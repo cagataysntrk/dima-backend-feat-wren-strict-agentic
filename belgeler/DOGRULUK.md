@@ -12,12 +12,28 @@ söylenmeden bir iddia bile değildir.
 
 ## 1 · Sayı
 
-| ölçüt | sonuç | payda | ne ölçer |
-|---|---|---|---|
-| **Doğru küp** | **%95,6** | **11.237** | Sorunun üretildiği küp ile cevabın küpü aynı mı |
-| **Semantik vaka** | **%94,4** | **591** | `(küp, ölçü, niyet)` üçlüsü — dönem/boyut çarpımı tek vakaya çöker |
-| **Cevapsız kesme** | **%19,7** | **14.957** | Cevap yok · kullanıcı durdurmadı · Discovery hiç koşmadı |
-| **Sessiz yanlış** | **7** | **2.286** | Gerçek-dünya korpusu: uyarısız, rozetli, yanlış sayı |
+| ölçüt | sonuç | **%95 güven aralığı** | payda | ne ölçer |
+|---|---|---|---|---|
+| **Doğru küp** | **%95,6** | **[%95,2 – %96,0]** | **11.237** | Sorunun üretildiği küp ile cevabın küpü aynı mı |
+| **Semantik vaka** | **%94,4** | **[%92,3 – %96,0]** | **591** | `(küp, ölçü, niyet)` üçlüsü — dönem/boyut çarpımı tek vakaya çöker |
+| **Cevapsız kesme** | **%19,7** | **[%19,1 – %20,3]** | **14.957** | Cevap yok · kullanıcı durdurmadı · Discovery hiç koşmadı |
+| **Sessiz yanlış** | **7** (%0,31) | **[%0,15 – %0,63]** | **2.286** | Gerçek-dünya korpusu: uyarısız, rozetli, yanlış sayı |
+
+### 🔴 Aralık neden yazılı — ve neyi yasaklıyor (`§A8`)
+
+Bir oran, **paydası** ve **belirsizliği** söylenmeden bir iddia bile değildir. Inspect
+AI'ın sorusu şuydu: *«20 senaryoluk paydada %85 ile %90 arasındaki fark **gürültü mü**»* —
+ve tek cevabı bir **aralıktır**.
+
+    Wilson skor aralığı (z = 1,96) — nadir olaylarda normal yaklaşımdan doğru,
+    payda küçüldükçe aralık GENİŞLER ve bu genişlik bir uyarıdır.
+
+⚠ Ne yasaklıyor: **aralıkları örtüşen iki sayıyı «iyileşme» diye ilan etmek.**
+`semantik vaka` aralığı **±1,87 puan** (n=591); yani %94,4 → %95,5 gibi bir değişim
+**ölçüm gürültüsüdür**, bir kazanç değil. Buna karşılık `doğru küp` aralığı **±0,38
+puan** (n=11.237) — orada yarım puanlık bir düşüş **gerçektir**.
+
+> *Bir oranı aralığı olmadan yayımlamak, okuyucuya kendi payda duygusunu uydurtmaktır.*
 
 ### Şirket kırılımı — ortalamanın arkasındaki dağılım
 

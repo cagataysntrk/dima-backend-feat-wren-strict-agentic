@@ -4055,7 +4055,7 @@ nedensel iddia **nedensel grafik beyanı** ister (DoWhy sınıfı) ve bizde **yo
 | ✅ **F7** | 🔴 **Kapsamı İLAN ET** — **özü zaten teslim edilmişti; kaçak bir yol kapatıldı** *(2026-08-11)* | ⊙ `app/yetenek.py`'nin **üç kutusu** (`anlamadim` · `yapamiyorum` · `yapmiyorum`) raporun istediği ayrımı zaten yapıyor ve `ask.py`'de **iki** çağrı yeri var — **yirmi birinci** «yazılmış ve bağlı» vakası. Canlı: *«gelecek ay ciro tahmini»* → *«forecast **v1'de yok** — bu bir eksiklik değil, **bilinçli bir karar**… **Yapabildiğim:** geçmiş eğilimi gösterebilirim»* + üç chip. 🔴 **Ama bir yol kaçaktı:** *«hava durumu nasıl»* (kataloğun tamamen dışında) → `rows=0` · `cube=None` ve kullanıcı şunu okuyordu: *«Bu cevap 1 adımda üretildi: 1. **ANLAT** — bulguları cümleye çevirir (`kaynaklar`=``)»* — yani kapsam beyanı değil, bir **planlayıcı iz satırı**. **Kök:** `plan_kosucu.dogrula` referans alanlarını **listeyi gezerek** denetliyor; `kaynaklar=[]` için döngü **hiç dönmüyor** → plan geçerli sayılıyor → makbuz basılıyor. Oysa fonksiyonun kendi cümlesi yazılıydı: *«bir anlatı, anlatacağı bulgulardan önce yazılamaz»* — hiç bulgusu **olmayan** bir anlatı, o ihlalin **en saf hâli** (konum değil **varlık** sorunu). Boş referans listesi artık **reddediliyor**; red garsona döner, onarım tükenirse kapsam beyanı konuşur. Kapı: `test_f7_bos_anlati.py` (6) |
 | ⊘ **F7-b** | *«Katalog dışı soruda Discovery'ye düşmeden kapsam ilan et»* — **ÖLÇÜLDÜ, YAPILMADI** | Doğru yüklem **yok**: `cube_router.veri_niyeti_var` var ve bağlı, ama ölçüldü — *«hava durumu nasıl»* için **`True`** dönüyor (sosyal kapı için yazılmış, katalog-kapsamı için değil). Yeni bir yüklem icat etmek `ADR-0008`'e girer ve `yetenek.py`'nin kendi uyarısına çarpar: *«Bir sınır beyanı, cevaplanabilen bir soruyu **asla reddetmemelidir**»*; bir yanlış-pozitif reddin bedeli `§101.1` gereği kusurun kendisinden ağırdır. ⊙ Bugünkü davranış **dürüst**: Discovery `SELECT 'Hava durumu verisi bulunmamaktadır.'` üretiyor — uydurma sayı **yok**, rozet `llm:*`, ve `CLAUDE.md`'ye göre her `adhoc` zaten bir **arıza raporudur**. *Ölçülmemiş bir yüklem yazmaktansa, ölçülmüş bir dürüstlüğü korumak.* |
 | ✅ **F8** | **Doğruluk sayısı YAYINLANDI** — [`belgeler/DOGRULUK.md`](../DOGRULUK.md) *(2026-08-12, `ddc6fa3`)* | ⊙ Yeni ölçüm aracı **yazılmadı**: var olan `nl_corpus.json` yayımlanabilir bir artefakta çevrildi. **Sayı:** doğru-küp **%95,6** (payda 11.237) · semantik vaka **%94,4** (591) · cevapsız **%19,7** (14.957) · sessiz-yanlış **7** (2.286). 🔴 **Payda oyunu yapmamanın somut karşılığı üç şey:** ① **iki payda birden** yayımlanır (ham tur ⊕ semantik vaka) ve **şişme katsayısı 25,3×** açıkça yazılır — *«14.957 soruda %95»* demek teknik olarak doğru ama yanıltıcıdır ② **en düşük şirket tabloda kalır** (`gitas` %89, ortalamayı aşağı çeker) ve dördü de adıyla yayımlanır ③ **bilinen körlükler yazılır** — sorular katalogdan üretildiği için **yazım hatası yolu hiç sorulmuyor**, korpus `route()`'u ölçer Discovery'yi **görmez**. ⊕ Payda seyreltmesinin neden yasak olduğu **ölçümle** anlatılır (`gitas` düştü → payda 445→342 → doğruluk **%93,2→%94,3 ÇIKTI**). ⊕ Yeniden üretme komutu + sha + tarih **künye olarak** verilir. 🔴 **Ve belge çürüyemez:** `test_f8_dogruluk_yayini.py` (6) her sayıyı `nl_corpus.json`'dan **yeniden hesaplayıp** karşılaştırır; şirket tablodan düşerse ya da oran bayatlarsa **kapı kırmızı**. `00-INDEKS.md`'ye yeni bir bayatlama sınıfı olarak eklendi: *«dışarıya verilen, kapıyla canlı tutulan»* |
-| **F9** | Kama/fiyat/kanal kararı | ⚠ **§37.4: taze arama oturumu olmadan stratejik karara temel yapılmamalı** |
+| ⊘ **F9** | Kama/fiyat/kanal kararı | ⚠ **§37.4: taze arama oturumu olmadan stratejik karara temel yapılmamalı** ⟳ **KARAR:** **KARAR VERİLMEDİ ve VERİLMEDİĞİ YAZILDI (`§40.4`)** — `§37.4`'ün şartı: *«taze arama oturumu olmadan stratejik karara temel yapılmamalı»*. Şart karşılanmadı. |
 
 ---
 
@@ -4100,22 +4100,22 @@ teşhisi tam olarak budur.
 
 | # | kalem | kaynak | ne yapar | maliyet |
 |---|---|---|---|---|
-| **A5** | **`syrupy`** (MIT, **sıfır bağımlılık**) + `pytest-regressions` | §13.5 | **Snapshot testi**: cevabın *tam metnini* kilitler. ⊙ Bu oturumda `§SB` iz satırı bir altın testi kırdı ve **iyi ki kırdı** — snapshot bunu sistematik yapar | saatler |
-| **A6** | **`test-suite-sql-eval`** deseni (Apache-2.0, EMNLP 2020) | §13.5 | **Damıtılmış çoklu mini veri seti**: `yil = 2026` ile `yil > 2025` **tek** DB'de aynı sonucu verir, **birden çok** mini DB'de ayrışır. ⊙ *«15 gizli kırmızı, 2'si gerçek kusur»* ölçümümüzün panzehiri | günler |
-| **A7** | **`EHRSQL` reliability score** (CC-BY-4.0, NeurIPS 2022) | §13.5 | Kapsam-**içine** red **ağır negatif** · kapsam-**dışına** red **pozitif** · kapsam-dışına uydurma **en ağır negatif**. ⊙ *«Dürüst red başarı değil»* doktrininin **matematiksel formu** — tek başına bir CI kapısı | günler |
-| **A8** | **Inspect AI'ın `stderr`'i** (standart hata) | §13.5 | *«20 senaryoluk paydada %85 ile %90 arasındaki fark **gürültü mü**»* sorusunun tek cevabı. ⊙ **«Payda kutsaldır»** ilkesinin doğal tamamlayıcısı | saatler |
-| **A9** | **`promptfoo`** (saf MIT) — **yalnız garson için** | §13.5 | A1 korpusunu koşturacak hazır harness. ⚠ Mevcut `eval/run.py` zaten selective-prediction yapıyor; **yerine değil, garson için** | günler |
-| **A10** | **`Dr.Spider`** deseni (Apache-2.0, ICLR 2023) | §13.5 | **17 pertürbasyon** · `robustness gap = acc(orijinal) − acc(bozulmuş)`. 🔴 `göre/bazında/bazlı` üçlü aşırı-yüklemesi bizi **üç kez** ısırdı çünkü **ölçülmüyor** | günler |
-| **A11** | **TURSpider / TUR2SQL / BIRDTurk** | §13.6 | Türkçe NL→SQL veri setleri (8.659 / 10.809 / 10.962). ⊙ **Kendi korpusumuzun dışında bir çapa** — bugün hiç yok. ⚠ TUR2SQL lisansı belirsiz, TURSpider HF kopyası **CC BY 4.0** | günler |
+| ⊘ **A5** | **`syrupy`** (MIT, **sıfır bağımlılık**) + `pytest-regressions` | §13.5 | **Snapshot testi**: cevabın *tam metnini* kilitler. ⊙ Bu oturumda `§SB` iz satırı bir altın testi kırdı ve **iyi ki kırdı** — snapshot bunu sistematik yapar | saatler ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — snapshot cevabın TAM METNİNİ kilitler; bu deponun 30+ kapısı bilinçle YAPIYA bağlı. *Onaylanarak geçilen bir kapı, kapı değildir.* |
+| ⏸ **A6** | **`test-suite-sql-eval`** deseni (Apache-2.0, EMNLP 2020) | §13.5 | **Damıtılmış çoklu mini veri seti**: `yil = 2026` ile `yil > 2025` **tek** DB'de aynı sonucu verir, **birden çok** mini DB'de ayrışır. ⊙ *«15 gizli kırmızı, 2'si gerçek kusur»* ölçümümüzün panzehiri | günler ⟳ **KARAR:** **PARK (`§40.5`)** — ikinci bir DB ister; korpus `sessiz_yanlis`'ı zaten ölçüyor (7/2.286). Şart: korpus bu sınıfı kaçırdığı ÖLÇÜLENE kadar. |
+| ◐ **A7** | **`EHRSQL` reliability score** (CC-BY-4.0, NeurIPS 2022) | §13.5 | Kapsam-**içine** red **ağır negatif** · kapsam-**dışına** red **pozitif** · kapsam-dışına uydurma **en ağır negatif**. ⊙ *«Dürüst red başarı değil»* doktrininin **matematiksel formu** — tek başına bir CI kapısı | günler ⟳ **KARAR:** **İLKESİ ZATEN UYGULANIYOR (`§40.3`)** — kapsam-dışına red pozitif (`§⑧`), kapsam-içine red negatif (`cevapsız` %19,7 yayında). Eksik olan tek SKORDA birleştirme: bir sunum işi. |
+| ✅ **A8** | **Inspect AI'ın `stderr`'i** (standart hata) | §13.5 | *«20 senaryoluk paydada %85 ile %90 arasındaki fark **gürültü mü**»* sorusunun tek cevabı. ⊙ **«Payda kutsaldır»** ilkesinin doğal tamamlayıcısı | saatler ⟳ **KARAR:** **YAPILDI (`§40.6`)** — `DOGRULUK.md`'ye **Wilson %95 güven aralığı** eklendi: doğru-küp **[%95,2–%96,0]** (±0,38) · semantik vaka **[%92,3–%96,0]** (±1,87) · cevapsız **[%19,1–%20,3]** · sessiz-yanlış **[%0,15–%0,63]**. ⚠ Ne yasakladığı da yazılı: **aralıkları örtüşen iki sayıyı «iyileşme» ilan etmek**. |
+| ⊘ **A9** | **`promptfoo`** (saf MIT) — **yalnız garson için** | §13.5 | A1 korpusunu koşturacak hazır harness. ⚠ Mevcut `eval/run.py` zaten selective-prediction yapıyor; **yerine değil, garson için** | günler ⟳ **KARAR:** **REDDEDİLDİ (`§40.3`)** — `eval/run.py` zaten selective-prediction yapıyor; ikinci harness aynı işi ikinci bağımlılıkla satın almaktır. |
+| ✅ **A10** | **`Dr.Spider`** deseni (Apache-2.0, ICLR 2023) | §13.5 | **17 pertürbasyon** · `robustness gap = acc(orijinal) − acc(bozulmuş)`. 🔴 `göre/bazında/bazlı` üçlü aşırı-yüklemesi bizi **üç kez** ısırdı çünkü **ölçülmüyor** | günler ⟳ **KARAR:** **YAPILDI (`§40.6`)** — ve gerekçesi bu turda ÖLÇÜLDÜ: `göre`/`bazında` **üçlü değil DÖRTLÜ** aşırı-yüklenme (dördüncüsü *«dolar bazında»* = para birimi, canlıda yanlış beyan üretti). Kapı `tests/test_a10_saglamlik_farki.py` — LLM'siz/ağsız, üç ölçülmüş bozulma sınıfı (yazım·çekim·edat), liste **canlıdan** gelir. |
+| ⏸ **A11** | **TURSpider / TUR2SQL / BIRDTurk** | §13.6 | Türkçe NL→SQL veri setleri (8.659 / 10.809 / 10.962). ⊙ **Kendi korpusumuzun dışında bir çapa** — bugün hiç yok. ⚠ TUR2SQL lisansı belirsiz, TURSpider HF kopyası **CC BY 4.0** | günler ⟳ **KARAR:** **PARK (`§40.5`)** — dış çapa değerli; şart: lisans+şema eşleme, ve `§26` garson ölçümü ondan önce. |
 
 ### FAZ 1'e eklenenler — getirme ve Türkçe
 
 | # | kalem | kaynak | ne yapar | maliyet |
 |---|---|---|---|---|
-| **B5** | **`Snowball` Türkçe kök bulucu** (BSD-3, 34,4M indirme/ay) | §13.6 | 🟢 **Gölge ölçümde dene** — sıfır bağımlılık, mikrosaniye. ⚠ Kendi belgesi: *«stems only **noun and nominal** verb suffixes»* → `arttı`yı **çözmez**, ama `satışlarımızın`/`cirodaki`/`bazında` tam kapsamda | günler |
-| **B6** | **Zemberek sözlüğü** (Apache-2.0) — **yalnız sözlük** | §13.6 | ~130k köklü sözlük; `_catalog_vocabulary`'yi besler. ⚠ **Kodu alma**: README *«slow maintenance mode»*, son sürüm **2019**, Maven Central'da **yok** | günler |
-| **B7** | **M-Schema** (XiYan-SQL) | §13.7 | **LLM-dostu şema temsili** — B1'in (şema daraltma) **çıktı biçimi** olarak değerlendirilmeli. Ham JSON yerine model için tasarlanmış gösterim | günler |
-| **B8** | **`ManifestExtractor.resolve_used_table_names`** | §11.1 | *«verilen SQL'i ayrıştır, kullanılan tablo adlarını döndür»* → **B1'in doğrulaması**: budanmış manifest, üretilen SQL'in ihtiyacını **gerçekten** karşıladı mı | saatler |
+| ⊘ **B5** | **`Snowball` Türkçe kök bulucu** (BSD-3, 34,4M indirme/ay) | §13.6 | 🟢 **Gölge ölçümde dene** — sıfır bağımlılık, mikrosaniye. ⚠ Kendi belgesi: *«stems only **noun and nominal** verb suffixes»* → `arttı`yı **çözmez**, ama `satışlarımızın`/`cirodaki`/`bazında` tam kapsamda | günler ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — kendi belgesi *«stems only, not lemmas»*; Türkçe'de ekler anlamı TAŞIR (`§G/AJ0`: *«arttı»* bir FİİL). Kök bulucu o ayrımı siler. |
+| ⊘ **B6** | **Zemberek sözlüğü** (Apache-2.0) — **yalnız sözlük** | §13.6 | ~130k köklü sözlük; `_catalog_vocabulary`'yi besler. ⚠ **Kodu alma**: README *«slow maintenance mode»*, son sürüm **2019**, Maven Central'da **yok** | günler ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — README *«slow maintenance»*; ve sözlük bugün kataloğun KENDİ kelimelerinden besleniyor. Dış sözlük, katalogda olmayan bir kelimeyi *tanıyormuş* gibi gösterir. |
+| ⏸ **B7** | **M-Schema** (XiYan-SQL) | §13.7 | **LLM-dostu şema temsili** — B1'in (şema daraltma) **çıktı biçimi** olarak değerlendirilmeli. Ham JSON yerine model için tasarlanmış gösterim | günler ⟳ **KARAR:** **PARK (`§40.5`)** — `B1`'in çıktı biçimi; `B1` ✅ ama biçim değişimi `KURAL B` ister. Şart: `§26`. |
+| ⏸ **B8** | **`ManifestExtractor.resolve_used_table_names`** | §11.1 | *«verilen SQL'i ayrıştır, kullanılan tablo adlarını döndür»* → **B1'in doğrulaması**: budanmış manifest, üretilen SQL'in ihtiyacını **gerçekten** karşıladı mı | saatler ⟳ **KARAR:** **PARK (`§40.5`)** — `B1`'in doğrulaması. Şart: `B1`'in bir kırmızısı ölçülene kadar. |
 
 ### FAZ 3'e eklenenler — grafik ve biçim
 
@@ -4130,15 +4130,15 @@ teşhisi tam olarak budur.
 
 | # | kalem | kaynak | ne yapar | maliyet |
 |---|---|---|---|---|
-| **E5** | **`ruptures`** (BSD-2) + **`statsforecast`** (Apache-2.0) | §13.8 | 🔴 **E2'nin (JS sürprizi) ÖN KOŞULU**: Adtributor `F` (baseline/forecast) ister — *«beklenen değer»* olmadan *«sürpriz»* hesaplanamaz. Ayrıca *«mart'ta düştü»* iddiasını **doğrular** | günler |
-| **E6** | **Explanation Tables** (VLDB 2014) — **oku, uygulama** | §13.8 | Adtributor'ın kardeşi; **kompakt, örtüşmeyen kural kümesi**. §10.4'ün *«bileşik segment»* boşluğuna **HotSpot'tan daha yorumlanabilir** ikinci çözüm ailesi | okuma |
+| ⏸ **E5** | **`ruptures`** (BSD-2) + **`statsforecast`** (Apache-2.0) | §13.8 | 🔴 **E2'nin (JS sürprizi) ÖN KOŞULU**: Adtributor `F` (baseline/forecast) ister — *«beklenen değer»* olmadan *«sürpriz»* hesaplanamaz. Ayrıca *«mart'ta düştü»* iddiasını **doğrular** | günler ⟳ **KARAR:** **PARK (`§40.5`)** — `E1` Adtributor'ın ön koşulu; `§25` layer-1 kilidi açılmadan gereksiz. |
+| ⊘ **E6** | **Explanation Tables** (VLDB 2014) — **oku, uygulama** | §13.8 | Adtributor'ın kardeşi; **kompakt, örtüşmeyen kural kümesi**. §10.4'ün *«bileşik segment»* boşluğuna **HotSpot'tan daha yorumlanabilir** ikinci çözüm ailesi | okuma ⟳ **KARAR:** **OKUNDU ve ERTELENDİ (`§40.4`)** — kartın kendisi *«oku, uygulama»* diyor. Adtributor'ın kardeşi, **bileşik segment** boşluğuna aday; o boşluk `§25` ile layer-1'de kilitli. |
 
 ### FAZ 5'e eklenenler — motorda olanı bırakma
 
 | # | kalem | kaynak | ne yapar | maliyet |
 |---|---|---|---|---|
-| **F10** | **`SessionContext.dry_run` / `register_csv` / `register_parquet`** | §11.1 | `wren_service.dry_plan` sarmalayıcısı ve **`dataset.py` (161 satır)** yerine motorun kendi API'si | günler |
-| **F11** | **`RowLevelAccessControl` + `validate_rlac_rule`** | §11.1 | **`rls.py` (380 satır)** yerine. ⚠ Güvenlik sınırı — **çok dikkatli**, kademeli, A/B ile | hafta |
+| ⊘ **F10** | **`SessionContext.dry_run` / `register_csv` / `register_parquet`** | §11.1 | `wren_service.dry_plan` sarmalayıcısı ve **`dataset.py` (161 satır)** yerine motorun kendi API'si | günler ⟳ **KARAR:** **`§F5`'TE ÖLÇÜLÜP REDDEDİLDİ (`§40.2`)** — `dataset.py`'nin 161 satırı dökümlendi; `register_csv` o işin **hiçbirini** yapmıyor (`ingest_file` 42 satır yalnız yaklaşıyor). |
+| ⊘ **F11** | **`RowLevelAccessControl` + `validate_rlac_rule`** | §11.1 | **`rls.py` (380 satır)** yerine. ⚠ Güvenlik sınırı — **çok dikkatli**, kademeli, A/B ile | hafta ⟳ **KARAR:** **`§F5`'TE ÖLÇÜLÜP REDDEDİLDİ (`§40.2`)** — *«sembol düzeyinde doğru, yetenek düzeyinde farklı»*; ve `§F12`'nin üçüncü ölçümü RLS enjeksiyonunun manifesti **v2-uyumsuz** yaptığını gösterdi. |
 | ◐ **F12** | ⟳ **ÜÇÜNCÜ ÖLÇÜM (2026-08-12): ⑦'nin ÖN KOŞUL KAPISI KÖRDÜ — ve koşul ZATEN SAĞLANMIYOR.** 🔴 `is_backward_compatible` *«RLS uygulanmış manifestte de True»* diyordu; **boş bir doğruydu**: varsayılan tenant (`demo-boyahane`) hiçbir cube'da `always_filter` beyan etmiyor, yani `manifeste_yaz` her iki kademede de **bayt bayt aynı** manifesti döndürüyordu — test *«RLS uygulanmış»* diyordu ama RLS **hiç uygulanmamıştı**. İzole + taze derlenmiş `gulteks` (logo-3) ile ölçüldü: ham **True** · `shadow` (0 kural) **True** · 🔴 **`on` (3 kural: `cari`·`mal`·`ticaret`, hepsi `CANCELLED = 0`) → `False`**. Kontrol izole (aynı manifest, yalnız enjeksiyon farkı) ve kusur **varsayılan** manifestte de yeniden üretiliyor (tek yapay `always_filter` → 1 kural → `False`) — yani bulgu tenant'a değil **enjeksiyonun kendisine** bağlı. ⊙ Bu tam olarak kartın *«bir gün RLS enjeksiyonu manifesti v2-uyumsuz hâle getirirse kapı bayrağı açmadan önce konuşur»* cümlesinin gerçekleşmesidir; kapı konuşamamıştı çünkü **kural olmayan tek tenant'a** bakıyordu. *Bir ön koşul kapısını, koşulun oluşamadığı yerde koşmak, kapıyı kurmakla kurmamak arasındaki farkı yok eder.* Kapı artık **görüyor**: `test_RLAC_ENJEKSIYONU_v2_UYUMUNU_BOZUYOR`. *(ilk ölçümün metni aşağıda korunuyor)* · **`Manifest` · `to_manifest` · `migrate_manifest_json` · `is_backward_compatible`** — **ÖLÇÜLDÜ, İKİYE AYRILDI** *(ilk ölçüm 2026-08-12)*. ⊘ **Göç YAPILMIYOR:** beş projenin `schema_version`'ı da **5**, yani göçülecek **sürüm farkı yok**; API *«maximum supported version is 4»* diyor ve base64'te de *«JSON error»* — **girdi biçimi belgesizce çelişiyor**. ⚠ Ve `wren_project.yml`'nin `schema_version`'ı ile motorun *«layout version»*'ı **aynı şey olmayabilir**; denk saymak ölçülmemiş bir eşitlik kurmak olurdu. *«Göç bedava» ancak göçülecek bir şey varsa kazançtır* — on üçüncü ölçülmüş «yapma». ✅ **AMA YARISI HEMEN DEĞERLİ:** `is_backward_compatible(manifest)` → **`True`**, hem temiz hem **RLS uygulanmış** hâlde — bu **`motor_rls` borcunun ön koşulu** ve artık kapılı. 🔴 **VE ÖLÇÜM BORÇ ⑦'NİN ŞEKLİNİ DEĞİŞTİRDİ:** `rls(shadow)` ve `rls(on)` → **0 kural**; demo katalogda RLS **hiç kural enjekte etmiyor**, yani `motor_rls`'i açmak burada **hiçbir şey değiştirmezdi** (daha önce ölçülen *«`shadow ≡ off`»*'un sebebi budur). Eksik olan **bayrak değil KURAL**. *Bir korumayı açmadan önce, koruyacak bir şeyi olduğunu ölçmek gerekir.* Kapı: `test_f12_manifest_uyumu.py` (4) — sürüm tekliğini, v2 uyumunu ve kural sayısını kilitler; ayrışırlarsa karar **yeniden okunur** | §11.1 | `compose.py` + `mdl_writer.py`'nin manifest kısmı (**~1.490 satır**). ⊙ Özellikle **`migrate_manifest_json`** — pack sürümü değişince **göç bedava** | hafta |
 
 ### 14.12 Toplam ve dürüst yargı
@@ -4198,7 +4198,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 |---|---|---|---|
 | **B9** | 🔴 **İki-sağlayıcılı LLM hakem** | §7.3 | AUROC ölçümü: `dry_plan` (**query executability**) **0,500 — tam şans**; execution self-consistency **0,613**; string self-consistency **0,675**; tek GPT-4o hakem **0,770**; 🟢 **iki-sağlayıcılı topluluk 0,822** (ECE 0,031). ⊙ **Bizim `k=3` oylamamızın tavanı ~0,675** — CHASE-SQL'in dersi: *darboğaz aday üretimi değil **SEÇİM***. ⚠ Oylamanın **yerine değil, ÜSTÜNE** |
 | **B10** | 🔴 **SKILLS — metodoloji markdown'ları** *(B3'ten AYRI)* | §36.1-5 | ⚠ **B3 `instructions.md` = iş sözlüğü** (*«fire'yi kg konuşuruz»*). **B10 = metodoloji**: kohort · funnel · retention · **YoY-oranı** · what-if — her biri bir **markdown iş akışı**. ⊙ Anthropic: **skill'siz %21 → skill'li >%95**; *«bir skill'e paketlenebilecek bağlam **fiilen sınırsız**»*. Ve §34'ün beş metodoloji hatası (adım sırası · dedup · pencere · kohort ataması · geri dönüş) **kodda değil METİNDE** yaşar. ⚠ Bakım: **pack ile aynı PR** (bakımsız **1 ayda %95→%65**) |
-| **B11** | **Ephemeral / karalama sorgusu** | §36.1-4 | Hex'in ölçümü: ajan önce veriyi **görünmez bir sorguyla** tanıyor → *«ilk denemede doğruluk yükseliyor»*. Bizde **yok**. ⊙ B4 (repair) ile kardeş: biri **hatadan sonra**, öteki **hatadan önce** |
+| ✅ **B11** | **Ephemeral / karalama sorgusu** | §36.1-4 | Hex'in ölçümü: ajan önce veriyi **görünmez bir sorguyla** tanıyor → *«ilk denemede doğruluk yükseliyor»*. Bizde **yok**. ⊙ B4 (repair) ile kardeş: biri **hatadan sonra**, öteki **hatadan önce** ⟳ **KARAR:** **AMACI KARŞILANIYOR (`§40.3`)** — Hex soru-başına gizli sorgu koşar; biz kurulum anında **bir kez** profilliyoruz: **121 boyutun 120'si (%99)** değer taşıyor. Mekanizma farklı, sonuç aynı, maliyet daha düşük. |
 
 ### FAZ 3'e — kapsam ve tanım
 
@@ -4305,8 +4305,8 @@ yoğunluğunun saat dağılımı — *«hangi saatlerde duruyor»* sorusu **ifad
 |---|---|---|---|
 | **B12** | 🔴 **Granülerliği tek kaynağa bağla + `hour`/`minute` aç** — `cube_operatorleri.py`'nin deseniyle: motora **tek tek gönder, satır döndürdüğünü ÖLÇ**, sonra ekle. `intent_semasi._GRAN_ENUM` ve `plan_onarim.GRANULERLIKLER` o kaynaktan türesin | FAZ 1 | günler |
 | **F14** | **`SessionContext`'in dört kullanılmayan yeteneği**: `get_available_functions` (motorun desteklediği fonksiyonları **sormak**, varsaymak yerine) · `transform_sql` · `pushdown_limit` · `list_tables` | FAZ 5 | günler |
-| **F15** | `Model` · `SessionProperty` · `RemoteFunction` · `to_json_base64` — **değerlendir**; `RemoteFunction` özel iş fonksiyonları (ör. Türkçe tarih/metin) için kapı olabilir | FAZ 5 | okuma |
-| **F16** | **`views` yolu için bir kapı** — bugün tek view var ve sınanmıyor | FAZ 5 | saatler |
+| ⊘ **F15** | `Model` · `SessionProperty` · `RemoteFunction` · `to_json_base64` — **değerlendir**; `RemoteFunction` özel iş fonksiyonları (ör. Türkçe tarih/metin) için kapı olabilir | FAZ 5 | okuma ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — bugün karşılığı yok; `RemoteFunction` Türkçe tarih/metin için bir kapı olabilir ama `§B12`'nin motor sözleşmesi işiyle birlikte açılır. |
+| ✅ **F16** | **`views` yolu için bir kapı** — bugün tek view var ve sınanmıyor | FAZ 5 | saatler ⟳ **KARAR:** **ZATEN VAR (`§40.2`)** — `tests/test_view_fanout_guard.py` koşuyor: `parti_zengin` view'ının `personel.ad_soyad` üzerinden LEFT JOIN'i bir fan-out riskiydi, `4.7b` en az invaziv düzeltmeyle regresyon kapısına çevrildi. |
 
 ### E · Wren'in **ürün** tarafından alınacaklar — plan durumu
 
@@ -4328,9 +4328,9 @@ yoğunluğunun saat dağılımı — *«hangi saatlerde duruyor»* sorusu **ifad
 
 | # | iş | faz | neden |
 |---|---|---|---|
-| **A15** | **Wren'in `evals/` dizinini incele** — A1'in korpus tasarımına desen | FAZ 0 | okuma |
-| **B13** | 🔴 **Değer profilleme (value profiling)** — Wren'in 6 doğruluk sütunundan biri; `deger_capasi.py`'nin üstüne. *«Kullanıcının kelimesi ↔ DB değeri»* uçurumu | FAZ 1 | günler |
-| **F17** | `wren-langchain` / `wren-pydantic` SDK'larını değerlendir | FAZ 5 | okuma |
+| ⏸ **A15** | **Wren'in `evals/` dizinini incele** — A1'in korpus tasarımına desen | FAZ 0 | okuma ⟳ **KARAR:** **PARK (`§40.5`)** — `A1` kaseti 21→50'ye büyütülürken okunur. |
+| ✅ **B13** | 🔴 **Değer profilleme (value profiling)** — Wren'in 6 doğruluk sütunundan biri; `deger_capasi.py`'nin üstüne. *«Kullanıcının kelimesi ↔ DB değeri»* uçurumu | FAZ 1 | günler ⟳ **KARAR:** **YAPILMIŞ (`§40.3`)** — `_enrich_categorical` + `_enrich_cube_dim_values` + `value_index.FuzzyIndex` + `deger_capasi.py`. *«Kullanıcının kelimesi ↔ DB değeri»* uçurumu kapalı (%99 ölçüldü). |
+| ⊘ **F17** | `wren-langchain` / `wren-pydantic` SDK'larını değerlendir | FAZ 5 | okuma ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — depo motoru doğrudan çağırıyor ve `§F5` o yolun ince olduğunu ölçtü; SDK katmanı yeni yetenek değil yeni bir sürüm bağımlılığı getirir. |
 
 ### 14.17 GÜNCEL TOPLAM
 
@@ -4627,3 +4627,75 @@ bütçesi (200/200) tükendiği için tüm erişim WebFetch + GitHub/PyPI/npm/Hu
 üzerinden yapıldı ve lisanslar **LICENSE ham metninden** doğrulandı. Erişilemeyen kaynaklar
 (Show Me 2007 PDF, APT 1986 tam metni, iDice, Ang 2005) ilgili yerlerde **açıkça
 işaretlendi** ve içerikleri yalnız ikincil/doğrulanabilir kaynaklardan aktarıldı.
+
+---
+
+## 40 · 🔴 ARAŞTIRMA KALEMLERİNİN TOPLU KARARI — ölç → karar → **YAZ** (2026-08-12)
+
+Yol haritasının sonuna eklenen kalemlerin çoğu *«oku / değerlendir»* biçiminde yazılmıştı.
+Bir *«değerlendir»* maddesi, değerlendirilip **kararı yazılmadıkça** kapanmaz — ve açık
+duran her satır, bir sonraki turun önceliğini bozar.
+
+⚠ **Gerekçeli `⊘` bir başarısızlık değildir.** `§E3` Benjamini-Hochberg'i tam olarak
+böyle kapattı: ölçüldü, bu depoda p-değeri olmadığı görüldü, **reddedildi ve yazıldı**.
+*Bir aracı almamak, ancak neden almadığın yazılıysa bir karardır.*
+
+### 40.1 Ölçüm — bağımlılıklar ve kod izleri
+
+    syrupy · ruptures · statsforecast · snowballstemmer · zemberek · promptfoo → HİÇBİRİ KURULU DEĞİL
+    M-Schema · resolve_used_table_names · LMDI · perturbation · TURSpider     → kodda İZ YOK
+    değer profilleme (`FuzzyIndex` · `dimension_values` · `deger_capasi`)      → ✅ VAR
+    `SessionContext` · `RowLevelAccessControl`                                → ✅ ÖLÇÜLMÜŞ (`§F5`)
+    view fan-out kapısı (`test_view_fanout_guard.py`)                         → ✅ VAR
+
+### 40.2 🔴 ÜÇ KALEM ZATEN KAPANMIŞ — kartları bayattı
+
+| kalem | ölçüm |
+|---|---|
+| **F16** *«views yolu için bir kapı»* | ✅ `tests/test_view_fanout_guard.py` **var ve koşuyor** — `parti_zengin` view'ının `personel.ad_soyad` üzerinden LEFT JOIN'i bir fan-out riskiydi, `4.7b` en az invaziv düzeltmeyle regresyon kapısına çevrildi |
+| **F10** `SessionContext.dry_run`/`register_csv` | ⊘ `§F5`'te **ölçülüp reddedildi**: `dataset.py`'nin 161 satırı dökümlendi, `register_csv` o işin **hiçbirini** yapmıyor (`ingest_file` 42 satır yalnız *yaklaşıyor*) |
+| **F11** `RowLevelAccessControl` | ⊘ `§F5`: *«sembol düzeyinde doğru, yetenek düzeyinde farklı»* — ve `§F12`'nin üçüncü ölçümü RLS enjeksiyonunun manifesti **v2-uyumsuz** yaptığını gösterdi |
+
+⊙ Üçü de `㊷`'nin örneği: *bir kartın «yapılacak»ı zaten yapılmış olabilir — önce `§`'ünü ara.*
+
+### 40.3 ✅ AMACI KARŞILANANLAR — mekanizma farklı, sonuç aynı
+
+| kalem | karar |
+|---|---|
+| **B11** ephemeral/karalama sorgusu | ✅ `§36.1-4`: Hex soru-başına gizli sorgu koşar; biz **kurulum anında bir kez** profilleriz — **121 boyutun 120'si (%99)** değer taşıyor. Amaç (*«ilk denemede doğruluk»*) karşılanıyor, mekanizma **daha ucuz** |
+| **B13** değer profilleme | ✅ Aynı ölçüm: `_enrich_categorical` + `_enrich_cube_dim_values` + `value_index.FuzzyIndex` + `deger_capasi.py`. *«Kullanıcının kelimesi ↔ DB değeri»* uçurumu **kapalı** |
+| **A9** `promptfoo` | ⊘ `eval/run.py` **zaten** selective-prediction yapıyor; ikinci bir harness aynı işi ikinci bir bağımlılıkla satın almaktır |
+| **A7** EHRSQL reliability skoru | ◐ İlkesi **zaten uygulanıyor**: kapsam-dışına red **pozitif** (`§⑧` · dürüst red), kapsam-içine red **negatif** (`cevapsız` metriği, `DOGRULUK.md`'de **%19,7**). Tek eksik: ikisini **tek bir skorda** birleştirmek — bir sunum işi, bir yetenek değil |
+
+### 40.4 ⊘ REDDEDİLENLER — ve gerekçeleri
+
+| kalem | red gerekçesi |
+|---|---|
+| **A5** `syrupy` snapshot | 🔴 **Bu deponun kapı felsefesine aykırı.** Snapshot cevabın **tam metnini** kilitler; buradaki 30+ kapı bilinçle **yapıya/iddiaya** bağlandı (ders ㉕). Bir snapshot her anlatı iyileştirmesinde kırmızı verir ve düzeltmesi *«kabul et»*tir — yani kapı bir **kayda** dönüşür. *Bir kapının onaylanarak geçilen hâli, kapı değildir.* |
+| **B5** Snowball TR kök bulucu | ⊘ Kendi belgesi *«stems only, **not lemmas**»* diyor; Türkçe'de ekler anlamı **taşır** (`§G/AJ0`: *«arttı»* bir FİİL). Kök bulucu o ayrımı **siler** |
+| **B6** Zemberek sözlüğü | ⊘ README *«slow maintenance»*; ve `_catalog_vocabulary` bugün **kataloğun kendi kelimelerinden** besleniyor — dış sözlük, katalogda olmayan bir kelimeyi *tanıyormuş* gibi gösterir |
+| **F9** kama/fiyat/kanal kararı | ⊘ `§37.4`'ün kendi şartı: *«taze arama oturumu olmadan stratejik karara temel yapılmamalı»*. Şart karşılanmadı → karar **verilmiyor**, ve verilmediği yazılıyor |
+| **F15** `Model`/`SessionProperty`/`RemoteFunction` | ⊘ Bugün karşılığı yok; `RemoteFunction` Türkçe tarih/metin için bir kapı **olabilir** ama o kapı `§B12`'nin motor sözleşmesi işiyle birlikte açılır |
+| **F17** `wren-langchain`/`wren-pydantic` SDK | ⊘ Bu depo motoru **doğrudan** çağırıyor ve `§F5` o yolun ince olduğunu ölçtü; bir SDK katmanı yeni yetenek getirmiyor, yeni bir sürüm bağımlılığı getiriyor |
+| **E6** Explanation Tables | ⊘ Kartın kendisi *«oku, uygulama»* diyor. Okundu: Adtributor'ın kardeşi, **bileşik segment** boşluğuna aday — ve o boşluk `§25` ile **layer-1'de kilitli** (PARK). Ön koşulu açılmadan bu da açılmaz |
+
+### 40.5 ⏸ PARK — değerli ama şartı yazılı
+
+| kalem | şart |
+|---|---|
+| **A6** `test-suite-sql-eval` deseni | **İkinci bir DB** ister (aynı sonucu veren farklı SQL'leri ayırt etmek için). Bugünkü korpus `sessiz_yanlis`'ı **zaten** ölçüyor (7/2.286) → şart: korpus bu sınıfı kaçırdığı **ölçülene** kadar bekler |
+| **A11** TURSpider / TUR2SQL / BIRDTurk | Dış çapa **değerli** (kendi korpusumuzun dışında); şart: lisans + şema eşleme işi, ve `§26` garson ölçümü ondan **önce** gelir |
+| **A15** Wren `evals/` dizinini incele | `A1` korpus tasarımına desen; şart: `A1` kaseti 21→50'ye büyütülürken okunur |
+| **B7** M-Schema (XiYan-SQL) | `B1` şema daraltmanın **çıktı biçimi**; `B1` ✅ yapıldı ama biçim değişimi `KURAL B` ister → şart: garson doğruluk ölçümü (`§26`) |
+| **B8** `resolve_used_table_names` | `B1`'in **doğrulaması** (budanmış manifest gerçekten yetiyor mu). Şart: `B1`'in bir kırmızısı ölçülene kadar bekler |
+| **E5** `ruptures` + `statsforecast` | `E1` Adtributor'ın **ön koşulu** (baseline/forecast). `§25` layer-1 kilidi açılmadan gereksiz |
+
+### 40.6 🔴 GERÇEK VE UCUZ — bu turda yapılanlar
+
+| kalem | ne yapıldı |
+|---|---|
+| **A8** Inspect AI `stderr` | ✅ **YAPILDI** — `DOGRULUK.md`'nin yayınladığı oranlara **Wilson güven aralığı** eklendi. *«%85 ile %90 arasındaki fark gürültü mü»* sorusunun tek cevabı bir aralıktır |
+| **A10** `Dr.Spider` robustness gap | ✅ **YAPILDI** — ve gerekçesi bu turda **ölçüldü**: `göre`/`bazında` bu depoda **dört** anlama geliyor ve dördüncüsü (*«dolar bazında»* = para birimi) canlı turda yakalandı. Pertürbasyon kapısı tam bu sınıfı ölçer |
+
+*Bir yol haritasının sonundaki maddeler, kararları yazılmadıkça bir kuyruk değil bir
+gürültüdür.*
