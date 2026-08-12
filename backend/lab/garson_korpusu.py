@@ -269,10 +269,34 @@ def ozet(sonuc: list[dict]) -> dict:
     return d
 
 
-def rapor(sonuc: list[dict]) -> str:
+def rapor(sonuc: list[dict], iska: int = 0) -> str:
+    """Korpus sonucunu markdown'a çevirir.
+
+    🔴🔴 `iska` **ZORUNLU BAĞLAM** (⟳ 2026-08-12, denetim bulgusu). Öncesinde bu
+    fonksiyon yalnız `sonuc` alıyordu ve ıska sayısı **artefakta hiç ulaşmıyordu** —
+    oysa `kapi()` bir ıskada bile kırmızı veriyor. Bedeli ölçüldü:
+
+        artefakt  : route 9 · garson 2 · orkestra 0 · netlestirme 9 · sosyal 1
+        taban     : route 9 · garson 4 · orkestra 4 · netlestirme 3 · sosyal 1
+
+    `route` ve `sosyal` **birebir sabit** (deterministik yol bozulmamış); yalnız
+    **LLM'e bağlı** iki basamak çökmüş ve farkın tamamı `netlestirme`'ye gitmiş
+    (`garson −2 · orkestra −4 · netlestirme +6`, toplam korunmuş). Bu bir **kaset
+    ıskası imzasıdır**, bir ürün gerilemesi değil — ama artefakt bunu **söyleyemiyordu**
+    ve iki tur boyunca *«gerileme mi ıska mı»* diye tartışıldı.
+
+    > *Bir ölçümün kırmızısı, sebebini taşımıyorsa bir alarm değil bir muammadır.*
+    """
     o = ozet(sonuc)
     sat = ["# Kasetli garson korpusu", "",
            f"payda **{o['payda']}** (⚠ kayıt kümesi — *«korpus %»* değil)", ""]
+    if iska:
+        sat += [f"🔴 **KASET ISKASI: {iska}** — bu turlar **ölçülmedi**; aşağıdaki "
+                "sayılar bir ürün ölçümü DEĞİL, eksik bir kasetin gölgesidir. "
+                "`route`/`sosyal` sabit kalıp `garson`/`orkestra` düşüyorsa sebep "
+                "neredeyse kesin budur (kaseti tazeleyin).", ""]
+    else:
+        sat += ["✅ kaset ıskası **yok** — sayılar bir ürün ölçümüdür.", ""]
     sat.append("| basamak | n | pay |")
     sat.append("|---|---|---|")
     for k in ("route", "garson", "orkestra", "netlestirme", "sosyal", "discovery",
@@ -443,7 +467,7 @@ def main() -> int:
 
     hedef = _rapor_yolu()
     hedef.parent.mkdir(parents=True, exist_ok=True)
-    hedef.write_text(rapor(sonuc), encoding="utf-8")
+    hedef.write_text(rapor(sonuc, iska=_iska), encoding="utf-8")
     print(f"Rapor: {hedef}")
     kod, mesaj = kapi(sonuc, iska=_iska)
     print(mesaj)
