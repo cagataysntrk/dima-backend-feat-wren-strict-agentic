@@ -107,8 +107,35 @@ def cagir(planlayici: Any, ad: str, argumanlar: dict[str, Any] | None = None,
             "_meta": {"makbuz": None},
         }
 
+    # 🔴🔴 **ENJEKTE EDİLEN KAYNAKLAR BURADA SAĞLANIR** (⟳ 08-12, `§14.16 E`).
+    #
+    # `Arac.enjekte` bir **beyandır**: *«bu argümanı sunucu verir, LLM değil.»* Ama
+    # ölçüldü — `enjekte`'yi **hiçbir yer tüketmiyordu** (`grep -rn "\.enjekte" app/`
+    # → yalnız alan tanımı). `Planlayici.calistir(ad, *args, **kwargs)` her argümanı
+    # **çağırandan** alıyor. Sonuç: `schema` isteyen beş araç MCP'den **çağrılamıyordu**
+    # (`route` dâhil — merdivenin birinci basamağı).
+    #
+    # ⚠ Ve beyanı `girdi`den `enjekte`ye taşımak TEK BAŞINA yetmez: o yalnız
+    # `inputSchema`'yı düzeltir, çağrıyı **düzeltmez** — araç bu kez *«eksik argüman»*
+    # ile düşerdi. *Bir alanı ilan etmekten çıkarmak, onu sağlamak değildir.*
+    _ek: dict[str, Any] = {}
     try:
-        sonuc = planlayici.calistir(ad, **(argumanlar or {}), makbuz=makbuz)
+        from app import tools as _t
+
+        _arac = _t.get(ad)
+        _svc = getattr(planlayici, "kaynaklar", {}).get("servis:wren")
+        for _k in (_arac.enjekte or ()):
+            if _k in (argumanlar or {}):
+                continue                     # çağıran açıkça verdiyse ona dokunma
+            if _k in ("service", "svc") and _svc is not None:
+                _ek[_k] = _svc
+            elif _k in ("schema", "sema") and _svc is not None:
+                _ek[_k] = _svc.schema()
+    except Exception:                                         # noqa: BLE001
+        _ek = {}                                              # enjeksiyon cevabı DÜŞÜRMEZ
+
+    try:
+        sonuc = planlayici.calistir(ad, **(argumanlar or {}), **_ek, makbuz=makbuz)
         hata = None
     except Exception as exc:                                  # noqa: BLE001
         sonuc, hata = None, f"{type(exc).__name__}: {exc}"[:300]
@@ -144,8 +171,17 @@ def cagir(planlayici: Any, ad: str, argumanlar: dict[str, Any] | None = None,
         "isError": bool(hata),
         # 🔴 **MAKBUZ** — jenerik MCP sunucularında olmayan fark. Aynı `Adim` nesnesi
         # HTTP yolunda da üretilir; burada yeniden BİÇİMLENDİRİLMEZ, olduğu gibi verilir.
-        "_meta": ({"makbuz": _adim_sozlugu(son), "belirsizlik": _bel} if _bel
-                  else {"makbuz": _adim_sozlugu(son)}),
+        # 🔴 `kalan` — ⟳ 08-12. `§C2` bütçesi MCP'de **çağrı başına** sıfırlanıyor
+        # (`routers/mcp.py:59` her istekte taze `Planlayici(butce=Butce())`), yani
+        # tavan bir **oturum** tavanı değil. Oturum bütçesi bir **durum deposu**
+        # ister ve o ayrı bir karardır; ⏸ ama en azından ajan **kendi maliyetini
+        # görebilmeli**: `Planlayici.kalan()` zaten hesaplıyordu, hiçbir yere
+        # yazılmıyordu. *Harcadığını göremeyen bir ajan, tutumlu olmayı seçemez.*
+        "_meta": {k: v for k, v in (
+            ("makbuz", _adim_sozlugu(son)),
+            ("belirsizlik", _bel),
+            ("kalan", (planlayici.kalan() if hasattr(planlayici, "kalan") else None)),
+        ) if v is not None},
     }
 
 

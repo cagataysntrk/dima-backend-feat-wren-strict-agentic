@@ -224,3 +224,31 @@ def test_HICBIR_ARAC_CAGIRANDAN_SUNUCU_NESNESI_ISTEMIYOR():
         f"🔴 çağıranın ÜRETEMEYECEĞİ alanı isteyen araç(lar): {kacak}\n"
         "Bu alanlar `girdi`den `enjekte`ye taşınmalı — yoksa araç MCP'de yayımlanır "
         "ama **çağrılamaz**.")
+
+
+def test_AJAN_YALNIZ_SORUYLA_MERDIVENE_BASLAYABILIYOR(wren):
+    """🔴🔴 **DAVRANIŞSAL KAPI** — sözleşme değil, **çağrının kendisi**.
+
+    Kardeş test `route`'un `required` alanlarını ölçüyor; bu test **gerçekten çağırıyor**.
+    Ayrım önemli, çünkü ilk düzeltmem tam burada yarım kaldı: `schema`'yı `girdi`den
+    `enjekte`ye taşımak `inputSchema`'yı düzeltti ama **çağrıyı düzeltmedi** —
+    `Arac.enjekte` yalnız bir **beyandı**, hiçbir yer onu tüketmiyordu
+    (`grep -rn "\\.enjekte" app/` → yalnız alan tanımı). Araç bu kez *«eksik argüman»*
+    ile düşerdi.
+
+    ⊙ `mcp.cagir` artık `enjekte`'yi **gerçekten sağlıyor** (`servis:wren` → `schema()`).
+
+    *Bir alanı ilan etmekten çıkarmak, onu sağlamak değildir.*
+    """
+    from app import mcp, planner
+
+    pl = planner.Planlayici(principal=None, butce=planner.Butce(),
+                            kaynaklar={"servis:wren": wren})
+    r = mcp.cagir(pl, "route", {"question": "bu yil ciro"})
+    assert r["isError"] is False, (
+        f"🔴 ajan YALNIZ SORUYLA `route`'u çağıramadı: "
+        f"{r['content'][0]['text'][:160]}\n"
+        "Merdivenin birinci basamağı MCP'den erişilemez demektir.")
+    k = mcp.cagir(pl, "katalog", {})
+    assert k["isError"] is False, (
+        f"🔴 `katalog` keşif aracı çağrılamadı: {k['content'][0]['text'][:160]}")
