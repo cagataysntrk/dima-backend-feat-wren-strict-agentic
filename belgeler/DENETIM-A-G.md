@@ -133,8 +133,8 @@ etkileyemez** ve bu bir yapılandırma değil bir **yapı**.
 
 | # | iş | risk | gerekçe |
 |---|---|---|---|
-| 1 | **Yön beyansızlığını anlatıda söyle** (68/136) | 🟢 yok | uydurma yok, yeni liste yok — *var olan bilgisizliğin beyanı* |
-| 2 | **Kapı:** yön beyansız oran **%50'yi geçerse kırmızı** | 🟢 yok | katalog büyürken borç **sessizce** büyümesin |
+| 1 ✅ | **Yön beyansızlığını anlatıda söyle** (68/136) — *yapıldı, mutasyonlu* | 🟢 yok | uydurma yok, yeni liste yok — *var olan bilgisizliğin beyanı* |
+| 2 ✅ | **Kapı:** yön beyansız oran **%50'yi geçerse kırmızı** — *`test_a_yon_beyani.py` (4)* | 🟢 yok | katalog büyürken borç **sessizce** büyümesin |
 | 3 | **Madencinin kolunu çevir**: `lab/` altında bir **çevrimdışı koşucu** (route-edilemeyen soruları `interaction_log`'dan al → `oner` → `kuyruga_koy`) | 🟡 orta | hat kurulu; eklenen tek şey **tetik**. `E-8` **korunur** (sıcak yol değil) |
 | 4 | **Kapı:** `sinonim_onerici`'nin **bir çağıranı olmalı** — yoksa kırmızı | 🟢 yok | *bir motoru kurmak onu çalıştırmaz* |
 | ⏸ | `higher_is_better` listesi | — | **136 ölçüyü elle etiketlemek** = tam da bırakılması istenen iş → **3 numaranın kuyruğuna** |
