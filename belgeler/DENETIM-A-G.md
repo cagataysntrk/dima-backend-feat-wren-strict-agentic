@@ -395,15 +395,29 @@ için»*). 🔴 **Ama kıyasın ÇIKTISININ nereye gittiği ve okuyanı olup olm
 **sayaç değil** — yani *«gölge kaç kez ayrıştı»* sorusu bir log taramasıyla cevaplanır,
 bir metrikle değil. → **`§F` kuyruğuna** yazıldı (telemetri kalemi).
 
-#### ② 🔴 `vqr`'ın *«şema-sürüm kapısı»* — **İZİ YOK**
+#### ② ⟳🔴 `vqr`'ın *«şema-sürüm kapısı»* — **BENİM BULGUM YANLIŞTI, kapı VAR**
 
 `app/vqr.py`'de `schema_version` · `surum` · `version` → **0 isabet**. Yani `wren.memory`
 karşılaştırmasında bulduğum boşluk (`schema_is_current`) **gerçek**: şema değiştiğinde
 belleğin bayatlayıp bayatlamadığı **bilinmiyor**.
 
-⚠ **Ve bu bir «yapılmamış iş» değil, bir «yazılmış ama ölçülmemiş iddia»**: depoda
-*«`vqr.recall` ham-SQL replay'i; şema-sürüm kapısı var»* diye bir cümle geçiyordu.
-🅐 *Bir değişmezin ilanını ölçmek, değişmezi ölçmek değildir.* → **`D` kuyruğuna** yazıldı.
+⟳ **DÜZELTME (aynı oturum, `§D`'nin ilk işi): İDDİA DOĞRUYMUŞ, ÖLÇÜMÜM YANLIŞTI.**
+
+`app/vqr.py`'de `schema_version|surum|version` aramak **yanlış ad, yanlış dosyaydı**.
+Gerçek ad **`mdl_version`** (repo genelinde **26** referans) ve kapı `vqr`'da değil
+**sözleşme kimliğinde**:
+
+> `app/contracts.py:145` — *«`mdl_version`, `company`, `tenant_id` **kimliğe GİRER**:
+> şema değişince aynı `cube_query` **başka bir kimlik** üretir.»*
+> (`:169` `payload = {"cq": cq, "mdl": mdl_version, "company": …, "tenant": …}`)
+
+✅ Yani bayatlık **yapısal olarak** kapalı: şema sürümü değişince hash değişir, eski kayıt
+**eşleşmez**. `wren.memory`'nin `schema_is_current`'ının karşılığı **bizde var** — başka
+bir yerde ve **daha güçlü** (kimliğin parçası, bir kontrol değil).
+
+> 🅣 *Bir kapının yokluğunu iddia etmek, aradığın YERİN kapsamıyla sınırlıdır* — ve bu
+> oturumda **yedinci** kez kendi probum yanılttı. ㉙ **KOD ADIYLA ARA**: `version` diye
+> aradım, alanın adı `mdl_version`'dı.
 
 #### ③ `dataset.py` ↔ `register_csv` — **AYNI ÇERÇEVE HATASI, aynı cevap**
 
@@ -427,7 +441,7 @@ Bir dosyayı tanıtmak ile onu **semantik katmana** sokmak aynı iş değildir (
 | `wren.ask_templates` · `wren.genbi` | ⊘ **konu dışı** | grafik kararı **deterministik** (`ADR-0024`); şablon/GenBI ithalatı o kararı LLM'e devrederdi |
 | `rls.py` · `dataset.py` · manifest | ⊘ **tekrar DEĞİL** | üçü de motora **girdi** üretiyor; başlıkları bunu yazıyor |
 | gölge kıyası | 🟢 **sayaç eksik** | log var, metrik yok → `§F` |
-| `vqr` şema-sürüm | 🔴 **ölçülmemiş iddia** | → `§D` |
+| `vqr` şema-sürüm | ✅ **VAR** — `contracts.cube_query_hash`'te `mdl_version` **kimliğin parçası** | ⟳ benim ölçümüm yanlıştı |
 
 > 🆛 *Bir motoru «az kullanıyoruz» diye suçlamadan önce, onun hangi işini bizim
 > yaptığımızı değil, bizim hangi işimizi onun yapamayacağını sormak gerekir.*
