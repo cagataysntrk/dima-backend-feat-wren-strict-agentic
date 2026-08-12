@@ -148,8 +148,25 @@ def test_HAKEM_MATCH_CUBEIN_ILK_SATIRINDA():
     agac = ast.parse((KOK / "app" / "cube_router.py").read_text(encoding="utf-8"))
     fn = next(n for n in ast.walk(agac)
               if isinstance(n, ast.FunctionDef) and n.name == "_match_cube")
-    assert any(isinstance(n, ast.Call) and getattr(n.func, "id", "") == "hakem"
-               for n in ast.walk(fn)), "`_match_cube` hakemi ÇAĞIRMIYOR — kararlar ölü"
+    # 🔴 ⟳ **KAPI BİR ADA BAĞLIYDI ve `§SH-2` taşımasından beri TABANDA KIRMIZIYDI**
+    # (ölçüldü 2026-08-12, `HEAD` worktree'sinde). Hakemin **gövdesi** o turda
+    # `metrik_kaydi.hakem_secimi`'ne çıktı (`cube_router:1127` bunu yazıyor) ve bu kapı
+    # hâlâ `hakem` **adını** arıyordu → *«kararlar ölü»* diye bağırıyordu, oysa kararlar
+    # **çalışıyordu** (korpusta ölçüldü: 40 yanlış satırın 33'ü kararın FİYATI).
+    #
+    # ⊙ Ve kırmızı görünmedi çünkü yerel kapı politikası yalnız **değişen dosyaların**
+    # testlerini seçiyor; `cube_router` o turdan beri değişmemişti.
+    #
+    # *Bir kapıyı bir ADA bağlamak, gövde taşındığı gün onu bir yalancıya çevirir.*
+    #
+    # Doğru ölçüm **iddianın kendisi**: `_match_cube` sahiplik kaydına **danışıyor mu** —
+    # doğrudan `hakem` ile ya da onun evi olan `hakem_secimi` ile.
+    _hakem_adlari = {"hakem", "hakem_secimi"}
+    _cagrilan = {getattr(n.func, "id", "") or getattr(n.func, "attr", "")
+                 for n in ast.walk(fn) if isinstance(n, ast.Call)}
+    assert _hakem_adlari & _cagrilan, (
+        "🔴 `_match_cube` sahiplik hakemine HİÇ danışmıyor — kararlar ölü.\n"
+        f"   çağrılanlar: {sorted(x for x in _cagrilan if x)[:12]}")
 
 
 def test_GERILEME_OLCUMU_ve_COZUMU_YAZILI():

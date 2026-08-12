@@ -14,6 +14,8 @@ Uygulamalar:
 
 from __future__ import annotations
 
+from app import cube_operatorleri as _ops_gran
+
 from app import intent_semasi as _intent_semasi
 
 import contextvars
@@ -361,7 +363,11 @@ def _cube_select_system(catalog: str) -> str:
         "Kurallar:\n"
         "- SADECE JSON döndür (SQL YOK, açıklama YOK).\n"
         '- Biçim: {"cube":"<ad>","measures":["<ölçü>"],"dimensions":["<boyut>"],'
-        '"timeDimensions":[{"dimension":"<zaman>","granularity":"year|quarter|month|week|day"}],'
+        # ⟳ `§B12` — granülerlik listesi **TÜRETİLDİ** (2026-08-12): istem metni de
+        # `cube_operatorleri` sahibinden gelir. Elle yazılı bir istem, kümenin
+        # **dördüncü** kopyasıydı ve garson ile şema ayrışabilirdi.
+        '"timeDimensions":[{"dimension":"<zaman>","granularity":"'
+        + _ops_gran.GRANULERLIK_ISTEM + '"}],'
         '"filters":[{"dimension":"<boyut>","operator":"eq","value":"<değer>"}],'
         '"measure_having":{"measure":"<ölçü>","op":">","value":<sayı>}}\n'
         # 🔴🔴 `§EŞ` — **YETENEK VARDI, GARSONUN MENÜSÜNDE YOKTU.**

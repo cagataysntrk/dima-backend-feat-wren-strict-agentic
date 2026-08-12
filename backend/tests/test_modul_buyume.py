@@ -922,6 +922,22 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("b12-granulerlik-tek-sahip", 1,
+     "🔴 **`§B12` — KAT-1 DÜZELTMESİ, Δ=1 (tek `import` satırı).** "
+     "⊙ Ölçüldü (2026-08-12): zaman granülerliği kümesi **DÖRT** yerde elle yazılıydı "
+     "(`intent_semasi._GRAN_ENUM` · `plan_onarim.GRANULERLIKLER` · "
+     "`cube_router._GRAN_LADDER` · `llm.py` istem metni) ve **ikisinin sırası bile "
+     "farklıydı** — biri üyelik (sıra önemsiz), öteki bir MERDİVEN (`.index(cur)+1` → "
+     "daha ince). Yani dört kopya, iki farklı sözleşme varsayımı. "
+     "⚠ Bir denetim ajanı **iki** kopya bildirmişti; `grep` ile **sayınca dört** çıktı — "
+     "bu oturumun ⑲ numaralı dersinin (*«tek/iki X var» iddiasını SAYARAK doğrula*) "
+     "dördüncü ödemesi. "
+     "✅ Tek sahip `cube_operatorleri.GRANULERLIKLER` (emsal: aynı modül `§M-6`'da "
+     "operatör kümesinin tek kaynağı); dördü de ondan türüyor ve `KURAL B` gereği "
+     "değerler **bayt bayt aynı**. Δ, o sahibi getiren **tek `import` satırıdır** — "
+     "gövde eklenmedi, dört kopyadan üçü **silindi**. "
+     "*Bir tavan, kopyayı teke indiren bir satırı reddederse, kopyayı ödüllendirir.* "
+     "Kapı: `test_b12_granulerlik_tek_sahip.py` (5)."),
     ("yon-yumusamis-kutup-kokleri", 5,
      "🔴 **`§YÖN` — «EN DÜŞÜĞÜ» SORUSU «EN YÜKSEĞİ» SIRALIYORDU.** "
      "⊙ Ölçüldü (canlı, **üç koşumda da aynı**, 2026-08-11): *«en düşük makine»* → `ASC` "

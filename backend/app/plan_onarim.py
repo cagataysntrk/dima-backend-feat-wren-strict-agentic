@@ -56,7 +56,9 @@ from __future__ import annotations
 
 #: Zaman ekseninin geçerli granülerlikleri — motorun tanıdıkları. Kapalı bir küme;
 #: genişletilmesi motor sözleşmesinin değişmesini gerektirir.
-GRANULERLIKLER = ("day", "week", "month", "quarter", "year")
+#: ⟳ `§B12` — **TÜRETİLDİ** (2026-08-12). Burada yalnız **üyelik** için kullanılır
+#: (`in`), yani sıra önemsizdir; sahibin sırası kabadan inceyedir.
+from app.cube_operatorleri import GRANULERLIKLER  # noqa: E402  (tek sahip)
 
 #: Bir zaman ekseni istendiğinde granülerlik yazılmamışsa varsayılan. ⊙ Ölçüldü:
 #: `II20`/`II19`'da model *«aylık fire»* / *«aylara göre»* diyordu ve route'un niyet

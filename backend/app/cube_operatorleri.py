@@ -101,3 +101,39 @@ def gecerli(op) -> bool:
     Bir red logda görünür (`intent: whitelist REDDİ`), sessiz bir düşüş görünmez.
     """
     return isinstance(op, str) and op in MOTOR_OPERATORLERI
+
+# ══ `§B12` · ZAMAN GRANÜLERLİĞİ — İKİNCİ KAPALI KÜME, AYNI SAHİP ═══════════════
+#
+# ## Ölçülen kusur (2026-08-12) — ajan İKİ dedi, ölçüm DÖRT buldu
+#
+# Aynı kapalı küme **dört yerde** elle yazılıydı:
+#
+#     app/intent_semasi.py:24   _GRAN_ENUM      ["year","quarter","month","week","day"]
+#     app/plan_onarim.py:59     GRANULERLIKLER  ("day","week","month","quarter","year")
+#     app/cube_router.py:4574   _GRAN_LADDER    ["year","quarter","month","week","day"]
+#     app/llm.py:364            istem metni     "year|quarter|month|week|day"
+#
+# ⊙ Ve ikisinin **sırası bile farklıydı** — biri üyelik için (sıra önemsiz), öteki bir
+# **merdiven** için (`.index(cur)+1` → daha ince granülerlik). Yani dört kopya, iki
+# farklı sözleşme varsayımı. *Aynı kuralın dört sahibi, dört farklı gün ayrışır.*
+#
+# ⚠ Bu modül `operatorleri` adını taşıyor ama işi **küp sözleşmesinin kapalı
+# kümelerinin tek sahibi** olmak; operatörler o kümelerin **ilkiydi**. Yeni bir modül
+# açmak sahipliği daha da bölerdi — `KAT-1` tam bunun tersini ister.
+#
+# ## 🔴 SIRA BİR SÖZLEŞMEDİR: kabadan inceye
+#
+# `cube_router._GRAN_LADDER` sıralamaya **dayanıyor**; bu yüzden sahip sıralı bir
+# tuple'dır ve sırası **kabadan inceye**dir. Üyelik için kullananlar (`plan_onarim`)
+# sıradan etkilenmez.
+#
+# ⚠ `KURAL B`: dördünün de ürettiği değer **bayt bayt aynı** kalır —
+# `test_b12_granulerlik_tek_sahip.py` bunu ölçer.
+#
+# ⊙ `hour`/`minute` **YOK ve bu bir karardır**: motorun `timeDimensions.granularity`
+# sözleşmesi bu beşini tanıyor. Genişletmek motor sözleşmesinin değişmesini gerektirir
+# — *bir kümeyi yerelde büyütmek, motorun tanımadığı bir değeri geçerli sanmaktır.*
+GRANULERLIKLER: tuple[str, ...] = ("year", "quarter", "month", "week", "day")
+
+#: İstem metni için hazır biçim — `llm.py` onu elle yazmasın.
+GRANULERLIK_ISTEM = "|".join(GRANULERLIKLER)

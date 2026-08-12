@@ -21,7 +21,9 @@ from __future__ import annotations
 
 from app import cube_operatorleri as _ops  # `M-6` — operatör kümesinin TEK sahibi
 
-_GRAN_ENUM = ["year", "quarter", "month", "week", "day"]
+#: ⟳ `§B12` — **TÜRETİLDİ** (2026-08-12): elle yazılı liste `cube_operatorleri`
+#: sahibine bağlandı. `KURAL B`: değer bayt bayt aynı.
+_GRAN_ENUM = list(_ops.GRANULERLIKLER)
 
 
 def _OPERATOR_ADLARI() -> tuple[str, ...]:

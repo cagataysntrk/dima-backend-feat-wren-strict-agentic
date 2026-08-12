@@ -23,6 +23,7 @@ import re
 from datetime import date, timedelta
 
 from app import cekirdek, mali_takvim
+from app import cube_operatorleri as _cube_op
 from app.llm import _norm
 
 #: FAZ 9.3 — bu modül bugüne kadar hiç log ATMIYORDU; `route()` saf bir fonksiyon olduğu
@@ -4571,7 +4572,10 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
 from app.katalog_metni import build_catalog  # noqa: E402,F401
 
 # Zaman granülerliği merdiveni (kaba→ince); drill-down bir kademe iner (ay→hafta).
-_GRAN_LADDER = ["year", "quarter", "month", "week", "day"]
+#: ⟳ `§B12` — **TÜRETİLDİ** (2026-08-12). ⚠ Sıra burada bir **sözleşmedir**:
+#: `.index(cur)+1` bir sonraki **daha ince** granülerliği verir; sahip kabadan
+#: inceye sıralıdır.
+_GRAN_LADDER = list(_cube_op.GRANULERLIKLER)
 _GRAN_LABEL = {"year": "Yıllık", "quarter": "Çeyreklik", "month": "Aylık",
                "week": "Haftalık", "day": "Günlük"}
 _MAX_NEXT_STEPS = 6
