@@ -129,7 +129,7 @@ kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 | # | faz | ölçüme bağlı mı | durum |
 |---|---|---|---|
 | 1 | **`FAZ 0`** Türkçe gömme ölçümü (`Recall@3`) | — | ✅ **BİTTİ — %89,5 → 🟢 DEVAM** |
-| 2 | **katalog borcu** (68 yön beyanı) | ⊘ | ⏭ planda **yoktu**, eklendi |
+| 2 | ~~katalog borcu (68 yön beyanı)~~ | ⊘ | ⟳ **ÇERÇEVE ÇÜRÜDÜ** — 68'in ~50'si gerçekten yönsüz; gerçek borç **~18** ve `§7`'de ⑫ olarak kayıtlı |
 | 3 | **`FAZ 4`** kıyas temeli chip'i | ⊘ | ⏭ |
 | 4 | **`FAZ 1`** `emin_miyim` (şekil birleştir) | ⊘ | ⏭ |
 | 5 | **`FAZ 2`** marj kapısı (varsayılan `∞`) | ⊘ | ⏭ |
@@ -219,3 +219,54 @@ görünümle eşleşmiyor. Bu, öneri katmanının değil **katalog borcunun** a
 🅜 **Payda 19** — `§13.1` *«30–40 ifade»* diyordu. Bu bir **eğilim işaretidir**, kanıt
 değil; `FAZ 5` öncesi payda büyütülmeli. Karar eşiği geçildi ama **rahat bir farkla
 değil**: bir vaka değişse oran %84,2'ye düşer ve karar **sarıya** döner.
+
+---
+
+## §7 · KATALOG BORCU — **ÇERÇEVE ÖLÇÜMLE ÇÜRÜDÜ** *(2026-08-13)*
+
+`FAZ 0`'ın ② bulgusu katalog borcunu işaret etmişti. Araştırıldı ve **borcun tanımı
+yanlıştı**.
+
+### Ölçüm
+
+```
+136 ölçü = 68 `lower_is_better` beyanlı + 68 BEYANSIZ
+```
+
+Ama 68 beyansızın **etiketlerine** bakınca sınıf ayrışıyor:
+
+| sınıf | ~adet | örnek |
+|---|---|---|
+| 🟢 **gerçekten YÖNLÜ** (yüksek iyi), beyan **eksik** | ~18 | `ort_oee` · `ilk_seferde_tamam_yuzde` · `kar_marji_yuzde` · `zamaninda_teslim_yuzde` · `planli_bakim_yuzde` · `basari_orani_yuzde` · `kazanma_orani_yuzde` |
+| ⚪ **gerçekten YÖNSÜZ** — beyan **eksik değil, YOK** | ~50 | adet (`is_emri_adedi`·`personel_sayisi`·`fatura_sayisi`) · hedef (`toplam_hedef`) · bakiye (`bakiye`·`toplam_borc`) · kur (`ort_kur`·`kapanis_kuru`) · hacim (`toplam_uretim_kg`·`toplam_metre`) · tutar (`toplam_kdv`·`siparis_tutari`) |
+
+🔴 **Yani *«68/136 yön beyansız = borç»* çerçevesi YANLIŞ.** Elli ölçünün yönü **yok** —
+bir adedin, bir bakiyenin, bir kurun *«iyi yönü»* diye bir şey yoktur. Onları
+*«beyansız»* saymak, olmayan bir borcu **her turda** raporlamaktır.
+
+> 🆋 *Bir listede olmamak, karşıt listede olmak değildir* — **ve üçüncü bir hâl de
+> vardır: yönü olmamak.** Bugünkü şema iki hâl tanıyor (`lower_is_better` ↔ *«bilinmiyor»*),
+> oysa gerçekte **üç** hâl var.
+
+### Kod yüzeyi ölçüldü
+
+```
+lower_is_better okuyan  : kok_neden._yon_beyanli:413 (TEK SAHİP) + interpret (5 yer, hep _yon_beyanli mantığı)
+higher_is_better        : app/ altında 2 geçiş — ikisi de kok_neden'in AÇIKLAMA satırı, KOD YOK
+```
+
+⊙ `_yon_beyanli` **tek sahip** (`KAT-1`) — üçüncü hâl eklenecekse **tek yerden** eklenir.
+
+### ⏭ KARAR — ve neden bu tur UYGULANMIYOR
+
+Doğru iş **iki parça**: ① şemaya `higher_is_better` **üçüncü listesi** ② ~18 ölçünün
+oraya yazılması. Ama ⓐ bu bir **şema sözleşmesi** değişikliğidir (`compose` · pack
+YAML'leri · `_yon_beyanli` · `interpret`), ⓑ `test_a_yon_beyani.py`'nin
+`AZAMI_YONSUZ_ORAN=0.50` tavanı bu tanımla **anlamını yitirir** (payda değişir 🅜).
+
+⚠ Bu **bir faz büyüklüğünde** iş ve `FAZ 4`/`FAZ 1`'den **önce** gelmesi için bir
+sebep yok: öneri katmanı yönü **kullanmıyor**; yön yalnız *«en kötü/en iyi»* sorularında
+devreye giriyor. 🅗 **Borç ödenmiyor, ve nedeni bu satır.**
+
+📌 **Yeni borç ⑫:** üçüncü hâl (`higher_is_better`) — ~18 ölçü. Ön koşulu yok, ama
+`AZAMI_YONSUZ_ORAN` tavanı **onunla birlikte** yeniden tanımlanmalı.
