@@ -118,3 +118,63 @@ def test_KISILMA_NEDENI_kayda_geciyor():
     assert kis, "_kis kayboldu"
     govde = "\n".join(ast.dump(x) for x in kis.body)
     assert "kisilma_nedeni" in govde and "_log" in govde
+
+
+def test_HER_BUTCE_CAGRISINDA_SIFIR_EKSEN_GEREKCELI():
+    """🔴🔴 `§C2` — **tüm çağrı yerleri**, yalnız varsayılan değil.
+
+    Kardeş test (`test_BUTCE_HICBIR_EKSENDE_uykuda_degil`) yalnız `Butce()`
+    **varsayılanını** ölçüyordu. Ölçüldü (08-12, denetim ajanı): **iki CANLI çağrı**
+    `sorgu=0` geçiyordu (`routers/ask.py:273` · `answer.py:567`) ve `Butce`'nin kendi
+    sözleşmesine göre `0` = **o eksende SINIRSIZ** — yani kardeş testin *adıyla*
+    yasakladığı hâl iki yerde mevcuttu ve kapı yeşildi.
+
+    ⊙ İkisi **aynı şey değildi**, ayrım ölçümle çıktı:
+    · `answer.py` planlayıcısına `servis:wren` **hiç verilmiyor** → sorgu **koşamaz**;
+      eksen sınırsız değil **uygulanamaz** (meşru, gerekçesi yazıldı).
+    · `routers/ask.py` planlayıcısına `servis:wren` **veriliyor** → koşabilirdi;
+      tavan adım sayısına **eşitlendi** (`sorgu=3`). *Bir tavanın pratikte var olması,
+      ilan edilmiş olması demek değildir.*
+
+    ⚠ **VE BU KAPI KENDİ ARACININ YANILMASINDAN DOĞDU:** ilk taramam yalnız
+    `Butce(...)` (`ast.Name`) biçimini arıyordu ve **2** çağrı buldu; ürün kodu
+    `_planner.Butce(...)` (`ast.Attribute`) yazıyor. Doğru tarayıcı **6** buldu.
+    *Bir çağrıyı tek yazım biçiminde aramak, öteki biçimdekileri yok saymaktır.*
+    """
+    import ast
+    import pathlib as _p
+
+    kok = _p.Path(__file__).parent.parent / "app"
+    kacak, toplam = [], 0
+    for f in sorted(kok.rglob("*.py")):
+        try:
+            agac = ast.parse(f.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError):            # noqa: PERF203
+            continue
+        satirlar = f.read_text(encoding="utf-8").splitlines()
+        for n in ast.walk(agac):
+            if not isinstance(n, ast.Call):
+                continue
+            # 🔴 İKİ YAZIM BİÇİMİ DE: `Butce(...)` ve `_planner.Butce(...)`
+            ad = (n.func.attr if isinstance(n.func, ast.Attribute)
+                  else getattr(n.func, "id", None))
+            if ad != "Butce":
+                continue
+            toplam += 1
+            sifir = [k.arg for k in n.keywords
+                     if isinstance(k.value, ast.Constant) and k.value.value == 0]
+            if not sifir:
+                continue
+            # gerekçe: çağrının hemen üstündeki yorum bloğunda `sorgu=0`/`sınırsız` geçmeli
+            once = "\n".join(satirlar[max(0, n.lineno - 9):n.lineno - 1])
+            if not any(x in once for x in ("sınırsız", "uygulanamaz", "SINIRSIZ")):
+                kacak.append(f"{f.relative_to(kok)}:{n.lineno} → {sifir}")
+    assert toplam >= 4, (
+        f"⊘ ölçüm tabanı çöktü: yalnız {toplam} `Butce(...)` çağrısı bulundu — "
+        "tarayıcı büyük olasılıkla bir yazım biçimini kaçırıyor (ders: `ast.Attribute`).")
+    assert not kacak, (
+        f"🔴 GEREKÇESİZ SIFIR EKSEN: {kacak}\n"
+        "`Butce` sözleşmesi: `0`/`None` = **o eksende sınırsız**. Sınırsız bırakmak "
+        "meşru olabilir — ama **yazılı** olmalı: çağrının üstüne neden sınırsız "
+        "olduğunu (ör. o kaynağa hiç erişemiyor) yazın.\n"
+        "*Bir kapsamı daraltmak meşrudur; daraltmayı yazmamak değildir.*")

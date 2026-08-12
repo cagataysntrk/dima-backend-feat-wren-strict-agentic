@@ -167,12 +167,41 @@ def test_YAZMA_ARACI_MCP_YUZEYINDE_YOK():
 
 
 def test_MCP_CAGRISI_DORT_KAPIDAN_geciyor():
-    """✅ Şart ③. `cagir()` bir `Planlayici` **ister**; istemeseydi kapıları atlamak bir
-    imza değişikliği kadar kolay olurdu. *İstediği için atlamak imkânsızdır.*"""
-    cs = inspect.getsource(mcp.cagir)
-    assert "Planlayici" in cs or "planlayici" in cs.lower(), (
-        "MCP kendi yürütme yolunu açmış olabilir — makbuz ve dört kapı kaybolur")
-    assert "calistir" in cs
+    """✅ Şart ③ — `cagir()` yürütmeyi **`Planlayici`'ya devretmeli**.
+
+    🔴🔴 **İLK YAZIM DOCSTRING'İ ÖLÇÜYORDU** (denetim ajanı buldu, kendi ölçümüm
+    doğruladı):
+
+        cs = inspect.getsource(mcp.cagir)
+        assert "Planlayici" in cs ...   # ← ikisi de `cagir`'ın DOCSTRING'inde geçiyor
+
+    `ast.get_docstring(cagir)` → `Planlayici` **True**, `calistir` **True**. Yani
+    gövdedeki gerçek çağrı silinip MCP kendi yürütme yolunu açsa bile kapı **yeşil
+    kalırdı** — makbuz ve dört kapı sessizce kaybolurdu.
+
+    ✅ Yüklem artık **davranışsal**: sahte bir planlayıcı verilir ve `calistir`'ın
+    **gerçekten çağrıldığı** ölçülür. *Bir devri, devredildiğini ANLATAN metinle
+    ölçmek, hiç ölçmemektir.*
+    """
+    cagrildi = {"n": 0, "ad": None}
+
+    class _SahtePlanlayici:
+        kosum = None
+
+        def calistir(self, ad, *a, **kw):
+            cagrildi["n"] += 1
+            cagrildi["ad"] = ad
+            return {"ok": True}
+
+    sonuc = mcp.cagir(_SahtePlanlayici(), "route", {"question": "x", "schema": {}})
+    assert cagrildi["n"] == 1, (
+        f"🔴 `mcp.cagir` `Planlayici.calistir`'ı ÇAĞIRMADI (çağrı sayısı "
+        f"{cagrildi['n']}) — MCP kendi yürütme yolunu açmış olabilir; makbuz ve dört "
+        "kapı (bütçe · yetki · determinizm · makbuz) atlanır.")
+    assert cagrildi["ad"] == "route", (
+        f"🔴 planlayıcıya farklı bir araç adı geçti: {cagrildi['ad']!r}")
+    assert isinstance(sonuc, dict) and "content" in sonuc, (
+        "🔴 MCP zarfı bozuldu — `content` yok")
 
 
 def test_MCP_KENDI_KAYDINI_KURMUYOR():

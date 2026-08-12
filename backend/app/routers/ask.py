@@ -270,7 +270,13 @@ def _prompt_enhance_dene(request, ham_soru: str, q_norm: str, schema: dict, prin
         catalog_text, _idx = katalog_metni.metin_ve_indeks(schema, principal)
         plan = _planner.Planlayici(
             principal=principal,
-            butce=_planner.Butce(adim=3, saniye=10.0, sorgu=0),
+            # 🔴 `sorgu=0` İDİ ve bu bir **sınırsız eksendi** (⟳ 08-12 denetim).
+            # Kardeşinden (`answer.py`) farkı: buraya `servis:wren` **veriliyor**,
+            # yani bu planlayıcı sorgu **koşabilir**. `adim=3` pratikte üstten
+            # sınırlıyordu — ama bir tavanın *pratikte* var olması, *ilan edilmiş*
+            # olması demek değildir. Tavan adım sayısına **eşitlendi**: davranış
+            # aynı (3 adım 3 sorgudan fazlasını koşamaz), sınır artık **yazılı**.
+            butce=_planner.Butce(adim=3, saniye=10.0, sorgu=3),
             kaynaklar={"servis:llm": llm, "servis:wren": service},
         )
         # DETERMİNİSTİK-ÖNCE kapısı: `route` PLANLAYICI ÜZERİNDEN denenmiş olmalı.

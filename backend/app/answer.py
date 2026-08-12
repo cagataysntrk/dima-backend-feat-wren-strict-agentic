@@ -564,6 +564,11 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
 
         plan = _planner.Planlayici(
             principal=principal,
+            # 🔴 `sorgu=0` = o eksende **sınırsız** (`Butce` sözleşmesi). Burada
+            # meşru ve gerekçesi YAPISAL: bu planlayıcıya `servis:wren` **hiç
+            # verilmiyor** (aşağıdaki `kaynaklar`), yani sorgu **koşamaz**. Eksen
+            # sınırsız değil, **uygulanamaz**. ⚠ `servis:wren` bir gün eklenirse bu
+            # satır bir tavan almalı — `test_c2_butce_stall` bunu ölçüyor.
             butce=_planner.Butce(adim=2, saniye=15.0, sorgu=0),
             kaynaklar={"servis:llm": llm},
         )
