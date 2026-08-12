@@ -834,9 +834,19 @@ def get(ad: str) -> Arac:
     try:
         return _ARACLAR[ad]
     except KeyError:
+        # 🔴 **ENVANTER SIZDIRILMAZ** (⟳ 08-12, denetim bulgusu). Eski mesaj
+        # `Mevcut: {sorted(_ARACLAR)}` ile **31 aracın tamamını** basıyordu ve
+        # `principal`'a göre **süzülmüyordu**. Bu metin `mcp.cagir`'ın hata dalından
+        # geçip **ajana dönüyor**: `/mcp/tools`'u görmemesi gereken bir kullanıcı,
+        # bilerek hatalı bir çağrıyla envanteri **sayabilirdi**.
+        # ⚠ Bugün ürünsel etkisi yoktu (yalnız `owner` kullanılıyor, rol matrisi uykuda)
+        # — ama matris açıldığı gün **sessiz** bir sızıntıya dönerdi. Sayı kalıyor
+        # (geliştiriciye yararlı), **adlar gidiyor**.
+        # *Bir hata mesajı, başaramadığı işlemin yetkisini taşımaz.*
         raise KeyError(
-            f"Kayıtlı olmayan araç: {ad!r}. Kayıtta olmayan bir yetenek ajana AÇIK DEĞİLDİR "
-            f"(bkz. app/tools.py). Mevcut: {sorted(_ARACLAR)}") from None
+            f"Kayıtlı olmayan araç: {ad!r}. Kayıtta olmayan bir yetenek ajana AÇIK "
+            f"DEĞİLDİR (bkz. app/tools.py). Kayıtta {len(_ARACLAR)} araç var; "
+            "YETKİNE GÖRE SÜZÜLMÜŞ listeyi `tools/list` ile alın.") from None
 
 
 def hepsi() -> tuple[Arac, ...]:

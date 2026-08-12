@@ -122,7 +122,7 @@ def beyan(ad: str) -> EylemBeyani:
     except KeyError:
         raise KeyError(
             f"Kayıtlı olmayan eylem: {ad!r}. Kayıtta olmayan bir yazma AÇIK DEĞİLDİR "
-            f"(bkz. app/eylem.py). Mevcut: {sorted(_BEYANLAR)}") from None
+            f"(bkz. app/eylem.py). Kayıtta {len(_BEYANLAR)} kalem var — adlar hata mesajında SIZDIRILMAZ (⟳ 08-12).") from None
 
 
 # --- SÖZLÜK (kapalı, belgeli — liste büyütmek ÇÖZÜM DEĞİLDİR, ADR-0008) ------------

@@ -167,7 +167,7 @@ def soz(kimlik: str, **alanlar: Any) -> str:
         kalip = str(KATALOG[kimlik]["metin"])
     except KeyError:
         raise BilinmeyenSoz(
-            f"Katalogda olmayan söz: {kimlik!r}. Mevcut: {sorted(KATALOG)}") from None
+            f"Katalogda olmayan söz: {kimlik!r}. Katalogda {len(KATALOG)} kalem var — adlar hata mesajında SIZDIRILMAZ (⟳ 08-12).") from None
     try:
         return kalip.format(**alanlar)
     except (KeyError, IndexError):
