@@ -222,12 +222,46 @@ def test_IZINLER_MATRISTE_VAR():
 
 
 def test_YAZMA_ARACLARI_HALA_AJANA_KAPALI():
-    """Bu faz yasağı KALDIRMADI, kademelendirdi. `llm_araclari` hâlâ yazma taşımamalı —
-    aksi hâlde ajan kullanıcıyı atlayıp yazabilirdi."""
-    from app import tools
+    """Bu faz yasağı KALDIRMADI, kademelendirdi.
 
-    assert all(a.yan_etki != "yazar" for a in tools.KAYIT), \
-        "yazma aracı LLM araç kaydına sızmış — onay kademesi ATLANABİLİR"
+    🔴🔴 **KAPI BAYRAĞA KÖRDÜ — ve o yüzden BİR YAPILANDIRMADA HEP KIRMIZIYDI**
+    (⟳ 2026-08-12, `§F13` denetimi). Yüklem `tools.KAYIT`'ta hiç yazan olmamasını
+    istiyordu; oysa `yazma_araclari` bayrağı **tam da onları kayda almak için** var.
+    Bayrak varsayılan olarak kapalı olduğu için kapı hiç bu hâliyle koşmadı — ve
+    kırmızı olduğunu **kimseye söylemedi**.
+
+    ⊙ Ölçüldü (bayrak açık): `KAYIT` yazanları `['dashboards.create',
+    'schedules.create', 'preferences.set']`; `llm_araclari()` **üçünü de** taşıyor,
+    `okuyan_araclar()` **hiçbirini**. Yani Faz H'nin gerçek değişmezi *«ajan görmesin»*
+    değil, *«ajan önerebilsin ama SALT-OKUMA yüzeyleri taşımasın ve çağrı onaydan
+    geçsin»*tir — `mcp.cagir` `yan_etki != "yok"` olanı **reddediyor** (`mcp.py:100`).
+
+    ✅ Yüklem artık **iki yapılandırmayı da** ölçüyor; hangisi koşarsa koşsun bir şey
+    iddia ediyor. *Yalnız tek bir yapılandırmada anlamlı olan bir kapı, öteki
+    yapılandırmada bir kapı değildir.*
+    """
+    from app import tools
+    from app.config import get_settings
+
+    acik = str(getattr(get_settings(), "yazma_araclari", "") or "").lower() in (
+        "1", "true", "on", "yes")
+    yazanlar = {a.ad for a in tools.KAYIT if a.yan_etki == "yazar"}
+
+    if not acik:
+        assert not yazanlar, (
+            f"🔴 bayrak KAPALI ama yazma aracı kayda sızmış: {sorted(yazanlar)} — "
+            "`KURAL B` ihlali; onay kademesi ATLANABİLİR")
+        return
+
+    # Bayrak açık: yazan araçlar kayıtta **olmalı** (yoksa öneri üretilemez), ama
+    # salt-okuma yüzeyinde **olmamalı** ve doğrudan çağrı **reddedilmeli**.
+    assert yazanlar, (
+        "⊘ ölçüm tabanı çöktü: bayrak açık ama kayıtta hiç yazan araç yok — bu kapı "
+        "hiçbir şey ölçmüyor")
+    salt_okuma = {d["name"] for d in tools.okuyan_araclar(None)}
+    assert not (yazanlar & salt_okuma), (
+        f"🔴 yazma aracı SALT-OKUMA yüzeyine sızmış: {sorted(yazanlar & salt_okuma)} — "
+        "MCP/dış yüzey üzerinden onay ATLANABİLİR")
 
 
 def test_ONAY_UCU_DOGRULAMAYI_IKINCI_KEZ_YAZMAZ():

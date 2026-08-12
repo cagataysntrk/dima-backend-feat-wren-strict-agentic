@@ -335,8 +335,69 @@ def test_IMPORT_SIRASI_DAIRESEL_DEGIL():
 
 
 def test_KURAL_B_bayrak_kapaliyken_KAYIT_DEGISMEDI():
-    """Bağlama bir **sahip** değişikliğidir, bir davranış değişikliği değil."""
+    """Bağlama bir **sahip** değişikliğidir, bir davranış değişikliği değil.
+
+    ⚠ **ŞARTIN YERİ** (⟳ 08-12): adı *«bayrak kapalıyken»* diyordu ama yüklem bayrağa
+    **bakmıyordu** — bayrak açık koşulduğunda yapısal olarak kırmızıydı. `KURAL B` bir
+    *«flag off ⇒ bayt bayt aynı»* iddiasıdır; bayrak açıkken bir şey söylemez.
+    """
+    import os
+
     from app import tools
+
+    if os.environ.get("DIMA_YAZMA_ARACLARI", "").lower() in {"on", "1", "true"}:
+        import pytest
+        pytest.skip("⊘ `KURAL B` yalnız bayrak KAPALIYKEN bir şey iddia eder")
 
     assert all(a.yan_etki == "yok" for a in tools.KAYIT), (
         "bayrak kapalıyken kayda yazan araç girmiş — `KURAL B` ihlali")
+
+
+#: 🔴 `§F13` — **ARAÇSIZ KALMASI MEŞRU** olan eylemler. Bugün **boş**; bir eylem buraya
+#: girecekse gerekçesi `yazma_araclari.py`'de `measures.approve`'unki gibi **yazılı**
+#: olmalı. *Bir asimetriyi sessiz bırakmak, onu bir gün «ajan yazma önerebiliyor» diye
+#: özetlemektir — ve üçün ikisi olduğu görünmez olur.*
+ARACSIZ_MESRU: dict[str, str] = {}
+
+
+def test_HER_EYLEMIN_ARACI_VAR_ters_yon_de_kilitli():
+    """🔴🔴 **BAĞLAMA TEK YÖNLÜYDÜ** (⟳ 2026-08-12, denetim ajanı + kendi ölçümüm).
+
+    `test_HER_YAZMA_ARACININ_ONAY_YOLU_VAR` (`:241`) **araç → eylem** yönünü kilitliyor:
+    *«çıkmaz öneri üretme»*. Ama **eylem → araç** yönü açıktı ve ölçüldü:
+
+        EYLEM_KAYIT              = 3  ['pano.ekle', 'zamanla.olustur', 'tercih.kaydet']
+        ARAC_EYLEM (bayrak açık) = 2  → 'tercih.kaydet' ARAÇSIZ
+
+    `tercih.kaydet`'in onay yolu **eksiksizdi**: `EYLEM_KAYIT`'ta kayıtlı (`eylem.py:101`),
+    `beyan()` tanıyor, `/ask/eylem` `tercih_yaz`'a bağlıyor (`routers/eylem.py:173-176`),
+    `DELETE /tercihler/{anahtar}` ile geri alınıyor, izni `query:run` (yeni yüzey açmaz).
+    Eksik olan **yalnız aracın kendisiydi** — yani ajan üç eylemin **en zararsızını**
+    öneremiyordu.
+
+    ⊙ `measures.approve` haklı olarak dışarıda ve gerekçesi **yazılı**: onun onay yolu
+    **YOK** (`EYLEM_KAYIT`'ta hiç geçmiyor → `beyan()` 400). O gerekçeye bakıp bunu da
+    meşru saymak, **iki farklı sebebi bir sanmaktı**.
+
+    *Bir yönü kilitleyen kapı, öteki yönün kilitli olduğunu kanıtlamaz.*
+    """
+    import os
+
+    from app.eylem import EYLEM_KAYIT
+
+    if os.environ.get("DIMA_YAZMA_ARACLARI", "").lower() not in {"on", "1", "true"}:
+        import pytest
+        pytest.skip("⊘ yazma araçları bayrağı kapalı — bağlama tablosu boş (`KURAL B`)")
+
+    from app.yazma_araclari import ARAC_EYLEM
+
+    baglanan = set(ARAC_EYLEM.values())
+    aracsiz = [e.ad for e in EYLEM_KAYIT if e.ad not in baglanan]
+    assert not [a for a in aracsiz if a not in ARACSIZ_MESRU], (
+        f"🔴 ARAÇSIZ EYLEM: {aracsiz} — `/ask/eylem` bunu onaylayabiliyor ama ajan "
+        "**öneremiyor**. Ya `ARAC_EYLEM`'e bağla ya `ARACSIZ_MESRU`'ya gerekçesiyle yaz.")
+    # ⊘ Boş yeşil avı: tablo boşalırsa yüklem hiçbir şey ölçmez.
+    assert baglanan, "⊘ ölçüm tabanı çöktü: `ARAC_EYLEM` boş"
+    assert len(EYLEM_KAYIT) >= 3, (
+        f"🔴 `EYLEM_KAYIT` küçülmüş ({len(EYLEM_KAYIT)}) — bir onay yolu **kaldırılmış** "
+        "olabilir; bu kapı o kaybı sessizce yeşil geçirmemeli.")

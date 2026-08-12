@@ -94,6 +94,15 @@ if TYPE_CHECKING:                                  # pragma: no cover
 ARAC_EYLEM: dict[str, str] = {
     "dashboards.create": "pano.ekle",
     "schedules.create": "zamanla.olustur",
+    # 🔴 `§F13` — **BAĞLAMA TEK YÖNLÜYDÜ** (⟳ 08-12, denetim ajanı + kendi ölçümüm).
+    # `EYLEM_KAYIT` **3**, bu tablo **2** idi: her aracın bir eylemi vardı, her eylemin
+    # aracı **yoktu**. `tercih.kaydet` `EYLEM_KAYIT`'ta duruyordu (`eylem.py:101`),
+    # `/ask/eylem` onu **tanıyordu** (`routers/eylem.py:173-176` → `tercih_yaz`), ama
+    # ajan onu **göremediği** için *«bundan sonra raporları aylık göster»* önerilemiyordu
+    # — üstelik üç eylemin **en zararsızı** bu (geri alınabilir, yeni veri yüzeyi açmaz).
+    # ⊙ `measures.approve`'un dışarıda kalma gerekçesi (*«onay yolu YOK»*) buraya
+    # **uymuyordu**; ona bakıp buna da meşru sanmak, iki farklı sebebi bir sanmaktır.
+    "preferences.set": "tercih.kaydet",
 }
 
 
@@ -163,6 +172,36 @@ def _kurul() -> tuple["Arac", ...]:
                "çekilemez. D9 gereği HER ZAMAN senkron onay ister (FAZ 6.1). Periyot "
                "söylenmemişse araç ÇAĞRILMAZ — sorulur.",
         etiketler=("yazma", "zamanlama"),
+    ),
+    Arac(
+        ad="preferences.set",
+        ozet="Kullanıcının KENDİ raporlarının sunum tercihini kalıcılaştırır "
+             "(granülerlik ya da görünüm). "
+             "[Erişim: yalnız çağıran kullanıcının kendi tercihi] "
+             "[Ne zaman: kullanıcı KALICILIK işareti verdiğinde — «bundan sonra», "
+             "«hep», «varsayılan olsun» — VE bir görünüm/granülerlik hedefi söylediğinde] "
+             "[NE ZAMAN KULLANILMAZ: tek seferlik bir istek için («bunu aylık göster» "
+             "→ sorguyu değiştir, tercih YAZMA); başkası adına; kullanıcı istemeden "
+             "«faydalı olur» diye]",
+        # ⚠ Anahtar uzayı **KAPALI** (`tercih.ANAHTARLAR`) ve `tercih_yaz` bilinmeyen
+        # anahtarı **400** ile reddediyor — açık uçlu bir sözlük değil (`ADR-0008`).
+        girdi={"anahtar": "sunum.granulerlik | sunum.gorunum",
+               "deger": "granülerlik: day|week|month|quarter|year — "
+                        "görünüm: table|pivot|chart|line|bar|pie|heatmap",
+               "kaynak_ifade": "kullanıcının kalıcılığı istediği CÜMLE (isteğe bağlı)"},
+        cikti="yazılan tercih kaydının kimliği",
+        determinizm="deterministik",
+        maliyet="ucuz",
+        yan_etki="yazar",
+        makbuz=None,
+        **_eylemden("preferences.set"),
+        # 🔴 GERİ ALINABİLİR ve **tek uçla**: `DELETE /tercihler/{anahtar}` idempotenttir
+        # (`routers/tercihler.py:94`, ADR-0019). Üç yazma eyleminin en ucuz geri alması.
+        geri_alma_ref="DELETE /tercihler/{anahtar}",
+        notlar="Yalnız ONAY AKIŞI üzerinden çağrılabilir. Kapsam içi + geri alınabilir "
+               "olduğu için D9 gereği istem ÜRETMEDEN koşabilir (FAZ 6.0). Kalıcılık "
+               "işareti YOKSA bu araç değil, sorgunun kendisi değiştirilir.",
+        etiketler=("yazma", "tercih"),
     ),
     # ⊘ **`measures.approve` BURADA YOK — ve bu bir KARARDIR** (2026-08-12).
     #

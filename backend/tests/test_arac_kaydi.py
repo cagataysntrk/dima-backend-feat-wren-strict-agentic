@@ -210,7 +210,22 @@ def test_ajan_YAZAMAZ():
             f"gün unutulacak bir engelin arkasında durur.")
         return
 
-    beyan = {"dashboards.create", "schedules.create", "measures.approve"}
+    # 🔴🔴 **BEYAN BAYATTI — VE İKİ YÖNDEN** (⟳ 2026-08-12, `§F13` denetimi).
+    #
+    # ① `measures.approve` bu kümede yazıyordu ama kayda **hiç girmiyordu**: gerekçesi
+    #    `yazma_araclari.py`'de yazılı — `/ask/eylem`'in `EYLEM_KAYIT`'ında karşılığı
+    #    YOK, yani `beyan()` fail-closed 400 döner ve kullanıcı onu **onaylayamaz**.
+    #    Onay yolu olmayan bir öneri, bir öneri değil bir çıkmazdır.
+    # ② `tercih.kaydet` eylemi ise **tersi**: onay yolu eksiksiz kuruluydu
+    #    (`eylem.py:101` → `routers/eylem.py:173-176` → `tercih_yaz`, geri alma
+    #    `DELETE /tercihler/{anahtar}`) ama **aracı yoktu** — ajan üç eylemin en
+    #    zararsızını öneremiyordu.
+    #
+    # ⚠ İkisi birlikte kapıyı **iki kez** yanılttı: küme yanlış bir adı sayıyor, kayıt
+    # doğru bir adı taşımıyordu. Bu yüzden bayrak açık yolda kapı **zaten kırmızıydı**
+    # ve kimse bakmamıştı — *bayrağın arkasındaki bir kapı, bayrak açılana kadar
+    # kırmızı olduğunu kimseye söylemez.*
+    beyan = {"dashboards.create", "schedules.create", "preferences.set"}
     assert {a.ad for a in yazanlar} == beyan, (
         f"🔴 Beyan EDİLMEMİŞ bir yazma aracı kayda girmiş: "
         f"{sorted({a.ad for a in yazanlar} - beyan)}. Yazma yüzeyi bir LİSTEDİR ve o "
@@ -476,6 +491,11 @@ def test_ARAC_SAYISI_KAYITLI():
     # `route`'un `required` alanları `['question','schema']` idi ve ŞEMA DÖNDÜREN
     # HİÇBİR ARAÇ YOKTU; sıfırdan başlayan bir ajan merdivenin birinci basamağına
     # ulaşamıyordu. Araç `yan_etki="yok"` · `maliyet="sifir"` — yazma yüzeyi BÜYÜMEDİ.
+    # ⚠ **SAYI DOĞRUYDU, GEREKÇESİ YANLIŞTI** (⟳ 08-12): «+3» hiç kayda girmemiş
+    # `measures.approve`'u sayıyordu, gerçek **34** idi ve kapı bayrak açıkken
+    # kırmızıydı. `preferences.set` sayıyı 35'e getiriyor — yani sayı **başka bir
+    # araçla** doğrulandı. *Bir sayının tutması, tuttuğu sebebin doğru olduğunu
+    # göstermez;* bu yüzden asıl yüklem `test_ajan_YAZAMAZ`'daki **isim** kümesidir.
     beklenen = 35 if acik else 32
     assert len(tools.hepsi()) == beklenen, (
         f"araç sayısı {len(tools.hepsi())}, beklenen {beklenen} — kayıt değiştiyse bu "
