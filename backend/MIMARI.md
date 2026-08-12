@@ -15,26 +15,26 @@
 
 ## 🧭 DİZİN — *üretilir, elle yazılmaz* (`lab/belge_dizini.py`)
 
-⊙ **5696 satır · 16 bölüm · 123 alt başlık.** Şişkinliğin çaresi silmek değil **gezinmek**: önce bölümü seç, sonra bölüm içinde ara.
+⊙ **5723 satır · 16 bölüm · 123 alt başlık.** Şişkinliğin çaresi silmek değil **gezinmek**: önce bölümü seç, sonra bölüm içinde ara.
 
 | # | bölüm | satır | alt başlık |
 |---|---|---|---|
 | 1 | [§0 · ⟳ YÜRÜRLÜKTE — YOL HARİTASININ OTORİTE ALDIĞI BAŞLIKLAR  *(FAZ −1/Kutu B)*](#0-yürürlükte-yol-haritasinin-otorite-aldiği-başliklar-faz-1kutu-b) | `41` | 0 |
 | 2 | [1. Sistem nedir, ne DEĞİLDİR](#1-sistem-nedir-ne-değildir) | `122` | 3 |
 | 3 | [2. Cevaplama merdiveni — normatif akış](#2-cevaplama-merdiveni-normatif-akış) | `175` | 4 |
-| 4 | [3. Semantik katman anatomisi — asıl karışıklık kaynağı](#3-semantik-katman-anatomisi-asıl-karışıklık-kaynağı) | `491` | 8 |
-| 5 | [4. DEĞİŞMEZLER — "bunu bozarsan sistem yalan söyler"](#4-değişmezler-bunu-bozarsan-sistem-yalan-söyler) | `749` | 0 |
-| 6 | [5. YAPILMAYACAKLAR — gerekçesiyle](#5-yapilmayacaklar-gerekçesiyle) | `817` | 0 |
-| 7 | [6. Bilinen açık kusurlar (2026-08-02 itibarıyla, hepsi doğrulandı)](#6-bilinen-açık-kusurlar-2026-08-02-itibarıyla-hepsi-doğrulandı) | `846` | 58 |
-| 8 | [7. Ölçüm sözleşmesi](#7-ölçüm-sözleşmesi) | `4103` | 6 |
-| 9 | [8. Belge otoritesi ve belgelenmiş çelişkiler](#8-belge-otoritesi-ve-belgelenmiş-çelişkiler) | `4497` | 3 |
-| 10 | [9. Hedef mimari — nereye gidiyoruz](#9-hedef-mimari-nereye-gidiyoruz) | `4619` | 2 |
-| 11 | [11. Agentic katman sözleşmesi (Faz F1 — araç kaydı kuruldu)](#11-agentic-katman-sözleşmesi-faz-f1-araç-kaydı-kuruldu) | `4743` | 10 |
-| 12 | [12. Konuşma sözleşmesi — thread bağlamsallığı (Faz G5 kuruldu)](#12-konuşma-sözleşmesi-thread-bağlamsallığı-faz-g5-kuruldu) | `4997` | 12 |
-| 13 | [13. Görsel dilbilgisi — semantik metadata görselleştirmeyi besler (Faz I1)](#13-görsel-dilbilgisi-semantik-metadata-görselleştirmeyi-besler-faz-i1) | `5300` | 8 |
-| 14 | [15. KARAR KAYDI — Query Contract'ın bir üstü (Faz E-4)](#15-karar-kaydi-query-contractın-bir-üstü-faz-e-4) | `5479` | 4 |
-| 15 | [14. Arka–ön sözleşmesi — "Tanım Tamamlandı" = arka + ön + test](#14-arkaön-sözleşmesi-tanım-tamamlandı-arka-ön-test) | `5530` | 5 |
-| 16 | [10. Bu belge nasıl güncellenir](#10-bu-belge-nasıl-güncellenir) | `5687` | 0 |
+| 4 | [3. Semantik katman anatomisi — asıl karışıklık kaynağı](#3-semantik-katman-anatomisi-asıl-karışıklık-kaynağı) | `518` | 8 |
+| 5 | [4. DEĞİŞMEZLER — "bunu bozarsan sistem yalan söyler"](#4-değişmezler-bunu-bozarsan-sistem-yalan-söyler) | `776` | 0 |
+| 6 | [5. YAPILMAYACAKLAR — gerekçesiyle](#5-yapilmayacaklar-gerekçesiyle) | `844` | 0 |
+| 7 | [6. Bilinen açık kusurlar (2026-08-02 itibarıyla, hepsi doğrulandı)](#6-bilinen-açık-kusurlar-2026-08-02-itibarıyla-hepsi-doğrulandı) | `873` | 58 |
+| 8 | [7. Ölçüm sözleşmesi](#7-ölçüm-sözleşmesi) | `4130` | 6 |
+| 9 | [8. Belge otoritesi ve belgelenmiş çelişkiler](#8-belge-otoritesi-ve-belgelenmiş-çelişkiler) | `4524` | 3 |
+| 10 | [9. Hedef mimari — nereye gidiyoruz](#9-hedef-mimari-nereye-gidiyoruz) | `4646` | 2 |
+| 11 | [11. Agentic katman sözleşmesi (Faz F1 — araç kaydı kuruldu)](#11-agentic-katman-sözleşmesi-faz-f1-araç-kaydı-kuruldu) | `4770` | 10 |
+| 12 | [12. Konuşma sözleşmesi — thread bağlamsallığı (Faz G5 kuruldu)](#12-konuşma-sözleşmesi-thread-bağlamsallığı-faz-g5-kuruldu) | `5024` | 12 |
+| 13 | [13. Görsel dilbilgisi — semantik metadata görselleştirmeyi besler (Faz I1)](#13-görsel-dilbilgisi-semantik-metadata-görselleştirmeyi-besler-faz-i1) | `5327` | 8 |
+| 14 | [15. KARAR KAYDI — Query Contract'ın bir üstü (Faz E-4)](#15-karar-kaydi-query-contractın-bir-üstü-faz-e-4) | `5506` | 4 |
+| 15 | [14. Arka–ön sözleşmesi — "Tanım Tamamlandı" = arka + ön + test](#14-arkaön-sözleşmesi-tanım-tamamlandı-arka-ön-test) | `5557` | 5 |
+| 16 | [10. Bu belge nasıl güncellenir](#10-bu-belge-nasıl-güncellenir) | `5714` | 0 |
 
 <!-- DIZIN:SON -->
 
@@ -223,6 +223,33 @@ YOKTU** (`MATRIS`·`SIRALA`·`RAPOR`·`PANO` → `app.ilkeller`; `KIYASLA`·`BOY
 determinizmini ve maliyetini **bilmiyordu**.
 
 > *Bir kaydın tekliği, sayısıyla değil **kapsamıyla** ölçülür.*
+
+#### 🔵 AÇIK TEKLİF — *basamak 6'nın çıktısı bir LİSTE olabilir* `ÖNGÖRÜ KATMANI`
+
+⚠ **Bu bir karar DEĞİL, kayıtlı bir tekliftir** — ve buraya yazılmasının sebebi tam da
+budur: teklif bir yerde durmazsa her bağlam onu yeniden keşfeder.
+
+**Teklif:** `route`/garson **karar verici** olmaktan çıkıp **aday sıralayıcı** olur;
+hangi adayın icra edileceğine bir **marj kapısı** karar verir (marj büyükse doğrudan
+cevap, küçükse adaylar gösterilir, taban altındaysa sınır beyanı). Merdivenin
+**basamak sayısı değişmez** — değişen yalnız 6. basamağın **çıktı biçimidir**; yani
+yukarıdaki `§2.0` kararının **aynı kalıbı** (`CubeQuery → plan` orada, `CubeQuery →
+CubeQuery listesi` burada).
+
+🔴 **NEDEN HENÜZ KARAR DEĞİL:** teklifin tamamı ölçülmemiş bir ön koşula bağlı —
+**Türkçe kısa alan adlarında gömme isabeti** (`Recall@3`). Ölçüm `%70`'in altında
+çıkarsa teklifin uygulama yarısı **rafa kaldırılır**; teşhis geçerli kalır, çare değişir.
+🅐 *Bir değişmezi ilan etmek onu değişmez yapmaz* — ve ölçülmemiş bir ön koşulu olan
+teklifi karar diye yazmak, mimariyi bir temenniyle kirletmek olurdu.
+
+⊙ **Bugün mimaride HİÇBİR ŞEY değişmiş değildir.** Plan `belgeler/plan/
+2026-08-12_ONGORU-KATMANI-KARARI.md`, durum `belgeler/plan/ONGORU-DURUM.md`.
+Karar verilirse bu blok **kararla değiştirilir**, silinmez (`§10`).
+
+⚠ Ve teklifin **ölçülmüş** bir yan bulgusu şimdiden geçerlidir: *«yeterince emin miyim»*
+sorusu bugün **beş ayrı yerde beş ayrı biçimde** cevaplanıyor (`value_index.AUTO_MARGIN`
+· `cube_router` `≥4 harf` · `SequenceMatcher`+`_TYPO_*` · `len(adaylar)==1` · garson oy
+dağılımı). Bu bir `KAT-1` borcudur ve **tekliften bağımsız** olarak kapatılabilir.
 
 🔴 **LLM çağrı sayısı DEĞİŞMEZ** — ölçülmüş: garson zaten yalnız `route_hit is None` dalında
 çağrılıyor. Göç *ne zaman* çağrıldığını değil *ne döndürdüğünü* değiştiriyor.

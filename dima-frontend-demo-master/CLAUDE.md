@@ -1,5 +1,12 @@
 # dima-frontend — CLAUDE.md
 
+> ⚠ **AKTİF BACKEND OPERASYONU: ÖNGÖRÜ KATMANI** — bu arayüz `FAZ 6`'da işin içine girer
+> (öneri şeridi · `↓↑ Enter` · tek tuş; **üç dosya**: `lib/types.ts` · `ChatPanel.tsx` ·
+> API çağrısı). `ReportCard.tsx` **hiç açılmıyor**.
+> Plan: `belgeler/plan/2026-08-12_ONGORU-KATMANI-KARARI.md §40` · durum:
+> `belgeler/plan/ONGORU-DURUM.md`.
+> 🔴 `FAZ 6` **`FAZ 0` ölçümüne bağlıdır** — ölçüm yapılmadan FE işine başlanmaz.
+
 ## Rol
 `dima`'nın son-kullanıcı arayüzü. WrenAI açık kaynak tarafında UI sunmadığından
 bu arayüz sıfırdan bizim ürünümüz. Veriye asla doğrudan dokunmaz; her şey

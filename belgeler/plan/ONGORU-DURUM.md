@@ -90,6 +90,15 @@ docker run -d --name Xk$$ --network none -v "$PWD:/app" -v "$PWD/../belgeler:/be
 # KORPUS
 docker run -d ... dima-test python lab/nl_corpus.py --kapi     # ~2 dk, çıkış 0 beklenir
 
+# BELGE DÜZENİ KAPISI — ⚠ TEK KOŞUM BİÇİMİ VAR (tur 0'da bulundu)
+# Kapı repo KÖKÜNÜ görmek zorunda; standart koşumda (yalnız backend/ bağlı) 7 test
+# SESSİZCE ATLANIYOR, ana makinede ise bağımlılık yok. Çalışan tek kombinasyon:
+docker run -d --name Xbd$$ --network none -v "$PWD:/repo" -w /repo/backend \
+  --user "$(id -u):$(id -g)" -e DIMA_VQR_EMBEDDER=off dima-test \
+  python -m pytest -q -p no:randomly tests/test_belge_duzeni.py
+# ⊙ Kökü /repo'ya bağla, ÇALIŞMA DİZİNİ /repo/backend olsun — böylece hem bağımlılıklar
+#   (imajdan) hem repo kökü (parent zincirinden) görünür.
+
 # CANLI (backend :8001, imaj dima-backend-temiz:s06)
 TK=$(curl -s -m 25 -X POST localhost:8001/auth/login -H 'Content-Type: application/json' \
   -d '{"email":"demo-boyahane@usedima.com","password":"dima-demo-1234"}' \
@@ -142,6 +151,7 @@ kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 | ④ | `CLARIFY:dönem` (181–296 soru/şirket) | ⏭ ölçülmedi |
 | ⑥ | `demo/OLMAYAN-DIZIN` (1,2 MB, 0 referans) | ⏭ **silinmez**, karar kullanıcının |
 | ⑩ | fan-out sertifikası sürüm damgası | ⏭ `d11`'in ön koşulu |
+| ⑪ | `belgeler/` kökünde **yeri olmayan iki belge** — `DIKKAT-EDILECEKLER.md` · `dima v2 v3 için mimari karar (1).md` | 🔵 **kullanıcı kararı bekliyor**: `denetim/` mi `kilavuz/` mu `mimari/` mi? ⚠ **taşınmadı, silinmedi** |
 
 ---
 

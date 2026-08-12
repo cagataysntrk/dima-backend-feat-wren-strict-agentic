@@ -1,6 +1,26 @@
 # dima-backend — CLAUDE.md
 
-> 🔴 **AKTİF OPERASYON: DİMA v1 yol haritası.** Bir geliştirme isteği geldiğinde **önce
+> 🔴🔴 **AKTİF OPERASYON (2026-08-13'ten): ÖNGÖRÜ KATMANI.** Bir geliştirme isteği
+> geldiğinde **önce şunları oku** — bağlam sıfırlansa (compact) bile operasyon buradan
+> devam eder:
+> 1. **`belgeler/plan/ONGORU-DURUM.md`** — 🔴 **ÖNCE BU**: nerede kaldık · bağlayıcı
+>    kurallar · taban sayılar · açık borçlar · koşum kalıpları (`§0` compact kurtarma)
+> 2. **`belgeler/plan/2026-08-12_ONGORU-KATMANI-KARARI.md`** — **plan** (`§0`'da üretilmiş
+>    dizin · `§42` fazlar · `§44` bağımlılık haritası)
+> 3. bu dosya + **`MIMARI.md §0` dizini**
+>
+> 🔴 **Döngü compact'te KIRILMAZ:** her turun son eylemi `ScheduleWakeup`
+> (`delaySeconds: 60` — araç `[60,3600]`'e kırpar, **30 verilemez**). Yalnız kullanıcı
+> *«dur»* derse durur.
+>
+> ⟳ **`OPERASYON.md` · `OPERASYON-DURUM.md` · `DIMA-V1-YOL-HARITASI.md` — v1 operasyonu,
+> ARŞİV değil ama AKTİF de değil.** Kayıt olarak duruyorlar (`§10`: kapananlar
+> işaretlenir, silinmez); bu operasyonun durumu **`ONGORU-DURUM.md`**'dedir. İkisini
+> karıştırmak, iki farklı *«nerede kaldık»* okumak demektir (`KAT-1`).
+
+---
+
+> ⟳ **ÖNCEKİ OPERASYON — DİMA v1 yol haritası.** Bir geliştirme isteği geldiğinde **önce
 > şunları oku** — bağlam sıfırlansa bile operasyon buradan devam eder:
 > 1. **`OPERASYON.md`** (repo kökü) — kural seti, döngü adımları, test kapısı, öz-denetim
 > 2. **`OPERASYON-DURUM.md`** (repo kökü) — **nerede kaldık**, açık borçlar, ölçüm tabanı
