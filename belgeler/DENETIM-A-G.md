@@ -860,3 +860,37 @@ yönü. 🅜 *Payda kutsaldır — ve kutsallığı, **yazılı olmasıyla** kor
 **③ `CLARIFY:dönem` ayrı bir borç olarak kalır** — açıkladığı şey erişim düşüşü değil,
 ama **şirket başına 181–296 soru** hâlâ *«hangi dönem?»*e düşüyor ve *«dürüst red başarı
 değildir»*.
+
+## ⟳⟳ İKİNCİ DÜZELTME — *«katalog büyüdü»* de YANLIŞTI: **kusuru BEN yazdım**
+
+Bir önceki düzeltmede *«payda büyüdü çünkü katalog büyüdü»* demiştim. **Bu da yanlıştı.**
+Payda büyüdü çünkü **ben ona kova ekledim**.
+
+`erişim = OK / sum(cats.values())` — ve `§B`'de `cats`'e **teşhis kovaları** (`sebep::…`)
+eklemiştim. `cats` iki ayrı şey taşıyor: **tur sınıfları** (*«bu tur ne oldu»*) ve
+**teşhis kovaları** (*«route neden çekildi»*) — ve bir tur **ikisine birden** girer.
+
+| şirket | `tur` | `sebep::` | **sebepsiz** | taban |
+|---|---|---|---|---|
+| atiksan | 1.845 | 398 | **1.447** | 1.462 |
+| gulteks | 2.079 | 461 | **1.618** | **1.618** ← birebir |
+| gitas | 3.110 | 631 | **2.479** | **2.479** ← birebir |
+| boyahane | 10.764 | 1.351 | 9.413 | 5.306 *(gerçekten büyüdü)* |
+
+**İki şirkette taban BİREBİR geri geliyor.** Gerileme **yoktu**.
+
+✅ **Onarım:** `tur_paydasi(cats)` — teşhis kovalarını **hariç tutan** tek sahip
+(`KAT-1`), üç çağrı yerine geçti. Kapı:
+
+```
+boyahane %83 (taban 69) ✅   atiksan %69 (69) ✅   gulteks %68 (69) ✅   gitas %72 (72) ✅
+TOPLAM doğru-cube %95,6 (94,4) ✅    SEMANTİK VAKA %94,4 (93,5) ✅    çıkış kodu 0
+```
+
+🔴 **Üç turluk teşhis zinciri, ve her halkası bir öncekini düzeltti:**
+① *«`CLARIFY:dönem` kök»* → sınıf doğru, **sebep değil**
+② *«katalog büyüdü»* → payda doğru gözlem, **sebep hâlâ değil**
+③ **«kovayı ben ekledim»** → ölçüldü, düzeltildi, kapı yeşil.
+
+> 🆖 *Bir kova eklemek paydaya dokunmamalıdır* — ve ben tam da bunu yaptığım turda,
+> commit mesajına *«payda untouched»* yazmıştım. 🅟 **Commit mesajı kanıt değildir.**

@@ -436,6 +436,34 @@ TOLERANS_PUAN = 1
 TOLERANS_DOGRULUK = 0.5
 
 
+#: 🔴🔴 `§PAYDA` — **TEŞHİS KOVALARI PAYDAYA GİRMEZ.** `cats` iki ayrı şey taşıyor:
+#: **tur sınıfları** (`tekil::OK`, `süreç::CLARIFY:ölçü` …) ve **teşhis kovaları**
+#: (`sebep::bilinmeyen_token` …). Birincisi *«bu tur ne oldu»*, ikincisi *«route neden
+#: çekildi»* — ve bir tur **ikisine birden** girer.
+#:
+#: ⚠ **BU BİR ÖLÇÜLMÜŞ KUSURDUR, ve kusuru ben yazdım.** `sebep::` kovaları eklendiğinde
+#: `erişim = OK / sum(cats)` **paydası şişti** ve kapı üç şirkette *«gerileme»* raporladı:
+#:
+#: ```
+#: atiksan  tur=1845  sebep=398 → sebepsiz=1447   (taban 1462)
+#: gulteks  tur=2079  sebep=461 → sebepsiz=1618   (taban 1618)  ← BİREBİR
+#: gitas    tur=3110  sebep=631 → sebepsiz=2479   (taban 2479)  ← BİREBİR
+#: ```
+#:
+#: İki şirkette taban **birebir** geri geliyor: gerileme **yoktu**, payda değişmişti.
+#: ⊙ Ve *«katalog büyüdü»* diye yazdığım ilk teşhis de **yanlıştı** — büyüyen katalog
+#: değil, **paydanın kendisiydi**. `boyahane` (9413 ↔ 5306) ayrı bir konudur: orada
+#: katalog **gerçekten** büyüdü ve erişim **yükseldi**.
+#:
+#: 🆖 *Bir kova eklemek paydaya dokunmamalıdır.* 🅜 *Payda kutsaldır.*
+TESHIS_ONEKI = "sebep::"
+
+
+def tur_paydasi(cats: dict) -> int:
+    """Turların **sınıf** sayımı — teşhis kovaları **hariç**. Tek sahip (`KAT-1`)."""
+    return sum(v for k, v in cats.items() if not str(k).startswith(TESHIS_ONEKI))
+
+
 def _taban_beklenen() -> dict:
     """Tabanın **en son turunu** döndürür — kök değerleri değil.
 
@@ -510,7 +538,7 @@ def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
         if rep.get("error"):
             satirlar.append(f"  {rep['company']}: ⊘ ÖLÇÜLEMEDİ — {str(rep['error'])[:90]}")
             continue
-        total = sum(rep["cats"].values())
+        total = tur_paydasi(rep["cats"])
         ok = sum(v for k, v in rep["cats"].items() if "::OK" in k)
         erisim = 100 * ok / max(total, 1)
         dc = rep.get("dogru_cube") or {}
@@ -679,7 +707,7 @@ def _olculen_yuk() -> dict[str, float]:
         if r.get("sure_sn"):                            # ölçülmüş iş yükü
             yuk[ad] = float(r["sure_sn"])
         elif r.get("cats"):                             # ilk koşum: tur × ağırlık
-            yuk[ad] = sum(r["cats"].values()) * _AGIRLIK.get(ad, 1.0)
+            yuk[ad] = tur_paydasi(r["cats"]) * _AGIRLIK.get(ad, 1.0)
     return yuk
 
 
@@ -888,7 +916,7 @@ def main():
         if rep.get("error"):
             lines.append(f"- HATA: {rep['error']}")
             continue
-        total = sum(rep["cats"].values())
+        total = tur_paydasi(rep["cats"])
         lines.append(f"- tekil senaryo: {rep['n_single']} · süreç adımı: {rep['n_proc_steps']} · toplam tur: {total}")
         # 🔴 `G3.4` — CEVAPSIZ KESME ORANI. `MIMARI §5`'in 18. yasağının ölçüsü:
         # merdiveni **pozitif cevap** ya da **açık `yol_siniri`** dışında bir şey
@@ -932,7 +960,7 @@ def main():
     for rep in reports:
         if rep.get("error"):
             continue
-        total = sum(rep["cats"].values())
+        total = tur_paydasi(rep["cats"])
         ok = sum(v for k, v in rep["cats"].items() if "::OK" in k)
         dc = rep.get("dogru_cube") or {}
         n_dc = sum(dc.get(k, 0) for k in ("dogru", "yanlis", "discovery"))
