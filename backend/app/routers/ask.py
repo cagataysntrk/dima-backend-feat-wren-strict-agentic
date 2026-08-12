@@ -2322,7 +2322,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # *Ölçmeden eklenen bir koruma, bir koruma değil bir kör noktadır.*
         if "llm" in str(resp.source or "") and resp.result:
             try:
-                _uyum.uydurma_beyani(resp, _niyet.coz(body.question, schema))
+                # ⟳ Fiş de veriliyor (2026-08-12): *«çıpasız»* iddiası, teslim
+                # edilen fişin kullanıcının bir sözcüğünü karşılayıp
+                # karşılamadığına da bakmalı — gövde `uyum`'da (tek sahip).
+                _uyum.uydurma_beyani(resp, _niyet.coz(body.question, schema),
+                                     soru=body.question, cq=cq, schema=schema)
             except Exception:            # noqa: BLE001 — beyan susar, tur düşmez
                 _log.warning("§KA: niyet okunamadı (best-effort)", exc_info=True)
         # `§SD-2` — sessiz bir `null` merdivenin **her** basamağında sessizdir; gövde

@@ -1662,7 +1662,7 @@ def atif_beyani(q: str, cq: dict | None) -> str:
             f"Adını yazarsan süzgeci kurarım (ör. *«RAM-2 için …»*).")
 
 
-def tanimadan_cevap_notu(niyet) -> str | None:
+def tanimadan_cevap_notu(niyet, *, kanit: dict | None = None) -> str | None:
     """🔴🔴 `§KA` — **HİÇBİR ŞEYİ TANIMADAN VERİLEN GÜVENLİ BİR CEVAP, BİR UYDURMADIR.**
 
     ## Ölçülen kusur (curl `CC` turu, CC-15)
@@ -1711,6 +1711,43 @@ def tanimadan_cevap_notu(niyet) -> str | None:
         return None
     if (getattr(niyet, "olcu_adaylari", None) or getattr(niyet, "kirilimlar", None)
             or getattr(niyet, "donem_sayisi", 0) or getattr(niyet, "filtreler", None)):
+        return None
+    # 🔴🔴 **ÜÇÜNCÜ ÖLÇÜM (2026-08-12): YÜKLEM DOĞRU AMA GÖZÜ TEK YÖNLÜYDÜ.**
+    #
+    # Canlı curl:
+    #
+    #     «cirumuz ne kadar» → cube=parti · measures=['toplam_ciro'] · **Ciro ₺137.588.350**
+    #                        → ve yanında: *«hiçbir ölçüye bağlayamadım, bu bir VARSAYIMDIR»*
+    #
+    # ⊙ Cevap **doğru**, damga **yanlış**. Ve sebebi bir typo değil: typo'suz
+    # *«ciromuz ne kadar»* da aynı damgayı alıyor (ölçüldü) — çünkü `Niyet` **LLM'den
+    # ÖNCEKİ** deterministik okumadır ve `ciromuz` route'un sözlüğünde yok. Ölçüyü
+    # bağlayan **garson**dı, ve bu yüklem garsonun teslim ettiği **fişi hiç görmüyordu**.
+    #
+    # 🔴 Bir yanlış uyarı, doğru uyarıyı da tüketir: kullanıcı ikinci kez okumaz.
+    # (`§101.1`: *bir yanlış-pozitifin bedeli, kapattığı kusurdan ağırdır.*)
+    #
+    # ## Ayırt edici — yeni bir eşleştirici DEĞİL, var olan TERS YÖN
+    #
+    # `ters_yon.eslesen_terim_cikar` zaten tam bu soruyu cevaplıyor: *«fişteki bu ad,
+    # kullanıcının hangi sözcüğünün karşılığı?»* — deterministik, **0 token**, ve
+    # sözlüğü elle yazmadan. Ölçüldü, dört vakada da doğru ayırıyor:
+    #
+    #     «cirumuz ne kadar»     → {'soz': 'cirumuz', 'ad': 'toplam_ciro'}  → SUS
+    #     «ciromuz ne kadar»     → {'soz': 'ciromuz', 'ad': 'toplam_ciro'}  → SUS
+    #     «asdfgh qwerty»        → None (iki bilinmeyen, hedef tekil değil) → KONUŞ
+    #     «hedefin neresindeyiz» → None                                     → KONUŞ
+    #
+    # ⚠ `«asdfgh qwerty»` korumasının **yapısal** olduğuna dikkat: `eslesen_terim_cikar`
+    # *«tam bir bilinmeyen + tam bir hedef»* ister; anlamsız bir soruda bilinmeyen
+    # **iki**dir ve kural kendiliğinden düşer. Yani koruma bir kelime listesine değil,
+    # tekillik şartına dayanıyor.
+    #
+    # ⊙ Bayrağa bağlı **değil**: `ters_yon_alani` bayrağı eşlemenin **yayımlanmasını**
+    # yönetir; buradaki kullanım saf bir **yüklemdir** (`KURAL B` korunur, aynı tek sahip).
+    #
+    # *Bir cevabın çıpasız olduğunu söylemeden önce, teslim ettiğin fişe bakmak gerekir.*
+    if kanit:
         return None
     return ("⚠ Bu soruyu kataloğumdaki hiçbir **ölçü**, **boyut** ya da **döneme** "
             "bağlayamadım — aşağıdaki rapor bir **varsayımdır**. Kastettiğin bu "
@@ -1783,13 +1820,27 @@ def yon_beyani(resp) -> bool:
     return True
 
 
-def uydurma_beyani(resp, niyet) -> bool:
+def uydurma_beyani(resp, niyet, *, soru: str | None = None,
+                   cq: dict | None = None, schema: dict | None = None) -> bool:
     """`§KA`'nın **iliştirme** yarısı — yüklem `tanimadan_cevap_notu`'nda.
 
     Ayrı durur çünkü yüklem saf ve testlenebilir olmalı; bu ise bir cevabı değiştirir.
+
+    ⟳ **`soru`/`cq`/`schema` EKLENDİ (2026-08-12)** — teslim edilen **fişin** kullanıcının
+    hangi sözcüğünü karşıladığını `ters_yon` çıkarıyor. Üçü de **isteğe bağlı**: verilmezse
+    davranış birebir eskisi (`KURAL B`), yani bu bir gevşetme değil bir **kanıt kanalıdır**.
+
     Döner: beyan edildi mi (çağıran ize bunu yazar).
     """
-    not_ = tanimadan_cevap_notu(niyet)
+    kanit = None
+    if soru and cq and schema:
+        try:
+            from app import ters_yon as _ty
+
+            kanit = _ty.eslesen_terim_cikar(soru, cq, schema)
+        except Exception:                # noqa: BLE001 — kanıt yoksa yüklem eskisi gibi
+            kanit = None
+    not_ = tanimadan_cevap_notu(niyet, kanit=kanit)
     if not not_:
         return False
     resp.note = " ".join(x for x in [resp.note, not_] if x)
