@@ -12942,3 +12942,46 @@ denetleniyor. **Eksik olan DÖNEM ekseni.**
 
 ⚠ `§101.1`: beyan **yalnız** soru bir dönem adlayıp sorgu onu taşımadığında basılmalı;
 her cevaba eklenirse okunmaz olur.
+
+## 🔬 ① `S06` KÖKÜ — **SORU SORULUYOR, CEVAP ŞIKLARI VERİLMİYOR**
+
+### Ölçüm — niyet İKİ TARAFTA DA tanınıyor
+
+```
+route('bu ay acilan partileri listele') → cube_query = None
+niyet.turler        = ['kirilim', 'liste']      ← TUR_LISTE VAR
+cube_router.liste_niyeti(q) = True              ← YETENEK ÇALIŞIYOR
+```
+
+Yani *«liste niyeti tanınmıyor»* **değil**: iki bağımsız yol da tanıyor. `route` yine de
+sorgu kuramıyor, çünkü `liste_niyeti` bayrağının koruması listeyi bir **kırılıma
+çevirmeye** çalışıyor ve *«partileri»* bir **boyut değil**, küpün **kendisi**.
+
+### 🔴 ASIL KUSUR — chip'ler var ama **sorulan soruya ait değil**
+
+⚠ Önce *«chip sayısı 0»* ölçmüştüm; **yanlış alana baktım** (`suggestions`). Doğru alan
+**`next_steps`** ve orada **4 chip var** (⑤, on sekizinci kez kendi probum):
+
+```
+note      : «Hangi kırılımı istiyorsun?»
+next_steps: [+ ortalama hız (measure)] [Aylık trend (time)]
+            [Geçen yıla göre kıyasla (time)] [+ fire (measure)]
+```
+
+🔴 **Sistem bir KIRILIM soruyor ve sıfır kırılım sunuyor.** Dördünün `kind`'ı `measure`
+ya da `time` — hiçbiri `dimension`. Yani kullanıcı *«hangi kırılım?»* sorusunu
+**chip'lerle cevaplayamıyor**; elle yazmak zorunda.
+
+⊙ **Karşıt kanıtlar aynı turdan:** `S05` dönemi çözemeyince **dört dönem chip'i** sundu;
+`S07` terim belirsizliğinde **öteki tanımı chip olarak** verdi. Desen kurulu — bu dalda
+**bağlanmamış**. 🆈 *Bir chip'in açıklaması bir vaattir* — ve burada vaat edilen şey
+(*«söyle, kırılımı uygularım»*) sunulan şeyle **örtüşmüyor**.
+
+### ⏭ Karar — ham döküm yolu AÇILMAZ, red CEVAPLANABİLİR yapılır
+
+⊘ Ham satır dökümü açmak `features.py:618`'in **yazılı `on_sarti`**'na (*«dejenere
+tek-toplam vakası korpusta **0** olmalı»*) girer ve bir **sessiz-yanlış** riski taşır —
+bu tur bir kusur kapatma turu, bir kapsam açma turu değil ㊸.
+
+✅ Yapılacak: netleştirme *«kırılım»* eksenindeyse chip'ler **küpün boyutları** olsun —
+`S05`/`S07` deseninin **aynısı**, yeni bir yazar doğurmadan.
