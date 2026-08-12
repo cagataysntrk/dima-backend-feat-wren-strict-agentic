@@ -371,3 +371,21 @@ değil; kıyas dönemi yok, payın değişip değişmediği ölçülmedi.»* Kap
 `test_kok_neden_pay_cebri.py` (7), mutasyonlu.
 
 > 🆆 *Bir ölçüyü hesaplayamıyorsan, hesaplayamadığını söylemek de bir ölçümdür.*
+
+---
+
+## ⑮ `§38 D4` — tanım chip'i **iki renderer'dan birinde** jenerikti *(08-12)*
+
+Ajan *«ön uç `kind`'ı HİÇ okumuyor»* demişti. **Ölçüldü — iddia daraltıldı:**
+
+| renderer | üç edim ayrı mı |
+|---|---|
+| `ReportCard.tsx` *(ana cevap yolu)* | ✅ **evet** — `!s.kind` `:1130` · `"turetme"` `:1165` · `"tanim"` `:1188` |
+| `ReportPanel.tsx` *(saf-not dalı)* | 🔴 **hayır** — hepsi tek tip buton |
+
+Ajanın grep'i **tek dosyaya** baktığı için tabloyu tersine okumuştu (bu turda **üçüncü**
+düzeltme). ⊙ Kusur yine de gerçekti: `belirsizlik_chipi.py:51`'in sözleşmesi **bileşen
+ayrımı yapmıyor**. → saf-not dalı artık süzüyor + *«başka tanım»* şeridi basıyor, iki
+renderer **birebir aynı** açıklama cümlesini taşıyor. Kapı
+`test_d4_tanim_chipi_ayri_gorunur.py` (5), mutasyonlu; birinci yüklem backend sözleşme
+cümlesine **zincirli**.
