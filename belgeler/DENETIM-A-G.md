@@ -9,7 +9,7 @@
 |---|---|---|
 | **A** | iş sözlüğü: elle değil **kullanımdan hasat** | 🟣 ölçüldü — *aşağıda* |
 | **B** | route'un **çürütülebilirliği** + garson | ✅ **KAPANDI** — *aşağıda* |
-| **C** | Wren motorunun **kullanılmayan** yetenekleri | 🔵 |
+| **C** | Wren motorunun **kullanılmayan** yetenekleri | 🟣 ölçüldü — *aşağıda* |
 | **D** | agentic önerileri **tek tek** | 🔵 |
 | **E** | cevap biçimi + UX önerileri **tek tek** | 🔵 |
 | **F** | LLM girdi token'ı / maliyet | 🔵 |
@@ -246,3 +246,61 @@ yolunu sınıyor. Sonuç:
 ⚠ Sektör karşılaştırması (Snowflake Cortex Analyst · Databricks Genie · Wren AI) ancak
 **②** kurulduktan sonra anlamlı olur: karşılaştırma bir **sayı** ister, bugün elimizde
 garson için o sayı **yok**.
+
+---
+
+## C · WREN MOTORU — **ÜÇ METOT DEĞİL, DÖRT ALT SİSTEM KULLANILMIYOR**
+
+### C.1 Hiç ölçülmemiş üçü — **ölçüldü, üçü de sıfır**
+
+`ast` ile gerçek `Call` düğümü (`app` + `lab` + `tests`):
+
+```
+load_mdl          app 0 · lab 0 · tests 0
+register_csv      app 0 · lab 0 · tests 0
+register_parquet  app 0 · lab 0 · tests 0
+transform_sql     app 0 · lab 0 · tests 7      (§F14'te ölçülmüştü)
+```
+
+⊙ Yani `§F14`'ün *«dört yetenek kullanılmıyor»* tablosu **eksikti**: kullanılmayan metot
+sayısı **dört değil yedi** (`dry_run`·`pushdown_limit`·`list_tables`·
+`get_available_functions` + bu üçü).
+
+### C.2 🔴 **AI Context Layer'ın ADLARI PAKETTE YOK — ama DÖRT ALT SİSTEM VAR ve HİÇBİRİ KULLANILMIYOR**
+
+Araştırmacının verdiği adlar (`instructions.md` · `queries.yml` · **LanceDB**) `wren`
+paketinde **bulunamadı** (`rglob` → **0** isabet). ⚠ *Yabancı bir ad envanteri, yerel adı
+yokluk sanar* (🅓). Gerçekte duran şey **başka adlarla** ve **daha fazlası**:
+
+| alt paket | içerik (ölçüldü) | bizim **gerçek** import'umuz |
+|---|---|---|
+| `wren.memory` | **18 dosya** — `WrenMemory` · `embeddings.py` · `cli.py` | **0** |
+| `wren.skills_content` | **13 dosya** — çoklu `SKILL.md` | **0** |
+| `wren.ask_templates` | `direct.md.tmpl` · `guided.md.tmpl` | **0** |
+| `wren.genbi` | **20 dosya** | **0** |
+
+⚠ **İlk ölçümüm 7 isabet demişti ve YANILTICIYDI**: kelime araması `memory`/`genbi`
+geçen kendi satırlarımızı sayıyordu. `ast` ile gerçek `ImportFrom`/`Import` arandığında
+**0** çıktı. *Bir kullanımı metinle ölçmek, kendi kelimelerini kullanım sanmaktır.*
+
+### C.3 ⏭ Bir sonraki turda ölçülecek — **karar bundan sonra**
+
+`§F14`'ün dersi bağlayıcı: **yanlış gerekçeli bir ⊘, bir sonraki turda yeniden okunmaz.**
+O yüzden karar **ölçümden sonra**:
+
+1. **`wren.memory` ↔ bizim `vqr`** — ikisi de *«doğrulanmış soru → geri getirme»* yapıyor
+   olabilir (㊷ *kartın yapılacağı yapılmış olabilir*). Örtüşüyorsa ⊘ **gerekçeli**;
+   örtüşmüyorsa gerçek bir boşluk.
+2. **`wren.skills_content` ↔ bizim `demo/skills/*.md`** — `§38.2 D9`'da ölçtük: üç metin
+   **yazılı** ama `skills: "off"` (bağlı değil). Motorun kendi SKILL'leri **ayrı bir
+   küme** mi, yoksa aynı iş mi?
+3. **`rls.py` (380) · `dataset.py` (161) · manifest (~1.490)** — **satır satır değil,
+   yetenek yetenek**: bu modüller motorun `transform_sql`/`register_*`/`load_mdl`
+   işini mi yapıyor, ve **gerekçesi yazılı mı**?
+4. **`motor_rls="shadow"`** — `rls.py:160` *«manifest dokunulmaz, gölge yalnız ÖLÇER»*.
+   **Gölge bir şey yazıyor mu, nereye, okuyan var mı?** Kullanıcının teşhisi:
+   *«karşılaştırma verisi zaten üretiliyor olabilir ve kimse ölçüsüne bakmamış.»*
+
+> 🆘 *Bir yeteneği «kullanılmıyor» diye işaretlemek ucuzdur; onun işini başka bir yerde
+> kendimizin yapıp yapmadığını ölçmek pahalıdır — ve karar ancak ikincisinden sonra
+> verilebilir.*
