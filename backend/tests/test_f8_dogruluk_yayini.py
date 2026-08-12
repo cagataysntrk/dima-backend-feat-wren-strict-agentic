@@ -32,7 +32,11 @@ import pytest
 
 _KOK = pathlib.Path(__file__).parent.parent
 _JSON = _KOK / "lab" / "reports" / "nl_corpus.json"
-_BELGE = _KOK.parent / "belgeler" / "DOGRULUK.md"
+# ⟳ **YOL DEĞİŞTİ (2026-08-13):** `DOGRULUK.md` `belgeler/` kökünden
+# `belgeler/denetim/`e taşındı (`1ee3d14`). Yol sabiti güncellendi — kapı
+# gevşetilmedi, **aradığı yer** düzeltildi. ⚠ Taşınma fark edilmeseydi kapı
+# «belge yok» diye **sessizce atlanır** ve yayın çürümesi görünmez olurdu 🅣.
+_BELGE = _KOK.parent / "belgeler" / "denetim" / "DOGRULUK.md"
 
 #: ⚠ İki AYRI eksiklik, iki AYRI sonuç — ve bunu ayırmak bir kapı hijyenidir:
 #:   · `belgeler/` **hiç bağlanmamış** (konteynerde `-v …/belgeler:/belgeler:ro` yok)

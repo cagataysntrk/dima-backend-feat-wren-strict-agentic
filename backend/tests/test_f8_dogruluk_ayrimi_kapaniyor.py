@@ -41,7 +41,11 @@ import pytest
 
 _BACKEND = pathlib.Path(__file__).parent.parent
 _ARTEFAKT = _BACKEND / "lab" / "reports" / "nl_corpus.json"
-_BELGE = _BACKEND.parent / "belgeler" / "DOGRULUK.md"
+# ⟳ **YOL DEĞİŞTİ (2026-08-13):** `DOGRULUK.md` `belgeler/` kökünden
+# `belgeler/denetim/`e taşındı (`1ee3d14`). Yol sabiti güncellendi — kapı
+# gevşetilmedi, **aradığı yer** düzeltildi. ⚠ Taşınma fark edilmeseydi kapı
+# «belge yok» diye **sessizce atlanır** ve yayın çürümesi görünmez olurdu 🅣.
+_BELGE = _BACKEND.parent / "belgeler" / "denetim" / "DOGRULUK.md"
 
 pytestmark = pytest.mark.skipif(
     not _BELGE.parent.is_dir(),

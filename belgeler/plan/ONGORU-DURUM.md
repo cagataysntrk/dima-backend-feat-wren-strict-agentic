@@ -152,4 +152,10 @@ kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 
 | tur | ne yapıldı | kapı | commit |
 |---|---|---|---|
-| 0 | operasyon kuruldu: bu dosya · memory · raporun bayat sayıları düzeltildi | — | *(bu tur)* |
+| 0 | operasyon kuruldu: bu dosya · memory · raporun bayat sayıları düzeltildi · **taşınan belge yolları onarıldı** | 27 ✅ | `1ee3d14`+ |
+
+⚠ **Tur 0'da ölçülen ortam değişikliği:** `1ee3d14` `belgeler/DOGRULUK.md`'yi
+`belgeler/denetim/`e **taşımış**; üç kapı eski yolu arıyordu ve **7 kırmızı** verdi.
+Yol sabitleri güncellendi — kapı **gevşetilmedi**, aradığı yer düzeltildi.
+🅣 *Taşınma fark edilmeseydi kapılar «belge yok» diye **sessizce atlanır** ve yayın
+çürümesi görünmez olurdu.*

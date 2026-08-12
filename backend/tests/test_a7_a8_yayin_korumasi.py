@@ -37,7 +37,12 @@ import re
 
 import pytest
 
-_BELGE = pathlib.Path(__file__).parent.parent.parent / "belgeler" / "DOGRULUK.md"
+# ⟳ **YOL DEĞİŞTİ (2026-08-13):** `DOGRULUK.md` `belgeler/` kökünden
+# `belgeler/denetim/`e taşındı (`1ee3d14`). Yol sabiti güncellendi — kapı
+# gevşetilmedi, **aradığı yer** düzeltildi. ⚠ Taşınma fark edilmeseydi kapı
+# «belge yok» diye **sessizce atlanır** ve yayın çürümesi görünmez olurdu 🅣.
+_BELGE = (pathlib.Path(__file__).parent.parent.parent / "belgeler" / "denetim"
+          / "DOGRULUK.md")
 
 pytestmark = pytest.mark.skipif(
     not _BELGE.parent.is_dir(),
