@@ -18,6 +18,16 @@ from app.auth.dependencies import require, require_company
 
 router = APIRouter(prefix="/mcp", tags=["mcp"])
 
+#: 🔴🔴 `§38.3 D13` — **BU UCUN SAĞLAYABİLDİĞİ KAYNAKLAR** (⟳ 2026-08-12).
+#: Tek yerde yazılı: `tools/list` bunu **süzgeç**, `tools/call` sözlüğün
+#: **anahtarı** olarak kullanır. Ayrışırlarsa ilan edilen bir araç çağrılamaz
+#: hâle gelir — ölçüldü: üç `llm.*` aracı listede görünüyor ama
+#: `baglanma="servis:llm"` olduğu için çağrıda `ValueError` ile düşüyordu.
+#: ⊘ `servis:llm` **bilerek yok**: dış bir çağıranın LLM bütçesi harcaması ayrı
+#: bir **yönetişim** kararıdır ve ilan edilmeden verilemez. Verildiği gün bu
+#: kümeye bir ad eklenir; başka hiçbir satır değişmez.
+_KAYNAK_ADLARI = {"servis:wren"}
+
 
 def _acik_mi(request: Request) -> Any:
     from app.config import get_settings
@@ -35,7 +45,8 @@ def tools_list(request: Request) -> dict:
     """MCP `tools/list`. **Kullanıcının yetkisiyle süzülür** — ajan kullanıcıyı aşamaz."""
     from app.mcp import araclar
 
-    return {"tools": araclar(_acik_mi(request))}
+    # 🔴 `§38.3 D13` — liste, bu ucun **gerçekten sağladığı** kaynaklardan türetilir.
+    return {"tools": araclar(_acik_mi(request), kaynaklar=_KAYNAK_ADLARI)}
 
 
 @router.post("/call", dependencies=[Depends(require("query:run")),
@@ -58,4 +69,9 @@ def tools_call(body: dict, request: Request) -> dict:
     # ajanın maliyeti kullanıcıya sormadan harcaması demektir.
     plan = Planlayici(principal=p, butce=Butce(),
                       kaynaklar={"servis:wren": wren_for_request(request)})
+    # ⚠ İki yüzeyin **aynı** kümeden beslendiğini burada da doğrula: bir gün biri
+    # değişip öteki kalırsa, yayımlanan sözleşme sessizce yalan söylemeye başlar.
+    assert set(plan.kaynaklar) == _KAYNAK_ADLARI, (
+        "🔴 `tools/list` ile `tools/call` farklı kaynak kümesi kuruyor — "
+        "yayımlanan sözleşme çağrılabilirlikle ayrıştı.")
     return cagir(plan, ad, (body or {}).get("arguments") or {})

@@ -252,3 +252,78 @@ def test_AJAN_YALNIZ_SORUYLA_MERDIVENE_BASLAYABILIYOR(wren):
     k = mcp.cagir(pl, "katalog", {})
     assert k["isError"] is False, (
         f"🔴 `katalog` keşif aracı çağrılamadı: {k['content'][0]['text'][:160]}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔴 `§38.3 D13` — YAYIMLANAN ≠ ÇAĞRILABİLİR (⟳ 2026-08-12)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_YAYIMLANAN_ARAC_SUNULABILIR_KAYNAGA_BAGLI():
+    """🔴🔴 **ASIL KAPI.** `tools/list` yalnız bu ucun **gerçekten sağladığı** kaynaklara
+    bağlı araçları ilan etmeli.
+
+    ## Ölçülen kusur
+
+    `llm.prompt_enhance` · `llm.anlat` · `llm.select_cube` listede **görünüyordu** ama
+    `baglanma="servis:llm"` ve `routers/mcp.py` yalnız `{"servis:wren"}` sağlıyor →
+    çağrı `ValueError` ile düşüyordu. Dış çağıran aracı deneyip hata alır ve hatayı
+    **kendi isteğinde** arar.
+
+    ⊙ *Bir aracı yayımlamak onu çağrılabilir yapmaz* — ve *yanlış yayımlanmış bir
+    sözleşme, hiç yayımlanmamıştan kötüdür.*
+
+    ✅ Süzgeç bir **dışlama listesi değil**, sağlanan kaynak kümesinden **türetilir**:
+    yarın `servis:llm` verilirse üç araç kendiliğinden görünür.
+    """
+    from app import mcp, tools
+
+    hepsi = mcp.araclar(None)
+    suzulmus = mcp.araclar(None, kaynaklar={"servis:wren"})
+    assert len(hepsi) > len(suzulmus), (
+        "⊘ ölçüm tabanı çöktü: süzgeç HİÇBİR şeyi elemiyor — ya `servis:llm` bağlı araç "
+        "kalmadı ya süzgeç çalışmıyor.")
+    for a in suzulmus:
+        b = getattr(tools.get(a["name"]), "baglanma", "modul")
+        assert b in ("modul", "servis:wren"), (
+            f"🔴 `{a['name']}` yayımlandı ama `{b}` kaynağı bu uçta SAĞLANMIYOR — "
+            "çağrı `ValueError` ile düşecek.")
+
+
+def test_IKI_YUZEY_AYNI_KAYNAK_KUMESINDEN_BESLENIYOR():
+    """⚠ `KAT-1` — küme **tek yerde** yazılı olmalı. `tools/list` süzgeç olarak,
+    `tools/call` sözlüğün anahtarı olarak aynı sabiti kullanır; ayrışırlarsa yayımlanan
+    sözleşme **sessizce** yalan söylemeye başlar."""
+    import ast
+    import pathlib
+
+    src = (pathlib.Path(__file__).resolve().parents[1]
+           / "app" / "routers" / "mcp.py").read_text(encoding="utf-8")
+    assert "_KAYNAK_ADLARI" in src, (
+        "🔴 kaynak kümesi adlandırılmamış — iki yüzey iki ayrı yerde küme kuruyor olabilir.")
+    agac = ast.parse(src)
+    kullanim = sum(1 for n in ast.walk(agac)
+                   if isinstance(n, ast.Name) and n.id == "_KAYNAK_ADLARI")
+    assert kullanim >= 3, (
+        f"🔴 `_KAYNAK_ADLARI` {kullanim} yerde kullanılıyor (beklenen ≥3: tanım · list "
+        "süzgeci · call doğrulaması) — bir yüzey kümeden KOPMUŞ olabilir.")
+
+
+def test_KAYNAKLAR_VERILMEZSE_ESKI_DAVRANIS():
+    """⚠ `KURAL B`: `kaynaklar=None` hiçbir şey süzmez — yeni parametre eski çağıranı
+    bozmamalı."""
+    from app import mcp
+
+    assert len(mcp.araclar(None)) == len(mcp.araclar(None, kaynaklar=None))
+
+
+def test_TIP_TURETME_HALA_CALISIYOR_gerileme():
+    """⚠ Gerileme koruması: denetim ajanı *«31 `inputSchema` property tipi `{'string'}`»*
+    ölçmüştü; `tools._json_tipi` bunu kapattı. Süzgeç o kazancı yutmamalı."""
+    from app import mcp
+
+    tipler = {p.get("type")
+              for a in mcp.araclar(None, kaynaklar={"servis:wren"})
+              for p in ((a.get("inputSchema") or {}).get("properties") or {}).values()}
+    assert len(tipler - {None}) >= 3, (
+        f"🔴 property tipleri yine tekdüze: {sorted(t for t in tipler if t)} — "
+        "`_json_tipi` türetmesi kaybolmuş olabilir.")

@@ -48,7 +48,8 @@ from app import tools
 SEMA_ALANI = "inputSchema"
 
 
-def araclar(principal: Any = None) -> list[dict[str, Any]]:
+def araclar(principal: Any = None,
+            kaynaklar: set[str] | None = None) -> list[dict[str, Any]]:
     """MCP `tools/list` — **`tools.llm_araclari()`'nin çevirisidir**, kopyası değil.
 
     🔴 Yetki süzgeci burada YENİDEN YAZILMAZ: `llm_araclari(principal)` zaten
@@ -60,8 +61,27 @@ def araclar(principal: Any = None) -> list[dict[str, Any]]:
     yazan araç yoktu**. Ölçüldü: `yazma_araclari` bayrağı açılınca üç yazma aracı
     listede **görünüyordu**. Sınırı koruyan şey bir güvence değil bir rastlantıydı.
     """
+    # 🔴🔴 `§38.3 D13` — **YAYIMLANAN, SUNULABİLENE TÜRETİLİR** (⟳ 2026-08-12).
+    #
+    # Ölçüldü: `llm.prompt_enhance` · `llm.anlat` · `llm.select_cube` bu listede
+    # **görünüyordu** ama `baglanma="servis:llm"` ve `routers/mcp.py:59` yalnız
+    # `{"servis:wren"}` veriyor → çağrı `ValueError` ile düşüyordu. Yani üç araç
+    # **ilan edilmiş ama sunulamıyordu**.
+    #
+    # ⊙ *Bir aracı yayımlamak onu çağrılabilir yapmaz* — ve *yanlış yayımlanmış bir
+    # sözleşme, hiç yayımlanmamıştan kötüdür*: dış çağıran onu deneyip hata alır ve
+    # hatayı **kendi isteğinde** arar.
+    #
+    # ✅ Süzgeç bir **dışlama listesi değil**: çağıranın gerçekten sağladığı kaynak
+    # kümesinden **türetilir** (`KAT-1`). Yarın `servis:llm` sağlanırsa üç araç
+    # kendiliğinden görünür — burada değiştirilecek bir satır yoktur.
+    # ⚠ `kaynaklar=None` → eski davranış (hiçbir şey süzülmez), `KURAL B`.
     out = []
     for a in tools.okuyan_araclar(principal):
+        if kaynaklar is not None:
+            _b = getattr(tools.get(a["name"]), "baglanma", "modul")
+            if _b != "modul" and _b not in kaynaklar:
+                continue
         kayit = dict(a)
         kayit[SEMA_ALANI] = kayit.pop("input_schema")
         out.append(kayit)
