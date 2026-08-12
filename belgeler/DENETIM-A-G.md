@@ -200,4 +200,6 @@ garson k=3 **98 sn** · Discovery **12,5 sn** · korpus **LLM'siz %94,9**.
 **sebebi** kayda geçmiyor: *«çok sahipli terim»* mi, *«tanınmayan token»* mı, *«dönem
 yok»* mu? Bu ayrım olmadan garsonun yükünün **ne kadarının** belirsizlikten geldiği
 bilinemez — ve `§A.2`'nin 73 terimlik borcunun **ürün maliyeti** ölçülemez.
-→ `KÖK-1`'in **niyet nesnesi** bunun için var; sebep oraya yazılmalı ve **sayılmalı**.
+✅ **KAPANDI (08-12):** `Niyet.cekilme_sebebi` — kapalı küme (`cok_sahipli_terim` · `bilinmeyen_token` · `olcu_bulunamadi`), **alan değil TÜREV** (`referans`'ın gerekçesiyle aynı: *bir değeri iki yerden yazılabilir yapmak, iki değeri garanti etmektir*). Nesnenin **zaten taşıdığı** alanlardan okunuyor — yeni ölçüm/liste/eşik **yok**. Kapı `test_b_cekilme_sebebi.py` (7), mutasyonlu; en ince yüklem: ölçüt **küp kümesi**, aday sayısı **değil**.
+
+⏭ **Kalan:** sebep **sayılmıyor** henüz — bir sayaç/telemetri bağlanmalı ki *«garsonun yükünün %kaçı belirsizlikten»* sorusu cevaplanabilsin.
