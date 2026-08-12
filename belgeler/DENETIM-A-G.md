@@ -10,7 +10,7 @@
 | **A** | iş sözlüğü: elle değil **kullanımdan hasat** | 🟣 ölçüldü — *aşağıda* |
 | **B** | route'un **çürütülebilirliği** + garson | ✅ **KAPANDI** — *aşağıda* |
 | **C** | Wren motorunun **kullanılmayan** yetenekleri | ✅ **KAPANDI** — *aşağıda* |
-| **D** | agentic önerileri **tek tek** | 🔵 |
+| **D** | agentic önerileri **tek tek** | ✅ **KAPANDI** — *aşağıda* |
 | **E** | cevap biçimi + UX önerileri **tek tek** | 🔵 |
 | **F** | LLM girdi token'ı / maliyet | 🔵 |
 | **G** | repo düzeni · **yetim uç kapısı** · belge şişkinliği | 🔵 |
@@ -445,3 +445,67 @@ Bir dosyayı tanıtmak ile onu **semantik katmana** sokmak aynı iş değildir (
 
 > 🆛 *Bir motoru «az kullanıyoruz» diye suçlamadan önce, onun hangi işini bizim
 > yaptığımızı değil, bizim hangi işimizi onun yapamayacağını sormak gerekir.*
+
+---
+
+## D · AGENTIC — **ÜÇ KALEM ZATEN KAPALI, BİRİ BU OTURUMDA KAPANDI**
+
+### D.1 ✅ Plan onarım döngüsü — *«yalnız tekrar dene»* **DEĞİL**, **11 sınıf başına çare**
+
+Rapor: *«`/stats/plan`: denendi 16 · onarıldı 1 · düştü 3 → **%25**»* ve endişe: onarım
+gerçekten bir **çare** mi taşıyor, yoksa modele *«tekrar dene»* mi diyor?
+
+**Ölçüldü:** `plan_garson.ONARIM_YONERGESI` → **11 sınıf**, her biri **eyleme dönüşebilir**
+bir talimat:
+
+```
+ad_yok · bilinmeyen_fiil · boyut_yok · cozulmemis_referans · eksik_alan
+fazla_alan · ileri_referans · json · olcu_yok · tavan · ulasilmaz
+```
+
+Örnek (`cozulmemis_referans`): *«Bir adım referansı bir alanın **TAMAMI** olmalıdır
+(`"cube_query": "$1"`); süzgeç değerinin içine yazılamaz. Önceki adımın seçtiği varlığı
+süzgeç yapmak için `BAGLA` çıktısını sonraki adımın `hedef` alanında kullan.»*
+
+⊘ **KARAR: kalem kapalı.** Bu bir *«tekrar dene»* değil, **kusur sınıfını adlandırıp
+düzeltmesini gösteren** bir yönerge. ⚠ **%25'lik onarım tutma oranı bir SONUÇ, bir kusur
+değil**: paydası **16** ve `§F14`'ün dersi geçerli — bir oranı iyileştirmeden önce
+**neyin ölçüldüğünü** bilmek gerekir.
+
+### D.2 ✅ Ajan bütçe görünürlüğü — **bu oturumda kapandı**
+
+🅩 *Harcadığını göremeyen ajan tutumlu olmayı seçemez.*
+
+**Ölçüldü:** `Planlayici.kalan()` **var** ve `mcp.py:203` onu `_meta.kalan` olarak
+**taşıyor**. Kodun kendi notu (`:194-198`, ⟳ 08-12): *«`Planlayici.kalan()` **zaten
+hesaplıyordu, hiçbir yere** [gitmiyordu]»* — yani klasik *«yazılmış ama bağlanmamış»*, ve
+bu oturumda `§38.3 D13` çalışmasıyla **bağlandı**.
+
+⊘ **KARAR: kapalı.** ⏭ Kalan tek soru: ajan `_meta`'yı **okuyor** mu — bu bir **istem**
+tasarımı sorusu ve `B.5`'in **garson korpusu** ölçüm tabanı kurulmadan cevaplanamaz.
+
+### D.3 ✅ Çok adımlı plan — tavanlar **kurulu ve kapılı**
+
+`§C2`'de ölçülmüştü ve bu oturumda **doğrulandı**: `Butce(adim=8 · saniye=30,0 ·
+sorgu=12)` · `AZAMI_ADIM=12` (`dogrula`'da, **koşmadan önce**) · `ONARIM_TAVANI=2`
+(Magentic-One *«stall ≤2»*) · tavan dolunca **`ButceAsimi` fırlıyor**. Kapı
+`test_c2_butce_stall.py` (**8**).
+
+⊘ **KARAR: kapalı.** ⚠ `app/butce.py` bir **sınıf değil bir koşucu** (`kos` · `ASIM`) —
+㉙ *kod adıyla ara*: `Butce` adı `planner`'da yaşıyor.
+
+### D.4 ✅ MCP dış yüzey — **29 araç**, ve `servis:llm` **bilinçli açık değil**
+
+Bu oturumda kapandı (`§38.3 D13`): yayımlanan liste ucun **gerçekten sağladığı** kaynak
+kümesinden **türetiliyor**; `llm.*` üçü **süzüldü** (32 → **29**), çünkü çağrılamıyorlardı.
+
+⊘ **KARAR: kapalı — ve `servis:llm` bilerek dışarıda.** Dış bir çağıranın **LLM bütçesi
+harcaması** ayrı bir **yönetişim** kararıdır; ilan edilmeden verilemez. Verildiği gün
+`_KAYNAK_ADLARI`'na bir ad eklenir, **başka hiçbir satır değişmez**.
+
+### D.5 ⏭ `D`'den çıkan tek yeni iş
+
+🔴 **Ajanın `_meta`'yı gerçekten okuyup okumadığı ölçülmedi.** `kalan` taşınıyor ama
+*«ajan onu görünce davranışını değiştiriyor mu»* sorusu bir **davranış** ölçümüdür ve
+`B.6/②`'nin garson korpusu **canlı** koşulmadan cevaplanamaz. → `B` kuyruğuna **bağlandı**,
+`D`'de ayrı bir borç açılmadı (㊲ *aynı işin iki satırı*).
