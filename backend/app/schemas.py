@@ -826,6 +826,11 @@ class ContributionResponse(BaseModel):
     taranmayan_boyut: int = 0
     taranmayan_adlar: list[str] = Field(default_factory=list)
     contract_ids: list[str] = Field(default_factory=list)
+    #: 🔴 `§E3` — **TARAMA GENİŞLİĞİ** (⟳ 08-12). Üstteki iki alan *«neye BAKMADIM»*ı
+    #: sayar; bu alan *«kaç aday ARASINDAN seçtim»*i söyler — ikisi aynı soruyu
+    #: cevaplamaz. Alanı şemaya yazmadan üretmek, `§E2`'nin ölçtüğü kusurun aynısı
+    #: olurdu: Pydantic sınırında **sessizce** düşerdi.
+    tarama_beyani: str | None = None
 
 
 class DrillDimension(BaseModel):

@@ -154,3 +154,47 @@ def tarama_beyani(n_aday: int, n_isaret: int, k: float = VARSAYILAN_K) -> str:
         _s += (f" — ⚠ bu eşik **normal** bir dağılımda ~%{pay * 100:.1f}'ini "
                f"kendiliğinden işaretler (bu {n_aday} adayda ~{beklenen:.1f})")
     return _s + "."
+
+
+#: 🔴 `§E3` — bir **seçim** ancak iki adaydan itibaren bir seçimdir. Altında cümle
+#: kurmak, tek adayı *«taranmış»* gibi göstermek olurdu.
+ASGARI_ADAY_SECIM = 2
+
+
+def secim_beyani(n_aday: int, olcut: str) -> str:
+    """🔴🔴 `§E3` — **MAX-SEÇİMİ TARAMALARININ GENİŞLİĞİ.** `tarama_beyani`'nin kardeşi,
+    **rakibi değil** (`KAT-1`: cümlenin sahibi hâlâ bu modül).
+
+    ## Neden ayrı bir kip — ölçülmüş bir yanlış cümle riski
+
+    `tarama_beyani` bir **z-kesimine** bağlıdır ve cümlesinde *«|z| ≥ 2 eşiğini geçti»*
+    yazar; şans payını da o eşiğin normal dağılımdaki oranından okur (`_SANS_PAYI`).
+    Denetimde (⟳ 2026-08-12) sayılan **dört** tarama yerinin **üçü** bir eşik testi
+    değil, bir **`max(...)` seçimi**dir:
+
+    | tarama yeri | seçim kuralı |
+    |---|---|
+    | `kok_neden._en_ayristiran` | aday kırılımlar arasında **en çok ayrıştıran** |
+    | `kok_neden.derinles` | `AZAMI_ADAY` kırılım arasında yine max yayılım |
+    | `kok_neden.toplam_turu` | kırılımdaki **en büyük** segment |
+    | `contribution.arastir` | `MAX_BOYUT` boyut × segment süpürmesi |
+
+    Oralarda `tarama_beyani` çağırmak, olmayan bir eşiği **varmış gibi** yazmak olurdu:
+    *«doğru hesaplanmış bir sayı yanlış bir cümlede hâlâ yanlıştır.»*
+
+    ## Ne söyler, ne söylemez
+
+    ✅ **genişlik**: kaç aday arasından seçildi — çünkü aday sayısı büyüdükçe en uçtaki
+    değerin **şans eseri** uçta olma ihtimali büyür (CHI 2018, `§10.5`).
+    ⊘ **şans payı YAZILMAZ**: bir max-seçiminde şans payı ancak adayların dağılımı
+    hakkında bir varsayımla hesaplanır ve o varsayım **ölçülmedi**. `§E2`'de forecast
+    için, `§E3`'te BH için verilen kararın aynısı — *elimizde olmayan bir tabanı
+    uydurmaktansa, elimizdekini beyan etmek.*
+
+    Döner: beyan cümlesi ya da `""` (seçilecek bir şey yoksa).
+    """
+    if n_aday < ASGARI_ADAY_SECIM or not olcut:
+        return ""
+    return (f"{n_aday} aday arasından {olcut} seçildi — ⚠ bu bir **eşik testi değil, "
+            f"bir seçimdir**: aday sayısı arttıkça en uçtaki değerin şans eseri uçta "
+            f"olma ihtimali de artar, ve bu pay hesaplanmadı (varsayım ölçülmedi).")

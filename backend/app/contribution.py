@@ -41,6 +41,8 @@ from __future__ import annotations
 # akran kıyasında koşuyor.
 # *Bir ismi kullandığın yerde değil, çözüldüğü yerde tanımlamak gerekir.*
 from app.sayi_bicimi import ek as _sek, sayi as _ssayi, yuzde as _syuzde
+# 🔴 `§E3` — max-seçimi genişlik beyanı; cümlenin sahibi `stats` (`KAT-1`).
+from app.stats import secim_beyani as _secim_beyani
 
 from typing import Any
 
@@ -890,9 +892,19 @@ def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
                         "kullanılmayan boyut yok ya da hiçbir segment anlamlı bir hareket "
                         "göstermiyor."}
 
+    # 🔴 `§E3` — **TARANAN HİPOTEZ SAYISI BEYAN EDİLİR.** `taranmayan_boyut` /
+    # `taranmayan_adlar` **bakılmayanı** sayar; oysa `rank_dimensions` bir **seçimdir**
+    # ve seçimin genişliği (kaç kırılım, kaç bulgu değerlendirildi) hiçbir yerde
+    # söylenmiyordu. *«Neye bakmadım» bir kapsam beyanıdır; «kaç aday arasından seçtim»
+    # bir güven beyanıdır — ikisi aynı soruyu cevaplamaz.*
+    # ⊙ Cümlenin sahibi `stats.secim_beyani` (`KAT-1`); şans payı **yazılmaz**, çünkü
+    # bu bir eşik testi değil bir max-seçimidir.
+    _hipotez = sum(len(r.get("bulgular") or []) for r in (raporlar + pvm_raporlar))
+    _tb = _secim_beyani(_hipotez, f"{len(taranan)} kırılım arasından en açıklayıcısı")
     return {"measure": measure, "mode": mode, "kind": kind,
             "taranmayan_boyut": taranmayan, "taranmayan_adlar": atlanan,
             "contract_ids": contract_ids,
+            "tarama_beyani": _tb or None,
             "raporlar": rank_dimensions(raporlar),
             "pvm_raporlar": rank_dimensions(pvm_raporlar)}
 

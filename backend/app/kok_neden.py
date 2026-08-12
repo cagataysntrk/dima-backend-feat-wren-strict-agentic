@@ -357,6 +357,8 @@ def ayristir(olcu: str, hedef: dict, akran: dict, cube_meta: dict | None,
 # *«47,836 dk … %83.4'i»* — üç ayrı hata). Gövde artık `app/sayi_bicimi.py`'de; burada
 # yalnız **takma ad** var ki bu dosyanın çağrı yerleri değişmesin.
 # *İki yerde biçimlendirilen bir sayı, er ya da geç iki farklı sayı gibi okunur.*
+# 🔴 `§E3` — max-seçimi taramalarının genişlik beyanı; cümlenin sahibi `stats`.
+from app.stats import secim_beyani as _secim_beyani
 from app.sayi_bicimi import ek as _ek, sayi as _sayi, yuzde as _yuzde  # noqa: E402
 
 
@@ -530,13 +532,20 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
         from app.drill import available_dimensions
 
         _adaylar = [d["name"] for d in available_dimensions(cube_meta or {}, _cq)]
-        _sec = _en_ayristiran(_cq, _alanlar, olcu, _adaylar[:AZAMI_ADAY], kos=kos)
+        _tarananlar = _adaylar[:AZAMI_ADAY]
+        _sec = _en_ayristiran(_cq, _alanlar, olcu, _tarananlar, kos=kos)
         if _sec is None:
             _log.info("§KN-tek: ayrıştıran bir kırılım bulunamadı — «%s»", olcu)
             return None
         boyut, satirlar = _sec
+        # 🔴 `§E3` — **SEÇİMİN GENİŞLİĞİ BEYAN EDİLİR.** Bu bir eşik testi değil,
+        # aday kırılımlar üzerinde bir `max(...)` seçimidir; genişliği söylenmezse
+        # *«en çok ayrıştıran»* cümlesi kaç adayın arasından çıktığını gizler.
+        # Cümlenin sahibi `stats.secim_beyani` — burada ikinci bir cümle yazılmıyor.
         adimlar.append(f"ekranda kırılım yoktu → ölçüyü en çok ayrıştıran kırılım "
                        f"**{boyut}** seçildi")
+        if (_sb := _secim_beyani(len(_tarananlar), "en çok ayrıştıran kırılım")):
+            adimlar.append(_sb)
     else:
         boyut = boyutlar[0]
     _cq["measures"] = _alanlar
@@ -1024,12 +1033,19 @@ def toplam_turu(prev_cq: dict, cube_meta: dict | None, *, kos,
         satirlar = kos({**_cq, "measures": [olcu], "dimensions": [boyut]}) or []
     else:
         _ad = [d["name"] for d in available_dimensions(cube_meta or {}, _cq)]
-        _sec = _en_ayristiran(_cq, [olcu], olcu, _ad[:AZAMI_ADAY], kos=kos)
+        _tarananlar = _ad[:AZAMI_ADAY]
+        _sec = _en_ayristiran(_cq, [olcu], olcu, _tarananlar, kos=kos)
         if _sec is None:
             return None
         boyut, satirlar = _sec
+        # 🔴 `§E3` — **SEÇİMİN GENİŞLİĞİ BEYAN EDİLİR.** Bu bir eşik testi değil,
+        # aday kırılımlar üzerinde bir `max(...)` seçimidir; genişliği söylenmezse
+        # *«en çok ayrıştıran»* cümlesi kaç adayın arasından çıktığını gizler.
+        # Cümlenin sahibi `stats.secim_beyani` — burada ikinci bir cümle yazılmıyor.
         adimlar.append(f"ekranda kırılım yoktu → ölçüyü en çok ayrıştıran kırılım "
                        f"**{boyut}** seçildi")
+        if (_sb := _secim_beyani(len(_tarananlar), "en çok ayrıştıran kırılım")):
+            adimlar.append(_sb)
     _uygun = [r for r in satirlar if sayi(r.get(olcu)) is not None]
     if len(_uygun) < 2:
         return None
@@ -1078,6 +1094,10 @@ def toplam_turu(prev_cq: dict, cube_meta: dict | None, *, kos,
     _pay = (_ham if (_ham is not None and abs(_net) > _brut * 0.01
                      and abs(_ham) <= 100.0) else None)
     _akran = (_net - _hv) / max(1, len(_uygun) - 1)          # 🔴 İŞARETLİ ortalama
+    # 🔴 `§E3` — *«N segment ölçüldü»* bir **kapsam** cümlesidir; *«bunların en
+    # büyüğü seçildi»* ise bir **seçimdir** ve genişliği ayrıca söylenmelidir.
+    if (_sb := _secim_beyani(len(_uygun), "en büyük segment")):
+        adimlar.append(_sb)
     adimlar.append(f"en büyük segment **{_seg}** — toplamın {_ek(_yuzde(_pay))}"
                    if _pay is not None else
                    f"en büyük segment **{_seg}** — ⚠ pay hesaplanamadı: segmentler "
@@ -1111,6 +1131,10 @@ def toplam_turu(prev_cq: dict, cube_meta: dict | None, *, kos,
         _p2 = 100.0 * abs(sayi(_h2[olcu]) or 0.0) / _t2
         adimlar.append(f"**{_seg}** içinde **{d2}** kırılımı açıldı → "
                        f"**{_h2.get(d2)}**")
+        # 🔴 `§E3` — ikinci kırılım **bileşik** bir seçimdir (aday kırılımlar ×
+        # alt-segmentler); en dibe inildikçe aday sayısı çarpılır ve şans payı büyür.
+        if (_sb := _secim_beyani(len(_u2), f"**{d2}** içinde en uç alt-segment")):
+            adimlar.append(_sb)
         metin += (f"\n\n→ **{_seg}** içinde en çok **{_h2.get(d2)}** ({d2}) "
                   f"ayrışıyor: **{_sayi(sayi(_h2[olcu]))}**, bu segmentin "
                   f"{_ek(_yuzde(_p2))}.")
