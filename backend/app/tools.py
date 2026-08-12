@@ -75,6 +75,21 @@ class Arac:
     #   "servis:wren" → `WrenService` örneğine bağlı metot (istek başına)
     #   "servis:llm"  → LLM sağlayıcısına bağlı metot (ördek-tipli, sağlayıcı değişir)
     baglanma: Literal["modul", "servis:wren", "servis:llm"] = "modul"
+    #: 🔴🔴 `§D6`/`§C1` — **BU ARACIN KARŞILIK GELDİĞİ PLAN FİİLİ** (yoksa `None`).
+    #:
+    #: `C1` kartının kendi kararı bu biçimi **adıyla** istemişti:
+    #:
+    #: > *«Doğru biçim: her araç **kendi fiilini beyan eder** (`fiil` alanı) ve
+    #: > `FIIL_ANLAMI` ondan türetilir.»*
+    #:
+    #: ⚠ Ve o kart üçüncü gerekçesinde şunu söylüyordu: *«adlar örtüşmediği için türetim
+    #: bir EŞLEME TABLOSU ister — yani iki kayıt yerine ÜÇ şey»*. Bu alan tam olarak o
+    #: üçüncü şeyin **doğmasını engeller**: eşleme ayrı bir tabloda değil, **aracın kendi
+    #: beyanında** durur. `KAT-1` adına yapılan bir iş, üçüncü bir kayıt doğurmuyor.
+    #:
+    #: ⊙ `None` olması bir eksiklik değildir: araçların çoğu (`route` · `cube_sql` ·
+    #: `llm.*` · `stats.*`) plan fiili değil, **alt yapı**dır.
+    fiil: str | None = None
     # 🔴 **ÇALIŞTIRICININ VERDİĞİ PARAMETRELER — model ASLA vermez.**
     #
     # Ölçüldü (2026-08-09, `FAZ O` demeti): 25 aracın **yedisinin** `girdi` beyanı gerçek
@@ -161,6 +176,7 @@ KAYIT: tuple[Arac, ...] = (
     # kosmazlar. Butce muhasebesi bu yuzden bozulmaz.
     Arac(
         ad="bagla",
+        fiil="BAGLA",
         ozet="Koşmuş satırlardan BİR VARLIĞI seçip değerini döndürür — zincirin SATIR→DEĞER halkası. [Erişim: ELDEKİ SATIRLAR — yeni sorgu YOK, LLM YOK] "
              "[Ne zaman: bir adımın çıktısındaki «hangisi» sorusunu cevaplayıp sonraki "
              "adıma TEK BİR AD vermek gerektiğinde] [NE ZAMAN KULLANILMAZ: satır yoksa; "
@@ -179,6 +195,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="hesapla",
+        fiil="HESAPLA",
         ozet="Bir hedefi AKRANLARIYLA kıyaslar: fark, yüzde ve akran sayısı. [Erişim: "
              "ELDEKİ SATIRLAR — yeni sorgu YOK, LLM YOK] [Ne zaman: «X neden ötekilerden düşük/yüksek» ailesinde, `bagla` hedefi sectikten SONRA] "
              "[NE ZAMAN KULLANILMAZ: ikiden az akran varsa — o bir kıyas değil ikinci "
@@ -196,6 +213,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="route",
+        fiil="SORGU",
         ozet="Türkçe soruyu SIFIR LLM ile bir CubeQuery'ye çözer; çözemezse None döner. [Erişim: yalnız KATALOG (ölçü/boyut adları) — ham veri YOK] [Ne zaman: her soruda İLK basamak] [NE ZAMAN KULLANILMAZ: takip mesajlarında (o `deterministic_refine`'ın işi); bir cevabın ÜSTÜNDE konuşurken]",
         girdi={"question": "kullanıcının sorusu (ham metin)",
                "schema": "cube kataloğu (WrenService.schema())"},
@@ -239,6 +257,7 @@ KAYIT: tuple[Arac, ...] = (
     # --- sorgu DÖNÜŞTÜRENLER (gezinme) -------------------------------------------
     Arac(
         ad="drill.expand",
+        fiil="KIR",
         ozet="Bir CubeQuery'ye yeni bir kırılım boyutu ekler (bir seviye aşağı in). [Erişim: CubeQuery + katalog boyutları] [Ne zaman: kullanıcı 'neden' diye sorup bir kırılım aradığında] [NE ZAMAN KULLANILMAZ: iki kırılım zaten varken (satır patlar); ölçü değiştirmek için]",
         girdi={"cube_query": "CubeQuery", "dimension": "eklenecek boyut adı"},
         cikti="genişletilmiş CubeQuery",
@@ -252,6 +271,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="drill.select",
+        fiil="SUZ",
         ozet="Bir hücreyi/segmenti tek başına gösteren CubeQuery üretir (grafikten seçim). [Erişim: CubeQuery + seçilen hücre] [Ne zaman: kullanıcı grafikte bir noktaya işaret ettiğinde] [NE ZAMAN KULLANILMAZ: ham satır göstermek için (T1/T2 sınırı); seçim yokken]",
         girdi={"cube_query": "CubeQuery", "dimension": "boyut", "value": "seçilen değer"},
         cikti="filtrelenmiş CubeQuery",
@@ -264,6 +284,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="yoy.compute",
+        fiil="TREND",
         ozet="Aynı raporu önceki dönemle (yıl ya da ay) hizalayıp kıyas kolonları ekler. [Erişim: CubeQuery + zaman boyutu] [Ne zaman: 'geçen yıla/aya göre' istendiğinde] [NE ZAMAN KULLANILMAZ: çok-yıl veri yoksa; zaman boyutu olmayan cube'da]",
         girdi={"service": "WrenService", "cq": "CubeQuery", "mode": "'yoy' | 'mom'",
                "time_dim": "zaman boyutu adı", "limit": "satır üst sınırı"},
@@ -294,6 +315,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="contribution.report",
+        fiil="AYRISTIR",
         ozet="KULLANILMAYAN boyutları tarar, değişimi ayrıştırır, açıklayıcılığa göre sıralar. [Erişim: kullanılmayan boyutlar + iki dönem] [Ne zaman: hangi kırılımın açıkladığı BİLİNMEDİĞİNDE] [NE ZAMAN KULLANILMAZ: pahalıdır (boyut başına sorgu) — kırılım belliyse `contribution.decompose` yeter]",
         girdi={"service": "WrenService", "schema": "cube kataloğu", "cube_query": "kaynak CubeQuery",
                "mode": "yoy|mom", "kind": "segment|pvm", "max_dimensions": "tarama sınırı"},
@@ -325,6 +347,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="interpret",
+        fiil="ANLAT",
         ozet="Eldeki sonuç tablosunu deterministik olarak yorumlar (sinyal/aykırılık/trend). [Erişim: eldeki sonuç tablosu — LLM'e ham veri GİTMEZ] [Ne zaman: her cevapta, sayıların üstüne] [NE ZAMAN KULLANILMAZ: sonuç boşken; tek satırlık sonuçta trend aramak için]",
         girdi={"result": "sorgu sonucu", "cube_query": "kaynak CubeQuery"},
         cikti="Interpretation — flag'li, veri-güdümlü ifadeler",
@@ -338,6 +361,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="viz.recommend",
+        fiil="GORSEL",
         ozet="Sonucun doğru görselleştirmesini DETERMİNİSTİK seçer (Show-Me/Cleveland-McGill). [Erişim: sonuç + cube metadata (birim/additive)] [Ne zaman: sonuç dolu olduğunda] [NE ZAMAN KULLANILMAZ: grafik türünü LLM'e SEÇTİRMEK için — karar deterministiktir (ADR-0024)]",
         # ⟳ `cube_meta` **YANLIŞTI**: `recommend`'in böyle bir parametresi yok. Semantik
         # metadata `viz.meta_args(cube_meta)` ile `units`/`lower_set`/`non_additive`/
@@ -471,6 +495,151 @@ KAYIT: tuple[Arac, ...] = (
 # ⚠ **Bir ad düzeltildi:** yol haritası `kpi.resolve_series` diyordu; ölçüldü, öyle bir
 # fonksiyon **yok** — gerçek ad `kpi.resolve_kpi`. *Bir plandaki ad, koddaki adın yerine
 # geçmez.*
+#: 🔴🔴 `§D6` — **PLAN İLKELLERİ KAYDA GİRDİ: «tek yetenek kaydı» artık GERÇEKTEN tek.**
+#:
+#: ## Ölçülen kusur (2026-08-12)
+#:
+#: `plan_semasi.FIIL_ANLAMI` **15 fiil** taşıyordu, `tools.KAYIT` **25 araç** — ve rapor
+#: bunları *«%73 örtüşür»* diye kaydetmişti. Gerçek eşleşme **gövde düzeyinde** sayıldı:
+#:
+#:     9/15 fiil kayıtlı bir aracın gövdesini çağırıyor  (route · bagla · hesapla ·
+#:                yoy.compute · contribution.report · drill.expand/select · viz.recommend)
+#:     🔴 6/15 fiilin gövdesi kayıtta HİÇ YOKTU:
+#:         MATRIS · SIRALA · RAPOR · PANO   → `app.ilkeller.*`
+#:         KIYASLA · BOYUTSEC               → `app.contribution.*`
+#:
+#: ⊙ Yani *«tek yetenek kaydı»* iddiası **altı yetenek eksikti**: planlayıcı onları
+#: çağırabiliyordu ama envanter onları **bilmiyordu** — yetki sınıfı, determinizmi,
+#: maliyeti hiçbir yerde beyanlı değildi.
+#:
+#: > *Bir kaydın tekliği, sayısıyla değil KAPSAMIYLA ölçülür; kapsamadığı her yetenek,
+#: > o kaydın söylemediği bir cümledir.*
+#:
+#: ⚠ Altısı da **aynı sınıf**: koşmuş satırlar üstünde saf dönüşüm — yeni sorgu YOK,
+#: LLM YOK, yazma YOK. Bu yüzden `bagla`/`hesapla` ilkelleriyle **birebir aynı** beyanı
+#: taşıyorlar (`determinizm=deterministik · maliyet=sifir · yan_etki=yok ·
+#: izin=query:run · makbuz=None`). *Yeni bir yetki sınıfı açmak, olmayan bir riski
+#: icat etmektir.*
+PLAN_ILKELLERI: tuple[Arac, ...] = (
+    Arac(
+        ad="matris",
+        fiil="MATRIS",
+        ozet="Adayları ölçütlerle yan yana koyar (satır=aday, sütun=ölçüt) — saf "
+             "hizalama. [Erişim: ELDEKİ SATIRLAR — yeni sorgu YOK, LLM YOK] "
+             "[Ne zaman: birden çok adımın satırları TEK bir karşılaştırma tablosunda "
+             "buluşacaksa] [NE ZAMAN KULLANILMAZ: tek kaynak varsa — hizalanacak bir "
+             "şey yoktur]",
+        girdi={"kaynaklar": "koşmuş adımların satır listeleri",
+               "boyut": "aday anahtarı olan kolon"},
+        cikti="birleştirilmiş satırlar (aday × ölçüt)",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.ilkeller", fonksiyon="matris",
+        notlar="Aritmetik YOK, agirlik YOK: yalniz hizalama. Bir KARAR matrisi degil "
+               "bir KARSILASTIRMA tablosudur.",
+        etiketler=("ilkel", "llmsiz", "zincir"),
+    ),
+    Arac(
+        ad="sirala",
+        fiil="SIRALA",
+        ozet="Adayları çok ölçütle sıralar — **ağırlık YOK, hepsi EŞİT**. "
+             "[Erişim: ELDEKİ SATIRLAR — yeni sorgu YOK, LLM YOK] "
+             "[Ne zaman: bir karşılaştırma tablosundan bir sıra çıkarılacaksa] "
+             "[NE ZAMAN KULLANILMAZ: tek ölçüt varsa — o `order`'ın işidir]",
+        girdi={"rows": "karşılaştırma tablosunun satırları",
+               "boyut": "aday anahtarı", "olculer": "sıralamaya giren ölçüler",
+               "az_iyi": "hangi ölçülerde AZ olan iyidir (beyan)"},
+        cikti="sıralanmış satırlar (+ sıra bilgisi)",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.ilkeller", fonksiyon="sirala",
+        notlar="Agirligi MODEL koymaz, hic kimse koymaz: agirlik bir IS KARARIDIR ve "
+               "beyani yoktur. Yon `az_iyi` BEYANINDAN okunur.",
+        etiketler=("ilkel", "llmsiz", "zincir"),
+    ),
+    Arac(
+        ad="rapor",
+        fiil="RAPOR",
+        ozet="Koşmuş bölümleri tek bir belgeye dizer — hiçbir şey hesaplamaz. "
+             "[Erişim: KOŞMUŞ BÖLÜMLER — yeni sorgu YOK, LLM YOK] "
+             "[Ne zaman: çok bölümlü bir çıktı isteniyorsa] "
+             "[NE ZAMAN KULLANILMAZ: tek bölüm varsa — belge bir zarf değil bir yüktür]",
+        girdi={"bolumler": "koşmuş adımların çıktıları", "baslik": "belge başlığı"},
+        cikti="belge (bölümler + başlık)",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.ilkeller", fonksiyon="rapor",
+        notlar="Hicbir sey HESAPLAMAZ, dizer. Sayilar bolumlerin kendisinden gelir.",
+        etiketler=("ilkel", "llmsiz", "belge"),
+    ),
+    Arac(
+        ad="pano.taslak",
+        fiil="PANO",
+        ozet="Sorgulardan bir pano TASLAĞI kurar — 🔴 **hiçbir şey kaydetmez**. "
+             "[Erişim: KOŞMUŞ SORGULAR — yazma YOK] "
+             "[Ne zaman: kullanıcı bir pano istiyorsa] "
+             "[NE ZAMAN KULLANILMAZ: kalıcılaştırma için — o onay akışının işidir]",
+        girdi={"sorgular": "panoya girecek cube sorguları", "baslik": "pano başlığı"},
+        cikti="pano taslağı (kaydedilmemiş)",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.ilkeller", fonksiyon="pano_taslagi",
+        # ⚠ Yazma aracının ADI burada GEÇMEZ: bu metin seçici listesine giriyor ve
+        # `test_SECICI_YALNIZ_bu_listeyi_gorur` orada bir yazma aracı adı görmemeli.
+        # *Bir yasağın adını anmak, onu listeye sokmanın en sessiz yoludur.*
+        notlar="YAZMAZ. Kalicilastirma AYRI bir yazma aracinin ve ONAYIN isidir; "
+               "ikisini ayirmak calistiricinin salt-okunurlugunu korur (§D7).",
+        etiketler=("ilkel", "llmsiz", "taslak"),
+    ),
+    Arac(
+        ad="contribution.akran",
+        fiil="KIYASLA",
+        ozet="Bir hedefi AKRANLARIYLA kıyaslar ve farkı en çok açıklayan ölçüyü bulur. "
+             "[Erişim: küp — akran satırları için sorgu koşar] "
+             "[Ne zaman: «X neden ötekilerden farklı» ailesinde] "
+             "[NE ZAMAN KULLANILMAZ: ikiden az akran varsa — o bir kıyas değildir]",
+        girdi={"cq": "hedefin cube sorgusu", "measure": "kıyas ölçüsü",
+               "cube_meta": "küp beyanı"},
+        # ⚠ `service` istek kapsamlıdır — model bir motor nesnesi uyduramaz, çalıştırıcı
+        # verir. Beyan kapısı (`test_ZORUNLU_PARAMETRE_YA_BEYANLI_YA_ENJEKTE`) bunu ilk
+        # koşumda yakaladı: *yazılmayan bir zorunluluk, çağrı anında bulunur.*
+        enjekte=("service",),
+        cikti="akran kıyası (fark · yüzde · akran sayısı) ya da None",
+        # ⚠ `yan_etki="yok"` — ilk yazımımda `"okur"` yazmıştım ve o değer bu kayıtta
+        # **hiç kullanılmıyor**: sorgu koşan araçlar bile (`route` · `cube_sql` ·
+        # `contribution.report`) `"yok"` beyan ediyor. *Yan etki VERİYE yapılan etkidir;
+        # okumak bir yan etki değildir.* Uydurduğum değer, `§F13`'ün onay kapısına bu
+        # aracı bir **yazma aracı** gibi gösterdi (kapı yakaladı).
+        determinizm="deterministik", maliyet="dusuk", yan_etki="yok",
+        izin="contribution:run", makbuz="sorgu",
+        modul="app.contribution", fonksiyon="_akran_kiyasi",
+        notlar="§AA1. Akran kumesi kupun kendi boyutundan gelir; uydurma akran YOK.",
+        etiketler=("recete", "llmsiz", "kok-neden"),
+    ),
+    Arac(
+        ad="contribution.boyutsec",
+        fiil="BOYUTSEC",
+        ozet="Hangi boyutun farkı en çok AÇIKLADIĞINI sıralar. "
+             "[Erişim: KOŞMUŞ katkı raporları — yeni sorgu YOK, LLM YOK] "
+             # ⚠ *«kök neden»* YAZILMAZ: `§E4`'ün kararı — biz **katkı** ölçüyoruz,
+             # nedensel iddia nedensel bir graf beyanı ister ve o beyan yok. Kapı
+             # (`test_ARKA_UCTA_kullaniciya_donen_kok_neden_METNI_YOK`) bunu ilk
+             # koşumda yakaladı. *Bir adı düzeltmek, onu her yerde düzeltmektir.*
+             "[Ne zaman: bir kırılımdan ötekine inerken sıradaki boyutu seçmek "
+             "gerektiğinde] "
+             "[NE ZAMAN KULLANILMAZ: elde katkı raporu yoksa — sıralanacak bir şey yok]",
+        girdi={"raporlar": "katkı ayrıştırma raporları"},
+        cikti="boyutlar, açıklayıcılığa göre sıralı",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.contribution", fonksiyon="rank_dimensions",
+        notlar="Sezgi: degisimin buyuk kismi TEK bir segmentten geliyorsa o boyut daha "
+               "aciklayicidir. Esik yok, sira var.",
+        etiketler=("ilkel", "llmsiz", "kok-neden"),
+    ),
+)
+
+
 KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
     Arac(
         ad="prescribe.recete",
@@ -646,7 +815,7 @@ def _yazma_araclari() -> tuple[Arac, ...]:
     return _ya._kurul()
 
 
-KAYIT = KAYIT + KAYITSIZ_OLANLAR + _yazma_araclari()
+KAYIT = KAYIT + PLAN_ILKELLERI + KAYITSIZ_OLANLAR + _yazma_araclari()
 
 _ARACLAR: dict[str, Arac] = {a.ad: a for a in KAYIT}
 

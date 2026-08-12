@@ -81,7 +81,53 @@ FIIL_ANLAMI: dict[str, str] = {
     "PANO": "sorgulardan bir pano TASLAĞI kurar — hiçbir şey kaydetmez",
 }
 
-FIILLER: tuple[str, ...] = tuple(FIIL_ANLAMI)
+#: 🔴🔴 `§D6`/`§C1` — **FİİL KÜMESİ ARTIK YETENEK KAYDINDAN TÜRETİLİYOR.**
+#:
+#: ## Raporun isteği ve `C1`'in koyduğu şart
+#:
+#: > *«`FIIL_ANLAMI` `tools.py`'den üretilir; kapalı `enum` korunur — yalnız artık
+#: > türetilmiş olur. Kazanç: tek kayıt (`KAT-1`).»*
+#:
+#: `C1` kartı bunu **üç ölçülmüş gerekçeyle** ertelemişti ve üçüncüsü şuydu: *«adlar
+#: örtüşmediği için türetim bir EŞLEME TABLOSU ister — iki kayıt yerine ÜÇ şey»*.
+#: O şart artık **karşılandı**: eşleme ayrı bir tabloda değil, her **aracın kendi
+#: beyanında** duruyor (`tools.Arac.fiil`), ve kayıt tamamlandı — planın 15 fiilinin
+#: 15'i de bir aracın gövdesi (önce **altısı kayıtta hiç yoktu**).
+#:
+#: ## ⚠ Neden METİNLER hâlâ burada — ve bu bir yarım iş DEĞİL
+#:
+#: Araç `ozet`leri planlayıcı için değil **MCP/araç seçimi** için yazılmış uzun
+#: metinlerdir (`[Erişim: …] [Ne zaman: …] [NE ZAMAN KULLANILMAZ: …]`). Onları plan
+#: istemine dökmek istemi birkaç kat büyütür ve **davranışı değiştirir** — `KURAL B`'nin
+#: yasakladığı şey tam da bu. Bu yüzden ayrım şöyle kuruldu:
+#:
+#:   · **HANGİ fiiller var** → yetenek kaydı karar verir (tek sahip, `KAT-1`)
+#:   · **Plan istemindeki cümle** → burada durur (kullanıcıya/modele bakan yüzey)
+#:
+#: 🔴 Ve ayrışma **imkânsız**: aşağıdaki denetim **içe aktarma anında** koşar. Bir fiil
+#: eklenip aracı yazılmazsa (ya da tersi) uygulama **ayağa kalkmaz** — sessizce
+#: kaymaz.
+#:
+#: *Bir türetimin amacı metni kopyalamak değil, iki listenin ayrışmasını imkânsız
+#: kılmaktır.*
+def _fiilleri_kayittan_dogrula() -> tuple[str, ...]:
+    """Yetenek kaydındaki fiil beyanlarıyla `FIIL_ANLAMI` **aynı kümeyi** taşımalı."""
+    from app import tools as _t
+
+    beyan = {a.fiil for a in _t.KAYIT if a.fiil}
+    yazili = set(FIIL_ANLAMI)
+    if beyan != yazili:
+        raise RuntimeError(
+            "🔴 `KAT-1` ihlali — plan fiilleri ile yetenek kaydı AYRIŞTI.\n"
+            f"  kayıtta beyanlı ama plan şemasında yok: {sorted(beyan - yazili)}\n"
+            f"  plan şemasında var ama hiçbir araç beyan etmiyor: {sorted(yazili - beyan)}\n"
+            "Her plan fiili bir aracın gövdesidir; aracı `fiil=\"...\"` ile beyan etmeli.")
+    # ⚠ Sıra **buradan** gelir, kayıttan değil: istem metninin sırası bir sözleşmedir
+    # (`KURAL B` — bayt bayt aynı). Kayıt yalnız KÜMEYİ belirler.
+    return tuple(FIIL_ANLAMI)
+
+
+FIILLER: tuple[str, ...] = _fiilleri_kayittan_dogrula()
 
 #: 🔴 **HER FİİLİN ZORUNLU ALANLARI — TEK SAHİP.** Hem şema (`required`) hem serbest-JSON
 #: doğrulaması (`plan_garson._plani_oku`) buradan okur.

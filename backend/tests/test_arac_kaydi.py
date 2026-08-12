@@ -441,6 +441,18 @@ def test_ARAC_SAYISI_KAYITLI():
     """
     from app.config import get_settings
 
+    # ⟳🔴 `§D6` — 25 → **31**. Planın **altı ilkeli** kayda girdi; bu bir ÜRÜN KARARIDIR
+    # ve gerekçesi ölçülmüş: `plan_semasi.FIIL_ANLAMI`'nın 15 fiilinden **6'sının gövdesi
+    # kayıtta HİÇ YOKTU** (`MATRIS`·`SIRALA`·`RAPOR`·`PANO` → `app.ilkeller`;
+    # `KIYASLA`·`BOYUTSEC` → `app.contribution`). Yani *«tek yetenek kaydı»* iddiası altı
+    # yetenek eksikti: planlayıcı onları çağırabiliyordu ama envanter onları **bilmiyordu**
+    # — yetki sınıfı, determinizmi, maliyeti hiçbir yerde beyanlı değildi.
+    #
+    # *Bir kaydın tekliği, sayısıyla değil KAPSAMIYLA ölçülür.*
+    #
+    # ⚠ Liste büyüdü ama **yeni yetenek eklenmedi**: altısı da zaten koşuyordu. Eklenen
+    # şey **beyan**dır. Ve altısı da aynı sınıf (koşmuş satırlar üstünde saf dönüşüm), o
+    # yüzden yeni bir yetki sınıfı açılmadı — `bagla`/`hesapla` ile aynı beyanı taşıyorlar.
     acik = str(getattr(get_settings(), "yazma_araclari", "") or "").lower() in (
         "1", "true", "on", "yes")
     # ⟳ FAZ O-3 — 23 → 25. Orkestratörün iki ilkeli (`bagla` · `hesapla`) kayda girdi.
@@ -452,7 +464,7 @@ def test_ARAC_SAYISI_KAYITLI():
     # §99.1'in emsali: uzun bir liste, seçimi KÖTÜLEŞTİRİR.
     # ⚠ İkisi de maliyet="sifir" · yan_etki="yok": veriye dokunmuyorlar, sorgu
     # koşmuyorlar — bütçe muhasebesi bozulmaz.
-    beklenen = 28 if acik else 25
+    beklenen = 34 if acik else 31
     assert len(tools.hepsi()) == beklenen, (
         f"araç sayısı {len(tools.hepsi())}, beklenen {beklenen} — kayıt değiştiyse bu "
         f"bir ÜRÜN kararıdır ve beyanı da değişmeli.")
