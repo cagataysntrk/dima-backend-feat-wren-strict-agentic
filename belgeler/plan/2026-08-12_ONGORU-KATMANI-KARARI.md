@@ -1422,3 +1422,183 @@ kusurları kapatıyor, ikisi de yeni bir yüzey açmıyor, ikisi de `§13.1`'i b
 
 > *Bir sistemi geliştirmenin en ucuz yolu, onun zaten hesapladığı ama attığı şeyi
 > kullanmaktır.*
+
+---
+
+# EK 3 — 2026-08-13 · GARSONUN YENİ ROLÜ + DÖRDÜNCÜ ÖLÇÜM
+
+---
+
+## §28 · GARSON = **SEÇİLMEYENİN PILL'İNİ HAZIRLAYAN**
+
+### 28.1 Formülasyon doğru — ama **üç kaynak var, iki değil**
+
+Kullanıcının cümlesi: *«öngörüden seçilmeyenler için pill satırını ve adımları hazırlamak
+ve onaya düşürmek; öngörü seçilirse pill/adım otomatik gelir.»* **Doğru** — bir ekleme ile:
+
+```
+                       kullanıcı yazar
+                             │
+                   route → SIRALI ADAY LİSTESİ
+                             │
+        ┌────────────────────┼────────────────────┐
+   marj ≥ eşik          marj < eşik          aday YOK / uzun cümle
+        │                    │                     │
+  🟢 OTO-İCRA          🔵 ADAY PILL'LERİ      🟣 GARSON TASLAĞI
+  pill'ler cevabın     kullanıcı seçer         garson pill+adım kurar
+  MAKBUZU olarak       ⊘ LLM YOK              → onaya düşer
+  görünür              ⊘ LLM YOK              ✅ LLM burada
+        │                    │                     │
+        └────────────────────┴─────────┬───────────┘
+                                       │
+                          AYNI cube_query / plan → AYNI koridor
+```
+
+🔴 **Ortadaki dal `E-8` açısından kritik:** marj düşük olduğunda **garsona gidilmiyor** —
+route'un **kendi kaybedenleri** gösteriliyor. Yani belirsizliğin çoğu **sıfır token** ile
+çözülüyor. Garson yalnız **üçüncü** dalda çalışıyor.
+
+⊙ Bugün bu üç dal **tek bir dala** çöküyor: marj düşükse route çekiliyor ve **garson
+gidiyor** — yani bugün *«iki aday var»* durumu bile bir **LLM turu** ödetiyor.
+
+### 28.2 Garsonun çıktısı **tek tip** — ve bu zaten mimaride yazılı
+
+Garson *«tek sorgu mu, plan mı»* diye **ayrışmaz**. `MIMARI.md §2.0` (birebir):
+
+> *«**Tek adımlı bir plan, basamak 6'nın bugünkü `CubeQuery`'sidir** (`plan_semasi.tek_adimli`)
+> ve aynı `parse_cube_query` beyaz listesinden geçer.»*
+
+🔴 Yani garsonun çıktısı **her zaman bir plandır (1..N adım)**, ve pill satırı onun
+**görünür hâlidir**. Tek adımlıysa tek satır pill, çok adımlıysa dikey adım listesi.
+**Dallanma yok, ikinci bir çıktı tipi yok** (`KAT-1`).
+
+### 28.3 🔴 Garson çıktısı da **marj kapısından geçer** — atlamaz
+
+Kullanıcının *«onaya düşürmek»*i doğru, ama **her çıktı için onay** istemek `§24`'ün
+çözdüğü sorunu (uzman yavaşlıyor) geri getirir. Onay **geri alınabilirliğe ve maliyete
+orantılı** olmalı:
+
+| garson çıktısı | davranış | gerekçe |
+|---|---|---|
+| **tek adım**, garson emin | 🟢 **koşar**, pill'ler makbuz olarak görünür | salt-okuma · ucuz · makbuz zaten anlatıyor |
+| **tek adım**, garson kararsız | 🔵 **pill'ler önerilir**, kullanıcı onaylar | `§24` marj kapısının garson tarafı |
+| **çok adım** (N ≥ 2) | 🔴 **her zaman önizleme** | bütçe (`adim=8·saniye=30·sorgu=12`) + **%25** onarım tutma |
+| yazma fiili içeriyor | 🔴 **senkron onay** | mevcut karar: geri alınamaz iş → senkron |
+
+### 28.4 🟢 Garsonun marjı **bedava** — çünkü zaten oyluyor
+
+Garson `consistency_k=3` ile **üç kez** çağrılıyor ve **çoğunluk oylaması** yapıyor
+(`§B.5`'te ölçüldü). Bu oy dağılımı **bir güven sinyalidir**:
+
+```
+3/3 aynı cevap   → marj YÜKSEK  → koş
+2/3              → marj DÜŞÜK   → pill'leri onaya düşür
+1/1/1 (dağıldı)  → marj YOK     → adayları göster, cevaplama
+```
+
+⊙ Ve bu kavram **zaten kayıtlı**: `features.py:673` `oylama_paydasi` bayrağı
+*«Self-consistency **uyum oranı**»*nı yönetiyor ve çekimser (`{cube:null}`) oyların paydaya
+girip girmeyeceğini tartışıyor.
+
+> 🔴 **`§23`'ün deseni burada da geçerli: garsonun güven sinyali de HESAPLANIYOR, ama bir
+> KAPIYA bağlanmıyor.** Üç oy alınıp çoğunluk seçiliyor; **dağılım atılıyor.**
+
+### 28.5 ⚠ Garson **ilk boyamayı asla bloke etmez**
+
+Ölçüldü: garson turu `k=3` ile **98 saniye** (tek örnek). Kullanıcı bunu **bekleyemez**.
+
+```
+t=0      deterministik öneriler EKRANDA            (route, 145–434 ms)
+t=0..N   garson arkada çalışır
+t=N      liste ZENGİNLEŞİR ya da taslak pill'ler DÜŞER  (ekran zaten dolu)
+```
+
+🔴 Bu, `E-8`'in korunma biçimi: garson **sıcak yolda kritik değil**. Gelmezse ekran boş
+kalmıyor; geç gelirse kullanıcı çoktan ilerlemiş olabiliyor — o zaman taslak **sessizce
+düşer**, üste atlamaz.
+
+### 28.6 Garsonun **YAPMADIĞI** şeyler — rol büyümedi
+
+| ⊘ garson yapmaz | kim yapar |
+|---|---|
+| adımları **koşmak** | orkestratör + küp |
+| **sayıyı** koymak | 🔴 her zaman **küp** |
+| **grafiği** seçmek | `viz` — deterministik (`ADR-0024`) |
+| **SQL yazmak** (küp yolunda) | ⊘ kimse — `parse_cube_query` beyaz listesi |
+| pill'i **onaylamak** | 🔴 **kullanıcı** |
+
+> *Garson taslak çizer; mutfak pişirir; müşteri onaylar. Üçü de birbirinin işini yapmaz.*
+
+---
+
+## §29 · 🔴🔴 DÖRDÜNCÜ ÖLÇÜM — `§24` ZATEN YAZILMIŞ, **ADIYLA**
+
+`§23`'te üç yer bulmuştum. **Dördüncüsü, `§24`'ün birebir uygulaması** —
+`app/value_index.py`:
+
+```python
+AUTO_MARGIN = 0.08   # ikinci FARKLI adaya asgari fark (belirsizse otomatik düzeltme YOK)
+
+def auto_fix(self, q_norm, unknown) -> Candidate | None:
+    """Tek ve açık ara önde aday → otomatik düzeltme; aksi halde None (chip'e kalır)."""
+    cands = self.suggest(q_norm, unknown)                       # ① SIRALI ADAY LİSTESİ
+    if not cands: return None
+    c = cands[0]
+    if c.score < AUTO_SCORE or len(c.surface) < MIN_AUTO_LEN:
+        return None                                             # ② TABAN SKOR
+    if len(cands) > 1 and cands[1].score > c.score - AUTO_MARGIN:
+        return None    # yakın ikinci aday → belirsiz, sorulur   # ③ MARJ KAPISI
+    return c                                                    # ④ OTO-İCRA
+```
+
+🔴 **`§24`'ün dört bileşeni de burada, aynı sırada, ve sabitin adı `AUTO_MARGIN`.**
+Docstring bile aynı cümleyi kuruyor: *«…aksi halde None (**chip'e kalır**)»*.
+
+> **`§24` bir tasarım önerisi değil — bu deponun DEĞER katmanında ÇALIŞAN, kanıtlanmış bir
+> desenin ÖLÇÜ/KÜP katmanına taşınmasıdır.**
+
+### 29.1 Dört uygulama, dört farklı ölçüt — `KAT-1` borcu **ölçüldü**
+
+| # | yer | sıralama ölçütü | taban | marj | belirsizde |
+|---|---|---|---|---|---|
+| ① | `value_index.auto_fix` | skor (0–1) | `AUTO_SCORE` | **`AUTO_MARGIN=0.08`** | chip |
+| ② | `cube_router:1190` | **sinonim uzunluğu** (harf) | — | **`≥4 harf`** | `None` → `cube_tie_candidates` |
+| ③ | `cube_router:3865` | `SequenceMatcher` oranı | `min_suggest` | `second_score` + `len_ratio` | öneri düşer |
+| ④ | `cube_router:1109` | — | — | **`len==1`** | `None` |
+| ⑤ | garson | oy sayısı (`k=3`) | — | ⊘ **dağılım atılıyor** | çoğunluk zorlanır |
+
+🔴 **Beş yerde beş farklı «yeterince emin miyim» tanımı.** Biri harf sayıyor, biri oran,
+biri oy. Bunlar bugün **ayrışmış durumda** — ve bir kullanıcı için hepsi *«sistem emin
+miydi?»* sorusunun **aynı** cevabı olmalı.
+
+> 🅐 *Bir değişmezin beş ayrı yerde beş ayrı biçimde ilan edilmesi, o değişmezin
+> ilan edilmemesiyle aynı kapıya çıkar.*
+
+### 29.2 ✅ Referans uygulama **①**'dir — kopyalanacak şekil
+
+`value_index.auto_fix` en olgunu: **normalize skor** · **taban** · **marj** · **belirsizde
+chip**. Birleştirme hedefi:
+
+```
+app/emin_miyim.py  (yeni · TEK SAHİP)
+   karar(adaylar) → OTO_ICRA | ADAYLARI_GOSTER | SINIR_BEYANI
+   · skorlar 0–1'e normalize (harf sayısı da, oran da, oy da)
+   · TABAN  : altındaysa hiçbir aday yeterli değil → sınır beyanı
+   · MARJ   : birinci-ikinci farkı → oto-icra ya da göster
+   · beş çağıran da BURAYA sorar (KAT-1)
+```
+
+⚠ **Ve bu, `§26`'nın 1. adımıdır** — öneri katmanından **bağımsız**, `§13.1` ölçümünü
+**beklemiyor**, ve tek başına bir `KAT-1` borcunu kapatıyor.
+
+### 29.3 Bu bulgunun raporun tamamına etkisi
+
+| önceki ifade | ölçümden sonra |
+|---|---|
+| *«marj kapılı oto-icra bir tasarım önerisi»* | 🔴 **çalışan bir desenin taşınması** — `AUTO_MARGIN` var |
+| *«sıralayıcı yazacağız»* | ⊘ **beş yerde var**, birleştirilecek |
+| *«garsonun güveni ölçülmeli»* | ⊘ **oyluyor zaten** — dağılım bağlanacak |
+| risk profili | 🟢 **düştü**: yeni mekanizma değil, **mevcut desenin genelleştirilmesi** |
+
+> *Bu depo, çözümü dört kez yazmış ve dördünde de çöpe atmış. Yapılacak iş bir icat değil,
+> bir **toplama**.*
