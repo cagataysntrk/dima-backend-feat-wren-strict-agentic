@@ -1958,10 +1958,38 @@ onun ~%20'si `INFER_SQL`.
 | **Theme-property** (aynı özellik, başka varlık) | *«X'in puanı?»* → *«Peki Y için?»* | **%9,7** |
 | **Answer refinement** (önceki **CEVAPTAN** varlık) | cevap *«İstatistik böl.»* → o bölüm hakkında | **%8,1** |
 
-🔴 **Bu dört kova, `niyet.py`'nin taşıması gereken TAM listedir** — ve bugün **yok**.
-⊙ Özellikle **Answer refinement (%8,1)**: bu, bu oturumda ölçtüğüm *«odak varlığı yok»*
-kusurunun (`ask.py`'nin `§AT` yorumu: *«o makine»* → süzgeç kurulamıyor, 33 satır dönüyor)
-**akademik adıdır**.
+⟳ **ÖLÇÜLDÜ (2026-08-12) — «BUGÜN YOK» İDDİASI BAYAT. DÖRDÜ DE ÇALIŞIYOR.**
+
+Bu satır *«dört kova `niyet.py`'de yok»* diyordu. Canlı curl (dört turluk zincir) +
+birim ölçüm, dördünün de çalıştığını ve dördünün de **`source=cube`** (sıfır LLM)
+olduğunu gösterdi:
+
+| ilişki | oran | canlı tur | ölçülen sonuç |
+|---|---|---|---|
+| **theme-entity** | %48,4 | *«o makinenin oee'si ne kadar»* | `makine eq RAM-2` · küp `parti`→`oee` |
+| **refinement** | %33,8 | *«peki geçen yıl»* | dönem 2025'e kaydı, **varlık korundu** |
+| **theme-property** | %9,7 | *«peki RAM-3 için»* | `makine eq RAM-3` — RAM-2 **düştü** |
+| **answer-refinement** | %8,1 | RAM-2 **cevaptan** geldi (soruda yok) | + beyan: *«bir önceki turun seçtiği makine»* |
+
+⊙ *«Odak varlığı yok»* kusuru **kapanmış**: `§B9 ODAK VARLIK` (`app/diyalog.py::
+odak_suzgeci`/`odak_uygula`, kapı `test_odak_varlik.py` 13 test). Rapor onu **akademik
+adıyla** yeniden keşfetti ama **kod adıyla** aramadı.
+
+⏸ **KARAR — adlar `niyet.py`'ye EKLENMEDİ, ve bu bir karardır:** eksik olan ürün değil
+**ad**. Ad eklemek tek başına bir tüketici doğurmaz; doğurmayan bir ad aynı kuralın
+**ikinci sahibi** olur (`KAT-1`). Taksonominin verdiği asıl değer bir **kontrol
+listesiydi** — o liste kapıya çevrildi: `tests/test_b9_sparc_iliskileri.py` (6), her
+kova kendi oranıyla.
+
+🔴 **VE KONTROL LİSTESİ GERÇEK BİR AÇIK BULDU:** `test_odak_varlik.py::
+test_KAPSAM_BIR_PIN_DEGILDIR` şunu **yazıyor** — *«Var olan bir aralık atfı engellemez;
+bir `eq` pini **engeller**»* — ama yalnız **birinci** yarıyı ölçüyordu. İkinci yarı,
+`refinement` (%33,8) ve `theme-property` (%9,7) kovalarını koruyan şeydi: bozulursa
+*«peki RAM-3 için»* iki `makine eq` süzgeci alır (`RAM-3` **ve** `RAM-2`) ve cevap
+sessizce **0 satır** olur.
+
+> *Bir kapı, iddiasının yalnız bir yarısını ölçüyorsa, öteki yarı yazılı bir
+> temenniden ibarettir.*
 
 #### ⚠ Tur bazlı çöküş — mimari uyarı
 
