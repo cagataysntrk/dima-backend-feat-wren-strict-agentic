@@ -54,11 +54,20 @@ YETIM_MESRU: dict[str, str] = {
     "embed_kapsam": "P0-bloke: gömme sağlayıcısı kararı verilmeden bağlanamaz",
     "kanal_kimlik": "adaptör bekliyor: teslim kanalı sözleşmesi henüz tek sağlayıcılı",
     "bayrak_profilleri": "test yardımcısı: bayrak kombinasyonlarını kurar, ürün yolu yok",
-    # ⏭ `sinonim_onerici` — `§A.6/3` ile bir **çevrimdışı koşucu** kazanınca buradan
-    #    ÇIKACAK. Bugün hâlâ yetim ve gerekçesi *«tasarım: offline»*.
-    #    ⚠ Ama `§A.5`'in dersi: *«offline» bir ÇALIŞMA KİPİDİR, bir ÇALIŞMAMA GEREKÇESİ
-    #    DEĞİL* — bu satır bir **borç kaydıdır**, bir aklama değil.
-    "sinonim_onerici": "⏭ BORÇ: tasarım offline, ama koşucusu yok — `§A.6/3` ile kapanacak",
+    # ✅ `sinonim_onerici` — **BURADA KALMASI DOĞRU, ve gerekçesi ⟳ DÜZELTİLDİ (§A.6/3).**
+    #
+    # İlk planım *«koşucu yazılınca listeden çıkar»*dı. **Yanlıştı**: bu modülün üretimden
+    # çağrılmaMASI `E-8`'in **şartıdır** (*sıcak yola seri ikinci LLM turu eklenemez*).
+    # Yani üretim importu bir **hedef değil, bir ihlal** olurdu.
+    #
+    # ⊙ Eksik olan *«bağlantı»* değil **kol**du — ve o bu turda takıldı:
+    # `lab/sozluk_hasadi.py` (kuru mod varsayılan, `--yaz` ile kuyruğa aday).
+    # Kapı `test_a_sozluk_hasadi.py` koşucunun **var ve çağırıyor** olduğunu ölçüyor.
+    #
+    # *Bir yetimliğin gerekçesi «neden bağlı değil»i değil, «bağlı olmadan nasıl
+    # çalışıyor»u anlatmalıdır.*
+    "sinonim_onerici": "offline ZORUNLU (`E-8`: üretim importu ihlal olurdu) — kolu "
+                       "`lab/sozluk_hasadi.py`, kapısı `test_a_sozluk_hasadi.py`",
 }
 
 
