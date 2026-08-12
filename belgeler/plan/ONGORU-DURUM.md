@@ -1,0 +1,155 @@
+# ÖNGÖRÜ OPERASYONU — DURUM & PROTOKOL
+
+> 🔴🔴 **BU DOSYA HER TURDA GÜNCELLENİR.** Bağlam sıfırlansa (compact) bile operasyon
+> buradan devam eder. Sohbet geçmişine ihtiyaç **yoktur**.
+> **Plan:** `belgeler/plan/2026-08-12_ONGORU-KATMANI-KARARI.md` · **Otorite:** çelişkide
+> `backend/MIMARI.md` kazanır.
+
+---
+
+## §0 · COMPACT KURTARMA — *bağlam sıfırlandıysa ÖNCE BUNLARI OKU*
+
+Sırayla, **başka hiçbir şey yapmadan**:
+
+| # | dosya | ne verir |
+|---|---|---|
+| 1 | **bu dosya** (`ONGORU-DURUM.md`) | nerede kaldık · kurallar · sıradaki adım |
+| 2 | `belgeler/plan/2026-08-12_ONGORU-KATMANI-KARARI.md` | **plan** — `§0` dizin, `§42` fazlar, `§44` bağımlılık |
+| 3 | `backend/CLAUDE.md` | kapı politikası · koşum hijyeni · garson devri |
+| 4 | `backend/MIMARI.md` `§0` dizini | mimari otorite (5.700 satır, dizinden gez) |
+
+⚠ `OPERASYON.md` / `OPERASYON-DURUM.md` (repo kökü) **v1 operasyonuna** aittir; bu
+operasyonun dosyası **bu dosyadır**. İkisini karıştırma (`KAT-1`).
+
+🔴 **Compact döngüyü DURDURMAZ.** Compact'ten önce de sonra da her turun son eylemi
+`ScheduleWakeup`'tır. Yeni bağlam bu dosyayı okur ve **kaldığı yerden** devam eder.
+
+---
+
+## §1 · BAĞLAYICI KURALLAR
+
+### 1.1 Döngü
+- 🔴 **Her turun son eylemi `ScheduleWakeup`.** İstenen: **30 sn**.
+  ⚠ **ÖLÇÜLDÜ: araç `delaySeconds`'i `[60, 3600]`'e KIRPIYOR** — 30 istenirse 60 olur.
+  Bu yüzden **`delaySeconds: 60`** yazılır; bu aracın verebileceği **en kısa** aralıktır.
+  *Bir sınırı bilmeden istemek, istediğini aldığını sanmaktır.*
+- 🔴 Yanıta *«tamam, en kısa aralıkla (60 sn) wake up zamanlayacağım»* ile başla.
+- 🔴 **Yalnız kullanıcı «dur/bekle» derse** `stop: true`. Kapı kırmızısı · ajan bildirimi ·
+  hata · compact — **hiçbiri** durma sebebi değildir.
+- 🔴 `prompt` alanına **tam `/loop` metni + güncel durum özeti** yazılır.
+
+### 1.2 Ölçüm
+- 🔴 **Hiçbir sayıyı ölçmeden alma — kendi bulgunu da.** Bu oturumda iddialar **22 kez**
+  daraldı; **24'ü** kendi probum/testim/teşhisimdi.
+- 🔴 **Kapının yeşili de kapsamıyla sınırlıdır** 🅣. *(Ölçüldü: üç kez «kapı temiz» dedim,
+  süitin **%5,6**'sını ölçüyormuşum — sebep `zsh`'ın tırnaksız değişkeni bölmemesiydi.)*
+- 🔴 **Tek koşum kanıt değildir** 🅢 — garson örneklemesi turdan tura değişir ㉝.
+- 🔴 Sayıyı **artefakttan** oku, belgeden değil ㉔.
+
+### 1.3 Değişiklik
+- 🔴 **Mutasyonla kanıtla** 🅑 — `grep -c` **VE** `diff` ile doğrula. Gövdeye gömülü bir
+  karar kanıtlanamaz; yüklem taşıyan yeri **modül düzeyine** çıkar 🅯.
+- 🔴 **Komşuyu koş** ⑯ — `ast` ile bağımlıları bul.
+- 🔴 **İkinci sahip açma** (`KAT-1` ㊲). Aynı kuralın **iki tüketicisi** olabilir ㉚.
+- 🔴 **Gerekçeli ⊘ da bir sonuçtur** ㊸. Ödenmeyecek borcun **nedeni yazılır** 🅗.
+- ⚠ `§38.4` dokunulmazları: LLM SQL yazmaz **küp yolunda** · sayıyı küp koyar · grafik
+  deterministik · kapalı fiil kümesi · `narration_guard` · beyan kültürü · Türkçe
+  morfoloji · JOIN planlayıcı yasağı · `KURAL B` · `KAT-1` · motor in-process · `E-8` ·
+  `ADR-0024`.
+
+### 1.4 Ortam *(ölçülmüş yasaklar)*
+- ⚠ **`docker-compose up` DENENMEZ** — v1 `KeyError: ContainerConfig` verir **ve koşan
+  konteyneri durdurur** (ölçüldü: 40 sn kesinti).
+- ⚠ `demo/wren-project` **SİLİNMEZ** — motorun semantik model dizini.
+- ⚠ **Dosya silme yok.** ⚠ Paylaşılan repo — ana dizinde **checkout/stash yok**.
+- ⚠ **`interaction_log`'a DB probu YASAK** *(kod okumak serbest)*.
+- ⚠ **Commit footer YASAK** (`backend/CLAUDE.md`, saka standardı).
+- ⚠ Kapı koşarken repoya **yazma**.
+
+### 1.5 Koşum kalıpları *(kopyala-yapıştır)*
+
+```bash
+# HER Bash'in ilk satırı:
+cd /home/cagataysntrk/İndirilenler/dima-backend-feat-wren-strict-agentic
+
+# HEDEFLİ TEST
+docker run -d --name X$$ --network none -v "$PWD/backend:/app" \
+  -v "$PWD/belgeler:/belgeler:ro" -v "$PWD/dima-frontend-demo-master:/dima-frontend-demo-master:ro" \
+  -w /app --user "$(id -u):$(id -g)" -e DIMA_VQR_EMBEDDER=off dima-test \
+  python -m pytest -q -p no:randomly tests/test_X.py
+
+# TAM KAPI  ⚠ ${=D} ZORUNLU — zsh tırnaksız değişkeni BÖLMEZ
+cd backend
+D=$(cd .. && git diff --name-only 294eb67..HEAD | grep "^backend/" | sed 's|^backend/||' | tr '\n' ' ')
+docker run -d --name Xk$$ --network none -v "$PWD:/app" -v "$PWD/../belgeler:/belgeler:ro" \
+  -v "$PWD/../dima-frontend-demo-master:/dima-frontend-demo-master:ro" -w /app \
+  --user "$(id -u):$(id -g)" -e DIMA_VQR_EMBEDDER=off dima-test \
+  python lab/kapi.py --hizli --degisen ${=D}
+# ✅ başlıkta «değişen=606 → seçilen 383/456» GÖRÜNMELİ; görünmüyorsa KAPI YALAN SÖYLÜYOR
+
+# KORPUS
+docker run -d ... dima-test python lab/nl_corpus.py --kapi     # ~2 dk, çıkış 0 beklenir
+
+# CANLI (backend :8001, imaj dima-backend-temiz:s06)
+TK=$(curl -s -m 25 -X POST localhost:8001/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"demo-boyahane@usedima.com","password":"dima-demo-1234"}' \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+# ⚠ takip çapası `cube_query` (thread_id PASS-THROUGH) · chip'ler `next_steps`'te
+```
+
+---
+
+## §2 · TABAN SAYILAR *(2026-08-13, ölçülmüş)*
+
+```
+SÜİT      4.843 ✅ · 1 🔴 (d11, GEREKÇELİ) · 43 atlandı   → 383/456 dosya
+KORPUS    ✅ çıkış 0 · erişim 83/69/68/72 (dördü de tabanında)
+          doğru-cube %95,6 (t.94,4) · semantik vaka %94,4 (t.93,5) · cevapsız %19,7
+KATALOG   23 küp · 136 ölçü · 816 terim · yön beyansız 68/136 (kapılı)
+YÜZEY     HTTP ucu 77 (8 gerekçeli yetim) · app/ 138 modül (4 yetim) · MCP 29 araç
+TAVAN     ask() 1444/1444 · ask.py 2888/2888
+```
+
+⚠ **Raporun `§1.1`/`§1.2`'sindeki `54/53/58` BAYATTI ve düzeltildi** — o düşüş bir payda
+kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
+
+---
+
+## §3 · KARAR VERİLMİŞ SIRA
+
+| # | faz | ölçüme bağlı mı | durum |
+|---|---|---|---|
+| 1 | **`FAZ 0`** Türkçe gömme ölçümü (`Recall@3`) | — | ⏭ **SIRADA** |
+| 2 | **katalog borcu** (68 yön beyanı) | ⊘ | ⏭ planda **yoktu**, eklendi |
+| 3 | **`FAZ 4`** kıyas temeli chip'i | ⊘ | ⏭ |
+| 4 | **`FAZ 1`** `emin_miyim` (şekil birleştir) | ⊘ | ⏭ |
+| 5 | **`FAZ 2`** marj kapısı (varsayılan `∞`) | ⊘ | ⏭ |
+| 6 | `FAZ 3` aday yan kanalı | ⊘ | ⚠ `FAZ 6` ile **aynı demette** (yetim uç riski) |
+| 7 | `FAZ 5–8` öneri motoru · uç+FE · pill · hasat | 🔴 **`FAZ 0`'a bağlı** | ⏸ |
+
+🔴 **`FAZ 0` %70'in altında çıkarsa `FAZ 5–8` RAFA KALDIRILIR** — teşhis geçerli kalır,
+çare değişir. *(Raporun kendi ölüm şartı, `§13.1`.)*
+
+---
+
+## §4 · AÇIK BORÇLAR
+
+| # | borç | durum |
+|---|---|---|
+| **d11** | 9 boyutun fan-out sertifikası | 🔴 kapı **kırmızı KALIYOR** — ön koşul: sertifikaya `mdl_version` damgası |
+| ① | Discovery dalına beyan taşıma | ⊘ ertelendi — o dal `uyum.denetle`'den hiç geçmedi |
+| ③ | `netlestirme_sorusu` çağrı yeri | ⏭ `adaylar` boşken `diyalog_durumu.kismi_cq` okunabilir |
+| ④ | `CLARIFY:dönem` (181–296 soru/şirket) | ⏭ ölçülmedi |
+| ⑥ | `demo/OLMAYAN-DIZIN` (1,2 MB, 0 referans) | ⏭ **silinmez**, karar kullanıcının |
+| ⑩ | fan-out sertifikası sürüm damgası | ⏭ `d11`'in ön koşulu |
+
+---
+
+## §5 · TUR KAYDI
+
+> Her tur **buraya** bir satır. En yeni **üstte**. ⚠ Bu bölüm **kısa tutulur** — uzarsa
+> eski satırlar `belgeler/denetim/`'e taşınır, **silinmez**.
+
+| tur | ne yapıldı | kapı | commit |
+|---|---|---|---|
+| 0 | operasyon kuruldu: bu dosya · memory · raporun bayat sayıları düzeltildi | — | *(bu tur)* |
