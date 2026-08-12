@@ -2111,3 +2111,356 @@ tek tuşla** gösterilir.
 ⚠ **Ve ertelenen tek şey ölçüm değil:** `§40.4`'te ⊘ konan altı madde **ürün için hâlâ
 gerekli**. Demo'nun başarısı onları **kapsam dışı** yapmaz — yalnız **sonraya** koyar.
 *Bir kapsam kararını bir tamamlanma sanmak, bu deponun ㊷ dersinin tersidir.*
+
+---
+
+# EK 6 — 2026-08-13 · FAZ PLANI *(koddan doğrulanmış)*
+
+> 🔴 Bu bölüm yazılmadan önce kopyalanacak **her desen koddan okundu**. İki ölçüm planı
+> **değiştirdi** — biri bir **regresyonu**, biri bir **sessiz kusuru** önledi. İkisi de
+> aşağıda `⚠ ÖLÇÜM DÜZELTTİ` etiketiyle.
+
+---
+
+## §41 · İKİ ÖLÇÜM, İKİ DÜZELTME — fazlardan önce
+
+### 41.1 ⚠ ÖLÇÜM DÜZELTTİ ① — **eşikler CANLI KALİBRE EDİLMİŞ, tek sayıya indirilemez**
+
+`cube_router.py:3767-3790` okundu. Eşikler keyfi değil, **canlı bulgularla** konmuş:
+
+```python
+_TYPO_MIN_WORD_LEN = 4    # 3 harf ve altı fuzzy'ye HİÇ girmez
+_TYPO_HIGH  = 0.82        # + net aday → OTOMATİK düzelt
+_TYPO_MID   = 0.65        # HIGH altı → yalnız "şunu mu demek istedin?"
+_TYPO_GAP   = 0.08        # en iyi/ikinci fark — NET ADAY ŞARTI
+_TYPO_MID_WIDE = _TYPO_HIGH   # cube ÇÖZÜLEMEDİYSE baraj YÜKSELİR
+```
+
+Ve yorumlar **kanıt taşıyor** (birebir):
+> *«0.60 → 0.65 (canlı bulgu, 31 Temmuz): "fizibilite"/"profitability" tam **0.6087**
+> (uzunluk-oranı korumasını GEÇİYOR) → 0.60 eşiğinde YANLIŞ öneri üretti… Gerçek
+> düzeltmelerin (müterileri/müşteri=0.706, vardya/vardiya=0.923, siyh/siyah=0.889) hepsi
+> 0.65'in ÜSTÜNDE — regresyon YOK.»*
+
+> *«`_TYPO_MID_WIDE` `_TYPO_HIGH`'a EŞİTLENDİ (**keyfi yeni sayı icat etmek yerine**):
+> cube ÇÖZÜLMEDİĞİNDE (bağlam belirsiz) fuzzy önerinin güven barajı da YÜKSELMELİ.»*
+
+🔴 **`§29.2`'nin ilk hâli — «beş tanımı tek sayıda birleştir» — BİR REGRESYON OLURDU.**
+Bu sabitler **alanına özgü** ve **ölçülerek** konmuş; tek bir `MARJ_ESIGI`'ne indirmek
+kalibre edilmiş bilgiyi **yok etmek** olurdu.
+
+✅ **DÜZELTİLMİŞ TASARIM:** `emin_miyim` **ŞEKLİ** birleştirir, **SAYILARI değil**.
+
+```python
+# app/emin_miyim.py — ŞEKİL tek, SABİTLER çağıranın
+def karar(adaylar, *, taban, marj, taban_genis=None, baglam_belirsiz=False):
+    """OTO_ICRA | GOSTER | SINIR — üç kademeli karar. Sabitler ÇAĞIRANDAN gelir."""
+```
+
+| çağıran | `taban` | `marj` | özel |
+|---|---|---|---|
+| `value_index.auto_fix` | `AUTO_SCORE=0.8` | `AUTO_MARGIN=0.08` | `MIN_AUTO_LEN=5` |
+| `cube_router` typo | `_TYPO_HIGH=0.82` | `_TYPO_GAP=0.08` | `_TYPO_MID=0.65` · `_MID_WIDE` |
+| `cube_router:1190` cube | *(harf → 0–1 normalize)* | `≥4 harf` karşılığı | — |
+| garson | oy oranı | oy farkı | `oylama_paydasi` |
+
+⊙ **Ve iki bağımsız uygulama zaten AYNI SAYIDA buluşmuş:** `AUTO_MARGIN = 0.08` ↔
+`_TYPO_GAP = 0.08`; `AUTO_SCORE = 0.8` ↔ `_TYPO_HIGH = 0.82`.
+🟢 Bu, birleştirmenin **çelişki çözmek değil, bir MUTABAKATI ADLANDIRMAK** olduğunu
+gösteriyor — yani **düşük riskli**.
+
+### 41.2 ⚠ ÖLÇÜM DÜZELTTİ ② — **SONDA TUZAĞI: yan kanal EZİLİR**
+
+`cube_router.py:2213-2226` okundu — `_sonda_reddi_korur` dekoratörü **ölçülmüş bir
+kusurdan** doğmuş (birebir):
+
+> *«`red_gerekcesi()` bir ContextVar'dır ve **her** `route()` çağrısı girişte
+> `reddi_sifirla()` yapar. Chip doğrulaması (`_calisan_sorgu`) `route()`'u **defalarca
+> SONDA olarak** çağırıyordu → kullanıcının gerçek kodu (`R1`) son sondanınkiyle ya da
+> `None` ile **eziliyordu**.»*
+> *«**Sonda bir ölçüm aracıdır; ölçtüğü şeyi değiştirmemeli.**»*
+
+🔴 **Bu tuzak `_adaylari_yaz()` için BİREBİR geçerlidir.** `route()`'u sonda olarak çağıran
+en az dört yer var (`_calisan_sorgu` · `yetenek.py:474` · `typo_onerisi.py:69` ·
+`lab/nl_corpus`) — önlem alınmazsa **kullanıcının aday listesi son sondanınkiyle ezilir**
+ve öneri şeridi **yanlış adaylar** gösterir.
+
+✅ **ZORUNLU:** aday yan kanalı **`_sonda_reddi_korur` ile AYNI korumayı** alır → adı
+`_sonda_kanali_korur` olur ve **her iki kanalı** birden korur (`KAT-1`: tek dekoratör).
+
+> 🅣 *Bu tuzak, kapının yokluğundan değil, **aynı deseni ikinci kez kullanırken ilk
+> kullanımın dersini okumamaktan** doğardı.*
+
+---
+
+## §42 · FAZLAR — alt maddeleriyle
+
+> Her fazda: **ön koşul · alt maddeler · dokunulan dosya · «ötekine zarar» kontrolü ·
+> kapı · geri alma · bitti ölçütü**.
+> 🔴 **Hiçbir faz, bir sonrakini zorunlu kılmaz.**
+
+---
+
+### FAZ 0 · ÖLÇÜM *(kod yok)*
+
+| | |
+|---|---|
+| **ön koşul** | — |
+| **çıktı** | `Recall@3` · `Recall@5` · `MRR` — Türkçe kısa alan adlarında |
+
+**Alt maddeler**
+- `0.1` 136 ölçü + 816 terimi **çok görünümlü** hazırla (ad · etiket · sinonim · birim)
+- `0.2` **30–40 gerçek iş ifadesi** yaz (`hasıl`·`fire`·`duruş`·`sapma`·`bakiye`·`vardya`)
+  ⚠ **karışık dil** (`OEE downtime`) ve **yazım hatalı** örnekler **mutlaka** olsun
+- `0.3` En az **iki** model ölç: `BGE-M3` (talimatsız) ↔ `multilingual-e5-large`
+  🔴 E5'te **iki tarafa da `query: `** (simetrik görev — kart birebir söylüyor)
+- `0.4` **Leksik taban** da ölç (yalnız `difflib`/n-gram) → vektörün **marjinal** katkısı
+- `0.5` `lab/oneri_olcum.py` — koşucu, `--kuru` varsayılan (mevcut `lab/` deseni)
+
+**Zarar kontrolü** ⊘ kod yok, ürün yolu **hiç** dokunulmuyor.
+**Kapı** ⊘ (ölçüm aracı) · **Geri alma** ⊘
+**Bitti ölçütü** 🔴 `§20.1` eşiğine göre **karar verildi**: devam / dar kapsam / **DUR**
+
+---
+
+### FAZ 1 · `emin_miyim` — **şekli birleştir, sabitleri koru** 🟢 FAZ 0'ı beklemez
+
+**Alt maddeler**
+- `1.1` `app/emin_miyim.py`: `Aday` (kimlik·etiket·skor 0-1·kaynak) + `Karar` enum
+- `1.2` `karar(adaylar, *, taban, marj, taban_genis=None, baglam_belirsiz=False)`
+  → `OTO_ICRA | GOSTER | SINIR`
+- `1.3` `value_index.auto_fix` → `karar()` çağırır, **`AUTO_SCORE`/`AUTO_MARGIN` yerinde kalır**
+- `1.4` `cube_router` typo (`:3865`) → `karar()`, **`_TYPO_*` yerinde kalır**
+  ⚠ `_TYPO_MID_WIDE` mantığı `baglam_belirsiz=True` ile taşınır — **kaybolmaz**
+- `1.5` `cube_router:1190` (harf farkı) → **0–1'e normalize** edilip `karar()`
+  ⚠ Normalizasyon `≥4 harf` davranışını **birebir** korumalı (aksi hâlde regresyon)
+- `1.6` `cube_router:1109` (`len==1`) → `karar()` (dejenere hâl: marj = ∞ ya da 0)
+
+**Zarar kontrolü**
+- 🔴 **Davranış DEĞİŞMEMELİ.** Bu faz **saf yeniden düzenleme**.
+- ⚠ `1.5` en riskli alt madde — harf farkı bir **oran değil**; normalizasyon yanlışsa
+  cube seçimi bozulur → **korpus kırmızı** verir.
+- ⊘ `parse_cube_query`'nin sağına **hiç** dokunulmuyor.
+
+**Kapı** `test_emin_miyim_tek_sahip.py`
+- ① beş çağıranın hiçbiri **kendi** marjını hesaplamıyor (`ast`)
+- ② `value_index.auto_fix` davranışı **birebir** (mutasyonlu)
+- ③ typo üç kademesi **birebir** (`0.82`/`0.65`/`0.08` + `_MID_WIDE`)
+- ④ `cube_router:1190` normalizasyonu `≥4 harf` ile **eşdeğer** (tablo testi)
+- ⑤ normalize edilmemiş skor → `ValueError`
+- 🔴 ⑥ **korpus taban KORUNUYOR** (`doğru-cube` ≥ bugünkü)
+
+**Geri alma** revert · **Bitti** korpus **birebir aynı** + `KAT-1` borcu kapalı
+
+---
+
+### FAZ 2 · Marj kapılı oto-icra 🟢 FAZ 0'ı beklemez
+
+**Alt maddeler**
+- `2.1` `features.yml`: `marj_esigi` (varsayılan **∞ = bugünkü davranış**) + `on_sarti`
+  ⚠ `on_sarti` **yapısal alan** olmalı — `test_bayrak_on_sarti` düzyazı gerekçeyi reddediyor
+- `2.2` `cube_router:1190` → eşik **bayraktan**; `∞` iken `≥4 harf` **aynen**
+- `2.3` `SINIR` kararı → **proaktif sınır beyanı** metni (`§D4` deseni; katalog listesi var)
+- `2.4` `_meta.marj` + `_meta.karar` — makbuza girer (`§E.4` katman 3)
+- `2.5` `/stats/marj` **AÇILMAZ** ⊘ — `§F`'nin kararı: tüketicisiz uç **yetim uç** olur
+
+**Zarar kontrolü**
+- 🔴 Varsayılan `∞` → **hiçbir davranış değişmez**; faz **etkisiz** teslim edilir
+- ⚠ `2.3` yeni **metin** üretiyor → `narration_guard` kapsamına girer mi? **Girmez**
+  (sayı taşımıyor) — ama kapı bunu **doğrulamalı**
+
+**Kapı** `test_marj_kapisi.py`
+- ① `marj_esigi=∞` → korpus çıktısı **bayt bayt** aynı
+- ② eşik düşürülünce oto-icra **artar** ve **sessiz-yanlış SAYILIR** (yeni sayaç)
+- ③ `SINIR` metni **uydurma yetenek** vaat etmiyor (katalogdan türetilmiş)
+- ④ `_meta.marj` **her** cevapta var (deterministik yolda da)
+
+**Geri alma** `marj_esigi: ∞` · **Bitti** eşik **ayarlanabilir** ve etkisi **ölçülüyor**
+
+---
+
+### FAZ 3 · Aday yan kanalı 🟢 FAZ 0'ı beklemez
+
+**Alt maddeler**
+- `3.1` `_aday_var: ContextVar` — `_reddi_var` (`:3989`) ile **birebir** desen
+- `3.2` `adaylari_sifirla()` — `route()` girişinde, `reddi_sifirla()` ile **aynı yerde**
+- `3.3` 🔴 **`_sonda_kanali_korur`** — `_sonda_reddi_korur`'u **genişlet**, iki kanalı
+  birden korusun (`KAT-1`: iki dekoratör **olmaz**)
+- `3.4` `adaylar() -> list[Aday]` — `red_gerekcesi()` kalıbı
+- `3.5` `ask.py`: sıfırlama `reset_llm_usage()` ile **aynı satır bloğunda**
+- `3.6` `cube_tie_candidates` (`:2479`) → `adaylar()`'ı **okur**, kendi türetmesini bırakır
+
+**Zarar kontrolü**
+- 🔴🔴 **SONDA TUZAĞI** (`§41.2`) — `3.3` olmadan bu faz **kullanıcının listesini bozar**
+- ⚠ `3.6` en riskli: `cube_tie_candidates`'in bugünkü kapsamı **ölçülmedi** (`§39/③`)
+  → **önce ölç, sonra bağla**; ölçemezsen `3.6`'yı **ayır ve ertele**
+- ⊘ `route()` imzası, dönüş tipi, beş çağıran: **dokunulmuyor**
+
+**Kapı** `test_aday_yan_kanali.py`
+- ① `route()` imzası **değişmedi** (`inspect.signature`)
+- ② `adaylar()` çağrılmazsa yanıt **birebir** aynı
+- ③ 🔴 **sonda ezmiyor**: `_calisan_sorgu` sondasından sonra kullanıcının listesi **duruyor**
+- ④ ardışık iki istek arasında **sızıntı yok**
+- ⑤ `cube_tie_candidates` ile `adaylar()` **aynı sonucu** veriyor *(3.6 yapıldıysa)*
+
+**Geri alma** okuyanı kaldır · **Bitti** ikinci sahiplik kapandı, sonda tuzağı **kapılı**
+
+---
+
+### FAZ 4 · Kıyas temeli chip'i 🟢 FAZ 0'ı beklemez · **bağımsız değer**
+
+**Alt maddeler**
+- `4.1` Değerlendirici yüklem tespiti (`düşük`·`kötü`·`yüksek`) — ⚠ **kapalı küme**
+  (`ADR-0008`: açık uçlu kelime listesi **yasak**)
+- `4.2` Kıyas temeli **yoksa** → `[akran ▾] [dönem ▾] [hedef ▾]`
+- `4.3` Chip'ler `Suggestion(kind="tanim")` şeridine düşer — **yeni şerit açılmaz**
+- `4.4` `kok_neden` gövdeleri **aynen** çağrılır — yeni mantık **yok**
+
+**Zarar kontrolü**
+- ⚠ `4.1` bir **kelime listesi** — `ADR-0008`'in sınırında. Kapalı ve **belgeli** olmalı
+- ⚠ Yanlış-pozitif chip `§101.1` ihlali → tetikleyici **yapısal** (yön beyanı **var mı**)
+- ⊘ Yeni şerit açılmıyor → `§25/⑪` riski doğmuyor
+
+**Kapı** `test_kiyas_temeli_chipi.py`
+- ① *«RAM-3 neden düşük»* artık **cevapsız değil**
+- ② kıyas temeli **verilmişse** chip **basılmıyor** (yanlış-pozitif)
+- ③ yön **beyansız** ölçüde `[akran]` chip'i **sunulmuyor** (`68/136` gerçeği)
+
+**Geri alma** chip üretimini kapat · **Bitti** ölçülmüş kusur sınıfı **kapalı**
+
+---
+
+### FAZ 5 · Öneri motoru 🔴 **FAZ 0 EŞİĞİNE BAĞLI**
+
+**Ön koşul** `Recall@3 ≥ %85` *(veya `§20.1`'e göre dar kapsam)*
+
+**Alt maddeler**
+- `5.1` `app/oneri.py` — **saf**: `ara(kismi, schema, principal) -> list[Aday]`
+- `5.2` 🔴 **`authorize()` süzmesi SIRALAMADAN ÖNCE** (bilgi sızıntısı kapısı)
+- `5.3` Leksik ayak: **edge n-gram** (indeksleme zamanı) + `_TYPO_*` eşikleri **yeniden kullanılır**
+- `5.4` Vektör ayağı: **exact/flat** (⊘ HNSW) · çok görünümlü gömme
+- `5.5` Sıklık önceliği — ⚠ RRF skoruna **küçük katsayıyla** (Qdrant uyarısı)
+- `5.6` Füzyon **RRF** · 🔴 `k` **bilinçli seçilir ve YAZILIR** (60 ↔ 2 tuzağı)
+- `5.7` `lab/oneri_indeksi.py` — üreteç + **tazelik damgası** (`mdl_version` deseni)
+- `5.8` Gömücü **soğuksa** → leksik kipe düş, **çökme** ⚠ ölçülmüş kusur
+- `5.9` Boş girdi: son bakılanlar · en çok sorulanlar · dikeyin çekirdek 5'i
+
+**Zarar kontrolü**
+- 🔴🔴 `5.2` atlanırsa **envanter ifşası** — bu fazın **tek güvenlik kalemi**
+- ⚠ `5.7` atlanırsa **bayat indeks** sessizce yanlış öneri verir
+- ⊘ `/ask` yoluna **hiç** dokunulmuyor — `oneri.py` ayrı bir modül
+
+**Kapı** `test_oneri_motoru.py`
+- ① 🔴 dar yetkili principal → yetkisiz ölçü listede **YOK**
+- ② `p95 < 300 ms` (⚠ **kapının kendi maliyeti** de ölçülür)
+- ③ gömücü soğukken **leksik**, çökme yok
+- ④ indeks bayatsa **beyan** ediyor
+- ⑤ her aday **temsil edilebilir** (JOIN gerektiren aday **sunulmuyor**)
+
+**Geri alma** `oneri_katmani: off` · **Bitti** `§13.2` ölçütleri **koşulabilir**
+
+---
+
+### FAZ 6 · Uç + FE şeridi + tuş 🔴 FAZ 5'e bağlı · **DEMO KAPSAMI**
+
+**Alt maddeler**
+- `6.1` `GET /oneri` — `Aday[]` döner
+- `6.2` 🔴 **FE tüketicisi AYNI demette** (`§G` yetim uç kapısı)
+- `6.3` `types.ts` + `ChatPanel.tsx` + api çağrısı — **üç dosya**
+- `6.4` debounce **200 ms** · **≤7** öneri · **kaydırma yok**
+- `6.5` Klavye `↓↑ Enter Esc` — 🔴 **poliş değil, iddianın kanıtı**
+- `6.6` Tuş: `useFeature` ⊕ yerel geçersiz kılma (demo: `localStorage`)
+- `6.7` Marj kapısının **üç çıkışı** ekranda ayırt edilebilir
+- ⊘ `ReportCard.tsx` **açılmıyor**
+
+**Zarar kontrolü**
+- 🔴 `6.2` atlanırsa `test_g_yetim_uc_kapisi` **kırmızı** (tavan 8 → 9)
+- ⚠ `6.6` demo'da `localStorage` → **A/B kaybı** (`§40.3`), ölçüm **ertelenir**
+- ⊘ Kapalıyken `/oneri` **çağrılmıyor** — ağ sekmesinden **görülebilir**
+
+**Kapı** `test_oneri_katmani_kural_b.py` (5 yüklem, `§19.5`) + yetim uç kapısı **yeşil**
+**Geri alma** tuş → bayrak → revert
+**Bitti** 🔴 `§40.7`'nin **beş senaryosu gözle** doğrulandı
+
+---
+
+### FAZ 7 · Çapa · pill · makro · plan önizleme ⊘ **DEMO DIŞI**
+
+⊙ `§40.4`'ün kararı: bu faz **iddiayı kanıtlamıyor**, zenginleştiriyor. Demo başarılı
+olursa açılır. Alt maddeleri `§34/adım 7`'de duruyor — **silinmedi, ertelendi**.
+
+---
+
+### FAZ 8 · Hasat döngüsü 🔴 FAZ 6'ya bağlı
+
+**Alt maddeler**
+- `8.1` Tıklama kaydı: `(ham ifade → seçilen alan → konum)`
+- `8.2` 🔴 **konum yanlılığı**: yalnız **1. sırayı ATLAYAN** tık **güçlü** sinyal
+- `8.3` `ε` karıştırma (küçük oranda sıra bozma)
+- `8.4` *«yazdı, hiçbirini tıklamadı»* → üsttekilere **negatif**
+- `8.5` `sinonim_onerici.kuyruga_koy(approved=False)` — **mevcut hat**
+- `8.6` `lab/sozluk_hasadi.py` **mevcut koşucu** tıklama kaynağını da okur
+
+**Zarar kontrolü**
+- ⊘ `approved=False` **sabit** — onaysız hiçbir şey `compose`'a girmez
+- ⚠ `8.3` `ε` çok büyükse kullanıcı deneyimi bozulur → **küçük** ve **ölçülü**
+
+**Kapı** `test_hasat_konum_yanliligi.py` — naif sayım **kendini beslemiyor**
+**Geri alma** kayıt kapat · **Bitti** 🟢 sözlük **kullanımdan** büyüyor
+
+---
+
+## §43 · «ÖTEKİ ZARAR GÖRMESİN» — çapraz kontrol listesi
+
+Her fazdan **sonra**, teslimden **önce**:
+
+| # | kontrol | nasıl |
+|---|---|---|
+| 1 | `route()` imzası değişmedi | `inspect.signature` kapısı |
+| 2 | `cube_query` şekli değişmedi | `parse_cube_query` kapısı |
+| 3 | korpus **payda** değişmedi 🅜 | `nl_corpus` ham tur sayısı |
+| 4 | korpus `doğru-cube` **düşmedi** | dondurulmuş taban |
+| 5 | guard/makbuz/beyan alanları duruyor | `test_cevap_alani_yetim_degil` |
+| 6 | yetim uç/modül sayısı **artmadı** | `test_g_yetim_*` (8 / 4) |
+| 7 | `ask.py` tavanları aşılmadı | `test_modul_buyume` (1444 / 2875) |
+| 8 | bayrak **kapalı** → bayt bayt aynı | `KURAL B` kapısı |
+| 9 | kapılar **iki kipte de** koştu 🆀 | bayraklı/bayraksız çift koşum |
+| 10 | 🔴 sonda kanalı **ezmiyor** | `§41.2` kapısı |
+
+⚠ **Ve demet sonunda BİR kez:** `lab/kapi.py --hizli --degisen <tümü>` → `--tam`.
+Ara koşum **yok** (sıfırıncı kural).
+
+---
+
+## §44 · FAZ BAĞIMLILIK HARİTASI
+
+```
+FAZ 0 (ölçüm) ──────────────────────────┐
+                                        ▼
+FAZ 1 (emin_miyim) ──→ FAZ 2 (marj)   FAZ 5 (öneri motoru)
+       │                    │              │
+       └────────────────────┴──────────────┤
+                                           ▼
+FAZ 3 (yan kanal) ─────────────────→ FAZ 6 (uç+FE+tuş) ──→ FAZ 8 (hasat)
+                                           │
+FAZ 4 (kıyas chip) ─ BAĞIMSIZ              └──→ FAZ 7 (pill·çapa) ⊘ DEMO DIŞI
+```
+
+🟢 **Sol sütun (0·1·2·3·4) FAZ 0'ı beklemez ve tek başına değerlidir.**
+🔴 **Sağ sütun (5·6·8) FAZ 0 eşiğine bağlıdır.**
+
+---
+
+## §45 · BU PLANIN SINIRI
+
+| ölçüldü ✅ | ölçülmedi ⚠ |
+|---|---|
+| `route()` imzası + beş çağıran | `cube_tie_candidates` **kapsamı** (`3.6` buna bağlı) |
+| `_reddi_var` / `_sonda_reddi_korur` deseni | `oneri.py` **gerçek gecikmesi** (`5.2` kapısı) |
+| `AUTO_SCORE`·`AUTO_MARGIN`·`MIN_AUTO_LEN` | Türkçe gömme **isabeti** (FAZ 0) |
+| `_TYPO_HIGH/MID/GAP/MID_WIDE` + gerekçeleri | FE **iş büyüklüğü** (demo kapsamı **azalttı**) |
+| `features.py` kapsam sırası + `on_sarti` şartı | `cube_router:1190` **normalizasyon** eşdeğerliği (`1.5`) |
+
+> 🔴 **`1.5` bu planın en riskli tek alt maddesidir:** harf farkı bir **oran değildir** ve
+> yanlış normalizasyon cube seçimini bozar. Kapısı **tablo testi** olmalı — birkaç örnekle
+> değil, `≥4 harf` kuralının **tüm sınır durumlarıyla**.
