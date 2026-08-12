@@ -12840,3 +12840,59 @@ döndürdü — beyan **doğru** ama edim **yerine getirilmedi**. `S05`'in döne
 
 **17 ✅ · 3 kusur:** `S06` liste niyeti · `T6` dönem daraltma · **`T8` uydurma ölçü adı**.
 ⊙ Ve **kendi test hatam** on beşinci kez çıktı (`thread_id` ≠ çapa).
+
+## 🔬 ÜÇ KUSURUN KÖKÜ — ÖLÇÜLDÜ *(düzeltme öncesi)*
+
+### ① `S06` liste niyeti — **kod var, bayrak `beta`, ve REDDİ BİLİNÇLİ**
+
+`cube_router.liste_niyeti` (`:4122`) **var** ve `niyet.py:315` onu çağırıyor; bayrak
+`features.yml:533` **`beta`**. Tasarım notu kararı açıkça yazıyor:
+
+> *«**YALNIZ gerçek bir boyut eşleştiğinde** — yoksa döküm isteyene **DEJENERE TEK
+> TOPLAM** dönerdi (sessiz-yanlış).»*
+
+Ve `features.py:618`'de bir **yazılı `on` şartı** var: *«dejenere tek-toplam vakası
+korpusta **0** olmalı»*.
+
+🔴 **Yani red bir kusur değil, bir KORUMA** — ama koruma **yarım**: sistem *«kırılım
+veremem»* deyip **duruyor**, oysa istenen kırılım değil **satırların kendisi**
+(`TUR_LISTE` = *«satır dökümü»*). ㊸ Gerçek boşluk şu: **ham satır dökümü için bir yol
+yok**; `liste_niyeti` listeyi bir **kırılıma çevirmeye** çalışıyor, çeviremeyince
+cevapsız kalıyor. *Bir korumayı, koruduğu şeyin yerine geçirmek onu bir engele çevirir.*
+
+### ② `T6` *«sadece son 3 ayı»* — **beyan var, edim yok** (`uyum.py:1387`)
+
+```python
+if re.search(r"\b(sadece|yalniz|yalnizca|only|just)\b", qn) and not any(...):
+    "**sadece …** dedin ama sorguya bir kısıtlama taşıyamadım — sayı **tüm**…"
+```
+
+Beyan **doğru kurulmuş** ve öneri bile veriyor (*«sadece Siyah renk»* gibi bir **değer**
+yaz). ⚠ Ama *«son 3 ay»* bir **değer** değil bir **dönem**dir ve `S05` kanıtladı ki dönem
+ifadeleri **çözülebiliyor** (orada *«son 12 ay»* varsayıldı ve chip'ler üretildi).
+🔴 **Kök: `sadece` dalı dönem eksenini hiç denemiyor** — kısıtlamayı yalnız **boyut
+değeri** olarak arıyor. 🆑 Cevapsız bırakılan şey **çözülebilir** bir şeydi.
+
+### ③ `T8` *«2019 cirosu»* — **veri aralığı ÖLÇÜLEBİLİYOR ama kapsam SINANMIYOR**
+
+`app/veri_araligi.py` **var** ve `donem_capasi.py:242` onu kullanıyor:
+*«aralık `veri_araligi.aralik` ile ölçülür»*. Yani sistem *«elimdeki veri 06.2025–06.2026»*
+diyebilecek durumda.
+
+🔴 **Ama `cube_router`'da dönem için bir KAPSAM SINAMASI yok** (ölçüldü: `kapsam` +
+tarih/dönem eşleşmesi **0**). Sonuç zinciri:
+`2019 çözülür → katalogda karşılığı yok → route çekilir → Discovery → ad UYDURULUR`
+(`toplam_ciro_2019`).
+
+⚠ **Doğru desen aynı turda mevcut:** `T7` *«enerji bu küpte yok»* diye **beyan ediyor**.
+`T8` için karşılığı: *«2019 verisi **yok** — elimdeki aralık 06.2025–06.2026»*.
+🆑 Uydurmak, cevapsız bırakmaktan da kötüdür — çünkü **sessiz-yanlıştır**: sayı bir
+kaynağa dayanıyormuş gibi görünür.
+
+## ⏭ DÜZELTME SIRASI *(toplu — arada kapı YOK)*
+
+| # | iş | dokunulacak | risk |
+|---|---|---|---|
+| ③ | dönem **kapsam dışıysa** Discovery'ye düşmeden **beyan et** | `cube_router` dönem dalı + `veri_araligi` | 🔴 en yüksek değer, `§38.4` sınırı |
+| ② | `sadece` dalı **dönem eksenini** de denesin | `uyum.py:1387` | orta |
+| ① | ham **satır dökümü** yolu (kırılıma çevirmeden) | `liste_niyeti` çevresi | ⚠ `on_sarti` yazılı — dikkat |
