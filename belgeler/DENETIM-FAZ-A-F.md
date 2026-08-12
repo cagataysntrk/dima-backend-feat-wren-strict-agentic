@@ -42,10 +42,10 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 | **②** | `mcp._arindir` — köken zarfının sınırı **yeniden kurulabiliyor** (prompt-injection sınırı kırık) | 🔴 **GÜVENLİK** | ✅ **KAPANDI** *(sabit-nokta `re.sub` + `[sınır]`; 4 saldırı biçiminde 1/1; kapı vektörü çiftlendi, mutasyonlu)* |
 | **③** | `kok_neden.toplam_turu` — *«toplamın %P'ini taşıyor»* derken payda **mutlak değerler toplamı**; karışık işaretli ölçüde **12 kat yanlış + işaret ters** | 🔴 **SESSİZ-YANLIŞ (yayında)** | ✅ **KAPANDI** *(net-tabanlı pay + %100 tavanı + işaretli akran; eşik `contribution` ile tek sahipli; kapı 5, mutasyonlu)* |
 | **④** | `test_a10_saglamlik_farki` — `a.get("cube")` daima `None`; kapı **iki farklı küpü bile** eşit sayıyordu | 🔴 **SAHTE YEŞİL** | ✅ **KAPANDI** *(bugün · 10 geçti · 0 atlandı)* |
-| **⑤** | `test_view_fanout_guard` — **9 view'ın 1'ini** görüyor; `karlilik_src`'nin 2 `LEFT JOIN`'i korunmasız | 🔴 **KÖR KAPI** | 🔵 bekliyor |
-| **⑥** | `kirpilan_esik_yuzde` ön-uçta `*100` → ekranda *«eşiğin altında (|pay| < **%100.0**)»* | 🔴 **BİRİM HATASI (kullanıcıya görünür)** | 🔵 bekliyor |
+| **⑤** | `test_view_fanout_guard` — **9 view'ın 1'ini** görüyor; `karlilik_src`'nin 2 `LEFT JOIN`'i korunmasız | 🔴 **KÖR KAPI** | ✅ **KAPANDI** *(kapsam 9 view/4 kiracı · davranışsal 2 + beyanlı 7 · payda kilidi; mutasyonlu)* |
+| **⑥** | `kirpilan_esik_yuzde` ön-uçta `*100` → ekranda *«eşiğin altında (|pay| < **%100.0**)»* | 🔴 **BİRİM HATASI (kullanıcıya görünür)** | ✅ **KAPANDI** *(`*100` kaldırıldı · PVM dalı eşiği yazıyor · `kirpilan_pay_yuzde` kütle beyanı; mutasyonlu)* |
 | **⑦** | `test_kimlik_uzayi_tek_anlamli` — deseni `**`'ta duruyor, **`D6` ve `D10` çakışmalarını kaçırıyor**; taban kapısı 62 sayıp yeşil kalıyor | 🔴 **KÖR KAPI (bugün yazdığım)** | ✅ **KAPANDI** *(desen genişledi 62→68 kimlik · TR büyük harf katlaması · `D6`+`D10` haritaya · yeni sayı kapısı; mutasyonlu)* |
-| **⑧** | `test_c3…:152` · ~~`test_a15…:71`~~ · `test_arsivlenmis…:135` — kendi metnini ölçüyor | 🔴 **DEKORATİF KAPI** | ◐ **A15 KAPANDI**, C3 ve F1 bekliyor |
+| **⑧** | `test_c3…:152` · ~~`test_a15…:71`~~ · `test_arsivlenmis…:135` — kendi metnini ölçüyor | 🔴 **DEKORATİF KAPI** | ✅ **ÜÇÜ DE KAPANDI** *(A15 · C3③ · F1 tautolojisi — sonuncusunda mutasyon hangi yüklemin yük taşıdığını gösterdi)* |
 
 ---
 
