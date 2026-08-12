@@ -235,3 +235,108 @@ def test_YAZMA_ARACLARININ_GIRDI_BEYANI_HALA_UYUMSUZ():
             "araçlar gerçekten çağrılabilir hâle gelmiş. O hâlde tek koruma "
             "`_onay_kapisi`dir: `FAZ H` adaptörleriyle birlikte onay akışının uçtan uca "
             "canlı olduğunu doğrulayın ve bu kaydı GÜNCELLEYİN.")
+
+# --- ⟳ ARAÇ ↔ EYLEM BAĞLAMASI (2026-08-12) — `§C1`'in ikinci vakası kapandı ---------
+
+def test_HER_YAZMA_ARACININ_ONAY_YOLU_VAR():
+    """🔴 **Onay yolu olmayan bir öneri, bir öneri değil bir çıkmazdır.**
+
+    Ajan bir yazma aracı önerebiliyorsa, kullanıcı onu **onaylayabilmelidir**.
+    `/ask/eylem` kaydı (`EYLEM_KAYIT`) fail-closed'dır: kayıtta olmayan bir eylem
+    **400** döner. Yani araç kaydında olup eylem kaydında olmayan bir kalem, kullanıcıyı
+    onaylayamayacağı bir öneriyle baş başa bırakırdı.
+
+    ⊙ Ölçüldü (2026-08-12): `measures.approve` tam olarak buydu → **kayıttan çıkarıldı**,
+    gerekçesi `yazma_araclari.py`'de yazılı.
+    """
+    from app import eylem as _e
+    from tests.kapi_ortak import yazma_araclari_acik
+
+    with yazma_araclari_acik() as tools:
+        from app.yazma_araclari import ARAC_EYLEM
+
+        yazanlar = {a.ad for a in tools.KAYIT if a.yan_etki != "yok"}
+        assert yazanlar, "⊘ ölçüm tabanı çöktü: bayrak açıkken yazan araç yok"
+        eksik = sorted(yazanlar - set(ARAC_EYLEM))
+        assert not eksik, (
+            f"🔴 onay yolu OLMAYAN yazma aracı: {eksik}. Ya `ARAC_EYLEM`'e bir eylem "
+            "bağla ya kayıttan çıkar — üçüncü seçenek, kullanıcının onaylayamayacağı "
+            "bir öneridir.")
+        for arac_adi, eylem_adi in ARAC_EYLEM.items():
+            _e.beyan(eylem_adi)          # fail-closed: yoksa KeyError
+
+
+def test_TURETILEN_ALANLAR_EYLEMLE_BAYT_BAYT_AYNI():
+    """🔴 `KAT-1` — `izin`/`modul`/`fonksiyon`ın **tek sahibi** `app/eylem.py`.
+
+    Bu üç alan önce iki yerde ayrı ayrı yazılıydı ve bugün **tutarlıydılar**; ama iki
+    sahip ayrışır. Türetme sonrası değerler elle yazılmış hâlleriyle **birebir aynı**
+    çıkıyor (ölçüldü: `query:run` · `app.routers.dashboards` · `add_widget`) — yani
+    `KURAL B`: davranış değişmedi, **sahip** değişti.
+    """
+    from app import eylem as _e
+    from tests.kapi_ortak import yazma_araclari_acik
+
+    with yazma_araclari_acik() as tools:
+        from app.yazma_araclari import ARAC_EYLEM
+
+        for a in tools.KAYIT:
+            if a.yan_etki == "yok":
+                continue
+            b = _e.beyan(ARAC_EYLEM[a.ad])
+            modul, _, fonksiyon = b.uc.rpartition(".")
+            assert a.izin == b.izin, f"{a.ad}: izin ayrıştı ({a.izin} ≠ {b.izin})"
+            assert a.modul == f"app.routers.{modul}", f"{a.ad}: modül ayrıştı"
+            assert a.fonksiyon == fonksiyon, f"{a.ad}: fonksiyon ayrıştı"
+
+
+def test_GERI_ALINABILIRLIK_iki_kayitta_CELISMEZ():
+    """`geri_alinabilir` (eylem, bool) ↔ `geri_alma_ref` (araç, yol) **aynı olgudur**.
+
+    ⚠ Türetilmedi çünkü araç tarafı **daha fazlasını** taşıyor (geri alma YOLU); ama
+    çelişmeleri bir kapıyla yasak. *İki kodlamayı birleştiremiyorsan, en azından
+    ayrışmalarını duyulur yap.*
+    """
+    from app import eylem as _e
+    from tests.kapi_ortak import yazma_araclari_acik
+
+    with yazma_araclari_acik() as tools:
+        from app.yazma_araclari import ARAC_EYLEM
+
+        for a in tools.KAYIT:
+            if a.yan_etki == "yok":
+                continue
+            b = _e.beyan(ARAC_EYLEM[a.ad])
+            assert bool(a.geri_alma_ref) == b.geri_alinabilir, (
+                f"{a.ad}: geri alınabilirlik ÇELİŞİYOR — araç "
+                f"{a.geri_alma_ref!r}, eylem {b.geri_alinabilir}")
+
+
+def test_IMPORT_SIRASI_DAIRESEL_DEGIL():
+    """⚠ Ölçüldü: bayrak açıkken `yazma_araclari`'yı `tools`'tan **önce** almak
+    `ImportError: partially initialized` veriyordu. Uygulama yolunda `tools` önce
+    geldiği için görünmüyordu.
+
+    *Yalnız bir sıralama sayesinde çalışan bir şey, çalışmıyor demektir; henüz sırası
+    gelmemiştir.*
+    """
+    import subprocess
+    import sys
+
+    kod = ("from app.yazma_araclari import YAZMA_KAYIT\n"
+           "from app import tools\n"
+           "assert len(YAZMA_KAYIT) >= 1 and len(tools.KAYIT) > len(YAZMA_KAYIT)\n")
+    r = subprocess.run([sys.executable, "-c", kod], capture_output=True, text=True,
+                       env={"PATH": "/usr/bin:/bin", "DIMA_YAZMA_ARACLARI": "on",
+                            "DIMA_VQR_EMBEDDER": "off", "PYTHONPATH": "/app"},
+                       cwd="/app")
+    assert r.returncode == 0, (
+        "🔴 dairesel import geri geldi (`yazma_araclari` önce):\n" + r.stderr[-600:])
+
+
+def test_KURAL_B_bayrak_kapaliyken_KAYIT_DEGISMEDI():
+    """Bağlama bir **sahip** değişikliğidir, bir davranış değişikliği değil."""
+    from app import tools
+
+    assert all(a.yan_etki == "yok" for a in tools.KAYIT), (
+        "bayrak kapalıyken kayda yazan araç girmiş — `KURAL B` ihlali")

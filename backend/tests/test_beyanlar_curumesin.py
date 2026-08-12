@@ -569,9 +569,24 @@ def test_TERS_TUZAK_FAZ_6_2_YAZMA_ARACLARI_AYAKTA():
     from app.yazma_araclari import YAZMA_KAYIT, geri_alinamaz_olanlar
 
     assert (APP / "yazma_araclari.py").exists(), "🔴 FAZ 6.2 GERİ ALINDI."
-    assert {a.ad for a in YAZMA_KAYIT} == {"dashboards.create", "schedules.create",
-                                           "measures.approve"}
+    # ⟳ **`measures.approve` KAYITTAN ÇIKTI (2026-08-12) — ve bu bir karardır.**
+    #
+    # `/ask/eylem`'in kaydında (`EYLEM_KAYIT`) karşılığı **yok** ve o kayıt fail-closed
+    # (`beyan()` → 400). Yani ajan onu önerse **kullanıcı onaylayamazdı**.
+    # *Onay yolu olmayan bir öneri, bir öneri değil bir çıkmazdır.*
+    #
+    # ⚠ Eklenmesi `EYLEM_KAYIT`'a yeni bir eylem yazmayı gerektirir ve o, `/ask/eylem`'in
+    # **kabul kümesini** değiştirir — ayrı bir karar, ayrı bir ölçüm. Ölçüsü de yazılı:
+    # `measure:approve` bir ölçüyü **kataloğa** alır, kapsamı bir panodan geniştir.
+    assert {a.ad for a in YAZMA_KAYIT} == {"dashboards.create", "schedules.create"}
     assert all(a.yan_etki == "yazar" for a in YAZMA_KAYIT)
+    # 🔴 Ve kaydın **tamamının** onay yolu olmalı — iki kayıt birbirine bağlandı
+    # (`ARAC_EYLEM`, `§C1`'in ikinci vakası). Bu satır, listenin bir gün yeniden
+    # büyümesi hâlinde çıkmaz bir öneriyi **doğduğu anda** yakalar.
+    from app import eylem as _eylem
+    from app.yazma_araclari import ARAC_EYLEM
+    for a in YAZMA_KAYIT:
+        _eylem.beyan(ARAC_EYLEM[a.ad])          # fail-closed: yoksa KeyError
 
     # 🔴 GERİ ALINAMAZLIK GİZLENMİYOR.
     assert geri_alinamaz_olanlar() == ["schedules.create"], (

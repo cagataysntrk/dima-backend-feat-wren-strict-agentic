@@ -36,14 +36,78 @@ kullanıcıya **gösterir**.
 
 from __future__ import annotations
 
-from app.tools import Arac
+from typing import TYPE_CHECKING
 
-#: 🔴 `yan_etki="yazar"` ile kayda giren **ilk** araçlar. Üçü de:
-#:   · `izin` — `authorize()` matrisinde **var olan** bir aksiyon (yeni izin icat YOK),
-#:   · `geri_alma_ref` — geri alınabilirse **yolu**, değilse `None` (**açıkça**),
-#:   · `notlar` — *ne zaman KULLANILMAZ* (6.3'ün dört bileşenli `ozet` disiplininin
-#:     habercisi; yanlış-araç-seçimi karşı önlemi).
-YAZMA_KAYIT: tuple[Arac, ...] = (
+if TYPE_CHECKING:                                  # pragma: no cover
+    from app.tools import Arac
+
+#: 🔴🔴 **ARAÇ ↔ EYLEM BAĞLAMASI** *(`§F13` açık yarısı, 2026-08-12)*.
+#:
+#: ## Ölçülen kusur — `§C1`'in İKİNCİ VAKASI
+#:
+#: Aynı üç yazma işi **iki kayıtta** ayrı ayrı beyan ediliyordu ve ad örtüşmesi
+#: **SIFIR**dı:
+#:
+#:     EYLEM_KAYIT (`/ask/eylem`, ÇALIŞAN onay yolu)
+#:         pano.ekle · zamanla.olustur · tercih.kaydet     [alanlar: izin · uc · geri_alinabilir]
+#:     YAZMA_KAYIT (ajanın araç kaydı)
+#:         dashboards.create · schedules.create · measures.approve
+#:
+#: Ve **aynı gerçekler iki kez** yazılıydı: `pano.ekle.uc = "dashboards.add_widget"`
+#: ile aracın `modul="app.routers.dashboards"` + `fonksiyon="add_widget"`'i **aynı
+#: hedefi** gösteriyordu; `geri_alinabilir=True` ile `geri_alma_ref="…remove_widget"`
+#: **aynı olguyu**. Bugün tutarlılar — ama iki sahip **ayrışır**, ve bu deponun bir
+#: numaralı kusur sınıfı tam olarak budur (`KAT-1`).
+#:
+#: ⊙ Ve *«aranan adaptör»* zaten oradaydı: `EylemBeyani.uc`. `FAZ H` bir **yeni katman**
+#: değil, bir **bağlama** işiydi.
+#:
+#: ## Kural: eylemi olan araç ondan TÜRER
+#:
+#: `izin` · `modul` · `fonksiyon` · `geri_alma_ref` artık **eylem beyanından** okunur.
+#: Araca özgü kalan tek şey **anlatım**dır (`ozet` · `girdi` · `notlar`) — yani LLM'e
+#: *ne zaman kullanılır / kullanılmaz* diyen kısım.
+#:
+#: 🔴 `KURAL B`: bayrak kapalıyken kayıt bugünküyle **birebir aynı** (araçlar hiç
+#: girmez); açıkken de türetilen alanlar elle yazılmış değerlerle **bayt bayt** aynı
+#: çıkar — `test_f13_onayli_yazma.py` bunu kilitler.
+#:
+#: ⚠ **`measures.approve` KAYITTAN ÇIKARILDI** — ve bu bir eksiklik değil bir karar:
+#: `/ask/eylem`'in kaydında karşılığı **YOK** (`beyan()` fail-closed → 400). Yani ajan
+#: onu önerse kullanıcı **onaylayamazdı**. *Onay yolu olmayan bir öneri, bir öneri
+#: değil bir çıkmazdır.* Eklenmesi `EYLEM_KAYIT`'a yeni bir eylem yazmayı gerektirir ve
+#: o, `/ask/eylem`'in kabul kümesini değiştirir — ayrı bir karar, ayrı bir ölçüm.
+
+#: `araç adı → eylem adı`. **Kapalı** ve her kalem `EYLEM_KAYIT`'ta **var olmalı**
+#: (kapı doğrular): olmayan bir eylemi işaret eden araç, çıkmaz bir öneri üretirdi.
+ARAC_EYLEM: dict[str, str] = {
+    "dashboards.create": "pano.ekle",
+    "schedules.create": "zamanla.olustur",
+}
+
+
+def _eylemden(arac_adi: str) -> dict:
+    """Eylem beyanından türeyen alanlar — **tek sahip `app/eylem.py`**."""
+    from app import eylem as _e
+
+    b = _e.beyan(ARAC_EYLEM[arac_adi])
+    modul, _, fonksiyon = b.uc.rpartition(".")
+    return {"izin": b.izin, "modul": f"app.routers.{modul}", "fonksiyon": fonksiyon}
+
+
+def _kurul() -> tuple["Arac", ...]:
+    """Kaydı **çağrı anında** kurar.
+
+    ⚠ Modül düzeyinde `from app.tools import Arac` yazmak **dairesel import** üretiyordu
+    (ölçüldü 2026-08-12): `tools.py:643` kaydı kurarken bu modülü çağırıyor, bu modül de
+    `tools`'u import ediyordu. Uygulama yolunda `tools` önce geldiği için görünmüyordu —
+    yani kırılganlık **import sırasına** bağlıydı ve bir gün başka bir çağıran onu
+    ortaya çıkaracaktı. *Yalnız bir sıralama sayesinde çalışan bir şey, çalışmıyor
+    demektir; henüz sırası gelmemiştir.*
+    """
+    from app.tools import Arac
+
+    return (
     Arac(
         ad="dashboards.create",
         ozet="Bir raporu kullanıcının kendi panosuna widget olarak ekler. "
@@ -56,10 +120,8 @@ YAZMA_KAYIT: tuple[Arac, ...] = (
         determinizm="deterministik",
         maliyet="ucuz",
         yan_etki="yazar",
-        izin="query:run",
         makbuz=None,
-        modul="app.routers.dashboards",
-        fonksiyon="add_widget",
+        **_eylemden("dashboards.create"),
         # 🔴 GERİ ALINABİLİR: widget soft-delete ile kaldırılır (ADR-0019).
         geri_alma_ref="dashboards.remove_widget",
         notlar="Yalnız ONAY AKIŞI üzerinden çağrılabilir; doğrudan çağrı onayı bir SÜS "
@@ -80,10 +142,8 @@ YAZMA_KAYIT: tuple[Arac, ...] = (
         determinizm="deterministik",
         maliyet="ucuz",
         yan_etki="yazar",
-        izin="schedule:create",
         makbuz=None,
-        modul="app.routers.schedules",
-        fonksiyon="create_schedule",
+        **_eylemden("schedules.create"),
         # 🔴 **GERİ ALINAMAZ — ve bu GİZLENMİYOR.** Zamanlama kaydı silinebilir ama
         # gönderilmiş bir bildirim geri çekilemez: dışarıya çıkmış bir e-posta,
         # sistemin sınırının dışındadır.
@@ -93,30 +153,23 @@ YAZMA_KAYIT: tuple[Arac, ...] = (
                "söylenmemişse araç ÇAĞRILMAZ — sorulur.",
         etiketler=("yazma", "zamanlama"),
     ),
-    Arac(
-        ad="measures.approve",
-        ozet="Terfi kuyruğundaki bir ölçü adayını onaylar (kataloğa girer). "
-             "[Erişim: tenant'ın metrik kataloğu] "
-             "[Ne zaman: bir incelemeci adayı değerlendirip karar verdiğinde] "
-             "[NE ZAMAN KULLANILMAZ: ajanın kendi başına 'iyi görünüyor' demesiyle; "
-             "değerlendirilmemiş adaylar için]",
-        girdi={"candidate_id": "aday kimliği"},
-        cikti="onaylanan adayın yeni durumu",
-        determinizm="deterministik",
-        maliyet="ucuz",
-        yan_etki="yazar",
-        izin="measure:approve",
-        makbuz=None,
-        modul="app.routers.measures",
-        fonksiyon="approve_candidate",
-        # Onay geri alınabilir: aday `deprecated`e çekilir (kayıt silinmez, ADR-0019).
-        geri_alma_ref="measures.deprecate",
-        notlar="Yalnız ONAY AKIŞI üzerinden. ⚠ Bir ölçüyü kataloğa almak, onu HER "
-               "kullanıcının sorusuna açar — kapsamı bir panodan geniştir ve bu yüzden "
-               "D9'un 'kapsam içi' şartını KARŞILAMAZ: her zaman istem üretir.",
-        etiketler=("yazma", "terfi"),
-    ),
+    # ⊘ **`measures.approve` BURADA YOK — ve bu bir KARARDIR** (2026-08-12).
+    #
+    # `/ask/eylem`'in kaydında (`EYLEM_KAYIT`) karşılığı **yok**: `beyan()` fail-closed
+    # olduğu için kullanıcı onu **onaylayamaz** (400). Yani ajan onu önerse, kullanıcı
+    # önerinin karşısında hiçbir şey yapamazdı.
+    #
+    # > *Onay yolu olmayan bir öneri, bir öneri değil bir çıkmazdır.*
+    #
+    # ⚠ Ve bu bir "sonra ekleriz" değil: eklemek `EYLEM_KAYIT`'a yeni bir eylem yazmayı
+    # gerektirir ve o, `/ask/eylem`'in **kabul kümesini** değiştirir — ayrı bir karar,
+    # ayrı bir ölçüm. Ölçü de yazılı: `measure:approve` bir ölçüyü **kataloğa** alır,
+    # yani kapsamı bir panodan geniştir (aracın kendi eski notu).
 )
+
+
+#: Kayıt **çağrı anında** kurulur (dairesel import gerekçesi `_kurul`'da yazılı).
+YAZMA_KAYIT: tuple["Arac", ...] = _kurul()
 
 
 def geri_alinamaz_olanlar() -> list[str]:

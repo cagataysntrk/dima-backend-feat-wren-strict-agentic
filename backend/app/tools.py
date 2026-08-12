@@ -635,9 +635,15 @@ def _yazma_araclari() -> tuple[Arac, ...]:
     if not acik:
         return ()
 
-    from app.yazma_araclari import YAZMA_KAYIT
+    # ⚠ **TUPLE DEĞİL FONKSİYON** — dairesel import gerekçesi (ölçüldü 2026-08-12):
+    # `yazma_araclari` ÖNCE import edilirse, o modül burayı tetikler ve `YAZMA_KAYIT`
+    # henüz **atanmamıştır** (`ImportError: partially initialized`). `_kurul()` ise
+    # tanımlı olur — fonksiyon tanımları atamalardan önce çalışır. Uygulama yolunda
+    # `tools` önce geldiği için kusur görünmüyordu; yani yalnız bir **sıralama**
+    # sayesinde çalışıyordu.
+    from app import yazma_araclari as _ya
 
-    return YAZMA_KAYIT
+    return _ya._kurul()
 
 
 KAYIT = KAYIT + KAYITSIZ_OLANLAR + _yazma_araclari()
