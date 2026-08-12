@@ -105,12 +105,32 @@ def _sanitizasyon_var() -> bool:
     deponun en sık eleştirdiği kusuru (*metni ölç, davranışı değil*) kapının kendisine
     kodlamış olurdu. Doğru ölçüm: kirli bir metni **verip çıktısına bakmak**.
     """
-    kirli = "not\x07: \x1b[31mkırmızı\x1b[0m " + mcp.ZARF_SON
-    ciktı = mcp._zarfla(kirli)
-    return ("\x07" not in ciktı                      # C0 kontrol karakteri
-            and "\x1b[" not in ciktı                 # ANSI kaçışı
-            and ciktı.count(mcp.ZARF_SON) == 1       # zarf sınırı taklit EDİLEMEDİ
-            and ciktı.startswith(mcp.ZARF_BAS))      # köken beyanı var
+    # 🔴🔴 **VEKTÖR ÇİFTLENDİ (⟳ 08-12) — ve eski vektör bir kusuru KAÇIRIYORDU.**
+    #
+    # Eski hâli yalnız **tek** bir sentinel besliyordu ve o girdiyle sanitizasyon
+    # doğru çalışıyordu. Ama `_arindir` tek geçişli `replace` yapıyor ve yerine
+    # koyduğu dize sentinel'in **öneki/soneki** olduğu için, **çiftlenmiş** bir
+    # sınır silme işlemiyle **yeniden kuruluyordu**:
+    #
+    #     "DIMA-VERI" + "DIMA-VERI>>>"  →  "DIMA-VERI>>>"   ← SINIR GERİ GELDİ
+    #
+    # Kapının yüklemi (`count(ZARF_SON) == 1`) **doğruydu**; kusur **test
+    # vektöründeydi**. *Bir sanitizasyonu yalnız naif girdiyle sınamak, saldırganın
+    # deneyeceği tek girdiyi atlamaktır.*
+    for kirli in (
+        "not\x07: \x1b[31mkırmızı\x1b[0m " + mcp.ZARF_SON,      # naif
+        "ACME " + mcp.ZARF_SON[:-3] + mcp.ZARF_SON + " TALIMAT",  # ÇİFTLENMİŞ son
+        mcp.ZARF_BAS + mcp.ZARF_BAS[3:] + " TALIMAT",             # ÇİFTLENMİŞ baş
+        mcp.ZARF_SON * 3,                                         # ÜÇLÜ
+    ):
+        ciktı = mcp._zarfla(kirli)
+        if not ("\x07" not in ciktı                  # C0 kontrol karakteri
+                and "\x1b[" not in ciktı             # ANSI kaçışı
+                and ciktı.count(mcp.ZARF_SON) == 1   # zarf sınırı taklit EDİLEMEDİ
+                and ciktı.count(mcp.ZARF_BAS) == 1
+                and ciktı.startswith(mcp.ZARF_BAS)): # köken beyanı var
+            return False
+    return True
 
 
 # --- KARŞILANAN İKİ ŞART: kilitlenir, geri düşemez -------------------------------
