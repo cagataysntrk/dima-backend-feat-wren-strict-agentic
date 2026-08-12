@@ -425,6 +425,14 @@ export function ContributionLayer({
               {d.taranmayan_adlar?.length ? `: ${d.taranmayan_adlar.join(", ")}` : ""}.
             </p>
           )}
+          {d?.tarama_beyani && (
+            // 🔴 `§E3` — SEÇİM GENİŞLİĞİ. Yukarıdaki satır «neye BAKMADIM»ı söylüyor;
+            // bu satır «kaç aday arasından SEÇTİM»i. Bir «en açıklayıcı kırılım» cümlesi,
+            // arkasındaki aday sayısı bilinmeden bir güven ifadesi taşıyamaz: ikiden
+            // seçilen ile yirmiden seçilen aynı cümleyi kurar, aynı şeyi söylemez.
+            // ⚠ Backend ürettiği hâlde EKRANDA GÖRÜNMÜYORDU — demet kapısı yakaladı.
+            <p className="font-mono text-[10px] text-neutral-500">{d.tarama_beyani}</p>
+          )}
           {d && d.contract_ids.length > 0 && (
             <p className="font-mono text-[10px] text-neutral-500">
               {d.contract_ids.length} makbuz üretildi — her bulgu ayrı ayrı kanıtlanabilir.

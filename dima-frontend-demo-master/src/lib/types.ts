@@ -893,6 +893,10 @@ export interface ContributionResponse {
   // Atlananların ADLARI: bir SAYI ("3 boyut taranmadı") kullanıcıya hangi soruyu
   // sorabileceğini söylemez, ad söyler ("peki renk bazında?").
   taranmayan_adlar?: string[];
+  /** 🔴 `§E3` — SEÇİM BEYANI: *«kaç aday arasından seçildi»*. `taranmayan_adlar` bir
+   *  KAPSAM beyanıdır (*«neye bakmadım»*), bu ise bir GÜVEN beyanı — ikisi aynı soruyu
+   *  cevaplamaz ve bu yüzden ayrı alanlar. Sahibi `stats.secim_beyani` (`KAT-1`). */
+  tarama_beyani?: string | null;
   contract_ids: string[];
 }
 

@@ -904,6 +904,19 @@ MUAFIYET_ASK_KOD = [
      "niyetin doğru sınıflanıp yanlış basamağa gönderilmesiydi; kararı çağrıdan uzağa "
      "koymak aradaki her dalın yeniden aynı tuzağa düşmesine kapı açardı. "
      "⚠ Uydurma yok: yalnız bilinen olgu + ne yapılabileceği (`D4` proaktif sınır deseni)."),
+    # 🔴 `§B2` (08-12, demet kapısı ölçtü) — **TAKİP GARSONU FEW-SHOT'U GÖRMÜYORDU.**
+    # `§B.5`'te ölçülmüştü: `few_shot_block` YALNIZ Discovery'ye bağlıydı; garsonun üç
+    # yolundan ikisi **aç kalıyordu**. Onarım `ask()` gövdesinde olmak ZORUNDA: takip
+    # turunun katalog metni orada kuruluyor ve `principal`/`request` orada canlı — bir
+    # modüle çıkarmak üç parametreyi taşımak, yani AYNI kodu başka yere yazmak olurdu.
+    # ⊙ Δ ölçülerek konuldu (1444 − 1438), tahminle değil; bayrak kapalıyken satırlar
+    # **çalışmaz** ama sayılır (`KURAL B` korunur, tavan korunmaz).
+    ("b2-takip-garsonu-few-shot-goruyor", 6,
+     "🔴 `§B2` — takip garsonu `vqr_few_shot` bloğunu görmüyordu; `catalog_text` takip "
+     "yolunda few-shot'suz kuruluyordu. Onarım `ask()` içinde: `principal` + `request` + "
+     "`body.question` üçü de orada canlı, modüle çıkarmak üçünü taşımak demekti. "
+     "⚠ Bu bir DAVRANIŞ eklemesi değil, ÖLÇÜLMÜŞ bir eksiğin kapatılması — garsonun "
+     "üçüncü yolu da artık ötekilerle aynı istemi görüyor."),
     ("v1-makbuz-sorusu-8-konusma-turu", 31,
      "🔴🔴 **SİSTEM CEVABI ÜRETİYOR AMA ONA ULAŞAN KAPI YOKTU — üç kanıt.** "
      "`u2` *«bu nasıl hesaplandı?»* → dürüst ret · `V2` *«bu rakama neler dahil, nasıl "
@@ -1505,6 +1518,20 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    # 🔴 `§C2` (08-12) — **`ask()` DIŞINDA, MODÜL DÜZEYİNDE: bir tavan İLAN EDİLDİ.**
+    # `_prompt_enhance_dene`'nin planlayıcısı `sorgu=0` ile kuruluyordu; kardeşinden
+    # (`answer.py`) farkı buraya `servis:wren`'in **veriliyor** olması, yani bu
+    # planlayıcı sorgu **koşabiliyordu**. `adim=3` onu pratikte sınırlıyordu — ama
+    # 🅥 *bir tavanın pratikte var olması, ilan edilmiş olması demek değildir*.
+    # Tavan adım sayısına eşitlendi: **davranış aynı**, sınır artık **yazılı**.
+    # ⊙ Δ ölçüldü (2875 − 2873), tahmin değil.
+    ("c2-prompt-enhance-butcesi-ilan-edildi", 2,
+     "🔴 `§C2` — `_prompt_enhance_dene` planlayıcısı `sorgu=0` (SINIRSIZ eksen) ile "
+     "kuruluyordu ve bu uçta `servis:wren` VERİLDİĞİ için sorgu koşabiliyordu. Tavan "
+     "`adim`'e eşitlendi (`Butce(adim=3, saniye=10.0, sorgu=3)`): davranış birebir aynı "
+     "(3 adım zaten 3 sorgudan fazlasını koşamaz), ama sınır artık **ilan edilmiş**. "
+     "⚠ `ask()` GÖVDESİNE dokunmaz — bu satırlar modül düzeyinde, o yüzden dosya "
+     "toplamında ayrı kalem. `sha=fe2f679`"),
     ("aa2-red-yaninda-rapor-dosya", 6,
      "🔴 `§AA2`'nin dosya-toplamı payı — `ask()` muafiyetinin aynısı ve **aynı "
      "gerekçeyle**: gövde `contribution.yanindaki_rapor`'a taşındı, burada yalnız çağrı "
