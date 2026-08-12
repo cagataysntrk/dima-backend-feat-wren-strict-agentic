@@ -54,7 +54,7 @@ kapanmaz. Dört ayrı çalışma aynı yönü gösteriyor (+17…+72 puan).
 | **2** | 🔴 **Ters yatırım.** Makineye Türkçe öğretmeye 9.468 satır; trafiğin daha büyük kısmını taşıyan hakeme 45 satır | route **%35,5** · garson **%37,0** | O model (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft'ta Aralık 2026'da, Tableau'da Şubat 2024'te kaldırıldı** |
 | **3** | 🔴 **Motorun yüzeyi taranmamış.** `wren_core` **15 sembol** açıyor, **1'ini** kullanıyoruz | `rls.py` 380 · `dataset.py` 161 · manifest ~1.490 satır **yeniden yazılmış**; `ManifestExtractor.extract_by` (**şema daraltma**) hiç kullanılmamış | Şema bağlama hatası kurumsal ölçekte hataların **%27,6–33,0'ı** |
 | **4** | 🔴 **Kök-neden yarım.** Layer-1'de kilitli (bileşik segment aranmıyor), **sürpriz (JS diverjansı) hesaplanmıyor**, **FDR düzeltmesi yok** | `§KN-toplam` **en büyük segmenti** seçiyor | Adtributor'ın kurucu örneği: *«yalnız explanatory power kullanan her analiz **büyük segmentleri sistematik olarak suçlar**»*. Ve **CHI 2018: kullanıcı içgörülerinin %60'ından fazlası yanlış** |
-| **5** | 🔴 **Cevap tek kalıpta.** Ölçüldü: 8 farklı soru türünde chip sayısı **6,6,5,6,6,4,6,3**; olgu sayısı **hep 1-2**; **hiçbir cevapta çoklu grafik yok** | *«robotik / katalog gibi»* şikâyetinin sayısal karşılığı | Tableau Pulse **14 deterministik içgörü tipi** üretip **LLM'e yalnız cümleyi** kurduruyor |
+| **5** | 🔴 **Cevap tek kalıpta.** Ölçüldü: 8 farklı soru türünde chip sayısı **6,6,5,6,6,4,6,3** *(⟳08-12 yeniden ölçüldü: **6,6,6,6,5,6,6,5** — `bicim.py:14` kaydediyor; teşhis **güçlendi**, dizi daha da sabitleşti)*; olgu sayısı **hep 1-2**; **hiçbir cevapta çoklu grafik yok** | *«robotik / katalog gibi»* şikâyetinin sayısal karşılığı | Tableau Pulse **14 deterministik içgörü tipi** üretip **LLM'e yalnız cümleyi** kurduruyor |
 
 ### 0.3 Rakipler «mükemmel» değil — ölçümle
 
@@ -758,6 +758,34 @@ Intl.NumberFormat("tr-TR",{notation:"compact"}).format(1234567890) → "1,2 Mr"
 ⊙ Bizim `app/sayi_bicimi.py`'miz bu oturumda tam da bu yüzden doğdu (beş ayrı
 biçimlendirici bulunmuştu). Ama **ön-uç tarafı (ECharts/Vega) ölçülmedi** — açık borç.
 
+> ⟳✅ **ÖN-UÇ BORCU KAPANDI — ÖLÇÜLDÜ (2026-08-12).** İki bölüm (`§9.5` · `§12.5`)
+> *«ön-uç tarafı ölçülmedi, açık borç»* diyordu. Ölçüm:
+>
+> | soru | ölçüm |
+> |---|---|
+> | grafik kütüphanesi | **ECharts `^6.1.0`** — 4 dosya (`EChart.tsx`·`chart.ts`·`export.ts`·`KpiCard.tsx`) |
+> | `d3` · `d3-format` · `vega` · `vega-lite` | ⊘ **HİÇBİRİ YOK** — ne bağımlılık ne import |
+> | `Intl.NumberFormat("tr-TR")` | ✅ **2 dosya · 4 çağrı** (`lib/format.ts` · `KpiCard.tsx`) |
+> | `toLocaleString` | ✅ **5 kullanım, 5'i de `"tr-TR"` açık** — varsayılan locale'e düşen **yok** |
+>
+> ⊘ **`d3-format`'ta `tr-TR` locale'i yok» tuzağı KONU DIŞI** — o kütüphane bu üründe
+> kullanılmıyor. *Bir riski taşımayan bir mimariyi o riskle eleştirmek, çözdüğü sorunu
+> göremeden onu değiştirmeye çalışmaktır.*
+>
+> 🔴 **AMA ÖLÇÜM BAŞKA BİR ŞEY BULDU — ve tam bu kartın uyardığı şey:** Türkçe sayı
+> biçiminin **İKİ SAHİBİ** var. `src/lib/format.ts` (`fmtValue`/`fmtAxis`, **5 tüketici**)
+> ve `src/components/KpiCard.tsx` — ve `KpiCard` `lib/format`'ı **içe almıyor**, kendi
+> `Intl.NumberFormat("tr-TR", {maximumFractionDigits: 2})`'ini yazıyor. Bugün ikisi aynı
+> sonucu veriyor; ayrılmaları için birinde `maximumFractionDigits` değişmesi yeter.
+>
+> ⏸ **KARAR: ŞİMDİ BİRLEŞTİRİLMİYOR, ŞARTIYLA.** `fmtValue(v, col)` bir **sütun** alıp
+> birim çözüyor; `KpiCard`'ın çağrısında sütun **yok**. Yani birleştirme bir imza
+> değişikliğidir, bir `import` değil — ve ön-uçta bu turda **kapı yok**, yani `KURAL B`
+> ölçülemez. ⊘ Şart: ön-uç birim kapısı kurulduğu gün (`§9.5`'in kendi kalemi) bu
+> ikizlik **aynı demette** kapatılır. *Bir kopyayı kapı olmadan birleştirmek, iki doğru
+> yerine bir ölçülmemiş doğru bırakır.*
+
+
 ## 10 · KÖK-NEDEN — rakip algoritmalar ve bizim konumumuz
 
 ### 10.1 Önce ayrım: iki farklı soru
@@ -1075,6 +1103,7 @@ Ve muhtemelen `cube_router.py`'nin bir kısmı ↔ `wren cube query`.
 Bu oturumda ölçüldü: `contribution._b3` · `interpret` ×6 · `prescribe` ×2 ·
 `plan_tuketici._b` · `kok_neden._sayi`. Beşi de ayrışmıştı (`%83.4'i` ↔ `%83,4'ü`).
 ⚠ Ve **ön-uç tarafı hâlâ ölçülmedi**: `d3-format`'ta **`tr-TR` locale'i yok**.
+> ⟳ **08-12: ölçüldü — `§9.5`'e bakın.** Özetle: `d3-format` **kullanılmıyor** (tuzak konu dışı), locale **her yerde açık `tr-TR`**, ama bu kartın uyardığı **ikizlik** ön-uçta **gerçekten var**: `lib/format.ts` ↔ `KpiCard.tsx`.
 
 ### 12.6 🔴 Ölçmeden koruma eklemek
 `§KA`'nın kapısına iki kez daraltma koydum, ikisi de **düzeltmemi sessizce iptal etti**
@@ -1136,7 +1165,7 @@ Bu raporun en tekrar eden bulgusu bir kusur değil, bir **desen**:
 | 2 | `tools.py`'nin **25 aracı** | `agent_plan_secimi: off` · `mcp_yuzeyi: off` → **ikisi de kapalı** |
 | 3 | `interpret.py`'nin **11 olgu üreticisi** | canlıda **1-2** ateşliyor |
 | 4 | `plan_semasi`'nin **15 fiili** ↔ `tools.py` | **%73 örtüşüyor**, biri uykuda |
-| 5 | 🔴 **`vqr.few_shot_block()`** | **yazılmış, çalışıyor** — ama **Discovery'ye (%1,7)** bağlı, **garsona (%37)** değil |
+| 5 | ⟳✅ **`vqr.few_shot_block()`** | *(o günün ölçümü: yalnız Discovery'ye bağlıydı)* — 🔴 **BU SATIR BAYATTI, ⟳08-12 düzeltildi:** garsona **bağlandı** ve aynı belge bunu iki yerde yazıyor (`§0.6` satır 16 · `§38.1`). Ölçüm: `few_shot_block` çağrı yerleri **`vqr.py` 6 · `routers/ask.py` 4 · `features.py` 1** — Discovery'ye özel değil. *㊿ deseni: özet güncellendi, KAYNAK BÖLÜM güncellenmedi* |
 
 ⊙ **Toplam:** ürünün en pahalı yetenekleri **zaten yazılmış**; eksik olan **kablolama**.
 Ve §16.4'ün *«açıkça boşa giden ~2.000 satır»* rakamı bu ışıkta **yeniden okunmalı**:
@@ -1658,7 +1687,7 @@ Sekiz farklı soru türü, canlı:
 
 **Dört ölçülmüş kusur:**
 
-1. 🔴 **Chip sayısı neredeyse sabit: 6,6,5,6,6,4,6,3.** Soru ne olursa olsun aynı boyda
+1. 🔴 **Chip sayısı neredeyse sabit: 6,6,5,6,6,4,6,3** *(⟳08-12: **6,6,6,6,5,6,6,5**)*. Soru ne olursa olsun aynı boyda
    bir öneri şeridi. *Katalog hissinin birinci kaynağı budur* — mobilya her cevapta aynı.
 2. 🔴 **Olgu sayısı hep 1-2.** Cevabın **derinliği soruya göre değişmiyor**. Tableau
    Pulse'un **14 içgörü tipi** üretip duruma göre seçmesiyle kıyaslanınca fark buradan
