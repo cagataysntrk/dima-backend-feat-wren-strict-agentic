@@ -429,6 +429,23 @@ GARSON_TOPLUDA_YOK = "garson"
 #:     python lab/kapi.py --tam --sadece eval_llm   # faz sonu, gerçek sağlayıcıyla
 TOPLUDA_YOK = ("garson", "eval_llm")
 
+#: ⟳ **② ÖLÇÜLDÜ (2026-08-12) — «konuşma senaryoları adımı ⊘ ölçülemez» YANLIŞTI.**
+#:
+#: Adım koşuldu: **9 sınıf, hepsi yeşil, ratchet'li** (`--kapi`, çıkış kodu 0). ⊘ olan
+#: adımın kendisi değil, içindeki **tek vaka**: `vqr_kalicilik` (0/1, taban 0).
+#:
+#: Ve o ⊘ **doğru** bir işarettir, bir eksiklik değil: VQR yalnız `intent_source ==
+#: "cube+llm"` yolunda öğrenir (`ask.py`; Faz 2b-2'nin ölçülmüş kararı — deterministik
+#: bir cevabı dondurmak kazanç getirmez). LLM'siz CI modunda replay **yapısal olarak**
+#: doğamaz. Eski sürüm bunu *«parafraz replay YOK ✅»* diye raporluyordu — ölçmediğini
+#: ölçmüş gibi; FAZ 9.6 onu üçüncü bir duruma (`None` = ÖLÇÜLEMEDİ) çevirdi.
+#:
+#: ⊙ Ölçülebilir hâle gelmesinin tek yolu `--live` + gerçek sağlayıcıdır ve o **`A1`**
+#: kalemidir — kullanıcının bağlayıcı kuralıyla **PARK** (*«ölçüm/altyapı tesisatı ürün
+#: değildir»*). Yani ② bir borç değil, park edilmiş bir kalemin **gölgesidir**.
+#:
+#: *Bir ⊘ işaretini bir borç sanmak, dürüstlüğü bir eksiklik saymaktır.*
+
 #: 🔴 **YEREL DEMET KAPISI = KORPUS + GERÇEK-DÜNYA** (2026-08-05'te ikinciyle genişledi).
 #:
 #: ## Neden ikinci bir korpus adımı — ve neden yereldeki tek ekleme bu

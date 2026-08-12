@@ -182,8 +182,33 @@ def test_YAZMA_ARACLARININ_GIRDI_BEYANI_HALA_UYUMSUZ():
     tutmuyor (`add_widget(request, did, body, session)`). Yani araçlar bugün **onay
     bileti verilse bile** koşamaz.
 
-    🔴 Bu bir kusur değil bir **kapsam**: aradaki adaptör (FastAPI el sıkışmasından
-    arındırılmış çağrılabilir bir yüzey) `FAZ H`'nin işidir ve bu turda **yapılmadı**.
+    🔴 ⟳ **KÖK NEDEN ÖLÇÜLDÜ (2026-08-12) — ve «adaptör yaz» YANLIŞ TEŞHİSTİ.**
+
+    İlk kayıt *«aradaki adaptör `FAZ H`'nin işidir»* diyordu. Ölçüm başka bir şey
+    gösterdi: **adaptör zaten var**, yalnız araç kaydı ona bağlı değil.
+
+        EYLEM_KAYIT (çalışan onay yolu, `/ask/eylem`)
+            pano.ekle · tercih.kaydet · zamanla.olustur      ← alanları: ad·izin·**uc**·…
+        YAZMA_KAYIT (ajanın araç kaydı)
+            dashboards.create · measures.approve · schedules.create
+        AD ÖRTÜŞMESİ: **SIFIR**
+
+    ⊙ `EylemBeyani.uc` tam olarak *«bu eylem hangi uçtan koşar»*ı taşıyor — yani
+    aranan adaptör odur. `YAZMA_KAYIT` ise `modul`+`fonksiyon` ile **FastAPI rota
+    işleyicisine** işaret ediyor (`add_widget(request, did, body, session)`) ve o
+    imza `Depends`/`Request` istediği için hiçbir zaman doğrudan çağrılamaz.
+
+    🔴 Ve iki kayıt **aynı kümeyi bile kapsamıyor**: `measures.approve`'ın eylem
+    karşılığı yok, `tercih.kaydet`'in araç karşılığı yok. İkisi ayrı ayrı büyüyor.
+
+    ⚠ Bu, `§C1`'in (fiil kaydı ↔ araç kaydı, örtüşme **sıfır**) **ikinci vakasıdır** —
+    aynı desen, bu kez yazma tarafında. *Bir ilkenin (KAT-1) ihlali bir kez ölçülünce,
+    ikinci vakası aranmalıdır; çünkü sınıfı olan bir kusurun tek örneği olmaz.*
+
+    ⊙ **Doğru iş** artık adıyla yazılı: yeni bir adaptör katmanı DEĞİL, `YAZMA_KAYIT`'ı
+    `EYLEM_KAYIT`'a **bağlamak** (araç `uc`u beyan etsin ya da doğrudan eylem adını
+    taşısın) — ve `KURAL B`: bugünkü `/ask/eylem` davranışı bayt bayt aynı kalmalı.
+
     Bu test onu **gizlemiyor**: uyumsuzluk giderildiği gün kırılır ve o gün onay
     kapısının gerçekten tek koruma olduğu hatırlanır.
 
