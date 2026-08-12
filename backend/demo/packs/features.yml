@@ -79,7 +79,7 @@ features:
   #
   # 🔴 `on` ŞARTI (gözlenebilir): canlı `GET /connections/{cid}/ossie` **200** dönmeli ve
   # gövdesinde `datasets` ≥ 1 + en az bir `ai_context` bulunmalı.
-  # ⚠ `ossie_ithal` **`off` KALIYOR**: o bir YAZMA yoludur ve gerçek bir müşteri modeliyle
+  # ⟳ `ossie_ithal` **`beta`ya ALINDI (2026-08-12)** — aşağıdaki bloğa bak. Eski not: **`off` KALIYOR**: o bir YAZMA yoludur ve gerçek bir müşteri modeliyle
   # pilotu YAPILMADI. *Ölçülmemiş bir yeteneği, kardeşi ölçüldü diye açmak, ölçümü bir
   # törene çevirir.*
   ossie_ihrac: beta
