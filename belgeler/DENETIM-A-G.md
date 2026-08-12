@@ -203,3 +203,46 @@ bilinemez — ve `§A.2`'nin 73 terimlik borcunun **ürün maliyeti** ölçülem
 ✅ **KAPANDI (08-12):** `Niyet.cekilme_sebebi` — kapalı küme (`cok_sahipli_terim` · `bilinmeyen_token` · `olcu_bulunamadi`), **alan değil TÜREV** (`referans`'ın gerekçesiyle aynı: *bir değeri iki yerden yazılabilir yapmak, iki değeri garanti etmektir*). Nesnenin **zaten taşıdığı** alanlardan okunuyor — yeni ölçüm/liste/eşik **yok**. Kapı `test_b_cekilme_sebebi.py` (7), mutasyonlu; en ince yüklem: ölçüt **küp kümesi**, aday sayısı **değil**.
 
 ⏭ **Kalan:** sebep **sayılmıyor** henüz — bir sayaç/telemetri bağlanmalı ki *«garsonun yükünün %kaçı belirsizlikten»* sorusu cevaplanabilsin.
+
+### B.5 🔴 GARSON — *«hiç geliştirmedik»* İDDİASI **ÇÜRÜDÜ**; asıl boşluk **ölçüm**
+
+Ölçüldü (2026-08-12, kendi koşumum):
+
+| yatırım | ölçüm | durum |
+|---|---|---|
+| `select_cube` istemi (`llm.py:358`) | **161 satır** — küratörlü, kısıtlı | ✅ geliştirilmiş |
+| **tool-calling** yolu (`_arac_ile`) | **var** — serbest metin değil **yapısal** çıktı | ✅ |
+| few-shot (`few_shot_block`) | `app/` altında **11** referans; `§B2` ile garsona **bağlandı** | ✅ |
+| istem zenginleştirme (`prompt_enhance`) | **24** referans | ✅ |
+| öz-tutarlılık (`consistency_k=3`) | **15** referans | ✅ |
+| çoğunluk oylaması (`oylama_cogunluk`) | **3** referans, bayraklı; *«belirsizlik atılmaz»* | ✅ |
+| şema daraltma (`sema_daraltma: beta`) | `§38 D1` — 8 soruda **8/8** kapsandı, **0 kayıp** | ✅ |
+
+⊘ Yani *«garsonu hiç geliştirmedik»* **ölçümle çürüdü** — bu, bu oturumda bir iddianın
+**yedinci** kez ölçümle daralması.
+
+🔴 **AMA ASIL BOŞLUK VAR VE DEPO ONU KENDİ YAZMIŞ** — `demo/packs/features.yml:222`:
+
+> *«Geniş yayılım için ön koşul `A1` (garson korpusu): **kapı `route()`'u ölçer, garsonu
+> ölçmez** — bu bayrağın gerilemesi kapıda **GÖRÜNMEZ**.»*
+
+Yani garson **geliştirildi ama ölçülmüyor**: korpus (**%94,9**, LLM'siz) yalnız `route()`
+yolunu sınıyor. Sonuç:
+
+- bir garson iyileştirmesinin **kazandırdığı** ölçülemiyor,
+- bir garson **gerilemesi** kapıda **görünmüyor**,
+- ve `sema_daraltma` gibi bayraklar `beta`'da **kanıtla** tutuluyor, **sayıyla** değil.
+
+> 🆕 *Ölçülmeyen bir bileşen geliştirilebilir ama iyileştirilemez: iyileştirme, iki
+> ölçüm arasındaki farktır.*
+
+### B.6 ⏭ `B` için kalan iki iş
+
+| # | iş | risk | not |
+|---|---|---|---|
+| 1 | **Çekilme sebebini SAY** — `cekilme_sebebi` adlandırıldı (`B.4`) ama sayaç yok | 🟢 | `lab/nl_corpus.py`'nin `cats` kovasına ekle; **payda kutsal** (🅜) |
+| 2 | **Garson korpusu (`A1`)** — `route()` dışı bir ölçüm tabanı | 🟡 | deponun **kendi** ilan ettiği ön koşul; `sema_daraltma`/`few_shot` yayılımının şartı |
+
+⚠ Sektör karşılaştırması (Snowflake Cortex Analyst · Databricks Genie · Wren AI) ancak
+**②** kurulduktan sonra anlamlı olur: karşılaştırma bir **sayı** ister, bugün elimizde
+garson için o sayı **yok**.
