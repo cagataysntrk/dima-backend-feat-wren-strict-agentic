@@ -70,6 +70,34 @@ def test_IKI_KAYIT_bugun_de_AYRI():
     assert len(tools.KAYIT if hasattr(tools, "KAYIT") else tools.llm_araclari(None)) >= 15
 
 
+def test_ADLAR_HIC_ORTUSMUYOR_turetim_UCUNCU_kayit_ister():
+    """🔴 Ertelemenin **en keskin** dayanağı — ve bugüne kadar ölçülmemişti.
+
+    Ölçüldü (2026-08-12): iki kaydın ad kümelerinin kesişimi **SIFIR**.
+
+        FIIL_ANLAMI  : ANLAT · AYRISTIR · BAGLA · BOYUTSEC · GORSEL · HESAPLA · KIR ·
+                       KIYASLA · MATRIS · PANO · RAPOR · SIRALA · SORGU · SUZ · TREND
+        tools.KAYIT  : route · contribution.decompose · viz.recommend · …
+        kesişim      : **0**
+
+    Yani `FIIL_ANLAMI`'nı `tools.KAYIT`'tan **türetmek** 15 satırlık bir **eşleme
+    tablosu** ister — ve o tablo, iki kayıt yerine **üçüncü** bir kayıttır.
+
+    > `KAT-1` adına yapılan bir işin üçüncü bir kayıt doğurması, ilkeyi ilkenin adıyla
+    > çiğnemektir.
+
+    ⚠ Bu test bir engeli **dondurmuyor**: örtüşme bir gün doğarsa (araçlar fiil adlarını
+    beyan etmeye başlarsa) kırılır ve `C1` **eşleme tablosuz** ödenebilir hâle gelmiş
+    demektir — kartın istediği ödeme biçimi tam olarak odur.
+    """
+    ortusme = set(FIIL_ANLAMI) & {a.ad for a in tools.KAYIT}
+    assert not ortusme, (
+        f"✅ İki kayıt artık {len(ortusme)} adı PAYLAŞIYOR: {sorted(ortusme)}\n"
+        "`C1`'in üçüncü erteleme gerekçesi (eşleme tablosu = üçüncü kayıt) zayıfladı. "
+        "Türetimi yeniden değerlendir: araç kendi `fiil`ini BEYAN etsin → `FIIL_ANLAMI` "
+        "ondan TÜRETİLSİN → türetilmiş liste bugünkü 15 fiille BAYT BAYT aynı çıksın.")
+
+
 def test_FIIL_KAYDI_CANLI():
     """`FIIL_ANLAMI` her planlayıcı çağrısında okunuyor — riski canlı yol taşır."""
     g = (pathlib.Path(__file__).parent.parent / "app" / "plan_garson.py").read_text(

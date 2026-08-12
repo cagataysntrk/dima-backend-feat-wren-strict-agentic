@@ -89,6 +89,27 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("kapsam-disi-satir-uretmez", 3,
+     "🔴🔴 **`§⑧` — KAPSAM DIŞI BİR SORU BİR SATIRA DÖNÜŞEMEZ.** "
+     "⊙ Canlı ölçüm (2026-08-12, **dört tur, dördü de**): *«hava durumu nasıl»* → "
+     "`source=llm:openrouter` · `cube=adhoc` · **1 satır** — ve o satır küpten değil "
+     "**modelden** geliyordu: `{\"1\": 1}` (SELECT 1) ve "
+     "`{\"mesaj\": \"…veri bulunmamaktadır.\"}` (SELECT 'metin'). `§38.4`'ün değişmezi: "
+     "*sayıyı küp koyar.* ⊙ Dürüst red yolu ZATEN VARDI ve bazı turlarda çalıştı; model "
+     "onu **sözdizimsel olarak geçerli bir SELECT yazarak** atlıyordu — üç güvenlik "
+     "guard'ının (`guard_sql` · `dry_plan` · `katman_b`) üçü de bunu göremez, çünkü "
+     "`SELECT 1` kusursuz biçimde salt-okuma, tek ifadeli ve planlanabilirdir. "
+     "⊙ Δ = 3: modül import'u + yüklem dalı + dürüst redde dönüş. **Gövde taşındı**: "
+     "yüklem `wren_service.veriye_dokunmuyor` (yapısal, gramer — kelime listesi YOK, "
+     "`ADR-0008`), reddi kuran `wren_service.kapsam_disi_reddi`, metin `soz.py` "
+     "(`ret.kapsam_disi` — red cümlelerinin TEK SAHİBİ). "
+     "⚠ **Bu üç satır TAŞINAMAZ:** karar noktası tam olarak SQL'in üretildiği ile "
+     "`dry_plan`'a verildiği arasıdır; daha yukarısı SQL'i bilmez, daha aşağısı zaten "
+     "uydurma satırı çalıştırmıştır. "
+     "🔴 Ve bu, raporun kendi farklılaşma iddiasının ölçülmemiş yarısıydı (`§1232`: "
+     "*«Power BI kapsam dışında uyduruyor — biz SÖYLÜYORUZ»*) — ölçüm iddianın Discovery "
+     "yolunda karşılıksız olduğunu gösterdi. *Bir farklılaşmayı ilan etmek, onu ölçmeden "
+     "korumaz.*"),
     ("e2-surpriz-beyani", 3,
      "🔴🔴 **`§E2` — «EN BÜYÜK MÜŞTERİ HEP SUÇLU ÇIKIYOR» BEYAN EDİLİYOR.** "
      "⊙ Adtributor'ın (NSDI'14) **kurucu örneği** kendi kodumuza verildi (2026-08-11) ve "

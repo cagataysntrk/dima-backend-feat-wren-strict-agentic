@@ -5255,6 +5255,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     trace=trace + [f"self-healing başarısız ({exc2}) → dürüst ret"],
                 )
 
+        # 🔴 **KAPSAM DIŞI SORU BİR SATIRA DÖNÜŞEMEZ** (⑧, 2026-08-12) — ve YERİ
+        # canlı curl ile DÜZELTİLDİ: ilk yazımda denetim SQL'in ÜRETİLDİĞİ yerdeydi ve
+        # ateşlemedi, çünkü uydurma SQL **onarımdan** doğuyordu (`llm.repair`) ve
+        # onarılan SQL bir daha denetlenmiyordu. Burası tek boğaz: üretim de onarım da
+        # buradan geçer. *Bir kuralı doğuşun yanına koymak, doğumun tek yolunun o
+        # olduğunu varsaymaktır.*
+        from app import wren_service as _ws
+        if (_kd := _ws.kapsam_disi_reddi(wren_sql)) is not None:
+            return _honest_refusal(note=_kd[0], trace=trace + _kd[1])
+
         # ÇALIŞTIRMA (canlı bulgu, 31 Temmuz 2026 — gerçek kullanıcı testinde 500 olarak
         # patladı): `dry_plan` yalnız PLANLAMA/SEMANTİK doğrulamadır — motorun GERÇEK
         # ÇALIŞTIRMASI (DuckDB/hedef lehçe) ayrı bir aşamadır ve dry_plan'ın geçtiği bir SQL

@@ -76,6 +76,80 @@ def guard_sql(sql: str) -> str:
     return stripped
 
 
+def veriye_dokunmuyor(sql: str) -> bool:
+    """🔴 **HİÇBİR TABLOYA DOKUNMAYAN BİR SORGU, BİR CEVAP DEĞİLDİR.**
+
+    ## Ölçülen kusur (canlı, 2026-08-12 — dört tur, dördü de aynı)
+
+    Kapsam dışı bir soru (*«hava durumu nasıl»*) Discovery'ye düşüyor ve
+    `source=llm:openrouter` · `cube=adhoc` ile **bir satır** dönüyordu:
+
+        {"mesaj": "Hava durumu ile ilgili veri bulunmamaktadır."}   ← SELECT 'metin'
+        {"1": 1}                                                    ← SELECT 1
+
+    İkisi de **uydurma**: sayı/metin küpten değil **modelden** geliyor. `§38.4`'ün
+    değişmezi açık — *sayıyı küp koyar*. Ve `guard_sql` bunu göremezdi: ikisi de
+    kusursuz biçimde salt-okuma, tek ifadeli, geçerli SQL.
+
+    ⊙ **Dürüst red yolu ZATEN VARDI** (`soz.py`: *«Bu soru için güvenilir bir sorgu
+    üretemedim»*) — ve gerçekten de bazı turlarda o çalışıyordu. Model onu
+    **sözdizimsel olarak geçerli bir SELECT yazarak** atlıyordu.
+
+    > *Bir reddin kapısı, reddedilmek istenen şeyin o kapıdan geçebildiği yerde
+    > kurulmuşsa, kapı değil bir geçittir.*
+
+    ## Kural — YAPISAL, kelime listesi YOK (`ADR-0008`)
+
+    Sorgu ayrıştırılır; **CTE adları düşüldükten sonra** hiçbir tablo referansı
+    kalmıyorsa `True`. Bu bir metin sezgisi değil bir **gramer** gerçeğidir:
+    `SELECT 1`, `SELECT 'x' AS mesaj`, `WITH t AS (SELECT 1) SELECT * FROM t` —
+    üçü de veriye dokunmaz.
+
+    ## ⚠ AYRIŞTIRAMAZSA `False` — bilinçli olarak fail-OPEN
+
+    Bu bir **güvenlik** kapısı değil bir **içerik** kapısıdır: reddi güvenlik
+    guard'ları (`guard_sql` · `dry_plan` · `katman_b`) zaten veriyor. Ayrıştırma
+    hatasında `True` dönmek, ayrıştırıcının anlamadığı **geçerli** bir cevabı
+    susturmak olurdu — ve `§101.1`: *bir yanlış pozitifin bedeli kusurun
+    kendisinden ağırdır.* Anlaşılmayan SQL zaten `dry_plan`'a çarpar.
+    """
+    try:
+        import sqlglot
+        from sqlglot import exp
+
+        agac = sqlglot.parse_one(sql, read="duckdb")
+        if agac is None:
+            return False
+        cte_adlari = {
+            str(c.alias_or_name).lower()
+            for c in agac.find_all(exp.CTE) if c.alias_or_name
+        }
+        for t in agac.find_all(exp.Table):
+            if str(t.name or "").lower() not in cte_adlari:
+                return False
+        return True
+    except Exception:                                         # noqa: BLE001
+        return False                                          # fail-OPEN (yukarıdaki gerekçe)
+
+
+def kapsam_disi_reddi(sql: str) -> tuple[str, list[str]] | None:
+    """Kapsam dışıysa `(not, iz)`, değilse `None`.
+
+    ⚠ **Neden `ask.py`'de değil.** İlk yazımda çağrı yeri `ask()`in içindeydi ve
+    `test_modul_buyume` iki tavanı birden kırdı. Kapının kendi talimatı: *«artıyorsa
+    gerçekten YENİ kod eklenmiş demektir → ayrı bir modüle çıkar»*. Metin ise
+    `soz.py`'nin (`ret.kapsam_disi`) — red cümlelerinin **tek sahibi** orasıdır.
+
+    ⊙ Yani bu üç satır bir "kolaylık" değil, iki kapının **birlikte** dayattığı yer.
+    """
+    if not veriye_dokunmuyor(sql):
+        return None
+    from app import soz
+    return (soz.soz("ret.kapsam_disi"),
+            ["Discovery: üretilen SQL HİÇBİR tabloya dokunmuyor "
+             f"({' '.join(str(sql).split())[:120]}) → dürüst ret"])
+
+
 #: CLAC gölge manifesti — **MDL baytına göre** bellekte. ⚠ Tek girdi: MDL bir istek
 #: içinde değişmez ve sınırsız bir sözlük, uzun ömürlü bir süreçte sessiz bir sızıntıdır.
 _CLAC_ONBELLEK: dict[str, tuple[bytes, int]] = {}

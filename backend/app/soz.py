@@ -104,6 +104,16 @@ KATALOG: dict[str, dict[str, Any]] = {
         "kind": "ret",
         "not": "🔴 Bu cümle ÖLÇÜLDÜ: iki ayrı yerde BİREBİR tekrar ediyordu.",
     },
+    "ret.kapsam_disi": {
+        "metin": "Bu soruyu verinden cevaplayamıyorum — sorduğun şey "
+                 "kataloğunda hiçbir tabloya karşılık gelmiyor.",
+        "kind": "ret",
+        "not": "🔴 ⑧ (2026-08-12): Discovery, kapsam dışı soruda HİÇBİR TABLOYA "
+               "dokunmayan bir SELECT yazıp onu veri satırı gibi sunuyordu "
+               "(`{\"1\": 1}` · `{\"mesaj\": \"…veri bulunmamaktadır.\"}`, dört "
+               "turda dördü). Dürüst red yolu vardı; model onu GEÇERLİ bir SELECT "
+               "yazarak atlıyordu.",
+    },
     "ret.takip_baglanamadi": {
         "metin": "Bunu üstteki raporla bağlayamadım — yeni bir soru olarak sorayım mı?",
         "kind": "ret",
