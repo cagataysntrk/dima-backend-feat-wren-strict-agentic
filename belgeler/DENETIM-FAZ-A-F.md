@@ -121,7 +121,7 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 | # | kalem | rapor | **ÖLÇÜLEN** | durum |
 |---|---|---|---|---|
 | **E1** | Adtributor | ◐ | ⊘ dürüst — ama gerekçe zinciri kırık: *«E3 ön koşuldu, yapıldı»* deniyor; E3 kartın saydığı **4 tarama yerinin 1'ini** kapsıyor | 🔵 |
-| **E2** | JS sürprizi | ✅ | ◐ **YARIM** — matematik **DOĞRU** (bağımsız JSD ile fark `4,2e-07`, sıfır olasılık doğru atlanıyor). 🔴 Ama **tel üstünde DÜŞÜYOR**: `/ask/contribution` (ön-ucun çağırdığı **tek** uç) `surpriz_notu` **taşımıyor**, bulgularda `surpriz`/`surpriz_pay` **yok**. 🔴 Ve `surpriz_notu` adayını **kırpılmış** listeden seçiyor → dağılımı en çok değiştiren segment (JS payı **%43,3**) hareketi küçük diye **sessizce siliniyor** | 🔵 |
+| **E2** | JS sürprizi | ✅ | ✅ **KAPANDI (08-12)** — matematik zaten **DOĞRUYDU** (bağımsız JSD ile fark `4,2e-07`). İki kusur da kapandı: ① **tel üstünde düşüyordu** → `ContributionFinding`'e 4 alan + `ContributionReport.surpriz_notu`; ② **kırpma süzgeci sürpriz adayını yiyordu** → aday havuzu **kırpılmamış** liste, aday kırpıldıysa *«listede yok»* **söyleniyor**, ve kırpılanların JS payı ≥%20 ise **kütlesi beyan ediliyor**. ⊙ İki bağımsız ölçüm: ajanın vakası `Web` **%43,3** (not `""` idi), benim vakam `C` **%97,6** (not *«A sebep değil»* deyip **susuyordu**). Kapı `test_e2_kirpilan_surpriz.py` (6), **iki yarı da mutasyonlu**. `549e258` | ✅ |
 | **E3** | FDR → tarama beyanı | ✅ | 🟡 **VEKİL ÖLÇÜT** — BH reddi doğru ölçülmüş, ama beyan **tek çağrı yerinde** (`interpret.py:425-427`) ve `n_aday = len(rows)` = *tek serideki nokta sayısı*. Kartın saydığı 3 tarama yeri (`_en_ayristiran`·`derinles`·`contribution`) **hiçbir şey beyan etmiyor** | 🔵 |
 | **E4** | Adlandırma | ✅ | ✅ kapı gerçek (`ast` + ön-uç metni), 5 yeşil | ⊘ |
 | **E5** | `ruptures`+`statsforecast` | ⏸ park | ✅ doğru park — ⚠ rapor **kendisiyle çelişiyor**: `:4289` *«E2'nin ÖN KOŞULU»* ↔ `:4074-4077` *«ön koşulu değilmiş»* | 🔵 |
@@ -147,7 +147,7 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 | **F10** | `dry_run`/`register_csv` | ⊘ | ✅ doğru | ⊘ |
 | **F11** | RLS | ⊘ | ✅ doğru | ⊘ |
 | **F12** | manifest uyumu | ⊘ | ✅ doğru, kör kapı düzeltilmiş | ⊘ |
-| **F13** | onaylı yazma | ✅ | ✅ **birebir doğrulandı**: kapalı → `31 {'yok':31}` · açık → `33 {'yok':31,'yazar':2}` → **üç değil İKİ**. 🔴 `EYLEM_KAYIT=3` ↔ `ARAC_EYLEM=2` → **`tercih.kaydet` hâlâ araçsız**, bağlama **tek yönlü**. ⊙ Ve gerekçe ayrımı: `measures.approve` **haklı olarak** dışarıda (eylem karşılığı yok, fail-closed), ama `tercih.kaydet` **`EYLEM_KAYIT`'ta VAR** (`eylem.py:104-112`) — onay yolu **kurulu**, yalnız araç yok | 🔵 |
+| **F13** | onaylı yazma | ✅ | ✅ **KAPANDI (08-12)** — ajanın ölçümü birebir doğrulandı (`EYLEM_KAYIT=3` ↔ `ARAC_EYLEM=2`, **`tercih.kaydet` araçsız**). Ajanın **1. seçeneği** uygulandı: `preferences.set → tercih.kaydet` (onay yolu zaten uçtan uca kuruluydu — `routers/eylem.py:173-176` → `tercih_yaz`, geri alma `DELETE /tercihler/{anahtar}`, izin `query:run`). Yeni kapı `test_HER_EYLEMIN_ARACI_VAR_ters_yon_de_kilitli` **mutasyonlu**; `ARACSIZ_MESRU` bugün boş. ⊙ `measures.approve` **haklı olarak** dışarıda (onay yolu yok). 🔴🔴 **VE BAYRAK AÇILINCA ÜÇ KAPININ ÖNCEDEN KIRMIZI OLDUĞU GÖRÜLDÜ** — ayrıntı aşağıda ⑰. `b00f9fb` | ✅ |
 | **F14** | dört yetenek | ⊘ | ⚠ **KARAR SAVUNULABİLİR, GEREKÇE YANLIŞ**: `dry_run` app/lab/tests **0** · `dry_plan` **25 gerçek çağrı** (grep 70 = metin) · `pushdown_limit` **0** · `list_tables` **0** · `transform_sql` *«yüzeyde yok»* **YANLIŞ** — deponun kendi testleri **7 kez** çağırıyor | 🔵 |
 | **F15** | `Model`/`RemoteFunction` | ⊘ | ✅ doğru | ⊘ |
 | **F16** | views fan-out kapısı | ✅ *«ZATEN VAR»* | 🔴🔴 **KÖR KAPI — 9 view'ın 1'ini görüyor.** `_view_files(settings.resolved_project_dir())` yalnız **varsayılan tenant**: `enerji_tesis`(1). Görülmeyenler: `gitas` **3** · `gulteks` **2** · `atiksan` **2** · `demo-boyahane` **1**. `karlilik_src` **2 LEFT JOIN** taşıyor (`stok_kartlari ON STOK_KODU`) — `parti_zengin`'in **tam sınıfı**; fan-out `sale_amount`'ı şişirir ve `source="cube"` rozetiyle çıkar | 🔵 |
@@ -319,3 +319,31 @@ var)* · ④ 7,87 sn'lik beklemeyi kes + 14 `time.sleep`'i tek tek ölç.
 🔴 **PAYDA KAPISI:** `--collect-only` sayısı **5.505**'in altına düşerse **KIRMIZI**.
 
 > *Hız kapsamdan değil çekirdekten satın alınır — ve payda kutsaldır.*
+
+---
+
+## ⑰ 🔴🔴 BAYRAĞIN ARKASINDA ÜÇ KAPI KIRMIZI BEKLİYORDU *(yeni bulgu, 08-12 · `b00f9fb`)*
+
+`§F13`'ü kapatırken **aranmayan** bir şey ölçüldü: `DIMA_YAZMA_ARACLARI` varsayılan
+**kapalı** olduğu için, o bayrağın açık olduğu yapılandırmada üç kapı **hiç koşmamıştı**
+— ve üçü de **kırmızıydı**. Kusur benim yamamdan **önce** vardı (temel ölçümle
+doğrulandı: yama öncesi HEAD, bayrak açık → aynı iki kırmızı).
+
+| # | kapı | neden kırmızıydı | onarım |
+|---|---|---|---|
+| ① | `test_arac_kaydi::test_ajan_YAZAMAZ` | beyan kümesi `measures.approve`'u sayıyordu — o araç kayda **hiç girmemişti** (gerekçesi `yazma_araclari.py`'de yazılı: onay yolu yok → `beyan()` 400) | küme gerçeğe çevrildi: `{dashboards.create, schedules.create, preferences.set}` |
+| ② | `test_arac_kaydi::test_ARAC_SAYISI_KAYITLI` | «+3» aynı hayalî aracı sayıyordu; gerçek **34**, beklenen **35** | ⚠ `preferences.set` sayıyı 35'e getirdi — yani sayı **başka bir araçla** tuttu. Gerekçe yazıldı; asıl yüklem ①'in **isim** kümesidir |
+| ③ | `test_eylem_onayi::test_YAZMA_ARACLARI_HALA_AJANA_KAPALI` **+** `test_f13::test_KURAL_B_bayrak_kapaliyken_KAYIT_DEGISMEDI` | ikisi de **Faz H öncesi** değişmezi kilitliyordu (*«kayıtta hiç yazan olmasın»*), oysa bayrak **tam da onları kayda almak için** var; ve ikisi de bayrağa **bakmıyordu** | ③ artık **iki yapılandırmayı da** ölçüyor; `KURAL B` yüklemi bayrak açıkken gerekçeli **atlıyor** |
+
+**Ölçülen bugünkü değişmez** (bayrak açık): `llm_araclari()` üç yazanı da taşıyor ·
+`okuyan_araclar()` **hiçbirini** · `mcp.cagir` `yan_etki != "yok"` olanı **reddediyor**
+(`mcp.py:100`). Yani Faz H'nin gerçek güvencesi *«ajan görmesin»* değil, ***«ajan
+önerebilsin ama salt-okuma yüzeyi taşımasın ve çağrı onaydan geçsin»***.
+
+> 🅰 *Bayrağın arkasındaki bir kapı, bayrak açılana kadar kırmızı olduğunu kimseye
+> söylemez.*
+> 🅱 *Bir sayının tutması, tuttuğu sebebin doğru olduğunu göstermez.*
+
+⚠ **Açık kalan soru (bir sonraki tura):** başka kaç kapı yalnız tek bir yapılandırmada
+anlamlı? `features.yml`'deki her bayrak için aynı sınıf taranmalı — bu, `A3` test
+düzenlemesiyle **aynı koşumda** yapılabilir.
