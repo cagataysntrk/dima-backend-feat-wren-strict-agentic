@@ -3302,7 +3302,28 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **risk** | erken kesme → cevapsız artışı |
 | **azaltma** | Kesildiğinde **o ana kadarki adımlar geçerli** (`ButceAsimi` zaten böyle tanımlı) |
 
-### ⊘ C3 · MCP yüzeyini aç — **AÇILMADI: dört şarttan İKİSİ karşılanmıyor** *(2026-08-12)*
+### ✅ C3 · MCP açılış şartları — **DÖRDÜ DE KARŞILANDI** *(2026-08-12, ikinci ölçüm)*
+
+> ⟳ **BU BÖLÜMÜN İLK HÂLİ (aşağıda, olduğu gibi duruyor) iki şartı 🔴 sayıyordu. İkinci
+> ölçüm ikisini de çözdü — ve biri bir GÜVENLİK KUSURU çıktı.**
+>
+> | # | ilk ölçüm | ikinci ölçüm |
+> |---|---|---|
+> | ① araç ≤20 | 🔴 25 > 20 | ✅ **eşiğin kendisi bir VEKİLDİ.** Asıl ölçüt (OpenAI) sayı değil **örtüşme**; ölçüldü: **1 çift** (`stats.trend`↔`stats.ozet`), **25 aracın 23'ü ayrık**. Vekil kırmızı, asıl ölçüt yeşil. Eşik kaldırılmadı, **yerine geçildi** (`ORTUSME_TAVANI=10` asıl · `ARAC_TAVANI=35` ikincil) |
+> | ② yazma aracı yok | ✅ | 🔴→✅ **ŞART BİR RASTLANTIYDI.** `yazma_araclari` bayrağı açıkken `mcp.araclar(None)` **28** döndürüyor ve üç yazma aracı **MCP yüzeyinde görünüyordu**. Artık yapısal: `tools.okuyan_araclar()` eler, `mcp.cagir()` adı bilinse bile **reddeder** |
+> | ③ dört kapı | ✅ | ✅ değişmedi |
+> | ④ sanitizasyon | 🔴 hiç yok | ✅ **iki kapalı yapısal sınıf + köken beyanı** — C0/C1 kontrol karakterleri · ANSI kaçışları · zarf sınırı taklidi. Kelime listesi **YOK** (`ADR-0008`) |
+>
+> 🔴 **En önemli bulgu ②'de:** kartın *«yazma araçları kayıtta yok (zaten öyle)»*
+> parantezi **doğruydu ama bir güvence değildi**. Sınırı koruyan şey kaydın boşluğuydu;
+> `§F13`'ün bayrağı açıldığı an güvence **sessizce** ölüyordu.
+> *Bir sınırı bir rastlantının koruması, o sınırın hiç konmamış olmasıdır.*
+>
+> ⚠ **Bayrak yine de AÇILMADI** — açılış artık bir güvenlik borcu değil bir **ürün
+> kararı**: `§C1` (tek yetenek kaydı) hâlâ `mcp_yuzeyi` açılışına bağlı ve o karar
+> ayrıca verilmeli. Kapı: `test_c3_mcp_acilis_sartlari.py` · `test_mcp.py`.
+
+### ⊘ C3 · MCP yüzeyini aç — **AÇILMADI: dört şarttan İKİSİ karşılanmıyor** *(ilk ölçüm, 2026-08-12)*
 
 > Kartın `azaltma` satırı bir dilek listesi değil, **açılış şartıdır**. Dördü tek tek
 > ölçüldü:
@@ -3965,7 +3986,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 
 | # | iş | kaynak | neden |
 |---|---|---|---|
-| ◐ **F13** | 🔴 **ONAYLI YAZMA AKSİYONLARI** — **ÖLÇÜLDÜ: KİLİDİN BİR YARISI ZATEN KURULU** *(2026-08-12)*. ⊙ `onay_akisi.py` **289 satır** (durumlar · risk kademeleri · bilet ömrü · **yasak argüman** listesi) · `yazma_araclari.py` *«yalnız `onay_akisi` üzerinden»* · `POST /ask/eylem` **canlı** ve `bilet_dogrula` çağırıyor · şema bilet alanı **fail-closed** · `authorize()`+audit **var**. 🔴 **VE BAYRAĞIN ADI YANILTIYOR:** `onay_akisi: "off"` bir *«onay akışı kapalı»* **değildir** — bayrağın kendi açıklaması *«kapsam İÇİ ve GERİ ALINABİLİR bir eylem İSTEMSİZ koşar… **YAZMA YÜZEYİ BÜYÜMEZ**»* diyor; yani bayrak **istem kaldırır**, onay eklemez, ve `off` **daha muhafazakâr** olandır. *Bir bayrağın adı, ne yaptığının kanıtı değildir.* 🔴 **Gerçekten eksik tek parça:** ajanın yazma aracını **öneri olarak üretmesi** — `tools.KAYIT`'ta `yan_etki="yazar"` araç **yok** (`§C3`: `{'yok': 25}`), planlayıcı onu **seçemez**. ⚠ Bu bir kablolama değil bir **karar**: kayda bir `yazar` araç girdiği an `§C3`'ün MCP açılış şartı da kırmızıya döner — **ikisi aynı kararın iki yüzü** ve birlikte verilmeli. Kapı: `test_f13_onayli_yazma.py` (6) kurulu yarıyı kilitler, eksik yarıyı **adıyla** bekler | §17.3 · MIMARI §H | Bugün `_yazma_araclari` **bilerek** `llm_araclari` dışında — *«ajan YAZAMAZ»* (`tools.py`'nin dört değişmezinden biri). Sonuç: *«bunu panoya ekle»* · *«her pazartesi yolla»* **yapılamıyor**. ⊙ **Ve bu «agentic'in asıl kilidi»**: yasak **kaldırılmaz, KADEMELENDİRİLİR** — ajan yazma aracını **öneri** olarak üretir → kullanıcı **onaylar** → `authorize()` + audit (**ikisi de zaten var**) → çalışır. Geri alınamaz iş → **senkron onay**; orta risk → kuyruk. ⚠ **Kapı: onaysız hiçbir yazma; her onay audit'e ayrı satır** |
+| ✅ **F13** | ⟳ **İKİNCİ ÖLÇÜM (2026-08-12): «eksik parça» İDDİASI ÇÜRÜDÜ — araç VARDI, KAPI yoktu.** `app/yazma_araclari.py` üç aracı `yan_etki="yazar"` ile **zaten** tanımlıyor ve `tools.py:643` (`KAYIT = KAYIT + … + _yazma_araclari()`) onu **tam bağlıyor** — yani *«ajan öneremiyor»* yanlıştı. 🔴 Gerçekte eksik olan: `Planlayici.calistir()`'in dört kapısında `yan_etki`·`onay`·`bilet` **hiç geçmiyordu**; `yazma_araclari.py`'nin *«yalnız onay_akisi üzerinden»* değişmezi **düzyazıydı**. ⚠ Ve boşluğu gizleyen ikinci kusur: araçlar zaten çalışmıyordu (ilan edilen `girdi` gerçek imzayla tutmuyor → `TypeError`) — yani güvenlik bir kapı değil bir **uyumsuzluktu**, ve bir `TypeError` bir **red değildir**. ✅ **Beşinci kapı** `_onay_kapisi` (fail-closed: `onay_biletleri` boş) + MCP sızdırmazlığı. ⊘ Açık kalan: `girdi`↔imza adaptörü (`FAZ H`) — `test_YAZMA_ARACLARININ_GIRDI_BEYANI_HALA_UYUMSUZ` onu gizlemiyor. *(ilk ölçümün metni aşağıda korunuyor)* · 🔴 **ONAYLI YAZMA AKSİYONLARI** — **ÖLÇÜLDÜ: KİLİDİN BİR YARISI ZATEN KURULU** *(ilk ölçüm 2026-08-12)*. ⊙ `onay_akisi.py` **289 satır** (durumlar · risk kademeleri · bilet ömrü · **yasak argüman** listesi) · `yazma_araclari.py` *«yalnız `onay_akisi` üzerinden»* · `POST /ask/eylem` **canlı** ve `bilet_dogrula` çağırıyor · şema bilet alanı **fail-closed** · `authorize()`+audit **var**. 🔴 **VE BAYRAĞIN ADI YANILTIYOR:** `onay_akisi: "off"` bir *«onay akışı kapalı»* **değildir** — bayrağın kendi açıklaması *«kapsam İÇİ ve GERİ ALINABİLİR bir eylem İSTEMSİZ koşar… **YAZMA YÜZEYİ BÜYÜMEZ**»* diyor; yani bayrak **istem kaldırır**, onay eklemez, ve `off` **daha muhafazakâr** olandır. *Bir bayrağın adı, ne yaptığının kanıtı değildir.* 🔴 **Gerçekten eksik tek parça:** ajanın yazma aracını **öneri olarak üretmesi** — `tools.KAYIT`'ta `yan_etki="yazar"` araç **yok** (`§C3`: `{'yok': 25}`), planlayıcı onu **seçemez**. ⚠ Bu bir kablolama değil bir **karar**: kayda bir `yazar` araç girdiği an `§C3`'ün MCP açılış şartı da kırmızıya döner — **ikisi aynı kararın iki yüzü** ve birlikte verilmeli. Kapı: `test_f13_onayli_yazma.py` (6) kurulu yarıyı kilitler, eksik yarıyı **adıyla** bekler | §17.3 · MIMARI §H | Bugün `_yazma_araclari` **bilerek** `llm_araclari` dışında — *«ajan YAZAMAZ»* (`tools.py`'nin dört değişmezinden biri). Sonuç: *«bunu panoya ekle»* · *«her pazartesi yolla»* **yapılamıyor**. ⊙ **Ve bu «agentic'in asıl kilidi»**: yasak **kaldırılmaz, KADEMELENDİRİLİR** — ajan yazma aracını **öneri** olarak üretir → kullanıcı **onaylar** → `authorize()` + audit (**ikisi de zaten var**) → çalışır. Geri alınamaz iş → **senkron onay**; orta risk → kuyruk. ⚠ **Kapı: onaysız hiçbir yazma; her onay audit'e ayrı satır** |
 
 ### 14.15 GÜNCEL TOPLAM
 
