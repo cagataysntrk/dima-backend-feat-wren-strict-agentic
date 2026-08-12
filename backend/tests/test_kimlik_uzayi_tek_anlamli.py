@@ -69,6 +69,18 @@ AYNI_IS_FARKLI_IFADE = {
     "F1": "ayrıştırıcı gürültüsü: `### F ·` başlığı kimlik sanılıyor",
     # `§F14` başlığı bu turda düzeltildi (*«dört kullanılmayan»* → *«biri kullanılıyor»*)
     "F14": "aynı kart, başlığı 2026-08-12'de ölçümle düzeltildi",
+    # ⟳ 08-12, geniş desenle görünür oldular — ikisi de AYNI İŞİN iki yazımı:
+    "A12": "«Tur bazında ölçüm» ↔ «Çok turlu belleği TUR BAZINDA ölç» — kısaltma",
+    "B12": "«Granülerliği tek kaynağa bağla + hour/minute aç» ↔ «hour/minute» — kısaltma",
+}
+
+#: 🔴 **KOD TARAFI ÇAKIŞMALAR** — haritada yazılı ama bu kapı **ölçemez**.
+#: Bir kimliğin ikinci/üçüncü anlamı **kodda** yaşıyorsa (modül, sınıf, kapı dosyası),
+#: raporu ayrıştıran bir kapı onu göremez. Bu bir kusur değil bir **KAPSAM**tır ve
+#: `§0.7`'de de yazılıdır. *Bir kapının kapsamı, kapının kendisi kadar bir vaattir.*
+HARITA_KOD_TARAFI = {
+    "B9": "üç anlam: `§14.14` hakem (rapor) · `app/diyalog.py:89` ODAK VARLIK (kod) · "
+          "`tests/test_b9_sparc_iliskileri.py` SParC (kapı) — son ikisi rapor dışında",
 }
 
 _MARKA = re.compile(r"[🔴🟡🟢✅⊘⏸⟳⚠⊙*`]")
@@ -82,9 +94,16 @@ def _kimlikler() -> dict[str, set[str]]:
     """→ `{kimlik: {başlık, …}}` — hem tablo satırlarından hem alt başlıklardan."""
     s = _RAPOR.read_text(encoding="utf-8")
     kal: dict[str, set[str]] = collections.defaultdict(set)
+    # 🔴🔴 **DESEN GENİŞLETİLDİ** (⟳ 08-12, denetim ajanı buldu, kendi ölçümüm doğruladı).
+    # Eski hâli `[^|*\n]` idi ve hücre `🔴 **Draco…**` gibi **kalın** başlarsa `*`'ta
+    # **duruyordu** → başlık kesiliyor, çakışma görünmüyordu. Ölçüm:
+    #     dar desen : 62 kimlik · 13 çakışma · D6 ✗ D10 ✗
+    #     geniş     : 68 kimlik · 17 çakışma · D6 ✓ D10 ✓
+    # Marka temizliğini `_temiz()` **zaten** yapıyordu; desenin onu beklemesi gerekiyordu.
+    # *Bir ayrıştırıcı, kendi temizleyicisinden önce durursa onu hiç çağırmamış olur.*
     desenler = (
-        r"\*\*([A-F]\d{1,2})\*\*\s*\|\s*\*?\*?([^|*\n]{4,40})",
-        r"^#{3,4}\s*[⟳✅⊘⏸🔴🟡🟢 ]*([A-F]\d{1,2})\s*·\s*([^\n—(]{4,40})",
+        r"\*\*([A-F]\d{1,2})\*\*\s*\|\s*([^|\n]{4,60})",
+        r"^#{3,4}\s*[⟳✅⊘⏸🔴🟡🟢 ]*([A-F]\d{1,2})\s*·\s*([^\n—(]{4,60})",
     )
     for d in desenler:
         for m in re.finditer(d, s, re.M):
@@ -104,7 +123,14 @@ def _cakisanlar() -> dict[str, list[str]]:
     """
     cak = {}
     for k, v in _kimlikler().items():
-        kalan = [a for a in v if not any(a != b and b.startswith(a) for b in v)]
+        # ⚠ **TÜRKÇE BÜYÜK HARF** (ders ⑧): `İki-sağlayıcılı` ile `iki-sağlayıcılı`
+        # aynı başlıktır ama `str.lower()` bunu ÇÖZMEZ (`İ` → `i̇`, birleşik noktalı).
+        # Ölçüldü: `B9` bu yüzden **sahte bir çakışma** olarak sayılıyordu.
+        def _kat(x: str) -> str:
+            return x.replace("İ", "i").replace("I", "ı").lower()
+
+        kalan = [a for a in v
+                 if not any(a != b and _kat(b).startswith(_kat(a)) for b in v)]
         if len(kalan) > 1:
             cak[k] = sorted(kalan)
     return cak
@@ -154,7 +180,9 @@ def test_HARITA_OLCUMLE_TUTUYOR():
     yazili = set(re.findall(r"\|\s*\*\*([A-F]\d{1,2})\*\*\s*\|", harita))
     assert yazili, "⊘ ölçüm tabanı çöktü: `§0.7` haritasından hiç kimlik okunamadı"
     olculen = set(_cakisanlar())
-    hayalet = yazili - olculen
+    # ⚠ Kod tarafı çakışmalar burada da muaf — bu kapı RAPORU ayrıştırır ve
+    # `B9`'un iki anlamı kodda yaşıyor (yukarıdaki `HARITA_KOD_TARAFI`).
+    hayalet = yazili - olculen - set(HARITA_KOD_TARAFI)
     assert not hayalet, (
         f"🔴 `§0.7` haritası BAYAT: {sorted(hayalet)} artık çakışmıyor. "
         "Kimlik tekilleştiyse satır kaldırılsın — *bayat bir uyarı, gerçek uyarıyı "
@@ -173,3 +201,31 @@ def test_D9_BORCU_HARITADA_ADIYLA_GECIYOR():
     harita = metin[bas:metin.index("\n## ", bas)]
     assert "agent_error" in harita and "mcp_yuzeyi" in harita, (
         "🔴 `D9` vakası haritadan silinmiş — *bir kuralın gerekçesi, kuralın kendisidir.*")
+
+
+def test_HARITA_OLCUMLE_AYNI_SAYIDA():
+    """🔴🔴 **SAYI TUTARLILIĞI** — harita, ölçülen çakışmaların **hepsini** saymalı.
+
+    Ölçülen kusur (08-12): `§0.7` haritası **dokuz `D`** sayıyordu, gerçek **on bir**
+    (`D6` ve `D10` eksikti) — ve kapı bunu **göremiyordu**, çünkü ayrıştırıcısı `**`'ta
+    duruyordu. Yani harita eksik, kapı kör, ve taban yüklemi (`≥40`) **62** sayıp yeşil
+    kalıyordu: *sağlıklı görünen bir kapı, iki satırı sessizce düşürüyordu.*
+
+    ⚠ Bu yüklem `test_HER_CAKISMA_YA_HARITADA_YA_GEREKCELI`'den **farklı**: o *«her
+    çakışma bir yerde yazılı mı»* diye sorar, bu *«sayılar tutuyor mu»* diye. İkisi
+    ayrı kusur sınıfı — biri **eksik satır**, öteki **eksik ayrıştırma**.
+    """
+    metin = _RAPOR.read_text(encoding="utf-8")
+    bas = metin.index("### 0.7 ")
+    harita = metin[bas:metin.index("\n## ", bas)]
+    import re as _re
+
+    yazili = set(_re.findall(r"\|\s*\*\*([A-F]\d{1,2})\*\*\s*\|", harita))
+    olculen = {k for k in _cakisanlar() if k not in AYNI_IS_FARKLI_IFADE}
+    yazili -= set(HARITA_KOD_TARAFI)          # kapının ölçemediği, ama YAZILI olanlar
+    assert yazili == olculen, (
+        f"🔴 HARİTA ↔ ÖLÇÜM AYRIŞTI\n"
+        f"  haritada var, ölçümde yok : {sorted(yazili - olculen)}\n"
+        f"  ölçümde var, haritada yok : {sorted(olculen - yazili)}\n"
+        "*Bir haritanın eksik olması, ayrıştırıcının kör olmasından ayırt edilemez — "
+        "bu yüzden ikisi de sayılır.*")

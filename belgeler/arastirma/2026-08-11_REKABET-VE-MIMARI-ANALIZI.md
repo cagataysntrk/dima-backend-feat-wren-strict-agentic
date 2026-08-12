@@ -147,7 +147,7 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 
 Bu belgede kart kimlikleri (`A1`·`B12`·`D9`…) **tek bir uzaydan gelmiyor**; üç ayrı
 bölüm aynı harf-sayı adlarını **bağımsız olarak** kullanmış. Ölçüm (`68` kimlik
-ayrıştırıldı, **21'i** birden çok başlık taşıyor; gürültü elenince **dokuz `D`** gerçek
+ayrıştırıldı, **21'i** birden çok başlık taşıyor; gürültü elenince **on bir `D`** gerçek
 çakışma):
 
 | kimlik | `§38` — **kapanış kartları** | `§14.1` — **FAZ 3 yol haritası** | `§14.11`/`§14.14` — **rakip analizi kalemleri** |
@@ -157,9 +157,11 @@ ayrıştırıldı, **21'i** birden çok başlık taşıyor; gürültü elenince 
 | **D3** | İş sözlüğü | Cevap biçimi bir KARAR olsun | — |
 | **D4** | Belirsizlik | Ön-uç sayı biçimi | — |
 | **D5** | Sorgu hatası | Takip anlama | — |
+| **D6** | Plan yetenek listesi | — | Draco hard kısıtları |
 | **D7** | Yetki denetimi (plan) | — | AVA `ckb` + `purpose` alanı |
 | **D8** | Durdurma koşulu | — | CompassQL etkinlik tabloları |
 | **D9** | Metodoloji (kohort/funnel/YoY) | — | Metabase `candidates` + `agent_error` |
+| **D10** | Cevap biçimi | — | Tanım çakışması yönetimi |
 | **D11** | Olgu üretimi | — | Denormalizasyon |
 
 🔴 **VE `D` UZAYI TEK ÇAKIŞAN UZAY DEĞİL — `B9` ÜÇ ŞEYİ ADLANDIRIYOR** *(⟳ 08-12)*:
