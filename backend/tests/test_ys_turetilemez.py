@@ -66,7 +66,11 @@ def test_KANAL_KURULU_KUP_YOLUNDA():
     kaynak = (pathlib.Path(__file__).parent.parent / "app"
               / "intent_semasi.py").read_text(encoding="utf-8")
     assert "yok_sayilan" in kaynak, "küp şemasında alan hiç geçmiyor"
-    assert "yansımayan" in kaynak, (
+    # ⚠ İkinci yanılma **aynı satırda**: metin `YANSIMAYAN` (BÜYÜK, noktasız ı) yazıyor;
+    # `"yansımayan"` (küçük, noktalı ı) aramak Türkçe'de **başka bir dizedir** (ders ⑧).
+    # Yüklem artık iki yazımı da kabul ediyor — *bir dilin büyük harfi, ötekinin harfi
+    # değildir.*
+    assert ("yansımayan" in kaynak or "YANSIMAYAN" in kaynak), (
         "alan var ama İSTENMİYOR — açıklaması olmayan bir alan modelce doldurulmaz.")
 
 
