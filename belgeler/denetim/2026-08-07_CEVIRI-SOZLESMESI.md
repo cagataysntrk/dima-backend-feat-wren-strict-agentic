@@ -13488,3 +13488,33 @@ Vektör ayağının kuyruğu alakasız kalıyor. ⚠ Vektör ayağı bilinçli o
 bir **alaka tabanı** kurmaktır ve o taban **kalibre edilmeden** konulamaz (MIMARI:
 *«kalibre edilmemiş bir eşik bir güven değil bir süstür»*). Kalibrasyonun paydası bugün
 **19** 🆉 ve o payda büyütülmeden bu karar verilemez.
+
+## ⟳ **K4 GERİ ÇEKİLDİ — kusur yoktu, PROB yanlıştı** ③⑦
+
+İnsan testinde *«makine bazında oee»* → *«+ kullanılabilirlik»* denemesi
+`['ort_kullanilabilirlik']` verdi ve bunu *«chip ölçüyü değiştiriyor»* diye kaydettim.
+**Yanlış.** Kaynağı okuyunca (`cube_router:4678`) chip'in **zaten** birleştirilmiş bir
+fiş taşıdığı görüldü:
+
+```python
+meases.append({"label": f"+ {label}", "kind": "measure",
+               "cube_query": {**cube_query, "measures": [*meas_used, m]}})
+```
+
+Canlıda doğrulandı: `+ kullanılabilirlik` → `cube_query.measures = ['ort_oee',
+'ort_kullanilabilirlik']`. Yani chip **ekliyor**, hem de `/cube` ile **sıfır LLM**.
+
+🔴 **Benim hatam:** chip'i *tıklamak* yerine **etiketini metin olarak yazdım**
+(`{"question": "+ kullanılabilirlik", "history": [...]}`). O tamamen başka bir yoldur
+(garson/LLM) ve chip'in vaadini taşımaz. Yani ölçtüğüm şey ürünün akışı değil, **benim
+uydurduğum bir akıştı** ⑦.
+
+⊙ Bu, bu oturumda beklentimin **otuzuncu** kez yanılmasıdır — ve disiplin işe yaradı:
+kusuru *«düzeltmeden önce kaynağı oku»* kuralı, olmayan bir kusura yama yazmayı önledi.
+*Bir kusur kaydı da bayatlar 🅟; yanlış kaydı düzeltmemek, onu ikinci kez üretmektir.*
+
+⚠ **Açık kalan gerçek soru** (kusur değil, **ürün kararı**): kullanıcı chip etiketini
+**yazarsa** ne olmalı? Bugün LLM yoluna gidiyor ve ölçüyü değiştirebiliyor. Chip'in
+etiketi `+X`, `oneri_cumle`'nin cümlesi ise fiilli (*«fire ekle (aynı kırılım · aynı
+dönem)»*) — ikisi **aynı biçimde** olsaydı yazılan metin de doğru yola düşerdi ㊲.
+**Ölçülmeden karar verilmez**; borç listesine yazıldı.
