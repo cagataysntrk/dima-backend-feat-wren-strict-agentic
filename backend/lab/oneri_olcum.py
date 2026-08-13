@@ -245,7 +245,8 @@ def kos(*, vektor: bool = False) -> dict:
     s = get_settings()
     w = WrenService(project_dir=s.resolved_project_dir(), datasource=s.datasource,
                     connection_info=s.connection_dict())
-    havuz = gorunumler(w.schema())
+    sema = w.schema()
+    havuz = gorunumler(sema)
 
     olculur = [(i, h) for i, h, _s in VAKALAR if i not in GURULTU]
     gurultu = [i for i, _h, _s in VAKALAR if i in GURULTU]
@@ -273,6 +274,30 @@ def kos(*, vektor: bool = False) -> dict:
             # 🔴 Gürültü vakası: doğru davranış **bulmamak**. En iyi skoru raporla ki
             # bir eşik konabilsin — ama Recall paydasına **girmesin** 🅜.
             rapor["gurultu_en_iyi"] = {g: round(vek[g][0][0], 3) for g in gurultu if g in vek}
+        # ══════════════════════════════════════════════════════════════════════════
+        # 🔴 `§76` — **ÜRÜNÜN KENDİ SIRALAMASI** (`app.oneri.ara`, RRF)
+        # ══════════════════════════════════════════════════════════════════════════
+        #
+        # ⊙ Ölçülen boşluk: bu araç üç şey ölçüyordu — `leksik`, `vektor` ve `birlesik`
+        # (**max** füzyonu, kendi şerhi: *«RRF gibi bir şey denenmedi»*). Üçü de
+        # `_RRF_K`'dan **bağımsızdır**; yani sabiti değiştirip aracı koşmak üç `K` için
+        # **birebir aynı** sayıları verir ve *«fark yok»* diye okunur 🆆.
+        #
+        # ⚠ Bu satır ürünü **çağırır, taklit etmez** ㊲⑦: `oneri.ara` neyi sıralıyorsa
+        # ölçülen odur — allowlist, ısıtma, değer adayları ve RRF dâhil. İkinci bir
+        # sıralayıcı yazmak, ölçülen şeyi üründen **ayırmak** olurdu.
+        # ⚠ Değer adayları (`kimlik` içinde `#`) **elenmez**: kullanıcı onları da görüyor
+        # ve bir sırayı **işgal ediyorlar** — elemek, ürünü olduğundan iyi ölçmek olurdu.
+        try:
+            from app import oneri as _urun
+
+            rapor["urun"] = _metrik(siralar(
+                lambda i: [(0.0, a.kimlik) for a in _urun.ara(i, sema)]))
+            rapor["urun_rrf_k"] = _urun._RRF_K
+        except Exception as e:                                  # noqa: BLE001
+            # ⚠ Ölçüm aracı **düşmez**: ürün ayağı koşamazsa nedeni raporlanır ve öteki
+            # ayaklar okunabilir kalır (ADR-0020 ruhu).
+            rapor["urun"] = {"hata": f"{type(e).__name__}: {e}"}
     return rapor
 
 

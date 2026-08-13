@@ -3661,3 +3661,55 @@ görmek.»*
 ### ⊘ FE ekran doğrulaması — **altıncı tur** yapılamadı
 
 `localhost:3000` → `000`.
+
+---
+
+## `§76` — ölçüm aracı artık **ÜRÜNÜ** ölçüyor; `_RRF_K` sayıyla kapandı, **yeni bir kusur açıldı**
+
+### ⚠ ÖNCE BİR DÜZELTME ③ — `§75`'teki *«araç füzyonu ölçmüyor»* **yarı yanlıştı**
+
+`fuzyon={}` benim **prob anahtarımın** artefaktıydı. Araç bir füzyon **ölçüyor**:
+`rapor["birlesik"]` — ama o **max** füzyonudur ve kendi şerhi bunu söylüyor: *«RRF gibi
+bir şey **denenmedi**; amaç en iyi füzyonu bulmak değil, vektörün marjinal katkısını
+görmek.»* Doğru teşhis: **araç ÜRÜNÜN sıralamasını (RRF) ölçmüyordu** — üç ayağının üçü de
+`_RRF_K`'dan bağımsız. *Bir aracın ölçmediği şeyi, ölçmediğini de yanlış adlandırabilirsin.*
+
+### ① 🆕 `urun` ayağı — ürün **çağrılıyor**, taklit edilmiyor ㊲⑦
+
+`lab/oneri_olcum.py` artık `app.oneri.ara()`'yı doğrudan çağırıyor: allowlist, ısıtma,
+değer adayları ve RRF **dâhil**. İkinci bir sıralayıcı yazmak, ölçülen şeyi üründen
+ayırmak olurdu.
+
+### ② `_RRF_K` — **kapandı, sayıyla** 🆕
+
+`K ∈ {5, 10, 20, 37, 60}` → `urun` metrikleri **beşinde de birebir aynı**
+(`R@1 78,4 · R@3 83,8 · MRR 0,806`). *Fark ölçülemedi → sabite dokunulmadı.* Kalem artık
+bir *«kalibrasyon borcu»* değil, **ölçülmüş bir sonuç**.
+
+### ③ 🔴 YENİ BULGU — **ürünün sıralaması vektör ayağının GERİSİNDE**
+
+Aynı **37** vaka, aynı koşum:
+
+| ayak | `R@1` | `R@3` | `R@5` | `MRR` |
+|---|---|---|---|---|
+| leksik | 70,3 | 75,7 | 81,1 | 0,749 |
+| vektör | **81,1** | **91,9** | **91,9** | **0,868** |
+| birleşik (max) | 78,4 | **91,9** | 91,9 | 0,854 |
+| 🔴 **ürün (RRF)** | 78,4 | **83,8** | **83,8** | 0,806 |
+
+İlk üçte **8,1 puan** kayıp — ve **max füzyonu vektörle aynı yerde** duruyor. Yani kayıp
+*«füzyon fikrinden»* değil, **bu füzyondan** geliyor gibi görünüyor.
+
+⚠ **Bir aday şüpheli elendi** ③: değer adaylarının (`kimlik` içinde `#`) sıraları işgal
+ettiğini sanmıştım — elenince metrikler **birebir aynı** kaldı (`78,4 / 83,8 / 0,806`).
+Sebep **onlar değil**.
+
+⊘ **Düzeltilmedi, kaydedildi** ㊸: sıralama değişikliği kendi turunu ister (korpus +
+canlı + `Recall` yeniden ölçümü). Devralanın **ilk kod işi** artık budur.
+
+**Demet:** 279 ✅. ⚠ Değişiklik yalnız `lab/` altında — **canlı tazeleme yapılmadı**
+(`s36` güncel).
+
+### ⊘ FE ekran doğrulaması — **yedinci tur** yapılamadı
+
+`localhost:3000` → `000`.
