@@ -1726,3 +1726,53 @@ TAVANI_ASMIYOR` ateşledi. Tavan **yükseltilmedi** — çağrı tek satıra sı
 **K5◐** (*«sadece bu üç ayı»* daraltması) · borçlar: `_uuid_or_none` 5 kopya ㊲ ·
 `_norm` 5 modül · `d11` · `§56` · `FAZ 0` paydası 🆉 · `_RRF_K` · chip etiketi ·
 çok kiracılı ısıtma.
+
+---
+
+## §35 — K5'in kökü: *«üç ay»* değil, **YAZIYLA YAZILMIŞ HER SAYI**
+
+### Ölçülen (iki turlu tam akış 🆣, çapa `cube_query` ile gönderildi)
+
+```
+tur1  «bu yil ciro»        → parti · toplam_ciro · tarih ≥ 2026-01-01
+tur2  «sadece bu uc ayi»   → source=None · cube_query=None
+                             note: «Bu takip mesajını önceki raporla ilişkilendiremedim.»
+```
+
+Beyan **dürüst** — ama planın ürün sözleşmesinin **3. satırı** *«5 turluk thread'de yapı
+hiç kaybolmaz — "ilişkilendiremedim" 0 kez»* diyor. Yani dürüstlük burada bir başarı
+değil, bir **eksiklik raporudur**.
+
+### Kök ㉚ — takip tesisatı değil, DÖNEM AYRIŞTIRICISI
+
+| ifade | `date_filters` |
+|---|---|
+| `son 3 ayi` | **1** ✅ |
+| `son üç ay` · `son altı ay` · `geçen üç ay` · `son iki hafta` | **0** ❌ |
+
+Yani kusur *«üç ay»*a özel değil: **rakamla yazılınca çalışıyor, yazıyla yazılınca
+çalışmıyor** 🅡. Ve `«sadece bu uc ayi»` iki kez düşüyor — hem `bu N ay` kalıbı yok, hem
+`uc` bir sayı olarak okunmuyor.
+
+### 🔴 Ve çare BURADA BİR DOKTRİN SORUSU — kendi başıma karar vermiyorum
+
+**EN ÜST KURAL:** *«route'a dil kuralı EKLEME (morfoloji · ek · eşanlam · sözcük sınıfı)
+zaruri olmadıkça. Bir cümle anlaşılmıyorsa çözüm route'u genişletmek değil DEVRİ
+tetiklemektir.»* Türkçe sayı sözcükleri tam da bu yasağın içindedir.
+
+Ve devir **fresh** soruda zaten çalışıyor: `son üç ay ciro` → dönem çözülemez →
+`eksiklik={donem}` → `route_supheli=True` → garson. **Ölçülen kusur takip yolunda**:
+çapalı bir takip mesajı garsona **hiç gitmeden** *«ilişkilendiremedim»* diyor.
+
+⟹ **Doğru çare, route'a sayı öğretmek DEĞİL, takip yolunda da devri açmaktır.**
+
+### ⚠ Ama bu ölçüm LLM'SİZ TABANDA yapıldı — eksiği yayına yazıyorum 🅖
+
+Prob konteynerinde sağlayıcı `RuleBasedSqlGenerator`, yani **garson yok**. Gördüğüm
+*«ilişkilendiremedim»* garsonun **yokluğunda** doğru davranış da olabilir; canlıda
+`_cube_refine_user` (`llm.py:521` — *«Konuşmasal daraltma — YAPISAL karar protokolü»*)
+bu mesajı **çözüyor** olabilir. **Ölçülmedi.**
+
+**Sıradaki ölçüm:** sahte bir garson (stub `select_cube`/refine) ile takip yolunun
+devri **çağırıp çağırmadığı** — bu, LLM kalitesini değil **tesisatı** ölçer ㊳.
+*Bir yolun kapalı olduğunu, o yolu açan anahtarı takmadan ilan edemem.*
