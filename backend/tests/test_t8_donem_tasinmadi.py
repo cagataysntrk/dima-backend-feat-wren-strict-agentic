@@ -39,6 +39,8 @@ okunmaz olur.
 
 from __future__ import annotations
 
+import dataclasses as _dc
+
 _CQ_FILTRESIZ = {"cube": "parti", "measures": ["toplam_ciro"]}
 _CQ_FILTRELI = {"cube": "parti", "measures": ["toplam_ciro"],
                 "filters": [{"dimension": "tarih", "operator": "gte",
@@ -50,22 +52,59 @@ def _isaretler(q, cq, schema):
     return {i.isaret for i in uyum.denetle(q, cq, None, schema)}
 
 
-def test_OLCUM_TABANI_NIYET_FARKI_GORUYOR(schema):
-    """⊘ **Boş yeşil avı.** Ayrım `Niyet`te yoksa aşağıdaki yüklemler hiçbir şey ölçmez."""
+def test_OLCUM_TABANI_SINIF_ARTIK_BOS(schema):
+    """⟳ **ÖLÇÜM TABANI DEĞİŞTİ — ve sebebi bir DÜZELTME** 🅟.
+
+    Bu yüklemin ilk hâli *«`2019 cirosu` sayılır ama **çözülemez**»* diyordu ve alttaki
+    asıl kapının boş yeşil olmadığını böyle kanıtlıyordu. O örnek **kapandı**: çıplak yıl
+    artık çözülüyor (`cube_router._YEAR_RE`, `K3`) ve soru Discovery'ye düşmüyor.
+
+    ⊙ **On üç ifade tarandı** (`gelecek yıl` · `önümüzdeki ay` · `13. ayda` · `2019 kasım`
+    · `bayram döneminde` · `kış aylarında` · `ilk çeyrek` · `mali yıl` · `yaz döneminde`
+    · `pandemi döneminde` · `2019 üçüncü çeyrek` · `2019 ilk yarı` · `son mali çeyrek`) ve
+    **hiçbiri** *«sayılır ama çözülemez»* sınıfına girmedi: ya çözülüyorlar ya hiç dönem
+    sayılmıyorlar. Yani sayıcı ile çözücü **bugün aynı fikirde** 🆉.
+
+    🔴 **Ama işaret KALDI** ve kalmalı: sınıf **kapanmadı**, yalnız **boşaldı**. Yeni bir
+    dönem sözcüğü ya da yeni bir katalog onu bir günde yeniden doldurabilir. *Bir kapıyı,
+    bugün örneği yok diye kaldırmak, yarın onu yeniden yazmaya söz vermektir.*
+
+    ⚠ Bu yüzden asıl kapı (aşağıda) artık **birim düzeyinde** kuruluyor: canlı bir soru
+    yerine sınıfın **kendisi** üretiliyor. Ölçtüğü şey değişmedi — nereden beslendiği
+    değişti ㊺.
+    """
     from app.niyet import coz
 
-    disi, ici = coz("2019 cirosu", schema), coz("bu yil ciro", schema)
-    assert disi.donem_sayisi >= 1 and not disi.donemler, (
-        f"⊘ ölçüm tabanı: `2019` için sayı={disi.donem_sayisi} çözülen={len(disi.donemler)}")
+    ici = coz("bu yil ciro", schema)
     assert ici.donem_sayisi >= 1 and ici.donemler, (
         f"⊘ ölçüm tabanı: `bu yil` çözülemedi — {len(ici.donemler)}")
+    disi = coz("2019 cirosu", schema)
+    assert disi.donem_sayisi >= 1 and disi.donemler, (
+        "⊘ `2019 cirosu` yeniden ÇÖZÜLEMEZ oldu — `K3` düzeltmesi geri gitmiş olabilir.")
 
 
-def test_DONEM_TASINMADIYSA_BEYAN_EDILIYOR(schema):
+def test_DONEM_TASINMADIYSA_BEYAN_EDILIYOR(schema, monkeypatch):
     """🔴🔴 **ASIL KAPI.** Soru bir dönem adlayıp sorgu onu taşımıyorsa cümle bunu
-    **söylemeli**. Sessiz kalmak, *«tüm zamanlar»*ı *«2019»* diye sunmaktır."""
-    assert "donem_tasinmadi" in _isaretler("2019 cirosu", _CQ_FILTRESIZ, schema), (
-        "🔴 DÖNEM SESSİZCE DÜŞTÜ: soru «2019» diyor, sorguda tarih kısıtı yok ve "
+    **söylemeli**. Sessiz kalmak, *«tüm zamanlar»*ı *«2019»* diye sunmaktır.
+
+    ⟳ Girdi **birim düzeyinde** kuruluyor (yukarıdaki gerekçe): sınıfın canlı örneği
+    bugün yok, ama sınıf var. Sahte olan **yalnız** `Niyet`in iki alanı; işaretin kendi
+    mantığı **ürünündür** ve olduğu gibi koşuyor ㉕.
+
+    🅑 Mutasyon: `uyum.py`'deki `donem_tasinmadi` dalı kaldırılırsa bu yüklem kırılır.
+    """
+    from app import niyet as _n
+    from app import uyum
+
+    # ⚠ Hedef `coz` değil **`coz_soru`** — `uyum.denetle` şemasız çözücüyü çağırır
+    # (`uyum.py:746`) ve import **fonksiyon içinde** olduğu için yama çalışma anında
+    # tutar. İlk denemem `coz`'u yamaladı ve **hiçbir şey değişmedi** ㉙: bir bağımlılığı
+    # yamalamadan önce, kodun onu hangi **adla** çağırdığını okumak gerekir.
+    gercek = _n.coz_soru("bu yil ciro")
+    sahte = _dc.replace(gercek, donemler=[])          # sayılır ama ÇÖZÜLEMEZ
+    monkeypatch.setattr(_n, "coz_soru", lambda *_a, **_k: sahte)
+    assert "donem_tasinmadi" in _isaretler("bu yil ciro", _CQ_FILTRESIZ, schema), (
+        "🔴 DÖNEM SESSİZCE DÜŞTÜ: soru bir dönem adlıyor, sorguda tarih kısıtı yok ve "
         "sistem bunu SÖYLEMİYOR — üretilen sayı tüm zamanları kapsıyor.")
 
 

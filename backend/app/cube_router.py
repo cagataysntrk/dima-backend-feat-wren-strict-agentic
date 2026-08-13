@@ -546,38 +546,26 @@ def _single_day_filters(q: str, time_dim: str) -> list[dict] | None:
 #: ⚠ ÇIPLAK YIL BİLEREK KAPSAM DIŞI: dört haneli bir sayı bir hesap/şube/TRCODE değeri de
 #: olabilir (`_value_token_hit`'in kendi notu bu tuzağı kaydediyor). En az bir YIL İŞARETİ
 #: (`yıl`/`sene` ya da hâl eki) aranır — belirsizde dönem sormak, uydurmaktan iyidir.
-_YEAR_RE = re.compile(r"\b((?:19|20)\d{2})\s*(?:(?:yil|sene)\w*|da\b|de\b|ta\b|te\b)")
+_YEAR_RE = re.compile(r"(?<![\w-])((?:19|20)\d{2})(?![\w-])\s*((?:yil|sene)\w*|da\b|de\b|ta\b|te\b)?")
 
-#: **Çıplak yıl** — *«2019 cirosu»*. Ek istemez; aralık kapalı (1900-2099) ve
-#: lookaround yapışık rakamları (`RAM-2019`) dışarıda tutar 🆢. Eşikle çakışma
-#: `date_filters` içinde `_measure_threshold`'a **sorularak** kesilir ㊲.
-_YEAR_BARE_RE = re.compile(r"(?<![\w-])((?:19|20)\d{2})(?![\w-])")
 
 
 def _calendar_year_filters(q: str, time_dim: str) -> list[dict]:
     m = _YEAR_RE.search(q)
-    if not m:
-        # 🔴 **ÇIPLAK YIL — ölçülmüş kusur (insan testi, 2026-08-13).**
-        #
-        # `2019 yılı cirosu` çözülüyordu ama **`2019 cirosu` çözülmüyordu**: `_YEAR_RE`
-        # yılın ardından *«yıl/sene»* ya da bir bulunma eki (*«2019'da»*) arıyor. Oysa
-        # Türkçede *«2019 cirosu»* tam ve olağan bir ifadedir.
-        #
-        # ⊙ Bedeli ölçüldü ve ağırdı: dönem düştüğü için soru **küp yolundan çıkıp**
-        # Discovery'ye gitti (`source=llm:openrouter` · `cube=adhoc`) ve kullanıcıya
-        # **`null`** döndü. Yani bir ayrıştırma eksiği, *«sayıyı küp koyar»* ilkesini
-        # kullanıcının gözünde bozdu. *Bir dönemi okuyamamak, o soruyu kaybetmektir.*
-        #
-        # ⚠ **Eşikle çakışma tek sahibe sorularak** kesiliyor ㊲: *«2000 üstü müşteriler»*
-        # bir yıl değil bir **eşiktir**, ve bunu bilen zaten `_measure_threshold`'dur.
-        # Karşılaştırıcı sözcükleri buraya **kopyalamak** ikinci bir sözlük doğururdu.
-        #
-        # ⚠ Aralık `(?:19|20)\d{2}` ile kapalı; `1000`/`5000` gibi eşik sayıları
-        # **giremez**. Yapışık rakamlar (`RAM-2019`) de lookaround ile dışarıda 🆢.
-        b = _YEAR_BARE_RE.search(q)
-        if not b or _measure_threshold(q) is not None:
-            return []
-        m = b
+    # 🔴 **ÇIPLAK YIL** — ölçülmüş kusur: `2019 yılı cirosu` çözülüyordu ama **`2019
+    # cirosu` çözülmüyordu** (kalıp yılın ardından *«yıl/sene»* ya da bulunma eki
+    # arıyordu). Dönem düşünce soru **küp yolundan çıkıp** Discovery'ye gitti ve
+    # kullanıcıya **`null`** döndü. *Bir dönemi okuyamamak, o soruyu kaybetmektir* 🆘.
+    #
+    # ⚠ Ek artık **isteğe bağlı** (`group(2)`), ama çıplak hâlde bir **eşikle çakışma**
+    # riski doğar: *«2000 üstü müşteriler»* bir yıl değildir. Karşılaştırıcı sözcükleri
+    # buraya **kopyalamak** ikinci bir sözlük doğururdu ㊲ — bunun yerine **tek sahibe
+    # sorulur** (`_measure_threshold`). Ve guard yalnız **eksiz** eşleşmede çalışır:
+    # *«2019 yılı cirosu 1000 üstü»* gibi bir cümlede yıl **korunur**.
+    #
+    # ⚠ Lookaround yapışık rakamı dışarıda tutar 🆢: `RAM-2019` bir **kimliktir**.
+    if not m or (not m.group(2) and _measure_threshold(q) is not None):
+        return []
     yil = int(m.group(1))
     return [
         {"dimension": time_dim, "operator": "gte", "value": f"{yil}-01-01"},
