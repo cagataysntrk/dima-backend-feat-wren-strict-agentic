@@ -499,7 +499,7 @@ def cumleler(adaylar: Sequence[Aday], *, capa: dict | None = None, niyet: Any = 
     ust_pay = limit if not yeni else max(1, limit - 1)
     secim = ust[:ust_pay]
     secim += yeni[: max(0, limit - len(secim))]
-    return _ayirt_et(secim, schema)
+    return _ayirt_et(_onek_oncelikli(secim, soru), schema)
 
 
 def _rapor_ustunde(adaylar: list[Aday], c: _Capa, niyet: Any,
@@ -794,6 +794,44 @@ def _tekille(oneriler: list[Oneri]) -> list[Oneri]:
         gorulen.add(o.kimlik)
         out.append(o)
     return out
+
+
+def _onek_oncelikli(oneriler: list[Oneri], soru: str) -> list[Oneri]:
+    """🔴 `§47` — **ÖNEK DEĞİŞMEZİ, SÜZGEÇ DEĞİL SIRALAMA OLARAK.**
+
+    ## Ölçülen kusur
+
+    Bir tamamlama, yazılanı **sürdürmelidir**. `q=ci` için üretilenlerin ikisi yazılanı
+    hiç taşımıyordu (*«bu ay sipariş tutarı ne kadar?»*, *«bu ay ağır şikayet oranı ne
+    kadar?»*) — anlamca komşu ama **tamamlama değil**. Aynı desen `ram 3` yazılırken
+    *«kök nedene göre **ram**ak kala»*yı öne çıkarmıştı.
+
+    ## Neden KATI kural DEĞİL — ölçüm bunu çürüttü 🆃
+
+    Aynı ölçüm yazım hatasını da gösterdi: `q=firee` için üretilen **iki** satır da
+    yazılanı içermiyor — ama ikisi de **doğru** (*«bu ay fire ne kadar…»*). Katı bir
+    *«içermiyorsa at»* kuralı, ürünün **yazım hatası toleransını** öldürürdü.
+
+    ⟹ Çare **sıralama**: yazılanı taşıyanlar **üste**, ötekiler altta ve **kaybolmadan**.
+    *Bir gürültüyü susturmanın yolu onu silmek değil, doğrunun sesini yükseltmektir* 🆉.
+
+    ⚠ Kararlı (`stable`) sıralama: aynı sınıf içindeki mevcut sıra — bantlar, RRF ve
+    çapa önceliği — **bozulmaz**; yalnız iki sınıf birbirine göre yer değiştirir.
+    """
+    # ⚠ Normalleştirici **motorun kendisinden** alınır (`app.oneri._norm`, kaynağı
+    # `app.llm`): şerit hangi metni eşleştiriyorsa sıralama da **onu** görmeli 🆩. Ve
+    # saflık kapısının izinli kümesi dar — `cube_router` buraya giremez (`E-8`).
+    from app.oneri import _norm as _n
+
+    tokenlar = [t for t in _n(soru or "").split() if t]
+    if not tokenlar:
+        return oneriler
+
+    def _tasiyor(o: Oneri) -> int:
+        m = _n(o.metin)
+        return 0 if all(t in m for t in tokenlar) else 1
+
+    return sorted(oneriler, key=_tasiyor)
 
 
 def _ayiricili(metin: str, kup: str) -> str:

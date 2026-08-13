@@ -2249,3 +2249,40 @@ genelinde kalıcıdır (üretimde doğrusu budur) ama test süreci paylaşılır
 Soğuk 44 → 29,8 sn indi ve **cevap geldi** (eskiden hiç dönmüyordu). Kalan 29,8 sn
 ısınmanın CPU'yu doyurmasıdır; `s16` ile ısıtma artık **gerçekten** koşuyor, ölçümü
 sıradaki turda.
+
+---
+
+## §47 — ÖNEK DEĞİŞMEZİ: **süzgeç değil sıralama** (ölçüm katı kuralı çürüttü)
+
+### Ölçüm — kuralı yazmadan önce
+
+| girdi | yazılanı taşımayan satır | yargı |
+|---|---|---|
+| `ram 3` · `fire` · `durus` | **0** | ✅ zaten sürdürüyor |
+| `ci` | **2** — *«bu ay sipariş tutarı ne kadar?»* · *«bu ay ağır şikayet oranı ne kadar?»* | 🔴 anlamca komşu ama **tamamlama değil** |
+| `firee` *(yazım hatası)* | **2** — *«bu ay fire ne kadar…»* | ✅ **doğru** |
+
+Son satır kararı değiştirdi 🆃: bir denetim ajanı *«içermiyorsa öneri değildir, at»* diyordu;
+ölçüm gösterdi ki katı bir süzgeç ürünün **yazım hatası toleransını** öldürürdü —
+`firee` yazan kullanıcı düzeltmeyi göremezdi.
+
+⟹ **Çare sıralama:** yazılanı taşıyanlar **üste**, ötekiler altta ve **kaybolmadan**.
+*Bir gürültüyü susturmanın yolu onu silmek değil, doğrunun sesini yükseltmektir* 🆉.
+
+⚠ Kararlı sıralama: bantlar · RRF · çapa önceliği **bozulmaz**; yalnız iki sınıf yer
+değiştirir.
+
+### Saflık kapısı bir kez daha haklı çıktı ㊸
+
+İlk yazımda `cube_router`'ı içe almıştım; `test_SAF_MODUL_llm_sorgu_io_ICERMEZ` **kırmızı**
+verdi ve izin listesini gösterdi (`app.ek`, `app.oneri`, stdlib). Normalleştirici
+**motorun kendisinden** alındı (`app.oneri._norm`, kaynağı `app.llm`) — şerit hangi metni
+eşleştiriyorsa sıralama da **onu** görüyor 🆩. *Bir kapının reddi, çoğu zaman doğru adresi
+de gösterir.*
+
+### Kapı
+
+`tests/test_onek_degismezi.py` (**3 ✅**): taşıyanlar üstte · **ilk satır** yazılanı
+sürdürür (`Enter`'ın seçeceği satır) · **zıt ölçüt**: yazım hatasında öneri **kaybolmaz**.
+
+**Kanıt:** `onek_degismezi · oneri_cumle · oneri_motoru · alan_haritasi` → **108 ✅**.
