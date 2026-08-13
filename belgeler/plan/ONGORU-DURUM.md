@@ -2593,3 +2593,45 @@ yazılarak yapılır — kapıyı silerek değil.*
 
 `lab/oneri_p95.py` gerçek gömücüyle koşuyor (model indirmesi ~2 GB; ilk koşum uzun).
 Eşik `ESIK_MS = 300.0`; canlı ılık gözlem **0,10–0,36 s**. Sonuç sıradaki turda.
+
+---
+
+## §56 — 🔴 KILAVUZ BACKEND'İ ÇÖKERTTİ: **yıkıcı adım, doğrulanmış adımdan önceydi**
+
+### Olay (kullanıcı, 2026-08-13)
+
+`SERVER_COMMANDS.md`'nin *«yeniden derle»* bloğu kopyalandı. `ETIKET` **elle atanan** bir
+değişkendi ve satır kopyalanmadı:
+
+```
+docker build -t dima-backend-temiz:  →  invalid reference format   (düştü)
+docker rm -f dima-oneri-8002         →  ✅ SİLDİ                    (çalıştı)
+docker run … dima-backend-temiz:     →  invalid reference format   (düştü)
+```
+
+⟹ **Backend gitti.** Derleme düşmüştü ama bir sonraki satır çalışan kabı **yine de**
+sildi.
+
+### Kök — bir kabuk hatası değil, bir **sıra** hatası
+
+`docker rm -f`, yerine konacak imaj **var olmadan** yazılmıştı. Bir kurulum reçetesinde
+yıkıcı adım, doğrulanmış adımdan **sonra** gelir.
+
+*Bir reçetenin doğru çalışması, kullanıcının bir satırı atlamamasına bağlı olmamalıdır.*
+
+### Düzeltme (`belgeler/kilavuz/SERVER_COMMANDS.md`)
+
+1. **Etiket kendi hesaplanıyor** — `s$(( en_büyük + 1 ))`; elle atanan değişken yok.
+   *(Denendi: `s22` üretti 🆌.)*
+2. **Önce derle, sonra değiştir**: `docker build … || { echo '🔴 derleme düştü — kap
+   YERİNDE'; exit 1; }` — düşerse çalışan kaba **hiç dokunulmaz**.
+3. **Sağlık yoklaması** blok içinde (200 gelene kadar).
+4. **Tek satırlık kurtarma** reçetesi eklendi: son sağlam imajla geri kaldırır.
+   *(Denendi: `s21` buldu 🆌.)*
+
+⚠ Ve kılavuzun `--env-file .env` satırı **doğrulandı** 🅢: `.env` ile koşan kabın ortamı
+**birebir aynı** (35 `DIMA_` değişkeni, eksik **yok**).
+
+### Kurtarma
+
+`dima-oneri-8002` **`s21`** ile geri kaldırıldı, `health=200`. Kayıp: yalnız kesinti süresi.

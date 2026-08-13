@@ -16,17 +16,49 @@
 ```bash
 cd /home/cagataysntrk/İndirilenler/dima-backend-feat-wren-strict-agentic
 
-ETIKET=s18                                   # ⚠ bir öncekinden BÜYÜK olsun (aşağıya bak)
-docker build -t dima-backend-temiz:$ETIKET backend/
+# ① Etiketi KENDİ hesapla — elle yazılan bir değişken unutulur ve boş kalır.
+ETIKET="s$(( $(docker images --format '{{.Tag}}' dima-backend-temiz \
+              | sed 's/^s//' | sort -n | tail -1) + 1 ))"
+echo "yeni etiket: $ETIKET"
 
+# ② ÖNCE DERLE. Derleme düşerse burada durur — çalışan kaba HİÇ dokunulmamış olur.
+docker build -t "dima-backend-temiz:$ETIKET" backend/ || { echo "🔴 derleme düştü — kap YERİNDE, hiçbir şey yapma"; return 2>/dev/null || exit 1; }
+
+# ③ Ancak imaj hazırsa değiştir.
 docker rm -f dima-oneri-8002
 docker run -d --name dima-oneri-8002 -p 8002:8000 --env-file .env \
   -v dima-backend-feat-wren-strict-agentic_dima_logs:/app/logs \
   -v dima-backend-feat-wren-strict-agentic_dima_hf_cache:/tmp/fastembed_cache \
-  dima-backend-temiz:$ETIKET
+  "dima-backend-temiz:$ETIKET"
+
+# ④ Sağlık — 200 gelene kadar yokla (ısınma ~25 sn, öneri ucu o pencerede leksik cevap verir).
+for i in $(seq 1 40); do
+  [ "$(curl -s -o /dev/null -w '%{http_code}' -m 4 localhost:8002/health)" = "200" ] \
+    && { echo "✅ ayakta ($ETIKET)"; break; }
+done
 ```
 
-**Sıradaki etiketi öğren:** `docker images --format '{{.Tag}}' dima-backend-temiz | sort -V | tail -1`
+🔴🔴 **BU BLOK BİR KEZ BACKEND'İ ÇÖKERTTİ — ve sebebi SIRAYDI** *(ölçüldü, 2026-08-13)*.
+Eski hâlinde `docker rm -f` **derlemeden önce** koşuyordu ve `ETIKET` elle atanan bir
+değişkendi. Kullanıcı bloğu kopyalarken `ETIKET` satırı boş kaldı → `docker build -t
+dima-backend-temiz:` **`invalid reference format`** ile düştü → ama bir sonraki satır
+çalışan kabı **yine de sildi** → `docker run` da düştü ve **backend gitti**.
+
+> *Yıkıcı adım, doğrulanmış adımdan sonra gelir.* Bir kurulum reçetesinde `rm -f`,
+> yerine koyacağın şey **elinde olduktan sonra** yazılır — önce değil.
+
+⚠ Ve `ETIKET` artık **elle yazılmaz**: yukarıdaki satır mevcut en büyük etiketi bulup bir
+artırıyor. *Bir reçetenin doğru çalışması, kullanıcının bir satırı atlamamasına bağlı
+olmamalıdır.*
+
+**Çöktüyse — tek satırlık kurtarma** (son sağlam imajla geri kaldır):
+
+```bash
+docker run -d --name dima-oneri-8002 -p 8002:8000 --env-file .env \
+  -v dima-backend-feat-wren-strict-agentic_dima_logs:/app/logs \
+  -v dima-backend-feat-wren-strict-agentic_dima_hf_cache:/tmp/fastembed_cache \
+  "dima-backend-temiz:$(docker images --format '{{.Tag}}' dima-backend-temiz | sed 's/^s//' | sort -n | tail -1 | sed 's/^/s/')"
+```
 
 ⚠ **Rebuild şart** — kaynak kod konteynere bind-mount **edilmiyor**; `docker restart`
 eski kodu çalıştırmaya devam eder. *(Bu, bu depoda defalarca «düzelttim ama değişmedi»
