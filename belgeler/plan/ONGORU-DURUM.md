@@ -917,3 +917,48 @@ ve yazar **tek**.
 
 📌 Ajan denetimi **arka planda koşuyor**; iki test konteyneri **paralel koşturulmaz**
 (compose kilidi `metadata.yml`'de çakışır) — tam kapı ajan bitince koşulacak.
+
+---
+
+## §19 · **KENDİ KAPILARIMIN ÖZ-DENETİMİ** — ne ölçüyorlar? 🅯 *(2026-08-13)*
+
+Ajan koşarken konteynersiz bir ölçüm yapıldı: **9 kapı dosyası · 60 yüklem**, `ast` ile
+sınıflandırıldı (`read_text`/`getsource`/`glob` çağıran = **metin**, ürünü koşturan =
+**davranış**).
+
+| kapı | davranış | metin |
+|---|---|---|
+| `kiyas_temeli_chipi` | **7** | 0 |
+| `oneri_motoru` | **9** | 2 |
+| `hasat_konum_yanliligi` | **6** | 3 |
+| `oneri_tus_ve_sonbakilanlar` | **5** | 1 |
+| `emin_miyim_tek_sahip` | 4 | 4 |
+| `marj_kapisi_on_kosullari` | 2 | **5** |
+| `oneri_on_kosulu_model_kimligi` | 1 | 2 |
+| `aday_yan_kanali_on_kosullari` | 1 | **4** |
+| `oneri_p95_ve_faz7` | **0** | **4** |
+| **TOPLAM** | **35 (%58)** | **25 (%42)** |
+
+### Bu sayı tek başına bir yargı DEĞİL ㉘
+
+Metin ağırlıklı üç dosya tam olarak **erteleme kapıları**dır (`marj_kapisi`,
+`aday_yan_kanali`, `p95_ve_faz7`). Bir ⊘'nün gerekçesi doğası gereği **belgesel ya da
+yapısal**dır: *«`§40.4` duruyor mu»*, *«`cube_router` ayar okumuyor mu»*, *«sıralamaya
+rastgelelik sızdı mı»* — bunlar davranışla ifade edilemez, çünkü **olmayan** bir şeyin
+yokluğunu ölçerler 🆆.
+
+### 🔴 Ama iki gerçek zayıflık var — ve yazılıyor 🅖
+
+**① `oneri_p95_ve_faz7.py`: SIFIR davranış yüklemi.** Dördü de metin/rapor. Üstelik
+ikisi **gitignore'lu artefakta** bağlı (`§16` eki) → temiz klonda **skip**. Yani bu
+dosya bugün **hiçbir davranışı** korumuyor; bir **kayıt** tutuyor. Bu kabul edilebilir
+ama *«p95 kapılı»* demek **fazla iddialı** olurdu 🅫 — doğrusu: *«p95 ölçüldü ve sayısı
+belgeye yazıldı; kapı yalnız raporun kendisiyle tutarlılığı tutuyor.»*
+
+**② `emin_miyim_tek_sahip::test_DORT_CAGIRAN_DA_BAGLI`** `_emin_karar(` **geçişini
+sayıyor** — bir metin vekili ㊳. Çağıran *var ama erişilmez* olsa yine yeşil verirdi.
+⊙ Yanında **davranış** yüklemleri var (`auto_fix` eşikleri, typo üç kademesi) ve asıl
+korumayı **onlar** yapıyor; sayım yüklemi bir **erken uyarı**, bir kanıt değil.
+
+📌 Bu bölüm bir **özür değil bir sınır beyanı**: *bir kapının yeşili kapsamıyla
+sınırlıdır* 🅣 — ve kapsamı **sayıyla** yazılmadıkça o sınır görünmez.
