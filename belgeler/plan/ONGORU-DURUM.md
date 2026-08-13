@@ -1940,3 +1940,58 @@ Geçen demette aynı komut **4 dk 06 sn** sürmüş ve neredeyse tüm depoyu se�
 kodda değil **tabandaydı** (`294eb67` çok geride). Taban güncellenince kapı **iki kat**
 hızlandı ve kapsamı gerçekten *«değişen»* oldu 🅜. *Bir aracın yavaşlığı, çoğu zaman
 aracın değil ona verilen sınırın ölçüsüdür.*
+
+---
+
+## §41 — ÖNGÖRÜ ARTIK TAM CÜMLE **ve YAZILANI İÇERİYOR** (kullanıcı kusuru kapandı)
+
+### Kullanıcının bildirdiği kusur
+
+`ram 3 neden` yazıldı; şeritte **`RAM-3` hiç geçmedi**, gelenler alan adlarıydı
+(*«duruş sayısı»*, *«kırılım»*). Kullanıcı: *«öneri değil ÖNGÖRÜ… yazdığını tamamlama…
+`ram-3` olmak zorunda, bunun MAKİNE olduğunu fark etmiş olmak zorunda»* ve
+*«cümle bile değil… tam cümle öngörüsü»*.
+
+### İki kök — ikisi de ölçüldü
+
+| # | kök | kanıt |
+|---|---|---|
+| 1 | öneri evreninde **boyut değerleri yoktu** | `oneri.ara("ram 3")` → **0 aday**; `grep dimension_values app/oneri.py` → **0** 🆘 |
+| 2 | çapasız öneri **cümle değil etiketti** | `metin = etiket + _donem_eki(donem)`; dönem yoksa çıplak etiket 🆡 |
+
+Ekrandaki *«kök nedene göre **ram**ak kala»* bir eşleşme değil, **harf benzerliğiydi** —
+gerçek aday zaten listede olmadığı için gürültü öne çıkmıştı.
+
+### Çare
+
+* `oneri._deger_adaylari` — her boyut değeri, küpün **`default_measure`**'ıyla eşleşip
+  aday olur: `kimlik = "oee.ort_oee#makine=RAM-3"`. `#` **yeni sözleşme değil**,
+  kırılımlı öneriler onu zaten kullanıyordu 🆍. `default_measure` yoksa küp **atlanır**
+  (uydurma ölçü yok ㊱). Tavan `200`/küp — ölçülen havuz **776** değer, en kalabalık küp
+  **88**; sınır bugünü kırpmıyor, yarını taşınabilir kılıyor 🅜.
+* `oneri_cumle._deger_ayikla` + `_olcu_etiketi` — cümleyi `_kapsam(varlik, etiket)` ile
+  kurar; Türkçe tamlama **zaten** oradaydı ㊷, eksik olan **girdiydi**.
+* `_VARSAYILAN_DONEM = "bu ay"` — cümlede geçen dönem `cube_query`'ye de **aynen** girer
+  🆁; öneri bir sistem varsayımı değil, **kullanıcının yazacağı cümledir**.
+* `_ayiricili` — küp ayırıcısı cümlenin **içine**: `«bu ay fire ne kadar (OEE)?»`.
+* `routers/oneri.py::_yazilan_varlik` — `value_index.FuzzyIndex` ile yazılan varlık
+  çapaya bağlanır (⚠ `_capa_kur` dize ister; `None` geçmek **500** üretti, ölçüldü).
+
+### Ölçülen sonuç
+
+```
+"ram 3"   → «bu ay RAM 3 için OEE ne kadar?» · «bu ay RAM-3'ün iş emri adedi ne kadar?»
+"ferraro" → «bu ay FERRARO SANFOR-1'in iş emri adedi ne kadar?»
+"fire"    → «bu ay fire ne kadar (OEE)?» · «bu ay fire oranı ne kadar?»
+```
+
+### ⚠ Bir kapı KULLANICI KARARIYLA taşındı ㊸
+
+`test_S51_SERIDI_planin_ornegiyle_ayni_KALIPTA` planın `§5.1` **öbek** örneğini
+(`«RAM-3'ün fire oranı — bu ay»`) savunuyordu. Kullanıcı ekranda görüp reddetti ve
+**tam cümle** istedi. Kapı **kaldırılmadı**: içeriği (varlık · ölçü · dönem) aynı kaldı,
+**biçim** cümleye taşındı ve gerekçe kapının içine yazıldı. *Bir kararı plan yazar, ama
+plandan yeni bir karar onu geçersiz kılabilir — yeter ki sessizce değil, YAZILARAK.*
+
+**Kanıt:** `test_oneri_cumle` · `test_oneri_motoru` · `test_oneri_tus_ve_sonbakilanlar` ·
+`test_pill_katmani` → **89 ✅ / 4 atlandı**.

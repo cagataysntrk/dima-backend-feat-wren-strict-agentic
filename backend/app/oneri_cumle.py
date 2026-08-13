@@ -677,6 +677,29 @@ def _yazilan_donem(soru: str) -> str:
 _VARSAYILAN_DONEM = "bu ay"
 
 
+def _deger_ayikla(aday: Any, cube: str) -> tuple[str, str, str]:
+    """`oee.ort_oee#makine=RAM-3` → `("makine", "RAM-3", "ort_oee")`; değilse üç boş dize.
+
+    Sözleşmenin **sahibi** `app/oneri.py::_deger_adaylari`; burada yalnız **okunur**
+    (`_olcu_kodu`'nun kardeşi, `KAT-1`).
+    """
+    kod = _olcu_kodu(aday)
+    if "#" not in kod:
+        return "", "", ""
+    olcu, kalan = kod.split("#", 1)
+    if "=" not in kalan:
+        return "", "", ""
+    boyut, deger = kalan.split("=", 1)
+    return (boyut.strip(), deger.strip(), olcu.strip()) if deger.strip() else ("", "", "")
+
+
+def _olcu_etiketi(schema: dict | None, cube: str, olcu: str) -> str:
+    """Ölçünün insan-okur adı — katalogdan, **ikinci bir sözlük açmadan** (`KAT-1`)."""
+    meta = _kup_meta(schema, cube)
+    gorenen = meta.get("measure_synonyms_display") or {}
+    return str(gorenen.get(olcu) or olcu)
+
+
 def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | None,
                ust_metinler: set[str], soru: str = "") -> list[Oneri]:
     """`↳ YENİ KONU` — çapa **düşer**; dönem kalır (`§6/Thread 3`: kopuş bir yeni rapordur,
@@ -704,9 +727,25 @@ def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | 
         else:
             meta_boyutlar = set(_kup_meta(schema, cube).get("dimensions") or [])
             boyut = next((b for b in niyet_boyutlari if b in meta_boyutlar), "")
+        donem_c = donem or _VARSAYILAN_DONEM
+        # 🔴 `§40` — DEĞER ADAYI: `oee.ort_oee#makine=RAM-3`. Yazılan varlık cümlenin
+        # **öznesi** olur; `_kapsam` Türkçe tamlamayı zaten kuruyor ㊲.
+        v_boyut, v_deger, v_olcu = _deger_ayikla(a, cube)
+        if v_deger:
+            v_etiket = _olcu_etiketi(schema, cube, v_olcu)
+            metin = f"{donem_c} {_kapsam(v_deger, v_etiket)} ne kadar?"
+            if metin in ust_metinler:
+                continue
+            out.append(Oneri(
+                kimlik=f"{GRUP_YENI}:{TUR_YENI}:{cube}.{v_olcu}#{v_boyut}={v_deger}",
+                metin=metin, grup=GRUP_YENI, tur=TUR_YENI, cube=cube,
+                cube_query=_yeni_sorgu(
+                    cube, v_olcu, donem=donem_c,
+                    filtreler=[{"dimension": v_boyut, "operator": "eq",
+                                "value": v_deger}])))
+            continue
         b_et = _boyut_etiketi(schema, cube, boyut) if boyut else ""
         onek = f"{kirilim_ifadesi(b_et)} " if b_et else ""
-        donem_c = donem or _VARSAYILAN_DONEM
         metin = f"{donem_c} {onek}{etiket} ne kadar?"
         if metin in ust_metinler:
             # Üst bantta **birebir aynı** cümle zaten var: aynı satırı iki başlık altında
@@ -732,6 +771,21 @@ def _tekille(oneriler: list[Oneri]) -> list[Oneri]:
     return out
 
 
+def _ayiricili(metin: str, kup: str) -> str:
+    """Küp ayırıcısını **cümlenin içine** koyar — sonuna değil.
+
+    🔴 `§40` — öngörü **tam cümle** olunca ayırıcının yeri de değişti: eskiden metin bir
+    öbekti (`fire oranı`) ve sona eklemek doğaldı (`fire oranı (parti)`); şimdi cümle
+    soru işaretiyle bitiyor ve aynı ekleme *«bu ay fire ne kadar? (OEE)»* gibi **cümleyi
+    kesip arkasına etiket yapıştırıyordu**.
+
+    ⚠ Ayırıcının **işi değişmedi** (aynı metinli iki öneriyi ayırmak) — yalnız **yeri**
+    düzeldi. Kapı `test_AYNI_ETIKETLI_IKI_ONERI_kup_adiyla_AYRILIR` aynen geçerli.
+    """
+    ek = f" ({kup})"
+    return f"{metin[:-1]}{ek}?" if metin.endswith("?") else f"{metin}{ek}"
+
+
 def _ayirt_et(oneriler: list[Oneri], schema: dict | None) -> list[Oneri]:
     """🔴 `§6/Thread 4` — **AYNI ETİKETLİ İKİ ÖNERİ**: kullanıcı ayırt edemez.
 
@@ -749,6 +803,6 @@ def _ayirt_et(oneriler: list[Oneri], schema: dict | None) -> list[Oneri]:
     if all(n == 1 for n in sayim.values()):
         return oneriler
     return [o if sayim[o.metin] == 1
-            else Oneri(kimlik=o.kimlik, metin=f"{o.metin} ({_kup_adi(schema, o.cube)})",
+            else Oneri(kimlik=o.kimlik, metin=_ayiricili(o.metin, _kup_adi(schema, o.cube)),
                        grup=o.grup, tur=o.tur, cube_query=o.cube_query, cube=o.cube)
             for o in oneriler]

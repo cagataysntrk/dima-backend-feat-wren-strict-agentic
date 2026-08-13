@@ -261,6 +261,56 @@ def terimler(schema: dict, izinliler: set[str] | None) -> list[Aday]:
                 kimlik=f"{cube}.{olcu}", etiket=ad, cube=cube, kip="leksik",
                 gorunumler=_gorunumler(ad, sinonimler.get(olcu), kup_display,
                                        birimler.get(olcu))))
+        out.extend(_deger_adaylari(c, cube, kup_display, gorunen))
+    return out
+
+
+#: Bir küpten indekse girecek **en çok** değer. ⚠ Havuz ölçüldü: dört şirketin
+#: kataloğunda toplam **776** değer var, en kalabalık küp **88** (`parti`). Sınır bu
+#: sayının **üstünde** tutuldu ki bugün hiçbir değer düşmesin; amacı bir gün onbinlerce
+#: değerli bir kiracıda sıcak yolu korumak 🅜 — *bir sınırın işi bugünü kırpmak değil,
+#: yarını taşınabilir kılmaktır.*
+_DEGER_TAVANI = 200
+
+
+def _deger_adaylari(c: dict, cube: str, kup_display: str, gorunen: dict) -> list[Aday]:
+    """🔴 `§40` — **BOYUT DEĞERLERİ DE ADAYDIR**: *«ram 3»* → `RAM-3`.
+
+    ## Ölçülen kusur (kullanıcı, 2026-08-13)
+
+    Kullanıcı `ram 3 neden` yazdı ve öneri şeridinde **`RAM-3` hiç geçmedi**; gelenler
+    katalog alan adlarıydı. Ölçüldü: `oneri.ara("ram 3", schema)` → **0 aday**, çünkü bu
+    modülün evreninde **yalnız ölçüler** vardı (`dimension_values` → 0 geçiş) 🆘.
+
+    *Bir öngörü, yazılanı içeremiyorsa bir öngörü değildir* — ve içeremiyordu, çünkü
+    yazılan şey (bir **makine adı**) sistemin aday listesinde hiç yoktu.
+
+    ## Aday şekli — ve neden ölçüsüz bir değer YETMEZ
+
+    Bir değer tek başına **cevaplanabilir değildir**: *«RAM-3»* bir soru değil bir
+    özne. Bu yüzden her değer, küpün **varsayılan ölçüsüyle** (`default_measure`)
+    eşleştirilip tam bir cümlenin iskeleti olarak doğar:
+
+        kimlik = "oee.ort_oee#makine=RAM-3"   →   «bu ay RAM-3'ün ortalama OEE'si …»
+
+    `#` ayırıcısı **yeni bir sözleşme değil**: kırılımlı öneriler onu zaten kullanıyor 🆍.
+
+    ⚠ `default_measure` yoksa küp **atlanır** — uydurma ölçü seçmek, sessiz-yanlış bir
+    sorgu üretmenin en kısa yoludur ㊱.
+    """
+    olcu = str(c.get("default_measure") or "").strip()
+    if not olcu:
+        return []
+    out: list[Aday] = []
+    for boyut, degerler in (c.get("dimension_values") or {}).items():
+        for deger in (degerler or [])[:_DEGER_TAVANI]:
+            d = str(deger).strip()
+            if not d:
+                continue
+            out.append(Aday(
+                kimlik=f"{cube}.{olcu}#{boyut}={d}", etiket=d, cube=cube, kip="leksik",
+                gorunumler=_tekil(d, f"{d} {kup_display}",
+                                  f"{d} {str(gorunen.get(olcu) or olcu)}")))
     return out
 
 
