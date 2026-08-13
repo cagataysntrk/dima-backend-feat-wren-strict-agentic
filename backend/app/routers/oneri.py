@@ -35,22 +35,101 @@ router = APIRouter(tags=["oneri"])
 _log = logging.getLogger("dima.oneri")
 
 
+def _liste(ham: str) -> list[str]:
+    """`"a,b"` → `["a", "b"]`. Biçimin **tek sahibi** burasıdır ㊲.
+
+    ⚠ Boş parçalar düşer: `"a,,b"` → `["a","b"]`. Bir arayüzün ürettiği fazladan virgül
+    bir hata değil bir **gürültü**dür 🅡; onu uçta temizlemek, her tüketiciye aynı
+    temizliği öğretmekten ucuzdur.
+    """
+    return [p.strip() for p in ham.split(",") if p.strip()]
+
+
+def _capa_kur(cube: str, olcu: str, kirilim: str, donem: str, varlik: str) -> dict | None:
+    """Parçalı query paramlarından **`cube_query` biçiminde** çapa.
+
+    ⚠ Çapa yeni bir model **değildir**: `oneri_cumle._capa_oku` doğrudan bir `cube_query`
+    bekler, yani buradaki iş bir **çeviri değil, bir toplama**dır. Yeni bir çapa şeması
+    icat etseydik `§5.1`'in *«bağlam gizli durum olmaktan çıkar»* vaadi, iki temsili olan
+    bir bağlama dönerdi (`KAT-1`).
+
+    ⚠ `varlik` biçimi **`boyut:deger`** (`makine:RAM-3`) — ve bu bilinçli: değerin hangi
+    boyuta ait olduğunu **tahmin etmek** (*«ilk kırılımdır herhâlde»*) bu deponun defalarca
+    ısırılmış olduğu türden bir varsayımdır ㊱. Boyut yoksa varlık **taşınmaz**; eksik
+    bir çapa, yanlış bir çapadan iyidir.
+    """
+    if not cube.strip():
+        return None
+    cq: dict = {"cube": cube.strip()}
+    if (m := _liste(olcu)):
+        cq["measures"] = m
+    if (d := _liste(kirilim)):
+        cq["dimensions"] = d
+    if donem.strip():
+        cq["period_expr"] = donem.strip()
+    if ":" in varlik:
+        boyut, _, deger = varlik.partition(":")
+        if boyut.strip() and deger.strip():
+            cq["filters"] = [{"dimension": boyut.strip(), "operator": "eq",
+                              "value": deger.strip()}]
+    return cq
+
+
 @router.get("/oneri", dependencies=[Depends(require_company)])
-def oneri_ara(request: Request, q: str = Query("", max_length=120)) -> dict:
-    """Katalogdan yazarken-ara adayları.
+def oneri_ara(request: Request, q: str = Query("", max_length=120),
+              capa_cube: str = Query("", max_length=64),
+              capa_olcu: str = Query("", max_length=240),
+              capa_kirilim: str = Query("", max_length=240),
+              capa_donem: str = Query("", max_length=64),
+              capa_varlik: str = Query("", max_length=120)) -> dict:
+    """Katalogdan yazarken-ara **cümleleri** (`§5.1`) — ve ham adaylar.
 
     🔴 **Yetki motorda süzülür, burada değil** (`KAT-1`): `app/oneri.terimler()`
     `katman_b.karar`'ı çağırır ve **sıralamadan önce** süzer. Buradaki tek iş
     allowlist'i **almak**tır (`katman_b.allowlist`), yorumlamak değil.
+
+    ## 🔴 ÇAPA NEDEN **PARÇALI QUERY PARAMI** — ve neden gövde değil
+
+    Ölçülen kısıt: bu uç `GET`'tir ve **typeahead**'in sıcak yoludur (ılık `p95`
+    **49,23 ms**, eşik 300 ms). Üç seçenek vardı:
+
+    | seçenek | bedeli |
+    |---|---|
+    | `POST` + gövde | `GET` sözleşmesi kırılır, tarayıcı önbelleği/iptali kaybolur |
+    | `capa=<url-encoded JSON>` | uçta **JSON ayrıştırıcı** doğar 🅪 — ikinci bir sözleşme |
+    | **parçalı param** ✅ | ayrıştırma yok, alanlar **adıyla** görünür, kısa |
+
+    ⚠ Çoklu alanlar **virgülle**: `capa_olcu=ort_oee,toplam_fire_kg`. Bu bir biçim
+    kararıdır ve **tek yerde** yaşar (aşağıdaki `_liste`), iki tarafta değil ㊲.
+
+    ⚠ Çapa **doğrulanmaz, taşınır**: geçersiz bir çapa cümle üretmez (aday eşleşmez) ve
+    bir sorgu **koşulmaz** — bu uç sorgu koşmuyor. Doğrulamanın yeri `parse_cube_query`
+    beyaz listesidir; burada ikinci bir doğrulayıcı kurmak ㊲ olurdu.
     """
-    from app import katman_b, oneri
+    from app import katman_b, oneri, oneri_cumle
     from app.company_registry import wren_for_request
 
     principal = getattr(request.state, "principal", None)
     izinliler = katman_b.allowlist(request, principal)
     schema = wren_for_request(request).schema()
     adaylar = oneri.ara(q, schema, izinliler=izinliler)
+
+    capa = _capa_kur(capa_cube, capa_olcu, capa_kirilim, capa_donem, capa_varlik)
+    # ⚠ Cümle kurmak **sorgu koşmaz ve LLM çağırmaz** (`E-8`): `oneri_cumle` saf bir
+    # modüldür. Sıcak yola eklenen tek maliyet dize birleştirmedir.
+    oneriler = oneri_cumle.cumleler(adaylar, capa=capa, schema=schema)
+
     return {
+        # 🔴 `§5.1`'in ASIL çıktısı: kullanıcı **cümle** görür, alan adı değil.
+        # ⚠ `adaylar` **kaldırılmadı** — `KURAL B`: bayrak kapalıyken ve eski tüketici
+        # varken davranış bugünküyle birebir kalmalı. Yeni alan **ekler**, eskisini
+        # götürmez 🅐; götürseydi bu uç, henüz göç etmemiş bir tüketiciyi bozardı.
+        "oneriler": [
+            {"kimlik": o.kimlik, "metin": o.metin, "grup": o.grup, "tur": o.tur,
+             "cube_query": o.cube_query, "cube": o.cube}
+            for o in oneriler
+        ],
+        "capa": capa,
         "adaylar": [
             {"kimlik": a.kimlik, "etiket": a.etiket, "cube": a.cube, "kip": a.kip}
             for a in adaylar
