@@ -962,3 +962,48 @@ korumayı **onlar** yapıyor; sayım yüklemi bir **erken uyarı**, bir kanıt d
 
 📌 Bu bölüm bir **özür değil bir sınır beyanı**: *bir kapının yeşili kapsamıyla
 sınırlıdır* 🅣 — ve kapsamı **sayıyla** yazılmadıkça o sınır görünmez.
+
+---
+
+## §20 · CURL TURU **HAZIRLIĞI** — 22 senaryo, her biri **beklenen gözlemiyle** *(2026-08-13)*
+
+⚠ Bu bir **plan**dır, bir **ölçüm değildir** 🅫. Sonuçlar koşulduğunda
+`belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md`'ye yazılacak; buraya **yazılmayacak**.
+
+⚠ **Ön koşul:** `/oneri` ve `/oneri/tik` **bugünkü imajda YOK** (⑦ ortam≠ürün) — 1–4
+ancak **imaj tazelendikten** sonra koşulabilir. 5–22 bugünkü imajla koşulabilir.
+
+### A · Yeni yetenek (imaj tazeleme sonrası)
+| # | girdi | **beklenen gözlem** |
+|---|---|---|
+| 1 | `GET /oneri?q=fi` | `adaylar[]` dolu · `kip` alanı **var** · her aday `kimlik`/`cube` taşıyor |
+| 2 | `GET /oneri?q=` (boş) | **boş liste** — uç boş girdide aday üretmez |
+| 3 | `GET /oneri?q=zzzqqq` | **boş liste**, `200` — anlamsız girdi çökertmez 🅡 |
+| 4 | `POST /oneri/tik` `{konum:0}` → `{konum:2}` | `sinyal` sırasıyla **`zayif`** ve **`guclu`** 🔴 `8.2` |
+
+### B · Sekiz fazın davranışı (bugünkü imaj)
+| # | girdi | **beklenen gözlem** |
+|---|---|---|
+| 5 | *«RAM-3 neden düşük»* (çapasız) | `KIYASLA` fiili · akran ortalaması · **`FAZ 4`** |
+| 6 | *«RAM-3 neden düşük»* (çapalı) | 11 satır · *«%10,7 düşük»* |
+| 7 | *«bu yıl fire oranı»* | `source=cube` · `kanit=olculmus` |
+| 8 | *«bu yıl zurnalama oranı»* | `source=cube+llm` · `kanit=probabilistik` · `temellendirme.olcu` **dolu** |
+| 9 | *«bu yıl fire oranı nedir acaba»* | `bilinmeyen` **boş** — dolgu sözcükleri kirletmiyor |
+| 10 | *«vardya sayısı»* | ⚠ **iki kez koş** 🅢 — garson olasılıksal, tek koşum kanıt değil |
+| 11 | *«makine bazında oee»* + `«+ kullanılabilirlik»` | ikinci ölçü **eklenir**, ilki **kaybolmaz** |
+| 12 | *«fire»* (iki küpte tanımlı) | netleştirme **chip'i** ya da beyan — sessiz seçim **yok** |
+| 13 | *«bu yıl en yüksek 5 müşteri»* | `order`+`limit` · chip *«En yüksek 5»* **yinelenmiyor** |
+| 14 | *«geçen aya göre ciro»* | `compare: mom` — `FAZ 4`'ün bağlam kuralı |
+| 15 | *«2019 cirosu»* | dönem **taşınır**; `§T8` (dönem düşmesi) **yok** |
+| 16 | *«sadece bu üç ayı»* (takip) | daraltma çalışır, **yanlış uyarı yok** (`§T6`) |
+| 17 | *«teşekkürler»* | `0 LLM · 0 SQL` — sosyal sınıf |
+| 18 | *«hava durumu nasıl»* | **dürüst red** + katalog sınırı; `cube=adhoc` **yok** |
+| 19 | *«لهذا العام إجمالي الإيرادات»* | doğru dönem + ölçü — çok-dillilik (`§56`'nın alanı) |
+| 20 | *«aylık üretim ve enerji tüketimini birlikte göster»* | *«birlikte»* **çapraz-konu sanılmıyor** |
+| 21 | *«personel bazlı verimlilik»* | katalogsal sınır **beyan edilir** (uydurma boyut yok) |
+| 22 | aynı thread'de 5 tur | *«ilişkilendiremedim»* **0 kez** — sözleşme #3 |
+
+### Kural
+Her senaryo **tek tek** koşulur, ham cevap **kısaltmadan** okunur, teşhis **sonra**
+yazılır. ⚠ Yığın koşum yok; ⚠ token **her turda** yenilenir ⑩; ⚠ `10` gibi olasılıksal
+vakalar **iki kez** koşulur 🅢.
