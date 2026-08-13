@@ -13171,3 +13171,55 @@ tutuyor. Kapatmak için önce sertifikaya kimlik vermek gerekiyor — o da ayrı
 
 📌 **Kapı kırmızı KALIYOR** ve sebebi burada yazılı. 🅗 *Borcun alarmı çalsa da borç
 ödenmeyebilir — ödenmeyecekse **neden** ödenmediği yazılır.*
+
+---
+
+# 🔴 CURL TURU — `§20`'nin 22 senaryosu · **TAZE İMAJ** *(2026-08-13)*
+
+⚠ **Ortam:** `docker build` → `dima-backend-temiz:s07` → **yeni kap** `dima-oneri-8002`
+(**8002**). Canlı kap **8001 durdurulmadı** — `docker-compose up` denenmedi (v1 bu
+makinede backend'i yeniden yaratamıyor ve düşerken **40 sn** kesinti yapıyor).
+
+## İlk dokuz senaryo — ham gözlem
+
+| # | senaryo | beklenen | **ölçülen** | |
+|---|---|---|---|---|
+| 1 | `GET /oneri?q=fi` | dolu · `kip` var | 7 aday · `kip=leksik+vektor` · hepsi `kimlik`+`cube` taşıyor | ✅ |
+| 2 | `GET /oneri?q=` | **boş liste** | **7 aday** | 🔴 |
+| 3 | `GET /oneri?q=zzzqqq` | **boş liste**, 200 | **7 aday** (`ik.toplam_sgk`…) | 🔴 |
+| 4 | `/oneri/tik` `konum:0`→`konum:1` | `zayif` → `guclu` | `zayif` → `guclu` ✅ ama **`kaydedildi:false`** | ◐🔴 |
+| 7 | *«bu yıl fire oranı»* | `cube` · `olculmus` | `source=cube` · `kanit_sinifi=olculmus` · **3 satır** | ✅ |
+| 8 | *«bu yıl zurnalama oranı»* | `cube+llm` · `probabilistik` · temellendirme dolu | `cube+llm` · `probabilistik` · `{cube: parti, olcu: "fire oranı", donem: 2026-01-01}` | ✅ |
+| 9 | *«…nedir acaba»* | `bilinmeyen` boş | `source=cube` · `eksik_niyet: {}` | ✅ |
+| 17 | *«teşekkürler»* | 0 LLM · 0 SQL | `source=meta` · `sql=''` · `cube=None` | ✅ |
+
+⊙ **Alan adları nesneden okundu ㊱🅬:** `explain.kanit`/`rows`/`answer` **yok**; doğrusu
+`kanit_sinifi` · `result` · `soz`. Üçünü de uydurmuştum — bu turda **on dokuzuncu** kez
+kendi beklentim kusurlu çıktı.
+
+## Teşhis — üç kusur, hepsi **bu operasyonun kendi işi**
+
+### 🔴 K1 · Öneri motorunun **eşleşmesizlik hâli yok** *(senaryo 2 ve 3)*
+
+`ara()`'nın tek erken çıkışı **havuz boşsa**. Vektör ayağı bilinçli olarak bir **filtre
+değil sıralayıcıdır** (🆜 kapısı bunu şart koşuyor: *«havuzdaki her adayı döndürmeli»*),
+dolayısıyla füzyon **her sorguda** yedi aday üretir — boş dizede de, `zzzqqq`'da da.
+
+⚠ Kapı yanlış değil, **eksik**: *«filtreleme»*yi vektör ayağından kovarken onun yerine
+bir **taban** koymamışım. Doğru yeri füzyondan **sonra**, kesme adımıdır — böylece 🆜
+kapısı da ayakta kalır.
+⊙ FE bugün `q.length < 2` ile koruyor (`OneriSeridi.tsx:48`) — yani üründe boş-sorgu
+görünmüyor. Ama kural **tek sahipli** olmalı (`KAT-1`): asgari uzunluğun sahibi
+**motor**dur, tüketici değil 🆘.
+
+### 🔴 K2 · Tık kaydı **hiç yazılmıyor** — ve hata **sessizce yutuluyor** *(senaryo 4)*
+
+`routers/oneri.py:100` — `except Exception: kaydedildi = False`, **kütüğe hiçbir şey
+yazmadan**. Sinyal sınıfı doğru hesaplanıyor (`zayif`/`guclu` ✅) ama kayıt **her iki
+çağrıda da** düştü.
+
+⚠ İki ayrı kusur iç içe: **(a)** yazma başarısız, **(b)** başarısızlığın **nedeni
+görünmez**. `§101.1` *«telemetri hatası ürün hatası değildir»* doğru — ama ADR-0020
+*«sessiz yutma yok»* der: sebebi **kütüğe** yazmadan yutmak, teşhisi imkânsız kılar.
+🔴 Ve sonuç ağır: `FAZ 8`'in tüm hasat zinciri `InteractionLog(kind="oneri_tik")`'i
+okur; yazma düşükse zincir **tüketicisiz bir yetenektir** 🆘.
