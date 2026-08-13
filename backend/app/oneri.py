@@ -726,7 +726,26 @@ def ara(kismi: str, schema: dict, *, izinliler: set[str] | None = None,
 
     # ⚠ Eşitlikte **leksik önde** olan kazanır: bir önek eşleşmesi kullanıcının
     # yazdığının **birebir** karşılığıdır; vektör benzerliği bir tahmindir ㊼.
-    lek_yer = {i: y for y, i in enumerate(lek)}
+    # 🔴 `§85` — **EŞİTLİK KURALININ KENDİ GEREKÇESİ, ÖNEK YOKKEN GEÇERSİZDİR** ㊸.
+    #
+    # Aşağıdaki *«eşitlikte leksik önde»* kuralı bir sebeple konmuştu: *«bir **önek**
+    # eşleşmesi kullanıcının yazdığının **birebir** karşılığıdır; vektör benzerliği bir
+    # tahmindir»* ㊼. Ölçüldü ki kural, gerekçesinin **geçmediği** yerde de uygulanıyordu:
+    #
+    #     «makine verimliliği»  onek=0 → leksik 1.'si `parti.ort_hiz_m_dk`, hedef 2.
+    #     «delivery performance» onek=0 → leksik 1.'si `oee.ort_performans`, hedef 4.
+    #
+    # Yani önek **hiç yokken** (leksik ayak yalnız token kapsamıyla tutunmuşken) *«birebir
+    # karşılık»* diye bir şey yok — orada leksik sırası bir **tahmin**, üstelik vektörün
+    # tahmininden **daha kötü** olanı. Önek varsa kural aynen sürer.
+    #
+    # ⊙ Ölçüm (37 vaka): `R@1` **78,4 → 81,1** *(vektör tavanı **81,1** — kapandı)* ·
+    # `MRR` 0,832 → **0,845** · `R@3`/`R@5` **değişmedi** · gürültü kontrolü ㊳
+    # (`fire`·`ciro`·`zayiat`·`ram 3`) **birebir aynı**.
+    #
+    # *Bir kuralı gerekçesinin bittiği yerde de uygulamak, onu bir kurala değil bir
+    # alışkanlığa çevirir.*
+    lek_yer = {i: y for y, i in enumerate(lek)} if _onek_var else {}
     sirali = sorted(puan, key=lambda i: (-puan[i], lek_yer.get(i, 10**6), havuz[i].etiket))
     out: list[Aday] = []
     for i in sirali[:limit]:

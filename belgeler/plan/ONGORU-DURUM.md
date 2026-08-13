@@ -4115,3 +4115,25 @@ belgeyi «denetledim» diye değiştirmek, denetimi bir bahaneye çevirir* 🆞.
 
 **Kapılar:** belge düzeni + yol gerçekliği **9 ✅ / 1 ⊘** · `app/` **değişmedi** → canlı
 tazeleme **yapılmadı** (`s38` güncel).
+
+---
+
+## `§85` — eşitlik kuralı **gerekçesiyle sınırlandı**: `R@1` vektör tavanına ulaştı
+
+*«Eşitlikte leksik önde»* kuralının kendi gerekçesi: *«bir **önek** eşleşmesi kullanıcının
+yazdığının **birebir** karşılığıdır»* ㊼. Ölçüldü ki kural, gerekçesinin **geçmediği**
+yerde de uygulanıyordu (`onek=0` iken leksik sırası da bir tahmindir):
+
+| | `R@1` | `R@3` | `R@5` | `MRR` |
+|---|---|---|---|---|
+| önce | 78,4 | 86,5 | 91,9 | 0,832 |
+| **sonra** | **81,1** ← vektör tavanı | 86,5 | 91,9 | **0,845** |
+
+Gürültü kontrolü ㊳ (`fire`·`ciro`·`zayiat`·`ram 3`) **birebir aynı** · korpus **birebir
+aynı** (`83/69/68/72 · %95,6 · 558/591`) · demet **457 ✅**.
+
+*Bir kuralı gerekçesinin bittiği yerde de uygulamak, onu bir kurala değil bir alışkanlığa
+çevirir.*
+
+⊙ Böylece öneri sıralamasının **üç ölçüsü de** (`R@1`·`R@3`·`R@5`) vektör ayağının
+tavanında ya da onunla eşit: **81,1 / 86,5 / 91,9**.

@@ -115,3 +115,29 @@ def test_ONEK_SINYALI_DONUSLE_TASINIYOR():
     assert kaynak.rstrip().endswith("return _sira, bool(onek)"), (
         "🔴 önek sinyali dönüşle taşınmıyor — global bir bayrak `§65`'in ölçülmüş "
         "kusurunu tekrarlar")
+
+def test_ONEK_YOKKEN_LEKSIK_ESITLIGI_BOZMAZ():
+    """🔴 `§85` — *«eşitlikte leksik önde»* kuralı **gerekçesiyle sınırlıdır** ㊸.
+
+    Kuralın kendi cümlesi: *«bir **önek** eşleşmesi kullanıcının yazdığının **birebir**
+    karşılığıdır»* ㊼. Önek **hiç yokken** o cümle geçmez — leksik sırası orada da bir
+    tahmindir, üstelik ölçülen vakalarda vektörünkinden **daha kötü** olanı:
+
+        «makine verimliliği»  onek=0 → leksik 1.'si yanlış, hedef 2.
+        «delivery performance» onek=0 → hedef 4.
+
+    ⊙ `R@1` **78,4 → 81,1** *(vektör tavanı 81,1)* · `MRR` 0,832 → **0,845** · gürültü
+    kontrolü ㊳ **birebir aynı**. 🆃 Önek **varken** kural sürüyor — o dal ayrıca sınanır.
+    """
+    k = _ara_kaynagi()
+    assert "if _onek_var else {}" in k, (
+        "🔴 leksik sıra, önek yokken de eşitliği bozuyor — `R@1` 81,1 → 78,4'e düşer "
+        "(`§85` ölçümü). Değiştiriyorsan ölçümü **yeniden koş**.")
+
+
+def test_ZIT_OLCUT_ONEK_VARKEN_LEKSIK_HALA_ONDE():
+    """🆃 Kapının kurbanı: kuralı **tümden** kaldırmak *«fire»* gibi **önek** sorgularında
+    kullanıcının birebir yazdığını ikinci sıraya düşürebilirdi."""
+    k = _ara_kaynagi()
+    assert "lek_yer = {i: y for y, i in enumerate(lek)}" in k, (
+        "🔴 leksik sıra tümden kaldırılmış — önek eşleşmesi artıklığını kaybeder")
