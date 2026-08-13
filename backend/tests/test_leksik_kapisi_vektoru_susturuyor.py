@@ -1,62 +1,39 @@
-"""🔴 `§77` — **TEŞHİS DONDURULDU**: leksik kapı, vektörün getirdiği adayı **eliyor**.
+"""🔴 `§78` — **LEKSİK KAPI: daraltma sürüyor, ama vektörün EN EMİN adayı geçiyor.**
 
-## Ölçülen kayıp (`§76`, 37 vaka)
+## Hikâye — bir satır hem çare hem kusurdu ㊸
 
-| ayak | `R@3` | `MRR` |
-|---|---|---|
-| vektör | **91,9** | 0,868 |
-| birleşik (max) | **91,9** | 0,854 |
-| 🔴 **ürün (RRF)** | **83,8** | 0,806 |
+`ara()`'daki `if lek:` kapısı gürültüyü kesmek için konmuştu (*«`fire` yazan kullanıcı
+«doğalgaz» okuyor»*) ve **işini yapıyordu**. Ama aday kümesini leksiğe **kapatınca**
+vektör ayağı *sıralayabilen ama aday ekleyemeyen* bir şeye dönüştü — `MIMARI`'nin
+*«vektör bir sıralayıcıdır, süzgeç değil»* cümlesinin tersi.
 
-## Sebep — koda yazılı, tahmin değil ③
+Ölçüldü (`§77`, 37 vaka): üç **anlamsal/İngilizce** ifade `sıra=None` ile düşüyordu —
+aşağı itilmiş değil, **hiç listede yok**.
 
-```python
-if lek:                                   # app/oneri.ara
-    lek_kume = set(lek)
-    puan = {i: p for i, p in puan.items() if i in lek_kume}
+## Tarama (`§78`) — ve sınırın **aynı taramada** görünmesi 🅜
+
+```
+k=0 (eski)  R@3 83,8 · R@5 83,8 · MRR 0,806   gürültü: temiz
+k=1         R@3 86,5 · R@5 86,5 · MRR 0,820   gürültü: TEMİZ   ← seçilen
+k=2         R@3 86,5 · R@5 91,9 · MRR 0,832   🔴 «ciro» → ik.toplam_prim
+k=5         R@3 86,5 · R@5 91,9 · MRR 0,832   🔴 «fire» → parti.toplam_metre
 ```
 
-Leksik ayak **bir şey** bulduğunda aday kümesi ona **kapanır**; vektör ayağı yalnız
-**sıralayabilir**, aday **ekleyemez**. Düşen üç vaka `sıra=None` ile düşüyor — yani
-*«aşağı itilmiş»* değil, **hiç listede yok**:
+🔴 `k≥2`'nin `R@5` kazancı **kapının kurulma sebebini geri getiriyor**: `k=5`'te *«fire»*
+yine *«metre»* gösteriyor — kapının kendi şerhinde **adıyla** yazan kusur. *Bir sayı
+iyileşirken ekranın bozulabileceğinin kanıtı, aynı taramanın içindeydi.*
 
-| ifade | ürün ilk-5 | vektörün bulduğu |
-|---|---|---|
-| *«makine verimliliği»* | `parti.ort_hiz_m_dk` (tek aday) | `oee.ort_oee` **1.** |
-| *«delivery performance»* | `oee.ort_performans` · … | `siparis.zamaninda_teslim_yuzde` **1.** |
-| *«complaint count»* | `bakim.ariza_sayisi` · … | `sikayet.sikayet_adedi` **3.** |
+⊘ Kalan açık (86,5 ↔ vektör tavanı **91,9**) **kapanmadı**: iki vaka daha ancak **gürültü
+ödeyerek** gelir 🆖. Kapatılmaması bir eksik değil, ölçülmüş bir **karar** 🆂.
 
-⊙ Üçü de **anlamsal/İngilizce** — leksik ayağın zayıf, vektörün güçlü olduğu tam yer.
-
-## ⚠ Kapı bu satırı **savunmuyor**, **kaydediyor** ㊸
-
-O satır bir kusur değil, **ölçülmüş bir çare**: kendi şerhi *«`fire` için leksik ayak 3
-aday buluyor, ekranda 7 görünüyordu … kullanıcı «fire» yazıp «doğalgaz» okuyor»* diyor.
-Yani iki gerçek bir arada: **gürültüyü kesiyor** ve **anlamsal adayı da kesiyor**.
-
-## Ölçülmüş bir aday çare (uygulanmadı)
-
-Deney (mutasyonla, sonra **geri alındı**): kapıya *«vektörün **birincisi** geçsin»*
-eklendi →
-
-| | `R@1` | `R@3` | `MRR` |
-|---|---|---|---|
-| bugün | 78,4 | 83,8 | 0,806 |
-| deney | 78,4 | **86,5** | **0,820** |
-
-Gürültü kontrolü ㊳ (`fire` · `ciro` · `ram 3`) **kontrol grubuyla birebir aynı** çıktı —
-yani deney bir gerileme üretmedi. Ama **91,9'a da ulaşmıyor**: üç vakanın **ikisi** hâlâ
-düşüyor. *Bir çarenin ölçüsü, kapattığı açığın tamamıdır; yarısını kapatan bir çare bir
-karardır, bir düzeltme değil.* Bu yüzden **uygulanmadı** — kendi turunu, korpusunu ve
-canlı doğrulamasını ister.
-
-## Bu kapının üç yüklemi
+## Bu kapının dört yüklemi
 
 | # | savunulan |
 |---|---|
-| 1 | kapı **hâlâ orada** — biri kaldırırsa `§77` kararı yeniden okunmalı ㉕ |
-| 2 | vektör ayağı **süzgeç değil** (`MIMARI`) — ama kapı onu **fiilen** süzgeçleştiriyor |
-| 3 | 🆃 leksik **boşken** vektör tek çare — o dal **korunmalı** |
+| 1 | daraltma **duruyor** — kapı kaldırılmadı |
+| 2 | vektörün **en emin** adayı geçiyor (`_VEK_GECIS`) |
+| 3 | 🆃 geçiş **dar** kalıyor (`≤1`) — `k≥2` gürültüyü geri getirir |
+| 4 | 🆃 leksik **boşken** vektör tek çare — o dal korunuyor |
 """
 
 from __future__ import annotations
@@ -70,29 +47,34 @@ def _ara_kaynagi() -> str:
     return inspect.getsource(oneri.ara)
 
 
-def test_LEKSIK_KAPISI_YERINDE():
-    """㉕ Bu satır değişirse `§77`'nin ölçümü **bayatlar** — kırmızı, bir hatırlatmadır."""
+def test_DARALTMA_DURUYOR():
+    """🔴 Kapı **kaldırılmadı**: gürültü kesmesi hâlâ orada."""
     k = _ara_kaynagi()
-    assert "if lek:" in k, (
-        "🔴 leksik kapı kaldırılmış/değişmiş. `ONGORU-DURUM.md §77`: bu satır hem "
-        "gürültüyü hem **anlamsal adayı** kesiyor (`R@3` 83,8 ↔ vektör 91,9). "
-        "Değiştiriyorsan ölçümü **yeniden koş** ve `§77`'yi güncelle.")
-    assert "lek_kume" in k, "🔴 kapının gövdesi değişmiş — ölçüm bayatlamış olabilir"
+    assert "if lek:" in k, "🔴 leksik kapı kaldırılmış — `fire` → `metre` gürültüsü döner"
+    assert "puan.items() if i in lek_kume" in k, "🔴 daraltma deseni değişmiş"
 
 
-def test_VEKTOR_AYAGI_ADAY_EKLEYEMIYOR():
-    """🔴 **ASIL TEŞHİS.** Kapı açıkken puan sözlüğü **leksik kümeye** daraltılıyor;
-    vektörün birinci sırası bile listeye giremiyor."""
+def test_VEKTORUN_EN_EMIN_ADAYI_GECIYOR():
+    """🔴 **ASIL DEĞİŞMEZ.** Anlamsal aday listeye **girebilmeli**."""
     k = _ara_kaynagi()
-    i = k.index("if lek:")
-    govde = k[i:i + 260]
-    assert "puan.items() if i in lek_kume" in govde, (
-        f"🔴 daraltma deseni değişmiş — teşhis yeniden yapılmalı:\n{govde[:180]}")
+    assert "lek_kume.update(vek[:_VEK_GECIS])" in k, (
+        "🔴 vektör adayı kapıdan geçmiyor — `§77`'nin üç anlamsal vakası yine `sıra=None` "
+        "ile düşer (`«makine verimliliği»` · `«delivery performance»` · `«complaint count»`)")
+
+
+def test_ZIT_OLCUT_GECIS_DAR_KALIYOR():
+    """🆃🅜 Kapının **kurbanı**: geçişi genişletmek `R@5`'i 91,9'a çıkarır **ama** `k=5`'te
+    *«fire»* sorgusu yine *«metre»* gösterir. Sayı iyileşirken ekran bozulur."""
+    assert oneri._VEK_GECIS <= 1, (
+        f"🔴 `_VEK_GECIS={oneri._VEK_GECIS}` — tarama `k≥2`'de gürültü ölçtü "
+        "(«ciro» → `ik.toplam_prim`, «fire» → `parti.toplam_metre`). Büyütüyorsan "
+        "`§78` taramasını **yeniden koş** ve gürültü kontrolünü ㊳ raporla.")
+    assert oneri._VEK_GECIS >= 1, "🔴 geçiş kapatılmış — anlamsal vakalar geri düşer"
 
 
 def test_ZIT_OLCUT_LEKSIK_BOSKEN_VEKTOR_TEK_CARE():
-    """🆃 Kapı **koşullu** olmalı: leksik hiçbir şey bulamadığında (`zayiat` · `vardya`)
-    vektör tek çaredir ve liste ondan kurulur. `if lek:` koşulu kalkarsa o dal ölür."""
+    """🆃 Kapı **koşullu** kalmalı: leksik hiçbir şey bulamadığında (`zayiat` · `vardya`)
+    liste vektörden kurulur. `if lek:` koşulsuz hâle gelirse o dal ölür."""
     k = _ara_kaynagi()
-    assert "if lek:" in k and "if not lek" not in k.split("if lek:")[0][-120:], (
-        "🔴 daraltma koşulsuz hâle gelmiş — leksik boşken vektör de susturulur")
+    onces = k.split("if lek:")[0][-140:]
+    assert "if not lek" not in onces, "🔴 daraltma koşulsuz olmuş — leksik boşken de susar"

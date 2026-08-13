@@ -164,7 +164,33 @@ __all__ = ["Aday", "ara", "terimler"]
 _HAVUZ = 20
 
 #: RRF sabiti — gerekçesi modül başlığında. **Kalibre değil, seçilmiş** 🅖.
+#: ⊙ `§76`'da **ölçüldü**: `K ∈ {5,10,20,37,60}` → ürün metrikleri **birebir aynı**.
+#: *Fark ölçülemedi → sabite dokunulmadı* 🆕.
 _RRF_K = 10
+
+#: 🔴🔴 `§78` — **LEKSİK KAPIDAN GEÇEN VEKTÖR ADAYI SAYISI.**
+#:
+#: `ara()`'daki `if lek:` kapısı aday kümesini leksiğe **kapatıyordu**: vektör ayağı
+#: sıralayabiliyor ama **aday ekleyemiyordu**. Ölçüldü (`§77`, 37 vaka): üç anlamsal/
+#: İngilizce ifade (*«makine verimliliği»* · *«delivery performance»* · *«complaint
+#: count»*) `sıra=None` ile düşüyordu — aşağı itilmiş değil, **hiç listede yok**.
+#:
+#: ⊙ **TARAMA** (`§78`, her `k` için gürültü kontrolüyle ㊳):
+#:
+#:     k=0 (eski)  R@3 83,8 · R@5 83,8 · MRR 0,806   gürültü: temiz
+#:     k=1         R@3 86,5 · R@5 86,5 · MRR 0,820   gürültü: TEMİZ  ← seçilen
+#:     k=2         R@3 86,5 · R@5 91,9 · MRR 0,832   🔴 «ciro» → `ik.toplam_prim`
+#:     k=5         R@3 86,5 · R@5 91,9 · MRR 0,832   🔴 «fire» → `parti.toplam_metre`
+#:
+#: 🔴 `k≥2`'nin getirdiği `R@5` kazancı **tam da kapının kurulma sebebini** geri getiriyor:
+#: `k=5`'te *«fire»* sorgusu yine *«metre»* gösteriyor — kapının kendi şerhinde **adıyla**
+#: yazan kusur. *Bir sayı iyileşirken ekranın bozulabileceğinin kanıtı, aynı taramanın
+#: içinde.* 🅜
+#:
+#: ⚠ `1` bir eşik değil bir **karar**: vektörün **en emin** adayı listeye girer, gerisi
+#: leksiğin kapısında kalır. ⊘ Kalan açık (86,5 ↔ vektör tavanı 91,9) **kapanmadı** ve
+#: kapanmaması bilinçli — iki vaka daha ancak **gürültü ödeyerek** gelir 🆖.
+_VEK_GECIS = 1
 
 #: Öneri şeridinin tavanı (`FAZ 6.4`: **≤7**).
 VARSAYILAN_LIMIT = 7
@@ -672,6 +698,9 @@ def ara(kismi: str, schema: dict, *, izinliler: set[str] | None = None,
     # 🅑 Mutasyon: `if lek:` kaldırılırsa `fire` sorgusuna `metre`/`enerji` geri gelir.
     if lek:
         lek_kume = set(lek)
+        # 🔴 `§78` — vektörün **en emin** adayı kapıdan geçer (`_VEK_GECIS`, ölçülmüş).
+        # ⚠ Kapı kaldırılmadı: daraltma sürüyor, yalnız **bir** anlamsal aday ekleniyor.
+        lek_kume.update(vek[:_VEK_GECIS])
         puan = {i: p for i, p in puan.items() if i in lek_kume}
 
     # ⚠ Eşitlikte **leksik önde** olan kazanır: bir önek eşleşmesi kullanıcının

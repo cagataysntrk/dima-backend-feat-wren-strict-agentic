@@ -3774,3 +3774,52 @@ kapı değişirse kırmızı verir ve ölçüm yeniden istenir. 🆃 Leksik boş
 ### ⊘ FE ekran doğrulaması — **sekizinci tur** yapılamadı
 
 `localhost:3000` → `000`.
+
+---
+
+## `§78` — çare **taranarak** seçildi: vektörün **en emin** adayı kapıdan geçiyor
+
+### Tarama — ve sınırın **aynı taramada** görünmesi 🅜
+
+| `k` | `R@1` | `R@3` | `R@5` | `MRR` | gürültü kontrolü ㊳ |
+|---|---|---|---|---|---|
+| **0** (eski) | 78,4 | 83,8 | 83,8 | 0,806 | temiz |
+| **1** ← seçilen | 78,4 | **86,5** | 86,5 | **0,820** | **temiz** (dördü de kontrolle birebir) |
+| 2 | 78,4 | 86,5 | **91,9** | 0,832 | 🔴 *«ciro»* → `ik.toplam_prim` · *«ram 3»* → `toplam_dogalgaz_sm3` |
+| 3 | 78,4 | 86,5 | 91,9 | 0,832 | 🔴 *«ciro»* → `+parti.toplam_fire_kg` |
+| 5 | 78,4 | 86,5 | 91,9 | 0,832 | 🔴 *«fire»* → **`parti.toplam_metre`** |
+
+🔴 `k≥2`'nin getirdiği `R@5` kazancı **tam da kapının kurulma sebebini** geri getiriyor:
+`k=5`'te *«fire»* sorgusu yine *«metre»* gösteriyor — kapının kendi şerhinde **adıyla**
+yazan kusur. *Bir sayı iyileşirken ekranın bozulabileceğinin kanıtı, aynı taramanın
+içindeydi.*
+
+### Uygulanan
+
+`_VEK_GECIS = 1` — vektörün **en emin** adayı leksik kapıdan geçer; daraltma **kaldırılmadı**.
+Doğrulama (uygulandıktan sonra):
+
+```
+urun = R@1 78,4 · R@3 86,5 · R@5 86,5 · MRR 0,820
+«fire» · «ciro» · «zayiat» · «ram 3»  → kontrol grubuyla BİREBİR
+«makine verimliliği» → ['parti.ort_hiz_m_dk', 'oee.ort_oee']   ⊙ hedef artık listede
+```
+
+⊘ **Kalan açık ilan edildi** 🆖🆂: 86,5 ↔ vektör tavanı **91,9**. İki vaka daha ancak
+**gürültü ödeyerek** gelir; kapatılmaması bir eksik değil ölçülmüş bir **karar**.
+
+### ⚠ Bu turda kendi hatamı yakaladım ㉚⑮
+
+`_RRF_K = 10` dizesi dosyada **iki yerde** geçiyor (biri **modül başlığındaki şerhte**).
+`str.replace(..., 1)` **şerhi** değiştirdi, gerçek sabiti değil — ve `assert` yalnız
+*«dize var mı»* diye baktığı için **yeşil** kaldı. Yedekten dönüldü, `Edit` ile **benzersiz
+bağlam** kullanıldı. *Bir yüklem «bulundu» diyorsa, «doğru yerde bulundu» demiş olmaz.*
+
+**Kapı:** `test_leksik_kapisi_vektoru_susturuyor.py` **güncellendi** (teşhis değişti) —
+daraltma duruyor · vektörün en emini geçiyor · 🆃 geçiş **dar** kalıyor (`≤1`, gerekçesi
+tarama) · 🆃 leksik boşken vektör tek çare. **Korpus:** `83/69/68/72 · %95,6 · 558/591 ·
+payda 591` — **birebir aynı** 🅜. **Demet:** 453 ✅.
+
+### ⊘ FE ekran doğrulaması — **dokuzuncu tur** yapılamadı
+
+`localhost:3000` → `000`.
