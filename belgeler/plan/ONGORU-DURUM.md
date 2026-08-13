@@ -1111,3 +1111,53 @@ kimlik → farklı anahtar»*) kapıya bağlandı.
 ısıtmanın doğru yeri ölçülmedi ⓑ ölçüm **tek havuzlu**; çok kiracılı p95 **ölçülmedi**.
 *Ölçülmemiş bir hız iddiasıyla tuş açmak, kalibre edilmemiş bir sayıyı güven diye
 satmaktır.*
+
+---
+
+## §23 · TAM KAPI — **10 🔴 → 2 🔴**, ve altısı benim işim DEĞİLDİ *(2026-08-13)*
+
+**İlk koşum: 4.900 ✅ · 10 🔴 · 44 atlandı** (4 dk 15 sn, değişen **624** backend dosyası).
+Her kırmızı **kendi kapsamıyla** sınandı 🆐:
+
+| kırmızı | sahibi | teşhis |
+|---|---|---|
+| `test_a14_hava_boslugu_yayini` ×**6** | **BENİM DEĞİL** | `1ee3d14` belgeyi `belgeler/denetim/`'e taşımış; bu kapının yol sabiti **atlanmış**. *Aynı commit `DOGRULUK.md`'yi taşıyıp üç kapıyı kırmıştı; bu dördüncüsüydü.* |
+| `test_g_belge_dizini_taze` | **benim** | planı düzenledim, dizin bayatladı → `belge_dizini.py --yaz` |
+| `test_alan_haritasi::SINIFSIZ` | **benim** | `emin_miyim`/`oneri`/`hasat` haritada yoktu |
+| `test_frontend_buyume[api-client.ts]` | **benim** | `getOneri`+`oneriTik`+tipler → **+22** satır |
+| `test_d11` | — | **gerekçeli**, kalıyor |
+
+⚠ 🅣 **Altı kırmızı hedefli koşumlarda GÖRÜNMÜYORDU** — o dosya hiç seçilmiyordu.
+*Bir kapının yeşili kapsamıyla sınırlıdır; ve kapsamı, seçtiğin dosyalar kadardır.*
+
+### Düzeltmeler — hiçbiri gevşetme değil
+
+* `a14` **adresi** düzeltildi (kapı **aynı** şeyi ölçüyor).
+* Üç modül **MUTFAK**'a yazıldı: üçü de LLM çağırmaz, üçü de deterministiktir.
+* FE tavanı **778 → 814** (`Δ=22`, ölçülen fazlaya **eşit** 🅜). ⚠ Bileşene çıkarmak
+  **öteki kapıyı** kör ederdi (`test_uc_yetim_degil` sarmalayıcıları `api-client.ts`
+  **içinde** arıyor) — bir borcu başka bir borca taşımak olurdu 🆝; gerekçe yazıldı 🅗.
+* `oneri.py` → `llm._norm` geçişi `MUAF_GECISLER`'e eklendi; emsali `wren_service.py`
+  ve gerekçesi **birebir aynı**: `_norm` bir **metin normalleştiricisidir**.
+  🔴 **Ama bu artık İKİNCİ kez** — bir emsal ikiye çıkınca kural olmaya başlar 🆍.
+  ⊙ Ölçüldü: `_norm`'u `llm`'den alan **5 modül** var. Doğru çözüm onu **ortak bir
+  yardımcıya** taşımak; ⊘ bu turda yapılmadı (tek başına bir demet kapısı ister) 🅗.
+  ⚠㊱ O gerekçeye ilk yazdığım sayı (*«on yedi»*) **ölçülmemişti**; ölçüldü: **5**.
+  *Gerekçeye konan her sayı da bir iddiadır.*
+
+### İkinci koşum: **4.912 ✅ · 2 🔴 · 43 atlandı**
+
+Kalan ikisi: `d11` (**gerekçeli**) ve **yeni bir kırmızı** —
+`test_a13_plan_ayrismasi_olcumu::test_SAYAC_VAR_ve_ALANLARI_TAM`.
+
+🔴 **Ve o benim işim değil, ama gerçek:**
+* **İlk** tam koşumda kırmızı **değildi**; izole koşumda **3 passed**; `-k "garson or
+  plan_garson or a13"` dilimiyle **65 passed**. Yani **sıra/durum bağımlı** 🅢.
+* `a9b0d45~1..HEAD` aralığında ne teste ne `app/plan_garson.py`'ye **dokundum**.
+* Mekanizma ölçüldü: `SAYAC` **modül-düzeyi genel** bir sözlük; `sayaclar()` onun
+  **kopyasını** döndürüyor. Tam süitte bir kod yolu ona **yeni bir anahtar** ekliyor
+  ve kapı *«ilan edilmemiş alan»* diye kırmızı veriyor — yani kapı **işini yapıyor**:
+  *«sessizce büyüyen bir sözleşme, denetlenemeyen bir sözleşmedir.»*
+
+⊙ **Anahtarın adı UYDURULMAYACAK** ㊱ — tam koşumun kendi hata satırından okunacak.
+Ölçüm bu turda başlatıldı; sonucu sonraki tur yazılacak.

@@ -32,7 +32,13 @@ import re
 
 import pytest
 
-_BELGE = pathlib.Path(__file__).parent.parent.parent / "belgeler" / "HAVA-BOSLUGU.md"
+# ⟳🔴 **YOL DÜZELTİLDİ 2026-08-13.** `1ee3d14` belgeleri `belgeler/denetim/`
+# altına taşımıştı (aynı commit `DOGRULUK.md`'yi de taşıdı ve **üç** kapıyı
+# kırmıştı); bu dosyanın sabiti **atlanmıştı**. Altı yüklem `FileNotFoundError`
+# veriyordu ve **yalnız tam kapıda** görünüyordu 🅣 — hedefli koşumlar bu dosyayı
+# hiç seçmiyordu. ⚠ Kapı **gevşetilmedi**, yalnız **adresi** düzeltildi.
+_BELGE = (pathlib.Path(__file__).parent.parent.parent / "belgeler" / "denetim"
+          / "HAVA-BOSLUGU.md")
 
 pytestmark = pytest.mark.skipif(
     not _BELGE.parent.is_dir(),

@@ -98,6 +98,14 @@ MUTFAK = {
     # `contribution` ve `drill` de yapar). *Bir modülü sınıflandıran şey neye baktığı
     # değil, ne ürettiğidir.*
     "kok_neden.py",
+    # 🔴 `ÖNGÖRÜ KATMANI` (2026-08-13) — üçü de **MUTFAK**: hiçbiri LLM
+    # çağırmaz, üçü de deterministiktir ve `E-8` gereği sıcak yola seri bir
+    # ikinci tur **eklemez**.
+    #   · `emin_miyim.py`  — *«emin miyim»* eşik aritmetiği (dört çağıranın tek sahibi)
+    #   · `oneri.py`       — katalogdan yazarken-ara (leksik ⊕ vektör, RRF); yetki
+    #                        süzmesi **sıralamadan önce**, sorgu **koşmaz**
+    #   · `hasat.py`       — tıklama sinyali (konum yanlılığı) ve not biçimi; saf
+    "emin_miyim.py", "oneri.py", "hasat.py",
     "statements.py", "drill.py", "audit_zinciri.py", "lineage.py", "tazelik.py",
     "veri_araligi.py", "result_shape.py", "sensitivity.py",
     # `M-6` — MOTORUN OPERATÖR ADLARI. Dil değil, **motorun kendi sözlüğü**: küme
@@ -159,6 +167,21 @@ MUAF_GECISLER = {
     # ortak bir yardımcıya taşımak; o **bu fazın konusu değil**. Kapı görüyor, biz
     # adlandırıyoruz: *sınır kokusu var ve kayıtlı.*
     ("wren_service.py", "llm"),
+    # 🔴 **İKİNCİ KEZ — ve bu, kokuyu bir BORCA çeviriyor** (2026-08-13).
+    # `oneri.py:63` → `from app.llm import _norm`. Gerekçe yukarıdakiyle
+    # **aynı**: `_norm` küçük harfe indirip boşluk kırpar; bir dil anlama
+    # yüzeyi **değildir** ve öneri motoru LLM'i hiç çağırmaz (`E-8` korunuyor,
+    # `test_alan_haritasi` ve `routers/ask.py` taraması ayrıca doğruluyor).
+    #
+    # ⚠ Ama artık **iki** mutfak modülü aynı kapıdan geçiyor ve bir emsal
+    # ikiye çıkınca **kural** olmaya başlar 🆍. Doğru çözüm belli: `_norm`
+    # `llm.py`'den **ortak bir yardımcıya** taşınmalı (`KAT-1` korunur, ithal
+    # yönü düzelir). ⊘ Bu turda yapılmadı çünkü `_norm`'u `llm`'den alan **beş**
+    # modül var (ölçüldü) ve taşıma tek başına bir demet kapısı ister 🅗.
+    #
+    # ⚠㊱ Bu satır ilk yazılışında *«on yedi yerden»* diyordu — **ölçülmemiş bir
+    # sayıydı**. Ölçüldü: **5**. *Gerekçeye konan her sayı da bir iddiadır.*
+    ("oneri.py", "llm"),
 }
 
 

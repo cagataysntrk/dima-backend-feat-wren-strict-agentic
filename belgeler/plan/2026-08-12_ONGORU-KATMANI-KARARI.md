@@ -10,7 +10,7 @@
 
 ## 🧭 DİZİN — *üretilir, elle yazılmaz* (`lab/belge_dizini.py`)
 
-⊙ **2565 satır · 46 bölüm · 104 alt başlık.** Şişkinliğin çaresi silmek değil **gezinmek**: önce bölümü seç, sonra bölüm içinde ara.
+⊙ **2645 satır · 46 bölüm · 104 alt başlık.** Şişkinliğin çaresi silmek değil **gezinmek**: önce bölümü seç, sonra bölüm içinde ara.
 
 | # | bölüm | satır | alt başlık |
 |---|---|---|---|
@@ -57,9 +57,9 @@
 | 41 | [§40 · DEMO YÜZEYİ — ne kanıtlıyoruz, ne ERTELİYORUZ](#40-demo-yüzeyi-ne-kanıtlıyoruz-ne-erteliyoruz) | `2075` | 8 |
 | 42 | [§41 · İKİ ÖLÇÜM, İKİ DÜZELTME — fazlardan önce](#41-iki-ölçüm-iki-düzeltme-fazlardan-önce) | `2224` | 2 |
 | 43 | [§42 · FAZLAR — alt maddeleriyle](#42-fazlar-alt-maddeleriyle) | `2295` | 9 |
-| 44 | [§43 · «ÖTEKİ ZARAR GÖRMESİN» — çapraz kontrol listesi](#43-öteki-zarar-görmesin-çapraz-kontrol-listesi) | `2512` | 0 |
-| 45 | [§44 · FAZ BAĞIMLILIK HARİTASI](#44-faz-bağimlilik-haritasi) | `2534` | 0 |
-| 46 | [§45 · BU PLANIN SINIRI](#45-bu-planin-siniri) | `2553` | 0 |
+| 44 | [§43 · «ÖTEKİ ZARAR GÖRMESİN» — çapraz kontrol listesi](#43-öteki-zarar-görmesin-çapraz-kontrol-listesi) | `2592` | 0 |
+| 45 | [§44 · FAZ BAĞIMLILIK HARİTASI](#44-faz-bağimlilik-haritasi) | `2614` | 0 |
+| 46 | [§45 · BU PLANIN SINIRI](#45-bu-planin-siniri) | `2633` | 0 |
 
 <!-- DIZIN:SON -->
 

@@ -115,7 +115,18 @@ TAVANLAR = {
     # rapor sayfası değildir ve beş bloğu oraya sığdırmak ikisini de bozardı.
     # 🔴 Koşul `item.rapor` üzerinde: alan boşken blok **hiç render edilmez** (`KURAL B`).
     "components/ReportCard.tsx": 1064,
-    "lib/api-client.ts": 778,
+    # ⊙ +22 · `FAZ 6.1/8.1` ÖNERİ UCU SARMALAYICILARI (`getOneri` · `oneriTik` ·
+    # `OneriAdayi`/`OneriYaniti` tipleri).
+    #
+    # ⚠ **Bileşene çıkarılamadı ve nedeni ölçüldü** 🅗: `test_uc_yetim_degil.py`
+    # sarmalayıcıları **`api-client.ts` içinde** arıyor (*«api-client.ts'te uç
+    # sarmalayıcısı bulunamadı — çapa kaymış»*). Ayrı bir `oneri-api.ts` açmak bu
+    # dosyayı küçültürdü ama **öteki kapıyı kör ederdi** — bir borcu başka bir borca
+    # taşımak olurdu 🆝.
+    #
+    # ⚠ Δ tam ölçülen fazladır (**814 − 792 = 22**), yuvarlanmadı 🅜; boşluk bırakmak
+    # `test_KAPI_SAHTE_DEGIL`'i kırmızı verir.
+    "lib/api-client.ts": 814,
     "lib/chart.ts": 688,
     # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).
     # ⚠ İkisi de bir ALAN BEYANIDIR, mantık değil — tip dosyasının büyümesi burada
