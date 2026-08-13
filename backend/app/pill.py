@@ -101,6 +101,12 @@ ALAN_OLCU = "olcu"
 ALAN_DONEM = "donem"
 ALAN_KIRILIM = "kirilim"
 ALAN_TUR = "tur"
+#: 🔴 `§51` — BEŞİNCİ ALAN: soruda geçen **katalog değeri** (`RAM-3`).
+#: Plan `§5.2` dört sütun sayıyordu; beşincisi bir süs değil bir **eksikti**:
+#: kullanıcının yazdığı varlık hiçbir yuvaya düşmüyordu. ⚠ Ön yüz pill'leri
+#: alan adına **bakmadan** çiziyor (`PillSatiri`), yani bu ekleme FE
+#: sözleşmesini bozmaz — ölçüldü.
+ALAN_VARLIK = "varlik"
 
 #: 🔴 Sıra bir **sözleşmedir**: `§5.2` diyagramının soldan sağa sırası.
 ALANLAR: tuple[str, ...] = (ALAN_OLCU, ALAN_DONEM, ALAN_KIRILIM, ALAN_TUR)
@@ -290,6 +296,18 @@ def pillerden(niyet: Niyet, schema: dict[str, Any] | None = None) -> list[Pill]:
                           metin=_olcu_metni(cube, olcu, schema, coklu),
                           deger=(cube, olcu),
                           silinebilir=coklu))
+    # ── varlık (soruda geçen katalog DEĞERİ) ───────────────────────────────────
+    # 🔴 `§51` — Kullanıcı `«ram 3»` yazdığında pill satırı yalnız `['toplam']`
+    # gösteriyordu: yazdığı **şey** hiçbir yuvada görünmüyordu. `Niyet.filtreler` artık
+    # değer filtresini taşıyor (`niyet._varlik_filtreleri`) ve burada **çizilir**.
+    # ⚠ Dönem filtreleri bu bandın dışında (`tarih` boyutu kendi pill'ini alıyor);
+    # ikisini karıştırmak, bir dönemi bir varlık gibi göstermek olurdu 🆪.
+    for f in niyet.filtreler:
+        boyut, deger = str(f.get("dimension") or ""), f.get("value")
+        if not boyut or boyut == "tarih" or deger in (None, ""):
+            continue
+        pills.append(Pill(alan=ALAN_VARLIK, metin=str(deger),
+                          deger=(boyut, deger), silinebilir=True))
 
     # ── donemler ───────────────────────────────────────────────────────────────
     if niyet.donemler:

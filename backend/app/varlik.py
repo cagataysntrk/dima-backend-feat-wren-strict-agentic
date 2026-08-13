@@ -176,3 +176,27 @@ def geri_koy(cq: Any, harita: dict[str, str]) -> Any:
         _log.warning("varlık perdesi: ÇÖZÜLEMEYEN yuva — sorgu düşürüldü (fail-closed)")
         return None
     return out
+
+
+def boyutu(deger: str, schema: dict) -> str | None:
+    """Bir katalog değerinin ait olduğu **boyut adı** — `«RAM 3»` → `«hat»`.
+
+    🔴 `§51` — **TEK SAHİP.** Bu arama iki yerde gerekiyordu (`routers/oneri.py`'nin
+    yazılan-varlık çapası ve `niyet`in değer filtresi) ve ikisinde ayrı yazılsaydı bir
+    gün iki farklı boyut seçerlerdi ㊲. Sahibi burasıdır çünkü **perdeleme** de burada:
+    değeri bulan ile onun boyutunu söyleyen aynı modül olmalı.
+
+    ⚠ **İLK sahip kazanır** — `perdele`'nin kuralıyla birebir: aynı değer birden çok
+    boyutta geçebilir (`RAM 3` hem `hat` hem `makine` olabilir) ve burada bir **seçim**
+    yapmak, seçimi kullanıcıdan almaktır. İlkini vermek bir tercih değil bir **sıra**dır;
+    şerit ötekini ayrı bir öneri olarak zaten gösterir.
+    """
+    from app import cube_router as cr
+
+    hedef = cr._norm(str(deger))
+    for c in schema.get("cubes") or []:
+        for boyut, degerler in (c.get("dimension_values") or {}).items():
+            for v in degerler or []:
+                if cr._norm(str(v)) == hedef:
+                    return str(boyut)
+    return None

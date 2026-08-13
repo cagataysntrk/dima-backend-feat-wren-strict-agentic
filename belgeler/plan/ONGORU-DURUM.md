@@ -2384,3 +2384,50 @@ Son tur bir ajan yine *«tıklama `cube_query`'yi atıyor, `onSec={onDeger}`»* 
 **üstünde** duruyor.
 
 *Bir raporun doğru olması, hâlâ güncel olması demek değildir; ölçüm tarihi de bir veridir.*
+
+---
+
+## §51 — PILL VARLIK KÖRLÜĞÜ: yetenek vardı, **çağrı yoktu** 🆘
+
+### Ölçüm — körlük hangi katmanda
+
+| ölçüm | sonuç |
+|---|---|
+| canlı `GET /oneri/pill?q=ram 3` | `piller = ['toplam']` — yazdığı şey **yok** |
+| `niyet.coz("ram 3")` | `filtreler=[]` **ve** `bilinmeyenler=[]` 🔴 |
+| `varlik.perdele("ram 3", schema)` | **`{'{{ENT_1}}': 'RAM 3'}`** ✅ |
+| `varlik.perdele("RAM-3 fire")` | **`{'{{ENT_1}}': 'RAM-3'}`** ✅ |
+
+⟹ `RAM 3` ne tanınıyor ne de *«bilmiyorum»* diye bildiriliyordu — **sessizce düşüyordu**.
+Oysa onu bulan araç üründe vardı ve doğru çalışıyordu; `niyet` onu **çağırmıyordu**.
+*Bir katman bir şeyi görmüyorsa, önce ona bakıp bakmadığına bak.*
+
+### Çare — üç dokunuş, sıfır yeni eşleştirici ㊲
+
+* `varlik.boyutu(deger, schema)` — **tek sahip**; değeri bulan (`perdele`) ile boyutunu
+  söyleyen aynı modül. İki yerde ayrı yazılsaydı bir gün iki farklı boyut seçerlerdi.
+* `niyet._varlik_filtreleri` — `perdele` + `boyutu` → `{"dimension":…, "operator":"eq",
+  "value":…}`. ⚠ **Boyut bulunamazsa filtre üretilmez**: boyutsuz bir değer filtresi
+  sorguyu sessizce yanlış yapardı ㊱.
+* `pill.ALAN_VARLIK` — **beşinci alan**. Plan `§5.2` dört sütun sayıyordu; beşincisi bir
+  süs değil bir **eksikti**. ⚠ Ön yüz pill'leri **alan adına bakmadan** çiziyor
+  (`PillSatiri`) — ölçüldü, FE sözleşmesi bozulmuyor.
+
+### Ölçülen sonuç
+
+```
+q=«ram 3»      → piller: ['RAM 3', 'toplam']
+q=«ram 3 fire» → piller: ['fire', 'RAM 3', 'toplam']
+q=«fire»       → piller: ['fire', 'toplam']
+```
+
+**Kanıt:** `pill_katmani · kok1_niyet · alan_haritasi` → **148 ✅**.
+
+### ⚠ Ajan şartnamesi (`09b02b9`) — *«ölçülmüş durum»* bölümü BAYAT 🅟
+
+Belge `/oneri`yi **42,9 sn**, görünümleri **1.359**, tıklamayı *«`cube_query` atıyor»*
+diye yazıyor. Üçü de **kapandı**: `§43` (değerler vektörden çıktı → 534 görünüm) · `§45`
+(tıklama `/cube`·`/oneri/makro` koşuyor, mutasyonla kanıtlı) · `§50` (tavan kapısı).
+Belgenin **§4.2**'si ise değerli ve duruyor: marj yerine **sayılabilir belirsizlik**
+(token tüketildi mi · ölçü kaç küpte · tüketilmemiş token var mı) — `§49`'un kararı
+verilirken bu öneri tartılacak.

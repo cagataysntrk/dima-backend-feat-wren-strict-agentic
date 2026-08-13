@@ -405,7 +405,39 @@ def _coz(soru: str, schema: dict[str, Any]) -> Niyet:
         turler.discard(TUR_TOPLAM)
 
     return dataclasses.replace(temel, olcu_adaylari=adaylar, kirilimlar=kirilimlar,
-                               turler=turler, bilinmeyenler=list(bilinmeyen))
+                               turler=turler, bilinmeyenler=list(bilinmeyen),
+                               filtreler=[*temel.filtreler, *_varlik_filtreleri(soru, schema)])
+
+
+def _varlik_filtreleri(soru: str, schema: dict[str, Any]) -> list[dict]:
+    """🔴 `§51` — SORUDA GEÇEN **KATALOG DEĞERİ** bir filtredir.
+
+    ## Ölçülen kusur (kullanıcı ekranı, 2026-08-13)
+
+    `q=«ram 3»` için pill satırı yalnız `['toplam']` gösteriyordu. Ölçüldü:
+    `niyet.coz("ram 3")` → `filtreler=[]` **ve** `bilinmeyenler=[]` — yani `RAM 3`
+    ne tanınıyor ne de *«bilmiyorum»* diye bildiriliyordu; **sessizce düşüyordu**.
+    Oysa `route()` aynı değeri buluyor ve `varlik.perdele` onu **doğru** çıkarıyor
+    (`«ram 3»` → `RAM 3`, `«RAM-3 fire»` → `RAM-3`).
+
+    ⟹ Eksik olan bir yetenek değil bir **çağrıydı** 🆘.
+
+    ⚠ Yeni eşleştirici **yazılmadı**: değeri `varlik.perdele`, boyutunu
+    `varlik.boyutu` söylüyor ㊲. Boyut bulunamazsa filtre **üretilmez** — bir
+    değeri boyutsuz filtrelemek, sorguyu sessizce yanlış yapardı ㊱.
+    """
+    from app import varlik
+
+    out: list[dict] = []
+    try:
+        _, harita, _ = varlik.perdele(soru, schema)
+    except Exception:                                   # noqa: BLE001
+        return out
+    for deger in harita.values():
+        boyut = varlik.boyutu(deger, schema)
+        if boyut:
+            out.append({"dimension": boyut, "operator": "eq", "value": deger})
+    return out
 
 
 def _kirilimlar(cr, q: str, schema: dict, adaylar: list[tuple[str, str]]) -> list[str]:
