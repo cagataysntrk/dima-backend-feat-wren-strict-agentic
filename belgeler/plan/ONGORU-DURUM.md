@@ -2812,3 +2812,47 @@ o zaman **yeni sohbet açılamazdı** 🆐.
 
 🅑 **Mutasyon:** `zinciriKes`'e `setActiveThreadId(null)` geri kondu →
 `test_ZINCIRI_KES_THREADE_DOKUNMAZ` **kırmızı**; geri yüklendi, `diff` temiz.
+
+---
+
+## §61 — AGENTIC DENETİMİ: planın `Thread 5`'i **madde madde** koda karşı ölçüldü
+
+Kullanıcı sordu: *«çok adımlı işlemler için agentic sistem, uzun istemleri pill'lere
+ayırma neden hâlâ yok, direkt koşuyor?»* — **tek tek ölçtüm.**
+
+| plan maddesi (`Thread 5` · `§7`) | kodda | ölçüm |
+|---|---|---|
+| **Kademe ①** tek adım, ⊘LLM | ✅ | `route()` → `cube_query`; öneri tıklaması `/cube` (0 token) |
+| **Kademe ②** adlı makro, N adım, ⊘LLM | ✅ | `makro.MAKROLAR` + `/oneri/makro` → `plan_tuketici.calistir` **LLM'siz** |
+| **Kademe ③** serbest kompozisyon, ✅LLM | ✅ | `ask.py:4132` `plan_garson.sarmala(...)` — garson plan yazar |
+| **Plan ÖNİZLEME** — *«plan KOŞMUYOR, pill satırı olarak gösterilir»* `[düzenle][koş][iptal]` | 🔴 **YOK** | `/oneri/makro` planı **anında koşuyor**; `PlanAdimlari.tsx` **geriye dönük** (kendi belgesi: *«koşum bitince yazılır»*) |
+| **Uzun girdide şerit sönmesi** (`≈8 kelime`/fiil) | 🔴 **YOK** | `OneriSeridi`'de kelime eşiği **hiç yok** |
+| **Bütçe görünürlüğü** (*«3 adım/12 · 2 sorgu/12»*) | ◐ | `hava_boslugu`/`agent_run` alanları var; şeritte **gösterilmiyor** |
+| `8.3` `ε` · `5.5` sıklık | 🔴 | `§55`: ikisi de **yazılı kararlarla çakışıyor**, kullanıcı kararı bekliyor |
+
+### ⚠ Ve planın **kendi kapsam beyanı** — adil olmak için
+
+> **`FAZ 7 · Çapa · pill · makro · plan önizleme` ⊘ DEMO DIŞI** — *«bu faz iddiayı
+> kanıtlamıyor, zenginleştiriyor. Demo başarılı olursa açılır. Silinmedi, ertelendi.»*
+
+⟹ O fazın **dört** kaleminden **üçü zaten teslim edildi** (çapa `§41` · pill `§51`+`§53`
+· makro `§42`) — yani kapsam dışı ilan edilmiş bir faz **fiilen açıldı**. Eksik kalan tek
+kalem **plan önizlemesi**, ve kullanıcının işaret ettiği şey **tam da o**.
+
+*Bir fazı ertelemek, onun en değerli maddesini de erteler — ve o madde çoğu zaman
+ötekilerin sebebidir.*
+
+### Neden plan önizlemesi **en değerli madde**
+
+Planın kendi ölçümü: *«bugün plan yazılıp **koşuyor**; 7. adımda çökerse kullanıcı
+**sonda** öğreniyor (onarım tutma **%25**, payda 16). Pill kipinde plan **koşmadan**
+görünür ve düzeltilir.»*
+
+> *Bir planı koşmadan önce görünür yapmak, onu onarmaktan ucuzdur.*
+
+### Sıradaki iki iş (bu denetimin çıktısı)
+
+1. **Uzun girdide şerit sönsün** — küçük, ölçülü, bugün yapılır.
+2. **Plan önizleme** — `/oneri/makro`'ya `kos=false` (plan döner, koşmaz) + pill satırı
+   `[düzenle] [koş] [iptal]`. ⚠ `plan_kosucu.dogrula` **zaten** planı doğruluyor; önizleme
+   onu **koşmadan** çağırır ㊲.
