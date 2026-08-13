@@ -1364,3 +1364,50 @@ yumuşamaz (`kürke`·`parka`·`Türke`) ama ünlüden sonra yumuşar (`göğe`�
 
 📌 **Kalan:** FE'de pill satırı + makro tıklaması *(ajanda)* · imaj tazeleme · **insan
 testi** · tam kapı. **Açık kusurlar:** K1 · K3 · K4 · K5◐ · K6 · K8.
+
+---
+
+## §28 · **İNSAN TESTİ İKİ KUSUR BULDU, İKİSİ DE KAPANDI** *(2026-08-13)*
+
+Kullanıcının bağlayıcı isteğiydi: *«curl'le uç sınamak yetmez — özelliği insan gibi test
+et»*. Ve haklı çıktı: birim kapıları **hepsi yeşilken** ürün iki yerden kırıktı 🅣.
+
+| # | insan testinde görülen | kök | durum |
+|---|---|---|---|
+| **İK1** | `bu ay fire` → `fire (parti)` — yazdığı **dönem yok sayılıyor** | cümlenin dönem parçası **yalnız çapadan** gelebiliyordu | ✅ |
+| **İK2** | makro kartı **gövdesiz** | uç `calistir`'ın **iç sözleşmesini** döndürüyordu (`ciktilar·katmanlar·makbuz`), bir cevap değil | ✅ |
+
+### Canlı doğrulama *(kap `s11`, ısıtma `24354 ms`)*
+
+```
+bu ay fire  →  fire — bu ay (parti) · fire oranı — bu ay
+bu yıl ciro →  ciro — bu yıl
+fire        →  fire (OEE)                    ← uydurma dönem YOK 🅫
+
+makro: source=cube · question='OEE neden bu seviyede?' · result satır=33
+       kolon=[makine, vardiya, ort_oee] · bolumler=2 · cube_query VAR
+```
+
+### Bu turun iki dersi
+
+**1 · Bir kapı bir KAYNAK SEÇİMİNİ düzeltebilir ③🅑.** İK1 için ilk yazımım
+`donem_capasi.DONEM_SECENEKLERI`'ni import etti. **Saflık kapısı reddetti ve haklıydı**:
+o modül yaprak değil (`cube_router` + `veri_araligi` çeker) ve cümle katmanının *«LLM yok,
+sorgu yok, IO yok»* ilanını kırardı. Doğru kaynak modülün **kendi** `_ONCEKI_DONEM`
+tablosuydu — üstelik daha güçlü güvenceyle: bir kapı her değerinin `route()` tarafından
+**çözülebildiğini** ölçüyor. Yani kullanıcıya sunulan dönem **koşulabilir** bir dönem.
+*Aynı sözcük listesinin iki kaynağından, kapıya bağlı olanı seçilir.*
+
+**2 · `cevap()` çağrılamazdı, blok ÇIKARILDI ㊲.** İK2'de kolay yol `plan_tuketici.cevap`'ı
+çağırmaktı; ölçtüm, **olmadı**: o fonksiyonun kendi ön koşulları var (`acik_mi` bayrağı ·
+*«route zaten cevapladı → boşluk YOK»* · azınlık okuması). O bir **boşluk doldurma**
+yoludur; makro bir boşluk değil bir **istektir**. Geriye tek doğru seçenek kaldı: sunumu
+**ikinci kez yazmak değil, `bolumlere_cevir`'e çıkarmak**.
+
+### Kapı durumu
+
+**5.020 ✅ · 1 🔴 · 44 atlandı** (4 dk 24 sn). Tek kırmızı **`d11`** — gerekçeli, kod
+kusuru değil (bayat derleme artefaktı ⑪; ön koşulu `fanout.py:264`'te ödenmiş).
+⊙ Operasyon boyunca süit **4.913 → 5.020** (+107 yüklem).
+
+📌 **Açık:** **K1** *(alaka tabanı — kalibrasyon paydası 19 🆉)* · K3 · K4 · K5◐ · K6 · K8.
