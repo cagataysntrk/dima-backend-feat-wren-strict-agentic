@@ -225,6 +225,20 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
     ad = str(d.get("ad") or "").strip()
     cq = d.get("capa") if isinstance(d.get("capa"), dict) else None
     boyut = str(d.get("boyut") or "").strip()
+    # 🔴 **ÖLÇÜLMÜŞ KUSUR (arayüz bağlanırken, 2026-08-13).** İlk yazımda `calistir`'a
+    # `soru=ad` geçiyordum — yani *«neden»*. İki ayrı zarar:
+    #
+    # * `soru` `calistir`'ın **dönem çözümü** için okunuyor (`period_expr` varsa);
+    #   bir **makro adı** dönem taşımaz, kullanıcının cümlesi taşır.
+    # * Cevapta `question` **hiç yoktu**; `AskResponse` onu zorunlu tutuyor ve istemci
+    #   `question.startsWith(...)` çağırıyor → dürüst ret yolunda `undefined` üstünde
+    #   çökme. Arayüz bunu **yamamak** zorunda kalmıştı 🆘 — bir sözleşme eksiğini
+    #   tüketiciye ödetmek, onu iki yerde bilmek demektir ㊲.
+    #
+    # ⊙ `metin` **tıklanan cümledir** (*«toplam fire (kg) neden bu seviyede?»*): hem
+    # dönem çözümüne doğru girdi, hem kullanıcının kartta göreceği soru. Yoksa `ad`'a
+    # düşer — eski davranış korunur 🅐.
+    metin = str(d.get("metin") or "").strip() or ad
     if not ad or not cq:
         raise HTTPException(status_code=400,
                             detail="`ad` ve `capa` zorunlu — makro bir çapanın üstünde koşar.")
@@ -248,12 +262,15 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
         plan_kosucu.dogrula(plan)
         out = plan_tuketici.calistir(
             plan, service=service, index=index, schema=schema,
-            cube_meta=plan_tuketici.kosum_cube_meta(schema), soru=ad)
+            cube_meta=plan_tuketici.kosum_cube_meta(schema), soru=metin)
     except plan_kosucu.PlanHatasi as e:
         _log.info("makro %r koşamadı: %s", ad, e)
-        return {"source": None, "makro": ad,
+        # ⚠ Dürüst ret de `question` taşır: kullanıcı **hangi** soruya ret aldığını
+        # görmeden bir reddi okuyamaz.
+        return {"source": None, "makro": ad, "question": metin,
                 "note": plan_tuketici.neden_olmadi(plan, e)}
     out["makro"] = ad
+    out["question"] = metin
     out["adim_sayisi"] = len(plan["adimlar"])
     return out
 

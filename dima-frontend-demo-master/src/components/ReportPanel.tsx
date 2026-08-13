@@ -55,6 +55,23 @@ const SAF_NOT_ALANLARI = new Set<keyof AskResponse | string>([
   "calculation_explanation",
   // — istemci-tarafı alanlar (backend göndermez, `page.tsx` ekler) —
   "steering_golgede",
+  // 🔴🔴 `§7 ②` — **MAKRO'NUN İKİ META ALANI, VE BU KÜMENİN KENDİ UYARISININ AYNEN
+  // TEKRARI.** `POST /oneri/makro` cevabına iki alan ekliyor: `makro` (koşan reçetenin
+  // **adı**) ve `adim_sayisi` (kaç adım koştu). İkisi de bir **gövde** değil bir
+  // künyedir — ne bir sonuç, ne bir grafik, ne bir öneri.
+  //
+  // ⊙ Ve kümeye yazılmasaydı kusur **dürüst reddin tam üstüne** düşerdi: makro
+  // koşamadığında cevap `{source: null, makro: "neden", note: "<gerekçe>"}` olur, yani
+  // gövdesi **yoktur** — ama `makro` dolu bir dize olduğu için `raporlanabilir()` `true`
+  // döner ve cevap **gövdesiz bir rapor kartı** olarak çizilirdi. Saf-not dalı (ve onun
+  // okunur gerekçesi) hiç çalışmazdı. Bu, `kanit_sinifi` ve `soz` vakalarının
+  // **üçüncüsüdür**; bu dosyanın kendi cümlesi: *«buraya bir taşıma/meta alanı eklemeyi
+  // unutmak, saf-not cevabının kart olarak render edilmesine yol açar.»*
+  //
+  // ⚠ `AskResponse`'a **tip olarak eklenmediler**: küme `keyof AskResponse | string`
+  // kabul ediyor ve `types.ts` tavanında (`616/616`) bir satır boşluk yok. Bir alanı
+  // tipe yazmak burada bir kazanç da vermezdi — ikisi de yalnız bu kümede okunuyor.
+  "makro", "adim_sayisi",
   // 🔴 **GARSON FAZI — DİPNOTLAR, GÖVDE DEĞİL.** `G1`'in `temellendirme`si ve `G2`'nin
   // `diyalog_durumu`su bir cevabın **yanında** konuşur (rozet · bekleyen yuva); ikisi de
   // `ReportCard` içinde render edilir ama hiçbiri bir **rapor gövdesi** değildir.
@@ -118,6 +135,7 @@ export function ReportPanel({
   aktifJobId,
   viewHint,
   onCubeEdit,
+  onMakro,
   error,
   sessionId,
   contextLabel,
@@ -136,6 +154,11 @@ export function ReportPanel({
   // YALNIZ thread'in EN SON raporlanabilir item'ına geçirilir (bkz. aşağıdaki lastReportableIdx).
   viewHint?: { kind: string; nonce: number } | null;
   onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
+  // 🔴 `§7 ②` — ADLANDIRILMIŞ MAKRO: `POST /oneri/makro`, **sıfır LLM**, N deterministik
+  // adım. ⚠ Çapayı (`capa.cq`) ve kırılım boyutunu bu panel **verir**, çünkü ikisinin de
+  // tek sahibi burasıdır (`capaCq` aşağıda `temellendirme` ile aynı kalemden okunuyor).
+  // `page.tsx`'in bilmesi gereken tek şey cevabın nereye düşeceğidir.
+  onMakro?: (ad: string, soru: string, cq: CubeQuery, boyut: string) => void;
   error: string | null;
   sessionId?: string;
   // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — "bağlam: X" göstergesi ARTIK burada: eski sol
@@ -561,6 +584,19 @@ export function ReportPanel({
             sonBakilanlar={sonBakilanlar}
             capa={capa}
             onCapaBirak={onClearContext}
+            // 🔴 `§7 ②` — makro **yalnız bir çapa varken** koşabilir: *«neden bu
+            // seviyede?»* sorusunun öznesi ekrandaki sayıdır ve sunucu da bunu yazıyor
+            // (*«çapasız bir makronun öznesi yoktur ve tıklandığında düşer»*). `capaCq`
+            // yokken prop hiç verilmez → şerit o satırı bugünkü gibi metne tamamlar.
+            // ⚠ `boyut`: reçeteler (`neden` · `en_kotu`) bir **kırılım** ister ve tek
+            // meşru kaynağı çapanın kendi `dimensions`'ıdır. Burada bir boyut **seçmek**
+            // (*«ilk boyutu alıveririm»* diye şemadan devşirmek) kullanıcının sormadığı
+            // bir kırılımı ona kendi sorusu gibi göstermek olurdu. Boş kalırsa sunucu
+            // 400 + Türkçe gerekçe döner ve o gerekçe kullanıcıya **ulaşır**.
+            onMakro={capaCq && onMakro
+              ? (ad, soru) => onMakro(ad, soru, capaCq,
+                  String(((capaCq.dimensions as unknown[]) ?? [])[0] ?? ""))
+              : undefined}
             ipucu={thread ? "bu rapor üzerinde devam et…" : "sor…"}
           />
         )

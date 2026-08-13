@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
-import { apiErrorMessage, ask, askCube, getConversation, uploadDataset } from "@/lib/api-client";
+import { apiErrorMessage, ask, askCube, getConversation, postMakro, uploadDataset } from "@/lib/api-client";
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
 import { ConnectionReviewPanel } from "@/components/ConnectionReviewPanel";
@@ -430,9 +430,27 @@ export default function Home() {
   // KALDIRILDI (dead code).
 
   // Yorum çubuğu chip düzenlemesi → deterministik /cube (LLM yok); transkripte de düşer.
-  const cubeMutation = useMutation<AskResponse, unknown, { cq: NonNullable<AskResponse["cube_query"]>; label: string }>({
-    mutationFn: ({ cq, label }) =>
-      askCube({ cube_query: cq, label, session_id: sessionId, thread_id: activeThreadId }),
+  //
+  // 🔴🔴 `§7 ②` — **ADLANDIRILMIŞ MAKRO DA BURADAN GEÇER, KENDİ MUTASYONUNU AÇMAZ.**
+  //
+  // İki yol da aynı şeyi yapıyor: **sıfır LLM** ile bir cevap üretip onu aktif thread'e
+  // koymak. `onSuccess` gövdesinin tamamı (thread damgası · `addHistory` · `addToCanvas` ·
+  // `contextCq`/`contextRapor`/`diyalog_durumu` yankısı · `prevSql` temizliği) ikisi için
+  // de **birebir** doğrudur. İkinci bir `useMutation` yazmak o gövdenin ikinci bir sahibi
+  // demekti ve bu depoda o desen (`contextRapor` · `diyalog_durumu`) **iki kez** bir alanı
+  // yetim bıraktı: biri güncellenir, öteki unutulur.
+  //
+  // ⊙ Ve bedava iki kazanç: ① `pending` zaten `cubeMutation.isPending`i içeriyor → makro
+  // koşarken **bekleme göstergesi** (plan 5 adım koşuyor) kendiliğinden çalışır; ② cevap
+  // `raporlanabilir` ise normal `ReportCard`, `source: null` + `note` ise saf-not dalı —
+  // yani **dürüst ret** de yeni bir gösterim icat edilmeden görünür.
+  //
+  // ⚠ `label` makro dalında **kullanılmaz** (uç onu okumaz): kartın başlığı `soru`dur,
+  // yani kullanıcının şeritte gördüğü cümle. Bkz. `postMakro`'nun şerhi.
+  const cubeMutation = useMutation<AskResponse, unknown, { cq: NonNullable<AskResponse["cube_query"]>; label: string; makro?: { ad: string; soru: string; boyut: string } }>({
+    mutationFn: ({ cq, label, makro }) =>
+      makro ? postMakro({ ad: makro.ad, capa: cq, boyut: makro.boyut, soru: makro.soru })
+      : askCube({ cube_query: cq, label, session_id: sessionId, thread_id: activeThreadId }),
     onSuccess: (data) => {
       // §B — chip düzenlemesi HER ZAMAN aktif thread'e etiketlenir (chip UI'ı zaten yalnız
       // aktif thread'in kartlarında var), asla yeni thread AÇMAZ. `activeThreadId` null
@@ -631,7 +649,16 @@ export default function Home() {
                 aktifJobId={isPendingNew ? null : aktifJobId}
                 viewHint={viewHint}
                 onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
-                error={mutation.isError ? apiErrorMessage(mutation.error) : null}
+                // 🔴 `§7 ②` — makro, `/cube` ile **aynı** mutasyondan geçer (gerekçesi
+                // yukarıda). `label` yalnız `/cube` dalının işine yarar; makro dalında
+                // kartın başlığını `soru` verir.
+                onMakro={(ad, soru, cq, boyut) => cubeMutation.mutate({ cq, label: soru, makro: { ad, soru, boyut } })}
+                // 🔴 `cubeMutation` HATASI DA GÖRÜNÜR OLDU. Eskiden yalnız `mutation`
+                // okunuyordu; `/cube` sessizce düşerse kullanıcı **hiçbir şey** görmüyordu.
+                // Makro ile bu bir kusurdan bir **ürün boşluğuna** dönüşürdü: boyutsuz bir
+                // çapada sunucu 400 + Türkçe gerekçe döner (*«… bir kırılım boyutu ister»*)
+                // ve o cümlenin ekrana ulaşması `§7`'nin *«dürüst ret»* şartıdır.
+                error={mutation.isError || cubeMutation.isError ? apiErrorMessage(mutation.error ?? cubeMutation.error) : null}
                 sessionId={sessionId}
                 contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
                 // §B — "konudan çık": HEPSİ BİRLİKTE sıfırlanır → panel BOŞALIR ve

@@ -24,7 +24,10 @@ import type {
   MeasureCandidate,
   MeasurePreview,
   MeasurePreviewInput,
-  QueryResult,
+  // ⚠ `PillYaniti` **satıra eklendi**, kendi satırını almadı: bu dosya `814 + 14`
+  // muafiyet = `828` kod satırı tavanında ve pill/makro sarmalayıcıları için yer
+  // ancak `listDashboards`'ın yinelenen satır-içi tipi tekilleştirilerek açıldı.
+  PillYaniti, QueryResult,
   Report,
   ReportBlockInput,
   DrillRequestInput,
@@ -306,6 +309,36 @@ export async function oneriTik(
   } catch {
     /* yut — telemetri cevabı bozmaz */
   }
+}
+
+// 🔴 `§5.2`/`§5.3` — PILL SATIRI (`GET /oneri/pill`). Motor `backend/app/pill.py`.
+//
+// ⊘ Çapa **almaz** ve bu bir eksiklik değil bir sözleşme: uç yalnız `q` okur, çünkü
+// pill'ler `Niyet.coz(q)`'dan türer — cümlenin kendisinden. Çapayı da göndermek, ekranda
+// yazmayan bir şeyi *«anladığım şu»* diye göstermek olurdu.
+// ⊘ Sorgu koşmaz, LLM çağırmaz: `§5.3`'ün tamamı kullanıcı **koşmadan önce** olur.
+export async function getPill(q: string): Promise<PillYaniti> {
+  return (await apiClient.get<PillYaniti>("/oneri/pill", { params: { q } })).data;
+}
+
+// 🔴 `§7 ②` — ADLANDIRILMIŞ MAKRO (`POST /oneri/makro`): tek tık, N deterministik adım,
+// **sıfır LLM**. Şeritteki `tur === "neden"` satırı bir `cube_query` **taşımaz** (backend
+// `TUR_NEDEN`, `cube_query=None`); taşıdığı şey bir **reçete adıdır** ve koşulacağı yer
+// burasıdır — `/cube` değil.
+//
+// 🔴 `soru` GÖVDEYE GİRER AMA SUNUCU İÇİN DEĞİL — **kart için**. Sunucu cevabı `/ask`
+// biçimindedir ama `question` alanı **yoktur** (`plan_tuketici.calistir` onu üretmez) ve
+// `AskResponse.question` zorunludur: `ReportPanel`'in saf-not dalı `it.question`ı doğrudan
+// çizer, `nearestRealQuestion` ise `question.startsWith` çağırır — alan boş gelseydi kart
+// **başlıksız** çıkar, dürüst-ret dalı ise `undefined.startsWith` ile **düşerdi**.
+// ⚠ Kullanıcının gördüğü cümle (*«fire neden bu seviyede?»*) şeritten gelir; makro **adı**
+// (`neden`) bir kimliktir, bir başlık değil. Kartın başlığına adı yazmak, kullanıcıya
+// tıkladığından başka bir soru göstermek olurdu.
+export async function postMakro(
+  g: { ad: string; capa: CubeQuery; boyut: string; soru: string },
+): Promise<AskResponse> {
+  const { data } = await apiClient.post<AskResponse>("/oneri/makro", g);
+  return { ...data, question: data.question || g.soru };
 }
 
 // Faz 4.1 (31 Temmuz 2026) — backend'de `ask_async_discovery` bayrağı açık tenant'larda
@@ -813,15 +846,12 @@ export async function getStarters(): Promise<Starter[]> {
 }
 
 // --- Panolar (§9 canlı-izleme) --------------------------------------------
-export async function listDashboards(): Promise<{
-  dashboards: DashboardListItem[];
-  max_per_user: number;
-}> {
-  const { data } = await apiClient.get<{
-    dashboards: DashboardListItem[];
-    max_per_user: number;
-  }>("/dashboards");
-  return data;
+// ⚠ Şekil **bir kez** yazılır: aynı satır-içi tip hem imzada hem `get<…>`de tekrar
+// ediyordu (6 satır, iki sahip). Bir gün biri ötekinden ayrılsaydı derleyici susardı —
+// `Promise<A>` dönen bir gövdenin `B` okuması, `A ⊇ B` olduğu sürece geçerlidir.
+type PanoListesi = { dashboards: DashboardListItem[]; max_per_user: number };
+export async function listDashboards(): Promise<PanoListesi> {
+  return (await apiClient.get<PanoListesi>("/dashboards")).data;
 }
 
 export async function createDashboard(title: string): Promise<{ id: string }> {
@@ -867,19 +897,16 @@ export async function addDashboardWidget(
 /** **PANO SİLMEYİ GERİ AL** (denetim F2). 🔴 Sunucu panoyu silmiyor **damgalıyordu**;
  *  geri getiren hiçbir yol yoktu — *geri alınamayan bir soft-delete, pahalı bir
  *  hard-delete'tir.* */
-export async function restoreDashboard(id: string): Promise<{ restored: boolean; title: string }> {
-  const { data } = await apiClient.post<{ restored: boolean; title: string }>(
-    `/dashboards/${id}/geri-al`);
-  return data;
+// ⚠ `listDashboards` ile aynı tekilleştirme: bu şekil **dört kez** yazılıydı (iki imza +
+// iki `post<…>`). Dört sahip, bir gün dört farklı şekil demektir.
+type PanoGeriAl = { restored: boolean; title: string };
+export async function restoreDashboard(id: string): Promise<PanoGeriAl> {
+  return (await apiClient.post<PanoGeriAl>(`/dashboards/${id}/geri-al`)).data;
 }
 
 /** **WIDGET SİLMEYİ GERİ AL** (denetim F2). */
-export async function restoreDashboardWidget(
-  id: string, wid: string,
-): Promise<{ restored: boolean; title: string }> {
-  const { data } = await apiClient.post<{ restored: boolean; title: string }>(
-    `/dashboards/${id}/widgets/${wid}/geri-al`);
-  return data;
+export async function restoreDashboardWidget(id: string, wid: string): Promise<PanoGeriAl> {
+  return (await apiClient.post<PanoGeriAl>(`/dashboards/${id}/widgets/${wid}/geri-al`)).data;
 }
 
 export async function deleteDashboardWidget(id: string, wid: string): Promise<void> {
@@ -905,9 +932,7 @@ export async function patchDashboardWidget(
 }
 
 export async function getDashboardData(id: string): Promise<DashboardWidgetData[]> {
-  const { data } = await apiClient.get<{ widgets: DashboardWidgetData[] }>(
-    `/dashboards/${id}/data`,
-  );
+  const { data } = await apiClient.get<{ widgets: DashboardWidgetData[] }>(`/dashboards/${id}/data`);
   return data.widgets ?? [];
 }
 

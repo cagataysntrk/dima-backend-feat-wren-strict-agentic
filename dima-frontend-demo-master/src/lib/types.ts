@@ -1067,3 +1067,25 @@ export interface SunumTercihi {
   kaynak_ifade: string | null;  // tercihi doğuran cümle
   updated_at: string | null;
 }
+
+// 🔴🔴 `§5.2` + `§5.3` — **PILL SATIRI SÖZLEŞMESİ** (`GET /oneri/pill`).
+//
+// `app/pill.py`'nin aynası; `Niyet` nesnesinin **görünür hâli**. Üç alan, üç iş:
+//   · `piller`  — `Niyet`in çizilmiş parçaları (`alan` kapalı küme: olcu·donem·kirilim·tur)
+//   · `hatalar` — `§5.3`: geçersiz kombinasyonda o **alanın** pill'i kırmızıya döner ve
+//                 `neden` **okunur** (bir hata kodu değil, Türkçe bir cümle) yazılır
+//   · `artilar` — 🔴 **TİPLİ `+`**: `sonuc` bir `+`'ın ne ürettiğini söyler (`tek_sorgu`
+//                 aynı fişi büyütür · `plan` bir **adım** doğurur). Tek tip `+` çizmek
+//                 planın **bir numaralı tuzağıdır** — *«göre/bazında»* üç anlamlıydı ve
+//                 bu depoyu **üç kez** ısırdı.
+//
+// ⚠ Üye tipleri **satır içi** ve bu bir üslup tercihi değil bir **tavan kararıdır**: bu
+// dosya `598 + 18` muafiyet = `616` kod satırında ve bu blokla **tam** oraya oturuyor.
+// Ayrı `PillOgesi`/`PillArti`/`PillHata` adları dört satır daha yerdi ve sıfır kazanç
+// verirdi — tüketici onları `PillYaniti["artilar"][number]` ile zaten adlandırabiliyor.
+export interface PillYaniti {
+  piller: { alan: string; metin: string; deger: unknown; silinebilir: boolean }[];
+  artilar: { tip: string; alan: string | null; metin: string; sonuc: "tek_sorgu" | "plan";
+             secenekler: { deger: string; metin: string }[] }[];
+  hatalar: { alan: string; deger: unknown; neden: string }[];
+}

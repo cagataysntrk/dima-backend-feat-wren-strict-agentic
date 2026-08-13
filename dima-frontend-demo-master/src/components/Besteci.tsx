@@ -33,6 +33,7 @@
 
 import { CaretInput } from "@/components/CaretInput";
 import { OneriSeridi, type OneriCapasi } from "@/components/OneriSeridi";
+import { PillSatiri } from "@/components/PillSatiri";
 import type { ReactNode } from "react";
 
 export function Besteci({
@@ -43,6 +44,7 @@ export function Besteci({
   ipucu,
   capa = null,
   onCapaBirak,
+  onMakro,
   sonBakilanlar = [],
   ustBilgi,
   vurgulu = false,
@@ -64,6 +66,14 @@ export function Besteci({
   capa?: OneriCapasi | null;
   /** `✕ bağlamı bırak` — **açık kullanıcı eylemi**; verilmezse düğme çizilmez. */
   onCapaBirak?: () => void;
+  /** 🔴 `§7 ②` — ADLANDIRILMIŞ MAKRO. Şeritteki *«… neden bu seviyede?»* satırı bir
+   *  `cube_query` **taşımaz**; tıklanınca metni tamamlamak yerine `POST /oneri/makro`'ya
+   *  gider ve **LLM'siz** çok adımlı bir plan koşar.
+   *  ⚠ Bu prop **buradan geçer ama burada karşılanmaz**: çapayı (`capa.cq`) ve cevabın
+   *  hangi thread'e düşeceğini bu dosya bilmez. Bilen `ReportPanel`/`page.tsx`'tir ve
+   *  makro cevabı `/cube` ile **aynı** yerleştirme yolundan geçer — yeni bir gösterim
+   *  icat edilmedi. Verilmezse şerit bugünkü davranışını sürdürür (`KURAL B`). */
+  onMakro?: (ad: string, soru: string) => void;
   sonBakilanlar?: string[];
   /** Kutunun üstünde tek satırlık durum (bugün: *«N kart birleştirilerek soruluyor»*).
    *  ⚠ Bu satır varken çapa **verilmez**: bağlamı seçili kartlar kurar ve bunu zaten
@@ -95,6 +105,7 @@ export function Besteci({
             sonBakilanlar={sonBakilanlar}
             capa={capa}
             onCapaBirak={onCapaBirak}
+            onMakro={onMakro}
           >
             <CaretInput
               value={deger}
@@ -109,6 +120,13 @@ export function Besteci({
               ipucu={ipucu}
             />
           </OneriSeridi>
+          {/* 🔴 `§5.2`/`§5.3` — PILL SATIRI, bestecinin **altında**. ⚠ `OneriSeridi`'nin
+              İÇİNE değil ALTINA konuldu ve bu bir yerleşim tercihi değil bir sahiplik
+              kararı: şerit *«ne sorabilirsin»* der (aday listesi), pill satırı *«ne
+              anladım ve bu soru koşabilir mi»* der (`Niyet` + doğrulama). İkisini tek
+              bileşene koymak, iki farklı soruyu tek sahibe vermek olurdu.
+              ⊘ Kendi bayrağını/debounce'unu kendi taşır; buradan geçen tek şey metindir. */}
+          <PillSatiri metin={deger} />
         </div>
       </div>
     </div>

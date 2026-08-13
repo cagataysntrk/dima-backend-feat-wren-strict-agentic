@@ -115,7 +115,19 @@ interface Satir {
   metin: string;
   grup: Grup;
   ipucu: string;
+  /** 🔴 `§7 ②` — sunucunun `tur`u. Bir satırın **koşulacak mı yoksa tamamlanacak mı**
+   *  olduğunu tek başına bu alan söyler; `cube_query`nin yokluğu söylemez (bir cümle onu
+   *  şema eksikliğinden de taşımayabilir). Eski `adaylar` dalında `tur` yoktur → `""`,
+   *  yani o dal **her zaman** tamamlama olarak kalır (`KURAL B`). */
+  tur: string;
 }
+
+/** 🔴 **MAKRO ADLARI — `backend/app/makro.py::MAKROLAR` ile birebir.** Şerit bugün yalnız
+ *  `neden`i üretiyor (`oneri_cumle.TUR_NEDEN`), ötekiler `makrolar_icin` üzerinden gelir.
+ *  ⚠ Küme **kapalı** ve bilerek: `tur`u körlemesine makro adı saymak, bir gün eklenecek
+ *  sıradan bir `tur`u (ör. `donem_kaydir`) sessizce `/oneri/makro`'ya yollar ve kullanıcı
+ *  bir 400 görürdü. *Bir adı bir komut sanmak, ancak adların listesi varsa güvenlidir.* */
+const MAKRO_ADLARI = new Set(["neden", "gecen_yil", "en_kotu"]);
 
 export function OneriSeridi({
   metin,
@@ -123,6 +135,7 @@ export function OneriSeridi({
   sonBakilanlar = [],
   capa = null,
   onCapaBirak,
+  onMakro,
   children,
 }: {
   metin: string;
@@ -134,6 +147,9 @@ export function OneriSeridi({
   capa?: OneriCapasi | null;
   /** 🔴 `✕ bağlamı bırak` — **açık kullanıcı eylemi.** Verilmezse düğme çizilmez. */
   onCapaBirak?: () => void;
+  /** 🔴 `§7 ②` — bir **makro** satırı tıklandı (`tur ∈ MAKRO_ADLARI`). Verilmezse makro
+   *  satırı bugünkü gibi yalnız metni tamamlar — yani `KURAL B` ile birebir eski davranış. */
+  onMakro?: (ad: string, soru: string) => void;
   /** Bestecinin kendisi (`CaretInput`). ⚠ Çapa **üstünde**, şerit **altında** durur. */
   children: ReactNode;
 }) {
@@ -183,13 +199,14 @@ export function OneriSeridi({
                 kimlik: o.kimlik, metin: o.metin,
                 grup: o.grup === "rapor_ustunde" ? "rapor_ustunde" : "yeni_konu",
                 ipucu: o.cube_query ? `${o.cube ?? ""} · ${o.tur}` : `makro · ${o.tur}`,
+                tur: o.tur,
               }))
             : y.adaylar.map((a) => ({
                 // ⚠ Grupsuz bir aday *«bu raporun üstünde»* SAYILAMAZ: o band bir
                 // **vaattir** (aynı kırılım · aynı dönem sürecek). Eksik bir grup,
                 // yanlış bir gruptan iyidir.
                 kimlik: a.kimlik, metin: a.etiket, grup: "yeni_konu" as const,
-                ipucu: `${a.cube} · ${a.kip}`,
+                ipucu: `${a.cube} · ${a.kip}`, tur: "",
               }));
           // ⚠ Sıralama **burada** yapılır, render'da değil: `secili` bir **konumdur** ve
           // o konum ekrandaki sırayla birebir aynı olmak zorunda — `↓↑` ile
@@ -211,6 +228,22 @@ export function OneriSeridi({
     const a = adaylar[i];
     if (!a) return;
     oneriTik(metin.trim(), adaylar.map((x) => x.kimlik), i);
+    // 🔴🔴 `§7 ②` — **MAKRO SATIRI TEK İSTİSNADIR VE İSTİSNA OLMAK ZORUNDADIR.**
+    //
+    // Bu şeridin kuralı *«tıklama yalnız metni tamamlar»*dır ve o kural yerinde duruyor:
+    // bir `cube_query` taşıyan satır bile koşmaz. Ama makro satırının tamamlayacağı bir
+    // metin **yoktur** — *«fire neden bu seviyede?»* bir sorgu adı değil bir **reçete
+    // adıdır** (`cube_query = null`, `tur = "neden"`). Onu besteciye yazmak, kullanıcıya
+    // hiçbir yolun cevaplamadığı bir cümle bırakmak olurdu: `Enter`'a bastığında istek
+    // `/ask`e gider ve garson aynı planı **LLM ile** yeniden kurmaya çalışır — yani
+    // `§7`'nin `②` kademesi sessizce `③`e düşer, ve o tablonun başlığı *«karışmamalılar»*.
+    //
+    // ⚠ `onMakro` yoksa eski davranış **birebir** sürer (`KURAL B`).
+    if (MAKRO_ADLARI.has(a.tur) && onMakro) {
+      onMakro(a.tur, a.metin);
+      setKapali(true);
+      return;
+    }
     // ⊘ Sorgu KOŞMAZ: `cube_query` taşısa bile tıklama yalnız **metni** tamamlar.
     onSec(a.metin);
     setKapali(true);
