@@ -2431,3 +2431,40 @@ diye yazıyor. Üçü de **kapandı**: `§43` (değerler vektörden çıktı →
 Belgenin **§4.2**'si ise değerli ve duruyor: marj yerine **sayılabilir belirsizlik**
 (token tüketildi mi · ölçü kaç küpte · tüketilmemiş token var mı) — `§49`'un kararı
 verilirken bu öneri tartılacak.
+
+---
+
+## §52 — FAZIN KENDİ `KURAL B` KAPISI: **savunacak bir şey de yoktu**
+
+Ajanın şartnamesi *«`test_oneri_katmani_kural_b.py` hiç yazılmamış»* diyordu. Doğruydu —
+ama sebebi daha kötü çıktı:
+
+```
+grep oneri_katmani app/routers/oneri.py  →  0
+```
+
+Bayrak `features.yml`'de tanımlı, `features.py`'de ilan edilmiş, **ön yüzde okunuyor**
+(`OneriSeridi.tsx:169` · `PillSatiri.tsx:73`) — ama **sunucuda hiç denetlenmiyordu**.
+Üstelik ön yüzün kendi yorumu şunu iddia ediyordu: *«`oneri_katmani` **sunucu tarafıdır
+ve bir YETKİdir**»*.
+
+> *Bir yetkiyi istemcide uygulamak, onu uygulamamaktır.* Bayrağı kapalı bir kiracı ucu
+> doğrudan çağırdığında öneri **yine** üretiliyordu.
+
+### Çare
+
+`_katman_acik(request, principal)` — `resolve_for` ile bayrak sunucuda çözülür; kapalıysa
+**boş yanıt** döner. ⚠ **404 değil**: bu faz öncesinde bu uçlar yoktu, dolayısıyla
+*«kapalı ⇒ hiçbir öneri»* fazın öncesiyle **eşdeğerdir**; 404 istemcide bir **hata yolu**
+açardı ve *kapalı bir özellik bir arıza değildir*. Bayrak çözülemezse **kapalı** sayılır
+(fail-closed) ve `_log.warning` ile duyurulur (ADR-0020).
+
+### Kapı — dört yüklem, biri **zıt ölçüt** 🆃
+
+`tests/test_oneri_katmani_kural_b.py` (**4 ✅**): kapalıyken **boş** · kapalıyken
+**200** (şekil aynı) · **açıkken çalışır** · uç bayrağı **gerçekten okuyor** (`ast`
+yerine kaynak taraması, zincir yüklemi 🆆).
+
+Üçüncüsü olmasaydı **ucu tamamen kırmak da kapıyı yeşil bırakırdı** 🆐.
+
+**Kanıt:** `oneri_katmani_kural_b · oneri_motoru · pill_katmani` → **61 ✅**.

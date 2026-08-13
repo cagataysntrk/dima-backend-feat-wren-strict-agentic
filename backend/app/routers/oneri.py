@@ -125,6 +125,38 @@ def _yazilan_varlik(q: str, schema: dict) -> str | None:
     return None
 
 
+def _katman_acik(request, principal) -> bool:
+    """🔴 `§52` — **`KURAL B` SUNUCUDA DA UYGULANIR.**
+
+    ## Ölçülen boşluk
+
+    `OneriSeridi.tsx:56` şunu yazıyordu: *«`oneri_katmani` **sunucu tarafıdır ve bir
+    YETKİdir**»* — ama ölçüldü: `grep oneri_katmani app/routers/oneri.py` → **0**. Yani
+    bayrak yalnız **ön yüzde** okunuyordu; kapalı bir kiracı ucu doğrudan çağırsa öneri
+    **yine** üretiliyordu. Fazın kendi `KURAL B` kapısı da bu yüzden yazılamamıştı 🆆.
+
+    *Bir yetkiyi istemcide uygulamak, onu uygulamamaktır.*
+
+    ⚠ Kapalıyken **404 değil boş yanıt**: bu faz öncesinde bu uçlar yoktu, dolayısıyla
+    *«bayrak kapalı ⇒ hiçbir öneri»* davranışı fazın öncesiyle **eşdeğerdir**. 404 ise
+    istemcide bir hata yolu açardı — kapalı bir özellik bir arıza değildir.
+    """
+    from app.config import get_settings
+    from app.features import resolve_for
+
+    try:
+        return "oneri_katmani" in resolve_for(get_settings(), principal)
+    except Exception:                                        # noqa: BLE001
+        _log.warning("bayrak çözülemedi → öneri katmanı KAPALI sayıldı", exc_info=True)
+        return False
+
+
+def _bos_yanit() -> dict:
+    """Kapalı katmanın yanıtı — **şekli aynı**, içeriği boş (istemci dallanmasın)."""
+    return {"oneriler": [], "adaylar": [], "capa": None, "kip": "kapali",
+            "indeks": {"durum": "kapali", "surum": ""}}
+
+
 @router.get("/oneri", dependencies=[Depends(require_company)])
 def oneri_ara(request: Request, q: str = Query("", max_length=120),
               capa_cube: str = Query("", max_length=64),
@@ -160,6 +192,8 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120),
     from app.company_registry import wren_for_request
 
     principal = getattr(request.state, "principal", None)
+    if not _katman_acik(request, principal):
+        return _bos_yanit()
     izinliler = katman_b.allowlist(request, principal)
     schema = wren_for_request(request).schema()
     adaylar = oneri.ara(q, schema, izinliler=izinliler)
