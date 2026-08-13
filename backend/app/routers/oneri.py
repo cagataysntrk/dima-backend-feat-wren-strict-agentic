@@ -361,6 +361,9 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
     ad = str(d.get("ad") or "").strip()
     cq = d.get("capa") if isinstance(d.get("capa"), dict) else None
     boyut = str(d.get("boyut") or "").strip()
+    # `§28.3` — **onay bayrağı**: çok adımlı plan önce **önizlenir**, koşum ancak
+    # kullanıcı onayıyla gelir (`kos=true`). Tek adımlı planda anlamı yoktur.
+    kos = bool(d.get("kos", False))
     # 🔴 **ÖLÇÜLMÜŞ KUSUR (arayüz bağlanırken, 2026-08-13).** İlk yazımda `calistir`'a
     # `soru=ad` geçiyordum — yani *«neden»*. İki ayrı zarar:
     #
@@ -390,6 +393,38 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
     from app.katalog_metni import metin_ve_indeks
 
     _, index = metin_ve_indeks(schema, principal)
+    # 🔴🔴 `§63` — **ÇOK ADIM (N ≥ 2) → HER ZAMAN ÖNİZLEME** (`§28.3`, bir KURAL).
+    #
+    # Belgenin karar tablosu bir bayrak değil bir kural veriyor:
+    #
+    #     tek adım · garson emin      → 🟢 koşar, pill'ler makbuz olur
+    #     tek adım · garson kararsız  → 🔵 pill önerilir, kullanıcı onaylar
+    #     çok adım (N ≥ 2)            → 🔴 HER ZAMAN önizleme
+    #     yazma fiili                 → 🔴 senkron onay
+    #
+    # Gerekçesi ölçülmüş: *«plan yazılıp KOŞUYOR; 7. adımda çökerse kullanıcı SONDA
+    # öğreniyor — onarım tutma %25, payda 16»*. Ve belgenin başlığı işin kendisi:
+    # *«route ve garson KARAR VERİCİ olmaktan çıkıp TAHMİNCİ oluyor … kullanıcı KARARI
+    # VERİR (bir tık)»* (`§3.1`).
+    #
+    # ⚠ Doğrulama **aynı** kapıdan geçer ㊲: önizleme *«daha gevşek»* bir yol değil,
+    # **koşumsuz** yoldur. Bütçe de zaten `dogrula`'nın içinde (`azami_sorgu` ·
+    # `plan_semasi.AZAMI_ADIM`) — ikinci bir bütçe sayacı bir gün iki farklı sınır olurdu.
+    if len(plan.get("adimlar") or []) >= 2 and not kos:
+        try:
+            plan_kosucu.dogrula(plan)
+            gecerli = True
+            not_ = f"{len(plan['adimlar'])} adım — koşmadan önce gözden geçir."
+        except plan_kosucu.PlanHatasi as e:
+            # ⊘ Geçersiz plan da **gösterilir**: kullanıcı neyin tutmadığını görmeden
+            # düzeltemez. Ürünün kendi Türkçe gerekçesi taşınır, yeniden yazılmaz.
+            gecerli, not_ = False, str(e)
+        return {"source": "onizleme", "makro": ad, "question": metin, "gecerli": gecerli,
+                "adimlar": [{"sira": i, "fiil": x.get("fiil"),
+                             "metin": plan_tuketici._adim_metni(x)}
+                            for i, x in enumerate(plan["adimlar"], 1)],
+                "note": not_}
+
     try:
         # ⚠ **Koşmadan denetle**: `dogrula` tip uyuşmazlıklarını (bir `SORGU` adımı bir
         # `olcum` adımına atıf yapıyorsa) motora hiç gitmeden yakalar. Reçeteler kapıda

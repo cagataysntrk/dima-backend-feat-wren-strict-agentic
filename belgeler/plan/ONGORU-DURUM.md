@@ -2902,3 +2902,51 @@ korunur, **icra** kullanıcıya geçer.
 2. **Uzun girdide şerit sönmesi** (`Thread 5` kırılma #1).
 3. **Marj kapısı → aday pill'leri** (`§28`): belirsizlikte garson **taslak** verir,
    kullanıcı seçer. *(`emin_miyim` var, `/ask`'ta 0 çağrı — `§49`.)*
+
+---
+
+## §63 — ROL DEĞİŞİKLİĞİNİN İLK PARÇASI: **çok adım → HER ZAMAN önizleme**
+
+Belgeyi doğru okuyunca `§28.3` bir bayrak değil bir **karar tablosu** verdi:
+
+| garson çıktısı | davranış |
+|---|---|
+| tek adım · emin | 🟢 koşar, pill'ler **makbuz** olur |
+| tek adım · kararsız | 🔵 pill **önerilir**, kullanıcı onaylar |
+| **çok adım (N ≥ 2)** | 🔴 **HER ZAMAN önizleme** |
+| yazma fiili | 🔴 senkron onay |
+
+### Uygulanan
+
+`POST /oneri/makro` — `kos` (varsayılan **`false`**). `N ≥ 2` ve onay yoksa: plan
+üretilir, **`plan_kosucu.dogrula`'dan geçer**, `plan_tuketici.calistir` **çağrılmaz**.
+
+⚠ **İkinci doğrulayıcı yazılmadı** ㊲: önizleme *«daha gevşek»* bir yol değil **koşumsuz**
+yoldur — aynı kapı. Bütçe de zaten `dogrula`'nın içinde (`azami_sorgu` ·
+`plan_semasi.AZAMI_ADIM`); ikinci bir sayaç bir gün **iki farklı sınır** olurdu.
+⚠ Adım metnini **`plan_tuketici._adim_metni`** yazıyor — ürünün kendi anlatıcısı ㊷.
+
+### Ölçülen (uçtan uca)
+
+```
+onaysız  → source=onizleme · gecerli=True · 5 adım
+           1 SORGU · 2 KIYASLA · 3 KIR · 4 SORGU · 5 ANLAT
+kos=true → source=cube · 5 adım koştu
+```
+
+### Kapı — dört yüklem, biri **zıt ölçüt** 🆃
+
+`tests/test_plan_onizleme.py` (**4 ✅**): onaysız **koşmaz** · önizleme **adımları taşır**
+(sıra ve fiil) · **onaylı koşar** 🆃 · **geçersiz plan da gösterilir** (dürüst ret).
+
+**Kanıt:** `plan_onizleme · makro_recetesi · orkestrator` → **57 ✅**.
+
+### ⚠ Kalan — rol değişikliği henüz TAM değil
+
+| madde | durum |
+|---|---|
+| çok adımlı makro → önizleme | ✅ bu bölüm |
+| **FE**: dikey adım listesi + `[düzenle] [koş] [iptal]` | 🔴 sıradaki |
+| **garson çıktısı da** plan olsun (`§28`: *«garson = seçilmeyenin pill'ini hazırlayan»*) | 🔴 `ask.py`'de `emin_miyim` **0 çağrı** |
+| uzun girdide şerit sönmesi (`>8 kelime ∨ fiil`) | 🔴 |
+| bütçe görünürlüğü (`adim=8 · saniye=30 · sorgu=12`) | ◐ doğrulayıcıda var, **ekranda yok** |
