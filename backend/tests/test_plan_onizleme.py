@@ -83,3 +83,64 @@ def test_GECERSIZ_PLAN_DA_GOSTERILIR(client):
     govde = r.json()
     metin = str(govde.get("detail") or govde.get("note") or "")
     assert metin.strip(), f"🔴 gerekçesiz ret — kullanıcı neyi düzelteceğini bilemez: {govde}"
+
+def test_ADIM_METNI_FIILI_YINELEMEZ(makro_cagir):
+    """🔴 `§64` — biçim kusuru: fiil **ayrı alan** olarak gidiyor ㊲.
+
+    Ölçüldü (canlı `s24`): ekranda `SORGU` rozetinin yanında *«**SORGU** — …»* yazıyordu
+    ve `**`/`` ` `` işaretleri **düz** basılıyordu (makbuz markdown'a, önizleme düz metne
+    yazılır). Cümlenin sahibi hâlâ `plan_tuketici._adim_metni` — burada değişen **yalnız
+    biçim**; ikinci bir cümle kurmak, aynı adımın makbuzda ve önizlemede farklı okunması
+    olurdu ve kullanıcı **onayladığı şeyle koşan şeyi** karşılaştıramazdı.
+    """
+    for a in makro_cagir().get("adimlar") or []:
+        assert not a["metin"].startswith(f"**{a['fiil']}**"), (
+            f"🔴 fiil metinde yineleniyor → rozet + metin aynı sözcük: {a}")
+        assert "**" not in a["metin"] and "`" not in a["metin"], (
+            f"🔴 markdown işareti düz metne sızdı: {a['metin']!r}")
+        assert a["metin"].strip(), f"🔴 biçim temizliği metni **boşalttı**: {a}"
+
+def test_ONIZLEME_KIPI_HER_FIILE_YAZILI():
+    """🅜 **PAYDA KUTSALDIR.** Kapalı fiil kümesinin **her** üyesinin bir önizleme kipi
+    olmalı; biri unutulursa kullanıcı o adımda **boş satır** görür.
+
+    ⚠ Ölçüt `FIILLER`'e bağlandı ㉕: elle yazılmış bir liste, kümeye bir fiil eklendiğinde
+    sessizce eskir ve kapı *«yeşil»* derken kapsam kırpılmış olur.
+    """
+    from app.plan_semasi import FIIL_ONIZLEME, FIILLER
+
+    eksik = [f for f in FIILLER if not (FIIL_ONIZLEME.get(f) or "").strip()]
+    assert not eksik, f"🔴 önizleme kipi olmayan fiil(ler): {eksik}"
+
+
+def test_ONIZLEME_SATIRI_TANIM_BASMAZ(makro_cagir):
+    """🔴 `§64` — önizlemenin okuru **kullanıcıdır**, geliştirici değil.
+
+    Ölçüldü (canlı `s25`): beş satırın **üçü** iç kısıt cümlesiydi — *«YALNIZ son adım
+    olabilir»* · *«çıktısı satır değil, yeni bir SORGU»*. Bir kararın önüne konan cümle,
+    kararın **sonucunu** söylemelidir. ⚠ Makbuz (geriye dönük, tanı için) o tanımları
+    **korur** — değişen kip, sözlüğün sahibi değil 🅔.
+    """
+    for a in makro_cagir().get("adimlar") or []:
+        for iz in ("YALNIZ", "çıktısı satır değil", "cube_query=", "kaynaklar="):
+            assert iz not in a["metin"], (
+                f"🔴 önizlemeye geliştirici cümlesi/iç alanı sızdı ({iz!r}): {a['metin']!r}")
+
+def test_ONIZLEME_YUVASI_KALINTI_BIRAKMAZ(makro_cagir):
+    """⚠ `{boyut}` bir **yuvadır**: dolarsa Türkçe eki cümlenin içinde durur, dolmazsa
+    cümleden **düşer**. Kalıntı bir yuva, kullanıcının hata sandığı bir metindir.
+
+    Ve `$3` gibi **iç referanslar** kullanıcıya `3.` diye gösterilir 🅡: adımlar ekranda
+    1'den numaralı; aynı sayıyı iki yazımda okumak bir tutarsızlıktır.
+    """
+    adimlar = makro_cagir().get("adimlar") or []
+    for a in adimlar:
+        assert "{" not in a["metin"] and "$" not in a["metin"], (
+            f"🔴 önizlemede kalıntı yuva/iç referans: {a['metin']!r}")
+    kir = [a["metin"] for a in adimlar if a["fiil"] == "KIR"]
+    assert kir and kir[0].startswith("makine "), (
+        f"🔴 yuva dolmadı — boyut cümleye girmedi: {kir}")
+    # ⚠ Ek **birlikte** değişir ㊵: `$3` bir ad gibi çekiliyordu (*«$3 adımının»*); ham
+    # değiştirme *«3. adımının»* üretmişti (canlı `s27`).
+    for a in adimlar:
+        assert "adımının" not in a["metin"], f"🔴 tamlama bozuk: {a['metin']!r}"

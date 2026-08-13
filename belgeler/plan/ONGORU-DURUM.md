@@ -3004,3 +3004,36 @@ ve eşik **tek sahipli** ㊲ · önizleme **dikey** ve pill'in **altında** · �
 | bütçe görünürlüğü (`adim=8 · saniye=30 · sorgu=12`) | ◐ doğrulayıcıda var, **ekranda yok** |
 | fiil tespiti (`>8 kelime **∨ fiil**`) | ◐ bugün yalnız kelime sayısı 🅖 |
 | adım **düzenleme** | 🔴 sunucuda sözleşme yok 🅖 |
+
+### `§64-ek` — önizlemenin **dili**: makbuzun cümlesi kullanıcının cümlesi değil 🅔
+
+Canlıda (`s24`→`s27`) dört biçim/dil kusuru ölçüldü ve dördü de aynı kökten: önizleme,
+**makbuzun** metnini olduğu gibi basıyordu. Makbuz geriye dönüktür ve okuru tanı arayan
+biridir; önizleme ileriye dönüktür ve okuru **karar veren** kişidir.
+
+| ölçülen (canlı) | çare |
+|---|---|
+| `SORGU` rozeti + *«**SORGU** — …»* — **fiil iki kez** ㊲ | önek atılır (fiil ayrı alan) |
+| ekranda düz `**` ve `` ` `` | markdown işaretleri düşer (önizleme **düz metin**) |
+| *«YALNIZ son adım olabilir»* · *«çıktısı satır değil…»* — **iç kısıt cümlesi** | 🆕 `FIIL_ONIZLEME` — aynı sözlüğün **ikinci kipi** 🅔 |
+| *«$3 adımının»* → ham değiştirmede *«3. adımının»* | ek **birlikte** değişir ㊵ |
+
+🔴 **İkinci bir sahip doğmadı.** Cümlenin sahibi hâlâ `plan_semasi` (tek kayıt, iki kip)
+ve `plan_tuketici._adim_metni`; `routers/oneri._onizleme_satiri` yalnız **biçim** yapar.
+İki ayrı cümle yazılsaydı kullanıcı **onayladığı şeyle koşan şeyi** karşılaştıramazdı.
+
+⚠ `{boyut}` bir **yuvadır**, dışarıdan iliştirme değil: Türkçe eki cümlenin **içinde**
+yazılı (*«makine kırılımı ekler»*) — `§18.8` morfoloji tuzağı. Boyut yoksa yuva düşer.
+
+**Canlı kanıt (`s27`+):**
+
+```
+1 SORGU    ort_oee · makine kırılımında
+2 KIYASLA  akran ortalamasıyla karşılaştırır
+3 KIR      makine kırılımı ekler
+4 SORGU    3. adımın ürettiği sorguyu koşar
+5 ANLAT    bulguları cümleye çevirir
+```
+
+**Kapı:** `test_plan_onizleme.py` **8 ✅** (fiil yinelenmez · markdown sızmaz · **her fiilin
+önizleme kipi var** 🅜 · tanım/iç alan basmaz · yuva kalıntı bırakmaz · tamlama bozulmaz).

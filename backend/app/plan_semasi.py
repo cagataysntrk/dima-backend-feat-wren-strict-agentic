@@ -81,6 +81,41 @@ FIIL_ANLAMI: dict[str, str] = {
     "PANO": "sorgulardan bir pano TASLAĞI kurar — hiçbir şey kaydetmez",
 }
 
+#: 🔴🔴 `§64` — **AYNI FİİLİN İKİNCİ KİPİ: ÖNİZLEME SATIRI** 🅔.
+#:
+#: `FIIL_ANLAMI` bir **tanımdır** ve okuru geliştiricidir: *«KIR — bir sorguya kırılım
+#: boyutu EKLER — çıktısı satır değil, yeni bir SORGU»*. O cümledeki son yarı bir
+#: **kısıttır**, bir açıklama değil; makbuzda (geriye dönük, tanı için) yerindedir.
+#:
+#: Ama `§28.3` önizlemesinin okuru **kullanıcıdır** ve verdiği şey bir **karardır**
+#: (*«kullanıcı KARARI VERİR — bir tık»*, `§3.1`). Bir kararın önüne konan cümle,
+#: kararın **sonucunu** söylemelidir: *«makine kırılımı ekler»*. Ölçüldü (canlı `s25`):
+#: önizlemede beş satırın **üçü** iç kısıt cümlesiydi (*«YALNIZ son adım olabilir»*).
+#:
+#: ⚠ Bu **ikinci bir sahip değildir**: sözlük yine burada, yine tek kayıt, yalnız iki
+#: **kipi** var (`KAT-1` korunur). İkisini iki dosyaya bölmek bir sahip ikilemesi olurdu.
+#: ⚠ **`{boyut}` bir yuvadır, bir biçimlendirme değil**: Türkçe eki cümlenin **içinde**
+#: durur (*«makine kırılımı ekler»*) ve onu dışarıdan iliştirmeye çalışmak bu deponun
+#: `§18.8`'de yazılı morfoloji tuzağıdır. Adımda boyut yoksa yuva **cümleden düşer**.
+#: ⚠ **Payda kutsaldır** 🅜: `test_plan_semasi` her fiilin burada bir karşılığı olmasını
+#: şart koşar — bir fiil eklenip önizleme kipi unutulursa kullanıcı **boş satır** görür.
+FIIL_ONIZLEME: dict[str, str] = {
+    "SORGU": "veriyi çeker",
+    "KIYASLA": "akran ortalamasıyla karşılaştırır",
+    "AYRISTIR": "toplamı bileşenlerine ayırır",
+    "BAGLA": "en dikkat çeken varlığı seçer",
+    "HESAPLA": "akrandan farkı hesaplar",
+    "TREND": "önceki dönemle karşılaştırır",
+    "ANLAT": "bulguları cümleye çevirir",
+    "KIR": "{boyut} kırılımı ekler",
+    "SUZ": "{boyut} kategorisine daraltır",
+    "BOYUTSEC": "farkı en çok açıklayan boyutu bulur",
+    "MATRIS": "adayları ölçütlerle yan yana koyar",
+    "SIRALA": "adayları çok ölçütle sıralar",
+    "RAPOR": "bölümleri tek belgeye dizer",
+    "GORSEL": "grafik kararını üretir",
+    "PANO": "pano taslağı kurar",
+}
 #: 🔴🔴 `§D6`/`§C1` — **FİİL KÜMESİ ARTIK YETENEK KAYDINDAN TÜRETİLİYOR.**
 #:
 #: ## Raporun isteği ve `C1`'in koyduğu şart

@@ -22,6 +22,8 @@ bağlıydı 🅕); kapı *«bağla»* dedi ve **haklıydı**. Bu dosya o bağlam
 
 from __future__ import annotations
 
+import re
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -331,6 +333,56 @@ def oneri_pill(request: Request, q: str = Query("", max_length=400)) -> dict:
     }
 
 
+def _onizleme_satiri(adim: dict) -> str:
+    """Önizlemede bir adımın **yazısı** — makbuzun cümlesi, ekranın biçiminde.
+
+    ⚠ Metnin **tek sahibi** `plan_tuketici._adim_metni`'dir (`KAT-1`): ikinci bir cümle
+    kurmak, aynı adımın makbuzda ve önizlemede **farklı** okunması demekti — ve kullanıcı
+    onayladığı şeyle koşan şeyi karşılaştıramazdı. Burada yapılan **yalnız biçimdir**.
+
+    İki ölçülmüş biçim kusuru (canlı `s24`):
+
+    | görülen | neden |
+    |---|---|
+    | `SORGU` rozeti + *«**SORGU** — …»* | fiil **ayrı alan** olarak gidiyor; metin onu **yineliyordu** ㊲ |
+    | ekranda düz `**` ve `` ` `` | makbuz **markdown**'a yazılır, önizleme **düz metne** |
+
+    ⊘ Ve işaretler istemcide temizlenmedi: bir markdown çözücü üç simge için fazla, ama
+    asıl sebep sahiplik — biçimi **üreten** yer bilir, tüketen yer tahmin eder 🅬.
+    """
+    # ⚠ Tembel import ⑬: `plan_tuketici` bu modülde **gövde içinde** çözülüyor (uç
+    # açılışta ağır bir zinciri çekmesin diye). Modül düzeyinde varsaymak, aynı `NameError`
+    # ile üçüncü kez düşmek olurdu — kapı bu turda da yakaladı.
+    from app import plan_tuketici
+
+    from app.plan_semasi import FIIL_ONIZLEME
+
+    fiil = str(adim.get("fiil") or "")
+    metin = plan_tuketici._adim_metni(adim)
+    onek = f"**{fiil}** — "
+    if metin.startswith(onek):
+        metin = metin[len(onek):]
+    metin = metin.replace("**", "").replace("`", "")
+    # 🔴 `SORGU` **kendi gövdesini** yazar (*«ort_oee · makine kırılımında»*) — orada
+    # kullanıcıya söylenecek şey zaten onun kendi ölçüsüdür. Ötekiler tanım basıyordu;
+    # onlar için sözlüğün **önizleme kipi** okunur ve adımın kendi alanları (boyut ·
+    # kaynaklar) o cümlenin **arkasına** iliştirilir.
+    kisa = FIIL_ONIZLEME.get(fiil)
+    if kisa and fiil != "SORGU":
+        _b = str(adim.get("boyut") or adim.get("dimension") or "")
+        # ⚠ Yuva **cümlenin içinde**: Türkçe eki oraya yazılı (*«makine kırılımı ekler»*).
+        # Boyut yoksa yuva düşer — *«{boyut} kırılımı»* gibi bir kalıntı, bir cümleyi
+        # bozuk Türkçeye çevirir ve kullanıcı onu bir hata sanır.
+        metin = kisa.replace("{boyut} ", f"{_b} " if _b else "")
+    # 🅡 `$3` bir **iç referanstır**; kullanıcı adımları **1'den** numaralı görüyor ve
+    # aynı sayıyı iki yazımda okumak (`$3` ↔ `3`) bir tutarsızlıktır.
+    # ⚠ Ek **birlikte** değişir ㊵: makbuz `$3` sözcüğünü bir ad gibi çekiyor (*«`$3`
+    # adımının»*); ham değiştirme *«3. adımının»* üretti — ölçüldü, canlı `s27`. Sayıya
+    # dönünce tamlama da düzelir: *«3. adımın»*. Bu bir dil kuralı değil **bir kalıbın
+    # karşılığıdır**: kalıp `_adim_metni`'nde tek bir yerde yazılı.
+    metin = re.sub(r"\$(\d+) adımının", r"\1. adımın", metin)
+    return re.sub(r"\$(\d+)", r"\1.", metin)
+
 @router.post("/oneri/makro", dependencies=[Depends(require_company)])
 def oneri_makro(request: Request, govde: dict | None = None) -> dict:
     """🔴 `§7 ②` — **adlandırılmış makro KOŞULUR**: tek tıklama, N deterministik adım.
@@ -421,7 +473,7 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
             gecerli, not_ = False, str(e)
         return {"source": "onizleme", "makro": ad, "question": metin, "gecerli": gecerli,
                 "adimlar": [{"sira": i, "fiil": x.get("fiil"),
-                             "metin": plan_tuketici._adim_metni(x)}
+                             "metin": _onizleme_satiri(x)}
                             for i, x in enumerate(plan["adimlar"], 1)],
                 "note": not_}
 
