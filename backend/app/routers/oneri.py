@@ -125,6 +125,50 @@ def _yazilan_varlik(q: str, schema: dict) -> str | None:
     return None
 
 
+#: `5.9` — boş kutuda gösterilecek **çekirdek** öneri sayısı. Plan *«çekirdek 5»* diyor.
+_CEKIRDEK = 5
+
+
+def _cekirdek_adaylar(schema: dict, izinliler: set[str] | None) -> list:
+    """🔴 `§54` — **BOŞ KUTU DA KONUŞUR** (`5.9`), ama motoru uyandırmadan.
+
+    ## Ölçülen durum
+
+    `oneri.ara("")` → **0 aday**, ve bu **bilinçli**: kapı
+    `test_bos_ve_ANLAMSIZ_girdi_PATLAMIYOR` şunu savunuyor — *«typeahead her tuşta
+    çağrılır; boş dize en sık gelen girdidir»* 🅡. Motoru her boş girdide indeks/füzyon
+    boyunca koşturmak, en sık gelen istek için en pahalı yolu seçmek olurdu.
+
+    ⟹ Bu yüzden çekirdek liste **uçta** kurulur: şemadan okunur, **hiçbir arama
+    koşulmaz**. Kapının niyeti (motor sussun) korunur, planın istediği (kutu boşken de
+    öneri) verilir.
+
+    ## Neden `terimler()` çağrılıyor ㊲
+
+    Etiket üretimi (görünen ad · sinonim · birim · küp bağlamı) ve **yetki süzmesi**
+    orada. İkinci bir etiketleyici yazmak, aynı ölçünün iki farklı adla görünmesiyle
+    biterdi. Buradaki tek iş **seçmektir**: küpün `default_measure`'ı.
+
+    ⚠ `default_measure`'ı olmayan küp **atlanır** — çekirdek bir liste, rastgele bir
+    ölçüyle doldurulmaz ㊱. ⚠ Değer adayları (`#`) dışarıda: boş kutuda bir makine adı
+    önermek, kullanıcının hiç sormadığı bir varlığı öne sürmek olurdu.
+    """
+    from app import oneri
+
+    hedef = {(str(c.get("name") or ""), str(c.get("default_measure") or ""))
+             for c in schema.get("cubes") or [] if c.get("default_measure")}
+    out = []
+    for a in oneri.terimler(schema, izinliler):
+        if "#" in a.kimlik:
+            continue
+        kod = a.kimlik.split(".", 1)[1] if "." in a.kimlik else ""
+        if (a.cube, kod) in hedef:
+            out.append(a)
+        if len(out) >= _CEKIRDEK:
+            break
+    return out
+
+
 def _katman_acik(request, principal) -> bool:
     """🔴 `§52` — **`KURAL B` SUNUCUDA DA UYGULANIR.**
 
@@ -196,7 +240,8 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120),
         return _bos_yanit()
     izinliler = katman_b.allowlist(request, principal)
     schema = wren_for_request(request).schema()
-    adaylar = oneri.ara(q, schema, izinliler=izinliler)
+    adaylar = (oneri.ara(q, schema, izinliler=izinliler) if q.strip()
+               else _cekirdek_adaylar(schema, izinliler))
 
     capa = _capa_kur(capa_cube, capa_olcu, capa_kirilim, capa_donem,
                      capa_varlik or _yazilan_varlik(q, schema) or "")

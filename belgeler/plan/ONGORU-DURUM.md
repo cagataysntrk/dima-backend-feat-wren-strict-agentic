@@ -2502,3 +2502,51 @@ ilan etmektir**. İkisine de eklendi (`ALAN_VARLIK: "filtreler"`).
 `pill_katmani · belirlenimli_sira` → **54 ✅** · `frontend_derlenir · frontend_buyume`
 → **15 ✅**. ⚠ İkisi **atlandı** ve bu bir boşluktu 🅢: derleme kapısı `node_modules`
 yokken susuyor. Elle **gerçek `tsc --noEmit`** koşuldu → **çıkış 0**.
+
+---
+
+## §54 — `5.9`: BOŞ KUTU DA KONUŞUYOR — ama motor susmaya devam ediyor
+
+### Ölçüm ve karar
+
+| ölçüm | sonuç |
+|---|---|
+| `oneri.ara("")` | **0 aday** — kapılı bir **karar** 🅡 (*«boş dize en sık gelen girdidir»*) |
+| boş `q` ile `GET /oneri` | **0 cümle** → ekrandaki *«son bakılanlar»* tamamen `localStorage` |
+
+İkincisi kusurdu: plan `5.9` çekirdek listeyi **motorda** ister, çünkü *«son bakılanlar»*
+**kiracıya** göre değişir ve istemcide tutulursa çok kiracılıda **yanlış** olur.
+
+⟹ Çekirdek liste **uçta** kuruldu (`_cekirdek_adaylar`): şemadan okunur, **hiçbir arama
+koşulmaz**. Kapının niyeti korundu (motor susar), planın istediği verildi.
+Etiketleme ve **yetki süzmesi** için `oneri.terimler()` **çağrılır** ㊲ — ikinci bir
+etiketleyici, aynı ölçünün iki farklı adla görünmesiyle biterdi.
+
+### Ölçülen çıktı
+
+```
+bu ay iş emri adedi ne kadar?   | bakim_is_emri
+bu ay eğitim saati ne kadar?    | egitim
+bu ay elektrik ne kadar?        | enerji_makine
+bu ay enpg ne kadar?            | enerji_sapma
+bu ay set ne kadar?             | enerji_tesis
+```
+
+### 🅖 Yayına yazılan eksik: **SIRA bir hiyerarşi değil**
+
+Sıra **katalog sırasıdır**; kullanıcı kutuyu açınca *«enpg»* ve *«set»* görüyor. Katalogda
+önem işareti **arandı ve yok**: `cekirdek_metrik` **0/23 küpte** dolu. Doğru sıra
+**kullanım sıklığından** gelmeli (`İŞ 6` · plan `5.5`); o gelene kadar bu liste bir
+**başlangıçtır**. *Bir sırayı ölçmeden koymak, ölçülmüş gibi görünen bir sıra üretir* ㊱.
+
+### Kapı — üç yüklem, biri **zıt ölçüt** 🆃
+
+`tests/test_bos_girdi_cekirdek.py` (**3 ✅**): boş kutu **konuşur** (≤5) · her satır
+**koşulabilir** ve **tam cümle** · **motor boş girdide hâlâ susar** — üçüncüsü, çekirdek
+listeyi bir gün `ara()`'ya taşımanın kısayolunu kapatır 🆪.
+
+⚠ Yol boyunca `NameError: oneri` aldım: `oneri` uç fonksiyonunun **içinde** tembel içe
+alınıyordu, modül düzeyindeki yardımcı onu göremedi ⑬.
+
+**Kanıt:** `bos_girdi_cekirdek · oneri_motoru · oneri_katmani_kural_b` → **20 ✅**.
+Demet kapısı (`105b742..`) → **382 ✅ / 0 🔴**.
