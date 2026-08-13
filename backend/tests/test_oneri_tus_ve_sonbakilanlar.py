@@ -33,6 +33,7 @@ karşılığı **değildir** ve öyle sayılmıyor 🅫.
 
 from __future__ import annotations
 
+import inspect
 import pathlib
 
 _KOK = pathlib.Path(__file__).resolve().parents[1]
@@ -148,14 +149,28 @@ def test_5_5_ERTELEMESI_HALA_GECERLI():
     ⚠ Aranan şey bir **kırılım**: `InteractionLog` üzerinde `olcu`/`measure` başına
     bir sayım. `kind` başına sayım (`stats.py:51`) **bu değildir** ㊺.
     """
-    stats = (_KOK / "app" / "routers" / "stats.py").read_text(encoding="utf-8")
-    assert "InteractionLog.kind, func.count()" in stats, (
-        "🔴 `stats.py`'nin sayım kırılımı değişti — `5.5`'in ⊘ gerekçesi ("
-        "*«sayım kind başına, ölçü başına değil»*) yeniden ölçülmeli.")
-    for kirilim in ("InteractionLog.olcu", "InteractionLog.measure"):
-        assert kirilim not in stats, (
-            f"🔴 ölçü başına sayım doğmuş ({kirilim}) — `5.5` (sıklık önceliği) artık "
-            "**uygulanabilir**, ertelemesi düştü.")
+    # ⟳🔴 **DÜZELTİLDİ — kapı YANLIŞ KAYNAĞA bakıyordu** ㊺ (denetim ajanı).
+    # Eski hâli yalnız `stats.py`'yi gözlüyordu. Ama `FAZ 8.1` ile sıklık verisi
+    # **doğdu**: `InteractionLog(kind="oneri_tik")` her tıkı `cube.olcu` kimliğiyle
+    # kaydediyor. Yani veri aktığında eski kapı **hiç kırmızı vermeyecekti** — bir
+    # ertelemeyi, dayanağı çöktükten sonra da yeşil tutan bir kapı bir **perdedir** 🆍.
+    #
+    # ⊙ Doğru ölçüt **iki ayaklı**: ⓐ toplu bir sıklık **tüketicisi** doğdu mu
+    # (`oneri.py` sıralamasında sıklık terimi) ⓑ hasat zinciri sıklık **üretiyor** mu.
+    from app import oneri as _oneri
+
+    kaynak = inspect.getsource(_oneri)
+    for iz in ("siklik", "frekans", "sayac"):
+        assert iz not in kaynak, (
+            f"🔴 öneri sıralamasına sıklık terimi girmiş ({iz!r}) — `5.5` ⊘'sü düştü; "
+            "kalibrasyonu ve Qdrant uyarısındaki **küçük katsayı** ölçülmeli.")
+    # ⓑ Veri kaynağı artık VAR (8.1) — bu, ertelemenin **ön koşulunun** değiştiğini
+    # söyler ve burada **görünür** kalır 🅖: erteleme bugün *«ölçü yok»* değil,
+    # *«ölçü yeni doğdu, henüz yeterli veri yok»* gerekçesine dayanıyor.
+    hasat_kaynak = (_KOK / "app" / "hasat.py").read_text(encoding="utf-8")
+    assert "not_yaz" in hasat_kaynak and "hasat_adaylari" in hasat_kaynak, (
+        "🔴 tıklama zinciri kayboldu — `5.5`'in yeni gerekçesi ("
+        "*«veri yeni doğdu»*) dayanaksız kaldı.")
 
 
 def test_6_7_ERTELEMESI_ON_KOSULA_BAGLI():

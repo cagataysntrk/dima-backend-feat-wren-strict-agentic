@@ -57,6 +57,7 @@ eşik (`_TYPO_MID`) katalog kelimeleri için **kalibre edilmiş** bir sabittir v
 from __future__ import annotations
 
 import difflib
+import hashlib
 from dataclasses import dataclass
 
 from app.llm import _norm
@@ -153,15 +154,23 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
 _INDEKS: dict[str, tuple[tuple[str, ...], object]] = {}
 
 
-def _anahtar(surum: str, n: int) -> str:
+def _anahtar(surum: str, kimlikler: tuple[str, ...]) -> str:
     """Önbellek anahtarının **tek sahibi** ㊲.
 
     ⚠ İlk yazılışta anahtar **iki yerde** kuruluyordu: `_vektor_sira` `f"{surum}|{n}"`
     üretiyor, `indeks_durumu` düz `surum` arıyordu — yani durum beyanı **hep «yok»**
     diyordu ve kapı bunu ilk koşumda yakaladı. *İki satırın aynı işi yaptığı yerde,
     bir gün biri değişir.*
+
+    ⟳🔴 **DÜZELTİLDİ (denetim ajanı):** anahtar **aday SAYISINA** bağlıydı. Farklı
+    allowlist'li iki kiracı aynı sayıya düşerse **aynı girdiye** yazıyorlardı: kimlik
+    kontrolü doğruluğu koruyordu ama önbellek **her istekte ıskalıyordu** — yani ölçülen
+    `p95 = 49,23 ms` **tek havuzludur** ve çok kiracılıya **taşınmaz** 🅕.
+    ⊙ Artık anahtar **kimliklerin özetini** taşıyor: iki farklı havuz **iki ayrı girdi**.
     """
-    return f"{surum}|{n}"
+    ozet = hashlib.blake2s("\x00".join(kimlikler).encode("utf-8"),
+                           digest_size=8).hexdigest()
+    return f"{surum}|{len(kimlikler)}|{ozet}"
 
 
 def indeks_durumu(schema: dict) -> dict:
@@ -199,8 +208,8 @@ def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]
         # sürümünü hem aday **kimliklerini** taşır: allowlist daraldığında havuz da
         # daralır ve eski matris o havuza **uymaz** — sessiz bir hizasızlık yerine
         # açık bir önbellek ıskası olur ㊴.
-        anahtar = _anahtar(_surum, len(adaylar))
         kimlikler = tuple(a.kimlik for a in adaylar)
+        anahtar = _anahtar(_surum, kimlikler)
         onbellek = _INDEKS.get(anahtar)
         if onbellek is not None and onbellek[0] == kimlikler:
             M = onbellek[1]

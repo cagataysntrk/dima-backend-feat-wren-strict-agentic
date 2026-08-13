@@ -1077,3 +1077,37 @@ Gerekçe *«olduğundan büyük yazılmıştı»* 🅫.
   bayrak açıldığı an şerit bir sonraki tuşa kadar gelmez (UX gecikmesi, güvenlik yok).
 * `_INDEKS` anahtarı çok kiracılıda **aynı sayıya** düşen iki allowlist için her
   istekte yeniden gömer → ölçülen **49,23 ms tek havuzludur** 🅕.
+
+---
+
+## §22 · AJANIN BEŞ ⚠ MADDESİ — **hepsi kapandı, hepsi mutasyonlu** *(2026-08-13)*
+
+| # | borç | düzeltme | 🅑 mutasyon |
+|---|---|---|---|
+| ① | eşik yasağı **metin** ölçüyordu | **davranış** yüklemi: vektör ayağı bir **sıralayıcıdır**, süzgeç değil — havuzdaki **her** adayı geri vermeli | ajanın **geçen** mutasyonu (`_t = …; >= _t`) → **kırmızı** |
+| ② | sıklık kapısı **yanlış kaynağa** bakıyordu ㊺ | ölçüt `oneri.py`'nin **sıralamasına** taşındı; `8.1` zincirinin varlığı ayrı yüklem | — *(ölçüt değişti, gerekçe yenilendi)* |
+| ③ | `on_sarti` **bayat** 🅟 | *«p95 ölçülmedi»* → **49,23 ms ölçüldü**; `beta`nın **kalan iki şartı** yazıldı | — |
+| ④ | bağımlılık dizisi eksik | `[metin, kapali, **kapaliBayrak**]` | — |
+| ⑤ | anahtar **sayıya** bağlıydı 🅕 | anahtar **kimliklerin özetine** (`blake2s`) bağlandı | anahtar sayıya döner → **kırmızı** |
+
+### ① — bir metin yasağı neden davranışa çevrildi
+
+Ajan ölçtü: `if skor[i] > 0.8` yakalanıyordu ama **değişken adlı** bir eşik
+(`_t = …; if skor[i] >= _t`) **geçiyordu** (11 passed). Yani yasak yalnız **bir
+yazılışa** karşıydı ㊳. Davranışsal değişmez şu: *vektör ayağı bir **sıralayıcıdır**,
+bir **süzgeç değil*** — havuzdaki her adayı (tavana kadar) geri vermelidir. Hangi adla
+yazılırsa yazılsın **her** eşik listeyi kısaltır ve yüklem kırılır.
+
+### ⑤ — bir **başarım** kusuru davranış yüklemiyle yakalanamaz
+
+Anahtar sayıya bağlıyken doğruluk **korunuyordu** (kimlik kontrolü sayesinde); bozulan
+şey **isabet oranıydı**. Bu yüzden ilk mutasyon **hayatta kaldı** — ve doğru cevap
+ürünü değil **kapıyı** değiştirmekti 🅑: anahtarın kendi özelliği (*«aynı sayı, farklı
+kimlik → farklı anahtar»*) kapıya bağlandı.
+
+### ③ — `beta`nın kalan iki şartı **yazıldı** 🅖
+
+`oneri_katmani` hâlâ `off`, çünkü: ⓐ **soğuk** ilk istek **1.514 ms** (eşiğin ~5 katı),
+ısıtmanın doğru yeri ölçülmedi ⓑ ölçüm **tek havuzlu**; çok kiracılı p95 **ölçülmedi**.
+*Ölçülmemiş bir hız iddiasıyla tuş açmak, kalibre edilmemiş bir sayıyı güven diye
+satmaktır.*

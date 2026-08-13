@@ -90,11 +90,14 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         # kaybı»*. Ölçüldü ki gerek yok: ön uçta **`useFeature`** zaten var
         # (`src/lib/useFeature.ts`, açılışta bir kez `/features` okur). Bayrak
         # normal kanaldan akar, A/B **korunur** 🆝.
-        "on_sarti": "🔴 `FAZ 0` eşiği karşılandı (`Recall@3 %89,5` ≥ %85) ve zincir "
-                    "bağlandı. `beta`ya alınması için kalan ölçüm: planın `②` kapısı "
-                    "**p95 < 300 ms** — sürüm anahtarlı önbellek sonrası istek başına "
-                    "**1** gömme kaldı, ama p95 **henüz ölçülmedi**. Ölçülmeden `beta` "
-                    "yok: kalibre edilmemiş bir hız iddiası bir süstür.",
+        "on_sarti": "🔴 İKİ ÖLÇÜM KARŞILANDI: `FAZ 0` eşiği (`Recall@3 %89,5` ≥ %85) "
+                    "ve planın `②` kapısı (**ılık p95 = 49,23 ms** < 300; payda 90, "
+                    "kip **vektor**). ⟳ Bu satır bir kez **bayatladı** 🅟 — *«p95 henüz "
+                    "ölçülmedi»* diyordu, oysa `bc1cb4c` ölçmüştü; denetim ajanı yakaladı. "
+                    "🔴 **`beta` için KALAN İKİ ŞART:** ⓐ **soğuk** ilk istek **1.514 ms** "
+                    "(eşiğin 5 katı) — ısıtma yeri seçilmeli ⓑ ölçüm **tek havuzlu**; "
+                    "çok kiracılı p95 **ölçülmedi** 🅕. Ölçülmemiş bir hız iddiasıyla tuş "
+                    "açmak, kalibre edilmemiş bir sayıyı güven diye satmaktır.",
         "label": "Yazarken-ara öneri şeridi (`GET /oneri`)",
         "description": "Katalogdan yazarken aday terim önerir (leksik ⊕ vektör, RRF). "
                        "🔴 Yetki **motorda** ve **sıralamadan önce** süzülür — bir "

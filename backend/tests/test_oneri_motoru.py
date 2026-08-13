@@ -129,6 +129,44 @@ def test_MUTLAK_KOSINUS_ESIGI_YOK():
             "reddetti (gürültü 0,851).")
 
 
+def test_VEKTOR_AYAGI_HICBIR_ADAYI_ELEMİYOR(monkeypatch):
+    """🔴🔴 **BİR ÜSTTEKİ YÜKLEM METİN ÖLÇÜYORDU — bu onun DAVRANIŞ hâli** 🅯.
+
+    ⊙ Denetim ajanı ölçtü: `if skor[i] > 0.8` yakalanıyordu, ama **değişken adlı** bir
+    eşik (`_t = …; if skor[i] >= _t`) kapıdan **geçiyordu** (11 passed). Yani yasak
+    yalnız **bir yazılışa** karşı korunuyordu ㊳.
+
+    ⊙ Davranışsal değişmez şudur: vektör ayağı bir **sıralayıcıdır**, bir **süzgeç
+    değil** — havuzdaki her adayı (tavana kadar) geri vermelidir. Herhangi bir eşik,
+    hangi adla yazılırsa yazılsın, listeyi **kısaltır** ve bu yüklem kırılır.
+
+    ⚠ `FAZ 0`'ın bulgusu: gürültü *«vardya»* kosinüs **0,851** aldı — yani *«yüksek
+    skor = iyi aday»* **yanlıştır**; eleme kararı sıralamaya değil **marja** aittir.
+    """
+    from app import oneri, vqr
+
+    class _Gomucu:
+        def embed(self, metinler):
+            # Kasten **çok düşük** kosinüs üretir: her metin ayrı bir eksene bakar.
+            out = []
+            for i, m in enumerate(metinler):
+                v = [0.0, 0.0, 0.0]
+                v[i % 3] = 1.0
+                out.append(v)
+            return out
+
+    monkeypatch.setattr(vqr, "_embedder", lambda: _Gomucu())
+    oneri._INDEKS.clear()
+    havuz = oneri.terimler(_SEMA, None)
+    assert len(havuz) == 5
+    sira = oneri._vektor_sira("fire", havuz, "vX")
+    assert sorted(sira) == list(range(5)), (
+        f"🔴 vektör ayağı ADAY ELEDİ: {sorted(sira)} (5 aday bekleniyordu). Bir eşik "
+        "eklenmiş olabilir — hangi adla yazılırsa yazılsın, eleme kararı sıralamanın "
+        "değil MARJIN işidir (`FAZ 0`: gürültü 0,851 aldı).")
+    oneri._INDEKS.clear()
+
+
 # ── `5.7` İNDEKS — bayatlık BEYAN edilmez, İMKÂNSIZ kılınır 🅐 ───────────────
 
 def test_indeks_gomucu_kapaliyken_KAPALI_der():
@@ -232,3 +270,24 @@ def test_indeks_DISKTE_ARTEFAKT_URETMIYOR():
         assert yasak not in kaynak, (
             f"🔴 `oneri.py` diske dokunuyor ({yasak!r}) — indeks bir **artefakt**a "
             "dönüşürse bayatlık sınıfı geri gelir ⑪.")
+
+
+def test_ANAHTAR_AYNI_SAYIDA_FARKLI_HAVUZU_AYIRIR():
+    """🔴 **Çok kiracılı önbellek ıskası** (denetim ajanı bulgusu).
+
+    Anahtar **aday sayısına** bağlıydı: farklı allowlist'li iki kiracı aynı sayıya
+    düşerse **aynı girdiye** yazıyorlardı. Kimlik kontrolü doğruluğu koruyordu — ama
+    önbellek **her istekte ıskalıyordu**, yani ölçülen `p95 = 49,23 ms` **tek
+    havuzludur** ve çok kiracılıya **taşınmaz** 🅕.
+
+    ⚠ Bu bir **doğruluk** kusuru değil bir **başarım** kusuruydu; o yüzden davranış
+    yüklemleri onu **yakalayamadı** (mutasyon hayatta kaldı, ölçüldü). Kapı bu yüzden
+    anahtarın **kendi özelliğini** tutuyor: aynı sayı, farklı kimlik → **farklı anahtar**.
+    """
+    from app.oneri import _anahtar
+
+    assert _anahtar("v1", ("a", "b")) != _anahtar("v1", ("c", "d")), (
+        "🔴 aynı sayıda ama FARKLI kimlikli iki havuz aynı anahtara düşüyor — "
+        "çok kiracılıda önbellek her istekte ıskalar.")
+    assert _anahtar("v1", ("a", "b")) == _anahtar("v1", ("a", "b"))
+    assert _anahtar("v1", ("a", "b")) != _anahtar("v2", ("a", "b"))

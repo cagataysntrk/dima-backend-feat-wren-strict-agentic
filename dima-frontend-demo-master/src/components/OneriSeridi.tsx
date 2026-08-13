@@ -63,7 +63,7 @@ export function OneriSeridi({
         .catch(() => setAdaylar([]));   // öneri katmanı cevabı BOZMAZ (§101.1)
     }, DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [metin, kapali]);
+  }, [metin, kapali, kapaliBayrak]);
 
   // `6.5` — Klavye: ↓↑ Enter Esc. **Poliş değil, iddianın kanıtı**: bir öneri şeridi
   // fareye mecbur bırakıyorsa yazarken-ara değildir.
