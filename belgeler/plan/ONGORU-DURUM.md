@@ -1301,3 +1301,66 @@ onu iki kez yazmak değil; iki kez BOZULABİLİR kılmaktır.*
 🔴 Arayüz ajanına anında iletildi: *«iki bestecide de öneri»* maddesi **iptal**, tüm öneri
 altyapısı **yalnız sağdaki** besteciye bağlanacak; soldaki kutunun bugünkü işi (yeni
 thread açma) butona **eksiksiz** taşınacak. ⚠ Dosya silme yok.
+
+---
+
+## §27 · **ÜRÜN TESLİM EDİLDİ** — `§26`'nın faturası ödendi *(2026-08-13)*
+
+`§26`'da yazdığım öz-eleştiri şuydu: *«altyapıyı teslim ettim, ürünü değil»*. Bu bölüm
+o borcun kapanışıdır. Sıra, planın kendi madde numaralarıyla:
+
+| plan | ne teslim edildi | kapı |
+|---|---|---|
+| **`§3.3`** menü değil **tamamlama** | `Enter` **kullanıcının kendi cümlesini** gönderir (`secili` başlangıcı **-1**); şeride `↓` ile girilir | FE |
+| **`§5.1`** görünür çapa + iki bant + **cümle** | `/oneri` → `{oneriler, capa, adaylar, kip, indeks}`; 📌 çubuk + `✕ bağlamı bırak` | **27 ✅** |
+| **`§5.2`** PILL satırı, **tipli `+`** | `GET /oneri/pill` → `piller` · `artilar` (**her zaman dört**) · `hatalar` | **44 ✅** |
+| **`§5.3`** pill **canlı** doğrulanır | `dogrula` koşmadan; beyaz liste **artımlı sorularak** yerelleştirilir, kopyalanmaz ㊲ | ↑ |
+| **`§7②`** adlandırılmış makro | `POST /oneri/makro` → `plan_uret` → `dogrula` → `calistir`; **5 adım · 2 sorgu · SIFIR LLM** | **13 ✅** |
+| **`§18.7`** alan adını **gömme** | dört görünüm; `Recall@3` **%68,4 → %89,5**, MRR **0,895** | 12 ✅ |
+| **`§26.1`** tek chat | sol besteci → `+ yeni sohbet`; tek besteci `ReportPanel`de; tuval onun **gövdesi** | **34 ✅** |
+
+### Ölçülen önce/sonra — kullanıcının gördüğü şey
+
+```
+ÖNCE   fire·oee · su·surdurulebilirlik · set·enerji_tesis     ← alan adı menüsü
+SONRA  ↳ BU RAPOR ÜZERİNDE
+         • RAM-3'ün fire oranı — bu ay
+         • fire oranı ekle (aynı dönem)
+         • toplam fire (kg) neden bu seviyede?        ← makro, tek tık, 5 adım
+         • duruş nedenine göre toplam fire (kg) — bu ay
+       ↳ YENİ KONU
+         • makineye göre fire oranı — bu ay
+```
+
+### 🔴 Bu turun üç ders kaydı
+
+**1 · Yayınlanan sayı, koşan koddan farklı ölçülmüş olabilir** 🅟. `FAZ 0`'ın `%89,5`'i
+**çok görünümlü lab havuzuyla** ölçülmüştü; üretim çıplak etiket gömüyor ve **%68,4**
+veriyordu — `§13.1`'in **«🔴 DUR»** bandının (`<%70`) **altında**. Yani ölüm şartı
+*yayınlanan sayıya göre* sağlanıyordu. *Bir eşiği geçtiğini sanmak, onu geçmekten farklı
+bir durumdur ve ikisi aynı belgede yaşayabilir.*
+
+**2 · Kapının yeşili kapsamıyla sınırlıdır** 🅣. Çok görünümlü temsil soğuk isteği
+`1.514 → 24.313 ms` yaptı. `FAZ 5` kapısı `②` **yeşil kaldı**, çünkü eşik `p95`'e bakar
+ve `p95` **ılık** dağılımın ölçüsüdür — ilk isteği **tanım gereği saymaz**. Kullanıcı 24
+saniye bekliyordu ve hiçbir kapı bunu söylemiyordu. Isıtma `main.py`'ye kondu; ısıtma
+sonrası ilk istek **55,0 ms**.
+⊙ Ve ısıtmanın kapısı, ısıtmanın **varlığını** değil **sıra değişmezini** tutuyor:
+gömücü hazır değilken `ara()` vektör ayağını atlar ve indeks **kurulmaz** — ısıtma koşar,
+log basar, **hiçbir şey ısıtmaz** 🅯.
+
+**3 · Bir borç ödendiğinde, onu erteleyen GEREKÇE de bayatlar** 🅟. İki gerekçe aynı gün
+yanlışa döndü: *«⊘ ısıtma yapılmadı çünkü şema tenant'a göre çözülür»* ve *«onarım
+`ek.py`'ye kural eklemek değil»*. İkisi de düzeltildi — çünkü bir belgenin en tehlikeli
+satırı, **dünkü doğrusudur**.
+
+### Türkçe morfoloji — dört ölçülmüş kusur
+
+`hat → «hada»` · `renk → «renğe»` · `cinsiyet → «cinsiyede»` · `kürk → «kürğe»`. **Üçü
+gerçek katalog etiketiydi**, yani kullanıcı bu yanlış Türkçeyi şeritte görecekti.
+Üçü **sözlüksel** (`_OZEL_GOVDE` · `_YUMUSAMAZ`), biri **kuralsal**: `k` ünsüzden sonra
+yumuşamaz (`kürke`·`parka`·`Türke`) ama ünlüden sonra yumuşar (`göğe`·`ekmeğe`).
+*Kural türetilebiliyorsa liste yazmak borçtur* 🆞.
+
+📌 **Kalan:** FE'de pill satırı + makro tıklaması *(ajanda)* · imaj tazeleme · **insan
+testi** · tam kapı. **Açık kusurlar:** K1 · K3 · K4 · K5◐ · K6 · K8.
