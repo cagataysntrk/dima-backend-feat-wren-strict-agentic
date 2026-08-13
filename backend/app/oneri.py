@@ -52,6 +52,95 @@ aldı — yani *«skor > X ⇒ iyi aday»* **çalışmaz**. Bu modül hiçbir ye
 kosinüs eşiği kullanmaz; vektör ayağı yalnız **sıra** üretir. Leksik ayakta kullanılan
 eşik (`_TYPO_MID`) katalog kelimeleri için **kalibre edilmiş** bir sabittir ve
 `cube_router`'dan **ödünç alınır**, yeniden tanımlanmaz (`KAT-1`).
+
+## 🔴🔴 `§18.7` — GÖMÜLEN ŞEY **ALAN ADI DEĞİL**, ÇOK GÖRÜNÜMLÜ TEMSİLDİR
+
+⟳ **DÜZELTİLDİ (2026-08-13).** Bu modül `FAZ 0`'ın ölçtüğü şeyi **koşmuyordu**.
+
+`FAZ 0` (`lab/oneri_olcum.py::gorunumler`) her ölçüyü **çok görünümlü** bir havuzla
+ölçtü — ad · etiket · sinonimler — ve `Recall@3 = %89,5` sayısı **oradan** çıktı.
+Üretimdeki bu modül ise ölçü başına **tek** bir metin gömüyordu: çıplak görünen
+etiket. Yani kapıdaki sayı ile koşan kod **aynı temsili paylaşmıyordu**.
+
+⊙ **Ölçüldü (aynı etiketli küme, `ara()` boru hattının tamamı, payda 19):**
+
+| temsil | `Recall@1` | `Recall@3` | `MRR` |
+|---|---|---|---|
+| çıplak etiket *(önceki üretim)* | %68,4 | **%68,4** | 0,703 |
+| **çok görünümlü** *(bu hâl)* | %89,5 | **%89,5** | **0,895** |
+
+🔴 `§13.1`'in karar tablosuna göre **%68,4 «🔴 DUR» bandındadır** (`< %70`) — yani
+üretim, planın ölüm şartını **sağlamayan** bir temsille koşuyordu ve bunu kimse
+görmüyordu, çünkü ölçüm aracı **kendi** havuzunu kuruyordu 🅕.
+
+*Bir ölçümün taşınabilmesi için, ölçtüğü temsilin üretimde de kurulmuş olması gerekir;
+aksi hâlde yayınlanan sayı başka bir sistemin sayısıdır.*
+
+### Dört görünüm — üçü de zaten katalogda (`§18.7`: *«ek yazım işi yok»*)
+
+```
+alan: surdurulebilirlik.toplam_su_lt
+ ├ ① görünen etiket : "su"            ← measure_synonyms_display
+ ├ ② sinonimler     : "su, su tüket, toplam su"  ← cube_synonyms.yml
+ ├ ③ küp bağlamı    : "sürdürülebilirlik · su"   ← cube `display`
+ └ ④ birim          : "su (lt)"                  ← measure `unit`
+```
+
+Sorgu **en yakın görünüme** eşleşir, alan o görünümden **türer**; bir alan birden çok
+görünümden gelirse **tekilleştirilir** — en iyi görünüm kazanır (`max`). Bu bir füzyon
+değil bir **temsil** kararıdır: aday havuzu hâlâ **alan** başınadır, görünüm sayısı
+sıralamayı şişirmez.
+
+### 🔴 `①`'in inceliği: **BAĞLAMSIZ KISA AD GÖMÜLMEZ** (`_KISA_ESIK`)
+
+Ölçülen kusur (canlı curl, 2026-08-13): `q=fi` → `fire·oee, fire·parti, fırsat adedi,
+fire oranı, **su·surdurulebilirlik**, **set·enerji_tesis**`. Son ikisi alakasız.
+Sebep `§18.6`'nın işaret ettiği yer: `toplam_su_lt`'nin görünen etiketi **`"su"`**,
+`set_tep_ton`'unki **`"set"`** — iki karakterlik bir sorgu (`fi`) ile iki karakterlik
+bir etiket arasındaki kosinüs, **anlamdan değil kısalıktan** gelir.
+
+Bu yüzden `①` çıplak etiketi **yalnız kendi başına durabiliyorsa** gömer; kısaysa küp
+bağlamına füzelenir (`"sürdürülebilirlik · su"`). Alan **kaybolmaz** — `su` yazan
+kullanıcı onu hâlâ `①`/`②`/`③` üzerinden bulur (ölçüldü: `q=su` → aynı alan **1.**).
+
+⚠ 🅖 **`_KISA_ESIK = 4` ÖLÇÜLDÜ, ödünç alınmadı.** `§18.8` iki bağımsız satıcının
+(Algolia · Typesense) *«1 hata için asgari uzunluk = 4»* sayısını verir **ve** onu
+benimsemeyi yasaklar (*«Latin kelime uzunluk dağılımına kalibre; ölçmeden benimseme»*).
+Ölçüldü: `3·4·5·6` değerlerinin **dördü de** aynı `Recall@3 = %89,5`'i veriyor — yani
+sayı erişimde **yansız**. Seçimi yapan şey ölçülen kusurdur: `su` (2) ve `set` (3)
+harflik iki etiketi birden bağlama sokan **en küçük** değer **4**'tür.
+
+### ⚠🅖 BEDELİ — ölçüldü ve GİZLENMİYOR
+
+Havuz `136` metinden `534` görünüme çıktı (`3,93`/alan). Aynı konteynerde, gerçek
+gömücüyle:
+
+| `lab/oneri_p95.py` (payda **90**) | önce | sonra | kapı |
+|---|---|---|---|
+| ılık `p50` | 39,63 ms | **50,86 ms** | — |
+| ılık `p95` | 49,23 ms | **53,88 ms** | `< 300 ms` ✅ |
+| **soğuk (ilk istek)** | 1.514,5 ms | 🔴 **24.799,7 ms** | *(kapı yok)* |
+
+⊙ Ilık yol **tabanın yanında kaldı** (`+%9,4`) — ama bedavaya değil: ilk yazılışta
+`p95 = 147,03 ms` ölçüldü (`+%199`) ve sebep temsil değil `M @ qn`'in **iş parçacığı
+yan etkisiydi**; elemanwise indirgemeyle geri alındı (gerekçe `_vektor_sira` içinde).
+*Bir yavaşlamayı ölçmeden yeni özelliğe yazmak, yanlış şeyi geri almaktır.*
+
+🔴 **Soğuk maliyet `16×` arttı ve bu AÇIK BİR BORÇTUR.** İki sebebi var ve ikisi de
+ölçüldü: görünüm **sayısı** (`3,93×`) ve görünümlerin **uzunluğu** (sinonim cümlesi
+uzun; metin başına `11,3 → 47,8` ms). Kısaltma denendi ve **reddedildi**: sinonimleri
+`4`'e kırpmak soğuğu `16,8` sn'ye indiriyor ama `Recall@3`'ü **%89,5 → %84,2**
+düşürüyor — yani ucuzluk doğrudan erişimden ödeniyor.
+
+⊙ **Ölçülmüş bir kaldıraç var, alınMADI** ㊴: `③ küp bağlamı` görünümünü düşürmek
+(`407` görünüm, soğuk `18,4` sn) `Recall@3`'ü **hiç** değiştirmiyor (%89,5). Ama payda
+**19**'dur ve iki kurulum orada **tavana** vurmaktadır: bu bir *«③ işe yaramıyor»*
+kanıtı değil, **ölçütün ayırt edemediği** bir yerdir 🅜. `§18.7` o görünümü açıkça
+istiyor; düşürme kararı **payda büyütülmeden** verilemez.
+
+⚠ Doğru çözüm kırpma değil **ısıtmadır** ve adresi bu modülde değil: `main.py`
+gömücüyü zaten arka planda ısıtıyor, indeks ısıtılmıyor (`lab/oneri_p95.py`'de yazılı
+⊘). O ⊘ bugüne kadar `1,5` sn'lik bir borçtu; bugünden sonra `25` sn'lik bir borçtur.
 """
 
 from __future__ import annotations
@@ -74,15 +163,69 @@ _RRF_K = 10
 #: Öneri şeridinin tavanı (`FAZ 6.4`: **≤7**).
 VARSAYILAN_LIMIT = 7
 
+#: 🔴 `§18.7` — **bağlamsız kısa ad gömülmez.** Bundan kısa bir görünen etiket kendi
+#: başına bir görünüm olmaz; küp bağlamına füzelenir. Gerekçesi ve **ölçümü** modül
+#: başlığında (`3·4·5·6` erişimde yansız; `4`, ölçülen iki kusurlu etiketi —
+#: `su`·`set` — birden kapsayan en küçük değer).
+_KISA_ESIK = 4
+
 
 @dataclass(frozen=True)
 class Aday:
-    """Bir öneri. `kip` **hangi ayağın** bulduğunu beyan eder 🅖."""
+    """Bir öneri. `kip` **hangi ayağın** bulduğunu beyan eder 🅖.
+
+    `gorunumler` — `§18.7`'nin **çok görünümlü temsili**: aynı alanın etiketi ·
+    sinonim cümlesi · küp bağlamı · birimi. İki ayak da (leksik **ve** vektör) bu
+    kümede arar; aday yine **alan başınadır**, yani bir alan kaç görünümden gelirse
+    gelsin listede **bir kez** görünür 🆈.
+    """
 
     kimlik: str        # `cube.olcu` — tıklanınca sorguyu kuran taraf bunu çözer
     etiket: str        # kullanıcıya görünen ad
     cube: str
     kip: str           # "leksik" | "vektor" | "leksik+vektor"
+    gorunumler: tuple[str, ...] = ()   # `§18.7` — aranan metinler (etiket DEĞİL, temsil)
+
+
+def _tekil(*parcalar: str) -> tuple[str, ...]:
+    """Normalize edilmiş hâli aynı olan görünümleri **teke indirir**, sırayı korur.
+
+    ⚠ Aynı metni iki kez gömmek yalnız maliyet değildir: `max` havuzunda bir alanın
+    aynı görünümü iki kez sayılmaz ama **soğuk maliyet** iki katına çıkar.
+    """
+    gorulen: set[str] = set()
+    out: list[str] = []
+    for p in parcalar:
+        m = str(p or "").strip()
+        k = _norm(m).strip()
+        if k and k not in gorulen:
+            gorulen.add(k)
+            out.append(m)
+    return tuple(out)
+
+
+def _gorunumler(etiket: str, sinonimler, kup_display: str, birim: str) -> tuple[str, ...]:
+    """🔴 `§18.7` — bir alanın **çok görünümlü temsili**. Üç kaynak da katalogda.
+
+    `①` görünen etiket · `②` etiket+sinonim cümlesi · `③` küp bağlamı · `④` birim.
+
+    🔴 `①`'in tek sapması: **çıplak kısa ad gömülmez** (`_KISA_ESIK`) — `"su"`/`"set"`
+    gibi bir etiketin gömmesi alanın anlamını değil kelimenin **kısalığını** taşır
+    (`§18.6`: literatürde tek kelime performansı için ölçüm **yok**; `§12.1`: ölüm
+    şartı tam burada). O hâlde etiket `③` ile aynı metne düşer ve alan bağlamıyla
+    gömülür — **kaybolmaz**, yalnızca yalnız bırakılmaz.
+    """
+    etiket = str(etiket or "").strip()
+    kup_display = str(kup_display or "").strip()
+    baglam = f"{kup_display} · {etiket}" if kup_display and etiket else etiket
+    birim = str(birim or "").strip()
+
+    ilk = etiket if len(_norm(etiket).strip()) >= _KISA_ESIK else baglam
+    sozluk = _tekil(etiket, *[str(s) for s in (sinonimler or [])])
+    dortlu = [ilk, ", ".join(sozluk), baglam]
+    if birim and etiket:
+        dortlu.append(f"{etiket} ({birim})")
+    return _tekil(*dortlu) or ((etiket,) if etiket else ())
 
 
 def terimler(schema: dict, izinliler: set[str] | None) -> list[Aday]:
@@ -93,6 +236,9 @@ def terimler(schema: dict, izinliler: set[str] | None) -> list[Aday]:
 
     `izinliler is None` → Katman B bu tenant'ta yapılandırılmamış; kararı
     `katman_b.karar` verir (Katman A yönetir). Kural burada **tekrarlanmaz**.
+
+    🔴 `§18.7` — her aday **çok görünümlü** doğar. Havuzun **boyu değişmez** (aday
+    hâlâ alan başına birdir); değişen, o adayın **hangi metinlerle arandığıdır** 🅐.
     """
     from app.katman_b import karar
 
@@ -103,10 +249,18 @@ def terimler(schema: dict, izinliler: set[str] | None) -> list[Aday]:
         if not gecer:
             continue  # 🔴 yetkisiz küp → adı bile geçmez (envanter sızıntısı)
         cube = str(c.get("name") or "")
+        # `③` küp bağlamı — `display` **zaten** şemada (`wren_service.py:846` deseni):
+        # `label` > ilk sinonim > ad. İkinci bir sözlük açılmıyor (`KAT-1`).
+        kup_display = str(c.get("display") or cube)
         gorunen = c.get("measure_synonyms_display") or {}
+        sinonimler = c.get("measure_synonyms") or {}    # `②` — cube_synonyms.yml
+        birimler = c.get("units") or {}                 # `④` — measure `unit`
         for olcu, etiket in gorunen.items():
-            out.append(Aday(kimlik=f"{cube}.{olcu}", etiket=str(etiket), cube=cube,
-                            kip="leksik"))
+            ad = str(etiket or "").strip() or str(olcu)
+            out.append(Aday(
+                kimlik=f"{cube}.{olcu}", etiket=ad, cube=cube, kip="leksik",
+                gorunumler=_gorunumler(ad, sinonimler.get(olcu), kup_display,
+                                       birimler.get(olcu))))
     return out
 
 
@@ -116,6 +270,11 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
     Önek eşleşmesi typeahead'in doğal davranışıdır ve **bedavadır**; bulanık ayak
     yalnız önek hiçbir şey bulamadığında anlamlıdır. Eşik `cube_router`'dan **ödünç
     alınır** — bu depoda o sabitler katalog kelimeleriyle kalibre edildi (`KAT-1`).
+
+    🔴 `§18.7` — arama **görünümler üstünde** yapılır, çıplak etiket üstünde değil:
+    *«zayiat»* yazan kullanıcı `toplam_fire_kg`'ye **sinonim görünümünden** ulaşır ve
+    bu ulaşma gömücüye **borçlu değildir** (`5.8`: gömücü soğuksa da çalışır) 🅖.
+    En iyi görünüm alanın skoru olur — alan **bir kez** aday olur.
     """
     from app.cube_router import _TYPO_MID
 
@@ -124,13 +283,17 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
         return []
     onek, bulanik = [], []
     for i, a in enumerate(adaylar):
-        e = _norm(a.etiket)
-        if e.startswith(q) or any(p.startswith(q) for p in e.split()):
+        vurdu, en_iyi = False, -1.0
+        for g in (a.gorunumler or (a.etiket,)):
+            e = _norm(g)
+            if e.startswith(q) or any(p.startswith(q) for p in e.split()):
+                vurdu = True
+                break
+            en_iyi = max(en_iyi, difflib.SequenceMatcher(None, q, e).ratio())
+        if vurdu:
             onek.append((0.0, i))
-            continue
-        r = difflib.SequenceMatcher(None, q, e).ratio()
-        if r >= _TYPO_MID:
-            bulanik.append((-r, i))
+        elif en_iyi >= _TYPO_MID:
+            bulanik.append((-en_iyi, i))
     onek.sort(key=lambda t: (t[0], len(adaylar[t[1]].etiket)))
     bulanik.sort()
     return [i for _, i in onek][:_HAVUZ] + [i for _, i in bulanik][:_HAVUZ]
@@ -151,10 +314,11 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
 #: ⊘ **Diskte artefakt YOK** ⑪: bu depo bir kez *«gitignore'lu bir derleme
 #: artefaktından okuyan ölçüm»* yüzünden aynı kaynakta farklı sayı gördü. Bellekteki
 #: önbellek süreçle doğar, süreçle ölür — okunacak bayat bir dosya yoktur.
-_INDEKS: dict[str, tuple[tuple[str, ...], object]] = {}
+_INDEKS: dict[str, tuple[tuple[str, ...], tuple[str, ...], object]] = {}
 
 
-def _anahtar(surum: str, kimlikler: tuple[str, ...]) -> str:
+def _anahtar(surum: str, kimlikler: tuple[str, ...],
+             gorunumler: tuple[str, ...] = ()) -> str:
     """Önbellek anahtarının **tek sahibi** ㊲.
 
     ⚠ İlk yazılışta anahtar **iki yerde** kuruluyordu: `_vektor_sira` `f"{surum}|{n}"`
@@ -167,9 +331,17 @@ def _anahtar(surum: str, kimlikler: tuple[str, ...]) -> str:
     kontrolü doğruluğu koruyordu ama önbellek **her istekte ıskalıyordu** — yani ölçülen
     `p95 = 49,23 ms` **tek havuzludur** ve çok kiracılıya **taşınmaz** 🅕.
     ⊙ Artık anahtar **kimliklerin özetini** taşıyor: iki farklı havuz **iki ayrı girdi**.
+
+    ⟳🔴 **`§18.7` ile bir ÜÇÜNCÜ boyut daha eklendi: GÖRÜNÜM KÜMESİ.** Matrisin satır
+    sayısı artık aday sayısı değil **görünüm** sayısıdır; katalog aynı kimlikleri
+    koruyup bir etiketi/sinonimi/birimi değiştirdiğinde eski matris yeni havuza
+    **uymaz** — ve şema sürümü her zaman değişmeyebilir (fikstür, kiracı-içi düzeltme).
+    Anahtar bunu taşımazsa skorlar **yanlış görünüme** atanır: sessiz bir hizasızlık.
+    *Bir önbelleğin anahtarı, sakladığı şeyin bağlı olduğu HER girdiyi taşımalıdır.*
     """
-    ozet = hashlib.blake2s("\x00".join(kimlikler).encode("utf-8"),
-                           digest_size=8).hexdigest()
+    ozet = hashlib.blake2s(
+        "\x00".join((*kimlikler, "\x01", *gorunumler)).encode("utf-8"),
+        digest_size=8).hexdigest()
     return f"{surum}|{len(kimlikler)}|{ozet}"
 
 
@@ -194,6 +366,12 @@ def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]
 
     ⚠ E5 burada **simetrik** kullanılır (soru↔terim): `query: ` öneki **iki tarafa** da
     konur — `FAZ 0` ölçümü de böyle yapıldı, aksi hâlde ölçüm taşınmaz 🅕.
+
+    🔴 `§18.7` — gömülen şey **alan adı değil**, alanın görünümleridir. Matris görünüm
+    başına bir satır taşır; bir alanın skoru **en yakın görünümünün** skorudur (`max`).
+    Yani sorgu bir **görünüme** eşleşir, aday o görünümden **türer** ve aynı alan iki
+    görünümden gelse bile listeye **bir kez** girer — tekilleştirme burada olur.
+    ⊘ Bu bir eleme **değildir**: dönen sıra hâlâ havuzun tamamını kapsar.
     """
     from app import vqr
 
@@ -204,25 +382,49 @@ def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]
     try:
         import numpy as np
 
-        # 🔴 `5.7` — aday gömmeleri **sürüm anahtarıyla** önbellekte. Anahtar hem şema
-        # sürümünü hem aday **kimliklerini** taşır: allowlist daraldığında havuz da
-        # daralır ve eski matris o havuza **uymaz** — sessiz bir hizasızlık yerine
+        # 🔴 `5.7` — aday gömmeleri **sürüm anahtarıyla** önbellekte. Anahtar üç şey
+        # taşır: şema sürümü · aday **kimlikleri** · **görünüm kümesi**. Allowlist
+        # daralırsa havuz daralır, katalog metni değişirse görünümler değişir; iki
+        # hâlde de eski matris yeni havuza **uymaz** — sessiz bir hizasızlık yerine
         # açık bir önbellek ıskası olur ㊴.
         kimlikler = tuple(a.kimlik for a in adaylar)
-        anahtar = _anahtar(_surum, kimlikler)
+        duz: list[str] = []
+        dilim: list[tuple[int, int]] = []
+        for a in adaylar:
+            bas = len(duz)
+            duz.extend(a.gorunumler or (a.etiket,))
+            dilim.append((bas, len(duz)))
+        gorunum = tuple(duz)
+        anahtar = _anahtar(_surum, kimlikler, gorunum)
         onbellek = _INDEKS.get(anahtar)
-        if onbellek is not None and onbellek[0] == kimlikler:
-            M = onbellek[1]
+        if (onbellek is not None and onbellek[0] == kimlikler
+                and onbellek[1] == gorunum):
+            M = onbellek[2]
         else:
-            M = np.asarray(list(model.embed([onek + a.etiket for a in adaylar])),
-                           dtype="float32")
+            M = np.asarray(list(model.embed([onek + g for g in duz])), dtype="float32")
             M /= (np.linalg.norm(M, axis=1, keepdims=True) + 1e-9)
-            _INDEKS[anahtar] = (kimlikler, M)
+            _INDEKS[anahtar] = (kimlikler, gorunum, M)
         qv = list(model.embed([onek + kismi]))[0]
         qn = np.asarray(qv, dtype="float32")
         qn /= (np.linalg.norm(qn) + 1e-9)
-        skor = M @ qn
-        return [int(i) for i in skor.argsort()[::-1][:_HAVUZ]]
+        # 🔴🅫 **ÖLÇÜLMÜŞ: `M @ qn` BURADA ÜÇ KAT PAHALIYA MAL OLUYORDU.** Matris
+        # görünümlerle `136 → 534` satıra çıkınca `matmul` **çok iş parçacıklı BLAS**
+        # yoluna düşüyor; çarpımın kendisi 2,8 ms ama açtığı iş parçacığı havuzu bir
+        # sonraki **ONNX gömme** çağrısını yavaşlatıyor. Ölçüldü (aynı konteyner,
+        # gerçek gömücü, uçtan uca ılık çağrı):
+        #
+        #     M @ qn          → 113,2 ms   (yalnız sorgu gömme: 35,2 ms)
+        #     (M * qn).sum(1) →  37,5 ms   ← temsil zenginleşti, gecikme **taban**da
+        #
+        # Elemanwise indirgeme tek iş parçacıklıdır ve bellek-bağımlıdır: `534×1024`
+        # `float32` için ~2,2 MB geçici. `§18.2` bu ölçekte **exact arama** kararı
+        # verdi; katalog büyürse geçici de büyür ve **o gün** parçalı indirgeme gerekir.
+        # *Bir çarpımın maliyeti kendi süresi değildir; bıraktığı yan etkidir.*
+        skor = (M * qn).sum(axis=1)
+        # Görünüm skorlarını **alana** indir: en yakın görünüm alanın skorudur.
+        en_yakin = np.asarray([float(skor[b:s].max()) for b, s in dilim],
+                              dtype="float32")
+        return [int(i) for i in en_yakin.argsort()[::-1][:_HAVUZ]]
     except Exception:  # noqa: BLE001 — öneri katmanı **cevabı bozmaz** (§101.1)
         return []
 
@@ -232,6 +434,10 @@ def ara(kismi: str, schema: dict, *, izinliler: set[str] | None = None,
     """`5.1` — **saf** arama. Sorgu koşmaz, LLM çağırmaz, durum tutmaz.
 
     Sıra: ① yetki süzmesi ② iki ayak ③ **RRF** füzyonu ④ kesme.
+
+    ⊙ Havuz **alan** başınadır (`§18.7`): iki ayak da alanın *görünümleri* içinde arar,
+    ama sıra numaraları alanlara aittir — yani RRF bir alanı görünüm sayısı kadar
+    ödüllendirmez. *Bir temsili zenginleştirmek, onu birden çok kez saymak değildir.*
     """
     havuz = terimler(schema, izinliler)
     if not havuz:
@@ -255,5 +461,5 @@ def ara(kismi: str, schema: dict, *, izinliler: set[str] | None = None,
     for i in sirali[:limit]:
         a = havuz[i]
         out.append(Aday(kimlik=a.kimlik, etiket=a.etiket, cube=a.cube,
-                        kip="+".join(sorted(kipler[i]))))
+                        kip="+".join(sorted(kipler[i])), gorunumler=a.gorunumler))
     return out

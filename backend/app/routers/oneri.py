@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.auth.dependencies import require_company
 
@@ -143,6 +143,119 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120),
         # önbellek şema sürümüyle anahtarlıdır, eski sürüm okunamaz 🅐.
         "indeks": oneri.indeks_durumu(schema),
     }
+
+
+@router.get("/oneri/pill", dependencies=[Depends(require_company)])
+def oneri_pill(request: Request, q: str = Query("", max_length=400)) -> dict:
+    """🔴 `§5.2` + `§5.3` — **`Niyet`in GÖRÜNÜR HÂLİ**: pill satırı + canlı doğrulama.
+
+    ```
+       olcu_adaylari      donemler        kirilimlar       turler
+            │                │                │               │
+       [toplam_fire_kg] [bu ay]    [makineye göre]    [+ ölçü ▾]
+    ```
+
+    🔴 **Yeni model kurulmuyor, mevcut model çiziliyor.** Pill'ler `app/niyet.py::Niyet`
+    alanlarından **türetilir**; ikinci bir temsil doğsaydı bir gün biri ötekinden ayrılır
+    ve kullanıcı *«anladığım şu»* diye yanlış bir şey okurdu (`KAT-1`).
+
+    ⚠ **`+` TİPLİDİR** (`artilar`): `[+ ölçü] [+ kırılım] [+ dönem] [+ adım]`. Tek bir `+`
+    üç ayrı anlama gelir (aynı sorguya ölçü ekle · adım ekle · ayrı rapor) ve bu deponun
+    bir numaralı tuzağıdır — *«göre/bazında»* üç anlamlıydı ve **üç kez** ısırdı.
+
+    ⚠ `dogrula` **koşmadan** çalışır: geçersiz bir kombinasyon kırmızıya döner ve nedenini
+    söyler. *«Sayıyı küp koyar»* ilkesinin arayüz karşılığı budur — **imkânsız soru
+    sorulamaz hâle gelir.**
+
+    ⊘ Bu uç **sorgu koşmaz ve LLM çağırmaz**: `Niyet` çözümlemesi deterministiktir.
+    """
+    from app import niyet as _niyet
+    from app import pill
+    from app.company_registry import wren_for_request
+
+    if not q.strip():
+        # ⚠ Boş soruda **boş pill satırı** — uydurma bir niyet çizmek, kullanıcının
+        # yazmadığı bir şeyi ona *«anladığım şu»* diye göstermek olurdu 🅡.
+        return {"piller": [], "artilar": [], "hatalar": []}
+
+    schema = wren_for_request(request).schema()
+    n = _niyet.coz(q, schema)
+    return {
+        "piller": [{"alan": p.alan, "metin": p.metin, "deger": p.deger,
+                    "silinebilir": p.silinebilir} for p in pill.pillerden(n, schema)],
+        # ⚠ `tip` **taşınır** ve `alan` `None` olabilir: `+ adım` bir `Niyet` alanına
+        # değil **plana** karşılık gelir (`sonuc="plan"`). İkisini tek anahtara sıkıştırmak,
+        # `+`'ın tipini kaybetmek — yani kapatmaya çalıştığımız tuzağı geri açmak olurdu.
+        "artilar": [{"tip": a.tip, "alan": a.alan, "metin": a.metin, "sonuc": a.sonuc,
+                     "secenekler": [{"deger": s.deger, "metin": s.metin}
+                                    for s in a.secenekler]}
+                    for a in pill.artilar(n, schema)],
+        "hatalar": [{"alan": h.alan, "deger": h.deger, "neden": h.neden}
+                    for h in pill.dogrula(n, schema)],
+    }
+
+
+@router.post("/oneri/makro", dependencies=[Depends(require_company)])
+def oneri_makro(request: Request, govde: dict | None = None) -> dict:
+    """🔴 `§7 ②` — **adlandırılmış makro KOŞULUR**: tek tıklama, N deterministik adım.
+
+    Şeritteki *«… neden bu seviyede?»* satırı bir `cube_query` **taşımaz** (`TUR_NEDEN`,
+    `cube_query=None`); taşıdığı şey bir **reçete adıdır**. Bu uç o adı bir **plana**
+    çevirir (`makro.plan_uret`) ve planı **LLM'siz** koşar (`plan_tuketici.calistir`).
+
+    ## 🔴 Neden `plan_tuketici.cevap` DEĞİL
+
+    Ölçüldü (`plan_tuketici.py:405-411`): `cevap()` *«boşluğun tek kapısı»*dır ve **LLM
+    çağrısını kendi içinde** yapar — bayrak kapalıysa `None` döner, açıksa garsona plan
+    kurdurur. Yani `cevap`'tan geçen bir makro `②` kademesi olmaktan çıkar, `③` (özgün
+    besteleme) olurdu. `§7`'nin tablosu `②` için LLM'i **⊘** işaretliyor ve kademelerin
+    *«karışmamalı»* olması o tablonun başlığıdır.
+
+    ⚠ Bu yüzden burada **plan hazır gelir** (bir reçeteden), garsondan **istenmez**.
+
+    ## Dürüst ret 🅤
+
+    Plan koşulamazsa `neden_olmadi` ile **adım adım** gerekçe döner — sessiz bir boş
+    cevap, tıklandığında hiçbir şey yapmayan bir düğmedir ve hiçbir yerde iz bırakmaz.
+    """
+    from app import makro, plan_kosucu, plan_tuketici
+    from app.company_registry import wren_for_request
+
+    d = govde if isinstance(govde, dict) else {}
+    ad = str(d.get("ad") or "").strip()
+    cq = d.get("capa") if isinstance(d.get("capa"), dict) else None
+    boyut = str(d.get("boyut") or "").strip()
+    if not ad or not cq:
+        raise HTTPException(status_code=400,
+                            detail="`ad` ve `capa` zorunlu — makro bir çapanın üstünde koşar.")
+
+    try:
+        plan = makro.plan_uret(ad, cq, boyut=boyut)
+    except ValueError as e:                                # bilinmeyen ad / eksik boyut
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    service = wren_for_request(request)
+    schema = service.schema()
+    principal = getattr(request.state, "principal", None)
+    from app.katalog_metni import metin_ve_indeks
+
+    _, index = metin_ve_indeks(schema, principal)
+    try:
+        # ⚠ **Koşmadan denetle**: `dogrula` tip uyuşmazlıklarını (bir `SORGU` adımı bir
+        # `olcum` adımına atıf yapıyorsa) motora hiç gitmeden yakalar. Reçeteler kapıda
+        # zaten bundan geçiyor; burada ikinci kez çağrılması bir yinelenme değil, **canlı
+        # çapayla** kurulan planın ilk kez denetlenmesidir.
+        plan_kosucu.dogrula(plan)
+        out = plan_tuketici.calistir(
+            plan, service=service, index=index, schema=schema,
+            cube_meta=plan_tuketici.kosum_cube_meta(schema), soru=ad)
+    except plan_kosucu.PlanHatasi as e:
+        _log.info("makro %r koşamadı: %s", ad, e)
+        return {"source": None, "makro": ad,
+                "note": plan_tuketici.neden_olmadi(plan, e)}
+    out["makro"] = ad
+    out["adim_sayisi"] = len(plan["adimlar"])
+    return out
 
 
 @router.post("/oneri/tik", dependencies=[Depends(require_company)])

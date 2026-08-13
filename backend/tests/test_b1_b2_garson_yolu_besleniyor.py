@@ -49,6 +49,17 @@ MUAF = {
     ("_prompt_enhance_dene", "istem zenginleştirici: katalog **sözcük havuzu** için, bir "
                              "garson istemi için değil"),
     ("cevap", "orkestratör plan tüketicisi (`plan_tuketici`): hazır planı koşar, küp SEÇMEZ"),
+    # 🔴 `§7②` makro ucu — `cevap` ile **aynı sınıf ve aynı gerekçe**: plan bir
+    # **reçeteden** hazır gelir, küp seçilmez, garsona hiçbir istem kurulmaz (uç LLM'e
+    # değmez; `test_MAKRO_UCU_ORKESTRATORUN_LLM_KAPISINDAN_GECMEZ` bunu tutuyor).
+    #
+    # ⚠ Ve `soru=` geçmek burada **zararlı** olurdu, sadece gereksiz değil: `soru`
+    # verildiğinde `katalog_metni` `daraltma_adaylari` ile budama yapabiliyor ve budama
+    # **indeksi de** daraltıyor. Makro planı o indeksle koşuyor — daraltılmış bir indeks,
+    # planın küpünü **görünmez** kılar ve reçete kendi kataloğunda düşerdi 🆐.
+    # *Bir budamayı ihtiyacı olmayan yola uygulamak, tasarruf değil kör nokta üretir.*
+    ("oneri_makro", "`§7②` makro ucu: plan reçeteden hazır gelir, küp SEÇMEZ; `soru=` "
+                    "indeksi de budayacağı için ZARARLI olurdu"),
 }
 _MUAF_FN = {f for f, _ in MUAF}
 

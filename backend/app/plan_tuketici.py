@@ -184,6 +184,20 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
             "KIR": _kir, "SUZ": _suz, "BOYUTSEC": _boyutsec, "GORSEL": _gorsel}
 
 
+def kosum_cube_meta(schema: dict) -> dict:
+    """`calistir(cube_meta=…)`'nın gövdesi — **tek sahip** ㊲.
+
+    ⊙ Bu birleşim (`lower_is_better`) iki yerden isteniyor: orkestratörün kendi yolundan
+    (`cevap`) ve `§7②`'nin **LLM'siz** makro ucundan. İkisi ayrı ayrı yazsaydı bir gün
+    biri yeni bir kaynağı okumaya başlar, öteki okumazdı — ve *«hangi ölçüde küçük iyidir»*
+    sorusunun iki cevabı olurdu. Bir küpün yönü, cevabın **işaretini** belirler.
+    """
+    lower: set[str] = set()
+    for c in (schema.get("cubes") or []):
+        lower |= set(c.get("lower_is_better") or [])
+    return {"lower_is_better": sorted(lower)}
+
+
 def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = None,
              schema: dict | None = None, limit: int | None = None,
              azami_sorgu: int | None = None, soru: str = "") -> dict:
@@ -479,11 +493,8 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         return None
     _n = len(plan["adimlar"])
     try:
-        _lower: set[str] = set()
-        for c in (schema.get("cubes") or []):
-            _lower |= set(c.get("lower_is_better") or [])
         out = calistir(plan, service=service, index=index, schema=schema,
-                       cube_meta={"lower_is_better": sorted(_lower)}, limit=limit,
+                       cube_meta=kosum_cube_meta(schema), limit=limit,
                        soru=soru)
     except plan_kosucu.PlanHatasi as e:
         _log.info("plan KOŞAMADI (%d adım) → adım adım dürüst ret: %s", _n, e)

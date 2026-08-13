@@ -122,3 +122,51 @@ def test_MAKRO_ENFLASYONU_TAVANI():
     assert len(makro.MAKROLAR) <= 5, (
         f"🔴 {len(makro.MAKROLAR)} makro — tavan 5. Yeni bir ad eklemeden önce SIKLIK "
         "ölçülmeli; ölçülmemiş bir makro, sayılmış bir kombinasyon uzayıdır.")
+
+
+# ── 🔴🔴 `②` KADEMESİ KOŞUM UCU — ve LLM'e DEĞMEME ŞARTI ────────────────────
+
+def test_MAKRO_UCU_ORKESTRATORUN_LLM_KAPISINDAN_GECMEZ():
+    """🔴 `§7`'nin tablosu `②` için LLM'i **⊘** işaretler ve kademelerin *«karışmamalı»*
+    olması o tablonun başlığıdır.
+
+    ⊙ Ölçüldü (`plan_tuketici.py:405`): `cevap()` *«boşluğun tek kapısı»*dır ve **LLM
+    çağrısını kendi içinde** yapar. Makro ucu oradan geçseydi `②` sessizce `③`'e dönerdi
+    — üstelik hiçbir kapı bunu söylemezdi, çünkü cevap yine doğru çıkardı 🅯.
+
+    🅑 Mutasyon: uçtaki `plan_tuketici.calistir` çağrısı `plan_tuketici.cevap` yapılırsa
+    bu yüklem kırılır.
+    """
+    import pathlib
+
+    from tests._kod_ayikla import kodu_ayikla
+
+    src = kodu_ayikla((pathlib.Path(__file__).resolve().parents[1] / "app" / "routers"
+                       / "oneri.py").read_text(encoding="utf-8"))
+    assert "plan_tuketici.calistir(" in src, (
+        "🔴 makro ucu planı kendisi koşmuyor — `②` kademesinin tanımı bu.")
+    assert "plan_tuketici.cevap(" not in src, (
+        "🔴 makro ucu orkestratörün LLM kapısından geçiyor → `②` değil `③` olur (`E-8`).")
+    assert "plan_kosucu.dogrula(" in src, (
+        "🔴 canlı çapayla kurulan plan **koşmadan** denetlenmeli — motora giden geçersiz "
+        "bir plan, motorun hatasıyla değil bizim ihmalimizle düşer.")
+
+
+def test_LOWER_IS_BETTER_BIRLESIMI_TEK_SAHIP():
+    """㊲ *«hangi ölçüde küçük iyidir»* sorusunun **iki** cevabı olamaz.
+
+    Birleşim iki yerden isteniyor (orkestratörün yolu + makro ucu). İkisi ayrı ayrı
+    yazsaydı bir gün biri yeni bir kaynağı okumaya başlar, öteki okumazdı — ve bir küpün
+    yönü cevabın **işaretini** belirler.
+    """
+    import pathlib
+
+    from tests._kod_ayikla import kodu_ayikla
+
+    kok = pathlib.Path(__file__).resolve().parents[1] / "app"
+    sayac = 0
+    for p in (kok / "plan_tuketici.py", kok / "routers" / "oneri.py"):
+        sayac += kodu_ayikla(p.read_text(encoding="utf-8")).count('"lower_is_better"')
+    assert sayac <= 2, (
+        f"🔴 `lower_is_better` birleşimi {sayac} yerde kuruluyor — tek sahip "
+        "`plan_tuketici.kosum_cube_meta` olmalı ㊲.")
