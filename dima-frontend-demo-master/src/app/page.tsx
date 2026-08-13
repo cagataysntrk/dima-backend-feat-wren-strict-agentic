@@ -392,10 +392,22 @@ export default function Home() {
   //
   // ⊘ Sohbet GEÇMİŞİNİ silmez (o `newChat`): thread listesi durur, tıklanınca yeniden
   // girilebilir. *«Yeni konu» ile «yeni oturum» aynı şey değildir.*
-  const yeniKonu = () => {
-    setContextCq(null); setContextRapor(null); setDiyalogDurumu(null);
-    setPrevSql(null); setActiveThreadId(null); setViewHint(null);
+  // 🔴🔴 `§60` — **ZİNCİRİ KESMEK, THREAD'DEN ÇIKMAK DEĞİLDİR.**
+  //
+  // Ölçülen kusur: tek bir işleyici iki **farklı edimi** birden yapıyordu — bağlamı
+  // temizliyor **ve** `activeThreadId`'yi düşürüyordu. Kullanıcı bir konuyu bitirince
+  // sohbetten de çıkmış oluyordu. Bu, `app/context.py`'nin *«tartışmaya kapalı»* diye
+  // işaretlediği kararı çiğniyordu: **thread bir UI gruplamasıdır, semantik sınır
+  // değildir**; yeni thread **yalnız açık kullanıcı eylemiyle** doğar.
+  //
+  // ⊙ Doğru model: bir thread **birden çok zincir** taşır. Soru → cevap → takip →
+  // takibin takibi… ve kullanıcı zinciri kestiğinde **aynı thread içinde** yeni bir
+  // konu başlar. Zincir semantiktir, thread görseldir.
+  const zinciriKes = () => {
+    setContextCq(null); setContextRapor(null); setDiyalogDurumu(null); setPrevSql(null); setViewHint(null);
   };
+  // `+ yeni sohbet` **ayrı** bir edimdir: zinciri keser **ve** thread'den çıkar.
+  const yeniSohbet = () => { zinciriKes(); setActiveThreadId(null); };
   const submitNew = (q: string) => {
     setDrawer(null);
     setStarted(true); // ilk sorudan sonra çalışma alanında kal (hata olsa da landing'e dönme)
@@ -600,7 +612,7 @@ export default function Home() {
                 setPrevSql(last?.sql || null);
                 setViewHint(null); // yeniden girişte zorla remount YOK — kartlar kendi view_hint'ini kullanır
               }}
-              onYeniSohbet={yeniKonu}
+              onYeniSohbet={yeniSohbet}
               onUpload={onUpload}
               uploading={uploadMut.isPending}
             />
@@ -666,11 +678,12 @@ export default function Home() {
                 error={mutation.isError || cubeMutation.isError ? apiErrorMessage(mutation.error ?? cubeMutation.error) : null}
                 sessionId={sessionId}
                 contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
-                // §B — "konudan çık": HEPSİ BİRLİKTE sıfırlanır → panel BOŞALIR ve
-                // sonraki soru YENİ bir thread başlatır. Gövde `yeniKonu`'da (yukarıda),
-                // çünkü `ChatPanel`'in `+ yeni sohbet` düğmesi AYNI edimdir — iki
-                // düğme, TEK sahip.
-                onClearContext={yeniKonu}
+                // ⟳ `§60` — "konudan çık" bağlamı sıfırlar ve **thread'de KALIR**:
+                // sonraki soru aynı sohbetin **yeni zinciri** olur. Eski not burada
+                // *«sonraki soru YENİ bir thread başlatır»* diyordu ve iki düğmeyi
+                // **tek edim** sayıyordu — ölçüldü, yanlıştı 🆪: zincir semantik,
+                // thread görsel. `+ yeni sohbet` ayrı işleyicidir (`yeniSohbet`).
+                onClearContext={zinciriKes}
                 onContinue={submitContinue}
                 onReply={submitReply}
                 onReplyMulti={submitReplyMulti}

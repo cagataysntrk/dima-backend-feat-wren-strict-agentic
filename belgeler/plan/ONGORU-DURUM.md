@@ -2751,3 +2751,48 @@ Sıra **şarttır** (makro → sorgu → metin): makro satırının `cube_query`
 Kapı: `test_oneri_tiklamasi_sorgu_kosar.py` — *«öngörü tıklamasında `/ask` çağrılmaz»*,
 🅑 mutasyonla kanıtlı. Şeridin kendisi de LLM'siz: katalogdan üretilir, sorgu koşmaz
 (ılık **0,10 s**).
+
+---
+
+## §60 — 🔴 ZİNCİR ≠ THREAD: *«konudan çık»* seni sohbetten de çıkarıyordu
+
+### Kullanıcının tarif ettiği doğru model
+
+> *«Kişi bir soru sorar, cevap gelir; takip açıksa devam eder, sonra takibin takibi…
+> zincir olur. Bir yerde zinciri keserse **aynı thread içinde yeni konuya** geçmiş olur.»*
+
+Ve bu model üründe **zaten yazılı** — `app/context.py`, *«tartışmaya kapalı»* etiketiyle:
+
+> **Thread bir UI GRUPLAMASIDIR, SEMANTİK SINIR DEĞİLDİR.** Bir thread cube/bağlam
+> sınırı taşımaz; yeni thread **yalnız açık kullanıcı eylemiyle** doğar.
+
+### Ölçülen ihlal — **iki edim, tek işleyici**
+
+```tsx
+const yeniKonu = () => { …bağlamı temizle…; setActiveThreadId(null); };
+onYeniSohbet={yeniKonu}     // «+ yeni sohbet» → yeni THREAD   ✅ doğru
+onClearContext={yeniKonu}   // «konudan çık»   → yeni THREAD   🔴 yanlış
+```
+
+Ve eski yorum bunu bir **karar** gibi savunuyordu: *«`+ yeni sohbet` düğmesi AYNI
+edimdir — iki düğme, TEK sahip.»* Ölçüldü: **aynı edim değiller** 🆪.
+
+⊙ Sunucu tarafı zaten doğruydu: çapa **yalnız `continue`** yolunda gönderiliyor
+(`cube_query: contextCq`), taze soru çapasız gidiyor ve `is_followup` üretmiyor. Kusur
+tamamen istemcinin **iki edimi karıştırmasıydı**.
+
+### Çare
+
+| edim | işleyici | etkisi |
+|---|---|---|
+| *«konudan çık»* | **`zinciriKes`** | bağlam · rapor · diyalog · `prev_sql` · görünüm sıfırlanır; **thread KALIR** → sonraki soru aynı sohbetin **yeni zinciri** |
+| *«+ yeni sohbet»* | **`yeniSohbet`** | `zinciriKes()` **+** `activeThreadId = null` |
+
+⚠ İkincisi birincisini **çağırıyor** — iki temizleme listesi olsaydı bir gün biri eksik
+kalırdı ㊲.
+
+⚠ **Tavan 🆄** ateşledi (+1 satır); **yükseltilmedi**, gövde tek satıra toplandı.
+`tsc --noEmit` **temiz** (kapı `node_modules` yokken atlıyor 🅢 — elle koşuldu).
+
+**Kanıt:** `frontend_buyume · frontend_derlenir · uc_yetim_degil · konusma_baglamsiz`
+→ **31 ✅** *(tavan düzeltmesinden sonra 15 ✅ yeniden)*.
