@@ -13281,3 +13281,64 @@ biçimidir (`next_steps`: *«+ kullanılabilirlik»*).
 *«sadece … dedin ama»*. Daraltma **çalışmadı**; ancak `§T6`'nın yasakladığı **sessiz**
 yanlış da yok — sistem ne yaptığını söylüyor 🅖. **Kusur sayılıyor ama K3/K4'ün
 arkasında**: göreli bir dönem ifadesi çapasız bir tura düştüğünde gerçekten belirsizdir.
+
+## Üçüncü parti — son iki senaryo *(⑥ çapalı · ㉒ beş turluk thread)*
+
+| # | beklenen | **ölçülen** | |
+|---|---|---|---|
+| 6 | 11 satır · *«%10,7 düşük»* | **7 adımlı orkestre**: `SORGU → KIYASLA → KIR(vardiya) → SORGU → KIR(hat) → SORGU → ANLAT`. `KIYASLA` **ateşledi** ✅. Ama sapma yüzdesi anlatıya **çıkmadı** ve **yanlış bir uyarı** var | ◐🔴 |
+| 22 | *«ilişkilendiremedim»* **0 kez** | **0 kez** ✅ — ama thread **sessizce bozuldu** | ◐🔴 |
+
+⊙ **Beklenen sayılar bayattı 🅟:** *«11 satır · %10,7»* planın yazıldığı günün fotoğrafı;
+bugünkü veri farklı. Ölçüt sayı değil **yapı** olmalıydı ⑭ — `KIYASLA`'nın ateşlemesi.
+
+### ㉒'nin beş turu — yüklem geçti, **anlam geçmedi** 🅯
+
+| tur | soru | çapa nereye gitti |
+|---|---|---|
+| 1 | *«bu yıl fire oranı»* | `parti / fire_orani_yuzde` ✅ |
+| 2 | *«makine bazında göster»* | `oee / ort_oee / [makine]` — 🔴 **`fire_orani_yuzde` KAYBOLDU** |
+| 3 | *«geçen yıla göre nasıl»* | `compare` **uygulanmadı**; ve **iki koşumda iki farklı küp** (`oee/ort_oee` ↔ `parti/toplam_ciro`) 🅢㉝ |
+| 4 | *«en kötü üçü hangileri»* | `measures: []` — 🔴 **ölçü boş** |
+| 5 | *«bunu aylık trende çevir»* | 🔴 **çöktü** (dürüstçe beyan edilerek) |
+
+🔴 **Sözleşme #3'ün yüklemi *«ilişkilendiremedim» 0 kez* — ve geçti.** Ama beş turun
+dördü çapayı kaybetti. *Bir şikâyetin yokluğu, anlamanın varlığı değildir* 🅯: ölçüt
+sistemin **sustuğunu** ölçüyor, **doğru olduğunu** değil. Bu, korpusun bilinen körlüğünün
+(§*«soru katalogdan üretiliyor»*) thread'deki eşleniğidir.
+
+## Teşhis — üç kusur daha
+
+### 🔴 K6 · **Yanlış uyarı**: verilmemiş bir eşik iddia ediliyor *(senaryo 6)* ㉜
+
+*«RAM-3 neden düşük»* → uyarı: *«⚠ Sayı doğru ama **eksik**: bir **eşik** verdin (ör.
+«1.000 üstü») ama …»*. Kullanıcı **eşik vermedi**. Muhtemel kök: eksiklik saptayıcısı
+*«düşük»* sözcüğünü bir eşik işareti sayıyor.
+
+⚠ `§101.1`'in tam tersi yönde bir hata: yanlış pozitif, kusurun kendisinden pahalıdır —
+çünkü doğru cevabın üstüne *«eksik»* damgası basıyor. ⊙ Aynı uyarı ailesi ㉑ ve ⑯'da
+**doğru** ateşledi; yani kusur ailenin kendisinde değil, **eşik dalında**.
+
+### 🔴 K7 · `TREND` `oee` küpünde **koşamıyor** *(senaryo 22, tur 5)*
+
+```
+Error during planning: Unknown time dimension 'oee.tarih' in cube 'oee'
+```
+
+⊙ **İki hipotez ölçüldü ve İKİSİ DE ÇÜRÜDÜ ③:**
+* *«`oee`'de `tarih` yok»* → **var**: `backend/demo/packs/modul/oee/cubes/oee/metadata.yml:117`
+  `time_dimensions: - name: tarih / type: DATE` — `parti` ile **birebir aynı**.
+* *«derlenmiş artefakt bayat»* ⑪ → **değil**: derlenmiş projede de, **kabın içinde de** var.
+
+⊙ Kalan iz: hata küpü **`oee.tarih`** diye **nitelikli** yazıyor; oysa aynı turda çalışan
+`parti` sorgusu alanı **`tarih`** (niteliksiz) taşıyordu. Yani şüphe artık *«boyut yok»*
+değil, **adın nitelenme biçiminde**. ⚠ Bir sonraki ölçüm bu izi kovalar — kaynağı
+okumadan düzeltme yazılmaz.
+
+### 🔴 K8 · Takip turunda **belirlenimsizlik** ㉝🅢 *(senaryo 22, tur 3)*
+
+Aynı soru + aynı `history` **iki kez** koşuldu, **iki farklı çapa** çıktı:
+`oee/ort_oee/[makine]` ve `parti/toplam_ciro/timeDimensions`. Garson olasılıksaldır ve bu
+bilinçlidir — ama **çapalı** bir takipte çapa, garsonun yeniden karar vereceği bir şey
+değil, **taşınacak** bir veridir. *Bir bağlamı her turda yeniden tahmin etmek, onu hiç
+tutmamaktır.*
