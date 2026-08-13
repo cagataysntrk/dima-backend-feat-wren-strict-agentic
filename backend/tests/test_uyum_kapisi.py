@@ -307,3 +307,43 @@ def test_KISITLAMA_UYGULANDIYSA_SUSAR():
                       {"dimension": "renk", "operator": "eq", "value": "Siyah"}]}
     isaretler = {i.isaret for i in denetle("sadece siyah renk", cq, None)}
     assert "kisitlama" not in isaretler, "🔴 uygulanmış bir kısıtlama beyan edilmemeli"
+
+
+# ── 🔴 K6 — KİMLİKTEKİ RAKAM BİR EŞİK DEĞİLDİR (insan testi bulgusu) ────────
+
+def test_KIMLIKTEKI_RAKAM_ESIK_SANILMAZ():
+    """🔴 **Ölçülen yanlış pozitif:** *«RAM-3 neden düşük»* → `{'op':'>','value':3.0}`.
+
+    Zincir üç halkaydı, üçü de tek başına masumdu: `\\b(\\d+)` tireden sonraki `3`'ü
+    yakalıyor · *«ölçü adını atla»* grubu **«ne-den»**i yutuyor (bir **soru sözcüğü**
+    ölçü adı sanıldı) · `dusuk` karşılaştırıcı listesinde. Sonuç: kullanıcı *«bir eşik
+    verdin ama filtreye çeviremedim»* diye **vermediği** bir iddiayı okuyordu ㉜.
+
+    ⚠ Onarım bir sözcük listesi **değil** 🆞 — rakamın **önündeki karakter** sınanıyor:
+    bir sayı bir sözcüğe ya da tireye yapışıksa o bir **kimliktir**, eşik değil.
+
+    🅑 Mutasyon: `_THRESHOLD_RE`'deki `(?<![\\w-])` kaldırılırsa bu yüklem kırılır.
+    """
+    from app.cube_router import _measure_threshold, _norm
+
+    for kimlik in ("RAM-3 neden düşük", "KZN-5 neden yüksek", "Q4 neden düşük"):
+        assert _measure_threshold(_norm(kimlik)) is None, (
+            f"🔴 `{kimlik}`: kimlikteki rakam eşik sanıldı — kullanıcı vermediği bir "
+            "eşik iddiasını okur (`§101.1`: yanlış pozitif kusurdan pahalıdır).")
+
+
+def test_MESRU_ESIKLER_BOZULMADI():
+    """⑯ **Komşusunu bozuyor mu.** Yanlış pozitifi keserken gerçek eşikleri kesmek,
+    bir kusuru başka bir kusurla değişmek olurdu."""
+    from app.cube_router import _measure_threshold, _norm
+
+    beklenen = {
+        "1000 üstü müşteriler": (">", 1000.0),
+        "yüzde 5 üzerindeki partiler": (">", 5.0),
+        "10 milyon üzeri": (">", 10_000_000.0),
+        "100 bin altında": ("<", 100_000.0),
+        "cirosu 1000den fazla": (">", 1000.0),
+    }
+    for soru, (op, deger) in beklenen.items():
+        cikan = _measure_threshold(_norm(soru))
+        assert cikan == {"op": op, "value": deger}, f"🔴 `{soru}` → {cikan}"

@@ -3965,8 +3965,27 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
 #: ekleri kümesidir (`ADR-0008` kapalı sınıfları serbest bırakır).
 #:
 #: *Bir eki iki kelime sanmak, o ekin taşındığı her ismi görmemektir.*
+#: 🔴 **ÖLÇÜLMÜŞ YANLIŞ POZİTİF (insan testi, 2026-08-13).**
+#:
+#: *«RAM-3 neden düşük»* → `{'op': '>', 'value': 3.0}`. Yani **makine adındaki rakam**
+#: bir eşik sanıldı; kullanıcıya *«bir eşik verdin (ör. «1.000 üstü») ama filtreye
+#: çeviremedim»* diye **verilmemiş bir iddia** okundu ㉜.
+#:
+#: Zincir üç halkaydı ve üçü de kendi başına masumdu:
+#:   ① `\b(\d+)` — `RAM-3`'teki `3`'ü yakalar (tire ile rakam arasında `\b` **vardır**)
+#:   ② `(?:\w{2,}(?:dan|den|…)\s+)?` — ölçü adını atlamak için konmuştu, ama **«ne-den»**
+#:      de bu kalıba uyar; bir **soru sözcüğü** ölçü adı sanıldı
+#:   ③ `dusuk` — karşılaştırıcı listesinde
+#:
+#: ⚠ Onarım bir **sözcük listesi değil** 🆞: rakamın **önündeki karakter** sınanıyor.
+#: Bir sayı, bir sözcüğe ya da tireye yapışıksa (`RAM-3` · `Q4` · `ISO-9001`) o bir
+#: **eşik değil bir kimliktir**. Meşru eşikler her zaman ayrık yazılır (*«1.000 üstü»* ·
+#: *«yüzde 5 üzerindeki»* · *«cirosu 1000den fazla»*) ve etkilenmez.
+#:
+#: `§101.1`: yanlış pozitif kusurdan pahalıdır — doğru bir cevabın üstüne *«eksik»*
+#: damgası basar. *Bir kimliğin içindeki rakam, bir ölçünün eşiği değildir.*
 _THRESHOLD_RE = re.compile(
-    r"\b(\d+(?:[.,]\d+)?)\s*(milyar|milyon|bin|k|m)?\s*(?:tl\w*|lira\w*|₺)?\s*"
+    r"(?<![\w-])(\d+(?:[.,]\d+)?)\s*(milyar|milyon|bin|k|m)?\s*(?:tl\w*|lira\w*|₺)?\s*"
     r"(?:\w{2,}(?:dan|den|tan|ten|nin|nun|in|un)\s+)?"
     r"(uzerindeki|uzerinde|uzeri|ustu|asan|gecen|dan fazla|den fazla|dan buyuk|den buyuk|"
     r"dan yuksek|den yuksek|altindaki|altinda|alti|dan az|den az|dan kucuk|den kucuk|"
