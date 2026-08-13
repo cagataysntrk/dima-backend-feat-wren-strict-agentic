@@ -1614,3 +1614,67 @@ zaten var mı** ölçülecek; yoksa bağlanacak.
 ⚠ Sınırlar: `test_B_CIPLAK_YIL_BILEREK_KAPSAM_DISI` **korunur** ㊸ · `features.yml`
 **okundu, değiştirilmedi** · *«sayıyı küp koyar»* dokunulmazı bu çarenin **lehinedir**:
 Discovery'nin her ateşlenmesi bir **mutfak eksikliği raporudur**.
+
+---
+
+## §33 — K3 KAPANDI · geri dönüş ZATEN VARDI · kalan kusur BEYANIN EKSİKLİĞİ
+
+### ① Geri dönüş var ㊷ — yazılmadı, **ölçüldü**
+
+`ask.py:4286` `if route_hit:` → cevabı **route'un yarım isabetinden** kurar; garson bir şey
+üretirse `:4199`'da onun yerine geçer. Yani *«garson boş dönerse Discovery'ye düşülür»*
+**yanlıştı**: yarım isabet garson bloğundan **sağ çıkıyor**.
+
+### ② Kontrol grubu ㊳ — garsonsuz ortamda ürün DOĞRU cevaplıyor
+
+Tam akış, ürünün kendi istek şekliyle koşuldu 🆣 (`POST /ask`, LLM = `RuleBasedSqlGenerator`,
+yani **garson yok**):
+
+| soru | `source` | `cube` |
+|---|---|---|
+| `2019 cirosu` | **`cube`** | `parti` |
+| `2019 yili cirosu` | **`cube`** | `parti` |
+
+**`adhoc` yok, Discovery yok.** Canlıda görülen `adhoc` bu yüzden determinist katmanın
+suskunluğu değil, **garsonun devraldığı yolun çıktısıdır** — `§32`'nin yargısı bir
+kontrol grubuyla doğrulandı.
+
+### ③ Ama beyan EKSİK — kalan gerçek kusur 🆗
+
+`2019 cirosu` için üretilen cevap:
+
+```
+cube_query.filters = tarih ∈ [2025-06-01, 2026-06-30]
+note                = "⏱ Dönemi çözemedim — **verinin son 12 ayı** alındı (01.06.2025 – 30.06.2026).
+                       Başka bir dönem yazarsan onu uygularım."
+explain.assumptions = ["Dönem çözülemedi — verinin son 12 ayı BEYANLA varsayıldı
+                       (kullanıcı onaylamadı; tek tıkla değiştirilebilir)."]
+```
+
+`M-4` çalışıyor, beyan **gövdede** (`note`) ve `explain`'de — ADR-0007-K3 ve DA-10'a uygun.
+**Eksik olan tek şey:** kullanıcı `2019` **yazdı**, sistem onu **yok saydı** ve bunu
+söylemiyor. *«Dönemi çözemedim»* doğru ama **eksik bir doğru**: soruda dönem gibi duran
+bir token vardı ve düşürüldü.
+
+> **Çare (sıradaki tur):** beyan, **yok sayılan token'ı adıyla** ansın ve **çözümü
+> öğretsin** — *«`2019`'u bir dönem olarak okuyamadım (bir hesap/şube kodu da olabilir);
+> verinin son 12 ayını aldım. **`2019 yılı`** dersen o yılı uygularım.»*
+> Bu, `㊸`'nin sınırını **korur** (çıplak yıl hâlâ dönem sayılmaz) ve `🆗`'yi **öder**
+> (belirsizde uydurma yok, ne yaptığını söyle + nasıl düzeltileceğini göster).
+
+⚠ Sahip **tek**: `donem_capasi.py:285` (KAT-1 ✅). Yok sayılan token tespiti için
+`cube_router`'ın **mevcut** aracı kullanılacak (`partial_unknowns` / `_YEAR_RE`),
+ikinci bir tarayıcı **yazılmayacak** ㊲.
+
+### K3 — kapanış
+
+| iddia | son yargı |
+|---|---|
+| *«route küp üretmiyor»* | ❌ çürüdü — `parti · toplam_ciro` üretiyor |
+| *«netleştirme yolu yok»* | ❌ çürüdü — üç parça da var, `M-4` bilerek **beyanı** seçiyor |
+| *«garson boş dönerse Discovery»* | ❌ çürüdü — `route_hit` sağ çıkıyor |
+| *«çıplak yıl tanınmalı»* | ❌ **geri alındı** ㊸ — sınır bilinçli |
+| **kalan** | ⚠ **beyan, yok sayılan token'ı anmıyor** — küçük, dürüst, çözülebilir |
+
+*Bir kusuru dört kez yanlış yerde aradım; her seferinde bir katman yukarı çıktı ve her
+seferinde ürün, iddiamdan daha doğru çıktı.*
