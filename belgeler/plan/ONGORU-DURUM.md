@@ -1282,3 +1282,22 @@ bitmiş değildir** — burada tüketici vardı ama **yanlış şeyi** tüketiyo
 idi; uç dönüştürücüyü çağırmıyordu ve istisna **kütüksüz** yutuluyordu. İkisi de düzeltildi:
 `_uuid_or_none` **çağrıldı** (yazılmadı ㊲ — `answer.py`/`ask.py` aynı işi zaten onunla
 yapıyor) ve `except` artık `_log.exception` ile **duyuruyor** (ADR-0020).
+
+### §26.1 · 🔴 **TEK CHAT KARARI** *(kullanıcı, 2026-08-13)*
+
+> *«sağdaki kalacak, soldaki yeni chat aç butonu olacak — çift chat'e her özelliği girmek
+> elim bir hata ve risk»*
+
+| | önce | **sonra** |
+|---|---|---|
+| sol | besteci (yeni thread) | **«+ Yeni sohbet» butonu** |
+| sağ | besteci (aynı thread) | **TEK girdi kutusu** |
+
+⊙ Gerekçe bir tasarım tercihi değil bir **bakım** kararı: öneri şeridi · çapa · pill ·
+toggle · klavye gezinmesi — her biri iki bestecide iki kez bakım demekti, ve iki
+uygulamanın bir gün ayrışmaması için hiçbir kapı yoktu ㊲. *Bir özelliği iki yere koymak,
+onu iki kez yazmak değil; iki kez BOZULABİLİR kılmaktır.*
+
+🔴 Arayüz ajanına anında iletildi: *«iki bestecide de öneri»* maddesi **iptal**, tüm öneri
+altyapısı **yalnız sağdaki** besteciye bağlanacak; soldaki kutunun bugünkü işi (yeni
+thread açma) butona **eksiksiz** taşınacak. ⚠ Dosya silme yok.
