@@ -663,6 +663,20 @@ def _yazilan_donem(soru: str) -> str:
                  if d in metin), "")
 
 
+#: 🔴 `§40` — ÖNGÖRÜ **TAM CÜMLEDİR**, etiket değil.
+#:
+#: Kullanıcı ölçümü (2026-08-13, ekran görüntüsü): boş sayfada yazarken gelenler
+#: `fire (parti)` · `fire (OEE)` · `fire oranı` idi — *«cümle bile değil»*. Modülün kendi
+#: notu bunu zaten itiraf ediyordu: *«çapasız her öneri dönemsiz kalıyordu — yani cümle
+#: değil etiket»* 🆡; çare **yarım** uygulanmıştı: dönem yalnız kullanıcı **yazdıysa**
+#: ekleniyordu, yazmadıysa geriye çıplak etiket kalıyordu.
+#:
+#: ⚠ Bu ifade bir **sistem varsayımı değildir**: öneri, kullanıcının **yazacağı cümledir**.
+#: Kullanıcı onu seçerse dönemi **kendisi söylemiş** olur — ve `cube_query` da **aynı**
+#: dönemi taşır (`donem_c`), yoksa cümle sorgudan başka bir şey söylerdi 🆁.
+_VARSAYILAN_DONEM = "bu ay"
+
+
 def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | None,
                ust_metinler: set[str], soru: str = "") -> list[Oneri]:
     """`↳ YENİ KONU` — çapa **düşer**; dönem kalır (`§6/Thread 3`: kopuş bir yeni rapordur,
@@ -692,7 +706,8 @@ def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | 
             boyut = next((b for b in niyet_boyutlari if b in meta_boyutlar), "")
         b_et = _boyut_etiketi(schema, cube, boyut) if boyut else ""
         onek = f"{kirilim_ifadesi(b_et)} " if b_et else ""
-        metin = f"{onek}{etiket}{_donem_eki(donem)}"
+        donem_c = donem or _VARSAYILAN_DONEM
+        metin = f"{donem_c} {onek}{etiket} ne kadar?"
         if metin in ust_metinler:
             # Üst bantta **birebir aynı** cümle zaten var: aynı satırı iki başlık altında
             # göstermek, iki seçenek varmış gibi görünen tek bir seçenektir.
@@ -700,7 +715,8 @@ def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | 
         out.append(Oneri(
             kimlik=f"{GRUP_YENI}:{TUR_YENI}:{cube}.{olcu}" + (f"#{boyut}" if b_et else ""),
             metin=metin, grup=GRUP_YENI, tur=TUR_YENI, cube=cube,
-            cube_query=_yeni_sorgu(cube, olcu, boyut=boyut if b_et else "", donem=donem)))
+            cube_query=_yeni_sorgu(cube, olcu, boyut=boyut if b_et else "",
+                                   donem=donem_c)))
     return _tekille(out)
 
 

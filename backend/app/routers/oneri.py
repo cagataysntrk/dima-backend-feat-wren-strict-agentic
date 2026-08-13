@@ -75,6 +75,56 @@ def _capa_kur(cube: str, olcu: str, kirilim: str, donem: str, varlik: str) -> di
     return cq
 
 
+def _yazilan_varlik(q: str, schema: dict) -> str | None:
+    """🔴 `§40` — **YAZILAN VARLIK**: *«ram 3»* → `makine:RAM-3`.
+
+    ## Ölçülen kusur (kullanıcı ekran görüntüsü, 2026-08-13)
+
+    Kullanıcı `ram 3 neden` yazdı; öneri listesinde **`RAM-3` hiç geçmedi**. Gelen
+    satırlar katalog alan adlarıydı (*«duruş sayısı»*, *«arıza sayısı»*) ve içlerinden
+    biri — *«kök nedene göre **ram**ak kala»* — yalnız **harf benzerliğiyle** girmişti.
+
+    ⊙ Kök: `oneri.py`'nin evreninde **boyut DEĞERLERİ yok** (`grep dimension_values
+    app/oneri.py` → **0**). Sistem `RAM-3`'ü öneremiyordu çünkü **görmüyordu** 🆘.
+
+    ⊙ İkinci kök: cümle katmanı varlığı **yalnız çapadan** alıyordu (`capa_varlik`),
+    kullanıcının **yazdığından** değil. Oysa `oneri_cumle._kapsam(varlik, etiket)`
+    *«RAM-3'te duruş»* demeyi **zaten biliyor** ㊷ — eksik olan girdiydi, yetenek değil.
+
+    ## Neden yeni bir eşleştirici YAZILMADI ㊲
+
+    Eşleşmeyi `value_index.FuzzyIndex` yapıyor — `route()`'un değer eşleşmesinde
+    kullandığı **aynı** indeks (`cube_router:3935`). Burada yalnız **boyut adı** geri
+    aranıyor: `FuzzyIndex` girdilerini `dimension_values.values()` üzerinden kurduğu
+    için değeri bilir, ait olduğu **boyutu** düşürür.
+
+    ⚠ Sessiz kalma şartı: eşleşme **yoksa `None`** döner ve çapa eskisi gibi davranır —
+    `KURAL B` anlamında davranış yalnız *«yazılan bir varlık tanındığında»* değişir.
+    """
+    from app import cube_router as cr
+    from app.value_index import FuzzyIndex
+
+    qn = cr._norm(q or "")
+    kelimeler = [w for w in qn.split() if len(w) >= 2]
+    if not kelimeler:
+        return None
+    try:
+        adaylar = FuzzyIndex(schema).suggest(qn, kelimeler, top=1)
+    except Exception:                                    # noqa: BLE001
+        _log.warning("yazılan varlık aranamadı — öneri varlıksız sürüyor", exc_info=True)
+        return None
+    deger = next((a.label for a in adaylar if a.kind == "value"), None)
+    if not deger:
+        return None
+    hedef = cr._norm(deger)
+    for c in schema.get("cubes", []):
+        for boyut, degerler in (c.get("dimension_values") or {}).items():
+            for v in degerler or []:
+                if cr._norm(str(v)) == hedef:
+                    return f"{boyut}:{v}"
+    return None
+
+
 @router.get("/oneri", dependencies=[Depends(require_company)])
 def oneri_ara(request: Request, q: str = Query("", max_length=120),
               capa_cube: str = Query("", max_length=64),
@@ -114,7 +164,8 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120),
     schema = wren_for_request(request).schema()
     adaylar = oneri.ara(q, schema, izinliler=izinliler)
 
-    capa = _capa_kur(capa_cube, capa_olcu, capa_kirilim, capa_donem, capa_varlik)
+    capa = _capa_kur(capa_cube, capa_olcu, capa_kirilim, capa_donem,
+                     capa_varlik or _yazilan_varlik(q, schema) or "")
     # ⚠ Cümle kurmak **sorgu koşmaz ve LLM çağırmaz** (`E-8`): `oneri_cumle` saf bir
     # modüldür. Sıcak yola eklenen tek maliyet dize birleştirmedir.
     # ⚠ `niyet.coz` **ölçüldü**: ılık hâlde ~4,4 ms (ilk çağrılar ısınmadır ⑨) — `p95`

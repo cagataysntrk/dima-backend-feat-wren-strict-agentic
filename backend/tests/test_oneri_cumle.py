@@ -97,8 +97,14 @@ def test_S51_SERIDI_planin_ornegiyle_ayni_KALIPTA():
     """
     out = cumleler(_ADAYLAR, capa=_CAPA, schema=_SEMA)
     m = _metinler(out)
-    assert "RAM-3'ün fire oranı — bu ay" in m, f"🔴 çapalı ölçü cümlesi yok: {m}"
-    assert "makineye göre toplam fire (kg) — bu ay" in m, f"🔴 YENİ KONU cümlesi yok: {m}"
+    # 🔴 `§40` — KULLANICI KARARI (2026-08-13): öngörü bir öbek değil **TAM CÜMLE**.
+    # Planın `§5.1` örneği (`«… — bu ay»`) bir **öbekti**; kullanıcı ekranda görüp
+    # reddetti: *«cümle bile değil … tam cümle öngörüsü»*. Kapı **kaldırılmadı**,
+    # yeni kalıba taşındı: içerik aynı (varlık · ölçü · dönem), biçim cümle.
+    assert any("RAM-3" in s and "fire oranı" in s for s in m), (
+        f"🔴 çapalı ölçü cümlesi yok: {m}")
+    assert any(s.startswith("bu ay makineye göre toplam fire (kg)") for s in m), (
+        f"🔴 YENİ KONU cümlesi yok: {m}")
     assert any(s.endswith("ekle (aynı kırılım · aynı dönem)") for s in m), (
         f"🔴 *«… ekle (aynı kırılım · aynı dönem)»* satırı yok: {m}")
     assert any(s.endswith(" neden bu seviyede?") for s in m), f"🔴 makro satırı yok: {m}"
@@ -301,7 +307,8 @@ def test_AYNI_ETIKETLI_IKI_ONERI_kup_adiyla_AYRILIR():
     out = cumleler(ikiz, capa=None, schema=_SEMA)
     m = _metinler(out)
     assert len(m) == len(set(m)), f"🔴 AYIRT EDİLEMEZ İKİ ÖNERİ: {m}"
-    assert "fire oranı (OEE)" in m and "fire oranı (parti)" in m, f"🔴 ayırıcı yanlış: {m}"
+    assert any("fire oranı" in s and "(OEE)" in s for s in m), f"🔴 ayırıcı yanlış: {m}"
+    assert any("fire oranı" in s and "(parti)" in s for s in m), f"🔴 ayırıcı yanlış: {m}"
 
 
 def test_AYNI_GIRDI_AYNI_CIKTI():
