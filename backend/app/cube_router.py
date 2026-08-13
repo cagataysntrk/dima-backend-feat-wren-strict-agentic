@@ -546,25 +546,22 @@ def _single_day_filters(q: str, time_dim: str) -> list[dict] | None:
 #: ⚠ ÇIPLAK YIL BİLEREK KAPSAM DIŞI: dört haneli bir sayı bir hesap/şube/TRCODE değeri de
 #: olabilir (`_value_token_hit`'in kendi notu bu tuzağı kaydediyor). En az bir YIL İŞARETİ
 #: (`yıl`/`sene` ya da hâl eki) aranır — belirsizde dönem sormak, uydurmaktan iyidir.
-_YEAR_RE = re.compile(r"(?<![\w-])((?:19|20)\d{2})(?![\w-])\s*((?:yil|sene)\w*|da\b|de\b|ta\b|te\b)?")
+_YEAR_RE = re.compile(r"\b((?:19|20)\d{2})\s*(?:(?:yil|sene)\w*|da\b|de\b|ta\b|te\b)")
 
 
 
 def _calendar_year_filters(q: str, time_dim: str) -> list[dict]:
     m = _YEAR_RE.search(q)
-    # 🔴 **ÇIPLAK YIL** — ölçülmüş kusur: `2019 yılı cirosu` çözülüyordu ama **`2019
-    # cirosu` çözülmüyordu** (kalıp yılın ardından *«yıl/sene»* ya da bulunma eki
-    # arıyordu). Dönem düşünce soru **küp yolundan çıkıp** Discovery'ye gitti ve
-    # kullanıcıya **`null`** döndü. *Bir dönemi okuyamamak, o soruyu kaybetmektir* 🆘.
+    # ⟳ **ÇIPLAK YIL DENENDİ ve GERİ ALINDI ㊸** — `tests/test_gercekci_senaryo_bulgulari.
+    # py::test_B_CIPLAK_YIL_BILEREK_KAPSAM_DISI` kapısı bunu **yazılı bir kararla**
+    # yasaklıyor: *«Dört haneli bir sayı bir hesap/şube/TRCODE DEĞERİ de olabilir. En az
+    # bir yıl işareti aranır — belirsizde dönem SORMAK, uydurmaktan iyidir.»*
     #
-    # ⚠ Ek artık **isteğe bağlı** (`group(2)`), ama çıplak hâlde bir **eşikle çakışma**
-    # riski doğar: *«2000 üstü müşteriler»* bir yıl değildir. Karşılaştırıcı sözcükleri
-    # buraya **kopyalamak** ikinci bir sözlük doğururdu ㊲ — bunun yerine **tek sahibe
-    # sorulur** (`_measure_threshold`). Ve guard yalnız **eksiz** eşleşmede çalışır:
-    # *«2019 yılı cirosu 1000 üstü»* gibi bir cümlede yıl **korunur**.
-    #
-    # ⚠ Lookaround yapışık rakamı dışarıda tutar 🆢: `RAM-2019` bir **kimliktir**.
-    if not m or (not m.group(2) and _measure_threshold(q) is not None):
+    # ⊙ Ben `2019 cirosu`'nun Discovery'ye düşmesini (`cube=adhoc`, sonuç `null`) bir
+    # ayrıştırma eksiği sanıp yılı çözdürdüm; kapı **haklı çıktı**. Kusur gerçek ama
+    # **çaresi başka**: uydurmak değil, **sormak ya da beyan etmek**. `K3` bu gerekçeyle
+    # yeniden açıldı 🅟.
+    if not m:
         return []
     yil = int(m.group(1))
     return [

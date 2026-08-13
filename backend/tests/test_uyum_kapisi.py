@@ -351,20 +351,22 @@ def test_MESRU_ESIKLER_BOZULMADI():
 
 # ── 🔴 K3 — ÇIPLAK YIL BİR DÖNEMDİR (insan testi bulgusu) ──────────────────
 
-def test_CIPLAK_YIL_DONEM_OLARAK_COZULUR():
-    """🔴 **Ölçülen kusur:** `2019 yılı cirosu` çözülüyordu ama **`2019 cirosu`
-    çözülmüyordu** — `_YEAR_RE` yılın ardından *«yıl/sene»* ya da bulunma eki arıyordu.
-
-    ⊙ Bedeli ağırdı: dönem düştüğü için soru **küp yolundan çıkıp** Discovery'ye gitti
-    (`source=llm:openrouter` · `cube=adhoc`) ve kullanıcıya **`null`** döndü. Bir
-    ayrıştırma eksiği, *«sayıyı küp koyar»* ilkesini kullanıcının gözünde bozdu 🆘.
-
-    🅑 Mutasyon: `_YEAR_BARE_RE` dalı kaldırılırsa bu yüklem kırılır.
-    """
-    from app.cube_router import _norm, date_filters
-
-    f = date_filters(_norm("2019 cirosu"))
-    assert [x["value"] for x in f] == ["2019-01-01", "2019-12-31"], f"🔴 {f}"
+# ⟳ **`test_CIPLAK_YIL_DONEM_OLARAK_COZULUR` KALDIRILDI — iddiası ÇÜRÜTÜLDÜ ㊸.**
+#
+# İnsan testinde *«2019 cirosu»* Discovery'ye düşüyordu (`cube=adhoc`, sonuç `null`) ve
+# ben bunu bir **ayrıştırma eksiği** sanıp çıplak yılı çözdürdüm. Tam kapı üç ayrı
+# dosyadan kırmızı verdi ve biri kararı **adıyla** taşıyordu:
+#
+#   `test_gercekci_senaryo_bulgulari.py::test_B_CIPLAK_YIL_BILEREK_KAPSAM_DISI`
+#   *«Dört haneli bir sayı bir hesap/şube/TRCODE DEĞERİ de olabilir. En az bir yıl
+#    işareti aranır — belirsizde dönem SORMAK, uydurmaktan iyidir.»*
+#
+# ⊙ Yani çıplak yıl bir **eksik değil, bir SINIR**dır ve gerekçesi bu alanın kendisinden
+# gelir. Kusur (Discovery'ye düşmek) **gerçek**, ama çaresi **uydurmak değil**: sormak ya
+# da beyan etmek. `K3` bu gerekçeyle **yeniden açıldı** 🅟.
+#
+# ⚠ Buraya ikinci bir koruma **yazılmadı** ㊲: yasağın sahibi yukarıdaki kapıdır.
+# *Bir kararı iki yerde savunmak, bir gün iki farklı karara dönüşür.*
 
 
 def test_ESIK_YILA_DONUSMEZ():
