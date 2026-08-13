@@ -133,3 +133,35 @@ def test_COK_KIRACILI_EKSIK_YAZILI():
     belge = ast.get_docstring(fn) or ""
     assert "tenant" in belge.lower(), (
         "🔴 çok kiracılı sınır yazılı değil — ödenmeyecek borcun **nedeni yazılır** 🅗.")
+
+
+def test_ISIT_GERCEKTEN_KOSUYOR(schema):
+    """🔴 `§46` — **KAPI «ÇAĞRILIYOR MU» DEĞİL «KOŞUYOR MU» DİYE SORAR** 🆆.
+
+    ## Ölçülen kusur (canlı, 2026-08-13)
+
+    `isit()` yazıldı, `main.py`'ye bağlandı, `ast` kapısı **yeşil** verdi — ve canlıda:
+
+        WARNING dima.main: öneri indeksi ısıtılamadı → ilk istek soğuk kalacak
+        NameError: name 'durum' is not defined      ← fonksiyonun adı `indeks_durumu`
+
+    Yani ısıtma **hiç koşmadı** ve kapı bunu göremedi: metin taraması bir çağrının
+    *varlığını* ölçer, *çalıştığını* değil. Bir ad hatası ancak **koşarak** görülür.
+
+    ⚠ Bu test gömücüsüz ortamda da anlamlıdır: `isit()` o hâlde de **çağrılabilir**
+    olmalı ve bir sözlük döndürmelidir (`durum` alanı `kapali` olur). Ölçtüğü şey
+    erişim kalitesi değil, **çağrının ayakta olması**.
+    """
+    from app import oneri
+
+    # ⚠ `_ISITMA_BASLADI` **süreç genelinde kalıcıdır** (üretimde doğrusu budur:
+    # bir kez ısındıktan sonra istek yolu bir daha inşa etmez). Ama test süreci
+    # paylaşılır — bayrağı bırakırsak sonraki testlerde vektör ayağı **susar** ve
+    # iki motor kapısı sahte kırmızı verir 🅢. Bu yüzden geri konur.
+    onceki = oneri._ISITMA_BASLADI
+    try:
+        d = oneri.isit(schema)
+    finally:
+        oneri._ISITMA_BASLADI = onceki
+    assert isinstance(d, dict) and "durum" in d, f"🔴 `isit()` sözlük döndürmedi: {d!r}"
+    assert d["durum"] in {"taze", "yok", "kapali"}, f"🔴 bilinmeyen durum: {d!r}"

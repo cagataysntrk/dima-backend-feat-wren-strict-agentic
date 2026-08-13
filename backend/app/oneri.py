@@ -420,7 +420,7 @@ _ISITMA_BASLADI = False
 
 
 def _indeks_taze(surum: str) -> bool:
-    """Bu şema sürümü için indeks **kurulmuş mu**. ⚠ `durum()` ile aynı ölçüt (`KAT-1`)."""
+    """Bu şema sürümü için indeks **kurulmuş mu**. ⚠ `indeks_durumu()` ile aynı ölçüt (`KAT-1`)."""
     return any(k.startswith(f"{surum}|") for k in _INDEKS)
 
 
@@ -431,7 +431,7 @@ def isit(schema: dict, *, izinliler: set[str] | None = None) -> dict:
     bir **yetki**: istek yolu soğuk indeksi kurmaya kalkarsa kullanıcı `24+` sn bekler
     (ölçüldü). Isıtma bekleyebilir, kullanıcı bekleyemez.
 
-    Dönüş `durum()` ile aynı sözlüktür — çağıranın *«ısındı mı»* diye ikinci bir soru
+    Dönüş `indeks_durumu()` ile aynı sözlüktür — çağıranın *«ısındı mı»* diye ikinci bir soru
     sormasına gerek kalmaz.
     """
     global _ISITMA, _ISITMA_BASLADI
@@ -440,7 +440,7 @@ def isit(schema: dict, *, izinliler: set[str] | None = None) -> dict:
         ara("fi", schema, izinliler=izinliler)
     finally:
         _ISITMA = False
-    return durum(schema)
+    return indeks_durumu(schema)
 
 
 def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]:
