@@ -3343,3 +3343,53 @@ tur3  cube+llm  · oy birliği → KOŞTU
 
 ⊙ *«OEE · OEE»* ve *«performans · OEE»* **gitti**; ayırt edicilik gerektiğinde (`t13`)
 duruyor — kapının zıt ölçütü onu savunuyor 🆃.
+
+---
+
+## `§70` — **iki ayrı sınır** (kullanıcı kararı) · ve bir *«borç»*un aslında **sınır** çıkması
+
+### ① Bütçe tutarsızlığı → **karar alındı, kod değişmedi**
+
+`§68`'de ölçülmüştü: `AZAMI_ADIM = 12` (şemanın izin verdiği **uzunluk**) ↔
+`AZAMI_SORGU = 8` (koşumun ödeyebileceği **iş**). Kör hizalama yapmadım ㊸; kullanıcıya
+soruldu ve karar geldi (2026-08-13):
+
+> **«Kalsın, yalnız beyan düzelsin.»**
+
+Ölçüm ③ ile doğrulandı — *kendini yalanlayan* satır (*«12 sorgu (bütçe 8)»*) zaten
+**geçerli** bir önizlemede görünemiyor, çünkü `dogrula` o planı **koşumdan önce**
+reddediyor. Eksik olan, reddin **hangi sınıra** çarptığını ve ötekinin ne olduğunu
+söylememesiydi:
+
+| önce | sonra |
+|---|---|
+| `plan 9 sorgu istiyor, bütçe 8` | `🔴 Bu plan **koşulamaz**: … ⊙ Plan 9 adım · 9 sorgu. **İki ayrı sınır var** ve biri ötekinin yerine geçmez: adım **tavanı 12**, sorgu **bütçesi 8**.` |
+
+⚠ Açıklama **yalnız redde** yazılıyor 🆃: geçerli planın satırı kısa kalır
+(*«5 adım (tavan 12) · 4 sorgu (bütçe 8)»*) — her önizlemeyi ders kitabına çevirmek de
+bir kusurdur.
+
+**Kapı:** `test_iki_ayri_sinir.py` (**5 ✅**) — sayılar **kararlaştırıldığı gibi** ㉕
+(değişirse kırmızı, karar yeniden alınır) · redde iki sınır ayrı · red **koşumdan önce**
+㊴ · 🆃 geçerli satır kısa · ⊘ kendini yalanlayan cümle **üretilemez** (yüklem metne değil
+**doğrulayıcıya** bağlandı ⑭). **Mutasyonla kanıtlandı** 🅑.
+
+### ② 🅖 → ⊘ **«Adım düzenleme» bir borç DEĞİL, planın kendi SINIRI** ㊸
+
+Önceki turlarda *«adım düzenleme: sunucuda sözleşme yok 🅖»* diye yazmıştım. Planı okudum
+— **kendi kararı** olarak iki yerde ⊘ işaretli:
+
+> satır `1840`: `| 14 | **pill düzenleme** | — | yeniden kur, koş | ⊘ |`
+> satır `2150`: `| ⊘ | **pill satırı düzenleme** | Niyet aynası; iddiayı kanıtlamıyor · **en pahalı FE işi** |`
+
+Yani eksik olan bir yetenek değil, **konmuş bir sınır**. Bugünkü `[düzenle]` (cümleyi
+besteciye geri yazar) planın `418`. satırındaki çizimle **birebir** aynı. *Bir «eksik»i
+borç diye yazmak, onu bir gün ödenmesi gereken bir söz sayar — oysa o bir karardı.*
+
+⟳ **Kalan gerçek borçlar:** fiil tespiti (`>8 kelime **∨ fiil**`; bugün yalnız kelime
+sayısı) · **K5◐** · `_norm` 5 modül ㊲ · `d11` · `_RRF_K` · `FAZ 0` paydası 🆉.
+
+### ⊘ FE ekran doğrulaması — **yine yapılamadı** 🅢
+
+`localhost:3000` bu turda da **kapalı** (`HTTP 000`). Zincir kodda bağlı ve
+`test_onizleme_zinciri_kopuk_degil.py` ile korunuyor; **ekran** doğrulaması açık kalıyor.

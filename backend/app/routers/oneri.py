@@ -418,7 +418,7 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
         except plan_kosucu.PlanHatasi as e:
             # ⊘ Geçersiz plan da **gösterilir**: kullanıcı neyin tutmadığını görmeden
             # düzeltemez. Ürünün kendi Türkçe gerekçesi taşınır, yeniden yazılmaz.
-            gecerli, not_ = False, str(e)
+            gecerli, not_ = False, plan_tuketici.onizleme_notu(plan, e)
         return {"source": "onizleme", "makro": ad, "question": metin, "gecerli": gecerli,
                 "adimlar": [{"sira": i, "fiil": x.get("fiil"),
                              "metin": plan_tuketici.onizleme_satiri(x)}

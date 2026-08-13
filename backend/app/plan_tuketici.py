@@ -566,7 +566,8 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             _gecerli, _not = True, onizleme_notu(plan)
         except plan_kosucu.PlanHatasi as e:
             # ⊘ Dürüst ret: geçersiz plan da **gösterilir**, gerekçesiyle (`§7`).
-            _gecerli, _not = False, str(e)
+            # `§70` — ve **sınırın hangisi olduğu** da yazılır: iki ayrı sınır var.
+            _gecerli, _not = False, onizleme_notu(plan, e)
         _log.info("orkestratör: %d adımlık plan ÖNİZLENİYOR (onay bekliyor) — §28.3", _n)
         return {"source": "onizleme", "note": _not, "gecerli": _gecerli, "plan_taslagi": plan,
                 "adimlar": [{"sira": i, "fiil": x.get("fiil"), "metin": onizleme_satiri(x)}
@@ -1467,7 +1468,7 @@ def kosum_yaniti(out: dict, plan: dict, *, schema: dict, soru: str,
     return yanit
 
 
-def onizleme_notu(plan: dict) -> str:
+def onizleme_notu(plan: dict, hata: Exception | None = None) -> str:
     """🔴 `§68` — önizlemenin **bütçe satırı**: *«bu plan bütçenin neresinde»*.
 
     Plan `§28.3` bütçeyi bir onay gerekçesi sayıyor (*«bütçe + %25 onarım tutma»*) ama
@@ -1479,6 +1480,10 @@ def onizleme_notu(plan: dict) -> str:
     `AZAMI_SORGU`/`AZAMI_ADIM` sabitlerinden okunur. Gösterilen sayı ile kapıda
     uygulanan sayı **aynı kaynaktan** gelir.
 
+    ⚠ `hata` verilirse **red metni** döner: kullanıcı kararı (2026-08-13) *«sayılar
+    kalsın, yalnız beyan düzelsin»*. Ölçüldü ki karışıklık iki sınırın **tek bütçe** gibi
+    okunmasından doğuyor — o cümle yalnız redde yazılır, geçerli planın satırını uzatmaz.
+
     ⚠ Süre bilerek **yazılmıyor** 🅖: `Butce`'nin saniye ayağı koşum anında ölçülür; bir
     planın ne kadar süreceğini koşmadan **bilmiyoruz** ve bilmediğimiz bir sayıyı
     yazmak, onu ölçtüğümüzü söylemek olurdu.
@@ -1488,8 +1493,19 @@ def onizleme_notu(plan: dict) -> str:
 
     n = len(plan.get("adimlar") or [])
     s = plan_kosucu.sorgu_sayisi(plan)
-    return (f"{n} adım (tavan {AZAMI_ADIM}) · {s} sorgu (bütçe {AZAMI_SORGU}) — "
-            "koşmadan önce gözden geçir.")
+    if hata is None:
+        return (f"{n} adım (tavan {AZAMI_ADIM}) · {s} sorgu (bütçe {AZAMI_SORGU}) — "
+                "koşmadan önce gözden geçir.")
+    # 🔴 `§70` — **RED, KOŞUMDAN ÖNCE VE GEREKÇESİYLE.** Kullanıcı kararı (2026-08-13):
+    # *«sayılar kalsın, yalnız beyan düzelsin»*. Ölçülen karışıklık kaynağı iki sınırın
+    # **tek bütçe** gibi okunmasıydı (`tavan 12` ↔ `bütçe 8`); burada **ayrı** oldukları
+    # açıkça yazılır — yalnız karışıklığın doğduğu yerde, geçerli planın satırını
+    # uzatmadan.
+    return (f"🔴 Bu plan **koşulamaz**: {hata}\n\n"
+            f"⊙ Plan {n} adım · {s} sorgu. **İki ayrı sınır var** ve biri ötekinin "
+            f"yerine geçmez: adım **tavanı {AZAMI_ADIM}** (şemanın izin verdiği uzunluk), "
+            f"sorgu **bütçesi {AZAMI_SORGU}** (koşumun ödeyebileceği iş). Bir plan "
+            "tavanın altında olup bütçeyi aşabilir.")
 
 
 def onizleme_satiri(adim: dict) -> str:
