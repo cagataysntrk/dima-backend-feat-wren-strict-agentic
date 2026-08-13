@@ -93,7 +93,11 @@ def test_E8_KORUNUYOR_sicak_yol_bu_modulu_cagirmiyor():
         if not d.is_dir():
             continue
         for f in d.rglob("*.py"):
-            m = f.read_text(encoding="utf-8")
+            from tests._kod_ayikla import kodu_ayikla
+
+            # 🅞 **Sözü değil KULLANIMI ara.** Açıklamada geçen bir modül adı bir
+            # çağrı değildir; ayıklayıcı ortak (`tests/_kod_ayikla.py`) ㊲.
+            m = kodu_ayikla(f.read_text(encoding="utf-8"))
             if "sozluk_hasadi" in m or "sinonim_onerici" in m:
                 kacak.append(str(f.relative_to(_KOK)))
     assert not kacak, (

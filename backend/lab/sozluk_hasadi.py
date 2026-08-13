@@ -91,8 +91,15 @@ def kos(*, yaz: bool = False, sirket: str | None = None) -> dict:
             pass
 
     ciplak = _ciplak_alanlar(schema)
+    # 🔴 `FAZ 8.6` — **İKİNCİ KAYNAK: KULLANIM.** Birincisi katalogdaki *çıplak* alanlar
+    # (LLM'e sorulur); bu ise kullanıcının **gerçekten** yaptığı çeviri. İkisi ayrı
+    # şeylerdir ve ayrı sayılır 🆋: biri *«sözlüğümüz eksik»*, öteki *«insanlar şuna
+    # şu diyor»*. ⚠ Mevcut yol **bozulmadı** (`KURAL B`): `ciplak` hesabı ve kuru mod
+    # davranışı aynen duruyor, rapor yalnız **alan kazandı**.
+    tiklama = _tiklama_adaylari()
     rapor = {"cube": len((schema or {}).get("cubes") or []), "ciplak": len(ciplak),
              "aday": 0, "yazilan": 0, "kuru": not yaz,
+             "tiklama_aday": len(tiklama),
              "ornek": [f"{c}.{a}" for c, _t, a in ciplak[:8]]}
     if not yaz:
         # 🔴 Kuru mod: **hiçbir LLM çağrısı yok, hiçbir yazma yok.** Yalnız borç ölçülür.
@@ -115,6 +122,18 @@ def kos(*, yaz: bool = False, sirket: str | None = None) -> dict:
                     field_name=alan, synonyms=syns)
                 if kayit is not None:
                     rapor["yazilan"] += 1
+        # 🔴 `8.6` — kullanımdan gelen adaylar **aynı kuyruğa**, **aynı kapıdan**:
+        # `approved=False` orada sabittir, yani onaysız hiçbir şey `compose`'a girmez.
+        # ⊘ İkinci bir kuyruk hattı kurulmadı (`KAT-1`).
+        for ifade, kimlik in tiklama:
+            cube, _, alan = kimlik.partition(".")
+            if not cube or not alan:
+                continue
+            rapor["aday"] += 1
+            kayit = _so.kuyruga_koy(session, cube=cube, field_kind="measure",
+                                    field_name=alan, synonyms=[ifade])
+            if kayit is not None:
+                rapor["yazilan"] += 1
     return rapor
 
 
@@ -138,3 +157,38 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":                             # pragma: no cover
     raise SystemExit(main())
+
+
+def _tiklama_adaylari() -> list[tuple[str, str]]:
+    """`FAZ 8.6` — `InteractionLog(kind="oneri_tik")` → **güçlü** sinyalli adaylar.
+
+    ⚠ Karar burada **verilmez**: konum yanlılığı kuralının tek sahibi `app/hasat.py`
+    (`sinyal`/`hasat_adaylari`) ve not biçiminin tek sahibi de orası (`not_oku`). Bu
+    fonksiyon yalnız **satırları getirir** — bir okuyucu, bir yargıç değil.
+
+    ⚠ 🅖 **Bugün bu kaynak BOŞ dönebilir ve bu bir kusur değildir:** `oneri_katmani`
+    bayrağı **kapalı**, yani henüz tıklama üretilmiyor. Zincir kurulu; veri akmaya
+    bayrak açılınca başlar. *Bir borunun boş olması, bağlı olmadığı anlamına gelmez.*
+
+    ⚠ Oturum açılamazsa (`lab/` çoğu zaman DB'siz koşar) **sessizce boş** döner: hasat
+    bir ölçüm aracıdır, ortam eksiğinde çökmesi ölçtüğü şeyi de durdurur.
+    """
+    from app.hasat import hasat_adaylari, not_oku
+
+    try:
+        from sqlmodel import select
+
+        from control_plane.db import get_session_ctx  # type: ignore[attr-defined]
+        from control_plane.models import InteractionLog
+    except Exception:                                  # noqa: BLE001
+        return []
+    try:
+        with get_session_ctx() as oturum:
+            satirlar = oturum.exec(
+                select(InteractionLog).where(InteractionLog.kind == "oneri_tik")
+                .order_by(InteractionLog.ts.desc()).limit(2000)).all()
+    except Exception:                                  # noqa: BLE001
+        return []
+    kayitlar = [t for r in satirlar
+                if (t := not_oku(r.question, r.note)) is not None]
+    return hasat_adaylari(kayitlar)

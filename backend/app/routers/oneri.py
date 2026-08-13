@@ -95,7 +95,7 @@ def oneri_tik(request: Request, govde: dict) -> dict:
                 question=t.ham_ifade,
                 kind="oneri_tik",
                 source="oneri",
-                note=f"{sinif}|{t.konum}|{','.join(t.gosterilen)}",
+                note=hasat.not_yaz(t),   # ㊲ biçimin tek sahibi `hasat`
             ))
             oturum.commit()
         kaydedildi = True

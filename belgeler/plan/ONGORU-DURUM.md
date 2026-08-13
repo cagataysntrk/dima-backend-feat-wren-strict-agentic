@@ -856,3 +856,40 @@ Kapı `test_EPSILON_ERTELEMESI_HALA_GECERLI`: sıralamaya rastgelelik sızarsa *
 
 📌 **Kalan: `8.6`** — `lab/sozluk_hasadi.py` tıklama kaynağını da okusun
 (`hasat.hasat_adaylari` → `sinonim_onerici.kuyruga_koy(approved=False)`).
+
+### ⟳ `§17` EKİ — `8.6` BAĞLANDI · **`FAZ 8` ✅ · SEKİZ FAZIN HEPSİ KAPANDI**
+
+`lab/sozluk_hasadi.py` artık **iki kaynak** okuyor: ① katalogdaki **çıplak alanlar**
+(*«sözlüğümüz eksik»*) ② **kullanım** — `InteractionLog(kind="oneri_tik")` →
+`hasat.not_oku` → `hasat.hasat_adaylari` → `sinonim_onerici.kuyruga_koy(approved=False)`.
+İkisi ayrı sayılıyor 🆋 (`rapor["tiklama_aday"]` yeni alan); mevcut yol **bozulmadı**
+(`KURAL B`) ve kuru mod hâlâ **hiçbir şey yazmıyor**.
+
+⚠ 🅖 **Bu kaynak bugün BOŞ dönebilir ve bu bir kusur değildir:** `oneri_katmani`
+bayrağı **kapalı**, yani henüz tıklama üretilmiyor. *Bir borunun boş olması, bağlı
+olmadığı anlamına gelmez.*
+
+### 🔴 ㊲ İki ayrı tuzak, ikisi de **aynı kusurun** iki yüzü
+
+**① Not biçimi iki sahip olacaktı.** `note` gövdesini **yazan** HTTP ucu, **okuyan**
+`lab/` koşucusu olacaktı — biri değişirse öteki **sessizce yanlış** okurdu ve sözlüğe
+**yanlış eşleşme** yazılırdı. Biçimin tek sahibi `app/hasat.py` (`not_yaz`/`not_oku`);
+iki taraf da **çağırıyor**. ⊙ Ve `not_oku` sinıfı **nottan okumaz, yeniden hesaplar**:
+not bir **kayıt**tır, bir **karar** değil — kural değişirse eski kayıtlar **yeni
+kuralla** okunur ㉓.
+
+**② İKİNCİ bir kapı, BİRİNCİYLE aynı kusuru taşıyordu.** `test_a_sozluk_hasadi.py`
+de `app/` ağacında **metin** arıyordu ve `app/hasat.py`'yi **açıklaması** yüzünden
+yakaladı 🅞 — tıpkı `test_sinonim_onerici.py` gibi. Yani `E-8` yasağını **iki kapı**
+tutuyor ve **ikisi de** aynı biçimde yanılıyordu.
+
+⊙ Ayıklayıcı **kopyalanmadı**, `tests/_kod_ayikla.py`'ye çıkarıldı ve **ikisi de onu
+çağırıyor** (`KAT-1`). Kopyalansaydı biri düzeltilir, öteki eski hâliyle kalırdı.
+⚠ Salt `ast` yetmez ②: `importlib.import_module("sozluk_hasadi")` gibi bir **dize
+sabiti** de sızıntıdır — yalnız **docstring'ler** düşürülür, dizeler **kalır**.
+
+🅑 **Kanıt:** `app/hasat.py`'ye gerçek bir `from lab import sozluk_hasadi` konunca kapı
+**kırmızı** verdi; geri alındı. ⑯ komşu: **316 ✅ · 1 atlandı**.
+
+📌 **SEKİZ FAZ DA KAPANDI.** Sırada kullanıcının bağlayıcı kuralı: **ajan denetimi
+(40 kontrol)** → **tam kapı + demet kapısı** → **≥20 curl senaryo/thread turu**.

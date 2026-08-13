@@ -47,7 +47,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 __all__ = ["Tiklama", "SINYAL_GUCLU", "SINYAL_ZAYIF", "SINYAL_NEGATIF",
-           "sinyal", "hasat_adaylari"]
+           "sinyal", "hasat_adaylari", "negatif_kanit", "not_yaz", "not_oku"]
 
 SINYAL_GUCLU = "guclu"
 SINYAL_ZAYIF = "zayif"
@@ -119,3 +119,43 @@ def negatif_kanit(kayitlar: list[Tiklama]) -> dict[str, int]:
         for k in t.gosterilen:
             sayac[k] = sayac.get(k, 0) + 1
     return sayac
+
+
+# ── KAYIT BİÇİMİ — **TEK SAHİP** ㊲ ─────────────────────────────────────────
+#
+# ⚠ Bu iki fonksiyon olmasaydı biçimi **yazan** (HTTP ucu) ve **okuyan** (`lab/`
+# koşucusu) ayrı ayrı bilecekti. İki yer bir biçimi bilirse, bir gün biri değişir ve
+# öteki **sessizce yanlış** okur — hasat tarafında bu, sözlüğe **yanlış eşleşme**
+# yazmak demektir. Biçimin sahibi burasıdır; iki taraf da **çağırır**.
+#
+# ⊘ `InteractionLog`'a yeni **kolon** eklenmedi 🆝: mevcut `question` + `note` alanları
+# taşıyor. Bir kolon eklemek bir göç demekti ve olayın ikinci bir sahibini doğururdu.
+
+_AYRAC = "|"
+_ALT_AYRAC = ","
+
+
+def not_yaz(t: Tiklama) -> str:
+    """`InteractionLog.note` gövdesi: `sinif|konum|aday1,aday2,…`."""
+    return _AYRAC.join((sinyal(t), str(t.konum), _ALT_AYRAC.join(t.gosterilen)))
+
+
+def not_oku(question: str | None, note: str | None) -> Tiklama | None:
+    """`(question, note)` → `Tiklama`; okunamıyorsa **None** (kayıt sessizce düşer 🅡).
+
+    ⚠ Sinıf alanı **yeniden hesaplanır**, nottan okunmaz: not bir **kayıt**tır, bir
+    **karar** değil. Kural değişirse eski kayıtlar **yeni kuralla** okunur — yoksa
+    dünkü bir eşik bugünkü sözlüğü belirlerdi ㉓.
+    """
+    if not note:
+        return None
+    parcalar = note.split(_AYRAC)
+    if len(parcalar) != 3:
+        return None
+    try:
+        konum = int(parcalar[1])
+    except ValueError:
+        return None
+    gosterilen = tuple(x for x in parcalar[2].split(_ALT_AYRAC) if x)
+    return Tiklama(ham_ifade=(question or "").strip(), gosterilen=gosterilen,
+                   konum=konum)

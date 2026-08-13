@@ -73,26 +73,9 @@ def test_HICBIR_ASK_YOLUNDAN_cagrilmiyor():
     *Bir yasağı ölçen kapı, yasağın kendisinden fazlasını yasaklıyorsa, bir gün onu
     doğru dürüst yazan kişiyi durdurur.*
     """
-    import ast
     import pathlib
 
-    def _kodu_ayikla(kaynak: str) -> str:
-        """Docstring'leri düşürür; yorumlar `ast.unparse` ile zaten gider."""
-        agac = ast.parse(kaynak)
-        for d in ast.walk(agac):
-            govde = getattr(d, "body", None)
-            if not isinstance(govde, list) or not govde:
-                continue
-            ilk = govde[0]
-            if (isinstance(d, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef,
-                               ast.ClassDef))
-                    and isinstance(ilk, ast.Expr)
-                    and isinstance(ilk.value, ast.Constant)
-                    and isinstance(ilk.value.value, str)):
-                govde.pop(0)
-                if not govde:
-                    govde.append(ast.Pass())
-        return ast.unparse(ast.fix_missing_locations(agac))
+    from tests._kod_ayikla import kodu_ayikla as _kodu_ayikla
 
     app_dir = pathlib.Path(inspect.getfile(so)).parent
     for f in app_dir.rglob("*.py"):
