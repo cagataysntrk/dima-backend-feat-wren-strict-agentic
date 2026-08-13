@@ -13518,3 +13518,34 @@ kusuru *«düzeltmeden önce kaynağı oku»* kuralı, olmayan bir kusura yama y
 etiketi `+X`, `oneri_cumle`'nin cümlesi ise fiilli (*«fire ekle (aynı kırılım · aynı
 dönem)»*) — ikisi **aynı biçimde** olsaydı yazılan metin de doğru yola düşerdi ㊲.
 **Ölçülmeden karar verilmez**; borç listesine yazıldı.
+
+## ⟳ **K8 (ve K7) GERİ ÇEKİLDİ — aynı prob hatası, ikinci kez** ③⑦
+
+`AskRequest` **`cube_query` alanı taşıyor** (`schemas.py:81`) ve şemanın kendi notu
+mimariyi yazıyor: *«🔴 `G2` — DİYALOG DURUMU (yankı). Sunucu oturum **SAKLAMAZ**»* — yani
+çapayı **istemci yankılar**, sunucu onu tahmin etmez.
+
+Ölçüldü, çapa açıkça gönderilerek, **iki koşum**:
+
+```
+koşum 1: cube=oee · olcu=['ort_oee'] · compare=yoy
+koşum 2: cube=oee · olcu=['ort_oee'] · compare=yoy      ← birebir aynı
+```
+
+Ve `compare=yoy` *«geçen yıla göre nasıl»* için **doğru**.
+
+🔴 **Benim hatam:** yalnız `history` (metin) gönderdim ve çapayı **garsona tahmin
+ettirdim**. Garson olasılıksaldır — *ve bu bilinçlidir*. Yani ölçtüğüm belirlenimsizlik
+ürünün değil, **probumun** ürettiği bir belirsizlikti.
+
+⊙ Bu, **K4 ile aynı sınıf** ve bu oturumda **ikinci** kez oldu. Genelleştirilmiş ders:
+
+> 🆣 **İnsan testi, ürünün İSTEK ŞEKLİNİ kullanmalıdır.** Sadeleştirilmiş bir istek
+> sadeleştirilmiş bir ürün ölçer. Bir alanı göndermemek, o alanın **yokluğunu** değil,
+> **kendi kurduğun başka bir akışı** ölçmektir.
+
+⊙ **K7 de bununla düşer**: *«`TREND` `oee`'de koşamıyor»* diye kaydedilen kırmızı, çapası
+kaymış bir planın belirtisiydi; çapa taşınınca üretilemedi (o gün de **330 satırla**
+başarılı koşmuştu 🅢).
+
+**Açık kusur listesi artık: K5◐ (dürüst beyanla) — o kadar.**
