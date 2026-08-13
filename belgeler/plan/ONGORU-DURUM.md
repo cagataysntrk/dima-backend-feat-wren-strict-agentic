@@ -3408,3 +3408,55 @@ geçerli plan   →  gecerli=True · «5 adım (tavan 12) · 2 sorgu (bütçe 8)
 *«🔴 Ama tamamlayamadım: plan 9 sorgu istiyor, bütçe 8»* der. İkisini birleştirmedim —
 biri *«bunu onaylar mısın»* anındaki metin, öteki *«onayladın ama olmadı»* anındaki; aynı
 cümleyi iki bağlama koymak, ikisini de zayıflatırdı.
+
+---
+
+## `§71` — korpus **taban üstünde** · fiil tespiti **ölçüldü ve reddedildi**
+
+### ① 🅜 KORPUS — on bölümlük iş, **sıfır gerileme**
+
+Bu operasyonda korpus **hiç koşulmamıştı** (`§61`'den beri 10 bölüm). Koşuldu:
+
+| şirket | erişim | taban | doğru-cube |
+|---|---|---|---|
+| boyahane | **%83** | %69 | %96 |
+| atiksan | **%69** | %69 | %98 |
+| gulteks | **%68** | %69 | %95 |
+| gitas | **%72** | %72 | %89 |
+
+**TOPLAM doğru-cube %95,6** (taban %94,4) ✅ · **semantik vaka 558/591 = %94,4**
+(taban %93,5) ✅ · ham tur **14.957**.
+
+⚠ Payda **kırpılmadı** 🅜: 591 semantik vaka, dört şirket de yerinde. Yani `§63`–`§70`'in
+tamamı — önizleme, onay ucu, pill'ler, bütçe, etiket — `route()` davranışını **bayt bayt**
+korudu (`KURAL B` ruhu).
+
+### ② 🅖 `§33` satır 11'in **fiil yarısı**: iki aday ölçüldü, **ikisi de yanlış**
+
+Kelime yarısı `§64`'te bağlandı; fiil yarısı **bağlanmadı** — bir unutma değil, ölçülmüş
+bir sonuç. Canlı `s35` üzerinde `docker exec` ile:
+
+| aday | yanlış pozitif | kaçan |
+|---|---|---|
+| `turetme.fiil_bicimi_mi` | 🔴 **`oran`** (katalogun çekirdek sözcüğü) | emir kipinin **tamamı**: `hesapla · göster · anlat · bul · listele · özetle` |
+| kapalı fiil kümesi + `_syn_hit` | 🔴 **`«müşteri kırılımı»` → `KIR`** · `«sıralama»` → `SIRALA` | `bul` |
+
+Birincisi **yazım hatası bastırma** için yazılmış (şerhi de öyle diyor); ikincisinde
+`_syn_hit`'in *«kırılımı» → `KIR`* eşlemesi **doğru** davranıştır — yanlış olan onu bu işe
+koşmaktır.
+
+Üçüncü yol bir **emir kipi sözcük listesi** yazmak olurdu: `㊱` (uydurma yok) ve
+`CLAUDE.md`'nin en üst kuralı (*«route'a dil kuralı EKLEME»*) bunu yasaklıyor. Dördüncü
+yol garsona sormak — **tuş başına LLM**, `E-8` ihlali.
+
+> *Bir kuralı yanlış bir sinyale bağlamak, onu hiç bağlamamaktan kötüdür: birincisi
+> sessizce yanlış davranır, ikincisi eksik olduğunu söyler.*
+
+**Kapı:** `test_fiil_tespiti_olculdu.py` (**7 ✅**) — ölçümü **dondurur** ㉕: adayların
+yanlış pozitifleri değişirse kırmızı verir ve karar **yeniden** alınır. 🆃 Aday 2'nin
+gerçek komutu (*«fire oranını hesapla»*) **gördüğü** de yazılı — bir adayı reddederken
+yaptığı işi de yazmak, reddi dürüst yapar.
+
+### ⊘ FE ekran doğrulaması — **üçüncü tur** yapılamadı 🅢
+
+`localhost:3000` → `000`. Zincir kodda bağlı ve kapılı; **ekran** doğrulaması açık.
