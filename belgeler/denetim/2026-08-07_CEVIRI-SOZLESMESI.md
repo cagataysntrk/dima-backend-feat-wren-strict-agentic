@@ -13376,3 +13376,82 @@ görülen bir kırmızı, kusurun **yerini** de yanlış gösterebilir. Bu turda
 bir kusur adı bu yüzden düştü.
 
 **Kusur sayısı 8 → 7:** K1 · K2 · K3 · K4 · K5◐ · K6 · **K8 (K7 dahil)**.
+
+---
+
+# 🎯 İNSAN TESTİ — *«insan gibi mi tamamlıyor?»* *(2026-08-13, kap `s10`)*
+
+⊙ Isıtma **canlıda kanıtlandı**: `dima.main: öneri indeksi ısındı: 24785 ms`. Vektör ayağı
+koşuyor (`kip=leksik+vektor`, `indeks=taze`) — yani `Recall@3 %89,5` artık **ürüne
+taşınıyor** 🅕.
+
+## ✅ ÇAPALI ŞERİT — planın `§5.1`'i birebir
+
+Çapa `oee · ort_oee · makine · bu ay · makine:RAM-3`, yazılan `fire`:
+
+```
+↳ BU RAPOR ÜZERİNDE
+  • RAM-3 için fire — bu ay              (olcu_ekle)
+  • fire ekle (aynı kırılım · aynı dönem) (olcu_ekle)
+  • OEE neden bu seviyede?                (neden ← makro)
+  • RAM-3 için OEE — geçen ay             (donem)
+↳ YENİ KONU
+  • makineye göre fire — bu ay
+  • fire — bu ay
+  • fire oranı — bu ay
+```
+
+Bu **insandır**: özne var, dönem var, eylem var. Ve `fire` iki küpte tanımlıyken
+`fire (parti)` / `fire (OEE)` diye **ayrıştırılıyor** (`Thread 4`).
+
+## 🔴 İK1 · ÇAPASIZ HÂLDE ÖNERİ **CÜMLE DEĞİL, ETİKET**
+
+| yazılan | dönen |
+|---|---|
+| `f` | `fire (parti)` · `fire (OEE)` · `delta E` · `gerçekleşen` · `enpg` · `metre` · `mesai` |
+| `fire` | `fire (OEE)` · `fire (parti)` · `fire oranı` · `metre` · `enerji` · `doğalgaz (…)` |
+| **`bu ay fire`** | `fire (parti)` · … · `bakiye (cari hesap)` |
+
+İki ayrı kusur iç içe:
+
+**(a) Cümle yok.** `§3.3` *«MENÜ DEĞİL TAMAMLAMA»* diyor ve çapalı bantta bunu
+başarıyoruz; çapasız bantta **etikete düşüyoruz**. Oysa sistemin bir **varsayılan dönemi
+var** ve cevaplarında onu zaten beyan ediyor (*«verinin son 12 ayı»*) — yani
+*«fire (parti) — son 12 ay»* yazılabilirdi. Cümlenin dönem parçası çapadan geliyor;
+çapa yoksa cümle **yarım kalıyor**, ve yarım bir cümle bir etikettir.
+
+**(b) Kullanıcının YAZDIĞI dönem yok sayılıyor.** `bu ay fire` yazan biri *«bu ay»*
+demiştir; öneriler bunu hiç kullanmıyor. ⊙ Ve bu bilgi **elimizde**: `/oneri/pill` aynı
+cümleden `[01.08.2026 sonrası]` dönemini **çıkarabiliyor** (aşağıda). Yani eksik olan
+veri değil, **bağlantı** — pill katmanı okuyor, cümle katmanı okumuyor.
+
+## 🔴 İK2 · `/oneri/makro` bir **CEVAP** döndürmüyor, koşucunun **ham çıktısını** döndürüyor
+
+```
+anahtarlar: ciktilar · katmanlar · makbuz · onarimlar · sonuclar · sorgu_sayisi · sorgular
+source: None      question: None      note: None      (result YOK)
+```
+
+Plan **koştu** (`adim_sayisi: 5`) ama dönen şey `plan_tuketici.calistir`'ın iç sözleşmesi
+— bir `AskResponse` değil. Arayüz bunu normal cevap kartı yolundan geçiriyor; kart
+**gövdesiz** çizilir 🆘.
+
+⊙ **Ve `cevap()` kullanılamaz** — ölçüldü: kendi ön koşulları var (`plan_garson.acik_mi`
+bayrağı · *«route zaten cevapladı → boşluk YOK, hiç konuşmuyorum»* · `_azinlik`). O
+fonksiyon **boşluk doldurma** yoludur; makro bir boşluk değil bir **istektir**.
+⊙ Doğru onarım: `cevap`'ın `calistir` **sonrası** sunum bloğunu (`_bolumler` · `_son` ·
+`result`) **ortak bir işleve çıkarmak** ve iki taraftan çağırmak ㊲. İkinci kez yazmak,
+bir gün ikisinin ayrışması demektir.
+
+⚠ `question: None` ayrı ve **küçük** bir sebep: çalışan imaj (`s10`) o düzeltmeden
+**önce** derlenmişti ③ — kod doğru, kap eski. Bir sonraki tazelemede kapanır.
+
+## ✅ PILL SATIRI — `§5.2` birebir
+
+`«bu ay makine bazında fire»` →
+`[ölçü: fire] [dönem: 01.08.2026 sonrası] [kırılım: makine kırılımı] [tür: kırılım]`
+`+ ölçü (tek_sorgu)` · `+ kırılım (tek_sorgu)` · `+ dönem (tek_sorgu)` · **`+ adım (plan)`**
+`hatalar: []`
+
+Dört `+` **tipli** ve `sonuc` alanı `plan`'ı ötekilerden ayırıyor — planın *«bir numaralı
+tuzağı»* kapalı.
