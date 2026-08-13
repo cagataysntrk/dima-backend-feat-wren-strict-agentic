@@ -147,6 +147,7 @@ from __future__ import annotations
 
 import difflib
 import hashlib
+import threading
 from dataclasses import dataclass
 
 from app.llm import _norm
@@ -456,9 +457,24 @@ def indeks_durumu(schema: dict) -> dict:
     return {"durum": "taze" if taze else "yok", "surum": surum}
 
 
-#: `§46` — indeks **inşa hakkı**. Yalnız `isit()` bunu `True` yapar; istek yolunda soğuk
-#: bir indeks **kurulmaz**, leksik ayakla cevap verilir.
-_ISITMA = False
+#: 🔴🔴 `§46`+`§65` — indeks **inşa hakkı**, ve o hak bir **İPLİĞE** aittir.
+#:
+#: ⊙ **ÖLÇÜLEN KUSUR (canlı `s28`).** Bayrak bir modül globaliydi, ısıtma ise arka
+#: planda bir **iplikte** koşuyor. Yani ısınma penceresi boyunca `_ISITMA` **her iplik
+#: için** `True` görünüyordu → istek yolundaki atlama koşulu (`not _ISITMA`) **hiç
+#: ateşlenmiyordu** → tam da korumak için yazıldığı pencerede kullanıcı yine bloke
+#: oluyordu. Ölçüm: `GET /oneri?q=ram 3` → **90 sn'de HTTP=000**; ve ısınma `48 sn`
+#: yerine **204.990 ms** sürdü — iki iplik aynı gömmeyi birden hesaplıyordu.
+#:
+#: ⚠ *Bir bayrağın kapsamı, koruduğu şeyin kapsamıyla aynı olmalıdır:* inşa hakkı
+#: **ısıtan ipliğin** hakkıdır, sürecin bir **hâli** değil. `threading.local` bunu
+#: yapısal olarak söyler.
+_ISITMA_YEREL = threading.local()
+
+
+def _insa_hakki() -> bool:
+    """Bu **iplik** indeksi kurmaya yetkili mi (yani `isit()` gövdesinde miyiz)."""
+    return bool(getattr(_ISITMA_YEREL, "acik", False))
 
 #: ⚠ Atlama **ısıtma başlamışsa** geçerlidir. Isıtmanın hiç çağrılmadığı bir ortamda
 #: (birim testleri, `lab/` araçları) istek yolu indeksi eskisi gibi kurar — yoksa vektör
@@ -482,12 +498,13 @@ def isit(schema: dict, *, izinliler: set[str] | None = None) -> dict:
     Dönüş `indeks_durumu()` ile aynı sözlüktür — çağıranın *«ısındı mı»* diye ikinci bir soru
     sormasına gerek kalmaz.
     """
-    global _ISITMA, _ISITMA_BASLADI
-    _ISITMA = _ISITMA_BASLADI = True
+    global _ISITMA_BASLADI
+    _ISITMA_BASLADI = True
+    _ISITMA_YEREL.acik = True
     try:
         ara("fi", schema, izinliler=izinliler)
     finally:
-        _ISITMA = False
+        _ISITMA_YEREL.acik = False
     return indeks_durumu(schema)
 
 
@@ -553,7 +570,7 @@ def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]
     # ⚠ İnşa hakkı **ısıtmaya** ait: `_ISITMA` yalnız `isit()` içinde `True`. Bir istek
     # soğuk indekse rastlarsa vektör ayağı **susar** (leksik ayak cevabı verir) ve ısınma
     # kendi hızında sürer. *Bir kullanıcıyı bekletmek, ona daha iyi bir sıra vermez.*
-    if (model is not None and _ISITMA_BASLADI and not _ISITMA
+    if (model is not None and _ISITMA_BASLADI and not _insa_hakki()
             and not _indeks_taze(_surum)):
         return []
     if model is None or not adaylar:
