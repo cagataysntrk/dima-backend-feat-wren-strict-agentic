@@ -425,6 +425,23 @@ def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]
     """
     from app import vqr
 
+    # 🔴🔴 `§43` — **DEĞER ADAYLARI VEKTÖR AYAĞINA GİRMEZ.** Ölçülen kusur (canlı,
+    # 2026-08-13): `§41` ile `776` boyut değeri (≈`2.300` görünüm) indekse girdi ve
+    # `/oneri` **120 sn'de bile dönmedi** — kullanıcı hiçbir öneri göremedi.
+    #
+    # ⊙ Sebep bu modülün kendi belgesinde zaten yazılıydı: `534` görünüm soğukta
+    # `24,8` sn ediyordu; dört katı, dakikalar eder. *Bir maliyeti belgeye yazmak, onu
+    # ödememizi engellemez.*
+    #
+    # ⊙ Ve gerek de yok: bir makine adı (`RAM-3`) **anlamla** değil **harfle** aranır —
+    # önek/bulanık eşleşme onun doğal yoludur ve leksik ayak bunu zaten yapıyor.
+    # Anlamsal komşuluk (`fire ≈ ıskarta`) **ölçüler** içindir.
+    # ⚠ Süzme **konum uzayını korur** ㊶: bu fonksiyon çağırana **indeks** döndürür;
+    # listeyi kırpıp indeks döndürmek, çağıranı **başka bir adaya** baktırırdı.
+    secili = [i for i, a in enumerate(adaylar) if "#" not in a.kimlik]
+    if not secili:
+        return []
+    adaylar = [adaylar[i] for i in secili]
     model = vqr._embedder()
     if model is None or not adaylar:
         return []
@@ -474,7 +491,7 @@ def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]
         # Görünüm skorlarını **alana** indir: en yakın görünüm alanın skorudur.
         en_yakin = np.asarray([float(skor[b:s].max()) for b, s in dilim],
                               dtype="float32")
-        return [int(i) for i in en_yakin.argsort()[::-1][:_HAVUZ]]
+        return [secili[int(i)] for i in en_yakin.argsort()[::-1][:_HAVUZ]]
     except Exception:  # noqa: BLE001 — öneri katmanı **cevabı bozmaz** (§101.1)
         return []
 
