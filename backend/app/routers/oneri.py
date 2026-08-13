@@ -106,7 +106,7 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120),
     bir sorgu **koşulmaz** — bu uç sorgu koşmuyor. Doğrulamanın yeri `parse_cube_query`
     beyaz listesidir; burada ikinci bir doğrulayıcı kurmak ㊲ olurdu.
     """
-    from app import katman_b, oneri, oneri_cumle
+    from app import katman_b, niyet as _niyet, oneri, oneri_cumle
     from app.company_registry import wren_for_request
 
     principal = getattr(request.state, "principal", None)
@@ -117,7 +117,13 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120),
     capa = _capa_kur(capa_cube, capa_olcu, capa_kirilim, capa_donem, capa_varlik)
     # ⚠ Cümle kurmak **sorgu koşmaz ve LLM çağırmaz** (`E-8`): `oneri_cumle` saf bir
     # modüldür. Sıcak yola eklenen tek maliyet dize birleştirmedir.
-    oneriler = oneri_cumle.cumleler(adaylar, capa=capa, schema=schema)
+    # ⚠ `niyet.coz` **ölçüldü**: ılık hâlde ~4,4 ms (ilk çağrılar ısınmadır ⑨) — `p95`
+    # 53,82 ms'nin ~%8'i. Kullanıcının **yazdığı** kırılımı ve dönemi cümleye taşımanın
+    # bedeli budur; taşımamanın bedeli ise `fire (parti)` gibi bir **etiketti** 🆡.
+    # ⚠ `q` boşsa çağrılmaz: boş metinden çıkarılacak bir niyet yoktur ve sıcak yola
+    # ödenmemiş bir maliyet eklenmez.
+    n = _niyet.coz(q, schema) if q.strip() else None
+    oneriler = oneri_cumle.cumleler(adaylar, capa=capa, schema=schema, niyet=n, soru=q)
 
     return {
         # 🔴 `§5.1`'in ASIL çıktısı: kullanıcı **cümle** görür, alan adı değil.

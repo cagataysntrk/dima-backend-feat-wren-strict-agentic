@@ -457,7 +457,8 @@ def _yeni_sorgu(cube: str, olcu: str, *, boyut: str = "", donem: str = "",
 
 
 def cumleler(adaylar: Sequence[Aday], *, capa: dict | None = None, niyet: Any = None,
-             schema: dict | None = None, limit: int | None = None) -> list[Oneri]:
+             schema: dict | None = None, limit: int | None = None,
+             soru: str = "") -> list[Oneri]:
     """Adaylardan **Türkçe cümleler** kurar. `§5.1`'in şeridi budur:
 
         ↳ BU RAPOR ÜZERİNDE                     (çapa varsa)
@@ -490,7 +491,7 @@ def cumleler(adaylar: Sequence[Aday], *, capa: dict | None = None, niyet: Any = 
 
     c = _capa_oku(capa)
     ust = _rapor_ustunde(list(adaylar), c, niyet, schema) if c else []
-    yeni = _yeni_konu(list(adaylar), c, niyet, schema, {o.metin for o in ust})
+    yeni = _yeni_konu(list(adaylar), c, niyet, schema, {o.metin for o in ust}, soru)
 
     # 🔴 **İKİ BANT DA TEMSİL EDİLİR.** `§5.1`'in şeridi iki başlık çizer; üsttekinin
     # tavanı yemesi, alttakini **görünmez** yapardı — ve `§6/Thread 3`'ün asıl kazancı
@@ -627,8 +628,43 @@ def _donem_onerisi(c: _Capa, schema: dict | None) -> list[Oneri]:
                   cube=c.cube, cube_query=yeni_cq)]
 
 
+def _yazilan_donem(soru: str) -> str:
+    """Kullanıcının **kendi yazdığı** dönem — ve yalnız **kapalı listeden**.
+
+    🔴 Bu fonksiyonun yapmadığı iki şey, yaptığı şeyden önemli:
+
+    **① Süzgeçten geri çözmez.** `Niyet.donemler` bir **filtre**dir
+    (`{'dimension':'tarih','operator':'gte','value':'2026-08-01'}`) ve bu modülün kendi
+    kuralı onu yasaklar: *«`2026-08-01 ≤ tarih ≤ 2026-08-31` ifadesinden «bu ay»'a dönmek
+    bir **tahmindir**»* (`_capa_oku`). Bir tahmini kullanıcıya **kendi cümlesi** diye
+    göstermek, `§5.1`'in *«bağlam görünür olsun»* vaadinin tersidir.
+
+    **② Yeni bir dil kuralı EKLEMEZ.** Metinden dönem çıkarmak route'a Türkçe öğretmek
+    olurdu (en üst kural: *«route'a dil kuralı EKLEME»*). Bunun yerine **bu modülün
+    zaten sahip olduğu** kapalı tablo okunuyor: `_ONCEKI_DONEM`'in anahtarları.
+
+    ⊙ **Ve bu kaynak seçimi ölçümle düzeldi ③.** İlk yazımım `donem_capasi.
+    DONEM_SECENEKLERI`'ni import etti; **saflık kapısı** onu reddetti ve **haklıydı**:
+    `donem_capasi` yaprak bir modül değil — `cube_router` ve `veri_araligi` çekiyor, yani
+    bu modülün *«LLM yok, sorgu yok, IO yok»* ilanını kırardı. `_ONCEKI_DONEM` ise
+    **burada** yaşıyor ve üstelik daha güçlü bir güvenceyle: bir kapı her değerinin
+    `route()` tarafından **çözülebildiğini** ölçüyor. *Aynı sözcük listesinin iki
+    kaynağından, kapıya bağlı olanı seçilir.*
+
+    ⚠ **En uzun eşleşme kazanır**: bugün *«bu ay»* ile *«bu yıl»* çakışmıyor ama tablo
+    büyüyebilir; kısa olanı önce eşleştirmek, uzun olanı **sessizce** yutardı.
+    ⚠ Eşleşme yoksa **boş** döner — uydurma dönem yazılmaz. Dönemsiz bir öneri hâlâ
+    doğrudur; yanlış dönemli bir öneri **değildir** 🅫.
+    """
+    metin = (soru or "").lower()
+    if not metin:
+        return ""
+    return next((d for d in sorted(_ONCEKI_DONEM, key=len, reverse=True)
+                 if d in metin), "")
+
+
 def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | None,
-               ust_metinler: set[str]) -> list[Oneri]:
+               ust_metinler: set[str], soru: str = "") -> list[Oneri]:
     """`↳ YENİ KONU` — çapa **düşer**; dönem kalır (`§6/Thread 3`: kopuş bir yeni rapordur,
     yeni bir takvim değil).
 
@@ -636,7 +672,11 @@ def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | 
       · çapanın **süzdüğü** boyut → *«RAM-3»*'ten *«makineye göre»*'ye açılım (`§5.1`),
       · `Niyet`in eşleştirdiği boyut → kullanıcının kendi sözcüğü.
     """
-    donem = c.donem if c else ""
+    # 🔴 **ÖLÇÜLMÜŞ KUSUR (insan testi, 2026-08-13).** Burası `c` yoksa `""` diyordu ve
+    # çapasız her öneri **dönemsiz** kalıyordu — yani cümle değil **etiket**: `fire (parti)`.
+    # Üstelik kullanıcı *«bu ay fire»* **yazdığında bile**, çünkü yazdığı dönem hiç
+    # okunmuyordu. *Yarım bir cümle bir etikettir* 🆡.
+    donem = c.donem if c else _yazilan_donem(soru)
     niyet_boyutlari = [str(d) for d in (getattr(niyet, "kirilimlar", None) or [])]
     out: list[Oneri] = []
     for a in adaylar:

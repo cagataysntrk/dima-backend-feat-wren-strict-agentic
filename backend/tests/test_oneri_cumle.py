@@ -438,3 +438,57 @@ def test_SOZLESME_grup_ve_tur_KAPALI_KUME():
     assert {o.grup for o in out} <= {GRUP_RAPOR, GRUP_YENI}
     assert {o.tur for o in out} <= turler, f"🔴 kapalı küme dışı tür: {[o.tur for o in out]}"
     assert len({o.kimlik for o in out}) == len(out), "🔴 kimlik çakışması var."
+
+
+# ── 🔴 İK1 — KULLANICININ YAZDIĞI DÖNEM CÜMLEYE GİRER (insan testi bulgusu) ──
+
+def test_YAZILAN_DONEM_CUMLEYE_GIRER():
+    """🔴 **İnsan testinde ölçüldü:** `bu ay fire` yazan kullanıcı `fire (parti)` görüyordu
+    — yazdığı dönem **yok sayılıyordu**. Yarım bir cümle bir **etikettir** 🆡.
+
+    ⚠ Kaynak `_ONCEKI_DONEM`'in anahtarlarıdır ve bu bir tercih değil bir **güvence**:
+    o tablonun her değeri `route()` tarafından çözülebiliyor (bu dosyanın kendi kapısı
+    bunu ölçer). Yani sunulan dönem, **koşulabilir** bir dönemdir.
+
+    🅑 Mutasyon: `_yeni_konu`'daki `_yazilan_donem(soru)` çağrısı `""` yapılırsa kırılır.
+    """
+    from app.oneri_cumle import _yazilan_donem
+
+    assert _yazilan_donem("bu ay fire") == "bu ay"
+    assert _yazilan_donem("BU AY fire") == "bu ay", "büyük harf de tanınmalı ⑧"
+    assert _yazilan_donem("bu yıl ciro") == "bu yıl"
+
+
+def test_YAZILMAYAN_DONEM_UYDURULMAZ():
+    """🔴 Kullanıcı dönem yazmadıysa cümle **dönemsiz** kalır.
+
+    *Dönemsiz bir öneri hâlâ doğrudur; yanlış dönemli bir öneri değildir* 🅫. Ve bu
+    modülün kendi kuralı zaten süzgeçten geri çözmeyi yasaklıyor (`_capa_oku`).
+    """
+    from app.oneri_cumle import _yazilan_donem
+
+    assert _yazilan_donem("fire") == ""
+    assert _yazilan_donem("") == ""
+    # ⚠ 🅖 **Bilinen sınır, gizlenmiyor:** tablo *«şimdiki»* dönemleri anahtarlar
+    # (`bu ay` → `geçen ay`), yani kullanıcı doğrudan *«geçen ay»* yazarsa eşleşme
+    # **olmaz**. Tabloyu genişletmek bir ölçüm ister, bir sezgi değil 🆞.
+    assert _yazilan_donem("geçen ay fire") == ""
+
+
+def test_SAFLIK_KAPISI_DONEM_KAYNAGINI_SECTI():
+    """⊙ **Kapı bir kaynak seçimini düzeltti ③🅑.** İlk yazımım `donem_capasi.
+    DONEM_SECENEKLERI`'ni import etti; saflık kapısı reddetti ve **haklıydı** —
+    `donem_capasi` yaprak değil (`cube_router`·`veri_araligi` çeker) ve bu modülün
+    *«LLM yok, sorgu yok, IO yok»* ilanını kırardı.
+
+    Bu yüklem o kararı **kilitler**: dönem kaynağı bu modülün **kendi** tablosudur.
+    """
+    import pathlib
+
+    from tests._kod_ayikla import kodu_ayikla
+
+    src = kodu_ayikla((pathlib.Path(__file__).resolve().parents[1] / "app"
+                       / "oneri_cumle.py").read_text(encoding="utf-8"))
+    assert "donem_capasi" not in src, (
+        "🔴 saf modül `donem_capasi`'yı import ediyor — o modül `cube_router` ve "
+        "`veri_araligi` çeker; saflık ilanı kırılır.")
