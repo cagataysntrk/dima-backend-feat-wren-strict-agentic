@@ -3393,3 +3393,18 @@ sayısı) · **K5◐** · `_norm` 5 modül ㊲ · `d11` · `_RRF_K` · `FAZ 0` p
 
 `localhost:3000` bu turda da **kapalı** (`HTTP 000`). Zincir kodda bağlı ve
 `test_onizleme_zinciri_kopuk_degil.py` ile korunuyor; **ekran** doğrulaması açık kalıyor.
+
+**Canlı kanıt (`s35`):**
+
+```
+geçerli plan   →  gecerli=True · «5 adım (tavan 12) · 2 sorgu (bütçe 8) — koşmadan önce gözden geçir.»
+9 sorgulu plan →  🔴 Bu plan koşulamaz: plan 9 sorgu istiyor, bütçe 8
+                  ⊙ Plan 9 adım · 9 sorgu. İki ayrı sınır var … tavanı 12 … bütçesi 8.
+```
+
+⚠ **İki red metni var ve ikisi de dürüst — ama aynı değil** 🆂: yukarıdaki `§70` metni
+**önizleme** yolunundur (`/ask` merdiveni · onaysız `/oneri/makro`). **Onaylı** koşum
+(`POST /plan/kos`) kendi sahibini kullanır (`neden_olmadi`): adımları **tek tek sayar** ve
+*«🔴 Ama tamamlayamadım: plan 9 sorgu istiyor, bütçe 8»* der. İkisini birleştirmedim —
+biri *«bunu onaylar mısın»* anındaki metin, öteki *«onayladın ama olmadı»* anındaki; aynı
+cümleyi iki bağlama koymak, ikisini de zayıflatırdı.
