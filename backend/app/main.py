@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -147,6 +148,44 @@ async def lifespan(app: FastAPI):
     from app.vqr import _embedder
 
     _warm(_embedder)
+
+    def _oneri_indeksi() -> None:
+        """🔴 **ÖLÇÜLMÜŞ ÜRÜN KUSURU** (2026-08-13): `§18.7` çok görünümlü temsili
+        erişimi `%68,4 → %89,5` çıkardı, ama **ilk isteği `1,5 sn → 24,8 sn`** yaptı
+        (534 görünüm gömülüyor). Ilık yol tabanda kaldı (`p95 53,88 ms`, eşik 300) —
+        yani **kapı yeşildi ve kusuru göremiyordu** 🅖: p95 ılık dağılımın ölçüsüdür,
+        ilk isteği hiç saymaz. Ama o ilk istek **bir kullanıcının** ilk tuşudur.
+
+        ⚠ Sıra **zorunlu ve bu yüzden ayrı bir iş parçacığı değil, aynı zincir**:
+        gömücü hazır değilken `ara()` vektör ayağını **atlar** ve indeks kurulmaz —
+        ısıtma sessizce hiçbir şey yapmış olurdu 🅯. `_embedder()` önbelleklidir
+        (`_emb_tried`), yani buradaki çağrı ya yüklemeyi bekler ya da hazırı döndürür.
+
+        ⚠ **Isıtılan şey VARSAYILAN projenin indeksidir** ㊴🅖: şema istek başına
+        (tenant'a göre) çözülür ve başka bir tenant'ın indeksi **hâlâ ilk istekte**
+        kurulur. Bu bir eksik ve **gizlenmiyor**: çok kiracılı ısıtma, tenant listesini
+        startup'ta okumayı gerektirir — bu uçların değil, kayıt katmanının işidir ve
+        ölçülmeden yapılmaz. *Tek kiracıda kusur kapanır, çok kiracıda küçülür.*
+
+        ⚠ `except`: ısıtma bir **kolaylık**tır, bir ön koşul değil. Düşerse uygulama
+        yine açılır ve indeks ilk istekte kurulur — yani en kötü hâl **bugünkü hâldir**.
+        """
+        try:
+            if _embedder() is None:
+                _log.info("öneri indeksi: gömücü yok → ısıtma atlandı (leksik yol)")
+                return
+            from app import oneri
+
+            t0 = time.perf_counter()
+            oneri.ara("fi", app.state.wren.schema())
+            _log.info("öneri indeksi ısındı: %.0f ms",
+                      (time.perf_counter() - t0) * 1000.0)
+        except Exception:                                  # noqa: BLE001
+            # ADR-0020: sessiz yutma yok — ısıtma düşerse **nedeni** görünür.
+            _log.warning("öneri indeksi ısıtılamadı → ilk istek soğuk kalacak",
+                         exc_info=True)
+
+    _warm(_oneri_indeksi)
     yield
 
 
