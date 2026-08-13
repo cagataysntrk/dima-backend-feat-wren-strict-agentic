@@ -408,6 +408,41 @@ def indeks_durumu(schema: dict) -> dict:
     return {"durum": "taze" if taze else "yok", "surum": surum}
 
 
+#: `§46` — indeks **inşa hakkı**. Yalnız `isit()` bunu `True` yapar; istek yolunda soğuk
+#: bir indeks **kurulmaz**, leksik ayakla cevap verilir.
+_ISITMA = False
+
+#: ⚠ Atlama **ısıtma başlamışsa** geçerlidir. Isıtmanın hiç çağrılmadığı bir ortamda
+#: (birim testleri, `lab/` araçları) istek yolu indeksi eskisi gibi kurar — yoksa vektör
+#: ayağı orada **hiç** koşmaz ve ölçüm sessizce leksikleşirdi 🅣. Yani bu bayrak bir
+#: davranışı değil, **kimin bekleyeceğini** ayarlar: ısıtma bekler, kullanıcı beklemez.
+_ISITMA_BASLADI = False
+
+
+def _indeks_taze(surum: str) -> bool:
+    """Bu şema sürümü için indeks **kurulmuş mu**. ⚠ `durum()` ile aynı ölçüt (`KAT-1`)."""
+    return any(k.startswith(f"{surum}|") for k in _INDEKS)
+
+
+def isit(schema: dict, *, izinliler: set[str] | None = None) -> dict:
+    """🔴 `§46` — indeksi **bilerek** kurar; tek inşa yetkilisi budur.
+
+    `main.py` açılışta bunu çağırır. Ayrı bir fonksiyon olmasının sebebi bir üslup değil
+    bir **yetki**: istek yolu soğuk indeksi kurmaya kalkarsa kullanıcı `24+` sn bekler
+    (ölçüldü). Isıtma bekleyebilir, kullanıcı bekleyemez.
+
+    Dönüş `durum()` ile aynı sözlüktür — çağıranın *«ısındı mı»* diye ikinci bir soru
+    sormasına gerek kalmaz.
+    """
+    global _ISITMA, _ISITMA_BASLADI
+    _ISITMA = _ISITMA_BASLADI = True
+    try:
+        ara("fi", schema, izinliler=izinliler)
+    finally:
+        _ISITMA = False
+    return durum(schema)
+
+
 def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]:
     """Vektör ayağı — **yalnız sıra üretir**, eşik üretmez (`FAZ 0` bulgusu).
 
@@ -443,6 +478,23 @@ def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]
         return []
     adaylar = [adaylar[i] for i in secili]
     model = vqr._embedder()
+    # 🔴🔴 `§46` — SOĞUKTA **BEKLETME, LEKSİK CEVAP VER.**
+    #
+    # Canlı ölçüldü (2026-08-13): açılışta `öneri indeksi ısındı: **48.757 ms**`. Isıtma
+    # arka planda koşuyor; o pencerede gelen ilk istek indeksi **kendisi** kurmaya
+    # kalkıyor ve kullanıcı **44 sn** bekliyordu — yani aynı iş iki kez yapılıyordu.
+    #
+    # Modülün kendi kuralı zaten bunu söylüyordu (`5.8`): *«gömücü hazır değilse leksik
+    # ayakla devam et; bu bir hata değil bir HÂL»*. Eksik olan, **indeksin** de aynı
+    # kurala tabi olmasıydı 🆘 — gömücü yüklenmiş ama indeks kurulmamışken istek yine
+    # bloke oluyordu.
+    #
+    # ⚠ İnşa hakkı **ısıtmaya** ait: `_ISITMA` yalnız `isit()` içinde `True`. Bir istek
+    # soğuk indekse rastlarsa vektör ayağı **susar** (leksik ayak cevabı verir) ve ısınma
+    # kendi hızında sürer. *Bir kullanıcıyı bekletmek, ona daha iyi bir sıra vermez.*
+    if (model is not None and _ISITMA_BASLADI and not _ISITMA
+            and not _indeks_taze(_surum)):
+        return []
     if model is None or not adaylar:
         return []
     onek = "query: "

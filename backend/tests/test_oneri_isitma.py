@@ -76,8 +76,13 @@ def test_ISITMA_GOMUCUYU_ONCE_BEKLER():
     nitelikli = [f"{d.func.value.id}.{d.func.attr}" for d in ast.walk(fn)
                  if isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute)
                  and isinstance(d.func.value, ast.Name)]
-    assert "oneri.ara" in nitelikli, (
-        "🔴 ısıtma indeksi kurmuyor — `oneri.ara(...)` çağrılmalı.")
+    # ⟳ `§46` — ÇAĞRI **`isit()`**'e taşındı ve kapı **güçlendi**: eskiden
+    # *«`ara` çağrılıyor mu»* diye soruyordu; oysa `ara` istek yolunun da
+    # fonksiyonudur ve onu çağırmak indeksin **kurulacağını** söylemez 🆆.
+    # `isit()` tek **inşa yetkilisidir** (ölçülen kusur: ısınma 48,7 sn sürerken
+    # gelen ilk istek indeksi kendisi kurup kullanıcıyı 44 sn bekletiyordu).
+    assert "oneri.isit" in nitelikli, (
+        "🔴 ısıtma indeksi kurmuyor — `oneri.isit(...)` çağrılmalı (tek inşa yetkilisi).")
 
 
 def test_GOMUCU_AYRI_IS_PARCACIGINDA_ISITILMAZ():

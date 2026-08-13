@@ -2178,3 +2178,43 @@ sınırı siler, ikincisi sınırı **kayda geçirir**.*
 
 **Kanıt:** `frontend_buyume · frontend_derlenir · uc_yetim_degil · oneri_cumle` →
 **52 ✅ / 2 atlandı**.
+
+---
+
+## §46 — SOĞUK 44 SN: ısıtma çalışıyordu, **istek onu beklemiyordu**
+
+### Ölçüm — teşhisim yine bir katman kaydı ㉚
+
+`docker logs dima-oneri-8002 | grep 'öneri indeksi'` → **`ısındı: 48.757 ms`**. Yani
+ısıtma *«hiç koşmuyor»* değildi; **48,7 sn sürüyordu** ve o pencerede gelen ilk istek
+indeksi **kendisi** kurmaya kalkıyordu. Aynı iş iki kez yapılıyor, kullanıcı **44 sn**
+bekliyordu.
+
+### Çare — kuralı zaten yazılıydı, kapsamı eksikti
+
+`5.8` diyor ki: *«gömücü hazır değilse leksik ayakla devam et — bu bir hata değil bir
+HÂL»*. Eksik olan, **indeksin** de aynı kurala tabi olmasıydı 🆘: gömücü yüklenmiş ama
+indeks kurulmamışken istek yine bloke oluyordu.
+
+* `oneri.isit(schema)` — **tek inşa yetkilisi**. `main.py` artık `ara()` değil bunu çağırır.
+* İstek yolu soğuk indekste vektör ayağını **atlar**, leksik cevap verir.
+* ⚠ Atlama **yalnız ısıtma başlamışsa** geçerli (`_ISITMA_BASLADI`): ısıtmanın hiç
+  çağrılmadığı ortamlarda (birim testleri, `lab/`) istek yolu indeksi eskisi gibi kurar —
+  yoksa vektör ayağı orada **hiç** koşmaz ve ölçümler sessizce leksikleşirdi 🅣.
+  *Bu bayrak bir davranışı değil, **kimin bekleyeceğini** ayarlar.*
+
+### Kapı GÜÇLENDİ 🆆
+
+`test_ISITMA_GOMUCUYU_ONCE_BEKLER` eskiden *«`ara` çağrılıyor mu»* diye soruyordu — oysa
+`ara` **istek yolunun da** fonksiyonudur ve onu çağırmak indeksin kurulacağını söylemez.
+Şimdi `isit`'i arıyor: *«inşa yetkilisi çağrılıyor mu»*.
+
+**Kanıt:** `oneri_isitma · oneri_motoru · oneri_gomme_temsili · oneri_cumle ·
+alan_haritasi · oneri_tiklamasi_sorgu_kosar` → **125 ✅ / 1 atlandı**.
+
+### `§45`'in kapısı da kuruldu
+
+`tests/test_oneri_tiklamasi_sorgu_kosar.py` (**4 ✅**): dal **var** · sıra **makro → hazır
+sorgu → metin** · zincir **sayfaya kadar bağlı** · metin yolu **kaldırılmadı** 🆃.
+🅑 Mutasyon: `page.tsx`'ten `onSorguKos` kaldırıldı → `test_ZINCIR_SAYFAYA_KADAR_BAGLI`
+**kırmızı**; geri yüklendi, `diff` temiz.

@@ -189,9 +189,13 @@ async def lifespan(app: FastAPI):
             from app import oneri
 
             t0 = time.perf_counter()
-            oneri.ara("fi", app.state.wren.schema())
-            _log.info("öneri indeksi ısındı: %.0f ms",
-                      (time.perf_counter() - t0) * 1000.0)
+            # 🔴 `§46` — `ara()` DEĞİL `isit()`: inşa hakkı **yalnız** ısıtmanındır.
+            # Ölçüldü (canlı): ısınma **48,7 sn** sürüyor ve o pencerede gelen ilk istek
+            # indeksi kendisi kurmaya kalkıp kullanıcıyı **44 sn** bekletiyordu — aynı iş
+            # iki kez. Artık istek yolu soğuk indekste **leksik** cevap verir.
+            _durum = oneri.isit(app.state.wren.schema())
+            _log.info("öneri indeksi ısındı: %.0f ms (durum=%s)",
+                      (time.perf_counter() - t0) * 1000.0, _durum.get("durum"))
         except Exception:                                  # noqa: BLE001
             # ADR-0020: sessiz yutma yok — ısıtma düşerse **nedeni** görünür.
             _log.warning("öneri indeksi ısıtılamadı → ilk istek soğuk kalacak",
