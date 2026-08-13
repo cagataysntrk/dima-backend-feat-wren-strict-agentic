@@ -1520,3 +1520,56 @@ kaydı** bırakıldı ve **ikinci bir koruma yazılmadı** ㊲.
 **9 🔴 → 6 🔴 → 1 🔴** (`d11`, gerekçeli). Süit **5.020 → 5.024**.
 ⊙ Kapı bu turda **dört kez** haklı çıktı: büyüme tavanı · ölçüm tabanı · bilinçli sınır ·
 yan hasar. *Bir kapının adını okumak, üç saatlik yanlış bir yolu bir cümlede kapatabilir.*
+
+---
+
+## §31 — K3'ün çaresi: «SOR» zinciri ÖLÇÜLDÜ · hipotez ÇÜRÜDÜ · korpus TABANDA
+
+### Korpus — geri alma hiçbir şeyi oynatmadı
+
+`83 / 69 / 68 / 72` · doğru-cube **%95,6** (taban %94,4) · semantik vaka **558/591 = %94,4**
+(taban %93,5). Dördü de ✅. *Bir geri almanın en iyi kanıtı, hiçbir sayının kıpırdamamasıdır.*
+
+### «Belirsizde SOR» kararı — üç parça VAR, çağıranı YOK 🆘
+
+| parça | yer | ölçülen |
+|---|---|---|
+| karar fonksiyonu | `netlestirme.sorar_mi("normal","donem")` | ✅ `True` — ama **gerçek çağıranı yok**; `ask.py:3763`'teki tek isabet bir **yorum**. `diyalog.py:19` bunu zaten yazmış |
+| «sor» ölçütü | `cube_router.needs_period` (`:1685`) | ✅ çıplak yılda `True` (`return not date_filters(q)`) |
+| sorunun metni | `soz.py "netlestirme.donem"` | ✅ katalogda, notu **`ADR-0007-K3`** |
+| çağıran dal | `ask.py:2892` | ✅ var — ama **önünde kendi kapısı var** (aşağıda) |
+
+*Yazılmış ama çağrılmayan bir karar, alınmamış bir karardır.*
+
+### Hipotez ÇÜRÜDÜ ㉚ — route cevabı ÜRETİYOR
+
+Kapta ölçüldü (`Xr3`, LLM'siz):
+
+| soru | `cube_query` | `needs_period` |
+|---|---|---|
+| `2019 yili cirosu` | `parti · toplam_ciro · tarih∈[2019-01-01, 2019-12-31]` | `False` |
+| `2019 cirosu` | `parti · toplam_ciro · **filters=None**` | **`True`** |
+
+Yani *«route hiç küp üretmedi»* **yanlıştı**: küp de var, ölçü de var, *«SOR»* ölçütü de
+doğru üretiliyor. Kusur bu üçünde **değil**.
+
+⚠ **Ve prob iki kez yanıldı ③🅬:** ilk okumam `r["cube"]` idi — o anahtar `route`'un dönüş
+nesnesinde **hiç yok** (`cube_query · measure · period_optional · limit · order`). `None`
+bir bulgu değil bir **okuma hatasıydı**. *Bir alanın adını belgeden değil, nesneden öğren.*
+
+### Kalan iki şüpheli — sıradaki ölçüm
+
+1. **`ask.py:2846` — `M-4` beyanlı varsayım kapısı.** `varsayilan_donem` bayrağı açıksa
+   sistem **sormaz**, dönemi varsayıp **beyan eder**; netleştirme ikinci seçeneğe düşer.
+   Bu bilinçli bir takas ve **yazılı** — yani çıplak yılda soru görülmemesi bir kusur
+   değil, **bu bayrağın sonucu** olabilir. ⚠ `features.yml` ajan alanı — bayrak
+   **değiştirilmeden** ölçülecek.
+2. **`ask.py:4050` — `_niyet_tasima.route_supheli`.** Route cevap verse **bile** şüpheli
+   sayılıp garsona devredilebiliyor; `2019` route'un **yok saydığı** bir token ve devir
+   doktrini tam da bunu ister. Canlıdaki `adhoc` bu yoldan gelmiş olabilir.
+
+⚠ **Canlı kap `s12` bayattır** — geri aldığım değişikliği hâlâ taşıyor; bu iki şüpheli
+HTTP ile değil, **saf fonksiyon** olarak ölçülecek (`route_supheli` saf).
+
+🔴 **Değişmeyen sınır:** çare ne çıkarsa çıksın `test_B_CIPLAK_YIL_BILEREK_KAPSAM_DISI`
+**korunur** — çıplak yıl bir eksik değil, alandan gelen bir **sınırdır** ㊸.
