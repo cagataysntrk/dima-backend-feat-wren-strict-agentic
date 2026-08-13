@@ -722,3 +722,50 @@ değil bir **kullanım** (`localStorage.`) arayacak şekilde düzeltildi.
 
 📌 **Kalan:** plan kapısı `②` **p95 < 300 ms** → sonra `FAZ 7` (⊘ demo dışı — planın
 kendi kararı, **doğrulanacak**) → `FAZ 8` hasat.
+
+---
+
+## §16 · KAPI `②` **p95 ÖLÇÜLDÜ** · `FAZ 7` ⊘ **DOĞRULANDI** *(2026-08-13)*
+
+### `②` — gerçek gömücüyle, ve **soğuk sayı gizlenmedi**
+
+`lab/oneri_p95.py` · `intfloat/multilingual-e5-large` · **136 terim** · payda **90**:
+
+| ölçüm | değer |
+|---|---|
+| kip | **vektor** *(🅕 leksik bir sayı buraya taşınamaz)* |
+| ılık **p50** | **39,63 ms** |
+| ılık **p95** | **49,23 ms** — eşik **300 ms** ✅ (**≈6× pay**) |
+| soğuk (ilk istek) | **1.514,5 ms** |
+
+🅖 **Soğuk sayı eşiğin ÜSTÜNDE ve yayına yazıldı.** İlk istek 136 etiketi gömer;
+süreç × şema sürümü başına **bir kez**. Azaltma yolu **var ve uygulanmadı**: `main.py`
+gömücüyü zaten arka planda ısıtıyor (`_warm`), indeks de oradan ısıtılabilir. ⊘ Şimdi
+yapılmadı çünkü ısıtma bir **şema** ister ve şema **istek başına** (tenant'a göre)
+çözülür — ısıtmanın **doğru yeri** ölçülmeden seçilemez ㊴.
+
+⚠ ㊱ Araç ilk yazılışında `WrenService()` diye çağırdı ve `TypeError` aldı (imza **üç**
+zorunlu argüman ister); kurulum `lab/oneri_olcum.py:211`'den **ödünç alındı**.
+
+### `FAZ 7` ⊘ — **devralınmadı, doğrulandı** ㉓
+
+Planın gerekçesi iki **doğrulanabilir** iddiaya dayanıyordu; ikisi de ölçüldü:
+`§40.4` **var** (`:2141`) · `§34/Adım 7` **var** (`:1958`) ve alt maddeleri
+(`ChatPanel.tsx` · `ReportCard.tsx` · `plan_semasi` · pill sözleşmesi ·
+`test_pill_niyet_aynasi.py`) **duruyor**. Yani ⊘ bir **unutma** değil bir **karar**,
+ve geri dönüş adresi yazılı.
+
+### Kanıt
+
+`tests/test_oneri_p95_ve_faz7.py` — **4 yüklem**: ① rapor **vektör** kipinde ve p95
+eşiği geçiyor (payda ≥30 🅜) ② soğuk maliyet raporda **görünüyor** ③ `§40.4` +
+`§34/Adım 7` **duruyor** ④ `Adım 7` altında **iş** var (`DOSYA`/`SÖZLEŞME`/`KAPI`) 🆚.
+
+🅑 **İki mutasyon:** rapor `kip=leksik` → **kırmızı** · `p95=310 ms` → **kırmızı**.
+
+📌 **Kalan tek faz: `FAZ 8` — hasat döngüsü** (`FAZ 6`'ya bağlıydı, **artık açık**).
+Alt maddeleri: `8.1` tıklama kaydı · `8.2` 🔴 **konum yanlılığı** (yalnız 1. sırayı
+**atlayan** tık güçlü sinyal) · `8.3` `ε` karıştırma · `8.4` *«tıklamadı»* → negatif ·
+`8.5` `sinonim_onerici.kuyruga_koy(approved=False)` **mevcut hat** · `8.6`
+`lab/sozluk_hasadi.py` **mevcut koşucu**. ⊙ `FAZ 8`'in tıklama kaydı, `5.5`'in
+bulunamayan sıklık ölçüsünü **doğurabilir** — ikisi aynı borcun iki ucu.
