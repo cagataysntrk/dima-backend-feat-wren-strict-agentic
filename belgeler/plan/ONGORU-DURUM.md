@@ -1203,3 +1203,36 @@ kırmıyor.
 ⚠ Bu kusur **benim işim değildi** ama tam kapı olmadan **hiç görünmeyecekti** 🅣 —
 ve iki turdur *«süit yeşil»* diye taşıdığım sayı, o dosyayı hiç seçmeyen bir kapsamın
 sayısıydı.
+
+---
+
+## §25 · **TAM KAPI ✅ · KORPUS ✅** — kapanış ölçümleri *(2026-08-13)*
+
+### Tam kapı (dördüncü koşum, `--degisen` **624** backend dosyası)
+
+**4.913 ✅ · 1 🔴 · 43 atlandı** (4 dk 17 sn). Tek kırmızı **`d11`** — **gerekçeli**
+ve ㊷ ajanın bulgusuyla **küçülmüş**: ön koşulu (*«sertifika sürümlenmeli»*) kodda
+**zaten ödenmiş** (`fanout.py:264`, `2026-08-02`'den beri); diskteki `mdl_version:
+None` bir **bayat derleme artefaktı** ⑪. Kalan iş bir kod işi değil, **tek bir yeniden
+üretim**.
+
+⊙ Yolculuk: **10 🔴 → 2 🔴 → 1 🔴**. Altı kırmızı **benim işim değildi** (`1ee3d14`'ün
+taşıdığı belge), biri **açık anahtar uzayı** ㊶, üçü benim eklediklerimdi.
+
+### Korpus — **dört şirket de TABANLA BİREBİR**
+
+| şirket | erişim | taban |
+|---|---|---|
+| boyahane | **%83** | %69 ✅ |
+| atiksan | **%69** | %69 ✅ |
+| gulteks | **%68** | %69 ✅ |
+| gitas | **%72** | %72 ✅ |
+
+**doğru-cube %95,6** (taban %94,4) ✅ · **semantik 558/591 = %94,4** (taban %93,5) ✅ ·
+çıkış kodu **0**.
+
+⊙ Bu tur `plan_garson.sayaclar()` **değişti** (kırılım iç içe taşındı) ve `oneri`/`hasat`
+**eklendi**; korpus bu yüzden zorunluydu — küp seçimi **bozulmadı**.
+
+📌 **Kalan:** ⑦ **imaj tazeleme** (`/oneri` ve `/oneri/tik` bugünkü imajda **yok**) →
+**22 curl senaryosu** (`§20`).
