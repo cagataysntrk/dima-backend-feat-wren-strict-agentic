@@ -2286,3 +2286,63 @@ de gösterir.*
 sürdürür (`Enter`'ın seçeceği satır) · **zıt ölçüt**: yazım hatasında öneri **kaybolmaz**.
 
 **Kanıt:** `onek_degismezi · oneri_cumle · oneri_motoru · alan_haritasi` → **108 ✅**.
+
+---
+
+## §48 — ÇEŞİTLİLİK: *«tekrar»* sanılanın çoğu GERÇEK ALTERNATİFTİ ㉔
+
+### Ölçüm — kotayı yazmadan önce
+
+Bir denetim ajanı *«`fire (OEE)` · `fire (parti)` · `fire oranı` üçü de aynı şeyi
+söylüyor; küp başına kota koy»* dedi. Kimlikler basıldı:
+
+```
+fire   → oee.toplam_fire_kg · parti.toplam_fire_kg · parti.fire_orani_yuzde
+ram 3  → enerji_makine…#hat=RAM 3 · oee.ort_oee#hat=RAM 3
+         bakim_is_emri…#makine=RAM-3 · enerji_makine…#makine=RAM-3
+```
+
+⟹ **Tekrar yok:** üç ayrı ölçü; ve `RAM 3` ile `RAM-3` **farklı boyutlarda** (`hat` ·
+`makine`) **farklı** varlıklar. Üstelik küp ayırıcısı bir kapının savunduğu **kasıtlı**
+bir ayrım (`test_AYNI_ETIKETLI_IKI_ONERI_kup_adiyla_AYRILIR`). Kota yazsaydım gerçek
+alternatifleri silecektim 🆉.
+
+### Ama ölçüm BAŞKA bir kalabalık gösterdi — ve o gerçekti
+
+Her varlık **iki** satır üretiyordu (*«… ne kadar?»* + *«… neden bu seviyede?»*); yedi
+yuvayı **üç** varlık dolduruyordu. Aynı varlığın ikinci kalıbı yeni bir **seçenek** değil
+bir **tekrar**dır.
+
+**Çare:** makro (`TUR_NEDEN`) yalnız **en iyi** varlığa yazılır. Öncesi/sonrası:
+
+| önce | sonra |
+|---|---|
+| RAM 3 elektrik · RAM 3 elektrik **neden** · RAM 3 OEE · RAM 3 OEE **neden** · RAM-3 iş emri · RAM-3 iş emri **neden** · RAM-3 elektrik | RAM 3 elektrik · RAM 3 elektrik **neden** · RAM 3 OEE · RAM-3 iş emri · RAM-3 elektrik · **RAM 1** elektrik · **RAM 2** elektrik |
+
+Yedi yuvada üç varlık yerine **beş** varlık. *Çeşitlilik, alternatifleri silerek değil
+tekrarları keserek artar.*
+
+**Kanıt:** `oneri_cumle · onek_degismezi · oneri_motoru` → **46 ✅**.
+
+---
+
+## §49 — 🔴 KULLANICI KARARI BEKLEYEN BULGU: **marj kapısı cevap yolunda YOK**
+
+Bir denetim ajanı ölçtü, **doğruladım**:
+
+| ölçüm | sonuç |
+|---|---|
+| `app/emin_miyim.py` | **var** — marj/eşik mantığı yazılı |
+| `grep emin_miyim app/routers/ask.py` | **0** 🔴 |
+| tüketicileri | yalnız `cube_router` · `value_index` (iç kullanım) |
+
+Planın `§28`'i üç dal tarif ediyor: **🟢 marj yüksek → oto-icra** · **🔵 marj düşük →
+route'un KENDİ kaybedenleri aday pill olarak (⊘ LLM)** · **🟣 aday yok → garson**.
+Bugün **ortadaki dal yok**: belirsizlik doğduğu anda tek çare garson.
+
+⚠ **Uygulamadım** ve sebebi bir çekingenlik değil bir **çelişki**: senin `EN ÜST KURAL`'ın
+*«en ufak %5'lik şüphede bile garson gitsin»* diyor; `§28` ise *«şüphenin çoğu **sıfır
+token**la çözülür»* diyor. İkisi aynı anda doğru olamaz ve bu bir **ürün kararıdır**.
+
+> **Sorum:** belirsizlikte önce **route'un kendi ikinci/üçüncü adayı** pill olarak
+> gösterilsin mi (0 token, anında), yoksa bugünkü gibi doğrudan **garson** mu gitsin?

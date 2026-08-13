@@ -733,6 +733,7 @@ def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | 
     donem = c.donem if c else _yazilan_donem(soru)
     niyet_boyutlari = [str(d) for d in (getattr(niyet, "kirilimlar", None) or [])]
     out: list[Oneri] = []
+    makro_yazildi = False
     for a in adaylar:
         cube, olcu = str(getattr(a, "cube", "")), _olcu_kodu(a)
         etiket = str(getattr(a, "etiket", "")).strip()
@@ -764,6 +765,15 @@ def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | 
             # ona *«ne kadar»* öneriyordu. Makro (`TUR_NEDEN`) `rapor_ustunde` dalında
             # zaten vardı ㊷ — yeni konuda **yoktu**. Aynı değişmez korunur: makro
             # cümlesi `cube_query` taşımaz, `Oneri.gecerli` onu tür üzerinden kabul eder.
+            #
+            # ⚠ `§48` — **MAKRO YALNIZ EN İYİ VARLIĞA.** Ölçüldü (`q=ram 3`): her varlık
+            # iki satır üretiyordu (*«ne kadar»* + *«neden»*) ve yedi yuvayı **üç varlık**
+            # dolduruyordu. Alternatifler gerçek (farklı küp/boyut — silinmez 🆉), ama
+            # aynı varlığın ikinci kalıbı yeni bir **seçenek** değil bir **tekrar**dır.
+            # En iyi aday hangisiyse *«neden»*i o hak eder; ötekiler `ne kadar` ile durur.
+            if makro_yazildi:
+                continue
+            makro_yazildi = True
             out.append(Oneri(
                 kimlik=f"{GRUP_YENI}:{TUR_NEDEN}:{cube}.{v_olcu}#{v_boyut}={v_deger}",
                 metin=f"{_kapsam(v_deger, v_etiket)} neden bu seviyede?",
