@@ -2698,3 +2698,56 @@ gerileme değil, bir **eleme** oldu 🆬.
 
 **Kanıt:** `oneri_motoru · onek_degismezi · oneri_cumle · bos_girdi_cekirdek ·
 gomulen_gorunum_tavani · oneri_gomme_temsili · alan_haritasi` → **124 ✅**.
+
+---
+
+## §59 — TEK HANELİ DEĞER GÜRÜLTÜSÜ: **rakam pekiştirir, kanıtlamaz** 🆢
+
+`§57`'nin token kapsamı bir yan etki bıraktı: `«ram 3 neden düşük»` listesinde *«bu ay
+**3**'ün kaza adedi ne kadar?»* — katalogdaki `3` (şiddet kodu) sorgudaki `3` token'ına
+**tek başına** vuruyordu.
+
+### İlk çarem komşuyu bozdu ⑯ — ve kapı ondan önce ben yakaladım
+
+Rakam token'larını **toptan** elemeyi denedim. Sonuç ölçüldü:
+
+```
+«ram 3 neden düşük» → RAM-1 · RAM-1 · RAM-2 · RAM-3 …   🔴 sıra kayboldu
+```
+
+Çünkü `RAM 3` ile `RAM-1` **eşitlendi**: ikisi de yalnız `«ram»`dan kapsam alıyordu.
+*Bir gürültüyü elerken, gürültüyü ayıran işareti de elemiş oldum.*
+
+### Doğru ölçüt uzunluk değil **CİNS**
+
+* Rakam token'ı **pekiştiricidir**: harf kanıtı **varsa** sayılır, yoksa sayılmaz.
+* `3` (şiddet kodu) → harf kanıtı **yok** → 0 → listeden düşer ✅
+* `RAM 3` → `«ram»` (harf) + `«3»` (rakam) = **2** → `RAM-1`'in (1) **üstünde** ✅
+
+⚠ **`_KISA_ESIK` kullanılmadı** ㊲ ve gerekçesi yazıldı: o eşik *«kısa etiket bağlamsız
+gömülmez»* sorusunun cevabıdır (`4`); buradaki soru *«bir token eşleşmeyi kanıtlar mı»*.
+`«ram»` üç harf, `«3»` bir hane — **uzunluk ikisini ayırmaz**.
+
+### Kapı — dört yüklem, biri **zıt ölçüt** 🆃
+
+`tests/test_token_kapsami.py` (**4 ✅**): uzun cümle varlığı **kaybetmez** · tek haneli
+değer **tek başına eşleşmez** · **rakam hâlâ ayırt eder** *(ilk çaremin kurbanı)* · tek
+kelimelik girdi davranışı **değişmedi**.
+
+**Kanıt:** `token_kapsami · oneri_motoru · onek_degismezi · oneri_cumle ·
+oneri_gomme_temsili · alan_haritasi` → **123 ✅**.
+
+---
+
+### §59-ek · Kullanıcı sorusu: *«öngörüye basınca ne oluyor?»* — ölçülmüş cevap
+
+| tıklanan satır | yol | LLM | süre |
+|---|---|---|---|
+| hazır `cube_query` taşıyan cümle | **`POST /cube`** | ⊘ | ~30 ms |
+| *«… neden bu seviyede?»* (makro) | **`POST /oneri/makro`** — 5 adımlık determinist plan | ⊘ | tek istek |
+| ikisi de yoksa | metin → `/ask` | olabilir | değişken |
+
+Sıra **şarttır** (makro → sorgu → metin): makro satırının `cube_query`'si **yoktur**.
+Kapı: `test_oneri_tiklamasi_sorgu_kosar.py` — *«öngörü tıklamasında `/ask` çağrılmaz»*,
+🅑 mutasyonla kanıtlı. Şeridin kendisi de LLM'siz: katalogdan üretilir, sorgu koşmaz
+(ılık **0,10 s**).

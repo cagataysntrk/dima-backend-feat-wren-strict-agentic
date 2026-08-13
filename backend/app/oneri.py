@@ -319,6 +319,8 @@ def _deger_adaylari(c: dict, cube: str, kup_display: str, gorunen: dict) -> list
     return out
 
 
+
+
 def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
     """Edge n-gram **önce**, bulanık benzerlik **sonra** (`5.3`).
 
@@ -363,8 +365,21 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
             if e.startswith(q) or any(p.startswith(q) for p in kelimeler):
                 vurdu = True
                 break
-            sayi = max(sayi, sum(1 for t in tokenlar
-                                 if e.startswith(t) or any(p.startswith(t) for p in kelimeler)))
+            harf = sum(1 for t in tokenlar if not t.isdigit()
+                       and (e.startswith(t) or any(p.startswith(t) for p in kelimeler)))
+            rakam = sum(1 for t in tokenlar if t.isdigit()
+                        and (e.startswith(t) or any(p.startswith(t) for p in kelimeler)))
+                    # 🔴 `§59` — **RAKAM PEKİŞTİRİR, KANITLAMAZ** 🆢.
+            #
+            # Ölçülen kusur: `«ram 3 neden düşük»` listesinde *«bu ay **3**'ün kaza adedi
+            # ne kadar?»* çıkıyordu — katalogdaki `3` (şiddet kodu) sorgudaki `3`'e tek
+            # başına vuruyordu. İlk çarem rakamı **toptan** elemekti ve **komşuyu bozdu**
+            # ⑯: `RAM 3` ile `RAM-1` eşitlendi, sıra kayboldu.
+            #
+            # ⚠ `_KISA_ESIK` de kullanılmadı ㊲: o eşik *«kısa etiket bağlamsız gömülmez»*
+            # sorusunun cevabıdır; buradaki soru *«bir token eşleşmeyi kanıtlar mı»*.
+            # `«ram»` üç harf, `«3»` bir hane — uzunluk ikisini ayırmaz, **cins** ayırır.
+            sayi = max(sayi, harf + (rakam if harf else 0))
             en_iyi = max(en_iyi, difflib.SequenceMatcher(None, q, e).ratio())
         if vurdu:
             onek.append((0.0, i))
