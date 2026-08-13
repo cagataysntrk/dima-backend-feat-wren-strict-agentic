@@ -22,11 +22,17 @@ bağlıydı 🅕); kapı *«bağla»* dedi ve **haklıydı**. Bu dosya o bağlam
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, Query, Request
 
 from app.auth.dependencies import require_company
 
 router = APIRouter(tags=["oneri"])
+
+#: ADR-0020 — sessiz yutma yok. Bir telemetri hatası cevabı bozmaz (`§101.1`) ama
+#: **duyurulur**: duyurulmayan bir hata, olmamış bir hatadan ayırt edilemez.
+_log = logging.getLogger("dima.oneri")
 
 
 @router.get("/oneri", dependencies=[Depends(require_company)])
@@ -82,14 +88,29 @@ def oneri_tik(request: Request, govde: dict | None = None) -> dict:
     sinif = hasat.sinyal(t)
     kaydedildi = False
     try:                                                   # pragma: no cover - IO
+        # 🔴 **ÖLÇÜLMÜŞ KUSUR (curl turu, 2026-08-13).** Uç `principal`in alanlarını
+        # **ham** geçiyordu ve kayıt **her çağrıda** düşüyordu:
+        #
+        #     Principal.tenant_id : `str | None`      ← garson/JWT'den gelen SLUG
+        #     InteractionLog.tenant_id : `UUID | None`
+        #
+        # Yani tür uyuşmazlığı; ve `except` sessiz olduğu için **kimse görmedi**
+        # (`kaydedildi:false` üç koşumda da yeniden üretildi 🅢). Sonuç ağırdı:
+        # `FAZ 8`'in hasat zinciri bu kaydı okur — yazma düşükse zincir
+        # **tüketicisiz bir yetenektir** 🆘.
+        #
+        # ⚠ Dönüştürücü **yazılmadı, ÇAĞRILDI** ㊲: `answer.py` ve `ask.py` aynı
+        # `principal → InteractionLog` yazımını zaten `_uuid_or_none` ile yapıyor.
+        # Altıncı bir kopya, bir gün ötekilerden ayrışacak altıncı bir kuraldı.
+        from app.answer import _uuid_or_none
         from control_plane.db import get_session
         from control_plane.models import InteractionLog
 
         principal = getattr(request.state, "principal", None)
         with next(get_session()) as oturum:
             oturum.add(InteractionLog(
-                tenant_id=getattr(principal, "tenant_id", None),
-                user_id=getattr(principal, "user_id", None),
+                tenant_id=_uuid_or_none(getattr(principal, "tenant_id", None)),
+                user_id=_uuid_or_none(getattr(principal, "user_id", None)),
                 question=t.ham_ifade,
                 kind="oneri_tik",
                 source="oneri",
@@ -98,6 +119,9 @@ def oneri_tik(request: Request, govde: dict | None = None) -> dict:
             oturum.commit()
         kaydedildi = True
     except Exception:                                      # noqa: BLE001 — §101.1
+        # ADR-0020: cevabı bozma, ama **sus da deme**. Bu satır olmasaydı yukarıdaki
+        # tür uyuşmazlığı bir daha ancak bir curl turunda görülürdü 🅖.
+        _log.exception("oneri_tik: tıklama kaydı yazılamadı")
         kaydedildi = False
     # 🅖 Sinıf **her hâlde** dönülür: kayıt tutulamasa bile istemci ne olduğunu bilir.
     return {"sinyal": sinif, "kaydedildi": kaydedildi}

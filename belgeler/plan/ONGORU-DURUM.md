@@ -1236,3 +1236,49 @@ taşıdığı belge), biri **açık anahtar uzayı** ㊶, üçü benim ekledikle
 
 📌 **Kalan:** ⑦ **imaj tazeleme** (`/oneri` ve `/oneri/tik` bugünkü imajda **yok**) →
 **22 curl senaryosu** (`§20`).
+
+---
+
+## §26 · 🔴🔴 **ÖZ-ELEŞTİRİ: ALTYAPIYI TESLİM ETTİM, ÜRÜNÜ DEĞİL** *(2026-08-13)*
+
+Kullanıcı frontend'e girdi ve gördüğü şey şuydu: bir-iki kelimelik, **alakasız** öneriler
+(`su`, `set`), **çapa çubuğu yok**, **pill satırı yok**, **toggle yok**, ve sağdaki
+besteci hiç öneri vermiyor. Haklı.
+
+### Ne yaptım — ve planın ne dediği
+
+| planın maddesi | plan ne diyor | ben ne teslim ettim |
+|---|---|---|
+| **`§3.3`** | *«MENÜ DEĞİL, **TAMAMLAMA**»* — örtük mesaj *«ne diyeceğini biliyorum»* | bir **alan adı menüsü** |
+| **`§18.7`** | *«Ne gömüyoruz — **alan adını DEĞİL**»*; etiket·sinonim·küp bağlamı·birim **ayrı vektör** | ham `cube.olcu` kimlikleri gömüldü → `fi` sorgusuna `su`·`set` düştü |
+| **`§5.1`** | 📌 **görünür çapa** + `[✕ bağlamı bırak]` + iki grup (`BU RAPOR ÜZERİNDE` / `YENİ KONU`) + **tam Türkçe cümleler** | tek düz liste, çapa yok, cümle yok |
+| **`§5.2`** | **PILL satırı** = `Niyet`in görünür hâli, **tipli `+`** (`ölçü·kırılım·dönem·adım`) | **hiç yok** — oysa `app/niyet.py` ve alanları **hazır** |
+| **`§5.3`** | pill **canlı doğrulanır**, geçersiz kombinasyon kırmızıya döner | **hiç yok** |
+| **`§7 ②`** | **adlandırılmış makro**: tek öneri, arkasında N deterministik adım | **hiç yok** |
+
+🔴 **Teşhis:** `FAZ 5`–`FAZ 8`'i *«motor + uç + kapı»* olarak okudum ve her birini kapıya
+bağladım. Kapılar yeşil, sayılar doğru — ama **ürün yok**. Yeşil bir kapı, kapsamı kadar
+doğrudur 🅣: benim kapılarım *«motor doğru sıralıyor mu»* diye sordu, hiçbiri *«kullanıcı
+ne görüyor»* diye sormadı. Ve `🆘` dersini kendi işime uygulamadım: **tüketicisiz yetenek
+bitmiş değildir** — burada tüketici vardı ama **yanlış şeyi** tüketiyordu.
+
+⊙ Ve curl turuna geçmem sırayı bozdu: 22 senaryoyu **eksik bir ürünün** üstünde koştum.
+*Bir şeyin doğru çalıştığını ölçmek, doğru şeyi yaptığını göstermez.*
+
+### Ne yapılıyor — dört ajan, kesişmeyen dosya sahipliğiyle
+
+| ajan | dosya | plan maddesi |
+|---|---|---|
+| **cümle üreteci** | `app/oneri_cumle.py` *(yeni)* | `§5.1` · `§3.3` — Türkçe cümle + iki grup |
+| **pill katmanı** | `app/pill.py` *(yeni)* | `§5.2` · `§5.3` — `Niyet`ten türetilir, tipli `+`, canlı doğrulama |
+| **gömme temsili** | `app/oneri.py` | `§18.7` — alan adı değil, **çok görünümlü** temsil |
+| **arayüz** | `dima-frontend-demo-master/` | `§5.1` çapa · **iki besteci** · toggle |
+
+⊙ Birleştirme dikişi (`routers/oneri.py` sözleşmesi + `§7 ②` makro) **bende**.
+
+### Bu turda kapanan: **K2** ✅
+
+`routers/oneri.py` — `principal.tenant_id` **`str`**, `InteractionLog.tenant_id` **`UUID`**
+idi; uç dönüştürücüyü çağırmıyordu ve istisna **kütüksüz** yutuluyordu. İkisi de düzeltildi:
+`_uuid_or_none` **çağrıldı** (yazılmadı ㊲ — `answer.py`/`ask.py` aynı işi zaten onunla
+yapıyor) ve `except` artık `_log.exception` ile **duyuruyor** (ADR-0020).
