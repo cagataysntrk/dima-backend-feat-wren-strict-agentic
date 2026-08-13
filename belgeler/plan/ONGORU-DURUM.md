@@ -893,3 +893,27 @@ sabiti** de sızıntıdır — yalnız **docstring'ler** düşürülür, dizeler
 
 📌 **SEKİZ FAZ DA KAPANDI.** Sırada kullanıcının bağlayıcı kuralı: **ajan denetimi
 (40 kontrol)** → **tam kapı + demet kapısı** → **≥20 curl senaryo/thread turu**.
+
+---
+
+## §18 · DEMET KAPSAMI **YENİDEN ÖLÇÜLDÜ** — taşıdığım sayı bayatmış 🅟 *(2026-08-13)*
+
+Tam kapıyı kurmadan önce kapsam ölçüldü ve **taşıdığım sayı yanlış çıktı**:
+
+| | taşınan (bayat) | **ölçülen** |
+|---|---|---|
+| `294eb67..HEAD` değişen dosya | *«606»* | **680** *(backend **624** · FE **18** · belgeler **25**)* |
+| aralıktaki commit | *(anılmıyordu)* | **552** — hepsi tek yazar, **sıfır** merge |
+
+⚠ ③ İlk okumam *«552 commit ama ben 13 attım, bir şey ters»* diye alarm verdi. Yeniden
+sayınca görüldü: `294eb67` oturum **başındaki** anlık görüntüden geliyor ve o görüntü
+**çok eski** — aradaki 552 commit bu uzun oturumun **tamamı** (`G0`…`FAZ 8`). Ayrık bir
+dal ya da başka bir geliştiricinin işi **yok**; `merge-base --is-ancestor` **EVET** dedi
+ve yazar **tek**.
+
+⊙ Sonuç: *«hedefli»* demet kapısı artık **624 backend dosyası** seçiyor — yani pratikte
+**tam süite yakın**. Bu bir kusur değil, kapsamın **büyümesi**; ama sayıyı taşımak
+㉔ *raporun sayısını ölçmeden alma* dersinin bir tekrarı olurdu.
+
+📌 Ajan denetimi **arka planda koşuyor**; iki test konteyneri **paralel koşturulmaz**
+(compose kilidi `metadata.yml`'de çakışır) — tam kapı ajan bitince koşulacak.
