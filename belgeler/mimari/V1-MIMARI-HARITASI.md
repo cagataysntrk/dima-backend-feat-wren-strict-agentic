@@ -26,7 +26,7 @@ tek bir fiş yerine bir **PLAN** çevirebiliyor — bayrak `off`, gerekçesi öl
 | `backend/MIMARI.md` | 🥈 Mimari otorite | **MIMARI kazanır** |
 | `belgeler/plan/DIMA-V1-YOL-HARITASI.md` | 🥉 Plan otoritesi | **Yol haritası kazanır** |
 | ⟳ `belgeler/plan/DIMA-GARSON-ARA-FAZ.md` | 🥉 **Ara faz plan otoritesi** *(garson katmanı)* | **Ara faz kazanır** |
-| ⟳ `belgeler/denetim/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md` | 🥉 **Orkestratör faz otoritesi** *(`O-0`…`O-9`)* | **Rapor kazanır** — ⚠ *ama `E6` düzeltmesi bir A/B ile GERİ ALINDI; ölçüm rapordan da üstündür* |
+| ⟳ `belgeler/plan/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md` | 🥉 **Orkestratör faz otoritesi** *(`O-0`…`O-9`)* | **Rapor kazanır** — ⚠ *ama `E6` düzeltmesi bir A/B ile GERİ ALINDI; ölçüm rapordan da üstündür* |
 | `OPERASYON-DURUM.md` | Durum kaydı | **Durum kaydı kazanır** |
 | **BU BELGE** | ❌ **YOK** | — |
 
@@ -972,7 +972,7 @@ Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir (`*_select_mo
 > orkestratör değişmezi (`O1`…`O8`) ve kabul ölçütü yazılı.
 
 > ⟳ **2026-08-09 · YENİ BÖLÜM** *(`O-0`…`O-9`)*. Kaynak plan:
-> `belgeler/denetim/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md`.
+> `belgeler/plan/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md`.
 > ⟳ **Bayrak `orkestrator_plan` = `beta` *(2026-08-09 akşamı)*.** `off` idi ve o da bir
 > A/B'nin sonucuydu; **açılması da öyle**: gerileme diye ölçülen −10 puanın kaynağı plan
 > kalitesi değil **oylamada iki dağılımın karışmasıydı**. Tam göç karışmayı kaldırdı ve

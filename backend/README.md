@@ -159,5 +159,5 @@ control-plane DB, MFA bayrağı ve rate-limit ayarları dahil).
 `wren-core-py==0.7.2` olarak pinler ve DuckDB demosunu image'a gömer. **Build context
 parent `dima` repo'su olmalı** (Wren kaynağı sibling submodule'de); Railway config'i parent
 repo kökündeki `railway.json`'dadır (`dockerfilePath: dima-backend/Dockerfile`). Swagger
-`/docs`'ta açıktır. Adımlar ve env: root [`docs/deployment.md`](../docs/deployment.md),
+`/docs`'ta açıktır. Adımlar ve env: kurulum reçetesi [`belgeler/kilavuz/SERVER_COMMANDS.md`](../belgeler/kilavuz/SERVER_COMMANDS.md),
 gerekçe [ADR-0012](../docs/adr/0012-canliya-alma-hosting-topolojisi.md).

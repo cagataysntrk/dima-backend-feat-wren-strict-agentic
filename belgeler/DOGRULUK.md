@@ -212,7 +212,7 @@ yayınlıyor — o paydada güven aralığı **±13 puandır**.
 ## 6 · Bu belge çürümez
 
 Buradaki her sayı `backend/lab/reports/nl_corpus.json`'dan okunur ve
-`backend/tests/test_f8_doğruluk_yayini.py` ikisini **karşılaştırır**. Ölçüm değişir de bu
+`backend/tests/test_f8_dogruluk_yayini.py` ikisini **karşılaştırır**. Ölçüm değişir de bu
 belge güncellenmezse **kapı kırmızı** olur.
 
 *Yayınlanmış ve çürümüş bir sayı, hiç yayınlanmamış bir sayıdan kötüdür — çünkü ona

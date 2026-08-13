@@ -3935,3 +3935,56 @@ adıyla ilan edildi; listeye ad eklemek **yazılı gerekçe** ister.
 **Kapılar:** belge düzeni **6 ✅ / 1 ⊘** *(`git` imajda yok — ilan edilmiş)* · yayın
 kapıları (`DOGRULUK` · `HAVA-BOSLUGU` · `A7/A8` · korpus tetiği) **41 ✅** · demet
 **312 ✅**.
+
+---
+
+## `§81` — **belgelerdeki YOLLAR gerçek mi**: yeni bir kapı, üç gerçek kusur
+
+Yeni gelen bir geliştirici belgeyi **yol yol** okur: *«`app/oneri.py`'ye bak»* der ve
+oraya gider. Yol yoksa iki şey birden kaybolur — aradığı dosya **ve belgeye olan güveni**.
+
+### ① Ölçüm — asıl yüzey **taranmıyormuş** ㉖
+
+| ölçüt | sayı |
+|---|---|
+| markdown bağı (`[…](…)`) — mevcut kapının baktığı | **46** · kırık **0** |
+| satır içi kod olarak anılan yol (`` `app/oneri.py` ``) | **602** · canlı belgelerde bulunamayan **95** |
+
+Yani mevcut kapı (`test_INDEKS_kirik_bag_tasimaz`) **yalnız indeksi** ve **yalnız bağları**
+tarıyordu; bu depoda yollar ağırlıkla **satır içi kod** olarak anılıyor.
+
+### ② 95'in ayıklanması — çoğu **ölçütün körlüğüydü** ③
+
+| sınıf | ne yapıldı |
+|---|---|
+| kısaltılmış yollar (`routers/ask.py` = `backend/app/routers/ask.py`) | ölçüt **çoklu kök** çözüyor |
+| `target/mdl.json` · `fanout_certificate.json` | kök listesine `demo/wren-project` eklendi |
+| `wren/policy.py` · `connector/mssql.py` | ⊘ **kütüphane içi** (`site-packages/wren`) — repoda olmaması **doğru** ⑦ |
+| `belgeler/plan/*` · `devir/` · `arsiv/` · `arastirma/` · tarih damgalılar | ⊘ **gelecek kipi** ya da 🔒 tarihsel kayıt — düzeltmek **tahrif** olurdu ㊸ |
+| `OPERASYON-DURUM.md` | ⊘ kapanmış operasyonun günlüğü; *«`app/merdiven.py` **bilerek yazılmadı**»* gibi **kasıtlı yokluk** kayıtları var |
+
+### ③ Geriye kalan **üç gerçek kusur** — düzeltildi
+
+| belge | kusur | çare |
+|---|---|---|
+| `belgeler/DOGRULUK.md` | kapıyı `test_f8_do**ğ**ruluk_yayini.py` diye anıyordu (Türkçe «ğ») | ASCII ada düzeltildi |
+| `backend/MIMARI.md` `ADR-0014` | `app/audit.py` — **yok** | `control_plane/audit.py` |
+| `backend/MIMARI.md` `ADR-0018` | `app/synonyms.py` — **yok** | `app/sinonim_onerici.py` |
+| `backend/README.md` | `docs/deployment.md` — kök `docs/` **yok** | `belgeler/kilavuz/SERVER_COMMANDS.md` |
+
+*Bir kapının adını yanlış yazmak, onu olmayan bir kapı yapar.*
+
+### ④ 🆕 Kapı: `test_belge_yollari_gercek.py` (**3 ✅**)
+
+Canlı belgede anılan her yol **çözülür**; 🆃 zıt ölçüt hem uydurma bir yolun
+**bulunmadığını** hem kısaltılmış bir yolun **bulunduğunu** sınar (yoksa kapı ya sahte
+yeşil ya yanlış kırmızı olurdu); kapsam **beyandır** 🆂.
+
+⚠ **İki kez ön koşuldan düştü ve ikisi de yazıldı:**
+* süzgeç yalnız `belgeler/` altına uygulanmıştı, **kök dosyalara** değil ⑯;
+* ön koşul tek dizine bakıyordu — standart kap `belgeler`i bağlıyor, kökün geri kalanını
+  **bağlamıyor**; koşul üç parçalı yapıldı. *Bir ortamın «görünür» olması, aradığın her
+  şeyin görünmesi demek değildir.*
+
+**Kapılar:** kök mount'la **9 ✅ / 1 ⊘** · standart mount'ta **276 ✅ / 3 ⊘** (doğru
+şekilde **atlıyor**, kırmızı vermiyor 🅯).
