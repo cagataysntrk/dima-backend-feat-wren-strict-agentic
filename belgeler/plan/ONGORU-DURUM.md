@@ -3713,3 +3713,64 @@ canlı + `Recall` yeniden ölçümü). Devralanın **ilk kod işi** artık budur
 ### ⊘ FE ekran doğrulaması — **yedinci tur** yapılamadı
 
 `localhost:3000` → `000`.
+
+---
+
+## `§77` — **TEŞHİS**: leksik kapı, vektörün getirdiği adayı **eliyor**
+
+### Düşen üç vaka — `sıra=None`, yani *«aşağı itilmiş»* değil **hiç listede yok**
+
+| ifade | ürünün ilk-5'i | vektörün bulduğu |
+|---|---|---|
+| *«makine verimliliği»* | `parti.ort_hiz_m_dk` — **tek aday** | `oee.ort_oee` **1.** |
+| *«delivery performance»* | `oee.ort_performans` · `enerji_sapma.*` | `siparis.zamaninda_teslim_yuzde` **1.** |
+| *«complaint count»* | `bakim.ariza_sayisi` · `ik.personel_sayisi` · `kalite.rework_sayisi` | `sikayet.sikayet_adedi` **3.** |
+
+⊙ Üçü de **anlamsal/İngilizce** — leksik ayağın zayıf, vektörün güçlü olduğu tam yer.
+
+### Sebep — koda yazılı, tahmin değil ③
+
+```python
+if lek:                                   # app/oneri.ara
+    lek_kume = set(lek)
+    puan = {i: p for i, p in puan.items() if i in lek_kume}
+```
+
+Leksik ayak **bir şey** bulduğunda aday kümesi ona **kapanır**: vektör yalnız
+**sıralayabilir**, aday **ekleyemez**. `MIMARI` *«vektör bir sıralayıcıdır, süzgeç
+değil»* diyor — bu satır onu **fiilen süzgeçleştiriyor**.
+
+⚠ Ve o satır bir kusur **değil**, ölçülmüş bir çare: kendi şerhi *«`fire` için leksik ayak
+3 aday buluyor, ekranda 7 görünüyordu … kullanıcı «fire» yazıp «doğalgaz» okuyor»*. **İki
+gerçek bir arada**: gürültüyü kesiyor **ve** anlamsal adayı kesiyor ㊸.
+
+### Ölçülmüş aday çare — **uygulanmadı**, sayısıyla kaydedildi
+
+Deney (mutasyonla, sonra **geri alındı** 🅑): kapıya *«vektörün **birincisi** geçsin»*:
+
+| | `R@1` | `R@3` | `MRR` |
+|---|---|---|---|
+| bugün | 78,4 | 83,8 | 0,806 |
+| deney | 78,4 | **86,5** | **0,820** |
+| vektör (tavan) | 81,1 | **91,9** | 0,868 |
+
+🔴 **Kontrol grubu kuruldu** ㊳: `fire` · `ciro` · `ram 3` çıktıları deney ve kontrolde
+**birebir aynı** — deney bir gerileme üretmedi. Ama açığın **yalnız üçte birini** kapatıyor
+(3 vakadan 1'i). *Bir çarenin ölçüsü, kapattığı açığın tamamıdır; yarısını kapatan bir çare
+bir karardır, bir düzeltme değil.* Bu yüzden **uygulanmadı** — kendi turunu, korpusunu ve
+canlı doğrulamasını ister.
+
+⊙ Ve bir yan bulgu ㊳: `«ram 3»` ham aday listesinde **birinci** `isg.ramak_kala_adedi` —
+**deneyden önce de öyleydi**. Canlıda sorun görünmüyor çünkü `oneri_cumle` katmanı varlık
+odaklı sıralıyor (`§57`/`§59`). *Ham katmandaki bir sıra, kullanıcının gördüğü sıra
+değildir.*
+
+**Kapı:** `test_leksik_kapisi_vektoru_susturuyor.py` (**3 ✅**) — teşhisi **dondurur** ㉕:
+kapı değişirse kırmızı verir ve ölçüm yeniden istenir. 🆃 Leksik boşken vektörün **tek
+çare** olduğu dal ayrıca savunuluyor.
+
+⚠ Değişiklik yalnız `tests/`+belge — **canlı tazeleme yapılmadı** (`s36` güncel).
+
+### ⊘ FE ekran doğrulaması — **sekizinci tur** yapılamadı
+
+`localhost:3000` → `000`.
