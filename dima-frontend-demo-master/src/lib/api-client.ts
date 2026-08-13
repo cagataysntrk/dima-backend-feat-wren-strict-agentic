@@ -334,12 +334,20 @@ export async function getPill(q: string): Promise<PillYaniti> {
 // ⚠ Kullanıcının gördüğü cümle (*«fire neden bu seviyede?»*) şeritten gelir; makro **adı**
 // (`neden`) bir kimliktir, bir başlık değil. Kartın başlığına adı yazmak, kullanıcıya
 // tıkladığından başka bir soru göstermek olurdu.
+//
+// 🔴🔴 `§63` — **`kos` BİR ONAYDIR, BİR SEÇENEK DEĞİL.** Uç, gövdede `kos` yokken çok
+// adımlı planı **koşmaz**; `source="onizleme"` ile adımları geri verir. Yani bu imzadaki
+// alanın varsayılanı *«koşma, önce göster»*tir — ve bu bilinçli: bir onay alanının
+// varsayılanı **her zaman** en az geri alınamaz olandır.
+// ⊘ Ve burada birleştirme YOK: uç alanları düz gönderir, ekranın istediği tek nesneyi
+// `lib/onizleme.ts` kurar. Bu dosya bir **taşıyıcıdır**, bir yorumlayıcı değil.
 export async function postMakro(
-  g: { ad: string; capa: CubeQuery; boyut: string; soru: string },
+  g: { ad: string; capa: CubeQuery; boyut: string; soru: string; kos?: boolean },
 ): Promise<AskResponse> {
   const { data } = await apiClient.post<AskResponse>("/oneri/makro", g);
   return { ...data, question: data.question || g.soru };
 }
+
 
 // Faz 4.1 (31 Temmuz 2026) — backend'de `ask_async_discovery` bayrağı açık tenant'larda
 // Discovery (LLM ham-SQL, en yavaş yol) senkron dönmez: /ask hemen bir job_id taşıyan

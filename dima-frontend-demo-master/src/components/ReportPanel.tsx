@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { OnizlemeKumandasi } from "@/lib/onizleme";
 import type { AskResponse, CubeQuery, Report } from "@/lib/types";
 import type { Thread } from "@/lib/threads";
 import { Besteci } from "@/components/Besteci";
@@ -137,6 +138,7 @@ export function ReportPanel({
   onCubeEdit,
   onMakro,
   onSorguKos,
+  onizleme = null,
   error,
   sessionId,
   contextLabel,
@@ -163,6 +165,10 @@ export function ReportPanel({
   /** 🔴 `§45` — hazır `cube_query` taşıyan öngörü tıklanınca **koşulur** (`/cube`,
    *  0 LLM). Verilmezse tıklama eski gibi metni besteciye yazar (`KURAL B`). */
   onSorguKos?: (cq: CubeQuery, metin: string) => void;
+  /** 🔴 `§63` — koşmadan gösterilen plan; yalnız **devam** bestecisinde çizilir.
+   *  ⚠ Çoklu-seçim bestecisine verilmez: orada bağlamı seçili kartlar kurar ve o kutu
+   *  makro **çağırmaz** — çizilseydi, ait olmadığı bir cümlenin planını gösterirdi. */
+  onizleme?: OnizlemeKumandasi | null;
   error: string | null;
   sessionId?: string;
   // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — "bağlam: X" göstergesi ARTIK burada: eski sol
@@ -602,6 +608,7 @@ export function ReportPanel({
                   String(((capaCq.dimensions as unknown[]) ?? [])[0] ?? ""))
               : undefined}
             onSorgu={onSorguKos}
+            onizleme={onizleme}
             ipucu={thread ? "bu rapor üzerinde devam et…" : "sor…"}
           />
         )

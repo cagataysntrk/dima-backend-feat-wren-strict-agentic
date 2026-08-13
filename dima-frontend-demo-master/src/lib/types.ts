@@ -332,6 +332,18 @@ export interface AskResponse {
    *
    * `null` = bu cevap bir belge değil. */
   rapor?: Report | null;
+  /** 🔴🔴 `§63` — **KOŞMADAN GÖSTERİLEN PLANIN TEL BİÇİMİ.** `§28.3`: *«çok adım
+   *  (N ≥ 2) → 🔴 **her zaman** önizleme»*. Uç (`POST /oneri/makro`) onaysız çağrıda
+   *  `source="onizleme"` döner, **hiçbir sorgu koşmaz** ve planı bu iki alanla anlatır.
+   *
+   *  ⚠ İkisi de **düz** durur çünkü sunucu onları düz gönderiyor (kapı:
+   *  `test_plan_onizleme.py`) — bu dosya sözleşmenin **aynasıdır**, güzelleştiricisi
+   *  değil. Ekranın istediği birleşik nesneyi `lib/onizleme.ts` kurar.
+   *  ⚠ `gecerli` ile `sertifika.gecerli` **ayrı sorulara** cevap verir: bu, planın
+   *  doğrulayıcıdan geçip geçmediği; öteki, metrik tanımının onaylı olup olmadığı.
+   *  ⚠ `plan` ile de karıştırılmaz: o **koşmuş** cevabın yapısıdır (sonuç taşır). */
+  adimlar?: { sira: number; fiil: string; metin: string }[] | null;
+  gecerli?: boolean;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).

@@ -34,6 +34,8 @@
 import { CaretInput } from "@/components/CaretInput";
 import { OneriSeridi, type OneriCapasi } from "@/components/OneriSeridi";
 import { PillSatiri } from "@/components/PillSatiri";
+import { PlanOnizleme } from "@/components/PlanOnizleme";
+import type { OnizlemeKumandasi } from "@/lib/onizleme";
 import type { CubeQuery } from "@/lib/types";
 import type { ReactNode } from "react";
 
@@ -50,6 +52,7 @@ export function Besteci({
   sonBakilanlar = [],
   ustBilgi,
   vurgulu = false,
+  onizleme = null,
 }: {
   /** Kutunun metni. ⚠ Durum **çağıranda** durur: `ReportPanel` iki farklı kutuyu iki
    *  farklı state ile besliyor (`continueValue` · `multiValue`) ve bir seçim
@@ -85,6 +88,10 @@ export function Besteci({
   ustBilgi?: ReactNode;
   /** Çoklu-seçim kipinin hafif vurgusu (`bg-accent/[0.03]`). */
   vurgulu?: boolean;
+  /** 🔴 `§63` — koşmadan gösterilen plan. `null` → hiç çizilmez (`KURAL B`: önizleme
+   *  gelmeyen her akış bugünküyle birebir). Sahibi `page.tsx`'tir çünkü onay ikinci bir
+   *  **koşum**dur ve koşumun tek sahibi orada (`cubeMutation`). */
+  onizleme?: OnizlemeKumandasi | null;
 }) {
   return (
     <div
@@ -132,6 +139,20 @@ export function Besteci({
               bileşene koymak, iki farklı soruyu tek sahibe vermek olurdu.
               ⊘ Kendi bayrağını/debounce'unu kendi taşır; buradan geçen tek şey metindir. */}
           <PillSatiri metin={deger} />
+          {/* 🔴 `§63` — ÖNİZLEME, pill satırının **altında**. Sıra bir tercih değil bir
+              okuma yönü: pill'ler *«ne anladım»*, plan *«ne yapacağım»* der; ikincisi
+              birincisinden **türer**, o yüzden onun altındadır.
+              ⚠ `[düzenle]` burada karşılanır çünkü kutunun metnini bilen tek yer burası:
+              kullanıcının kendi cümlesi besteciye geri yazılır, önizleme kapanır. */}
+          {onizleme?.plan && (
+            <PlanOnizleme
+              onizleme={onizleme.plan}
+              busy={busy}
+              onKos={onizleme.kos}
+              onIptal={onizleme.iptal}
+              onDuzenle={() => { onDeger(onizleme.plan!.soru); onizleme.iptal(); }}
+            />
+          )}
         </div>
       </div>
     </div>

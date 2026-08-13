@@ -128,6 +128,21 @@ interface Satir {
   cq: CubeQuery | null;
 }
 
+/** 🔴 `§64` — **UZUN BİLEŞİK İSTEMDE ŞERİT SÖNER** (`§33` satır 11).
+ *
+ *  Plan: *«uzun bileşik (>8 kelime ∨ fiil) → 🔴 şerit **söner** → garson → plan
+ *  önizleme»*. Gerekçesi `Thread 5`'te yazılı: *«uzun cümlede öneri **gürültü** yapar»* —
+ *  kullanıcı bir **plan** yazıyor, bir kelime aramıyor. Doğru cevap tamamlama değil,
+ *  koşmadan gösterilen bir **plan taslağıdır**.
+ *
+ *  ⚠ Eşik **tek sahipli**: iki yerde yazılsaydı bir gün biri 8, öteki 10 olurdu ㊲. */
+const AZAMI_KELIME = 8;
+
+/** Girdi bir **cümle mi bir plan mı**. Bugün yalnız kelime sayısı; fiil tespiti
+ *  `islev_sozcukleri` kapalı kümesine bağlanacak (açık borç 🅖 — uydurma sözcük listesi
+ *  yazmaktansa eksiği ilan etmek yeğdir ㊱). */
+const uzunBilesik = (q: string) => q.split(/\s+/).filter(Boolean).length > AZAMI_KELIME;
+
 /** 🔴 **MAKRO ADLARI — `backend/app/makro.py::MAKROLAR` ile birebir.** Şerit bugün yalnız
  *  `neden`i üretiyor (`oneri_cumle.TUR_NEDEN`), ötekiler `makrolar_icin` üzerinden gelir.
  *  ⚠ Küme **kapalı** ve bilerek: `tur`u körlemesine makro adı saymak, bir gün eklenecek
@@ -187,7 +202,7 @@ export function OneriSeridi({
     // 🔴 Bayrak kapalıysa **ağa hiç çıkma** — «çizmemek» yetmez, `E-1`'in ölçümü
     // istekten başlar. ⚠ Kullanıcı tercihi de **aynı kapıdan** geçer: susturulmuş bir
     // şerit için istek atmak, tuşu bir süse çevirirdi.
-    if (kapaliBayrak || !tercih || q.length < 2 || kapali) {
+    if (kapaliBayrak || !tercih || q.length < 2 || kapali || uzunBilesik(q)) {
       setAdaylar([]);
       return;
     }

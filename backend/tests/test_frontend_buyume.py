@@ -248,6 +248,24 @@ MUAFIYET: list[tuple[str, int, str]] = [
      "İkinci bir HTTP dosyası açmak, bir tavan borcunu bir MİMARİ İHLALİNE çevirirdi. "
      "⚠ Ve kapı bunu ilk gününde yakaladı — yazarını dahil: bir tavan, kendi koyanını "
      "da bağlamıyorsa bir tavan değildir."),
+    # ═══ `§63`/`§64` — ÖNİZLEME YÜZÜ (2026-08-13) ═══
+    ("lib/types.ts", 2,
+     "🔴 `§63` — `AskResponse.adimlar` + `gecerli`: çok adımlı planın **koşmadan** dönen "
+     "tel biçimi (`source=onizleme`). ⚠ **TAŞINAMAZ** ve gerekçesi bu dosyanın kendi "
+     "muafiyet geleneğinde yazılı: bu dosya sunucu sözleşmesinin **tek** aynasıdır; bir "
+     "alanı ikinci bir tip dosyasına koymak sözleşmeyi iki yerden okumak olurdu. "
+     "🔴 İki satır, iki alan, ikisi de **düz** — çünkü sunucu onları düz gönderiyor ve "
+     "bir ayna güzelleştirmez. Ekranın istediği birleşik nesneyi `lib/onizleme.ts` kurar; "
+     "yani bu turda büyüyen tek yer sözleşme, mantık **tavansız bir modüle** çıktı."),
+    ("app/page.tsx", 4,
+     "🔴 `§63` — önizlemenin **bağlanması**: kanca importu · `useOnizleme()` · "
+     "*«önizleme bir cevap değildir»* muhafızı (`yakala` → `return`) · bestecinin "
+     "kumandası. ⚠ **TAŞINAMAZ:** bu dosya thread/bağlam yaşam döngüsünün **tek** "
+     "sahibidir ve buradaki tek karar odur — *bir cevap geçmişe/tuvale yazılır mı*. "
+     "Onaysız bir plan yazılsaydı bir sonraki takip sorusu **hayalî** bir bağlam "
+     "üzerinden sorulurdu. 🔴 Durum makinesi (üç hâl: yok · bekliyor · onaylandı) ve "
+     "birleştirme burada DEĞİL: kapının kendi öğüdüne uyularak `lib/onizleme.ts`'e "
+     "çıkarıldı — dört satırın hiçbiri mantık taşımıyor, hepsi **bağ**."),
 ]
 
 

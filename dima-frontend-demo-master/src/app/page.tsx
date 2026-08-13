@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { apiErrorMessage, ask, askCube, getConversation, postMakro, uploadDataset } from "@/lib/api-client";
+import { useOnizleme, type MakroIstegi } from "@/lib/onizleme";
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
 import { ConnectionReviewPanel } from "@/components/ConnectionReviewPanel";
@@ -459,11 +460,21 @@ export default function Home() {
   //
   // ⚠ `label` makro dalında **kullanılmaz** (uç onu okumaz): kartın başlığı `soru`dur,
   // yani kullanıcının şeritte gördüğü cümle. Bkz. `postMakro`'nun şerhi.
-  const cubeMutation = useMutation<AskResponse, unknown, { cq: NonNullable<AskResponse["cube_query"]>; label: string; makro?: { ad: string; soru: string; boyut: string } }>({
+  // 🔴 `§63` — koşmadan gösterilen plan. Durum/onay mekaniği `lib/onizleme.ts`'te:
+  // bu dosyanın işi thread/bağlam yaşam döngüsüdür, bir karar makinesi değil.
+  const onizleme = useOnizleme();
+
+  const cubeMutation = useMutation<AskResponse, unknown, MakroIstegi>({
     mutationFn: ({ cq, label, makro }) =>
-      makro ? postMakro({ ad: makro.ad, capa: cq, boyut: makro.boyut, soru: makro.soru })
+      makro ? postMakro({ ad: makro.ad, capa: cq, boyut: makro.boyut, soru: makro.soru, kos: makro.kos })
       : askCube({ cube_query: cq, label, session_id: sessionId, thread_id: activeThreadId }),
-    onSuccess: (data) => {
+    onSuccess: (data, istek) => {
+      // 🔴🔴 `§63` — **ÖNİZLEME BİR CEVAP DEĞİLDİR.** Uç `source="onizleme"` döndüyse
+      // hiçbir sorgu koşmadı: geçmişe yazmak, tuvale eklemek ya da bağlamı (`contextCq`)
+      // güncellemek, **olmamış** bir cevabı olmuş gibi kaydetmek olurdu — ve bir sonraki
+      // takip sorusu o hayalî bağlam üzerinden sorulurdu. ⚠ İkinci bir `useMutation`
+      // yazılmadı: onay **aynı** gövdenin `kos: true` ile yeniden gönderilmesidir.
+      if (onizleme.yakala(data, istek)) return;
       // §B — chip düzenlemesi HER ZAMAN aktif thread'e etiketlenir (chip UI'ı zaten yalnız
       // aktif thread'in kartlarında var), asla yeni thread AÇMAZ. `activeThreadId` null
       // olamayacak durumda (savunmacı) yeni bir thread mint edilir.
@@ -670,6 +681,7 @@ export default function Home() {
                 // bozardı ㊲: makro `makro` alanıyla, öngörü onsuz gider.
                 onMakro={(ad, soru, cq, boyut) => cubeMutation.mutate({ cq, label: soru, makro: { ad, soru, boyut } })}
                 onSorguKos={(cq, label) => cubeMutation.mutate({ cq, label })}
+                onizleme={{ ...onizleme, kos: () => { const i = onizleme.onayla(); if (i) cubeMutation.mutate(i); } }}
                 // 🔴 `cubeMutation` HATASI DA GÖRÜNÜR OLDU. Eskiden yalnız `mutation`
                 // okunuyordu; `/cube` sessizce düşerse kullanıcı **hiçbir şey** görmüyordu.
                 // Makro ile bu bir kusurdan bir **ürün boşluğuna** dönüşürdü: boyutsuz bir

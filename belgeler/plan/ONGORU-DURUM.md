@@ -2950,3 +2950,57 @@ kos=true → source=cube · 5 adım koştu
 | **garson çıktısı da** plan olsun (`§28`: *«garson = seçilmeyenin pill'ini hazırlayan»*) | 🔴 `ask.py`'de `emin_miyim` **0 çağrı** |
 | uzun girdide şerit sönmesi (`>8 kelime ∨ fiil`) | 🔴 |
 | bütçe görünürlüğü (`adim=8 · saniye=30 · sorgu=12`) | ◐ doğrulayıcıda var, **ekranda yok** |
+
+---
+
+## `§64` — ÖNİZLEMENİN **YÜZÜ**, ve uzun girdide şeridin **susması**
+
+> `§63` ucu kurdu; ama bir arka-uç yeteneği **tüketicisi olmadan «bitti» değildir** 🆘.
+> Ölçüldü: `postMakro` `kos` alanını **hiç göndermiyordu** ve dönen `adimlar` **okunmadan
+> atılıyordu** — yani kullanıcı için önizleme *hâlâ yoktu*.
+
+### Ne yapıldı
+
+| # | iş | yer |
+|---|---|---|
+| ① | `postMakro` **`kos` taşır** — onay bir alan, bir seçenek değil | `lib/api-client.ts` |
+| ② | önizleme durumu + onay mekaniği | 🆕 `lib/onizleme.ts` (`useOnizleme`) |
+| ③ | **dikey** adım listesi + `[koş] [düzenle] [iptal]` | 🆕 `components/PlanOnizleme.tsx` |
+| ④ | pill satırının **altına** yerleşim | `Besteci.tsx` |
+| ⑤ | **uzun bileşikte şerit söner** (`>8 kelime`) | `OneriSeridi.tsx` |
+
+**Akış:** çok adımlı makro tıklanır → uç `source="onizleme"` döner → `yakala()` **`true`**
+döndürür ve cevap **geçmişe/tuvale yazılmaz** (bir önizleme bir cevap değildir; yazılsaydı
+sonraki takip sorusu **hayalî** bir bağlam üzerinden sorulurdu) → kullanıcı `[koş]` derse
+**aynı gövde** `kos: true` ile gider.
+
+### Üç tasarım kararı, üçü de planın bir cümlesinden
+
+* **adımlar dikey** (satır `1242`: *«adımlar dikey, yuvalar yatay; ikisi aynı şeritte
+  olmaz»*) — bir plan bir **sıradır**; pill satırı yatay kalır çünkü o bir **kümedir**.
+* **`gecerli === false` de çizilir** (`§7` dürüst ret) — `[koş]` söner, gerekçe kalır.
+* **`[düzenle]` planı değil cümleyi düzenler**: adım kurcalama sözleşmesi sunucuda **yok**;
+  kullanıcının kendi cümlesi besteciye geri yazılır. Adım düzenleme **açık borç** 🅖.
+
+### Tavan hikâyesi — kapı yine yol gösterdi
+
+İlk yazım `page.tsx` **+17**, `api-client` **+9**, `types.ts` **+8** büyüttü ve kapı üçünü
+de kırmızı verdi. Tavanlar **yükseltilmedi**; kapının kendi öğüdüne uyuldu (*«yeni davranışı
+bir bileşene çıkar»*): birleştirme `api-client`'tan **çıkarıldı** (o dosya bir **taşıyıcıdır**,
+yorumlayıcı değil → **−2**), durum makinesi `lib/onizleme.ts`'e taşındı. Kalan **`page.tsx`
++4 · `types.ts` +2** gerekçeli `MUAFIYET`'e yazıldı: dördünün hiçbiri mantık değil **bağ**,
+ikisi ise sözleşmenin **tek aynasındaki** iki alan.
+
+**Kapı:** `test_onizleme_yuzu.py` (**4 ✅**) — `kos` taşınıyor · şerit uzun girdide **söner**
+ve eşik **tek sahipli** ㊲ · önizleme **dikey** ve pill'in **altında** · 🆃 **kısa girdide
+şerit hâlâ yanar** (yalnız susmayı ölçseydik, şeridi tümden kapatmak kapıyı yeşil bırakırdı).
+**Kanıt:** `onizleme_yuzu · frontend_buyume · plan_onizleme · yetim uç/modül` → **30 ✅**.
+
+### ⚠ Kalan — rol değişikliği hâlâ TAM değil
+
+| madde | durum |
+|---|---|
+| **garson çıktısı da** plan olsun (`§28`) | 🔴 `ask.py`'de `emin_miyim` **0 çağrı** |
+| bütçe görünürlüğü (`adim=8 · saniye=30 · sorgu=12`) | ◐ doğrulayıcıda var, **ekranda yok** |
+| fiil tespiti (`>8 kelime **∨ fiil**`) | ◐ bugün yalnız kelime sayısı 🅖 |
+| adım **düzenleme** | 🔴 sunucuda sözleşme yok 🅖 |
