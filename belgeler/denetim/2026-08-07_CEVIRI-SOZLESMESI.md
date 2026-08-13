@@ -13455,3 +13455,36 @@ bir gün ikisinin ayrışması demektir.
 
 Dört `+` **tipli** ve `sonuc` alanı `plan`'ı ötekilerden ayırıyor — planın *«bir numaralı
 tuzağı»* kapalı.
+
+## 🎯 İNSAN TESTİ — **İKİNCİ TUR** *(kap `s11`, ısıtma `24354 ms`)*
+
+Önceki turun iki kusuru **canlıda** kapandı:
+
+### ✅ İK1 — kullanıcının yazdığı dönem artık cümlede
+
+| yazılan | önce | **şimdi** |
+|---|---|---|
+| `bu ay fire` | `fire (parti)` | **`fire — bu ay (parti)`** · `fire oranı — bu ay` |
+| `bu yıl ciro` | `ciro` | **`ciro — bu yıl`** |
+| `fire` *(dönemsiz)* | `fire (OEE)` | `fire (OEE)` — **uydurma dönem yok** 🅫 |
+
+### ✅ İK2 — makro bir **cevap** döndürüyor
+
+```
+source: cube            ← LLM yok, rozet bunu söylüyor
+question: 'OEE neden bu seviyede?'
+result:   satır=33 · kolon=[makine, vardiya, ort_oee]
+bolumler: 2 · cube_query: {cube:oee, measures:[ort_oee], dimensions:[makine,vardiya]}
+```
+
+Kart **gövdeli** çiziliyor ve `cube_query` sayesinde `/cube` ile **sıfır LLM** yeniden
+koşulabiliyor (`O-5`). Önceki turda dönen şey `ciktilar·katmanlar·makbuz` idi.
+
+### 🔴 K1 hâlâ açık — ve insan testinde **her turda** görünüyor
+
+`fire` → `metre` · `enerji` · `gerçekleşen`; `bu yıl ciro` → `borç` · `alacak` · `hedef`.
+Vektör ayağının kuyruğu alakasız kalıyor. ⚠ Vektör ayağı bilinçli olarak *«sıra üretir,
+**eşik üretmez**»* (`FAZ 0` bulgusu) — yani onarım **eşik koymak değil**, kesme adımında
+bir **alaka tabanı** kurmaktır ve o taban **kalibre edilmeden** konulamaz (MIMARI:
+*«kalibre edilmemiş bir eşik bir güven değil bir süstür»*). Kalibrasyonun paydası bugün
+**19** 🆉 ve o payda büyütülmeden bu karar verilemez.
