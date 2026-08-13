@@ -769,3 +769,27 @@ Alt maddeleri: `8.1` tıklama kaydı · `8.2` 🔴 **konum yanlılığı** (yaln
 `8.5` `sinonim_onerici.kuyruga_koy(approved=False)` **mevcut hat** · `8.6`
 `lab/sozluk_hasadi.py` **mevcut koşucu**. ⊙ `FAZ 8`'in tıklama kaydı, `5.5`'in
 bulunamayan sıklık ölçüsünü **doğurabilir** — ikisi aynı borcun iki ucu.
+
+### ⚠ `§16` EKİ — **İKİ KAPI ARTEFAKTA BAĞLI ve BAŞKA AĞAÇTA ATLANIR** ⑪🅣
+
+Commit sırasında ölçüldü: **`backend/lab/reports/` gitignore'ludur.** Yani
+`oneri_p95.json` ve `oneri_olcum.json` **depoya girmiyor**, ve onları okuyan iki
+yüklem başka bir çalışma ağacında (ya da temiz bir klonda) **`skip`** verir:
+
+* `test_oneri_p95_ve_faz7.py::test_p95_RAPORU_YERINDE_ve_ESIGI_GECIYOR`
+* `test_oneri_on_kosulu_model_kimligi.py::test_FAZ0_raporu_YERINDE_ve_esik_KARSILANDI`
+
+⊙ Bu **`d11` ile aynı sınıf** bir durumdur (sertifika gitignore'lu `demo/wren-project/
+target/`'te). Ve 🅣 *bir kapının yeşili kapsamıyla sınırlıdır*: burada yeşil, orada
+**sessiz**.
+
+⊘ **Artefaktı depoya koymak çözüm değil** ⑪: bu depo bir kez *«gitignore'lu bir
+derleme artefaktından okuyan ölçüm»* yüzünden aynı kaynakta farklı sayı gördü —
+commit'lenen bir ölçüm raporu **bayatlar** ve bayat hâliyle **yeşil** verir.
+
+📌 **Doğru çözüm ölçümün kendisini taşımaktır, dosyayı değil** 🅕: sayılar bu durum
+belgesine **yazıldı** (p95 **49,23 ms** · payda **90** · kip **vektor** · soğuk
+**1.514,5 ms**), ve `skip` mesajı hangi komutun koşulacağını **söylüyor**. Kapı bir
+**gerileme** kapısıdır, bir **kanıt taşıyıcısı** değil.
+
+⚠ Kaydedildi: bu, kapıların kapsamı hakkında bir **borç** — ve bilinerek taşınıyor 🅖.
