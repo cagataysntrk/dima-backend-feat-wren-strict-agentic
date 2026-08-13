@@ -35,6 +35,15 @@ BEKLENEN_ALANLAR = {
     "adim_toplami", "cok_adimli", "denendi", "dustu", "gecerli", "onarildi",
     "onarim_tutma_yuzde", "red_nedenleri", "red_orani_yuzde", "tek_adimli",
     "yedege_dondu",
+    # 🔴 **TUR KIRILIMI — İLAN EDİLDİ** (2026-08-13, tam kapı ölçümü).
+    # `plan_garson:343` onarım turunu **dinamik anahtarla** sayıyor
+    # (`onarildi_tur1`, `onarildi_tur2`, …). Eskiden bunlar `sayaclar()` çıktısında
+    # **üst düzeye** seriliyordu; izole koşumda o yol hiç çalışmadığı için kapı
+    # yeşil kalıyor, tam süitte bir onarım tetiklendiği anda `onarildi_tur1`
+    # beliriyor ve bu yüklem *«ilan edilmemiş alan»* diye kırmızı veriyordu 🅢.
+    # ⊙ Kapı **gevşetilmedi**: ürün, kırılımı `red_nedenleri` gibi **iç içe** bir
+    # alana taşıdı ㊲ — üst düzey anahtar uzayı **kapalı**, bilgi **kaybolmadı**.
+    "onarildi_turlere_gore",
 }
 
 

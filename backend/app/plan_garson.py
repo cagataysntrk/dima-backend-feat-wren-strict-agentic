@@ -198,7 +198,24 @@ def _redi_say(mesajlar) -> None:
 def sayaclar() -> dict[str, int]:
     """Ölçüm okuyucusu — **kopyasını** verir. Doğrudan sözlüğü vermek, okuyanın
     yazabilmesi demekti."""
-    out = dict(SAYAC)
+    # 🔴🔴 **ANAHTAR UZAYI KAPALI TUTULUR** ㊶ (2026-08-13, tam kapı ölçümü).
+    #
+    # ⊙ Ölçülen kusur: `:343` onarım turunu **dinamik anahtarla** sayıyor
+    # (`SAYAC[f"onarildi_tur{_tur}"]`). `out = dict(SAYAC)` onu **üst düzeye**
+    # taşıyınca yayımlanan sözleşme **çalışma zamanında büyüyordu**: izole koşumda
+    # o yol hiç çalışmadığı için kapı yeşil, tam süitte bir test onarım tetikleyince
+    # `onarildi_tur1` beliriyor ve `test_a13` *«ilan edilmemiş alan»* diye kırmızı
+    # veriyordu 🅢. Kapı **haklıydı**: *sessizce büyüyen bir sözleşme, denetlenemeyen
+    # bir sözleşmedir.*
+    #
+    # ⊙ Çözüm deponun **kendi deseni**: kırılımlar üst düzeye serilmez, **iç içe**
+    # yayımlanır — tıpkı `red_nedenleri` gibi ㊲. Böylece hiçbir bilgi kaybolmaz,
+    # üst düzey alan kümesi **sabit** kalır ve `test_a13` onu **tam** sayabilir.
+    out = {k: v for k, v in SAYAC.items() if not k.startswith("onarildi_tur")}
+    out["onarildi_turlere_gore"] = {                     # type: ignore[assignment]
+        k.removeprefix("onarildi_tur"): v
+        for k, v in SAYAC.items() if k.startswith("onarildi_tur")
+    }
     # 🔴 `A9` — sebep dağılımı **aynı okuyucudan** çıkar: iki ayrı okuyucu, bir gün
     # yalnız birinin okunması demekti.
     out["red_nedenleri"] = dict(RED_NEDENLERI)          # type: ignore[assignment]

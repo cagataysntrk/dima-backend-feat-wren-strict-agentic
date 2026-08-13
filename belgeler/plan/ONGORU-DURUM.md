@@ -1161,3 +1161,45 @@ Kalan ikisi: `d11` (**gerekçeli**) ve **yeni bir kırmızı** —
 
 ⊙ **Anahtarın adı UYDURULMAYACAK** ㊱ — tam koşumun kendi hata satırından okunacak.
 Ölçüm bu turda başlatıldı; sonucu sonraki tur yazılacak.
+
+---
+
+## §24 · `a13` TEŞHİSİ — **AÇIK ANAHTAR UZAYI** ㊶ *(2026-08-13)*
+
+Üçüncü tam koşum (**4.911 ✅ · 2 🔴**) hata satırını verdi ve anahtar **uydurulmadı** ㊱:
+
+    E   assert not {'onarildi_tur1'}
+
+### Mekanizma — ölçüldü, tahmin edilmedi
+
+`app/plan_garson.py:343` onarım turunu **dinamik anahtarla** sayıyor:
+`SAYAC[f"onarildi_tur{_tur}"]`. `sayaclar()` ise `out = dict(SAYAC)` yapıyordu — yani
+**yayımlanan sözleşme çalışma zamanında büyüyordu**.
+
+⊙ Bu yüzden kırmızı **sıra bağımlıydı** 🅢: izole koşumda onarım yolu hiç çalışmıyor,
+üstelik alfabetik sırada `test_a13` kirletici `test_b4`'ten **önce** geliyor. Tam
+süitte bir onarım tetiklendiği an `onarildi_tur1` beliriyor ve kapı *«ilan edilmemiş
+alan»* diyor.
+
+⚠ **İlk «125 passed» koşumum kanıt değildi** ㉘ — `-k` seçimi de alfabetik sıralıyordu,
+yani `a13` yine **önce** koşuyordu. Vakayı ancak **sırayı elle kurarak**
+(`test_b4 → test_a13`) yalıtabildim.
+
+### Çözüm — kapı **gevşetilmedi**, ürün deponun **kendi desenine** uydu ㊲
+
+Kırılım artık üst düzeye serilmiyor; `red_nedenleri` gibi **iç içe** yayımlanıyor:
+`onarildi_turlere_gore: {"1": n, "2": m}`. Böylece **üst düzey anahtar uzayı kapalı**,
+bilgi **kaybolmadı**, ve `test_a13` alan kümesini **tam** sayabiliyor.
+`BEKLENEN_ALANLAR`'a tek bir **ilan edilmiş** alan eklendi.
+
+⊙ Tüketiciler ölçüldü: `/stats/plan` (operatör aracı) ve iki test — ikisi de yalnız
+**ilan edilmiş** alanları arıyor; `onarildi_tur*`'u okuyan tek yer `test_b4` ve o
+**doğrudan `SAYAC`**'a bakıyor, `sayaclar()`'a değil. Yani değişiklik hiçbir okuyucuyu
+kırmıyor.
+
+🅑 **Mutasyon:** `out = dict(SAYAC)` geri konunca (`b4 → a13` sırasıyla) kapı
+**kırmızı**; düzeltmeyle **9 passed**.
+
+⚠ Bu kusur **benim işim değildi** ama tam kapı olmadan **hiç görünmeyecekti** 🅣 —
+ve iki turdur *«süit yeşil»* diye taşıdığım sayı, o dosyayı hiç seçmeyen bir kapsamın
+sayısıydı.
