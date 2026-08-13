@@ -82,6 +82,27 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "yanıt BAYT BAYT bugünküyle aynıdır (KURAL B — FAZ 2.5).",
         "category": "dogruluk",
     },
+    "oneri_katmani": {
+        # 🔴 `FAZ 6.6` — yazarken-ara şeridinin tuşu.
+        #
+        # ⚠ **Planın `localStorage` çaresi UYGULANMADI** ㊱: plan demo'da yerel bir
+        # geçersiz kılma öneriyor ve kendi uyarısını da yazıyordu — *«`§40.3` A/B
+        # kaybı»*. Ölçüldü ki gerek yok: ön uçta **`useFeature`** zaten var
+        # (`src/lib/useFeature.ts`, açılışta bir kez `/features` okur). Bayrak
+        # normal kanaldan akar, A/B **korunur** 🆝.
+        "on_sarti": "🔴 `FAZ 0` eşiği karşılandı (`Recall@3 %89,5` ≥ %85) ve zincir "
+                    "bağlandı. `beta`ya alınması için kalan ölçüm: planın `②` kapısı "
+                    "**p95 < 300 ms** — sürüm anahtarlı önbellek sonrası istek başına "
+                    "**1** gömme kaldı, ama p95 **henüz ölçülmedi**. Ölçülmeden `beta` "
+                    "yok: kalibre edilmemiş bir hız iddiası bir süstür.",
+        "label": "Yazarken-ara öneri şeridi (`GET /oneri`)",
+        "description": "Katalogdan yazarken aday terim önerir (leksik ⊕ vektör, RRF). "
+                       "🔴 Yetki **motorda** ve **sıralamadan önce** süzülür — bir "
+                       "öneri listesi envanterdir. Kapalıyken şerit **hiç çizilmez** "
+                       "ve `/oneri` **hiç çağrılmaz** (ağ sekmesinden görülebilir); "
+                       "yanıt yolunda tek bayt değişmez (KURAL B).",
+        "category": "deneyim",
+    },
     "olcu_ekleme_takibi": {
         # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
         # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.

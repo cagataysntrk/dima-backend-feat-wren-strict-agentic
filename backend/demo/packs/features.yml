@@ -547,3 +547,11 @@ features:
                           # VARSAYILAN KAPALI ve bu bir karar: DCM bir KISITLAMADIR;
                           # istemeden açılırsa kullanıcı ürünü BOZUK sanır ("neden yazamıyorum?").
                           # Açıkken serbest metin YOK, cevap 3 tıkta ve LLM'siz.
+  oneri_katmani: "off"    # FAZ 6.6: yazarken-ara öneri şeridi (GET /oneri).
+                          # VARSAYILAN KAPALI ve bu bir karar: planın `②` kapısı
+                          # (p95 < 300 ms) HENÜZ ÖLÇÜLMEDİ. Ölçülmemiş bir hız
+                          # iddiasıyla bir tuşu açmak, kalibre edilmemiş bir sayıyı
+                          # güven diye satmakla aynı sınıftır (MIMARI'nin kararı).
+                          # KAPALIYKEN şerit HİÇ çizilmez ve /oneri HİÇ çağrılmaz —
+                          # ağ sekmesinden görülebilir; yanıt yolunda tek bayt
+                          # değişmez (KURAL B).

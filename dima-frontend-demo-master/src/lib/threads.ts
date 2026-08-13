@@ -81,3 +81,26 @@ export function replyAnchorLabel(question: string): string {
   const q = question.trim();
   return q.length > 48 ? `${q.slice(0, 45)}…` : q;
 }
+
+
+// 🔴 `FAZ 5.9` — **SON BAKILANLAR**, sohbetin kendi kartlarından türetilir.
+//
+// ⚠ Yeni bir depo AÇILMADI: `localStorage` yok, sunucu tarafı yok, senkron yok.
+// Kaynak `temellendirme.olcu` — makbuzun *«ne anladım»* alanı, yani kullanıcının
+// gerçekten **gördüğü** ölçü adı (ham `measures[]` kolon adı değil 🅬).
+//
+// ⚠ *«En çok sorulanlar»* ve *«dikeyin çekirdek 5'i»* **uygulanmadı**: ikisi de bir
+// sıklık/önem ölçüsüne dayanır ve o ölçü kodda **yoktur** (`stats.py` yalnız `kind`
+// başına sayar). Uydurulmuş bir sıralama, sıralama değildir ㊱.
+export function sonBakilanEtiketler(threads: Thread[], azami = 7): string[] {
+  const out: string[] = [];
+  for (let i = threads.length - 1; i >= 0; i--) {
+    const its = threads[i].items;
+    for (let j = its.length - 1; j >= 0; j--) {
+      const e = its[j]?.temellendirme?.olcu;
+      if (e && !out.includes(e)) out.push(e);
+      if (out.length >= azami) return out;
+    }
+  }
+  return out;
+}

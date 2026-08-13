@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getOneri, type OneriAdayi } from "@/lib/api-client";
+import { useFeature } from "@/lib/useFeature";
 
 /** `6.4` — debounce 200 ms. Her tuşta uç çağırmak, ucu bir DDoS'a çevirir. */
 const DEBOUNCE_MS = 200;
@@ -22,10 +23,19 @@ const AZAMI = 7;
 export function OneriSeridi({
   metin,
   onSec,
+  sonBakilanlar = [],
 }: {
   metin: string;
   onSec: (etiket: string) => void;
+  /** `5.9` — boş girdide gösterilecek **son bakılanlar**. Yeni bir depo AÇMAZ:
+   *  sohbetin kendi kartlarından türetilir (kalıcı durum yok, izin yok, senkron yok). */
+  sonBakilanlar?: string[];
 }) {
+  // 🔴 `6.6` — TUŞ. Kapalıyken şerit çizilmez **ve `/oneri` hiç çağrılmaz** 🆀.
+  // ⚠ Planın `localStorage` çaresi UYGULANMADI: `useFeature` zaten var, bayrak normal
+  // kanaldan akar ve planın kendi uyardığı **A/B kaybı** (`§40.3`) doğmaz 🆝.
+  const acik = useFeature("oneri_katmani");
+  const kapaliBayrak = acik === null || acik === "off";
   const [adaylar, setAdaylar] = useState<OneriAdayi[]>([]);
   const [secili, setSecili] = useState(0);
   const [kapali, setKapali] = useState(false);
@@ -33,7 +43,9 @@ export function OneriSeridi({
 
   useEffect(() => {
     const q = metin.trim();
-    if (q.length < 2 || kapali) {
+    // 🔴 Bayrak kapalıysa **ağa hiç çıkma** — «çizmemek» yetmez, `E-1`'in ölçümü
+    // istekten başlar.
+    if (kapaliBayrak || q.length < 2 || kapali) {
       setAdaylar([]);
       return;
     }
@@ -68,6 +80,30 @@ export function OneriSeridi({
   }, [adaylar, secili, onSec]);
 
   useEffect(() => { setKapali(false); }, [metin]);
+
+  if (kapaliBayrak) return null;
+
+  // `5.9` — **BOŞ GİRDİ**: uç çağrılmaz, sohbetin kendi geçmişinden son bakılanlar
+  // gösterilir. ⚠ *«En çok sorulanlar»* ve *«dikeyin çekirdek 5'i»* **uygulanmadı**:
+  // ikisi de ölçüye dayanır ve o ölçü kodda **yok** (bkz. `5.5`'in gerekçeli ⊘'si) —
+  // uydurulmuş bir sıralama, sıralama değildir ㊱.
+  if (!metin.trim() && sonBakilanlar.length && !kapali) {
+    return (
+      <div className="mt-1 flex flex-wrap items-center gap-1 font-mono text-xs">
+        <span className="select-none text-neutral-600">son bakılanlar:</span>
+        {sonBakilanlar.slice(0, AZAMI).map((e) => (
+          <button
+            key={e}
+            type="button"
+            onMouseDown={(ev) => { ev.preventDefault(); onSec(e); }}
+            className="rounded border border-neutral-700 px-2 py-0.5 text-neutral-400 transition-colors hover:text-neutral-200"
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   if (!adaylar.length) return null;
   return (

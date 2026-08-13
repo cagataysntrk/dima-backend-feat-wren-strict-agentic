@@ -659,3 +659,66 @@ matrisi** kullanır (skorlar **yanlış adaya** atanır).
 probu **yasak**) · `5.9` boş girdi · `6.6` tuş · `6.7` üç çıkışın ayırt edilebilirliği ·
 plan kapısı `②` `p95 < 300 ms` (artık **ölçülebilir**: önbellek sonrası istek başına
 **1** gömme).
+
+---
+
+## §15 · `5.5`⊘ · `5.9`✅ · `6.6`✅ · `6.7`⊘ — **FAZ 5 ve FAZ 6 KAPANDI** *(2026-08-13)*
+
+**241 ✅ · 1 atlandı.** İki madde uygulandı, ikisi **gerekçeli ⊘** ve **kapılı** ㊸.
+
+### `6.6` TUŞ ✅ — ve planın çaresi **gereksizmiş** ㊱
+
+Plan demo için `localStorage` geçersiz kılması öneriyor, kendi uyarısını da yazıyordu:
+*«`§40.3` A/B kaybı»*. Ölçüldü: ön uçta **`useFeature`** zaten var
+(`src/lib/useFeature.ts`, açılışta bir kez `/features`). Bayrak **normal kanaldan**
+akıyor → **A/B korunuyor** 🆝. `localStorage` yazılmadı.
+
+`oneri_katmani` **üç yerde** kayıtlı oldu — ve üçünü de birer kapı istedi:
+`FLAG_REGISTRY` (`on_sarti` ile) · `demo/packs/features.yml` (**açıkça `"off"`** —
+kapının cümlesi: *«yokluk ile `off` çözümlemede aynı, okuyucu için değil»*) · rollout
+yüzeyi. Varsayılan **kapalı** ve bu bir **karar**: planın `②` kapısı (`p95 < 300 ms`)
+**henüz ölçülmedi**; ölçülmemiş bir hız iddiasıyla tuş açmak, kalibre edilmemiş bir
+sayıyı güven diye satmakla aynı sınıftır.
+
+🔴 **Asıl şart «çizmemek» değil, «ağa çıkmamak»** 🆀: bayrak kontrolü `fetch`'in
+**önünde** ㊴ ve bu **mutasyonla** kanıtlandı (koruma kaldırılınca kapı kırmızı).
+
+### `5.9` SON BAKILANLAR ✅ — yeni depo **açmadan**
+
+Kaynak `temellendirme.olcu` — makbuzun *«ne anladım»* alanı, yani kullanıcının
+**gördüğü** ad (`toplam_fire_kg` değil *«fire»*) 🅬. `sonBakilanEtiketler(threads)`
+sohbetin kendi kartlarından türetiyor: `localStorage` yok, sunucu yok, senkron yok.
+
+⚠ Planın öteki iki kaynağı (*«en çok sorulanlar»* · *«dikeyin çekirdek 5'i»*)
+**uygulanmadı** — ikisi de `5.5`'in bulunmayan ölçüsüne dayanıyor.
+
+### `5.5` SIKLIK ⊘ — **ölçü kodda YOK** ㉙
+
+* `stats.py:51` → `select(InteractionLog.kind, func.count())` — sayım **`kind` başına**,
+  **ölçü başına değil** ㊺.
+* `kaset.py::sayac` bir **test kaseti** sayacı, ürün telemetrisi değil.
+* `metadata.yml` şemasında ölçü başına kullanım alanı yok.
+
+Ölçülmeyeni sıralamaya katmak uydurulmuş bir sayıyı katmaktır ㊱ — üstelik `_RRF_K`
+zaten **kalibre değil** 🅖; ikinci bir kalibresiz terim, iki bilinmeyeni birbirine
+dayamaktı.
+
+### `6.7` ÜÇ ÇIKIŞ ⊘ — **öznesi yok** ㊻
+
+Öznesi **marj kapısı**; o kapı `FAZ 2`'de gerekçeli ⊘ oldu. Olmayan bir kapının
+çıkışlarını ekranda ayırt etmek mümkün değil; öyleymiş gibi rozet çizmek 🆂 *beyanı
+koşula bağlayıp süs yapmak* olurdu. ⊙ Şeridin **kendi** üç hâli (`kip`,
+`indeks.durum`) beyanlı ama bu `6.7`'nin **karşılığı değil** ve öyle sayılmıyor 🅫.
+
+### İki ⊘ de **kapılı** — ertelemeler kendi kendini iptal eder
+
+`tests/test_oneri_tus_ve_sonbakilanlar.py` (**6 yüklem**): `InteractionLog`'a
+`olcu`/`measure` kırılımı doğarsa `5.5` ⊘'sü **kırmızı**; `Settings`'e `marj_esigi`
+girerse `6.7` ⊘'sü **kırmızı**.
+
+⚠ 🅞 Kapı ilk koşumda **kendi açıklamamı** yakaladı: `threads.ts`'te geçen tek
+`localStorage`, *«`localStorage` yok»* diyen **yorum satırıydı**. Yüklem bir **söz**
+değil bir **kullanım** (`localStorage.`) arayacak şekilde düzeltildi.
+
+📌 **Kalan:** plan kapısı `②` **p95 < 300 ms** → sonra `FAZ 7` (⊘ demo dışı — planın
+kendi kararı, **doğrulanacak**) → `FAZ 8` hasat.

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { vurguSuz } from "@/lib/vurgu";
-import type { Thread } from "@/lib/threads";
+import { sonBakilanEtiketler, type Thread } from "@/lib/threads";
 import type { CubeQuery } from "@/lib/types";
 import { CaretInput } from "@/components/CaretInput";
 import { DurdurDugmesi } from "@/components/DurdurDugmesi";
@@ -454,7 +454,13 @@ export function ChatPanel({
             <CaretInput value={value} onChange={setValue} onSubmit={send} busy={pending} size="inline" />
             {/* 🔴 FAZ 6.3 — yazarken-ara şeridi. Tıklanan aday yalnız METNİ tamamlar;
                 sorgu koşmaz, sayı üretmez. */}
-            <OneriSeridi metin={value} onSec={setValue} />
+            <OneriSeridi
+              metin={value}
+              onSec={setValue}
+              /* `5.9` — son bakılanlar sohbetin KENDİ kartlarından türer: yeni bir
+                 depo, yeni bir izin, yeni bir senkron YOK. */
+              sonBakilanlar={sonBakilanEtiketler(threads)}
+            />
           </div>
         </div>
       </div>
