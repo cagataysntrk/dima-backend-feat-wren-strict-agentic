@@ -2218,3 +2218,34 @@ alan_haritasi · oneri_tiklamasi_sorgu_kosar` → **125 ✅ / 1 atlandı**.
 sorgu → metin** · zincir **sayfaya kadar bağlı** · metin yolu **kaldırılmadı** 🆃.
 🅑 Mutasyon: `page.tsx`'ten `onSorguKos` kaldırıldı → `test_ZINCIR_SAYFAYA_KADAR_BAGLI`
 **kırmızı**; geri yüklendi, `diff` temiz.
+
+### §46-ek · Kapı yeşilken ısıtma ÖLÜYDÜ — ve bu dersin kendisi
+
+`s15` canlıya kondu, `ast` kapısı **yeşildi**, ama kütük şunu yazdı:
+
+```
+WARNING dima.main: öneri indeksi ısıtılamadı → ilk istek soğuk kalacak
+NameError: name 'durum' is not defined      ← fonksiyonun gerçek adı `indeks_durumu`
+```
+
+Fonksiyonun adını **uydurmuştum** 🅬 ve metin taraması bunu göremezdi: bir çağrının
+*varlığını* ölçen kapı, onun *çalıştığını* ölçmez 🆆.
+
+⊙ Eklenen kapı `test_ISIT_GERCEKTEN_KOSUYOR`: `isit()`'i **koşar** ve sözlük döndüğünü
+sınar. Gömücüsüz ortamda da anlamlıdır — ölçtüğü şey erişim kalitesi değil, **çağrının
+ayakta olması**.
+
+⚠ Ve o test iki motor kapısını **sahte kırmızıya** düşürdü 🅢: `_ISITMA_BASLADI` süreç
+genelinde kalıcıdır (üretimde doğrusu budur) ama test süreci paylaşılır. Bayrak
+`try/finally` ile geri konuyor. *Üretimde doğru olan bir kalıcılık, testte bir sızıntıdır.*
+
+### Canlı ölçüm (`s15`, ısıtma düşmüşken bile)
+
+| çağrı | süre | kip |
+|---|---|---|
+| ilk (soğuk) | 29,8 s | `leksik` — vektör ayağı **atlandı** ✅ |
+| ılık ×3 | **0,10 – 0,23 s** | `leksik+vektor` |
+
+Soğuk 44 → 29,8 sn indi ve **cevap geldi** (eskiden hiç dönmüyordu). Kalan 29,8 sn
+ısınmanın CPU'yu doyurmasıdır; `s16` ile ısıtma artık **gerçekten** koşuyor, ölçümü
+sıradaki turda.
