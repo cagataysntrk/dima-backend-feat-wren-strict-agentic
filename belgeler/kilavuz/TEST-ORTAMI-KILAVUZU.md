@@ -287,7 +287,8 @@ yoksa *"genişleme mi gerileme mi"* ayırt edilemezdi. Bir kapı bunu sınıyor
 | `test_ekili_olaylar.py` | büyüklük eşiği · çakışma yok · SQL kanıtı · zincir senaryosu |
 | `test_ortam_butunlugu.py` | **yetim cube** · **payda** · **kaynak yanlılığı** · taban commit'lenebilir · **kapı dekor değil** |
 | `test_kosut_deseni.py` | koşut desen uygulanmış · muafiyetler gerekçeli · spawn |
-| `test_belge_duzeni.py` | kök üç dosyalık · denetim adları tarih damgalı · her belge git'te · indeks bağları sağlam |
+| `test_belge_duzeni.py` | kök **dört** dosyalık (`README` + `OPERASYON*`) · denetim adları tarih damgalı · her belge git'te · indeks bağları sağlam |
+| `test_belge_yollari_gercek.py` | 🆕 **canlı belgede anılan yol gerçekten var mı** — satır içi `` `<dizin>/<dosya>.py` `` biçimleri dâhil (**602 yol**); donmuş sınıflar (`plan/`·`devir/`·`arsiv/`·tarih damgalılar) taranmaz |
 
 ⚠ **7 atlama beklenen davranıştır, kusur değil:** `test_belge_duzeni.py` **repo kökünü**
 denetliyor ama test konteynerine yalnız `backend/` bağlanıyor ve imajda `git` yok.
@@ -333,6 +334,12 @@ docker wait t1 && docker logs t1 && docker rm -f t1
 
 # ⚠ Belge düzeni denetimi REPO KÖKÜNDEN koşulur (konteynerde ⊘ atlanır):
 cd backend && python -m pytest tests/test_belge_duzeni.py -q
+
+# ⚠ KONTEYNERDE koşacaksan **repo kökünü** bağla — yoksa ikisi de ⊘ ATLAR (`skipped`
+# bir onay değildir 🅯):
+docker run -d --name X$$ --network none -v "$PWD:/repo" -w /repo/backend \
+  --user "$(id -u):$(id -g)" -e DIMA_VQR_EMBEDDER=off dima-test \
+  python -m pytest -q tests/test_belge_duzeni.py tests/test_belge_yollari_gercek.py
 ```
 
 ### Yeni bir test yazacaksan

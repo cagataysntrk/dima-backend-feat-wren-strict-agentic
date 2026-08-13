@@ -4022,3 +4022,45 @@ uyarısı, ve **büyüme tavanı** disiplini (*«tavanı yükseltme — mantığ
 
 **Kapılar:** belge düzeni + yol gerçekliği **9 ✅ / 1 ⊘** (kök mount) · `app/` **değişmedi**
 → **canlı tazeleme yapılmadı** (`s38` güncel).
+
+---
+
+## `§83` — kılavuzlar · `MIMARI §0` işaretçisi · devir tutanağı
+
+### ① Kılavuzlarda **üç bayat iddia** — canlıdan ölçüldü ㊱
+
+| belge | iddia | gerçek (`docker ps`) |
+|---|---|---|
+| `00-INDEKS.md` | *«port 8001»* | **iki kap** var: `dima-oneri-8002` → **:8002** (öngörü/geliştirme) · `dima-backend-temiz` → :8001 |
+| `CANLI_TEST_REHBERI.md` | konteyner **`dima-backend-core`** | 🔴 **öyle bir kap YOK**; `BASE` de `:8001`'i gösteriyordu |
+| `TEST-ORTAMI-KILAVUZU.md` | belge kapısı *«repo kökünden koşulmalı»* | doğru ama **eksik**: konteyner reçetesi (`-v "$PWD:/repo"`) yazılı değildi |
+
+Üçü de düzeltildi; kılavuza **yeni kapı** (`test_belge_yollari_gercek.py`) ve kök-mount
+reçetesi eklendi. *Bir kılavuzdaki hayalet konteyner adı, yeni gelenin ilk on dakikasını
+yer.*
+
+### ② `MIMARI §0` — otorite belgesinin **işaretçisi** bayattı ⑳
+
+`§0` başlığı yol haritasını `~/.claude/plans/…` diye gösteriyordu: **makineye özel** bir
+yol, başka bir geliştiricide **yok**. Depodaki karşılığına (`belgeler/plan/…`) çevrildi ve
+🔴 **güncel operasyonun `ONGORU-DURUM.md` olduğu** açıkça yazıldı.
+
+### ③ `MIMARI`'ye iki değişmez: **O2 · O3**
+
+Otorite belgesi öngörü katmanının **kararlarını** taşımıyordu (uzun anlatı `ONGORU-DURUM`'da
+kalsın ㊲ ama **değişmez** burada durmalı):
+
+* **O2** — çok adımlı plan (N ≥ 2) **koşmadan** gösterilir; onay `POST /plan/kos`'a **aynı
+  planı** yollar (⊘ LLM). *Onayda plan yeniden üretilseydi onay bir **tören** olurdu.*
+* **O3** — garson **kararsızsa** koşmaz, onaya düşer (`§28.3`).
+
+### ④ Devir tutanağına `§6b`: **belgeler nasıl düzenlendi, hangi kapı neyi tutuyor** 🅦
+
+### ⚠ Kapı **kendi yazarını** yakaladı ⑮
+
+Kılavuza örnek diye `` `app/x.py` `` yazdım; `test_belge_yollari_gercek` **kırmızı verdi**
+— öyle bir dosya yok. Yer tutucuya çevrildi. *Bir kuralı yazan, ilk ihlal edendir; kapı
+onu da bağlamıyorsa kural değil temennidir.*
+
+**Kapılar:** belge düzeni + yol gerçekliği **9 ✅ / 1 ⊘** · `app/` **değişmedi** → canlı
+tazeleme **yapılmadı** (`s38` güncel).

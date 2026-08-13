@@ -50,8 +50,15 @@
 > **ölçümlü `✅`** yazılır, ve `tests/test_beyanlar_curumesin.py`'deki **tuzak testi ters
 > çevrilerek** korunur. *Belge güncellemesi böylece bir CI zorunluluğu olur.*
 >
-> **Yol haritası:** `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` · **operasyon:**
-> `OPERASYON.md` (kural seti) + `OPERASYON-DURUM.md` (nerede kaldık)
+> **Yol haritası:** `belgeler/plan/DIMA-V1-YOL-HARITASI.md` *(depoya alındı; eski
+> `~/.claude/plans/…` yolu **makineye özeldi** ve başka bir geliştiricide **yoktu**)*
+> · **operasyon:** `OPERASYON.md` (kural seti) + `OPERASYON-DURUM.md` (o operasyonun
+> durumu).
+>
+> 🔴 ⟳ **GÜNCEL OPERASYON BAŞKA:** *«nerede kaldık»* bugün
+> **`belgeler/plan/ONGORU-DURUM.md`**'dedir (öngörü katmanı / rol değişikliği).
+> `OPERASYON-DURUM.md` **kapanmış** v1 operasyonunun günlüğüdür — ikisini birden
+> *«nerede kaldık»* diye okumak `KAT-1`'in belge düzeyindeki ihlalidir.
 >
 > > ✅ **§14 İNDİ — BEŞ ENTEGRASYON KAPISI** *(`45b5c6a`, FAZ 0.14)*. Ortak iskelet
 > **tek sahipte**: `tests/kapi_ortak.py` (yorum ayıklayıcı · tam-yol deseni · tüketim
@@ -415,6 +422,8 @@ yorumla değil.*
 | # | değişmez | nerede |
 |---|---|---|
 | **O1** | Plan **koşmadan önce doğrulanır**: ileri referans · tip · `ANLAT` yalnız son · toplam bütçe · ulaşılamaz adım | `plan_kosucu.dogrula()` |
+| **O2** | 🔴 ⟳ **ÇOK ADIMLI PLAN (N ≥ 2) KOŞMADAN ÖNCE KULLANICIYA GÖSTERİLİR** — cevap `source="onizleme"` döner, **hiçbir sorgu koşmaz**; onay `POST /plan/kos`'a **aynı planı** geri yollar (⊘ LLM). Karar kullanıcınındır. ⚠ Onayda plan **yeniden üretilmez**: model aynı soruya iki farklı plan üretebilir, o zaman onay bir **tören** olurdu. Ayrıntı: `belgeler/plan/ONGORU-DURUM.md §63`·`§66` | `plan_tuketici.cevap()` · `routers/oneri.plan_kos` |
+| **O3** | ⟳ **Garson KARARSIZSA koşmaz, onaya düşer** (`§28.3`): self-consistency uyumu `< 1` ise teklif pill'leriyle birlikte önizlenir. Sinyal zaten hesaplanıyordu; bir **kapıya** bağlandı. Ayrıntı: `ONGORU-DURUM.md §67` | `plan_tuketici.kararsiz_onizleme()` |
 | **O2** | Bağımlılık **çıkarılır, sorulmaz** — `depends_on` diye bir alan **yoktur** (`$n` tek veri kanalı) | `dogrula()` → Kahn katmanları |
 | **O3** | Paralellik yalnız **`SORGU`**, yalnız aynı katman, tavan **4** (ölçüldü: 4 işçi 2,52× · 8 işçi 1,86×) | `AZAMI_ESZAMANLI` |
 | **O4** | Çıktı **adım sırasına** yazılır, tamamlanma sırasına değil | `ciktilar[i-1]` ön tahsisli |

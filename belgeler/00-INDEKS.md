@@ -61,7 +61,7 @@ fotoğrafıdır ve **değiştirilmez**; bu ise **yayımlanmış bir iddiadır** 
 
 | dosya | kime |
 |---|---|
-| [`SERVER_COMMANDS.md`](kilavuz/SERVER_COMMANDS.md) | sistemi **ayağa kaldıracak** herkese — port 8001, frontend **pnpm** |
+| [`SERVER_COMMANDS.md`](kilavuz/SERVER_COMMANDS.md) | sistemi **ayağa kaldıracak** herkese — **derle→değiştir** sırası, port **8002** (öngörü/geliştirme kabı `dima-oneri-8002`; ⚠ ayrıca **8001**'de ikinci bir kap koşuyor olabilir — `docker ps` ile bak), frontend **pnpm** |
 | [`TEST-ORTAMI-KILAVUZU.md`](kilavuz/TEST-ORTAMI-KILAVUZU.md) | 🔴 **test koşacak/yazacak herkese** — süre kuralları, parçalar, kapılar |
 | [`CANLI_TEST_REHBERI.md`](kilavuz/CANLI_TEST_REHBERI.md) | canlı LLM turu koşacaklara (kota kısıtı!) |
 | [`KULLANIM-KILAVUZU-v1.md`](kilavuz/KULLANIM-KILAVUZU-v1.md) | son kullanıcı bakışı |

@@ -3,7 +3,7 @@
 Bu belge, çalışan bir backend'e **gerçek LLM sağlayıcısıyla** soru sorarken izlenecek
 sırayı, harcanabilecek istek bütçesini ve dönen cevapta neye bakılacağını anlatır.
 
-Kapsam: `backend/` (FastAPI, konteyner `dima-backend-core`, host portu **8001**).
+Kapsam: `backend/` (FastAPI). ⚠ **Konteyner adı ve port ölçülerek yazılır** ㊱ — `docker ps --format '{{.Names}}\t{{.Ports}}'`. Bugünkü hâl: öngörü/geliştirme kabı **`dima-oneri-8002`** → `localhost:8002`; ayrıca **`dima-backend-temiz`** → `:8001`. *(Eski metin `dima-backend-core` diyordu; öyle bir kap **yok**.)*
 Kurulum/log komutları `belgeler/kilavuz/SERVER_COMMANDS.md`'den alınmıştır; mimari iddialar
 `backend/MIMARI.md`'ye aittir.
 
@@ -69,7 +69,7 @@ Fixture'ların kapsamı `tenant.slug`'ın **kendisidir** (`demo-boyahane`), kır
 ### 1.3 Login
 
 ```bash
-BASE=http://localhost:8001
+BASE=http://localhost:8002
 TOKEN=$(curl -s -X POST $BASE/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"demo-boyahane@usedima.com","password":"dima-demo-1234"}' \

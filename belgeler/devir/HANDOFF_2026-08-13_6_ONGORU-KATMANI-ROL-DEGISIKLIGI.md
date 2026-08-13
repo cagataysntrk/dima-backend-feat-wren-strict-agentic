@@ -132,6 +132,29 @@ bir açık, ilan edildiği sürece bir borç değil bir karardır* 🆂.
 
 ---
 
+## §6b — BELGELER NASIL DÜZENLENDİ, HANGİ KAPI NEYİ TUTUYOR 🅦
+
+Devralanın belgeye **güvenebilmesi** için, belgelerin doğruluğu artık kapılıdır.
+
+| kapı | neyi tutuyor | nasıl koşulur |
+|---|---|---|
+| `test_belge_duzeni.py` | kök **dört** dosyalık (`README` + `OPERASYON*`) · `denetim/` adları **tarih damgalı** *(canlı kayıt defterleri hariç, adıyla ilan edilmiş)* · her belge **git'te** · indeks **her dizini** anlatıyor · indekste **kırık bağ yok** | 🔴 **kök mount**: `-v "$PWD:/repo" -w /repo/backend` |
+| `test_belge_yollari_gercek.py` | 🆕 **canlı belgede anılan her yol gerçekten var** (satır içi kod dâhil, **602 yol**) | aynı |
+| `test_f8_dogruluk_yayini.py` + 3 kardeş | **yayımlanan sayı** çürümüyor (`belgeler/DOGRULUK.md` · `HAVA-BOSLUGU.md`) | standart mount |
+
+⚠ **`skipped` bir onay değildir** 🅯: bu iki belge kapısı standart test kabında **atlar**
+(repo kökü görünmez) ve bir zamanlar **7/7 atlanıyordu** — kimse görmedi.
+
+**Yerleşim kuralı** `belgeler/00-INDEKS.md`'de ve **bayatlama süresine** göre: kök =
+giriş · `kilavuz`·`mimari`·`urun`·`plan` = canlı · `denetim`·`devir`·`arastirma` = 🔒
+tarihsel · `belgeler/` kökü = **kapıyla canlı tutulan yayın**.
+
+**Giriş noktası:** kök [`README.md`](../../README.md) — *ne olduğu · depo haritası ·
+ayağa kaldırma · **ilk gün okuma sırası** · nerede kaldık · dokunulmazlar · test
+disiplini · yeni gelenin çarpacağı beş şey*.
+
+---
+
 ## §7 — DEVİR, TEK CÜMLE
 
 > Öngörü katmanının **karar mekaniği bitti, kapılı ve canlıda** (`s37`); öneri sıralaması
