@@ -3230,3 +3230,32 @@ karar **açık borç** olarak buraya yazıldı 🅖.
 (**4 ✅**: adet+sınır · sayımın tek sahibi ㊲ · 🆃 sayaç gerçekten sayıyor · ⊘ süre yok).
 **Demet: 1762 ✅.** Kapı üç kırmızı verdi, **üçü de haklıydı**: dilbilim sahipliği ㊸ ·
 `AskResponse` 47→48 · `types.ts` tavanı.
+
+### `§68-ek` 🔴 **CANLI TUR KUSURU BULDU — ve kütük yalan söylüyordu** 🅯
+
+`§28.4`'ün orta satırını (`2/3`) canlıda **görmeye** çalışırken (🅢) şu çıktı:
+
+```
+kütük:  §28.3: garson kararsız (uyum 67%, 3 örnek) → ONAYA düşüyor
+cevap:  source = cube · piller = 0 · plan_taslagi = yok
+```
+
+Yani dal **ateşlendi**, log **yazdı**, ve kullanıcı **normal cevabı gördü**. Sebep:
+
+```
+AttributeError: 'list' object has no attribute 'get'   ← niyet.fisten
+```
+
+`schema["cubes"]` bir **sözlük** sanılmıştı; bu depoda her yer onu **liste** okur
+(`for c in (schema.get("cubes") or [])` — `kosum_cube_meta` · `context` · `deger_capasi`).
+Dış `except` istisnayı **yuttu** ve merdiven normal yoluna döndü.
+
+⚠ **Birim testi bunu göremezdi** 🅡: hepsi `schema=None` geçiyordu — *bir yolun hiç
+girilmemesi, o yolun çalıştığının kanıtı değildir.* Yeni kapı **gerçek fikstürle** geçer
+(`test_SEMA_LISTEDIR_SOZLUK_DEGIL`).
+
+⊙ İki ders birden: **①** şekli ölç ⑤ — alanın **adını** değil **türünü** de nesneden oku;
+**②** *koşan, log basan, hiçbir şey yapmayan* bir dal 🅯 yalnız **canlı turda** görünür —
+demet **1762 yeşilken** bu kusur oradaydı.
+
+⊙ Ve `2/3` dalı böylece **canlıda gözlendi** 🅢: `uyum 67% · 3 örnek`, iki ayrı soruda.

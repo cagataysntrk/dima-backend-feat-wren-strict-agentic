@@ -509,7 +509,15 @@ def fisten(cq: dict | None, schema: dict[str, Any] | None = None) -> Niyet | Non
     if not isinstance(cq, dict) or not cq.get("cube"):
         return None
     cube = str(cq["cube"])
-    _meta = ((schema or {}).get("cubes") or {}).get(cube) or {}
+    # 🔴 **ŞEKLİ ÖLÇ** ⑤ — `schema["cubes"]` bir **LİSTEDİR**, ada göre bir sözlük değil.
+    # Ölçüldü (canlı `s32`): sözlük varsayan hâl `AttributeError: 'list' object has no
+    # attribute 'get'` ile düştü ve dış `except` onu **yuttu** → kararsızlık dalı kütüğe
+    # *«ONAYA düşüyor»* yazdı ama kullanıcı normal cevabı gördü 🅯. Birim testi bunu
+    # göremezdi çünkü `schema=None` geçiyordu 🅡.
+    # ⚠ Deponun kendi kalıbı: `for c in (schema.get("cubes") or [])` (`kosum_cube_meta`,
+    # `context`, `deger_capasi`… hepsi böyle okur).
+    _meta = next((c for c in ((schema or {}).get("cubes") or [])
+                  if isinstance(c, dict) and str(c.get("name")) == cube), {})
     _zaman = {str(t) for t in (_meta.get("time_dimensions") or [])} | {"tarih"}
     donemler, filtreler = [], []
     for f in (cq.get("filters") or []):

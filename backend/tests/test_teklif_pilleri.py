@@ -92,3 +92,20 @@ def test_BOZUK_FIS_NIYET_URETMEZ():
     """⚠ `cube`'suz bir fiş bir sorgu değildir; ondan pill üretmek **uydurmak** olurdu."""
     for bozuk in (None, {}, {"measures": ["x"]}, "metin"):
         assert niyet.fisten(bozuk, None) is None, f"🔴 bozuk fişten niyet doğdu: {bozuk!r}"
+
+def test_SEMA_LISTEDIR_SOZLUK_DEGIL(schema):
+    """🔴🔴 **CANLIDA ÖLÇÜLEN KUSUR** ⑤🅡 — ve birim testinin **göremediği** kusur.
+
+    İlk yazım `schema["cubes"]` bir **sözlük** sanıyordu (`.get(cube)`); oysa bu depoda
+    her yer onu **liste** olarak okur (`for c in (schema.get("cubes") or [])`). Canlı
+    (`s32`): `AttributeError: 'list' object has no attribute 'get'` → dış `except` onu
+    **yuttu** → kütükte *«§28.3: garson kararsız → ONAYA düşüyor»* yazıyordu ama kullanıcı
+    normal cevabı görüyordu 🅯.
+
+    ⚠ Öteki testler `schema=None` geçiyordu; bir yolun **hiç girilmemesi**, o yolun
+    çalıştığının kanıtı değildir 🅡. Bu kapı **gerçek fikstürle** geçer.
+    """
+    n = niyet.fisten(_CQ, schema)
+    assert n is not None, "🔴 gerçek şemayla niyet üretilemedi"
+    alanlar = [p.alan for p in pill.pillerden(n, schema)]
+    assert pill.ALAN_OLCU in alanlar, f"🔴 gerçek şemayla pill üretilemedi: {alanlar}"
