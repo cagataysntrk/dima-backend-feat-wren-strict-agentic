@@ -3037,3 +3037,66 @@ yazılı (*«makine kırılımı ekler»*) — `§18.8` morfoloji tuzağı. Boyu
 
 **Kapı:** `test_plan_onizleme.py` **8 ✅** (fiil yinelenmez · markdown sızmaz · **her fiilin
 önizleme kipi var** 🅜 · tanım/iç alan basmaz · yuva kalıntı bırakmaz · tamlama bozulmaz).
+
+---
+
+## `§66` — **CEVAP MERDİVENİNDE DE ONAY VAR**: rol değişikliğinin kalan yarısı
+
+`§63` önizlemeyi **makro** yolunda kurmuştu. Ama asıl merdiven `plan_tuketici.cevap`'tan
+geçiyor ve orada plan **hâlâ koşuyordu** — kodda ölçüldü:
+
+```python
+_n = len(plan["adimlar"])
+out = calistir(plan, …)          # ⟵ N kaç olursa olsun, onay YOK
+```
+
+Yani *«route ve garson KARAR VERİCİ olmaktan çıkıp TAHMİNCİ oluyor»* (`§3.1`) kararı
+**yarım** uygulanmıştı 🆘.
+
+### Ne yapıldı
+
+| # | iş | yer |
+|---|---|---|
+| ① | N ≥ 2 → `source="onizleme"`, **koşmaz** | `plan_tuketici.cevap` |
+| ② | önizleme **planın kendisini** taşır (`plan_taslagi`) | `schemas.AskResponse` |
+| ③ | 🆕 **onay ucu** `POST /plan/kos` — onaylanan planı koşar, ⊘ LLM | `routers/oneri.py` |
+| ④ | bayrağın **tek sahibi** | 🆕 `features.oneri_katmani_acik` ㊲ |
+| ⑤ | koşum cevabının **tek biçimi** | 🆕 `plan_tuketici.kosum_yaniti` ㊲ |
+| ⑥ | adım cümlesinin **tek sahibi** (iki önizleme aynı cümleyi okusun) | `plan_tuketici.onizleme_satiri` ㊲ |
+| ⑦ | FE: `/ask` cevabı da önizleme olabilir; `[koş]` → `/plan/kos` | `lib/onizleme.ts` · `page.tsx` |
+
+### 🔴 Onay neden **planı geri yolluyor**
+
+Onayda planı **yeniden üretmek** iki şeyi bozardı: `E-8` (sıcak yolda ikinci seri LLM turu)
+ve — daha ağırı — **onayın anlamı**. Model aynı soruya iki farklı plan üretebilir; kullanıcı
+A'yı onaylayıp B koşulsaydı onay bir **tören** olurdu.
+
+⚠ Güven sınırı **genişlemedi**: `POST /cube` zaten istemciden gelen bir `cube_query`'yi
+koşuyor. Plan da aynı iki kapıdan geçer — `plan_kosucu.dogrula` (**kapalı fiil kümesi**) +
+her adımın `parse_cube_query` beyaz listesi. *Bir gövdeye güvenmek ile onu doğrulayıp
+koşmak aynı şey değildir.*
+
+### Kapının bana verdiği yedi kırmızı — ve dördü **haklıydı**
+
+| kırmızı | ne dedi | ne yapıldı |
+|---|---|---|
+| `test_cevap_alani_yetim_degil` | *«üç yeni alanın FE tüketicisi yok»* 🆘 | FE **aynı demette** bağlandı |
+| `test_plan_tuketici` (4) | *«plan artık koşmuyor»* | **doğru** — kapsam beyanı yazıldı 🆂, `onaylandi=True` varsayıldı, **davranış kapısı** eklendi |
+| `test_maskeleme_tumleyeni` | `AskResponse` 44 → **47** alan | kayıt tazelendi 🅟 |
+| `test_modul_buyume` | `ask()` +1 satır | üç `kwarg` → **bir kavrayış**; kalan +1 gerekçeli muafiyet |
+
+⚠ Ve `test_BAYRAGIN_TEK_SAHIBI_VAR` **kendi ilk yazımında** yanıldı: `"resolve_for" in metin`
+bir **yorum satırına** vurdu 🅞 — ölçüt *«sözü değil kullanımı ara»* biçimine çekildi.
+
+**Kapı:** `test_garson_plani_onaysiz_kosmaz.py` (**5 ✅**: kaynak sırası ㊴ · plan taşınıyor ·
+`KURAL B` · bayrağın tek sahibi ㊲ · 🆃 onay yolunda **0 LLM**) + `test_plan_tuketici.py`'de
+**davranış** kapısı. **Demet: 1752 ✅ / 0 🔴.**
+
+### ⚠ Kalan
+
+| madde | durum |
+|---|---|
+| `§28.3` satır 2 — **tek adım + kararsız → 🔵 pill onaya** | 🔴 uyum oranı hesaplanıyor, **kapıya bağlı değil** |
+| `§28.3` satır 4 — **yazma fiili → senkron onay** | ◐ yazma fiili bugün küp yolunda yok |
+| bütçe görünürlüğü (`adim=8 · saniye=30 · sorgu=12`) | 🔴 ekranda yok |
+| fiil tespiti (`>8 kelime **∨ fiil**`) | ◐ bugün yalnız kelime sayısı 🅖 |

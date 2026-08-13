@@ -187,14 +187,12 @@ def _katman_acik(request, principal) -> bool:
     *«bayrak kapalı ⇒ hiçbir öneri»* davranışı fazın öncesiyle **eşdeğerdir**. 404 ise
     istemcide bir hata yolu açardı — kapalı bir özellik bir arıza değildir.
     """
-    from app.config import get_settings
-    from app.features import resolve_for
+    # ⚠ `§66` — gövde `features.oneri_katmani_acik`'a **taşındı** ㊲: aynı yüklem artık
+    # cevap merdiveninde de soruluyor (`plan_tuketici.cevap`). İki `resolve_for` çağrısı
+    # bir gün iki farklı ölçüte ayrışırdı — bir kiracıda öneri açık, önizleme kapalı.
+    from app.features import oneri_katmani_acik
 
-    try:
-        return "oneri_katmani" in resolve_for(get_settings(), principal)
-    except Exception:                                        # noqa: BLE001
-        _log.warning("bayrak çözülemedi → öneri katmanı KAPALI sayıldı", exc_info=True)
-        return False
+    return oneri_katmani_acik(principal)
 
 
 def _bos_yanit() -> dict:
@@ -333,56 +331,6 @@ def oneri_pill(request: Request, q: str = Query("", max_length=400)) -> dict:
     }
 
 
-def _onizleme_satiri(adim: dict) -> str:
-    """Önizlemede bir adımın **yazısı** — makbuzun cümlesi, ekranın biçiminde.
-
-    ⚠ Metnin **tek sahibi** `plan_tuketici._adim_metni`'dir (`KAT-1`): ikinci bir cümle
-    kurmak, aynı adımın makbuzda ve önizlemede **farklı** okunması demekti — ve kullanıcı
-    onayladığı şeyle koşan şeyi karşılaştıramazdı. Burada yapılan **yalnız biçimdir**.
-
-    İki ölçülmüş biçim kusuru (canlı `s24`):
-
-    | görülen | neden |
-    |---|---|
-    | `SORGU` rozeti + *«**SORGU** — …»* | fiil **ayrı alan** olarak gidiyor; metin onu **yineliyordu** ㊲ |
-    | ekranda düz `**` ve `` ` `` | makbuz **markdown**'a yazılır, önizleme **düz metne** |
-
-    ⊘ Ve işaretler istemcide temizlenmedi: bir markdown çözücü üç simge için fazla, ama
-    asıl sebep sahiplik — biçimi **üreten** yer bilir, tüketen yer tahmin eder 🅬.
-    """
-    # ⚠ Tembel import ⑬: `plan_tuketici` bu modülde **gövde içinde** çözülüyor (uç
-    # açılışta ağır bir zinciri çekmesin diye). Modül düzeyinde varsaymak, aynı `NameError`
-    # ile üçüncü kez düşmek olurdu — kapı bu turda da yakaladı.
-    from app import plan_tuketici
-
-    from app.plan_semasi import FIIL_ONIZLEME
-
-    fiil = str(adim.get("fiil") or "")
-    metin = plan_tuketici._adim_metni(adim)
-    onek = f"**{fiil}** — "
-    if metin.startswith(onek):
-        metin = metin[len(onek):]
-    metin = metin.replace("**", "").replace("`", "")
-    # 🔴 `SORGU` **kendi gövdesini** yazar (*«ort_oee · makine kırılımında»*) — orada
-    # kullanıcıya söylenecek şey zaten onun kendi ölçüsüdür. Ötekiler tanım basıyordu;
-    # onlar için sözlüğün **önizleme kipi** okunur ve adımın kendi alanları (boyut ·
-    # kaynaklar) o cümlenin **arkasına** iliştirilir.
-    kisa = FIIL_ONIZLEME.get(fiil)
-    if kisa and fiil != "SORGU":
-        _b = str(adim.get("boyut") or adim.get("dimension") or "")
-        # ⚠ Yuva **cümlenin içinde**: Türkçe eki oraya yazılı (*«makine kırılımı ekler»*).
-        # Boyut yoksa yuva düşer — *«{boyut} kırılımı»* gibi bir kalıntı, bir cümleyi
-        # bozuk Türkçeye çevirir ve kullanıcı onu bir hata sanır.
-        metin = kisa.replace("{boyut} ", f"{_b} " if _b else "")
-    # 🅡 `$3` bir **iç referanstır**; kullanıcı adımları **1'den** numaralı görüyor ve
-    # aynı sayıyı iki yazımda okumak (`$3` ↔ `3`) bir tutarsızlıktır.
-    # ⚠ Ek **birlikte** değişir ㊵: makbuz `$3` sözcüğünü bir ad gibi çekiyor (*«`$3`
-    # adımının»*); ham değiştirme *«3. adımının»* üretti — ölçüldü, canlı `s27`. Sayıya
-    # dönünce tamlama da düzelir: *«3. adımın»*. Bu bir dil kuralı değil **bir kalıbın
-    # karşılığıdır**: kalıp `_adim_metni`'nde tek bir yerde yazılı.
-    metin = re.sub(r"\$(\d+) adımının", r"\1. adımın", metin)
-    return re.sub(r"\$(\d+)", r"\1.", metin)
-
 @router.post("/oneri/makro", dependencies=[Depends(require_company)])
 def oneri_makro(request: Request, govde: dict | None = None) -> dict:
     """🔴 `§7 ②` — **adlandırılmış makro KOŞULUR**: tek tıklama, N deterministik adım.
@@ -473,7 +421,7 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
             gecerli, not_ = False, str(e)
         return {"source": "onizleme", "makro": ad, "question": metin, "gecerli": gecerli,
                 "adimlar": [{"sira": i, "fiil": x.get("fiil"),
-                             "metin": _onizleme_satiri(x)}
+                             "metin": plan_tuketici.onizleme_satiri(x)}
                             for i, x in enumerate(plan["adimlar"], 1)],
                 "note": not_}
 
@@ -501,20 +449,10 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
     # ⚠ Sunum **yazılmadı, ÇAĞRILDI** ㊲: `plan_tuketici.bolumlere_cevir` orkestratörün
     # de kullandığı işlevdir. İkinci kez yazılsaydı bir gün biri `CIKTI_TIPI`'ni okur,
     # öteki hâlâ `SORGU`'ya bakardı — ve o gün `TREND` makrosu boş cevap verirdi.
-    bolumler, son = plan_tuketici.bolumlere_cevir(out, plan, schema=schema, soru=metin)
-    return {
-        # ⚠ `source` **`cube`**: bu yolda LLM **yok** ve rozet bunu söylemeli 🅖.
-        # `cube+llm` yazmak, ödenmemiş bir maliyeti beyan etmek olurdu.
-        "source": "cube",
-        "question": metin,
-        "makro": ad,
-        "adim_sayisi": len(plan["adimlar"]),
-        "result": son,
-        # ⚠ Son bölümün fişi karta **yeniden koşulabilirlik** verir (`/cube`, 0 LLM).
-        "cube_query": (bolumler[-1]["cube_query"] if bolumler else None),
-        "bolumler": bolumler,
-        "note": out.get("makbuz"),
-    }
+    # ⚠ Sunum **yazılmadı, ÇAĞRILDI** ㊲: biçimin tek sahibi `plan_tuketici.kosum_yaniti`
+    # ve onu `POST /plan/kos` de kullanıyor. İki yerde yazılsaydı bir gün birinde `result`
+    # olur ötekinde olmazdı — bu depoda tam o kusur ölçüldü (kart gövdesiz çizildi 🆘).
+    return plan_tuketici.kosum_yaniti(out, plan, schema=schema, soru=metin, makro=ad)
 
 
 @router.post("/oneri/tik", dependencies=[Depends(require_company)])
@@ -576,3 +514,59 @@ def oneri_tik(request: Request, govde: dict | None = None) -> dict:
         kaydedildi = False
     # 🅖 Sinıf **her hâlde** dönülür: kayıt tutulamasa bile istemci ne olduğunu bilir.
     return {"sinyal": sinif, "kaydedildi": kaydedildi}
+
+
+@router.post("/plan/kos", dependencies=[Depends(require_company)])
+def plan_kos(request: Request, govde: dict | None = None) -> dict:
+    """🔴🔴 `§66` — **ONAYLANAN PLANI KOŞAR** — ve *onaylananı*, benzerini değil.
+
+    `§3.1`'in cümlesi: *«route ve garson, KARAR VERİCİ olmaktan çıkıp TAHMİNCİ oluyor …
+    **kullanıcı KARARI VERİR (bir tık)**»*. `/ask` çok adımlı bir planı artık koşmadan
+    önizliyor (`source="onizleme"` + `plan_taslagi`); bu uç o tıkın karşılığıdır.
+
+    ## Neden planı istemci geri yolluyor — ve neden bu bir açık değil
+
+    Onayda planı **yeniden üretmek** iki şeyi birden bozardı: `E-8` (sıcak yolda ikinci
+    seri LLM turu) ve — daha ağırı — **onayın anlamını**. Model aynı soruya iki farklı
+    plan üretebilir; kullanıcı A'yı onaylayıp B koşulsaydı onay bir **tören** olurdu.
+
+    ⚠ Güven sınırı **genişlemiyor**: bu depo `POST /cube`'da zaten istemciden gelen bir
+    `cube_query`'yi koşuyor. Plan da aynı iki kapıdan geçer — `plan_kosucu.dogrula`
+    (**kapalı fiil kümesi** + adım/atıf tipleri) ve her adımın `parse_cube_query` beyaz
+    listesi. *Bir gövdeye güvenmek ile onu doğrulayıp koşmak aynı şey değildir.*
+
+    ⊘ **LLM YOK.** Bu uç bir plan **almaz**, bir plan **koşar**.
+    """
+    from app import plan_kosucu, plan_tuketici
+    from app.company_registry import wren_for_request
+
+    d = govde if isinstance(govde, dict) else {}
+    plan = d.get("plan") if isinstance(d.get("plan"), dict) else None
+    metin = str(d.get("soru") or "").strip()
+    if not plan or not isinstance(plan.get("adimlar"), list) or not plan["adimlar"]:
+        # ⚠ Dürüst ret: boş bir 200 tıklandığında hiçbir şey yapmayan bir düğmedir 🅯.
+        raise HTTPException(status_code=400, detail="Koşulacak bir plan gelmedi.")
+
+    principal = getattr(request.state, "principal", None)
+    if not _katman_acik(request, principal):
+        # ⚠ `KURAL B`: katman kapalıyken bu uç **hiç yokmuş gibi** davranır — önizleme de
+        # üretilmiyordu, dolayısıyla onay da olamaz.
+        raise HTTPException(status_code=400, detail="Öngörü katmanı kapalı.")
+
+    service = wren_for_request(request)
+    schema = service.schema()
+    from app.katalog_metni import metin_ve_indeks
+
+    _, _index = metin_ve_indeks(schema, principal)
+    try:
+        plan_kosucu.dogrula(plan)
+        out = plan_tuketici.calistir(
+            plan, service=service, index=_index,
+            schema=schema, cube_meta=plan_tuketici.kosum_cube_meta(schema), soru=metin)
+    except plan_kosucu.PlanHatasi as e:
+        _log.info("§66: onaylanan plan koşamadı: %s", e)
+        return {"source": None, "question": metin,
+                "note": plan_tuketici.neden_olmadi(plan, e)}
+    # ⚠ Cevap **makro yolunun biçiminde** döner: istemci ikinci bir gösterim öğrenmesin
+    # (`KAT-1`). `question` zorunlu — `AskResponse` onu şart koşuyor ve kart başlığı odur.
+    return plan_tuketici.kosum_yaniti(out, plan, schema=schema, soru=metin)

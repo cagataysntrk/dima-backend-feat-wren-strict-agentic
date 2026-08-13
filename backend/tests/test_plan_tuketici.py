@@ -59,8 +59,31 @@ class _Istek:
         self.app = type("A", (), {"state": type("S", (), {"llm": llm})()})()
 
 
-def _cevap(g, motor=None, soru="q"):
-    return pt.cevap(_Istek(g), service=motor or _Motor(), schema=SCHEMA, soru=soru)
+def _cevap(g, motor=None, soru="q", onaylandi=True):
+    """⚠ `§66` — **`onaylandi=True` VARSAYILAN, ve bu bir kolaylık değil bir KAPSAM
+    beyanıdır.** Bu dosyanın konusu *«plan doğru koşuyor mu»*dur; `§28.3`'ün getirdiği
+    *«çok adım → koşmadan önizlenir»* kararı ayrı bir sorudur ve kendi kapısı vardır
+    (`test_COK_ADIM_ONAYSIZ_ONIZLENIR` + `test_garson_plani_onaysiz_kosmaz.py`).
+
+    *Bir kapının varsayımı bayatladığında doğru iş, kapıyı susturmak değil, varsayımı
+    ADIYLA yazmaktır* — yoksa bir gün onay yolu bozulur ve koşum kapıları yine yeşil kalır.
+    """
+    return pt.cevap(_Istek(g), service=motor or _Motor(), schema=SCHEMA, soru=soru,
+                    onaylandi=onaylandi)
+
+
+def test_COK_ADIM_ONAYSIZ_ONIZLENIR():
+    """🔴🔴 `§66`/`§28.3` — **DAVRANIŞ ÖLÇÜSÜ**: onaysız çağrıda plan **koşmaz**.
+
+    Kardeş kapı (`test_garson_plani_onaysiz_kosmaz.py`) kaynağa bakar (dalın **sırası**);
+    burada ölçülen şey **çıktı**: `source="onizleme"`, sonuç yok, plan cevapta.
+    """
+    c = _cevap(_Garson(PLAN), onaylandi=False)
+    assert c and c["source"] == "onizleme", f"🔴 çok adımlı plan onaysız koştu: {c}"
+    assert "result" not in c, "🔴 önizleme sonuç taşıyor — demek ki koşmuş"
+    assert c["plan_taslagi"]["adimlar"] == PLAN["adimlar"], (
+        "🔴 önizleme planın kendisini taşımıyor — onayda plan yeniden üretilirdi")
+    assert [a["sira"] for a in c["adimlar"]] == list(range(1, len(PLAN["adimlar"]) + 1))
 
 
 def test_BAYRAK_KAPALIYKEN_HIC_KONUSMAZ(monkeypatch):

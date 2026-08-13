@@ -4282,7 +4282,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return _finish(_attach_viz(AskResponse(
                 question=body.question, source=_pc["source"], note=_pc["note"],
                 result=_pc.get("result"), cube_query=_pc.get("cube_query"),
-                plan=_pc.get("plan"), rapor=_pc.get("rapor"), trace=_pc["iz"]),
+                plan=_pc.get("plan"), rapor=_pc.get("rapor"), trace=_pc["iz"],
+                **{k: _pc.get(k) for k in ("adimlar", "gecerli", "plan_taslagi")}),
                 _pc.get("result"), _pc.get("cube_query")))
         if route_hit:
             cq = route_hit["cube_query"]

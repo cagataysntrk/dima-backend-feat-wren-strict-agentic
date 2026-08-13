@@ -266,6 +266,27 @@ MUAFIYET: list[tuple[str, int, str]] = [
      "üzerinden sorulurdu. 🔴 Durum makinesi (üç hâl: yok · bekliyor · onaylandı) ve "
      "birleştirme burada DEĞİL: kapının kendi öğüdüne uyularak `lib/onizleme.ts`'e "
      "çıkarıldı — dört satırın hiçbiri mantık taşımıyor, hepsi **bağ**."),
+    # ═══ `§66` — MERDİVENDE ONAY (2026-08-13) ═══
+    ("lib/api-client.ts", 1,
+     "🔴 `§66` — `postPlanKos`: **onaylanan planı** koşan çağrı (`POST /plan/kos`, 0 LLM). "
+     "⚠ **TAŞINAMAZ:** `dima-frontend/CLAUDE.md` birebir «Tüm HTTP `src/lib/api-client.ts`'ten "
+     "geçer — dağınık `fetch` yok» diyor; ikinci bir HTTP dosyası açmak bir tavan borcunu "
+     "bir MİMARİ İHLALİNE çevirirdi (bu dosyanın kendi muafiyet geleneği). 🔴 Gövde bir "
+     "**taşıyıcıdır**: karar sunucuda, biçim `lib/onizleme.ts`'te."),
+    ("lib/types.ts", 1,
+     "🔴 `§66` — `AskResponse.plan_taslagi`: onayda **geri gönderilecek planın kendisi**. "
+     "⚠ **TAŞINAMAZ:** bu dosya sunucu sözleşmesinin **tek** aynasıdır. 🔴 Tek satır, tek "
+     "alan, `null` varsayılan — önizleme gelmeyen her cevapta hiç dolmaz (`KURAL B`). "
+     "Alanın **gerekçesi** yorumda: onayda planı yeniden üretmek `E-8`'i çiğner ve "
+     "onaylanan ile koşan planı ayrıştırabilirdi — o zaman onay bir tören olurdu."),
+    ("app/page.tsx", 2,
+     "🔴 `§66` — merdiven yolunun **iki bağı**: (1) `/ask` cevabı da önizleme olabilir → "
+     "`onizleme.yakala(...)` muhafızı; (2) koşum dalında `plan ? postPlanKos(...)`. "
+     "⚠ **TAŞINAMAZ:** birincisi *«bir cevap geçmişe/tuvale yazılır mı»* kararıdır ve bu "
+     "dosya thread/bağlam yaşam döngüsünün **tek** sahibidir; ikincisi tek `useMutation`'ın "
+     "içindedir ve ikinci bir mutasyon yazmak aynı yerleştirme gövdesinin **ikinci bir "
+     "sahibi** demekti ㊲ (bu dosyada `contextRapor`·`diyalog_durumu` tam böyle yetim kaldı). "
+     "🔴 İkisi de **bağ**; durum makinesi ve iki-yol ayrımı `lib/onizleme.ts`'te."),
 ]
 
 

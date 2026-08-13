@@ -341,6 +341,20 @@ export async function getPill(q: string): Promise<PillYaniti> {
 // varsayılanı **her zaman** en az geri alınamaz olandır.
 // ⊘ Ve burada birleştirme YOK: uç alanları düz gönderir, ekranın istediği tek nesneyi
 // `lib/onizleme.ts` kurar. Bu dosya bir **taşıyıcıdır**, bir yorumlayıcı değil.
+// 🔴🔴 `§66` — **ONAYLANAN PLANI KOŞAR** (`POST /plan/kos`, ⊘ LLM).
+//
+// `/ask` çok adımlı bir planı artık koşmadan önizliyor (`source="onizleme"`); bu çağrı
+// o önizlemenin `[koş]` düğmesidir. Gövdeye **planın kendisi** gider: onayda yeniden
+// üretmek `E-8`'i çiğner ve — daha ağırı — onayın anlamını bozar.
+// ⚠ `soru` kart başlığı için: sunucu `question` alanını gövdeden okur (`AskResponse`
+// onu zorunlu tutuyor ve kartın `startsWith` çağrısı boş alanda düşer).
+export async function postPlanKos(
+  g: { plan: Record<string, unknown>; soru: string },
+): Promise<AskResponse> {
+  const { data } = await apiClient.post<AskResponse>("/plan/kos", g);
+  return { ...data, question: data.question || g.soru };
+}
+
 export async function postMakro(
   g: { ad: string; capa: CubeQuery; boyut: string; soru: string; kos?: boolean },
 ): Promise<AskResponse> {

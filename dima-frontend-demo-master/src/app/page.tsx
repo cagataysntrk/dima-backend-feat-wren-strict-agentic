@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
-import { apiErrorMessage, ask, askCube, getConversation, postMakro, uploadDataset } from "@/lib/api-client";
+import { apiErrorMessage, ask, askCube, getConversation, postMakro, postPlanKos, uploadDataset } from "@/lib/api-client";
 import { useOnizleme, type MakroIstegi } from "@/lib/onizleme";
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -341,6 +341,10 @@ export default function Home() {
       // FAZ S · STEERING KAPISI — bu cevap HÂLÂ güncel mi?
       // Değilse: geçmişe YAZILIR (kaybolmaz) ama aktif thread/bağlam/görünüm ONUN
       // eline geçmez. Sessizce yutmak da, bağlamı geri almak da yanlış olurdu.
+      // 🔴 `§66` — merdiven de önizleyebilir: garsonun kurduğu çok adımlı plan koşmadan
+      // gelir (`source="onizleme"`). Yakalanırsa **kaydedilmez** — koşmamış bir cevabı
+      // geçmişe yazmak, sonraki takibi hayalî bir bağlama bağlardı.
+      if (onizleme.yakala(data, { cq: (data.cube_query ?? {}) as never, label: data.question })) return;
       const guncel = (vars.sira ?? 0) >= istekSirasi.current;
       if (!guncel) {
         data.steering_golgede = true;
@@ -465,8 +469,9 @@ export default function Home() {
   const onizleme = useOnizleme();
 
   const cubeMutation = useMutation<AskResponse, unknown, MakroIstegi>({
-    mutationFn: ({ cq, label, makro }) =>
-      makro ? postMakro({ ad: makro.ad, capa: cq, boyut: makro.boyut, soru: makro.soru, kos: makro.kos })
+    mutationFn: ({ cq, label, makro, plan }) =>
+      plan ? postPlanKos({ plan, soru: label })                       // `§66` — onaylanan plan
+      : makro ? postMakro({ ad: makro.ad, capa: cq, boyut: makro.boyut, soru: makro.soru, kos: makro.kos })
       : askCube({ cube_query: cq, label, session_id: sessionId, thread_id: activeThreadId }),
     onSuccess: (data, istek) => {
       // 🔴🔴 `§63` — **ÖNİZLEME BİR CEVAP DEĞİLDİR.** Uç `source="onizleme"` döndüyse

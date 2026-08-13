@@ -956,3 +956,25 @@ def resolve(settings) -> dict[str, str]:
     """Geriye-uyum: principal'sız çözüm (fabrika ayarı + yalnız global/sector
     override'ları — kimliksiz bağlamlar için)."""
     return resolve_for(settings, principal=None)
+
+def oneri_katmani_acik(principal=None) -> bool:
+    """🔴 `§66` — **ÖNGÖRÜ KATMANI AÇIK MI — TEK SAHİP** ㊲.
+
+    Bu yüklem iki yerde birden soruluyor: öneri/önizleme uçları (`routers/oneri.py`) ve
+    artık **cevap merdiveni** (`plan_tuketici.cevap` — çok adımlı plan koşmadan önizlenir
+    mi). İkisinde ayrı ayrı `resolve_for(...)` yazmak, bir kararı iki yerde savunmaktı; bir
+    gün biri `in` ötekisi `== "on"` olurdu ve bir kiracıda öneri açık, önizleme kapalı
+    kalırdı.
+
+    ⚠ Hata hâlinde **KAPALI**: bir bayrak çözülemiyorsa varsayılan, davranışı
+    **değiştirmeyen** taraftır (`KURAL B`).
+    """
+    from app.config import get_settings
+    from app.logging_setup import get_logger
+
+    try:
+        return "oneri_katmani" in resolve_for(get_settings(), principal)
+    except Exception:                                        # noqa: BLE001
+        get_logger("dima.features").warning(
+            "bayrak çözülemedi → öngörü katmanı KAPALI sayıldı", exc_info=True)
+        return False

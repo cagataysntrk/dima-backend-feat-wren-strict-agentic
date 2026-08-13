@@ -556,6 +556,18 @@ class AskResponse(BaseModel):
     # gider ama ORADA YENİDEN doğrulanır: öneri güvenilir bir girdi DEĞİLDİR.
     eylem_onerisi: dict[str, Any] | None = None
 
+    #: 🔴🔴 `§66` — **KOŞMADAN GÖSTERİLEN PLAN** (`§28.3`: *«çok adım (N ≥ 2) → her zaman
+    #: önizleme»*). `source="onizleme"` geldiğinde **hiçbir sorgu koşmadı**: `adimlar`
+    #: kullanıcının onaylayacağı sırayı, `plan_taslagi` ise onayda `POST /plan/kos`'a
+    #: **geri gönderilecek** planın kendisini taşır.
+    #:
+    #: ⚠ `plan` ile karıştırılmaz: o **koşmuş** cevabın yapısıdır (bölümler sonuç taşır).
+    #: ⚠ Onayda plan **yeniden üretilmez**: kullanıcı onayladığı planı koşar, benzerini
+    #: değil — ikinci bir garson turu hem `E-8`'i çiğner hem onaydan sapabilirdi.
+    adimlar: list[dict] | None = None
+    gecerli: bool | None = None
+    plan_taslagi: dict | None = None
+
 
 class EylemOnayRequest(BaseModel):
     """POST /ask/eylem — bir eylem önerisinin ONAYI.

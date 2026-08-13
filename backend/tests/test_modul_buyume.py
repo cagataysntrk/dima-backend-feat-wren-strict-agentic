@@ -933,6 +933,16 @@ MUAFIYET_ASK_KOD = [
      "⊙ Dalın kendisi **yeni motor açmıyor**: üç kaynağın üçü de var olan katalog "
      "alanları (`measure_expressions` · `units` · `base_object`) ve yeni sorgu koşmuyor — "
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
+    ("§66-onizleme-alanlari", 1,
+     "🔴 `§66` — **ÖNİZLEME ALANLARININ TAŞINMASI** (`adimlar` · `gecerli` · "
+     "`plan_taslagi`). ⚠ **TAŞINAMAZ:** `ask()`in bu noktası `plan_tuketici.cevap`'ın "
+     "sözlüğünü bir `AskResponse`'a çeviren **tek** yerdir; alanları başka bir yerde "
+     "iliştirmek, aynı cevabın iki sahibi demekti ㊲ — ve bu dosyada o desen "
+     "(`contextRapor` · `diyalog_durumu`) zaten iki kez bir alanı yetim bıraktı. "
+     "🔴 **Tek satır ve içinde karar YOK:** üç anahtar bir sözlük kavrayışıyla "
+     "aktarılıyor; karar (*«çok adım koşmadan önizlenir»*) `plan_tuketici`'de, biçim "
+     "(*«adım cümlesi»*) `onizleme_satiri`'nde. Burada olan yalnız **taşımadır**. "
+     "⊙ Alternatifi ölçüldü: üç ayrı `kwarg` satırı **+3**; kavrayış **+1**."),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
     ("faz1-emin-miyim-tek-sahip", 7,

@@ -344,6 +344,11 @@ export interface AskResponse {
    *  ⚠ `plan` ile de karıştırılmaz: o **koşmuş** cevabın yapısıdır (sonuç taşır). */
   adimlar?: { sira: number; fiil: string; metin: string }[] | null;
   gecerli?: boolean;
+  //: 🔴 `§66` — onayda **geri gönderilecek planın kendisi**. Merdiven yolunda (`/ask`)
+  //: garson bir plan kurar ve o plan koşmadan önizlenir; `[koş]` bunu `POST /plan/kos`'a
+  //: aynen yollar. ⚠ Yeniden **üretilmez**: model aynı soruya iki farklı plan üretebilir
+  //: ve kullanıcı A'yı onaylayıp B koşulsaydı onay bir **tören** olurdu.
+  plan_taslagi?: Record<string, unknown> | null;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).

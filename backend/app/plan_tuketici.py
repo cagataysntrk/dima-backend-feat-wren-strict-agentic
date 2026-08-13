@@ -33,11 +33,14 @@ muaf tutmak, planı Discovery'ye çevirirdi.
 
 from __future__ import annotations
 
+import re
+
 import json
 import logging
 import types
 from typing import Any
 
+from app import features as _features
 from app import plan_kosucu
 
 _log = logging.getLogger("dima.plan_tuketici")
@@ -345,7 +348,7 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
 def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any = None,
           principal: Any = None, limit: int | None = None,
           route_hit: dict | None = None, onceki_rapor: Any = None,
-          koru: bool = True) -> dict | None:
+          koru: bool = True, onaylandi: bool = False) -> dict | None:
     """🔴 **BOŞLUĞUN TEK KAPISI** — `ask()` bundan başka bir şey bilmez.
 
     `None` döner ve **hiçbir şey yapmaz** eğer: bayrak kapalıysa, sağlayıcı plan
@@ -538,6 +541,37 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         _log.info("orkestratör: kullanılabilir plan yok → merdiven bugünkü gibi")
         return None
     _n = len(plan["adimlar"])
+    # ══════════════════════════════════════════════════════════════════════════════
+    # 🔴🔴 `§66` — **ÇOK ADIMLI PLAN, KOŞMADAN ÖNCE KULLANICIYA SORULUR** (`§28.3`).
+    # ══════════════════════════════════════════════════════════════════════════════
+    #
+    # Belgenin **başlığı** işin kendisi: *«route ve garson, KARAR VERİCİ olmaktan çıkıp
+    # TAHMİNCİ oluyor … **kullanıcı KARARI VERİR (bir tık)**»* (`§3.1`). `§63` bunu
+    # **makro** yolunda kurmuştu; ama asıl merdiven buradan geçiyor ve burada plan hâlâ
+    # **koşuyordu** — yani rol değişikliği yarım kalmıştı 🆘.
+    #
+    # `§28.3` karar tablosu (birebir): **tek adım + emin → 🟢 koşar** · **çok adım
+    # (N ≥ 2) → 🔴 her zaman önizleme**. Gerekçesi ölçülmüş: *«7. adımda çökerse
+    # kullanıcı SONDA öğreniyor — onarım tutma %25, payda 16»* + bütçe.
+    #
+    # ⚠ **`KURAL B`:** öngörü katmanı kapalı bir kiracıda bu dal **hiç** çalışmaz ve
+    # merdiven bayt bayt bugünküdür. Bayrağın **tek sahibi** `features` ㊲.
+    # ⚠ Plan **cevaba iliştirilir**: onay `POST /plan/kos`'a *aynı planı* geri yollar —
+    # yani kullanıcı **onayladığı planı** koşar, yeniden üretilmiş bir benzerini değil.
+    # İkinci bir garson turu hem `E-8`'i çiğner hem de onaydan **farklı** bir plan
+    # üretebilirdi. *Onaylanan şey ile koşan şey aynı değilse, onay bir tören olur.*
+    if _n >= 2 and not onaylandi and _features.oneri_katmani_acik(principal):
+        try:
+            plan_kosucu.dogrula(plan)
+            _gecerli, _not = True, f"{_n} adım — koşmadan önce gözden geçir."
+        except plan_kosucu.PlanHatasi as e:
+            # ⊘ Dürüst ret: geçersiz plan da **gösterilir**, gerekçesiyle (`§7`).
+            _gecerli, _not = False, str(e)
+        _log.info("orkestratör: %d adımlık plan ÖNİZLENİYOR (onay bekliyor) — §28.3", _n)
+        return {"source": "onizleme", "note": _not, "gecerli": _gecerli, "plan_taslagi": plan,
+                "adimlar": [{"sira": i, "fiil": x.get("fiil"), "metin": onizleme_satiri(x)}
+                            for i, x in enumerate(plan["adimlar"], 1)],
+                "iz": [f"orkestratör: {_n} adımlık plan önizlendi (§28.3 — onay bekliyor)"]}
     try:
         out = calistir(plan, service=service, index=index, schema=schema,
                        cube_meta=kosum_cube_meta(schema), limit=limit,
@@ -1375,3 +1409,81 @@ def belge_takibi(request: Any, *, service: Any, schema: dict, soru: str,
     out["iz"] = [*(out.get("iz") or []),
                  "§RD-takip: ekrandaki belge düzenlendi (fiş zincirinden ÖNCE)"]
     return out
+
+def kosum_yaniti(out: dict, plan: dict, *, schema: dict, soru: str,
+                 makro: str | None = None) -> dict:
+    """🔴 `§66` — koşmuş bir planın **HTTP cevabı** — ve bunun **tek sahibi** ㊲.
+
+    İki uç aynı şeyi döndürüyor: `POST /oneri/makro` (reçete) ve `POST /plan/kos`
+    (onaylanan plan). Biçimi iki yerde yazmak, bir gün birinde `result` olup ötekinde
+    olmaması demekti — ve bu depoda tam o kusur **ölçüldü**: makro cevabı bir demet
+    boyunca `result` taşımadı, kart **gövdesiz** çizildi 🆘.
+
+    ⚠ `source` **`cube`**: bu yolda LLM **yok** ve rozet bunu söylemeli 🅖.
+    ⚠ `question` zorunlu: `AskResponse` onu şart koşuyor ve kart başlığı odur.
+    """
+    bolumler, son = bolumlere_cevir(out, plan, schema=schema, soru=soru)
+    yanit = {
+        "source": "cube",
+        "question": soru,
+        "adim_sayisi": len(plan.get("adimlar") or []),
+        "result": son,
+        # ⚠ Son bölümün fişi karta **yeniden koşulabilirlik** verir (`/cube`, 0 LLM).
+        "cube_query": (bolumler[-1]["cube_query"] if bolumler else None),
+        "bolumler": bolumler,
+        "note": out.get("makbuz"),
+    }
+    if makro:
+        yanit["makro"] = makro
+    return yanit
+
+
+def onizleme_satiri(adim: dict) -> str:
+    """Önizlemede bir adımın **yazısı** — makbuzun cümlesi, ekranın biçiminde.
+
+    ⚠ `§66` — gövde `routers/oneri.py`'den **buraya taşındı**: aynı satırı iki
+    önizleme üretiyor (makro ucu ve cevap merdiveni) ve ikisi ayrı yazılsaydı
+    kullanıcı **aynı adımı iki farklı cümleyle** okurdu ㊲.
+
+    ⚠ Metnin **tek sahibi** `_adim_metni`'dir (`KAT-1`): ikinci bir cümle
+    kurmak, aynı adımın makbuzda ve önizlemede **farklı** okunması demekti — ve kullanıcı
+    onayladığı şeyle koşan şeyi karşılaştıramazdı. Burada yapılan **yalnız biçimdir**.
+
+    İki ölçülmüş biçim kusuru (canlı `s24`):
+
+    | görülen | neden |
+    |---|---|
+    | `SORGU` rozeti + *«**SORGU** — …»* | fiil **ayrı alan** olarak gidiyor; metin onu **yineliyordu** ㊲ |
+    | ekranda düz `**` ve `` ` `` | makbuz **markdown**'a yazılır, önizleme **düz metne** |
+
+    ⊘ Ve işaretler istemcide temizlenmedi: bir markdown çözücü üç simge için fazla, ama
+    asıl sebep sahiplik — biçimi **üreten** yer bilir, tüketen yer tahmin eder 🅬.
+    """
+
+    from app.plan_semasi import FIIL_ONIZLEME
+
+    fiil = str(adim.get("fiil") or "")
+    metin = _adim_metni(adim)
+    onek = f"**{fiil}** — "
+    if metin.startswith(onek):
+        metin = metin[len(onek):]
+    metin = metin.replace("**", "").replace("`", "")
+    # 🔴 `SORGU` **kendi gövdesini** yazar (*«ort_oee · makine kırılımında»*) — orada
+    # kullanıcıya söylenecek şey zaten onun kendi ölçüsüdür. Ötekiler tanım basıyordu;
+    # onlar için sözlüğün **önizleme kipi** okunur ve adımın kendi alanları (boyut ·
+    # kaynaklar) o cümlenin **arkasına** iliştirilir.
+    kisa = FIIL_ONIZLEME.get(fiil)
+    if kisa and fiil != "SORGU":
+        _b = str(adim.get("boyut") or adim.get("dimension") or "")
+        # ⚠ Yuva **cümlenin içinde**: Türkçe eki oraya yazılı (*«makine kırılımı ekler»*).
+        # Boyut yoksa yuva düşer — *«{boyut} kırılımı»* gibi bir kalıntı, bir cümleyi
+        # bozuk Türkçeye çevirir ve kullanıcı onu bir hata sanır.
+        metin = kisa.replace("{boyut} ", f"{_b} " if _b else "")
+    # 🅡 `$3` bir **iç referanstır**; kullanıcı adımları **1'den** numaralı görüyor ve
+    # aynı sayıyı iki yazımda okumak (`$3` ↔ `3`) bir tutarsızlıktır.
+    # ⚠ Ek **birlikte** değişir ㊵: makbuz `$3` sözcüğünü bir ad gibi çekiyor (*«`$3`
+    # adımının»*); ham değiştirme *«3. adımının»* üretti — ölçüldü, canlı `s27`. Sayıya
+    # dönünce tamlama da düzelir: *«3. adımın»*. Bu bir dil kuralı değil **bir kalıbın
+    # karşılığıdır**: kalıp `_adim_metni`'nde tek bir yerde yazılı.
+    metin = re.sub(r"\$(\d+) adımının", r"\1. adımın", metin)
+    return re.sub(r"\$(\d+)", r"\1.", metin)

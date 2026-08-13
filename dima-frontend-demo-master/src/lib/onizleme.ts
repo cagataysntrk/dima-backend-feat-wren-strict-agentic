@@ -28,6 +28,11 @@ export interface MakroIstegi {
   cq: CubeQuery;
   label: string;
   makro?: { ad: string; soru: string; boyut: string; kos?: boolean };
+  /** 🔴 `§66` — **onaylanan plan**. Doluysa istek `/oneri/makro`'ya değil
+   *  `POST /plan/kos`'a gider: merdiven yolunda (`/ask`) önizlenen plan bir **reçete adı**
+   *  taşımaz, planın kendisini taşır. ⚠ Üç alan da aynı istekte durur çünkü hepsi **aynı
+   *  koşumun** tarifidir; ayrı üç mutasyon, aynı yerleştirme gövdesinin üç kopyası olurdu. */
+  plan?: Record<string, unknown>;
 }
 
 /** Ekranın çizdiği **birleşik** plan. ⚠ Tel biçimi düzdür (`AskResponse.adimlar` +
@@ -61,30 +66,38 @@ export function useOnizleme() {
      *  bir cevabı olmuş gibi kaydetmek olurdu — ve bir sonraki takip sorusu o hayalî
      *  bağlam üzerinden sorulurdu. */
     yakala(cevap: AskResponse, istek: MakroIstegi): boolean {
-      if (cevap.source !== "onizleme" || !istek.makro) {
+      if (cevap.source !== "onizleme") {
         setDurum(null);
         return false;
       }
+      // 🔴 `§66` — **İKİ YOL, TEK ÖNİZLEME.** Makro yolunda tarif bir **reçete adıdır**
+      // (`istek.makro`), merdiven yolunda (`/ask`) **planın kendisidir**
+      // (`cevap.plan_taslagi`). İkisi için ayrı bir gösterim/durum kurmak, kullanıcıya
+      // aynı kararı iki farklı yüzle sormak olurdu ㊲.
+      const _plan = cevap.plan_taslagi ?? undefined;
+      if (!istek.makro && !_plan) { setDurum(null); return false; }
       setDurum({
         plan: {
-          makro: istek.makro.ad,
+          makro: istek.makro?.ad ?? "plan",
           adimlar: cevap.adimlar ?? [],
           // ⚠ `!== false`: alan hiç gelmediyse plan geçerli sayılır — sunucu geçersizliği
           // **söyler**, sessizliği bir ret değildir (ADR-0020 ruhu).
           gecerli: cevap.gecerli !== false,
           note: cevap.note ?? "",
-          soru: istek.makro.soru,
+          soru: istek.makro?.soru ?? istek.label,
         },
-        istek,
+        istek: { ...istek, plan: _plan },
       });
       return true;
     },
 
     /** Onaylanmış istek — `null` ise ortada bekleyen bir plan yoktur. */
     onayla(): MakroIstegi | null {
-      if (!durum?.istek.makro) return null;
+      const i = durum?.istek;
+      if (!i || (!i.makro && !i.plan)) return null;
       setDurum(null);
-      return { ...durum.istek, makro: { ...durum.istek.makro, kos: true } };
+      // ⚠ Plan varsa **o** koşulur (`/plan/kos`); yoksa makro `kos: true` ile onaylanır.
+      return i.plan ? i : { ...i, makro: { ...i.makro!, kos: true } };
     },
 
     iptal(): void {
