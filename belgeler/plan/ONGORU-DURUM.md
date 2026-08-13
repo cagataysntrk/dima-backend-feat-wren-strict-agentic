@@ -1776,3 +1776,57 @@ bu mesajı **çözüyor** olabilir. **Ölçülmedi.**
 **Sıradaki ölçüm:** sahte bir garson (stub `select_cube`/refine) ile takip yolunun
 devri **çağırıp çağırmadığı** — bu, LLM kalitesini değil **tesisatı** ölçer ㊳.
 *Bir yolun kapalı olduğunu, o yolu açan anahtarı takmadan ilan edemem.*
+
+---
+
+## §36 — SAHTE GARSON: tesisat SAĞLAM, kusur DÖNEM AYRIŞTIRICISININ TEKİNDE
+
+### Ölçüm ㊳ — stub `refine_cube`, iki tur, çapa gönderildi 🆣
+
+| deneme | stub'ın döndürdüğü | sonuç |
+|---|---|---|
+| 1 | `{"action": "**refine**", "cube_query": {…}}` | `source=None` · *«ilişkilendiremedim»* |
+| 2 | `{"action": "**edit**", "cube_query": {…}}` | **`source=cube+llm`** ✅ |
+
+⚠ **Birinci deneme benim hatamdı ③🅬:** protokol sözcüğü `edit`; `refine`'ı **uydurmuştum**.
+Ürün doğru davranıyordu — *bir sözleşmeyi okumadan taklit etmek, onu ihlal etmektir.*
+
+### Ve ikinci denemede ürün beklediğimden DÜRÜST çıktı
+
+Stub tarihleri (`2026-04-01…06-30`) **uydurmuştu**; `_drop_invented(cq2, q_norm, prev_cq)`
+onları **attı** ve cevap bunu **söyledi**:
+
+> ⚠ Sayı doğru ama **eksik**: **sadece …** dedin ama sorguya bir kısıtlama taşıyamadım —
+> sayı **tüm** kayıtları kapsıyor.
+
+Yani `llm.py:520`'nin sözleşmesi işliyor: *«LLM SQL yazmaz, **TARİH HESAPLAMAZ**: dönem
+ifadesini `period_expr`e AYNEN kopyalar (**Python çözer**; çözemezse sistem sorar).»*
+
+### ⟹ `§35`'in doktrin okuması DÜZELTİLDİ
+
+`§35`'te *«çare route'a sayı öğretmek değil, takipte devri açmak»* yazmıştım. **Yanlış:**
+devir zaten var ve çalışıyor. Mimari, dönem çözümünü **tek sahibe** veriyor — **Python'a**
+— ve garsonun tarih hesaplamasını **yasaklıyor** (dokunulmaz). Dolayısıyla:
+
+> Yazıyla yazılmış sayı desteği garsonun kurtarabileceği bir şey **değildir**; eksik olan
+> şey **dönem ayrıştırıcısının kendisidir** ve onun sahibi Python'dur.
+
+Bu, *«route'a dil kuralı ekleme»* yasağıyla **çelişmez**: yasak, anlamayı LLM'e devretmeyi
+söyler; ama burada mimari **devretmeyi zaten yasaklamış** ve işi Python'a vermiştir. Bir
+işin tek sahibi varsa, eksiği o sahipte tamamlanır ㊲.
+
+### 🔴 KARAR KULLANICININ — uygulamadım, öneriyorum
+
+Ölçülen boşluk (`date_filters`): `son 3 ayi` ✅ · `son üç ay` · `son altı ay` ·
+`geçen üç ay` · `son iki hafta` ❌. Önerilen çare **kapalı ve küçük**: `bir…on iki`
+sözcük→rakam eşlemesi, **yalnız dönem kalıplarının içinde** (serbest sayı okuma yok),
+`_norm`'a dokunmadan. Tahmini kazanç korpusta ölçülür; `KURAL B` gereği bayrakla.
+
+⚠ Uygulanmadı: en üst kural bu sınıf değişiklikte *«zaruri»* gerekçesi ve **kullanıcı
+onayı** istiyor. Kayıt olarak duruyor.
+
+### K5 — durum
+
+◐ **kökü bulundu, tesisatı temiz, çaresi bir KARAR bekliyor.** *«İlişkilendiremedim»*
+yalnız garson yokken çıkıyor; garson varken ürün cevabı veriyor **ve eksiğini beyan
+ediyor** — yani sözleşmenin 3. satırı canlıda ihlal **edilmiyor** olabilir 🅖.
