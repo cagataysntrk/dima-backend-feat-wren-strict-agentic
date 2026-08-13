@@ -1573,3 +1573,44 @@ HTTP ile değil, **saf fonksiyon** olarak ölçülecek (`route_supheli` saf).
 
 🔴 **Değişmeyen sınır:** çare ne çıkarsa çıksın `test_B_CIPLAK_YIL_BILEREK_KAPSAM_DISI`
 **korunur** — çıplak yıl bir eksik değil, alandan gelen bir **sınırdır** ㊸.
+
+---
+
+## §32 — K3'ün gerçek yolu: DETERMİNİST KATMAN CEVAP VERİYORDU, DEVİR onu GÖLGELEDİ
+
+### Ölçülen zincir — *«2019 cirosu»*, adım adım
+
+| # | adım | ölçülen |
+|---|---|---|
+| 1 | `route()` | ✅ **yarım başarı**: `parti · toplam_ciro`, ama `2019` **düştü** (`filters=None`) |
+| 2 | `niyet_tasima.eksiklik(cq, q)` | **`{donem}`** |
+| 3 | `niyet_tasima.route_supheli(cq, q, schema)` | **`True`** — *«2019 yili cirosu»* için `False` |
+| 4 | `ask.py:4055` garson dalı | `ask_intent_first: **beta**` → **etkin** ⟹ garson çağrılır (`§51`) |
+| 5 | `ask.py:2846` `M-4` | `varsayilan_donem: **beta**` → **etkin** ⟹ sistem **sormaz**, dönemi varsayıp **beyan eder** |
+
+### Yargı — üç kırılma noktası da BİLİNÇLİ, kusur BAŞKA YERDE
+
+`route_supheli`'nin kendi belgesi (`§51`) tam bu vakayı anlatıyor: *«route'un yarım
+başarısı garsonu ENGELLİYOR»* — ölçülmüş üç örnekte kullanıcı `top 5`/`this quarter`
+düştüğü hâlde *«hangi dönem için?»* görmüş, ve çare **devir** olmuş. Yani `2019`'un
+düşmesi üzerine garsonun gitmesi bir kusur **değil**, ürünün **kararı**dır 🆟.
+
+⟹ **K3'ün teşhisi ÜÇÜNCÜ kez yer değiştirdi** ㉚ ve bu kez zemine oturdu:
+
+> Determinist katman *«2019 cirosu»*na cevap **verebiliyordu** (küp + ölçü + `M-4` beyanlı
+> varsayım). Canlıda `cube=adhoc` görülmesinin sebebi determinist katmanın **susması**
+> değil, **devrin onu gölgelemesi** ve garsonun dönüşünün Discovery'ye düşmesidir.
+
+Bu, planın `F` fazının kendi cümlesinin bir başka örneğidir: *«CI'da chip ateşliyor,
+üretimde Intent-JSON gölgeliyor»* — olasılıksal yol, **deterministik olarak bilinen**
+bir cevabın önüne geçiyor.
+
+### Sıradaki ölçüm — çareyi yazmadan ÖNCE ㊷
+
+Aday çare: **garson boş/`adhoc` dönerse, yarım-isabetli `route_hit`e geri dön** (beyanlı
+varsayım ya da netleştirme ile) — Discovery'ye değil. Ama önce **böyle bir geri dönüş
+zaten var mı** ölçülecek; yoksa bağlanacak.
+
+⚠ Sınırlar: `test_B_CIPLAK_YIL_BILEREK_KAPSAM_DISI` **korunur** ㊸ · `features.yml`
+**okundu, değiştirilmedi** · *«sayıyı küp koyar»* dokunulmazı bu çarenin **lehinedir**:
+Discovery'nin her ateşlenmesi bir **mutfak eksikliği raporudur**.
