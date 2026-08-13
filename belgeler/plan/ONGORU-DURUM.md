@@ -1678,3 +1678,51 @@ ikinci bir tarayıcı **yazılmayacak** ㊲.
 
 *Bir kusuru dört kez yanlış yerde aradım; her seferinde bir katman yukarı çıktı ve her
 seferinde ürün, iddiamdan daha doğru çıktı.*
+
+---
+
+## §34 — BEYAN TAMAMLANDI: *«çözemedim»* artık NEYİ yok saydığını da söylüyor 🆥
+
+### Önce · sonra
+
+| | metin |
+|---|---|
+| **önce** | ⏱ Dönemi çözemedim — **verinin son 12 ayı** alındı (01.06.2025 – 30.06.2026). Başka bir dönem yazarsan onu uygularım. |
+| **sonra** | …aynısı **+** ⚠ «2019» bir yıl **işareti** taşımadığı için dönem sayılmadı (bir hesap/şube kodu da olabilir) — **«2019 yılı»** dersen onu uygularım. |
+
+Cümle iki iş yapıyor: düşürüleni **adıyla anıyor** ve **düzeltmeyi öğretiyor**.
+*Bir sınırı söylemek, onu aşmanın yolunu göstermekle tamamlanır.*
+
+### Önceki dersle ÇELİŞMİYOR — onun uygulanışı
+
+`donem_capasi`'nin kendi docstring'i bu metni bir kez **zayıflatmıştı**: eski hâli *«sen
+söylemedin»* diyordu ve Arapça bir vakada **yanlış** çıktı (kullanıcı söylemişti, LLM
+çeviremedi). Ders: *«Bir beyan, ölçebildiğinden fazlasını söylediği anda bir varsayıma
+dönüşür.»* Eklenen cümle bu derse **uyar**: iddiası *«soruda geçen şu dört hane»* — yani
+sistemin **bilebileceği**, ölçülebilir bir şey. Ölçemediğini değil, **ölçebildiğini**
+söylüyor.
+
+### Sınır korundu 🆃 — anmak ≠ uygulamak
+
+`date_filters("2019 cirosu")` hâlâ **`[]`**; `«2019 yili cirosu»` hâlâ çevriliyor. Bu bir
+**görünürlük** değişikliğidir, davranış değişikliği değil — `㊸` sınırı yerinde.
+
+### Kapı ve kanıt
+
+`tests/test_beyan_yok_sayilani_anar.py` (**5 ✅**) — anma · boş-dize · **eşik sayısı yıl
+sanılmaz** (`1500 uzeri ciro`, `3000 adet parti` ⑯) · zıt ölçüt (sınır korunur) · **zincir**
+(`ast` ile `ask.py` `soru=` geçiyor mu).
+
+🅑 **Mutasyonla kanıtlandı:** `ask.py`'den `soru=` kaldırıldı → `test_ZINCIR_ask_soruyu_
+GECIYOR` **kırmızı**; geri yüklendi, `diff` temiz. *Zincire bağlanmamış bir kapı, metnin
+üretilebildiğini değil yalnız yazıldığını ölçer* 🆆.
+
+⚠ **Tavan 🆄:** ilk yazımda `ask.py`'ye ikinci satır eklemiştim ve `test_ASK_FONKSIYONU_
+TAVANI_ASMIYOR` ateşledi. Tavan **yükseltilmedi** — çağrı tek satıra sığdırıldı (96 < 100).
+*Bir kapı ateşlediğinde ilk düşünce onu gevşetmek olmamalı.*
+
+### Kalan iş
+
+**K5◐** (*«sadece bu üç ayı»* daraltması) · borçlar: `_uuid_or_none` 5 kopya ㊲ ·
+`_norm` 5 modül · `d11` · `§56` · `FAZ 0` paydası 🆉 · `_RRF_K` · chip etiketi ·
+çok kiracılı ısıtma.

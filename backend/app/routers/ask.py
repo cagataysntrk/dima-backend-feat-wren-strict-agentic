@@ -2844,7 +2844,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # (`KURAL B`) ve netleştirme aşağıda **aynen** durur — kaldırılmadı, ikinci
         # seçenek oldu.
         if ("varsayilan_donem" in resolve_for(settings, principal)
-                and _capa.varsayilan_yerinde(cq, service, cube_meta)):
+                and _capa.varsayilan_yerinde(cq, service, cube_meta, soru=body.question or "")):
             return None
 
         # 🔴 `DA-10` — **ÖNCE NE ANLADIĞINI SÖYLE, SONRA SOR.**

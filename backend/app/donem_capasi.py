@@ -62,6 +62,8 @@ kendisini ezmek için verilmiş bir talimatı ezemez.*
 
 from __future__ import annotations
 
+import re
+
 from app.logging_setup import get_logger
 
 _log = get_logger("donem_capasi")
@@ -195,7 +197,51 @@ IZ_VARSAYILAN = "dönem belirtilmedi → verinin son 12 ayı BEYANLA varsayıld�
 VARSAYILAN_AY = 12
 
 
-def varsayilan_yerinde(cq: dict, service, cube_meta: dict | None) -> bool:
+#: Yıl **işareti** taşımayan dört haneli sayı. ⚠ `cube_router._YEAR_RE`'nin **zıddı**:
+#: o *"yıl işareti VAR mı"* diye sorar ve bir dönem üretir; bu yalnız *"ortada anılmamış
+#: bir dört hane var mı"* diye sorar ve **hiçbir dönem üretmez**.
+_CIPLAK_YIL_RE = re.compile(r"\b(?:19|20)\d{2}\b")
+
+
+def _yok_sayilan_yil(soru: str) -> str | None:
+    """Beyanın **anacağı** yok sayılan dört haneli sayı — yalnız varsayım dalında.
+
+    🔴 `§34` — **EKSİK BİR DOĞRU.** *"Dönemi çözemedim"* doğruydu ama **yarımdı**:
+    kullanıcı `2019 cirosu` yazdı, sistem `2019`'u **düşürdü** ve cevabı verinin son 12
+    ayından kurdu — bunu **söylemeden**. Beyanın işi varsayımı görünür kılmaksa,
+    **neyi yok saydığını** da söylemelidir; yoksa kullanıcı yanlış dönemi doğru sanır.
+
+    ⚠ `㊸`'nin sınırı **korunmaz değil, KORUNUR**: çıplak yıl hâlâ bir dönem **değildir**
+    (ERP'de bir hesap/şube/TRCODE değeri olabilir — `test_B_CIPLAK_YIL_BILEREK_KAPSAM_DISI`).
+    Burada yalnız **anılır**; hiçbir filtre üretmez.
+
+    ⚠ Yalnız `varsayilan_yerinde` içinden çağrılır — oraya gelinmişse dönem **zaten
+    çözülememiştir**, yani ikinci bir sınır denetimi ㊲ gerekmez. Ve iddiası ölçülebilir:
+    *"soruda geçen şu dört hane"* — sistemin **bilebileceği** bir şey. Bu, bir üstteki
+    docstring'in dersinin (*"beyan ölçebildiğinden fazlasını söylemesin"*) ihlali değil,
+    **uygulanışıdır**: ölçebildiğini artık söylüyor.
+    """
+    if not soru:
+        return None
+    m = _CIPLAK_YIL_RE.search(soru)
+    return m.group(0) if m else None
+
+
+def _yok_sayilan_ek(soru: str) -> str:
+    """Yok sayılan dört hane varsa beyana eklenen **tek cümle**; yoksa **boş dize**.
+
+    Cümle iki iş yapar: (1) düşürüleni **adıyla** anar, (2) düzeltmeyi **öğretir**
+    (*«2019 yılı»*) — *bir sınırı söylemek, onu aşmanın yolunu göstermekle tamamlanır.*
+    """
+    yil = _yok_sayilan_yil(soru)
+    if not yil:
+        return ""
+    return (f" ⚠ «{yil}» bir yıl **işareti** taşımadığı için dönem sayılmadı "
+            f"(bir hesap/şube kodu da olabilir) — **«{yil} yılı»** dersen onu uygularım.")
+
+
+def varsayilan_yerinde(cq: dict, service, cube_meta: dict | None,
+                       *, soru: str = "") -> bool:
     """🔴🔴 **`M-4` — SORMAK VARSAYILAN DAVRANIŞTI; ARTIK BEYANLI VARSAYIM DA VAR.**
 
     ## Ölçülen kusur
@@ -283,7 +329,8 @@ def varsayilan_yerinde(cq: dict, service, cube_meta: dict | None) -> bool:
         # *Bir beyan, ölçebildiğinden fazlasını söylediği anda bir varsayıma dönüşür —
         # ve beyanın işi tam olarak varsayımı görünür kılmaktı.*
         (f"⏱ Dönemi çözemedim — **verinin son {VARSAYILAN_AY} ayı** alındı "
-         f"({_gun(bas)} – {_gun(_max)}). Başka bir dönem yazarsan onu uygularım."),
+         f"({_gun(bas)} – {_gun(_max)}). Başka bir dönem yazarsan onu uygularım."
+         + _yok_sayilan_ek(soru)),
         IZ_VARSAYILAN)
     return True
 
