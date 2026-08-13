@@ -3513,3 +3513,44 @@ yasaklı 🅛 — aracın kendisi hazır ve kapılı, ama çıktısını **görm
 ### ⊘ FE ekran doğrulaması — **dördüncü tur** yapılamadı
 
 `localhost:3000` → `000`.
+
+---
+
+## `§73` — devir tutanağı + **uzak borçlar ölçülüp sınıflandı** 🆞
+
+### ① 🔴 K5 bir *«liste satırı»* değil — **canlıda yanlış cevap veriyor**
+
+```
+«son 3 ayda fire ne kadar»    → source=cube      · dönem: 2026-05-13 →            ✅
+«son üç ayda fire ne kadar»   → source=cube+llm  · dönem: 2025-06-01 → 2026-06-30 🔴 13 AY
+```
+
+İki zarar: route düşüyor (**gereksiz LLM turu**) **ve** dönem 13 aya açılıyor — kullanıcı
+yanlış sayıyı doğru sanıyor. ⚠ Çare route'a dil kuralı eklemek **değil**; sahibi
+`donem_capasi` ve Türkçe sayı sözcükleri **kapalı, sonlu** bir küme (uydurma liste değil).
+⚠ `«bir ay»` iki anlamlı ⑯ → kısıt **birim ile birlikte**, ve korpusla sınanmalı.
+**Devralanın ilk kod işi budur.**
+
+### ② Öteki borçların sınıfı — ölçüldü
+
+| madde | ölçüm | sınıf |
+|---|---|---|
+| `_norm` yinelenmesi | **6** modülde tanımlı (`deger_capasi`·`contracts`·`llm`·`sensitivity`·`yetenek`·`uyum`) + `lab/oneri_olcum` | 🟡 **temizlik** — bugün kusur üretmiyor; not: sayı *«5»* diye yazılıydı, **6** ㉚ |
+| `d11` | `ONGORU-DURUM §…`: *«9 boyutun fan-out sertifikası · kapı **kırmızı KALIYOR** — ön koşul `mdl_version` damgası»* | ⊘ **gerekçeli kırmızı** ㊸ — borç değil, **bekleyen ön koşul** |
+| `_RRF_K = 10` | `app/oneri.py:167`, tek tanım | 🟡 **kalibrasyon** — bir kusur ölçülmedi |
+| `FAZ 0` paydası 🆉 | ölçüm aracı (`lab/oneri_olcum.py`) duruyor; örneklem sayısı statik okumayla **çıkarılamadı** | ⊘ **ölçülemedi**, öyle yazıyorum 🅢 |
+
+⚠ `d11` için bir an *«`pii.py`'de bir checksum»* sandım — o **başka bir `d11`** (TCKN
+kontrol hanesi) ve kasetteki de bir **hash parçası**. ③ *Prob yanılır; adı aynı olan üç
+şey vardı.*
+
+### ③ Devir tutanağı yazıldı 🅦
+
+`belgeler/devir/HANDOFF_2026-08-13_6_ONGORU-KATMANI-ROL-DEGISIKLIGI.md` — mevcut
+`HANDOFF_*` desenine uydu ㉙. **Özet değil tutanak**: ne çalışıyor (canlı kanıtla) · ne
+**yapılmadı ve neden** · hangi kapı neyi savunuyor · **nereye basarsan kırılır** · tek
+cümlelik devir.
+
+### ⊘ FE ekran doğrulaması — **beşinci tur** yapılamadı
+
+`localhost:3000` → `000`.
