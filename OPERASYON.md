@@ -1,5 +1,9 @@
 # OPERASYON — DİMA v1 · kural seti ve yürütme sözleşmesi
 
+> ⟳ **Bu ARŞİV değil ama AKTİF de değil.** Kayıt olarak duruyor (`MIMARI §10`: *kapananlar işaretlenir, silinmez*); **güncel durum** `belgeler/plan/ONGORU-DURUM.md`'dedir. İkisini birden *«nerede kaldık»* diye okumak, `KAT-1`'in belge düzeyindeki ihlalidir.
+
+---
+
 > 🔴 **BU DOSYA HER OTURUMDA OKUNUR.** Bağlam sıfırlanırsa (compact / yeni oturum) buradan
 > devam edilir. Yanında **`OPERASYON-DURUM.md`** vardır: *nerede kaldık*. İkisi birlikte
 > operasyonun **tam durumunu** taşır — sohbet geçmişine bağımlılık YOKTUR.

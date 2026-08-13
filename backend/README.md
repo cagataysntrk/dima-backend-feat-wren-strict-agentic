@@ -33,9 +33,17 @@ FastAPI (dima-backend) ──import──► wren.engine.WrenEngine ──► m�
 | POST | `/ask/upload` | Chat-scoped Excel/CSV yükle → oturum DuckDB + oto-cube (ADR-0021) |
 | GET/DELETE | `/conversations` `/conversations/{id}` | Sohbet geçmişi: liste/getir/soft-delete (ADR-0007/0019) |
 | * | `/cube` `/verify` `/contracts*` `/schedules*` `/notifications` | Chip düzenleme · verify döngüsü · Query Contract/replay · zamanlanmış raporlar |
+| GET | `/oneri` `/oneri/pill` | 🔴 **ÖNGÖRÜ KATMANI** — yazarken **cümle** önerir (leksik+vektör RRF, ⊘ LLM) · girilen metnin **pill** temsili |
+| POST | `/oneri/makro` `/oneri/tik` | adlandırılmış **makro** (N deterministik adım, ⊘ LLM; onaysız çağrı **önizler**) · tıklama sinyali (hasat) |
+| POST | `/plan/kos` | 🔴 **onaylanan planı koşar** — kullanıcı önizlemeyi onaylayınca, ⊘ LLM |
+| * | `/ask/drill` `/ask/jobs/{id}` `/dashboards*` `/measures*` `/decisions` `/stats` | kök-neden inişi · async iş · pano · ölçü terfi · karar kaydı · telemetri |
 
 `/health` ve `/auth/login|refresh` dışında **her uç geçerli Bearer access token ister**
 (bkz. Kimlik doğrulama). Swagger UI: `http://localhost:8000/docs`
+
+⚠ **Port:** uvicorn konteyner **içinde** `8000` dinler; dışarıya `-p 8002:8000` ile
+yayımlanır — yani tarayıcıdan **`localhost:8002/docs`**. Reçete:
+[`belgeler/kilavuz/SERVER_COMMANDS.md`](../belgeler/kilavuz/SERVER_COMMANDS.md).
 
 Ayrı süreçte **admin-api** (`admin_app.main:app`, Wren'siz, ADR-0015): `/sadmin/tenants`
 (+config +status; config'te sektör/modül + kaynak/firma-dönem kapsamı — ADR-0017),
@@ -76,8 +84,16 @@ uvicorn app.main:app --reload --port 8000
 cd admin-dev && pnpm dev        # http://admin-api.dima.localtld (yoksa :8001)
 ```
 
-Testler: `.venv/bin/python -m pytest tests/` (133 test; auth/eval/VQR depoları geçici
-yollara izole edilir, canlı log kirletilmez). Eval: `.venv/bin/python eval/run.py`.
+Testler: `.venv/bin/python -m pytest tests/` — **5.962 test** (ölçüm: `--collect-only`,
+2026-08-13; auth/eval/VQR depoları geçici yollara izole edilir, canlı log kirletilmez).
+Eval: `.venv/bin/python eval/run.py`.
+
+🔴 **Ama gündelik akış bu değildir.** Bu depoda kapı **toplu** koşulur ve üç seviyesi
+vardır (`CLAUDE.md` › *TEST KAPISI*): hedefli `pytest tests/test_x.py` (3-15 sn) →
+demet sonunda `python lab/kapi.py --hizli --degisen <dosyalar>` → `--tam` (korpus).
+⚠ **Belge kapıları repo kökünü ister** (`test_belge_duzeni.py` ·
+`test_belge_yollari_gercek.py`): standart kapta **atlarlar** — `skipped` bir onay
+değildir. Kök mount: `-v "$PWD:/repo" -w /repo/backend`.
 
 ### localtld (yerel domain)
 `pnpm dev`, [localtld](https://github.com/abdullahharunozturk) kuruluysa servisi

@@ -1,5 +1,9 @@
 # OPERASYON — ARKA PLAN DENETİMİ · ajan görev tanımları
 
+> ⟳ **Bu ARŞİV değil ama AKTİF de değil.** Kayıt olarak duruyor (`MIMARI §10`: *kapananlar işaretlenir, silinmez*); **güncel durum** `belgeler/plan/ONGORU-DURUM.md`'dedir. İkisini birden *«nerede kaldık»* diye okumak, `KAT-1`'in belge düzeyindeki ihlalidir.
+
+---
+
 > ✅ **AJANLAR KULLANILIR — operasyonun en güçlü yanı.** Bir ara *"arka plan ajanları ana
 > sohbeti sildi"* teşhisiyle yasaklanmışlardı; **teşhis yanlış çıktı** — sebep başarısız
 > bir **daemon yükseltmesiydi**, ajanlar değil. Yasak kaldırıldı.

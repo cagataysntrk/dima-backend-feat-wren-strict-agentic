@@ -1,11 +1,30 @@
 # dima-frontend — CLAUDE.md
 
-> ⚠ **AKTİF BACKEND OPERASYONU: ÖNGÖRÜ KATMANI** — bu arayüz `FAZ 6`'da işin içine girer
-> (öneri şeridi · `↓↑ Enter` · tek tuş; **üç dosya**: `lib/types.ts` · `ChatPanel.tsx` ·
-> API çağrısı). `ReportCard.tsx` **hiç açılmıyor**.
-> Plan: `belgeler/plan/2026-08-12_ONGORU-KATMANI-KARARI.md §40` · durum:
-> `belgeler/plan/ONGORU-DURUM.md`.
-> 🔴 `FAZ 6` **`FAZ 0` ölçümüne bağlıdır** — ölçüm yapılmadan FE işine başlanmaz.
+> ⟳ **ÖNGÖRÜ KATMANI KURULDU (2026-08-13).** Yukarıdaki *«FAZ 6'da işin içine girer»*
+> beklentisi gerçekleşti ve **büyüdü**: yalnız bir öneri şeridi değil, planın başlığındaki
+> **rol değişikliği** de burada yüzünü buldu — *«route ve garson KARAR VERİCİ olmaktan
+> çıkıp TAHMİNCİ oluyor … **kullanıcı KARARI VERİR (bir tık)**»*.
+> Plan: `belgeler/plan/2026-08-12_ONGORU-KATMANI-KARARI.md` · durum:
+> `belgeler/plan/ONGORU-DURUM.md` (`§63`–`§79`).
+
+## 🔴 Öngörü katmanı — hangi dosya ne yapar
+
+| dosya | işi |
+|---|---|
+| `components/OneriSeridi.tsx` | yazarken **cümle** önerir (`GET /oneri`); besteciyi **sarmalar** (çapa üstte, şerit altta); `>8 kelimede` **söner** |
+| `components/PillSatiri.tsx` | *«ne anladım»* — `Niyet`in pill temsili. `verilen` prop'u doluysa **ağa çıkmaz**, verilen pill'leri çizer |
+| `components/PlanOnizleme.tsx` | 🔴 **koşmadan gösterilen plan**: dikey adımlar + `[koş] [düzenle] [iptal]` · geçersiz plan da **gerekçesiyle** görünür |
+| `lib/onizleme.ts` | önizlemenin **durum makinesi** ve onayı. `yakala()` `true` dönerse cevap **geçmişe yazılmaz** — koşmamış bir cevap kaydedilmez |
+| `lib/api-client.ts` | `postMakro` (`kos` onayı) · **`postPlanKos`** (onaylanan planı koşar, ⊘ LLM) |
+
+⚠ **Zincir kapılı**: `test_onizleme_zinciri_kopuk_degil.py` her halkayı tek tek sınar —
+bu operasyonda zincir **iki kez** sessizce koptu (`kos` gönderilmiyordu · yutulmuş istisna).
+
+## ⚠ Büyüme tavanı — `page.tsx` · `lib/types.ts` **tavana dayalı**
+
+`backend/tests/test_frontend_buyume.py` dosya başına **kod satırı** tavanı tutar (yorum
+sayılmaz). Tavan kırmızı verirse **yükseltme**: mantığı tavansız bir modüle çıkar
+(`lib/onizleme.ts` böyle doğdu); taşınamayan satır **gerekçeli** `MUAFIYET`'e yazılır.
 
 ## Rol
 `dima`'nın son-kullanıcı arayüzü. WrenAI açık kaynak tarafında UI sunmadığından

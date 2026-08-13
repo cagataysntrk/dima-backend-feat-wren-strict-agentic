@@ -3988,3 +3988,37 @@ yeşil ya yanlış kırmızı olurdu); kapsam **beyandır** 🆂.
 
 **Kapılar:** kök mount'la **9 ✅ / 1 ⊘** · standart mount'ta **276 ✅ / 3 ⊘** (doğru
 şekilde **atlıyor**, kırmızı vermiyor 🅯).
+
+---
+
+## `§82` — üç giriş belgesi **koddan doğrulandı** ve tazelendi
+
+### ① `backend/README.md` — 14 gün dokunulmamıştı, üç kusur ölçüldü ㊱
+
+| iddia | gerçek (koddan) | ne yapıldı |
+|---|---|---|
+| *«133 test»* | **5.962** (`pytest --collect-only`) | sayı + **payda/yöntem** yazıldı 🆖 ve üç seviyeli kapı politikasına bağlandı |
+| uç tablosunda **öngörü katmanı yok** | `app/routers/` → **82** uç, `oneri.py` dâhil | `/oneri` · `/oneri/pill` · `/oneri/makro` · `/oneri/tik` · **`/plan/kos`** + drill/jobs/dashboards/measures satırları eklendi |
+| *«Swagger: `localhost:8000/docs`»* | uvicorn **konteyner içinde** 8000, dışarı **8002** | port ayrımı ve reçete bağı yazıldı |
+
+⚠ Yeni gelen için en tehlikelisi ikincisiydi: **ürünün son iki haftada kurulan katmanı**
+uç listesinde **hiç yoktu** — belgeye bakan biri onun var olduğunu bilemezdi 🆘.
+
+### ② `OPERASYON*.md` üçlüsü — *«bu hangi operasyon»* artık dosyanın **kendisinde**
+
+Kök `README` *«önceki operasyon»* diyordu ama üç dosya bunu **kendisi söylemiyordu**.
+Üçünün başlığının hemen altına `backend/CLAUDE.md`'nin cümlesiyle **aynı** şerh kondu ㊲:
+*«⟳ Bu ARŞİV değil ama AKTİF de değil … güncel durum `belgeler/plan/ONGORU-DURUM.md`»*.
+*Bir dosyanın hangi döneme ait olduğunu başka bir dosyadan öğrenmek zorunda kalmak, o
+dosyayı yanlış okumanın en olağan yoludur.*
+
+### ③ `dima-frontend-demo-master/CLAUDE.md` — beklenti **gerçekleşmişti**, belge bilmiyordu ⑳
+
+Başlık hâlâ *«bu arayüz `FAZ 6`'da işin içine girer … üç dosya»* diyordu; oysa katman
+kuruldu ve **büyüdü**. Eklendi: **hangi dosya ne yapar** tablosu (`OneriSeridi` ·
+`PillSatiri` · `PlanOnizleme` · `lib/onizleme.ts` · `postPlanKos`), **zincir kapısı**
+uyarısı, ve **büyüme tavanı** disiplini (*«tavanı yükseltme — mantığı tavansız modüle
+çıkar»*).
+
+**Kapılar:** belge düzeni + yol gerçekliği **9 ✅ / 1 ⊘** (kök mount) · `app/` **değişmedi**
+→ **canlı tazeleme yapılmadı** (`s38` güncel).

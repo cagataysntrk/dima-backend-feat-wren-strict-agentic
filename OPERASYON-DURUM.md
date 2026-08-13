@@ -1,5 +1,9 @@
 # OPERASYON DURUMU — *nerede kaldık*
 
+> ⟳ **Bu ARŞİV değil ama AKTİF de değil.** Kayıt olarak duruyor (`MIMARI §10`: *kapananlar işaretlenir, silinmez*); **güncel durum** `belgeler/plan/ONGORU-DURUM.md`'dedir. İkisini birden *«nerede kaldık»* diye okumak, `KAT-1`'in belge düzeyindeki ihlalidir.
+
+---
+
 > 🔴 **BAĞLAM SIFIRLANDIYSA BURADAN BAŞLA.** Sırayla oku:
 > 1. **`OPERASYON.md`** — kural seti (nasıl çalışılır) · **sıra `OPERASYON.md §10`'dadır**
 > 2. **bu dosya** — nerede kaldık
