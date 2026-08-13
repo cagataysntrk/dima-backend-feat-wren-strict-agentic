@@ -4,8 +4,9 @@
 
 # DİMA — Öngörü Katmanı / **Rol Değişikliği** Devir Tutanağı (13 Ağustos 2026)
 
-**Kod tabanı:** `dfb0246` · **Canlı imaj:** `dima-backend-temiz:s35` (kap `dima-oneri-8002`, `:8002`)
-**Aralık:** `e521e46..dfb0246` — **14 commit**, `§63`–`§72`
+**Kod tabanı:** `778211f` · **Canlı imaj:** `dima-backend-temiz:s39` (kap `dima-oneri-8002`, `:8002`)
+**Aralık:** `e521e46..778211f` — **23 commit**, `§63`–`§85`
+**Giriş noktası:** kök [`README.md`](../../README.md) · **belge kuralı:** [`belgeler/00-INDEKS.md`](../00-INDEKS.md)
 
 > 🔴 **İşin tanımı bir arayüz işi değildi.** Planın başlığı: *«route ve garson, KARAR
 > VERİCİ olmaktan çıkıp **TAHMİNCİ** oluyor … **kullanıcı KARARI VERİR (bir tık)**»*
@@ -120,15 +121,19 @@ aynı** (`83/69/68/72 · %95,6 · 558/591`).
 | leksik | 70,3 | 75,7 | 81,1 | 0,749 |
 | vektör | 81,1 | **91,9** | 91,9 | 0,868 |
 | birleşik (max) | 78,4 | 91,9 | 91,9 | 0,854 |
-| **ürün** (bugün) | 78,4 | **86,5** | 86,5 | **0,820** |
+| **ürün** (bugün) | **81,1** | **86,5** | **91,9** | **0,845** |
+
+⊙ `§78`–`§85`'te üç ölçünün üçü de vektör ayağının **tavanına** çekildi ve **gürültü
+kontrolü ㊳ her adımda birebir temiz** kaldı. İki karar da *«gerekçesi bitmiş bir kuralı
+sürdürme»* biçimindeydi: leksik kapı **önek yokken** gevşer, eşitlik kuralı **önek yokken**
+uygulanmaz.
 
 *(Vektör ayağı test kabında ancak canlı gömme önbelleği bağlanınca koşar —
 `-v …_dima_hf_cache:/tmp/fastembed_cache`, **`DIMA_VQR_EMBEDDER=off` verilmez**.)*
 
-🔴 **İLAN EDİLMİŞ AÇIK** 🆖: ürün **86,5** ↔ vektör tavanı **91,9**. Kapatılmadı çünkü
-tarama sınırı da gösterdi: kapıdan `k≥2` aday geçirmek `R@5`'i 91,9'a çıkarıyor **ama**
-`k=5`'te *«fire»* sorgusu yine *«metre»* döndürüyor — kapının kurulma sebebi. *Kapatılmayan
-bir açık, ilan edildiği sürece bir borç değil bir karardır* 🆂.
+✅ **AÇIK KAPANDI** (`§79`·`§85`): koşulsuz gevşetme gürültü üretiyordu; **koşullu**
+hâlde (önek kovası boşken) aynı kazanç **bedelsiz** geldi. *Bedeli ödeten şey sayı değil
+**koşulsuzluktu*** ㊴.
 
 ---
 
@@ -155,9 +160,27 @@ disiplini · yeni gelenin çarpacağı beş şey*.
 
 ---
 
+## §6c — 🔴 DEVRALANIN İLK GÜNÜ (sırayla, atlanmadan)
+
+| # | ne | nerede |
+|---|---|---|
+| 1 | **Depoyu tanı** — 30 dk | kök [`README.md`](../../README.md): ne olduğu · harita · ayağa kaldırma · **ilk gün okuma sırası** |
+| 2 | **Backend'i kaldır** | `README §3` (kısa) ya da [`SERVER_COMMANDS.md`](../kilavuz/SERVER_COMMANDS.md) (**reçetenin sahibi**) — ⚠ **ÖNCE derle, SONRA `rm -f`** |
+| 3 | **Frontend'i aç** | `cd dima-frontend-demo-master && pnpm dev` → `:3000` |
+| 4 | 🔴 **İLK İŞ: ekranda doğrula** | *«makinelerin performansı nasıl»* yaz (salınımlı, 2-3 kez). Beklenen: önizleme kartında **pill satırı + `[koş] [düzenle] [iptal]`**; `[koş]` → `docker logs dima-oneri-8002 \| grep 'POST /plan/kos'` |
+| 5 | **Nerede kaldık** | [`belgeler/plan/ONGORU-DURUM.md`](../plan/ONGORU-DURUM.md) `§63`–`§85` |
+| 6 | **Değiştirmeden önce** | `backend/CLAUDE.md` (en üst kural + test kapısı) · `backend/MIMARI.md §0` (otorite) |
+
+⚠ **4. madde bu tutanağın tek doğrulanmamış satırıdır** 🅢: zincir kodda bağlı ve
+`test_onizleme_zinciri_kopuk_degil.py` ile korunuyor, ama `localhost:3000` **on bir tur
+boyunca kapalıydı** — *bir zincirin kodda bağlı olması ekranda göründüğünün kanıtı
+değildir* 🆘.
+
+---
+
 ## §7 — DEVİR, TEK CÜMLE
 
-> Öngörü katmanının **karar mekaniği bitti, kapılı ve canlıda** (`s37`); öneri sıralaması
-> ölçülüp **iyileştirildi** (`R@3 83,8 → 86,5`) ve kalan açık **ilan edildi** (vektör
-> tavanı `91,9`); geriye **tek bir doğrulanmamış şey** kaldı: arayüzü **ekranda bir kez
-> görmek** (`localhost:3000` on turdur kapalı).
+> Öngörü katmanının **karar mekaniği bitti, kapılı ve canlıda** (`s39`); öneri sıralaması
+> ölçülüp **vektör tavanına** çekildi (`81,1 / 86,5 / 91,9`); **belgeler yeniden düzenlendi
+> ve doğruluğu kapıya bağlandı** (kök `README` + iki belge kapısı); geriye **tek bir
+> doğrulanmamış şey** kaldı: arayüzü **ekranda bir kez görmek**.
