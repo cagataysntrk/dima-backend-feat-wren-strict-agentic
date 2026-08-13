@@ -2856,3 +2856,49 @@ görünür ve düzeltilir.»*
 2. **Plan önizleme** — `/oneri/makro`'ya `kos=false` (plan döner, koşmaz) + pill satırı
    `[düzenle] [koş] [iptal]`. ⚠ `plan_kosucu.dogrula` **zaten** planı doğruluyor; önizleme
    onu **koşmadan** çağırır ㊲.
+
+---
+
+## §62 — 🔴🔴 KAPSAMI YANLIŞ OKUDUM: belgenin **BAŞLIĞI** işin kendisiydi
+
+Belgenin adı: **«route ve garson, KARAR VERİCİ olmaktan çıkıp TAHMİNCİ oluyor»**.
+`§3.1` bunu tabloyla veriyor:
+
+```
+                ÖNCE                          SONRA
+route()   →  KARAR VERİR, İCRA EDER      →  ADAY SIRALAR (icra etmez)
+garson    →  route çekilince KARAR VERİR →  aday listesini ZENGİNLEŞTİRİR
+                                             + kademe ③'te PLAN TASLAĞI çizer
+kullanıcı →  cevabı alır                 →  🔴 KARARI VERİR (bir tık)
+```
+
+### Ne yaptım, ne yapmadım — dürüst ayrım
+
+| plan maddesi | durum |
+|---|---|
+| öneri şeridi · cümle üretimi · pill · çapa · makro · tıklama=koşum | ✅ teslim |
+| **route icra etmez, ADAY SIRALAR** | 🔴 **yok** — `/ask` hâlâ karar verip koşuyor |
+| **garson karar vermez, PLAN TASLAĞI çizer** | 🔴 **yok** — `route_supheli` → garson → **cevap** |
+| **kullanıcı kararı verir (bir tık)** | 🔴 **yok** — onay adımı hiç yok |
+
+⟹ Ben **arayüzü** kurdum, **rol değişikliğini** kurmadım. Öneri katmanı bu belgede bir
+*özellik* değil, o rol değişikliğinin **görünür yüzü**ydü.
+
+### Ve `§49`'da kullanıcıya sorduğum soru **belgede zaten cevaplıydı** 🅞
+
+*«Belirsizlikte garson mu gitsin, aday pill'i mi?»* diye sordum — `§28`'in başlığı:
+**«GARSON = SEÇİLMEYENİN PILL'İNİ HAZIRLAYAN»**. Yani cevap yazılıydı; ben kararı
+soruya çevirdim. *Bir belgede yazılı olanı sormak, onu okumamış olmanın kibar hâlidir.*
+
+⚠ Bu, `CLAUDE.md`'deki **«EN ÜST KURAL — GARSON DEVRİ»** (2026-08-08) ile çelişiyor
+görünür; ama bu belge **08-12** tarihli ve rolü açıkça değiştiriyor: garson **gitmeye
+devam eder**, ama vardığında **karar vermez — taslak çizer**. İkisi çelişmiyor: devir
+korunur, **icra** kullanıcıya geçer.
+
+### Sıra — bundan sonraki iş budur
+
+1. **Plan önizleme** (`kos=false`): plan üretilir, `plan_kosucu.dogrula`'dan geçer,
+   **koşmaz**; adımlar dikey pill listesi + `[düzenle] [koş] [iptal]`.
+2. **Uzun girdide şerit sönmesi** (`Thread 5` kırılma #1).
+3. **Marj kapısı → aday pill'leri** (`§28`): belirsizlikte garson **taslak** verir,
+   kullanıcı seçer. *(`emin_miyim` var, `/ask`'ta 0 çağrı — `§49`.)*
