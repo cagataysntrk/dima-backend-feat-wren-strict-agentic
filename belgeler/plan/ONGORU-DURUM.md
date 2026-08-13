@@ -1995,3 +1995,55 @@ plandan yeni bir karar onu geçersiz kılabilir — yeter ki sessizce değil, YA
 
 **Kanıt:** `test_oneri_cumle` · `test_oneri_motoru` · `test_oneri_tus_ve_sonbakilanlar` ·
 `test_pill_katmani` → **89 ✅ / 4 atlandı**.
+
+---
+
+## §42 — ŞERİDİN HER SATIRI ARTIK CÜMLE (üç bant, üç kusur, üçü de kapandı)
+
+### ① Ön yüz çıplak etikete DÜŞÜYORDU — ekrandaki liste buradan geliyordu 🆘
+
+`OneriSeridi.tsx:204`: `oneriler` boşsa `y.adaylar.map(a => a.etiket)`. Yani şerit,
+cümle üretilemediği her anda **katalog alan adları** basıyordu — kullanıcının gördüğü
+*«duruş sayısı · arıza sayısı · kırılım»* tam olarak bu daldı.
+
+Eski gerekçe *(«hiç göstermemek alternatif değil — `KURAL B`»)* **bayrak kapalı** hâl
+için yazılmıştı; oysa ölçülen ekran bayrak **açıkken** çekildi (*«öneri: açık»*). Düşüş
+kapatıldı: şerit ya **cümle** gösterir ya **hiçbir şey**.
+
+### ② Çapalı bant değer adayını ÖLÇÜ sanıyordu — bozuk sorgu üretiyordu 🔴
+
+Uçtan uca ölçüldü (`q=ram 3 neden`): şeritte çıplak `RAM 3` · `RAM-3` · `RAM 1`
+satırları, `tur=olcu_ekle`. Bu yalnız çirkin değildi: `measures: ["ort_oee#makine=RAM 3"]`
+gibi **koşamayacak** bir `cube_query` kuruyordu. Değer adayları bu banttan çıkarıldı;
+varlığın cümlesini alt bant üretiyor.
+
+Aynı kusurun ikinci yüzü **makro öznesinde**ydi: *«RAM 3 neden bu seviyede?»* — bir
+makinenin *«seviyesi»* yoktur. Özne artık **ölçü olmak zorunda**.
+
+### ③ Çapalı bantta dönem yoksa metin yine ETİKETE iniyordu
+
+`govde + _donem_eki(c.donem)` → çapada dönem yoksa geriye `«fire»` kalıyordu 🆡.
+Artık cümle kuruluyor; ⚠ **dönem uydurulmuyor**: sorgu çapanın kendi dönemini taşıdığı
+için cümlede yalnız **çapanın** dönemi anılır, yoksa hiç anılmaz — dönemsiz ama **doğru**
+bir cümle, dönemli ama yalan bir cümleden iyidir 🆁.
+
+### Ölçülen sonuç (uçtan uca, `GET /oneri`)
+
+```
+q=«ram 3 neden» → «bu ay RAM 3 için OEE ne kadar?»
+                  «RAM 3 için OEE neden bu seviyede?»      ← makro (§6 dört adım)
+                  «bu ay RAM-3 için OEE ne kadar?»
+q=«fire»        → «fire ne kadar?» · «fire neden bu seviyede?»
+                  «bu ay fire ne kadar (OEE)?» · «bu ay fire ne kadar (parti)?»
+q=«ci»          → «bu ay ciro ne kadar?» · «bu ay CİDDİ için kaza adedi ne kadar?»
+```
+
+### İki kapı daha TAŞINDI (silinmedi) ㊸
+
+`test_S51_…_KALIPTA` ve `test_IYELIK_ZINCIRI_kurulamazsa_ICIN_edatina_DUSULUR` planın
+**öbek** kalıbını (`«… — bu ay»`) bekliyordu. Savundukları kural (varlık·ölçü·dönem
+içeriği; iyelik/`için` ayrımı) **aynen duruyor**; değişen yalnız kalıp. Gerekçe kapıların
+içine yazıldı.
+
+**Kanıt:** `oneri_cumle · oneri_motoru · oneri_tus · pill_katmani · frontend_derlenir ·
+kisa_devre_yok` → **102 ✅ / 2 atlandı**.

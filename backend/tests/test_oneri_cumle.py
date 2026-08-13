@@ -430,8 +430,11 @@ def test_IYELIK_ZINCIRI_kurulamazsa_ICIN_edatina_DUSULUR():
     sözcükle çalışır; *«fire oranı»* ise iyelik ekini **zaten taşıdığı** için tamlamaya girer.
     """
     m = _metinler(cumleler(_ADAYLAR, capa=_CAPA, schema=_SEMA, limit=20))
-    assert "RAM-3'ün fire oranı — bu ay" in m, f"🔴 {m}"
-    assert "RAM-3 için toplam fire (kg) — bu ay" in m, f"🔴 {m}"
+    # ⚠ `§42` — savunulan kural `_kapsam`'ın **iyelik/için** ayrımıdır ve o AYNEN
+    # duruyor; değişen yalnız **kalıp**: öbek (`«… — bu ay»`) yerine tam cümle
+    # (kullanıcı kararı). Kapı taşındı, gevşetilmedi 🆄.
+    assert "bu ay RAM-3'ün fire oranı ne kadar?" in m, f"🔴 {m}"
+    assert "bu ay RAM-3 için toplam fire (kg) ne kadar?" in m, f"🔴 {m}"
 
 
 def test_SOZLESME_grup_ve_tur_KAPALI_KUME():

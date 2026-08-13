@@ -190,24 +190,25 @@ export function OneriSeridi({
           // ⚠ Yarış koruması: geç dönen ESKİ bir cevap yeni listeyi EZMEMELİ —
           // typeahead'de en sık görülen görsel hata budur.
           if (kimlik !== sonIstek.current) return;
-          // 🔴 **CÜMLE ÖNCE, ETİKET SONRA.** `oneriler` boşsa (eski sürüm/bayrak)
-          // `adaylar`a düşülür ve o zaman şerit bugünkü gibi çıplak etiket gösterir —
-          // ⚠ *«hiç göstermemek»* bir alternatif değil: `KURAL B`, kapalıyken bugünkü
-          // davranışı şart koşuyor.
-          const satirlar: Satir[] = (y.oneriler ?? []).length
-            ? (y.oneriler ?? []).map((o) => ({
-                kimlik: o.kimlik, metin: o.metin,
-                grup: o.grup === "rapor_ustunde" ? "rapor_ustunde" : "yeni_konu",
-                ipucu: o.cube_query ? `${o.cube ?? ""} · ${o.tur}` : `makro · ${o.tur}`,
-                tur: o.tur,
-              }))
-            : y.adaylar.map((a) => ({
-                // ⚠ Grupsuz bir aday *«bu raporun üstünde»* SAYILAMAZ: o band bir
-                // **vaattir** (aynı kırılım · aynı dönem sürecek). Eksik bir grup,
-                // yanlış bir gruptan iyidir.
-                kimlik: a.kimlik, metin: a.etiket, grup: "yeni_konu" as const,
-                ipucu: `${a.cube} · ${a.kip}`, tur: "",
-              }));
+          // 🔴🔴 `§42` — **ÇIPLAK ETİKET DÜŞÜŞÜ KAPATILDI** (kullanıcı kararı 2026-08-13).
+          //
+          // Bu dal `oneriler` boşken `adaylar`a düşüyor ve şeride **alan adları**
+          // basıyordu: *«duruş sayısı · arıza sayısı · kırılım»*. Kullanıcı bunu ekranda
+          // görüp reddetti: *«öneri değil ÖNGÖRÜ… cümle bile değil»* — ve haklıydı:
+          // bir alan adı listesi bir **tamamlama öngörüsü değildir**, katalogdur.
+          //
+          // ⚠ Eski gerekçe *(«hiç göstermemek alternatif değil — `KURAL B`»)* **bayrak
+          // kapalı** hâl için yazılmıştı; ama ölçülen ekran bayrak **açıkken** çekildi
+          // (*«öneri: açık»*). Yani o gerekçe bu düşüşü savunmuyordu.
+          //
+          // ⊙ Yeni kural: şerit ya **cümle** gösterir ya **hiçbir şey**. Boş bir şerit
+          // sessizdir; yanlış bir şerit ise ürünü *«işe yaramaz»* gösterir 🆡.
+          const satirlar: Satir[] = (y.oneriler ?? []).map((o) => ({
+            kimlik: o.kimlik, metin: o.metin,
+            grup: o.grup === "rapor_ustunde" ? "rapor_ustunde" : "yeni_konu",
+            ipucu: o.cube_query ? `${o.cube ?? ""} · ${o.tur}` : `makro · ${o.tur}`,
+            tur: o.tur,
+          }));
           // ⚠ Sıralama **burada** yapılır, render'da değil: `secili` bir **konumdur** ve
           // o konum ekrandaki sırayla birebir aynı olmak zorunda — `↓↑` ile
           // `oneriTik(konum)` aksi hâlde iki farklı listeyi sayardı 🆆.

@@ -525,12 +525,25 @@ def _rapor_ustunde(adaylar: list[Aday], c: _Capa, niyet: Any,
         olcu, etiket = _olcu_kodu(a), str(getattr(a, "etiket", "")).strip()
         if not olcu or not etiket:
             continue
+        # 🔴 `§42` — DEĞER ADAYI BU BANDA GİRMEZ. Ölçüldü (uçtan uca, `q=ram 3 neden`):
+        # bu dal değer adayını bir **ölçü** sanıp şeride çıplak `RAM 3` yazıyordu ve
+        # `measures: ["ort_oee#makine=RAM 3"]` gibi **koşamayacak** bir sorgu kuruyordu —
+        # yani yalnız çirkin değil, **bozuk**. Varlığın cümlesini alt bant üretiyor
+        # (`_yeni_konu`), bu bant ise *«bu raporun ölçüsünü değiştir»* bandıdır.
+        # *Bir adayı yanlış bantta göstermek, onu yanlış bir şeye dönüştürür.*
+        if _deger_ayikla(a, c.cube)[1]:
+            continue
         if olcu not in c.olculer:
             # ① Kapsam aynı, ölçü değişiyor: *«RAM-3'ün fire oranı — bu ay»*
             govde = _kapsam(c.varlik, etiket) if c.varlik else etiket
+            # 🔴 `§42` — BU BANT DA CÜMLE KURAR. Ölçüldü: çapada dönem yokken metin
+            # `«fire»`ye iniyordu — yine **etiket** 🆡. ⚠ Dönem **uydurulmaz**: sorgu
+            # çapanın kendi dönemini taşır (`c.cq`), o yüzden cümlede yalnız **çapanın**
+            # dönemi anılır; yoksa hiç anılmaz ve cümle dönemsiz ama **doğru** kalır 🆁.
             out.append(Oneri(
                 kimlik=f"{GRUP_RAPOR}:{TUR_OLCU_EKLE}:{c.cube}.{olcu}",
-                metin=govde + donem, grup=GRUP_RAPOR, tur=TUR_OLCU_EKLE, cube=c.cube,
+                metin=f"{(c.donem + ' ') if c.donem else ''}{govde} ne kadar?",
+                grup=GRUP_RAPOR, tur=TUR_OLCU_EKLE, cube=c.cube,
                 cube_query={**c.cq, "measures": [olcu]}))
 
             # ② Aynı rapora **ekleme**: *«fire ekle (aynı kırılım · aynı dönem)»*
@@ -556,8 +569,12 @@ def _rapor_ustunde(adaylar: list[Aday], c: _Capa, niyet: Any,
     capa_olcu = c.olculer[0] if c.olculer else ""
     ozne, ozne_kod = _olcu_etiketi(schema, c.cube, capa_olcu), capa_olcu
     if not ozne:
+        # ⚠ `§42` — özne bir **ölçü** olmalı: değer adayı (`…#makine=RAM 3`) buraya
+        # düşerse makro *«RAM 3 neden bu seviyede?»* diye sorar ve bir makinenin
+        # *«seviyesi»* diye bir şey yoktur. Ölçüldü, uçtan uca görüldü.
         ilk = next((a for a in ayni_kup
-                    if _olcu_kodu(a) and str(getattr(a, "etiket", "")).strip()), None)
+                    if _olcu_kodu(a) and str(getattr(a, "etiket", "")).strip()
+                    and not _deger_ayikla(a, c.cube)[1]), None)
         ozne = str(getattr(ilk, "etiket", "")).strip() if ilk else ""
         ozne_kod = _olcu_kodu(ilk) if ilk else ""
     if ozne and ozne_kod:
@@ -743,6 +760,14 @@ def _yeni_konu(adaylar: list[Aday], c: _Capa | None, niyet: Any, schema: dict | 
                     cube, v_olcu, donem=donem_c,
                     filtreler=[{"dimension": v_boyut, "operator": "eq",
                                 "value": v_deger}])))
+            # 🔴 `§42` — VARLIĞIN **NEDEN**'İ: kullanıcı `ram 3 neden` yazmıştı; sistem
+            # ona *«ne kadar»* öneriyordu. Makro (`TUR_NEDEN`) `rapor_ustunde` dalında
+            # zaten vardı ㊷ — yeni konuda **yoktu**. Aynı değişmez korunur: makro
+            # cümlesi `cube_query` taşımaz, `Oneri.gecerli` onu tür üzerinden kabul eder.
+            out.append(Oneri(
+                kimlik=f"{GRUP_YENI}:{TUR_NEDEN}:{cube}.{v_olcu}#{v_boyut}={v_deger}",
+                metin=f"{_kapsam(v_deger, v_etiket)} neden bu seviyede?",
+                grup=GRUP_YENI, tur=TUR_NEDEN, cube=cube, cube_query=None))
             continue
         b_et = _boyut_etiketi(schema, cube, boyut) if boyut else ""
         onek = f"{kirilim_ifadesi(b_et)} " if b_et else ""
