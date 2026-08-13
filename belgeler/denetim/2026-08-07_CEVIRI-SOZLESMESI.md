@@ -13223,3 +13223,61 @@ görünmez**. `§101.1` *«telemetri hatası ürün hatası değildir»* doğru 
 *«sessiz yutma yok»* der: sebebi **kütüğe** yazmadan yutmak, teşhisi imkânsız kılar.
 🔴 Ve sonuç ağır: `FAZ 8`'in tüm hasat zinciri `InteractionLog(kind="oneri_tik")`'i
 okur; yazma düşükse zincir **tüketicisiz bir yetenektir** 🆘.
+
+## İkinci parti — on iki senaryo daha *(8002, taze imaj)*
+
+| # | senaryo | beklenen | **ölçülen** | |
+|---|---|---|---|---|
+| 5 | *«RAM-3 neden düşük»* (çapasız) | `KIYASLA` · akran ortalaması · `FAZ 4` | `oee/ort_oee/makine` (3 satır = akranlar) + chip **«Geçen yıla göre kıyasla»** `compare: yoy` | ✅ |
+| 10 | *«vardya sayısı»* **×2** 🅢 | garson olasılıksal | **iki koşum birebir**: `oee/toplam_parti/[vardiya]` · `temellendirme.olcu="parti sayısı"` | ✅ |
+| 11 | *«makine bazında oee»* → *«+ kullanılabilirlik»* | ikinci ölçü **eklenir**, ilki **kaybolmaz** | `['ort_kullanilabilirlik']` — **`ort_oee` KAYBOLDU** | 🔴 |
+| 12 | *«fire»* (iki küpte) | netleştirme **ya da** beyan | `note`: *«⚠ «fire» birden fazla yerde ve **FARKLI FORMÜLLE**…»* | ✅ |
+| 13 | *«bu yıl en yüksek 5 müşteri»* | `order`+`limit` · chip yinelenmiyor | `order={toplam_ciro,desc}` · `limit=5` · `[musteri]` · *«En yüksek 5»* chip'i **yok** | ✅ |
+| 14 | *«geçen aya göre ciro»* | `compare: mom` | `compare: mom` | ✅ |
+| 15 | *«2019 cirosu»* | dönem **taşınır** · `§T8` yok | `source=llm:openrouter` · `cube=adhoc` · sonuç **`null`** | 🔴 |
+| 16 | *«sadece bu üç ayı»* (takip) | daraltma çalışır · **yanlış uyarı yok** | `period=null` · *«Dönemi çözemedim»* + *«sadece … dedin ama»* uyarısı | ◐ |
+| 18 | *«hava durumu nasıl»* | dürüst red · `adhoc` **yok** | `cube=None` · `sql=''` · *«kataloğunda hiçbir tabloya karşılık gelmiyor»* | ✅ |
+| 19 | *«لهذا العام إجمالي الإيرادات»* | doğru dönem + ölçü | `parti/toplam_ciro` · **3 satır** — Arapça soru küp yolundan cevaplandı | ✅ |
+| 20 | *«aylık üretim ve enerji … birlikte»* | çapraz-konu **sanılmıyor** | **üç adımlı orkestre**: `toplam_agirlik_kg` → `toplam_enerji_kwh` → RAPOR | ✅ |
+| 21 | *«personel bazlı verimlilik»* | katalogsal sınır **beyan** · uydurma boyut yok | `[operator]` (**gerçek** boyut) + *«Sayı doğru ama **eksik**: soruda «verim» geçiyor ama bu cevap onu içermiyor»* | ✅ |
+
+⊙ **⑫'de kendi okumam eksikti ③:** yalnız `diyalog_durumu` ve `next_steps`'e baktım, beyan
+`note`'taydı. *Bir alanın boş olması, bilginin yokluğu değildir — başka alanda olabilir.*
+Bu turda **yirminci** kez kendi beklentim kusurlu çıktı.
+
+## Teşhis — üç kusur daha
+
+### 🔴 K3 · Kapsam dışı dönem küp yolundan **düşüyor** *(senaryo 15)* — **en ağırı**
+
+```
+soru:   «2019 cirosu»
+source: llm:openrouter          cube: adhoc
+sql:    SELECT SUM(toplam_tl) AS ciro_2019 FROM faturalar WHERE tur='satis' AND …
+sonuç:  {"ciro_2019": null}
+```
+
+Verinin aralığı **01.06.2025 – 30.06.2026** (sistemin kendi beyanı). 2019 **yok**. Dürüst
+cevap *«2019 için veri yok; aralık şu»* olmalıydı; bunun yerine soru **Discovery'ye**
+düştü, LLM `faturalar` diye bir tabloya SQL yazdı ve kullanıcıya **boş bir sayı** döndü.
+
+🔴 `cube=adhoc` bir çözüm değil bir **arıza raporudur** (en üst kural). Ve burada iki
+katmanlı: **(a)** sipariş **doğru alınmıştı** (*ciro* + *2019* — belirsizlik yok), yani
+kusur **mutfakta**; **(b)** mutfak *«bu dönemde veri yok»* diyemediği için **yan dükkâna**
+gönderdi. *Bir kapsam sınırını beyan edememek, onu uydurmaya davettir.*
+
+### 🔴 K4 · Chip biçimli ölçü ekleme **değiştiriyor** *(senaryo 11)*
+
+`«makine bazında oee»` → `['ort_oee']`, ardından `«+ kullanılabilirlik»` → **yalnız**
+`['ort_kullanilabilirlik']`. Plan `B1`'de ölçülen çalışan hâl **fiilli** biçimdi
+(*«bir de fire ekle»* → `['ort_oee','toplam_fire_kg']`). Yani ekleme yolu **var** ama
+**`+X` biçimi** onu tetiklemiyor — ve `+X` tam olarak **bizim kendi chip etiketimizin**
+biçimidir (`next_steps`: *«+ kullanılabilirlik»*).
+
+⚠ Bu bir 🆘: chip'i tıklayan kullanıcı, chip'in **vaat ettiğinden başka** bir cevap alır.
+
+### ◐ K5 · *«sadece bu üç ayı»* çözülmüyor — ama **dürüstçe** *(senaryo 16)*
+
+`period=null`, ve iki beyan birden: *«Dönemi çözemedim — verinin son 12 ayı alındı»* +
+*«sadece … dedin ama»*. Daraltma **çalışmadı**; ancak `§T6`'nın yasakladığı **sessiz**
+yanlış da yok — sistem ne yaptığını söylüyor 🅖. **Kusur sayılıyor ama K3/K4'ün
+arkasında**: göreli bir dönem ifadesi çapasız bir tura düştüğünde gerçekten belirsizdir.
