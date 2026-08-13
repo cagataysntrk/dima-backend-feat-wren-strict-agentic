@@ -113,7 +113,14 @@ def test_yan_kanal_TUKETICISIZ_ACILAMAZ():
     tanim = any(isinstance(d, ast.Name) and d.id == "_aday_var" and
                 isinstance(d.ctx, ast.Store) for d in ast.walk(agac))
     if not tanim:
-        return  # kanal henüz yok — erteleme yürürlükte, kapı sessiz
+        # ⟳🔴 **DÜZELTİLDİ** (denetim ajanı): eskiden burada `return` vardı ve yüklem
+        # **sessizce yeşil** veriyordu. Ama yeşili *«ölçtüm ve iyi»* değil *«hiç
+        # bakmadım»* demekti 🆆 — ve yeşil bir kapı, ölçmediğini **söylemelidir**.
+        import pytest
+
+        pytest.skip("⊘ `_aday_var` HENÜZ YOK — bu kapı bugün ÖLÇMEDEN atlandı. "
+                    "`FAZ 3` ertelemesi yürürlükte; kanal açıldığı gün yüklem "
+                    "otomatik olarak devreye girer ve okuyansız kanalı yakalar.")
     okuyan = sum(1 for d in ast.walk(agac)
                  if isinstance(d, ast.Attribute) and d.attr == "get"
                  and isinstance(d.value, ast.Name) and d.value.id == "_aday_var")

@@ -1007,3 +1007,73 @@ ancak **imaj tazelendikten** sonra koşulabilir. 5–22 bugünkü imajla koşula
 Her senaryo **tek tek** koşulur, ham cevap **kısaltmadan** okunur, teşhis **sonra**
 yazılır. ⚠ Yığın koşum yok; ⚠ token **her turda** yenilenir ⑩; ⚠ `10` gibi olasılıksal
 vakalar **iki kez** koşulur 🅢.
+
+---
+
+## §21 · AJAN DENETİMİ — **DÖRT GERÇEK KUSUR, DÖRDÜ DE BENİM** *(2026-08-13)*
+
+40 kontrolün **32'si ✅**, 6'sı ⚠, **4 gerçek kusur**. Ajanın her bulgusu **kendim
+ölçülerek** doğrulandı ㉔ — hiçbiri devralınmadı.
+
+### 🔴 KUSUR 1 — `lab/sozluk_hasadi.py` CLI'ı **ÇÖKÜYORDU** (en ağırı)
+
+`FAZ 8.6`'da `_tiklama_adaylari()`'yi dosyanın **sonuna** ekledim; orası
+`if __name__ == "__main__"` guard'ının **altıydı**. Betik kipinde guard gövdesi o
+`def`'ten **önce** koşuyor → `NameError` → aracın **belgelediği tek kullanım** tamamen
+kırık. Kanıt: `python lab/sozluk_hasadi.py` → `NameError: name '_tiklama_adaylari'
+is not defined`. Düzeltildi; şimdi **çıkış 0**.
+
+🔴 **Ve hiçbir kapı görmedi** 🆎: dosyadaki tüm yüklemler modülü **import** ediyordu,
+`kos()`'u **koşturmuyordu**.
+
+⚠🅑 **İlk kapım da yanlış araçtı ③:** `kos(yaz=False)`'u koşturan bir yüklem yazdım,
+mutasyon **hayatta kaldı** — çünkü guard'ın altındaki bir `def` **import'ta yine
+çalışır**; çökme yalnız `__main__` kipinde olur. Doğru değişmez: **guard modülün son
+üst-düzey ifadesi olmalı** (`test_MAIN_GUARDI_SON_IFADE`, `ast` ile). O mutasyonu
+**öldürüyor**.
+
+### 🔴 KUSUR 2 — `test_KAPALIYKEN_UCA_HIC_CIKILMAZ` **iki yönde de yanılıyordu**
+
+Ajan ölçtü: ⓐ koruma **silinip** metin bir **yoruma** taşınınca kapı **yeşil**
+(yanlış-negatif) ⓑ davranışı koruyan **farklı bir yazım** kırmızı (yanlış-pozitif).
+*Bir kapı tek bir yazımı kilitliyorsa, kilitlediği şey davranış değil biçimdir.*
+
+⚠ Düzeltirken **ikinci kez** yanlış çapa kondu ③: `src.index("useEffect")` **import
+satırındaki** sözcüğü buluyordu. Doğru çapa `getOneri`'yi **içeren** etkinin başı.
+Şimdi ⓐ **kırmızı**, ⓑ **yeşil** — ikisi de mutasyonla doğrulandı.
+
+### 🔴 KUSUR 3 — `POST /oneri/tik` kendi `§101.1` değişmezini çiğniyordu
+
+`int(govde.get("konum", -1))` `try` **dışındaydı**: `konum:"abc"` → `ValueError`,
+`konum:null` → `TypeError` → işlenmemiş **500**. Üstelik `gosterilen:"abc"` bir dizeyi
+**karakterlere** açıp **üç sahte aday** üretiyordu (hasat kuyruğuna çöp kimlik yolu).
+⊙ Ayrıştırma `hasat.govdeden()`'e taşındı — **asla fırlatmaz**, ve gövde biçiminin
+**tek sahibi** orası (`KAT-1`). 🅑 iki mutasyon: `try/except` düşür → kırmızı; dize
+koruması düşür → kırmızı.
+
+### 🔴 KUSUR 4 — `test_yan_kanal_TUKETICISIZ_ACILAMAZ` **sessizce yeşil** veriyordu
+
+`_aday_var` yokken `return` ediyordu: yeşili *«ölçtüm ve iyi»* değil *«hiç bakmadım»*
+demekti. `pytest.skip` yapıldı — **ölçmediğini söyleyen** bir kapı 🆆.
+
+### ㊷ Ajanın bir bulgusu bir **borcu küçülttü**
+
+`d11`'in *«sertifika sürümlenmeli»* ön koşulu **kodda zaten ödenmiş**:
+`app/fanout.py:264` sertifikaya `mdl_version` basıyor (**2026-08-02**'den beri) ve
+`WrenService.mdl_version` **asla `None` dönmüyor**. Diskteki `mdl_version: None` bir
+**bayat derleme artefaktı** ⑪ — kalan iş bir kod işi değil, **tek bir yeniden üretim**.
+Gerekçe *«olduğundan büyük yazılmıştı»* 🅫.
+
+### ⚠ Kalan zayıf noktalar (ajan ölçtü, borç olarak taşınıyor 🅖)
+
+* `test_MUTLAK_KOSINUS_ESIGI_YOK` **metin** ölçüyor — değişken adlı bir eşik
+  (`>= _t`) kapıdan **geçiyor** (ajan ölçtü: 11 passed).
+* `test_5_5_ERTELEMESI_HALA_GECERLI` **yanlış yeri** gözlüyor: sıklık verisi artık
+  `8.1` ile `InteractionLog(kind="oneri_tik")`'te **doğuyor**, ama kapı `stats.py`'ye
+  bakıyor → veri aktığında **hiç kırmızı vermeyecek** ㊺.
+* `features.py` `on_sarti` **bayat**: *«p95 henüz ölçülmedi»* diyor, oysa **49,23 ms**
+  ölçüldü 🅟.
+* `OneriSeridi.tsx` bağımlılık dizisi `[metin, kapali]` — `kapaliBayrak` **eksik**;
+  bayrak açıldığı an şerit bir sonraki tuşa kadar gelmez (UX gecikmesi, güvenlik yok).
+* `_INDEKS` anahtarı çok kiracılıda **aynı sayıya** düşen iki allowlist için her
+  istekte yeniden gömer → ölçülen **49,23 ms tek havuzludur** 🅕.

@@ -151,3 +151,46 @@ def test_EPSILON_ERTELEMESI_HALA_GECERLI():
         assert kotu not in kaynak, (
             f"🔴 öneri sıralamasına rastgelelik girmiş ({kotu!r}) — `8.3` ölçüme "
             "bağlıydı; ölçüm yapılmadan `ε` bir deneyim borcudur.")
+
+
+# ── 🅡 BOZUK GÖVDE BİR HÂLDİR, BİR ÇÖKME DEĞİL (denetim ajanı bulgusu) ───────
+
+def test_BOZUK_GOVDE_500_URETMEZ():
+    """🔴 **Ölçülmüş kusur** (denetim ajanı, 2026-08-13): uç `int(govde["konum"])`'i
+    `try` dışında çağırıyordu → `konum:"abc"` **ValueError**, `konum:null`
+    **TypeError** → işlenmemiş **500**.
+
+    Yani uç, kendi docstring'inin *«kayıt başarısız olsa da `{"kaydedildi": false}`
+    döner»* vaadini bozuk gövdede **tutmuyordu** 🆅. `§101.1`: öneri katmanı cevabı
+    bozmaz — **kendi ucunu da** bozmamalı.
+
+    🅑 Mutasyon: `govdeden`'deki `try/except` kaldırılırsa bu yüklem kırılır.
+    """
+    from app.hasat import govdeden
+
+    for kotu in ({"konum": "abc"}, {"konum": None}, {"konum": [1]}, {}, None, 42):
+        t = govdeden(kotu)
+        assert t.konum == -1, f"🔴 {kotu!r} → konum={t.konum} (okunamayan konum «seçim yok» olmalı)"
+
+
+def test_GOSTERILEN_DIZE_ISE_KARAKTERLERE_ACILMAZ():
+    """🔴 Ölçülen ikinci yarı: `{"gosterilen": "abc"}` **üç sahte adaya** (`'a','b','c'`)
+    açılıyordu — hasat kuyruğuna **çöp kimlik** yolu.
+
+    ⚠ Bir dize bir dizidir ama bir **liste değildir**; üzerinde döngü kurmak onu
+    karakterlere böler. Bu, Python'un en sessiz naif-girdi tuzağıdır 🅡.
+    """
+    from app.hasat import govdeden
+
+    assert govdeden({"gosterilen": "abc", "konum": 1}).gosterilen == ()
+    assert govdeden({"gosterilen": ["a", "b"], "konum": 1}).gosterilen == ("a", "b")
+
+
+def test_UC_GOVDEYI_KENDI_AYRISTIRMIYOR():
+    """`KAT-1`: gövde biçiminin sahibi `hasat.govdeden`; uç yalnız **çağırır** ㊲."""
+    import pathlib
+
+    src = (pathlib.Path(__file__).resolve().parents[1] / "app" / "routers"
+           / "oneri.py").read_text(encoding="utf-8")
+    assert "hasat.govdeden(govde)" in src
+    assert "int(govde" not in src, "🔴 uç konumu kendisi ayrıştırıyor — ikinci sahip ㊲"

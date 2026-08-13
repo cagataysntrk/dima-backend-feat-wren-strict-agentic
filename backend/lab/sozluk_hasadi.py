@@ -155,10 +155,6 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-if __name__ == "__main__":                             # pragma: no cover
-    raise SystemExit(main())
-
-
 def _tiklama_adaylari() -> list[tuple[str, str]]:
     """`FAZ 8.6` — `InteractionLog(kind="oneri_tik")` → **güçlü** sinyalli adaylar.
 
@@ -192,3 +188,7 @@ def _tiklama_adaylari() -> list[tuple[str, str]]:
     kayitlar = [t for r in satirlar
                 if (t := not_oku(r.question, r.note)) is not None]
     return hasat_adaylari(kayitlar)
+
+
+if __name__ == "__main__":                             # pragma: no cover
+    raise SystemExit(main())

@@ -47,7 +47,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 __all__ = ["Tiklama", "SINYAL_GUCLU", "SINYAL_ZAYIF", "SINYAL_NEGATIF",
-           "sinyal", "hasat_adaylari", "negatif_kanit", "not_yaz", "not_oku"]
+           "sinyal", "hasat_adaylari", "negatif_kanit", "not_yaz", "not_oku",
+           "govdeden"]
 
 SINYAL_GUCLU = "guclu"
 SINYAL_ZAYIF = "zayif"
@@ -159,3 +160,37 @@ def not_oku(question: str | None, note: str | None) -> Tiklama | None:
     gosterilen = tuple(x for x in parcalar[2].split(_ALT_AYRAC) if x)
     return Tiklama(ham_ifade=(question or "").strip(), gosterilen=gosterilen,
                    konum=konum)
+
+
+def govdeden(govde: object) -> Tiklama:
+    """HTTP gövdesi → `Tiklama`. **Asla fırlatmaz** 🅡 — bozuk girdi bir **hâl**dir.
+
+    ⊙ Ölçülmüş kusur (denetim ajanı, 2026-08-13): uç `int(govde.get("konum", -1))`'i
+    `try` bloğunun **dışında** çağırıyordu. Üçü de ölçüldü:
+
+    * `{"konum": "abc"}` → `ValueError` → işlenmemiş **500**
+    * `{"konum": null}`  → `TypeError` → işlenmemiş **500**
+    * `{"gosterilen": "abc"}` → dize **karakterlere** açılıyor → `('a','b','c')` üç
+      **sahte aday**; hasat kuyruğuna çöp kimlik yolu
+
+    Yani uç kendi docstring'inin *«kayıt başarısız olsa da `{"kaydedildi": false}`
+    döner»* vaadini **bozuk gövdede tutmuyordu** 🆅. `§101.1`: öneri katmanı cevabı
+    bozmaz — ve **kendi ucunu da** bozmamalı.
+
+    ⚠ Ayrıştırma **burada**, uçta değil (`KAT-1`): not biçiminin sahibi bu modül;
+    gövde biçiminin de öyle. İki yerde ayrıştırmak ㊲ *aynı işin iki satırı* olurdu.
+    """
+    d = govde if isinstance(govde, dict) else {}
+    ham = str(d.get("ham_ifade") or "")[:200]
+
+    # ⚠ Dize bir **liste değildir**: `"abc"` üzerinde döngü kurmak onu karakterlere
+    # açar. Yalnız gerçek diziler kabul edilir 🅡.
+    g = d.get("gosterilen")
+    gosterilen = (tuple(str(x)[:80] for x in g[:7])
+                  if isinstance(g, (list, tuple)) else ())
+
+    try:
+        konum = int(d.get("konum", -1))
+    except (TypeError, ValueError):
+        konum = -1          # okunamayan konum = *«seçim yok»*; en az iddialı hâl
+    return Tiklama(ham_ifade=ham, gosterilen=gosterilen, konum=konum)

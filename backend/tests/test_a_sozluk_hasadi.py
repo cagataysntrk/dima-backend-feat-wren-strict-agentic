@@ -133,3 +133,66 @@ def test_CIPLAK_ALAN_SAYISI_ARTMIYOR():
         f"🔴 sinonimi olmayan alan {len(ciplak)} (tavan 3): "
         f"{[f'{c}.{a}' for c, _t, a in ciplak[:6]]} — sözlük katalogun gerisinde kaldı. "
         "`python lab/sozluk_hasadi.py --kuru` ile bak, `--yaz` ile aday üret.")
+
+
+def test_KURU_MOD_GERCEKTEN_KOSUYOR():
+    r"""🔴🔴 **ÇALIŞTIRAN YÜKLEM** — ve neden var olduğu ölçülmüş bir kusurdur.
+
+    ⊙ `FAZ 8.6` (`7d4638f`) `_tiklama_adaylari()`'yi dosyanın **sonuna** ekledi ve o yer
+    `if __name__ == "__main__"` guard'ının **altındaydı**. Modül import edilince
+    guard **çalışmaz**, dolayısıyla fonksiyon **tanımlanmaz**; ama `kos()` onu çağırıyor:
+
+        NameError: name '_tiklama_adaylari' is not defined
+
+    Aracın belgelediği tek kullanım (`python lab/sozluk_hasadi.py`) **tamamen kırıktı**
+    ve bu dosyadaki **hiçbir** kapı görmedi — çünkü hepsi modülü **import ediyor**,
+    `kos()`'u **koşturmuyordu** 🆎. *Bir testin çağırması, ürünün çağırdığı anlamına
+    gelmez; bir modülün import edilmesi de çalıştığı anlamına gelmez.*
+
+    ⚠ Kuru mod seçildi bilerek: yazma yok, LLM yok, DB yok — yani bu yüklem **ucuz**
+    ve yine de gövdeyi **gerçekten** koşturur.
+
+    ⚠🅑 **Ama bu yüklem tek başına o kusuru YAKALAYAMAZ ve bu ölçüldü:** guard'ın
+    altına konan bir `def` **import sırasında yine çalışır**; çökme yalnız `__main__`
+    kipinde olur, çünkü guard gövdesi o `def`'ten **önce** koşar. Mutasyon bu yüklemin
+    altında **hayatta kaldı**. Asıl değişmezi bir sonraki yüklem tutuyor.
+    """
+    from lab import sozluk_hasadi
+
+    rapor = sozluk_hasadi.kos(yaz=False)
+    assert rapor["kuru"] is True
+    for alan in ("cube", "ciplak", "aday", "yazilan", "tiklama_aday"):
+        assert alan in rapor, f"🔴 rapor alanı kayboldu: {alan!r} 🅬"
+    assert rapor["yazilan"] == 0, "🔴 kuru mod YAZDI — adını hak etmiyor."
+
+
+def test_MAIN_GUARDI_SON_IFADE():
+    r"""🔴🔴 **KUSURUN GERÇEK DEĞİŞMEZİ** — ve doğru araç bu ②.
+
+    `if __name__ == "__main__":` bloğu **modülün son üst-düzey ifadesi** olmalıdır.
+    Altına konan her `def`/atama, **import**ta çalışır ama **`__main__` kipinde geç
+    kalır**: guard gövdesi onlardan **önce** koşar ve `NameError` fırlar.
+
+    ⊙ Ölçülmüş vaka (`7d4638f`): `_tiklama_adaylari` guard'ın altına düştü,
+    `python lab/sozluk_hasadi.py` **çöktü**, ve import eden hiçbir kapı görmedi 🆎.
+
+    ⚠ Bir önceki yüklem (`kos()`'u koşturan) bu mutasyonu **yakalayamadı** — çünkü
+    import kipinde ad **tanımlıdır**. *Doğru soruyu yanlış kiple sormak, cevabı
+    değiştirir.*
+    """
+    import ast
+    import inspect
+    import pathlib as _p
+
+    from lab import sozluk_hasadi
+
+    agac = ast.parse(_p.Path(inspect.getfile(sozluk_hasadi)).read_text(encoding="utf-8"))
+    guard_yeri = [i for i, d in enumerate(agac.body)
+                  if isinstance(d, ast.If) and "__main__" in ast.unparse(d.test)]
+    assert guard_yeri, "🔴 `__main__` guard'ı bulunamadı — çapa kaymış."
+    sonra = agac.body[guard_yeri[0] + 1:]
+    assert not sonra, (
+        "🔴 `__main__` guard'ından SONRA üst-düzey ifade(ler) var: "
+        f"{[type(d).__name__ for d in sonra]}. Bunlar import'ta çalışır ama betik "
+        "kipinde GEÇ KALIR — guard gövdesi onlardan önce koşar ve `NameError` fırlar "
+        "(ölçülmüş vaka: `7d4638f`).")

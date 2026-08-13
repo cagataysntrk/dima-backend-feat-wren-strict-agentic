@@ -61,7 +61,7 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120)) -> dict:
 
 
 @router.post("/oneri/tik", dependencies=[Depends(require_company)])
-def oneri_tik(request: Request, govde: dict) -> dict:
+def oneri_tik(request: Request, govde: dict | None = None) -> dict:
     """🔴 `FAZ 8.1` — **tıklama kaydı**: `(ham ifade → seçilen alan → konum)`.
 
     ⊘ **Yeni bir tablo AÇILMADI** 🆝: kayıt `InteractionLog`'a `kind="oneri_tik"` ile
@@ -76,11 +76,9 @@ def oneri_tik(request: Request, govde: dict) -> dict:
     """
     from app import hasat
 
-    t = hasat.Tiklama(
-        ham_ifade=str(govde.get("ham_ifade") or "")[:200],
-        gosterilen=tuple(str(x)[:80] for x in (govde.get("gosterilen") or [])[:7]),
-        konum=int(govde.get("konum", -1)),
-    )
+    # ⚠ Ayrıştırma **modülde** (`KAT-1`) ve **asla fırlatmaz** 🅡: bozuk gövde bir
+    # hâldir, bir çökme değil. Uç burada yalnız **çağırır**.
+    t = hasat.govdeden(govde)
     sinif = hasat.sinyal(t)
     kaydedildi = False
     try:                                                   # pragma: no cover - IO

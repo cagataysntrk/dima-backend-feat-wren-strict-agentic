@@ -39,6 +39,18 @@ _KOK = pathlib.Path(__file__).resolve().parents[1]
 _FE = _KOK.parent / "dima-frontend-demo-master" / "src"
 
 
+def _yorumsuz(src: str) -> str:
+    """TS/TSX yorumlarını düşürür 🅞 — *sözü değil kullanımı ara*.
+
+    ⚠ `tests/_kod_ayikla.py`'nin TS karşılığı; Python `ast`'i burada işe yaramaz.
+    Basit ama yeterli: `//…` satır sonuna kadar, `/*…*/` blok.
+    """
+    import re as _re
+
+    src = _re.sub(r"/\*.*?\*/", "", src, flags=_re.S)
+    return _re.sub(r"//[^\n]*", "", src)
+
+
 def _fe(ad: str) -> str:
     import pytest
 
@@ -73,10 +85,28 @@ def test_KAPALIYKEN_UCA_HIC_CIKILMAZ():
 
     🅑 Mutasyon: `kapaliBayrak` erken-dönüşü `useEffect`'ten çıkarılırsa bu yüklem
     kırılır (istek koruması **fetch'ten önce** olmalı ㊴).
+
+    ⟳🔴 **DÜZELTİLDİ — kapı İKİ YÖNDE de yanılıyordu** (denetim ajanı ölçtü):
+    eski hâli `'kapaliBayrak ||' in govde` diye **tek bir dize** arıyordu.
+    ⓐ Koruma **silinip** metin bir **yoruma** taşındığında kapı **yeşil** verdi
+    (yanlış-negatif) ⓑ davranışı doğru koruyan ama biçimi farklı bir yazım
+    (`if (kapaliBayrak) { … return; }`) **kırmızı** verdi (yanlış-pozitif).
+    *Bir kapı tek bir yazımı kilitliyorsa, kilitlediği şey davranış değil biçimdir.*
+
+    ⊙ Yeni ölçüt: yorumlar **ayıklanır** 🅞, ve korumanın `getOneri` çağrısından
+    **önce** geçtiği aranır — iki geçerli yazım da kabul, yorumdaki söz **kabul değil**.
     """
-    src = _fe("components/OneriSeridi.tsx")
-    govde = src.split("const t = setTimeout", 1)[0]
-    assert "kapaliBayrak ||" in govde, (
+    src = _yorumsuz(_fe("components/OneriSeridi.tsx"))
+    # ⚠ ③ **Çapa iki kez yanlış kondu ve ikisini de mutasyon söyledi** 🅑:
+    # ① `'kapaliBayrak ||' in govde` — tek yazımı kilitliyordu (iki yönde yanıldı).
+    # ② `src.index("useEffect")` — **import satırındaki** `useEffect` sözcüğünü
+    #    buluyordu, dolayısıyla bildirimi «etkinin içinde» sanıyordu ve koruma
+    #    silinse bile **yeşil** veriyordu.
+    # Doğru çapa: `getOneri` çağrısını **içeren** etkinin başlangıcı.
+    i_fetch = src.index("getOneri(")
+    i_etki = src.rindex("useEffect(", 0, i_fetch)
+    i_bayrak = src.find("kapaliBayrak", i_etki, i_fetch)
+    assert i_bayrak >= 0, (
         "🔴 bayrak kontrolü **isteğin önünde** değil — kapalıyken bile `/oneri` "
         "çağrılıyor olabilir (`E-1`: ölçüm istekten başlar).")
 
