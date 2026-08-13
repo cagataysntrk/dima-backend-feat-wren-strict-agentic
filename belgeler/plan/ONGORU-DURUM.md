@@ -2468,3 +2468,37 @@ yerine kaynak taraması, zincir yüklemi 🆆).
 Üçüncüsü olmasaydı **ucu tamamen kırmak da kapıyı yeşil bırakırdı** 🆐.
 
 **Kanıt:** `oneri_katmani_kural_b · oneri_motoru · pill_katmani` → **61 ✅**.
+
+---
+
+## §53 — `İŞ 3`: PILL SATIRI ARTIK **YUVA ADIYLA** DURUYOR
+
+### Ölçülen kusur
+
+Öneri çipi ile pill çipi **aynı** görünüyordu (`border px-…`, aynı yazı tipi, alt alta iki
+sıra). Kullanıcının ekran görüntüsünde alt sıra (*«kök neden kırılımı · + ölçü»*) **öneri
+sanıldı** — oysa pill satırıydı ve çalışıyordu. Plan `1242` bunu zaten yasaklamış:
+*«adımlar dikey, yuvalar yatay; ikisi aynı şeritte olmaz.»*
+
+### Çare — iki katman artık iki farklı şey gibi görünüyor
+
+* Şerit **dikey liste** (`§44`, `role="option"`), pill satırı **yatay** ve her yuva
+  **adıyla**: `ölçü [toplam] · varlık [RAM 3] · dönem [bu ay]`.
+* Ad **yalnız grubun ilkinde** yazılır — her çipe ad yapıştırmak satırı ikiye katlar ve
+  `≤7`nin okunurluğunu bozardı.
+* `ALAN_ADI` sözlüğü **ön yüzde**: sunucu `alan` **kodunu** yollar, insan-okur ad bir
+  **sunum** kararıdır. ⚠ Bilinmeyen alan gelirse **kodu** yazılır — yeni bir yuva sessizce
+  kaybolmaz, adsız görünür ve **fark edilir** 🆓.
+
+### Ve `§51`'in yarım kalan ilanı tamamlandı 🅧
+
+`ALAN_VARLIK` sabiti eklenmişti ama **kapalı kümeye** (`ALANLAR`) ve **kaynak haritasına**
+(`ALAN_KAYNAGI`) yazılmamıştı. Kapı `set(ALAN_KAYNAGI) == set(ALANLAR)` diyor ve **ikisinde
+de yok olduğu için yeşil kalmıştı** — bir alanı ilan edip kaydını yazmamak, onu **yarım
+ilan etmektir**. İkisine de eklendi (`ALAN_VARLIK: "filtreler"`).
+
+### Kanıt
+
+`pill_katmani · belirlenimli_sira` → **54 ✅** · `frontend_derlenir · frontend_buyume`
+→ **15 ✅**. ⚠ İkisi **atlandı** ve bu bir boşluktu 🅢: derleme kapısı `node_modules`
+yokken susuyor. Elle **gerçek `tsc --noEmit`** koşuldu → **çıkış 0**.

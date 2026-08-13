@@ -109,7 +109,8 @@ ALAN_TUR = "tur"
 ALAN_VARLIK = "varlik"
 
 #: 🔴 Sıra bir **sözleşmedir**: `§5.2` diyagramının soldan sağa sırası.
-ALANLAR: tuple[str, ...] = (ALAN_OLCU, ALAN_DONEM, ALAN_KIRILIM, ALAN_TUR)
+ALANLAR: tuple[str, ...] = (ALAN_OLCU, ALAN_VARLIK, ALAN_DONEM, ALAN_KIRILIM,
+                            ALAN_TUR)
 
 #: 🔴🔴 **PILL ALANI → `Niyet` ALANI.** Bu sözlük, planın *«birebir»* iddiasının
 #: **makinece okunabilir** hâlidir: her pill alanının arkasında **gerçek** bir `Niyet`
@@ -118,6 +119,10 @@ ALANLAR: tuple[str, ...] = (ALAN_OLCU, ALAN_DONEM, ALAN_KIRILIM, ALAN_TUR)
 #: ama **adıyla** düşer — sessizce bayatlamaz.
 ALAN_KAYNAGI: dict[str, str] = {
     ALAN_OLCU: "olcu_adaylari",
+    #: `§51` — varlık pill'i `Niyet.filtreler`den doğar (dönem filtreleri hariç;
+    #: onların kendi pill'i var). Kapı `set(ALAN_KAYNAGI) == set(ALANLAR)` ister:
+    #: bir alanı ilan edip **kaydını** yazmamak, onu yarım ilan etmektir 🅧.
+    ALAN_VARLIK: "filtreler",
     ALAN_DONEM: "donemler",
     ALAN_KIRILIM: "kirilimlar",
     ALAN_TUR: "turler",

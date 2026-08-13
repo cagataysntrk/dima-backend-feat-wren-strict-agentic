@@ -64,6 +64,14 @@ const SONUC_METNI: Record<string, string> = {
   plan: "yeni adım",
 };
 
+/** 🔴 `§53` — YUVA ADLARI. Sunucu pill'i `alan` koduyla yollar (`olcu` · `varlik` ·
+ *  `donem` · `kirilim` · `tur`); insan-okur ad bir **sunum** kararıdır ve burada
+ *  yaşar. ⚠ Bilinmeyen bir alan gelirse **kodu** yazılır: yeni bir yuva sessizce
+ *  kaybolmaz, adsız görünür ve fark edilir 🆓. */
+const ALAN_ADI: Record<string, string> = {
+  olcu: "ölçü", varlik: "varlık", donem: "dönem", kirilim: "kırılım", tur: "tür",
+};
+
 export function PillSatiri({ metin }: { metin: string }) {
   // 🔴 Bayrak `oneri_katmani` ve bu bir kapsam kararıdır: pill satırı öneri şeridiyle
   // **aynı** öngörü katmanının parçası (`§5.1`–`§5.3`) ve aynı kutunun altında duruyor.
@@ -118,23 +126,35 @@ export function PillSatiri({ metin }: { metin: string }) {
 
   return (
     <div className="mt-1 flex flex-col gap-1 font-mono text-[11px]">
-      <div className="flex flex-wrap items-center gap-1">
-        {piller.map((p) => {
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {piller.map((p, i) => {
           const kirmizi = hataliAlanlar.has(p.alan);
+          // 🔴 `§53` — YUVANIN ADI GÖRÜNÜR. Ölçülen kusur: öneri çipi ile pill çipi
+          // **aynı** görünüyordu; kullanıcı ekranda alt sırayı öneri sandı. Şerit artık
+          // dikey **liste**, pill satırı yatay ve her yuva **adıyla** duruyor — plan
+          // `§5.2`nin sütunları ve `1242`nin *«ikisi aynı şeritte olmaz»* kuralı.
+          // ⚠ Ad **yalnız grubun ilkinde**: her çipe ad yapıştırmak satırı ikiye katlar.
+          const ilk = i === 0 || piller[i - 1].alan !== p.alan;
           return (
-            <span
-              key={`${p.alan}:${p.metin}`}
-              // ⚠ `aria-invalid`: kırmızı **yalnız bir renk değil bir durumdur**; ekran
-              // okuyucu onu görmezse `§5.3` yalnız gören kullanıcılar için doğrudur.
-              aria-invalid={kirmizi || undefined}
-              className={
-                "max-w-full truncate border px-1.5 py-0.5 " +
-                (kirmizi
-                  ? "border-red-500/60 bg-red-500/[0.06] text-red-600 dark:text-red-400"
-                  : "border-hairline text-neutral-500")
-              }
-            >
-              {p.metin}
+            <span key={`${p.alan}:${p.metin}`} className="inline-flex items-center gap-1">
+              {ilk && (
+                <span className="select-none uppercase tracking-wider text-neutral-600">
+                  {ALAN_ADI[p.alan] ?? p.alan}
+                </span>
+              )}
+              <span
+                // ⚠ `aria-invalid`: kırmızı **yalnız bir renk değil bir durumdur**; ekran
+                // okuyucu onu görmezse `§5.3` yalnız gören kullanıcılar için doğrudur.
+                aria-invalid={kirmizi || undefined}
+                className={
+                  "max-w-full truncate border px-1.5 py-0.5 " +
+                  (kirmizi
+                    ? "border-red-500/60 bg-red-500/[0.06] text-red-600 dark:text-red-400"
+                    : "border-hairline text-neutral-500")
+                }
+              >
+                {p.metin}
+              </span>
             </span>
           );
         })}
