@@ -3332,3 +3332,14 @@ zincirin kodda bağlı olması ekranda göründüğünün kanıtı değildir* �
 önizleme kartında **pill satırı + `[koş] [düzenle] [iptal]`** görülmelidir.
 
 **Demet: 399 ✅.**
+
+**Canlı kanıt (`s34`, aynı soru üç tur):**
+
+```
+tur1  onizleme  · pill = ['performans', 'makine kırılımı']
+tur2  onizleme  · pill = ['performans', 'makine kırılımı']
+tur3  cube+llm  · oy birliği → KOŞTU
+```
+
+⊙ *«OEE · OEE»* ve *«performans · OEE»* **gitti**; ayırt edicilik gerektiğinde (`t13`)
+duruyor — kapının zıt ölçütü onu savunuyor 🆃.
