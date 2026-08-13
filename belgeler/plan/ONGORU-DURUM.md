@@ -3460,3 +3460,56 @@ yaptığı işi de yazmak, reddi dürüst yapar.
 ### ⊘ FE ekran doğrulaması — **üçüncü tur** yapılamadı 🅢
 
 `localhost:3000` → `000`. Zincir kodda bağlı ve kapılı; **ekran** doğrulaması açık.
+
+---
+
+## `§72` — **FAZLAR KAPANDI** (beyan değil, kapı) + hasat döngüsü **ilk kez canlıda**
+
+### ① Planın `§42` faz tablosu — dokuz fazın dokuzu ölçüldü
+
+| faz | kod karşılığı | durum |
+|---|---|---|
+| `0` ölçüm | `lab/oneri_olcum.py` | ✅ |
+| `1` `emin_miyim` | `app/emin_miyim.py` | ✅ |
+| `2` marj kapılı oto-icra | `cube_router` ↔ `emin_miyim.karar` | ✅ |
+| `3` aday yan kanalı | chip'ler / `suggestions` | ✅ |
+| `4` kıyas temeli chip'i | `InterpretationBar` | ✅ |
+| `5` öneri motoru | `app/oneri.py` | ✅ |
+| `6` uç + FE şeridi | `routers/oneri.py` · `OneriSeridi.tsx` | ✅ |
+| `7` çapa · pill · makro · **plan önizleme** | `pill.py` · `makro.py` · `plan_tuketici` · `PlanOnizleme.tsx` | ✅ |
+| `8` hasat döngüsü | `app/hasat.py` · `lab/sozluk_hasadi.py` | ✅ **8.3 hariç** ⊘ |
+
+⚠ **`FAZ 7`'nin hikâyesi bir ders:** plan onu *«iddiayı kanıtlamıyor, zenginleştiriyor»*
+diye **⊘ DEMO DIŞI** ertelemişti. Kullanıcı **tersini** söyledi — asıl iş **rol
+değişikliğiydi** ve tam o fazın içindeydi (`§63`–`§70`). *Bir planın kendi
+önceliklendirmesi de bir varsayımdır.*
+
+🔴 **İddia kapıya bağlandı** ㉕: `test_faz_kapanisi.py` (**11 ✅**) her fazın kod
+karşılığını **dosya düzeyinde** arar — biri taşınır/silinirse *«kapandı»* iddiası kırmızı
+verir. `FAZ 7`'nin **yüzü** (`PlanOnizleme.tsx`) ayrıca sorulur 🆘.
+
+### ② `8.3` (`ε` karıştırma) — **kapanmadı ve kapanmamalı** ㊷
+
+Kodda aradım ve **erteleme zaten kapılıydı**: `test_EPSILON_ERTELEMESI_HALA_GECERLI`
+*«ölçmeden konan bir `ε` listeyi bozar ve karşılığında hiçbir sayı üretmez»* diyor 🆕 ve
+`oneri.py`'de `random.`/`shuffle` **sızarsa** kırmızı veriyor. Yeni kapı bunu
+**tekrar etmiyor**, yalnız **varlığını** şart koşuyor ㊲ — bir kararı iki yerde savunmak,
+bir gün iki farklı karar demektir.
+
+### ③ 🔴 HASAT DÖNGÜSÜ **İLK KEZ CANLIDA KOŞTU** (`s35`)
+
+Kütükte bugüne dek **0** `POST /oneri/tik` vardı — yani `FAZ 8` yazılmıştı ama **hiç
+çalıştırılmamıştı**. Üç sinyal sınıfı da uçtan uca doğrulandı:
+
+```
+konum= 0  →  {"sinyal":"zayif",  "kaydedildi":true}     (1. sıra — zayıf)
+konum= 2  →  {"sinyal":"guclu",  "kaydedildi":true}     (sırayı ATLADI — güçlü, 8.2)
+konum=-1  →  {"sinyal":"negatif","kaydedildi":true}     (hiçbirini seçmedi, 8.4)
+```
+
+⊘ `lab/sozluk_hasadi.py`'yi (8.6) **koşmadım**: `interaction_log` okuması bu operasyonda
+yasaklı 🅛 — aracın kendisi hazır ve kapılı, ama çıktısını **görmedim**, öyle yazıyorum 🅢.
+
+### ⊘ FE ekran doğrulaması — **dördüncü tur** yapılamadı
+
+`localhost:3000` → `000`.
