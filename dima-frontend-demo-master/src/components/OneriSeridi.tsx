@@ -120,6 +120,12 @@ interface Satir {
    *  şema eksikliğinden de taşımayabilir). Eski `adaylar` dalında `tur` yoktur → `""`,
    *  yani o dal **her zaman** tamamlama olarak kalır (`KURAL B`). */
   tur: string;
+  /** 🔴 `§45` — öngörünün **hazır sorgusu**. Ölçülen kusur: tıklamada **atılıyordu**;
+   *  cümle `/ask`'a **metin** olarak gidiyor, route şüpheli sayılıp **garsona** düşüyordu.
+   *  Oysa bu `cube_query` katalogdan deterministik üretildi — yeniden *anlaşılmasına*
+   *  gerek yok. Plan `§6 Thread 1`: *«Enter → `cube_query` koşar · 34 ms · **0 token**»*.
+   *  ⚠ `null` olabilir (makro satırları taşımaz) — dal sırası bunu **şart** koşar 🆤. */
+  cq: CubeQuery | null;
 }
 
 /** 🔴 **MAKRO ADLARI — `backend/app/makro.py::MAKROLAR` ile birebir.** Şerit bugün yalnız
@@ -132,6 +138,7 @@ const MAKRO_ADLARI = new Set(["neden", "gecen_yil", "en_kotu"]);
 export function OneriSeridi({
   metin,
   onSec,
+  onSorgu,
   sonBakilanlar = [],
   capa = null,
   onCapaBirak,
@@ -140,6 +147,9 @@ export function OneriSeridi({
 }: {
   metin: string;
   onSec: (etiket: string) => void;
+  /** `§45` — hazır `cube_query` taşıyan öngörü **koşulur** (`/cube`, 0 LLM). Verilmezse
+   *  eski davranış birebir sürer (`KURAL B`). */
+  onSorgu?: (cq: CubeQuery, metin: string) => void;
   /** `5.9` — boş girdide gösterilecek **son bakılanlar**. Yeni bir depo AÇMAZ:
    *  sohbetin kendi kartlarından türetilir (kalıcı durum yok, izin yok, senkron yok). */
   sonBakilanlar?: string[];
@@ -208,6 +218,7 @@ export function OneriSeridi({
             grup: o.grup === "rapor_ustunde" ? "rapor_ustunde" : "yeni_konu",
             ipucu: o.cube_query ? `${o.cube ?? ""} · ${o.tur}` : `makro · ${o.tur}`,
             tur: o.tur,
+            cq: o.cube_query ?? null,
           }));
           // ⚠ Sıralama **burada** yapılır, render'da değil: `secili` bir **konumdur** ve
           // o konum ekrandaki sırayla birebir aynı olmak zorunda — `↓↑` ile
@@ -245,7 +256,22 @@ export function OneriSeridi({
       setKapali(true);
       return;
     }
-    // ⊘ Sorgu KOŞMAZ: `cube_query` taşısa bile tıklama yalnız **metni** tamamlar.
+    // 🔴🔴 `§45` — HAZIR SORGU VARSA **KOŞ**; cümleyi yeniden anlattırma.
+    //
+    // ⟳ Buradaki eski not *«sorgu KOŞMAZ: `cube_query` taşısa bile tıklama yalnız metni
+    // tamamlar»* diyordu. Ölçüldü ve **bu bir kusurdu**: cümle besteciye yazılıp `/ask`'a
+    // gidiyor, `route()` onu *yarım isabet* sayıp **garsona** devrediyordu (`§51`). Yani
+    // katalogdan **deterministik** üretilmiş, `cube_query`'si elimizde olan bir cevabı
+    // sistem **LLM'e yeniden tahmin ettiriyordu** 🆤 — planın `§6 Thread 1`'i tam tersini
+    // yazıyor: *«Enter → `cube_query` koşar · 34 ms · **0 token**»*.
+    //
+    // ⚠ Dal sırası **şart**: makro (sorgusuz) → hazır sorgu → metin. Ve `onSorgu` yoksa
+    // eski davranış **birebir** sürer (`KURAL B`).
+    if (a.cq && onSorgu) {
+      onSorgu(a.cq, a.metin);
+      setKapali(true);
+      return;
+    }
     onSec(a.metin);
     setKapali(true);
   }

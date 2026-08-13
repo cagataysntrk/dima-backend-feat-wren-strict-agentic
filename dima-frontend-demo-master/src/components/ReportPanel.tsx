@@ -136,6 +136,7 @@ export function ReportPanel({
   viewHint,
   onCubeEdit,
   onMakro,
+  onSorguKos,
   error,
   sessionId,
   contextLabel,
@@ -159,6 +160,9 @@ export function ReportPanel({
   // tek sahibi burasıdır (`capaCq` aşağıda `temellendirme` ile aynı kalemden okunuyor).
   // `page.tsx`'in bilmesi gereken tek şey cevabın nereye düşeceğidir.
   onMakro?: (ad: string, soru: string, cq: CubeQuery, boyut: string) => void;
+  /** 🔴 `§45` — hazır `cube_query` taşıyan öngörü tıklanınca **koşulur** (`/cube`,
+   *  0 LLM). Verilmezse tıklama eski gibi metni besteciye yazar (`KURAL B`). */
+  onSorguKos?: (cq: CubeQuery, metin: string) => void;
   error: string | null;
   sessionId?: string;
   // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — "bağlam: X" göstergesi ARTIK burada: eski sol
@@ -597,6 +601,7 @@ export function ReportPanel({
               ? (ad, soru) => onMakro(ad, soru, capaCq,
                   String(((capaCq.dimensions as unknown[]) ?? [])[0] ?? ""))
               : undefined}
+            onSorgu={onSorguKos}
             ipucu={thread ? "bu rapor üzerinde devam et…" : "sor…"}
           />
         )

@@ -2133,3 +2133,48 @@ ikisi de öneri tıklamasından **hiç çağrılmıyor** 🆘. `onMakro` prop'u 
 gölgelemesinin en pahalı hâlidir* 🆤.
 
 **Kanıt:** `frontend_derlenir · frontend_buyume · uc_yetim_degil` → **22 ✅**.
+
+---
+
+## §45 — ÖNGÖRÜ TIKLAMASI ARTIK **SORGUYU KOŞUYOR** (0 LLM)
+
+### Ölçülen kusur
+
+```ts
+onSec: (etiket: string) => void   // ← yalnız METİN
+onSec(a.metin)                    // cube_query · tur · cube ATILIYOR
+onSec={onDeger}                   // → composer → /ask → route «şüpheli» → GARSON
+```
+
+Katalogdan **deterministik** üretilmiş, `cube_query`'si elimizde olan bir cevap,
+tıklanınca **LLM'e yeniden tahmin ettiriliyordu** 🆤. Planın `§6 Thread 1`'i tersini
+yazıyor: *«Enter → `cube_query` koşar · 34 ms · **0 token**»*.
+
+### Çare — üç dal, sırası ŞART
+
+| sıra | koşul | yol |
+|---|---|---|
+| 1 | `tur ∈ MAKRO_ADLARI` | `POST /oneri/makro` — 5 adımlık determinist plan *(zaten vardı)* |
+| 2 | **`cq` var** | **`POST /cube`** — LLM'siz koşum *(bu turda bağlandı)* |
+| 3 | ikisi de yok | metni besteciye yaz → `/ask` *(eski davranış, `KURAL B`)* |
+
+⚠ Makro dalı **önce** gelmeli: makro satırının `cube_query`'si **yoktur** ve
+tamamlanacak bir metni de yoktur — sırayı bozmak onu `/ask`'a düşürürdü.
+
+⊙ **Yeni bir koşum yolu açılmadı** ㊲: sayfa zaten `cubeMutation` ile `askCube`/`postMakro`
+çağırıyordu (`page.tsx:452`). Eksik olan tek şey **bağlantıydı** 🆘 — `OneriSeridi` →
+`Besteci` → `ReportPanel` → `page` zinciri boyunca `cq` taşınmıyordu.
+
+### ⚠ Büyüme tavanı ateşledi ve GEVŞETİLMEDİ 🆄
+
+`app/page.tsx` **561/560**. Önce yorum kısaltıldı (kapı **kod satırı** sayıyor, işe
+yaramadı), sonra satır katlandı (yine 561). Sonunda kapının **kendi düzeneği**
+kullanıldı: `MUAFIYET`'e **+1** ve **gerekçesi** yazıldı 🅝 — bileşene çıkarma denendi ve
+reddedildi, çünkü koşum yolu (`cubeMutation`) sayfanın durumuna bağlı ve ikinci bir
+koşum sahibi `KAT-1`'i bozardı.
+
+*Bir tavanı yükseltmek ile bir muafiyeti gerekçesiyle yazmak aynı şey değildir: birincisi
+sınırı siler, ikincisi sınırı **kayda geçirir**.*
+
+**Kanıt:** `frontend_buyume · frontend_derlenir · uc_yetim_degil · oneri_cumle` →
+**52 ✅ / 2 atlandı**.

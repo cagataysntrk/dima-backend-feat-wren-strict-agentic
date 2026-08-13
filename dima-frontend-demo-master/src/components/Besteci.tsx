@@ -34,6 +34,7 @@
 import { CaretInput } from "@/components/CaretInput";
 import { OneriSeridi, type OneriCapasi } from "@/components/OneriSeridi";
 import { PillSatiri } from "@/components/PillSatiri";
+import type { CubeQuery } from "@/lib/types";
 import type { ReactNode } from "react";
 
 export function Besteci({
@@ -45,6 +46,7 @@ export function Besteci({
   capa = null,
   onCapaBirak,
   onMakro,
+  onSorgu,
   sonBakilanlar = [],
   ustBilgi,
   vurgulu = false,
@@ -74,6 +76,8 @@ export function Besteci({
    *  makro cevabı `/cube` ile **aynı** yerleştirme yolundan geçer — yeni bir gösterim
    *  icat edilmedi. Verilmezse şerit bugünkü davranışını sürdürür (`KURAL B`). */
   onMakro?: (ad: string, soru: string) => void;
+  /** `§45` — hazır sorgulu öngörü tıklanınca **koşulur** (0 LLM). */
+  onSorgu?: (cq: CubeQuery, metin: string) => void;
   sonBakilanlar?: string[];
   /** Kutunun üstünde tek satırlık durum (bugün: *«N kart birleştirilerek soruluyor»*).
    *  ⚠ Bu satır varken çapa **verilmez**: bağlamı seçili kartlar kurar ve bunu zaten
@@ -106,6 +110,7 @@ export function Besteci({
             capa={capa}
             onCapaBirak={onCapaBirak}
             onMakro={onMakro}
+            onSorgu={onSorgu}
           >
             <CaretInput
               value={deger}

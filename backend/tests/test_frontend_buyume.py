@@ -184,6 +184,16 @@ TAVANLAR = {
 
 #: `(dosya, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 MUAFIYET: list[tuple[str, int, str]] = [
+    ("app/page.tsx", 1,
+     "🔴 `§45` — **ÖNGÖRÜ TIKLAMASI HAZIR SORGUYU KOŞAR** (`onSorguKos`). Tek bir "
+     "kod satırı: `cubeMutation.mutate({ cq, label })`. ⊙ Ölçülen kusur: şeritteki "
+     "cümlenin `cube_query`'si tıklamada **atılıyor**, metin `/ask`'a gidiyor ve "
+     "`route()` onu yarım isabet sayıp **garsona** devrediyordu — yani katalogdan "
+     "deterministik ürettiğimiz cevabı **LLM'e yeniden tahmin ettiriyorduk**; plan "
+     "`§6 Thread 1` ise *«Enter → `cube_query` koşar · 34 ms · 0 token»* diyor. "
+     "⚠ Bileşene çıkarma **denendi ve reddedildi**: koşum yolu `cubeMutation` ve o "
+     "sayfanın durumuna bağlı; ikinci bir koşum sahibi `KAT-1`'i bozardı ㊲. "
+     "Kazanç bir satırdan büyük: her öngörü tıklaması bir LLM turu tasarruf eder."),
     ("app/page.tsx", 9,
      "🔴🔴 `§RY` — **BELGE BAĞLAMI KIRPILARAK GÖNDERİLİR.** ⊙ Ölçüldü: `previous_rapor` "
      "**tam** gidiyordu (`pages[][].result.rows` dâhil) ve ölçüm aracı `Argüman listesi "

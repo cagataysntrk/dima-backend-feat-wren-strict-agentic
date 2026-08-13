@@ -652,7 +652,12 @@ export default function Home() {
                 // 🔴 `§7 ②` — makro, `/cube` ile **aynı** mutasyondan geçer (gerekçesi
                 // yukarıda). `label` yalnız `/cube` dalının işine yarar; makro dalında
                 // kartın başlığını `soru` verir.
+                // 🔴 `§45` — öngörü tıklaması **hazır sorguyu koşar** (0 LLM);
+                // gerekçe `OneriSeridi.sec()` içinde. İki dal da AYNI koşum
+                // yolunu kullanır (`cubeMutation`) — ikinci bir yol `KAT-1`'i
+                // bozardı ㊲: makro `makro` alanıyla, öngörü onsuz gider.
                 onMakro={(ad, soru, cq, boyut) => cubeMutation.mutate({ cq, label: soru, makro: { ad, soru, boyut } })}
+                onSorguKos={(cq, label) => cubeMutation.mutate({ cq, label })}
                 // 🔴 `cubeMutation` HATASI DA GÖRÜNÜR OLDU. Eskiden yalnız `mutation`
                 // okunuyordu; `/cube` sessizce düşerse kullanıcı **hiçbir şey** görmüyordu.
                 // Makro ile bu bir kusurdan bir **ürün boşluğuna** dönüşürdü: boyutsuz bir
