@@ -449,3 +449,32 @@ kilitler; biri değişirse ⊘ **kırmızıyla** düşer.
 
 📌 **Sırada: `2.3`** — `D4` proaktif sınır deseni **var** (`ask.py:3374`) ama
 **bağlamsızlık** dalına bağlı, `SINIR` kararına değil.
+
+### ⟳ `§10` EKİ — `FAZ 2.3` de ertelendi · **`FAZ 2` KAPANDI** *(hepsi gerekçeli)*
+
+Tetikleyici ancak *«eşleşmeyen sözcük»* olabilirdi ve sinyal canlıda **temiz** çıktı
+(*«nedir acaba»* · *«ne kadar oldu»* → `bilinmeyen` **boş**; yalnız *«zurnalama»* gibi
+gerçek eşleşmezler görünüyor). ⚠ İlk itirazım (*«dolgu sözcükleri kirletir»*) **yanlıştı**
+③ — bu oturumda **beşinci** kez kendi beklentim ölçümle düzeldi.
+
+Ama liste **kullanılamaz**, üç ölçülmüş sebeple:
+
+| # | sebep | kaynak |
+|---|---|---|
+| ① | liste **Türkçe sözlüğe** dayanıyor; Arapça/İngilizce soruda **her sözcük** bilinmeyen görünür 🆊 | `islev_sozcukleri.py` — **E turu, dört kanıt** |
+| ② | depo listeyi **yanlış araç** ilan etmiş, kapanış koşulu `§56`, sonra dosya **silinir** | aynı dosya: *«bir listeyi uzatmak, listenin yanlış araç olduğunu gizler»* |
+| ③ | sınır beyanı **zaten var** ㊷ — *«"X" başka bir konu gibi görünüyor»* | `ask.py` üretici |
+
+⊙ **Ön koşul: `§56`.** Kapandığında `2.3` yeniden değerlendirilir 🅗.
+
+**Kapı büyüdü: 7 yüklem.** Yeni ikisi 🅑 mutasyonla kanıtlandı — ① sınır beyanının
+üreticisini değiştir (**1 kırmızı**) ② `§56`'yı belgeden sil (**1 kırmızı**).
+
+### ⟳ BORÇ ③ ZATEN ÖDENMİŞ — ㊷ on dördüncü kez
+
+`netlestirme_sorusu` **çağrılıyor**: `ask.py:1454`. Borç listem bayatmış 🅟.
+Dal `note=soru` **ve** `next_steps=adimlar` döndürüyor — yani soru **seçeneğiyle**
+geliyor (`§TZ`: *«beyanın yanında bir tık olmalı»*).
+
+📌 **`FAZ 2` ✅ (kapandı):** `2.1`⊘ `2.2`⊘ `2.3`⊘ `2.4`㊷ `2.5`⊘ — **beşi de gerekçeli**,
+üçü **kapıya bağlı**. Sırada **`FAZ 3`+`FAZ 6` (aynı demet)**.

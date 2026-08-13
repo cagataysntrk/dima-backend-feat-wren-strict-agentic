@@ -2402,8 +2402,23 @@ ve öneri şeridi **yanlış adaylar** gösterir.
 > `{"kind": "auto"|"suggest"}` diye yazıyor — bu tam olarak `Karar.OTO_ICRA`/`GOSTER`,
 > **dört** üretim noktasında. Yeni alan açmak ㊲ *aynı işin iki satırı* olurdu.
 >
-> **`2.5`** planın kendi ⊘'si, korundu. 🔴 **`2.3` AÇIK KALDI** — `D4` proaktif sınır
-> deseni var (`ask.py:3374`) ama **bağlamsızlık** dalına bağlı, `SINIR` kararına değil.
+> **`2.5`** planın kendi ⊘'si, korundu.
+>
+> ⟳🔴 **`2.3` DE ERTELENDİ — ön koşulu `§56`.** Tetikleyici ancak *«eşleşmeyen sözcük»*
+> olabilirdi ve canlıda ölçüldü ki sinyal **temiz** (dolgu sözcükleri kirletmiyor:
+> *«nedir acaba»* · *«ne kadar oldu»* → `bilinmeyen` **boş**). Ama liste kullanılamaz:
+> **①** `islev_sozcukleri.py`'nin **kendi belgesi** der ki *«soru İngilizce ya da Arapça
+> olduğunda **her sözcük** bilinmeyen görünüyor»* (**E turu, dört kanıt**) — beyan buna
+> bağlansaydı **doğru cevaplanmış** bir Arapça soruda her sözcük için *«bulamadım»*
+> derdi 🆊. **②** Depo bu listeyi zaten **yanlış araç** ilan etmiş ve kapanış koşulunu
+> yazmış (`§56`: *«garson bir aday ürettiyse Türkçe kapsam reddi hiç koşmamalıdır»*),
+> ardından dosya **silinir**; ikinci bir tüketici o silmeyi zorlaştırırdı — *«bir listeyi
+> uzatmak, listenin yanlış araç olduğunu gizler.»* **③** Sınır beyanı **zaten var** ㊷:
+> `ask.py` *«"X" başka bir konu gibi görünüyor»* üretiyor; ikincisi ㊲ aynı işin iki
+> satırı olurdu.
+>
+> ⊙ Ve ㊷ **on dördüncü** kez: borç **③ (`netlestirme_sorusu`) ZATEN ÖDENMİŞ** —
+> `ask.py:1454`'te çağrılıyor, borç listesi bayatmış 🅟.
 
 ---
 

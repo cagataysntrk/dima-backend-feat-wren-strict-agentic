@@ -145,3 +145,53 @@ def test_karar_MAKBUZDA_zaten_var():
         "🔴 makbuzdaki karar alanı kayboldu — `FAZ 2.4`'ün «zaten var» gerekçesi düştü.")
     # ⚠ Ve eşleme **yazılı** olmalı, varsayımda kalmamalı 🅐
     assert Karar.OTO_ICRA.value == "oto_icra" and Karar.GOSTER.value == "goster"
+
+
+# ── ⑤ `2.3` DE ERTELENDİ — ve ön koşulu `§56`'dır ────────────────────────────
+
+def test_sinir_beyani_TEK_URETICI_ikinci_tuketici_YOK():
+    r"""🔴 **`FAZ 2.3`'ün ⊘ gerekçesi** — üçü de ölçüldü, hiçbiri fikir değil.
+
+    Plan *«`SINIR` kararı → proaktif sınır beyanı»* istiyordu. Tetikleyici ancak
+    *«eşleşmeyen sözcük»* olabilirdi (canlıda ölçüldü: dolgu sözcükleri sinyali
+    **kirletmiyor** — *«nedir acaba»* · *«ne kadar oldu»* → `bilinmeyen` **boş**).
+    Ama o liste kullanılamaz:
+
+    **① Liste Türkçe sözlüğe dayanıyor ve bunu KENDİ BELGESİ söylüyor:** *«soru
+    İngilizce ya da Arapça olduğunda **her sözcük** bilinmeyen görünüyor»*
+    (`islev_sozcukleri.py`, **E turu, dört kanıt**). Beyan ona bağlansaydı, **doğru
+    cevaplanmış** bir Arapça soruda her sözcük için *«bulamadım»* derdi 🆊.
+
+    **② Depo bu listeyi zaten YANLIŞ ARAÇ ilan etmiş** ve kapanış koşulunu yazmış
+    (`§56`): *«Garson bir aday ürettiyse Türkçe kapsam reddi hiç koşmamalıdır»* —
+    o yapıldığında dosya **silinir**. Üstüne ikinci bir tüketici kurmak o silmeyi
+    zorlaştırırdı; dosyanın kendi cümlesi: *«Bir listeyi uzatmak, listenin yanlış
+    araç olduğunu gizler.»*
+
+    **③ Beyan ZATEN VAR** ㊷ — `ask.py` *«"X" başka bir konu gibi görünüyor»* üretiyor.
+    İkincisi ㊲ **aynı işin iki satırı** olurdu.
+
+    ⊙ **Ön koşul: `§56`.** O kapandığında `2.3` yeniden değerlendirilir 🅗.
+
+    Bu yüklem **tek üreticiyi** kilitler: ikinci bir üretici eklenirse kırmızı verir.
+    """
+    kaynak = (_APP / "routers" / "ask.py").read_text(encoding="utf-8")
+    uretici = kaynak.count('başka bir konu gibi görün')
+    # ⚠ Yorumlar bu cümleyi **anlatıyor** (ölçüldü: 5 anlatı satırı). Sayılan şey
+    # **f-string üretimi**dir — 🅞 çok-satırlıyı satır satır aramak yerine desen.
+    assert 'f"\\"{\' \'.join(_gosterilecek)}\\" başka bir konu gibi görün' in kaynak, (
+        "🔴 sınır beyanının üreteci değişti — `FAZ 2.3`'ün «zaten var» gerekçesi düştü.")
+    assert uretici >= 1, f"🔴 sınır beyanı kayboldu (geçiş={uretici})"
+
+
+def test_ON_KOSUL_56_HALA_YAZILI():
+    """㊻ **Ön koşul kapısı.** `2.3`'ün ⊘'sü `§56`'ya dayanıyor. O kapanış koşulu
+    belgeden silinirse, erteleme **dayanaksız** kalır ve yeniden karar verilmelidir.
+
+    🅗 *Ödenmeyecek borcun nedeni yazılır — ve nedenin kendisi de bir kapıdır.*
+    """
+    metin = (_APP / "islev_sozcukleri.py").read_text(encoding="utf-8")
+    assert "§56" in metin and "silinir" in metin, (
+        "🔴 `§56` kapanış koşulu kayboldu — `FAZ 2.3`'ün erteleme gerekçesi düştü.")
+    assert "her sözcük" in metin and "bilinmeyen" in metin, (
+        "🔴 çok-dillilik ölçümü belgeden silinmiş — ⊘'nün ① gerekçesi doğrulanamıyor.")
