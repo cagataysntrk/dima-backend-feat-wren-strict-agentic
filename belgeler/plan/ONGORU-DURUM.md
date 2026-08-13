@@ -568,3 +568,54 @@ başına** iç içe (`{"vektor": {"recall@3": 89.5, "payda": 19}}`). Ad **dönen
 📌 **Sonraki tur: `app/oneri.py`** — `5.1` saf `ara()` · `5.2` **`authorize()` sıralamadan
 ÖNCE** (fazın tek güvenlik kalemi) · `5.3` leksik edge n-gram · `5.8` gömücü soğuksa
 leksik kipe düş. Sonra `5.4–5.7` ve **`FAZ 6` aynı demette**.
+
+---
+
+## §13 · `FAZ 5` MOTORU + `FAZ 6` BAĞI — **ZİNCİR TAM** *(2026-08-13)*
+
+`app/oneri.py` yazıldı **ve aynı turda bağlandı**. Zincir: `app/oneri.py` →
+`GET /oneri` (`app/routers/oneri.py`) → `getOneri()` (`api-client.ts`) →
+`OneriSeridi.tsx` → `ChatPanel.tsx`. **262 ✅**.
+
+### 🔴 Üç kapı, üçü de aynı şeyi söyledi: **BAĞLA**
+
+Motoru yazınca **üç** kapı sırayla kırmızı verdi ve her biri bir kaçış yolunu kapattı:
+
+| kapı | ne dedi | benim ilk tepkim | doğrusu |
+|---|---|---|---|
+| `test_g_yetim_modul_kapisi` | modülün çağıranı yok 🆎 | *«gerekçe yazayım»* | ⛔ **tavan yalnız artışı yasaklıyor** — gerekçe sayıyı düşürmez |
+| `test_g_yetim_uc_kapisi` | uç FE'de geçmiyor (tavan 8) | — | uç **tek başına** da yetmez |
+| `test_uc_yetim_degil` | **ölü sarmalayıcı**: `getOneri` export edildi, çağıranı yok | *«`SARMALAYICI_MUAF`'a ekleyeyim»* | ⛔ o liste **bugüne dek boş** — ilk muafiyeti bir UI işi için açmam |
+
+㊲ Depo bu hatayı **üç ayrı katmanda** kapıya bağlamış: modül · uç · sarmalayıcı.
+Üçünün ortak cümlesi: *«yazıp bağlamamak bir hata değildir; bağlamadığını söylememek
+hatadır»* — ve **söylemenin bedeli, bağlamaktan pahalı olacak şekilde** ayarlanmış.
+
+### 🔴 `5.2` — planın adı YANLIŞTI ㊱, mekanizma düzeltildi
+
+Plan *«`authorize()` süzmesi»* diyordu. Ölçüldü: `authorize(principal, action, resource)`
+**eylem düzeyi** (Katman A) bir kapıdır ve izin varsa **sessiz döner** — kaynak başına
+süzemez. Kaynak başına yetki **Katman B**'dedir: `katman_b.karar(referanslar, izinliler)`,
+**saf** fonksiyon, ve *«yapılandırılmamış»* (`None`) ↔ *«boş allowlist»* ayrımını **o**
+taşır 🆋. `oneri.terimler()` onu **çağırır**; ikinci bir yetki kuralı yazılmadı (`KAT-1`).
+Küp→model bağı **`base_object`** (`wren_service.py:793`).
+
+### Yazılı sayılar — ve hangisinin kalibre OLMADIĞI
+
+* `_RRF_K = 10` — literatürün `k=60`'ı **uzun** listeler içindir; kısa havuzda `1/61`
+  ile `1/70` arasındaki fark **binde bire** iner ve füzyon **hiçbir şey sıralamaz**.
+  🅖 **Kalibre değil, seçilmiş** — kalibrasyonu `FAZ 0` paydasının 19→30–40 büyümesine bağlı.
+* `_HAVUZ = 20` · `VARSAYILAN_LIMIT = 7` (`6.4`) · debounce **200 ms** (`6.4`).
+* ⚠ **Mutlak kosinüs eşiği YOK** — `FAZ 0`: gürültü *«vardya»* **0,851** aldı. Vektör
+  ayağı yalnız **sıra** üretir, ve bunu bir kapı **mutasyonla** tutuyor.
+
+### Kanıt
+
+`tests/test_oneri_motoru.py` — **8 yüklem**. 🅑 **İki mutasyon:** ⓐ yetki süzgecindeki
+`continue`'yu kaldır → **2 kırmızı** (envanter sızıntısı yakalandı) ⓑ vektör ayağına
+`skor > 0.8` ekle → **1 kırmızı**. İkisi de `diff` ile geri alındı.
+
+📌 **Kalan (`FAZ 5`):** `5.5` sıklık önceliği · `5.7` `lab/oneri_indeksi.py` + **tazelik
+damgası** · `5.9` boş girdi (son bakılanlar). **Kalan (`FAZ 6`):** `6.6` tuş (`useFeature`)
+· `6.7` marj kapısının üç çıkışı ekranda ayırt edilebilir. Plan kapısı `②` (`p95 < 300 ms`)
+ve `④` (bayat indeks beyanı) **`5.7` ile birlikte** ölçülebilir 🅗.

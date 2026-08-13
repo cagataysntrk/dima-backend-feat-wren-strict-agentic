@@ -214,6 +214,11 @@ def create_app() -> FastAPI:
     from app.routers import mcp as _mcp
 
     app.include_router(_mcp.router, dependencies=_protected)
+    # 🔴 FAZ 6.1 — yazarken-ara ucu. Motor `app/oneri.py`; yetki süzmesi **motorda**
+    # ve **sıralamadan önce** (Katman B allowlist'i) — bir öneri listesi envanterdir.
+    from app.routers import oneri as _oneri
+
+    app.include_router(_oneri.router, dependencies=_protected)
     return app
 
 

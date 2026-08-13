@@ -230,6 +230,33 @@ export async function getSchema(scope?: string | null): Promise<SchemaResponse> 
   return data;
 }
 
+// 🔴 FAZ 6.1/6.2 — YAZARKEN-ARA (`GET /oneri`). Motor `backend/app/oneri.py`.
+//
+// ⚠ Bu fonksiyon ucun **tüketicisidir** ve aynı demette yazıldı: backend'in
+// `test_g_yetim_uc_kapisi` kapısı bir ucun FE'de geçmesini şart koşar (tavan 8), ve
+// `test_g_yetim_modul_kapisi` motorun bağlanmasını. İkisi birlikte, bu depoda beş kez
+// ölçülmüş olan «yazılmış ama bağlanmamış» hatasını kapatır.
+//
+// ⊘ Sorgu KOŞMAZ: dönen şey bir **ad** listesidir, bir sayı değil. Sayıyı küp koyar.
+// Yetki süzmesi **motorda** yapılır (Katman B allowlist'i, sıralamadan ÖNCE) — istemci
+// süzmez, süzülmüş listeyi alır.
+export interface OneriAdayi {
+  kimlik: string;   // "cube.olcu"
+  etiket: string;
+  cube: string;
+  kip: string;      // "leksik" | "vektor" | "leksik+vektor"
+}
+
+export interface OneriYaniti {
+  adaylar: OneriAdayi[];
+  kip: string;      // gömücü soğuksa "leksik" — kalite düşüşü BEYAN edilir
+}
+
+export async function getOneri(q: string): Promise<OneriYaniti> {
+  const { data } = await apiClient.get<OneriYaniti>("/oneri", { params: { q } });
+  return data;
+}
+
 // Faz 4.1 (31 Temmuz 2026) — backend'de `ask_async_discovery` bayrağı açık tenant'larda
 // Discovery (LLM ham-SQL, en yavaş yol) senkron dönmez: /ask hemen bir job_id taşıyan
 // yanıt döner, gerçek sonuç GET /ask/jobs/{id} poll'uyla gelir. Bayrak kapalıyken (varsayılan,

@@ -6,6 +6,7 @@ import type { Thread } from "@/lib/threads";
 import type { CubeQuery } from "@/lib/types";
 import { CaretInput } from "@/components/CaretInput";
 import { DurdurDugmesi } from "@/components/DurdurDugmesi";
+import { OneriSeridi } from "@/components/OneriSeridi";
 
 // SQL provenance — keskin, monospace "sistem readout" rozeti. "vqr" (VQR birebir/yakın
 // eşleşme tekrar oynatma) ve "meta"/"catalog" (deterministik, veri sorgusu değil) da
@@ -451,6 +452,9 @@ export function ChatPanel({
           <span className="select-none font-mono text-sm text-accent">›</span>
           <div className="flex-1">
             <CaretInput value={value} onChange={setValue} onSubmit={send} busy={pending} size="inline" />
+            {/* 🔴 FAZ 6.3 — yazarken-ara şeridi. Tıklanan aday yalnız METNİ tamamlar;
+                sorgu koşmaz, sayı üretmez. */}
+            <OneriSeridi metin={value} onSec={setValue} />
           </div>
         </div>
       </div>
