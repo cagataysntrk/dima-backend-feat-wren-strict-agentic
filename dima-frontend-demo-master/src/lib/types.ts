@@ -349,6 +349,11 @@ export interface AskResponse {
   //: aynen yollar. ⚠ Yeniden **üretilmez**: model aynı soruya iki farklı plan üretebilir
   //: ve kullanıcı A'yı onaylayıp B koşulsaydı onay bir **tören** olurdu.
   plan_taslagi?: Record<string, unknown> | null;
+  //: 🔴 `§68`/`§28.1` — teklifin **pill satırı**: kullanıcı bir cümleyi değil, **yuvaları**
+  //: onaylar. ⊘ Yalnız tek adımlı teklifte dolar (çok adımlı planın pill'i hangi adıma
+  //: ait olurdu sorusunun cevabı yok 🆂). Üretici sunucuda ve **ikinci bir kod değil**:
+  //: `niyet.fisten(cq)` → `pill.pillerden(niyet)` ㊲.
+  piller?: PillYaniti["piller"] | null;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).

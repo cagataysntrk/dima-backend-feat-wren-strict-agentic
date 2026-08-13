@@ -3166,3 +3166,67 @@ olarak çiziliyor (*«ort_oee · makine kırılımında»*), pill satırı deği
 
 **Demet: 1457 ✅**, iki kırmızı `ask()` tavanıydı → dört satırın hiçbiri karar taşımıyor,
 gerekçeli muafiyet.
+
+---
+
+## `§68` — teklif **pill olarak** okunur + bütçe **ekranda**
+
+### ① `§28.1`'in açık borcu kapandı 🅖
+
+`§67` kararı kurmuştu (kararsız garson koşmaz) ama teklifi **cümle** olarak gösteriyordu.
+Planın cümlesi ise birebir: *«öngörüden **seçilmeyenler** için **pill satırını** ve
+adımları hazırlamak ve onaya düşürmek»*.
+
+⊘ **İkinci bir pill üreteci yazılmadı** ㊲ — zincir **var olan** halkalardan kuruldu ㊷:
+
+```
+cube_query ──niyet.fisten──▶ Niyet ──pill.pillerden──▶ [Pill] ──PillSatiri──▶ ekran
+            (🆕 çeviri)      (mevcut)   (mevcut)         (mevcut, `verilen` prop'u eklendi)
+```
+
+`coz(soru, schema)` metinden okur; 🆕 `fisten(cq, schema)` **fişten**. Çıktı aynı `Niyet`,
+o yüzden pill satırı **tek** yerde biçimlenir.
+
+**Ölçüm (canlı fişle, `enerji_makine`):**
+
+```
+[olcu]    'toplam elektrik kwh'
+[donem]   '01.07.2026 – 31.07.2026'
+[kirilim] 'makine kırılımı'
+```
+
+⚠ **Ölçülen tuzak ⑯:** dönem süzgeci `filters` içinde ve boyut adı küpe göre değişiyor
+(`donem_tarih`, başka küpte `tarih`). `pillerden` yalnız `"tarih"`i eliyor — ham bir çeviri
+iki sınır satırını **iki varlık pill'i** olarak çizerdi. Ayrım **iki okumadan**: önce
+`cube_meta["time_dimensions"]`, sonra değerin **şekli** ⑤. **Mutasyonla kanıtlandı** 🅑.
+
+⚠ **Ve kapı beni yönetti ㊸:** `test_YENI_DILBILIM_YAZILMADI` `niyet.py`'de bir
+`re.compile` görünce kırmızı verdi — **haklıydı**: o nesne bir **çatıdır**, kalıp sahibi
+değil. Şekil ölçüsü `donem_capasi.tarih_sinirimi`'ne taşındı (`_CIPLAK_YIL_RE`'nin komşusu).
+
+### ② Bütçe artık **görünüyor**
+
+`§28.3` önizleme gerekçesini bütçeye bağlıyor, ama sayı yalnız **doğrulayıcıda** yaşıyordu:
+plan sınırı aşarsa red gelir, aşmazsa kullanıcı sınıra ne kadar yaklaştığını **hiç görmez**.
+*Onay isteyip gerekçesini göstermemek, onayı bir tören yapar.*
+
+Önizleme notu artık: **«5 adım (tavan 12) · 4 sorgu (bütçe 8) — koşmadan önce gözden geçir.»**
+
+⊘ **İkinci sayaç yok** ㊲: adet 🆕 `plan_kosucu.sorgu_sayisi`'ndan (doğrulayıcı da artık
+**onu** çağırıyor), sınırlar sabitlerden. ⊘ **Süre yazılmıyor** 🅖 — koşmadan bilinmiyor ve
+bilinmeyen bir sayıyı yazmak, onu ölçtüğümüzü söylemek olurdu.
+
+### 🔴 ÖLÇÜLEN BAYAT İDDİA ⑳ — hizalanmadı, KAYDEDİLDİ
+
+`plan_kosucu.AZAMI_SORGU`'nun şerhi *«`AZAMI_ADIM` ile **aynı sayı** olması tesadüf
+değil»* diyordu. Ölçüldü: **`AZAMI_SORGU = 8` · `AZAMI_ADIM = 12`**. Yani şema 12 adıma
+izin veriyor ama hepsi `SORGU` olan bir plan **koşum kapısında** düşer.
+
+🔴 **Kör hizalama yapılmadı** ㊸: hangisinin doğru olduğu bir **ürün kararıdır** (bütçe mi
+gevşer, şema mı daralır) ve ölçülmemiş bir davranış değişikliği olurdu. Yorum düzeltildi,
+karar **açık borç** olarak buraya yazıldı 🅖.
+
+**Kapılar:** `test_teklif_pilleri.py` (**5 ✅**, mutasyonla kanıtlı) · `test_butce_gorunur.py`
+(**4 ✅**: adet+sınır · sayımın tek sahibi ㊲ · 🆃 sayaç gerçekten sayıyor · ⊘ süre yok).
+**Demet: 1762 ✅.** Kapı üç kırmızı verdi, **üçü de haklıydı**: dilbilim sahipliği ㊸ ·
+`AskResponse` 47→48 · `types.ts` tavanı.

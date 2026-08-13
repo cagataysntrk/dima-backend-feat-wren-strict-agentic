@@ -287,6 +287,13 @@ MUAFIYET: list[tuple[str, int, str]] = [
      "içindedir ve ikinci bir mutasyon yazmak aynı yerleştirme gövdesinin **ikinci bir "
      "sahibi** demekti ㊲ (bu dosyada `contextRapor`·`diyalog_durumu` tam böyle yetim kaldı). "
      "🔴 İkisi de **bağ**; durum makinesi ve iki-yol ayrımı `lib/onizleme.ts`'te."),
+    ("lib/types.ts", 1,
+     "🔴 `§68`/`§28.1` — `AskResponse.piller`: kararsız teklifin **pill satırı**. "
+     "⚠ **TAŞINAMAZ:** bu dosya sunucu sözleşmesinin **tek** aynasıdır. 🔴 Tek satır, tek "
+     "alan, `null` varsayılan — tek adımlı teklif dışında hiç dolmaz (kapsam beyanı 🆂: "
+     "çok adımlı planın pill'i hangi adıma ait olurdu sorusunun cevabı yok). Üretici "
+     "sunucuda ve **ikinci bir kod değil**: `niyet.fisten(cq)` → `pill.pillerden(niyet)`; "
+     "çizen de var olan `PillSatiri` (yeni bir pill bileşeni açılmadı ㊲)."),
 ]
 
 

@@ -39,12 +39,28 @@ _log = get_logger("plan_kosucu")
 _REF = re.compile(r"^\$([1-9][0-9]?)$")
 
 #: 🔴 **SORGU BÜTÇESİ.** `Butce`'nin sorgu ayağının bu katmandaki karşılığı.
-#: ⚠ `plan_semasi.AZAMI_ADIM` ile aynı sayı olması **tesadüf değil**: 8 adımlık bir
-#: planın hepsi `SORGU` olabilir (rapor yeteneği tam da öyle bir plandır). Daha küçük
-#: bir bütçe, şemanın izin verdiği bir planı koşum anında reddederdi — ve o red
-#: `dogrula`'da bile olsa **geç**tir: plan kurulmuş, model çağrılmış olurdu.
+#: ⚠ **BU YORUM BİR ZAMANLAR *«`AZAMI_ADIM` ile aynı sayı»* DİYORDU — BUGÜN DEĞİL** ⑳.
+#: Ölçüldü (`§68`): `AZAMI_SORGU = 8`, `plan_semasi.AZAMI_ADIM = 12`. Yani şema 12 adıma
+#: izin veriyor ama hepsi `SORGU` olan bir plan **koşum kapısında** düşer. Bu bir kusur
+#: **olabilir** ve burada **düzeltilmedi**: iki sayıdan hangisinin doğru olduğu bir ürün
+#: kararıdır (bütçe mi gevşer, şema mı daralır) ve kör bir hizalama, ölçülmemiş bir
+#: davranış değişikliğidir. Kayıt `ONGORU-DURUM.md §68`'de, açık borç olarak 🅖.
+#: ⊙ Özgün gerekçe hâlâ geçerli: bir redde **geç kalmak** pahalıdır — plan kurulmuş,
+#: model çağrılmış olur. O yüzden `dogrula` koşumdan **önce** sayar.
 AZAMI_SORGU = 8
 
+
+
+
+def sorgu_sayisi(plan: dict | None) -> int:
+    """Planın **sorgu bütçesinden** ne kadar yiyeceği — sayımın **tek sahibi** ㊲.
+
+    `§68` bütçeyi ekrana taşıyor (*«bu plan bütçenin neresinde»*) ve orada ikinci bir
+    sayaç yazmak, bir gün kullanıcıya gösterilen sayı ile kapıda uygulanan sayının
+    ayrışması demekti — *bir sınırı iki yerden saymak, iki farklı sınır kurmaktır.*
+    """
+    return sum(1 for a in ((plan or {}).get("adimlar") or [])
+               if isinstance(a, dict) and a.get("fiil") == "SORGU")
 
 
 class PlanHatasi(Exception):
@@ -149,12 +165,11 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU,
     n = len(adimlar)
     kenarlar: dict[int, set[int]] = {i: set() for i in range(1, n + 1)}
     kullanilan: set[int] = set()
-    sorgu_sayisi = 0
+    # ⚠ Sayım **modül düzeyindeki sahibinden** okunur ㊲; döngü yalnız tipleri denetler.
+    _sorgu = sorgu_sayisi(plan)
 
     for sira, adim in enumerate(adimlar, 1):
         fiil = adim.get("fiil")
-        if fiil == "SORGU":
-            sorgu_sayisi += 1
         if fiil in SON_ADIM_FIILLERI and sira != n:
             raise PlanHatasi(
                 f"`{fiil}` yalnız SON adım olabilir (adım {sira}/{n}) — bir anlatı, "
@@ -237,8 +252,8 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU,
                     f"`${hedef}` bir **{gelen}** üretiyor "
                     f"(`{adimlar[hedef - 1].get('fiil')}`)")
 
-    if sorgu_sayisi > azami_sorgu:
-        raise PlanHatasi(f"plan {sorgu_sayisi} sorgu istiyor, bütçe {azami_sorgu}")
+    if _sorgu > azami_sorgu:
+        raise PlanHatasi(f"plan {_sorgu} sorgu istiyor, bütçe {azami_sorgu}")
 
     # 🔴🔴 **PLAN UZUNLUĞU TAVANI BURADA DA UYGULANIR — şemada olması YETMİYORDU.**
     #

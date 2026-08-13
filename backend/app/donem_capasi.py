@@ -390,3 +390,22 @@ def notu_al(cq: dict, note: str | None,
     # önerisi, kullanıcının kendi seçtiği dönemi geri almasını önerirdi.
     secenekler = [dict(x) for x in DONEM_SECENEKLERI] if iz == IZ_VARSAYILAN else []
     return " ".join(x for x in [note, metin] if x), [*trace, iz], secenekler
+
+#: `§68` — `YYYY-AA-GG` **şekli**.
+_ISO_GUN_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
+
+
+def tarih_sinirimi(deger: object) -> bool:
+    """Bir süzgeç değeri bir **dönem sınırı** mı (şekline göre) ⑤.
+
+    🔴 **Buranın sahibi olması bir yerleşim tercihi değil bir kapı kararı** ㊸:
+    `test_YENI_DILBILIM_YAZILMADI` `niyet.py`'de bir `re.compile` gördüğü an kırmızı
+    verir ve **haklıdır** — o nesne bir **çatıdır**, bir kalıp sahibi değil. Dönemle
+    ilgili her okuma bu modülde toplanır (`_CIPLAK_YIL_RE`'nin komşusu).
+
+    ⚠ Bu bir **son çare**dir: birincil ölçüt küpün `time_dimensions` kaydıdır. Şekil
+    ölçüsü yalnız meta yokken konuşur — ve bir tahmin değildir: bir hesap kodu `2019`
+    olabilir, ama `2019-07-01` bir tarihtir.
+    """
+    return bool(_ISO_GUN_RE.match(str(deger or "")))
+

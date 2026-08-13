@@ -567,6 +567,13 @@ class AskResponse(BaseModel):
     adimlar: list[dict] | None = None
     gecerli: bool | None = None
     plan_taslagi: dict | None = None
+    #: 🔴 `§68`/`§28.1` — *«öngörüden **seçilmeyenler** için **pill satırını** … hazırlamak
+    #: ve onaya düşürmek»*. Kararsız garsonun teklifi bir **cümle** olarak değil, onu
+    #: düzenlenebilir kılan **pill'ler** olarak da gösterilir.
+    #: ⚠ Üretici ikinci bir kod değil: `niyet.fisten(cq)` → `pill.pillerden(niyet)` ㊲.
+    #: ⊘ Yalnız **tek adımlı** teklifte dolar — çok adımlı planın pill'i hangi adıma ait
+    #: olurdu sorusunun cevabı **yok**, ve olmayan bir cevabı çizmek uydurmaktır 🆂.
+    piller: list[dict] | None = None
 
 
 class EylemOnayRequest(BaseModel):

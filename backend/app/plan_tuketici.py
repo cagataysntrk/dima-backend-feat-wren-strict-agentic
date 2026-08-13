@@ -563,7 +563,7 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     if _n >= 2 and not onaylandi and _features.oneri_katmani_acik(principal):
         try:
             plan_kosucu.dogrula(plan)
-            _gecerli, _not = True, f"{_n} adım — koşmadan önce gözden geçir."
+            _gecerli, _not = True, onizleme_notu(plan)
         except plan_kosucu.PlanHatasi as e:
             # ⊘ Dürüst ret: geçersiz plan da **gösterilir**, gerekçesiyle (`§7`).
             _gecerli, _not = False, str(e)
@@ -1467,6 +1467,31 @@ def kosum_yaniti(out: dict, plan: dict, *, schema: dict, soru: str,
     return yanit
 
 
+def onizleme_notu(plan: dict) -> str:
+    """🔴 `§68` — önizlemenin **bütçe satırı**: *«bu plan bütçenin neresinde»*.
+
+    Plan `§28.3` bütçeyi bir onay gerekçesi sayıyor (*«bütçe + %25 onarım tutma»*) ama
+    sayı yalnız **doğrulayıcıda** yaşıyordu: bir plan sınırı aşarsa red gelir, aşmazsa
+    kullanıcı sınıra ne kadar yaklaştığını **hiç görmez**. Onay isteyip gerekçesini
+    göstermemek, onayı bir tören yapar.
+
+    ⊘ **İkinci bir sayaç YOK** ㊲: adet `plan_kosucu.sorgu_sayisi`'ndan, sınırlar
+    `AZAMI_SORGU`/`AZAMI_ADIM` sabitlerinden okunur. Gösterilen sayı ile kapıda
+    uygulanan sayı **aynı kaynaktan** gelir.
+
+    ⚠ Süre bilerek **yazılmıyor** 🅖: `Butce`'nin saniye ayağı koşum anında ölçülür; bir
+    planın ne kadar süreceğini koşmadan **bilmiyoruz** ve bilmediğimiz bir sayıyı
+    yazmak, onu ölçtüğümüzü söylemek olurdu.
+    """
+    from app.plan_kosucu import AZAMI_SORGU
+    from app.plan_semasi import AZAMI_ADIM
+
+    n = len(plan.get("adimlar") or [])
+    s = plan_kosucu.sorgu_sayisi(plan)
+    return (f"{n} adım (tavan {AZAMI_ADIM}) · {s} sorgu (bütçe {AZAMI_SORGU}) — "
+            "koşmadan önce gözden geçir.")
+
+
 def onizleme_satiri(adim: dict) -> str:
     """Önizlemede bir adımın **yazısı** — makbuzun cümlesi, ekranın biçiminde.
 
@@ -1518,7 +1543,7 @@ def onizleme_satiri(adim: dict) -> str:
     return re.sub(r"\$(\d+)", r"\1.", metin)
 
 def kararsiz_onizleme(cq: dict | None, soru: str, uyum: float, k: int,
-                      principal: Any = None) -> Any:
+                      principal: Any = None, schema: dict | None = None) -> Any:
     """🔴🔴 `§28.3` satır 2 + `§28.4` — **GARSON KARARSIZSA, KOŞMADAN ONAYA DÜŞER.**
 
     ## Planın kendi tablosu (birebir)
@@ -1551,7 +1576,7 @@ def kararsiz_onizleme(cq: dict | None, soru: str, uyum: float, k: int,
     satırı değil. Karar (koşma, sor) doğru; **gösterim** yarım — ve bunu yazmak, tam
     yapılmışmış gibi göstermekten yeğdir.
     """
-    from app import plan_semasi
+    from app import niyet as _niyet, pill as _pill, plan_semasi
     from app.schemas import AskResponse
 
     if k <= 1 or uyum >= 1.0 or not cq:
@@ -1563,8 +1588,14 @@ def kararsiz_onizleme(cq: dict | None, soru: str, uyum: float, k: int,
         return None
     _log.info("§28.3: garson kararsız (uyum %.0f%%, %d örnek) → ONAYA düşüyor",
               uyum * 100, k)
+    # 🔴 `§28.1` — teklif **pill satırı** olarak da gösterilir. ⊘ İkinci bir üretici yok:
+    # `fisten` bir **çeviridir** (fiş → niyet), çizen yine `pillerden` ㊲.
+    _n = _niyet.fisten(cq, schema)
     return AskResponse(
         question=soru, source="onizleme", cube_query=cq, plan_taslagi=plan, gecerli=True,
+        piller=([{"alan": x.alan, "metin": x.metin, "deger": x.deger,
+                  "silinebilir": x.silinebilir} for x in _pill.pillerden(_n, schema)]
+                if _n else None),
         adimlar=[{"sira": 1, "fiil": x.get("fiil"), "metin": onizleme_satiri(x)}
                  for x in plan["adimlar"]],
         # ⚠ Sayı **beyan edilir**: kullanıcı neden sorulduğunu bilmeden onaylayamaz.

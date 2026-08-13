@@ -26,6 +26,7 @@
 //    yeteneği varmış gibi çizmekten yeğdir.
 
 // ⚠ Tek sahip: nesnenin şekli `lib/onizleme.ts`'te tanımlı, burada **yeniden yazılmaz**.
+import { PillSatiri } from "@/components/PillSatiri";
 import type { PlanOnizlemesi } from "@/lib/onizleme";
 
 export function PlanOnizleme({
@@ -56,6 +57,17 @@ export function PlanOnizleme({
         <span className="text-neutral-300">·</span>
         <span>{adimlar.length} adım</span>
       </div>
+
+      {/* 🔴 `§28.1` — **TEKLİF ÖNCE PILL OLARAK OKUNUR.** Plan birebir: *«öngörüden
+          seçilmeyenler için **pill satırını** ve adımları hazırlamak ve onaya düşürmek»*.
+          Yuvalar **yatay**, adımlar dikey (satır `1242`) — bu yüzden pill satırı adım
+          listesinin **üstünde** durur ve onunla aynı şeride girmez.
+          ⊘ Çizen `PillSatiri`; burada ikinci bir pill gösterimi **yok** ㊲. */}
+      {onizleme.piller?.length ? (
+        <div className="-mt-1 mb-1.5">
+          <PillSatiri metin={onizleme.soru} verilen={onizleme.piller} />
+        </div>
+      ) : null}
 
       {/* ① adımlar DİKEY — `ol` çünkü sıra anlam taşır, süs değil. */}
       <ol className="space-y-0.5">

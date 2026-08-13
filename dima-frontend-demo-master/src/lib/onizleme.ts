@@ -41,6 +41,8 @@ export interface MakroIstegi {
  *  `[düzenle]` onu besteciye geri yazar — makronun adını (`neden`) değil. */
 export interface PlanOnizlemesi {
   makro: string;
+  /** 🔴 `§68`/`§28.1` — teklifin **pill satırı**; yalnız tek adımlı teklifte dolar 🆂. */
+  piller?: import("@/lib/types").PillYaniti["piller"] | null;
   adimlar: { sira: number; fiil: string; metin: string }[];
   gecerli: boolean;
   note: string;
@@ -84,6 +86,7 @@ export function useOnizleme() {
           // **söyler**, sessizliği bir ret değildir (ADR-0020 ruhu).
           gecerli: cevap.gecerli !== false,
           note: cevap.note ?? "",
+          piller: cevap.piller ?? null,
           soru: istek.makro?.soru ?? istek.label,
         },
         istek: { ...istek, plan: _plan },

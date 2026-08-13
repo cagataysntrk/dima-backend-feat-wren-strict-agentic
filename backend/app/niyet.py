@@ -472,3 +472,64 @@ def _guvenli(f, varsayilan):
     except Exception:
         get_logger("niyet").warning("niyet alanı çözülemedi", exc_info=True)
         return varsayilan
+
+def fisten(cq: dict | None, schema: dict[str, Any] | None = None) -> Niyet | None:
+    """🔴🔴 `§68` — **BİR FİŞİN NİYETİNİ OKU** (`coz`'un ters yönü).
+
+    `§28.1` şunu istiyor: *«öngörüden **seçilmeyenler** için pill satırını … hazırlamak ve
+    onaya düşürmek»*. Yani pill satırı artık yalnız **yazılan metinden** değil, **önerilen
+    fişten** de doğmalı. `coz(soru, schema)` metinden okur; bu, fişten okur.
+
+    ⊘ **İkinci bir pill üreteci YAZILMADI** ㊲: çıktı yine bir `Niyet`'tir ve onu çizen yine
+    `pill.pillerden`'dir. Buradaki iş bir **çeviri**dir, bir gösterim değil — *bir modeli
+    ikinci kez kurmak yerine, mevcut modele ikinci bir giriş açmak.*
+
+    ## Dönem filtresi ile değer filtresi neden burada AYRILIR
+
+    Ölçüldü (canlı fiş, `enerji_makine`): dönem süzgeci `filters` içinde ve boyutun adı
+    küpe göre değişiyor — `donem_tarih`, başka küpte `tarih`. `pillerden` yalnız
+    `"tarih"`i eliyor; ham bir çeviri o iki sınır satırını **iki varlık pill'i** olarak
+    çizerdi (*«2026-07-01»* · *«2026-07-31»*) ⑯.
+
+    Ayrım **iki kaynaktan** yapılır, ikisi de okuma — uydurma değil ㊱:
+
+    | kaynak | ne söyler |
+    |---|---|
+    | `cube_meta["time_dimensions"]` | küpün **kendi** zaman boyutu (`§X1`'in tek sahibi) |
+    | değerin **şekli** (`YYYY-AA-GG`) | meta yoksa son çare ⑤ |
+
+    ⚠ İkincisi bir tahmin değil bir **biçim ölçüsüdür**: bir hesap kodu `2019` olabilir ama
+    `2019-07-01` bir tarihtir. Yine de sıra bağlayıcı: **önce meta**, sonra şekil.
+    """
+    # ⚠ Tembel import ⑬ **ve** bir kapı gereği: `niyet.py` bir **çatıdır**, kalıp sahibi
+    # değil (`test_YENI_DILBILIM_YAZILMADI` bir `re.compile` görürse kırmızı verir ve
+    # haklıdır). Tarih **şekli** dönem modülünün işidir.
+    from app import donem_capasi as _donem_capasi
+
+    if not isinstance(cq, dict) or not cq.get("cube"):
+        return None
+    cube = str(cq["cube"])
+    _meta = ((schema or {}).get("cubes") or {}).get(cube) or {}
+    _zaman = {str(t) for t in (_meta.get("time_dimensions") or [])} | {"tarih"}
+    donemler, filtreler = [], []
+    for f in (cq.get("filters") or []):
+        if not isinstance(f, dict):
+            continue
+        boyut = str(f.get("dimension") or "")
+        deger = f.get("value")
+        if boyut in _zaman or _donem_capasi.tarih_sinirimi(deger):
+            donemler.append(f)
+        else:
+            filtreler.append(f)
+    return Niyet(
+        soru=str(cq.get("period_expr") or ""),
+        olcu_adaylari=[(cube, str(m)) for m in (cq.get("measures") or [])],
+        donemler=donemler,
+        donem_sayisi=1 if donemler else 0,
+        kirilimlar=[str(d) for d in (cq.get("dimensions") or [])],
+        filtreler=filtreler,
+        kirilim_istendi=bool(cq.get("dimensions")),
+        ustunluk=(cq.get("limit") if cq.get("order") else None),
+        ustunluk_istendi=bool(cq.get("order")),
+        granulerlik=(str(cq["grain"]) if cq.get("grain") else None),
+    )

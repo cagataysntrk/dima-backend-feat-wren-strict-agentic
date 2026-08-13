@@ -72,7 +72,16 @@ const ALAN_ADI: Record<string, string> = {
   olcu: "ölçü", varlik: "varlık", donem: "dönem", kirilim: "kırılım", tur: "tür",
 };
 
-export function PillSatiri({ metin }: { metin: string }) {
+export function PillSatiri({ metin, verilen = null }: {
+  metin: string;
+  /** 🔴 `§68` — **HAZIR PILL'LER.** Doluysa uç **hiç çağrılmaz**: bu satır kullanıcının
+   *  yazdığını değil, sunucunun **teklifini** çizer (`AskResponse.piller`). ⊘ İkinci bir
+   *  pill bileşeni yazmak, aynı yuvayı iki yerde biçimlendirmek olurdu ㊲ — ve o gün biri
+   *  kırmızıyı gösterirken öteki göstermezdi.
+   *  ⚠ `metin` yine geçilir ama **sorguya çevrilmez**: teklif kipinde girdi metni bir
+   *  arama terimi değil, yalnız bir bağlamdır. */
+  verilen?: PillYaniti["piller"] | null;
+}) {
   // 🔴 Bayrak `oneri_katmani` ve bu bir kapsam kararıdır: pill satırı öneri şeridiyle
   // **aynı** öngörü katmanının parçası (`§5.1`–`§5.3`) ve aynı kutunun altında duruyor.
   // İkinci bir bayrak açmak, tek bir yüzeyi iki anahtarla yönetmek olurdu.
@@ -89,7 +98,7 @@ export function PillSatiri({ metin }: { metin: string }) {
     // 🔴 `q` boşken uç **hiç çağrılmaz**. Sunucu boş soruda zaten boş satır döndürüyor
     // (`routers/oneri.py`: *«uydurma bir niyet çizmek …»*) — ama o kararı ağ üzerinden
     // sormak, cevabı bilinen bir soruyu her tuşta yeniden sormaktır.
-    if (kapaliBayrak || !q) return;
+    if (kapaliBayrak || !q || verilen) return;   // `§68` — hazır pill varsa ağa çıkma
     const kimlik = ++sonIstek.current;
     const t = setTimeout(() => {
       getPill(q)
@@ -104,7 +113,7 @@ export function PillSatiri({ metin }: { metin: string }) {
         .catch(() => { if (kimlik === sonIstek.current) setYanit(BOS); });
     }, DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [q, kapaliBayrak]);
+  }, [q, kapaliBayrak, verilen]);
 
   // 🔴 **BOŞALTMA BİR ETKİ DEĞİL BİR TÜRETMEDİR.** İlk sürüm boş girdide `setYanit(BOS)`
   // çağırıyordu ve `react-hooks/set-state-in-effect` onu haklı olarak reddetti: bir etkinin
@@ -115,7 +124,10 @@ export function PillSatiri({ metin }: { metin: string }) {
   // ⊙ Bedava gelen davranış: yazarken satır **kaybolup geri gelmiyor**. Eski cevap yenisi
   // gelene kadar duruyor (bayatlığı debounce penceresiyle sınırlı, `OneriSeridi` ile aynı
   // ritim). *Bir göstergeyi her tuşta silmek, onu okunamaz yapmanın en hızlı yoludur.*
-  const { piller, artilar, hatalar } = kapaliBayrak || !q ? BOS : yanit;
+  // ⚠ Sıra: **verilen kazanır**. Teklif kipinde kullanıcının yazdığı metnin pill'i
+  // gösterilseydi, onayladığı şeyle gördüğü şey ayrışırdı.
+  const { piller, artilar, hatalar } =
+    verilen ? { ...BOS, piller: verilen } : (kapaliBayrak || !q ? BOS : yanit);
   if (!piller.length && !artilar.length && !hatalar.length) return null;
 
   // `§5.3` — hangi **alan** kırmızı. ⚠ Eşleşme `alan` üzerinden, `deger` üzerinden değil:

@@ -4199,7 +4199,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     if parsed and (not _supheli or _g_eksik <= _r_eksik):
                         # 🔴 `§28.3` satır 2 — garson **kararsızsa** koşmaz, onaya düşer.
                         _ko = _plan_tuketici.kararsiz_onizleme(
-                            parsed, body.question, uyum, k, principal)
+                            parsed, body.question, uyum, k, principal, schema)
                         if _ko is not None:
                             return _finish(_ko)
                         route_hit = {"cube_query": parsed, "order": None, "limit": None}

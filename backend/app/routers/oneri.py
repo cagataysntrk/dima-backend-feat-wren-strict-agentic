@@ -414,7 +414,7 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
         try:
             plan_kosucu.dogrula(plan)
             gecerli = True
-            not_ = f"{len(plan['adimlar'])} adım — koşmadan önce gözden geçir."
+            not_ = plan_tuketici.onizleme_notu(plan)
         except plan_kosucu.PlanHatasi as e:
             # ⊘ Geçersiz plan da **gösterilir**: kullanıcı neyin tutmadığını görmeden
             # düzeltemez. Ürünün kendi Türkçe gerekçesi taşınır, yeniden yazılmaz.
