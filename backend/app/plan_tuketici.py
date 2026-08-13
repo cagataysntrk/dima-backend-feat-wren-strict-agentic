@@ -184,6 +184,52 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
             "KIR": _kir, "SUZ": _suz, "BOYUTSEC": _boyutsec, "GORSEL": _gorsel}
 
 
+def bolumlere_cevir(out: dict, plan: dict, *, schema: dict,
+                    soru: str = "") -> tuple[list[dict], dict | None]:
+    """`calistir` çıktısı → **(bölümler, son sonuç)**. Sunumun **tek sahibi** ㊲.
+
+    ⊙ **Neden çıkarıldı (ölçüldü, insan testi 2026-08-13):** `§7②` makro ucu
+    `calistir`'ı çağırıyor ve dönen şeyi olduğu gibi veriyordu — yani `ciktilar`,
+    `katmanlar`, `makbuz`… Bir **koşucu iç sözleşmesi**, bir cevap değil. Arayüz onu
+    normal kart yolundan geçirince kart **gövdesiz** çizildi 🆘.
+
+    ⚠ Ve `cevap()` çağrılamazdı: o **boşluk doldurma** yoludur ve kendi ön koşulları
+    vardır (bayrak · *«route zaten cevapladı → boşluk YOK»* · azınlık okuması). Makro bir
+    boşluk değil bir **istektir**. Geriye tek doğru seçenek kaldı: bu bloğu **ikinci kez
+    yazmak değil, çıkarmak**.
+
+    ## İki kural burada yaşıyor — ikisi de ölçümle konmuştu
+
+    **1 · Bölümler FİİLE göre değil ÇIKTI TİPİNE göre toplanır.** İlk hâl yalnız
+    `SORGU`'yu topluyordu; tek `TREND` adımlı bir plan satır **üretip** boş cevap
+    veriyordu. `CIKTI_TIPI` zaten hangi fiilin `satirlar` ürettiğini söylüyor.
+
+    **2 · Fiş, ürettiği sayıyla aynı şeyi söylemeli.** `SORGU` dışı fiiller sorgularını
+    kendileri koşar; adımın `period_expr`'i **çözülmeden** saklanırsa kart *«2026»* der,
+    sayılar *«2025»* olur. `_fisi_coz` **çağrılır**, ikinci bir çözücü yazılmaz.
+    """
+    from app.plan_semasi import CIKTI_TIPI
+
+    sorgular = out.get("sorgular") or []
+    bolumler: list[dict] = []
+    sorgu_sirasi = 0
+    for adim, cikti in zip(plan.get("adimlar") or [], out.get("ciktilar") or []):
+        if CIKTI_TIPI.get(adim.get("fiil")) != "satirlar":
+            continue
+        if adim.get("fiil") == "SORGU":
+            cq = sorgular[sorgu_sirasi] if sorgu_sirasi < len(sorgular) else None
+            sorgu_sirasi += 1
+        else:
+            cq = adim.get("cube_query") if isinstance(adim.get("cube_query"), dict) else None
+            cq = _fisi_coz(cq, schema=schema, soru=soru)
+        satirlar = ([r for r in (cikti or []) if isinstance(r, dict)]
+                    if isinstance(cikti, list) else [])
+        bolumler.append({"cube_query": cq,
+                         "result": {"columns": list(satirlar[0]) if satirlar else [],
+                                    "rows": satirlar, "row_count": len(satirlar)}})
+    return bolumler, (bolumler[-1]["result"] if bolumler else None)
+
+
 def kosum_cube_meta(schema: dict) -> dict:
     """`calistir(cube_meta=…)`'nın gövdesi — **tek sahip** ㊲.
 
@@ -520,50 +566,11 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # ürettiğini söylüyor. Yarın sekizinci bir satır-üreten fiil eklenirse burası
     # kendiliğinden doğru çalışır. *Bir kusuru fiilin adıyla düzeltmek, aynı kusuru
     # sıradaki fiilde yeniden yazmaya söz vermektir.*
-    from app.plan_semasi import CIKTI_TIPI
-
-    _sorgular = out.get("sorgular") or []
-    _bolumler: list[dict] = []
-    _sorgu_sirasi = 0
-    for adim, cikti in zip(plan["adimlar"], out.get("ciktilar") or []):
-        if CIKTI_TIPI.get(adim.get("fiil")) != "satirlar":
-            continue
-        if adim.get("fiil") == "SORGU":
-            _cq = _sorgular[_sorgu_sirasi] if _sorgu_sirasi < len(_sorgular) else None
-            _sorgu_sirasi += 1
-        else:
-            # ⚠ `TREND` gibi fiiller sorgularını **kendileri** koşar; adımın kendi
-            # `cube_query`'si o bölümün kimliğidir (referanssa çözülmüş hâli yok —
-            # o zaman `None` kalır ve kart yeniden koşulamaz, bu **dürüstçe** böyledir).
-            #
-            # 🔴🔴 `§RE` — **FİŞ İLE SAYI AYRIŞIYORDU.** Ölçüldü (curl `U` turu, U20):
-            # *«geçen yıla göre bu yıl kalite raporu hazırla»* → ikinci bloğun fişi
-            #
-            #     {"period_expr": "geçen yıl", "filters": [{tarih gte "2026-01-01"}]}
-            #
-            # Fiilin gövdesi `period_expr`'i çözüp **geçen yılın** satırlarını üretti
-            # (iki bloğun satırları farklıydı — ölçüldü), ama saklanan fiş **bu yılı**
-            # iddia ediyordu. Yani kart *«2026»* diyor, sayılar *«2025»*.
-            #
-            # 🔴 Ve bedeli görüntüyle sınırlı değil: `O-5` gereği her bölüm `/cube` ile
-            # **sıfır LLM** yeniden koşulabilmeli — bu fişle koşulsa **başka bir sayı**
-            # verirdi. `SORGU` dalı bunu zaten doğru yapıyor (`sorgular.append(temiz)`
-            # çözülmüş hâli saklar); ayrım fiilin adına göreydi, oysa kural sınıfsal.
-            #
-            # ⚠ İkinci bir çözücü YAZILMADI, aynısı çağrıldı (`_resolve_period`) —
-            # aynı ifadenin iki farklı tarihe çözülmesi bir kusurdan beter bir
-            # tutarsızlıktır (`calistir`'ın kendi cümlesi).
-            #
-            # *Bir fiş, ürettiği sayıyla aynı şeyi söylemiyorsa, o bir makbuz değil bir
-            # süstür.*
-            _cq = adim.get("cube_query") if isinstance(adim.get("cube_query"), dict) else None
-            _cq = _fisi_coz(_cq, schema=schema, soru=soru)
-        _satirlar = [r for r in (cikti or []) if isinstance(r, dict)] \
-            if isinstance(cikti, list) else []
-        _bolumler.append({"cube_query": _cq,
-                          "result": {"columns": list(_satirlar[0]) if _satirlar else [],
-                                     "rows": _satirlar, "row_count": len(_satirlar)}})
-    _son = _bolumler[-1]["result"] if _bolumler else None
+    # ⟳ Bu blok **`bolumlere_cevir`'e taşındı** ㊲ — aynı sunum `§7②` makro ucundan da
+    # isteniyor ve ikinci kez yazılsaydı bir gün ikisi ayrışırdı. Aşağıdaki uzun
+    # gerekçeler (çıktı tipi · fiş çözümü) o işlevin başlığında **korunuyor**; buraya
+    # kopyalanmadı, çünkü bir gerekçenin de tek bir yeri olmalı.
+    _bolumler, _son = bolumlere_cevir(out, plan, schema=schema, soru=soru)
     # `§RP` — belge fiili varsa bölümleri `Report` biçimine diz (tek sahip: `report.py`).
     _belge_fiili = next((str(a.get("fiil")) for a in (plan.get("adimlar") or [])
                          if str(a.get("fiil")) in ("RAPOR", "PANO")), None)

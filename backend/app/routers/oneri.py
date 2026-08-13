@@ -269,10 +269,29 @@ def oneri_makro(request: Request, govde: dict | None = None) -> dict:
         # görmeden bir reddi okuyamaz.
         return {"source": None, "makro": ad, "question": metin,
                 "note": plan_tuketici.neden_olmadi(plan, e)}
-    out["makro"] = ad
-    out["question"] = metin
-    out["adim_sayisi"] = len(plan["adimlar"])
-    return out
+    # 🔴 **ÖLÇÜLMÜŞ KUSUR (insan testi).** Burası `out`'u **olduğu gibi** döndürüyordu —
+    # yani `ciktilar`·`katmanlar`·`makbuz`, bir **koşucu iç sözleşmesi**. Plan koşuyordu
+    # (5 adım) ama cevapta `result` **yoktu**; arayüz onu normal kart yolundan geçirince
+    # kart **gövdesiz** çizildi 🆘. *Bir yeteneğin çalışması, cevabının okunabilir olması
+    # demek değildir.*
+    #
+    # ⚠ Sunum **yazılmadı, ÇAĞRILDI** ㊲: `plan_tuketici.bolumlere_cevir` orkestratörün
+    # de kullandığı işlevdir. İkinci kez yazılsaydı bir gün biri `CIKTI_TIPI`'ni okur,
+    # öteki hâlâ `SORGU`'ya bakardı — ve o gün `TREND` makrosu boş cevap verirdi.
+    bolumler, son = plan_tuketici.bolumlere_cevir(out, plan, schema=schema, soru=metin)
+    return {
+        # ⚠ `source` **`cube`**: bu yolda LLM **yok** ve rozet bunu söylemeli 🅖.
+        # `cube+llm` yazmak, ödenmemiş bir maliyeti beyan etmek olurdu.
+        "source": "cube",
+        "question": metin,
+        "makro": ad,
+        "adim_sayisi": len(plan["adimlar"]),
+        "result": son,
+        # ⚠ Son bölümün fişi karta **yeniden koşulabilirlik** verir (`/cube`, 0 LLM).
+        "cube_query": (bolumler[-1]["cube_query"] if bolumler else None),
+        "bolumler": bolumler,
+        "note": out.get("makbuz"),
+    }
 
 
 @router.post("/oneri/tik", dependencies=[Depends(require_company)])
