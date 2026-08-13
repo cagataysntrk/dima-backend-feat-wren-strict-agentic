@@ -13342,3 +13342,37 @@ Aynı soru + aynı `history` **iki kez** koşuldu, **iki farklı çapa** çıkt�
 bilinçlidir — ama **çapalı** bir takipte çapa, garsonun yeniden karar vereceği bir şey
 değil, **taşınacak** bir veridir. *Bir bağlamı her turda yeniden tahmin etmek, onu hiç
 tutmamaktır.*
+
+## 🔴🔴 DÜZELTME ÖNCESİ TEŞHİS TURU — **K7, K8'in belirtisiymiş** ㉚🅢
+
+`K7`'yi *«`TREND` `oee` küpünde bozuk»* diye kaydetmiştim. Düzeltmeye başlamadan önce
+**dört hipotez ölçüldü ve DÖRDÜ DE ÇÜRÜDÜ ③** — kusur iddia ettiğim yerde değildi:
+
+| # | hipotez | ölçüm | yargı |
+|---|---|---|---|
+| 1 | `oee`'de `tarih` yok | `packs/modul/oee/…/metadata.yml:117` → **var**, `parti` ile birebir | ❌ |
+| 2 | derlenmiş artefakt bayat ⑪ | derlenmişte **ve kabın içinde** var | ❌ |
+| 3 | ⚠ **yanlış ağaca baktım** ⑪ | kabın okuduğu `demo/wren-project` (**tekil**) ≠ benim baktığım `demo/wren-projects/demo-boyahane` (**çoğul**) — ama **ikisinde de var** | ❌ |
+| 4 | `TREND`'in şekli `oee`'de derlenmiyor | `/cube` ile birebir kuruldu: `oee`+`makine`+`tarih` süzgeçleri → **11 satır**; `+ aylık seri` → **143 satır** | ❌ |
+
+⊙ **Ve `time_dim_of` doğru** (`yoy.py:18`): `oee` için `"tarih"` döndürüyor.
+
+### Sonra vaka **tekrar koşuldu ve ÜRETİLEMEDİ** 🅢
+
+Aynı soru, aynı `history` → bu kez **`satır=330` · `source=cube+llm` · hata yok**.
+
+🔴 **Yani `K7` ayrı bir kusur DEĞİL, `K8`'in (belirlenimsizlik) belirtisidir.** Çapa
+olasılıksal olarak kaydığında (bir turda `oee/ort_oee`, ötekinde `parti/toplam_ciro`),
+plan **derlenemeyen** bir `cube_query`'ye atıfta bulunabiliyor ve motor haklı olarak
+*«Unknown time dimension»* diyor. Motor suçsuz 🆛; suçlu **çapanın her turda yeniden
+tahmin edilmesi**.
+
+⚠ **Düzeltmenin yeri değişti:** `TREND` yamalanmayacak — yamalansaydı **doğru bir motoru**
+yanlış bir teşhis için değiştirmiş olurduk. Yapılacak iş `K8`/`K4` ailesinde: **çapa
+taşınacak bir veridir, yeniden karar verilecek bir şey değil.**
+
+⊙ **Ders (yeni):** *bir kusuru düzeltmeden önce onu İKİNCİ KEZ üret* — çünkü tek koşumla
+görülen bir kırmızı, kusurun **yerini** de yanlış gösterebilir. Bu turda dört hipotez ve
+bir kusur adı bu yüzden düştü.
+
+**Kusur sayısı 8 → 7:** K1 · K2 · K3 · K4 · K5◐ · K6 · **K8 (K7 dahil)**.
