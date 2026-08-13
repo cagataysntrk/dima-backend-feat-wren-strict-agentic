@@ -102,9 +102,14 @@ export function AnalysisCanvas({
 
   if (items.length === 0) {
     return (
+      // 🔴 Metin **aşağıyı** da söyler (2026-08-13): besteci artık tuvalin altında
+      // duruyor (`ReportPanel.tuval`), yani tuvali doldurmanın yolu yalnız chip
+      // tıklamak değil. Eski metin bunu söylemiyordu ve tek gerçek yolu gizliyordu —
+      // *bir boş durum, çıkış yolunu da göstermek zorundadır.*
       <div className="mx-auto max-w-md pt-16 text-center font-mono text-[12px] leading-relaxed text-neutral-400">
-        tuval boş — sohbette bir rapor üretip <span className="text-foreground">sonraki adım</span>{" "}
-        veya <span className="text-foreground">öneri</span> çipine tıkladıkça buraya eklenir.
+        tuval boş — <span className="text-foreground">aşağıdan sor</span>, ya da sohbette bir
+        rapor üretip <span className="text-foreground">sonraki adım</span>{" "}
+        veya <span className="text-foreground">öneri</span> çipine tıkla; her rapor buraya eklenir.
       </div>
     );
   }

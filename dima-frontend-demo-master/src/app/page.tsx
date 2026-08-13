@@ -22,7 +22,7 @@ import TercihlerPanel from "@/components/TercihlerPanel";
 import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
-import { groupIntoThreads, mintThreadId, replyAnchorLabel } from "@/lib/threads";
+import { groupIntoThreads, mintThreadId, replyAnchorLabel, sonBakilanEtiketler } from "@/lib/threads";
 import type { AskResponse, CubeQuery} from "@/lib/types";
 import { DcmAkisi } from "@/components/DcmAkisi";
 
@@ -83,10 +83,14 @@ export default function Home() {
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
   /** 🔴 FAZ 7.6 — **dar ekran sekmesi** (<1024). Masaüstünde bu durum HİÇ okunmaz;
-   *  iki bölme yan yanadır. ⚠ Varsayılan `"sohbet"`: dar bir ekranda ilk gösterilecek
-   *  şey **soru sorma yeridir** — boş bir sonuç bölmesi, kullanıcıya ne yapacağını
-   *  söylemez. */
-  const [darSekme, setDarSekme] = useState<"sohbet" | "sonuc">("sohbet");
+   *  iki bölme yan yanadır. ⚠ Varsayılan: dar bir ekranda ilk gösterilecek şey **soru
+   *  sorma yeridir** — boş bir sonuç bölmesi, kullanıcıya ne yapacağını söylemez.
+   *
+   *  🔴 **TEK CHAT (2026-08-13): varsayılan `"sohbet"` → `"sonuc"`.** Kural değişmedi,
+   *  **adresi** değişti: soru kutusu artık `ReportPanel`'in altında. Eski varsayılan
+   *  bırakılsaydı dar ekranda açılan ilk bölme, içinde **hiçbir girdi kutusu olmayan**
+   *  thread listesi olurdu — kuralın harfi korunup amacı kaybedilirdi. */
+  const [darSekme, setDarSekme] = useState<"sohbet" | "sonuc">("sonuc");
   // YOL SINIRI (Faz F2) — oturum boyunca kalıcı bir tercih: "yalnız küpün kanıtladığı
   // cevapları göster". `null` = sınır yok (bugünkü davranış, hiçbir şey değişmez).
   const [yolSiniri, setYolSiniri] = useState<"deterministik" | "llm" | null>(null);
@@ -373,6 +377,25 @@ export default function Home() {
     },
   });
 
+  // 🔴🔴 **TEK CHAT (2026-08-13) — «yeni konu» EDİMİNİN TEK SAHİBİ.**
+  //
+  // İki düğme bunu çağırır ve ikisi de aynı şeyi söyler: `ChatPanel`'in `+ yeni sohbet`i
+  // (eski sol komposer'ın yerine geçti) ve `ReportPanel` çapa çubuğundaki
+  // `✕ bağlamı bırak` (`§5.1`). ⚠ İki ayrı gövde yazmak, bir gün yalnız birinin bir
+  // alanı sıfırlaması demekti — ve bu depoda o desen (`contextRapor`/`diyalog_durumu`)
+  // zaten **iki kez** yetim bıraktı.
+  //
+  // ⊙ `diyalogDurumu` da sıfırlanır ve bu bir DÜZELTMEDİR: eski satır-içi gövdede yoktu,
+  // yani bırakılan bağlamın **bekleyen sorusu** bir sonraki taze soruya sızıyor ve sunucu
+  // turu `KURAL_DEVAM` sayıyordu. *Bir bağlamı bırakmak, parçalarından birini elde
+  // tutmakla tamamlanmaz.*
+  //
+  // ⊘ Sohbet GEÇMİŞİNİ silmez (o `newChat`): thread listesi durur, tıklanınca yeniden
+  // girilebilir. *«Yeni konu» ile «yeni oturum» aynı şey değildir.*
+  const yeniKonu = () => {
+    setContextCq(null); setContextRapor(null); setDiyalogDurumu(null);
+    setPrevSql(null); setActiveThreadId(null); setViewHint(null);
+  };
   const submitNew = (q: string) => {
     setDrawer(null);
     setStarted(true); // ilk sorudan sonra çalışma alanında kal (hata olsa da landing'e dönme)
@@ -559,7 +582,7 @@ export default function Home() {
                 setPrevSql(last?.sql || null);
                 setViewHint(null); // yeniden girişte zorla remount YOK — kartlar kendi view_hint'ini kullanır
               }}
-              onSubmit={submitNew}
+              onYeniSohbet={yeniKonu}
               onUpload={onUpload}
               uploading={uploadMut.isPending}
             />
@@ -602,37 +625,47 @@ export default function Home() {
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-auto">
-              {canvasMode ? (
-                <AnalysisCanvas
-                  items={canvasItems}
-                  onReorder={reorderCanvas}
-                  onRemove={removeFromCanvas}
-                  onClear={() => setCanvasItems([])}
-                />
-              ) : (
-                <ReportPanel
-                  thread={activeThread}
-                  pending={(mutation.isPending && !isPendingNew) || cubeMutation.isPending}
-                  aktifJobId={isPendingNew ? null : aktifJobId}
-                  viewHint={viewHint}
-                  onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
-                  error={mutation.isError ? apiErrorMessage(mutation.error) : null}
-                  sessionId={sessionId}
-                  contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
-                  onClearContext={() => {
-                    // §B — "konudan çık": DÖRDÜ BİRLİKTE sıfırlanır → panel BOŞALIR,
-                    // sonraki soru (sol komposer'dan) YENİ bir thread başlatır.
-                    setContextCq(null);
-    setContextRapor(null);
-                    setPrevSql(null);
-                    setActiveThreadId(null);
-                    setViewHint(null);
-                  }}
-                  onContinue={submitContinue}
-                  onReply={submitReply}
-                  onReplyMulti={submitReplyMulti}
-                />
-              )}
+              <ReportPanel
+                thread={activeThread}
+                pending={(mutation.isPending && !isPendingNew) || cubeMutation.isPending}
+                aktifJobId={isPendingNew ? null : aktifJobId}
+                viewHint={viewHint}
+                onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
+                error={mutation.isError ? apiErrorMessage(mutation.error) : null}
+                sessionId={sessionId}
+                contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
+                // §B — "konudan çık": HEPSİ BİRLİKTE sıfırlanır → panel BOŞALIR ve
+                // sonraki soru YENİ bir thread başlatır. Gövde `yeniKonu`'da (yukarıda),
+                // çünkü `ChatPanel`'in `+ yeni sohbet` düğmesi AYNI edimdir — iki
+                // düğme, TEK sahip.
+                onClearContext={yeniKonu}
+                onContinue={submitContinue}
+                onReply={submitReply}
+                onReplyMulti={submitReplyMulti}
+                sonBakilanlar={sonBakilanEtiketler(threads)}
+                tuval={canvasMode ? (
+                  // 🔴🔴 **ÖLÇÜLMÜŞ GERİLEME KAPANDI (2026-08-13).** Tuval eskiden
+                  // `ReportPanel`'in **YERİNE** çiziliyordu; «tek chat» kararıyla sol
+                  // besteci kaldırılınca bu, tuval kipinde ekranda **hiçbir girdi
+                  // kutusu bırakmıyordu** — kullanıcı yazamıyordu. Bir kapsam kararı
+                  // değil, taşımanın yan hasarı.
+                  //
+                  // ⚠ Çare **ikinci bir besteci değil**: tuval artık panelin GÖVDESİ
+                  // olarak geçiyor, besteci (ve çapa · öneri şeridi · bekleme/hata)
+                  // tek sahibinde kalıyor. Üçüncü bir besteci yazmak, aynı özelliği
+                  // üçüncü kez bakmak olurdu — «tek chat» kararının tam sebebi buydu.
+                  //
+                  // ⊙ Bedava bir kazanç: tuval kipinde sorulan soru `submitContinue`
+                  // yolundan geçtiği için cevabı `addToCanvas` **tuvale de** ekler —
+                  // yani kullanıcı tuvali artık tuvalden büyütebilir.
+                  <AnalysisCanvas
+                    items={canvasItems}
+                    onReorder={reorderCanvas}
+                    onRemove={removeFromCanvas}
+                    onClear={() => setCanvasItems([])}
+                  />
+                ) : null}
+              />
             </div>
           </section>
         </div>

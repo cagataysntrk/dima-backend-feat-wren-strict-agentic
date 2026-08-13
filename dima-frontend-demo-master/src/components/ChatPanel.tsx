@@ -1,12 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+// 🔴🔴 **TEK CHAT (2026-08-13) — BU PANELİN KOMPOSER'I KALDIRILDI.**
+//
+// Kullanıcının kararı ve kendi gerekçesi: *«çift chat'e her özelliği girmek elim bir hata
+// ve risk»*. Ürünün girdi kutusu artık **tek**: `ReportPanel`'in alt komposer'ı.
+//
+// ⚠ **Hiçbir iş kaybolmadı, yer değiştirdi** — nereye gittiği tek tek yazılı:
+//
+// | buradaki eski davranış | yeni yeri |
+// |---|---|
+// | metin yaz → **yeni thread** aç (`onSubmit` → `page.tsx::submitNew`) | `+ yeni sohbet` düğmesi (`onYeniSohbet`): bağlamı bırakır, sonraki soru `ReportPanel` komposer'ından **bağlamsız** gider ve `page.tsx` ona yeni bir thread kimliği basar |
+// | öneri şeridi (`OneriSeridi`) · son bakılanlar | `ReportPanel` komposer'ı (`§5.1` çapa çubuğu + iki grup + tuş) |
+// | 📎 Excel/CSV yükleme | **AYNI YERDE** — bir sohbet-kapsamlı veri kaynağı bir cümle değildir, komposer'a bağlı değildi |
+// | kapsam · yol · hızlı/derin anahtarları | **AYNI YERDE** — soru başına değil oturum başına ayarlar; `test_kapsam_mercegi` de onları bu dosyada arar |
+//
+// 🔴 `onSubmit` prop'u **silinmedi, dönüştü**: `page.tsx::submitNew` hâlâ yaşıyor
+// (`Landing` ilk soruyu, `HelpPanel` örnek soruyu oradan gönderir) — kaybolan yalnız bu
+// paneldeki **ikinci** giriş noktasıydı.
+
+import { useEffect, useRef } from "react";
 import { vurguSuz } from "@/lib/vurgu";
-import { sonBakilanEtiketler, type Thread } from "@/lib/threads";
+import type { Thread } from "@/lib/threads";
 import type { CubeQuery } from "@/lib/types";
-import { CaretInput } from "@/components/CaretInput";
 import { DurdurDugmesi } from "@/components/DurdurDugmesi";
-import { OneriSeridi } from "@/components/OneriSeridi";
 
 // SQL provenance — keskin, monospace "sistem readout" rozeti. "vqr" (VQR birebir/yakın
 // eşleşme tekrar oynatma) ve "meta"/"catalog" (deterministik, veri sorgusu değil) da
@@ -182,7 +198,7 @@ export function ChatPanel({
   aktifJobId,
   compact,
   onSelectThread,
-  onSubmit,
+  onYeniSohbet,
   yolSiniri = null,
   mod = null,
   onMod,
@@ -217,11 +233,15 @@ export function ChatPanel({
   // Bir thread satırına tıklamak O THREAD'İ sağda aktive eder (bağlam thread'in KENDİ son
   // item'ından geri yüklenir — "istediği zaman tekrar girebilir" sözünün en doğal okunuşu).
   onSelectThread: (thread: Thread) => void;
-  // §B düzeltmesi (1 Ağustos 2026) — KRİTİK: bu komposer HER ZAMAN yeni bir thread açar
-  // (aktif thread olsun ya da olmasın) — ASLA bağlamsal/takip yanıtı üretmez, ÖNCEKİYLE
-  // HİÇBİR BAĞI OLMAZ. Eski bağlamsal davranışın TAMAMI artık sağ panelin kendi
-  // komposer'ına taşındı (bkz. ReportPanel.tsx).
-  onSubmit: (q: string) => void;
+  // 🔴 **TEK CHAT** — eski `onSubmit(q)` komposer'ının yerine geçen düğme. Metin ALMAZ:
+  // yalnız *«yeni bir konu açıyorum»* der. Bağlamı bırakır (aktif thread + `cube_query` +
+  // `prev_sql` + diyalog durumu), böylece bir sonraki soru `ReportPanel` komposer'ından
+  // **taze** gider ve `page.tsx` ona yeni bir thread kimliği basar.
+  //
+  // 🔴 Kayıtlı ilkeyle birebir: *bir thread/UI gruplaması semantik bağlam sınırı taşımaz;
+  // yeni bağlam yalnız **açık kullanıcı eylemiyle** doğar.* Bu düğme (ve `ReportPanel`'in
+  // `✕ bağlamı bırak`ı) o açık eylemin **aynı** fonksiyonudur — iki düğme, TEK sahip.
+  onYeniSohbet: () => void;
   // YOL SINIRI (Faz F2) — "yalnız küpün KANITLADIĞI cevapları göster".
   // Sayısal bir güven eşiği DEĞİL: merdivenin kendisine bağlı üç ayrık seviye.
   // Rakiplerin veremeyeceği ayar budur — onların yolu yok, tek kutu var.
@@ -240,20 +260,12 @@ export function ChatPanel({
   onUpload?: (file: File) => void;
   uploading?: boolean;
 }) {
-  const [value, setValue] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [threads.length, pending]);
-
-  const send = () => {
-    const t = value.trim();
-    if (!t) return;
-    onSubmit(t);
-    setValue("");
-  };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -323,15 +335,17 @@ export function ChatPanel({
         </div>
       </div>
 
-      {/* alt komut satırı — §B düzeltmesi: bu komposer ARTIK bağlam TAŞIMIYOR (bkz. onSubmit
-          prop yorumu). "bağlam: X · ×" göstergesi ARTIK burada DEĞİL — sağ panele taşındı
-          (bkz. ReportPanel.tsx başlık çubuğu). `compact` iken bunun YERİNE her zaman görünen
-          bir İPUCU var: bu komposer'a yazmanın HER ZAMAN yeni bir thread açacağını netleştiriyor. */}
+      {/* alt çubuk — 🔴 **TEK CHAT**: burada artık bir metin kutusu YOK (bkz. dosya
+          başlığındaki taşıma tablosu). Kalanlar bilerek kaldı: oturum başına ayarlar
+          (kapsam · yol · hızlı/derin), sohbet-kapsamlı 📎 yükleme ve `+ yeni sohbet`.
+          `compact` iken (bir thread açıkken) soru kutusunun NEREDE olduğunu söyleyen bir
+          ipucu durur — bir kutuyu kaldırmak, onu arayan kullanıcıya yerini söylemekle
+          tamamlanır. */}
       <div className="shrink-0 border-t border-hairline px-4 py-3">
         {compact && (
           <p className="mb-2 font-mono text-[10px] leading-snug text-neutral-400">
-            ⓘ buraya yazmak her zaman <span className="text-accent">yeni bir thread</span>{" "}
-            başlatır — devam etmek için sağdaki paneli kullan.
+            ⓘ soru kutusu <span className="text-accent">sağdaki panelin altında</span> —
+            buradaki düğme yalnız yeni bir konu açar.
           </p>
         )}
         {/* YOL SINIRI (Faz F2) — soru BAŞINA tercih, o yüzden kompozerde durur.
@@ -449,19 +463,19 @@ export function ChatPanel({
               </button>
             </>
           )}
-          <span className="select-none font-mono text-sm text-accent">›</span>
-          <div className="flex-1">
-            <CaretInput value={value} onChange={setValue} onSubmit={send} busy={pending} size="inline" />
-            {/* 🔴 FAZ 6.3 — yazarken-ara şeridi. Tıklanan aday yalnız METNİ tamamlar;
-                sorgu koşmaz, sayı üretmez. */}
-            <OneriSeridi
-              metin={value}
-              onSec={setValue}
-              /* `5.9` — son bakılanlar sohbetin KENDİ kartlarından türer: yeni bir
-                 depo, yeni bir izin, yeni bir senkron YOK. */
-              sonBakilanlar={sonBakilanEtiketler(threads)}
-            />
-          </div>
+          {/* 🔴 **`+ yeni sohbet`** — eski komposer'ın TEK işi buydu ve tamamı burada:
+              bağlamı bırakır, sonraki soru yeni bir konu açar. ⚠ Metin ALMAZ; soru
+              kutusu tektir ve sağdadır. Sohbet GEÇMİŞİNİ silmez (o `newChat`'in işi,
+              rail'deki 🕐 panelinde) — yalnız bu oturumun **bağlamını** bırakır, thread
+              listesi olduğu gibi durur ve tıklanınca yeniden girilebilir. */}
+          <button
+            type="button"
+            onClick={onYeniSohbet}
+            title="Yeni bir konu aç — açık bağlam bırakılır, thread listesi durur. Sonraki soruyu sağdaki kutuya yaz."
+            className="flex-1 select-none border border-hairline px-2 py-1 text-left font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent/50 hover:text-accent"
+          >
+            + yeni sohbet
+          </button>
         </div>
       </div>
     </div>

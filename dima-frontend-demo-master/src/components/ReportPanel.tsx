@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AskResponse, CubeQuery, Report } from "@/lib/types";
 import type { Thread } from "@/lib/threads";
+import { Besteci } from "@/components/Besteci";
 import { BrandMark } from "@/components/BrandMark";
-import { CaretInput } from "@/components/CaretInput";
 import { DurdurDugmesi } from "@/components/DurdurDugmesi";
 import { NextStepChips } from "@/components/NextStepChips";
 import { ReportCard } from "@/components/ReportCard";
@@ -125,6 +125,8 @@ export function ReportPanel({
   onContinue,
   onReply,
   onReplyMulti,
+  sonBakilanlar = [],
+  tuval = null,
 }: {
   thread: Thread | null;
   pending: boolean;
@@ -152,6 +154,28 @@ export function ReportPanel({
              hucre?: { dimension: string; value: string }) => void;
   // Birden fazla kart seçip birleşik bağlamla sor: çapa = seçilenlerin EN SONuncusu.
   onReplyMulti?: (threadId: string, anchorIndex: number, extraIndices: number[], text: string) => void;
+  // 🔴 `5.9` — boş girdide gösterilen **son bakılanlar**. ⚠ Burada TÜRETİLMEZ, alınır:
+  // kaynağı sohbetin TÜM thread'leridir (`page.tsx::sonBakilanEtiketler(threads)`) ve bu
+  // panel yalnız AKTİF thread'i görür. Kendi listesini kursaydı, iki yerde iki farklı
+  // *«son bakılanlar»* doğardı. *Bir listeyi göremediği veriden kurmak, onu daraltmaktır.*
+  sonBakilanlar?: string[];
+  // 🔴🔴 **`🗂 TUVAL` — BESTECİYİ KOPYALAMAK YERİNE GÖVDEYİ DEĞİŞTİRMEK (2026-08-13).**
+  //
+  // ⊙ Ölçülmüş gerileme: `page.tsx` tuval modunda `AnalysisCanvas`'ı bu panelin
+  // **YERİNE** çiziyordu → o modda ekranda **hiçbir girdi kutusu kalmıyordu** (sol
+  // besteci kaldırıldığı için ikinci bir kutu da yoktu). Kullanıcı yazamıyordu.
+  //
+  // 🔴 İki çare vardı ve ikisi çok farklı: ① tuvalin altına **ikinci bir besteci**
+  // koymak — aynı özelliği üçüncü kez bakmak (`OneriSeridi` sarmalaması, çapa, tuşlar,
+  // temizlik…); ② bu panelin **gövdesini** değiştirmek. ②'de kopya SIFIRDIR: besteci ·
+  // çapa · bekleme/hata göstergesi · `pending` ayrımı tek sahipte kalır ve tuval yalnız
+  // kaydırılan alanın içeriği olur. *Bir görünümü değiştirmek için sahibini
+  // çoğaltmak gerekmiyorsa, çoğaltmamak gerekir.*
+  //
+  // ⚠ Verildiğinde kart yığını çizilmez ve **seçim çubuğu da çizilmez**: görünmeyen
+  // kartları *«seç»* diye teklif etmek, yapılamayacak bir şeyi teklif etmektir.
+  // ⊘ `null` (varsayılan) → bu dosya bayt bayt eski davranışını sürdürür.
+  tuval?: ReactNode;
 }) {
   // Verify geri bildirimi ("✓ doğru"/"✗ yanlış") İÇERİK-ANAHTARLI (verifyKey = label::sql) —
   // bu yüzden TÜM kartlar (hatta thread'ler) arasında GÜVENLE paylaşılabilir tek bir map.
@@ -190,36 +214,35 @@ export function ReportPanel({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [thread?.id, thread?.items.length, pending]);
 
-  if (error && !thread) {
-    return (
-      <Center>
+  // 🔴🔴 **TEK CHAT (2026-08-13) — BU PANEL ARTIK ERKEN DÖNMÜYOR.**
+  //
+  // Burada üç erken dönüş vardı (`error && !thread` · `pending && !thread` · `!thread`)
+  // ve üçü de **besteciyi birlikte götürüyordu**. Sol besteci dururken bu zararsızdı:
+  // soru sorulacak başka bir kutu vardı. Sol besteci kaldırılınca (kullanıcı kararı:
+  // *«çift chat'e her özelliği girmek elim bir hata ve risk»*) aynı erken dönüş ürünün
+  // **tek** girdi kutusunu yok ederdi — thread yokken soru sorulamaz hâle gelirdi.
+  //
+  // ⚠ Davranış kaybı YOK: üç durumun metni **aynen** duruyor, yalnız gövdeye taşındı;
+  // besteci artık her hâlde alt kenarda kalıyor. *Bir boş durum, çıkış yolunu da
+  // göstermek zorundadır.*
+  const bosGovde = (
+    <Center>
+      {error ? (
         <div className="max-w-sm border border-red-300 bg-red-50 px-4 py-3 font-mono text-[13px] text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
           {error}
         </div>
-      </Center>
-    );
-  }
-
-  if (pending && !thread) {
-    return (
-      <Center>
+      ) : pending ? (
         <div className="flex items-center gap-2 font-mono text-[13px] text-neutral-400">
           <span className="dima-caret" style={{ height: "0.9em" }} />
           yürütülüyor…
         </div>
-      </Center>
-    );
-  }
-
-  if (!thread) {
-    return (
-      <Center>
+      ) : (
         <div className="max-w-xs text-center font-mono text-[13px] text-neutral-400">
-          <span className="dima-caret" style={{ height: "0.9em" }} /> soldan sor — rapor burada belirir
+          <span className="dima-caret" style={{ height: "0.9em" }} /> aşağıdan sor — rapor burada belirir
         </div>
-      </Center>
-    );
-  }
+      )}
+    </Center>
+  );
 
   // "chip:" ile başlayan sentetik chip-düzenleme etiketleri gerçek bir soru DEĞİLDİR (bkz.
   // vqr.py::store — "chip etiketleri soru değildir") — verify bunlarla değil, GERİYE doğru en
@@ -235,18 +258,53 @@ export function ReportPanel({
   let lastReportableIdx = -1;
   // FAZ 0.23 — aynı kapı (aşağıdaki render dalıyla TEK sahip). Eskiden `it.result || it.kpi`
   // burada TEKRAR yazılıydı → `lastReportableIdx`/`viewHint` de aynı körlüğü MİRAS ALIYORDU.
-  thread.items.forEach((it, i) => { if (raporlanabilir(it)) lastReportableIdx = i; });
+  thread?.items.forEach((it, i) => { if (raporlanabilir(it)) lastReportableIdx = i; });
   // `§RV-canvas` — bağlamdaki belge: `previous_rapor` her zaman **bunu** taşır.
   const sonBelge: Report | null =
-    (lastReportableIdx >= 0 ? thread.items[lastReportableIdx]?.rapor : null) ?? null;
+    (lastReportableIdx >= 0 ? thread?.items[lastReportableIdx]?.rapor : null) ?? null;
+
+  // 🔴 `§5.1` — **GÖRÜNÜR ÇAPA.** `📌 RAM-3 · toplam_fire_kg · bu ay`
+  //
+  // ⚠ Etiket burada **üretilmez, okunur**: tek sahibi `temellendirme`dir (*«anladığım
+  // şu»* — kaynağı yalnız `cube_query`, 0 LLM). İkinci bir okuma yazmak, aynı cümlenin
+  // iki yerde ayrışması demekti (`Temellendirme.tsx`'in kendi şerhi: *bir yeteneği iki
+  // yere koymak, onu iki kez kazanmak değil iki kez bakmaktır*). Alan sırası da onunla
+  // birebir aynı: kapsam (`cube`) **önce** — `DA-7`'nin ölçtüğü `WRONG_SCOPE` %14,4.
+  //
+  // 🔴 Kapı `contextLabel`dir, `temellendirme` DEĞİL: bir sonraki isteğin bağlam taşıyıp
+  // taşımadığını yalnız `page.tsx`'in `contextCq`'su bilir. Temellendirmesi olan ama
+  // bağlamı düşmüş bir karttan çapa çizmek, **tutulmayacak bir söz** olurdu.
+  // ⚠ Son item bilerek: `contextCq` da son cevaptan kurulur; daha eski bir karta bakmak
+  // ekrandaki çapayı gönderilenden ayırırdı.
+  //
+  // ⚠ `cq` de **aynı** kalemden okunur ve uca gider (`getOneri` onu parçalı query
+  // paramına çevirir): sunucunun `BU RAPOR ÜZERİNDE` bandı çapasız **boş** döner. Etiketi
+  // bir kalemden, sorguyu başka bir kalemden almak, ekranda yazan bağlam ile üretilen
+  // önerilerin ayrışması demekti.
+  //
+  // ⚠ `useMemo` bir performans süsü değil bir **kimlik** kararıdır: `OneriSeridi`'nin
+  // getirme etkisi `capa`ya bağlıdır; her render'da yeni bir nesne üretmek, alakasız her
+  // render'da typeahead isteğini yeniden zamanlardı (sıcak yol, `p95` bütçeli).
+  const capaTemeli = thread?.items.at(-1)?.temellendirme;
+  const capaCq = thread?.items.at(-1)?.cube_query ?? null;
+  const capaEtiketi = contextLabel
+    ? [capaTemeli?.cube, capaTemeli?.olcu, capaTemeli?.donem,
+       ...(capaTemeli?.kirilim ?? []), ...(capaTemeli?.filtreler ?? [])]
+        .filter(Boolean).join(" · ") || contextLabel
+    : null;
+  const capa = useMemo(
+    () => (capaEtiketi ? { etiket: capaEtiketi, cq: capaCq } : null),
+    [capaEtiketi, capaCq],
+  );
 
   // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim: en-son (en büyük index) seçilen kart
   // yapısal ÇAPA olur (kendi cube_query/sql'i normal follow-up gibi kullanılır), geri
   // kalanı `extra_context` olarak (yalnız Discovery grounding'i, backend'de bilinçli
   // kapsam sınırı — bkz. ask.py::_with_extra_context) eklenir.
-  const submitReplyMulti = () => {
-    const t = multiValue.trim();
-    if (!t || !thread || !onReplyMulti || selected.size === 0) return;
+  // ⚠ Metin artık **parametreyle** gelir: kırpma ve boş koruması `Besteci`'nin tek
+  // kapısında yapılır (bkz. o dosyanın `onGonder` şerhi). Geri kalan her şey aynı.
+  const submitReplyMulti = (t: string) => {
+    if (!thread || !onReplyMulti || selected.size === 0) return;
     const idxs = Array.from(selected).sort((a, b) => a - b);
     const anchorIndex = idxs[idxs.length - 1];
     const extraIndices = idxs.slice(0, -1);
@@ -270,22 +328,21 @@ export function ReportPanel({
     <div className="flex h-full min-h-0 flex-col">
       {/* §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — üst çubuk: SOLDA aktif bağlam göstergesi
           (eski sol chat'ten taşındı), SAĞDA seçim modu toggle'ı + sayaç. Thread değişince
-          seçim otomatik sıfırlanır (bkz. yukarıdaki render-sırasında-ayarlama). */}
+          seçim otomatik sıfırlanır (bkz. yukarıdaki render-sırasında-ayarlama).
+
+          🔴 **BAĞLAM GÖSTERGESİ BURADAN TAŞINDI (`§5.1`, 2026-08-13)** — silinmedi,
+          **yerini değiştirdi**: artık bestecinin hemen üstündeki 📌 çapa çubuğu
+          (`OneriSeridi`). İki gerekçe:
+          ① `§5.1`'in çizimi onu yazının yanına koyuyor — panelin tepesinde duran bir
+             bağlam, kullanıcının BAKMADIĞI yerde durur.
+          ② İkisini birden çizmek *«bağlamı bırak»* ediminin **iki sahibi** demekti; bu
+             deponun bir numaralı kusur sınıfı. `onClearContext` hâlâ TEK fonksiyon —
+             yalnız düğmesi taşındı. */}
+      {/* ⚠ Thread yokken çubuk hiç çizilmez: seçilecek kart yokken *«kartları seç»*
+          teklif etmek, yapılamayacak bir şeyi teklif etmektir. ⊙ `!tuval` aynı
+          cümlenin ikinci hâli: tuval kipinde kart yığını ekranda **yok**. */}
+      {thread && !tuval && (
       <div className="flex shrink-0 items-center gap-2 border-b border-hairline px-4 py-1.5">
-        {contextLabel && (
-          <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-neutral-400">
-            <span className="text-accent">◆</span>
-            <span>bağlam: {contextLabel}</span>
-            <button
-              onClick={onClearContext}
-              aria-label="Bu thread'i kapat"
-              title="Bu thread'i kapat — panel temizlenir, sonraki soru yeni bir thread başlatır"
-              className="border border-hairline px-1 leading-tight transition-colors hover:border-accent/50 hover:text-foreground"
-            >
-              ×
-            </button>
-          </span>
-        )}
         <button
           onClick={() => { setSelectionMode((m) => !m); setSelected(new Set()); }}
           className={`border px-2 py-0.5 font-mono text-[11px] transition-colors ${
@@ -310,8 +367,11 @@ export function ReportPanel({
           </>
         )}
       </div>
+      )}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
-        {thread.items.map((it, i) => {
+        {/* 🔴 GÖVDE = tuval **ya da** kart yığını **ya da** boş durum. Üçü de aynı
+            kaydırılan alanın içeriğidir; besteci hepsinin altında AYNI yerde kalır. */}
+        {tuval ? tuval : !thread ? bosGovde : thread.items.map((it, i) => {
           if (raporlanabilir(it)) {
             return (
               <ReportCard
@@ -424,7 +484,13 @@ export function ReportPanel({
           }
           return null;
         })}
-        {pending && (
+        {/* ⚠ `thread &&`: thread yokken bu iki blok `bosGovde` içinde ZATEN çiziliyor —
+            koşulsuz bırakmak aynı beklemeyi/hatayı **iki kez** göstermek olurdu.
+            🔴 `|| tuval`: tuval kipinde `bosGovde` çizilmez, yani thread henüz yokken
+            bekleme/hata **hiçbir yerde** görünmezdi — bestecisi olan bir yüzeyin
+            geri bildirimi de olmak zorundadır. *Yazdıran, cevabın nerede olduğunu da
+            söylemelidir.* */}
+        {(thread || tuval) && pending && (
           <div className="mx-auto flex max-w-4xl items-center gap-2 px-8 py-4 font-mono text-[13px] text-neutral-400">
             <span className="dima-caret" style={{ height: "0.9em" }} />
             yürütülüyor…
@@ -436,7 +502,7 @@ export function ReportPanel({
             </span>
           </div>
         )}
-        {error && (
+        {(thread || tuval) && error && (
           <div className="mx-auto max-w-4xl px-8 py-4">
             <div className="max-w-sm border border-red-300 bg-red-50 px-4 py-3 font-mono text-[13px] text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
               {error}
@@ -446,48 +512,57 @@ export function ReportPanel({
       </div>
       {/* §B düzeltmesi (1 Ağustos 2026) — alt komposer(lar): seçim modunda ve ≥1 kart
           seçiliyken "birleşik bağlam" çubuğu; aksi halde normal "devam et" çubuğu — ikisi
-          karşılıklı dışlayıcı. Bu, eski TEK global komposer'ın bağlamsal davranışının
-          taşındığı YER (bkz. ChatPanel'in kendi komposer'ının artık HER ZAMAN yeni thread
-          açması). */}
-      {selectionMode && selected.size > 0 && onReplyMulti ? (
-        <div className="shrink-0 border-t border-hairline bg-accent/[0.03] px-4 py-3">
-          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-            {selected.size} kart birleştirilerek soruluyor
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="select-none font-mono text-sm text-accent">›</span>
-            <div className="flex-1">
-              <CaretInput
-                value={multiValue}
-                onChange={setMultiValue}
-                onSubmit={submitReplyMulti}
-                busy={pending}
-                size="inline"
-              />
-            </div>
-          </div>
-        </div>
+          karşılıklı dışlayıcı.
+
+          🔴🔴 **TEK CHAT (2026-08-13).** Bu artık *"sağdaki"* besteci değil, ürünün
+          **TEK** girdi kutusudur: sol panelin komposer'ı kaldırıldı ve yerine yalnız
+          `+ yeni sohbet` düğmesi geçti (`ChatPanel.tsx`). Kullanıcının kendi gerekçesi:
+          *«çift chat'e her özelliği girmek elim bir hata ve risk»* — bir yeteneği iki
+          kutuya bağlamak, onu iki kez gözden geçirmek demekti.
+
+          ⚠ Thread yokken de çizilir ve o hâlde `onContinue` bağlamsız gider (`contextCq`
+          · `prevSql` · `thread_id` hepsi `null`) — yani `page.tsx`'in `"continue"` dalı
+          o durumda **taze** bir istek üretir ve `onSuccess` yeni bir thread kimliği
+          basar. Eski sol komposer'ın işi böylece kaybolmadan taşındı.
+
+          🔴 `OneriSeridi` **besteciyi sarmalar**: 📌 çapa üstte, öneri şeridi altta,
+          `↓↑ Enter Esc` yalnız odaktaki kutuda (bkz. o dosyanın başlığı).
+
+          🔴🔴 **GÖVDE ARTIK `Besteci.tsx`'te (2026-08-13).** Burada aynı sarmalama
+          **iki kez** yazılıydı; `🗂 tuval` kipinde bir üçüncüsü gerekince kopya bir
+          borç olmaktan çıkıp bir **kusura** dönüşürdü. Çıkarıldı: aşağıdaki iki
+          çağıran (çoklu-seçim · devam et) artık **tek** uygulamayı koşuyor.
+          ⊙ Ve tuval kipi bir **üçüncü çağıran bile açmadı**: tuval bu panelin gövdesi
+          olarak geçtiği için besteci zaten olduğu yerde kalıyor — *bir görünümü
+          değiştirmek için sahibini çoğaltmak gerekmiyorsa, çoğaltmamak gerekir.*
+          ⚠ Kaybolan davranış YOK: çapa · şerit · tuşlar · `busy` · `ipucu` hepsi
+          prop olarak geçiyor, `secili = -1` kararı `OneriSeridi`'nin içinde duruyor. */}
+      {/* ⚠ `!tuval`: seçim çubuğu tuval kipinde çizilmediği için oradan seçimden
+          **çıkılamaz**; birleşik kutuyu orada göstermek kullanıcıyı çıkışı olmayan bir
+          kipte bırakırdı. Seçim SİLİNMEZ, yalnız kutusu beklemeye alınır — kart
+          yığınına dönünce çubuk da seçim de olduğu gibi yerinde. */}
+      {selectionMode && !tuval && selected.size > 0 && onReplyMulti ? (
+        <Besteci
+          deger={multiValue}
+          onDeger={setMultiValue}
+          onGonder={submitReplyMulti}
+          busy={pending}
+          sonBakilanlar={sonBakilanlar}
+          ustBilgi={`${selected.size} kart birleştirilerek soruluyor`}
+          vurgulu
+        />
       ) : (
         onContinue && (
-          <div className="shrink-0 border-t border-hairline px-4 py-3">
-            <div className="flex items-center gap-2">
-              <span className="select-none font-mono text-sm text-accent">›</span>
-              <div className="flex-1">
-                <CaretInput
-                  value={continueValue}
-                  onChange={setContinueValue}
-                  onSubmit={() => {
-                    const t = continueValue.trim();
-                    if (!t) return;
-                    onContinue(t);
-                    setContinueValue("");
-                  }}
-                  busy={pending}
-                  size="inline"
-                />
-              </div>
-            </div>
-          </div>
+          <Besteci
+            deger={continueValue}
+            onDeger={setContinueValue}
+            onGonder={(t) => { onContinue(t); setContinueValue(""); }}
+            busy={pending}
+            sonBakilanlar={sonBakilanlar}
+            capa={capa}
+            onCapaBirak={onClearContext}
+            ipucu={thread ? "bu rapor üzerinde devam et…" : "sor…"}
+          />
         )
       )}
     </div>

@@ -247,13 +247,46 @@ export interface OneriAdayi {
   kip: string;      // "leksik" | "vektor" | "leksik+vektor"
 }
 
+// 🔴 `§5.1`/`§3.3` — **ASIL ÇIKTI: CÜMLE.** Kullanıcı bizzat ölçtü ve şikâyeti buydu:
+// `adaylar[].etiket` bir-iki kelimelik bir **alan adıdır** (`toplam_fire_kg`), oysa plan
+// *«menü değil TAMAMLAMA»* diyor — tamamlanan şey bir ad değil bir **cümledir**.
+//
+// ⚠ Uç **ikisini birden** döndürüyor (`backend/app/routers/oneri.py`): `oneriler` yeni,
+// `adaylar` `KURAL B` gereği yerinde duruyor. Şerit `oneriler`i tercih eder, yoksa
+// `adaylar`a düşer — yani bayrak/sürüm ne olursa olsun ekranda bir şey vardır.
+// `grup` şeridin iki bandıdır (`↳ BU RAPOR ÜZERİNDE` / `↳ YENİ KONU`), `cube_query` ise
+// cümlenin **koşulabilir** hâli (⊘ bugün koşulmaz: tıklama yalnız metni tamamlar).
+export interface OneriCumlesi {
+  kimlik: string; metin: string; grup: "rapor_ustunde" | "yeni_konu";
+  tur: string; cube?: string; cube_query?: CubeQuery | null;
+}
+
 export interface OneriYaniti {
   adaylar: OneriAdayi[];
+  oneriler?: OneriCumlesi[];
   kip: string;      // gömücü soğuksa "leksik" — kalite düşüşü BEYAN edilir
 }
 
-export async function getOneri(q: string): Promise<OneriYaniti> {
-  const { data } = await apiClient.get<OneriYaniti>("/oneri", { params: { q } });
+// 🔴 `§5.1` ÇAPA — uç `GET`tir ve gövde alamaz; çapa **parçalı query paramı** olarak
+// gider (`capa_cube` · `capa_olcu` · `capa_kirilim` · `capa_donem` · `capa_varlik`) ve
+// sunucu onu bir `cube_query`ye geri toplar (`routers/oneri.py::_capa_kur`).
+//
+// ⚠ Parçalama **burada** yapılır, bir bileşende değil: bu bir **tel biçimidir** ve tel
+// biçiminin tek sahibi bu dosyadır. ⚠ `varlik` biçimi `boyut:deger` — değerin hangi
+// boyuta ait olduğunu **tahmin etmek** yasak (sunucu da tam olarak bunu yazıyor), o
+// yüzden yalnız `operator: "eq"` olan **tekil** bir filtreden okunur.
+// ⊘ Çapa yoksa parametreler boş gider ve `BU RAPOR ÜZERİNDE` bandı **boş** döner —
+// uydurulmuş bir bağlam, bağlam değildir.
+export async function getOneri(q: string, capa?: CubeQuery | null): Promise<OneriYaniti> {
+  const c = (capa ?? {}) as Record<string, unknown>;
+  const dizi = (k: string) => ((c[k] as string[] | undefined) ?? []).join(",");
+  const f = ((c.filters as { dimension?: string; operator?: string; value?: unknown }[] | undefined) ?? [])
+    .find((x) => x?.operator === "eq" && !!x?.dimension && typeof x?.value === "string");
+  const { data } = await apiClient.get<OneriYaniti>("/oneri", { params: {
+    q, capa_cube: String(c.cube ?? ""), capa_olcu: dizi("measures"),
+    capa_kirilim: dizi("dimensions"), capa_donem: String(c.period_expr ?? ""),
+    capa_varlik: f ? `${f.dimension}:${String(f.value)}` : "",
+  } });
   return data;
 }
 
