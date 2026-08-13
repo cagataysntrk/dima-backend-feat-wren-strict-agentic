@@ -2047,3 +2047,46 @@ içine yazıldı.
 
 **Kanıt:** `oneri_cumle · oneri_motoru · oneri_tus · pill_katmani · frontend_derlenir ·
 kisa_devre_yok` → **102 ✅ / 2 atlandı**.
+
+---
+
+## §43 — CANLI BEŞ SAAT ESKİYDİ · ve değer adayları vektör ayağını KİLİTLEDİ
+
+### ① Teşhisim yanlıştı — ekrandaki liste `adaylar` düşüşünden GELMİYORDU 🅢
+
+Bir denetim ajanı ölçtü, ben doğruladım: `localhost:8002`'de koşan imaj
+**`dima-backend-temiz:s12` (09:06)**; cümle commit'leri **11:13–11:31**. Backend'de
+kaynak bind-mount **yok** → yazdığım hiçbir şey canlıya geçmemişti.
+
+⚠ `§42`'de *«ön yüz `adaylar`a düşüyordu»* dedim; ölçüm bunu **çürüttü** — canlı
+`oneriler` **doluydu**, içi **etiketti**. O dalın kapatılması yine de doğru bir iştir ama
+kullanıcının gördüğü kusurun **sebebi değildi**. *Bir kusuru doğru yerde düzeltmek,
+onun sebebini doğru bilmek değildir.*
+
+### ② Ve tazeleme ikinci bir kusuru AÇIĞA ÇIKARDI — kendi eklediğim
+
+`s13` kaldırıldı, `/oneri` **120 sn'de bile dönmedi** (`HTTP=000`). Sebep `§41`:
+`776` boyut değeri × ~3 görünüm ≈ **2.300** metin **vektör ayağına** girdi. Modülün
+kendi belgesi bu bedeli yazmıştı (`534` görünüm → soğukta `24,8` sn); dört katı
+dakikalar eder. *Bir maliyeti belgeye yazmak, onu ödememizi engellemiyor.*
+
+**Çare:** değer adayları **vektör ayağına girmiyor** — bir makine adı (`RAM-3`) anlamla
+değil **harfle** aranır; önek/bulanık eşleşme onun doğal yolu ve leksik ayak bunu zaten
+yapıyor. Anlamsal komşuluk (`fire ≈ ıskarta`) **ölçüler** içindir.
+
+⚠ Süzme **konum uzayını korudu** ㊶: `_vektor_sira` çağırana **indeks** döndürüyor;
+listeyi kırpıp indeks döndürmek çağıranı **başka bir adaya** baktırırdı. `secili`
+eşlemesiyle geri çevrildi.
+
+### Canlı ölçüm (`s14`, `GET /oneri`, gerçek HTTP)
+
+| soru | süre | ilk üç cümle |
+|---|---|---|
+| `fire` | **44,1 s** *(soğuk)* | «bu ay fire ne kadar (OEE)?» · «bu ay fire oranı ne kadar?» |
+| `ram 3 neden` | **0,88 s** *(ılık)* | «bu ay RAM 3 için OEE ne kadar?» · «RAM 3 için OEE **neden bu seviyede?**» |
+
+🔴 **Açık borç:** soğuk `44` sn. `main.py` indeksi başlangıçta ısıtıyor olmalıydı;
+canlı kütükte ısınma satırı **yok** — ölçülecek ve bağlanacak (`§39` ısıtma kapısı
+`test_oneri_isitma.py` var, demek ki **kapsamı dar** 🆉).
+
+**Kanıt:** hedefli **60 ✅**.
