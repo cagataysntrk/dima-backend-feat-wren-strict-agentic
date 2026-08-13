@@ -44,23 +44,26 @@ semantik **558/591 = %94,4** (taban %93,5) · **payda kırpılmadı** 🅜.
 
 ---
 
-## §3 — 🔴 DEVRALANIN İLK BAKACAĞI KUSUR: **yazıyla yazılmış sayı** (K5)
+## §3 — ✅ **KAPANDI: yazıyla yazılmış sayı (K5)** — `§74`, canlı `s36`
 
-Canlı ölçüldü (`s35`) — bu bir liste satırı değil, **kullanıcıya yanlış cevap veren** bir kusur:
+<!-- ⑳ Bu bölüm bir tur boyunca *«devralanın ilk işi»* diyordu; iş **aynı gün** bitti.
+     Bayat bir tutanak, yanlış bir tutanaktır 🅦 — bu yüzden düzeltildi, silinmedi. -->
+
+Ölçülen kusur (`s35`) ve düzeltilmiş hâli (`s36`):
 
 ```
-«son 3 ayda fire ne kadar»    → source=cube      · dönem: 2026-05-13 →            ✅ doğru
-«son üç ayda fire ne kadar»   → source=cube+llm  · dönem: 2025-06-01 → 2026-06-30 🔴 ONÜÇ AY
+önce:  «son üç ayda fire»  → source=cube+llm · dönem 2025-06-01 → 2026-06-30  🔴 13 AY
+sonra: «son üç ayda fire»  → source=cube     · dönem 2026-05-13 →             ✅ rakamlıyla BİREBİR
 ```
 
-İki zarar birden: route düşüyor (**gereksiz LLM turu**) ve dönem **13 aya** açılıyor —
-kullanıcı yanlış sayıyı doğru sanıyor.
+Küme `donem_capasi.SAYI_SOZCUKLERI` (`bir…on iki`, **kapalı ve sonlu**) + `sayi_coz`
+(tek okuma noktası); `cube_router` yalnız **kalıba** koyar (`_REL_DATE` **ve** komşusu
+`_PERIOD_RANGE_REF` ⑯). ⚠ `«bir ay»` belirsizliği bir eşikle değil **kalıbın şekliyle**
+dışarıda: sözcük ancak `son <SAYI> <birim>` üçlüsünün **ortasında** eşleşir. Canlıda o
+soru `source=onizleme` dönüyor — sistem tahmin etmiyor, **soruyor**.
 
-⚠ **Çare route'a dil kuralı eklemek değildir** (en üst kural). Doğru yer **`donem_capasi`**:
-dönem çözümlemesinin sahibi orasıdır ve Türkçe sayı sözcükleri (`bir…on iki`) **kapalı,
-sonlu** bir kümedir — uydurma bir sözcük listesi değil. ⚠ `«bir ay»` iki anlamlıdır
-(*bir tane* ↔ *herhangi bir*); kısıt **birim ile birlikte** kurulmalı ⑯ ve korpusla
-sınanmalı (dönem değişiklikleri korpusun gördüğü yerdedir).
+**Kapı:** `test_yaziyla_sayi_donemi.py` (6 yüklem, mutasyonla kanıtlı) · **korpus birebir
+aynı** (`83/69/68/72 · %95,6 · 558/591`).
 
 ---
 
@@ -98,8 +101,25 @@ sınanmalı (dönem değişiklikleri korpusun gördüğü yerdedir).
 
 ---
 
-## §6 — DEVİR, TEK CÜMLE
+## §6 — ÖLÇÜLÜP **KAPATILAN** LİSTE SATIRLARI (borç değil) 🆞
 
-> Öngörü katmanının **karar mekaniği** bitti ve kapılıdır; geriye **ekranda bir kez
-> görmek** (FE, `localhost:3000`) ve **yazıyla yazılmış sayı** kusurunu `donem_capasi`'de
-> kapatmak kaldı.
+`§73`'te sınıflanan kalemler `§75`'te **ölçüldü**; ikisi sayıyla kapandı:
+
+| kalem | ölçüm | sonuç |
+|---|---|---|
+| `FAZ 0` paydası 🆉 | `VAKALAR` **38** üye (`GURULTU` 1) → **payda 37** | ✅ planın istediği aralıkta (*«30–40 gerçek iş ifadesi»*) |
+| `_RRF_K = 10` | doğrudan prob: 5 soru × 3 farklı `K` → **top-2 hiç değişmiyor**, yalnız 3. sıra 3 kez oynadı | 🟡 ölçülmüş **kusur yok** |
+| `_RRF_K` kalibrasyonu | `lab/oneri_olcum.py` **füzyonu ölçmüyor** (`fuzyon={}`, üç `K` için birebir aynı) | ⊘ **araç yetersiz** 🆆 — kalibrasyon için önce **aracın** RRF'i ölçmesi gerek |
+| `_norm` yinelenmesi | **6** modülde tanımlı | 🟡 temizlik; ölçülmüş kullanıcı kusuru yok |
+
+⊙ **Ölçüm tabanı (37 vaka, `s36` kodu):** leksik `R@1 70,3 · R@3 75,7 · MRR 0,749` ·
+vektör `R@1 81,1 · R@3 91,9 · MRR 0,868`. *(Vektör ayağı test kabında ancak canlı
+gömme önbelleği bağlanınca koşuyor — `-v …_dima_hf_cache:/tmp/fastembed_cache`.)*
+
+---
+
+## §7 — DEVİR, TEK CÜMLE
+
+> Öngörü katmanının **karar mekaniği bitti, kapılı ve canlıda** (`s36`); geriye **tek bir
+> doğrulanmamış şey** kaldı: arayüzü **ekranda bir kez görmek** (`localhost:3000` altı
+> turdur kapalı) — kod tarafında açık bir iş yok.

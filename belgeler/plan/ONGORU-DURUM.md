@@ -3610,3 +3610,54 @@ daha kısası 100 karakter sınırını aşıyordu) → gerekçeli `MUAFIYET_CUB
 ⊙ Üçüncü satır bir bonus: *«bir ayda»* kalıba girmediği için route tahmin **etmiyor**,
 garson kararsız kalıyor ve `§67`'nin kapısı devreye giriyor — **belirsizlik uydurulmuyor,
 soruluyor**. İki bölüm birbirini böyle tamamlıyor.
+
+---
+
+## `§75` — kalan kalemler **ölçüldü**; biri *«araç yetersiz»* çıktı 🆆
+
+### ① `FAZ 0` paydası 🆉 — ✅ **planın istediği aralıkta**
+
+`lab/oneri_olcum.py` koşuldu: `VAKALAR` **38** üye, `GURULTU={"vardya"}` → **payda 37**.
+Plan `0.2`: *«**30–40** gerçek iş ifadesi»* → **içinde**. Borç değil.
+
+**Ölçüm tabanı (37 vaka, `s36` kodu):**
+
+| ayak | `R@1` | `R@3` | `R@5` | `MRR` |
+|---|---|---|---|---|
+| leksik | 70,3 | 75,7 | 81,1 | 0,749 |
+| vektör | **81,1** | **91,9** | 91,9 | **0,868** |
+
+⚠ Vektör ayağı test kabında ancak **canlı gömme önbelleği** bağlanınca koşuyor
+(`-v …_dima_hf_cache:/tmp/fastembed_cache`); varsayılan reçetedeki `DIMA_VQR_EMBEDDER=off`
+ile bu satır **hiç ölçülmez** ⑦.
+
+### ② `_RRF_K = 10` — **ölçülmüş kusur yok**, ve **kalibre edilemiyor** 🆆
+
+İki ölçüm yapıldı:
+
+1. **Doğrudan prob** (canlı `s36`, 5 soru × `K∈{5,20,37}`): **top-2 hiç değişmedi**;
+   yalnız 3. sıra **3 kez** oynadı (*«elektrik»* 3. satırı bir **değer adayı** ↔ ayrı bir
+   ölçü). Yani bugün ölçülebilir bir kullanıcı kusuru **yok**.
+2. **Kalibrasyon denemesi:** `lab/oneri_olcum.py` üç `K` için **birebir aynı** sayıları
+   verdi ve `fuzyon={}` döndü — **araç leksik ve vektör ayaklarını AYRI ölçüyor, füzyonu
+   (RRF) hiç ölçmüyor**.
+
+> 🔴 *Bir sabiti kalibre etmek için önce onu **gören** bir araç gerekir.* `_RRF_K`'yı
+> ayarlamak, bugünkü ölçüm aracıyla **rastgele bir tercihtir** — sayıya dayanmaz.
+
+⊘ Bu yüzden `_RRF_K`'ya **dokunulmadı** ㊸; kalemin doğru hâli *«borç»* değil **iki
+adımlı bir iş**: (a) `oneri_olcum`'a füzyon ayağı ekle, (b) sonra kalibre et.
+
+⚠ Ortam notu: gömme önbelleği başka bir uid'e ait (`Permission denied … trees/*.json`);
+model yine de yüklendi (okuma yolları çalıştı) — düzeltilmedi, o birim **canlı kabın**.
+
+### ③ Devir tutanağı **tazelendi** 🅦⑳
+
+`§3` bir tur önce *«devralanın ilk işi `K5`»* diyordu; iş **aynı gün** bitti. Bölüm
+düzeltildi (silinmedi), `§6` ölçülen kalemler tablosuyla değiştirildi ve devir cümlesi
+yenilendi: *«kod tarafında açık bir iş yok; kalan tek doğrulanmamış şey arayüzü ekranda
+görmek.»*
+
+### ⊘ FE ekran doğrulaması — **altıncı tur** yapılamadı
+
+`localhost:3000` → `000`.
