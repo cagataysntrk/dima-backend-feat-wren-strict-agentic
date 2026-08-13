@@ -2796,3 +2796,19 @@ kalırdı ㊲.
 
 **Kanıt:** `frontend_buyume · frontend_derlenir · uc_yetim_degil · konusma_baglamsiz`
 → **31 ✅** *(tavan düzeltmesinden sonra 15 ✅ yeniden)*.
+
+### §60-ek · Kapı kuruldu ve **mutasyonla** kanıtlandı
+
+`tests/test_zincir_thread_ayrimi.py` (**3 ✅**):
+
+| yüklem | savunduğu |
+|---|---|
+| *«konudan çık» → `zinciriKes`* | bağ doğru yerde |
+| **`zinciriKes` `setActiveThreadId`'ye dokunmaz** | **asıl değişmez** |
+| *«+ yeni sohbet» → `yeniSohbet`* ve o thread'i **düşürür** + `zinciriKes()` çağırır | 🆃 zıt ölçüt |
+
+Üçüncüsü olmasaydı *«+ yeni sohbet»*i de thread'de bırakmak kapıyı yeşil bırakırdı — ve
+o zaman **yeni sohbet açılamazdı** 🆐.
+
+🅑 **Mutasyon:** `zinciriKes`'e `setActiveThreadId(null)` geri kondu →
+`test_ZINCIRI_KES_THREADE_DOKUNMAZ` **kırmızı**; geri yüklendi, `diff` temiz.
