@@ -3598,3 +3598,15 @@ Dönem kalıbı değişti, korpus kıpırdamadı.
 
 **Tavan:** `cube_router` **+3** (ilk yazım +4'tü; iki kalıp tek parçadan kurulunca +3 —
 daha kısası 100 karakter sınırını aşıyordu) → gerekçeli `MUAFIYET_CUBE_ROUTER_KOD`.
+
+**Canlı kanıt (`s36`):**
+
+```
+«son üç ayda fire ne kadar»  → source=cube      · dönem 2026-05-13   ✅ (rakamlıyla BİREBİR)
+«son 3 ayda fire ne kadar»   → source=cube      · dönem 2026-05-13
+«bir ayda fire ne kadar»     → source=onizleme  · dönem yok          ⊙ belirsiz → ONAYA düştü
+```
+
+⊙ Üçüncü satır bir bonus: *«bir ayda»* kalıba girmediği için route tahmin **etmiyor**,
+garson kararsız kalıyor ve `§67`'nin kapısı devreye giriyor — **belirsizlik uydurulmuyor,
+soruluyor**. İki bölüm birbirini böyle tamamlıyor.
