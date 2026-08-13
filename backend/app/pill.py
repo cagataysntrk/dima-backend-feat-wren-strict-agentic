@@ -296,9 +296,20 @@ def pillerden(niyet: Niyet, schema: dict[str, Any] | None = None) -> list[Pill]:
     # ise bir **belirsizliktir** ve silmek onu daraltır — yani orada silme bir
     # kayıp değil, bir **cevaptır**.
     coklu = len(niyet.olcu_adaylari) > 1
+    # 🔴 `§69` — **KÜP ADI BİR AYIRT EDİCİDİR; AYIRT ETMİYORSA GÜRÜLTÜDÜR.**
+    #
+    # ⊙ Canlıda ölçüldü (`s33`, kararsız garson teklifi): dört aday da **aynı** küpten
+    # geldi (`oee`) ve satır *«OEE · OEE»* · *«performans · OEE»* · *«kalite · OEE»*
+    # yazdı. Küp adı orada hiçbir şeyi ayırmıyor — yalnız her pill'i uzatıyor.
+    #
+    # ⚠ Ölçüt `silinebilir`den **ayrıldı** ve bu bilinçli ⑯: silinebilirlik *«birden çok
+    # ADAY var mı»* sorusunun cevabıdır (tek adayı silmek fişi ölçüsüz bırakır), etiket
+    # ise *«hangi KATALOGDAN»* sorusunun. İkisini tek bayrakla sürmek, bir ekranı öteki
+    # uğruna bozmaktı — `t13` (`elektrik` ↔ `tep`, **iki** küp) küp adını hâlâ görmeli.
+    coklu_kup = len({c for c, _ in niyet.olcu_adaylari}) > 1
     for cube, olcu in niyet.olcu_adaylari:
         pills.append(Pill(alan=ALAN_OLCU,
-                          metin=_olcu_metni(cube, olcu, schema, coklu),
+                          metin=_olcu_metni(cube, olcu, schema, coklu_kup),
                           deger=(cube, olcu),
                           silinebilir=coklu))
     # ── varlık (soruda geçen katalog DEĞERİ) ───────────────────────────────────
@@ -569,7 +580,11 @@ def _olcu_metni(cube: str, olcu: str, schema: dict[str, Any] | None, coklu: bool
         return ad
     # 🔴 Çok sahipli terim (`§A.2`): küp adı **ayırt edici**dir, yoksa iki pill aynı
     # metni taşır ve kullanıcı hangisini sildiğini bilemez.
-    return f"{ad} · {_kup_etiketi(cube, schema)}"
+    # ⚠ `§69` — ama küp etiketi **ölçü etiketinin aynısıysa** eklemek bir şeyi ayırmaz:
+    # *«OEE · OEE»* iki kez aynı sözcüktür (canlı ölçüm). Bu ikinci kural birinciyi
+    # zayıflatmaz — iki küpten biri böyleyse öteki hâlâ kendi adıyla ayrılır.
+    kup = _kup_etiketi(cube, schema)
+    return ad if kup.casefold() == ad.casefold() else f"{ad} · {kup}"
 
 
 def _olcu_etiketi(cube: str, olcu: str, schema: dict[str, Any] | None) -> str:

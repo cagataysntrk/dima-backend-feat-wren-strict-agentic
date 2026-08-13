@@ -3275,3 +3275,60 @@ tur3  source=onizleme  · 2 pill  · [olcu] performans   [kirilim] makine kırı
 
 ⚠ Küçük kusur, açık borç 🅖: çok adaylı ölçü pill'i `«OEE · OEE»` yazıyor
 (`_olcu_metni` ölçü ve küp etiketini birleştiriyor; `ort_oee`@`oee`'de ikisi aynı).
+
+---
+
+## `§69` — ölçü pill etiketi · yazma fiili kapsam kararı · zincir kapısı
+
+### ① `«OEE · OEE»` — küp adı bir **ayırt edicidir**; ayırt etmiyorsa gürültüdür
+
+Canlı ölçüm (`s33`, kararsız teklif): dört aday da **aynı** küpten (`oee`) geliyordu ama
+satırlar *«OEE · OEE»* · *«performans · OEE»* · *«kalite · OEE»* yazdı. `_olcu_metni`
+küp etiketini *«birden çok **aday** var»* diye ekliyordu — oysa kendi şerhinin gerekçesi
+*«küp adı **ayırt edicidir**»*.
+
+İki kural, ikisi de **mevcut gerekçeden** türedi:
+
+| # | kural |
+|---|---|
+| 1 | küp adı yalnız adaylar **birden çok küpten** geliyorsa yazılır |
+| 2 | küp etiketi **ölçü etiketinin aynısıysa** hiç yazılmaz |
+
+⚠ Ölçüt `silinebilir`den **ayrıldı** ⑯: silinebilirlik *«birden çok **ADAY** var mı»*,
+etiket *«hangi **KATALOGDAN**»* sorusudur. Tek bayrakla sürmek bir ekranı öteki uğruna
+bozardı — `t13` (`elektrik` ↔ `tep`, iki küp) küp adını **hâlâ** görüyor 🆃.
+
+**Kapı:** `test_olcu_pill_etiketi.py` (**4 ✅**) · komşu `test_pill_katmani.py` **44 ✅**.
+
+### ② `§28.3` satır 4 (*«yazma fiili → senkron onay»*) — **konusu yok**, ve bu ölçüldü
+
+| ne | değer |
+|---|---|
+| kapalı fiil kümesi | **15** fiil |
+| yazan fiil | **0** — `PANO` bile *«hiçbir şey kaydetmez, yalnız taslak»* |
+| koşucuda `INSERT`/`UPDATE`/`commit` | **0** |
+| SQL guard | `SELECT`/`WITH` dışını reddeder |
+
+Yani bu satır bugün **uygulanamaz**. *«Yapıldı»* demek yalan, *«yapılmadı»* demek eksik
+olurdu 🆂; ㉖'nın üçüncü seçeneği seçildi: **kapsam ilan edildi ve bir tel gerildi** ㉕.
+`test_yazma_fiili_kapsam_disi.py` fiil kümesinin **fotoğrafını** tutar — küme değiştiği
+an kırmızı verir ve ekleyen kişi *«bu fiil yazıyor mu, senkron onay nerede?»* sorusunu
+**cevaplamadan** geçemez. *Bir kararı belgeye yazmak onu hatırlatmaz; kapıya yazmak
+hatırlatır.*
+
+### ③ Zincir kapısı — çünkü bu operasyonda **iki kez** koptu 🆘
+
+`§64`'te `postMakro` `kos`'u hiç göndermiyordu; `§68-ek`'te dal koşup log basıp hiçbir şey
+yapmıyordu 🅯. Yeni kapı `/ask → yakala → onizleme.ts → Besteci → PlanOnizleme →
+PillSatiri → [koş] → postPlanKos → POST /plan/kos` halkalarını **tek tek** sınar ve
+ölçütü **kullanım** arar, sözü değil 🅞 (kendi zıt ölçütü de bunu sınıyor).
+
+### 🔴 YAPILAMAYAN — ve neden 🅢
+
+**FE tarayıcı doğrulaması yapılamadı:** `localhost:3000` bu turda **kapalı** (`HTTP 000`;
+önceki turda `307` veriyordu). Zincir **kodda** bağlı ve kapıyla korunuyor, ama *bir
+zincirin kodda bağlı olması ekranda göründüğünün kanıtı değildir* 🆘. Ekran doğrulaması
+**açık**: `pnpm dev` ayağa kalktığında *«makinelerin performansı nasıl»* sorulmalı ve
+önizleme kartında **pill satırı + `[koş] [düzenle] [iptal]`** görülmelidir.
+
+**Demet: 399 ✅.**
