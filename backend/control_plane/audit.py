@@ -32,11 +32,35 @@ from control_plane.models import AuditLog
 _SPOOL_PATH = BASE_DIR / "logs" / "audit-spool.jsonl"
 
 
-def _uuid_or_none(val: str | None) -> _uuid.UUID | None:
+def uuid_or_none(val) -> _uuid.UUID | None:
+    """`str`/`UUID`/`None` → `UUID | None`. **Beş kopyanın TEK sahibi** (`KAT-1`).
+
+    ## Neden burada — ve neden `app/` altında değil
+
+    Kopyalar **iki ayrı süreçte** yaşıyordu: `app/` (public plane) ve `admin_app/`
+    (ayrı süreç, Wren'siz). İkisinin **ortak** bağımlılığı `control_plane`'dir; sahibi
+    `app/`'e koymak `admin_app`'i public plane'e bağlardı — bir sınır ihlali.
+
+    ## Neden **bu** gövde
+
+    Beş kopya ölçüldü: dördü `UUID(val)`, biri (`app/answer.py`) `UUID(str(val))` +
+    `AttributeError`. **En savunmacı olan kazandı** — çünkü birleştirme bir davranış
+    *kaybı* olmamalı: `answer.py` bir `UUID` nesnesi de alabiliyordu, ötekiler o girdide
+    patlıyordu. *Beş kopyayı birleştirirken en zayıfını seçmek, dördünü düzeltip birini
+    bozmaktır.*
+
+    ⚠ `Principal.tenant_id` bir `str`, `InteractionLog.tenant_id` bir `UUID`'dir; bu
+    dönüşüm o sınırın **tek geçidi**. (Ölçülmüş kusur `K2`: eksikliği `kaydedildi:false`
+    üretmişti.)
+    """
     try:
-        return _uuid.UUID(val) if val else None
-    except (ValueError, TypeError):
+        return _uuid.UUID(str(val)) if val else None
+    except (ValueError, AttributeError, TypeError):
         return None
+
+
+#: Modül içi eski ad — dışarıdan **`uuid_or_none`** çağrılır.
+_uuid_or_none = uuid_or_none
 
 
 def _row_from_payload(p: dict) -> AuditLog:

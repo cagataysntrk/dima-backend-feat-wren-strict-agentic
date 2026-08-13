@@ -8,7 +8,6 @@ filtre+pagination+total = SQL'in işi (index + LIMIT/OFFSET + COUNT). Audit'ten 
 from __future__ import annotations
 
 import json
-import uuid as _uuid
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
@@ -30,11 +29,15 @@ def _loads(v: str | None):
         return None
 
 
-def _uuid_or_none(v):
-    try:
-        return _uuid.UUID(v) if v else None
-    except (ValueError, TypeError):
-        return None
+def _uuid_or_none(val):
+    """⟳ `KAT-1` — tek sahip `control_plane.audit.uuid_or_none`; burası **çağırır**.
+
+    Beş kopyanın beşi de aynı işi yapıyordu (ölçüldü); ayrı ayrı yaşamaları bir gün
+    beşinin **farklı** davranmasıyla biterdi. İçe alma tembeldir: modül yükünü
+    artırmamak için ㊲.
+    """
+    from control_plane.audit import uuid_or_none
+    return uuid_or_none(val)
 
 
 @router.get("")

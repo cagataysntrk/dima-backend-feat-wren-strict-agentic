@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-import uuid as _uuid
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session, func, select
@@ -18,13 +17,14 @@ from app.auth.dependencies import require, require_company
 
 
 def _uuid_or_none(val):
-    """str(uuid) → UUID (InteractionLog.tenant_id UUID kolonu — ham principal.tenant_id
-    string'i doğrudan bind edilirse SQLAlchemy UUID adaptörü patlıyordu). Geçersiz/boş →
-    None (aynı desen: app/routers/ask.py::_uuid_or_none)."""
-    try:
-        return _uuid.UUID(val) if val else None
-    except (ValueError, TypeError):
-        return None
+    """⟳ `KAT-1` — tek sahip `control_plane.audit.uuid_or_none`; burası **çağırır**.
+
+    Beş kopyanın beşi de aynı işi yapıyordu (ölçüldü); ayrı ayrı yaşamaları bir gün
+    beşinin **farklı** davranmasıyla biterdi. İçe alma tembeldir: modül yükünü
+    artırmamak için ㊲.
+    """
+    from control_plane.audit import uuid_or_none
+    return uuid_or_none(val)
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 

@@ -180,13 +180,14 @@ def _adhoc_kur(request: Request, body, result: dict | None, sql: str,
 
 
 def _uuid_or_none(val):
-    """str(uuid) → UUID (InteractionLog aktör kolonları AuditLog gibi UUID). Geçersiz/boş → None."""
-    import uuid as _uuid
+    """⟳ `KAT-1` — tek sahip `control_plane.audit.uuid_or_none`; burası **çağırır**.
 
-    try:
-        return _uuid.UUID(val) if val else None
-    except (ValueError, TypeError):
-        return None
+    Beş kopyanın beşi de aynı işi yapıyordu (ölçüldü); ayrı ayrı yaşamaları bir gün
+    beşinin **farklı** davranmasıyla biterdi. İçe alma tembeldir: modül yükünü
+    artırmamak için ㊲.
+    """
+    from control_plane.audit import uuid_or_none
+    return uuid_or_none(val)
 
 
 def _log_upload(session_id: str | None, filename: str, dataset_label: str,

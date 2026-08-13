@@ -183,13 +183,14 @@ _MAX_UPLOAD = 25 * 1024 * 1024      # 25 MB — DuckDB bellek-içi ingest sını
 
 
 def _uuid_or_none(val):
-    """`app/routers/ask.py`'den taşındı — `_log_interaction`'ın tek bağımlılığı."""
-    import uuid as _uuid
+    """⟳ `KAT-1` — tek sahip `control_plane.audit.uuid_or_none`; burası **çağırır**.
 
-    try:
-        return _uuid.UUID(str(val)) if val else None
-    except (ValueError, AttributeError, TypeError):
-        return None
+    Beş kopyanın beşi de aynı işi yapıyordu (ölçüldü); ayrı ayrı yaşamaları bir gün
+    beşinin **farklı** davranmasıyla biterdi. İçe alma tembeldir: modül yükünü
+    artırmamak için ㊲.
+    """
+    from control_plane.audit import uuid_or_none
+    return uuid_or_none(val)
 
 
 def _bosluk_kaydi(request, body, resp) -> dict:

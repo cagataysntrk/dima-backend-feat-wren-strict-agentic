@@ -1841,3 +1841,47 @@ Süit **5.029 → 5.030** *(yeni kapı beş test getirdi, biri komşu dosyada sa
 `294eb67` demetin çok gerisinde. Yani bu koşum adı *«hızlı»* olan bir **tam kapıydı**.
 *Bir kapının kapsamı, adından değil PAYDASINDAN okunur* 🅜 — sıradaki demette taban
 commit'i güncel tutmak gerekiyor, yoksa «hızlı» her seferinde 4 dakika ödetir.
+
+---
+
+## §37 — BORÇ: `_uuid_or_none` beş kopya → **tek sahip** ㊲
+
+### Ölçüm ⑲ — beşi de aynı işi yapıyordu, biri daha savunmacıydı
+
+| dosya | gövde |
+|---|---|
+| `control_plane/audit.py` | `UUID(val)` · `(ValueError, TypeError)` |
+| `admin_app/routers/interactions.py` | aynı |
+| `app/routers/stats.py` | aynı |
+| `app/routers/ask.py` | aynı |
+| **`app/answer.py`** | **`UUID(str(val))` · `(ValueError, AttributeError, TypeError)`** |
+
+### Sahip seçimi — ve **neden `app/` değil**
+
+Kopyalar **iki ayrı süreçte** yaşıyordu: `app/` (public plane) ve `admin_app/` (ayrı
+süreç, Wren'siz). Ortak bağımlılıkları **`control_plane`**'dir; sahibi `app/`'e koymak
+`admin_app`'i public plane'e bağlardı — bir **sınır ihlali**. Dördü de zaten
+`control_plane` içe alıyordu (ölçüldü: 16 · 8 · 4 · 2 geçiş) 🅙.
+
+**Gövde seçimi:** en savunmacı olan kazandı. *Beş kopyayı birleştirirken en zayıfını
+seçmek, dördünü düzeltip birini bozmaktır* — `answer.py` bir `UUID` nesnesi de
+alabiliyordu, ötekiler o girdide patlıyordu.
+
+⟹ `control_plane.audit.uuid_or_none` **tek sahip** (KAT-1); dört dosya artık **çağırıyor**
+(tembel import, modül yükü artmasın). Modül içi eski ad `_uuid_or_none` bir **takma ad**
+olarak duruyor.
+
+### ⚠ Ve birleştirme iki YETİM bıraktı — kendi çöpümü topladım 🅚
+
+`stats.py` ile `interactions.py`'de `import uuid as _uuid` **yetim** kaldı (ruff `F401`).
+İlk ölçümüm *«4 ve 5 geçiş var»* dedi ve beni yanılttı ③: geçişlerin hepsi
+**`_uuid_or_none` adının içindeydi**; nokta ile gerçek kullanım **sıfırdı**.
+*Bir adı ararken, onu içeren daha uzun adı da bulursun.*
+
+⚠ Aynı koşumda `ask.py`'de üç `F401` daha görüldü (`timezone` · `istek_kimligi` ·
+`_attach_next_steps`) — **benim değil**, önceden vardı 🆟; bu demette dokunulmadı.
+
+### Kanıt
+
+`test_telemetri_yazma_yolu` · `test_ask_golden` · `test_alan_haritasi` · `test_auth` →
+**184 ✅**. Kapı **demet sonunda** bir kez koşacak.
