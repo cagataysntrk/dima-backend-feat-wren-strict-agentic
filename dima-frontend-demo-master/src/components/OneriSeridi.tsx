@@ -273,16 +273,29 @@ export function OneriSeridi({
     }
   }
 
+  // 🔴 `§44` — ÖNGÖRÜ SATIRI **ÇİP DEĞİL, LİSTE SATIRIDIR** (`§40` sözleşmesi).
+  //
+  // Ölçülen kusur (kullanıcı ekranı): cümleler yan yana çip olarak diziliyordu; bir
+  // tamamlama listesi böyle okunmaz — göz **soldan aşağı** tarar. Üstelik aynı ekranda
+  // pill satırı da çip olduğu için **iki katman ayırt edilemiyordu** (plan `1242`:
+  // *«adımlar dikey, yuvalar yatay; ikisi aynı şeritte olmaz»*).
+  //
+  // ⚠ Erişilebilirlik plan `§40`'ın açık şartıdır: `listbox`/`option` + `aria-selected`.
+  // Klavye (`↓↑ Enter Esc`) **zaten** kuruluydu; eksik olan **rolün ilanıydı** — ekran
+  // okuyucu için bir çip yığını ile bir seçenek listesi aynı şey değildir.
   const pill = (a: Satir, i: number) => (
     <button
       key={a.kimlik}
       type="button"
+      role="option"
+      aria-selected={i === secili}
+      id={`oneri-${i}`}
       onMouseDown={(e) => { e.preventDefault(); sec(i); }}
       className={
-        "max-w-full truncate rounded border px-2 py-0.5 text-left transition-colors " +
+        "block w-full truncate rounded px-2 py-1 text-left transition-colors " +
         (i === secili
-          ? "border-accent text-accent"
-          : "border-hairline text-neutral-500 hover:text-foreground")
+          ? "bg-accent/10 text-accent"
+          : "text-neutral-500 hover:bg-hairline/40 hover:text-foreground")
       }
       title={a.ipucu}
     >

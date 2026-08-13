@@ -2090,3 +2090,46 @@ canlı kütükte ısınma satırı **yok** — ölçülecek ve bağlanacak (`§3
 `test_oneri_isitma.py` var, demek ki **kapsamı dar** 🆉).
 
 **Kanıt:** hedefli **60 ✅**.
+
+---
+
+## §44 — ŞERİT ÇİP DEĞİL **LİSTE**; ve tıklamanın hazır sorguyu ATTIĞI ölçüldü
+
+### ① Çip → liste satırı (`§40` sözleşmesi)
+
+Cümleler yan yana **çip** olarak diziliyordu; bir tamamlama listesi böyle okunmaz — göz
+soldan aşağı tarar. Üstelik pill satırı da çip olduğu için **iki katman ayırt
+edilemiyordu** (plan `1242`: *«adımlar dikey, yuvalar yatay; ikisi aynı şeritte olmaz»*).
+Satırlar tam genişlikte, `role="option"` + `aria-selected` taşıyor; klavye (`↓↑ Enter
+Esc`) **zaten** kuruluydu — eksik olan **rolün ilanıydı**.
+
+⚠ Bir denetim ajanı *«`≤7` uygulanmamış»* dedi; **ölçtüm, yanlış** ㉔: `AZAMI = 7` ve
+`satirlar.slice(0, AZAMI)` yerinde. *Bir ajanın bulgusu da bir iddiadır.*
+
+### ② 🔴 ASIL KUSUR — tıklama, öngörünün SORGUSUNU çöpe atıyor
+
+Ölçüldü (`OneriSeridi.tsx:142` · `:249` · `Besteci.tsx:104`):
+
+```ts
+onSec: (etiket: string) => void;   // ← yalnız METİN
+onSec(a.metin);                    // cube_query · kimlik · tur · cube ATILIYOR
+onSec={onDeger}                    // → metin composer'a yazılıyor → /ask → garson
+```
+
+Yani **katalogdan üretilmiş, hazır `cube_query`'si olan** bir öngörü, tıklanınca
+**sıfırdan yeniden anlaşılmaya** gönderiliyor. Planın `§6 Thread 1`'i tam tersini
+yazıyor: *«Enter → `cube_query` koşar · 34 ms · **0 token**»*.
+
+Ve iki yol da **hazır**: `askCube` (`api-client.ts:594`) ve `postMakro` (`:337`) —
+ikisi de öneri tıklamasından **hiç çağrılmıyor** 🆘. `onMakro` prop'u var ama **yalnız
+çapa varken** bağlı; taze *«… neden bu seviyede?»* öngörüsü onu hiç göremiyor.
+
+> **Sıradaki demetin ilk maddesi:** `onSec` imzası öngörü **nesnesini** taşısın; tüketici
+> üç dala ayrılsın — `cube_query` varsa **`/cube`**, `tur="neden"` ise **`/oneri/makro`**,
+> ikisi de yoksa (**yalnız o zaman**) metinle `/ask`. Kapı: *«öngörü tıklamasında `/ask`
+> çağrılmaz»*, mutasyonla kanıtlanır 🅑.
+
+*Bilinen bir cevabı yeniden tahmin ettirmek, olasılıksal yolun deterministiği
+gölgelemesinin en pahalı hâlidir* 🆤.
+
+**Kanıt:** `frontend_derlenir · frontend_buyume · uc_yetim_degil` → **22 ✅**.
