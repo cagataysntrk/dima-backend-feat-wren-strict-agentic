@@ -1931,3 +1931,12 @@ durduğunu savunuyor ve örneklemi iki NFD vakası taşıyor.
 
 `test_yetenek` · `test_uyum_kapisi` · `test_uyum_yanlis_pozitif` · `test_alan_haritasi` ·
 `test_modul_buyume` → **145 ✅**.
+
+### §38-ek · Demet kapısı — ve tabanın bedeli ölçüldü
+
+`--hizli --degisen` (**8 dosya**) → **`1811 passed, 4 skipped` (1 dk 57 sn)**, kırmızı **yok**.
+
+Geçen demette aynı komut **4 dk 06 sn** sürmüş ve neredeyse tüm depoyu seçmişti — fark
+kodda değil **tabandaydı** (`294eb67` çok geride). Taban güncellenince kapı **iki kat**
+hızlandı ve kapsamı gerçekten *«değişen»* oldu 🅜. *Bir aracın yavaşlığı, çoğu zaman
+aracın değil ona verilen sınırın ölçüsüdür.*
