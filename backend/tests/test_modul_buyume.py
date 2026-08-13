@@ -943,6 +943,16 @@ MUAFIYET_ASK_KOD = [
      "aktarılıyor; karar (*«çok adım koşmadan önizlenir»*) `plan_tuketici`'de, biçim "
      "(*«adım cümlesi»*) `onizleme_satiri`'nde. Burada olan yalnız **taşımadır**. "
      "⊙ Alternatifi ölçüldü: üç ayrı `kwarg` satırı **+3**; kavrayış **+1**."),
+    ("§67-kararsiz-onaya", 4,
+     "🔴 `§28.3` satır 2 — **GARSON KARARSIZSA KOŞMAZ, ONAYA DÜŞER.** ⚠ **TAŞINAMAZ:** "
+     "`uyum` · `k` · `parsed` · `principal` **yalnız burada** bir aradadır; kararı dışarı "
+     "almak bu dördünü parametre olarak taşımak, yani closure'ı elle yeniden kurmak "
+     "olurdu — bu dosyanın kendi muafiyet geleneğindeki gerekçenin aynısı. "
+     "🔴 **Dört satırda karar YOK:** eşik (`uyum >= 1`), bayrak (`KURAL B`) ve cevabın "
+     "biçimi `plan_tuketici.kararsiz_onizleme`'de; burada olan yalnız **çağrı ve dönüş**. "
+     "⊙ Planın teşhisi ölçüldü: *«garsonun güven sinyali HESAPLANIYOR ama bir KAPIYA "
+     "bağlanmıyor»* — `uyum` üç yere gidiyordu (chip · iz notu · `oylama_cogunluk`) ve "
+     "`2/3` **sessizce koşuyordu**. Bu dört satır o kapıdır."),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
     ("faz1-emin-miyim-tek-sahip", 7,

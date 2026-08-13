@@ -991,3 +991,20 @@ def belge_bolum_sirala(bloklar: list[dict], *, azami: int = BELGE_AZAMI_EK) -> l
              and not ((b.get("cube_query") or {}).get("dimensions") or [])]
     kirilim = [b for b in bloklar if b not in seyir]
     return seyir + sorted(kirilim, key=_skor)[:max(0, azami - len(seyir))]
+
+def tek_adim_plani(cube_query: dict | None) -> dict | None:
+    """🔴 `§67` — bir `CubeQuery`'yi **tek adımlı plana** sarar (`tek_adimli`'nın tersi).
+
+    `MIMARI §2.0` birebir: *«**Tek adımlı bir plan, basamak 6'nın bugünkü `CubeQuery`'sidir**
+    … ve aynı `parse_cube_query` beyaz listesinden geçer.»* `tek_adimli()` bu denkliği
+    **plandan fişe** kuruyordu; `§28.3` satır 2 (*«tek adım + garson kararsız → pill'ler
+    onaya düşer»*) ters yönü istiyor: onay yolu (`POST /plan/kos`) bir **plan** koşar,
+    fiş değil.
+
+    ⚠ İkinci bir sarmalayıcı yazmak, aynı denkliği iki yerden tanımlamak olurdu ㊲ —
+    ve o gün biri `SORGU` yazarken öteki başka bir fiil seçerdi.
+    """
+    if not isinstance(cube_query, dict) or not cube_query:
+        return None
+    return {"adimlar": [{"fiil": "SORGU", "cube_query": dict(cube_query)}]}
+

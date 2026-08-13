@@ -3100,3 +3100,69 @@ bir **yorum satırına** vurdu 🅞 — ölçüt *«sözü değil kullanımı ar
 | `§28.3` satır 4 — **yazma fiili → senkron onay** | ◐ yazma fiili bugün küp yolunda yok |
 | bütçe görünürlüğü (`adim=8 · saniye=30 · sorgu=12`) | 🔴 ekranda yok |
 | fiil tespiti (`>8 kelime **∨ fiil**`) | ◐ bugün yalnız kelime sayısı 🅖 |
+
+---
+
+## `§67` — **`note` bir cümledir** + **kararsız garson onaya düşer**
+
+### ① Adaşlıktan doğan kusur — `note` ham liste basıyordu
+
+Canlı ölçüm (`s30`, curl, **iki uçta birden**):
+
+```
+note = [{'sira': 1, 'fiil': 'SORGU', 'satir': 1}, {'sira': 2, 'fiil': 'SORGU', …}]
+```
+
+Sebep tek satır ve **adaşlık**:
+
+| ad | ne | okuru |
+|---|---|---|
+| `plan_kosucu.kos()["makbuz"]` | adım başına **kayıt listesi** (`sira·fiil·satir`) | koşucu içi |
+| `plan_tuketici.makbuz(plan)` | **cümle** (*«Bu cevap 5 adımda üretildi…»*) | kullanıcı |
+
+`kosum_yaniti` `out.get("makbuz")` okuyordu — **veriyi**, cümleyi değil. Merdiven yolu
+(`cevap()`) aynı cümleyi **doğru** kuruyordu; iki yol ayrışmıştı ㊲.
+
+> *Aynı adı taşıyan iki şeyden biri veri, öteki cümle ise, `get` ile okunan her zaman
+> yanlış olanıdır* 🅬 — çünkü sözlük erişimi tip sormaz.
+
+⊙ Ve bu, `bolumlere_cevir`'in kendi şerhinin **tekrarı**: sunum koşucu sözleşmesinden
+çıkarılmıştı, **not** çıkarılmamıştı — *yarım çıkarılan bir sunum, çıkarılmamış gibi
+davranır.* Çare: 🆕 `cevap_notu(plan, out)` — **tek sahip**, iki yol da onu çağırıyor.
+
+**Kapı:** `test_kosum_notu_cumledir.py` (**4 ✅**) — metin · iç alan sızmaz · iki yol tek
+sahip ㊲ · 🆃 makbuz **hâlâ** adım sayıyor (temizlik notu boşaltmasın). **Mutasyonla
+kanıtlandı** 🅑: eski okuma geri konunca **3 kırmızı**.
+
+### ② `§28.3` satır 2 — garson **kararsızsa** koşmaz
+
+Planın kendi teşhisi: *«garsonun güven sinyali de **HESAPLANIYOR, ama bir KAPIYA
+bağlanmıyor**»*. Ölçtüm — `_select_consistent` `uyum_orani` döndürüyor ve üç yere
+gidiyordu:
+
+| nereye | ne yapıyordu |
+|---|---|
+| uyuşmazlık chip'i | `1/1/1` hâli — **zaten vardı** ㊷ |
+| iz notu (*«%67 uyum»*) | bir **yazı**, bir kapı değil |
+| `oylama_cogunluk` bayrağı | 🔴 **doğrudan koşum** |
+
+Yani `§28.4`'ün orta satırı (`2/3 → pill'leri onaya düşür`) **hiç yoktu**: `2/3` sessizce
+koşuyordu. 🆕 `plan_tuketici.kararsiz_onizleme` o kapıdır ve **yeni bir gösterim
+açmadı** 🆘 — `§66`'nın onay yüzünü kullanır (`source="onizleme"` + `plan_taslagi`),
+çünkü *tek adımlı bir plan da bir plandır* (`MIMARI §2.0`). 🆕 `plan_semasi.tek_adim_plani`
+(`tek_adimli`'nın tersi) ㊲.
+
+Kullanıcının gördüğü: *«Bunu anladım ama **emin değilim** (garsonun 3 denemesinden %67'si
+aynı sonuca vardı). Koşmadan önce onayla.»* — sayı **beyan edilir** 🅜; *«emin değilim»*
+bir özür değil bir **ölçüdür**.
+
+**Kapı:** `test_kararsiz_garson_onaya_duser.py` (**5 ✅**) — kararsızda koşmaz · 🆃 **oy
+birliğinde koşar** (yoksa her soru iki tıka çıkardı, `§24`) · `k ≤ 1`'de sinyal yok →
+karar yok 🆕 · `KURAL B` · önizleme **onaylanabilir**.
+
+⊘ **Açık borç 🅖:** plan *«pill'ler önerilir»* diyor; bugün önizleme adımı **cümle**
+olarak çiziliyor (*«ort_oee · makine kırılımında»*), pill satırı değil. **Karar** doğru,
+**gösterim** yarım — ve bunu yazmak, tam yapılmış gibi göstermekten yeğdir.
+
+**Demet: 1457 ✅**, iki kırmızı `ask()` tavanıydı → dört satırın hiçbiri karar taşımıyor,
+gerekçeli muafiyet.

@@ -946,7 +946,7 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
               if _null else "")
     return {
         "source": "cube+llm",
-        "note": makbuz(plan) + "\n\n" + _bulgu_metni(plan, out) + _uyari + _eksik_notu,
+        "note": cevap_notu(plan, out) + _uyari + _eksik_notu,
         # 🔴 Onarım beyanları izin **başına değil sonuna** eklenir: birinci satır
         # *"kaç adım koştu"* sorusunun cevabıdır ve okuyucunun ilk aradığı odur.
         # Beyan yoksa liste bayt bayt bugünküdür (`KURAL B` disiplini).
@@ -1410,6 +1410,32 @@ def belge_takibi(request: Any, *, service: Any, schema: dict, soru: str,
                  "§RD-takip: ekrandaki belge düzenlendi (fiş zincirinden ÖNCE)"]
     return out
 
+
+def cevap_notu(plan: dict, out: dict) -> str:
+    """🔴 `§67` — koşmuş bir planın **insan notu** — ve bunun **tek sahibi** ㊲.
+
+    ## Ölçülen kusur (canlı `s30`, curl)
+
+    `/oneri/makro` ve `/plan/kos` `note` alanında **koşucunun iç listesini** basıyordu:
+
+        note = [{'sira': 1, 'fiil': 'SORGU', 'satir': 1}, {'sira': 2, ...}]
+
+    Çünkü `kosum_yaniti` `out.get("makbuz")` okuyordu — ama `plan_kosucu.kos()`'un
+    `makbuz` **anahtarı** adım başına makbuz **kayıtlarının listesidir** (`{"sira",
+    "fiil", "satir"}`), bir cümle değil. Cümleyi üreten şey aynı adı taşıyan
+    **fonksiyondur** (`makbuz(plan)`) ve merdiven yolu onu **doğru** çağırıyordu.
+
+    ⊙ Bu, bu dosyanın kendi şerhinin (`bolumlere_cevir`) tekrarıdır: *«`ciktilar`,
+    `katmanlar`, `makbuz`… bir **koşucu iç sözleşmesi**, bir cevap değil»* 🆘. Sunum
+    oradan çıkarılmıştı; **not** çıkarılmamıştı — ve yarım çıkarılan bir sunum,
+    çıkarılmamış gibi davranır.
+
+    ⚠ *Aynı adı taşıyan iki şeyden biri veri, öteki cümle ise, `get` ile okunan her zaman
+    yanlış olanıdır* 🅬 — çünkü sözlük erişimi tip sormaz.
+    """
+    return makbuz(plan) + "\n\n" + _bulgu_metni(plan, out)
+
+
 def kosum_yaniti(out: dict, plan: dict, *, schema: dict, soru: str,
                  makro: str | None = None) -> dict:
     """🔴 `§66` — koşmuş bir planın **HTTP cevabı** — ve bunun **tek sahibi** ㊲.
@@ -1431,7 +1457,10 @@ def kosum_yaniti(out: dict, plan: dict, *, schema: dict, soru: str,
         # ⚠ Son bölümün fişi karta **yeniden koşulabilirlik** verir (`/cube`, 0 LLM).
         "cube_query": (bolumler[-1]["cube_query"] if bolumler else None),
         "bolumler": bolumler,
-        "note": out.get("makbuz"),
+        # ⚠ `out["makbuz"]` **liste**dir (koşucu iç sözleşmesi); cümleyi `cevap_notu`
+        # üretir. Ölçüldü (canlı `s30`): bu satır bir listeyi `note` diye basıyordu ve
+        # arayüz onu **düz metin** olarak çiziyordu.
+        "note": cevap_notu(plan, out),
     }
     if makro:
         yanit["makro"] = makro
@@ -1487,3 +1516,60 @@ def onizleme_satiri(adim: dict) -> str:
     # karşılığıdır**: kalıp `_adim_metni`'nde tek bir yerde yazılı.
     metin = re.sub(r"\$(\d+) adımının", r"\1. adımın", metin)
     return re.sub(r"\$(\d+)", r"\1.", metin)
+
+def kararsiz_onizleme(cq: dict | None, soru: str, uyum: float, k: int,
+                      principal: Any = None) -> Any:
+    """🔴🔴 `§28.3` satır 2 + `§28.4` — **GARSON KARARSIZSA, KOŞMADAN ONAYA DÜŞER.**
+
+    ## Planın kendi tablosu (birebir)
+
+    ```
+    3/3 aynı cevap   → marj YÜKSEK  → koş
+    2/3              → marj DÜŞÜK   → pill'leri onaya düşür
+    1/1/1 (dağıldı)  → marj YOK     → adayları göster, cevaplama
+    ```
+
+    Ve planın teşhisi: *«garsonun güven sinyali de **HESAPLANIYOR, ama bir KAPIYA
+    bağlanmıyor**. Üç oy alınıp çoğunluk seçiliyor; **dağılım atılıyor**.»* Ölçüldü —
+    `_select_consistent` `uyum_orani` **döndürüyor**, ama üç yere gidiyordu: uyuşmazlık
+    chip'i (1/1/1 hâli · **zaten vardı**), iz notu (*«%67 uyum»* — bir **yazı**, bir kapı
+    değil) ve `oylama_cogunluk` bayrağı (**doğrudan koşum**). Yani `2/3` sessizce koşuyordu.
+
+    ## Neden yeni bir gösterim YOK 🆘
+
+    Onay yüzü `§66`'da kuruldu: `source="onizleme"` + `adimlar` + `plan_taslagi`, ve
+    `[koş]` `POST /plan/kos`'a **aynı planı** yollar (0 LLM). Tek adımlı bir plan da bir
+    plandır (`MIMARI §2.0`) — o yüzden burada üretilen şey ikinci bir kip değil, **aynı
+    kipin tek adımlı hâlidir**.
+
+    ⚠ **`KURAL B`:** öngörü katmanı kapalıyken `None` döner ve merdiven bayt bayt bugünkü.
+    ⚠ `k <= 1`'de oy **yok**, dolayısıyla kararsızlık da yok: sinyal ölçülmemişse
+    ondan bir karar üretmek, ölçmediğini bilmek gibi davranmaktır 🆕.
+
+    ⊘ **Sınır (açık borç 🅖):** plan `§28.1`'de *«pill'ler önerilir»* diyor; bugün
+    önizleme adımı **cümle** olarak çiziliyor (*«ort_oee · makine kırılımında»*), pill
+    satırı değil. Karar (koşma, sor) doğru; **gösterim** yarım — ve bunu yazmak, tam
+    yapılmışmış gibi göstermekten yeğdir.
+    """
+    from app import plan_semasi
+    from app.schemas import AskResponse
+
+    if k <= 1 or uyum >= 1.0 or not cq:
+        return None
+    if not _features.oneri_katmani_acik(principal):
+        return None
+    plan = plan_semasi.tek_adim_plani(cq)
+    if not plan:
+        return None
+    _log.info("§28.3: garson kararsız (uyum %.0f%%, %d örnek) → ONAYA düşüyor",
+              uyum * 100, k)
+    return AskResponse(
+        question=soru, source="onizleme", cube_query=cq, plan_taslagi=plan, gecerli=True,
+        adimlar=[{"sira": 1, "fiil": x.get("fiil"), "metin": onizleme_satiri(x)}
+                 for x in plan["adimlar"]],
+        # ⚠ Sayı **beyan edilir**: kullanıcı neden sorulduğunu bilmeden onaylayamaz.
+        # ⚠ Ve *«emin değilim»* bir özür değil bir **ölçüdür** — payda da yazılır 🅜.
+        note=(f"Bunu anladım ama **emin değilim** (garsonun {k} denemesinden "
+              f"%{uyum * 100:.0f}'i aynı sonuca vardı). Koşmadan önce onayla."),
+        trace=[f"§28.3: garson kararsız (self-consistency %{uyum * 100:.0f} / {k} örnek) "
+               "→ onaya düştü"])

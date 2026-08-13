@@ -4197,6 +4197,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     _r_eksik = _niyet_tasima.eksiklik(
                         (route_hit or {}).get("cube_query"), body.question or "")
                     if parsed and (not _supheli or _g_eksik <= _r_eksik):
+                        # 🔴 `§28.3` satır 2 — garson **kararsızsa** koşmaz, onaya düşer.
+                        _ko = _plan_tuketici.kararsiz_onizleme(
+                            parsed, body.question, uyum, k, principal)
+                        if _ko is not None:
+                            return _finish(_ko)
                         route_hit = {"cube_query": parsed, "order": None, "limit": None}
                         intent_source = "cube+llm"
                         if k > 1:
