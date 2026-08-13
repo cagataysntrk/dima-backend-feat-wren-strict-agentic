@@ -80,6 +80,32 @@ def test_ISITMA_GOMUCUYU_ONCE_BEKLER():
         "🔴 ısıtma indeksi kurmuyor — `oneri.ara(...)` çağrılmalı.")
 
 
+def test_GOMUCU_AYRI_IS_PARCACIGINDA_ISITILMAZ():
+    """🔴🔴 **CANLIDA ÖLÇÜLEN KUSUR** — ve bu kapının ilk hâli onu **kaçırdı** 🆜.
+
+    İlk yazımda gömücü ve indeks **ayrı** `_warm(...)` iş parçacıklarına verilmişti.
+    Yukarıdaki `test_ISITMA_GOMUCUYU_ONCE_BEKLER` yeşildi (gövde gerçekten `_embedder()`
+    çağırıyordu) ama tazelenen kabın ilk kütük satırı şunu yazdı:
+
+        dima.main: öneri indeksi: gömücü yok → ısıtma atlandı (leksik yol)
+
+    Sebep `vqr.py:39`: `_embedder()` yükleme kilidini **başkası tutuyorsa beklemeden
+    `None` döner** (bilinçli — bir istek 20 sn asılmasın). İki ısıtma yarışıyordu ve
+    sonra başlayan **her zaman kaybediyordu**.
+
+    ⊙ Ders 🆜: *bir kapı yanlış olmayabilir, yalnız **eksik** olabilir.* İlk yüklem
+    *«çağrılıyor mu»* diye sordu; sorulması gereken *«çağrıldığında **çalışabilir mi**»*
+    idi. Sıra bir **çağrı sırası** değil, bir **iş parçacığı** meselesiydi.
+
+    🅑 Mutasyon: `_warm(_embedder)` satırı geri eklenirse bu yüklem kırılır.
+    """
+    kaynak = _MAIN.read_text(encoding="utf-8")
+    assert "_warm(_embedder)" not in kaynak, (
+        "🔴 gömücü AYRI bir iş parçacığında ısıtılıyor — indeks ısıtması o kilide "
+        "takılıp `None` alır ve sessizce atlanır (`vqr.py:39`: beklemez). Gömücü, "
+        "indeksle **aynı zincirde** ısıtılmalı.")
+
+
 def test_ISITMA_HATASI_SESSIZ_DEGIL():
     """ADR-0020. Düşen ve **susan** bir ısıtma, hiç yazılmamış olandan kötüdür: yokluğu
     fark edilmez ve kusur bir kullanıcı şikâyetiyle geri döner 🅖."""

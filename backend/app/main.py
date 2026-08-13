@@ -147,8 +147,6 @@ async def lifespan(app: FastAPI):
     _warm(app.state.wren.schema)
     from app.vqr import _embedder
 
-    _warm(_embedder)
-
     def _oneri_indeksi() -> None:
         """🔴 **ÖLÇÜLMÜŞ ÜRÜN KUSURU** (2026-08-13): `§18.7` çok görünümlü temsili
         erişimi `%68,4 → %89,5` çıkardı, ama **ilk isteği `1,5 sn → 24,8 sn`** yaptı
@@ -156,10 +154,24 @@ async def lifespan(app: FastAPI):
         yani **kapı yeşildi ve kusuru göremiyordu** 🅖: p95 ılık dağılımın ölçüsüdür,
         ilk isteği hiç saymaz. Ama o ilk istek **bir kullanıcının** ilk tuşudur.
 
-        ⚠ Sıra **zorunlu ve bu yüzden ayrı bir iş parçacığı değil, aynı zincir**:
-        gömücü hazır değilken `ara()` vektör ayağını **atlar** ve indeks kurulmaz —
-        ısıtma sessizce hiçbir şey yapmış olurdu 🅯. `_embedder()` önbelleklidir
-        (`_emb_tried`), yani buradaki çağrı ya yüklemeyi bekler ya da hazırı döndürür.
+        🔴 **SIRA ZORUNLU — VE İLK YAZIMIM BUNU YARIŞA BIRAKTI (ölçüldü, canlıda).**
+        Gömücü ve indeks **ayrı** `_warm(...)` iş parçacıklarına verilmişti. Sonuç,
+        tazelenen kabın ilk kütük satırında göründü:
+
+            dima.main: öneri indeksi: gömücü yok → ısıtma atlandı (leksik yol)
+
+        Oysa gömücü **yükleniyordu**. Sebep `vqr.py:39`'da yazılı ve bilinçli bir
+        karardır: `_embedder()` yükleme kilidini **başka bir iş parçacığı tutuyorsa
+        beklemeden `None` döner** (*«bir istek 20 sn asılmasın»*). Yani benim iş
+        parçacığım **her zaman kaybediyordu** — ısıtma koşuyor, log basıyor ve
+        **hiçbir şey ısıtmıyordu** 🅯.
+
+        ⊙ Çözüm eşzamanlılık eklemek değil, **çıkarmak**: gömücü ve indeks artık
+        **tek** zincirde. `_embedder()` burada kilidi kendisi alır ve yükler; `ara()`
+        ondan sonra çağrılır. Toplam süre aynı, yarış **yapısal olarak** yok ㊴.
+
+        ⚠ Ve kusuru gösteren şey ADR-0020'ydi: kütüğe *«atlandı»* yazdığı için
+        görülebildi. Sessiz bir `return` olsaydı, ısıtma **var sanılırdı**.
 
         ⚠ **Isıtılan şey VARSAYILAN projenin indeksidir** ㊴🅖: şema istek başına
         (tenant'a göre) çözülür ve başka bir tenant'ın indeksi **hâlâ ilk istekte**
