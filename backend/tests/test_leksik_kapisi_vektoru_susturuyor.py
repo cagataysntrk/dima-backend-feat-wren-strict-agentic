@@ -57,7 +57,9 @@ def test_DARALTMA_DURUYOR():
 def test_VEKTORUN_EN_EMIN_ADAYI_GECIYOR():
     """🔴 **ASIL DEĞİŞMEZ.** Anlamsal aday listeye **girebilmeli**."""
     k = _ara_kaynagi()
-    assert "lek_kume.update(vek[:_VEK_GECIS])" in k, (
+    # ⚠ `§79`'da geçiş **koşullu** oldu; yüklem satırın **şekline** değil, **vektörün
+    # kümeye eklendiği** gerçeğine bakar ⑭.
+    assert "lek_kume.update(vek[:" in k, (
         "🔴 vektör adayı kapıdan geçmiyor — `§77`'nin üç anlamsal vakası yine `sıra=None` "
         "ile düşer (`«makine verimliliği»` · `«delivery performance»` · `«complaint count»`)")
 
@@ -78,3 +80,38 @@ def test_ZIT_OLCUT_LEKSIK_BOSKEN_VEKTOR_TEK_CARE():
     k = _ara_kaynagi()
     onces = k.split("if lek:")[0][-140:]
     assert "if not lek" not in onces, "🔴 daraltma koşulsuz olmuş — leksik boşken de susar"
+
+def test_ZAYIF_LEKSIKTE_KAPI_GEVSIYOR():
+    """🔴 `§79` — **ölçülmüş bir hâl**, sezgi değil: önek kovası boşken kapı gevşer.
+
+    Ayırt edici kova ölçüldü ㊷:
+
+    | sorgu | `onek` | sınıf |
+    |---|---|---|
+    | *«makine verimliliği»* · *«delivery performance»* · *«complaint count»* | **0** | 🔴 düşen |
+    | *«fire»* 3 · *«ciro»* 2 · *«ram 3»* 2 | **>0** | ✅ gürültüsüz |
+
+    Yani kullanıcının yazdığı hiçbir sözcük bir adayın **başına** oturmuyorsa, vektör o
+    listeye daha çok katkı verebilir. Önek varken kapı **dar** kalır — `§78` taraması
+    orada `k≥2`'nin gürültü ürettiğini ölçmüştü.
+    """
+    k = _ara_kaynagi()
+    assert "_VEK_GECIS if _onek_var else _VEK_GECIS_ZAYIF" in k, (
+        "🔴 geçiş sayısı leksiğin **gücüne** bağlı değil — ya koşulsuz gevşedi (gürültü) "
+        "ya da koşulsuz daraldı (`R@5` 91,9 → 86,5)")
+    assert oneri._VEK_GECIS_ZAYIF == 2, (
+        f"🔴 `_VEK_GECIS_ZAYIF={oneri._VEK_GECIS_ZAYIF}` — `§79` taraması **2**'yi ölçtü "
+        "(`R@5` 91,9 · gürültü temiz); `3` fazladan hiçbir şey getirmiyor 🆕. "
+        "Değiştiriyorsan taramayı yeniden koş.")
+
+
+def test_ONEK_SINYALI_DONUSLE_TASINIYOR():
+    """⑨`§65` — bu bilgi bir **modül globaliyle** taşınamaz: ısıtma ayrı bir **iplikte**
+    koşuyor ve bir global her iplikte aynı değeri gösterir. *Bir çağrının ürettiği bilgi,
+    o çağrının dönüşüyle taşınır.*"""
+    import inspect
+
+    kaynak = inspect.getsource(oneri._leksik_sira)
+    assert kaynak.rstrip().endswith("return _sira, bool(onek)"), (
+        "🔴 önek sinyali dönüşle taşınmıyor — global bir bayrak `§65`'in ölçülmüş "
+        "kusurunu tekrarlar")

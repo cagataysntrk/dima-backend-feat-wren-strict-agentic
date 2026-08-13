@@ -414,7 +414,7 @@ def test_LEKSIK_KANIT_VARKEN_LISTE_DOLDURULMAZ():
 
     sema, havuz = _sema_ve_havuz()
     for q in ("fire", "ciro"):
-        lek = oneri._leksik_sira(q, havuz)
+        lek, _ = oneri._leksik_sira(q, havuz)   # `§79` — dönüş (sıra, önek_var)
         assert lek, f"fikstür bozuk ㉒ — `{q}` leksik eşleşmeliydi"
         cikan = oneri.ara(q, sema)
         assert len(cikan) <= len(lek), (
@@ -439,6 +439,6 @@ def test_LEKSIK_BOSKEN_VEKTOR_SUSTURULMAZ():
                     "ortamda `[]` döner ve yüklem, ürünü değil **ortamı** ölçerdi ⑦.)")
     sema, havuz = _sema_ve_havuz()
     for q in ("zayiat", "vardya"):
-        assert not oneri._leksik_sira(q, havuz), f"fikstür bozuk ㉒ — `{q}` leksik EŞLEŞMEMELİ"
+        assert not oneri._leksik_sira(q, havuz)[0], f"fikstür bozuk ㉒ — `{q}` leksik EŞLEŞMEMELİ"
         assert oneri.ara(q, sema), (
             f"🔴 `{q}`: leksik boşken vektör de susturulmuş — sinonim/yazım yolu öldü.")

@@ -3823,3 +3823,54 @@ payda 591` — **birebir aynı** 🅜. **Demet:** 453 ✅.
 ### ⊘ FE ekran doğrulaması — **dokuzuncu tur** yapılamadı
 
 `localhost:3000` → `000`.
+
+---
+
+## `§79` — **kalan açık kapandı**: leksik **zayıfken** kapı gevşiyor (ölçülmüş hâl)
+
+### Ayırt edici **ölçüldü**, seçilmedi ㊷
+
+`§78` kapıyı `k=1` ile araladı ama açığı (86,5 ↔ 91,9) kapatamadı; `k≥2` **koşulsuz**
+uygulanınca gürültü geliyordu. Sorulacak doğru soru şuydu: *«bu üç vaka ötekilerden nasıl
+ayrılıyor?»* — leksik kovalar ölçüldü:
+
+| sorgu | `onek` | `kapsam` | sınıf |
+|---|---|---|---|
+| *«makine verimliliği»* | **0** | 1 | 🔴 düşen |
+| *«delivery performance»* | **0** | 3 | 🔴 düşen |
+| *«complaint count»* | **0** | 3 | 🔴 düşen |
+| *«fire»* | **3** | 0 | ✅ |
+| *«ciro»* | **2** | 0 | ✅ |
+| *«ram 3»* | **2** | 19 | ✅ |
+
+🔴 **Ayrım tam**: düşen üçünde kullanıcının yazdığı hiçbir sözcük bir adayın **başına**
+oturmuyor — leksik yalnız **token kapsamıyla** tutunmuş. *«Leksik zayıf»* artık bir sezgi
+değil, **sayılabilir bir hâl**.
+
+### Sonuç — gürültüsüz **vektör tavanı**
+
+| `_VEK_GECIS_ZAYIF` | `R@3` | `R@5` | `MRR` | gürültü ㊳ |
+|---|---|---|---|---|
+| 1 | 86,5 | 86,5 | 0,820 | temiz |
+| **2** ← seçilen | 86,5 | **91,9** | **0,832** | **temiz** |
+| 3 | 86,5 | 91,9 | 0,832 | temiz *(fazladan hiçbir şey yok 🆕)* |
+
+⊙ `§78`'de **koşulsuz** `k=2` aynı `91,9`'u veriyordu ama *«ciro»* → `ik.toplam_prim`,
+*«ram 3»* → `dogalgaz` gürültüsüyle. **Koşullu** hâlde dört kontrol sorgusu da **birebir
+temiz**. Yani `§78`'de *«ancak gürültü ödeyerek gelir»* diye ilan ettiğim açık, **bedelsiz**
+kapandı — çünkü bedeli ödeten şey `k` değil, **koşulsuzluğuydu** ㊴.
+
+### İki kusur, ikisi de kapı tarafından yakalandı 🅤
+
+* **Modül globali reddedildi** ⑨`§65`: önek sinyali önce bir global ile taşınmıştı; ısıtma
+  ayrı bir **iplikte** koştuğu için o desen zaten bir kez ısırmıştı. Sinyal **dönüşe**
+  taşındı (`_leksik_sira -> (sıra, önek_var)`).
+* **Erken dönüş unutuldu** ⑯: imza değişti ama `if not q: return []` kaldı →
+  `ValueError: not enough values to unpack` (boş girdi). `test_bos_ve_ANLAMSIZ_girdi_
+  PATLAMIYOR` **yakaladı**; iki satırlık düzeltme. *Bir imzayı değiştirirken kuyruğu
+  görmek kolaydır, erken çıkışları görmek disiplin ister.*
+
+**Kapı:** `test_leksik_kapisi_vektoru_susturuyor.py` (**6 ✅**) — zayıf leksikte gevşeme ·
+`_VEK_GECIS_ZAYIF == 2` (tarama sabiti) · sinyal **dönüşle** taşınıyor · 🆃 önek varken dar
+kalıyor. Yüklem satırın **şekline değil yapıya** bağlandı ⑭. **Korpus:** `83/69/68/72 ·
+%95,6 · 558/591` — **birebir aynı** 🅜. **Demet:** 455 ✅.

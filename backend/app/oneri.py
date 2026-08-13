@@ -192,6 +192,10 @@ _RRF_K = 10
 #: kapanmaması bilinçli — iki vaka daha ancak **gürültü ödeyerek** gelir 🆖.
 _VEK_GECIS = 1
 
+#: 🔴 `§79` — **leksik ZAYIFKEN** (önek kovası boş) kapıdan geçen vektör adayı sayısı.
+#: Ölçüm `§79`'da; `_VEK_GECIS` ile arasındaki fark bir sezgi değil, **kovaya bağlı**.
+_VEK_GECIS_ZAYIF = 2
+
 #: Öneri şeridinin tavanı (`FAZ 6.4`: **≤7**).
 VARSAYILAN_LIMIT = 7
 
@@ -348,7 +352,7 @@ def _deger_adaylari(c: dict, cube: str, kup_display: str, gorunen: dict) -> list
 
 
 
-def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
+def _leksik_sira(kismi: str, adaylar: list[Aday]) -> tuple[list[int], bool]:
     """Edge n-gram **önce**, bulanık benzerlik **sonra** (`5.3`).
 
     Önek eşleşmesi typeahead'in doğal davranışıdır ve **bedavadır**; bulanık ayak
@@ -364,7 +368,10 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
 
     q = _norm(kismi).strip()
     if not q:
-        return []
+        # ⚠ `§79` — **erken dönüş de tuple'dır** ⑯: imza değişince yalnız kuyruğu
+        # güncellemek, boş girdide `ValueError: not enough values to unpack` üretti
+        # (kapı yakaladı: `test_bos_ve_ANLAMSIZ_girdi_PATLAMIYOR`).
+        return [], False
     # 🔴🔴 `§57` — **ÇOK KELİMELİ GİRDİDE EŞLEŞME TOKEN BAZINDADIR.**
     #
     # Ölçülen kusur (kullanıcı ekranı, `q=«ram 3 neden düşük»`):
@@ -420,8 +427,13 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
     onek.sort(key=lambda t: (t[0], len(adaylar[t[1]].etiket)))
     kapsam.sort()
     bulanik.sort()
-    return ([i for _, i in onek][:_HAVUZ] + [i for *_, i in kapsam][:_HAVUZ]
-            + [i for _, i in bulanik][:_HAVUZ])
+    # 🔴 `§79` — **ÖNEK KOVASI BOŞ MU** bilgisi `ara()`'ya taşınır. ⚠ Modül düzeyinde bir
+    # değişkenle taşımak, `§65`'in ölçülmüş kusurunun aynısı olurdu: ısıtma bir **iplikte**
+    # koşuyor ve bir global her iplikte aynı değeri gösterir. Bir çağrının ürettiği bilgi,
+    # o çağrının **dönüşüyle** taşınır.
+    _sira = ([i for _, i in onek][:_HAVUZ] + [i for *_, i in kapsam][:_HAVUZ]
+             + [i for _, i in bulanik][:_HAVUZ])
+    return _sira, bool(onek)
 
 
 #: 🔴 `5.7` — **İNDEKS: SÜRÜM ANAHTARLI, BELLEKTE, BAYATLAYAMAZ.**
@@ -666,7 +678,7 @@ def ara(kismi: str, schema: dict, *, izinliler: set[str] | None = None,
     if not havuz:
         return []
 
-    lek = _leksik_sira(kismi, havuz)
+    lek, _onek_var = _leksik_sira(kismi, havuz)
     vek = _vektor_sira(kismi, havuz, str(schema.get("version") or ""))
 
     puan: dict[int, float] = {}
@@ -698,9 +710,18 @@ def ara(kismi: str, schema: dict, *, izinliler: set[str] | None = None,
     # 🅑 Mutasyon: `if lek:` kaldırılırsa `fire` sorgusuna `metre`/`enerji` geri gelir.
     if lek:
         lek_kume = set(lek)
-        # 🔴 `§78` — vektörün **en emin** adayı kapıdan geçer (`_VEK_GECIS`, ölçülmüş).
-        # ⚠ Kapı kaldırılmadı: daraltma sürüyor, yalnız **bir** anlamsal aday ekleniyor.
-        lek_kume.update(vek[:_VEK_GECIS])
+        # 🔴 `§78`/`§79` — vektörün adayı kapıdan geçer; **kaç tane** olduğu leksiğin
+        # ne kadar emin olduğuna bağlı. Ölçülen ayırt edici **önek kovası** ㊷:
+        #
+        #     «makine verimliliği» · «delivery performance» · «complaint count»
+        #         → onek=0   (leksik yalnız TOKEN KAPSAMIYLA tutundu)   🔴 düşen üç vaka
+        #     «fire» onek=3 · «ciro» onek=2 · «ram 3» onek=2            ✅ gürültüsüz
+        #
+        # Yani *«leksik zayıf»* bir sezgi değil, **ölçülmüş bir hâl**: kullanıcının yazdığı
+        # hiçbir sözcük bir adayın **başına** oturmuyorsa, o listeye vektör daha çok
+        # katkı verebilir. Önek varken kapı **dar** kalır — `§78` taraması `k≥2`'nin
+        # orada gürültü ürettiğini ölçmüştü (*«fire»* → *«metre»*).
+        lek_kume.update(vek[:(_VEK_GECIS if _onek_var else _VEK_GECIS_ZAYIF)])
         puan = {i: p for i, p in puan.items() if i in lek_kume}
 
     # ⚠ Eşitlikte **leksik önde** olan kazanır: bir önek eşleşmesi kullanıcının

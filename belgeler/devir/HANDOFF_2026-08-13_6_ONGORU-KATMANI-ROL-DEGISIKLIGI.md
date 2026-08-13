@@ -108,18 +108,33 @@ aynı** (`83/69/68/72 · %95,6 · 558/591`).
 | kalem | ölçüm | sonuç |
 |---|---|---|
 | `FAZ 0` paydası 🆉 | `VAKALAR` **38** üye (`GURULTU` 1) → **payda 37** | ✅ planın istediği aralıkta (*«30–40 gerçek iş ifadesi»*) |
-| `_RRF_K = 10` | doğrudan prob: 5 soru × 3 farklı `K` → **top-2 hiç değişmiyor**, yalnız 3. sıra 3 kez oynadı | 🟡 ölçülmüş **kusur yok** |
-| `_RRF_K` kalibrasyonu | `lab/oneri_olcum.py` **füzyonu ölçmüyor** (`fuzyon={}`, üç `K` için birebir aynı) | ⊘ **araç yetersiz** 🆆 — kalibrasyon için önce **aracın** RRF'i ölçmesi gerek |
+| ölçüm aracı | üç ayak ölçüyordu (`leksik`·`vektor`·`birlesik`=**max**), **ürünün RRF'ini ölçmüyordu** 🆆 | ✅ `§76`'da **`urun` ayağı** eklendi — ürün **çağrılıyor**, taklit edilmiyor ⑦ |
+| `_RRF_K = 10` | doğru aletle: `K ∈ {5,10,20,37,60}` → **beşinde de birebir aynı** | ✅ **kapandı** — *fark ölçülemedi → sabite dokunulmadı* 🆕 |
+| ürün sıralaması | 🔴 `R@3` **83,8** ↔ vektör **91,9**; üç anlamsal vaka `sıra=None` | ✅ `§77` teşhis → `§78` çare: `_VEK_GECIS=1` → **86,5 · MRR 0,820** |
 | `_norm` yinelenmesi | **6** modülde tanımlı | 🟡 temizlik; ölçülmüş kullanıcı kusuru yok |
 
-⊙ **Ölçüm tabanı (37 vaka, `s36` kodu):** leksik `R@1 70,3 · R@3 75,7 · MRR 0,749` ·
-vektör `R@1 81,1 · R@3 91,9 · MRR 0,868`. *(Vektör ayağı test kabında ancak canlı
-gömme önbelleği bağlanınca koşuyor — `-v …_dima_hf_cache:/tmp/fastembed_cache`.)*
+⊙ **Ölçüm tabanı (37 vaka, `s37` kodu):**
+
+| ayak | `R@1` | `R@3` | `R@5` | `MRR` |
+|---|---|---|---|---|
+| leksik | 70,3 | 75,7 | 81,1 | 0,749 |
+| vektör | 81,1 | **91,9** | 91,9 | 0,868 |
+| birleşik (max) | 78,4 | 91,9 | 91,9 | 0,854 |
+| **ürün** (bugün) | 78,4 | **86,5** | 86,5 | **0,820** |
+
+*(Vektör ayağı test kabında ancak canlı gömme önbelleği bağlanınca koşar —
+`-v …_dima_hf_cache:/tmp/fastembed_cache`, **`DIMA_VQR_EMBEDDER=off` verilmez**.)*
+
+🔴 **İLAN EDİLMİŞ AÇIK** 🆖: ürün **86,5** ↔ vektör tavanı **91,9**. Kapatılmadı çünkü
+tarama sınırı da gösterdi: kapıdan `k≥2` aday geçirmek `R@5`'i 91,9'a çıkarıyor **ama**
+`k=5`'te *«fire»* sorgusu yine *«metre»* döndürüyor — kapının kurulma sebebi. *Kapatılmayan
+bir açık, ilan edildiği sürece bir borç değil bir karardır* 🆂.
 
 ---
 
 ## §7 — DEVİR, TEK CÜMLE
 
-> Öngörü katmanının **karar mekaniği bitti, kapılı ve canlıda** (`s36`); geriye **tek bir
-> doğrulanmamış şey** kaldı: arayüzü **ekranda bir kez görmek** (`localhost:3000` altı
-> turdur kapalı) — kod tarafında açık bir iş yok.
+> Öngörü katmanının **karar mekaniği bitti, kapılı ve canlıda** (`s37`); öneri sıralaması
+> ölçülüp **iyileştirildi** (`R@3 83,8 → 86,5`) ve kalan açık **ilan edildi** (vektör
+> tavanı `91,9`); geriye **tek bir doğrulanmamış şey** kaldı: arayüzü **ekranda bir kez
+> görmek** (`localhost:3000` on turdur kapalı).
