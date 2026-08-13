@@ -36,7 +36,7 @@ _JSON = _KOK / "lab" / "reports" / "nl_corpus.json"
 # `belgeler/denetim/`e taşındı (`1ee3d14`). Yol sabiti güncellendi — kapı
 # gevşetilmedi, **aradığı yer** düzeltildi. ⚠ Taşınma fark edilmeseydi kapı
 # «belge yok» diye **sessizce atlanır** ve yayın çürümesi görünmez olurdu 🅣.
-_BELGE = _KOK.parent / "belgeler" / "denetim" / "DOGRULUK.md"
+_BELGE = _KOK.parent / "belgeler" / "DOGRULUK.md"
 
 #: ⚠ İki AYRI eksiklik, iki AYRI sonuç — ve bunu ayırmak bir kapı hijyenidir:
 #:   · `belgeler/` **hiç bağlanmamış** (konteynerde `-v …/belgeler:/belgeler:ro` yok)

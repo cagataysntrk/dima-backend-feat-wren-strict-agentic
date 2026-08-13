@@ -37,8 +37,9 @@ import pytest
 # kırmıştı); bu dosyanın sabiti **atlanmıştı**. Altı yüklem `FileNotFoundError`
 # veriyordu ve **yalnız tam kapıda** görünüyordu 🅣 — hedefli koşumlar bu dosyayı
 # hiç seçmiyordu. ⚠ Kapı **gevşetilmedi**, yalnız **adresi** düzeltildi.
-_BELGE = (pathlib.Path(__file__).parent.parent.parent / "belgeler" / "denetim"
-          / "HAVA-BOSLUGU.md")
+# ⟳ `§80` — `belgeler/denetim/`den **kökteki yayın sınıfına** döndü (gerekçe:
+# `test_a7_a8_yayin_korumasi`); `denetim/` 🔒 değiştirilmez, bu belge ise güncel tutulur.
+_BELGE = pathlib.Path(__file__).parent.parent.parent / "belgeler" / "HAVA-BOSLUGU.md"
 
 pytestmark = pytest.mark.skipif(
     not _BELGE.parent.is_dir(),

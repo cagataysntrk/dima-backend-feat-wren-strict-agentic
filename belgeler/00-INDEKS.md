@@ -33,6 +33,7 @@ sıfırlansa bile operasyon buradan devam eder.
 
 | dosya | ne |
 |---|---|
+| [`README.md`](../README.md) | 🔴 **depoya giriş** — *bu nedir · nasıl koşar · ilk gün okuma sırası*. ⚠ Bir **yön tabelasıdır**, referans değil: bilgiyi taşımaz, işaret eder |
 | [`OPERASYON.md`](../OPERASYON.md) | kural seti · döngü adımları · test kapısı · öz-denetim |
 | [`OPERASYON-DURUM.md`](../OPERASYON-DURUM.md) | **nerede kaldık** · açık borçlar · ölçüm tabanı |
 | [`OPERASYON-DENETIM.md`](../OPERASYON-DENETIM.md) | denetim ajanlarının görev metinleri |
@@ -80,6 +81,33 @@ fotoğrafıdır ve **değiştirilmez**; bu ise **yayımlanmış bir iddiadır** 
 |---|---|
 | [`Dima-0-100-Gorev-Takip.md`](urun/Dima-0-100-Gorev-Takip.md) | ürün şartnamesi — ⚠ **mimari otorite değildir** |
 
+## `plan/` — **yürürlükteki ve kapanmış operasyonların planı** (canlı)
+
+Bir *operasyon* tek plana bağlı bir çalışma dönemidir; her operasyonun bir **durum**
+dosyası vardır ve bağlam sıfırlansa bile iş oradan devam eder.
+
+| dosya | ne |
+|---|---|
+| [`2026-08-12_ONGORU-KATMANI-KARARI.md`](plan/2026-08-12_ONGORU-KATMANI-KARARI.md) | 🔴 **öngörü katmanı planı** — *route ve garson TAHMİNCİ oluyor, kararı kullanıcı verir* |
+| [`ONGORU-DURUM.md`](plan/ONGORU-DURUM.md) | 🔴 **nerede kaldık** (en son çalışılan operasyon) |
+| [`DIMA-V1-YOL-HARITASI.md`](plan/DIMA-V1-YOL-HARITASI.md) · [`DIMA-GARSON-ARA-FAZ.md`](plan/DIMA-GARSON-ARA-FAZ.md) | ⟳ kapanmış operasyonlar — *işaretlenir, silinmez* |
+| [`2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md`](plan/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md) · [`2026-08-13_ONGORU-KATMANI-DURUM-VE-SARTNAME.md`](plan/2026-08-13_ONGORU-KATMANI-DURUM-VE-SARTNAME.md) | tarih damgalı plan belgeleri |
+
+⚠ **Kök `OPERASYON-DURUM.md` ile karıştırma:** o **önceki** operasyonun durumudur. En son
+durum **`plan/ONGORU-DURUM.md`**'dedir; ikisini birden *«nerede kaldık»* diye okumak,
+`KAT-1`'in belge düzeyindeki ihlalidir.
+
+## `arastirma/` — **karardan ÖNCEKİ girdi** (🔒 tarih damgalı)
+
+Bir kararın gerekçesi değil, **hammaddesi**: literatür taraması, rakip analizi, ham
+tasarım sohbeti. *Karar `mimari/`'ye ya da `plan/`'a yazılır; buradaki metin onun
+kaynağıdır ve **değiştirilmez**.*
+
+| dosya | ne |
+|---|---|
+| [`2026-08-11_REKABET-VE-MIMARI-ANALIZI.md`](arastirma/2026-08-11_REKABET-VE-MIMARI-ANALIZI.md) | rekabet + mimari analiz |
+| [`2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md`](arastirma/2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md) | 🔴 **garson devrinin doğduğu ham sohbet** — *«LLM anlar → makine diline çevirir → küpler işler → LLM insan diliyle servis eder»* |
+
 ## `denetim/` — 🔒 tarih damgalı ölçümler (**değiştirilmez**)
 
 Adlandırma: **`YYYY-AA-GG_KONU.md`**. Tarih **başta** ki dizin kendiliğinden
@@ -98,6 +126,15 @@ kronolojik sıralansın.
 | [`2026-08-07_CEVIRI-SOZLESMESI.md`](denetim/2026-08-07_CEVIRI-SOZLESMESI.md) | 🔴 **«LLM anlıyor; SÖYLEYEMİYOR».** Sistem dili net ama garsonun fişi eksik: `route()` **12 anahtar** üretebiliyor, şema modele **7** alan sunuyor — `order`·`limit`·`entity_limit`·`measure_having`·`ayrik_aylar`·`referans` mutfakta çalışıyor, LLM ifade **edemiyor**. ⊙ Model **kolay** işte (takip: 21 örnek, 6 ek alan, `reason`) **zor** işten (taze: 5 örnek, sebepsiz `cube:null`) daha yetkili. 🔴 Ve *neyin ne yaptığı* bir yerde gerçekten karışık: sorgunun sahibi LLM, *«ne istendi»* iddiasının sahibi deterministik `Niyet` → ölçülmüş **yanlış beyan** |
 | [`2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md`](denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md) | 🔴🔴 **DÖNGÜ KURALINA DAHİL** — `OPERASYON.md §2c/T`, her demet kapanışında denetlenir. **Orkestratör bir TAVAN açtı, tabanı yükseltmedi**: tabanı `route()`+**katalog** belirliyor ve bu turun iki sessiz-yanlışının **ikisi de** katalogdan geldi. Kullanıcı tezi (*"garson güvenilir olsun, sinonim gerekmesin"*) **düzeltildi**: katalog route'un sözlüğü değil **garsonun menüsüdür** (kanıt: sözlüksüz dönemde **9/9 `cube:null`**) — doğru okunuşu *"route sahte kesinlik üretmesin"*. ⊙ Taze statik ölçüm: **28 küp · 173 ölçü · 141 benzersiz ad · 13 çok sahipli · yön beyanı 125'te YOK (%72)** · «müşteri» **5 ad, 3 ayrık aile** → `blend` yapısal olarak kurulamıyor · `cekirdek/` katmanında `metrikler` var **`varliklar` YOK** · `eval --slice llm` **4 vaka**, `nl_corpus` **LLM'siz**. **Yedi borç** (`B-0`…`B-7`) teşhis · kanıt · kök · kök çözüm ile. 🔴 `B-1` (garson korpusu) birinci sırada: kurulmadan öteki hiçbir kararın kazancı okunamaz. ⊘ **Hiçbir test koşulmadı**; canlı derlenmiş şema okunmadı |
 | [`2026-08-09_KAPI-YAVASLAMASI-TESHISI.md`](denetim/2026-08-09_KAPI-YAVASLAMASI-TESHISI.md) | 🔴🔴 **DÖNGÜ KURALINA DAHİL · ÖNCELİKLİ** *(günde ~3s 32dk saf bekleme — ölçüldü)*. **Kapı 1:50 → 13:00 (7,1×) — ve sebep kapı değil ÜRÜN.** Paralellik sağlam, payda kırpılmadı (tersine **+%38**); `/ask` **47→177 ms** yavaşladı (×3,8). Mekanizma: 5 günde 335 commit · sıcak yola **41 yeni modül** (17'si `ask.py`'de) · `cube_router`'da **sıfır** memoizasyon · `partial_unknowns` 4→7 çağrı. Vaka: **11 satırlık commit = +94 sn**. ⊙ Yan bulgular: `--hepsi` kendi belgesine aykırı `eval_llm` koşuyor · `_AGIR` dilim sabiti bayat · wren-engine **3209 restart**. 🔴 En kalıcı öneri: **latency tavanı kapısı** — 47→177 ms görünmedi çünkü ölçen kapı yoktu. ⚠ **Hiçbir test koşulmadan** ölçüldü (26 tarihsel konteyner kütüğü + git); profil **yapılmadı** |
+
+### ⟳ `denetim/` içinde **üçüncü bir sınıf**: canlı kayıt defteri
+
+`DENETIM-FAZ-A-F.md` ve `DENETIM-A-G.md` bir **fotoğraf değil**, sürekli eklenen **tek
+kayıt**tır (*«ajan bulgularının TEK KAYDI»*). Tarih damgası vermek *«değiştirilmez»*
+sözünü yalan yapardı; `belgeler/` köküne taşımak ise yanlış olurdu — orası **kapıyla**
+canlı tutulan yayın sınıfıdır, bu ikisini tutan bir kapı yok. Sınıf `test_belge_duzeni.py
+::DENETIM_CANLI_DEFTER`'de **adıyla** ilan edildi; listeye ad eklemek **yazılı gerekçe**
+ister.
 
 ## `devir/` — 🔒 oturum devri (**değiştirilmez**)
 

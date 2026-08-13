@@ -483,7 +483,7 @@ yeniden üretilir.
 ### 🔴 `K1…K8` — GARSON FAZININ BEDELİ ÖDENMİŞ SEKİZ KURALI *(2026-08-07)*
 
 > Hepsi bu turda **gerçek bir kusurdan** doğdu; hiçbiri önlem değil **fatura**.
-> Kaynak: `DIKKAT-EDILECEKLER.md §3` + üç denetim ajanının bulguları.
+> Kaynak: `belgeler/denetim/2026-08-07_DIKKAT-EDILECEKLER.md §3` + üç denetim ajanının bulguları.
 
 11. **`K1` · Ajan raporu İKİNCİ EL KANITTIR.** Üç ajanın 13 bulgusundan **biri yanlıştı**
     (`DA-6`); kodu okumadan uygulasaydım **çalışan bir meta-kapıyı sökmüş** olurdum.
@@ -615,7 +615,7 @@ hatası · FAZ 7 kapsamı) **ayrı tur açılmadan**, ilgili faza gelindiğinde 
 
 ## 10b · 🔴 SIRADAKİ FAZ — ŞEMA BUDAMASI *(`B1…B6`, tasarım hazır)*
 
-> **Tasarım `DIKKAT-EDILECEKLER.md §4`'te** — dört ölçümle yazıldı. Buraya **kopyalanmaz**
+> **Tasarım `belgeler/denetim/2026-08-07_DIKKAT-EDILECEKLER.md §4`'te** — dört ölçümle yazıldı. Buraya **kopyalanmaz**
 > (`D1`: kaynağı güncelle, kopyalama); buraya giren yalnız **bağlayıcı sıra ve şartlar**.
 
 ### Neden bu faz

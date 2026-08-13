@@ -65,10 +65,39 @@ _git_gerekli = pytest.mark.skipif(
 #: 🔴 Kökte durabilecek **tek** belge kümesi — operasyonun giriş noktası.
 #: `backend/CLAUDE.md` doğrudan bunlara işaret ediyor: bağlam sıfırlansa bile
 #: operasyon buradan devam eder. Taşımak, girişi görünmez yapardı.
-KOK_IZINLI = {"OPERASYON.md", "OPERASYON-DURUM.md", "OPERASYON-DENETIM.md"}
+#:
+#: ⟳ **`README.md` EKLENDİ (2026-08-13) — ve bu sessiz bir istisna değil, bir gerekçedir.**
+#: Bu testin kendi şerhi *«yeni bir belge kökte durmak istiyorsa önce bu testin gerekçesi
+#: değiştirilmeli»* diyordu; işte değiştiriliyor. Sebep ölçüldü: depoda **kök `README`
+#: yoktu** ve depoya ilk bakan biri (insan ya da yeni oturum) `backend/` · `belgeler/` ·
+#: `WrenAI-main/` · `lab/` yığınıyla karşılaşıp **nereden başlayacağını** bilmiyordu.
+#: `OPERASYON*` üçlüsü bir **operasyonun** giriş noktasıdır — *«bu depo nedir, nasıl
+#: koşar»* sorusunun cevabı değildir; üstelik o üçlü artık **önceki** operasyonu anlatıyor
+#: (güncel durum `belgeler/plan/ONGORU-DURUM.md`) ⑳.
+#: ⚠ `README.md` bir **yön tabelasıdır**: kendisi bilgi taşımaz, hepsini işaret eder —
+#: yani bayatlaması *«bağ kırıldı mı»* sorusuna indirgenir ve onu bu dosyadaki
+#: `test_INDEKS_kirik_bag_tasimaz` kardeşi kadar mekanik bir kapı tutabilir.
+KOK_IZINLI = {"OPERASYON.md", "OPERASYON-DURUM.md", "OPERASYON-DENETIM.md", "README.md"}
 
 #: Tarih damgalı ad kalıbı — tarih **başta** ki dizin kendiliğinden kronolojik sıralansın.
 _TARIHLI = re.compile(r"^\d{4}-\d{2}-\d{2}_[\wÇĞİÖŞÜçğıöşü.\-]+\.md$")
+
+#: ⟳ `§80` — **KURALIN ÖNGÖRMEDİĞİ ÜÇÜNCÜ SINIF: CANLI KAYIT DEFTERİ.**
+#:
+#: `denetim/` tanımı gereği 🔒 *«yazıldığı anın fotoğrafı, DEĞİŞTİRİLMEZ»*. Ama bu iki
+#: dosya bir fotoğraf değil, **sürekli eklenen tek kayıt**: başlıkları da bunu söylüyor
+#: (*«ajan bulgularının TEK KAYDI»* · *«bulgu → ölçüm → karar → kapı»*) ve ikisi de
+#: bugün hâlâ güncelleniyor.
+#:
+#: Üç seçenek vardı ve ikisi yanlıştı: **(a)** tarih damgası vermek — *«değiştirilmez»*
+#: sözünü yalan yapardı, çünkü ertesi gün yine yazılacak; **(b)** `belgeler/` köküne
+#: taşımak — orası *«dışarıya verilen, **kapıyla** canlı tutulan»* sınıfıdır ve bu ikisini
+#: canlı tutan bir kapı **yok** 🆆. Kalan doğru seçenek **(c)**: sınıfı **adıyla ilan et**
+#: ㉖ ve listeyi **kısa** tut — bir muafiyet ne kadar uzarsa kural o kadar azalır.
+#:
+#: ⚠ Buraya yeni bir ad eklemek, *«bu dosya neden ne fotoğraf ne yayın»* sorusunu
+#: **yazılı** cevaplamayı gerektirir. Cevap yoksa dosya ya tarihlenir ya taşınır.
+DENETIM_CANLI_DEFTER = {"DENETIM-FAZ-A-F.md", "DENETIM-A-G.md"}
 
 
 def _kok_md() -> list[str]:
@@ -110,10 +139,12 @@ def test_DENETIM_raporlari_tarih_damgali():
     if not (_BELGELER / "denetim").is_dir():
         return
     hatali = [p.name for p in (_BELGELER / "denetim").glob("*.md")
-              if not _TARIHLI.match(p.name)]
+              if not _TARIHLI.match(p.name) and p.name not in DENETIM_CANLI_DEFTER]
     assert not hatali, (
         f"🔴 tarih damgası olmayan denetim raporu: {hatali} — "
-        "ad `YYYY-AA-GG_KONU.md` olmalı")
+        "ad `YYYY-AA-GG_KONU.md` olmalı.\n"
+        "   Sürekli eklenen bir **kayıt defteri** ise `DENETIM_CANLI_DEFTER`'e "
+        "**gerekçesiyle** yaz; gerekçesiz bir ad, sessiz bir kural aşınmasıdır.")
 
 
 @_git_gerekli

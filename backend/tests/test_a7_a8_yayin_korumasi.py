@@ -37,12 +37,15 @@ import re
 
 import pytest
 
-# ⟳ **YOL DEĞİŞTİ (2026-08-13):** `DOGRULUK.md` `belgeler/` kökünden
-# `belgeler/denetim/`e taşındı (`1ee3d14`). Yol sabiti güncellendi — kapı
-# gevşetilmedi, **aradığı yer** düzeltildi. ⚠ Taşınma fark edilmeseydi kapı
-# «belge yok» diye **sessizce atlanır** ve yayın çürümesi görünmez olurdu 🅣.
-_BELGE = (pathlib.Path(__file__).parent.parent.parent / "belgeler" / "denetim"
-          / "DOGRULUK.md")
+# ⟳ **YOL İKİ KEZ DEĞİŞTİ — ikisi de kayıtlı.**
+# ① `1ee3d14`: `belgeler/` kökünden `belgeler/denetim/`e taşındı.
+# ② **`§80` (2026-08-13): GERİ ALINDI** ve sebebi ölçüldü — `belgeler/denetim/` dizini
+#    `00-INDEKS.md`'de 🔒 *«tarih damgalı, DEĞİŞTİRİLMEZ»* diye tanımlı; `DOGRULUK.md` ise
+#    **sürekli güncellenen bir yayındır** (bu kapı zaten onu güncel tutuyor). Yani dosya,
+#    tanımı gereği ait olmadığı bir dizinde duruyordu ve üç kusuru birden üretiyordu:
+#    indekste **kırık bağ**, `test_belge_duzeni` kırmızısı (*«tarih damgası yok»*), ve
+#    yerleşim kuralıyla çelişki. ⚠ Kapı **gevşetilmedi**, yine yalnız **adresi** düzeltildi.
+_BELGE = pathlib.Path(__file__).parent.parent.parent / "belgeler" / "DOGRULUK.md"
 
 pytestmark = pytest.mark.skipif(
     not _BELGE.parent.is_dir(),

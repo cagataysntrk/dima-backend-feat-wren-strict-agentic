@@ -151,7 +151,7 @@ kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 | ④ | `CLARIFY:dönem` (181–296 soru/şirket) | ⏭ ölçülmedi |
 | ⑥ | `demo/OLMAYAN-DIZIN` (1,2 MB, 0 referans) | ⏭ **silinmez**, karar kullanıcının |
 | ⑩ | fan-out sertifikası sürüm damgası | ⏭ `d11`'in ön koşulu |
-| ⑪ | `belgeler/` kökünde **yeri olmayan iki belge** — `DIKKAT-EDILECEKLER.md` · `dima v2 v3 için mimari karar (1).md` | 🔵 **kullanıcı kararı bekliyor**: `denetim/` mi `kilavuz/` mu `mimari/` mi? ⚠ **taşınmadı, silinmedi** |
+| ⑪ | `belgeler/` kökünde **yeri olmayan iki belge** — `belgeler/denetim/2026-08-07_DIKKAT-EDILECEKLER.md` · `belgeler/arastirma/2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md` | 🔵 **kullanıcı kararı bekliyor**: `denetim/` mi `kilavuz/` mu `mimari/` mi? ⚠ **taşınmadı, silinmedi** |
 
 ---
 
@@ -3874,3 +3874,64 @@ kapandı — çünkü bedeli ödeten şey `k` değil, **koşulsuzluğuydu** ㊴.
 `_VEK_GECIS_ZAYIF == 2` (tarama sabiti) · sinyal **dönüşle** taşınıyor · 🆃 önek varken dar
 kalıyor. Yüklem satırın **şekline değil yapıya** bağlandı ⑭. **Korpus:** `83/69/68/72 ·
 %95,6 · 558/591` — **birebir aynı** 🅜. **Demet:** 455 ✅.
+
+---
+
+## `§80` — **BELGE DÜZENİ**: kapı susturulmuştu, açıldı ve dört ihlal çıktı
+
+Kullanıcı isteği: *«başka geliştirici devam edecek, sisteme yabancı kalmasın»*. Önce
+ölçtüm — ve ilk bulgu kapının kendisiydi.
+
+### ① 🔴 `test_belge_duzeni.py` **7 test, 7'si de ATLANIYORDU** 🅯
+
+Kapı **repo kökünü** denetliyor ama standart test kabına yalnız `backend/` bağlanıyor;
+sonuç `skipped` — yani *«iyi haber»* gibi görünen bir **kapsam kaybı**. Doğru koşum:
+
+```bash
+docker run -d --name X$$ --network none -v "$PWD:/repo" -w /repo/backend \
+  --user "$(id -u):$(id -g)" -e DIMA_VQR_EMBEDDER=off dima-test \
+  python -m pytest -q tests/test_belge_duzeni.py
+```
+
+Açılınca **4 kırmızı** verdi ve dördü de gerçekti.
+
+### ② Bulgular ve çareleri
+
+| bulgu | çare |
+|---|---|
+| kökte yeri olmayan iki belge | `DIKKAT-EDILECEKLER.md` → `denetim/2026-08-07_…` *(ölçüm kaydı)* · ham v2/v3 sohbeti → `arastirma/2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md` *(karar değil **hammadde**)* — atıflar **4 dosyada** güncellendi |
+| indekste **kırık bağ** (`DOGRULUK.md`) | asıl sebep: dosya `denetim/`e taşınmıştı ⟳ **geri alındı** |
+| `denetim/`de tarihsiz **beş** dosya | üçü *(`DOGRULUK` · `HAVA-BOSLUGU` · `KAPI-DEFTERI`)* **yayın sınıfı** → `belgeler/` köküne döndü; ikisi **canlı kayıt defteri** → sınıf **adıyla ilan edildi** |
+| `arastirma/` ve `plan/` indekste **yok** | ikisi de yazıldı — `plan/` bölümü *«nerede kaldık»*ı da ayırıyor |
+
+🔴 **`DOGRULUK.md` taşıması geri alındı ve gerekçesi yazıldı:** `denetim/` tanım gereği
+🔒 *«değiştirilmez»*; o dosya ise **sürekli güncellenen bir yayındır** (dört kapı onu
+güncel tutuyor). Tanımı gereği ait olmadığı bir dizinde durunca **üç kusuru birden**
+üretiyordu: kırık bağ · tarih damgası kırmızısı · yerleşim kuralıyla çelişki.
+*Bir dosyayı yanlış dizine koymak, o dizinin sözünü de bozar.*
+
+### ③ 🆕 Kökte **`README.md`** — eksik olan ön kapı
+
+Depoda kök README **yoktu**: ilk bakan kişi `backend/` · `belgeler/` · `WrenAI-main/` ·
+`lab/` yığınıyla karşılaşıp nereden başlayacağını bilmiyordu. `OPERASYON*` üçlüsü bir
+**operasyonun** girişidir, *«bu depo nedir»*in cevabı değil — üstelik artık **önceki**
+operasyonu anlatıyor ⑳.
+
+Dokuz bölüm: ne olduğu (garson/aşçı/yan dükkân) · depo haritası · **ayağa kaldırma**
+(derle→değiştir sırası) · **ilk gün okuma sırası** · *«nerede kaldık»* hangi dosyada ·
+dokunulmazlar · test disiplini (üç seviye + konteyner kalıbı) · **yeni gelenin çarpacağı
+beş şey** · bir şey bozulunca (**yutulmuş istisna** araması).
+
+⚠ Kapının kendi şerhi *«yeni bir belge kökte durmak istiyorsa önce bu testin gerekçesi
+değiştirilmeli — sessizce eklenemez»* diyordu; `KOK_IZINLI`'ye **gerekçesiyle** eklendi.
+
+### ④ Kuralın öngörmediği **üçüncü sınıf** ㉖
+
+`DENETIM-FAZ-A-F.md` · `DENETIM-A-G.md` bir fotoğraf değil **sürekli eklenen tek kayıt**.
+Tarih damgası *«değiştirilmez»* sözünü yalan yapardı; `belgeler/` kökü ise **kapıyla**
+canlı tutulan sınıftır ve bu ikisini tutan kapı **yok** 🆆. Sınıf `DENETIM_CANLI_DEFTER`
+adıyla ilan edildi; listeye ad eklemek **yazılı gerekçe** ister.
+
+**Kapılar:** belge düzeni **6 ✅ / 1 ⊘** *(`git` imajda yok — ilan edilmiş)* · yayın
+kapıları (`DOGRULUK` · `HAVA-BOSLUGU` · `A7/A8` · korpus tetiği) **41 ✅** · demet
+**312 ✅**.

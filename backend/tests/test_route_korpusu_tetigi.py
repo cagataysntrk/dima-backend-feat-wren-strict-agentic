@@ -32,7 +32,7 @@ def test_TETIKLEYICIYE_DOKUNULDUYSA_KOSAR(degisen):
 @pytest.mark.parametrize("degisen", [
     ["app/answer.py"],
     ["app/diyalog.py", "tests/test_odak_varlik.py"],
-    ["belgeler/denetim/KAPI-DEFTERI.md"],
+    ["belgeler/KAPI-DEFTERI.md"],
 ])
 def test_DOKUNULMADIYSA_ATLANIR(degisen):
     gerekli, _ = route_korpusu_gerekli(degisen)

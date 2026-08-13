@@ -12,7 +12,7 @@
 >
 > **Kardeş belgeler:** `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` (5279 satır, §G) ·
 > `backend/MIMARI.md` (mimari otorite) · `OPERASYON.md` / `OPERASYON-DURUM.md` ·
-> `dima v2 v3 için mimari karar (1).md` (danışman girdisi — **denetlenmiş hâli §9'da**)
+> `belgeler/arastirma/2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md` (danışman girdisi — **denetlenmiş hâli §9'da**)
 
 ---
 
@@ -1710,7 +1710,7 @@ cevaplamaya çalışmıyor; ADR-0008 tam olarak onu yasaklar"*. **Yeni kelime ek
 > 🔴 **Bu bölüm fazın kapanışından SONRA eklendi.** Sebebi: üç denetim ajanı + bir dış
 > danışman değerlendirmesi, fazın bittiği noktada **yeni bir yapılacaklar haritası**
 > doğurdu. Kaynak belgeler **kopyalanmadı** (`D1`): tam gerekçeler
-> `DIKKAT-EDILECEKLER.md` (repo kökü) ve `OPERASYON.md §10b/§10c`'de; buraya giren
+> `belgeler/denetim/2026-08-07_DIKKAT-EDILECEKLER.md` (repo kökü) ve `OPERASYON.md §10b/§10c`'de; buraya giren
 > **harita** — ne yapıldı, ne kaldı.
 
 ### (a) ✅ YAPILDI — denetim turu
@@ -1750,7 +1750,7 @@ cevaplamaya çalışmıyor; ADR-0008 tam olarak onu yasaklar"*. **Yeni kelime ek
 | `B-G4` | `compare` **enum→ALAN** + `blend` → `5.6` hâlâ **BLOKE** | `OPERASYON-DURUM.md` | orta |
 | `S2·S4·S5·S6·S7` | Kayıtsız sapmalar *(en ağırı `S5`: `{{ENT_i}}` varlık perdesi inmedi)* | aynı | orta |
 | `P1·P3·P4·P5·P6` | Planın kendi eksikleri *(en ağırı `P3`: budamadan hiç söz etmiyor; `P5`: `viz` dışı grafik türleri)* | aynı | orta |
-| 🔴 `tsc` | **Gecelik CI'da HİÇ koşmuyor** — `backend-ci.yml`/`nightly.yml`'de node adımı yok, dolayısıyla `test_TSC_TEMIZ` **her zaman** atlanıyor. `K3`'ün açık borcu | `DIKKAT-EDILECEKLER.md §5` | 🔴 yüksek |
+| 🔴 `tsc` | **Gecelik CI'da HİÇ koşmuyor** — `backend-ci.yml`/`nightly.yml`'de node adımı yok, dolayısıyla `test_TSC_TEMIZ` **her zaman** atlanıyor. `K3`'ün açık borcu | `belgeler/denetim/2026-08-07_DIKKAT-EDILECEKLER.md §5` | 🔴 yüksek |
 | ⚠ `diyalog.py` | Fazın en büyük yeni katmanının `MIMARI` kaydı **yok** | aynı | orta |
 | ⚠ iz | `Niyet.temsil_edilemeyen` indirgemeden habersiz — iz yanıltıcı | aynı | düşük |
 | ⚠ `kapasite` | 🔴 **PLAN KENDİ İÇİNDE ÇELİŞİYOR:** `§13.5b` *"üç yeni alan kapıya bağlanır: … `kapasite`"* ⟷ `§13.5c/G8.2` *"üçüncü kanal açma"*. Kod ikincisini seçti ve **testle kilitledi** (`test_kapasite_beyani.py`: `assert "kapasite" not in alanlar`); ama `lab/garson.py` hâlâ `d.get("kapasite")` okuyor — **ölü dal**. Planın bir yarısı bir alanı şart koşarken öteki yarısı yasaklıyor | denetim bulgusu | orta |
@@ -1915,7 +1915,7 @@ karışırdı. Tek model, tek değişken.* ⚠ Bedeli **gecikme**: 550B model s�
 
 ## §9 · DANIŞMAN BELGESİNİN DENETİMİ
 
-> `dima v2 v3 için mimari karar (1).md` (2203 satır) tümüyle okundu. Fikirlerinin çoğu
+> `belgeler/arastirma/2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md` (2203 satır) tümüyle okundu. Fikirlerinin çoğu
 > doğru; **ama belge kod tabanının bugünkü hâline değil, bir dönem önceki hâline yazılmış**
 > ve iç tutarsızlıkları var. Bu bölüm, belgeyi **düz okuyan birinin alacağı yanlış bilgiyi**
 > engellemek içindir.
@@ -2699,7 +2699,7 @@ kendi teşhisi**: B1…B9 · KN-1…KN-7 · Ö1…Ö12 · KÇ-0…KÇ-7 · §12'
 `:1929`) · `backend/CLAUDE.md` (test kapısı politikası + ölçülen fatura) ·
 `OPERASYON.md` (§2 döngü · §3 test kapısı · §4 KAT-1…5 · §5 D1…D5 · §6 geliştirme
 değişmezleri · §9 commit · §10 sıra) · `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` §G
-(`YH:771-1680`) · `dima v2 v3 için mimari karar (1).md` (danışman girdisi — denetimi §9'da)
+(`YH:771-1680`) · `belgeler/arastirma/2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md` (danışman girdisi — denetimi §9'da)
 
 ---
 

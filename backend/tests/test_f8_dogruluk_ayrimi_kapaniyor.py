@@ -45,7 +45,7 @@ _ARTEFAKT = _BACKEND / "lab" / "reports" / "nl_corpus.json"
 # `belgeler/denetim/`e taşındı (`1ee3d14`). Yol sabiti güncellendi — kapı
 # gevşetilmedi, **aradığı yer** düzeltildi. ⚠ Taşınma fark edilmeseydi kapı
 # «belge yok» diye **sessizce atlanır** ve yayın çürümesi görünmez olurdu 🅣.
-_BELGE = _BACKEND.parent / "belgeler" / "denetim" / "DOGRULUK.md"
+_BELGE = _BACKEND.parent / "belgeler" / "DOGRULUK.md"
 
 pytestmark = pytest.mark.skipif(
     not _BELGE.parent.is_dir(),
