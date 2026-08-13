@@ -42,7 +42,8 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120)) -> dict:
 
     principal = getattr(request.state, "principal", None)
     izinliler = katman_b.allowlist(request, principal)
-    adaylar = oneri.ara(q, wren_for_request(request).schema(), izinliler=izinliler)
+    schema = wren_for_request(request).schema()
+    adaylar = oneri.ara(q, schema, izinliler=izinliler)
     return {
         "adaylar": [
             {"kimlik": a.kimlik, "etiket": a.etiket, "cube": a.cube, "kip": a.kip}
@@ -52,4 +53,8 @@ def oneri_ara(request: Request, q: str = Query("", max_length=120)) -> dict:
         # bunu (isterse) söyleyebilir. Sessizce kalitesi düşen bir liste, düşmediğini
         # sandıran bir listedir.
         "kip": adaylar[0].kip if adaylar else "yok",
+        # `5.7/④` — indeksin durumu **beyan edilir**: `taze` · `yok` (ilk istek, henüz
+        # kurulmadı) · `kapali` (gömücü yok → liste leksiktir). Bayat bir hâl **yoktur**:
+        # önbellek şema sürümüyle anahtarlıdır, eski sürüm okunamaz 🅐.
+        "indeks": oneri.indeks_durumu(schema),
     }

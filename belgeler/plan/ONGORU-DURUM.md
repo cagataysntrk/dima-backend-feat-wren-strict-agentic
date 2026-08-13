@@ -619,3 +619,43 @@ Küp→model bağı **`base_object`** (`wren_service.py:793`).
 damgası** · `5.9` boş girdi (son bakılanlar). **Kalan (`FAZ 6`):** `6.6` tuş (`useFeature`)
 · `6.7` marj kapısının üç çıkışı ekranda ayırt edilebilir. Plan kapısı `②` (`p95 < 300 ms`)
 ve `④` (bayat indeks beyanı) **`5.7` ile birlikte** ölçülebilir 🅗.
+
+---
+
+## §14 · `5.7` İNDEKS — **BAYATLIK BEYAN EDİLMEDİ, İMKÂNSIZ KILINDI** *(2026-08-13)*
+
+**Ölçülen maliyet:** her `/oneri` isteği katalogdaki **136 ölçü** etiketini yeniden
+gömüyordu. Debounce (200 ms) bunu seyreltir, **kaldırmaz**.
+
+**Çözüm — ve planın maddesinden bir adım ileri 🅐:** plan *«tazelik damgası»* istiyordu;
+bir damga bayatlığı **beyan eder**. Burada önbellek **şema sürümüyle anahtarlı**
+(`schema["version"]` — `contracts.py:75`'in `mdl_version` kıyasıyla aynı kaynak): sürüm
+değişince eski girdi **okunamaz**, yani *bayat* diye bir hâl **doğmaz**.
+*Bir değişmezi ilan etmek onu kurmaz; anahtarı değişmezin kendisi yapmak kurar.*
+
+⊘ **Diskte artefakt YOK** ⑪ — bu depo bir kez gitignore'lu bir derleme artefaktından
+okuyup aynı kaynakta farklı sayı görmüştü. Önbellek süreçle doğar, süreçle ölür.
+Kapı bunu da tutuyor (`oneri.py` içinde `open(`/`Path(`/`np.save`… **yasak**).
+
+Uç `"indeks": {"durum": "taze|yok|kapali", "surum": …}` **beyan ediyor** (`④`).
+
+### 🔴 Bu turda ÜÇ kez kendi işim kusurlu çıktı — üçünü de kapı/mutasyon söyledi
+
+| # | kusur | nasıl yakalandı |
+|---|---|---|
+| ㊲ | anahtar **iki yerde** kuruluyordu (`_vektor_sira` `"v1\|3"`, `indeks_durumu` düz `"v1"`) → durum **hep «yok»** | kapının **ilk koşumu** |
+| 🅯 | yüklem `_INDEKS`'e elle girdi koyuyordu; gömücü kapalı olduğu için **yük taşıyan yol hiç koşmuyordu** 🆎 → **iki mutasyon da hayatta kaldı** | 🅑 mutasyon |
+| ㉘ | *«aday kümesi değişti»* vakasında **sayı da** değişiyordu → anahtar zaten ıskalıyor, kimlik hizası **yalıtılmamış** → mutasyon **hayatta kaldı** | 🅑 mutasyon |
+
+Üçüncüsü için **eşit ölçü sayılı iki küp** fikstürü kuruldu — ayırt edici vaka budur.
+
+🅑 **İki mutasyon, ikisi de ısırıyor:** ⓐ anahtardan sürümü düşür → sürüm değişince
+**yeniden gömmez** ⓑ kimlik hizası kontrolünü düşür → farklı aday kümesi **eski
+matrisi** kullanır (skorlar **yanlış adaya** atanır).
+
+⑯ komşu: `oneri` · `yetim` · `modul_buyume` · `vqr` · `katman_b` → **205 ✅**.
+
+📌 **Kalan:** `5.5` sıklık önceliği (⚠ kaynak **kodda** aranacak, `interaction_log`
+probu **yasak**) · `5.9` boş girdi · `6.6` tuş · `6.7` üç çıkışın ayırt edilebilirliği ·
+plan kapısı `②` `p95 < 300 ms` (artık **ölçülebilir**: önbellek sonrası istek başına
+**1** gömme).

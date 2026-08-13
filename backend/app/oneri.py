@@ -135,7 +135,49 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
     return [i for _, i in onek][:_HAVUZ] + [i for _, i in bulanik][:_HAVUZ]
 
 
-def _vektor_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
+#: 🔴 `5.7` — **İNDEKS: SÜRÜM ANAHTARLI, BELLEKTE, BAYATLAYAMAZ.**
+#:
+#: ⊙ Ölçülen maliyet: her `/oneri` isteği katalogdaki **136 ölçü** etiketini yeniden
+#: gömüyordu. Debounce (200 ms) bunu seyreltir ama **kaldırmaz** — bir kullanıcı bir
+#: cümlede onlarca istek üretir.
+#:
+#: ⚠ **Planın «tazelik damgası» maddesi burada bir ADIM İLERİ taşındı** 🅐: bir damga
+#: bayatlığı *«beyan eder»*; **sürüm anahtarlı bir önbellek** onu **imkânsız kılar**.
+#: Anahtar `schema["version"]`'dır (`mdl_version` deseni — `contracts.py:75` bayatlığı
+#: tam bu kıyasla ölçer). Şema değişince anahtar değişir, eski girdi **kullanılamaz**.
+#: *Bir değişmezi ilan etmek onu kurmaz; anahtarı değişmezin kendisi yapmak kurar.*
+#:
+#: ⊘ **Diskte artefakt YOK** ⑪: bu depo bir kez *«gitignore'lu bir derleme
+#: artefaktından okuyan ölçüm»* yüzünden aynı kaynakta farklı sayı gördü. Bellekteki
+#: önbellek süreçle doğar, süreçle ölür — okunacak bayat bir dosya yoktur.
+_INDEKS: dict[str, tuple[tuple[str, ...], object]] = {}
+
+
+def _anahtar(surum: str, n: int) -> str:
+    """Önbellek anahtarının **tek sahibi** ㊲.
+
+    ⚠ İlk yazılışta anahtar **iki yerde** kuruluyordu: `_vektor_sira` `f"{surum}|{n}"`
+    üretiyor, `indeks_durumu` düz `surum` arıyordu — yani durum beyanı **hep «yok»**
+    diyordu ve kapı bunu ilk koşumda yakaladı. *İki satırın aynı işi yaptığı yerde,
+    bir gün biri değişir.*
+    """
+    return f"{surum}|{n}"
+
+
+def indeks_durumu(schema: dict) -> dict:
+    """`④` — indeksin **beyanı**. `durum`: `taze` (bu sürüm önbellekte) ·
+    `yok` (henüz kurulmadı) · `kapali` (gömücü yok → vektör ayağı hiç çalışmaz)."""
+    from app import vqr
+
+    surum = str(schema.get("version") or "")
+    if vqr._embedder() is None:
+        return {"durum": "kapali", "surum": surum}
+    onek = f"{surum}|"
+    taze = any(k.startswith(onek) for k in _INDEKS)
+    return {"durum": "taze" if taze else "yok", "surum": surum}
+
+
+def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]:
     """Vektör ayağı — **yalnız sıra üretir**, eşik üretmez (`FAZ 0` bulgusu).
 
     `5.8`: gömücü hazır değilse (`None`) **boş liste** döner ve çağıran leksik ayakla
@@ -153,11 +195,22 @@ def _vektor_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
     try:
         import numpy as np
 
-        vecs = list(model.embed([onek + a.etiket for a in adaylar]))
+        # 🔴 `5.7` — aday gömmeleri **sürüm anahtarıyla** önbellekte. Anahtar hem şema
+        # sürümünü hem aday **kimliklerini** taşır: allowlist daraldığında havuz da
+        # daralır ve eski matris o havuza **uymaz** — sessiz bir hizasızlık yerine
+        # açık bir önbellek ıskası olur ㊴.
+        anahtar = _anahtar(_surum, len(adaylar))
+        kimlikler = tuple(a.kimlik for a in adaylar)
+        onbellek = _INDEKS.get(anahtar)
+        if onbellek is not None and onbellek[0] == kimlikler:
+            M = onbellek[1]
+        else:
+            M = np.asarray(list(model.embed([onek + a.etiket for a in adaylar])),
+                           dtype="float32")
+            M /= (np.linalg.norm(M, axis=1, keepdims=True) + 1e-9)
+            _INDEKS[anahtar] = (kimlikler, M)
         qv = list(model.embed([onek + kismi]))[0]
-        M = np.asarray(vecs, dtype="float32")
         qn = np.asarray(qv, dtype="float32")
-        M /= (np.linalg.norm(M, axis=1, keepdims=True) + 1e-9)
         qn /= (np.linalg.norm(qn) + 1e-9)
         skor = M @ qn
         return [int(i) for i in skor.argsort()[::-1][:_HAVUZ]]
@@ -176,7 +229,7 @@ def ara(kismi: str, schema: dict, *, izinliler: set[str] | None = None,
         return []
 
     lek = _leksik_sira(kismi, havuz)
-    vek = _vektor_sira(kismi, havuz)
+    vek = _vektor_sira(kismi, havuz, str(schema.get("version") or ""))
 
     puan: dict[int, float] = {}
     kipler: dict[int, set[str]] = {}
