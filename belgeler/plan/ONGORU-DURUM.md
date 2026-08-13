@@ -525,3 +525,46 @@ okuyansız aç (**1 kırmızı**). İkisi de `diff` ile geri alındı.
 
 📌 **Sırada `FAZ 5` — öneri motoru.** Ön koşulu `FAZ 0` eşiğiydi ve **karşılandı**
 (`Recall@3 %89,5` 🟢). ⚠ `FAZ 0`'ın ikinci bulgusu bağlayıcı: **mutlak eşik YOK**.
+
+---
+
+## §12 · `FAZ 5` — ARAŞTIRMA + ÖN KOŞUL KAPISI *(2026-08-13, motor **henüz yazılmadı**)*
+
+🔴 **`FAZ 5` BİTMEDİ.** Bu tur araştırma + ön koşulun kilitlenmesi yapıldı; motor
+(`app/oneri.py`) **sonraki turda** yazılacak ve 🔴 **`FAZ 6` ile aynı demette** teslim
+edilecek — `FAZ 3`'ün bulgusu gereği (**tüketicisiz yetenek doğurma** 🆘).
+
+### ㊷ temiz çıktı
+
+`app/oneri.py` **yok**, `lab/oneri_indeksi.py` **yok** — faz gerçekten yeni. Yeniden
+kullanılacaklar ölçüldü: gömme yolunun üretim sahibi **`app/vqr.py`** (`KAT-1`: üçüncü
+bir gömücü yazılmayacak) · yetki süzgeci `control_plane/authorize.py:141` · yetim uç
+kapısı tavanı **8**.
+
+### 🔴 Ölçülen kusur: `_embedder()`'ın docstring'i BAYATTI — ve YÜK TAŞIYORDU
+
+`vqr._embedder()` *«fastembed e5-small»* diyordu; gövde (`:86`)
+`intfloat/multilingual-e5-large` yüklüyor ve modül başlığı sebebini yazıyor
+(*«fastembed e5-small'ı desteklemiyor»*).
+
+⚠ ③ **Bu bir yanlış alarmla bulundu** *(yedinci kez)*: docstring'i okuyup *«ön koşul
+başka modelde ölçülmüş»* sandım; **gövdeye bakınca** ikisinin de e5-large olduğu
+görüldü. Yani `FAZ 0`'ın `%89,5`'i **taşınabilir**. Ama cümle yük taşıyordu 🅟: okuyan
+*«üretim small»* sanarsa eşiği geçersiz sayardı. **Düzeltildi.**
+
+### Teslim: ön koşul kapısı ㊻
+
+`tests/test_oneri_on_kosulu_model_kimligi.py` — **3 yüklem**:
+① üretim gömücüsü ile ölçüm aracının modeli **aynı** (🅕 *sürümsüz ölçüm taşınamaz*)
+② düzeltilen docstring **geri bayatlamıyor**
+③ `FAZ 0` raporu yerinde, `Recall@3 ≥ %85`, ve **payda ≥ 19** 🅜
+
+🅑 **Mutasyon:** üretim modelini `e5-small`'a çevir → **1 kırmızı**. `diff` ile geri alındı.
+
+⚠ 🅬 Kapı ilk yazılışında düz `recall@3` aradı ve `None` buldu — gerçek şekil **ayak
+başına** iç içe (`{"vektor": {"recall@3": 89.5, "payda": 19}}`). Ad **dönen nesneden**
+öğrenildi.
+
+📌 **Sonraki tur: `app/oneri.py`** — `5.1` saf `ara()` · `5.2` **`authorize()` sıralamadan
+ÖNCE** (fazın tek güvenlik kalemi) · `5.3` leksik edge n-gram · `5.8` gömücü soğuksa
+leksik kipe düş. Sonra `5.4–5.7` ve **`FAZ 6` aynı demette**.

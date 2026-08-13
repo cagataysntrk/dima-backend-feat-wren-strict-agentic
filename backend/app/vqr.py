@@ -43,7 +43,14 @@ _emb_tried = False
 
 
 def _embedder():
-    """fastembed e5-small (lazy). Kurulu/indirilebilir değilse None → sözlüksel fallback.
+    """fastembed **e5-LARGE** (lazy). Kurulu/indirilebilir değilse None → sözlüksel fallback.
+
+    ⟳🔴 **DÜZELTİLDİ 2026-08-13** — bu satır *«e5-small»* diyordu, oysa gövde `:86`'da
+    `intfloat/multilingual-e5-large` yükler ve modül başlığı sebebini yazar (*«fastembed
+    e5-small'ı desteklemiyor»*). Bayat bir iddiaydı 🅟 ve **yük taşıyordu**: `FAZ 0`'ın
+    öneri eşiği (`Recall@3 %89,5`) e5-LARGE ile ölçüldü; okuyan burada *«üretim small
+    kullanıyor»* sanırsa o eşiği **taşınamaz** sayardı 🅕. Kapı:
+    `tests/test_oneri_on_kosulu_model_kimligi.py`.
 
     Canlı bulgu (1 Ağustos 2026): ONNX model dosyası ~1GB+ ve HF Hub'dan kimliksiz
     (HF_TOKEN'sız) indirme YAVAŞ/oranlanmış olabiliyor (bkz. fastembed'in kendi uyarısı).
