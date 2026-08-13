@@ -3259,3 +3259,19 @@ girilmemesi, o yolun çalıştığının kanıtı değildir.* Yeni kapı **gerç
 demet **1762 yeşilken** bu kusur oradaydı.
 
 ⊙ Ve `2/3` dalı böylece **canlıda gözlendi** 🅢: `uyum 67% · 3 örnek`, iki ayrı soruda.
+
+**Canlı kanıt (`s33`, aynı soru üç tur — `§28.4`'ün üç kademesi tek ekranda):**
+
+```
+tur1  source=onizleme  · 5 pill  · «emin değilim (3 denemeden %67'i aynı)»
+        [olcu] OEE · OEE   [olcu] performans · OEE   [olcu] kullanılabilirlik · OEE
+        [olcu] kalite · OEE   [kirilim] makine kırılımı
+tur2  source=cube+llm  · 0 pill  · oy birliği → KOŞTU
+tur3  source=onizleme  · 2 pill  · [olcu] performans   [kirilim] makine kırılımı
+```
+
+🅢 **Orta satır artık gözlendi** — ve aynı soruda tur tur değişmesi `§75`'in *«salınım»*
+ölçümünün ta kendisi: garson kararsızken sistem artık **koşmuyor, soruyor**.
+
+⚠ Küçük kusur, açık borç 🅖: çok adaylı ölçü pill'i `«OEE · OEE»` yazıyor
+(`_olcu_metni` ölçü ve küp etiketini birleştiriyor; `ort_oee`@`oee`'de ikisi aynı).
