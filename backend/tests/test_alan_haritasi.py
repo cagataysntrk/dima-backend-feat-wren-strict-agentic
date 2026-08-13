@@ -81,6 +81,21 @@ GARSON = {
     # `C1/C3` — ters yön: bilinmeyen bir terimi kataloğun bir hedefine eşler. Dil okur,
     # bir `cq` parçası üretir; hiçbir şey çalıştırmaz.
     "ters_yon.py",
+    # 🔴 `§5.1` — ÖNERİ CÜMLESİ. Sınıfı tartışmasız: bu modülün **tek** ürünü Türkçe bir
+    # cümledir (*«RAM-3 için fire — bu ay»*). Türkçe çekim kuralları (`yonelme`,
+    # `tamlayan`) burada yaşar. Motor importu **yok**; girdisi `oneri.ara` çıktısı, çıktısı
+    # metin. *Bir alan adını cümleye çeviren şey, tanım gereği garsondur.*
+    "oneri_cumle.py",
+    # 🔴 `§5.2` — PILL SATIRI. `temellendirme.py` ile **aynı sınıf ve aynı sebep**: ikisi de
+    # *«anladığım şu»*yu kullanıcıya gösterir, 0 LLM ile ve hiçbir sayı hesaplamadan.
+    # ⚠ Ve MUTFAK olamaz — `niyet`'i (bir `DIL_MODULU`) import eder; MUTFAK'a yazılsaydı
+    # `test_MUTFAK_dil_ayristiramaz` kırmızı verir ve bir **muafiyet** gerekirdi 🅝.
+    "pill.py",
+    # 🔴 `§7②` — MAKRO REÇETESİ. `plan_semasi.py` ile **aynı sınıf ve aynı sebep**: bir
+    # **sözleşme** üretir (adlandırılmış bir plan), hiçbir sayı hesaplamaz, hiçbir sorgu
+    # koşmaz. Koşan taraf `plan_tuketici`'dir. Üstelik stdlib dışında **hiçbir** şey import
+    # etmez — ne dile ne motora bağlıdır; adı bir cümle, gövdesi bir gramer.
+    "makro.py",
 }
 
 #: 🍳 MUTFAK — veri/sorgu ile çalışır, **dil bilmez**.
