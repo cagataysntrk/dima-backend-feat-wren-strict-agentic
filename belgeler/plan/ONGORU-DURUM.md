@@ -1461,3 +1461,62 @@ temsille `su` ilk iki sırada.
 ürünü değil **ortamı** ölçerdi ⑦ — artık gömücü yoksa **atlanıyor** 🅕.
 
 📌 **Açık:** K3 · K4 · K5◐ · K6 · K8.
+
+---
+
+## §30 · **KUSUR TURU BİTTİ — üç geri çekme, bir geri alma, üç onarım** *(2026-08-13)*
+
+İnsan testinin bulduğu sekiz kusur teker teker sınandı. Sonuç, düzeltilenlerden çok
+**düzeltilmeyenlerin** hikâyesi:
+
+| # | iddia | sonuç |
+|---|---|---|
+| **K1** | şeritte alakasız kuyruk | ✅ **onarıldı** — dolgu kesildi (*eşik değil **kesme***) |
+| **K6** | verilmemiş eşik uyarısı | ✅ **onarıldı** — `RAM-3`'teki rakam bir **kimlik** |
+| **K2** | tık kaydı düşüyor | ✅ **onarıldı** — `str` ↔ `UUID` |
+| **K4** | chip ölçüyü değiştiriyor | ⟳ **geri çekildi** — chip zaten birleştirilmiş fiş taşıyor |
+| **K7** | `TREND` `oee`'de düşüyor | ⟳ **geri çekildi** — çapa kaymasının belirtisi |
+| **K8** | takipte belirlenimsizlik | ⟳ **geri çekildi** — çapa **gönderilmemişti** |
+| **K3** | çıplak yıl Discovery'ye düşüyor | 🔴 **geri ALINDI** — düzeltmem bir **kararı** çiğniyordu ㊸ |
+| **K5** | *«sadece bu üç ayı»* | ◐ açık, **dürüst beyan** var |
+
+### 🔴 Üç geri çekme, tek bir sebep — ve bu bir ders 🆣
+
+`K4` ve `K8`'de **aynı** hatayı yaptım: **ürünün istek şeklini kullanmadım**.
+* `K4`'te chip'i **tıklamak** yerine etiketini **metin olarak yazdım** — chip `cube_query`
+  taşır, metin garsona gider. İki ayrı yol.
+* `K8`'de `AskRequest.cube_query`'yi **hiç göndermedim** ve çapayı garsona **tahmin
+  ettirdim**. Şemanın kendi notu mimariyi yazıyor: *«Sunucu oturum **SAKLAMAZ**»* — çapayı
+  **istemci yankılar**. Çapa gönderilince iki koşum **birebir** aynı çıktı.
+
+> **Sadeleştirilmiş bir istek, sadeleştirilmiş bir ürün ölçer.** Bir alanı göndermemek, o
+> alanın yokluğunu değil, **kendi kurduğun başka bir akışı** ölçmektir.
+
+⊙ Ve `K7` bunun bir **belirtisiydi**: çapası kaymış bir planın ürettiği kırmızı. Üçü
+birlikte düştü. *Olmayan üç kusura yama yazmamak, üç kusur düzeltmek kadar değerlidir.*
+
+### 🔴🔴 `K3` — kapı bana ders verdi ㊸
+
+*«2019 cirosu»* Discovery'ye düşüyordu (`cube=adhoc`, sonuç `null`) ve bunu bir
+**ayrıştırma eksiği** sanıp çıplak yılı çözdürdüm. Tam kapı **altı kırmızı** verdi; biri
+kararı **adıyla** taşıyordu:
+
+> `test_B_CIPLAK_YIL_BILEREK_KAPSAM_DISI` — *«Dört haneli bir sayı bir **hesap/şube/TRCODE
+> DEĞERİ** de olabilir. En az bir yıl işareti aranır — belirsizde dönem **SORMAK**,
+> uydurmaktan iyidir.»*
+
+Yani çıplak yıl bir **eksik değil bir SINIR**, ve gerekçesi **alanın kendisinden** geliyor:
+bir ERP'de `2019` bir hesap kodudur. Üç kırmızı daha benim `(?![\w-])` lookahead'imin **yan
+hasarıydı** ⑯ — eki **yapışık** gelen biçimleri kesiyordu (`2019da fire`, tek-gün, çoklu-ay).
+
+**Geri alındı.** Kendi kapım kaldırıldı (iddiası çürüdü), yerine **reddedilmiş denemenin
+kaydı** bırakıldı ve **ikinci bir koruma yazılmadı** ㊲.
+
+🔴 **`K3` yeniden açık ve teşhisi düzeldi:** kusur **gerçek** (kullanıcı `null` alıyor), ama
+çare **uydurmak değil SORMAK** — planın kendi cümlesiyle.
+
+### Kapı hikâyesi
+
+**9 🔴 → 6 🔴 → 1 🔴** (`d11`, gerekçeli). Süit **5.020 → 5.024**.
+⊙ Kapı bu turda **dört kez** haklı çıktı: büyüme tavanı · ölçüm tabanı · bilinçli sınır ·
+yan hasar. *Bir kapının adını okumak, üç saatlik yanlış bir yolu bir cümlede kapatabilir.*
