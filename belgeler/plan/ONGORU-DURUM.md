@@ -2550,3 +2550,46 @@ alınıyordu, modül düzeyindeki yardımcı onu göremedi ⑬.
 
 **Kanıt:** `bos_girdi_cekirdek · oneri_motoru · oneri_katmani_kural_b` → **20 ✅**.
 Demet kapısı (`105b742..`) → **382 ✅ / 0 🔴**.
+
+---
+
+## §55 — CANLI DOĞRULANDI · ve `İŞ 6` iki YAZILI KARARLA çakışıyor
+
+### Canlı (`s21`, curl, üç senaryo) 🆣
+
+```
+ısınma            : öneri indeksi ısındı: 24.713 ms (durum=taze)
+q=«»              : «bu ay iş emri adedi ne kadar?» · «bu ay eğitim saati ne kadar?» …
+q=«ram 3»         : «bu ay RAM 3 için elektrik ne kadar?» · «RAM 3 için elektrik neden bu seviyede?»
+/oneri/pill?q=ram 3: ['RAM 3', 'toplam']
+```
+
+Üçü de yerinde: **boş kutu konuşuyor**, **yazılan varlık cümlede ve pill'de**.
+
+### `İŞ 6` ölçümü — üç parçadan biri **zaten var**, ikisi **çakışıyor**
+
+| parça | ölçüm |
+|---|---|
+| *«yazdı, tıklamadı»* negatifi | ✅ **`hasat.negatif_kanit` VAR** ㊷ — ve belgesi dürüst: *«bugün yalnız sayılır»* 🅖 |
+| `8.3` **`ε` karıştırma** | 🔴 **`test_AYNI_GIRDI_AYNI_CIKTI` ile çakışıyor** (`test_oneri_cumle.py:314`) — şerit için **belirlenimlilik yazılı bir garantidir** |
+| `5.5` **sıklık katsayısı** | ⚠ Sıcak yolda **DB okuması** gerektirir; typeahead her tuşta çağrılıyor (`p95 < 300 ms` kapısı) ve `interaction_log` sorgusu o bütçeye sığmaz |
+
+⟹ **İkisi de tek başıma verilecek kararlar değil**, ikisi de bir **yazılı kuralı** karşıya
+alıyor. Uydurmadım; ölçüp yazdım.
+
+**Önerim (karar senin):**
+
+1. **Sıklık, sıcak yolda değil `5.7`'nin indeks üretecinde** toplansın — indeks zaten
+   çevrimdışı kuruluyor (`isit()`), sıklık oraya bir **alan** olarak girer ve sıcak yol
+   yalnız **okur**. Sektörün *«top-k çevrimdışı hesaplanır»* deseni de budur.
+2. **`ε` karıştırma bir bayrağın arkasında** açılsın ve **kapı bilerek genişletilsin**:
+   *«bayrak kapalıyken aynı girdi aynı çıktı; açıkken karıştırma ilan edilir»*. Kapıyı
+   sessizce gevşetmek yerine **ikinci bir kip** yazmak, `KURAL B`'nin kendi deseni.
+
+*Bir öğrenme döngüsünü kurmak için belirlenimliliği feda etmek gerekiyorsa, o takas
+yazılarak yapılır — kapıyı silerek değil.*
+
+### ⏳ `p95` ölçümü arka planda
+
+`lab/oneri_p95.py` gerçek gömücüyle koşuyor (model indirmesi ~2 GB; ilk koşum uzun).
+Eşik `ESIK_MS = 300.0`; canlı ılık gözlem **0,10–0,36 s**. Sonuç sıradaki turda.
