@@ -1830,3 +1830,14 @@ onayı** istiyor. Kayıt olarak duruyor.
 ◐ **kökü bulundu, tesisatı temiz, çaresi bir KARAR bekliyor.** *«İlişkilendiremedim»*
 yalnız garson yokken çıkıyor; garson varken ürün cevabı veriyor **ve eksiğini beyan
 ediyor** — yani sözleşmenin 3. satırı canlıda ihlal **edilmiyor** olabilir 🅖.
+
+### §36-ek · Demet kapısı — `§34` gerileme üretmedi
+
+`lab/kapi.py --hizli --degisen <demet>` → **`1 failed, 5030 passed, 44 skipped` (4 dk 06 sn)**.
+Tek kırmızı beklenen ve gerekçeli: `test_d11_denormalizasyon_siniri.py::test_SERTIFIKASIZ_KOKEN_YOK`.
+Süit **5.029 → 5.030** *(yeni kapı beş test getirdi, biri komşu dosyada sayılıyor)*.
+
+⚠ **Ölçülen tuhaflık:** `--degisen` listesi neredeyse **tüm depoyu** kapsadı — çünkü taban
+`294eb67` demetin çok gerisinde. Yani bu koşum adı *«hızlı»* olan bir **tam kapıydı**.
+*Bir kapının kapsamı, adından değil PAYDASINDAN okunur* 🅜 — sıradaki demette taban
+commit'i güncel tutmak gerekiyor, yoksa «hızlı» her seferinde 4 dakika ödetir.
