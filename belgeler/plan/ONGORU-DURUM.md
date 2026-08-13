@@ -2346,3 +2346,41 @@ token**la çözülür»* diyor. İkisi aynı anda doğru olamaz ve bu bir **ür�
 
 > **Sorum:** belirsizlikte önce **route'un kendi ikinci/üçüncü adayı** pill olarak
 > gösterilsin mi (0 token, anında), yoksa bugünkü gibi doğrudan **garson** mu gitsin?
+
+---
+
+## §50 — GÖMÜLEN GÖRÜNÜM TAVANI · ve ölçümle düşen iki iddia daha
+
+### ① Uç limiti — ölçüldü, **zaten yürürlükteydi** 🅢
+
+Ajan *«`cumleler(limit=None)`, uç `≤7` geçmiyor»* dedi. Ölçüm:
+
+```
+q=a → 7 · q=e → 7 · q=ram → 7 · q=ram 3 → 7 · q=fire → 3
+```
+
+`cumleler` limiti verilmediğinde **`oneri.VARSAYILAN_LIMIT`'e** düşüyor (`:488`) — sayı
+zaten **tek sahipte** ve uç fiilen kırpıyor. İkinci bir `7` yazmadım ㊲.
+*Bir imza eksikliği, bir davranış eksikliği değildir.*
+
+### ② Görünüm tavanı — **kuruldu** (asıl iş)
+
+Gömülen görünüm bugün **534** (tam da belgelenmiş taban; `§43` düzeltmesi tabanı geri
+getirmiş). Kapı `tests/test_gomulen_gorunum_tavani.py` (**2 ✅**):
+
+| yüklem | ne savunur |
+|---|---|
+| `gömülen ≤ 600` | soğuk maliyet **sessizce** büyümesin — `534 → 1.359` böyle kaçtı ve canlıyı **120 sn** astırdı |
+| değer adayları **gömülmez** | `§43`'ün zıt ölçütü 🆃 — sebep burada, sonuç yukarıda |
+
+⚠ Tavan bugünün **üstünde** (`600`, pay ~%12): *bir tavanın işi bugünü kırpmak değil,
+yarınki sessiz büyümeyi yakalamaktır* 🅜. Meşru büyümede **gerekçesiyle** yükseltilir 🅝.
+
+### ③ Ajan raporu **bayat** çıktı ㉔🅟
+
+Son tur bir ajan yine *«tıklama `cube_query`'yi atıyor, `onSec={onDeger}`»* diye bildirdi.
+Ölçtüm: dal **yerinde** (`grep 'a.cq && onSorgu'` → 1) ve kapısı mutasyonla kanıtlı
+(`§45`). Ajanın gördüğü satır artık **son çare** dalıdır — sorgu ve makro dalları onun
+**üstünde** duruyor.
+
+*Bir raporun doğru olması, hâlâ güncel olması demek değildir; ölçüm tarihi de bir veridir.*
