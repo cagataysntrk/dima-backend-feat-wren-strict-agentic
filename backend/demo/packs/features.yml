@@ -547,11 +547,19 @@ features:
                           # VARSAYILAN KAPALI ve bu bir karar: DCM bir KISITLAMADIR;
                           # istemeden açılırsa kullanıcı ürünü BOZUK sanır ("neden yazamıyorum?").
                           # Açıkken serbest metin YOK, cevap 3 tıkta ve LLM'siz.
-  oneri_katmani: "off"    # FAZ 6.6: yazarken-ara öneri şeridi (GET /oneri).
-                          # VARSAYILAN KAPALI ve bu bir karar: planın `②` kapısı
-                          # (p95 < 300 ms) HENÜZ ÖLÇÜLMEDİ. Ölçülmemiş bir hız
-                          # iddiasıyla bir tuşu açmak, kalibre edilmemiş bir sayıyı
-                          # güven diye satmakla aynı sınıftır (MIMARI'nin kararı).
+  oneri_katmani: beta     # FAZ 6.6: yazarken-ara öneri şeridi (GET /oneri).
+                          # ⟳ 2026-08-13'e kadar "off"tu ve gerekçesi ŞUYDU: planın `②`
+                          # kapısı (p95 < 300 ms) HENÜZ ÖLÇÜLMEMİŞTİ. O ön koşul artık
+                          # ÖDENDİ — ölçüldü ve kapıya bağlandı:
+                          #   ılık p95 = 49,23 ms · p50 = 39,63 ms · payda 90 koşum
+                          #   gerçek gömücüyle (kip=vektor), eşik 300 ms → ≈6× pay
+                          #   kapı: tests/test_oneri_p95_ve_faz7.py (raporu OKUR ㉔)
+                          # ⚠ Ve eksik de yayında 🅖: SOĞUK ilk istek ~1.514 ms, yani
+                          # eşiğin ÜSTÜNDE. Süreç + şema sürümü başına BİR kez yaşanır
+                          # (katalog gömülür); ısıtma uygulanmadı çünkü ısıtmanın doğru
+                          # yeri şema çözümüne bağlı ve ÖLÇÜLMEDEN seçilemez ㊴.
+                          # `beta` bilinçli: kazanç ölçüldü ama tüketici deneyimi
+                          # (soğuk saniye) henüz kalibre değil — `on` bir GA iddiasıdır.
                           # KAPALIYKEN şerit HİÇ çizilmez ve /oneri HİÇ çağrılmaz —
                           # ağ sekmesinden görülebilir; yanıt yolunda tek bayt
                           # değişmez (KURAL B).
