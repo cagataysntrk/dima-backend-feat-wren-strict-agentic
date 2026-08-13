@@ -409,3 +409,41 @@ def tarih_sinirimi(deger: object) -> bool:
     """
     return bool(_ISO_GUN_RE.match(str(deger or "")))
 
+#: 🔴 `§74` — **YAZIYLA YAZILMIŞ SAYI: kapalı, sonlu, tek sahipli** ㊱.
+#:
+#: ⊙ Canlı ölçüldü (`s35`): `«son 3 ayda fire»` → `source=cube`, dönem doğru;
+#: `«son üç ayda fire»` → route **düştü** (`source=cube+llm`) ve garson dönemi
+#: **13 aya** açtı (`2025-06-01 → 2026-06-30`). İki zarar: gereksiz bir LLM turu **ve**
+#: kullanıcının doğru sandığı **yanlış bir sayı**.
+#:
+#: ⚠ Bu bir *«route'a dil kuralı eklemek»* **değildir**: `_REL_DATE` zaten bir Türkçe
+#: birim listesi taşıyor (`ay|gun|hafta|yil`). Sayı sözcükleri de aynı cinsten — **kapalı
+#: ve sonlu** bir küme. Açık uçlu bir sözcük listesi yazılsaydı doktrin ihlali olurdu.
+#:
+#: ⚠ Anahtarlar **normalize** biçimdedir (`_norm`: `üç → uc`), çünkü eşleşme normalize
+#: metinde olur. `on bir`/`on iki` **iki sözcüktür** ve kalıpta **önce** denenmeli.
+#: ⊘ `yarım` yok: *«son yarım ay»* bir dönem değil bir yuvarlamadır.
+SAYI_SOZCUKLERI: dict[str, int] = {
+    "bir": 1, "iki": 2, "uc": 3, "dort": 4, "bes": 5, "alti": 6,
+    "yedi": 7, "sekiz": 8, "dokuz": 9, "on": 10, "on bir": 11, "on iki": 12,
+}
+
+#: Regex alternasyonu — **uzun olan önce** (`on iki` `on`dan önce denenmeli, yoksa
+#: `«son on iki ay»` → `on` + artık `iki ay` kalır ve kalıp tutmaz).
+SAYI_KALIBI: str = "|".join(
+    sorted((k.replace(" ", r"\s+") for k in SAYI_SOZCUKLERI), key=len, reverse=True))
+
+
+def sayi_coz(soz: str | None) -> int | None:
+    """`«uc»` → `3`. Rakamsa `int`, sözcükse tablodan; ikisi de değilse `None`.
+
+    ⚠ **Tek okuma noktası** ㊲: hem `_REL_DATE` hem gelecekteki her dönem kalıbı buradan
+    okur — iki yerde çözülen bir sayı, bir gün iki farklı tarihe dönüşür.
+    """
+    if not soz:
+        return None
+    t = " ".join(str(soz).split())
+    if t.isdigit():
+        return int(t)
+    return SAYI_SOZCUKLERI.get(t)
+

@@ -3554,3 +3554,47 @@ cümlelik devir.
 ### ⊘ FE ekran doğrulaması — **beşinci tur** yapılamadı
 
 `localhost:3000` → `000`.
+
+---
+
+## `§74` (`K5`) — **yazıyla yazılmış sayı**: *«son üç ay»* artık *«son 3 ay»*
+
+### Ölçülen kusur (canlı `s35`) — iki zarar birden
+
+```
+«son 3 ayda fire ne kadar»   → source=cube      · dönem 2026-05-13 →            ✅
+«son üç ayda fire ne kadar»  → source=cube+llm  · dönem 2025-06-01 → 2026-06-30 🔴 13 AY
+```
+
+Route düşüyordu (**gereksiz LLM turu**) **ve** dönem 13 aya açılıyordu — *bir sistemin
+yanlış cevabı, cevapsızlığından pahalıdır.*
+
+### Çare: **kapalı küme**, route'a dil kuralı **değil**
+
+`_REL_DATE` **zaten** Türkçe bir birim listesi taşıyor (`ay|gun|hafta|yil`); sayı
+sözcükleri aynı cinsten ve **sonlu** (`bir…on iki`). Yasak olan **açık uçlu** listelerdir
+㊱. Küme 🆕 `donem_capasi.SAYI_SOZCUKLERI` + `sayi_coz` (tek okuma noktası ㊲);
+`cube_router` yalnız **kalıba** koyar.
+
+### ⚠ `«bir ay»` belirsizliği ⑯ — **yapısal olarak** çözüldü
+
+Sözcük ancak `son <SAYI> <birim>` **üçlüsünün ortasında** eşleşir. Tek başına duran
+*«bir ay»* kalıba **hiç girmez** — bir eşikle değil, **kalıbın şekliyle**. Ölçüldü:
+
+```
+son 3 ay → 2026-05-13   son uc ay → 2026-05-13   son bir ay → 2026-07-13
+son on iki ay → 2025-08-13      son ucuncu ay → None      bir ay → None
+```
+
+⚠ **Komşu kalıp da genişletildi** ⑯: `_PERIOD_RANGE_REF` — yoksa *«son üç aya göre»*
+bir **kırılım** isteği sanılırdı (bu depoyu **üç kez** ısıran *«göre»* tuzağı).
+
+**Kapı:** `test_yaziyla_sayi_donemi.py` (**11 ✅**) — yazı ≡ rakam · iki sözcüklü sayılar
+(`on iki` uzun-önce) · 🆃 tek başına *«bir ay»* eşleşmez · 🆃 sıra sayısı eşleşmez · komşu
+kalıp · çözümün tek sahibi. **Mutasyonla kanıtlandı** 🅑 (küme kalıptan çıkarılınca 2 🔴).
+
+**Korpus:** **83/69/68/72 · %95,6 · 558/591 = %94,4 · payda 591** — **birebir aynı** 🅜.
+Dönem kalıbı değişti, korpus kıpırdamadı.
+
+**Tavan:** `cube_router` **+3** (ilk yazım +4'tü; iki kalıp tek parçadan kurulunca +3 —
+daha kısası 100 karakter sınırını aşıyordu) → gerekçeli `MUAFIYET_CUBE_ROUTER_KOD`.

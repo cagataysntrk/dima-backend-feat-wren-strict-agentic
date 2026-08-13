@@ -20,6 +20,8 @@ import difflib
 import logging
 import functools
 import re
+
+from app import donem_capasi as _donem_capasi
 from datetime import date, timedelta
 
 from app import cekirdek, mali_takvim
@@ -37,7 +39,12 @@ _log = logging.getLogger("dima.cube_router")
 # Göreli tarih aralığı: "son 3 ay / son 30 gun / son 2 hafta / son yil" → time dim `gte` filtresi.
 # Cube'da granularity'siz saf WHERE üretir (ay kovası eklemez) → haftanın-günü vb. bozulmaz.
 # Tek yerde tanımlı → her N-ay/gün/hafta/yıl sorgusu deterministik faydalanır (ADR-0004).
-_REL_DATE = re.compile(r"son\s+(?:(\d+)\s+)?(ay|gun|hafta|yil)")
+# 🔴 `§74` — sayı **rakamla ya da yazıyla** olabilir. Sözcük kümesi `donem_capasi`'de
+# (kapalı ve sonlu); burada yalnız **kalıba** giriyor. ⚠ Belirsizlik yapısal olarak yok:
+# sözcük ancak `son <SAYI> <birim>` üçlüsünün ortasında eşleşir — yalnız başına duran
+# *«bir ay»* bu kalıba **hiç** girmez ⑯.
+_SAYI = r"(?:\d+|" + _donem_capasi.SAYI_KALIBI + r")"
+_REL_DATE = re.compile(rf"son\s+(?:({_SAYI})\s+)?(ay|gun|hafta|yil)")
 
 # DİL ÇAKIŞMASI (bkz. _time_gran'daki aynı isimli not): "son 4 aya göre" / "son 4 ay
 # bazında" gibi ifadeler DÖNEM ifadesidir — buradaki "göre"/"bazında"/"bazlı" bir
@@ -45,7 +52,10 @@ _REL_DATE = re.compile(r"son\s+(?:(\d+)\s+)?(ay|gun|hafta|yil)")
 # sessiz-yanlış koruması (_BREAKDOWN_HINTS taraması) bu deseni ayrı tutmalı, yoksa
 # "son 4 aya göre yap" gibi salt dönem-değişikliği istekleri (log regresyonu:
 # test_son_n_aya_gore_kova_degil) yanlışlıkla "karşılanamayan kırılım" sanılır.
-_PERIOD_RANGE_REF = re.compile(r"son\s+(?:\d+\s+)?(?:ay|gun|hafta|yil)\w*\s+(?:gore|bazinda|bazli)")
+# ⚠ `§74` — **komşu kalıp da genişledi** ⑯: bu satır olmasaydı *«son üç aya göre»*
+# bir kırılım isteği sanılırdı (bu depoyu üç kez ısıran «göre» tuzağı).
+_PERIOD_RANGE_REF = re.compile(
+    rf"son\s+(?:{_SAYI}\s+)?(?:ay|gun|hafta|yil)\w*\s+(?:gore|bazinda|bazli)")
 
 
 def _months_ago(d: date, n: int) -> date:
@@ -59,7 +69,7 @@ def _relative_date_filter(q: str, time_dim: str) -> dict | None:
     m = _REL_DATE.search(q)
     if not m:
         return None
-    n = int(m.group(1)) if m.group(1) else 1
+    n = _donem_capasi.sayi_coz(m.group(1)) or 1   # `§74` — rakam ∨ sözcük
     unit = m.group(2)
     today = date.today()
     if unit == "ay":

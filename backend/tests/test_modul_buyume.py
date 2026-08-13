@@ -1551,6 +1551,17 @@ MUAFIYET_CUBE_ROUTER_KOD = [
                    "boşluk var — kapı büyümeyi DURDURMUYOR»* diye kırmızı verdi. "
                    "*Kazanılan alan sessizce harcanırsa, bir taşıma bir sonraki büyümenin "
                    "bütçesine dönüşür.*"),
+    ("§74-yaziyla-sayi", 3,
+     "🔴 `K5` — **YAZIYLA YAZILMIŞ SAYI** (`«son üç ay»` ≡ `«son 3 ay»`). ⊙ Canlı ölçüldü "
+     "(`s35`): `«son üç ayda fire»` route'u **düşürüyor** (gereksiz LLM turu) ve garson "
+     "dönemi **13 aya** açıyor — kullanıcı yanlış sayıyı doğru sanıyor. "
+     "⚠ **TAŞINAMAZ:** `_REL_DATE`/`_PERIOD_RANGE_REF` bu dosyanın kalıplarıdır; sayı "
+     "kümesini burada okumamak, dönem kalıbını **ikinci bir yerde** kurmak olurdu ㊲. "
+     "🔴 Üç satırın **hiçbiri dil kuralı değil**: bir import, bir **paylaşılan parça** "
+     "(`_SAYI` — iki kalıp da onu okur) ve komşu kalıbın ikinci satırı. Sözcük kümesinin "
+     "kendisi `donem_capasi.SAYI_SOZCUKLERI`'nde ve **kapalı** (`bir…on iki`). "
+     "⊙ Sıkıştırıldı: ilk yazım **+4**'tü; iki kalıp tek parçadan kurulunca **+3**. "
+     "Daha kısası satır uzunluğu sınırını (100) aşıyordu."),
 ]
 #: 🔴 **AYRI LİSTE — ve bu bir ÖLÇÜM ARACI DÜZELTMESİDİR.** İlk tasarımda dosya tavanı
 #: `TAVAN_ASK_KOD + 1259` idi; yani **modül düzeyine** eklenen bir satır için `MUAFIYET_
