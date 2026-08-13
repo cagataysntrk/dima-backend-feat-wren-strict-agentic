@@ -56,6 +56,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
+import os
 import sys
 import unicodedata
 from pathlib import Path
@@ -136,6 +137,30 @@ VAKALAR: list[tuple[str, tuple[str, ...], str]] = [
     ("downtime", ("bakim.toplam_durus_dakika", "oee.toplam_durus_dakika"), "karisik"),
     ("oee", ("oee.ort_oee",), "duz"),
     ("makine verimliliği", ("oee.ort_oee",), "dolayli"),
+    # --- `§39` PAYDA BÜYÜTMESİ: 19 → 36 ölçülen vaka -----------------------------
+    # 🅉 Borç *«payda 19, kalibrasyon için küçük»* buradaydı. Hedeflerin **hiçbiri
+    # uydurma değil**: katalogdan okundu ㊱ (`cari · sikayet · siparis · sevkiyat ·
+    # kalite · maliyet · ik` küplerinin gerçek ölçüleri). Dört zorluk sınıfı korundu.
+    # ⚠ Yeni sayı eskisiyle **kıyaslanamaz** 🅜: payda değişti, ölçüt değişmedi.
+    ("bakiye", ("cari.bakiye",), "duz"),
+    ("şikayet adedi", ("sikayet.sikayet_adedi",), "duz"),
+    ("sipariş tutarı", ("siparis.siparis_tutari",), "duz"),
+    ("nakliye maliyeti", ("sevkiyat.nakliye_maliyeti",), "duz"),
+    ("rework", ("kalite.toplam_rework_kg", "kalite.rework_sayisi"), "duz"),
+    ("kar marjı", ("maliyet.ort_kar_marji_yuzde",), "duz"),
+    ("sevkiyat adedi", ("sevkiyat.sevkiyat_adedi",), "duz"),
+    ("müşterilerden ne kadar alacağımız var", ("cari.toplam_alacak",), "dolayli"),
+    ("kaç şikayet geldi", ("sikayet.sikayet_adedi",), "dolayli"),
+    ("siparişleri zamanında teslim edebiliyor muyuz",
+     ("siparis.zamaninda_teslim_yuzde",), "dolayli"),
+    ("işçilik bize kaça mal oluyor", ("ik.toplam_isveren_maliyeti",), "dolayli"),
+    ("ürün başına ne kadar kar ediyoruz", ("maliyet.ort_birim_kar",), "dolayli"),
+    ("sikayet adedı", ("sikayet.sikayet_adedi",), "yazim"),
+    ("siparis tutari", ("siparis.siparis_tutari",), "yazim"),
+    ("nakliye maliyet", ("sevkiyat.nakliye_maliyeti",), "yazim"),
+    ("delivery performance", ("siparis.zamaninda_teslim_yuzde",), "karisik"),
+    ("complaint count", ("sikayet.sikayet_adedi",), "karisik"),
+    ("payroll cost", ("ik.toplam_isveren_maliyeti", "ik.toplam_brut_maas"), "karisik"),
 ]
 
 #: ⚠ `vardya` bir **gürültü** vakasıdır: kataloğa karşılığı olmayan bir kelime. Doğru
@@ -162,8 +187,18 @@ def _vektor(ifadeler: list[str], havuz: dict[str, list[str]]):
     except Exception:                                  # noqa: BLE001
         return None
     try:
+        # 🔴 `§39` — ÖNBELLEK KAP ÖMÜRLÜYDÜ, ölçüm ağa BAĞIMLI kalıyordu.
+        #
+        # Ölçüldü: `--network none` ile koşan her `--vektor` çağrısı *«name resolution»*
+        # hatasıyla düşüyor, çünkü `/tmp/fastembed_cache` konteynerle birlikte ölüyor ve
+        # model **her seferinde** yeniden indirilmek zorunda kalıyor. Yani kuru mod
+        # çalışıyor, gerçek ölçüm çalışmıyordu 🅯.
+        #
+        # ⚠ Varsayılan **değiştirilmedi** (`KURAL B`): env verilmezse davranış bayt aynı.
+        # Env verildiğinde önbellek bir **birim** (mount) olabilir ve ölçüm ağsız koşar.
         model = TextEmbedding("intfloat/multilingual-e5-large",
-                              cache_dir="/tmp/fastembed_cache")
+                              cache_dir=os.environ.get("DIMA_FASTEMBED_CACHE",
+                                                       "/tmp/fastembed_cache"))
     except Exception as exc:                           # noqa: BLE001
         print(f"⊘ gömme modeli yüklenemedi: {exc}", file=sys.stderr)
         return None
