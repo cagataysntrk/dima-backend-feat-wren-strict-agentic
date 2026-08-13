@@ -62,7 +62,29 @@ _SERT = "fstkçşhp"
 _YUMUSAMAZ = frozenset({
     "saat", "devlet", "millet", "sanat", "hukuk", "kat", "sept",
     "bilet", "paket", "market", "kredi", "tikat",
+    # 🔴 **ÖLÇÜLDÜ** (`§5.1` cümle üreteci, 2026-08-13): `cinsiyet` bu deponun **gerçek
+    # bir boyut etiketi** ve motor `«cinsiyede»` üretiyordu. TDK: *cinsiyeti · cinsiyete*.
+    "cinsiyet",
 })
+
+#: 🔴 **GÖVDESİ DEĞİŞEN SÖZCÜKLER** — üçüncü kapalı liste, ve onu da bir ÖLÇÜM buldurdu.
+#:
+#: Yukarıdaki iki liste *«yumuşar mı»* sorusunu cevaplıyor. Ama bazı sözcüklerde ünlüyle
+#: başlayan ek gelince **son ünsüz değişmez, GÖVDE değişir** — ve bu iki ayrı olaydır:
+#:
+#: | sözcük | motor ne üretiyordu | doğrusu | olay |
+#: |---|---|---|---|
+#: | `hat` | **hada** | **hatta** | ünsüz **ikizleşmesi** (`hat → hatt-`) |
+#: | `renk` | **renğe** | **renge** | `k → **g**` (ğ değil; `n`'den sonra) |
+#:
+#: ⊙ İkisi de `§5.1`'in şeridinde **gerçek katalog etiketi** olarak ölçüldü — uydurma
+#: vaka değil. Ve ikisi de bir **kuralla türetilemez**: `renk→renge` ama `kürk→kürkü`
+#: (hiç yumuşamaz), `hat→hatta` ama `kat→katta` (listede, yumuşamaz). Aynı yazım, üç
+#: ayrı davranış. *Bir dilin istisnası bir kuralın eksiği değil, sözlüğün kendisidir.*
+#:
+#: ⚠ Liste **dar**: yalnız bu deponun kataloğunda **ölçülmüş** etiketler. Büyümesi bir
+#: ölçüm ister, bir sezgi değil — liste uzatmak bir çözüm değil bir borçtur 🆞.
+_OZEL_GOVDE = {"hat": "hatt", "renk": "reng"}
 
 _YUMUSAMA = {"p": "b", "ç": "c", "t": "d", "k": "ğ"}
 
@@ -135,10 +157,31 @@ def _dortlu(unlu: str) -> str:
 
 
 def _yumusat(govde: str) -> str:
-    """Ünlüyle başlayan ek öncesi son ünsüz yumuşaması — istisnalar hariç."""
+    """Ünlüyle başlayan ek öncesi son ünsüz yumuşaması — istisnalar hariç.
+
+    ⚠ Sıra **önemli**: gövdesi değişen sözcükler (`hat→hatt`, `renk→reng`) yumuşama
+    kuralına **hiç girmez**; girselerdi `hat` önce `had`'a dönerdi ve ikizleşme kaybolurdu.
+    *Bir istisnayı kuraldan sonra uygulamak, kuralın onu çoktan bozmuş olması demektir.*
+    """
+    ozel = _OZEL_GOVDE.get(govde.lower())
+    if ozel is not None:
+        # ⚠ Büyük/küçük harf korunur: `Renk` → `Reng` (etiketler başlıkla gelebilir ⑧).
+        return govde[0] + ozel[1:] if govde[:1].isupper() else ozel
     if len(govde) < 3 or govde.lower() in _YUMUSAMAZ:
         return govde
     son = govde[-1].lower()
+    # 🔴 **ÖLÇÜLEN KUSUR** (2026-08-13): motor `kürk → «kürğe»` üretiyordu.
+    #
+    # Kural — ve bu bir liste değil, **türetilebilir**: `k` yumuşaması ünlüden sonra olur
+    # (*gök→göğü · ekmek→ekmeği*); **ünsüzden** sonra olmaz (*kürk→kürkü · park→parkı ·
+    # Türk→Türkü*). Bunu listeye yazmak, sonsuz bir sözcük sınıfını tek tek saymak olurdu
+    # 🆞 — oysa ayrım tek bir karakterde duruyor.
+    #
+    # ⚠ `renk→renge` bu kuralın istisnası **değil**, ondan **önce** çözülür
+    # (`_OZEL_GOVDE`): `-nk` sözcüklerinin bir kısmı `g`'ye döner, bir kısmı hiç dönmez —
+    # o ayrım sözlükseldir ve yukarıda gerekçesiyle duruyor.
+    if son == "k" and len(govde) >= 2 and govde[-2].lower() not in _UNLU:
+        return govde
     if son in _YUMUSAMA and _son_unlu(govde):
         return govde[:-1] + _YUMUSAMA[son]
     return govde

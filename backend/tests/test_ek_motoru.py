@@ -167,3 +167,46 @@ def test_EKSIZ_YUVA_ve_TANINMAYAN_KUYRUK_BOZULMAZ():
     assert m == "Mart en yüksek"
     m, _ = geri_koy("{{DIM_1}}'xyz", {"{{DIM_1}}": "Mart"})
     assert m == "Mart'xyz"
+
+
+# ── 🔴 ÖLÇÜLEN DÖRT MORFOLOJİ KUSURU (`§5.1` cümle üreteci, 2026-08-13) ──────
+#
+# Dördü de **gerçek katalog etiketiyle** ölçüldü — uydurma vaka yok. Üçü şeridin
+# cümlelerinde görünüyordu (`hat`·`renk`·`cinsiyet`), dördüncüsü (`kürk`) düzeltmeyi
+# ölçerken ortaya çıktı: *bir kusuru düzeltirken komşusuna bakmak, ikinci kusuru
+# bulmanın en ucuz yoludur* ⑯.
+
+def test_GOVDESI_DEGISEN_SOZCUKLER():
+    """`hat → hatta` (ünsüz **ikizleşmesi**) · `renk → renge` (`k → g`, `ğ` değil).
+
+    🅑 Mutasyon: `_OZEL_GOVDE` boşaltılırsa motor `«hada»` ve `«renğe»` üretir ve bu
+    yüklem kırılır.
+    """
+    from app.ek import ek_bagla
+
+    assert ek_bagla("hat", "e") == "hatta"
+    assert ek_bagla("renk", "e") == "renge"
+    assert ek_bagla("Renk", "e") == "Renge", "başlık harfi korunmalı ⑧"
+
+
+def test_CINSIYET_YUMUSAMAZ():
+    """`cinsiyet → cinsiyete`. Motor `«cinsiyede»` üretiyordu; TDK: *cinsiyeti*."""
+    from app.ek import ek_bagla
+
+    assert ek_bagla("cinsiyet", "e") == "cinsiyete"
+
+
+def test_UNSUZDEN_SONRAKI_K_YUMUSAMAZ():
+    """🔴 **Kural, liste değil**: `k` yumuşaması ünlüden sonra olur, **ünsüzden** sonra
+    olmaz. Listeye yazmak sonsuz bir sözcük sınıfını tek tek saymak olurdu 🆞.
+
+    🅑 Mutasyon: `_yumusat`'taki `govde[-2] not in _UNLU` dalı kaldırılırsa `kürk`
+    `«kürğe»`ye döner ve bu yüklem kırılır.
+    """
+    from app.ek import ek_bagla
+
+    for sozcuk, beklenen in (("kürk", "kürke"), ("park", "parka"), ("Türk", "Türke")):
+        assert ek_bagla(sozcuk, "e") == beklenen, f"{sozcuk} yanlış çekimlendi"
+    # ⚠ Ve kural **korunmalı**: ünlüden sonraki `k` hâlâ yumuşar.
+    assert ek_bagla("gök", "e") == "göğe"
+    assert ek_bagla("ekmek", "e") == "ekmeğe"
