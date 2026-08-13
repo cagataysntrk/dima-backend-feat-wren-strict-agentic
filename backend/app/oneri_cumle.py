@@ -55,12 +55,29 @@ cümle **ek istemeyen** bir kuruluşa düşer —
 |---|---|
 | kısaltmanın okunuşu (*«ABC'nin»* mi *«ABC'ın»* mı?) | *«ABC **için** …»* |
 | tamlananın iyelik eki yok (*«RAM-3'ün toplam fire (kg)»* eksik tamlama) | *«RAM-3 **için** …»* |
-| tek heceli sert ünsüz sonu (*«hat» → «hada»* ⊘ · doğrusu *«hatta»*) | *«hat **bazında** …»* |
+| **sert ünsüz sonu** (`p·ç·t·k`) — yumuşama bir **listeye** bağlı, kurala değil | *«hat **bazında** …»* |
 
-Üçüncüsü ölçülmüş bir kusurdur: `ek.py`'nin yumuşama koruması `len < 3` eşiğine dayanır ve
-`hat` **tam üç harf**tir — eşiğin bir karakter dışında kalır. Onarım `ek.py`'ye kural
-eklemek değil (o motorun kapsamı başka), **güvenmediğimiz yerde ek istememektir**;
-*«… bazında»* bu depoda zaten üretilen bir kuruluştur (`app/drill.py:112`).
+🔴 Üçüncüsü **ölçüldü** ve genel bir kusurdur: yumuşamanın istisnaları `ek.py`'de kapalı
+bir liste (`_YUMUSAMAZ`) ve o liste **anlatıcının** sözcükleriyle kalibre edilmiş. Bu
+deponun boyut etiketlerinde `p·ç·t·k` ile biten **her** örnek o listenin dışında kalıyor
+ve **üçü de yanlış** çekimleniyor:
+
+    hat      → «hada»    (doğrusu «hatta»)   ⊘ `len < 3` koruması üç harfliyi kaçırır
+    renk     → «renğe»   (doğrusu «renge»)   ⊘ `k → ğ` eşlemesi burada `k → g` olmalı
+    cinsiyet → «cinsiyede» (doğrusu «cinsiyete»)  ⊘ `devlet`/`millet` sınıfı, listede yok
+
+⟳ **VE ÜÇÜ DE ONARILDI** *(aynı gün, `ek.py`'de — bu paragrafın ilk hâli «onarım orada
+değil» diyordu ve o **bayattır** 🅟)*: `hat → hatta` · `renk → renge` · `cinsiyet →
+cinsiyete`. İkisi **sözlükseldi** (`_OZEL_GOVDE`/`_YUMUSAMAZ`), biri **kuraldı** — `k`
+ünsüzden sonra yumuşamaz (`kürke`·`parka`), ünlüden sonra yumuşar (`göğe`). Kapı:
+`tests/test_ek_motoru.py`.
+
+⊙ **Buna rağmen `«… bazında»` kuruluşu KALDI** ve bu bilinçli: onarım üç **ölçülmüş**
+etiketi kapattı, ama katalog büyür ve bir sonraki `p·ç·t·k` etiketi listede **olmayacak**.
+Yani kuruluş bir yama değil bir **taban**dır: ek isteyen yol doğruyken güzelleşir, yanlış
+olduğunda **bozulmaz**. Bu kuruluş bu depoda zaten üretiliyor (`app/drill.py:112`) ve her
+sözcükle çalışır. *Bir motorun kapsamını genişletmek ile kapsamının dışına çıkmayan bir
+cümle kurmak birbirinin alternatifi değil, birbirinin sigortasıdır.*
 
 *Yanlış bir ek, eksik bir ekten daha görünür bir kusurdur.*
 """
@@ -77,8 +94,18 @@ if TYPE_CHECKING:  # pragma: no cover — yalnız tip; çalışma anında import
     from app.oneri import Aday
 
 __all__ = [
-    "GRUP_RAPOR", "GRUP_YENI", "Oneri", "TUR_DONEM", "TUR_KIRILIM", "TUR_NEDEN",
-    "TUR_OLCU_EKLE", "TUR_YENI", "cumleler", "kirilim_ifadesi", "tamlayan", "yonelme",
+    "GRUP_RAPOR",
+    "GRUP_YENI",
+    "TUR_DONEM",
+    "TUR_KIRILIM",
+    "TUR_NEDEN",
+    "TUR_OLCU_EKLE",
+    "TUR_YENI",
+    "Oneri",
+    "cumleler",
+    "kirilim_ifadesi",
+    "tamlayan",
+    "yonelme",
 ]
 
 #: Şeridin iki bandı — `§5.1`'in görünür çapası bu ikisini **ayrı** çizer.
@@ -126,13 +153,12 @@ _UNLU_DUSEN: dict[str, str] = {
     "boyun": "boyn", "göğüs": "göğs",
 }
 
-#: Yumuşamaya açık son ünsüzler (`ek.py::_YUMUSAMA`'nın anahtarları). **Tek heceli**
-#: sözcüklerde bu yumuşama çoğunlukla YANLIŞTIR (*«top» → «toba»* ⊘) ve `ek.py`'nin
-#: `len < 3` koruması üç harflileri kaçırır — o yüzden bu modül orada ek **istemez**.
+#: Yumuşamaya açık son ünsüzler (`ek.py::_YUMUSAMA`'nın anahtarları). Bu harflerle biten
+#: bir etikete ek **istenmez**: yumuşayıp yumuşamayacağı bir kurala değil bir **listeye**
+#: bağlıdır ve o liste (`ek.py::_YUMUSAMAZ`) başka bir kapsam için kalibre edilmiştir —
+#: ölçüldü, bu deponun üç boyut etiketinin (`hat` · `renk` · `cinsiyet`) **üçü de** yanlış
+#: çekimleniyor. Gerekçenin tamamı modül başlığında.
 _SERT_SON = "pçtk"
-
-#: Türkçe ünlüler — hece sayımı için (bir sözcükteki ünlü sayısı = hece sayısı).
-_UNLULER = "aeıioöuüAEIİOÖUÜ"
 
 #: Değerin **sonundaki** rakam öbeği — *«RAM-3»* → `3` → okunuş *«üç»* → `'ün`.
 _SON_RAKAM = re.compile(r"(\d+)\s*$")
@@ -221,14 +247,15 @@ def yonelme(etiket: str) -> str:
     return " ".join([*p[:-1], cekim])
 
 
-def _yumusama_riski(sozcuk: str) -> bool:
-    """Tek heceli + sert ünsüz sonu → `ek.py`'nin yumuşaması bu sözcükte **güvenilmez**.
+def _ek_guvensiz(sozcuk: str) -> bool:
+    """Sert ünsüzle (`p·ç·t·k`) biten sözcükte yönelme eki **güvenilmez**.
 
-    *hat → «hada»* (doğrusu *hatta*) · *top → «toba»* (doğrusu *topa*). Çok heceli
-    sözcüklerde kural doğrudur (*kitap → kitaba*) ve `ek.py` istisnalarını zaten bilir.
+    *hat → «hada»* ⊘ · *renk → «renğe»* ⊘ · *cinsiyet → «cinsiyede»* ⊘ — üçü de gerçek
+    boyut etiketi, üçü de yanlış. Kural değil **liste** işidir ve liste başka bir kapsam
+    için yazılmıştır; burada ek istemek yerine ek istemeyen kuruluşa geçilir.
     """
     s = str(sozcuk or "")
-    return bool(s) and s[-1].lower() in _SERT_SON and sum(ch in _UNLULER for ch in s) == 1
+    return bool(s) and s[-1].lower() in _SERT_SON
 
 
 def kirilim_ifadesi(etiket: str) -> str:
@@ -242,7 +269,7 @@ def kirilim_ifadesi(etiket: str) -> str:
     p = str(etiket or "").split()
     if not p:
         return ""
-    if _yumusama_riski(p[-1]):
+    if _ek_guvensiz(p[-1]):
         return f"{etiket} bazında"
     return f"{yonelme(etiket)} göre"
 
@@ -479,6 +506,17 @@ def _rapor_ustunde(adaylar: list[Aday], c: _Capa, niyet: Any,
     """`↳ BU RAPOR ÜZERİNDE` — **yalnız çapanın küpünden** (🆈 JOIN yasağı, `Thread 3`)."""
     out: list[Oneri] = []
     ayni_kup = [a for a in adaylar if str(getattr(a, "cube", "")) == c.cube]
+    if not ayni_kup:
+        # 🔴 `§6/Thread 3` — **KULLANICI KONUYU DEĞİŞTİRDİYSE ÜST BANT SUSAR.**
+        #
+        # Yazılanın çapanın küpüyle **hiçbir** kesişimi yoksa (*«ciro»* yazarken çapa
+        # `fire`), açık rapor hakkında satır üretmek şeridi kullanıcının **sormadığı**
+        # şeyle doldurur. Plan bu turda üst banda tek bir satır koyuyor ve o satır bir
+        # JOIN gerektirdiği için zaten sunulamaz — geriye susmak kalır.
+        #
+        # ⚠ Çapa **düşmüyor**: kopuş tahmin edilmiyor, yalnız o turda sunacak bir şeyi
+        # olmadığını beyan ediyor. *Boş bir bant, ilgisiz bir banttan dürüsttür.*
+        return []
     donem = _donem_eki(c.donem)
 
     ekle_yazildi = False
@@ -509,12 +547,23 @@ def _rapor_ustunde(adaylar: list[Aday], c: _Capa, niyet: Any,
                     cube_query={**c.cq, "measures": [*c.olculer, olcu]}))
                 ekle_yazildi = True
 
-        # ③ 🔴 MAKRO — sorgu değil, `§6/Thread 2`'nin dört adımı (tek tık).
-        if not any(o.tur == TUR_NEDEN for o in out):
-            out.append(Oneri(
-                kimlik=f"{GRUP_RAPOR}:{TUR_NEDEN}:{c.cube}.{olcu}",
-                metin=f"{etiket} neden bu seviyede?", grup=GRUP_RAPOR, tur=TUR_NEDEN,
-                cube=c.cube, cube_query=None))
+    # ③ 🔴 MAKRO — sorgu değil, `§6/Thread 2`'nin dört adımı (tek tık).
+    #
+    # ⚠ Makro **açık rapora** sorulur, aday listesine değil: *«neden bu seviyede?»*
+    # sorusunun öznesi ekrandaki sayıdır. Bu yüzden özne önce **çapanın ölçüsüdür**;
+    # ancak onun etiketi bilinmiyorsa (şema verilmemiş) ilk adaya düşülür.
+    capa_olcu = c.olculer[0] if c.olculer else ""
+    ozne, ozne_kod = _olcu_etiketi(schema, c.cube, capa_olcu), capa_olcu
+    if not ozne:
+        ilk = next((a for a in ayni_kup
+                    if _olcu_kodu(a) and str(getattr(a, "etiket", "")).strip()), None)
+        ozne = str(getattr(ilk, "etiket", "")).strip() if ilk else ""
+        ozne_kod = _olcu_kodu(ilk) if ilk else ""
+    if ozne and ozne_kod:
+        out.append(Oneri(
+            kimlik=f"{GRUP_RAPOR}:{TUR_NEDEN}:{c.cube}.{ozne_kod}",
+            metin=f"{ozne} neden bu seviyede?", grup=GRUP_RAPOR, tur=TUR_NEDEN,
+            cube=c.cube, cube_query=None))
 
     # ④ Kırılım — **kullanıcının kendi sözcüğünden** doğar, icat edilmez.
     out += _kirilim_onerisi(c, niyet, schema)

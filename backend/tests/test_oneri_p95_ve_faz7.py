@@ -8,18 +8,33 @@ r"""🔴 `FAZ 5` kapı `②` (**p95**) + `FAZ 7`'nin ⊘'sünün **doğrulanmas�
 |---|---|
 | kip | **vektor** *(leksik değil — 🅕 gömücüsüz sayı taşınmaz)* |
 | terim | **136** · payda **90** koşum |
-| **ılık p50** | **39,63 ms** |
-| **ılık p95** | **49,23 ms** — eşik **300 ms** ✅ *(≈6× pay)* |
-| soğuk (ilk istek) | **1.514,5 ms** |
+| **ılık p50** | **50,77 ms** |
+| **ılık p95** | **53,82 ms** — eşik **300 ms** ✅ *(≈5,6× pay)* |
+| soğuk (indeks kurulumu) | **24.313,1 ms** |
 
-⚠ 🅖 **Soğuk sayı eşiğin ÜSTÜNDE ve bu gizlenmiyor.** İlk istek katalogdaki 136
-etiketi gömer (sürüm anahtarlı indeksi kurar); süreç başına ve şema sürümü başına
-**bir kez** yaşanır. Plan `②` *«p95»* diyor ve p95 **ılık** dağılımın ölçüsüdür —
-ama tek bir kullanıcı için o ilk istek **gerçektir**. Azaltma yolu var ve
-**uygulanmadı**: `main.py` gömücüyü zaten arka planda ısıtıyor (`_warm`); indeks de
-oradan ısıtılabilir. ⊘ **Şimdi yapılmadı** çünkü ısıtma bir **şema** ister ve şema
-istek başına (tenant'a göre) çözülür — yani ısıtmanın doğru yeri ölçülmeden
-seçilemez ㊴.
+## ⟳ İKİ SAYI DA DEĞİŞTİ — ve ikisinin de sebebi yazılı 🅟
+
+⊙ **Ilık `39,63 → 50,77` ms**: `§18.7` çok görünümlü temsile geçildi (alan başına dört
+görünüm). Bedeli ölçüldü, karşılığı da: **`Recall@3` %68,4 → %89,5**. Eşiğin altında
+kalındı, yani `②` kapısı **hâlâ geçiliyor** — ama sayı bir **fotoğraftır** ve burada
+tazelenmiştir.
+
+⊙ **Soğuk `1.514 → 24.313` ms**: 136 etiket yerine **534 görünüm** gömülüyor.
+
+🔴 **VE BU ARTIK KULLANICIYA YANSIMIYOR — ısıtma YAPILDI.** Bu bölümün eski hâli
+*«⊘ şimdi yapılmadı, çünkü ısıtma bir şema ister ve şema tenant'a göre çözülür»*
+diyordu. O gerekçe **ödendi**: `main.py`'nin `lifespan`'i şema ve gömücüyü zaten
+ısıtıyordu; üçüncü bir ısıtma indeksi de kuruyor. Ölçüldü: ısıtmadan sonra **ilk
+kullanıcı isteği 55,0 ms**. Kapısı `tests/test_oneri_isitma.py`.
+
+⚠ **Soğuk sayı raporda KALMAYA devam ediyor** ve kalmalı 🅖: ısıtma onu **taşıdı**,
+yok etmedi. Konteyner açılışından hemen sonra gelen bir istek hâlâ bekleyebilir ve
+**çok kiracılı** kurulumda ikinci tenant'ın indeksi hâlâ ilk istekte kurulur.
+*Bir maliyeti görünmez yapmak onu ödemek değildir; nereye taşındığını yazmaktır.*
+
+⚠ 🅣 **Ve asıl ders bu kapının kendisindeydi:** `②` eşiği `p95`'e bakar, `p95` **ılık**
+dağılımın ölçüsüdür ve ilk isteği **tanım gereği saymaz**. Kapı yeşilken kullanıcı 24
+saniye bekliyordu. *Bir ölçütün kapsamı dışındaki kusur, o ölçüt için yok hükmündedir.*
 
 ## `FAZ 7` — planın ⊘'sü **DEVRALINMADI, DOĞRULANDI** ㉓
 
