@@ -2635,3 +2635,66 @@ yıkıcı adım, doğrulanmış adımdan **sonra** gelir.
 ### Kurtarma
 
 `dima-oneri-8002` **`s21`** ile geri kaldırıldı, `health=200`. Kayıp: yalnız kesinti süresi.
+
+---
+
+## §57 — 🔴 KULLANICI KUSURU: **cümle uzadıkça öngörü körleşiyordu**
+
+### Ölçüm — `q=«ram 3 neden düşük»`
+
+Kullanıcı ekranı: pill satırı **`VARLIK [RAM 3]`** diyor (o katman doğru), ama öneri
+listesinde **`RAM 3` hiç yok**; gelenler *«en düşük kur»*, *«doğalgaz»*, *«ramak kala»*.
+
+```
+ara(«ram 3»)             → RAM 3 · RAM 3 · RAM-3 · RAM-3   ✅
+ara(«ram 3 neden»)       → RAM 3 · RAM-3 · RAM 1 · RAM 2   ✅
+ara(«ram 3 neden dusuk») → []                              🔴 SIFIR
+```
+
+**Kök:** leksik eşleşme **tüm diziyi** önek sayıyordu; hiçbir etiket *«ram 3 neden
+dusuk»* ile başlamaz ve bulanık oran eşiğin altına düşer. Kullanıcı yazmaya devam
+ettikçe **yazdığı varlık listeden siliniyordu** — ve boşluğu **vektör ayağı** anlamca
+uzak ölçülerle dolduruyordu (o bir **sıralayıcı**, süzgeç değil; ekrandaki *«en düşük
+kur»* oradan).
+
+*Bir tamamlama, kullanıcı yazmaya devam ettikçe körleşiyorsa bir tamamlama değildir.*
+
+### Çare — **token kapsamı** (üçüncü kova)
+
+`onek` → **`kapsam`** → `bulanik`. Bir aday, sorgunun **kaç token'ını** karşılıyorsa o
+kadar üstte: *«ram 3 neden düşük»*te `RAM 3` **iki** token kapsar, *«en düşük kur»* bir.
+
+⚠ **Tek kelimelik girdide davranış birebir aynı**: `tokenlar == [q]` olduğunda kapsam
+kovası önek kovasıyla çakışır. Değişen **yalnız** çok kelimeli hâldir.
+
+### Ölçülen sonuç
+
+```
+«ram 3 neden düşük» → bu ay RAM 3 için elektrik ne kadar?
+                      RAM 3 için elektrik neden bu seviyede?   ← kullanıcının sorusu
+                      bu ay RAM 3 için OEE ne kadar?
+«fire» · «ram 3»    → değişmedi
+```
+
+---
+
+## §58 — `5.7` DİSK KALICILIĞI **GERİ ALINDI**: kapı yazılı bir kararı savundu ㊸
+
+Açılıştaki **24,7 sn**'yi düşürmek için indeks diske yazılmıştı (`_diskten_oku` ·
+`_diske_yaz`). Kapı reddetti:
+
+> `test_indeks_DISKTE_ARTEFAKT_URETMIYOR` — *«bu depo bir kez gitignore'lu bir derleme
+> artefaktından okuyan ölçüm yüzünden aynı kaynakta **farklı sayı** gördü ⑪. Öneri
+> indeksi o sınıfa girmez: bellekte yaşar, süreçle ölür — okunacak bayat bir dosya
+> **yoktur**.»*
+
+⟹ Geri alındı; yerine **reddedilmiş denemenin kaydı** bırakıldı. ⚠ Ve planın `5.7`
+maddesi bir **lab üreteci** istiyor (`lab/oneri_indeksi.py`) — ürünün diskten
+**okuması** değil; ikisini aynı şey saymak kapıyı düşürür.
+
+*Bir açılış maliyetini düşürmek için bayatlık sınıfını geri getirmek, ödediğinden pahalı
+bir tasarruftur.* Ve **kapıdan geçmemiş kod commit edilmediği için** bu geri alma bir
+gerileme değil, bir **eleme** oldu 🆬.
+
+**Kanıt:** `oneri_motoru · onek_degismezi · oneri_cumle · bos_girdi_cekirdek ·
+gomulen_gorunum_tavani · oneri_gomme_temsili · alan_haritasi` → **124 ✅**.

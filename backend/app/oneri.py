@@ -150,6 +150,11 @@ import hashlib
 from dataclasses import dataclass
 
 from app.llm import _norm
+from app.logging_setup import get_logger
+
+#: ADR-0020 — sessiz yutma yok. İndeks kalıcılığı bir **iyileştirmedir**; düşerse
+#: ürün çalışmaya devam eder ama düşüşü **duyurulur** 🆓.
+_log = get_logger("oneri")
 
 __all__ = ["Aday", "ara", "terimler"]
 
@@ -331,22 +336,50 @@ def _leksik_sira(kismi: str, adaylar: list[Aday]) -> list[int]:
     q = _norm(kismi).strip()
     if not q:
         return []
-    onek, bulanik = [], []
+    # 🔴🔴 `§57` — **ÇOK KELİMELİ GİRDİDE EŞLEŞME TOKEN BAZINDADIR.**
+    #
+    # Ölçülen kusur (kullanıcı ekranı, `q=«ram 3 neden düşük»`):
+    #
+    #     ara(«ram 3»)             → RAM 3 · RAM-3 · …      ✅
+    #     ara(«ram 3 neden»)       → RAM 3 · RAM-3 · …      ✅
+    #     ara(«ram 3 neden dusuk») → **[]**                 🔴
+    #
+    # Sebep: önek denemesi **tüm diziyi** arıyordu; hiçbir etiket `«ram 3 neden dusuk»`
+    # ile başlamaz ve bulanık oran eşiğin altına düşer. Kullanıcı cümlesini uzattıkça
+    # yazdığı **varlık** listeden siliniyordu — ve boşluğu vektör ayağı *«en düşük kur»*
+    # gibi anlamca uzak ölçülerle dolduruyordu (o bir **sıralayıcı**, süzgeç değil).
+    #
+    # ⚠ Tek kelimelik girdide davranış **birebir aynı**: `tokenlar == [q]` olduğunda
+    # kapsam kovası önek kovasıyla çakışır. Değişen **yalnız** çok kelimeli hâldir.
+    #
+    # *Bir tamamlama, kullanıcı yazmaya devam ettikçe körleşiyorsa bir tamamlama değildir.*
+    tokenlar = [t for t in q.split() if t]
+    onek, kapsam, bulanik = [], [], []
     for i, a in enumerate(adaylar):
-        vurdu, en_iyi = False, -1.0
+        vurdu, en_iyi, sayi = False, -1.0, 0
         for g in (a.gorunumler or (a.etiket,)):
             e = _norm(g)
-            if e.startswith(q) or any(p.startswith(q) for p in e.split()):
+            kelimeler = e.split()
+            if e.startswith(q) or any(p.startswith(q) for p in kelimeler):
                 vurdu = True
                 break
+            sayi = max(sayi, sum(1 for t in tokenlar
+                                 if e.startswith(t) or any(p.startswith(t) for p in kelimeler)))
             en_iyi = max(en_iyi, difflib.SequenceMatcher(None, q, e).ratio())
         if vurdu:
             onek.append((0.0, i))
+        elif sayi:
+            # Çok token kapsayan **üstte**: `«ram 3 neden düşük»`de `RAM 3` iki token
+            # kapsar, `en düşük kur` bir. Eşitlikte kısa etiket önce (önek kovasının
+            # kuralıyla aynı) — *aynı listede iki farklı sıra mantığı olmaz* ㊲.
+            kapsam.append((-sayi, len(a.etiket), i))
         elif en_iyi >= _TYPO_MID:
             bulanik.append((-en_iyi, i))
     onek.sort(key=lambda t: (t[0], len(adaylar[t[1]].etiket)))
+    kapsam.sort()
     bulanik.sort()
-    return [i for _, i in onek][:_HAVUZ] + [i for _, i in bulanik][:_HAVUZ]
+    return ([i for _, i in onek][:_HAVUZ] + [i for *_, i in kapsam][:_HAVUZ]
+            + [i for _, i in bulanik][:_HAVUZ])
 
 
 #: 🔴 `5.7` — **İNDEKS: SÜRÜM ANAHTARLI, BELLEKTE, BAYATLAYAMAZ.**
@@ -442,6 +475,19 @@ def isit(schema: dict, *, izinliler: set[str] | None = None) -> dict:
         _ISITMA = False
     return indeks_durumu(schema)
 
+
+# ⊘ `5.7` — **İNDEKS DİSKE YAZILMAZ, ve bu bir EKSİK DEĞİL bir KARAR** ㊸.
+#
+# Kalıcılık bir tur yazıldı (`_diskten_oku`/`_diske_yaz`) ve **geri alındı**:
+# `test_indeks_DISKTE_ARTEFAKT_URETMIYOR` onu kaynak taramasıyla reddetti; gerekçesi
+# bu deponun **ölçülmüş** kazasıdır ⑪ — bir kez gitignore'lu bir derleme
+# artefaktından okuyan ölçüm, aynı kaynakta **farklı sayı** gösterdi. İndeks
+# bellekte yaşar, süreçle ölür: *okunacak bayat bir dosya yoktur.*
+#
+# ⚠ Planın `5.7` maddesi bir **lab üreteci** istiyor (`lab/oneri_indeksi.py`) —
+# ürünün diskten **okuması** değil. İkisini aynı şey saymak kapıyı düşürür.
+# *Bir açılış maliyetini düşürmek için bayatlık sınıfını geri getirmek,
+# ödediğinden pahalı bir tasarruftur.*
 
 def _vektor_sira(kismi: str, adaylar: list[Aday], _surum: str = "") -> list[int]:
     """Vektör ayağı — **yalnız sıra üretir**, eşik üretmez (`FAZ 0` bulgusu).
