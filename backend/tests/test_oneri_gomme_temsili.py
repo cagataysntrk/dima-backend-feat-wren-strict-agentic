@@ -170,7 +170,24 @@ def test_KISA_AD_GURULTUSU_SERITTEN_DUSUYOR(monkeypatch):
 
     monkeypatch.setattr(vqr, "_embedder", lambda: _UzunlukGomucu())
     serit = [a.kimlik for a in ara("fi", _SEMA, izinliler=None, limit=_SERIT)]
-    hepsi = [a.kimlik for a in ara("fi", _SEMA, izinliler=None)]
+    # ⟳ **ÖLÇÜM KATMANI TAŞINDI (zayıflatılmadı) — `K1` kesmesi geldiğinde.**
+    #
+    # Bu yüklemin iddiası *«alan ELENMEDİ, geriye ALINDI»*. İlk yazımda `hepsi`
+    # `ara(...)`'nın limitsiz çıktısıydı; o gün şeridin tek süzgeci **yetki**ydi.
+    # `K1` ile bir **kesme** eklendi: leksik ayak kanıt bulduysa (ve `fi` için **13**
+    # bulur) vektör-yalnız adaylar listeye **girmez** — çünkü insan testinde tam da onlar
+    # gürültü olarak görüldü (`fire` → `metre`·`enerji`).
+    #
+    # ⚠ Yani `ara()` artık bu iddiayı **ölçemez**: kesme, temsilin etkisini maskeler.
+    # İddia **vektör ayağının sırasına** aittir ve ölçüm oraya taşındı. Deney birebir
+    # aynı (aynı sahte gömücü · aynı şema · aynı sorgu); değişen tek şey **nereye
+    # baktığı** ㊺. *Bir yüklemi zayıflatmadan taşımanın ölçüsü, aynı kusuru hâlâ
+    # yakalamasıdır* — ve yakalıyor: kontrol grubu (bir alttaki yüklem) hâlâ kırmızı
+    # veriyor.
+    from app.oneri import _vektor_sira, terimler
+
+    _havuz = terimler(_SEMA, None)
+    hepsi = [_havuz[i].kimlik for i in _vektor_sira("fi", _havuz, "")]
 
     for gurultu in ("surdurulebilirlik.toplam_su_lt", "enerji_tesis.set_tep_ton"):
         assert gurultu not in serit, f"🔴 kısa-ad gürültüsü hâlâ şeritte: {serit}"
@@ -201,7 +218,10 @@ def test_ONCEKI_TEMSIL_AYNI_GOMUCUDE_GURULTUYU_GETIRIYORDU(monkeypatch):
             for a in terimler(_SEMA, None)]
     monkeypatch.setattr(oneri, "terimler", lambda *_a, **_k: list(eski))
 
-    serit = [a.kimlik for a in ara("fi", _SEMA, izinliler=None, limit=_SERIT)]
+    # ⟳ Ölçüm katmanı bir üstteki yüklemle **birlikte** taşındı: kontrol grubu da
+    # vektör ayağının sırasına bakar. Aksi hâlde `K1` kesmesi kusuru maskeler ve
+    # *«düzeltme çalışıyor»* sanılırdı — oysa kanıtlanan şey kesmenin varlığı olurdu.
+    serit = [eski[i].kimlik for i in oneri._vektor_sira("fi", eski, "eski")][:_SERIT]
     assert "surdurulebilirlik.toplam_su_lt" in serit, (
         f"🔴 kontrol grubu kusuru ÜRETMEDİ ({serit}) — o hâlde bir üstteki yüklemin "
         "yeşilliği düzeltmenin kanıtı değildir; sahte gömücü kusur sınıfını "
@@ -361,3 +381,64 @@ def test_SINIR_GERCEK_GOMUCU_BURADA_KOSMUYOR():
     assert vqr._embedder() is None, (
         "🔴 Test ortamında GERÇEK gömücü koşuyor — bu dosyanın sahte gömücüleri artık "
         "`e5`'in yerine geçemez; yüklemler gerçek sayılara göre gözden geçirilmeli.")
+
+
+# ── 🔴 K1 — DOLGU YOK: leksik kanıt varken vektör aday EKLEMEZ ──────────────
+
+def _sema_ve_havuz():
+    from app.config import get_settings
+    from app.wren_service import WrenService
+
+    from app import oneri
+
+    s = get_settings()
+    w = WrenService(project_dir=s.resolved_project_dir(), datasource=s.datasource,
+                    connection_info=s.connection_dict())
+    sema = w.schema()
+    return sema, oneri.terimler(sema, None)
+
+
+def test_LEKSIK_KANIT_VARKEN_LISTE_DOLDURULMAZ():
+    """🔴 **İnsan testinde her turda görüldü:** `fire` → `metre`·`enerji`; `bu yıl ciro`
+    → `borç`·`alacak`. Ölçülen yapı: leksik ayak `fire` için **3** aday buluyordu, ekranda
+    **7** vardı — **dördü dolguydu**.
+
+    ⚠ Bu bir **eşik değil bir kesme**dir: hiçbir sayı seçilmiyor, yalnız *«hangi kanıt
+    vardı»* soruluyor. Eşik koymak yasaktı (vektör ayağı *«sıra üretir, eşik üretmez»* ·
+    MIMARI: *«kalibre edilmemiş bir eşik bir güven değil bir süstür»*).
+
+    🅑 Mutasyon: `ara`'daki `if lek:` bloğu kaldırılırsa liste yine `limit`e kadar dolar
+    ve bu yüklem kırılır.
+    """
+    from app import oneri
+
+    sema, havuz = _sema_ve_havuz()
+    for q in ("fire", "ciro"):
+        lek = oneri._leksik_sira(q, havuz)
+        assert lek, f"fikstür bozuk ㉒ — `{q}` leksik eşleşmeliydi"
+        cikan = oneri.ara(q, sema)
+        assert len(cikan) <= len(lek), (
+            f"🔴 `{q}`: leksik {len(lek)} aday buldu ama liste {len(cikan)} satır — "
+            "aradaki fark **dolgudur** ve kullanıcı onu alakalı sanır.")
+
+
+def test_LEKSIK_BOSKEN_VEKTOR_SUSTURULMAZ():
+    """🔴 Kesmenin **sınırı**: leksik ayak hiçbir şey bulamadığında vektör **tek çaredir**.
+
+    Ölçüldü: `zayiat` (sinonim) ve `vardya` (yazım hatası) leksik ayakta **0** eşleşme
+    veriyor. Onları da kesseydik sinonim ve typo yolu **tamamen** kapanırdı — yani gürültüyü
+    keserken ürünün asıl yeteneğini kesmiş olurduk 🆜.
+    """
+    import pytest
+
+    from app import oneri, vqr
+
+    if vqr._embedder() is None:
+        pytest.skip("⊘ gömücü yok — bu iddia **vektör yolunun** iddiasıdır ve gömücüsüz "
+                    "ölçülemez 🅕. (İlk yazımım bunu atlamıştı: `ara('zayiat')` kuru "
+                    "ortamda `[]` döner ve yüklem, ürünü değil **ortamı** ölçerdi ⑦.)")
+    sema, havuz = _sema_ve_havuz()
+    for q in ("zayiat", "vardya"):
+        assert not oneri._leksik_sira(q, havuz), f"fikstür bozuk ㉒ — `{q}` leksik EŞLEŞMEMELİ"
+        assert oneri.ara(q, sema), (
+            f"🔴 `{q}`: leksik boşken vektör de susturulmuş — sinonim/yazım yolu öldü.")

@@ -1411,3 +1411,53 @@ kusuru değil (bayat derleme artefaktı ⑪; ön koşulu `fanout.py:264`'te öde
 ⊙ Operasyon boyunca süit **4.913 → 5.020** (+107 yüklem).
 
 📌 **Açık:** **K1** *(alaka tabanı — kalibrasyon paydası 19 🆉)* · K3 · K4 · K5◐ · K6 · K8.
+
+---
+
+## §29 · **K1 KAPANDI — ve çözüm bir EŞİK DEĞİL bir KESME** *(2026-08-13)*
+
+⊙ **Korpus temiz:** 83/69/68/72 · doğru-cube **%95,6** · semantik **%94,4** — dördü de
+tabanla birebir, bu demetten gerileme yok.
+
+### Ölçüm kararı verdi: kuyruk bir eşleşme değil, **DOLGU**
+
+| sorgu | leksik eşleşme | ekranda görünen |
+|---|---|---|
+| `fire` | **3** | 7 → **dördü dolgu** (`metre`·`enerji`…) |
+| `ciro` | 2 *(sinonimle `sipariş tutarı` dahil)* | 7 |
+| `zayiat` *(sinonim)* | **0** | vektör **tek yol** |
+| `vardya` *(yazım)* | **0** | vektör **tek yol** |
+
+Kural kendini yazdı ve **kalibrasyon istemedi**: *leksik ayak kanıt bulduysa liste onun
+desteklediğiyle sınırlanır; hiç bulamadıysa vektör tek çaredir.* Hiçbir sayı seçilmiyor —
+yalnız *«hangi kanıt vardı»* soruluyor. Eşik koymak yasaktı (vektör ayağı *«sıra üretir,
+eşik üretmez»* · MIMARI: *«kalibre edilmemiş bir eşik bir güven değil bir süstür»*), ve
+kalibrasyonun paydası zaten **19**'du 🆉 — yani doğru cevap eşiği kalibre etmek değil,
+**eşiğe hiç ihtiyaç duymamaktı**.
+
+**Sonuç ölçüldü:** `Recall@3` **%89,5 → değişmedi**; **MRR 0,895 → 0,909** *(gürültü
+sıralamayı da seyreltiyormuş)*; `fire` → `[fire, fire, fire oranı]`; sinonim/yazım yolu
+**yaşıyor**.
+
+### 🔴 Ve bir İLKE ÇATIŞMASI çıktı — kapı zayıflatılmadı, **taşındı** ㊺
+
+`§18.7`'nin kapısı şunu tutuyordu: *«alan **ELENMEDİ**, geriye **ALINDI**; vektör ayağı
+süzgece dönmüş olabilir»*. Kesme `fi` sorgusunda `su`'yu **eliyor** (çünkü `fi` leksikte
+**13** eşleşme veriyor) — yani o yüklem kırmızıya döndü.
+
+⊙ İki iddia da doğru ve **aynı katmanda değil**: `§18.7`'nin iddiası **vektör ayağının
+sırasına** aittir (temsil sıralamayı düzeltir); `K1`'in iddiası **şeridin içeriğine**
+(dolgu yok). `ara()` artık ikincisini uyguladığı için birincisini **ölçemez** — kesme,
+temsilin etkisini maskeler.
+
+**Onarım:** ölçüm `_vektor_sira` katmanına taşındı. Deney **birebir aynı** (aynı sahte
+gömücü · aynı şema · aynı sorgu); değişen tek şey **nereye baktığı**. Ve taşımanın
+zayıflatma olmadığının ölçüsü yazılı: **kontrol grubu hâlâ kusuru üretiyor** — eski
+temsille `su` ilk iki sırada.
+
+*Bir yüklemi zayıflatmadan taşımanın ölçüsü, aynı kusuru hâlâ yakalamasıdır.*
+
+⚠ Kendi yüklemim de düzeltildi: gömücüsüz ortamda `ara('zayiat')` **boş** döner ve yüklem
+ürünü değil **ortamı** ölçerdi ⑦ — artık gömücü yoksa **atlanıyor** 🅕.
+
+📌 **Açık:** K3 · K4 · K5◐ · K6 · K8.

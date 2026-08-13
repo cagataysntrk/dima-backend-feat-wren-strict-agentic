@@ -453,6 +453,30 @@ def ara(kismi: str, schema: dict, *, izinliler: set[str] | None = None,
             puan[i] = puan.get(i, 0.0) + 1.0 / (_RRF_K + yer + 1)
             kipler.setdefault(i, set()).add(ayak)
 
+    # 🔴 **K1 — DOLGU YOK** (insan testinde her turda görüldü: `fire` → `metre`·`enerji`;
+    # `bu yıl ciro` → `borç`·`alacak`).
+    #
+    # Ölçülen yapı: `fire` için leksik ayak **3** aday buluyor, ekranda **7** görünüyordu —
+    # yani **dördü dolguydu**. Füzyon listeyi `limit`e kadar dolduruyor ve kalanlar
+    # yalnız vektör sırasından geliyor; kullanıcı *«fire»* yazıp *«doğalgaz»* okuyor.
+    #
+    # ⚠ Onarım bir **eşik değil bir kesme**dir — ve bu ayrım bu deponun kuralıdır:
+    # vektör ayağı bilinçli olarak *«sıra üretir, **eşik üretmez**»* (`FAZ 0`), ve MIMARI
+    # *«kalibre edilmemiş bir eşik bir güven değil bir **süstür**»* der. Buradaki kural
+    # hiçbir sayı seçmez; yalnız *«hangi kanıt vardı»* diye sorar.
+    #
+    # ⚠ Ve vektör ayağı **susturulmuyor**: leksik ayak **hiçbir şey** bulamadığında
+    # (ölçüldü: `zayiat` → 0, `vardya` → 0) vektör **tek çaredir** ve liste ondan kurulur.
+    # Sinonim ve yazım hatası yolu tam olarak orada yaşıyor.
+    #
+    # ⊙ `§18.7`'den sonra leksik ayak **sinonimleri de** görüyor (ölçüldü: `ciro` →
+    # `sipariş tutarı`), yani bu kesme kapsamı daraltmıyor; **gürültüyü** kesiyor.
+    #
+    # 🅑 Mutasyon: `if lek:` kaldırılırsa `fire` sorgusuna `metre`/`enerji` geri gelir.
+    if lek:
+        lek_kume = set(lek)
+        puan = {i: p for i, p in puan.items() if i in lek_kume}
+
     # ⚠ Eşitlikte **leksik önde** olan kazanır: bir önek eşleşmesi kullanıcının
     # yazdığının **birebir** karşılığıdır; vektör benzerliği bir tahmindir ㊼.
     lek_yer = {i: y for y, i in enumerate(lek)}
