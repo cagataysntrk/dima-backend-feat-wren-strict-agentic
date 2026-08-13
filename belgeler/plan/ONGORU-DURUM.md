@@ -119,6 +119,16 @@ YÜZEY     HTTP ucu 77 (8 gerekçeli yetim) · app/ 138 modül (4 yetim) · MCP 
 TAVAN     ask() 1444/1444 · ask.py 2888/2888
 ```
 
+⚠ **Bu blok operasyonun BAŞLANGIÇ tabanıdır — «bugünkü sayı» değildir** 🅟. Sonraki
+bölümler ona göre kıyaslandığı için **güncellenmez**. Operasyon boyunca eklenenlerle
+bugünkü hâl (2026-08-13 sonu, koddan ölçüldü ㊱):
+
+| | taban (yukarıda) | bugün | fark |
+|---|---|---|---|
+| HTTP ucu | 77 | **82** | `/plan/kos` + öngörü uçları |
+| süit | 4.843 | **5.962** | bu operasyonun kapıları |
+| korpus | 83/69/68/72 · %95,6 · 558/591 | **aynı** 🅜 | *sıfır gerileme* |
+
 ⚠ **Raporun `§1.1`/`§1.2`'sindeki `54/53/58` BAYATTI ve düzeltildi** — o düşüş bir payda
 kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 
@@ -4061,6 +4071,47 @@ kalsın ㊲ ama **değişmez** burada durmalı):
 Kılavuza örnek diye `` `app/x.py` `` yazdım; `test_belge_yollari_gercek` **kırmızı verdi**
 — öyle bir dosya yok. Yer tutucuya çevrildi. *Bir kuralı yazan, ilk ihlal edendir; kapı
 onu da bağlamıyorsa kural değil temennidir.*
+
+**Kapılar:** belge düzeni + yol gerçekliği **9 ✅ / 1 ⊘** · `app/` **değişmedi** → canlı
+tazeleme **yapılmadı** (`s38` güncel).
+
+---
+
+## `§84` — son doğrulama: **belgeyi yeni gelen gibi adım adım uyguladım** 🆣
+
+### ① README `§3`'ün ön koşulları — **hepsi gerçek**
+
+| kontrol | sonuç |
+|---|---|
+| `.env` | ✅ var |
+| volume adları (`…_dima_logs` · `…_dima_hf_cache`) | ✅ **2/2** eşleşiyor |
+| `dima-backend-temiz` imajı | ✅ **33** etiket |
+| okuma sırasındaki **beş** dosya | ✅ beşi de yerinde |
+
+### ② Çelişki taraması ㊲ — bir **sahiplik** boşluğu bulundu
+
+Derleme reçetesi **iki** yerde: kök `README §3` (kısa) ve `SERVER_COMMANDS.md` (tam +
+kurtarma). İkisi bugün **aynı**, ama ikisi de *«sahibim»* demiyordu — bir adım değişince
+hangisinin güncelleneceği belirsizdi. `SERVER_COMMANDS.md` **sahip ilan edildi**;
+README'deki kopya *«kısaltılmış»* olarak ona bağlandı. *İki reçete, bir gün iki farklı
+sistem demektir.*
+
+### ③ 🔴 «TABAN SAYILAR» bloğu bugünle karışıyordu ⑳🅟
+
+`§2` başlığı *«TABAN SAYILAR (2026-08-13, ölçülmüş)»* diyor ve **bugünün tarihini**
+taşıyor; ama içindeki sayılar operasyonun **başlangıcından** (`HTTP ucu 77` · `süit
+4.843`). Bugün ölçüldü: **82** uç · **5.962** test.
+
+⚠ Sayılar **güncellenmedi** — sonraki bölümler o tabana göre kıyaslanıyor 🅟. Bloğun
+altına *«bu bir başlangıç tabanıdır»* uyarısı ve **taban ↔ bugün** farkı yazıldı.
+*Bir tabanı güncellemek, ona göre yapılmış bütün kıyasları sessizce yalan yapar.*
+
+### ④ `urun/` ve `mimari/` — **bayat değil** (ölçüldü)
+
+`Dima-0-100-Gorev-Takip.md` (08-12) · `V1-MIMARI-HARITASI.md` (08-13) ·
+`Wren_Hibrit_GenBI_SaaS_Strateji.md` (08-05). İlk ikisi son iki gün içinde dokunulmuş;
+üçüncüsü bir **strateji** belgesi (hızlı bayatlamaz). ⊘ Değişiklik **yapılmadı** — *bir
+belgeyi «denetledim» diye değiştirmek, denetimi bir bahaneye çevirir* 🆞.
 
 **Kapılar:** belge düzeni + yol gerçekliği **9 ✅ / 1 ⊘** · `app/` **değişmedi** → canlı
 tazeleme **yapılmadı** (`s38` güncel).

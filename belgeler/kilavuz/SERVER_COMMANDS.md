@@ -1,5 +1,9 @@
 # SUNUCU KOMUTLARI — *ne yapacağım*
 
+> 🔴 **BU DOSYA REÇETENİN SAHİBİDİR** ㊲. Kök [`README.md`](../../README.md) §3'te
+> **kısaltılmış** bir kopya var (yeni gelen için); bir adım değişirse **önce burası**
+> güncellenir, sonra oradaki özet. *İki reçete, bir gün iki farklı sistem demektir.*
+
 > Ana proje dizininde çalıştır:
 > `/home/cagataysntrk/İndirilenler/dima-backend-feat-wren-strict-agentic`
 
