@@ -478,3 +478,50 @@ geliyor (`§TZ`: *«beyanın yanında bir tık olmalı»*).
 
 📌 **`FAZ 2` ✅ (kapandı):** `2.1`⊘ `2.2`⊘ `2.3`⊘ `2.4`㊷ `2.5`⊘ — **beşi de gerekçeli**,
 üçü **kapıya bağlı**. Sırada **`FAZ 3`+`FAZ 6` (aynı demet)**.
+
+---
+
+## §11 · `FAZ 3` — **SIRA DÜZELTİLDİ: `FAZ 5` ÖNCE** *(2026-08-13)*
+
+⚠ **Kendi demet varsayımım yanlıştı** ③ *(altıncı kez)*: `FAZ 3`+`FAZ 6` aynı demet
+değil — planın kendi satırı **`FAZ 6` 🔴 `FAZ 5`'e bağlı** (`GET /oneri` öneri motorunun
+`Aday[]`'ini döner). Aynı demet olan **`6.1`+`6.2`**'dir (uç + FE tüketicisi).
+
+### ① Kanalın yakın vadede TÜKETİCİSİ YOK
+
+`FAZ 5` gelmeden `_aday_var`'ın gerçek okuyanı doğmuyor. Geriye tek aday tüketici `3.6`
+kalıyor ve o da ② yüzünden yapılamaz. Tüketicisiz kanal 🆘 *«yazılmış ama bağlanmamış»* —
+bu depoda **beş kez** ölçülmüş bir hata. ⊙ Bu bir erteleme değil **sıra düzeltmesi**:
+`FAZ 5` → `FAZ 3`+`FAZ 6` **birlikte**, kanal **tüketicisiyle doğsun**.
+
+### ② `3.6` iki KASITLI tanımı birleştirirdi — `2.2` ile aynı sınıf hata
+
+| | nerede | ölçüt |
+|---|---|---|
+| **kıran** | `_match_cube` | `_longest_syn_hit` üzerinde **marj ≥ 4 harf** |
+| **tanımlayan** | `cube_tie_candidates` | `(harf, ölçü-eşleşme)` ikilisinde **TAM EŞİTLİK** |
+
+2 harflik fark: kıran için *«kıramadım»*, tanımlayan için *«eşit değil»* → chip
+**basılmaz**. Kasıtlı, ve fonksiyonun kendi cümlesi: *«kanıt eşit değil → orta güven →
+Intent-JSON'ın işi.»* `3.6` bu ayrımı silseydi yakın-beraberlikler chip'e döner,
+**garsonun işi elinden alınırdı**. Planın kendi uyarısı zaten *«ölçemezsen ayır ve
+ertele»* diyordu; ölçüldü, ölçüm **ayırmayı** söyledi ㊸.
+
+⚠ Prob maliyeti (`_TIE_MAX_DENEME=8`, her deneme **tam `route()` koşusu**) *«hangi
+cube'lar eşit»* için değil **ayırt eden soru** için ödeniyor — yan kanal onu **ikame
+edemez**; ederse chip **metinsiz** kalır.
+
+### Teslim: ön koşul kapısı — erteleme **kendi kendini uygular**
+
+`tests/test_aday_yan_kanali_on_kosullari.py` — **5 yüklem**. 🔴 En önemlisi
+`test_yan_kanal_TUKETICISIZ_ACILAMAZ`: `_aday_var` eklenirse **okuyanı da** eklenmeli,
+yoksa kırmızı. ㊻
+
+🅑 **İki mutasyon:** ⓐ `esitler` süzgecini marja çevir (**1 kırmızı**) ⓑ `_aday_var`'ı
+okuyansız aç (**1 kırmızı**). İkisi de `diff` ile geri alındı.
+
+⚠ ㊱ Kapı ilk yazılışında `route(q, schema)` diye **uydurma ad** taşıyordu; ölçülen imza
+`route(question, schema, liste_kirilimi)` — düzeltildi.
+
+📌 **Sırada `FAZ 5` — öneri motoru.** Ön koşulu `FAZ 0` eşiğiydi ve **karşılandı**
+(`Recall@3 %89,5` 🟢). ⚠ `FAZ 0`'ın ikinci bulgusu bağlayıcı: **mutlak eşik YOK**.
