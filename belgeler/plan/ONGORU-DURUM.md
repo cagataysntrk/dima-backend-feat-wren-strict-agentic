@@ -793,3 +793,66 @@ belgesine **yazıldı** (p95 **49,23 ms** · payda **90** · kip **vektor** · s
 **gerileme** kapısıdır, bir **kanıt taşıyıcısı** değil.
 
 ⚠ Kaydedildi: bu, kapıların kapsamı hakkında bir **borç** — ve bilinerek taşınıyor 🅖.
+
+---
+
+## §17 · `FAZ 8` — `8.1`·`8.2`·`8.4`·`8.5`✅ · `8.3`⊘ · `8.6` **AÇIK** *(2026-08-13)*
+
+**316 ✅ · 1 atlandı.** 🔴 **`FAZ 8` henüz bitmedi** — `8.6` (koşucunun tıklama
+kaynağını okuması) kaldı.
+
+### ㊷ doğrulandı: planın *«mevcut»* dedikleri **gerçekten mevcut**
+
+`app/sinonim_onerici.kuyruga_koy` **var** ve `approved=False` gerçekten **sabit**
+(parametre olarak dışarı açılmamış) · `lab/sozluk_hasadi.py` **var** ve bugün
+**şemadan** çıplak alanları okuyor.
+
+### 🔴🔴 `8.2` KONUM YANLILIĞI — asıl iş burada
+
+`app/hasat.py` **saf**: `sinyal(Tiklama) -> guclu|zayif|negatif`.
+
+| olay | sinyal | sözlüğe girer mi |
+|---|---|---|
+| **1. sırayı ATLAYAN** tık (`konum ≥ 1`) | 🟢 **güçlü** | **evet** — sıralamaya **rağmen** seçildi |
+| **1. sıraya** tık (`konum == 0`) | ⚪ zayıf | **hayır** — konumla da açıklanabilir |
+| hiçbirini seçmedi (`-1`) | 🔴 negatif | hayır; **sayılır** (`negatif_kanit`) |
+
+Kapı `test_hasat_konum_yanliligi.py` **9 yüklem**; asıl yüklem
+`test_NAIF_SAYIM_KENDINI_BESLERDI`: **aynı kayıtları** iki kuralla okuyor — naif kural
+50 aday üretiyor, bizimki **sıfır**. Ayrışmasalardı koruma **olmazdı** ㉘.
+
+🅑 **İki mutasyon:** 1. sırayı `GUCLU` say → **2 kırmızı** · tekilleştirmeyi düşür →
+**1 kırmızı**.
+
+### `8.1` TIKLAMA KAYDI — **yeni tablo AÇILMADI** 🆝
+
+`POST /oneri/tik` → `InteractionLog`'a `kind="oneri_tik"`. Denetim kanalı **zaten**
+bu; ikinci bir depo aynı olayın iki sahibi olurdu (`KAT-1`). `§101.1`: kayıt
+başarısız olsa da istek `{"kaydedildi": false}` ile döner — bir telemetri hatası bir
+ürün hatası **değildir**. FE tarafı **aynı turda** bağlandı: `oneriTik()` +
+`OneriSeridi.sec()` — fare ve klavye **tek kapıdan** geçiyor ㊲, ve `Esc` `8.4`'ün
+negatif sinyalini **gönderiyor** (sessizce kapatmak o bilgiyi çöpe atardı 🆆).
+
+### 🔴 Bir depo kapısı KENDİ AÇIKLAMAMI yakaladı — ve kapı **güçlendirildi** ②🅞
+
+`test_sinonim_onerici.py::test_HICBIR_ASK_YOLUNDAN_cagrilmiyor` kırmızı verdi: `hasat.py`
+kuyruğun sahibini **docstring'inde** anmıştı; dosyada **hiçbir çağrı yok**. Kapı bir
+**kelimeyi** ölçüyordu, bir **çağrıyı** değil.
+
+⚠ **Zayıflatılmadı, kesinleştirildi:** metin araması bir **dinamik** sızıntıyı da
+yakalıyordu (`importlib.import_module("sinonim_onerici")` gibi bir **dize**), yani
+salt `ast` yetmezdi ②. Çözüm ikisini birden tutmak: **docstring'ler ayıklanır**, kalan
+kod (dize sabitleri **dâhil**) yine metin olarak aranır.
+
+🅑 **İki sızıntı denendi, ikisi de yakalandı:** gerçek `import` → **kırmızı** · dize
+sabiti → **kırmızı**.
+
+### ⊘ `8.3` (`ε` karıştırma) — **ölçülemez, bu yüzden yapılmadı** ㊸
+
+`ε`'nin faydası ancak *«karıştırılmış turlarda güçlü sinyal oranı arttı mı»* diye
+ölçülür — ve o ölçüm **tıklama verisi** ister, yani `8.1`'in **toplamış olmasını**.
+Ölçmeden konan bir `ε` listeyi bozar ve karşılığında **hiçbir sayı** üretmez 🆕.
+Kapı `test_EPSILON_ERTELEMESI_HALA_GECERLI`: sıralamaya rastgelelik sızarsa **kırmızı**.
+
+📌 **Kalan: `8.6`** — `lab/sozluk_hasadi.py` tıklama kaynağını da okusun
+(`hasat.hasat_adaylari` → `sinonim_onerici.kuyruga_koy(approved=False)`).

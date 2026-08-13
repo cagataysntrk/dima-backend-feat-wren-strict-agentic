@@ -12,7 +12,7 @@
 //   süzülmüş listeyi alır (bir öneri listesi envanterdir).
 
 import { useEffect, useRef, useState } from "react";
-import { getOneri, type OneriAdayi } from "@/lib/api-client";
+import { getOneri, oneriTik, type OneriAdayi } from "@/lib/api-client";
 import { useFeature } from "@/lib/useFeature";
 
 /** `6.4` — debounce 200 ms. Her tuşta uç çağırmak, ucu bir DDoS'a çevirir. */
@@ -72,14 +72,31 @@ export function OneriSeridi({
     const el = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") { e.preventDefault(); setSecili((s) => (s + 1) % adaylar.length); }
       else if (e.key === "ArrowUp") { e.preventDefault(); setSecili((s) => (s - 1 + adaylar.length) % adaylar.length); }
-      else if (e.key === "Enter" && adaylar[secili]) { e.preventDefault(); onSec(adaylar[secili].etiket); setKapali(true); }
-      else if (e.key === "Escape") { setKapali(true); }
+      else if (e.key === "Enter" && adaylar[secili]) {
+        e.preventDefault();
+        sec(secili);
+      } else if (e.key === "Escape") {
+        // 🔴 `8.4` — «yazdı, hiçbirini tıklamadı» **NEGATİF** sinyaldir: gösterilenler
+        // yanlıştı. Sessizce kapatmak, o bilgiyi çöpe atmak olurdu 🆆.
+        oneriTik(metin.trim(), adaylar.map((a) => a.kimlik), -1);
+        setKapali(true);
+      }
     };
     window.addEventListener("keydown", el, true);
     return () => window.removeEventListener("keydown", el, true);
   }, [adaylar, secili, onSec]);
 
   useEffect(() => { setKapali(false); }, [metin]);
+
+  // 🔴 `FAZ 8.1` — SEÇİMİN TEK KAPISI. Fare ve klavye **aynı** yoldan geçer; iki ayrı
+  // yol olsaydı biri kaydeder öteki kaydetmezdi ve sayı sessizce eksik kalırdı ㊲.
+  function sec(i: number) {
+    const a = adaylar[i];
+    if (!a) return;
+    oneriTik(metin.trim(), adaylar.map((x) => x.kimlik), i);
+    onSec(a.etiket);
+    setKapali(true);
+  }
 
   if (kapaliBayrak) return null;
 
@@ -112,7 +129,7 @@ export function OneriSeridi({
         <button
           key={a.kimlik}
           type="button"
-          onMouseDown={(e) => { e.preventDefault(); onSec(a.etiket); setKapali(true); }}
+          onMouseDown={(e) => { e.preventDefault(); sec(i); }}
           className={
             "rounded border px-2 py-0.5 transition-colors " +
             (i === secili

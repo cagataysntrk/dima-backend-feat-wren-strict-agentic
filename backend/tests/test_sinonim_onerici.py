@@ -54,14 +54,55 @@ def test_APPROVED_FALSE_sabittir_parametre_DEGIL():
 
 
 def test_HICBIR_ASK_YOLUNDAN_cagrilmiyor():
-    """Çalışma-anı sorgu yoluna ASLA girmez — planın literal şartı."""
+    """Çalışma-anı sorgu yoluna ASLA girmez — planın literal şartı (`E-8`).
+
+    ⟳🔴 **GÜÇLENDİRİLDİ 2026-08-13 — kapı bir KELİMEYİ ölçüyordu, bir ÇAĞRIYI değil.**
+
+    ⊙ Ölçüldü: `FAZ 8`'de yazılan `app/hasat.py`, kuyruğun sahibini **açıklamasında**
+    andı (*«yazan `sinonim_onerici.kuyruga_koy`'dur… ikinci bir hat kurulmadı»*) ve
+    kapı **kırmızı** verdi — oysa dosyada o modüle **hiçbir çağrı yok**. 🅞 *Sözü
+    değil kullanımı ara.*
+
+    ⚠ **Zayıflatılmadı, KESİNLEŞTİRİLDİ:** metin araması bir **dinamik** sızıntıyı da
+    yakalıyordu (`importlib.import_module("sinonim_onerici")` gibi bir dize). Bu yüzden
+    yalnız `ast` ile *«import/çağrı var mı»* diye bakmak **yetmezdi** ②. Çözüm ikisini
+    birden tutmak: **docstring'ler ayıklanır**, kalan kod (dize sabitleri **dâhil**)
+    yine metin olarak aranır. Böylece bir açıklama kapıyı kırmaz, bir dize sızıntısı
+    hâlâ kırar.
+
+    *Bir yasağı ölçen kapı, yasağın kendisinden fazlasını yasaklıyorsa, bir gün onu
+    doğru dürüst yazan kişiyi durdurur.*
+    """
+    import ast
     import pathlib
+
+    def _kodu_ayikla(kaynak: str) -> str:
+        """Docstring'leri düşürür; yorumlar `ast.unparse` ile zaten gider."""
+        agac = ast.parse(kaynak)
+        for d in ast.walk(agac):
+            govde = getattr(d, "body", None)
+            if not isinstance(govde, list) or not govde:
+                continue
+            ilk = govde[0]
+            if (isinstance(d, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef,
+                               ast.ClassDef))
+                    and isinstance(ilk, ast.Expr)
+                    and isinstance(ilk.value, ast.Constant)
+                    and isinstance(ilk.value.value, str)):
+                govde.pop(0)
+                if not govde:
+                    govde.append(ast.Pass())
+        return ast.unparse(ast.fix_missing_locations(agac))
 
     app_dir = pathlib.Path(inspect.getfile(so)).parent
     for f in app_dir.rglob("*.py"):
         if f.name in ("sinonim_onerici.py",):
             continue
-        assert "sinonim_onerici" not in f.read_text(encoding="utf-8", errors="ignore"), \
+        try:
+            kod = _kodu_ayikla(f.read_text(encoding="utf-8", errors="ignore"))
+        except SyntaxError:                                    # pragma: no cover
+            kod = f.read_text(encoding="utf-8", errors="ignore")
+        assert "sinonim_onerici" not in kod, \
             f"{f.name} offline öneriyi çağırıyor — çalışma-anı yoluna sızmış olabilir"
 
 

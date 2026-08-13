@@ -257,6 +257,24 @@ export async function getOneri(q: string): Promise<OneriYaniti> {
   return data;
 }
 
+// 🔴 FAZ 8.1 — TIKLAMA KAYDI. `(ham ifade → seçilen alan → konum)`.
+//
+// ⚠ Konum 0-tabanlıdır ve `-1` «hiçbirini seçmedi» demektir — backend'in `hasat.py`
+// modülü sinyali BUNDAN hesaplar (1. sırayı ATLAYAN tık güçlü sinyal; 1. sıraya tık
+// sıralamayla da açıklanabilir, sözlüğe girmez).
+//
+// ⚠ §101.1 — bu çağrı BEKLENMEZ ve hatası YUTULUR: bir telemetri isteği kullanıcının
+// cümlesini geciktirirse, ölçmek istediği deneyimi bozmuş olur.
+export async function oneriTik(
+  hamIfade: string, gosterilen: string[], konum: number,
+): Promise<void> {
+  try {
+    await apiClient.post("/oneri/tik", { ham_ifade: hamIfade, gosterilen, konum });
+  } catch {
+    /* yut — telemetri cevabı bozmaz */
+  }
+}
+
 // Faz 4.1 (31 Temmuz 2026) — backend'de `ask_async_discovery` bayrağı açık tenant'larda
 // Discovery (LLM ham-SQL, en yavaş yol) senkron dönmez: /ask hemen bir job_id taşıyan
 // yanıt döner, gerçek sonuç GET /ask/jobs/{id} poll'uyla gelir. Bayrak kapalıyken (varsayılan,
