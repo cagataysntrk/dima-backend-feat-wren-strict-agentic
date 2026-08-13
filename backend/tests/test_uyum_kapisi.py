@@ -347,3 +347,38 @@ def test_MESRU_ESIKLER_BOZULMADI():
     for soru, (op, deger) in beklenen.items():
         cikan = _measure_threshold(_norm(soru))
         assert cikan == {"op": op, "value": deger}, f"🔴 `{soru}` → {cikan}"
+
+
+# ── 🔴 K3 — ÇIPLAK YIL BİR DÖNEMDİR (insan testi bulgusu) ──────────────────
+
+def test_CIPLAK_YIL_DONEM_OLARAK_COZULUR():
+    """🔴 **Ölçülen kusur:** `2019 yılı cirosu` çözülüyordu ama **`2019 cirosu`
+    çözülmüyordu** — `_YEAR_RE` yılın ardından *«yıl/sene»* ya da bulunma eki arıyordu.
+
+    ⊙ Bedeli ağırdı: dönem düştüğü için soru **küp yolundan çıkıp** Discovery'ye gitti
+    (`source=llm:openrouter` · `cube=adhoc`) ve kullanıcıya **`null`** döndü. Bir
+    ayrıştırma eksiği, *«sayıyı küp koyar»* ilkesini kullanıcının gözünde bozdu 🆘.
+
+    🅑 Mutasyon: `_YEAR_BARE_RE` dalı kaldırılırsa bu yüklem kırılır.
+    """
+    from app.cube_router import _norm, date_filters
+
+    f = date_filters(_norm("2019 cirosu"))
+    assert [x["value"] for x in f] == ["2019-01-01", "2019-12-31"], f"🔴 {f}"
+
+
+def test_ESIK_YILA_DONUSMEZ():
+    """⑯ **Komşusunu bozuyor mu.** *«2000 üstü müşteriler»* bir **eşiktir**, yıl değil —
+    ve bunu bilen zaten `_measure_threshold`'dur.
+
+    ⚠ Karşılaştırıcı sözcükleri dönem ayrıştırıcısına **kopyalamak** ikinci bir sözlük
+    doğururdu ㊲; onun yerine tek sahibe **soruluyor**.
+
+    ⚠ Ve yapışık rakam bir **kimliktir** 🆢: `RAM-2019` bir yıl değil.
+    """
+    from app.cube_router import _norm, date_filters
+
+    for soru in ("2000 üstü müşteriler", "1000 üstü", "RAM-2019 neden düşük"):
+        assert date_filters(_norm(soru)) == [], f"🔴 `{soru}` yıl sanıldı"
+    # ⚠ Ve açık biçimler **bozulmadı**.
+    assert date_filters(_norm("2019 yılı cirosu"))[0]["value"] == "2019-01-01"
