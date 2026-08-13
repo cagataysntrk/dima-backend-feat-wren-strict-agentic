@@ -91,7 +91,16 @@ _AY = ("ocak", "subat", "mart", "nisan", "mayis", "haziran",
 
 
 def _norm(s: str) -> str:
-    return s.translate(str.maketrans("çÇğĞıİöÖşŞüÜ", "cCgGiIoOsSuU")).lower()
+    """⟳ `KAT-1` — leksik standart **`cube_router._norm`**; burası **çağırır**.
+
+    Bu kopya gerekçesizdi ve **ayrışmıştı**: NFD yazılmış `İ` (`I` + `U+0307`) route'ta
+    `istanbul`, burada `i̇stanbul` oluyordu. Uyum denetimi route'un gördüğünden **başka
+    bir metin** üzerinde karar veriyordu — *bir denetçi, denetlediği şeyle aynı gözlüğü
+    takmalıdır.*
+    """
+    from app import cube_router as cr
+
+    return cr._norm(s)
 
 
 #: 🔴 ARALIK İŞARETLERİ — iki dönem adı **tek bir aralığın iki UCU** olabilir.

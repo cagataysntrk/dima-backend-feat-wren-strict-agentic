@@ -1885,3 +1885,49 @@ olarak duruyor.
 
 `test_telemetri_yazma_yolu` · `test_ask_golden` · `test_alan_haritasi` · `test_auth` →
 **184 ✅**. Kapı **demet sonunda** bir kez koşacak.
+
+---
+
+## §38 — BORÇ: `_norm` beş modül → borç **küçüktü**, ama içinde **sessiz bir ayrışma** vardı
+
+### Önce ölçüm — borcun gerçek boyu 🆟
+
+| modül | durum |
+|---|---|
+| `deger_capasi._norm` | ✅ **zaten devrediyor** (`cube_router`, tembel import) — borç değil |
+| `llm._norm` | ✅ **birebir denk** ölçüldü (15 örnek, 0 fark) — farklı yazılmış, aynı davranış |
+| `contracts._norm_sql` · `sensitivity._norm_ad` | ⊘ **başka iş** — listeye yanlışlıkla girmişlerdi |
+| `yetenek._norm` | 🔴 kopya — gerekçesi **bayat** ㉓ |
+| `uyum._norm` | 🔴 kopya — gerekçesiz |
+
+*«Beş modül»* diye taşınan borcun **ikisi** gerçek çıktı. *Bir borcu ödemeden önce
+saymak, borcun yarısını ödemektir.*
+
+### Ve kopyalar **ayrışmıştı** — ölçülen sessiz kusur
+
+`yetenek._norm`'un notu *«`cube_router`'ı içe aktarmak döngüsel bağımlılık kurardı»*
+diyordu. Ölçüldü: **`cube_router` `yetenek`'i hiç içe almıyor**; üstelik `deger_capasi`
+aynı devri **fonksiyon içi import** ile zaten yapıyor 🆍. Gerekçe bir **miras**tı.
+
+Ve kopya artık aynı davranmıyordu:
+
+| girdi | `cube_router` | kopyalar |
+|---|---|---|
+| `İstanbul` (tek kod noktası) | `istanbul` | `istanbul` |
+| `İstanbul` (**NFD**: `I` + `U+0307`) | **`istanbul`** | ~~`i̇stanbul`~~ |
+
+**NFD gerçek dünyadır:** macOS panosu ve birçok PDF metni bu biçimi üretir. Yani route'un
+eşleştirdiği bir kelimeyi `uyum` denetçisi eşleştiremiyordu — *bir denetçi, denetlediği
+şeyle aynı gözlüğü takmalıdır.*
+
+### Kapı yeşilken kusur vardı 🆉
+
+`test_NORM_CUBE_ROUTER_ILE_AYNI` **tam bu eşitliği** savunuyordu ve **yeşildi** — çünkü
+örnekleminde NFD yoktu. Kapı **kaldırılmadı, genişletildi**: artık devrin yerinde
+durduğunu savunuyor ve örneklemi iki NFD vakası taşıyor.
+*Bir kapı, örnekleminin sormadığı soruyu yeşil sanır.*
+
+### Kanıt
+
+`test_yetenek` · `test_uyum_kapisi` · `test_uyum_yanlis_pozitif` · `test_alan_haritasi` ·
+`test_modul_buyume` → **145 ✅**.

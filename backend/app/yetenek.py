@@ -135,14 +135,28 @@ _TOKEN = re.compile(r"[0-9A-Za-zçÇğĞıİöÖşŞüÜ_]+")
 
 
 def _norm(s: str) -> str:
-    """`cube_router._norm` ile **aynı** düzleştirme (ı→i, ü→u, ş→s…).
+    """⟳ `KAT-1` — leksik standart **`cube_router._norm`**; burası artık **çağırır**.
 
-    ⚠ Kopya değil zorunluluk: `cube_router`'ı içe aktarmak döngüsel bağımlılık kurardı.
-    Davranış farkı olmaması için kapı `test_yetenek.py`'de **iki fonksiyonun aynı çıktıyı
-    verdiğini** ölçer — *bir kopyayı güvenli yapan şey niyeti değil, kapısıdır.*
+    ## Kopyanın gerekçesi bayat çıktı ㉓ — ve kopya sessizce AYRIŞMIŞTI
+
+    Eski not *«`cube_router`'ı içe aktarmak döngüsel bağımlılık kurardı»* diyordu.
+    Ölçüldü: **`cube_router` `yetenek`'i hiç içe almıyor**; üstelik `deger_capasi._norm`
+    aynı devri **fonksiyon içi (tembel) import** ile yıllardır yapıyor 🆍.
+
+    Ve kopya artık aynı değildi — **ayrışık (NFD) yazılmış `İ`** ölçüldü:
+
+    | girdi | `cube_router` | bu kopya |
+    |---|---|---|
+    | `İstanbul` (tek kod noktası) | `istanbul` | `istanbul` |
+    | `İstanbul` (**NFD**: `I` + `U+0307`) | **`istanbul`** | ~~`i̇stanbul`~~ |
+
+    macOS panosu ve birçok PDF metni **NFD** üretir; yani route'un eşleştirdiği bir
+    kelimeyi bu modül eşleştiremiyordu. *Bir kopyayı güvenli yapan şey kapısıdır — ama
+    kapı da örneklemi kadar görür* 🆉: eşitliği ölçen kapı bu vakayı hiç sormamıştı.
     """
-    d = str.maketrans("çÇğĞıİöÖşŞüÜ", "cCgGiIoOsSuU")
-    return s.translate(d).lower()
+    from app import cube_router as cr
+
+    return cr._norm(s)
 
 
 def _forecast_mi(q: str) -> bool:

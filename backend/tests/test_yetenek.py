@@ -154,12 +154,22 @@ def test_OLUMSUZLUK_GOVDE_KATALOGDA_OLMALI():
 
 
 def test_NORM_CUBE_ROUTER_ILE_AYNI():
-    """🔴 `yetenek._norm` bir **kopyadır** (döngüsel bağımlılık yüzünden zorunlu).
-    *Bir kopyayı güvenli yapan şey niyeti değil, kapısıdır* — ikisi aynı çıktıyı vermeli."""
+    """🔴 `yetenek._norm` artık bir **kopya değil, çağrıdır** (`§38`).
+
+    ⚠ Kapı **kaldırılmadı, GENİŞLETİLDİ**: eskiden kopyayı savunuyordu, şimdi devrin
+    yerinde durduğunu savunuyor. Ve örneklemine **NFD** eklendi — çünkü bu kapı yeşilken
+    kopya **ayrışmıştı** 🆉: ayrışık yazılmış `İ` (`I` + `U+0307`, macOS panosunun ve
+    birçok PDF metninin ürettiği biçim) route'ta `istanbul`, kopyada `i̇stanbul` oluyordu.
+    *Bir kapı, örnekleminin sormadığı soruyu yeşil sanır.*
+    """
+    import unicodedata as ud
+
     from app.cube_router import _norm as router_norm
 
-    for s in ("Fire Oranı", "ŞUBAT", "ölçüm", "İŞÇİLİK", "çğıöşü", "ABC 123"):
-        assert yetenek._norm(s) == router_norm(s), f"🔴 «{s}» ayrıştı"
+    ornekler = ("Fire Oranı", "ŞUBAT", "ölçüm", "İŞÇİLİK", "çğıöşü", "ABC 123",
+                ud.normalize("NFD", "İstanbul"), ud.normalize("NFD", "Çağrı"))
+    for s in ornekler:
+        assert yetenek._norm(s) == router_norm(s), f"🔴 «{ascii(s)}» ayrıştı"
 
 
 def test_KAPI_DISCOVERY_ONUNDE_BAGLI():
