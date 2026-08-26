@@ -41,7 +41,13 @@ measures:
     expression: SUM(beklenen)
     type: DOUBLE
     unit: "kWh"
-    synonyms: [beklenen, beklenen tüketim, regresyon, referans tüketim]
+    # 🔴🔴 FAZ 3.2 (`§K9-devam`'ın genelleştirilmesi) — çıplak `beklenen` KALDIRILDI:
+    # ölçüldü, `followup._NORMAL` (*"normal mi"* takibi ailesi) aynı kelimeyi kalıp
+    # olarak taşıyor — *"bu beklenen mi?"* gibi bir takip sorusu bu boyuta yanlış
+    # kırılım olarak eşleşirdi (`_NEDEN`/İSG'de kapanan kusurun İKİNCİ, bağımsız
+    # vukuu — `test_soru_sozcugu_sinonim_degil.py::test_HICBIR_KONUSMA_KALIBI_
+    # SOZLUGU_SINONIM_DEGIL` bunu yakaladı). Çok-kelimeli, spesifik ifadeler kalır.
+    synonyms: [beklenen tüketim, regresyon, referans tüketim]
 
 dimensions:
   - name: kaynak

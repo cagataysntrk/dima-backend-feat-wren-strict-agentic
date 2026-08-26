@@ -103,6 +103,23 @@ def hesapla(rows: list[dict], boyut: str, olcu: str, hedef: str) -> dict | None:
             "akran_sayisi": len(akranlar)}
 
 
+def hesapla_cumle(c: dict | None) -> str | None:
+    """`hesapla()` çıktısını insan-okur bir cümleye çevirir — **TEK sahip** (`KAT-1`):
+    plan_tuketici'nin hem teknik makbuzu (`_bulgu_metni`) hem kullanıcıya giden
+    anlatısı (`_anlat`) aynı cümleyi buradan alır, iki ayrı şablon yazılmaz.
+
+    ⚠ `fark_yuzde` `None` ise (payda sıfır — `hesapla()`'nın kendi uyarısı) `None`
+    döner: doğrulanamaz bir "%0,0" uydurmaktansa cümleyi hiç kurmamak yeğdir.
+    """
+    if not isinstance(c, dict) or c.get("fark_yuzde") is None:
+        return None
+    from app.sayi_bicimi import sayi as _b, yuzde as _syuzde
+    yon = "düşük" if (c.get("fark") or 0) < 0 else "yüksek"
+    return (f"Akran ortalaması {_b(c.get('akran_ortalamasi'))} "
+            f"({c.get('akran_sayisi')} akran) — aradaki fark "
+            f"**{_syuzde(abs(c.get('fark_yuzde') or 0))} {yon}**.")
+
+
 def matris(kaynaklar: list[list[dict]], boyut: str) -> list[dict]:
     """**`MATRIS` · SATIRLAR[] → SATIRLAR** — adayları ölçütlerle yan yana koyar.
 

@@ -122,6 +122,9 @@ EKSIK_DONEM = "donem"
 EKSIK_SIRALAMA = "siralama"
 EKSIK_TUMU = "yok"          # `cq` hiç yok → her şey eksik
 EKSIK_ATIF = "atif"         # *«o makinede»* — referans çözülmedi, süzgeç kurulmadı
+#: FAZ 2.2 — `EKSIK_ATIF`'in kullanıcıya giden KISA etiketi. `uyum.Ihlal.etiket`
+#: ailesiyle AYNI disiplin: ham kod telemetriye gider, bu rozete.
+EKSIK_ATIF_ETIKET = "referans"
 
 #: 🔴🔴 `§AT` — **İŞARET SIFATLARI: kapalı sınıf, üç sözcük.**
 #:

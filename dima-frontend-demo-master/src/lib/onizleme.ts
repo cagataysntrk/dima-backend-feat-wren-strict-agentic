@@ -47,6 +47,12 @@ export interface PlanOnizlemesi {
   gecerli: boolean;
   note: string;
   soru: string;
+  /** 🔴🔴 FAZ 2.1 — **"sihir"**: `note`'taki mimari-sınır beyanının (ör. yokluk
+   *  sorgusu, `§YK`) yanında duran en-yakın-hesaplanabilir alternatif — tek tık
+   *  koşulabilir bir chip. ⚠ Ölçülen kusur (canlı Playwright, `s58`): backend
+   *  `cevap.suggestions`'ı ZATEN dolduruyordu ama bu tip onu hiç TAŞIMIYORDU —
+   *  `note`'un metni ekranda görünüyordu, chip'in kendisi hiçbir yerde. */
+  suggestions?: import("@/lib/types").AskResponse["suggestions"] | null;
 }
 
 /** Bestecinin aldığı **kumanda**: ne çizilecek ve iki düğme ne yapacak. Tek prop olarak
@@ -87,6 +93,7 @@ export function useOnizleme() {
           gecerli: cevap.gecerli !== false,
           note: cevap.note ?? "",
           piller: cevap.piller ?? null,
+          suggestions: cevap.suggestions ?? null,
           soru: istek.makro?.soru ?? istek.label,
         },
         istek: { ...istek, plan: _plan },

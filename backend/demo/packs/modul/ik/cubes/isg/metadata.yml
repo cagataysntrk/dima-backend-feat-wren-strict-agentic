@@ -85,7 +85,17 @@ dimensions:
     expression: kok_neden
     type: VARCHAR
     label: kök neden
-    synonyms: [kök neden, sebep, neden, kaza nedeni]
+    # 🔴🔴 `§K9-devam` — ÇIPLAK `neden`/`sebep` KALDIRILDI (ölçüldü, canlı, 2026-08-26):
+    # bu iki kelime Türkçe'de birer SORU SÖZCÜĞÜDÜR ("ram 3 neden böyle?" gibi), bir
+    # ürün/olay adı değil. Bir cube boyutunun sinonim listesine girince ürünün HER
+    # yerinde HER nedensel takip sorusu bu dar İSG alanına "kırılım" olarak
+    # yanlış-eşleşiyordu (`niyet.py::_kirilimlar` → `cube_router._match_dims`),
+    # kullanıcının asıl "neden" sorusunu bir kök-neden ANALİZİNE değil bir kırılım
+    # EKLEME isteğine çeviriyordu — `followup.py`'nin `§NÇ` tarihçesi AYNI kusuru
+    # zaten üç kez düzeltmişti, ama o düzeltme yalnız `followup.py`'deydi, bu
+    # sinonim listesi (farklı bir eşleştirme yolu) hâlâ açıktı. Çok-kelimeli,
+    # SPESİFİK ifadeler (aşağıda) kalır — onlar gerçekten bu alana özgüdür.
+    synonyms: [kök neden, kaza nedeni]
   - name: kaza_vardiya
     expression: vardiya
     type: VARCHAR

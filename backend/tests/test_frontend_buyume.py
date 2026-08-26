@@ -114,7 +114,16 @@ TAVANLAR = {
     # çoğu, düğmenin **neden kartın içine gömülmediğini** yazan şerh: bir sohbet kartı bir
     # rapor sayfası değildir ve beş bloğu oraya sığdırmak ikisini de bozardı.
     # 🔴 Koşul `item.rapor` üzerinde: alan boşken blok **hiç render edilmez** (`KURAL B`).
-    "components/ReportCard.tsx": 1064,
+    # ⟳ **1064 → 1058 (`FAZ 2.2`, 2026-08-26).** İKİNCİ bir kod→etiket çeviri sözlüğü
+    # (`EKSIK_NIYET_ETIKET`/`EKSIK_NIYET_ACIKLAMA`, 14 satır) SİLİNDİ — tek sahip artık
+    # backend (`uyum.Ihlal.etiket`), `item.eksik_niyet_detay` üzerinden gelir. Kod
+    # KÜÇÜLDÜ; tavan da (yine sıfır boşluk ilkesiyle) ölçülen değere ÇEKİLDİ.
+    # ⟳ **1058 → 1082 (`FAZ 2.1`, 2026-08-26).** Δ=24: canlı Playwright'ta ölçülen
+    # kusur — `suggestions[].kind === "yokluk"` backend'den GELİYORDU ama HİÇBİR
+    # render dalı onu okumuyordu (`devam sorusu`/`türetme`/`tanım` üçü de başka
+    # `kind` değerlerine bakıyor). Dördüncü bir kutu eklendi, AYNI görsel dil
+    # (`türetme`/`tanım`'ın birebir kalıbı) — yeni bir bileşen İCAT EDİLMEDİ.
+    "components/ReportCard.tsx": 1083,
     # ⊙ +22 · `FAZ 6.1/8.1` ÖNERİ UCU SARMALAYICILARI (`getOneri` · `oneriTik` ·
     # `OneriAdayi`/`OneriYaniti` tipleri).
     #
@@ -294,6 +303,24 @@ MUAFIYET: list[tuple[str, int, str]] = [
      "çok adımlı planın pill'i hangi adıma ait olurdu sorusunun cevabı yok). Üretici "
      "sunucuda ve **ikinci bir kod değil**: `niyet.fisten(cq)` → `pill.pillerden(niyet)`; "
      "çizen de var olan `PillSatiri` (yeni bir pill bileşeni açılmadı ㊲)."),
+    # ═══ `FAZ 2.2` — EKSİK NİYET DETAYI (2026-08-26) ═══
+    ("lib/types.ts", 2,
+     "🔴🔴 `FAZ 2.2` — `AskResponse.eksik_niyet_detay`: `eksik_niyet`in (ham kod) "
+     "insan-okur eşliği (`{isaret, etiket, aciklama}[]`). ⚠ **TAŞINAMAZ:** bu dosya "
+     "sunucu sözleşmesinin **tek** aynasıdır. 🔴 İki satırın biri tip, biri JSDoc "
+     "gerekçesi — çünkü tam da bu dosyanın YANINDAKİ bileşende (`ReportCard.tsx`) "
+     "İKİNCİ bir çeviri sözlüğü yaşadığı için Tur 2 Senaryo 17 kırmızı verdi "
+     "(`uyum.py` 17 kod üretiyordu, sözlük yalnız 7'sini biliyordu). Alan `null` "
+     "varsayılan: ihlal yoksa hiç dolmaz (`KURAL B`)."),
+    # ═══ `FAZ 4.1` — PRESCRIPTION.MUHAKEME (2026-08-26) ═══
+    ("lib/types.ts", 2,
+     "🔴🔴 `FAZ 4.1` — `Prescription.muhakeme_metni`/`muhakeme_kaynak`: Katman "
+     "7'nin guarded-LLM basamağı (`answer.py::_tavsiye_ekle`/`_kok_tavsiye_ekle`, "
+     "FAZ 1) bu ikisini ZATEN üretiyordu ama tip tanımı hiç taşımıyordu — "
+     "`PrescriptionLayer.tsx` yalnız deterministik `rationale`'ı render ediyordu, "
+     "LLM'in yorumu HİÇBİR YERDE görünmüyordu (`grep -rl muhakeme src/` sıfır "
+     "sonuç verdi). ⚠ **TAŞINAMAZ:** bu dosya sunucu sözleşmesinin tek aynasıdır. "
+     "Alanlar `null` varsayılan: LLM devre dışıysa/reddedilirse hiç dolmaz (`KURAL B`)."),
 ]
 
 

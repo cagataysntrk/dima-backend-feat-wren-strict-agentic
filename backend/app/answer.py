@@ -495,30 +495,28 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
             from app import anlatici as _anlatici
 
             if _anlatici.basit_mi(yorum):
-                # 🔴 **ASIL KAZANÇ METİN DEĞİL, YAPILMAYAN ÇAĞRI.** Canlı ölçüldü:
+                # 🔴🔴 **KULLANICI KARARI (2026-08-26): "chat mantığına TAMAMEN
+                # geçmeliyiz" — basit bir cevap bile grafik+çıplak sayıyla
+                # bırakılmasın, LLM'in ZENGİN üslubuyla YÜKSELTİLSİN.**
                 #
-                # | tur | toplam | anlatı LLM | pay |
-                # |---|---|---|---|
-                # | *"makine bazında oee son 3 ay"* | 5.420 ms | **2.936 ms** | %54 |
-                # | *"aylara göre"* (takip) | 24.285 ms | 🔴 **22.564 ms** | **%93** |
+                # ⟳ Bu satır ESKİDEN burada ERKEN ÇIKIYORDU (bkz. altta bırakılan
+                # ölçüm tablosu — o zamanki gerekçe hâlâ DOĞRU, yalnız ÜRÜN KARARI
+                # değişti): *"basit olgular için LLM'in kattığı bilgi değil,
+                # yalnız üsluptur"* — ama kullanıcı artık **üslubun kendisini**
+                # istiyor, "En yüksek X, en düşük Y" telgraf-cümlesini değil.
                 #
-                # İki turda da **intent 0 LLM** aldı (`route()` / `deterministic_refine`);
-                # bekleyişin tamamı **süslemeydi**. Ve süslenen şey `summary`'nin taşıdığı
-                # **aynı üç olguydu** — LLM'in kattığı bilgi değil, üsluptu.
-                #
-                # 🔴 Bu yüzden şablon basamağı **metin üretmese bile** durur: `summary`
-                # zaten yazılı ve kullanıcı onu görüyor. Bir cümleyi ikinci kez, 22 saniye
-                # bekleterek yazdırmak bir kazanç değil bir **fatura**dır.
-                #
-                # ⚠ İlk yazımda yankı kapısı buraya **yanlış** yerleştirilmişti: metin
-                # `summary` ile aynıysa `None` dönüyordu ve tur **LLM'e düşüyordu** — yani
-                # kapı, önlemek için var olduğu çağrıyı **davet ediyordu**.
-                # *Bir eniyileştirmenin ölçütü ürettiği çıktı değil, engellediği iştir.*
-                yorum["narration_kaynak"] = "sablon"       # makbuz: LLM devreye GİRMEDİ
+                # ⚠ Bu artık GÜVENLİ: `§33`'ün bulduğu bütçe kusuru (`66 sn`
+                # bekleterek anlatı düşürme) `app/butce.py`'ye taşınıp DÜZELTİLDİ —
+                # aşağıdaki `_butce.kos(..., saniye=_azami)` (varsayılan 8 sn) HER
+                # ZAMAN uygulanıyor, aşılırsa cevap BEKLEMEDEN şablona (aşağıda
+                # yazılan `narration`) düşüyor. Yani **artık dönmüyoruz** — şablon
+                # burada bir SON DURAK değil, LLM zaman aşımına uğrarsa/guard'da
+                # düşerse geri düşülecek bir **güvenli taban**: en kötü durum YİNE
+                # bugünkü (şablon/`summary`), en iyi durum gerçek bir anlatı.
+                yorum["narration_kaynak"] = "sablon"       # LLM denemesi başarısızsa kalır
                 if (_sablon := _anlatici.anlat(yorum)):
                     yorum["narration"] = _sablon           # yalnız EK BİLGİ varsa
-                _log.info("T2 ŞABLON: LLM çağrısı YAPILMADI (0 token, 0 ms)")
-                return
+                _log.info("T2 ŞABLON: taban yazıldı, LLM'e DEVAM ediliyor (chat-öncelikli)")
         if "t2_anlatici" not in resolve_for(get_settings(), principal):
             return                      # KURAL B — kapalıyken davranış BİREBİR bugünkü
         llm = getattr(request.app.state, "llm", None)
@@ -705,6 +703,335 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
                       len(rapor.reddedilen))
     except Exception:  # noqa: BLE001 — anlatı SÜStür, cevabı asla düşürmez
         _log.warning("T2 anlatı üretilemedi (best-effort)", exc_info=True)
+
+
+def _tavsiye_ekle(request: Request, resp: AskResponse, rapor: dict, rec, *,
+                   lower_is_better: bool) -> None:
+    """FAZ 1 — T7 GUARDED LLM MUHAKEME (Katman 7): *"LLM YARGI yazar, SEÇENEĞİ/SAYIYI
+    sistem koyar."*
+
+    ## `_anlati_ekle`'nin karar-desteği kardeşi — İSKELET BİREBİR AYNI
+
+    Girdi `interpret()`'in `facts`'i DEĞİL, `prescribe.recete()`'nin ZATEN sıraladığı
+    `rec.oneriler` (segment/etki/pay/yön — hepsi ölçülmüş) ve `rec.gerekce` (deterministik
+    gerekçe). Model bunların ÜZERİNDE bir öncelik/muhakeme cümlesi kurar; `secenekler`
+    listesini BÜYÜTEMEZ (`anlat`'ta olmayan, buraya özel ek kısıt — istem VE guard ikisi
+    de bunu zorlar).
+
+    ## FAIL-CLOSED — `_anlati_ekle` ile AYNI en-kötü-durum
+
+    Çıktı `narration_guard.guvenli_anlatim` + `app/iddia.py` çift-kapısından geçer.
+    Hiçbir cümle sağ kalmazsa `resp.prescription["muhakeme_metni"]` HİÇ YAZILMAZ —
+    `rec.gerekce` (zaten `resp.prescription["rationale"]`'da) yerinde kalır. En kötü
+    durum "süssüz ama doğru", asla "akıcı ama uydurma" DEĞİLDİR.
+
+    ## ŞABLONU EZMEZ
+
+    `resp.prescription`'ın var olan alanları (`options`/`rationale`/`concentration`/
+    `diffuse`) hiç dokunulmaz; yalnız yeni bir alt-alan (`muhakeme_metni`) EKLENİR.
+    """
+    if not resp.prescription or resp.prescription.get("muhakeme_metni"):
+        return
+    # ŞABLON-ÖNCE (§4.4'ün "basit_mi" ilkesinin karar-desteği karşılığı): tek aday ya
+    # da hiç aday yoksa (dağınık) `rec.gerekce` zaten TEK cümlelik cevabın kendisidir —
+    # aralarında bir ÖNCELİK sorusu yoktur, LLM'e gitmek bir süstür, bir kazanç değil.
+    if not rec or len(rec.oneriler) < 2:
+        return
+    principal = getattr(request.state, "principal", None)
+    try:
+        from app.features import resolve_for
+
+        if "t7_tavsiye" not in resolve_for(get_settings(), principal):
+            return                      # KURAL B — kapalıyken davranış BİREBİR bugünkü
+        llm = getattr(request.app.state, "llm", None)
+        if llm is None or not hasattr(llm, "tavsiye_et"):
+            return                      # kural-tabanlı sağlayıcı: YOL KAPALI, hata DEĞİL
+        from app.sayi_bicimi import sayi as _fsayi, yuzde as _fyuzde
+
+        gercekler = [rec.gerekce] + [
+            f"{o.segment}: {'kötüleşti' if o.yon == 'kotulesti' else 'iyileşti'}, "
+            f"etki {_fsayi(o.etki)}"
+            + (f", net değişime payı {_fyuzde(o.pay * 100)}" if o.pay is not None else "")
+            for o in rec.oneriler
+        ]
+        secenekler = [o.segment for o in rec.oneriler]
+        if not gercekler or not secenekler:
+            return
+
+        from app.narration_guard import guvenli_anlatim, sayilari_cikar
+
+        # G5.1 — ÖN KOŞUL KİLİDİ, `_anlati_ekle` ile AYNI: `iddia.py` olmadan T7 açılmaz.
+        try:
+            import app.iddia as _iddia_kontrol  # noqa: F401
+        except ImportError:
+            _log.error("T7 tavsiye ENGELLENDİ: `app/iddia.py` YOK — G5.1.")
+            return
+
+        from app import planner as _planner
+
+        plan = _planner.Planlayici(
+            principal=principal,
+            butce=_planner.Butce(adim=2, saniye=15.0, sorgu=0),
+            kaynaklar={"servis:llm": llm},
+        )
+        # DETERMİNİSTİK-ÖNCE kapısı: `prescribe.recete` ("karar-recete" etiketinin
+        # LLM'siz kardeşi) planlayıcı ÜZERİNDEN denenmiş olmalı — `_anlati_ekle`'nin
+        # `interpret` ön-çağrısıyla AYNI desen. Maliyeti sıfır: aynı `rapor`u yeniden
+        # okur, sorgu koşmaz.
+        plan.calistir("prescribe.recete", rapor, lower_is_better=lower_is_better)
+
+        # G0b — HAVA BOŞLUĞU. Segment adları GERÇEK boyut değerleridir (müşteri/makine/
+        # tedarikçi adı olabilir) — `gercekler` VE `secenekler` TEK bir `perdele()`
+        # çağrısıyla birlikte maskelenir ki aynı gerçek değer HER İKİSİNDE AYNI yer
+        # tutucuya düşsün (ayrı çağrılar ayrı haritalar üretir, yuvalar KAYAR).
+        from app.yayilim import geri_koy, perdele
+
+        _birlesik, _harita = perdele([*gercekler, *secenekler], degerler=secenekler)
+        gercekler_p, secenekler_p = _birlesik[:len(gercekler)], _birlesik[len(gercekler):]
+
+        _azami = float(getattr(get_settings(), "anlati_azami_saniye", 8.0) or 8.0)
+        from app import butce as _butce
+
+        _sonuc = _butce.kos(
+            [lambda: plan.calistir("llm.tavsiye_et", resp.question,
+                                   gercekler_p, secenekler_p)],
+            saniye=_azami, ad="T7 tavsiye", log=_log)[0]
+        if _sonuc is _butce.ASIM:
+            return
+        ham = _sonuc
+        _anlati_makbuzu(resp, plan)             # generic — T2/T7 ortak makbuz birleştirici
+        ham, _yayilim_sorunlari = geri_koy(ham or "", _harita)
+        if _yayilim_sorunlari:
+            _log.info("T7 tavsiye YAYILIM BOZULDU (%d): %s",
+                      len(_yayilim_sorunlari), ", ".join(_yayilim_sorunlari[:5]))
+        resp.hava_boslugu = {**(resp.hava_boslugu or {}), "tavsiye_yer_tutucu": len(_harita),
+                             "tavsiye_bozulan": len(_yayilim_sorunlari)}
+
+        # G4 — İDDİA KAPISI, `_anlati_ekle` ile AYNI.
+        from app import iddia as _iddia
+        from app.company_registry import wren_for_request
+
+        try:
+            _sema = wren_for_request(request).schema()
+        except Exception:                                  # noqa: BLE001
+            _sema = None                                   # fail-closed: katalog yoksa
+            _log.warning("T7 iddia kapısı için şema okunamadı", exc_info=True)
+        _ir = _iddia.dogrula(ham, _sema)
+        resp.hava_boslugu = {**(resp.hava_boslugu or {}),
+                             "tavsiye_iddia_dusen": len(_ir.reddedilen)}
+        if _ir.reddedilen:
+            _log.info("T7 İDDİA KAPISI: %d cümle düştü — %s",
+                      len(_ir.reddedilen), "; ".join(_ir.gerekceler[:3]))
+        ham = _ir.temiz_metin
+
+        # SAYI GUARD'I — `result` BİLEREK `None`: reçetenin sayıları `resp.result`'ta
+        # DEĞİL (bu yol `resp.result=None` üretir — akran-kıyası ayrı bir sorgudan
+        # geldi). İzinli sayılar TAMAMEN `ek_degerler`den gelir — `gercekler`in KENDİ
+        # sayıları (zaten deterministik, zaten LLM'e verilmiş, zaten onaylı).
+        ek_degerler: list[float] = []
+        for g in gercekler:
+            ek_degerler.extend(sayilari_cikar(g))
+        metin, guard_rapor = guvenli_anlatim(ham, None, ek_degerler=ek_degerler, yedek=None)
+        if not metin:
+            # Tüm cümleler düştü — sessizce geç. `rec.gerekce` zaten orada.
+            _log.info("T7 tavsiye GUARD'DA DÜŞTÜ (yayımlanmadı): reddedilen=%d",
+                      len(getattr(guard_rapor, "reddedilen", []) or []))
+            return
+        resp.prescription["muhakeme_metni"] = metin
+        resp.prescription["muhakeme_kaynak"] = "llm"        # makbuz: hangi basamak yazdı
+        try:
+            _mk = guard_rapor.makbuza()
+            resp.hava_boslugu = {
+                **(resp.hava_boslugu or {}),
+                "tavsiye_dogrulandi": bool(_mk.get("narration_verified")),
+                "tavsiye_dusen": int(_mk.get("rejected_sentences") or 0),
+            }
+            from app import guard_alarmi as _alarm
+
+            _alarm.kaydet(int(_mk.get("rejected_sentences") or 0),
+                          int(_mk.get("total_sentences") or 0))
+        except Exception:                                  # noqa: BLE001 — makbuz süstür
+            _log.warning("T7 guard makbuzu yazılamadı", exc_info=True)
+        if getattr(guard_rapor, "reddedilen", None):
+            _log.info("T7 tavsiye: %d cümle guard'da düştü", len(guard_rapor.reddedilen))
+    except Exception:  # noqa: BLE001 — tavsiye SÜStür, cevabı asla düşürmez
+        _log.warning("T7 tavsiye üretilemedi (best-effort)", exc_info=True)
+
+
+def _kok_tavsiye_ekle(request: Request, resp: AskResponse, ayr, cube_meta: dict | None,
+                       *, segment: str, boyut: str) -> None:
+    """FAZ 1.4 — `kok_neden.py` (§KN) için `_tavsiye_ekle`'nin karar-desteği kardeşi.
+
+    ## Neden `_tavsiye_ekle`'nin BİREBİR kopyası DEĞİL (kasıtlı farklar)
+
+    `secenekler` burada `prescribe.py` gibi bir SEGMENT/müşteri adı listesi DEĞİL —
+    ölçünün FORMÜL BİLEŞENLERİdir (kullanılabilirlik/performans/kalite gibi katalog
+    SÖZLÜĞÜ). Bu yüzden `secenekler` PERDELENMEZ (ticari/kişisel veri değil); yalnız
+    İNCELENEN SEGMENT (gerçek bir müşteri/tedarikçi/makine adı OLABİLİR — bkz.
+    `kok_neden.ayristir`'in kendi "en düşük cirolu tedarikçi" örneği) hava boşluğundan
+    geçer.
+
+    ⚠ **YÖN BİLİNMİYORSA (`GG8`) HİÇ ÇALIŞMAZ.** `Prescription` sözleşmesi (`schemas.py`/
+    `types.ts`) her seçenek için ZORUNLU bir `direction` ("kotulesti"|"iyilesti") ister —
+    bu bir DEĞER YARGISIDIR. `kok_neden.ayristir`'in kendisi `lower_is_better` beyan
+    edilmemiş bir ölçüde bunu üretmez (`_yon_beyanli` ayrımı, modülün kendi ilkesi). Yön
+    bilinmiyorken bir `direction` UYDURMAK bu ilkeyi bu basamakta çiğnemek olurdu —
+    o yüzden o durumda hiçbir şey yazılmaz: `KURAL B` ile aynı en-kötü-durum (bugünkü
+    davranış, sessizce).
+
+    ## Çıktı `resp.prescription`'a yazılır — YENİ bir üst-düzey alan İCAT EDİLMEZ
+
+    `test_cevap_alani_yetim_degil.py` ölçtü: yeni bir üst-düzey `AskResponse` alanı,
+    frontend'de bir tüketici bağlanana kadar (FAZ 4) YETİMDİR. `prescription` zaten var
+    olan, zaten tüketilen (`PrescriptionLayer.tsx`) bir alan ve kök-neden yolu "ne
+    yapmalıyız" sorulduğunda (`oneri=True`) zaten `nereye_bak()`'in deterministik
+    "→ Öneri:" cümlesini üretiyor — yani KAVRAMSAL olarak kendisi de bir reçetedir.
+    ⚠ Bu yolda `resp.prescription` bugün hiç DOLU gelmiyordu (`ask.py`'nin kök-neden
+    erken-dönüşü bu alanı hiç kurmuyordu) — o yüzden `Prescription`'ın TÜM ZORUNLU
+    alanları (`options`/`concentration`/`diffuse`/`rationale`) burada BİRLİKTE kurulur;
+    yalnız `muhakeme_metni` eklensin de gerisi eksik kalsın diye YARIM bırakılmaz — o,
+    `PrescriptionLayer.tsx`'in `recete.options.map(...)`'ini `undefined` üzerinde
+    çökertirdi.
+    """
+    if not ayr or len(ayr.katkilar) < 2:
+        return
+    from app.kok_neden import _yon_beyanli
+
+    if not _yon_beyanli(ayr.olcu, cube_meta):
+        return
+    if resp.prescription and resp.prescription.get("muhakeme_metni"):
+        return
+    principal = getattr(request.state, "principal", None)
+    try:
+        from app.features import resolve_for
+
+        if "t7_tavsiye" not in resolve_for(get_settings(), principal):
+            return                      # KURAL B — kapalıyken davranış BİREBİR bugünkü
+        llm = getattr(request.app.state, "llm", None)
+        if llm is None or not hasattr(llm, "tavsiye_et"):
+            return                      # kural-tabanlı sağlayıcı: YOL KAPALI, hata DEĞİL
+        from app.sayi_bicimi import ek as _fek, sayi as _fsayi, yuzde as _fyuzde
+
+        gercekler = [f"İncelenen segment: {segment} ({boyut})."] + [
+            f"{k.bilesen.display}: {_fsayi(k.hedef)} ↔ akran {_fsayi(k.akran)} — "
+            f"farkın {_fek(_fyuzde(k.pay_yuzde), True)} "
+            + ("düşürüyor" if k.katki < 0 else "yükseltiyor")
+            for k in ayr.katkilar
+        ]
+        secenekler = [k.bilesen.display for k in ayr.katkilar]
+        if not secenekler:
+            return
+
+        from app.narration_guard import guvenli_anlatim, sayilari_cikar
+
+        # G5.1 — ÖN KOŞUL KİLİDİ, `_anlati_ekle`/`_tavsiye_ekle` ile AYNI.
+        try:
+            import app.iddia as _iddia_kontrol  # noqa: F401
+        except ImportError:
+            _log.error("§KN tavsiye ENGELLENDİ: `app/iddia.py` YOK — G5.1.")
+            return
+
+        from app import planner as _planner
+
+        plan = _planner.Planlayici(
+            principal=principal,
+            butce=_planner.Butce(adim=2, saniye=15.0, sorgu=0),
+            kaynaklar={"servis:llm": llm},
+        )
+        dusuk_iyi = ayr.olcu in ((cube_meta or {}).get("lower_is_better") or [])
+        # DETERMİNİSTİK-ÖNCE kapısı: `kok_neden.ayristir` ("karar-kok" etiketinin
+        # LLM'siz kardeşi) planlayıcı ÜZERİNDEN denenmiş olmalı. `arastir` (sorgu KOŞAR) tekrar
+        # koşulamaz; cebrin SORGUSUZ çekirdeği `ayristir`, `ayr`'den YENİDEN kurulan AYNI
+        # girdilerle (maliyeti sıfır — veri zaten elde) çağrılır — `interpret`/
+        # `prescribe.recete` ön-çağrılarıyla BİREBİR aynı desen.
+        _hedef = {ayr.olcu: ayr.hedef_deger, **{k.bilesen.ad: k.hedef for k in ayr.katkilar}}
+        _akran = {ayr.olcu: ayr.akran_deger, **{k.bilesen.ad: k.akran for k in ayr.katkilar}}
+        plan.calistir("kok_neden.ayristir", ayr.olcu, _hedef, _akran, cube_meta,
+                      dusuk_iyi=dusuk_iyi)
+
+        # G0b — HAVA BOŞLUĞU. Yalnız İNCELENEN SEGMENT perdelenir (bileşen adları
+        # katalog sözlüğüdür, ticari/kişisel veri DEĞİL — bkz. docstring).
+        from app.yayilim import geri_koy, perdele
+
+        gercekler_p, _harita = perdele(gercekler, degerler=[segment])
+
+        _azami = float(getattr(get_settings(), "anlati_azami_saniye", 8.0) or 8.0)
+        from app import butce as _butce
+
+        _sonuc = _butce.kos(
+            [lambda: plan.calistir("llm.tavsiye_et_kok_neden", resp.question,
+                                   gercekler_p, secenekler)],
+            saniye=_azami, ad="§KN tavsiye", log=_log)[0]
+        if _sonuc is _butce.ASIM:
+            return
+        ham = _sonuc
+        _anlati_makbuzu(resp, plan)
+        ham, _yayilim_sorunlari = geri_koy(ham or "", _harita)
+        if _yayilim_sorunlari:
+            _log.info("§KN tavsiye YAYILIM BOZULDU (%d): %s",
+                      len(_yayilim_sorunlari), ", ".join(_yayilim_sorunlari[:5]))
+
+        # G4 — İDDİA KAPISI, `_anlati_ekle`/`_tavsiye_ekle` ile AYNI.
+        from app import iddia as _iddia
+        from app.company_registry import wren_for_request
+
+        try:
+            _sema = wren_for_request(request).schema()
+        except Exception:                                  # noqa: BLE001
+            _sema = None                                   # fail-closed: katalog yoksa
+            _log.warning("§KN iddia kapısı için şema okunamadı", exc_info=True)
+        _ir = _iddia.dogrula(ham, _sema)
+        if _ir.reddedilen:
+            _log.info("§KN İDDİA KAPISI: %d cümle düştü — %s",
+                      len(_ir.reddedilen), "; ".join(_ir.gerekceler[:3]))
+        ham = _ir.temiz_metin
+
+        # SAYI GUARD'I — `result` BİLEREK `None` (`_tavsiye_ekle` ile AYNI gerekçe):
+        # izinli sayılar TAMAMEN `gercekler`in KENDİ sayılarından (`ek_degerler`) gelir.
+        ek_degerler: list[float] = []
+        for g in gercekler:
+            ek_degerler.extend(sayilari_cikar(g))
+        metin, guard_rapor = guvenli_anlatim(ham, None, ek_degerler=ek_degerler, yedek=None)
+        if not metin:
+            _log.info("§KN tavsiye GUARD'DA DÜŞTÜ (yayımlanmadı): reddedilen=%d",
+                      len(getattr(guard_rapor, "reddedilen", []) or []))
+            return
+
+        from app.kok_neden import nereye_bak
+        from app.prescribe import _yon as _prescribe_yon
+
+        resp.prescription = {
+            "options": [{"segment": k.bilesen.display, "impact": k.katki,
+                        "share": round(k.pay_yuzde / 100.0, 4),
+                        "direction": _prescribe_yon(k.katki, dusuk_iyi)}
+                       for k in ayr.katkilar],
+            "concentration": round(max(k.pay_yuzde for k in ayr.katkilar) / 100.0, 4),
+            "diffuse": False,
+            "rationale": nereye_bak(ayr, segment, boyut, None)
+                        or (f"En çok açıklayan bileşen: {ayr.sucllu.display}."
+                            if ayr.sucllu else ""),
+            "measure": ayr.olcu,
+            "muhakeme_metni": metin,
+            "muhakeme_kaynak": "llm",
+        }
+        try:
+            _mk = guard_rapor.makbuza()
+            resp.hava_boslugu = {
+                **(resp.hava_boslugu or {}),
+                "tavsiye_yer_tutucu": len(_harita),
+                "tavsiye_bozulan": len(_yayilim_sorunlari),
+                "tavsiye_iddia_dusen": len(_ir.reddedilen),
+                "tavsiye_dogrulandi": bool(_mk.get("narration_verified")),
+                "tavsiye_dusen": int(_mk.get("rejected_sentences") or 0),
+            }
+            from app import guard_alarmi as _alarm
+
+            _alarm.kaydet(int(_mk.get("rejected_sentences") or 0),
+                          int(_mk.get("total_sentences") or 0))
+        except Exception:                                  # noqa: BLE001 — makbuz süstür
+            _log.warning("§KN guard makbuzu yazılamadı", exc_info=True)
+    except Exception:  # noqa: BLE001 — tavsiye SÜStür, cevabı asla düşürmez
+        _log.warning("§KN tavsiye üretilemedi (best-effort)", exc_info=True)
 
 
 def _boyut_degerleri(resp) -> list[str]:

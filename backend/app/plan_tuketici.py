@@ -122,15 +122,46 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
         return out
 
     def _anlat(a: dict) -> str:
+        from app import ilkeller
         from app import interpret as _yorum
         from app import narration_guard
-        # ⚠ `FAZ 3` — `kaynaklar` bir **liste**dir; her öğe bir adımın çıktısı. Yalnız
-        # **satır** üretenler anlatılır: bir `varlik`ı ya da `olcum`u tabloya çevirmek,
-        # `interpret`e olmayan bir sonuç kümesi uydurmak olurdu.
+        # ⚠ `FAZ 3` — `kaynaklar` bir **liste**dir; her öğe bir adımın çıktısı. **Satır**
+        # üretenler (`SORGU`/`KIR`) `interpret()`e beslenir; `HESAPLA`/`BAGLA` **satır
+        # değil**, hazır bir bulgudur (akran kıyası / seçilmiş varlık) — eskiden bu ikisi
+        # sessizce ATLANIYORDU (`isinstance(_c, list)` yalnız satırları görüyordu), yani
+        # kullanıcı *«neden»* sorunca ANLAT'ın ürettiği `interpretation.summary` yalnız
+        # son SORGU'nun çıplak sayısına düşüyordu ("RAM-3 51,30") — asıl bulunan kıyas
+        # (`not`a giden `_bulgu_metni`'nin ZATEN ürettiği "aradaki fark %11,0 düşük"
+        # cümlesi) kullanıcıya hiç ULAŞMIYORDU. Aynı bulgu iki yerde iki farklı zenginlikte
+        # yaşıyordu — `KAT-1` ihlali. Kök çözüm: `HESAPLA`/`BAGLA` çıktılarını da anlatıya
+        # kat, `hesapla_cumle` ile (tek şablon, `_bulgu_metni` ile PAYLAŞILIYOR).
         _satirlar: list[dict] = []
+        _ek_cumleler: list[str] = []
+        _ek_sayilar: list[float] = []
         for _c in (a.get("kaynaklar") or []):
             if isinstance(_c, list):
                 _satirlar.extend(x for x in _c if isinstance(x, dict))
+            elif isinstance(_c, dict):
+                _cumle = ilkeller.hesapla_cumle(_c)
+                if _cumle:
+                    _ek_cumleler.append(_cumle)
+                    for _k in ("hedef_deger", "akran_ortalamasi", "fark", "fark_yuzde"):
+                        _v = _c.get(_k)
+                        if isinstance(_v, (int, float)):
+                            # ⚠ Cümle `abs(fark)`/`abs(fark_yuzde)` basıyor (yön ayrı
+                            # kelimeyle — "düşük"/"yüksek" — söyleniyor, işaretle değil);
+                            # guard işaretsiz metni işaretli sayıyla kıyaslayınca
+                            # `_yakin` YANLIŞ yere ıraksar (`11,0` ↔ `-11,0` benzemez).
+                            _ek_sayilar.append(float(_v))
+                            _ek_sayilar.append(abs(float(_v)))
+            elif isinstance(_c, tuple) and _c and _c[0] is not None:
+                # `BAGLA` çıktısı `(varlık, değer)` — ölçü adı burada yok (o alan
+                # yalnız ADIM tanımında var, kaynak zaten ÇÖZÜLMÜŞ bir değer); isim
+                # uydurmadan yalnız SEÇİMİ bildir, `_bulgu_metni`nin BİREBİR aynı §BG
+                # ilkesiyle — seçilmeyen bir şey seçilmiş gibi yazılmaz.
+                _ek_cumleler.append(f"**{_c[0]}** seçildi.")
+                if len(_c) > 1 and isinstance(_c[1], (int, float)):
+                    _ek_sayilar.append(float(_c[1]))
         _sonuc = ({"rows": _satirlar, "columns": list(_satirlar[0])}
                   if _satirlar else None)
         _ozet = ""
@@ -140,11 +171,15 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
             _ozet = ((_yorum.interpret(_sonuc) or {}) or {}).get("summary") or ""
         except Exception:
             _log.info("interpret özet üretemedi — anlatı boş kalır", exc_info=True)
-        if not _ozet:
+        _tam = " ".join(s for s in (_ozet, *_ek_cumleler) if s)
+        if not _tam:
             return ""
         # 🔴 `temiz_metin` — `Rapor`un yayımlanabilir alanı. Guard doğrulanamayan **cümleyi**
         # düşürür, metnin tamamını değil; yani en kötü durum *«süssüz ama doğru»*.
-        return narration_guard.dogrula(_ozet, _sonuc).temiz_metin
+        # `ek_degerler`: `HESAPLA`/`BAGLA` sayıları satırlarda YOK (kendi hesabı) —
+        # beyan edilmezse guard onları "uydurma" sanıp cümleyi düşürür (`FAZ 1`'in
+        # `_kok_tavsiye_ekle`sindeki AYNI desen).
+        return narration_guard.dogrula(_tam, _sonuc, ek_degerler=_ek_sayilar).temiz_metin
 
     # ── `FAZ 7` · KÖK-NEDEN İNİŞİ ────────────────────────────────────────────────
     # Üçü de `drill.py`/`contribution.py`'de **zaten var**, testli ve deterministik.
@@ -569,9 +604,41 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             # `§70` — ve **sınırın hangisi olduğu** da yazılır: iki ayrı sınır var.
             _gecerli, _not = False, onizleme_notu(plan, e)
         _log.info("orkestratör: %d adımlık plan ÖNİZLENİYOR (onay bekliyor) — §28.3", _n)
+        # 🔴🔴 FAZ 2.1 — **YOKLUK SORGUSU, KOŞMADAN ÖNCE BEYAN EDİLİR.** Ölçüldü
+        # (canlı, `s57`): *«bu ay hiç sipariş vermeyen müşteriler kim»* tam bu dala
+        # düşüyor (3 adımlık önizleme) — plan geçerli görünüp koşsa bile soruyu
+        # CEVAPLAYAMAZ (mimari sınır, `§YK`). Kullanıcıyı koşturup SONRA hayal
+        # kırıklığına uğratmak yerine, önizlemenin KENDİSİNDE söylenir. ⚠ Tek üretici
+        # `uyum.yokluk_ihlali` — ikinci bir denetim YAZILMAZ (`KAT-1`); planın İLK
+        # taslak sorgusu (henüz koşulmamış) chip'i zenginleştirmek için okunur.
+        _yi = None
+        try:
+            from app import uyum as _uyum
+            _ilk_bcq = next((a.get("cube_query") for a in plan["adimlar"]
+                              if isinstance(a.get("cube_query"), dict)), None)
+            _ilk_bcm = (next((c for c in (schema.get("cubes") or [])
+                              if c.get("name") == _ilk_bcq.get("cube")), None)
+                        if _ilk_bcq else None)
+            _yi = _uyum.yokluk_ihlali(soru, _ilk_bcq, _ilk_bcm)
+        except Exception:
+            _log.info("§YK-önizleme: yokluk denetimi yapılamadı (beyan atlandı)",
+                      exc_info=True)
+        if _yi:
+            # ⚠ `uyum.kismi_cevap_notu()` KULLANILMADI — o *"Sayı doğru ama eksik"*
+            # diye başlar (`§UT-M`) ve o çerçeve KOŞULMUŞ bir cevabı varsayar. Burada
+            # henüz HİÇBİR sayı yok (plan onay bekliyor) — o cümleyi buraya taşımak
+            # yanlış bir kesinlik iddia ederdi. Canlı doğrulamada (curl, `s58`)
+            # yakalanıp düzeltildi.
+            _yi_aciklama = str(_yi.aciklama or "").rstrip()
+            _not = (_not + f"\n\n⚠ Bu plan koşsa bile **eksik** kalır: {_yi_aciklama}"
+                    f"{'' if _yi_aciklama.endswith(('.', '!', '?', '…')) else '.'}"
+                    f"\n\n{_yi.oneri}")
         return {"source": "onizleme", "note": _not, "gecerli": _gecerli, "plan_taslagi": plan,
                 "adimlar": [{"sira": i, "fiil": x.get("fiil"), "metin": onizleme_satiri(x)}
                             for i, x in enumerate(plan["adimlar"], 1)],
+                "eksik_niyet": [_yi.isaret] if _yi else None,
+                "eksik_niyet_detay": _uyum.etiket_detayi([_yi]) if _yi else None,
+                "suggestions": _uyum.chipler([_yi]) if _yi else None,
                 "iz": [f"orkestratör: {_n} adımlık plan önizlendi (§28.3 — onay bekliyor)"]}
     try:
         out = calistir(plan, service=service, index=index, schema=schema,
@@ -948,6 +1015,19 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     return {
         "source": "cube+llm",
         "note": cevap_notu(plan, out) + _uyari + _eksik_notu,
+        # 🔴🔴 FAZ 2.2 — **BU YOLDA ROZET HİÇ YOKTU, YALNIZ METİN VARDI.** `_eksik_notu`
+        # (yukarıda) zaten insan-okur `note`'a giriyordu; eksik olan **rozetti**
+        # (`ReportCard.tsx`'in `eksik_niyet` üzerine kurduğu, tıklanabilir/gruplanabilir
+        # UI). `_ihlaller` zaten burada `uyum.denetle()`'den toplanıyor — ikinci bir
+        # denetim YAZILMADI, ZATEN VAR OLAN liste dışa açıldı (`KAT-1`).
+        "eksik_niyet": [i.isaret for i in _ihlaller] or None,
+        "eksik_niyet_detay": _uyum.etiket_detayi(_ihlaller) if _ihlaller else None,
+        # 🔴🔴 FAZ 2.1 — **CHIP DE AYNI KÖRLÜĞÜ TAŞIYORDU.** `_ihlaller`'ın
+        # `.chip` alanı (ör. `olcu_ikamesi`/`kirilim_ikamesi`, ve şimdi `yokluk`)
+        # tek-adımlı yolda `uyum.chipler()` ile `resp.suggestions`'a gidiyordu
+        # (`beyan_ekle`, `ask.py:3208`) ama BU yol (agentic plan) onu HİÇ
+        # toplamıyordu — `chipler()` zaten var, ikinci bir üretici YAZILMADI (`KAT-1`).
+        "suggestions": _uyum.chipler(_ihlaller) if _ihlaller else None,
         # 🔴 Onarım beyanları izin **başına değil sonuna** eklenir: birinci satır
         # *"kaç adım koştu"* sorusunun cevabıdır ve okuyucunun ilk aradığı odur.
         # Beyan yoksa liste bayt bayt bugünküdür (`KURAL B` disiplini).

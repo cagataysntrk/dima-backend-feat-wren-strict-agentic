@@ -209,6 +209,46 @@ def test_ANLAT_LLM_CAGIRMAZ():
     assert "narration_guard" in _govde, "ANLAT guard'sız — sayı doğrulanmıyor"
 
 
+def test_ANLAT_HESAPLA_CIKTISINI_YUTMAZ():
+    """🔴🔴 Kullanıcı bulgusu (2026-08-26): *"ram 3 neden düşük"* → `interpretation.
+    summary` yalnız `"RAM-3 51,30."` üretiyordu — `HESAPLA`'nın ZATEN hesapladığı akran
+    kıyası (`not`a giden `_bulgu_metni`'nin ürettiği "aradaki fark %11,0 düşük" cümlesi)
+    kullanıcıya hiç ULAŞMIYORDU, çünkü `_anlat` yalnız `list` (satır) kaynakları
+    görüyordu — `HESAPLA`'nın `dict` çıktısı SESSİZCE atlanıyordu. Aynı bulgu iki
+    yerde iki farklı zenginlikte yaşıyordu (`KAT-1` ihlali)."""
+    from app.plan_tuketici import _govdeler
+
+    g = _govdeler(_Motor(), SCHEMA, {"lower_is_better": []})
+    hesapla_ciktisi = {"hedef_deger": 51.3, "akran_ortalamasi": 57.62,
+                        "fark": -6.32, "fark_yuzde": -11.0, "akran_sayisi": 7}
+    satirlar = [{"makine": "RAM-3", "ort_oee": 51.3}]
+    metin = g["ANLAT"]({"kaynaklar": [hesapla_ciktisi, satirlar]})
+    assert "aradaki fark" in metin, f"akran kıyası anlatıya hiç girmedi: {metin!r}"
+    assert "11,0" in metin or "11.0" in metin, f"yüzde kayboldu: {metin!r}"
+    assert "düşük" in metin
+
+
+def test_ANLAT_BAGLA_CIKTISINI_UYDURMADAN_ANLATIR():
+    """`BAGLA` çıktısı `(varlık, değer)` bir `tuple` — `_anlat` bunu da artık atlamıyor,
+    ama ölçü adını UYDURMUYOR (adım gövdesinde yok, `§BG` ilkesi)."""
+    from app.plan_tuketici import _govdeler
+
+    g = _govdeler(_Motor(), SCHEMA, {"lower_is_better": []})
+    metin = g["ANLAT"]({"kaynaklar": [("RAM-3", 51.3)]})
+    assert "RAM-3" in metin and "seçildi" in metin
+
+
+def test_HESAPLA_CUMLE_PAYDA_SIFIRSA_UYDURMAZ():
+    """`ilkeller.hesapla()`'nın kendi uyarısı: payda sıfırsa `fark_yuzde` `None` kalır —
+    `hesapla_cumle` bunu **cümleye çevirmemeli** ("%0,0" uydurmak yerine)."""
+    from app import ilkeller
+
+    assert ilkeller.hesapla_cumle({"fark_yuzde": None, "fark": 0,
+                                    "akran_ortalamasi": 0, "akran_sayisi": 3}) is None
+    assert ilkeller.hesapla_cumle(None) is None
+    assert ilkeller.hesapla_cumle("not a dict") is None
+
+
 def test_HER_ADIMIN_SONUCU_DONUYOR():
     """🔴 `FAZ 5` — hesaplanan malzeme **atılmıyor**.
 
@@ -363,3 +403,82 @@ def test_BG_GERCEK_SECIM_BOZULMADI():
     plan = {"adimlar": [{"fiil": "BAGLA", "olcu": "rework_sayisi", "boyut": "operator"}]}
     metin = plan_tuketici._bulgu_metni(plan, {"ciktilar": [("MURAT DEMİR", 42)]})
     assert "MURAT DEMİR" in metin and "seçildi" in metin
+
+
+# ═══ FAZ 2.2 — plan yolunda da eksik_niyet ROZETİ (Tur 2 Senaryo 17) ═══════════════
+#
+# Senaryo 17'nin ASIL şikayeti bu yoldaydı (çok adımlı plan, "EKSİK: olcu_ikamesi,
+# sıralama" — ham kod). `_ihlaller` burada ZATEN toplanıyordu (`_eksik_notu`'nun
+# kaynağı) ama `cevap()`'in döndürdüğü sözlükte HİÇ dışa açılmıyordu — `ask.py`'nin
+# `AskResponse(...)` inşası da bu iki alanı hiç saymıyordu. İkisi de düzeltildi.
+
+def test_PLAN_YOLUNDA_EKSIK_NIYET_DISA_ACILIR():
+    """🔴🔴 Tur 2 Senaryo 17 — plan yolunda `eksik_niyet`/`eksik_niyet_detay` ÖNCEDEN
+    hiç yoktu (yalnız `note` metni vardı); rozet bu yüzden hiç render edilemiyordu."""
+    # SORGU tek başına: BAGLA/SIRALA/TREND/KIR yok → `ustunluk` KARŞILANMAMIŞ sayılır.
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]}
+    c = _cevap(_Garson(plan), soru="en yüksek oee'ye sahip makineyi bul")
+    assert c is not None
+    assert c.get("eksik_niyet"), f"🔴 eksik_niyet plan yolunda hâlâ boş: {c}"
+    assert "ustunluk" in c["eksik_niyet"]
+    detay = c.get("eksik_niyet_detay")
+    assert detay, "🔴 eksik_niyet_detay plan yolunda hiç dolmuyor"
+    assert len(detay) == len(c["eksik_niyet"])
+    ustunluk_detay = next(d for d in detay if d["isaret"] == "ustunluk")
+    assert ustunluk_detay["etiket"] == "sıralama"
+    assert ustunluk_detay["etiket"] != "ustunluk", "ham kod sızdı"
+
+
+def test_PLAN_YOLUNDA_IHLAL_YOKSA_ALANLAR_NONE():
+    """`KURAL B`/dürüstlük: hiçbir ihlal yoksa alanlar `None` — boş liste değil, ki
+    frontend'in `item.eksik_niyet && …` koşulu YANLIŞ pozitif vermesin."""
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]}
+    c = _cevap(_Garson(plan), soru="makine bazında oee")
+    assert c is not None
+    assert c.get("eksik_niyet") is None
+    assert c.get("eksik_niyet_detay") is None
+
+
+def test_ASKRESPONSE_INSASI_EKSIK_NIYETI_TASIR():
+    """🔴 Kaynak-okuma kilidi: `ask.py`'nin `AskResponse(...)` inşası `_pc`'den
+    `eksik_niyet`/`eksik_niyet_detay`'ı ÇEKMELİ — bu ikisi olmadan `cevap()`'in
+    ürettiği alanlar kullanıcıya hiç ulaşmaz (ölçülen ASIL kusur buydu)."""
+    import pathlib
+
+    kaynak = (pathlib.Path(__file__).resolve().parents[1]
+              / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
+    i = kaynak.index('_finish(_attach_viz(AskResponse(')
+    blok = kaynak[i:kaynak.index("_pc.get(\"cube_query\")))", i)]
+    assert '"eksik_niyet"' in blok and '"eksik_niyet_detay"' in blok, (
+        "AskResponse inşası eksik_niyet alanlarını taşımıyor — plan yolunda rozet "
+        "yine hiç render edilmez")
+
+
+def test_ASKRESPONSE_SUGGESTIONS_NONE_ILE_COKMEZ():
+    """🔴🔴 FAZ 2.1'in KENDİ regresyonu — canlı curl'de yakalandı, `yokluk`'a özel
+    bir vaka DEĞİL. `AskResponse.suggestions` `Field(default_factory=list)`'tir,
+    `Optional` DEĞİL — `None` geçmek `pydantic.ValidationError` (HTTP 500) verir.
+    İlk yazımda `ask.py`'nin plan-yolu `AskResponse(...)` inşası `_pc.get(
+    "suggestions")` boşken (yani `eksik_niyet` HİÇ olmayan SIRADAN bir agentic
+    plan koşumunda — çoğunluk yol!) `suggestions=None` geçiyordu → HER agentic
+    plan yanıtı, `yokluk` sorgusu olsun olmasın, 500 ile çöküyordu. Kaynak-kilit:
+    `_pc.get("suggestions")` `else None` DEĞİL `else []`/`or []` ile beslenmeli."""
+    import pathlib
+
+    from app.schemas import AskResponse, Suggestion
+
+    kaynak = (pathlib.Path(__file__).resolve().parents[1]
+              / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
+    i = kaynak.index('_finish(_attach_viz(AskResponse(')
+    blok = kaynak[i:kaynak.index("_pc.get(\"cube_query\")))", i)]
+    assert "suggestions=" in blok
+    assert "else None)" not in blok.split("suggestions=")[1][:150], (
+        "🔴 suggestions hâlâ None'a düşebilir — AskResponse.suggestions Optional "
+        "değil, bu ValidationError/500 demektir")
+    # Davranış kilidi: pydantic'in kendisi de doğrular — `None` REDDEDER.
+    with pytest.raises(Exception):
+        AskResponse(question="x", suggestions=None)
+    # ve `_pc.get("suggestions") or []` deseni HER ZAMAN güvenli bir liste üretir.
+    assert AskResponse(question="x",
+                       suggestions=[Suggestion(**s) for s in ({}.get("suggestions") or [])]
+                       ).suggestions == []

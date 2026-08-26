@@ -130,6 +130,11 @@ export interface AskResponse {
    *  yazıyor — *etiket üretilip render edilmezse hiçbir şey değişmez*. Yetim-alan
    *  kapısı (`test_cevap_alani_yetim_degil.py`) bunu ilk günde yakaladı. */
   eksik_niyet?: string[] | null;
+  /** 🔴🔴 FAZ 2.2 — `eksik_niyet`in insan-okur eşliği: `{isaret, etiket, aciklama}[]`,
+   *  AYNI sırada/uzunlukta. Tek sahip backend'dedir (`uyum.etiket_detayi`) — burada
+   *  İKİNCİ bir kod→etiket sözlüğü YAZILMAZ (o sözlük `uyum.py` büyüdükçe eskirdi,
+   *  Tur 2 Senaryo 17'nin bulduğu tam budur). */
+  eksik_niyet_detay?: { isaret: string; etiket: string; aciklama: string }[] | null;
   // 🔴 FAZ 6.0 — D9: YAPILDI BİLDİRİMİ. Kapsam içi + geri alınabilir bir eylem İSTEMSİZ
   // koştuğunda dolar.
   //
@@ -788,8 +793,11 @@ export interface ContributionFinding {
   simdi: number;
   onceki: number;
   delta: number;
-  net_pay: number | null; // net değişime oran (net ~0 ise null — UYDURULMAZ)
-  brut_pay: number | null;
+  // 🔴 FAZ 3.1 — ZATEN YÜZDE ÖLÇEĞİNDE (`35.2` = "%35,2"), 0-1 arası bir ORAN
+  // DEĞİL. `ContributionLayer.tsx::Yuzde` bunu `*100` yaparak ÇİFTE-YÜZDE
+  // kusuruna düşmüştü (canlı Playwright'ta yakalandı) — tekrar çarpmayın.
+  net_pay: number | null; // net değişimin YÜZDESİ (net ~0 ise null — UYDURULMAZ)
+  brut_pay: number | null; // brüt harekete göre YÜZDE — HER ZAMAN [0,100]
   cube_query: CubeQuery;
 }
 
@@ -873,6 +881,14 @@ export interface Prescription {
   diffuse: boolean;
   rationale: string;
   measure?: string | null;
+  // 🔴🔴 FAZ 4.1 — Katman 7'nin guarded-LLM basamağı (`answer.py::_tavsiye_ekle`/
+  // `_kok_tavsiye_ekle`) bu ikisini ZATEN üretiyordu ama TİP TANIMI hiç taşımıyordu
+  // — `PrescriptionLayer.tsx` `rationale`'ı (deterministik) render ediyordu,
+  // `muhakeme_metni` (LLM ürettiği yorum) HİÇBİR YERDE görünmüyordu (canlı ölçüldü,
+  // `grep -rl muhakeme src/` **sıfır** sonuç verdi). `kanit_sinifi==="probabilistik"`
+  // ile AYNI görsel dil (`Makbuz.tsx`) kullanılmalı — bu bir ÖLÇÜM değil bir YORUM.
+  muhakeme_metni?: string | null;
+  muhakeme_kaynak?: string | null;
 }
 
 // KARAR KAYDI (Faz E-4) — Query Contract'ın BİR ÜSTÜ. Contract "bu sayı nasıl

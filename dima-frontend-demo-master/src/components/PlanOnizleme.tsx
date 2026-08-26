@@ -35,6 +35,7 @@ export function PlanOnizleme({
   onKos,
   onIptal,
   onDuzenle,
+  onOneri,
 }: {
   onizleme: PlanOnizlemesi;
   busy?: boolean;
@@ -42,8 +43,13 @@ export function PlanOnizleme({
   onKos: () => void;
   onIptal: () => void;
   onDuzenle: () => void;
+  /** 🔴🔴 FAZ 2.1 — "sihir" chip'i tıklanınca YENİ bir soru gönderir. Bestecinin
+   *  KENDİ `onGonder`'ı geçirilir — ikinci bir gönderme yolu İCAT EDİLMEDİ.
+   *  Verilmezse chip'ler hiç çizilmez (`KURAL B`: prop yoksa davranış bugünküyle
+   *  birebir). */
+  onOneri?: (soru: string) => void;
 }) {
-  const { adimlar, gecerli, note } = onizleme;
+  const { adimlar, gecerli, note, suggestions } = onizleme;
   return (
     <div
       className="mt-2 rounded border border-hairline bg-neutral-50/60 px-3 py-2"
@@ -92,6 +98,28 @@ export function PlanOnizleme({
 
       {/* ② gerekçe — geçersizken **asıl** bilgi budur. */}
       {note && <p className="mt-1.5 text-[11px] leading-4 text-neutral-500">{note}</p>}
+
+      {/* 🔴🔴 FAZ 2.1 — "sihir": `note`'un beyanının YANINDA duran en-yakın-hesaplanabilir
+          alternatif. Ölçülen kusur (canlı Playwright, `s58`): metin ekranda görünüyordu,
+          chip'in kendisi HİÇBİR YERDE render edilmiyordu — `ReportCard.tsx`'in "devam
+          sorusu" chip'iyle AYNI görsel dil, ikinci bir bileşen icat edilmedi. */}
+      {onOneri && (suggestions ?? []).length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {(suggestions ?? []).map((s, i) => (
+            <button
+              key={`oneri-${i}`}
+              type="button"
+              onClick={() => { onOneri(s.query); onIptal(); }}
+              disabled={busy}
+              title="Bunun yerine bu soruyu sorar — LLM'siz, tek tık koşar"
+              className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground disabled:opacity-40 dark:text-neutral-300"
+            >
+              <span className="mr-1 text-neutral-400">↳</span>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="mt-2 flex gap-1.5">
         <button

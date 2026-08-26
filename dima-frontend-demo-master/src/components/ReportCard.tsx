@@ -39,22 +39,14 @@ import { SertifikaBandi } from "@/components/SertifikaBandi";
 // thread'in item dizisi üstünde `.map()`ler (bkz. ReportPanel.tsx). `fb` (verify geri bildirim
 // map'i) İÇERİK-ANAHTARLI olduğu için (verifyKey = label::sql) PAYLAŞILAN bir prop olarak
 // yukarıdan alınır — yığındaki/thread'lerdeki TÜM kartlarda güvenle paylaşılabilir.
-/** 🔴 Kod → insan etiketi. Backend SABİT kod gönderir (telemetri gruplanabilsin),
- *  arayüz onu okunur hâle çevirir. *Kod gruplanır, cümle okunur; ikisi ayrı sahiptir.* */
-const EKSIK_NIYET_ETIKET: Record<string, string> = {
-  kiyas: "kıyas", cok_donem: "çok dönem", trend: "trend",
-  kirilim: "kırılım", ustunluk: "sıralama", esik: "eşik", dislama: "dışlama",
-};
-
-const EKSIK_NIYET_ACIKLAMA: Record<string, string> = {
-  kiyas: "İki dönemi kıyaslamanı istedin ama tek bir toplam üretilebildi.",
-  cok_donem: "Birden çok dönem saydın ama tek bir aralık olarak toplandı.",
-  trend: "Değişimi/trendi istedin ama zaman ekseni kurulamadı.",
-  kirilim: "Bir kırılım istedin ama sorguya bir boyut taşınamadı.",
-  ustunluk: "En yüksek/en çok dedin ama sıralama uygulanamadı.",
-  esik: "Bir eşik verdin ama filtreye çevrilemedi.",
-  dislama: "Bir şeyi hariç tutmanı istedin ama dışlama filtresi kurulamadı.",
-};
+/** 🔴🔴 FAZ 2.2 — **BURADA İKİNCİ BİR KOD→ETİKET SÖZLÜĞÜ YOK, BİLEREK.**
+ *
+ * Eskiden burada elle yazılmış bir çeviri sözlüğü vardı ve `uyum.py`'nin ürettiği
+ * kodlardan (17) yalnız 7'sini biliyordu — kalanı kullanıcıya HAM KOD olarak
+ * gidiyordu (*"EKSİK: olcu_ikamesi, sıralama"* — Tur 2 Senaryo 17). Kök neden
+ * `aciklama`nın eksikliği değildi (o zaten `note`'ta insan-okurdu), **iki sahipli
+ * bir çeviriydi** (`KAT-1` ihlali). Artık backend `item.eksik_niyet_detay` ile
+ * `{isaret, etiket, aciklama}` gönderiyor — burası yalnız RENDER eder, ÇEVİRMEZ. */
 
 export function ReportCard({
   item,
@@ -316,7 +308,17 @@ export function ReportCard({
               className="mt-1.5 h-3.5 w-3.5 shrink-0 accent-accent"
             />
           )}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[200px] flex-1">
+            {/* 🔴🔴 `§K7` — `min-w-0` TEK BAŞINA YETMİYORDU. Ölçüldü: `shrink-0`
+                kaldırılsa BİLE başlık 33px'e eziliyordu — çünkü rozet çubuğunun
+                `flex-basis` (varsayılan `auto`) DEĞERİ zaten kendi tek-satırlık doğal
+                genişliğine (787px) eşitti ve satırda YETERLİ POZİTİF boşluk vardı
+                (832−787−12(gap)=33px); flex-shrink hiç TETİKLENMEDİ (yalnız NEGATİF
+                boşlukta devreye girer) — `flex-1`'in `flex-basis:0%`'i ise başlığa
+                SIFIR taban genişlik veriyordu, tüm alanı "büyüme"ye bırakıyordu ve
+                büyüyecek bir şey kalmıyordu. Çözüm: başlığa gerçek bir TABAN genişlik
+                (`min-w-[200px]`) — bu, toplam talebi konteynerden BÜYÜK yapıp negatif
+                boşluğu (ve gerçek `flex-shrink`i, çubuğun kendi `flex-wrap`ini) tetikler. */}
             {/* §B (Madde 4, 1 Ağustos 2026): sol paneldeki vurgu kaydırınca görünür alan
                 dışına çıkabiliyordu — burada HER ZAMAN görünen, "şu an gösterilen bu mu,
                 yeni bir konu mu yoksa devam mı" sorusunu doğrudan cevaplayan bir etiket.
@@ -338,11 +340,17 @@ export function ReportCard({
             )}
             <h2 className="font-mono text-[15px] leading-snug text-foreground">{item.question}</h2>
           </div>
-          {/* 🔴 `flex-wrap` — rozet çubuğu `shrink-0` idi ve SARMIYORDU: `Temellendirme`
-              rozetleri (kırılım+filtre sayısı sınırsız) çubuğu taşırıp kardeş sütundaki
-              soru başlığını (`min-w-0 flex-1`) sıfıra eziyordu. Sarmak, sınırsız bir
-              listeyi sınırlı bir alana sığdırmanın DOĞRU yoludur; kırpmak bilgiyi siler. */}
-          <div ref={actionsRef} className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 pt-0.5">
+          {/* 🔴🔴 `§K7` — ÖNCEKİ DÜZELTME (`flex-wrap` eklenmesi) YETERSİZDİ, canlıda
+              tekrar ölçüldü (2026-08-26): `shrink-0` çubuğun KENDİSİNİ hâlâ hiç
+              küçültmüyordu — `flex-wrap` yalnız çubuğa bir GENİŞLİK atandıktan SONRA
+              o genişlik içinde satır kaydırır; `shrink-0` o genişliğin ATANMASINI
+              (dış flex satırındaki küçülme payını) baştan engelliyordu. Ölçülen canlı
+              kanıt: rozet çoksa (KURAL/ANLADIĞIM/filtre çipleri) çubuk **787px**,
+              kardeş `min-w-0 flex-1` başlık **33px**'e eziliyordu — "kelime kelime
+              dikey" görünümün BİREBİR nedeni. `shrink-0` KALDIRILDI: artık `flex-wrap`
+              gerçekten işliyor, çubuk gerektiğinde küçülüp KENDİ içinde satır
+              kaydırıyor, başlık `flex-1` payını gerçekten alıyor. */}
+          <div ref={actionsRef} className="flex flex-wrap items-center justify-end gap-1.5 pt-0.5">
             {schedStage && canSchedule && item.cube_query && item.source && (
               <span className="relative">
                 <button
@@ -841,6 +849,34 @@ export function ReportCard({
         </div>
       )}
 
+      {/* 🔴🔴 FAZ 5 (2026-08-26) — ÖNCE CEVAP, SONRA KANIT. `OutputInsight`/AI-rozeti
+          buraya taşındı (eskiden `ResultView`'den SONRA, kartın alt yarısında gizliydi —
+          canlı Playwright'ta ölçüldü: kullanıcı "neden" sorunca grafik/tablo HER ZAMAN
+          önce geliyordu, asıl cevabı taşıyan cümle görünmeden önce kaydırma istiyordu).
+          ⚠ Koşulsuz taşındı — "bu turda anlatı mı isteniyor" diye YENİ bir kırılgan
+          sınıflandırıcı İCAT EDİLMEDİ (§9'un uyardığı kırılgan nokta); bunun yerine
+          evrensel bir okuma sırası benimsendi: önce özet cümle, sonra onu destekleyen
+          tablo/grafik — standart pano deseni (headline → visual), soru tipine bakmaz.
+          ⚠ SIRA BİLİNÇLİ: tazelik/bayat-veri uyarısının (yukarıda, `freshness==="hata"|
+          "bilinmiyor"` dalı) HER ZAMAN önce gelmesi korunuyor — güvenilirliği
+          sorgulanan bir veri üstüne özgüvenli bir yorum cümlesi binmesin. */}
+      <OutputInsight interpretation={item.interpretation} />
+      {/* FAZ 1.12 · AI ACT Md.50 — **AI İÇERİK İŞARETLEME.** İşaretlenen şey SAYI DEĞİL,
+          ÜSLUP'tur — sayı zaten `narration_guard`'dan geçmiştir. İşaret ANLATININ
+          YANINDA durur (kartın gerçek tepesinde değil, `OutputInsight`'ın hemen
+          altında): kartın en tepesinde bir rozet "bu cevabın TAMAMI yapay zekâ ürünü"
+          diye okunurdu — tablo/sayı/kırılım hâlâ deterministik küpten gelir. Karar
+          backend'de (`answer.seal`); burada ikinci bir çıkarım yapılmaz. */}
+      {item.ai_generated_prose && (
+        <p
+          className="mx-auto mt-1 flex max-w-4xl items-center gap-1.5 px-8 font-mono text-[10px] tracking-wide text-neutral-400"
+          title="Yukarıdaki AÇIKLAMA METNİ yapay zekâ tarafından yazıldı (AB Yapay Zekâ Yasası Md.50). Sayılar ve tablo bu metinden DEĞİL, doğrudan semantik küpten gelir; metindeki eşleşmeyen sayılar yayımlanmadan önce düşürülür."
+        >
+          <span aria-hidden>✎</span>
+          açıklama metni yapay zekâ ürünü — sayılar küpten gelir
+        </p>
+      )}
+
       {item.result && item.freshness !== "hata" && item.freshness !== "bilinmiyor" && (
         <div className="border border-hairline bg-background p-4">
           {/* `uyari` → rakamın ALTINA ince turuncu dalgalı çizgi. Rozetten FARKLI bir
@@ -956,13 +992,19 @@ export function ReportCard({
           <span className="font-mono text-[11px] uppercase tracking-wider text-warning">
             eksik
           </span>
-          {item.eksik_niyet.map((k) => (
+          {/* ⚠ `eksik_niyet_detay` birincil kaynaktır (backend AYNI yerde, AYNI sırada
+              kurar — bkz. `uyum.beyan_ekle`). Eksikse (eski önbellek/kayıt) ham koda
+              düşülür — o zaman en kötü ihtimalle bugünkü (kod görünür) davranış. */}
+          {(item.eksik_niyet_detay?.length === item.eksik_niyet.length
+            ? item.eksik_niyet_detay
+            : item.eksik_niyet.map((k) => ({ isaret: k, etiket: k, aciklama: k }))
+          ).map((d) => (
             <span
-              key={k}
-              title={EKSIK_NIYET_ACIKLAMA[k] ?? k}
+              key={d.isaret}
+              title={d.aciklama}
               className="rounded-[var(--radius-chip)] border border-warning/40 px-1.5 py-0.5 font-mono text-[11px] text-warning"
             >
-              {EKSIK_NIYET_ETIKET[k] ?? k}
+              {d.etiket}
             </span>
           ))}
           <span className="text-[11px] text-neutral-500">
@@ -974,31 +1016,6 @@ export function ReportCard({
       {item.kural_baglami && (
         <p className="mt-2 border-l-2 border-hairline pl-2 font-mono text-[11px] leading-snug text-neutral-400">
           ⓘ <span className="text-neutral-500">bilgi merkezi:</span> {item.kural_baglami}
-        </p>
-      )}
-
-      {/* Evrensel çıktı yorumu (feature flag'li) — KPI/tablo/grafik altında. */}
-      <OutputInsight interpretation={item.interpretation} />
-
-      {/* FAZ 1.12 · AI ACT Md.50 — **AI İÇERİK İŞARETLEME.**
-
-          🔴 İşaretlenen şey SAYI DEĞİL, ÜSLUP'tur. Sayıyı bu üründe her zaman küp koyar ve
-          `narration_guard` eşleşmeyen sayı taşıyan cümleyi DÜŞÜRÜR — yani sayı zaten makine
-          üretimi bir metnin insafına bırakılmaz. Md.50'nin istediği, METNİN makine tarafından
-          yazıldığının okuyucuya söylenmesidir.
-
-          ⚠ İşaret ANLATININ YANINDA durur, kartın tepesinde değil: tepede duran bir rozet
-          "bu cevabın TAMAMI yapay zekâ ürünü" diye okunurdu ve bu YANLIŞ olurdu — tablo,
-          sayı ve kırılım deterministik küpten gelir.
-
-          Karar backend'de (`answer.seal`); burada ikinci bir çıkarım yapılmaz. */}
-      {item.ai_generated_prose && (
-        <p
-          className="mx-auto mt-1 flex max-w-4xl items-center gap-1.5 px-8 font-mono text-[10px] tracking-wide text-neutral-400"
-          title="Yukarıdaki AÇIKLAMA METNİ yapay zekâ tarafından yazıldı (AB Yapay Zekâ Yasası Md.50). Sayılar ve tablo bu metinden DEĞİL, doğrudan semantik küpten gelir; metindeki eşleşmeyen sayılar yayımlanmadan önce düşürülür."
-        >
-          <span aria-hidden>✎</span>
-          açıklama metni yapay zekâ ürünü — sayılar küpten gelir
         </p>
       )}
 
@@ -1201,6 +1218,37 @@ export function ReportCard({
                   className="border border-amber-400/50 px-2 py-1 font-mono text-[11px] text-amber-700 transition-colors hover:border-amber-500 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30"
                 >
                   <span className="mr-1 opacity-60">⇄</span>
+                  {s.label}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* 🔴🔴 FAZ 2.1 — YOKLUK SORGUSU chip'i (`kind === "yokluk"`, `§YK`) — "sihir":
+          mimari sınır (NOT EXISTS/anti-join) beyan edildikten SONRA en-yakın-hesaplanabilir
+          alternatif, tek tık koşulabilir. Diğer üçünden (`devam sorusu`/`türetme`/`tanım`)
+          AYRI: onlar bir eşleştirme/tanım belirsizliğini çözer, bu sistemin YAPAMADIĞI
+          bir şeyin YANINDA durur — "bunu yapamam ama şuna bakabilirim." Bu kart yalnız
+          KOŞULMUŞ (`source=cube+llm`) yol içindir; PLAN ÖNİZLEMESİ (`source=onizleme`)
+          aynı chip'i `PlanOnizleme.tsx` üzerinden ayrıca render eder — ikisi de AYNI
+          backend alanını (`suggestions`) okur, ikinci bir üretici YAZILMADI (`KAT-1`). */}
+      {onReply && (item.suggestions ?? []).some((s) => s.kind === "yokluk") && (
+        <div className="mt-3 border-l-2 border-violet-400/60 pl-3 dark:border-violet-500/50">
+          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-violet-600 dark:text-violet-400">
+            bunun yerine
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(item.suggestions ?? [])
+              .filter((s) => s.kind === "yokluk")
+              .map((s, i) => (
+                <button
+                  key={`yokluk-${i}`}
+                  onClick={() => onReply(threadId, index, s.query)}
+                  title="En yakın hesaplanabilir alternatif — LLM'siz, tek tık koşar"
+                  className="border border-violet-400/50 px-2 py-1 font-mono text-[11px] text-violet-700 transition-colors hover:border-violet-500 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950/30"
+                >
+                  <span className="mr-1 opacity-60">→</span>
                   {s.label}
                 </button>
               ))}

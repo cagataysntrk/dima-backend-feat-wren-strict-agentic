@@ -373,8 +373,9 @@ class AskResponse(BaseModel):
     #: `narration_guard` eşleşmeyen **sayı** taşıyan cümleyi düşürmeye devam eder.
     kural_baglami: str | None = None
     #: 🔴 KÖK-2/KÖK-3 — **BEYANLI KISMİ CEVAP.** Sorudaki hangi niyet işaretleri
-    #: sorguya TAŞINAMADI (`kiyas` · `cok_donem` · `trend` · `kirilim` · `ustunluk` ·
-    #: `esik` · `dislama`). Boş/`None` = sorunun tamamı karşılandı.
+    #: sorguya TAŞINAMADI — `app/uyum.py::denetle()`'nin ürettiği TÜM `isaret` kodları
+    #: (liste büyüyebilir; `app/uyum.py`'nin kendisi TEK KAYNAKTIR, burada donduruLMAZ).
+    #: Boş/`None` = sorunun tamamı karşılandı.
     #:
     #: ⚠ Bu alan **telemetri için sabit kodlar** taşır; kullanıcıya giden cümle
     #: `note`tadır. İkisi ayrı: kod gruplanır, cümle okunur.
@@ -382,6 +383,16 @@ class AskResponse(BaseModel):
     #: *Bir cevabın eksik olduğunu bilmek, onu vermemekten iyidir — ama yalnız eksikliği
     #: SÖYLEYEN bir cevap için doğrudur.*
     eksik_niyet: list[str] | None = None
+    #: 🔴🔴 FAZ 2.2 — **`eksik_niyet`'in İNSAN-OKUR EŞLİĞİ.** `[{isaret, etiket,
+    #: aciklama}, …]`, `uyum.etiket_detayi()`'nin TEK ürettiği — `eksik_niyet`'le AYNI
+    #: sırada, AYNI uzunlukta (ikisi de AYNI ihlal listesinden, aynı yerde kurulur).
+    #:
+    #: ⚠ `eksik_niyet` (ham kod, telemetri) BUNDAN ETKİLENMEDEN kalır (KURAL B) —
+    #: bu SADECE ekleniyor. Sebep: frontend `eksik_niyet`in ham kodlarını göstermek
+    #: için KENDİ çeviri sözlüğünü tutuyordu ve o sözlük `uyum.py`'nin büyümesinin
+    #: gerisinde kaldı (17 koddan 7'sini biliyordu — ölçüldü, Tur 2 Senaryo 17).
+    #: Tek sahip artık `Ihlal.etiket` (`uyum.py`), ikinci bir kopya YOK.
+    eksik_niyet_detay: list[dict[str, str]] | None = None
     #: 🔴 **FAZ 6.0 — D9: YAPILDI BİLDİRİMİ.** Kapsam içi + geri alınabilir bir eylem
     #: **istemsiz** koştuğunda dolar: `{eylem, id, not, geri_al}`.
     #:
@@ -514,6 +525,14 @@ class AskResponse(BaseModel):
     # sayıları. Chip yalnız etiket taşır; yön bir renk kararıdır ve metinden okunmaz.
     #
     # Yeni bir PANEL değil bir ALAN (MIMARI §14.2): cevabın kendi kartında açılır.
+    # 🔴 FAZ 1 (Katman 7) — kök-neden AYRIŞTIRMASININ (§KN) guarded-LLM muhakemesi de BU
+    # ALANA yazılır (`prescription["muhakeme_metni"]`), YENİ bir üst-düzey alan İCAT
+    # EDİLMEZ: `test_cevap_alani_yetim_degil.py::test_HER_CEVAP_ALANININ_frontend_TUKETICISI_var`
+    # ölçtü — yeni bir üst-düzey alan, frontend'de bir tüketici bağlanana kadar (FAZ 4)
+    # YETİMDİR ve kapı bunu doğru biçimde KIRMIZI verir. `prescription` zaten var olan,
+    # zaten tüketilen bir alan; kök-neden yolu "ne yapmalıyız" sorulduğunda (`oneri=True`)
+    # zaten `nereye_bak()`'in deterministik "→ Öneri:" cümlesini üretiyor — yani kavramsal
+    # olarak KENDİSİ de bir prescription'dır, ikinci bir alan aynı şeyi ikinci kez adlandırırdı.
     prescription: dict[str, Any] | None = None
     # DÜZ-DİL HESAPLAMA AÇIKLAMASI (Madde 12, 1 Ağustos 2026): `drill.py::formula_explanation`
     # KPI-olmayan cube raporları İÇİN de (yalnız `/ask/drill`e değil, normal `/ask`e) çağrılır.

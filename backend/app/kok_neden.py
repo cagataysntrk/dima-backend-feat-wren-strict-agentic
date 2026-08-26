@@ -782,8 +782,14 @@ def cevap_verisi(prev_cq: dict, cube_meta: dict | None, *, service,
                  oneri: bool = False) -> dict | None:
     """`§KN` — `/ask`'in *«neden böyle»* dalı için hazır cevap verisi.
 
-    Döner: `{anlati, iz, chipler}` ya da `None` (*«bu ölçü kesitsel olarak
-    ayrıştırılamaz»* → çağıran bugünkü `contribution` yoluna devam eder).
+    Döner: `{anlati, iz, chipler, ayristirma, segment, boyut}` ya da `None` (*«bu ölçü
+    kesitsel olarak ayrıştırılamaz»* → çağıran bugünkü `contribution` yoluna devam eder).
+
+    ⚠ FAZ 1 (Katman 7) — `ayristirma`/`segment`/`boyut` çağıranın (`ask.py`) guarded-LLM
+    muhakeme basamağı (`answer._kok_tavsiye_ekle`) için EKLENDİ; kullanıcıya giden metne
+    (`anlati`) hiçbir etkisi yok, yalnız zaten hesaplanmış `Ayristirma`nın çağırana
+    SIZMASINI sağlıyor — `§KN-toplam`'ın tam tersi bir tuzağa düşmemek için (o BURADA bir
+    METİN eklemeye çalışıp cevabı ezmişti; bu bir VERİ alanı, metne dokunmuyor).
 
     ⚠ **`contribution`un rakibi değil kardeşi.** O *«geçen döneme göre neden değişti»*i
     açıklar; bu *«akranlarına göre neden farklı»*yı. İkisi farklı sorulardır; birini
@@ -828,7 +834,9 @@ def cevap_verisi(prev_cq: dict, cube_meta: dict | None, *, service,
                                             "value": _seg}]}}]
     return {"anlati": out["anlati"],
             "iz": [f"§KN: {a}" for a in out["adimlar"]],
-            "chipler": chipler}
+            "chipler": chipler,
+            "ayristirma": out.get("ayristirma"),
+            "segment": _seg, "boyut": _boyut}
 
 
 # --- `§NB` · AÇIKLANAMAYAN BİR «NEDEN» SESSİZCE BAŞKA BİR SORUYA DÖNÜŞEMEZ -------------

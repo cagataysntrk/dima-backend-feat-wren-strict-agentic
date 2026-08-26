@@ -272,6 +272,12 @@ features:
                           # narration_guard ZORUNLU çıkış kapısı (fail-closed: eşleşmeyen
                           # sayı taşıyan cümle YAYIMLANMAZ). `off` — sıcak yola LLM çağrısı
                           # ekliyor; açılması bilinçli bir karar olmalı (KURAL B, testli).
+  # 🔴🔴 FAZ 1 (Katman 7) — `t2_anlatici`'nin KARAR-DESTEĞİ kardeşi: aynı yol
+  # (guarded LLM, çift-kapı: narration_guard sayı + iddia.py iddia), yalnız girdi
+  # `interpret()` olguları değil `prescribe.recete()`'nin ZATEN sıraladığı seçenekler.
+  # `off` doğar — `t2_anlatici`'nin izlediği KURAL G-1 aynen geçerli: ölçülmeden alpha
+  # olmaz (bkz. `app/features.py` FLAG_REGISTRY `on_sarti`).
+  t7_tavsiye: "off"
   t2_sablon: beta  # 🔴 T2'nin DETERMİNİSTİK ilk basamağı — *"basit olanı sistem yazsın"*.
   # ⚠ Sayıya dokunmaz: cümleyi `interpret()`'in KENDİ metinlerinden kurar, yani guard'dan
   # geçmesi tesadüf değil yapısal. Tanımadığı olgu türünü görünce turu LLM'e DEVREDER —

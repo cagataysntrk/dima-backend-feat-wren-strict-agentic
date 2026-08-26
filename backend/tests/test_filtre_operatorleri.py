@@ -195,6 +195,38 @@ def test_dislama_SONUCU_gercek_veride_dogru(svc, schema):
         con.close()
 
 
+# --- FAZ 4.2 — "degil" İKİ GÖREVDE: dışlama mı, kendini-düzeltme mi? ------------
+
+def test_KENDINI_DUZELTME_sahte_dislama_URETMEZ():
+    """🔴🔴 FAZ 4.2 (Tur 2 Senaryo 14) — *"vardiya değil hat bazında istemiştim"*
+    bir DEĞER dışlamıyor, bir ÖNCEKİ boyut seçimini DÜZELTİYOR — ama `"degil"`
+    `_EXCLUDE_MARKERS`'da olduğu için eski davranış BURADA DA `dislama_istendi`
+    ateşliyor ve `uyum.py` sahte bir *"dışlama filtresi kuramadım"* uyarısı
+    ekliyordu. Kırılım ipucuyla (`bazinda`) birlikte geçen ÇIPLAK `"degil"`
+    (kesin bir dışlama sözcüğü — `haric`/`disinda`/`olmayan` — YOKKEN) artık
+    dışlama sayılmıyor."""
+    assert not cube_router._dislama_istendi_mi(
+        cube_router._norm("hayır vardiya değil hat bazında istemiştim"))
+    assert not cube_router._dislama_istendi_mi(
+        cube_router._norm("vardiya değil hat bazında oee"))
+
+
+def test_GERCEK_DISLAMA_KIRILIMLA_BIRLIKTE_HALA_CALISIR():
+    """Zıt-ölçüt: KESİN bir dışlama sözcüğü (`hariç`/`dışında`/`olmayan`) kırılım
+    ipucuyla BİRLİKTE geçtiğinde davranış DEĞİŞMEMELİ — yalnız yalnız-başına
+    çıplak `"degil"` + kırılım kombinasyonu bastırılır."""
+    assert cube_router._dislama_istendi_mi(
+        cube_router._norm("beyaz hariç renk bazında rework kg"))
+    assert cube_router._dislama_istendi_mi(
+        cube_router._norm("İstanbul dışında müşteri bazında ciro"))
+
+
+def test_DEGIL_TEK_BASINA_KIRILIMSIZ_HALA_DISLAMA():
+    """Zıt-ölçüt: kırılım ipucu YOKKEN çıplak `"degil"` hâlâ dışlama sayılmalı —
+    bastırma yalnız "degil" + kırılım ipucu BİRLİKTELİĞİNDE devreye girer."""
+    assert cube_router._dislama_istendi_mi(cube_router._norm("beyaz değil olanlar"))
+
+
 def test_starts_with_BUYUK_KUCUK_HARF_duyarli(svc, schema):
     """Neden `starts_with` NL'den DOĞRUDAN üretilmiyor — ölçülmüş gerekçe.
 

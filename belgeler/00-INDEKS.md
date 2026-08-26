@@ -93,6 +93,7 @@ dosyası vardır ve bağlam sıfırlansa bile iş oradan devam eder.
 | [`DIMA-V1-YOL-HARITASI.md`](plan/DIMA-V1-YOL-HARITASI.md) · [`DIMA-GARSON-ARA-FAZ.md`](plan/DIMA-GARSON-ARA-FAZ.md) | ⟳ kapanmış operasyonlar — *işaretlenir, silinmez* |
 | [`2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md`](plan/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md) · [`2026-08-13_ONGORU-KATMANI-DURUM-VE-SARTNAME.md`](plan/2026-08-13_ONGORU-KATMANI-DURUM-VE-SARTNAME.md) | tarih damgalı plan belgeleri |
 | [`2026-08-26_PLAYWRIGHT-BULGULARI-YOL-HARITASI.md`](plan/2026-08-26_PLAYWRIGHT-BULGULARI-YOL-HARITASI.md) | 🔴 **canlı test kampanyasının düzeltme rehberi** — sorun→kanıt→çözüm→doğrulama, 4 faz, K1-K13 |
+| [`2026-08-26_KATMAN-7-VE-TUR-2-DUZELTME-YOL-HARITASI.md`](plan/2026-08-26_KATMAN-7-VE-TUR-2-DUZELTME-YOL-HARITASI.md) | 🔴🔴🔴 **AKTİF** — tek kök sorun: sistem "muhakeme" isteyen sorulara (neden/ne yapmalıyız/tavsiye) deterministik cevap veriyor; kök çözüm `narration_guard`+`iddia.py` desenini `prescribe.py`/`kok_neden.py`'ye genişletmek |
 
 ⚠ **Kök `OPERASYON-DURUM.md` ile karıştırma:** o **önceki** operasyonun durumudur. En son
 durum **`plan/ONGORU-DURUM.md`**'dedir; ikisini birden *«nerede kaldık»* diye okumak,
@@ -110,6 +111,7 @@ kaynağıdır ve **değiştirilmez**.*
 | [`2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md`](arastirma/2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md) | 🔴 **garson devrinin doğduğu ham sohbet** — *«LLM anlar → makine diline çevirir → küpler işler → LLM insan diliyle servis eder»* |
 | [`2026-08-25_MIMARI-CIKMAZ-ARASTIRMASI.md`](arastirma/2026-08-25_MIMARI-CIKMAZ-ARASTIRMASI.md) | mimari çıkmaz araştırması — vizyon→teorik teşhis→canlı ölçüm→§13/§15 düzeltmeleri |
 | [`2026-08-26_PLAYWRIGHT-CANLI-TEST-KAMPANYASI.md`](arastirma/2026-08-26_PLAYWRIGHT-CANLI-TEST-KAMPANYASI.md) | 15 gerçek kullanıcı senaryosu, tarayıcıda tek tek test edildi — K1-K13 kök sorunlar (veri+UI) |
+| [`2026-08-26_PLAYWRIGHT-CANLI-TEST-TURU-2.md`](arastirma/2026-08-26_PLAYWRIGHT-CANLI-TEST-TURU-2.md) | tur 2 — 20 senaryo, tek tek; 2 düzeltme (K7, sinonim-hijack+kapı) + 4 genel kök-neden ailesi (A-D) + öncelik sırası |
 
 ## `denetim/` — 🔒 tarih damgalı ölçümler (**değiştirilmez**)
 

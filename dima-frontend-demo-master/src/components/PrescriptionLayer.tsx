@@ -169,6 +169,23 @@ export function PrescriptionLayer({
             {recete.rationale}
           </p>
 
+          {/* 🔴🔴 FAZ 4.1 — Katman 7'nin guarded-LLM muhakemesi. `rationale`'IN
+              ÜSTÜNE binmez, YANINA eklenir (`answer.py::_tavsiye_ekle`/`_kok_
+              tavsiye_ekle` ikisini de AYRI alanlarda taşır — biri deterministik
+              "→ Öneri:", öteki LLM'in ÜSLUP kattığı yorum). Görsel dil `Makbuz.
+              tsx`'in `kanit_sinifi==="probabilistik"` işaretiyle AYNI (amber `⚠`)
+              — *"bu bir yorum/öneridir, bir ölçüm değil"* ayrımı burada da
+              görünsün, iki yerde iki farklı ikonla değil. */}
+          {recete.muhakeme_metni && (
+            <p
+              className="border-t border-hairline px-2 py-1 font-mono text-[10px] leading-relaxed text-amber-700 dark:text-amber-400"
+              title="Bu metin LLM tarafından yazıldı (ÜSLUP) — sayılar yukarıdaki deterministik seçeneklerden, LLM hiçbir sayı üretmedi. Rakamlar ölçüldü, yorum olasılıksaldır."
+            >
+              <span className="mr-1">⚠ yorum:</span>
+              {recete.muhakeme_metni}
+            </p>
+          )}
+
           {/* KARAR KAYDI — rapor kalır, kararın kendisi kaybolur. Altı ay sonra "bunu
               neden yapmıştık" sorusunun cevabı burada durur. Şerit yalnız öneri VARSA
               görünür: dağınık değişimde kaydedilecek bir karar yoktur. */}

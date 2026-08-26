@@ -80,6 +80,34 @@ def test_GENEL_SORU_YENI_KONU_KALIR():
     assert n.tur != fu.TUR_NEDEN, f"🔴 genel soru takip sanıldı: {n}"
 
 
+def _sema_tireli():
+    """Katalog değeri **tireli** — gerçek demo katalogda `makine` boyutunun çoğu
+    değeri böyle (`RAM-1`, `RAM-2`, `RAM-3`, `ŞARDON-1`, `FERRARO SANFOR-1`)."""
+    return {"cubes": [{"name": "oee",
+                       "dimension_values": {"makine": ["RAM-3", "RAM-2", "ÖRGÜ HAT"]}}]}
+
+
+def _cq_tireli():
+    return {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"]}
+
+
+@pytest.mark.parametrize("soru", [
+    "ram 3 neden dusuk",     # 🔴 kullanıcı bulgusu — boşlukla yazılan tireli katalog adı
+    "ram-3 neden dusuk",     # katalogla BİREBİR (tireli) — hep çalışıyordu, regresyon kilidi
+])
+def test_TIRELI_KATALOG_ADI_BOSLUKLA_DA_TAKIPTIR(soru):
+    """🔴🔴 Kullanıcı bulgusu (2026-08-26): `RAM-3` ekrandaki raporun bir satırıyken
+    *"ram 3 neden düşük"* (boşluklu, DOĞAL yazım) `capa_degerleri`'nde eşleşmiyordu —
+    `_norm()` tire/boşluk ayrımını birleştirmiyor — ve tur SESSİZCE *yeni konu*
+    (`kalip-yok`) sayılıyordu; `neden` hiç `kok_neden`/`contribution`'a ulaşmıyordu.
+    Bu, kullanıcının "sadece ham sayı geliyor, açıklama yok" şikayetinin GERÇEK köküydü
+    — `plan_tuketici._anlat`'ın HESAPLA/BAGLA düzeltmesi bile bu tur hiç
+    tetiklenmediği için işe yaramıyordu."""
+    d = ctx.capa_degerleri(_cq_tireli(), _sema_tireli())
+    n = fu.sinifla(cr._norm(soru), baglam_var=True, capa_degerleri=d)
+    assert n.tur == fu.TUR_NEDEN, f"🔴 {soru!r} takip sayılmadı: {n}"
+
+
 def test_KELIME_LISTESI_SILINDI():
     """🔴 `ADR-0008`. Tikel çözümün kalıntısı kalmamalı."""
     import inspect

@@ -61,6 +61,44 @@ def test_net_sifira_yakinsa_net_pay_UYDURULMAZ():
     assert k[0]["brut_pay"] == pytest.approx(50.0)
 
 
+def test_net_kucuk_ama_SIFIR_DEGILSE_net_pay_yine_UYDURULMAZ():
+    """`§K2-ikiz`, FAZ 3.1 — canlı ölçülen kusur: segmentler birbirini TAM iptal
+    etmese bile (net tam sıfır değil), `net`'in `brüt`e göre KÜÇÜK kalması net_pay'i
+    patlatır. Ölçüldü: `A:+900k B:-790k C:-10k` (net=100k, brüt=1.700M) — ESKİ eşik
+    (`brut*0.01`) bunu GEÇİRİYORDU ve `net_pay=900.0`/`-790.0` üretiyordu
+    (*"net değişimin %900,0'ı"* — roadmap'in kendi canlı örneğiyle `+4740.0%` AYNI
+    sınıf). Yeni eşik (`_NET_PAY_GUVEN_ESIGI=0.20`) bunu `None`'a düşürür; `brut_pay`
+    (yapı gereği HER ZAMAN [0,100]) hikâyeyi güvenle anlatmaya devam eder."""
+    satirlar = [
+        {"musteri": "A", "ciro": 1_000_000.0, "ciro_gecen": 100_000.0},   # +900k
+        {"musteri": "B", "ciro": 100_000.0, "ciro_gecen": 890_000.0},     # -790k
+        {"musteri": "C", "ciro": 200_000.0, "ciro_gecen": 210_000.0},     # -10k
+    ]
+    k = contrib.contributions(satirlar, "musteri", "ciro")
+    assert all(x["net_pay"] is None for x in k), (
+        f"🔴 net küçük/brüt büyükken net_pay hâlâ hesaplanıyor: {k}")
+    a = next(x for x in k if x["deger"] == "A")
+    assert a["brut_pay"] == pytest.approx(52.9, abs=0.1)
+    d = contrib.decompose(satirlar, "musteri", "ciro",
+                          {"cube": "x", "measures": ["ciro"], "dimensions": ["musteri"]})
+    etiketler = " ".join(b["label"] for b in d["bulgular"])
+    assert "%900" not in etiketler and "%-790" not in etiketler
+    assert "hareketin" in etiketler  # brüt-pay çerçevesine düştü, net-pay değil
+
+
+def test_net_pay_hafif_offsette_HALA_gosterilir():
+    """Aşırı-uç KORUMASI, MASUM durumları BASTIRMAMALI: net brüt'ün yeterince büyük
+    bir kesriyse (burada `%91`) `net_pay` yine gösterilir — koruma yalnız ÇÖKÜŞ
+    bölgesinde devreye girer, her hafif ofsette değil."""
+    satirlar = [
+        {"m": "A", "x": 105.0, "x_gecen": 0.0},
+        {"m": "B", "x": 0.0, "x_gecen": 5.0},
+    ]
+    k = contrib.contributions(satirlar, "m", "x")
+    a = next(x for x in k if x["deger"] == "A")
+    assert a["net_pay"] == pytest.approx(105.0)
+
+
 def test_eksik_gecen_donem_SIFIR_sayilir():
     """Geçen dönemde HİÇ olmayan bir segment (yeni müşteri) tam katkı sayılmalı, satır
     düşürülmemeli — `yoy._merge` eşleşmeyen satırda `None` bırakıyor."""

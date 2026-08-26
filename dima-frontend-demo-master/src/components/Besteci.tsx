@@ -151,6 +151,10 @@ export function Besteci({
               onKos={onizleme.kos}
               onIptal={onizleme.iptal}
               onDuzenle={() => { onDeger(onizleme.plan!.soru); onizleme.iptal(); }}
+              // 🔴 FAZ 2.1 — "sihir" chip'i besteciyi doldurup göndermez, DOĞRUDAN
+              // gönderir (`onReply`'nin `ReportCard.tsx`'teki chip'leriyle AYNI davranış):
+              // kutunun KENDİSİ olduğu için ikinci bir gönderme yolu gerekmedi.
+              onOneri={onGonder}
             />
           )}
         </div>

@@ -81,7 +81,9 @@ dimensions:
     expression: sebep
     type: VARCHAR
     label: hata sebebi
-    synonyms: [sebep, neden, hata sebebi, hata nedeni, rework sebebi, gerekçe]
+    # `§K9-devam` — çıplak `sebep`/`neden` kaldırıldı (bkz. `isg/metadata.yml:kok_neden`
+    # şerhi — aynı kök kusur, aynı düzeltme).
+    synonyms: [hata sebebi, hata nedeni, rework sebebi, gerekçe]
   - name: makine
     expression: makine
     type: VARCHAR

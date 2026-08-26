@@ -36,7 +36,14 @@ measures:
     expression: "ROUND(MAX(kur),4)"
     type: DOUBLE
     unit: "₺"
-    synonyms: [en yüksek kur, zirve, maksimum kur, tepe]
+    # 🔴🔴 FAZ 3.2 (`§K9-devam`'ın genelleştirilmesi) — çıplak `zirve`/`tepe`
+    # KALDIRILDI: ölçüldü, `followup._ISARET` (grafikteki bir noktayı işaret eden
+    # coğrafi kelimeler ailesi — *"şu tepe"*, *"zirve neydi"*) AYNI kelimeleri
+    # taşıyor — bir takip sorusu bu ölçüye yanlış kırılım olarak eşleşirdi
+    # (`_NEDEN`/İSG'de kapanan kusurun ÜÇÜNCÜ, bağımsız vukuu —
+    # `test_soru_sozcugu_sinonim_degil.py::test_HICBIR_KONUSMA_KALIBI_SOZLUGU_
+    # SINONIM_DEGIL` bunu yakaladı). Çok-kelimeli, spesifik ifadeler kalır.
+    synonyms: [en yüksek kur, maksimum kur]
   - name: en_dusuk_kur
     lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "ROUND(MIN(kur),4)"

@@ -41,10 +41,12 @@ from app.answer import (
     _attach_next_steps,
     _attach_recommendations,
     _build_explain,
+    _kok_tavsiye_ekle,
     _log_interaction,
     _maybe_interpret,
     _persist_message,
     _source_kind,
+    _tavsiye_ekle,
     record_contract,
     seal,
 )
@@ -2467,11 +2469,21 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             _oner = tur == followup.TUR_NE_YAPMALI     # `§KN` — öneri YALNIZ sorulduğunda
             _kn = _kok_neden.cevap_verisi(prev_cq, cube_meta, service=service, oneri=_oner)
             if _kn:
-                return AskResponse(
+                _kn_resp = AskResponse(
                     question=body.question, source="cube", note=_kn["anlati"],
                     cube_query=prev_cq, trace=iz + _kn["iz"],
                     next_steps=[NextStep(**c) for c in _kn["chipler"]])
+                # FAZ 1.4 (Katman 7) — "ne yapmalıyız" sorulduysa (`_oner`), §KN'nin
+                # ZATEN hesapladığı ayrıştırma üzerine bir guarded-LLM muhakeme cümlesi
+                # denenir. Bayrak kapalıyken (varsayılan) `_kok_tavsiye_ekle` hiçbir şeye
+                # dokunmadan döner (KURAL B).
+                if _oner and _kn.get("ayristirma"):
+                    _kok_tavsiye_ekle(request, _kn_resp, _kn["ayristirma"], cube_meta,
+                                      segment=_kn.get("segment") or "",
+                                      boyut=_kn.get("boyut") or "")
+                return _kn_resp
             recete_payload: dict | None = None
+            rec = None
             try:
                 # FAZ F3 — artık KAYITLI bir araç: dört kapıdan (kayıt · yetki ·
                 # deterministik-önce · bütçe) geçer ve kendi adım makbuzunu üretir.
@@ -2578,14 +2590,21 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             if (_surp := ((ham.get("raporlar") or [{}])[0] or {}).get("surpriz_notu")):
                 not_metni = " ".join(x for x in [not_metni, _surp] if x)
                 iz.append("§E2: sürpriz — en büyük kalemin payı değişmemiş")
-            return AskResponse(question=body.question, source=None, note=not_metni,
-                               cube_query=prev_cq, next_steps=adimlar[:8],
-                               result=_sonuc,
-                               trace=iz + [_plan_izi(plan)]
-                               + (["red yanında eldeki rapor yeniden koşuldu (§AA2, "
-                                   "LLM'siz)"] if _sonuc else []),
-                               contribution=katki.model_dump(),
-                               prescription=recete_payload)
+            _resp = AskResponse(question=body.question, source=None, note=not_metni,
+                                cube_query=prev_cq, next_steps=adimlar[:8],
+                                result=_sonuc,
+                                trace=iz + [_plan_izi(plan)]
+                                + (["red yanında eldeki rapor yeniden koşuldu (§AA2, "
+                                    "LLM'siz)"] if _sonuc else []),
+                                contribution=katki.model_dump(),
+                                prescription=recete_payload)
+            # FAZ 1 (Katman 7) — reçete zaten üretildiyse (`rec`/`recete_payload` dolu),
+            # onun ÜSTÜNE bir guarded-LLM muhakeme cümlesi denenir. Bayrak kapalıyken
+            # (varsayılan) `_tavsiye_ekle` hiçbir şeye dokunmadan döner (KURAL B).
+            if rec is not None:
+                _tavsiye_ekle(request, _resp, ilk.model_dump(), rec,
+                              lower_is_better=dusuk_iyi)
+            return _resp
 
         # 🔴🔴 `§V1` — MAKBUZ SORUSU: **FİŞİ OKU, MUTFAĞA GİTME.**
         #
@@ -3176,6 +3195,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                                            "limit": limit_val}, _cm_uyum, schema)
         if _ihlaller:
             resp.eksik_niyet = [i.isaret for i in _ihlaller]
+            resp.eksik_niyet_detay = _uyum.etiket_detayi(_ihlaller)
             resp.note = " ".join(x for x in [resp.note, _uyum.kismi_cevap_notu(_ihlaller)] if x)
         # 🔴 KÖK-9 — BİLİNEN BELİRSİZLİK BEYAN EDİLİR (denetim raporu KN-6/KÇ-6).
         # Ölçüldü: kayıttaki **62/62** terim ≥2 adaylı ve hiçbirinin sahibi yok; cevaplanan
@@ -4301,11 +4321,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if _pc is None and _ertelenen_chip is not None:
             return _finish(_ertelenen_chip)   # `O-19` — plan da yapamadı, sınır konuşur
         if _pc is not None:
+            # 🔴 FAZ 2.1 — `_pc["suggestions"]` (varsa) `uyum.chipler()`'in ürettiği
+            # HAM sözlüklerdir (`{label, query, kind}`) — `Suggestion` şemasıyla
+            # BİREBİR aynı alanlar, dosyanın öteki 20+ çağrı yerindeki dönüşümle aynı.
             return _finish(_attach_viz(AskResponse(
                 question=body.question, source=_pc["source"], note=_pc["note"],
                 result=_pc.get("result"), cube_query=_pc.get("cube_query"),
                 plan=_pc.get("plan"), rapor=_pc.get("rapor"), trace=_pc["iz"],
-                **{k: _pc.get(k) for k in ("adimlar", "gecerli", "plan_taslagi")}),
+                # ⚠ `AskResponse.suggestions` `Optional` DEĞİL (`Field(default_factory=
+                # list)`) — `None` geçmek `ValidationError` ile HTTP 500 verir (canlı
+                # curl'de yakalandı: sıradan bir agentic plan, hiç `eksik_niyet` YOKKEN
+                # bile 500 düşüyordu, `yokluk`'a özel bir vaka değil). Boş liste GÜVENLİ.
+                suggestions=[Suggestion(**s) for s in (_pc.get("suggestions") or [])],
+                **{k: _pc.get(k) for k in ("adimlar", "gecerli", "plan_taslagi",
+                                           "eksik_niyet", "eksik_niyet_detay")}),
                 _pc.get("result"), _pc.get("cube_query")))
         if route_hit:
             cq = route_hit["cube_query"]
@@ -5006,8 +5035,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 if (_at := _uyum.atif_beyani(body.question or "",
                                              resp.cube_query or refined)):
                     resp.note = " ".join(x for x in [resp.note, _at] if x)
-                    from app.niyet_tasima import EKSIK_ATIF
+                    from app.niyet_tasima import EKSIK_ATIF, EKSIK_ATIF_ETIKET
                     resp.eksik_niyet = [*(resp.eksik_niyet or []), EKSIK_ATIF]
+                    resp.eksik_niyet_detay = [
+                        *(resp.eksik_niyet_detay or []),
+                        {"isaret": EKSIK_ATIF, "etiket": EKSIK_ATIF_ETIKET,
+                         "aciklama": _at}]
                 return resp
 
         try:

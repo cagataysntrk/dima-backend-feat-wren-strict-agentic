@@ -352,8 +352,12 @@ def _coz_soru(soru: str) -> Niyet:
     kirilim_istendi = bool(_guvenli(
         lambda: cr._herhangi(q, cr._BREAKDOWN_HINTS)
         and not cr.gore_donem_mi(q), False))
+    # 🔴🔴 FAZ 4.2 — `cr._herhangi(q, cr._EXCLUDE_MARKERS)` DEĞİL, `cr._dislama_
+    # istendi_mi(q)`: "degil" hem dışlama hem kendini-düzeltme kalıbında geçer
+    # (`"vardiya degil hat bazinda"`) — TEK SAHİP `cube_router.py`'de, ikinci
+    # bir ayrım burada YAZILMADI.
     dislama = bool(_guvenli(
-        lambda: cr._herhangi(q, cr._EXCLUDE_MARKERS), False))
+        lambda: cr._dislama_istendi_mi(q), False))
     if kirilim_istendi:
         turler.add(TUR_KIRILIM)
     if not turler:

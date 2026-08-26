@@ -857,6 +857,19 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "cümle DÜŞER. Varsayılan KAPALI — sıcak yola LLM ekler.",
         "category": "Anlatım",
     },
+    "t7_tavsiye": {
+        "label": "T7 muhakeme (Katman 7 — guarded LLM karar desteği)",
+        "description": "`prescribe.recete()`'nin ZATEN sıraladığı seçenekler ÜZERİNDE bir "
+                       "muhakeme/önceliklendirme cümlesi ekler; yeni bir seçenek/sayı "
+                       "üretilmez. `t2_anlatici`'nin karar-desteği kardeşi: aynı çift-kapı "
+                       "(narration_guard sayı + iddia.py iddia), aynı fail-closed disiplin. "
+                       "Varsayılan KAPALI — sıcak yola LLM ekler.",
+        "on_sarti": "`t2_anlatici`'nin izlediği yol: en az bir koşumda uydurma sayı/seçenek "
+                    "SIFIR ölçülmeli (guard_alarmi düşme oranı) ve reçetenin öncelik "
+                    "sırasına gerçek bir katkı kattığı (yalnız üslup değil) canlı örnekle "
+                    "gösterilmeli.",
+        "category": "Karar",
+    },
 }
 
 

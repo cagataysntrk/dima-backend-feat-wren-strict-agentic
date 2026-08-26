@@ -3267,6 +3267,38 @@ _EXCLUDE_MARKERS = ("haric", "disinda", "disindaki", "disindakiler",
 # Değerler arası bağlaçlar: "beyaz VE siyah hariç" ikisini birden dışlar.
 _CONJ = ("ve", "ile", "veya", "ya da", "yada", ",", "-")
 
+
+def _dislama_istendi_mi(q: str) -> bool:
+    """🔴🔴 FAZ 4.2 (`§K9-devam`/`KÖK NEDEN A` ailesinin ÜÇÜNCÜ örneği, Tur 2
+    Senaryo 14) — **`"degil"` İKİ GÖREVDE.** `_EXCLUDE_MARKERS`'daki ötekiler
+    (`haric`/`disinda`/`olmayan`/…) TEKİL dışlama sözcükleridir; `"degil"` ise
+    AYRICA bir KENDİNİ DÜZELTME kalıbının parçasıdır — *"vardiya değil hat
+    bazında istemiştim"* burada bir DEĞER dışlamıyor, bir ÖNCEKİ boyut seçimini
+    DÜZELTİYOR. Ölçüldü (canlı, Tur 2 Senaryo 14): çekirdek düzeltme mekanizması
+    doğru boyutu seçiyordu (`hat`) ama `dislama_istendi` AYRICA ateşleyip sahte
+    *"bir şeyi hariç tutmanı istedin ama dışlama filtresi kuramadım"* uyarısı
+    ekliyordu.
+
+    ⚠ Ayrım konumsal/yapısaldır, kelime listesi büyütülmedi: `"degil"` TEK
+    başına eşleşmişse (kesin bir dışlama sözcüğü YOKSA) VE aynı cümlede bir
+    KIRILIM ipucu (`_BREAKDOWN_HINTS` — "bazında"/"kırılım"/…) varsa, bu bir
+    boyut düzeltmesidir, dışlama değil. `haric`/`disinda`/`olmayan` gibi KESİN
+    bir dışlama sözcüğü varsa (kırılım ipucuyla birlikte geçse bile — ör.
+    "renk bazında beyaz hariç") davranış DEĞİŞMEZ.
+
+    *Yanlış-negatif tarafı güvenlidir* (`uyum.py`'nin kendi ilkesi): nadir bir
+    "kırılım + gerçek değer dışlama" birlikteliğinde (`"renk bazında beyaz
+    DEĞİL olanlar"`) beyan sessiz kalabilir — bu, kullanıcıya SAHTE bir hata
+    söylemekten daha güvenlidir."""
+    if not _herhangi(q, _EXCLUDE_MARKERS):
+        return False
+    _kesin = [w for w in _EXCLUDE_MARKERS if w != "degil" and _syn_hit(q, w)]
+    if _kesin:
+        return True                       # haric/disinda/olmayan — KESİN dışlama
+    if _herhangi(q, _BREAKDOWN_HINTS):
+        return False                      # yalnız "degil" + kırılım ipucu → düzeltme
+    return True
+
 # --- ÖNEK / İÇERME (Faz 3.3) ----------------------------------------------------
 # "M10 İLE BAŞLAYAN müşteriler", "ram İÇEREN makineler".
 #

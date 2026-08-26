@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { askContribution } from "@/lib/api-client";
 import { fmtValue } from "@/lib/format";
+import { vurgula } from "@/lib/vurgu";
 import type {
   ContributionFinding,
   ContributionResponse,
@@ -35,11 +36,22 @@ function Yuzde({ v }: { v: number | null }) {
   // `null` = "net değişim ~0, pay TANIMSIZ". Backend bunu bilerek uydurmuyor; UI de
   // uydurmamalı — "%0" yazmak "katkısı yok" demektir ve bu YANLIŞ olur.
   if (v === null) return <span className="text-neutral-500">—</span>;
-  const p = v * 100;
+  // 🔴🔴 FAZ 3.1 — **ÇİFTE-YÜZDE ÇARPIMI, canlı Playwright'ta yakalandı.**
+  // `v` (`ContributionFinding.net_pay`) backend'den ZATEN yüzde ÖLÇEĞİNDE gelir
+  // (`contribution.py::contributions`: `round(delta/net*100, 1)` — `35.2`, `100.0`
+  // gibi). Bu fonksiyon `v * 100` yapıyordu — tıpkı bu dosyanın 15 satır aşağısındaki
+  // `kirpilan_esik_yuzde` yorumunun anlattığı AYNI hata sınıfı ("zaten yüzde olan bir
+  // sayıyı ikinci kez ×100'lemek"), o SATIRDA düzeltilmiş ama BURADA UNUTULMUŞTU.
+  // Ölçüldü (canlı, `s60`): backend `net_pay=35.2` ("%35,2") → ekranda **"+3520.0%"**;
+  // `net_pay=100.0` → **"+10000.0%"**. Roadmap'in ORİJİNAL şikayeti ("0 ₺ →
+  // 11.054.714,7 ₺ (+4740.0%)") büyük ihtimalle TAM BU kusurdu — `contribution.py`'nin
+  // KENDİSİ değil (o ayrıca, BAĞIMSIZ bir eşik kusuru taşıyordu, orası da düzeltildi).
+  // *Aynı hatayı bir satırda düzeltip komşu satırda unutmak, hatayı taşımaktan farklı
+  // değildir — yalnız bir sonraki okuyucuyu "burası zaten düzeltilmişti" diye yanıltır.*
   return (
-    <span className={p >= 0 ? "text-emerald-600" : "text-red-500"}>
-      {p >= 0 ? "+" : ""}
-      {p.toFixed(1)}%
+    <span className={v >= 0 ? "text-emerald-600" : "text-red-500"}>
+      {v >= 0 ? "+" : ""}
+      {v.toFixed(1)}%
     </span>
   );
 }
@@ -396,8 +408,15 @@ export function ContributionLayer({
               ekranı değil, bir AÇIKLAMADIR. Katkı payı yalnız TOPLANABİLİR ölçülerde
               tanımlıdır; AVG/oran/COUNT(DISTINCT) için "bu segment değişimin %40'ını
               açıklıyor" cümlesi matematiksel olarak YANLIŞ olur. */}
+          {/* 🔴 `DA-8`'in AYNI kusuru, ikinci vukuu: `ReportCard.tsx`'in `note`/`soz`
+              kutusu `vurgula()`'dan geçiyordu, bu panel geçmiyordu — kullanıcı
+              yıldızları okuyordu (`**RAM-3**` harfiyen). `_capaya_deger()` düzeltmesi
+              bu paneli daha önce hiç erişilemeyen bir yola taşıyana kadar bu kusur
+              görünmüyordu (`akran` tipi katkı + dolu `note` daha önce hiç ulaşmıyordu). */}
           {d?.note && (
-            <p className="font-mono text-[11px] text-amber-600">{d.note}</p>
+            <p className="whitespace-pre-line font-mono text-[11px] leading-relaxed text-amber-600">
+              {vurgula(d.note)}
+            </p>
           )}
           {/* Hangi ayrışmanın gösterileceği CEVABIN kendi `kind`'ından okunur, yerel
               state'ten değil: ikisi bir an için ayrışabilir (istek uçarken kullanıcı sekme

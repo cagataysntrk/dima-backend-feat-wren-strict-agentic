@@ -108,7 +108,8 @@ dimensions:
   - name: konu
     expression: konu
     type: VARCHAR
-    synonyms: [konu, şikayet konusu, sebep, tür, şikayet türü]
+    # `§K9-devam` — çıplak `sebep` kaldırıldı (bkz. `isg/metadata.yml:kok_neden` şerhi).
+    synonyms: [konu, şikayet konusu, tür, şikayet türü]
   - name: siddet
     expression: siddet
     type: VARCHAR

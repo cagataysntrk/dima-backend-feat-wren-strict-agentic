@@ -66,9 +66,26 @@ _log = logging.getLogger("dima.uyum")
 
 @dataclass(frozen=True)
 class Ihlal:
-    """`isaret` telemetri için SABİT; `aciklama` kullanıcıya gider."""
+    """`isaret` telemetri için SABİT; `etiket`/`aciklama` kullanıcıya gider.
+
+    🔴🔴 FAZ 2.2 — **`etiket` EKLENDİ, çünkü `isaret`in İKİNCİ bir sahibi vardı.**
+
+    Frontend (`ReportCard.tsx`) `resp.eksik_niyet`in HAM `isaret` kodlarını
+    ("olcu_ikamesi", "kesme"…) kullanıcıya göstermek için KENDİ elle yazılmış çeviri
+    sözlüğünü tutuyordu (`EKSIK_NIYET_ETIKET`). Ölçüldü: bu modül **17** farklı
+    `isaret` üretiyor, o sözlük yalnız **7**'sini biliyordu — kalan 10'u (+`niyet_
+    tasima.EKSIK_ATIF`) kullanıcıya HAM KOD olarak gidiyordu (*"EKSİK: olcu_ikamesi,
+    sıralama"* — Tur 2 Senaryo 17'nin bulduğu tam budur). Kök neden `aciklama`nın
+    KENDİSİ değildi (o zaten insan-okurdur, `kismi_cevap_notu`'nun `note`'una gider) —
+    kök, KISA rozet etiketinin İKİNCİ, senkronsuz bir sahipte yaşamasıydı (`KAT-1`
+    ihlali). Çözüm bir çeviri sözlüğünü büyütmek DEĞİL (o yine bir gün eskirdi) —
+    etiketi KAYNAĞA (`Ihlal`'in kendisine) taşımak: `isaret`in her üretildiği yerde
+    `etiket` de ZORUNLU olarak üretilir (varsayılansız alan — unutmak derlemeyi
+    KIRAR), `resp.eksik_niyet_detay` bunu taşır, frontend'in KENDİ sözlüğü SİLİNİR.
+    """
 
     isaret: str
+    etiket: str
     aciklama: str
     oneri: str
     #: 🔴 `§TZ` deseni — **beyanın yanında bir tık.** Bir ihlal, kullanıcının tek
@@ -207,6 +224,66 @@ def ustunluk_istendi(qn: str) -> bool:
     from app.cube_router import _TOPN_CUE
 
     return bool(_ustunluk_mu(qn, _TOPN_CUE, None, None))
+
+
+#: 🔴🔴 `§YK` — FAZ 2.1: **«hiç X yapmayan Y»** — `cube_query` sözleşmesinin
+#: (`dimensions`/`measures`/`filters`/`order`) hiç temsil edemediği tek birincil SQL
+#: örüntüsü (NOT EXISTS/anti-join, Tur 2 Senaryo 6 · KÖK NEDEN C). Kapalı bir
+#: dilbilgisi sınıfı — Türkçenin OLUMSUZ ŞİMDİKİ ORTAÇ eki (`-mayan`/`-meyen`) — bir
+#: kelime listesi DEĞİL: "vermeyen" · "almayan" · "açmayan" · "görmeyen" hepsi AYNI
+#: eki taşır. `_norm()`'dan geçmiş metne karşı yazılır (ASCII-katlanmış: bu ek
+#: Türkçe harf taşımadığı için katlama regex'i etkilemez). `hic(bir)?` — "hiçbir X
+#: yapmayan" da AYNI kalıbın bir bileşiği, ikinci bir kelime değil.
+_YOKLUK_HIC = re.compile(r"\bhic(bir)?\b")
+_YOKLUK_ORTAC = re.compile(r"\b\w+(mayan|meyen)\b")
+
+
+def yokluk_istendi(qn: str) -> bool:
+    """Soru bir **yokluk/NOT EXISTS** kalıbı mı istiyor — *"hiç ... yapmayan"*.
+    Canlı ölçüm (`s57`, 2026-08-26): garson bu deseni tanımıyor, "hiç"/"vermeyen"
+    kelimelerini `bilinmeyen` sayıp sessizce yanlış cube'a ya da yanlış fiile
+    (`KIYASLA`) düşüyor — hiçbir beyan yok. `§YK` docstring'i gerekçedir."""
+    return bool(_YOKLUK_HIC.search(qn) and _YOKLUK_ORTAC.search(qn))
+
+
+def yokluk_chip(cq: dict | None, cube_meta: dict | None) -> dict | None:
+    """En yakın hesaplanabilir alternatif — AYNI ölçü/kırılımda EN AZ olanları
+    sırala. ⚠ LLM'e GİDİLMEZ: `cq` zaten garsonun ÇÖZDÜĞÜ ölçü/kırılımdır (canlı
+    ölçüm: garson doğru cube/ölçü/kırılımı — `siparis.siparis_adedi · musteri_kod`
+    — BULUYOR, yalnız yanlış FİİLE düşüyor). Burada yalnız doğal-dil bir yeniden-soru
+    kurulur, hiçbir sayı üretilmez — chip tıklanınca soru YENİDEN tam merdivenden
+    geçer (`olcu_ikamesi`/`kirilim_ikamesi` chip'leriyle AYNI desen, `§TZ`).
+    """
+    if not isinstance(cq, dict):
+        return None
+    m = next((str(x) for x in (cq.get("measures") or []) if x), None)
+    d = next((str(x) for x in (cq.get("dimensions") or []) if x), None)
+    if not m or not d:
+        return None
+    _md = str(((cube_meta or {}).get("measure_synonyms_display") or {}).get(m)
+               or m).replace("_", " ")
+    _dd = str(((cube_meta or {}).get("dimension_labels") or {}).get(d)
+               or d).replace("_", " ")
+    return {"label": f"en az {_md} — 5 {_dd}",
+            "query": f"en az {_md} olan 5 {_dd}", "kind": "yokluk"}
+
+
+def yokluk_ihlali(soru: str, ic: dict | None, cube_meta: dict | None) -> Ihlal | None:
+    """`§YK` — TEK üretici: hem `denetle()` (koşulmuş `cq`) hem plan önizlemesi
+    (henüz koşulmamış TASLAK `cq`, `§66`) BURADAN çağırır — ikinci bir inşa yeri
+    açmak `KAT-1`'i ihlal ederdi. 🔴 KOŞULSUZ: hiçbir `cq` bunu karşılayamaz (bu bir
+    mimari sınır, eşleşme hatası değil) — bu yüzden yalnız SORU METNİNE bakar, `ic`
+    yalnız chip'i (varsa) zenginleştirmek için okunur.
+    """
+    if not yokluk_istendi(_norm(soru or "")):
+        return None
+    return Ihlal(
+        isaret="yokluk", etiket="yokluk sorgusu",
+        aciklama=("**«hiç ... yapmayan»** türü bir soru bu — bugünkü sorgu biçimi "
+                  "(NOT EXISTS/anti-join) bunu henüz temsil edemiyor; bu geçici bir "
+                  "kusur değil, bir mimari sınır."),
+        oneri="En yakın hesaplayabildiğim şey: aynı ölçüde EN AZ olanları sıralamak.",
+        chip=yokluk_chip(ic, cube_meta))
 
 
 #: 🔴 `§HB` — Türkçenin **belgisiz sıfatı** `her`. Kapalı sınıf, tek sözcük.
@@ -813,6 +890,14 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
     kesme = (disi.get("limit") or ic.get("limit") or ic.get("entity_limit")
              or _kesme_izi)
 
+    # -1 · YOKLUK SORGUSU — *«hiç sipariş vermeyen müşteriler»* (bkz. `yokluk_ihlali`
+    # docstring'i, `§YK`). Diğer tüm ihlallerin aksine KOŞULSUZ: `ic`/`cube_meta`ye
+    # bakmaz (hangi cube/ölçü seçilmiş olursa olsun hiçbiri bu deseni karşılayamaz),
+    # yalnız chip'i zenginleştirmek için onları okur.
+    _yi = yokluk_ihlali(q, ic, cube_meta)
+    if _yi:
+        out.append(_yi)
+
     # 0 · GRUP BAŞINA ÜSTÜNLÜK — *«HER makinede en kötü vardiya»*
     #
     # 🔴🔴 **`§HB` — «her <boyut>» SESSİZCE GLOBAL TEK SATIRA İNDİRGENİYOR.**
@@ -840,6 +925,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
     if _grup_basina_istendi(qn, boyutlar) and (disi.get("limit") or ic.get("limit")):
         out.append(Ihlal(
             isaret="grup_basina",
+            etiket="grup başına",
             aciklama=("**her** dedin — yani grup başına bir sonuç istedin; ama "
                       "üretebildiğim şey **tek** bir satır (genel en iyi/en kötü)."),
             oneri=("Grup başına sıralama (her makinenin kendi en kötü vardiyası) v1'de "
@@ -876,6 +962,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             _terim2, _sahip2 = _ozgul
             out.append(Ihlal(
                 isaret="olcu_ozgullugu",
+                etiket="ölçü özgüllüğü",
                 aciklama=(f"Soruda **«{_terim2}»** geçiyor ama bu cevap onun yalnız bir "
                           f"**parçasıyla** hesaplandı — daha özgül bir karşılık var."),
                 oneri=(f"**«{_terim2}»** için {', '.join(_sahip2[:2])} küpünü "
@@ -891,6 +978,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             _terim, _sahipler = _ikame
             out.append(Ihlal(
                 isaret="olcu_ikamesi",
+                etiket="ölçü ikamesi",
                 aciklama=(f"Soruda **«{_terim}»** geçiyor ama bu cevap onu **içermiyor** — "
                           f"«{_terim}» bu küpte tanımlı değil."),
                 oneri=(f"«{_terim}» şu küplerde var: {', '.join(_sahipler[:3])}. "
@@ -1024,6 +1112,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
         _ad = ", ".join(f"`{_m}`" for _m in _dusen)
         out.append(Ihlal(
             "olcu_dustu",
+            "ölçü düştü",
             f"soruda **{len(_istenen_olculer)} ölçü** geçiyor ama cevapta "
             f"**{len(_verilen_olculer)}** var — {_ad} rapora girmedi",
             "Düşen ölçüyü ayrıca sorabilirsin; ya da takip turunda "
@@ -1054,6 +1143,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
                                                    or ic.get("compare_mode"))):
         out.append(Ihlal(
             "donem_tasinmadi",
+            "dönem taşınmadı",
             "soruda bir **dönem** geçiyor ama sorguya bir tarih kısıtı taşıyamadım — "
             "sayı **tüm** kayıtları kapsıyor",
             "Dönemi katalogdaki bir aralıkla yazarsan uygularım (*«bu yıl»* · "
@@ -1066,6 +1156,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             and not (ic.get("compare") or ic.get("compare_mode"))):
         out.append(Ihlal(
             "kiyas",
+            "kıyas",
             "iki dönemi **kıyaslamanı** istedin ama tek bir toplam üretebildim",
             "İki dönemi ayrı ayrı sorabilirsin; ya da *«geçen yıla göre»* diyerek "
             "dönemsel kıyası açıkça isteyebilirsin."))
@@ -1105,12 +1196,14 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             and not (ic.get("compare") or ic.get("compare_mode"))):
         out.append(Ihlal(
             "cok_donem",
+            "çok dönem",
             "birden çok dönem saydın ama tek bir **aralık** olarak topladım",
             "Dönemleri ayrı ayrı sorarsan her birini tek tek veririm."))
 
     # 3 · TREND — zaman ekseni ister
     if niyet.trend_istendi and not (_time_gran(qn) or _zaman_ekseni_var(ic, cube_meta)):
         out.append(Ihlal(
+            "trend",
             "trend",
             "**değişimi/trendi** istedin ama tek bir toplam ürettim — zaman ekseni yok",
             "*«aylara göre»* ya da *«çeyreklere göre»* eklersen zaman ekseninde çizerim."))
@@ -1121,6 +1214,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
         _kterim, _ksahip = _kupi
         out.append(Ihlal(
             isaret="kup_ikamesi",
+            etiket="küp ikamesi",
             aciklama=(f"Soruda **«{_kterim}»** geçiyor ve bu katalogda **{_ksahip}** "
                       f"konusudur — ama bu cevap **{ic.get('cube')}** küpünden geldi."),
             oneri=(f"«{_kterim}» konusunu **{_ksahip}** küpünde sorabilirsin."),
@@ -1133,6 +1227,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
         _kt, _ksah = _ki
         out.append(Ihlal(
             isaret="kirilim_ikamesi",
+            etiket="kırılım ikamesi",
             aciklama=(f"Soruda **«{_kt}»** kırılımı geçiyor ama bu cevap "
                       f"**{', '.join(str(b) for b in (ic.get('dimensions') or []))}** "
                       f"kırılımında hesaplandı — «{_kt}» bu küpte tanımlı değil."),
@@ -1194,6 +1289,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             and _time_gran(qn) is None and not _PERIOD_RANGE_REF.search(qn)):
         out.append(Ihlal(
             "kirilim",
+            "kırılım",
             "bir **kırılım** istedin ama sorguya bir boyut taşıyamadım",
             "Kırılım adını açıkça yazarsan (*«makine bazında»*) uygularım."))
 
@@ -1201,6 +1297,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
     if _ustunluk_mu(qn, _TOPN_CUE, ic, cube_meta) and not siralama:
         out.append(Ihlal(
             "ustunluk",
+            "sıralama",
             "**en yüksek/en çok** dedin ama sıralama uygulayamadım",
             "*«en yüksek 5 makine»* gibi sayı verirsen sıralayıp keserim."))
     # 🔴🔴 `§ÜK` — **SIRALAMA VAR AMA KIRILIM YOK: «hangisi» sorusuna «ne kadar» cevabı.**
@@ -1231,6 +1328,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             and not (ic.get("dimensions") or ic.get("timeDimensions")):
         out.append(Ihlal(
             "ustunluk_kirilimsiz",
+            "kırılımsız sıralama",
             "**en yüksek/en kötü** dedin ama cevapta bir **kırılım yok** — bu tek bir "
             "**toplam**, sıralanacak bir liste değil",
             "Neye göre sıralayayım? *«makine bazında»* · *«müşteri bazında»* · "
@@ -1242,6 +1340,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
     elif niyet.ustunluk and not kesme and not _ustunluk_harcandi(qn, ic, niyet.ustunluk):
         out.append(Ihlal(
             "kesme",
+            "liste kesme",
             f"**{niyet.ustunluk}** dedin ama listeyi o sayıya **kesemedim** — "
             f"sıralı ama **tam** liste görüyorsun",
             "Kırılımı tek bir boyuta indirirsen (*«makine bazında»*) ilk "
@@ -1252,6 +1351,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             and not _esik_filtresi_var(filtreler) and not ic.get("measure_having"):
         out.append(Ihlal(
             "esik",
+            "eşik",
             "bir **eşik** verdin (ör. *«1.000 üstü»*) ama filtreye çeviremedim",
             "Eşiği ölçü adıyla birlikte yazarsan (*«cirosu 1.000 üstü»*) uygularım."))
 
@@ -1386,6 +1486,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
         if _birim_bekleniyor and _birim and not _para_mi:
             out.append(Ihlal(
                 "olcu_ikamesi",
+                "ölçü ikamesi",
                 f"bir **{_birim_bekleniyor} tutarı** sordun ama elimdeki ölçü "
                 f"**{_birim}** cinsinden (`{_m}`)",
                 "O birimde bir ölçü katalogda yoksa hesabı ben uyduramam — "
@@ -1394,6 +1495,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
         if _oran_bekleniyor and not _oran_karsilandi:
             out.append(Ihlal(
                 "olcu_ikamesi",
+                "ölçü ikamesi",
                 f"bir **oran/yüzde** sordun ama `{_m}` bir "
                 f"**{_birim or 'sayım'}** — payda katalogda tanımlı değil",
                 "Oranı katalogda varsa adıyla sorabilirsin (*«… oranı»* biçiminde "
@@ -1402,6 +1504,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
         if _toplulastirma_bekleniyor and not _ort_karsilandi and _m.startswith("toplam_"):
             out.append(Ihlal(
                 "olcu_ikamesi",
+                "ölçü ikamesi",
                 f"**ortalama** sordun ama `{_m}` bir **toplam**",
                 "Ortalaması katalogda varsa adıyla sorabilirsin "
                 "(*«ortalama …»* biçiminde tanımlı bir ölçü)."))
@@ -1451,6 +1554,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
                 for f in filtreler)):
         out.append(Ihlal(
             "kisitlama",
+            "kısıtlama",
             "**sadece …** dedin ama sorguya bir kısıtlama taşıyamadım — sayı **tüm**"
             " kayıtları kapsıyor",
             "Kısıtlamayı katalogdaki bir değerle yazarsan (*«sadece Siyah renk»*) "
@@ -1462,6 +1566,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
                         for f in filtreler)):
         out.append(Ihlal(
             "dislama",
+            "dışlama",
             "bir şeyi **hariç tutmanı** istedin ama dışlama filtresi kuramadım",
             "Hariç tutulacak değeri açıkça yazarsan (*«RAM-2 hariç»*) uygularım."))
 
@@ -1694,6 +1799,16 @@ def chipler(ihlaller: list[Ihlal]) -> list[dict]:
     return out
 
 
+def etiket_detayi(ihlaller: list[Ihlal]) -> list[dict]:
+    """FAZ 2.2 — `resp.eksik_niyet_detay`'ın TEK üreticisi: `[{isaret, etiket,
+    aciklama}, …]`. `chipler()`'in kardeşi — AYNI ilke: metinden/koddan ikinci bir
+    çeviri türetmek yerine, ihlali üreten yerde ZATEN duran `etiket`/`aciklama`yı
+    toplar. `resp.eksik_niyet` (ham `isaret` listesi, telemetri sözleşmesi) BURADAN
+    ayrı kalır — KURAL B: o alanın biçimi değişmez, bu yalnız ÜSTÜNE eklenir."""
+    return [{"isaret": i.isaret, "etiket": i.etiket, "aciklama": i.aciklama}
+            for i in (ihlaller or [])]
+
+
 def kismi_cevap_notu(ihlaller: list[Ihlal]) -> str:
     """*"Şu kısmını verdim, şu kısmını veremedim, nedeni bu."*
 
@@ -1919,6 +2034,7 @@ def beyan_ekle(resp, *, soru: str, cq: dict, sema: dict, cube_meta: dict | None 
     if not ihlaller:
         return
     resp.eksik_niyet = [i.isaret for i in ihlaller]
+    resp.eksik_niyet_detay = etiket_detayi(ihlaller)
     resp.note = " ".join(x for x in [resp.note, kismi_cevap_notu(ihlaller)] if x)
     if chip:
         resp.suggestions = (resp.suggestions or []) + chipler(ihlaller)

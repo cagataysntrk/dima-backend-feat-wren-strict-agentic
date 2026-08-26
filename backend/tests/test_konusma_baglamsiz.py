@@ -35,10 +35,69 @@ def test_YORUMLA_BAGLAMSIZ_MERDIVENE_INMEZ():
 
 
 def test_NORMAL_MI_ZAMIRSIZ_DA_SAYILIR():
-    """⚠ *«normal mi»* ve *«ne yapmalıyız»* **tanım gereği** eldeki sonuca dairdir; zamir
-    şartı onlara uygulanmaz (bağlamlı dalın da aynı kararı)."""
+    """⚠ *«normal mi»* ve *«ne yapmalıyız»* — çıplak, KISA sorular — zamirsiz de
+    konuşma sayılır (`_kisa_soru` şartından geçerler; `§AY/S` düzeltmesinden SONRA
+    da böyle — bu ikisi zaten kısa, düzeltme yalnız UZUN cümlelerdeki muafiyeti
+    kaldırdı, bkz. `test_UZUN_NE_YAPMALI_CUMLESI_CALINMAZ`)."""
     assert _bs("normal mi").kural == "konusma-baglamsiz"
     assert _bs("ne yapmalıyız").kural == "konusma-baglamsiz"
+
+
+def test_UZUN_NE_YAPMALI_CUMLESI_CALINMAZ():
+    """🔴🔴 `§AY/S` — **ASIL DÜZELTME.** Ölçülen kusur (canlı, 2026-08-26): uzun,
+    zamirsiz, baştan sona geçerli bir YENİ veri isteği, içinde bir yerde
+    `ne_yapmali`/`normal` kalıbı geçtiği için TAMAMEN reddediliyordu — `anlat`/
+    `işaret` için zaten önlenen `test_KONU_DEGISIMI_CALINMAZ` hatasının ikiz
+    kardeşi. Artık bu ikisi de `TUR_ANLAT`/`TUR_ISARET` ile AYNI muafiyete tabi.
+
+    ⚠ Örnek cümle KASITLI OLARAK "bu yıl"/"bu ay" gibi bir baştan-temporal ifade
+    TAŞIMIYOR — o ayrı, DAHA ÖNCE VAR OLAN bir bug (`_ISARET_ZAMIRI`'ndeki çıplak
+    "bu", "bu yıl"/"bu ay" gibi TAMAMEN ilgisiz temporal ifadeleri de zamir sanıyor,
+    ölçüldü: `test_CIPLAK_BU_TEMPORAL_IFADEYLE_KARISIYOR` — henüz düzeltilmedi,
+    ayrı bir roadmap maddesi)."""
+    uzun = ("her ay için ciro ve fire oranını göster, hangi ay en "
+            "kötüsüydü açıkla, ve gelecek ay için ne yapmalıyız söyle")
+    assert _bs(uzun).kural == "baglam-yok"
+    uzun2 = ("vardiya bazında oee ve fire karşılaştır, en kötü vardiyayı bul, "
+             "sebebini araştır, ve o vardiya için somut 3 aksiyon öner")
+    assert _bs(uzun2).kural == "baglam-yok"
+
+
+def test_CIPLAK_BU_TEMPORAL_IFADEYLE_ARTIK_KARISMIYOR():
+    """✅ FAZ 3.4 — DÜZELTİLDİ (bu test eskiden BUGÜNKÜ KUSURLU davranışı sabitliyordu,
+    adı da öyleydi — `KARISIYOR`; artık DÜZELTİLMİŞ davranışı kilitliyor, `ARTIK_
+    KARISMIYOR`).
+
+    Eski kusur: `_ISARET_ZAMIRI`'ndeki çıplak `"bu"`, "bu yıl"/"bu ay" gibi son
+    derece yaygın TEMPORAL ifadeleri de (bağlamsal referansla hiç ilgisi olmayan)
+    bir "rapora işaret eden zamir" sanıyordu — ölçüldü: `"bu yıl her ay için
+    ciro..."` cümlesi `açıkla` (`TUR_ANLAT`) → çıplak "bu" zamir eşleşmesi
+    yolundan yanlış `konusma-baglamsiz` sayılıyordu (`§AY/S`'in KAPSAMADIĞI,
+    `KÖK NEDEN A` ailesinin üçüncü örneği).
+
+    Kök çözüm: `followup._bu_su_zamir_mi()` — "bu"/"su" yalnız GERÇEK bir takvim/
+    zaman-birimi isim (yıl/ay/hafta/gün/dönem/çeyrek — kapalı dilbilgisi sınıfı,
+    `cube_router._ek_gecerli` ile ek-toleranslı) TAKİP ETMİYORSA zamir sayılır.
+    "bu rapor"/"bu tablo"/"bu grafik"/"bu sonuc" gibi çok-kelimeli, rapora
+    GERÇEKTEN işaret eden biçimler `_ISARET_ZAMIRI`'nde DEĞİŞMEDEN kaldı — bkz.
+    `test_GERCEK_BU_ZAMIRI_HALA_TANINIR` (zıt-ölçüt)."""
+    uzun = ("bu yıl her ay için ciro ve fire oranını göster, hangi ay en "
+            "kötüsüydü açıkla, ve gelecek ay için ne yapmalıyız söyle")
+    assert _bs(uzun).kural == "baglam-yok", (
+        "🔴 'bu yıl' yine 'rapora işaret eden zamir' sayılıp cümle yanlışlıkla "
+        "konusma-baglamsiz'e düşüyor — FAZ 3.4'ün düzeltmesi bozulmuş olabilir.")
+
+
+def test_GERCEK_BU_ZAMIRI_HALA_TANINIR():
+    """🔴 Zıt-ölçüt (FAZ 3.4) — `_bu_su_zamir_mi()` yalnız TEMPORAL kullanımı
+    dışlamalı, GERÇEK zamir kullanımını BASTIRMAMALI. "bunu yorumla" (`bunu`,
+    çekimli) ve çıplak "bu" (temporal olmayan, örn. "bu doğru mu") hâlâ doğru
+    zamir sayılmalı — aksi hâlde düzeltme kusuru TERSİNE çevirmiş olurdu."""
+    assert followup.sinifla("bunu yorumla", baglam_var=True).sinif == followup.SINIF_KONUSMA
+    assert followup._bu_su_zamir_mi("bu dogru mu") == "bu"
+    assert followup._bu_su_zamir_mi("bu rapor neyi anlatiyor") == "bu"
+    assert followup._bu_su_zamir_mi("bu yil ciro ne kadar") is None
+    assert followup._bu_su_zamir_mi("su ay fire orani") is None
 
 
 def test_KONU_DEGISIMI_CALINMAZ():

@@ -59,6 +59,37 @@ _GURULTU_PAYI = 1.0  # %
 # (cari + geçen dönem) demek. Sınır konur ama KONAN SINIR LOGLANIR.
 MAX_BOYUT = 6
 
+# 🔴🔴 `§K2-ikiz` FAZ 3.1 — **`net_pay` PATLAYABİLİR; ESKİ EŞİK BUNU YAKALAMIYORDU.**
+#
+# ## Ölçülen kusur (roadmap'in kendi örneği + bu turda saf fonksiyonla yeniden üretildi)
+#
+# `net_pay = delta/net*100` — `net` TÜM segmentlerin cebirsel toplamı. Segmentler
+# BİRBİRİNİ İPTAL EDİNCE (biri artar, öbürü azalır) `net` küçülür ama `brut` (mutlak
+# toplam) büyük kalabilir — o zaman TEK bir segmentin payı yüzlerce/binlerce yüzdeye
+# fırlar. Ölçüldü: `A:+900k B:-790k C:-10k` (net=100k, brut=1.700M) → eski eşik
+# (`abs(net) > brut*0.01`, yani net brüt'ün SADECE %1'i kadar olsa yeter) GEÇTİ ve
+# `net_pay: A=900.0, B=-790.0` üretti — *"musteri: A — 900.000 arttı (net değişimin
+# %900,0'ı)"*. Roadmap'in kendi canlı örneğiyle (`+4740.0%`) AYNI SINIF.
+#
+# ⚠ **`yoy.py::_SIFIR_ESIGI` İLE AYNI KOD DEĞİL — kasıtlı ayrım.** `yoy.py`'nin
+# kusuru *"önceki değer neredeyse sıfır"* (mutlak eşik, `1e-6`); burası *"net değişim,
+# brüt harekete göre küçük"* (bağıl eşik) — iki FARKLI kırılganlık, aynı SEMPTOM
+# (anlamsız büyük yüzde). Tek bir paylaşılan fonksiyona zorlamak (ikisini de aynı tek
+# parametreyle kapsamaya çalışmak) matematiği gizler; ayrı kalmaları DAHA doğru —
+# her biri kendi payda türünün doğasına göre korunuyor.
+#
+# ⚠ **Neden `%1` yetmiyordu, `%20` yetiyor:** `net_pay`'in en kötü durum büyüklüğü
+# `brut_pay * (brut/net)` ile ölçeklenir (`brut_pay` HER ZAMAN [0,100] güvenlidir,
+# yapı gereği `abs(delta) <= brut`). `net`'i brüt'ün en az `%20`'si olmaya zorlamak,
+# tek bir baskın segmentin bile `net_pay`'ini kabaca `500%`'ün altında tutar — 900/
+# −790 gibi vakaları `None`'a düşürüp GÜVENLİ `brut_pay`'e (matematiksel olarak asla
+# patlamaz) yönlendirir; `decompose()`'daki düşme mekanizması ZATEN vardı, eksik olan
+# doğru eşikti.
+#
+# *Bir payda "sıfır değil" demek, "güvenilir" demek değildir — küçüklüğü payına göre
+# ölçülmeli, mutlak sıfıra göre değil.*
+_NET_PAY_GUVEN_ESIGI = 0.20  # net, brüt'ün en az bu kesri kadar olmalı
+
 
 def _sayi(v: Any) -> float:
     """Sayısal test `app/result_shape.py`'den (Faz C2); sayı değilse katkı 0'dır."""
@@ -192,9 +223,10 @@ def contributions(rows: list[dict], dim: str, measure: str) -> list[dict]:
     brut = sum(abs(k["delta"]) for k in kalemler)
     for k in kalemler:
         # Net pay ancak net değişim BRÜT hareketin anlamlı bir kısmıysa yorumlanabilir.
-        # Aksi halde (+100/−100 götürmesi) pay yüzdeleri patlar ve saçmalar.
+        # Aksi halde (segmentler birbirini iptal edince) pay yüzdeleri patlar ve
+        # saçmalar (`§K2-ikiz`, FAZ 3.1 — canlı ölçülen 900%/−790% vakası).
         k["net_pay"] = (round(k["delta"] / net * 100, 1)
-                        if net and abs(net) > brut * 0.01 else None)
+                        if net and abs(net) > brut * _NET_PAY_GUVEN_ESIGI else None)
         k["brut_pay"] = round(abs(k["delta"]) / brut * 100, 1) if brut else None
     _surprizi_isle(kalemler)
     return sorted(kalemler, key=lambda k: abs(k["delta"]), reverse=True)

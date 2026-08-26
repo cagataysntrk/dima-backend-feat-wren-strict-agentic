@@ -290,6 +290,42 @@ def _anlati_user(soru: str, gercekler: list[str]) -> str:
             + "\n".join(f"- {g}" for g in gercekler))
 
 
+def _tavsiye_system() -> str:
+    """T7 muhakeme (Katman 7) — LLM burada YARGI verir; `_anlati_system`'den fark budur.
+
+    Kullanıcı «ne yapmalıyız», «hangisi en etkili», «sen olsan ne önerirsin» dediğinde
+    sistem bugün ya sessiz kalıyor ya da yalnız sayı okuyordu (`§KN`/`prescribe` zaten
+    reçeteyi/ayrıştırmayı DETERMİNİSTİK üretir — eksik olan üstüne bir CÜMLE kurmaktı).
+
+    Sınır `_anlati_system` ile AYNI disiplinle çizilir: sayı uydurmak yasak. Ama burada
+    ayrıca YENİ bir sınır var — model yalnız verilen `secenekler` kümesi üzerinde
+    muhakeme kurabilir; listede olmayan bir aksiyon/alan-bilgisi bir HALÜSİNASYONDUR,
+    çünkü sistem verisini bilir, fiziği/domaini bilmez (`kok_neden.nereye_bak` docstring'i
+    ile aynı ilke). Çıktı `narration_guard` (sayı) + `iddia` (iddia) çift-kapısından geçer.
+    """
+    return (
+        "Sana bir veri raporunun DOĞRULANMIŞ bulguları ve önceden hesaplanmış "
+        "SEÇENEKLER listesi veriliyor. Kullanıcı bunlar arasında bir MUHAKEME ve "
+        "TAVSİYE istiyor ('ne yapmalıyız', 'hangisi en etkili', 'sen olsan ne "
+        "önerirsin' gibi).\n\n"
+        "MUTLAK KURALLAR:\n"
+        "- HİÇBİR YENİ SAYI ÜRETME. Yalnız verilen sayıları, verildiği gibi kullan.\n"
+        "- YALNIZ verilen SEÇENEKLER listesindeki seçeneklerden bahset. Listede "
+        "olmayan bir aksiyon, alan/domain bilgisi ya da öneri UYDURMA (ör. bakım "
+        "periyodu, fiziksel sebep, sektör pratiği — bunlar sana verilmedi).\n"
+        "- Muhakemeni verilen sayılara DAYANDIR: hangi seçenek neden öne çıkıyor "
+        "söyle; belirsizlik varsa dürüstçe belirt, uydurma.\n"
+        "- 2-5 cümle. Madde işareti yok, başlık yok, emoji yok."
+    )
+
+
+def _tavsiye_user(soru: str, gercekler: list[str], secenekler: list[str]) -> str:
+    return ("Soru: " + (soru or "—") + "\n\nDoğrulanmış bulgular:\n"
+            + "\n".join(f"- {g}" for g in gercekler)
+            + "\n\nSeçenekler:\n"
+            + "\n".join(f"- {s}" for s in secenekler))
+
+
 def _enhance_system(catalog: str) -> str:
     """PROMPT-ENHANCER (§4.3) — T1'in DÖRDÜNCÜ, AYRI LLM rolü.
 
@@ -670,6 +706,14 @@ class AnthropicSqlGenerator:
         return self._ask(_anlati_system(), _anlati_user(soru, gercekler),
                          model=self._select_model)
 
+    def tavsiye_et(self, soru: str, gercekler: list[str], secenekler: list[str]) -> str:
+        """T7 muhakeme (Katman 7, FAZ 1) — bkz. `anlat` docstring'i, AYNI disiplin:
+        dönüş HAM'dır, çağıran (`answer._tavsiye_ekle`) `narration_guard` + `iddia.py`
+        çift-kapısından geçirir. `anlat`'tan FARKI: burada model yalnız ÜSLUP değil bir
+        MUHAKEME/ÖNCELİKLENDİRME de üretir — ama yalnız `secenekler` listesi üzerinde."""
+        return self._ask(_tavsiye_system(), _tavsiye_user(soru, gercekler, secenekler),
+                         model=self._select_model)
+
     #: 🔴 **YETENEK BEYANI — `B5`.** Bu sağlayıcı native tool-use ile şema kısıtını
     #: **gerçekten uyguluyor**; şema üretmeye değer.
     sema_kullanir = True
@@ -901,6 +945,11 @@ class OpenAICompatibleSqlGenerator:
     def anlat(self, soru: str, gercekler: list[str]) -> str:
         """T2 anlatıcı (FAZ 5) — bkz. `AnthropicSqlGenerator.anlat`."""
         return self._chat(_anlati_system(), _anlati_user(soru, gercekler),
+                          model=self._select_model)
+
+    def tavsiye_et(self, soru: str, gercekler: list[str], secenekler: list[str]) -> str:
+        """T7 muhakeme (Katman 7, FAZ 1) — bkz. `AnthropicSqlGenerator.tavsiye_et`."""
+        return self._chat(_tavsiye_system(), _tavsiye_user(soru, gercekler, secenekler),
                           model=self._select_model)
 
     #: 🔴 **YETENEK BEYANI — `B5`.** Bu sağlayıcı `oneOf` desteklemiyor, yani `sema`
@@ -1610,6 +1659,19 @@ class FailoverSqlGenerator:
             except Exception:
                 continue
         raise RuntimeError("anlat: tüm sağlayıcılar başarısız")
+
+    def tavsiye_et(self, soru: str, gercekler: list[str], secenekler: list[str]) -> str:
+        """T7 muhakeme (Katman 7, FAZ 1) — `anlat`'ın BİREBİR aynı failover deseni."""
+        for g in self._gens:
+            if not hasattr(g, "tavsiye_et"):
+                continue          # kural-tabanlı sağlayıcıda YOK — yol kapalı, hata değil
+            try:
+                out = g.tavsiye_et(soru, gercekler, secenekler)
+                self._last = g
+                return out
+            except Exception:
+                continue
+        raise RuntimeError("tavsiye_et: tüm sağlayıcılar başarısız")
 
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         for g in self._gens:

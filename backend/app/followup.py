@@ -225,8 +225,61 @@ _ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
 # Konuşma sınıfı YALNIZ bunlarla tetiklenmez: soru aynı zamanda MEVCUT CEVABA işaret
 # etmelidir. "neden" tek başına yeni bir soru da olabilir ("fire neden yüksek olur?").
 # Bu zamirler soruyu ELDEKI sonuca bağlar.
-_ISARET_ZAMIRI = ("bu", "bunu", "bunun", "buradaki", "su", "sunu", "sunun",
+#
+# 🔴🔴 FAZ 3.4 (`§AY/S`'in ÜÇÜNCÜ örneği) — ÇIPLAK `"bu"`/`"su"` BİLEREK DIŞARIDA:
+# aşağıdaki `_bu_su_zamir_mi()` onları AYRI, TEMPORAL-FARKINDA bir kuralla karşılar.
+# Ölçüldü (bu operasyonun kendi sohbetinde, FAZ 0.1'de): *"bu yıl her ay için
+# ciro..."* cümlesi `açıkla` (`TUR_ANLAT`) → çıplak "bu" eşleşmesinden geçerek
+# yanlış `konusma-baglamsiz` sayılıyordu (`test_CIPLAK_BU_TEMPORAL_IFADEYLE_
+# KARISIYOR` kayda geçirmişti) — "bu yıl"/"bu ay" rapora işaret ETMEZ, bir zaman
+# BELİRTECİDİR. "bu rapor"/"bu tablo"/"bu grafik"/"bu sonuc" gibi ÇOK-KELİMELİ,
+# rapora GERÇEKTEN işaret eden biçimler AŞAĞIDA DEĞİŞMEDEN kalır.
+_ISARET_ZAMIRI = ("bunu", "bunun", "buradaki", "sunu", "sunun",
                   "yukaridaki", "bu rapor", "bu tablo", "bu grafik", "bu sonuc")
+
+#: 🔴🔴 FAZ 3.4 — Türkçenin takvim/zaman-birimi isimleri: SAYICA SINIRLI, KAPALI bir
+#: dilbilgisi kümesi (`_BELGISIZ_ZAMIR`/`_COGUL_ISARET_ZAMIR`'in izlediği AYNI ilke,
+#: `ADR-0008` bunu açıkça serbest bırakır) — yeni bir kelime listesi İCAT EDİLMEDİ.
+_TEMPORAL_BIRIM = ("yil", "ay", "hafta", "gun", "donem", "ceyrek", "sene")
+
+#: `bu`/`su` kökü + kelime içinde kalan HERHANGİ bir devam (ek zinciri OLABİLİR
+#: — `_ek_gecerli` doğrular; "buyuk" gibi kazayla denk gelenleri eler).
+_BU_SU_RE = re.compile(r"\b(bu|su)([a-z]*)")
+
+
+def _bu_su_zamir_mi(q: str) -> str | None:
+    """`bu`/`su` iki yoldan GERÇEK zamir sayılır: (1) ÜZERİNE doğrudan bir çekim
+    eki YAPIŞMIŞSA — `"bunda"`/`"buyla"` gibi ("bu" Türkçede ünsüz-tampon `n` ile
+    çekimlenir: bu+n+da, bu+n+u…) bu HER ZAMAN gerçek bir zamir kullanımıdır, ek
+    ayrı bir kelimeye YAPIŞAMAZ; (2) ÇIPLAKSA (ek yok) ve ardından bir takvim/
+    zaman-birimi isim GELMİYORSA — "bu yıl"/"bu ay" gibi TAMAMEN yaygın temporal
+    belirteçleri "rapora işaret eden zamir" sanmamak için (`§AY/S`, FAZ 3.4).
+
+    ⚠ Ek toleransı `cube_router._ek_gecerli`'den — TEK SAHİP, burada ikinci bir
+    çekim kuralı YAZILMAZ (`uyum._grup_basina_istendi`'nin BİREBİR deseni). Bu,
+    `_hit()`'in `_syn_hit` ile zaten yaptığı ek-zinciri toleransının BİREBİR
+    aynısı — `_ISARET_ZAMIRI`'nden çıkarılan çıplak "bu"/"su" o toleransı
+    kaybetmesin diye burada AÇIKÇA yeniden uygulanıyor (ölçülen regresyon:
+    "bunda ne oldu?" ilk yazımda kaçıyordu — `\\bbu\\b` yalnız TAM kelimeyi
+    arıyordu, "bunda" TEK bir tokendir, iki kelime değil)."""
+    from app.cube_router import _ek_gecerli
+
+    for m in _BU_SU_RE.finditer(q):
+        zamir, kalan = m.group(1), m.group(2)
+        if kalan:
+            if _ek_gecerli(kalan):
+                return zamir                  # "bunda"/"buyla" — çekimli, HER ZAMAN zamir
+            continue                          # "buyuk" gibi — geçersiz çekim, eşleşme değil
+        sonraki_m = re.match(r"\s+([a-z]+)", q[m.end():])
+        sonraki = sonraki_m.group(1) if sonraki_m else None
+        if sonraki:
+            _temporal = any(
+                sonraki == kok or (sonraki.startswith(kok) and _ek_gecerli(sonraki[len(kok):]))
+                for kok in _TEMPORAL_BIRIM)
+            if _temporal:
+                continue                      # "bu yıl"/"bu ayın" — belirteç, zamir DEĞİL
+        return zamir                          # "bu" tek başına ya da temporal-olmayan
+    return None
 
 #: 🔴 **BELGİSİZ ZAMİRLER — dilbilgisinin KAPALI sınıfı (`ADR-0008` bunu açıkça serbest
 #: bırakır: kelime listesiyle dile yetişilmez, ama gramerin kapalı sınıfları listelenir).**
@@ -497,13 +550,27 @@ def _konusma_baglamsiz(q: str) -> str | None:
     ⚠ `_NEDEN` **dışarıda**: *«neden fire yüksek olur»* bağlamsız da olsa gerçek bir
     veri sorusudur ve merdivenin cevaplaması gerekir. Ötekiler (`anlat`·`normal mi`·
     `ne yapmalı`·`işaret`) **tanım gereği** ekrandaki bir sonuca dairdir.
+
+    🔴🔴 `§AY/S` — **`TUR_NORMAL`/`TUR_NE_YAPMALI` AYNI ŞARTA TABİ DEĞİLDİ, TAM RET
+    ÜRETİYORDU.** Ölçüldü (canlı, iki bağımsız senaryo + bu belgenin kendi §10.3
+    örneğine "optimizasyon önerisi ver" eklenince üçüncü kez): *«…araştır, … göster,
+    … hangi ay en kötüsüydü açıkla, … ne yapmalıyız söyle»* gibi UZUN, baştan sona
+    geçerli bir YENİ veri isteği, içinde bir yerde `ne_yapmali`/`normal` kalıbı
+    geçtiği için **tamamen** "ekranda rapor yok" diye reddediliyordu — tıpkı bu
+    fonksiyonun `anlat`/`işaret` için ZATEN önlediği hatanın (*"fire analizini yap"*
+    yanlışlıkla konuşma sayılması) aynısı, yalnız iki tür için korunmamış hâli.
+    `TUR_NORMAL`/`TUR_NE_YAPMALI` artık ÖTEKİLERLE **aynı** zamir/kısalık şartına
+    tabi — yeni bir kural İCAT EDİLMEDİ, dosyanın kendi tutarlılık ilkesi
+    genişletildi (bkz. `§NÇ`'nin kendi dersi: *"bir dosyada iki kural aynı ayrımı
+    yapıyorsa, biri ötekini sormak zorundadır"*).
     """
-    zamir = _hit(q, _ISARET_ZAMIRI) or bool(_COGUL_ISARET_ZAMIR.search(q))
+    zamir = (_hit(q, _ISARET_ZAMIRI) or bool(_COGUL_ISARET_ZAMIR.search(q))
+             or bool(_bu_su_zamir_mi(q)))
     for tur, kaliplar in ((TUR_ANLAT, _ANLAT), (TUR_NORMAL, _NORMAL),
                           (TUR_NE_YAPMALI, _NE_YAPMALI), (TUR_ISARET, _ISARET)):
         if not _hit(q, kaliplar):
             continue
-        if tur in (TUR_NORMAL, TUR_NE_YAPMALI) or zamir or _kisa_soru(q):
+        if zamir or _kisa_soru(q):
             return tur
     return None
 
@@ -601,7 +668,7 @@ def sinifla(soru: str, *, baglam_var: bool,
 
     # `§AA4` — çoğul işaret zamiri de bir çapadır ve tekil olanla **aynı işi** görür.
     zamir = _hit(q, _ISARET_ZAMIRI) or (
-        _COGUL_ISARET_ZAMIR.search(q) and "bunlar/şunlar/onlar")
+        _COGUL_ISARET_ZAMIR.search(q) and "bunlar/şunlar/onlar") or _bu_su_zamir_mi(q)
     for tur, kaliplar in ((TUR_PAYLAS, _PAYLAS),
                           (TUR_TAKIP, _TAKIP),
                           (TUR_NE_YAPMALI, _NE_YAPMALI),
@@ -761,10 +828,29 @@ def sinifla(soru: str, *, baglam_var: bool,
 
 
 def _capaya_deger(q: str, capa_degerleri: frozenset[str] | None) -> bool:
-    """Soru, ekrandaki raporun bir **satırını** adlandırıyor mu?"""
+    """Soru, ekrandaki raporun bir **satırını** adlandırıyor mu?
+
+    🔴🔴 Kullanıcı bulgusu (2026-08-26): *"ram 3 neden düşük"* → `RAM-3`'ün ZATEN
+    ekrandaki raporda olmasına RAĞMEN bu tur *yeni bir konu* sayılıyordu (`kalip-yok`)
+    — `_NEDEN` sözlüğü eşleşiyordu ama bu fonksiyon *"ram 3" `capa_degerleri`'nde YOK*
+    diyordu, çünkü katalog değeri **tireli** (`RAM-3` → `_norm` sonrası `ram-3`),
+    kullanıcı **boşlukla** yazmıştı (`ram 3`) — `_norm()` (ASCII-katlama) tire/boşluk
+    ayrımını hiç birleştirmiyor (o onun işi değil, yapısal bir işaret). Sonuç: `neden`
+    hiç `_anlat`/`kok_neden`/`contribution`'a ULAŞMADAN, sıradan yeni bir sorgu gibi
+    çözülüyordu — kullanıcının bildirdiği "sadece ham sayı geliyor" şikayetinin GERÇEK
+    kökü BUYDU (`plan_tuketici._anlat`'ın HESAPLA/BAGLA düzeltmesi bile bu tur hiç
+    devreye girmediği için işe yaramıyordu).
+
+    ⚠ Kök çözüm `_norm()`'u DEĞİŞTİRMEZ (o repo-genelinde paylaşılan tek normalize edici
+    — küp/ölçü/boyut eşleştirmesinde tire ANLAMLI olabilir, orayı gevşetmek başka
+    kusurlar açabilirdi). Bu fonksiyonun işi farklı ve DAR: *"bu katalog değeri
+    cümlede geçiyor mu"* — gevşek bir metin-içinde-geçme testi, yapısal bir eşleştirme
+    değil. Tire/boşluk eşdeğerliği yalnız BURADA, bu dar kapsamda uygulanır.
+    """
     if not capa_degerleri:
         return False
-    return any(d and d in q for d in capa_degerleri)
+    _q = q.replace("-", " ")
+    return any(d and d.replace("-", " ") in _q for d in capa_degerleri)
 
 
 def konusma_sozcukleri(q: str) -> set[str]:

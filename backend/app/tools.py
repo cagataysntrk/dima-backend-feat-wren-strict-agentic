@@ -438,6 +438,59 @@ KAYIT: tuple[Arac, ...] = (
         etiketler=("anlatim", "t2", "guardli"),
     ),
     Arac(
+        ad="llm.tavsiye_et",
+        ozet="Zaten hesaplanmış SEÇENEKLER üzerinde muhakeme/önceliklendirme yazar — T7 (Katman 7, FAZ 1). [Erişim: deterministik OLGULAR + deterministik SEÇENEK listesi — ham satır YOK] [Ne zaman: 'ne yapmalıyız/hangisi en etkili/tavsiye eder misin' gibi bir MUHAKEME sorulduğunda, reçete zaten hesaplandıktan sonra] [NE ZAMAN KULLANILMAZ: yeni bir seçenek/sayı üretmek için — `secenekler` listesi model TARAFINDAN büyütülemez]",
+        girdi={"soru": "kullanıcının sorusu",
+               "gercekler": "prescribe.recete() çıktısından türetilmiş olgu cümleleri",
+               "secenekler": "prescribe.recete()'nin sıraladığı aday segment adları"},
+        cikti="düz metin — narration_guard + iddia.py'den GEÇMEDEN yayımlanamaz",
+        determinizm="llm", maliyet="ucuz", yan_etki="yok",
+        izin="llm:invoke", makbuz=None,
+        modul="app.llm", fonksiyon="tavsiye_et", baglanma="servis:llm",
+        notlar="`llm.anlat`'ın KARAR-DESTEĞİ kardeşi: o yalnız ÜSLUP yazar (yargı "
+               "yasak), bu YARGI yazar — ama yalnız `prescribe.recete()`'nin ZATEN "
+               "sıraladığı seçenekler üzerinde. `prescribe.recete` ('karar-recete' "
+               "etiketi) bu aracın DETERMİNİSTİK-ÖNCE kardeşidir; deneniMEDEN bu araç "
+               "seçilemez. Çıktısı `narration_guard` (sayı) + `app/iddia.py` "
+               "(iddia) çift-kapısından ZORUNLU geçer — `llm.anlat` ile AYNI "
+               "fail-closed disiplin. HER SAĞLAYICIDA YOKTUR (kural-tabanlı "
+               "taşımaz) — yokluğu YOL KAPALI sinyalidir, hata değil.\n"
+               "⚠ `llm.tavsiye_et_kok_neden` (aşağıda) BU AYNI Python metoduna "
+               "(`app.llm.tavsiye_et`) bağlıdır — İKİ kayıt, TEK gövde. Sebep: gate "
+               "(`_deterministik_once_kapisi`) etiket BAZLI — tek bir `Arac` hem "
+               "'karar-recete' hem 'karar-kok' taşısaydı, HER İKİ çağrı yeri de HER "
+               "İKİ deterministik kardeşin denenmesini isterdi (ölçüldü — "
+               "`test_t7_tavsiye.py` `AracReddi` ile kırmızı verdi). İki ayrı ADın "
+               "aynı gövdeye bağlanması `KAT-1`'i BOZMAZ: gövde tek, yalnız KAPI "
+               "kaydı çağrı-yerine göre ikiye ayrılıyor.",
+        etiketler=("karar-recete", "t7", "guardli"),
+    ),
+    Arac(
+        ad="llm.tavsiye_et_kok_neden",
+        ozet="`llm.tavsiye_et` ile AYNI Python metodu — yalnız DETERMİNİSTİK-ÖNCE "
+             "kardeşi FARKLI (`kok_neden.ayristir`, `prescribe.recete` DEĞİL). Zaten "
+             "hesaplanmış §KN bileşenleri üzerinde muhakeme/önceliklendirme yazar. "
+             "[Erişim: deterministik OLGULAR + bileşen SEÇENEK listesi — ham satır YOK] "
+             "[Ne zaman: 'neden böyle/hangisi en etkili' türü bir soruda, `kok_neden."
+             "ayristir` zaten koştuktan sonra] [NE ZAMAN KULLANILMAZ: yeni bir bileşen/"
+             "sayı üretmek için — `secenekler` listesi model TARAFINDAN büyütülemez]",
+        girdi={"soru": "kullanıcının sorusu",
+               "gercekler": "kok_neden.ayristir() çıktısından türetilmiş olgu cümleleri",
+               "secenekler": "ölçünün formül bileşenlerinin (kullanılabilirlik/"
+                             "performans/kalite gibi) katalog adları"},
+        cikti="düz metin — narration_guard + iddia.py'den GEÇMEDEN yayımlanamaz",
+        determinizm="llm", maliyet="ucuz", yan_etki="yok",
+        izin="llm:invoke", makbuz=None,
+        modul="app.llm", fonksiyon="tavsiye_et", baglanma="servis:llm",
+        notlar="Neden İKİNCİ bir kayıt (yukarıdaki `llm.tavsiye_et`'in notuna bkz.): "
+               "gate etiket-bazlı çalışıyor ve `llm.tavsiye_et`'in İKİ çağrı yeri "
+               "(prescribe.py yolu ve kok_neden.py yolu) FARKLI deterministik "
+               "kardeşlere bağlı. Aynı gövdeye (`app.llm.tavsiye_et`) İKİ isimle "
+               "bağlanmak, gövdeyi İKİNCİ kez yazmadan (KAT-1) kapıyı çağrı-yerine "
+               "göre doğru eşler.",
+        etiketler=("karar-kok", "t7", "guardli"),
+    ),
+    Arac(
         ad="narration_guard.dogrula",
         ozet="Bir anlatı metnindeki HER sayıyı sonuç kümesine karşı doğrular — KAPIDIR. [Erişim: anlatı metni + sonuç kümesi] [Ne zaman: her LLM anlatısından SONRA — KAPIDIR, seçenek değil] [NE ZAMAN KULLANILMAZ: atlanamaz; atlanırsa uydurma sayı yayımlanır]",
         girdi={"metin": "yayımlanmak istenen düz metin",
@@ -661,7 +714,30 @@ KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
         izin="query:run", makbuz=None,
         modul="app.prescribe", fonksiyon="recete",
         notlar="Deterministik: aynı sinyaller aynı reçeteyi verir.",
-        etiketler=("yorum", "karar"),
+        etiketler=("yorum", "karar-recete"),
+    ),
+    Arac(
+        ad="kok_neden.ayristir",
+        ozet="Bir ölçünün akran farkını FORMÜL BİLEŞENLERİNE (log-cebiri) ayrıştırır. "
+             "[Erişim: zaten hesaplanmış hedef/akran değerleri — sorgu KOŞMAZ] "
+             "[Ne zaman: 'neden böyle/hangisi en etkili' türü bir soruda, kırılım + "
+             "formül varken] [NE ZAMAN KULLANILMAZ: bileşen sayısı <2 ya da değer "
+             "sıfır/negatifse — `None` döner, uydurma yapılmaz]",
+        girdi={"olcu": "ölçü adı", "hedef": "{ölçü_adı: değer} — incelenen segment",
+               "akran": "{ölçü_adı: değer} — karşılaştırma tabanı"},
+        enjekte=("cube_meta", "dusuk_iyi"),
+        cikti="Ayristirma | None (katkilar + sucllu)",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.kok_neden", fonksiyon="ayristir",
+        notlar="§KN'nin cebir çekirdeği: sorgu koşmaz, LOGARİTMA ile artıksız ayrıştırır "
+               "(bkz. modül docstring'i). `llm.tavsiye_et_kok_neden`'in (FAZ 1.4) "
+               "DETERMİNİSTİK-ÖNCE kardeşi ('karar-kok' etiketi) — `kok_neden.arastir` "
+               "(sorgu KOŞAR, burada DEĞİL) zaten daha önce çalışıp `Ayristirma`yı "
+               "üretmiştir; bu araç aynı girdilerle YENİDEN koşulduğunda (maliyeti "
+               "sıfır — veri zaten elde) planlayıcının kendi kaydına düşer "
+               "(`interpret`/`prescribe.recete` ile AYNI desen).",
+        etiketler=("karar-kok", "kok-neden", "llmsiz"),
     ),
     Arac(
         ad="statements.resolve",

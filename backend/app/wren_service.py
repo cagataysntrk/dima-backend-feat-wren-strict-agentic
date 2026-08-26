@@ -189,12 +189,39 @@ def _etiket_belirsizligini_ayikla(sinonimler: dict[str, list[str]],
     """
     from collections import defaultdict
 
+    # 🔴🔴 `§EB/S` — **ETİKETTEN TÜREYEN ÇIPLAK SORU SÖZCÜĞÜ, TEK KÜPTE BİLE, SİNONİM
+    # OLAMAZ.** Ölçülen kusur (canlı, 2026-08-26): `isg.kok_neden`'in etiketi
+    # ("kök neden") kelimelere bölününce **"neden"**, `kalite.sebep`'in etiketi
+    # ("hata sebebi") **"sebebi"** üretiyordu — ikisi de KENDİ küplerinde başka
+    # bir boyutla ÇARPIŞMIYORDU (üstteki `belirsiz` kuralı bunları YAKALAMAZ,
+    # çünkü o kural yalnız AYNI küp içi çarpışmaya bakar). Ama "neden"/"sebep"
+    # Türkçe'de birer SORU SÖZCÜĞÜDÜR — hangi küpte olursa olsun, ürünün HER
+    # yerindeki nedensel takip sorusunu ("ram 3 neden böyle?") bu dar alana
+    # kırılım gibi yanlış eşliyordu (`followup.py`'nin `§NÇ` tarihçesi AYNI
+    # kusuru üç kez düzeltmişti — ama yalnız `followup.py`'nin KENDİ soru-
+    # sınıflandırmasında; şemanın bu bağımsız eşleştirme yolu hiç görmemişti).
+    # ⚠ Yeni bir kelime listesi İCAT EDİLMİYOR (`ADR-0008`): `followup._NEDEN`
+    # zaten ölçümle büyütülmüş TEK KAYNAK — burada ikinci kez okunuyor (`KAT-1`
+    # ihlali değil, aynı sözleşmenin ikinci tüketicisi, `test_katalog_sozlugu`
+    # dosyasının kendi önsözündeki ilkeyle birebir aynı gerekçe).
+    # ⚠ Yalnız ETİKETTEN türeyenler düşer — pack'in AÇIKÇA beyan ettiği bir
+    # sinonim (`beyan`) burada da KORUNUR: *"beyan bir karardır, türetme bir
+    # tahmindir"* ilkesi bu ek kuralda da geçerli.
+    from app.followup import _NEDEN as _soru_sozcukleri
+
+    _ciplak_soru = {s for s in _soru_sozcukleri if " " not in s}
+
     sahip: dict[str, list[str]] = defaultdict(list)
     for dim, syns in sinonimler.items():
         for s in syns:
             sahip[s].append(dim)
     belirsiz = {t for t, ds in sahip.items() if len(ds) > 1}
-    if not belirsiz:
+    soru_sozcugu_ihlali = {
+        dim: {s for s in etiketten.get(dim, ()) if s.lower() in _ciplak_soru}
+        for dim in sinonimler
+    }
+    soru_sozcugu_ihlali = {dim: s for dim, s in soru_sozcugu_ihlali.items() if s}
+    if not belirsiz and not soru_sozcugu_ihlali:
         return sinonimler
     # 🔴🔴 `§EB/T` — **DÜŞEN TOKEN KELİME DAĞARCIĞINDA KALIR.**
     #
@@ -210,13 +237,17 @@ def _etiket_belirsizligini_ayikla(sinonimler: dict[str, list[str]],
     # kaldırmak ötekini de kaldırıyorsa liste iki iş yapıyordur.*
     if dusenler is not None:
         dusenler |= belirsiz
+        for ihlaller in soru_sozcugu_ihlali.values():
+            dusenler |= ihlaller
     out: dict[str, list[str]] = {}
     for dim, syns in sinonimler.items():
+        soru_ihlal = soru_sozcugu_ihlali.get(dim, ())
         out[dim] = [s for s in syns
-                    if s not in belirsiz
-                    or s in beyan.get(dim, ())          # beyan korunur
-                    or s not in etiketten.get(dim, ())  # etiketten gelmiyorsa dokunma
-                    or s == dim]                        # boyutun kendi adı korunur
+                    if (s not in belirsiz
+                        or s in beyan.get(dim, ())          # beyan korunur
+                        or s not in etiketten.get(dim, ())  # etiketten gelmiyorsa dokunma
+                        or s == dim)                        # boyutun kendi adı korunur
+                    and (s not in soru_ihlal or s in beyan.get(dim, ()))]
     return out
 
 

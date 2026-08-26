@@ -496,7 +496,18 @@ def test_ARAC_SAYISI_KAYITLI():
     # kırmızıydı. `preferences.set` sayıyı 35'e getiriyor — yani sayı **başka bir
     # araçla** doğrulandı. *Bir sayının tutması, tuttuğu sebebin doğru olduğunu
     # göstermez;* bu yüzden asıl yüklem `test_ajan_YAZAMAZ`'daki **isim** kümesidir.
-    beklenen = 35 if acik else 32
+    # ⟳ FAZ 1 (Katman 7, 2026-08-26) — 32 → **33**. `llm.tavsiye_et` kayda girdi:
+    # `prescribe.recete()`'nin sıraladığı seçenekler ÜZERİNDE guarded-LLM muhakemesi
+    # (`llm.anlat`'ın karar-desteği kardeşi). Yazma yüzeyi BÜYÜMEDİ (`yan_etki="yok"`).
+    # ⟳ FAZ 1.4 — 33 → **35**. İKİ araç kayda girdi: `kok_neden.ayristir`
+    # (`kok_neden.arastir` sorgu koştuğu için tekrar koşulamaz, cebrin sorgusuz
+    # çekirdeği tekrar koşulabilir — maliyeti sıfır) VE `llm.tavsiye_et_kok_neden`.
+    # ⚠ İKİNCİ LLM aracı **YENİ bir yetenek DEĞİL**: `llm.tavsiye_et` ile AYNI Python
+    # metoduna (`app.llm.tavsiye_et`) bağlı — gate etiket-bazlı olduğu için `prescribe.
+    # recete`/`kok_neden.ayristir` FARKLI kardeşlere bağlanmak üzere İKİ ada ayrıldı
+    # (ölçüldü: TEK ad + iki etiket, HER İKİ çağrı yerini HER İKİ kardeşe bağımlı
+    # kılıyordu — `AracReddi`). `tools.py`'nin `llm.tavsiye_et` notuna bkz.
+    beklenen = 38 if acik else 35
     assert len(tools.hepsi()) == beklenen, (
         f"araç sayısı {len(tools.hepsi())}, beklenen {beklenen} — kayıt değiştiyse bu "
         f"bir ÜRÜN kararıdır ve beyanı da değişmeli.")
