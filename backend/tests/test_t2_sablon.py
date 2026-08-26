@@ -111,24 +111,33 @@ def test_TANINAN_TURLER_KAPALI_KUME(tur):
     assert isinstance(tur, str) and tur
 
 
-def test_SABLON_ARTIK_LLMi_ENGELLEMIYOR_chat_oncelikli():
-    """🔴🔴 **Ürün kararı tersine çevrildi (2026-08-26)** — bu testin ESKİ hâli
-    (`test_ASIL_KAZANC_YAPILMAYAN_CAGRI`) tam tersini, *"basit olgu → LLM hiç
-    çağrılmaz"*ı doğruluyordu. Ölçüm (aşağıdaki tablo) hâlâ DOĞRU — yalnız
-    kullanıcı *"chat mantığına TAMAMEN geçmeliyiz; basit bir cevap bile grafik
-    +çıplak sayıyla kalmasın"* dedi: üslup artık bir masraf değil, ÜRÜNÜN
-    kendisi.
+def test_ASIL_KAZANC_YAPILMAYAN_CAGRI():
+    """🔴🔴 **Karar bir kez tersine çevrildi, SONRA aynı gün GERİ getirildi —
+    ikisi de kayıtlı.** FAZ 6.7 bu testin tam tersini (`return` kaldırılsın,
+    basit olgu bile LLM'e gitsin) kısa süre doğrulamıştı. Kullanıcı KENDİ
+    "chat mantığı" isteğini düzeltti: *"1 cümle yazmak için demedim, o
+    cümleyi deterministik de yazabiliyoruz... durduk yere anında çalışacak
+    küp cevabı boşuna LLM bekliyor."* Asıl istenen an — kullanıcı cevabın
+    ÜSTÜNE konuşmak istediğinde (*"neden"*, *"anlamadım"*) — zaten AYRI bir
+    yoldan (`_cevap_ustunde_konus` → `contribution`/`kok_neden`, FAZ 6.1/6.2)
+    zengin bir cevap alıyor; bu basamaktan hiç geçmiyor. Yani FAZ 6.7'nin
+    kazancı SIFIRDI, bedeli her ANINDA cevaplanması gereken küp sorgusuna
+    3,7-20,8 sn gecikme eklemekti (canlı ölçüldü) — geri alındı.
 
     | tur | toplam | anlatı LLM | pay |
     |---|---|---|---|
-    | *"makine bazında oee son 3 ay"* | 5.420 ms | 2.936 ms | %54 |
-    | *"aylara göre"* (takip) | 24.285 ms | 22.564 ms | %93 |
+    | *"makine bazında oee son 3 ay"* | 5.420 ms | **2.936 ms** | %54 |
+    | *"aylara göre"* (takip) | 24.285 ms | 🔴 **22.564 ms** | **%93** |
 
-    ⚠ Bu artık GÜVENLİ bir gecikme: `app/butce.py`'nin `saniye=anlati_azami_
-    saniye` (varsayılan 8 sn) sınırı LLM çağrısının etrafını sarıyor — aşılırsa
-    cevap BEKLEMEDEN şablona düşer (aşağıdaki `_sablon` taban olarak kalır).
-    *Bir güvenlik ağı varken, onu tetiklememek için bir yeteneği kapatmak,
-    ağı hiç kurmamış olmaktan farksızdır.*
+    İki turda da **intent 0 LLM** aldı (`route()` / `deterministic_refine`);
+    bekleyişin tamamı **süslemeydi** — ve süslenen şey `summary`'nin taşıdığı
+    **aynı olgulardı**.
+
+    ⚠ İlk yazımda yankı kapısı yanlış yerdeydi: metin `summary` ile aynıysa
+    `None` dönüyordu ve tur **LLM'e düşüyordu** — yani kapı, önlemek için
+    var olduğu çağrıyı **davet ediyordu**.
+
+    *Bir eniyileştirmenin ölçütü ürettiği çıktı değil, engellediği iştir.*
     """
     import inspect
 
@@ -136,16 +145,10 @@ def test_SABLON_ARTIK_LLMi_ENGELLEMIYOR_chat_oncelikli():
 
     src = inspect.getsource(answer_mod._anlati_ekle)
     i = src.index("basit_mi(yorum)")
-    # ⚠ Yalnız `if basit_mi(...):`in KENDİ gövdesi taranır — `t2_anlatici`/`llm`
-    # guard'larının kendi (İLGİSİZ, MEŞRU) `return`'leri bu aralığın DIŞINDA
-    # kalmalı, yoksa kapı kendi yanlış-pozitifini üretir.
-    k = src.index('if "t2_anlatici" not in resolve_for')
+    blok = src[i:i + 1800]
+    assert "return" in blok, "🔴 şablon dalı erken dönmüyor — LLM yine çağrılır"
     j = src.index('calistir("llm.anlat"')
-    assert i < k < j, "🔴 beklenen sıra bozuldu — testin kendi varsayımı bayatladı"
-    blok = src[i:k]
-    assert "return" not in blok, (
-        "🔴 şablon dalı hâlâ erken dönüyor — basit olgular LLM'e hiç ULAŞAMIYOR "
-        "(kullanıcının 'chat mantığı' kararı geri alınmış)")
-    # Taban YİNE de yazılıyor olmalı — LLM zaman aşımına uğrarsa/guard'da
-    # düşerse kullanıcı boş ekran değil, ŞABLON metnini görsün.
-    assert 'if (_sablon := ' in blok and 'yorum["narration"] = _sablon' in blok
+    assert i < j, "🔴 şablon kontrolü LLM çağrısından SONRA"
+    # Ve dönüş `anlat()`'ın çıktısına BAĞLI OLMAMALI:
+    assert 'if (_sablon := ' in blok and blok.index("return") > blok.index("if (_sablon"), (
+        "🔴 dönüş metin üretimine bağlı — yankı durumunda LLM yeniden devreye girer")

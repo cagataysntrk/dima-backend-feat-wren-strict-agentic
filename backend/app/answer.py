@@ -474,6 +474,15 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
     if not yorum or yorum.get("narration"):
         return
     principal = getattr(request.state, "principal", None)
+    # FAZ 6.8 — **KONUŞMA BAĞLAMI ŞABLON KISAYOLUNU EZER.** `resp._zorla_anlati`
+    # yalnız `routers/ask.py`nin `niyet.konusma` dalında (`t8_sohbet` açıkken)
+    # kurulur — kullanıcı cevabın ÜSTÜNE konuşuyorken (*"anlamadım"*, *"yorumla"*…)
+    # basit_mi() kısayolu burada bilerek DEVRE DIŞI bırakılır: ilkler için doğru olan
+    # ("anında cevaplanan basit bir küp sorgusu LLM'i beklemesin") ikinciye
+    # UYGULANMAZ — kullanıcının kendi ayrımı budur (bkz. aşağıdaki ölçüm tablosu).
+    # `t8_sohbet` kapalıyken bu satır hiç kurulmaz → `getattr` `False` döner → davranış
+    # bugünküyle birebir (`KURAL B`).
+    zorla = bool(getattr(resp, "_zorla_anlati", False))
     try:
         from app.features import resolve_for
 
@@ -494,29 +503,31 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         if "t2_sablon" in resolve_for(get_settings(), principal):
             from app import anlatici as _anlatici
 
-            if _anlatici.basit_mi(yorum):
-                # 🔴🔴 **KULLANICI KARARI (2026-08-26): "chat mantığına TAMAMEN
-                # geçmeliyiz" — basit bir cevap bile grafik+çıplak sayıyla
-                # bırakılmasın, LLM'in ZENGİN üslubuyla YÜKSELTİLSİN.**
-                #
-                # ⟳ Bu satır ESKİDEN burada ERKEN ÇIKIYORDU (bkz. altta bırakılan
-                # ölçüm tablosu — o zamanki gerekçe hâlâ DOĞRU, yalnız ÜRÜN KARARI
-                # değişti): *"basit olgular için LLM'in kattığı bilgi değil,
-                # yalnız üsluptur"* — ama kullanıcı artık **üslubun kendisini**
-                # istiyor, "En yüksek X, en düşük Y" telgraf-cümlesini değil.
-                #
-                # ⚠ Bu artık GÜVENLİ: `§33`'ün bulduğu bütçe kusuru (`66 sn`
-                # bekleterek anlatı düşürme) `app/butce.py`'ye taşınıp DÜZELTİLDİ —
-                # aşağıdaki `_butce.kos(..., saniye=_azami)` (varsayılan 8 sn) HER
-                # ZAMAN uygulanıyor, aşılırsa cevap BEKLEMEDEN şablona (aşağıda
-                # yazılan `narration`) düşüyor. Yani **artık dönmüyoruz** — şablon
-                # burada bir SON DURAK değil, LLM zaman aşımına uğrarsa/guard'da
-                # düşerse geri düşülecek bir **güvenli taban**: en kötü durum YİNE
-                # bugünkü (şablon/`summary`), en iyi durum gerçek bir anlatı.
-                yorum["narration_kaynak"] = "sablon"       # LLM denemesi başarısızsa kalır
+            if _anlatici.basit_mi(yorum) and not zorla:
+                # 🔴🔴 **KARAR GERİ ALINDI (2026-08-26, aynı gün) — kullanıcı
+                # KENDİ önceki kararını düzeltti.** FAZ 6.7 burada erken
+                # çıkışı kaldırmıştı: "chat mantığı" isteği YANLIŞ okunmuştu
+                # — basit, ANINDA cevaplanan bir küp sorgusu (ör. "makine
+                # bazında oee") LLM'i BEKLEMEMELİ; deterministik tek cümle
+                # ORADA zaten doğru cevaptır. *"Sohbet merkezli"* istek
+                # aslında farklı bir ANI hedefliyordu: kullanıcı cevabın
+                # ÜSTÜNE konuşmak istediği (*"neden"*, *"anlamadım"*) tur —
+                # o tur zaten AYRI bir yoldan (`_cevap_ustunde_konus` →
+                # `contribution._akran_kiyasi` / `kok_neden.ayristir`)
+                # zengin, çok-cümlelik bir cevap ALIYOR (FAZ 6.1/6.2, "ram 3
+                # neden düşük" örneği) — bu basamaktan HİÇ geçmiyor. Yani
+                # FAZ 6.7'nin LLM'i HER basit cevapta deneme kararı, o ZATEN
+                # çözülmüş konuşma anını değil, sırf ANINDA cevaplanması
+                # gereken küp sorgularını YAVAŞLATIYORDU (canlı ölçüldü:
+                # 3,7-20,8 sn, öncesi anındaydı) — kazanç SIFIR, kayıp
+                # gecikme. Ölçüm tablosu (aşağıda) ve erken çıkış bu yüzden
+                # GERİ getirildi. FAZ 6.8 bu kısayola `zorla` istisnasını
+                # ekledi — konuşma bağlamında istisna GEÇERSİZ kılınır.
+                yorum["narration_kaynak"] = "sablon"       # makbuz: LLM devreye GİRMEDİ
                 if (_sablon := _anlatici.anlat(yorum)):
                     yorum["narration"] = _sablon           # yalnız EK BİLGİ varsa
-                _log.info("T2 ŞABLON: taban yazıldı, LLM'e DEVAM ediliyor (chat-öncelikli)")
+                _log.info("T2 ŞABLON: LLM çağrısı YAPILMADI (0 token, 0 ms)")
+                return
         if "t2_anlatici" not in resolve_for(get_settings(), principal):
             return                      # KURAL B — kapalıyken davranış BİREBİR bugünkü
         llm = getattr(request.app.state, "llm", None)

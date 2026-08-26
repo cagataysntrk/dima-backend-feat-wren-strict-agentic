@@ -326,6 +326,49 @@ def _tavsiye_user(soru: str, gercekler: list[str], secenekler: list[str]) -> str
             + "\n".join(f"- {s}" for s in secenekler))
 
 
+def _takip_sinif_system() -> str:
+    """FAZ 6.8 — **GARSON DEVRİ, takip sınıflandırmasında.** `app/followup.py::sinifla`
+
+    deterministik bir kalıp bulamadığında (`kural=="kalip-yok"`) EN ÜST KURAL devreye
+    girer: *"bir cümle anlaşılmıyorsa çözüm route'u genişletmek değil devri
+    tetiklemektir."* Bu prompt route'a YENİ BİR KELİME EKLEMEZ — zaten güvendiğimiz
+    hakeme (garson) TEK bir soru sorar: kullanıcı raporun ÜSTÜNE mi konuşuyor?
+
+    Kapsam bilinçli DAR: `_cube_select_system`in aksine cube/ölçü/boyut seçmez, SQL
+    yazmaz — yalnız BEŞ bilinen konuşma türünden (`followup.TUR_*`) birine ya da
+    `konusma=false`e karar verir. Kararın kendisi bir veri değildir, bir YÖNLENDİRMEDİR
+    — `iddia.py`/`narration_guard`in kapısından GEÇMEZ (geçecek olan, bu karardan sonra
+    ÇAĞRILAN anlatı, kendi guard zincirinden geçer).
+    """
+    return (
+        "Kullanıcı ekranda bir veri raporu görüyor ve az önce bir TAKİP mesajı yazdı. "
+        "Bu mesajın raporu DEĞİŞTİRMEK isteyen yeni bir veri isteği mi, yoksa raporun "
+        "ÜZERİNE KONUŞMAK isteyen bir mesaj mı olduğuna karar ver — açıklama istemek, "
+        "anlamadığını belirtmek, yorum/tepki vermek, netleştirme istemek gibi.\n\n"
+        "SADECE JSON döndür:\n"
+        '{"konusma": true|false, '
+        '"tur": "neden"|"ne_yapmali"|"normal_mi"|"anlat"|"makbuz"|null, '
+        '"gerekce": "<kısa Türkçe>"}\n\n'
+        "KURALLAR:\n"
+        "- Mesaj yeni bir ölçü/boyut/filtre/dönem İSTEMİYORSA ve raporu SORGULAMIYORSA — "
+        "yalnız eldeki cevaba tepki veriyor ya da açıklama istiyorsa konusma=true.\n"
+        "- konusma=true ise tur seç: sebep soruyorsa (\"neden\", \"niye\") → neden; "
+        "aksiyon soruyorsa (\"ne yapmalıyız\", \"nasıl düzeltiriz\") → ne_yapmali; "
+        "olağanlığı soruyorsa (\"normal mi\", \"iyi mi\") → normal_mi; hesap/kapsam "
+        "soruyorsa (\"nasıl hesaplandı\", \"neler dahil\") → makbuz; DİĞER HER TÜR "
+        "açıklama/anlamama/yorum isteği (ör. \"anlamadım\", \"peki bu ne demek\", "
+        "\"biraz daha açar mısın\", \"yeterli değil\", kısa tepki/onay ifadeleri) → "
+        "anlat.\n"
+        "- Mesaj yeni bir ölçü/boyut/filtre/dönem istiyorsa YA DA raporla tamamen "
+        "ilgisiz bir konuysa konusma=false.\n"
+        "- Emin değilsen konusma=false döndür — dürüst bir red zaten var, uydurma."
+    )
+
+
+def _takip_sinif_user(mesaj: str) -> str:
+    return "Takip mesajı: " + (mesaj or "—")
+
+
 def _enhance_system(catalog: str) -> str:
     """PROMPT-ENHANCER (§4.3) — T1'in DÖRDÜNCÜ, AYRI LLM rolü.
 
@@ -714,6 +757,14 @@ class AnthropicSqlGenerator:
         return self._ask(_tavsiye_system(), _tavsiye_user(soru, gercekler, secenekler),
                          model=self._select_model)
 
+    def takip_siniflandir(self, mesaj: str) -> str:
+        """FAZ 6.8 — GARSON DEVRİ (takip sınıflandırması). Dönüş HAM JSON metnidir;
+        çağıran (`routers/ask.py::_garson_konusma_dene`) `_parse_decision` ile ayrıştırıp
+        `followup.niyet_garsondan`'a verir. Ucuz/hızlı `_select_model` kullanır — bu
+        `select_cube`/`refine_cube` ile AYNI sınıftan bir karar, SQL/anlatı DEĞİL."""
+        return self._ask(_takip_sinif_system(), _takip_sinif_user(mesaj),
+                         model=self._select_model)
+
     #: 🔴 **YETENEK BEYANI — `B5`.** Bu sağlayıcı native tool-use ile şema kısıtını
     #: **gerçekten uyguluyor**; şema üretmeye değer.
     sema_kullanir = True
@@ -950,6 +1001,11 @@ class OpenAICompatibleSqlGenerator:
     def tavsiye_et(self, soru: str, gercekler: list[str], secenekler: list[str]) -> str:
         """T7 muhakeme (Katman 7, FAZ 1) — bkz. `AnthropicSqlGenerator.tavsiye_et`."""
         return self._chat(_tavsiye_system(), _tavsiye_user(soru, gercekler, secenekler),
+                          model=self._select_model)
+
+    def takip_siniflandir(self, mesaj: str) -> str:
+        """FAZ 6.8 — bkz. `AnthropicSqlGenerator.takip_siniflandir`."""
+        return self._chat(_takip_sinif_system(), _takip_sinif_user(mesaj),
                           model=self._select_model)
 
     #: 🔴 **YETENEK BEYANI — `B5`.** Bu sağlayıcı `oneOf` desteklemiyor, yani `sema`
@@ -1672,6 +1728,19 @@ class FailoverSqlGenerator:
             except Exception:
                 continue
         raise RuntimeError("tavsiye_et: tüm sağlayıcılar başarısız")
+
+    def takip_siniflandir(self, mesaj: str) -> str:
+        """FAZ 6.8 — `anlat`/`tavsiye_et`'in BİREBİR aynı failover deseni."""
+        for g in self._gens:
+            if not hasattr(g, "takip_siniflandir"):
+                continue          # kural-tabanlı sağlayıcıda YOK — yol kapalı, hata değil
+            try:
+                out = g.takip_siniflandir(mesaj)
+                self._last = g
+                return out
+            except Exception:
+                continue
+        raise RuntimeError("takip_siniflandir: tüm sağlayıcılar başarısız")
 
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         for g in self._gens:

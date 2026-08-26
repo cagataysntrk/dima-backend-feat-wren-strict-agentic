@@ -278,6 +278,13 @@ features:
   # `off` doğar — `t2_anlatici`'nin izlediği KURAL G-1 aynen geçerli: ölçülmeden alpha
   # olmaz (bkz. `app/features.py` FLAG_REGISTRY `on_sarti`).
   t7_tavsiye: "off"
+  # 🔴🔴 FAZ 6.8 — GARSON DEVRİ. `followup.sinifla()` kalıp bulamadığında (*"anlamadım"*
+  # gibi tek tek hard-code edilmemiş konuşmasal ifadeler) garsona (LLM) TEK bir
+  # sınıflandırma sorusu sorulur; `konusma` derse `t2_anlatici`'nin *basit_mi* kısayolu
+  # o turda DEVRE DIŞI kalır (kullanıcı kararı: "cevabın üstüne konuşunca LLM uzun uzun
+  # anlatmalı, basit olsa da"). `off` doğar — `t2_anlatici`'nin izlediği KURAL G-1 aynen
+  # geçerli: ölçülmeden alpha olmaz (bkz. `app/features.py` FLAG_REGISTRY `on_sarti`).
+  t8_sohbet: "off"
   t2_sablon: beta  # 🔴 T2'nin DETERMİNİSTİK ilk basamağı — *"basit olanı sistem yazsın"*.
   # ⚠ Sayıya dokunmaz: cümleyi `interpret()`'in KENDİ metinlerinden kurar, yani guard'dan
   # geçmesi tesadüf değil yapısal. Tanımadığı olgu türünü görünce turu LLM'e DEVREDER —

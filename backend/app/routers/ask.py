@@ -2428,6 +2428,47 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         temel = f"Ajan koşusu: {len(k.adimlar)} adım · {k.sorgu_sayisi} sorgu"
         return f"{temel} · KISILDI ({k.kisilma_nedeni})" if k.kisildi else temel
 
+    def _garson_konusma_dene(mesaj: str):
+        """🔴🔴 FAZ 6.8 — **GARSON DEVRİ, `followup.sinifla()` kalıp bulamadığında.**
+
+        `sinifla()` yukarıda `kural="kalip-yok"` döndürdüyse deterministik zincir
+        (kelime listesi + fiil çekimi tamamlaması) mesajı TANIMADI demektir. EN ÜST
+        KURAL burada devreye girer: *"bir cümle anlaşılmıyorsa çözüm route'u
+        genişletmek değil devri tetiklemektir."* `_ANLAT`e (ya da başka bir kalıp
+        listesine) yeni bir kelime EKLEMEDEN, zaten güvendiğimiz hakeme (garson) TEK
+        bir soru sorulur: bu mesaj raporun ÜSTÜNE mi konuşuyor?
+
+        Dönüş `followup.Niyet | None`. `None` ⇒ çağıran mevcut `niyet`i (dürüst ret
+        zincirine devam) DEĞİŞTİRMEDEN kullanır — flag kapalıyken, sağlayıcı yokken ya
+        da garson `konusma=false`/bozuk JSON dönerse en kötü durum BUGÜNKÜ davranıştır
+        (`KURAL B`). Best-effort: hiçbir istisna turu düşürmez.
+        """
+        try:
+            from app.features import resolve_for
+
+            if "t8_sohbet" not in resolve_for(settings, principal):
+                return None                     # KURAL B — kapalıyken davranış aynı
+            llm_probe = getattr(request.app.state, "llm", None)
+            if llm_probe is None or not hasattr(llm_probe, "takip_siniflandir"):
+                return None                     # kural-tabanlı sağlayıcı: yol kapalı
+            from app import butce as _butce
+
+            _azami = float(getattr(settings, "anlati_azami_saniye", 8.0) or 8.0)
+            ham = _butce.kos([lambda: llm_probe.takip_siniflandir(mesaj)],
+                             saniye=_azami, ad="FAZ 6.8 garson-devri", log=_log)[0]
+            if ham is _butce.ASIM or not ham:
+                return None
+            karar = _parse_decision(ham)
+            sonuc = followup.niyet_garsondan(karar, mesaj)
+            if sonuc:
+                _log.info("FAZ 6.8: garson devri → konuşma (tur=%s, mesaj=%r)",
+                          sonuc.tur, mesaj[:60])
+            return sonuc
+        except Exception:  # noqa: BLE001 — best-effort, turu asla düşürmez
+            _log.warning("FAZ 6.8 garson-devri sınıflandırması başarısız (best-effort)",
+                         exc_info=True)
+            return None
+
     def _cevap_ustunde_konus(prev_cq: dict, cube_meta: dict | None, niyet,
                              migration_trace: list[str], session_id: str | None):
         """"Cevap üstünde konuşma" (Faz G1) — VAR OLAN araçları KOMPOZE eder.
@@ -4921,6 +4962,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # "neden arttı" → `bakim.mudahale_eden` sahte eşleşmesi tam buydu).
         # ⚠ `niyet` YUKARIDA hesaplandı (FAZ 5.0) — burada yeniden çağırmak, aynı kuralın
         # ikinci bir sahibini yaratırdı ve iki sahip **ayrışır**.
+        #
+        # 🔴🔴 FAZ 6.8 — **GARSON DEVRİ.** `sinifla()` yukarıda hiçbir kalıp bulamadıysa
+        # (`kural=="kalip-yok"`) — *"anlamadım"*, *"peki bu ne demek"* gibi tek tek
+        # hard-code edilmemiş, ama açıkça konuşmasal ifadeler — EN ÜST KURAL burada
+        # devreye girer: kalıp listesini büyütmek yerine garsona (LLM) TEK bir
+        # sınıflandırma sorusu sorulur. Gövde `_garson_konusma_dene`'de; `t8_sohbet`
+        # kapalıyken `None` döner ve `niyet` DEĞİŞMEDEN kalır (`KURAL B`).
+        if not niyet.konusma and niyet.kural == "kalip-yok":
+            niyet = _garson_konusma_dene(body.question) or niyet
         if niyet.konusma:
             # GRAFİĞE ÇAPA (Faz G2): kullanıcı bir hücreye işaret ettiyse konuşma O
             # hücrenin üstünde yürür. Çapa bir metin değil KOORDİNATTIR ve burada
@@ -4930,6 +4980,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             resp = _cevap_ustunde_konus(konu_cq, prev_cube_meta, niyet,
                                         migration_trace + capa_izi, body.session_id)
             if resp is not None:
+                # 🔴🔴 FAZ 6.8 — **KONUŞMA BAĞLAMINDA ANLATI ZORLANIR.** Kullanıcının
+                # kendi düzeltmesi: "cevabın üstüne konuşmak isteyince artık LLM uzun
+                # uzun anlatmalı... basit olsa da." Gövde `answer._anlati_ekle`'nin
+                # `zorla` dalında; burada yalnız işaret (`resp._zorla_anlati`) kurulur.
+                # `t8_sohbet` kapalıyken bu satır hiç çalışmaz (`KURAL B`).
+                if "t8_sohbet" in resolve_for(settings, principal):
+                    resp._zorla_anlati = True  # type: ignore[attr-defined]
                 # 🔴 `§KN-toplam` — var olan cevabın **üstüne** iniş anlatısı. Gövde
                 # `kok_neden.toplam_ek`'te; burada yalnız çağrı. Ezmez: yapısal gövde
                 # (kartlar · chip'ler · ajan izi) aynen kalır.

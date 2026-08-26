@@ -802,6 +802,39 @@ def sinifla(soru: str, *, baglam_var: bool,
     return Niyet(sinif=SINIF_YENI, kural="kalip-yok")
 
 
+#: FAZ 6.8 — `niyet_garsondan`'ın kabul ettiği kapalı küme. Garson bunun DIŞINDA bir
+#: `tur` uydurursa (halüsinasyon) sonuç `None`e döner — bir tür İCAT EDİLMEZ.
+_GARSON_TUR_GECERLI = frozenset({TUR_NEDEN, TUR_NE_YAPMALI, TUR_NORMAL, TUR_ANLAT, TUR_MAKBUZ})
+
+
+def niyet_garsondan(karar: dict, mesaj: str) -> "Niyet | None":
+    """🔴🔴 FAZ 6.8 — **GARSON DEVRİ, `sinifla()`in kalıp bulamadığı yerde.**
+
+    `sinifla()` yukarıda `kural="kalip-yok"` döndürdüğünde (hiçbir kelime listesi/ek
+    zinciri eşleşmedi) EN ÜST KURAL'ın kendi cümlesi devreye girer: *"bir cümle
+    anlaşılmıyorsa çözüm route'u genişletmek değil devri tetiklemektir."* Bu fonksiyon
+    o devrin SONUCUNU (garsonun LLM kararı, `app/llm.py::_takip_sinif_system` ile
+    üretilir) bu modülün ZATEN TANIDIĞI `Niyet` sözleşmesine çevirir — yeni bir sınıf
+    İCAT EDİLMEZ, yalnız `kural` alanı kaynağı söyler (`"garson-devri"`).
+
+    ⚠ **Katkı listesi değil bir HAKEM kararı**: bu fonksiyon `karar` sözlüğünü METİN
+    olarak değil YAPISAL olarak okur (`konusma`/`tur` anahtarları) — çağıran
+    (`routers/ask.py::_garson_konusma_dene`) ham LLM çıktısını ayrıştırıp buraya
+    sözlük verir (`KAT-1`: JSON ayrıştırma orada, tür sözleşmesi burada).
+
+    Fail-closed: `konusma` yoksa/`False`sa, `tur` kapalı kümenin dışındaysa ya da
+    `karar` bozuksa `None` döner — çağıran mevcut `niyet`i (dürüst ret) KORUR. Yani en
+    kötü durumda garson devri hiç OLMAMIŞ gibi davranılır, asla uydurma bir tür YAYILMAZ.
+    """
+    if not isinstance(karar, dict) or not karar.get("konusma"):
+        return None
+    tur = karar.get("tur")
+    if tur not in _GARSON_TUR_GECERLI:
+        return None
+    return Niyet(sinif=SINIF_KONUSMA, tur=tur, kural="garson-devri",
+                 kanit=(mesaj or "")[:120])
+
+
 #: 🔴 **KÖK ÇÖZÜM — kelime listesi SİLİNDİ.** Önceki sürüm bir `_KARSILASTIRMA` listesi
 #: (`yuksek`·`dusuk`·`fazla`…) ve bir uzunluk eşiği (4 kelime) taşıyordu. Çalışıyordu ama
 #: **tikel**di: *"yıkama neden geride kaldı"* · *"3. vardiya neden zayıf"* · *"bu aşama

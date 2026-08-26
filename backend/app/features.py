@@ -870,6 +870,26 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                     "gösterilmeli.",
         "category": "Karar",
     },
+    "t8_sohbet": {
+        "label": "T8 garson devri (konuşmasal takip sınıflandırması)",
+        "description": "`followup.sinifla()` hiçbir kalıp bulamadığında (`kalip-yok`) — "
+                       "*«anlamadım»*, *«peki bu ne demek»* gibi tek tek hard-code "
+                       "edilmemiş konuşmasal ifadeler — garsona (LLM) TEK bir "
+                       "sınıflandırma sorusu sorulur; `konusma` derse mesaj bu modülün "
+                       "ZATEN TANIDIĞI bir `Niyet` türüne çevrilir (`niyet_garsondan`). "
+                       "Açıkken ayrıca `_cevap_ustunde_konus`'un ürettiği cevapta "
+                       "`t2_anlatici`'nin *basit_mi* kısayolu DEVRE DIŞI kalır — "
+                       "konuşma bağlamında anlatı basit olgularda bile denenir. "
+                       "Varsayılan KAPALI — sıcak yola ikinci bir LLM çağrısı ekler.",
+        "on_sarti": "Canlı turda en az beş ÖZGÜN, birbirinden farklı konuşmasal ifade "
+                    "(kelime listesindeki kalıplardan HİÇBİRİNİ taşımayan) doğru "
+                    "`konusma=true` + doğru `tur` alsın ve hiçbiri yanlışlıkla yeni bir "
+                    "veri sorusunu (`SINIF_YAPISAL`/`SINIF_YENİ` gerektiren bir turu) "
+                    "konuşma sanmasın (yanlış-pozitif SIFIR). Gecikme bütçesi "
+                    "(`anlati_azami_saniye`) aşımı `_butce.ASIM` ile fail-closed "
+                    "davrandığı canlı bir örnekle doğrulanmalı.",
+        "category": "Anlatım",
+    },
 }
 
 
