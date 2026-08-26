@@ -29,13 +29,22 @@ class UploadResponse(BaseModel):
 
 
 class ConversationOut(BaseModel):
-    """Sohbet listesi öğesi (geçmiş kenar çubuğu)."""
+    """Sohbet listesi öğesi (geçmiş kenar çubuğu).
+
+    🔴🔴 `§K12` — `last_question` ölçülen bir kusuru kapatır: aynı başlıkla açılan
+    threadler (ör. "bu yıl makine bazında oee" 4 kez) yalnız mesaj sayısı ve DAKİKA
+    çözünürlüklü bir zaman damgasıyla ayırt ediliyordu — hızlı ardışık testlerde
+    (saniyeler arayla) ikisi de aynı görünür. `last_question` (son turun SORU metni,
+    başlıktan bağımsız) kartlar arası GERÇEK bir içerik ayrımı sağlar; başlık aynı
+    kalsa bile sohbetin SON turu neredeyse hiç aynı olmaz.
+    """
 
     id: str
     title: str
     session_id: str
     message_count: int
     updated_at: str
+    last_question: str | None = None
 
 
 class ConversationDetail(BaseModel):

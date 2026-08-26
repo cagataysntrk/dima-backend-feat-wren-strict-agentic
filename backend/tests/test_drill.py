@@ -66,6 +66,40 @@ def test_formula_explanation_with_category_filter():
     assert "vardiya = sabah olan" in formula_explanation(cq, _CUBE_META)
 
 
+def test_formula_explanation_COKLU_ZAMAN_FILTRESI_TEK_CUMLEYE_BIRLESIR():
+    """🔴🔴 `§K10` — **ASIL DEĞİŞMEZ.** Aynı zaman boyutu için birden fazla
+    filtre birikmişse (konuşma turları arası artık/eski filtreler), her biri
+    AYRI bir "X tarihinden itibaren" cümlesi olup "ve" ile art arda
+    eklenmemeli — okunaksız, çelişkili görünen bir cümle üretir. Ölçüldü
+    (canlı, Playwright kampanyası): *"…2026-02-25'ten itibaren VE
+    2026-04-01'den itibaren VE 2026-05-01 tarihli…"*.
+
+    ⚠ Domain-agnostik: `_CUBE_META` (oee, jenerik) kullanılır — kusur hangi
+    küpte olursa olsun aynı mekanizmadan doğar."""
+    cq = {"cube": "oee", "measures": ["ort_oee"], "filters": [
+        {"dimension": "tarih", "operator": "gte", "value": "2026-02-25"},
+        {"dimension": "tarih", "operator": "gte", "value": "2026-04-01"},
+        {"dimension": "tarih", "operator": "lte", "value": "2026-05-01"},
+    ]}
+    text = formula_explanation(cq, _CUBE_META)
+    assert text.count("itibaren") <= 1, f"🔴 birden fazla 'itibaren' — çakışma birleşmedi: {text!r}"
+    # En kısıtlayıcı (en büyük) gte kazanmalı — 2026-02-25 değil 2026-04-01.
+    assert "2026-04-01" in text and "2026-02-25" not in text, (
+        f"🔴 en kısıtlayıcı gte seçilmedi: {text!r}")
+    assert "2026-05-01" in text, f"🔴 lte kayboldu: {text!r}"
+
+
+def test_ZIT_OLCUT_TEK_ZAMAN_FILTRESI_HALA_DOGRU_YAZILIR():
+    """🆃 Kapının kurbanı: birleştirme mantığı TEK filtreli (yaygın) durumu
+    bozmamalı — bugüne kadarki davranış (`test_formula_explanation_with_
+    date_filter`) korunmalı."""
+    cq = {"cube": "oee", "measures": ["ort_oee"],
+         "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}]}
+    text = formula_explanation(cq, _CUBE_META)
+    assert "2026-01-01 tarihinden itibaren" in text
+    assert text.count("itibaren") == 1
+
+
 # --- flag_outliers (z-skoru, app/schedules.py::detect_anomalies İLE AYNI yöntem) --------
 
 def test_flag_outliers_detects_low_shift_zscore():

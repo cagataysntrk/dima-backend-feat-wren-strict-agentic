@@ -25,6 +25,12 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/";
+  // 🔴🔴 `§K3` — Ölçüldü (canlı Playwright kampanyası): 20+ dk açık kalan bir sekmede
+  // oturum sessizce düşüyordu, kullanıcı hiç uyarı görmüyordu. `api-client.ts`'in
+  // 401→refresh-başarısız yolu artık `?sebep=oturum_suresi` taşıyor — bu nazik not
+  // o sinyali okuyup gösteriyor. Kırmızı bir HATA değil (kullanıcı yanlış bir şey
+  // yapmadı, zaman geçti) — nötr bir bilgi notu.
+  const sebep = params.get("sebep");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,6 +69,12 @@ function LoginForm() {
       <div className="mb-8 flex justify-center">
         <BrandMark size="xl" animate />
       </div>
+
+      {sebep === "oturum_suresi" && (
+        <p className="mb-4 rounded-md border border-hairline bg-neutral-500/[0.04] px-3 py-2 text-xs text-neutral-500">
+          Oturumunun süresi doldu — güvenlik için tekrar giriş yapman gerekiyor.
+        </p>
+      )}
 
       <label
         htmlFor="email"

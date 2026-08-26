@@ -465,6 +465,8 @@ export interface Conversation {
   session_id: string;
   message_count: number;
   updated_at: string;
+  // `§K12` — son turun soru metni: aynı başlıklı sohbetleri ayırt eden asıl sinyal.
+  last_question?: string | null;
 }
 
 export interface ConversationDetail {

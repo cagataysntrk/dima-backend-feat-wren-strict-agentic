@@ -10,10 +10,14 @@ import { GeriAlSeridi } from "@/components/GeriAlSeridi";
 // Sohbet geçmişi (per-user, backend kalıcı). Liste → tıkla=resume, × = soft-delete.
 // Minimal: demo sağ sheet içinde render edilir (SettingsDrawer). dima-frontend'in
 // elaborate AppSidebar'ı KOPYALANMADI — demo sade tutulur.
+// 🔴🔴 `§K12` — Ölçüldü (canlı, Playwright kampanyası): aynı başlıkla açılan 4 thread
+// yalnız DAKİKA çözünürlüklü bu damgayla ayrışamıyordu — hızlı ardışık (saniyeler
+// arayla) sohbetler aynı "gg.aa ss:dd" değerini üretiyordu. Saniye eklendi; asıl
+// ayrım sinyali `last_question` (aşağıda) ama bu da bağımsız bir kök-düzeltme.
 function fmtDate(iso: string): string {
   try {
     return new Date(iso).toLocaleString("tr-TR", {
-      day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+      day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
     });
   } catch {
     return "";
@@ -97,6 +101,14 @@ export function HistoryPanel({
                   <div className="truncate text-[13px] text-foreground">
                     {c.title || "(başlıksız)"}
                   </div>
+                  {/* `§K12` — SON TUR ÖNİZLEMESİ: aynı başlıkla açılan sohbetleri ayırt
+                      eden asıl sinyal (başlık aynı kalsa bile son soru neredeyse hiç
+                      aynı olmaz) — bkz. `ConversationOut.last_question` (backend). */}
+                  {c.last_question && (
+                    <div className="truncate text-[11px] text-neutral-500">
+                      {c.last_question}
+                    </div>
+                  )}
                   <div className="font-mono text-[10px] text-neutral-400">
                     {c.message_count} mesaj · {fmtDate(c.updated_at)}
                   </div>

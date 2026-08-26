@@ -105,6 +105,28 @@ def test_yuzde_degisim_ve_SIFIRA_BOLME():
     assert rows[0]["v_degisim_yuzde"] is None, "sıfıra bölme sızdı"
 
 
+def test_KAYAN_NOKTA_ARTIGI_ANLAMSIZ_YUZDE_URETMEZ():
+    """🔴 `§K2` **ASIL DEĞİŞMEZ.** Dengelenmesi beklenen (borç−alacak≈0) bir ölçü
+    tam `0` değil, kayan-nokta artığı (`4.65e-10`) döndürebilir — `p == 0`
+    koruması bunu YAKALAMAZ (Python'da `4.65e-10` truthy'dir). Ölçüldü (canlı,
+    `mizan.bakiye`): iki gürültü-seviyesi sayı arasında *"%100 arttı"* gibi
+    anlamsız bir yüzde üretiyordu. ⚠ Ölçü adı bilinçli olarak `mizan`/`bakiye`
+    DEĞİL — bu eşik domain-agnostik olmalı, herhangi bir ölçüde geçerli."""
+    rows, _ = _merge([{"m": "A", "net_etki": 9.313225746154785e-10}],
+                     [{"m": "A", "net_etki": -4.656612873077393e-10}],
+                     ["net_etki"], ["m"], "yoy")
+    assert rows[0]["net_etki_degisim_yuzde"] is None, (
+        "🔴 kayan-nokta artığı gerçek bir taban değeriymiş gibi kullanıldı")
+
+
+def test_ZIT_OLCUT_NORMAL_BUYUKLUKTE_DEGER_HALA_HESAPLANIR():
+    """🆃 Kapının kurbanı: eşiği çok büyük tutup HER küçük-ama-gerçek değeri de
+    `None`'a çevirmek de yeşil kalırdı. `0,01` gibi küçük ama **gerçek** bir
+    taban değer hâlâ normal şekilde hesaplanmalı — yalnız gürültü elenir."""
+    rows, _ = _merge([{"m": "A", "v": 0.02}], [{"m": "A", "v": 0.01}], ["v"], ["m"], "yoy")
+    assert rows[0]["v_degisim_yuzde"] == 100.0, "🔴 gerçek küçük değer de elendi"
+
+
 def test_kolon_duzeni():
     """`contribution.py` `<measure>_gecen` adına BAĞIMLI — ad sözleşmesi kilitlenir."""
     _rows, cols = _merge([{"m": "A", "v": 1}], [{"m": "A", "v": 1}], ["v"], ["m"], "yoy")

@@ -92,6 +92,7 @@ dosyası vardır ve bağlam sıfırlansa bile iş oradan devam eder.
 | [`ONGORU-DURUM.md`](plan/ONGORU-DURUM.md) | 🔴 **nerede kaldık** (en son çalışılan operasyon) |
 | [`DIMA-V1-YOL-HARITASI.md`](plan/DIMA-V1-YOL-HARITASI.md) · [`DIMA-GARSON-ARA-FAZ.md`](plan/DIMA-GARSON-ARA-FAZ.md) | ⟳ kapanmış operasyonlar — *işaretlenir, silinmez* |
 | [`2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md`](plan/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md) · [`2026-08-13_ONGORU-KATMANI-DURUM-VE-SARTNAME.md`](plan/2026-08-13_ONGORU-KATMANI-DURUM-VE-SARTNAME.md) | tarih damgalı plan belgeleri |
+| [`2026-08-26_PLAYWRIGHT-BULGULARI-YOL-HARITASI.md`](plan/2026-08-26_PLAYWRIGHT-BULGULARI-YOL-HARITASI.md) | 🔴 **canlı test kampanyasının düzeltme rehberi** — sorun→kanıt→çözüm→doğrulama, 4 faz, K1-K13 |
 
 ⚠ **Kök `OPERASYON-DURUM.md` ile karıştırma:** o **önceki** operasyonun durumudur. En son
 durum **`plan/ONGORU-DURUM.md`**'dedir; ikisini birden *«nerede kaldık»* diye okumak,
@@ -107,6 +108,8 @@ kaynağıdır ve **değiştirilmez**.*
 |---|---|
 | [`2026-08-11_REKABET-VE-MIMARI-ANALIZI.md`](arastirma/2026-08-11_REKABET-VE-MIMARI-ANALIZI.md) | rekabet + mimari analiz |
 | [`2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md`](arastirma/2026-08-07_v2-v3-MIMARI-KARAR-SOHBETI.md) | 🔴 **garson devrinin doğduğu ham sohbet** — *«LLM anlar → makine diline çevirir → küpler işler → LLM insan diliyle servis eder»* |
+| [`2026-08-25_MIMARI-CIKMAZ-ARASTIRMASI.md`](arastirma/2026-08-25_MIMARI-CIKMAZ-ARASTIRMASI.md) | mimari çıkmaz araştırması — vizyon→teorik teşhis→canlı ölçüm→§13/§15 düzeltmeleri |
+| [`2026-08-26_PLAYWRIGHT-CANLI-TEST-KAMPANYASI.md`](arastirma/2026-08-26_PLAYWRIGHT-CANLI-TEST-KAMPANYASI.md) | 15 gerçek kullanıcı senaryosu, tarayıcıda tek tek test edildi — K1-K13 kök sorunlar (veri+UI) |
 
 ## `denetim/` — 🔒 tarih damgalı ölçümler (**değiştirilmez**)
 

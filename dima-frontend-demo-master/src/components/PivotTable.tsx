@@ -43,15 +43,32 @@ export function PivotTable({
   const buckets = [...new Set(result.rows.map((r) => String(r[timeCol])))].sort();
   const totals = new Map<string, number>();
   const cell = new Map<string, unknown>();
+  // 🔴🔴 `§K13` — SESSİZ ÇÖKÜŞ TESPİTİ. Ölçüldü (canlı, Playwright kampanyası, `liste_niyeti`
+  // S10): sonuçta satırları AYIRT EDEN bir boyut varken (ör. 16 boyutlu bir listeleme) bu
+  // bileşen yalnız İKİ boyutla (satır×sütun) matris kuruyor — geri kalan boyutlar aynı
+  // (entity, kova) anahtarına düşüyor ve `cell.set()` SESSİZCE üstüne yazıyor: 1000 satır
+  // görünürde 1 hücreye çöküyor, kullanıcı hiç uyarı görmüyor. Domain-agnostik: hangi
+  // boyutun kaybolduğuna bakmaz, yalnız aynı anahtara BİRDEN FAZLA satır düşüp
+  // düşmediğine (çarpışma) bakar — bu, `entityDim`/`timeCol` ne olursa olsun aynı.
+  let carpisma = 0;
   for (const r of result.rows) {
     const e = String(r[entityDim]);
+    const k = anahtar(e, String(r[timeCol]));
+    if (cell.has(k)) carpisma += 1;
     totals.set(e, (totals.get(e) ?? 0) + (Number(r[measure]) || 0));
-    cell.set(anahtar(e, String(r[timeCol])), r[measure]);
+    cell.set(k, r[measure]);
   }
   const entities = [...totals.keys()].sort((a, b) => (totals.get(b) ?? 0) - (totals.get(a) ?? 0));
 
   return (
     <div className="overflow-auto border border-hairline">
+      {carpisma > 0 && (
+        <div className="border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-700 dark:text-amber-400">
+          ⚠ Bu çapraz tablo veriye tam uymuyor: {result.rows.length} satırdan{" "}
+          {carpisma} tanesi aynı hücreye düşüp üzerine yazıldı (görünmeyen veri
+          var) — sonucu <strong>tablo</strong> görünümünde kontrol edin.
+        </div>
+      )}
       <table className="w-full border-collapse font-mono text-[12px]">
         <thead>
           <tr className="border-b border-hairline bg-neutral-500/[0.04]">

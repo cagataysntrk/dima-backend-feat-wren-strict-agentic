@@ -37,9 +37,21 @@ def list_conversations(request: Request) -> list[ConversationOut]:
             Conversation.user_id == uid,
             Conversation.deleted_at.is_(None))  # soft-delete: silinmiş sohbetler gizli
             .order_by(Conversation.updated_at.desc())).all()
+        # `§K12` — SON TUR SORUSU: aynı başlıklı sohbetleri ayırt eden asıl sinyal
+        # (bkz. `ConversationOut.last_question` docstring'i). Kullanıcı başına liste
+        # küçük (kenar çubuğu) — konuşma başına tek satır sorgu kabul edilebilir.
+        son_sorular: dict[_uuid.UUID, str] = {}
+        for c in rows:
+            m = s.exec(select(ConversationMessage.question)
+                       .where(ConversationMessage.conversation_id == c.id)
+                       .order_by(ConversationMessage.seq.desc())
+                       .limit(1)).first()
+            if m:
+                son_sorular[c.id] = m
     return [ConversationOut(
         id=str(c.id), title=c.title or "(başlıksız)", session_id=c.session_id,
-        message_count=c.message_count, updated_at=c.updated_at.isoformat()) for c in rows]
+        message_count=c.message_count, updated_at=c.updated_at.isoformat(),
+        last_question=son_sorular.get(c.id)) for c in rows]
 
 
 def _owned(request: Request, cid: str) -> Conversation:

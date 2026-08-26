@@ -150,8 +150,20 @@ apiClient.interceptors.response.use(
         original.headers.Authorization = `Bearer ${token}`;
         return apiClient(original);
       }
+      // 🔴🔴 `§K3` — Ölçüldü (canlı Playwright kampanyası): 20+ dk açık kalan bir
+      // sekmede arka-plan sorguları (`/schema`/`/notifications`/`/auth/me`) art arda
+      // 401 alıyordu ve kullanıcı **hiçbir uyarı görmedi** — sayfa `/login`'e sessizce
+      // düştü (ya da düşmedi, arka-plan sorguları hata konsola gitti, kullanıcı fark
+      // etmedi). Refresh mekanizmasının KENDİSİ (`doRefresh` yukarıda, tek-uçuş
+      // paylaşımlı) doğru — asıl eksik, refresh GERÇEKTEN başarısız olduğunda
+      // kullanıcıya bunun NEDENİNİ söyleyen bir sinyal yokluğuydu. Kök/genel düzeltme:
+      // hangi uç 401 aldıysa (`/schema` ya da `/notifications` ya da başka biri fark
+      // etmez) yönlendirme artık NEDENİNİ taşıyor — login sayfası bunu okuyup nazik
+      // bir not gösteriyor, sessiz bir "neden buradayım" boşluğu bırakmıyor.
       if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-        window.location.href = "/login";
+        const mevcutYol = window.location.pathname + window.location.search;
+        window.location.href =
+          `/login?sebep=oturum_suresi&next=${encodeURIComponent(mevcutYol)}`;
       }
     }
     return Promise.reject(error);

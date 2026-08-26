@@ -14,6 +14,24 @@ from typing import Any
 
 from app import cube_router
 
+#: 🔴🔴 `§K2` — **"NEREDEYSE SIFIR", SIFIR DEĞİLDİR AMA SIFIR GİBİ DAVRANIR.**
+#:
+#: ## Ölçülen kusur (canlı, `2026-08-26_PLAYWRIGHT-CANLI-TEST-KAMPANYASI.md` §K2)
+#:
+#: `mizan.bakiye` gibi **dengelenmesi beklenen** (borç−alacak≈0) ölçülerde SQL
+#: toplamı tam `0` değil, kayan-nokta artığı (`-4.65e-10`, `9.31e-10`) veriyor.
+#: `p == 0` koruması (aşağıda `and p`) bu artığı **yakalamıyor** — Python'da
+#: `4.65e-10` "truthy"dir. Sonuç: iki gürültü-seviyesi sayı arasında
+#: `(c-p)/p*100` hesaplanıyor ve *"₺0 → ₺0 iken %100 arttı"* gibi
+#: matematiksel olarak anlamsız ama **büyük görünen** bir yüzde üretiyor.
+#:
+#: ⚠ **Bu `mizan`/`bakiye`'ye özel DEĞİL** — matematiksel olarak sıfıra
+#: yakınsaması beklenen HERHANGİ bir ölçüde (net etki, fark, dengelenmiş
+#: hesap) aynı kayan-nokta artığı oluşabilir. Eşik bu yüzden **mutlak ve
+#: domain-agnostiktir**: hiçbir gerçek iş ölçümü (₺/kg/adet) bu büyüklükte
+#: olmaz, yalnız birikmiş yuvarlama hatası bu kadar küçük olur.
+_SIFIR_ESIGI = 1e-6
+
 
 def time_dim_of(schema: dict, cube: str | None) -> str:
     """Cube'un zaman boyutu adı (parti/oee=tarih, enerji/ik=donem_tarih). Yoksa 'tarih'."""
@@ -75,7 +93,8 @@ def _merge(cur: list[dict], prev: list[dict], measures: list[str], dims: list[st
             c, p = r.get(m), pr.get(m)
             nr[f"{m}_gecen"] = p
             nr[f"{m}_degisim_yuzde"] = (round((c - p) / p * 100, 1)
-                if isinstance(c, (int, float)) and isinstance(p, (int, float)) and p else None)
+                if isinstance(c, (int, float)) and isinstance(p, (int, float))
+                and abs(p) > _SIFIR_ESIGI else None)
         out.append(nr)
     cols = cols0 + [f"{m}_gecen" for m in measures] + [f"{m}_degisim_yuzde" for m in measures]
     return out, cols

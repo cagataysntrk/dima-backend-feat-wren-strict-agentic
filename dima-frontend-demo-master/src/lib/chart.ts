@@ -9,6 +9,25 @@ import { fmtAxis, fmtTemporal, fmtValue, unitSuffix } from "./format";
 // Eksen ETİKETİ: zaman kovalarını okunur yap ("Oca 2026") — sıralama ham değerle kalır.
 const axisLabel = (v: string, col: string | null) => (col ? fmtTemporal(v, col) ?? v : v);
 
+// 🔴🔴 `§K5` — kategori sayısına göre eksen etiketi SIKIŞTIRMA — TEK karar noktası (KAT-1).
+// Ölçüldü (canlı, Playwright kampanyası — 11 makine): döndürme TEK BAŞINA (35°, sabit
+// font) yetmiyor, etiketler üst üste biniyor. Kategori sayısı arttıkça döndürme + küçük
+// font + (izin varsa) ECharts'ın kendi çakışma-önleme atlaması (`interval:"auto"`) birlikte
+// devreye girer. Domain-agnostik: yalnız `n`'e (kategori SAYISINA) bakar, hangi boyut
+// (makine/hesap/şube/…) olduğuna değil.
+// `allowSkip=false`: hücre-hizalı eksenler (heatmap) — etiket ASLA atlanmaz (her sütun bir
+// hücreye haritalanır, atlanırsa okuyucu hangi hücrenin hangi değere ait olduğunu kaybeder);
+// yalnız döndürme/küçültme ile sıkıştırılır.
+const axisLabelSpacing = (
+  n: number,
+  allowSkip = true,
+): { interval: 0 | "auto"; rotate: number; fontSize?: number } => {
+  if (allowSkip && n > 10) return { interval: "auto", rotate: 45, fontSize: 10 };
+  if (n > 8) return { interval: 0, rotate: 40, fontSize: 10 };
+  if (n > 5) return { interval: 0, rotate: 30, fontSize: 11 };
+  return { interval: 0, rotate: 0 };
+};
+
 // ADR-0024: backend viz.kind ile FE ChartKind hizası. "table"/"pivot" grafik değil → "none".
 export type ChartKind =
   | "kpi" | "bar" | "line" | "pie" | "heatmap" | "facet"
@@ -310,7 +329,7 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
       xAxis: {
         type: "category",
         data: xs.map((x) => axisLabel(x, comboX)),
-        axisLabel: { color: axis, interval: 0, rotate: xs.length > 8 ? 35 : 0 },
+        axisLabel: { color: axis, ...axisLabelSpacing(xs.length) },
         axisLine: { lineStyle: { color: split } },
       },
       yAxis: [
@@ -440,7 +459,7 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
         type: "category" as const,
         gridIndex: i,
         data: xs.map((x) => axisLabel(x, xDim)),
-        axisLabel: { color: axis, fontSize: 10, interval: 0, rotate: xs.length > 5 ? 45 : 0 },
+        axisLabel: { color: axis, ...axisLabelSpacing(xs.length) },
         axisLine: { lineStyle: { color: split } },
       })),
       yAxis: ms.map((m, i) => ({
@@ -566,8 +585,9 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
         type: "category",
         data: colLabels,
         splitArea: { show: true },
-        // kategorik eksende etiket ATLANMAZ (kumaş adları gibi her değer anlamlı)
-        axisLabel: { color: axis, interval: 0, rotate: colLabels.length > 5 ? 30 : 0 },
+        // kategorik eksende etiket ATLANMAZ (kumaş adları gibi her değer anlamlı) →
+        // `allowSkip=false`: yalnız döndürme/küçültme, `interval` hep `0` kalır.
+        axisLabel: { color: axis, ...axisLabelSpacing(colLabels.length, false) },
       },
       yAxis: { type: "category", data: rowLabels, splitArea: { show: true }, axisLabel: { color: axis, interval: 0 } },
       visualMap: {
@@ -639,7 +659,7 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
         type: "category" as const,
         gridIndex: i,
         data: xs.map((x) => axisLabel(x, xDim)),
-        axisLabel: { color: axis, fontSize: 10, interval: 0, rotate: xs.length > 5 ? 45 : 0 },
+        axisLabel: { color: axis, ...axisLabelSpacing(xs.length) },
         axisLine: { lineStyle: { color: split } },
       })),
       yAxis: panels.map((_, i) => ({
@@ -752,7 +772,7 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
       ...base,
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
       legend: { type: "scroll", top: 0, textStyle: { color: axis } },
-      xAxis: { type: "category", data: xs.map((x) => axisLabel(x, barX)), axisLabel: { color: axis, interval: 0, rotate: xs.length > 8 ? 35 : 0 }, axisLine: { lineStyle: { color: split } } },
+      xAxis: { type: "category", data: xs.map((x) => axisLabel(x, barX)), axisLabel: { color: axis, ...axisLabelSpacing(xs.length) }, axisLine: { lineStyle: { color: split } } },
       yAxis: {
         type: "value",
         name: unitSuffix(measure),
@@ -795,7 +815,7 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
     xAxis: {
       type: "category",
       data: cats,
-      axisLabel: { color: axis, rotate: cats.length > 8 ? 35 : 0, interval: 0 },
+      axisLabel: { color: axis, ...axisLabelSpacing(cats.length) },
       axisLine: { lineStyle: { color: split } },
     },
     yAxis: {

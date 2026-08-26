@@ -29,6 +29,35 @@ def test_conversation_resume_lists_messages(client):
     assert msg["viz"] is not None  # taze hesaplandı, boş kalmadı
 
 
+def test_liste_last_question_ile_ayni_basliktaki_sohbetleri_ayirt_eder(client):
+    """`§K12` — canlı Playwright kampanyasında ölçüldü: aynı başlıkla açılan sohbetler
+    yalnız mesaj sayısı + DAKİKA çözünürlüklü bir zaman damgasıyla ayrışamıyordu; ardışık
+    (saniyeler arayla) turlarda ikisi de aynı görünür. `last_question` — sohbetin SON
+    turunun soru metni — başlıktan bağımsız gerçek bir içerik ayrımı sağlamalı.
+
+    Domain-agnostik doğrulama: aynı test İKİ farklı küple (`oee` ve `mizan`) tekrarlanır —
+    kusur/düzeltme tek bir küpe özgü olmamalı (bkz. `feedback_kok_cozum_tekil_degil`)."""
+    for sid, ilk_soru, son_soru in [
+        ("conv-test-lastq-oee-1", "makine bazında oee", "geçen yılla kıyasla"),
+        ("conv-test-lastq-mizan-1", "hesap bazında bakiye", "şube kırılımında göster"),
+    ]:
+        r1 = client.post("/ask", json={"question": ilk_soru,
+                                       "execute": True, "session_id": sid})
+        assert r1.status_code == 200, r1.text
+        cid = _last_conversation_id(client, sid)
+        cq = r1.json().get("cube_query")
+        r2 = client.post("/ask", json={"question": son_soru, "execute": True,
+                                       "session_id": sid, "history": [ilk_soru],
+                                       "cube_query": cq})
+        assert r2.status_code == 200, r2.text
+
+        rows = client.get("/conversations").json()
+        hit = next(r for r in rows if r["id"] == cid)
+        assert hit["last_question"], f"last_question boş döndü ({sid})"
+        # son turun soru metni — İLK soru DEĞİL (sohbetin en son hâlini yansıtmalı).
+        assert son_soru in hit["last_question"] or hit["last_question"] == son_soru
+
+
 def test_conversation_delete_is_soft_and_filters_list_and_detail(client):
     """Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-14) — `DELETE /conversations/{cid}`
     HTTP katmanında hiç test edilmemişti. SOFT DELETE: kayıt DB'de kalır (proje kuralı,

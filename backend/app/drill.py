@@ -74,6 +74,23 @@ def formula_explanation(cube_query: dict, cube_meta: dict | None) -> str:
     _zaman = set((cube_meta or {}).get("time_dimensions") or ()) | {"tarih", "donem", "dönem"}
     _OP_SOZ = {"eq": "=", "neq": "≠", "gt": ">", "gte": "≥", "lt": "<", "lte": "≤",
                "contains": "içeren", "starts_with": "ile başlayan"}
+    # 🔴🔴 `§K10` — **ÇAKIŞAN ZAMAN FİLTRELERİ TEK CÜMLEYE BİRLEŞİR, "VE" İLE
+    # ART ARDA YAZILMAZ.** Ölçüldü (canlı, Playwright kampanyası): aynı zaman
+    # boyutu için birden fazla filtre birikince (konuşma turları arası artık
+    # filtre) her biri ayrı bir "X tarihinden itibaren" cümlesi oluyordu —
+    # *"…2026-02-25'ten itibaren VE 2026-04-01'den itibaren VE 2026-05-01
+    # tarihli…"* — okunaksız, çelişkili görünüyordu.
+    #
+    # ⚠ Domain-agnostik: bu, hangi küpün zaman boyutu olursa olsun aynı
+    # mekanizmadan doğar; düzeltme küp/ölçü adı bilmiyor.
+    #
+    # En kısıtlayıcı sınır kazanır — birden fazla `gte` varsa EN BÜYÜK (en
+    # geç başlangıç), birden fazla `lte` varsa EN KÜÇÜK (en erken bitiş).
+    # Bu, birikmiş filtrelerin AND ile birleştiği SQL semantiğiyle de
+    # tutarlıdır: sorgunun kendisi zaten en kısıtlayıcı aralığı uygular.
+    _zaman_gte: list[str] = []
+    _zaman_lte: list[str] = []
+    _zaman_diger: list[str] = []
     scope_bits: list[str] = []
     for f in filters:
         dim = f.get("dimension")
@@ -81,14 +98,14 @@ def formula_explanation(cube_query: dict, cube_meta: dict | None) -> str:
         op = f.get("operator", "eq")
         val = f.get("value")
         if dim in _zaman:
-            if op == "gte":
-                scope_bits.append(f"{val} tarihinden itibaren")
-            elif op == "lte":
-                scope_bits.append(f"{val} tarihine kadar")
+            if op == "gte" and val is not None:
+                _zaman_gte.append(str(val))
+            elif op == "lte" and val is not None:
+                _zaman_lte.append(str(val))
             elif op == "between" and isinstance(val, (list, tuple)) and len(val) == 2:
-                scope_bits.append(f"{val[0]} – {val[1]} aralığında")
+                _zaman_diger.append(f"{val[0]} – {val[1]} aralığında")
             else:
-                scope_bits.append(f"{val} tarihli")
+                _zaman_diger.append(f"{val} tarihli")
         elif op == "in" and isinstance(val, list):
             scope_bits.append(f"{label} değeri {', '.join(str(v) for v in val)} olan")
         elif op == "not_in" and isinstance(val, list):
@@ -99,6 +116,14 @@ def formula_explanation(cube_query: dict, cube_meta: dict | None) -> str:
             # ⚠ Operatör **olduğu gibi** yazılır; tanınmayan bir operatörü `=` diye
             # sunmak, makbuzun tek işini yapmamaktır.
             scope_bits.append(f"{label} {_OP_SOZ.get(op, op)} {val} olan")
+    # `§K10` — biriken gte/lte'lerden EN KISITLAYICI olanı tek cümleye yazılır.
+    # Metin sıralaması (max/min) tarihler ISO biçiminde (`YYYY-MM-DD`) olduğu
+    # için karakter dizisi karşılaştırması kronolojik sırayla örtüşür.
+    if _zaman_gte:
+        scope_bits.append(f"{max(_zaman_gte)} tarihinden itibaren")
+    if _zaman_lte:
+        scope_bits.append(f"{min(_zaman_lte)} tarihine kadar")
+    scope_bits.extend(_zaman_diger)
     for td in time_dims:
         gran = td.get("granularity")
         if gran:

@@ -265,6 +265,37 @@ def test_yoy_time_series_stays_line():
     assert s["facet_measure"] is None
 
 
+def test_YUKSEK_KARDINALITELI_SERIES_FACET_OLMAZ():
+    """🔴🔴 `§K4` — **ASIL DEĞİŞMEZ.** 3 boyut + zaman: panel ekseni (`vardiya`,
+    3 değer) eşiği geçse bile, SERIES ekseni (`makine`, 11 değer) kardinalite
+    kontrolünden geçmeliydi. Ölçüldü (canlı): panel oluşuyor ama her panelin
+    içi 11 renkli çubuk — okunamaz "duvar kağıdı". Facet artık kurulmamalı
+    (table'a düşer — okunamaz grafikten daha iyi bir dürüst geri çekiliş)."""
+    aylar = [f"2026-{m:02d}" for m in range(1, 4)]
+    vardiyalar = ["1. Vardiya", "2. Vardiya", "3. Vardiya"]
+    makineler = [f"M{i}" for i in range(11)]
+    rows = [{"ay": ay, "vardiya": v, "makine": mk, "oee": 70.0}
+            for ay in aylar for v in vardiyalar for mk in makineler]
+    s = rec(["ay", "vardiya", "makine", "oee"], rows, units={"oee": "%"},
+            cube_query={"timeDimensions": [{"dimension": "ay", "granularity": "month"}]})
+    assert s["kind"] != "facet", (
+        f"🔴 yüksek kardinaliteli series hâlâ facet'e giriyor: {s['kind']!r}")
+
+
+def test_ZIT_OLCUT_DUSUK_KARDINALITELI_SERIES_HALA_FACET_OLUR():
+    """🆃 Kapının kurbanı: series kontrolünü HER ZAMAN engelleyecek kadar
+    sıkı yazmak da yeşil kalırdı. İki boyut da düşük kardinaliteliyken
+    (3 vardiya × 2 hat) facet HÂLÂ kurulmalı — bu okunabilir bir görünüm."""
+    aylar = [f"2026-{m:02d}" for m in range(1, 4)]
+    vardiyalar = ["1. Vardiya", "2. Vardiya", "3. Vardiya"]
+    hatlar = ["Hat A", "Hat B"]
+    rows = [{"ay": ay, "vardiya": v, "hat": h, "oee": 70.0}
+            for ay in aylar for v in vardiyalar for h in hatlar]
+    s = rec(["ay", "vardiya", "hat", "oee"], rows, units={"oee": "%"},
+            cube_query={"timeDimensions": [{"dimension": "ay", "granularity": "month"}]})
+    assert s["kind"] == "facet", f"🔴 düşük kardinaliteli series artık facet olmuyor: {s['kind']!r}"
+
+
 def test_llm_no_cube_query_numeric_month_stays_time_col():
     # regresyon (Madde 13, 1 Ağustos 2026): cube_query=None (LLM/Discovery yolu) iken
     # LLM'in ürettiği SQL "ay"ı SAYISAL (EXTRACT(MONTH...) gibi) döndürürse önceden İKİNCİL

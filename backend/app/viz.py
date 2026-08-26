@@ -193,6 +193,20 @@ def analyze(
     else:
         primary_dim = None
 
+    # 🔴🔴 `§K4` — **FACET'İN "SERIES" EKSENİ DE OKUNABİLİR KALMALI, YALNIZ
+    # PANEL EKSENİ DEĞİL.** Ölçüldü (canlı, Playwright kampanyası — makine×
+    # vardiya×ay): panel ekseni (`vardiya`, 3 değer) eşiği geçti, facet
+    # kuruldu — ama SERIES ekseni (`makine`, 11 değer) hiç kontrol
+    # edilmiyordu. Sonuç: her panelin İÇİNDE 11 renkli çubuk/çizgi —
+    # okunamaz bir "duvar kağıdı". Aynı 2 boyutlu veri (`makine`×`vardiya`,
+    # zaman olmadan) BAŞKA bir yolda (`heatmap`) sorunsuz okunuyordu (§K4'ün
+    # dışsal kanıtı) — motor doğru karar VEREBİLİYOR, yalnız bu dalda series
+    # kardinalitesi hiç sorulmuyordu.
+    #
+    # ⚠ Domain-agnostik: eşik `_FACET_KARDINALITE_TAVANI` panel EKSENİYLE
+    # (satır altında zaten `6` olarak kullanılıyordu) **aynı ve simetrik** —
+    # hangi iki boyut panel/series rolüne düşerse düşsün aynı kural uygulanır.
+    _FACET_KARDINALITE_TAVANI = 6
     facet: dict[str, str] | None = None
     if len(dims) == 3 and len(measures) >= 1:
         if time_col:
@@ -200,12 +214,14 @@ def analyze(
                 [d for d in dims if d != time_col], key=lambda d: _card(rows, d)
             )
             a, b = rest[0], rest[1]
-            if _card(rows, a) <= 6:
+            if (_card(rows, a) <= _FACET_KARDINALITE_TAVANI
+                    and _card(rows, b) <= _FACET_KARDINALITE_TAVANI):
                 facet = {"dim": a, "x": time_col, "series": b}
         else:
             srt = sorted(dims, key=lambda d: _card(rows, d))
             fd, sd, xd = srt[0], srt[1], srt[2]
-            if _card(rows, fd) <= 6:
+            if (_card(rows, fd) <= _FACET_KARDINALITE_TAVANI
+                    and _card(rows, sd) <= _FACET_KARDINALITE_TAVANI):
                 facet = {"dim": fd, "x": xd, "series": sd}
 
     kind: VizKind = "table"

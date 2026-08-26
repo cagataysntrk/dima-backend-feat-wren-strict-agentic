@@ -2543,6 +2543,23 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 if rec.oneriler:
                     adimlar = [NextStep(label=o.segment, kind="dimension",
                                         cube_query=o.cube_query) for o in rec.oneriler]
+            elif _oner:
+                # 🔴🔴 `§K9` — **REÇETE İSTENDİ AMA ÜRETİLEMEDİ: BEYAN EDİLİR, SESSİZ
+                # KALINMAZ.** Ölçüldü (canlı, Playwright kampanyası — `OEE` örneğiyle):
+                # `katki.raporlar` boş çıktığında (segment-bazlı ayrıştırma yok — ölçü
+                # formül-bileşenli, `contribution.report`'un segment yolundan geçmiyor)
+                # bu blok hiç çalışmıyordu ve "ne yapmalıyız?" sorusu "neden böyle?"nin
+                # **birebir aynısını** dönüyordu — kullanıcı fark etmeden yanlış (aslında
+                # hiç var olmayan) bir "reçete" okumuş oluyordu.
+                #
+                # ⚠ Bu düzeltme **OEE'ye özel değil**: `katki.raporlar` boşluğu hangi
+                # küp/ölçüde olursa olsun (muhasebe, ciro, fire…) aynı davranışı üretir —
+                # `_oner`/`katki.raporlar` ikisi de bu bloktan önce zaten hesaplanmış
+                # genel değerlerdir, burada ölçüye özgü hiçbir dal yok.
+                not_metni += ("\n\n⚠ **Reçete üretilemedi:** aksiyon önerisi segment "
+                              "bazlı bir ayrıştırma ister, bu soruda öyle bir kırılım "
+                              "yok — yukarıdaki yalnız bir teşhis, bir öneri değil.")
+                iz.append("Reçete: segment ayrıştırması yok → üretilemedi (beyan edildi)")
             # Bulgular CEVABIN GÖVDESİDİR — `next_steps` DEĞİL. `next_steps`e konulduğunda
             # UI onları "sonraki adım" başlığıyla gösteriyordu (ölçüldü) ve Δ tutarları,
             # % paylar, kırpma uyarısı kayboluyordu. `contribution` alanı zengin gövdeyi

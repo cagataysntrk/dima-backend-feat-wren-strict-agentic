@@ -69,15 +69,21 @@ export function PlanOnizleme({
         </div>
       ) : null}
 
-      {/* ① adımlar DİKEY — `ol` çünkü sıra anlam taşır, süs değil. */}
+      {/* ① adımlar DİKEY — `ol` çünkü sıra anlam taşır, süs değil.
+          🔴🔴 `§K6` — `a.fiil` (`SORGU`/`AYRISTIR`/`GORSEL`/`ANLAT`…) İÇ ADLARI
+          eskiden burada ham rozet olarak basılıyordu — kullanıcı için anlamsız
+          kısaltmalar (bkz. canlı Playwright kampanyası). Backend'in kendisi
+          `onizleme_satiri()`'de tam olarak bunu YAPMAMAYA çalışıyor (`fiil`
+          önekini `metin`'den bilerek SIYIRIYOR, `plan_tuketici.py`) — burada
+          çıplak basmak o kararı geri alıyordu. `metin` zaten tam okunur bir
+          cümle; ikinci bir jargon rozeti eklemek yerine yalnız sıra numarası
+          kalır (KAT-1: çeviri sözlüğü — `FIIL_ONIZLEME` — TEK sahipte kalır,
+          FE'ye ikinci bir kopya taşınmaz). */}
       <ol className="space-y-0.5">
         {adimlar.map((a) => (
           <li key={a.sira} className="flex gap-2 text-xs leading-5">
             <span className="w-4 shrink-0 text-right font-mono text-neutral-400">
               {a.sira}
-            </span>
-            <span className="shrink-0 font-mono text-[10px] uppercase tracking-wide text-accent">
-              {a.fiil}
             </span>
             <span className="text-neutral-700">{a.metin}</span>
           </li>

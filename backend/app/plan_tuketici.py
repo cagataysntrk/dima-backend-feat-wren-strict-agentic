@@ -1437,6 +1437,116 @@ def cevap_notu(plan: dict, out: dict) -> str:
     return makbuz(plan) + "\n\n" + _bulgu_metni(plan, out)
 
 
+def _bulgu_ve_metin_cikar(out: dict, plan: dict) -> tuple[dict | None, dict | None, dict | None]:
+    """🔴 `§88` — **`GORSEL`/`AYRISTIR`/`ANLAT` çıktılarını `bolumlere_cevir`'in
+    süzdüğü yerden geri toplar.**
+
+    ## Ölçülen kusur (canlı, `/plan/kos`, kullanıcının kendi cümlesiyle)
+
+    *"son 2 yıl satış verileri ve … grafiğe dök"* → plan `SORGU→AYRISTIR→GORSEL→ANLAT`
+    doğru kuruldu, `koştu` (`gecerli=True`), `_gorsel()` `viz.recommend(...)`'i fiilen
+    çağırdı — ama HTTP cevabında `viz` **hiç yoktu**. Sebep: `bolumlere_cevir`
+    (`§29`) bölümleri `CIKTI_TIPI`ye göre süzüyor ve yalnız `"satirlar"` tipini
+    topluyor; `GORSEL`/`AYRISTIR` tipi `"bulgular"`, `ANLAT` tipi `"metin"`
+    (`plan_semasi.CIKTI_TIPI`) — üçü de bu süzgeçten **hiç geçmiyor**. Süzgeç
+    doğruydu (`bolumler` yalnız satır bekleyen tüketicilere gider) ama kimse bu üç
+    tipin **başka bir yere** taşınması gerektiğini yazmadı — hesaplanan bir grafik,
+    hiçbir alana konmadığı için sessizce kayboluyordu.
+
+    ⚠ `AskResponse.viz`/`.contribution`/`.interpretation` zaten var (ADR-0024, Faz
+    G1/H, `cikti_yorumlama`) — burada yeni bir alan **icat edilmiyor**, var olan
+    sözleşme dolduruluyor.
+
+    Döner: `(viz, contribution, interpretation)` — plandaki **son** `GORSEL`/
+    `AYRISTIR`/`ANLAT` adımının çıktısı, yoksa `None`. Birden fazlaysa sonuncusu
+    kazanır (`ANLAT` her hâlükârda yalnız son adım olabilir — `plan_kosucu.dogrula`).
+    """
+    ciktilar = out.get("ciktilar") or []
+    adimlar = plan.get("adimlar") or []
+    viz: dict | None = None
+    contribution: dict | None = None
+    interpretation: dict | None = None
+    for adim, cikti in zip(adimlar, ciktilar):
+        fiil = adim.get("fiil")
+        if fiil == "GORSEL" and isinstance(cikti, dict) and cikti:
+            viz = cikti
+        elif fiil == "AYRISTIR" and isinstance(cikti, dict) and cikti:
+            contribution = cikti
+        elif fiil == "ANLAT" and isinstance(cikti, str) and cikti.strip():
+            interpretation = {"summary": cikti, "narration_kaynak": "plan"}
+    return viz, contribution, interpretation
+
+
+def _kullanilan_boyutlar(out: dict, plan: dict) -> set[str]:
+    """Planın **fiilen çalıştırdığı** sorguların taşıdığı tüm boyut adları.
+
+    ⚠ `out["sorgular"]` yalnız `SORGU` adımlarının **çözülmüş** fişini taşır
+    (`calistir`'in ürettiği); `AYRISTIR`/`GORSEL` gibi öteki adımlar plandaki
+    **ham** `cube_query`'yi kullanır — ikisi de eklenir, hangisi eksik kalırsa
+    bir kırılım orada görünmez olur."""
+    boyutlar: set[str] = set()
+    for cq in out.get("sorgular") or []:
+        if isinstance(cq, dict):
+            boyutlar |= {str(d) for d in (cq.get("dimensions") or [])}
+    for adim in plan.get("adimlar") or []:
+        cq = adim.get("cube_query")
+        if isinstance(cq, dict):
+            boyutlar |= {str(d) for d in (cq.get("dimensions") or [])}
+    return boyutlar
+
+
+def _kirilim_beyani(schema: dict, soru: str, out: dict, plan: dict) -> str | None:
+    """🔴 `§89` — **İSTENEN KIRILIM KARŞILANMADIYSA BEYAN EDİLİR** (`ADR-0020`).
+
+    ## Ölçülen kusur (canlı, kullanıcının kendi cümlesiyle, `§10.3`/`§13.3`)
+
+    *"…ağırlığı en fazla olan **kalemler**…"* → plan `parti` küpünü **musteri**
+    (bir turda) ya da **kumas_cinsi** (başka bir turda) kırılımıyla koştu — hiçbiri
+    "kalem" değildi ve kullanıcıya hiç söylenmedi.
+
+    ## Kök neden `plan_onarim` değil — kapsam DIŞINDA kalıyordu
+
+    Bu bir mekanik kayma **değil** (`plan_onarim`'in üç şartından ikincisi —
+    "aynı değerin başka tam olarak BİR geçerli yeri var" — burada sağlanmıyor):
+    `"kalem"` gerçek bir boyut adı, ama **başka bir küpte** (`butce`); `parti`
+    küpünde yok. Yani bu bir **`iki_cube`** durumu (`MIMARI §2.0.3`) — kullanıcının
+    istediği kırılım ile seçilen küpün ölçüsü (`toplam_ciro`) **farklı küplerde**
+    yaşıyor, plan yalnız birini koşabildi ve ötekini **sessizce** düşürdü.
+
+    ⚠ Bu fonksiyon `iki_cube`'u **çözmüyor** (o hâlâ bir yetenek eksikliği,
+    `§3` dışsal araştırmasının doğruladığı gibi) — yalnız düşen kırılımı
+    **görünür** kılıyor. *Çözülemeyen bir şeyi sessizce yapmak, onu hiç
+    denememekten kötüdür — çünkü kullanıcı denendiğini sanır.*
+    """
+    from app import niyet as _niyet
+
+    try:
+        n = _niyet.coz(soru or "", schema or {})
+    except Exception:
+        # ⚠ `_niyet._guvenli`'nin ilkesiyle aynı: düşen bir GÖZLEMDİR, cevap değil —
+        # ama sessiz de olmaz, `ADR-0020` bunu bir istisna tanımıyor.
+        _log.warning("§89: kırılım beyanı için niyet çözülemedi", exc_info=True)
+        return None
+    # ⚠ `kirilim_istendi` **KASITLI OLARAK OKUNMUYOR**. Ölçüldü (canlı, kullanıcının
+    # kendi cümlesi): `kirilim_istendi=False` (metinde "göre"/"bazında" gibi klasik bir
+    # tetik yok) ama `kirilimlar=['kalem','satis_temsilcisi']` (şema eşleştirmesi
+    # gerçek boyut adlarını YİNE DE buldu). İlk yazım `kirilim_istendi`yi de şart
+    # koşuyordu ve bu YÜZDEN sessiz kaldı — tam düzeltmek istediği kusuru tekrarladı.
+    # `niyet.py`'nin kendi ayrımı (§121-124) "hangi boyut EŞLEŞTİ" (`kirilimlar`) ile
+    # "kullanıcı kırılım İSTEDİ Mİ" (`kirilim_istendi`, salt kalıp-tetikli) arasındadır —
+    # burada önemli olan yalnız **eşleşme**, tetik kelimesi değil.
+    if not n.kirilimlar:
+        return None
+    kullanilan = _kullanilan_boyutlar(out, plan)
+    kayip = [k for k in n.kirilimlar if k not in kullanilan]
+    if not kayip:
+        return None
+    _log.info("§89: kayıp kırılım — istenen=%s kullanılan=%s", kayip, sorted(kullanilan))
+    kullanilan_ad = ", ".join(sorted(kullanilan)) or "(hiçbiri)"
+    return (f"⚠ İstenen kırılım(lar) bu cevaba yansımadı: {', '.join(kayip)} "
+            f"— seçilen veri kümesinde yok, onun yerine {kullanilan_ad} kullanıldı.")
+
+
 def kosum_yaniti(out: dict, plan: dict, *, schema: dict, soru: str,
                  makro: str | None = None) -> dict:
     """🔴 `§66` — koşmuş bir planın **HTTP cevabı** — ve bunun **tek sahibi** ㊲.
@@ -1450,6 +1560,7 @@ def kosum_yaniti(out: dict, plan: dict, *, schema: dict, soru: str,
     ⚠ `question` zorunlu: `AskResponse` onu şart koşuyor ve kart başlığı odur.
     """
     bolumler, son = bolumlere_cevir(out, plan, schema=schema, soru=soru)
+    viz, contribution, interpretation = _bulgu_ve_metin_cikar(out, plan)
     yanit = {
         "source": "cube",
         "question": soru,
@@ -1463,6 +1574,21 @@ def kosum_yaniti(out: dict, plan: dict, *, schema: dict, soru: str,
         # arayüz onu **düz metin** olarak çiziyordu.
         "note": cevap_notu(plan, out),
     }
+    # 🔴 `§88` — `GORSEL`/`AYRISTIR`/`ANLAT` **hesaplanıyordu, hiçbir alana gitmiyordu**
+    # (yukarıdaki fonksiyonun gerekçesi). `None` ise alan hiç eklenmez — `AskResponse`
+    # zaten Optional, boş bir anahtar eklemek "hesapladım ama boş" ile "hiç hesaplamadım"
+    # ayrımını bulanıklaştırırdı.
+    if viz is not None:
+        yanit["viz"] = viz
+    if contribution is not None:
+        yanit["contribution"] = contribution
+    if interpretation is not None:
+        yanit["interpretation"] = interpretation
+    # 🔴 `§89` — istenen bir kırılım karşılanmadan düştüyse **beyan** notun sonuna eklenir
+    # (`plan_onarim`'in "beyanlar sona eklenir" ilkesiyle aynı sıra — `§66` gerekçesi).
+    _kirilim = _kirilim_beyani(schema, soru, out, plan)
+    if _kirilim:
+        yanit["note"] = f"{yanit['note']}\n\n{_kirilim}"
     if makro:
         yanit["makro"] = makro
     return yanit
