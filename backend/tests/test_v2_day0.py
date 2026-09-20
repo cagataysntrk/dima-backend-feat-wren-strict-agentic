@@ -66,25 +66,35 @@ def test_day0_baseline_manifest_is_large_and_covers_known_silent_wrong_inventory
     assert manifest["real_world_source_anchors"]
 
 
-def test_ask_v2_real_wren_bootstrap_and_rollback(client, monkeypatch):
+def test_ask_v2_runtime_boundary_and_rollback_still_hold_after_day1(client, monkeypatch):
+    """Day 1 may advance the response, but Day 0 runtime/rollback invariants stay locked."""
+    import json
+
+    from app.config import get_settings
+
+    class _FakeLLM:
+        def structured_text(self, system: str, user: str) -> str:  # noqa: ARG002
+            return json.dumps({"dialogue_act": "SOCIAL"})
+
     settings = get_settings()
-    body = {"question": "day0 smoke", "session_id": "v2-day0"}
+    body = {"question": "teşekkürler", "session_id": "v2-day0"}
 
     monkeypatch.setattr(settings, "ask_v2_enabled", False)
     off = client.post("/ask-v2", json=body)
     assert off.status_code == 404
 
     monkeypatch.setattr(settings, "ask_v2_enabled", True)
+    monkeypatch.setattr(client.app.state, "llm", _FakeLLM())
     on = client.post("/ask-v2", json=body)
     assert on.status_code == 200, on.text
 
     data = on.json()
-    assert data["status"] == "bootstrap_ready"
-    assert data["stage"] == "day0_runtime_boundary"
+    assert data["status"] == "interpreted"
     assert data["query_executed"] is False
-    assert data["llm_called"] is False
+    assert data["sql_generated"] is False
     assert data["legacy_semantic_path_called"] is False
     assert data["runtime"]["principal_user_id"]
     assert data["runtime"]["tenant_slug"] == settings.company
     assert data["runtime"]["mdl_version"]
-    assert data["next_stage"] == "turn_interpreter_day1"
+    assert data["context_version"]["version"]
+
