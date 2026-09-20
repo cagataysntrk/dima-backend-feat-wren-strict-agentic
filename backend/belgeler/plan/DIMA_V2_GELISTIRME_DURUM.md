@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 0 ACTIVE — SOURCE LOCK + BASELINE + V2 STUB**  
+**Durum:** **DAY 0 COMPLETE — DAY 1 READY**  
 **Kod fazı:** Henüz başlamadı.
 
 ---
@@ -166,7 +166,7 @@ alınır → V2 kendi typed shell cevabını verir → legacy `/ask` semantic de
 
 ---
 
-## 5A. DAY 0 ACTIVE TICKET — P3 SOURCE LOCK + BASELINE
+## 5A. DAY 0 COMPLETE — P3 SOURCE LOCK + BASELINE
 
 **ROADMAP:** P0, P0A, P1/P1A/P1B, P2/P2B, **P3**  
 **REPORT DAYANAK:** R0–R6; özellikle R2, R3/R3A, R4, R5/R5.6 ve immutable runtime ilkesi  
@@ -337,3 +337,81 @@ Bir sonraki geliştirici yalnız şu sırayla devam eder:
 - Hedefli test + 37-unit baseline artefaktını oku.
 - Sonucu ve artefakt özeti bu dosyaya yaz.
 - Exit yeşilse Day0 kapat; Day1 TurnInterpreter ticket'ını ancak ondan sonra aç.
+
+
+### 2026-09-20 — DAY 0 / kapanış ölçümü
+
+**CI / ölçüm kanıtı**
+- Draft PR: **#1** — `feat/ask-v2-mvp → wren-bağımsız`.
+- Corrected Day0 workflow run: `35535503304`.
+- Focused Day0 gates: **PASS**.
+- Legacy baseline step: **PASS**.
+- Artifact upload: **PASS**.
+- Workflow artifact digest: `sha256:87dc5dd87c1bca8dd989a9b5a619f204ed413809aa0bf530ce97004a73e37556`.
+- Kalıcı repo baseline: `eval/v2_day0_baseline.json` @ `4b52cdb916016f13d3c59dcff703649c63ac6b30`.
+
+**Baseline sonucu**
+- selected units: **37**
+- produced records: **44**
+- correct records: **43**
+- baseline-observed non-green record: **1**
+- known silent-wrong inventory coverage: **100%**
+- execution mode: `rule_offline`
+- every record has `failure_stage`: **YES**
+
+**Tek non-green legacy kayıt**
+- unit: `experience:kiyas_turu`
+- akış: `bu yıl makine bazında oee → geçen yılla kıyasla → bunu analiz et`
+- sources: `cube → cube → cube`
+- failure stage: `experience_contract`
+- yeşil kontroller:
+  - süreklilik = true
+  - makbuz = true
+  - anlatı = true
+- non-green kontrol:
+  - `1·çapa: konuşma turu yeni SQL yazmaz = on_kosul_yok`
+
+Bu sonuç **V2 regresyonu değildir**; Day0 source-lock'un yakaladığı legacy before-picture'dır.
+Day0 gate'in amacı legacy'nin %100 yeşil olması değil, başlangıç gerçeğinin kaybolmadan
+dondurulmasıdır.
+
+### V2-D005 — legacy kıyas turunda çapa kontrolü ölçülemiyor
+
+- Kaynak: P3 baseline / `experience:kiyas_turu`.
+- Gözlem: comparison → “bunu analiz et” akışında mevcut legacy cevaplar `cube` yolunda;
+  experience suite'in “konuşma turu yeni SQL yazmaz” kontrolü `on_kosul_yok` üretiyor.
+- Sınıf: **baseline observation / measurement-contract gap**; henüz “ürün bug'ı” diye
+  yeniden sınıflandırılmadı.
+- Risk: yeni V2'nin RESULT_EXPLAIN / mevcut sonucu yorumlama turunda gereksiz query
+  çalıştırmasını engelleyen Day1–Day5 acceptance için güçlü sentinel.
+- Blocker: **Day0 için NO**.
+- Kapanış: V2 canonical thread'de “bunu analiz et/yorumla” için query=0 davranışı
+  TurnInterpreter + DialoguePolicy aşamalarında ölçülür; eski legacy dosyası bu uğurda
+  patch edilmez.
+- Hedef: Day1 classification contract + Day5 Core MVP.
+
+**Day 0 EXIT**
+- representative baseline >=30: **PASS (37)**
+- known silent-wrong inventory coverage: **PASS**
+- failure-stage kayıt disiplini: **PASS**
+- `/ask-v2` stub boot: **PASS**
+- explicit principal/tenant runtime: **PASS**
+- immutable request runtime snapshot: **PASS**
+- real demo Wren schema + MDL smoke: **PASS**
+- feature flag off rollback: **PASS**
+- V2 query/LLM invocation: **0**
+- legacy semantic hot-path import: **0**
+- legacy semantic owner dosyalarında değişiklik: **0**
+- request-level legacy fallback: **0**
+
+**Day 0 kapanış kararı**
+Day 0 tamamlandı. V2'nin Katman 0 / L0 sınırı kanıtlandı ve source-lock kalıcı olarak
+repoya alındı. Baseline workflow tekrar eden pushlarda çalışmayacak şekilde tekrar
+`opened + workflow_dispatch` moduna donduruldu.
+
+**Sıradaki**
+- Day1 başlamadan **roadmap P4 + rapor R7** okunacak.
+- Önce Day1 ticket contract'ı bu dosyaya yazılacak.
+- Day1 yalnız `ContextProviderV0 + TurnInterpreter + typed TurnInterpretation` kapsamına
+  girecek.
+- SemanticResolver/clarification Day2'ye, CubePlanner/query Day3'e bırakılacak.
