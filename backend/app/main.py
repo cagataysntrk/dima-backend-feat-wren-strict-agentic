@@ -14,7 +14,7 @@ from app.auth import router as auth_router
 from app.auth.dependencies import get_current_principal
 from app.config import get_settings
 from app.llm import build_generator
-from app.routers import ask, health, query
+from app.routers import ask, ask_v2, health, query
 from app.routers import connections as connections_router
 from app.routers import contracts as contracts_router
 from app.routers import conversations as conversations_router
@@ -230,6 +230,9 @@ def create_app() -> FastAPI:
     app.include_router(metrics.router, dependencies=_protected)
     app.include_router(query.router, dependencies=_protected)
     app.include_router(ask.router, dependencies=_protected)
+    # Dima V2 greenfield island. Route owns its query permission + company binding;
+    # the feature flag remains default-off until Day 0/1 gates are proven.
+    app.include_router(ask_v2.router)
     app.include_router(contracts_router.router, dependencies=_protected)
     # FAZ 1.12 — AI Act Md.13: denetleyici-okunabilir kayıt ihracı.
     from app.routers import audit_export as _audit_export
