@@ -28,8 +28,8 @@ name: v2-day1-turn-interpreter
   workflow_dispatch:
 
 concurrency:
-  group: v2-day1-pr-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: v2-day1-${{ github.sha }}
+  cancel-in-progress: false
 
 defaults:
   run:
