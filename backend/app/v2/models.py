@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AskV2BootstrapRequest(BaseModel):
@@ -21,6 +21,8 @@ class AskV2BootstrapRequest(BaseModel):
 
 class TenantAnalyticsRuntimeV0(BaseModel):
     """Immutable identity + semantic-engine snapshot for one V2 request."""
+
+    model_config = ConfigDict(frozen=True)
 
     tenant_id: str | None = None
     tenant_slug: str | None = None
