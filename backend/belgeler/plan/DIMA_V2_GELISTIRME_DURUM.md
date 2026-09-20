@@ -292,3 +292,48 @@ Bir sonraki geliştirici yalnız şu sırayla devam eder:
 6. Hedefli test/daily demo gerekiyorsa çalıştır.
 7. Bu dosyayı commit SHA, sonuç, borç ve sıradaki adımla güncelle.
 8. Ancak exit yeşilse sonraki ticket'a geç.
+
+
+### 2026-09-20 — DAY 0 / implementation batch 1
+
+**Roadmap/Report çaprazı**
+- P3 Source Lock + Baseline okundu.
+- P2/P2B isolation/touch-no-touch ile R2–R5 reuse-first sınırı çaprazlandı.
+- R3/R3A eski hata sınıfları için import-ban + explicit runtime + no-fallback/no-query Day0 sınırı seçildi.
+
+**Yapılan**
+- `app/v2/` greenfield package yeniden, bu kez Day0 kapsamıyla kuruldu.
+- `TenantAnalyticsRuntimeV0` yalnız principal/tenant + MDL/schema snapshot taşır; semantic yorum yok.
+- `POST /ask-v2` eklendi; `query:run` + `require_company` ile mevcut auth/tenant yatırımı reuse edildi.
+- `ask_v2_enabled=False` default-off rollback flag eklendi.
+- Stub yalnız Wren `schema()` + `mdl_version` okur; query/dry-plan/LLM/legacy semantic path yok.
+- 32 mevcut eval case + 5 mevcut experience scenario = 37 unit Day0 baseline manifesti kilitlendi.
+- Known silent-wrong envanteri ranking/period/comparison/typo/repair/follow-up/ambiguity aileleriyle manifestte coverage gate'e bağlandı.
+- `lab/v2_day0_baseline.py` mevcut `/ask` üzerinden outcome/source/correctness/failure_stage/latency kaydı üretecek şekilde eklendi.
+- `tests/test_v2_day0.py` yalnız hedefli Day0 gate'leri içeriyor.
+- Bir kerelik `v2-day0-baseline` workflow'u draft PR açılışında baseline JSON artefaktı üretecek; sonraki pushlarda otomatik tekrar etmeyecek.
+
+**Legacy no-touch doğrulaması**
+- `app/routers/ask.py`: değişmedi.
+- `app/cube_router.py`: değişmedi.
+- `app/uyum.py`: değişmedi.
+- `app/plan_tuketici.py`: değişmedi.
+- `app/plan_semasi.py`: değişmedi.
+- `app/wren_service.py`: değişmedi.
+
+**Açık borç**
+
+### V2-D004 — Live-provider Day0 baseline yok
+- Kaynak: P3 baseline + P0A hız politikası.
+- Mevcut ölçüm: `rule_offline` reproducible before-picture.
+- Risk: Intent-LLM/Discovery canlı sağlayıcı davranışı Day0 artefaktında temsil edilmeyecek.
+- Blocker: **Day0/Core geliştirme için NO**; pilot/default-ready öncesi YES.
+- Neden şimdi değil: API/kota/belirlenimsizlik Day0 hızlı mimari kanıtını bloke etmemeli; mevcut repo da live ölçümü faz-sonu sınıfında tutuyor.
+- Kapanış: gerçek sağlayıcıyla aynı source-locked manifest üzerinde ayrı ölçüm + provenance.
+- Hedef: pilot hardening.
+
+**Bekleyen ölçüm**
+- Draft PR aç → one-shot Day0 workflow.
+- Hedefli test + 37-unit baseline artefaktını oku.
+- Sonucu ve artefakt özeti bu dosyaya yaz.
+- Exit yeşilse Day0 kapat; Day1 TurnInterpreter ticket'ını ancak ondan sonra aç.
