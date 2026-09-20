@@ -189,11 +189,87 @@ class UserRepair(FrozenModel):
     correction_spans: tuple[str, ...] = ()
 
 
-class ClarificationState(FrozenModel):
-    """Minimum Day 1 domain marker; candidate resolution is implemented on Day 2."""
+class CandidateSource(StrEnum):
+    EXPLICIT_ANCHOR = "explicit_anchor"
+    CURRENT_FOCUS = "current_focus"
+    CANONICAL_NAME = "canonical_name"
+    VERIFIED_SYNONYM = "verified_synonym"
+    EXACT_ENTITY_VALUE = "exact_entity_value"
+    COMPANY_VOCABULARY = "company_vocabulary"
+    FUZZY_SUGGESTION = "fuzzy_suggestion"
 
+
+class SemanticTargetKind(StrEnum):
+    METRIC = "metric"
+    DIMENSION = "dimension"
+    ENTITY_VALUE = "entity_value"
+    KPI = "kpi"
+    CUBE = "cube"
+
+
+class ResolutionStatus(StrEnum):
+    RESOLVED = "resolved"
+    CLARIFY = "clarify"
+    SEMANTIC_GAP = "semantic_gap"
+
+
+class ClarificationReason(StrEnum):
+    MATERIAL_AMBIGUITY = "material_ambiguity"
+    FUZZY_ONLY = "fuzzy_only"
+    SEMANTIC_GAP = "semantic_gap"
+
+
+class SemanticAnchor(FrozenModel):
+    """Typed conversation anchor. Labels alone never become semantic truth."""
+
+    target_kind: SemanticTargetKind
+    canonical_name: str
+    dimension_name: str | None = None
+    value: str | None = None
+    display_label: str | None = None
+    aliases: tuple[str, ...] = ()
+    sensitive: bool = False
+
+
+class SemanticCandidate(FrozenModel):
+    candidate_id: str
+    target_kind: SemanticTargetKind
+    canonical_name: str
+    dimension_name: str | None = None
+    value: str | None = None
+    cube_names: tuple[str, ...] = ()
+    display_label: str
+    provenance: tuple[CandidateSource, ...]
+    score: float = Field(ge=0.0, le=1.0)
+    material: bool = False
+    sensitive: bool = False
+    selection_aliases: tuple[str, ...] = ()
+
+
+class SemanticHypothesis(FrozenModel):
+    source_mention: str
+    mention_kind: SemanticMentionKind
+    status: ResolutionStatus
+    candidates: tuple[SemanticCandidate, ...] = ()
+    resolved_candidate_id: str | None = None
+    resolved_surface_value: str | None = None
+
+
+class ClarificationChip(FrozenModel):
+    candidate_id: str
+    label: str
+    token: str
+
+
+class ClarificationState(FrozenModel):
     pending: bool = False
+    clarification_id: str | None = None
     source_mention: str | None = None
+    source_kind: SemanticMentionKind | None = None
+    reason: ClarificationReason | None = None
+    question: str | None = None
+    candidates: tuple[SemanticCandidate, ...] = ()
+    chips: tuple[ClarificationChip, ...] = ()
 
 
 class Requirement(FrozenModel):
@@ -218,6 +294,9 @@ class ConversationStateV2(FrozenModel):
     topic_labels: tuple[str, ...] = ()
     focus_labels: tuple[str, ...] = ()
     selected_anchor_label: str | None = None
+    selected_anchor: SemanticAnchor | None = None
+    focus_anchors: tuple[SemanticAnchor, ...] = ()
+    clarification_state: ClarificationState | None = None
 
 
 class TurnInterpretation(FrozenModel):
@@ -234,6 +313,7 @@ class AskV2Request(FrozenModel):
     session_id: str | None = None
     thread_id: str | None = None
     conversation: ConversationStateV2 = Field(default_factory=ConversationStateV2)
+    clarification_token: str | None = None
 
 
 class TurnInterpretationFailure(FrozenModel):
@@ -257,3 +337,51 @@ class AskV2Day1Response(FrozenModel):
     sql_generated: Literal[False] = False
     legacy_semantic_path_called: Literal[False] = False
     next_stage: Literal["semantic_resolver_day2"] = "semantic_resolver_day2"
+
+
+
+# ---------------------------------------------------------------------------
+# Day 2 semantic grounding / clarification
+# ---------------------------------------------------------------------------
+
+
+class SemanticResolutionBundle(FrozenModel):
+    hypotheses: tuple[SemanticHypothesis, ...] = ()
+    clarification: ClarificationState | None = None
+
+    @property
+    def semantic_status(self) -> str:
+        if self.clarification is not None:
+            return (
+                "semantic_gap"
+                if self.clarification.reason == ClarificationReason.SEMANTIC_GAP
+                else "clarification_required"
+            )
+        return "resolved"
+
+
+class AskV2Day2Response(FrozenModel):
+    status: Literal["interpreted"] = "interpreted"
+    stage: Literal["day2_semantic_grounding"] = "day2_semantic_grounding"
+    semantic_status: Literal[
+        "resolved",
+        "clarification_required",
+        "semantic_gap",
+        "not_applicable",
+    ]
+    runtime: TenantAnalyticsRuntimeV0
+    context_version: ContextVersionV0
+    turn: TurnInterpretation | None = None
+    hypotheses: tuple[SemanticHypothesis, ...] = ()
+    clarification: ClarificationState | None = None
+    resumed_by: Literal["signed_chip", "free_text"] | None = None
+    session_id: str | None = None
+    thread_id: str | None = None
+    query_executed: Literal[False] = False
+    sql_generated: Literal[False] = False
+    legacy_semantic_path_called: Literal[False] = False
+    next_stage: Literal[
+        "analytics_ir_day3",
+        "clarification_resume_day2",
+        "conversation_policy_future",
+    ]
