@@ -45,7 +45,9 @@ jobs:
     env:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
-      DIMA_LLM_PROVIDER: "auto"
+      DIMA_LLM_PROVIDER: "openrouter"
+      DIMA_OPENROUTER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_OPENROUTER_SELECT_MODEL: "openai/gpt-5.6-luna"
       DIMA_ANTHROPIC_API_KEY: ${{ secrets.DIMA_ANTHROPIC_API_KEY || secrets.ANTHROPIC_API_KEY }}
       DIMA_GEMINI_API_KEY: ${{ secrets.DIMA_GEMINI_API_KEY || secrets.GEMINI_API_KEY }}
       DIMA_GROQ_API_KEY: ${{ secrets.DIMA_GROQ_API_KEY || secrets.GROQ_API_KEY }}
@@ -68,6 +70,22 @@ jobs:
 
       - name: Focused Day 0 + Day 1 contracts
         run: pytest -q tests/test_v2_day0.py tests/test_v2_day1.py
+
+      - name: OpenRouter one-call transport smoke
+        shell: bash
+        run: |
+          python - <<'PY'
+          from app.config import get_settings
+          from app.llm import build_generator
+          llm = build_generator(get_settings())
+          out = llm.structured_text(
+              "Return one short JSON object only.",
+              'Return {"ok":true}.',
+          )
+          if not str(out).strip():
+              raise SystemExit("empty structured_text response")
+          print("OpenRouter structured transport smoke: PASS")
+          PY
 
       - name: P4 real-provider acceptance if a provider secret exists
         shell: bash
