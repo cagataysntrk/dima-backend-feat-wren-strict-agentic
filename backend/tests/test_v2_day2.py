@@ -452,3 +452,15 @@ def test_resolver_has_no_literal_special_cases_or_execution_boundary_calls():
 
     signature = inspect.signature(SemanticResolver.resolve_turn)
     assert "question" not in signature.parameters
+
+
+def test_clarification_hmac_key_is_stable_and_domain_separated():
+    from control_plane.security import derive_hmac_key
+
+    a1 = derive_hmac_key("v2-clarification-chip-v1")
+    a2 = derive_hmac_key("v2-clarification-chip-v1")
+    other = derive_hmac_key("another-purpose")
+
+    assert a1 == a2
+    assert a1 != other
+    assert len(a1) == 32
