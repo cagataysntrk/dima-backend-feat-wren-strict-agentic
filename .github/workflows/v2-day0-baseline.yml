@@ -8,7 +8,6 @@ name: v2-day0-baseline
       - wren-bağımsız
     types:
       - opened
-      - synchronize
   workflow_dispatch:
 
 defaults:
