@@ -1225,3 +1225,16 @@ Bir sonraki geliştirici önce P6 + R10 + R5.5 + R5D'yi yeniden okuyacak; ardın
 `AnalyticsIR + RequirementLedger-lite + CubePlanner + principal-aware Wren execution`
 ticket'ını açacak. Day2 resolver'a SQL/query davranışı eklenmeyecek.
 
+
+
+### 2026-09-21 — DAY 2 gate freeze
+
+- Day2 focused gate başarıyla tamamlandıktan sonra
+  `.github/workflows/v2-day2-semantic-resolver.yml` de Day1 gibi
+  **workflow_dispatch-only** yapıldı.
+- Commit: `39a2cdd20ffc7943a9675452700cd33cd5958e52`.
+- Gerekçe: Day3'te ortak `models.py/orchestrator.py` değişiklikleri Day2 testini
+  gereksiz otomatik tekrar koşturmasın.
+- Bu policy-only değişiklik için test **tekrar çalıştırılmadı**.
+- Always-on/full CI yok; kapalı fazların focused gate'leri de otomatik rerun yapmaz.
+
