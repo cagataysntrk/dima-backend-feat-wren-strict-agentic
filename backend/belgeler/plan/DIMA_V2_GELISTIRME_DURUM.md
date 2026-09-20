@@ -828,3 +828,33 @@ Full suite, milestone/release/security/parity gibi gerçekten gerekli bir kapı 
 otomatiklaştırılmayacak. Günlük geliştirmede yalnız aktif P/R fazının hedefli acceptance
 testleri çalıştırılacak.
 
+
+
+### 2026-09-21 — LOCAL 28-CASE DENEMESİ KAPATILDI
+
+**Run**
+- `v2-day1-live-28` / `35537876889`
+- model: local Ollama `qwen2.5:3b`
+- scope: yalnız 28-case P4 evaluator; full suite yok.
+
+**Sonuç**
+- Ollama install: PASS
+- model pull: PASS
+- evaluator: **INFRA/PERFORMANCE FAIL**
+- her structured call local CPU runner'da 30s read timeout'a girdi.
+- workflow job timeout/cancel ile kapandı.
+- evaluator final JSON üretilemeden kesildi; accuracy sonucu YOK.
+- Bu sonuç TurnInterpreter correctness FAIL değildir; seçilen local execution motorunun
+  acceptance için pratik olmadığını gösterir.
+
+**Karar**
+- Local Ollama yolu tekrar çalıştırılmayacak.
+- `.github/workflows/v2-day1-live-28.yml` silindi.
+- Day1 acceptance için bir sonraki tek yol: mevcut
+  `v2-day1-turn-interpreter.yml` içindeki real-provider evaluator.
+- Full suite açılmayacak; secret geldiğinde yalnız focused contracts + 28-case live eval.
+
+**V2-D007 güncelleme**
+Local alternatifi elendi. Blocker artık yalnız gerçek provider credential.
+Secret hiçbir commit/.env'e yazılmayacak; GitHub Actions repository secret olarak verilecek.
+
