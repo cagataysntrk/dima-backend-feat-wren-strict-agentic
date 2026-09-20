@@ -1,3 +1,39 @@
+<!-- DIMA-V2-ACTIVE-OPERATION -->
+# 🔴🔴 AKTİF OPERASYON — DIMA V2 GREENFIELD CORE
+
+> **Bu branch'te eski “aktif operasyon” bloklarının üstünde BU BLOK okunur.**
+> Branch: `feat/ask-v2-mvp`.
+>
+> Her geliştirme oturumunun ilk sırası:
+>
+> 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
+> 2. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
+> 3. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
+> 4. `AGENTS.md`
+> 5. `MIMARI.md` ve yalnız aktif ticket'ın kodu
+>
+> Nihai rapor ve roadmap **mühürlü / salt-okunur**. İlerleme, karar sonucu, commit SHA,
+> açık borç ve sonraki adım yalnız `DIMA_V2_GELISTIRME_DURUM.md` dosyasına yazılır.
+>
+> Koddan önce roadmap'teki aktif **P** bölümünü ve onun dayanak gösterdiği **R** bölümünü
+> birlikte oku. Rapor gerekçenin, roadmap icra sırasının authority'sidir.
+>
+> **V2 amacı:** legacy `/ask`i refactor etmek değil; mevcut repo içinde clean
+> `/ask-v2` island kurmak, çalışan auth/tenant/Wren/analytical primitive'leri adapter
+> ile reuse etmek ve eski semantic ownership hatalarını yeni çekirdeğe taşımamak.
+>
+> **Test:** her küçük değişiklikte büyük kapı yok. Yalnız gerekli hedefli testler;
+> full/corpus gate milestone/demet sonunda; ağır suite nightly CI'da. Daily dikey demo
+> ve P0 invariant testleri önceliklidir.
+>
+> **İlk 10 gün wholesale refactor yasağı:** `routers/ask.py`, `cube_router.py`,
+> `uyum.py`, `plan_tuketici.py`, `plan_semasi.py`.
+>
+> Eski öngörü/v1 operasyon kayıtları bu branch için “nerede kaldık?” authority'si değildir;
+> tarihsel/current-system bağlam olarak korunurlar, silinmezler.
+
+---
+
 # dima-backend — CLAUDE.md
 
 > 🔴🔴 **AKTİF OPERASYON (2026-08-13'ten): ÖNGÖRÜ KATMANI.** Bir geliştirme isteği
