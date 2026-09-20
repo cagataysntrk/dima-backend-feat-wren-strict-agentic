@@ -12,8 +12,13 @@ name: backend-ci
 # Wren tarafı repo'daki demo DuckDB projesi — harici servis/Docker gerekmez.
 
 "on":
+  # V2 development has its own phase-scoped focused workflows. Running the entire
+  # legacy suite on every V2 commit defeats the active rapid-development contract.
   push:
+    branches-ignore:
+      - "feat/ask-v2-*"
   pull_request:
+  workflow_dispatch:
 
 defaults:
   run:
@@ -21,6 +26,9 @@ defaults:
 
 jobs:
   test:
+    # PR branch filtering only sees the BASE branch at trigger level, so skip V2 heads
+    # here. Full regression remains explicitly runnable at milestone via workflow_dispatch.
+    if: ${{ github.event_name != 'pull_request' || !startsWith(github.head_ref, 'feat/ask-v2-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
