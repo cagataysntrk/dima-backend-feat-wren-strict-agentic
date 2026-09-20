@@ -27,6 +27,9 @@ defaults:
 jobs:
   day1:
     runs-on: ubuntu-latest
+    # The OpenRouter key is stored as an Environment secret in the environment
+    # named DIMA_OPENROUTER_API_KEY. Binding the job is required for secrets.* access.
+    environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 20
     env:
       DIMA_VQR_EMBEDDER: "off"
