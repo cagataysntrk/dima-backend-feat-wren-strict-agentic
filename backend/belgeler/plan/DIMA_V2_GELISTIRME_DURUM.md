@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 1 COMPLETE — DAY 2 READY**  
-**Kod fazı:** Day 1 / P4 COMPLETE — Day 2 / P5 henüz başlamadı.
+**Durum:** **DAY 2 ACTIVE — SEMANTIC RESOLVER + CLARIFICATION**  
+**Kod fazı:** Day 2 / P5 ACTIVE.
 
 ---
 
@@ -970,4 +970,146 @@ tekrarlanmayacak:
 Bu değişiklik model/config/devir policy değişikliğidir. Day1 zaten strict exit'i geçtiği için
 yalnız bu kayıt uğruna 23+28 acceptance tekrar çalıştırılmadı. Yeni model gerçek bir sonraki
 fazın focused ölçümü gerektiğinde kullanılacak; gereksiz test yok.
+
+
+
+## 9. DAY 2 ACTIVE TICKET — P5 / R8 SEMANTIC RESOLVER + CLARIFICATION
+
+**AMAÇ**  
+TurnInterpreter'ın surface-level mention'larını tenant'ın gerçek semantic/data kataloğuna
+deterministik bağlamak; gerçek ambiguity varsa ilk adayı seçmek yerine minimum gerekli
+netleştirmeyi üretmek. Day 2 hiçbir query çalıştırmaz.
+
+**USER SCENARIO**
+```text
+“Siyah için fire”
+“Bakiye ne?”
+“Gece verimlilik”
+“RAM-3 nasıl?”
+```
+
+**ROADMAP**  
+P5 / P5.1 / P5.2 / P5.3 / P5.4.
+
+**REPORT DAYANAK**  
+R8; kök hata için R3.1/R3.2/R3.4. North-star kontrolü: R26B / NS2.
+
+**NEW OWNER**
+- `SemanticResolver` → surface mention → candidate set → hypothesis.
+- `ClarificationState` → blocking ambiguity / fuzzy-only / semantic gap.
+- signed candidate token → deterministic chip resume.
+- TurnInterpreter raw language owner olarak kalır; resolver raw soruyu yeniden parse etmez.
+
+**INPUT**
+- `TurnInterpretation`
+- tenant-bound `WrenService.schema()`
+- `BoundedSemanticContextV0`
+- typed conversation anchors / pending clarification.
+
+**OUTPUT**
+- `SemanticHypothesis[]`
+- gerekirse tek `ClarificationState`
+- chip resume'da deterministic resolved hypothesis.
+
+**CANDIDATE PROVENANCE**
+```text
+explicit anchor
+current focus
+canonical name
+verified synonym
+exact entity value
+verified company vocabulary   # yalnız gerçekten provenance varsa
+fuzzy suggestion
+```
+
+**KARAR KURALI**
+```text
+tek güçlü/material aday       → resolve
+birden fazla material aday    → clarify
+yalnız fuzzy aday             → suggestion clarification
+aday yok                      → semantic gap / açık soru
+```
+
+Company-vocabulary provenance mevcut schema yüzeyinde ayrıca korunmuyorsa ona sahte
+`company_vocabulary` etiketi verilmeyecek; onaylı overlay synonym mevcutsa
+`verified_synonym` olarak tüketilecek. Provenance uydurmak yasak.
+
+**PRIVACY**
+- Entity value index süreç içinde resolver tarafından görülebilir.
+- Hassas entity values fuzzy candidate discovery/chip label ile sızdırılmaz.
+- Kullanıcının birebir yazdığı hassas değer ancak exact match olarak kendi surface'i
+  üzerinden çözülebilir; prompt'a toplu değer dökümü yoktur.
+- Candidate token integrity içindir; auth/tenant sınırını gevşetmez.
+
+**SIGNED RESUME**
+```text
+tenant + context_version + thread/session binding
++ clarification_id + candidate_id + source mention
+→ HMAC-signed opaque selection token
+→ candidate current schema'dan yeniden türetilir
+→ deterministic slot resolution
+```
+Client'ın candidate payload'ı semantic truth sayılmaz.
+
+**FREE-TEXT RESUME**
+Pending clarification + `CLARIFICATION_ANSWER` TurnInterpretation üzerinden candidate
+set daraltılır. Resolver raw question parser olmaz.
+
+**FILES TO TOUCH**
+- `app/v2/models.py`
+- `app/v2/resolver.py` (new)
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `tests/test_v2_day2.py` (new, yalnız focused contract)
+- bu yaşayan durum dosyası.
+
+**FILES NOT TO TOUCH**
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- Day1 tarihsel measurement.
+- kaldırılmış `.github/workflows/backend-ci.yml` yeniden yaratılmaz.
+
+**TEST KARARI — HIZ**
+Bu ticket için full suite/corpus yok. Koddan sonra yalnız yeni Day2 resolver/clarification
+contract dosyası ve gerekirse Day1'in kırılma riski taşıyan tek küçük boundary testi koşulur.
+OpenRouter/LLM acceptance Day2 resolver correctness'inin sahibi değildir; provider/infra
+hatası semantic correctness FAIL sayılmaz.
+
+**TARGETED CASES**
+- canonical metric exact → resolve.
+- verified synonym → resolve.
+- exact entity tek aday → resolve.
+- aynı surface birden çok material target → clarify; auto-pick=0.
+- yalnız fuzzy → clarify, auto-resolve=0.
+- unknown → semantic gap.
+- sensitive value fuzzy discovery yok / placeholder-safe behavior.
+- signed chip valid → deterministic resolution.
+- token wrong tenant/context/thread/tamper → fail-closed.
+- free-text clarification answer → pending candidate set içinden resolve.
+- `Siyah / RAM-3 / gece / premium / bakiye` aynı generic mechanism.
+- clarification path query/dry_plan/SQL = 0.
+
+**KPI / EXIT**
+```text
+blocking_ambiguity_recall          >= 95% dedicated focused set
+blocking false auto-resolution     = 0
+unnecessary_clarification_rate     <= 10%
+clarification query count          = 0
+clarification_recovery             >= 95%
+```
+
+**STOP-THE-LINE**
+- `Siyah`, `RAM-3` veya başka bir literal için special-case branch/regex yazılırsa.
+- Resolver raw `question` parse ederse.
+- İlk candidate sessizce kazanırsa.
+- Fuzzy candidate otomatik execute semantic truth olursa.
+- Sensitive entity value suggestion ile ifşa edilirse.
+- Clarification sırasında query/SQL açılırsa.
+- Signed token client payload'ını doğrulamadan semantic state patch ederse.
+- Day3 CubePlanner/AnalyticsIR resolution mantığı Day2'ye çekilirse.
 
