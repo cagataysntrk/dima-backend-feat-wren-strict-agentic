@@ -773,6 +773,9 @@ Bir sonraki geliştirici:
 - Commit: `b528de33562270fc043bbd16d10840f9d828a013`.
 - Run: `35537876889`.
 - Mevcut blocker model/TurnInterpreter değil, **Actions runner kapasitesi**:
+  - ölçüm anında: 20/20 in-progress job'un tamamı eski `backend-ci`,
+  - ayrıca 14 eski `backend-ci` run queued,
+  - `v2-day1-live-28` run `35537876889` bu backlog'un arkasında queued.
   - legacy `backend-ci` eski commitlerden 20 concurrent full-suite job çalıştırıyor,
   - ayrıca çok sayıda eski full-suite job queued.
 - Bu backlog, V2 hız politikası konmadan ÖNCE üretilen run'lardan geliyor.
