@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 1 IMPLEMENTATION COMPLETE — LIVE P4 ACCEPTANCE BLOCKED**  
+**Durum:** **DAY 1 COMPLETE — DAY 2 READY**  
 **Kod fazı:** Day 1 / P4.
 
 ---
@@ -857,4 +857,72 @@ testleri çalıştırılacak.
 **V2-D007 güncelleme**
 Local alternatifi elendi. Blocker artık yalnız gerçek provider credential.
 Secret hiçbir commit/.env'e yazılmayacak; GitHub Actions repository secret olarak verilecek.
+
+
+
+### 2026-09-21 — DAY 1 STRICT EXIT / LIVE P4 PASS
+
+**Provider / transport**
+- GitHub Environment: `DIMA_OPENROUTER_API_KEY`
+- provider: `openrouter`
+- acceptance model: `openai/gpt-5.6-luna`
+- one-call structured transport smoke: **PASS**
+- OpenRouter environment binding fix:
+  `164b88a94320080af2593b1449c9f7cb38cae255`
+- model-compatible transport fix:
+  `ca52f4ccd8c9c231f662b66bc0ac7d03f6907883`
+
+**Final live acceptance**
+- workflow run: `35540119438`
+- product snapshot: `5b541d0ba4e928eb1a86c7e437ddcfbc60cdcc11`
+- artifact: `10614537238`
+- digest:
+  `sha256:e0034a9bf67000f2c943c55e5d8a3563d9f3deae3037338595111ff3f97ad274`
+- focused structural tests: **23 / 23 PASS**
+- labeled live corpus: **28**
+- structured output: **28 / 28 = 100%**
+- turn act: **27 / 28 = 96.43%**
+- surface-grounding violation: **0**
+- total LLM calls: **31**
+- max calls / case: **2**
+
+**P4 strict exit**
+- structured-output success >=99%: **PASS — 100%**
+- turn_act_accuracy >=95%: **PASS — 96.43%**
+- canonical/surface hallucination dedicated set =0: **PASS**
+- k=1 normal path: **PASS**
+- max one format-only retry: **PASS**
+- SQL/query in interpreter: **0**
+- request-level legacy fallback: **0**
+
+### V2-D011 — “sadece RAM-3” refine/repair sınırı
+
+- Case: `refine-filter`
+- input: `sadece RAM-3`
+- expected: `ANALYTIC_REFINE`
+- actual: `USER_REPAIR`
+- Day1 gate etkisi: **NON-BLOCKING**; aggregate accuracy %96.43 ve P4 eşiği geçiyor.
+- Neden şimdi hard-code edilmiyor:
+  - “RAM-3 → refine” özel case yazmak P5/P7 generic semantics ilkesini ihlal eder.
+  - gerçek ayrım conversation state + prior IR/focus ile Day4'te daha güçlü yapılacak.
+- Sentinel:
+  canonical Day4 flow'da `yalnız RAM-3 / sadece RAM-3` unrelated-slot preservation ve
+  refine-vs-repair davranışı ayrıca ölçülecek.
+- Hedef kapanış: Day4 / P7 canonical conversation flows.
+
+**V2-D007**
+- **CLOSED.**
+- Gerçek provider credential bulundu, 28-case evaluator çalıştı ve P4 strict KPI geçti.
+
+**Day 1 kapanış kararı**
+Day 1 **COMPLETE**. P4/R7 implementation + structural + live acceptance kapıları geçildi.
+Test uğruna yeni special-case parser eklenmedi. Day 2 artık açılabilir.
+
+**Sıradaki zorunlu sıra**
+1. `DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md` → P5 yeniden oku.
+2. `DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md` → R8 yeniden oku.
+3. Bu dosyada Day2 ticket contract aç.
+4. Yalnız `SemanticResolver + SemanticHypothesis + ClarificationState` geliştir.
+5. Blocking ambiguity'de query=0.
+6. CubePlanner/SQL Day3'e kadar yasak.
 
