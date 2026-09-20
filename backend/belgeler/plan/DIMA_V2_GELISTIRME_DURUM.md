@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **PRE-DAY0 — GELİŞTİRME PLATFORMU HAZIRLANIYOR**  
+**Durum:** **PRE-DAY0 READY — GELİŞTİRME PLATFORMU HAZIR**  
 **Kod fazı:** Henüz başlamadı.
 
 ---
@@ -44,11 +44,11 @@ altyapısını typed adapter'larla reuse etmek.
 - [x] Nihai uygulama yol haritası aktif repo belgesi olarak eklendi.
 - [x] Nihai mimari/denetim raporu aktif repo belgesi olarak eklendi.
 - [x] Belgelerin canonical dosya adları kendi iç referanslarıyla uyumlu tutuldu.
-- [ ] `backend/AGENTS.md` V2 çalışma sözleşmesi eklendi.
-- [ ] `backend/CLAUDE.md` V2 aktif-operasyon override ile güncellendi.
-- [ ] `backend/MIMARI.md` V2 authority overlay ile güncellendi.
-- [ ] Branch diff yalnız hazırlık belgelerini içeriyor doğrulandı.
-- [ ] PRE-DAY0 commit durumu son kez kaydedildi.
+- [x] `backend/AGENTS.md` V2 çalışma sözleşmesi eklendi.
+- [x] `backend/CLAUDE.md` V2 aktif-operasyon override ile güncellendi.
+- [x] `backend/MIMARI.md` V2 authority overlay ile güncellendi.
+- [x] Branch diff yalnız hazırlık/authority belgelerini içeriyor; executable V2 kod değişikliği yok.
+- [x] Mühürlü iki belgenin kaynakla içerik eşitliği doğrulandı (4744 / 6379 satır; içerik birebir).
 
 ### Erken başlanıp geri alınan iş
 
@@ -63,13 +63,13 @@ oluşturuldu. Kullanıcı kararıyla Day 0 başlamadan önce geri silindi.
 
 ## 3. ŞU ANKİ BORÇ DEFTERİ
 
-### V2-D001 — Eski MIMARI/CLAUDE operasyon metni V2'yi henüz işaret etmiyor
+### V2-D001 — Eski MIMARI/CLAUDE operasyon metni V2'yi henüz işaret etmiyor — **KAPANDI**
 
 - Kaynak: P1 / R0.2
 - Risk: yeni geliştirici eski “aktif operasyon”a gidebilir.
-- Blocker: **YES — Day 0 öncesi**
-- Kapanış: MIMARI authority overlay + CLAUDE V2 override + AGENTS kurulumu.
-- Hedef: PRE-DAY0.
+- Blocker: **CLOSED**
+- Kapanış kanıtı: root `AGENTS.md` + `backend/AGENTS.md` + `CLAUDE.md` V2 override + `MIMARI.md` V2 authority overlay.
+- Hedef: PRE-DAY0 — tamamlandı.
 
 ### V2-D002 — V2 executable code henüz yok
 
@@ -173,7 +173,12 @@ alınır → V2 kendi typed shell cevabını verir → legacy `/ask` semantic de
 **Yapılan**
 - `feat/ask-v2-mvp` açıldı.
 - Nihai roadmap ve rapor branch'e aktif mühürlü belgeler olarak alındı.
+- Her iki mühürlü belgenin kaynak içerikle birebir eşitliği doğrulandı.
+- Root `AGENTS.md` ve `backend/AGENTS.md` kuruldu.
+- `backend/CLAUDE.md` V2 aktif-operasyon override aldı.
+- `backend/MIMARI.md` V2 authority overlay aldı; eski current-state gövdesi korunarak bırakıldı.
 - Premature V2 kod iskeleti geri alındı; Day 0 sınırı temizlendi.
+- Branch diff'i yalnız hazırlık/authority belgelerinden oluşuyor; executable V2 kodu henüz yok.
 
 **Karar**
 - Geliştirme rapor + roadmap çapraz okunarak yapılacak.
@@ -181,9 +186,10 @@ alınır → V2 kendi typed shell cevabını verir → legacy `/ask` semantic de
 - Büyük testler her küçük değişiklikte değil milestone/demet sonunda çalışacak.
 
 **Sıradaki**
-- AGENTS/CLAUDE/MIMARI V2 çalışma katmanını tamamla.
-- Branch diff'i doğrula.
-- Sonra ayrı adım olarak Day 0 ticket'ını aç.
+- **Day 0 ticket'ını aç.**
+- P0–P2B ile R0–R6'yı tekrar aktif ticket bağlamında çapraz oku.
+- V2 island boot/runtime boundary'yi en küçük dikey dilimle uygula.
+- Day 0 bitene kadar TurnInterpreter/Resolver gibi Day 1+ capability'lere geçme.
 
 ---
 
