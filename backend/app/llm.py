@@ -141,6 +141,7 @@ def _norm(text: str) -> str:
 
 class SqlGenerator(Protocol):
     def generate_sql(self, question: str, schema: dict) -> str: ...
+    def structured_text(self, system: str, user: str) -> str: ...
 
 
 # --- ortak prompt -----------------------------------------------------------
@@ -712,6 +713,14 @@ class AnthropicSqlGenerator:
         text = "".join(b.text for b in message.content if b.type == "text")
         return _FENCE.sub("", text.strip()).strip()
 
+    def structured_text(self, system: str, user: str) -> str:
+        """Semantic-agnostic structured-text transport.
+
+        The caller owns the schema/prompt/validation. This deliberately does NOT know
+        about cubes, turns or V2; it only reuses the configured low-latency select model.
+        """
+        return self._ask(system, user, model=self._select_model)
+
     def generate_sql(self, question: str, schema: dict) -> str:
         return self._ask(_build_system(schema, self._dialect), question)
 
@@ -967,6 +976,10 @@ class OpenAICompatibleSqlGenerator:
         _log.info("%s API başarılı (model=%s, %dms)", self._provider, use_model, elapsed_ms)
         return _icerik_cikar(data, self._provider, use_model)
 
+    def structured_text(self, system: str, user: str) -> str:
+        """Semantic-agnostic structured-text transport; caller owns interpretation."""
+        return self._chat(system, user, model=self._select_model)
+
     def generate_sql(self, question: str, schema: dict) -> str:
         return self._chat(_build_system(schema, self._dialect), question)
 
@@ -1187,6 +1200,10 @@ class RuleBasedSqlGenerator:
     - `oee_vardiya` (OEE): makine/vardiya bazlı verimlilik (47-tablo rebind, eski adı
       `vardiya_kayitlari` — bkz. app/llm.py Faz 2b notu, kolon adları da değişti).
     - `partiler` (boya partileri): fire, su/enerji, maliyet, renk sapması, ağırlık, ciro."""
+
+    def structured_text(self, system: str, user: str) -> str:  # noqa: ARG002
+        # V2 TurnInterpreter'ın regex/kural fallback'e sessizce düşmesi yasaktır.
+        raise RuntimeError("Structured language interpretation için gerçek LLM sağlayıcı gerekli.")
 
     def generate_followup_sql(self, question: str, schema: dict, prev_question: str,  # noqa: ARG002
                               prev_sql: str, history: list[str]) -> str:  # noqa: ARG002
@@ -1624,6 +1641,26 @@ class FailoverSqlGenerator:
         except Exception:  # noqa: BLE001 — kayıt, dayanıklılığı KIRAMAZ
             _log.warning("kademeli düşüş audit'e yazılamadı", exc_info=True)
 
+    def structured_text(self, system: str, user: str) -> str:
+        """Use the existing provider failover without importing any semantic owner."""
+        errs = []
+        for sira, g in enumerate(self._gens):
+            fn = getattr(g, "structured_text", None)
+            if not callable(fn):
+                continue
+            try:
+                out = fn(system, user)
+                if sira:
+                    self._dususu_kaydet(g, sira)
+                self._last = g
+                return out
+            except Exception as exc:
+                errs.append(f"{getattr(g, '_provider', type(g).__name__)}: {exc}")
+        _log.error("FailoverSqlGenerator.structured_text: TÜM sağlayıcılar başarısız: %s",
+                   " | ".join(errs))
+        raise RuntimeError("structured_text: tüm LLM sağlayıcıları başarısız: "
+                           + " | ".join(errs))
+
     def generate_sql(self, question: str, schema: dict) -> str:
         errs = []
         for sira, g in enumerate(self._gens):
@@ -1834,6 +1871,9 @@ def _make(provider: str, settings, dialect: str):
 class NoLlmGenerator:
     """A#5: rule_fallback KAPALI + hiç sağlayıcı yok → tahmin YOK. generate_sql hata
     fırlatır; routers/ask.py bunu dürüst redde çevirir (sessiz-yanlış SQL yerine)."""
+
+    def structured_text(self, system: str, user: str) -> str:  # noqa: ARG002
+        raise RuntimeError("Structured language interpretation için LLM sağlayıcısı yok.")
 
     def generate_sql(self, question: str, schema: dict) -> str:  # noqa: ARG002
         raise RuntimeError("LLM sağlayıcısı yok ve kural yedeği kapalı (DIMA_RULE_FALLBACK)")
