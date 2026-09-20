@@ -1,0 +1,28 @@
+{
+  "kind": "dima_v2_day1_acceptance",
+  "measured_at": "2026-09-20",
+  "roadmap": "P4",
+  "report": "R7",
+  "structural": {
+    "workflow_run_id": 35536670734,
+    "focused_tests_passed": 23,
+    "focused_tests_failed": 0,
+    "duration_seconds": 20.2,
+    "status": "pass"
+  },
+  "live_provider": {
+    "status": "live_provider_unavailable",
+    "configured_provider_secrets": [],
+    "artifact_digest": "sha256:df451c9b50f8e875f72782e8f1f4bf5b652eae40aa679330642bdbf9a25b4530"
+  },
+  "live_kpis": {
+    "corpus_cases": 28,
+    "structured_output_success_rate": null,
+    "turn_act_accuracy": null,
+    "surface_grounding_violations": null,
+    "max_calls_per_case": null,
+    "status": "not_measured"
+  },
+  "blocker": "V2-D007",
+  "transition_policy": "Do not open Day 2 until live evaluator returns status=pass."
+}
