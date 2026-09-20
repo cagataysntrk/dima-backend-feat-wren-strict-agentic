@@ -78,7 +78,11 @@ def _run_eval_case(client, case: dict[str, Any]) -> list[dict[str, Any]]:
         response = client.post("/ask", json=payload)
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
         data = response.json() if response.status_code == 200 else {"_http": response.status_code}
-        actual, correct = step_result(data, step["expect"], step)
+        if response.status_code == 200:
+            actual, correct = step_result(data, step["expect"], step)
+        else:
+            # Transport/infrastructure failure is never a semantically correct refusal.
+            actual, correct = "http_error", False
 
         records.append(
             {
