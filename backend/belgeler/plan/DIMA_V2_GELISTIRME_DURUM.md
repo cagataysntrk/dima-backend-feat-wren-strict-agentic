@@ -796,3 +796,35 @@ Bir sonraki geliştirici:
 - Day1 için bundan sonra yalnız 28-case evaluator çalıştırılır.
 - 28-case sonucu gelmeden Day2 açılmaz.
 
+
+
+### 2026-09-21 — LEGACY BACKEND CI KALDIRILDI
+
+**Karar**
+Eski `.github/workflows/backend-ci.yml` sürekli full-suite ürettiği ve V2 rapid-development
+sözleşmesini ihlal ettiği için tamamen kaldırıldı. Bu yalnız V2 branch seviyesinde bırakılmadı;
+repo default/base branch `wren-bağımsız` üzerinden de silindi.
+
+**Commitler**
+- V2 branch deletion: `216b6e0be1d351d02aa38a222ef5a30046144638`
+- default/base deletion: `cb9e6ab3aae5d5fbdb49ce59c91644a90dcb9cab`
+
+**Sonuç**
+- Yeni `backend-ci` push/PR run'ı artık üretilemez.
+- Full regression her committe koşmayacak.
+- Ağır doğrulama gerektiğinde `nightly.yml` / açık milestone kararı kullanılacak.
+- V2'nin phase-scoped küçük workflow'ları korunuyor:
+  - `v2-day0-baseline.yml`
+  - `v2-day1-turn-interpreter.yml`
+  - `v2-day1-live-28.yml`
+
+**Mevcut eski runlar**
+Workflow dosyasının silinmesi, daha önce oluşturulmuş queued/in-progress run snapshot'larını
+geriye dönük iptal etmez. Bunlar yeni borç/run üretmiyor; kapasite boşaldıkça bitecek.
+Yeni ağır run açılmayacak.
+
+**Kural**
+Full suite, milestone/release/security/parity gibi gerçekten gerekli bir kapı dışında
+otomatiklaştırılmayacak. Günlük geliştirmede yalnız aktif P/R fazının hedefli acceptance
+testleri çalıştırılacak.
+
