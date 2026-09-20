@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 2 ACTIVE — SEMANTIC RESOLVER + CLARIFICATION**  
-**Kod fazı:** Day 2 / P5 ACTIVE.
+**Durum:** **DAY 2 COMPLETE — DAY 3 READY**  
+**Kod fazı:** Day 2 / P5 COMPLETE — Day 3 / P6 henüz başlamadı.
 
 ---
 
@@ -1112,4 +1112,116 @@ clarification_recovery             >= 95%
 - Clarification sırasında query/SQL açılırsa.
 - Signed token client payload'ını doğrulamadan semantic state patch ederse.
 - Day3 CubePlanner/AnalyticsIR resolution mantığı Day2'ye çekilirse.
+
+
+
+### 2026-09-21 — DAY 2 / P5 COMPLETE
+
+**Roadmap / report çaprazı**
+- P5/P5.1/P5.2/P5.3/P5.4 uygulandı.
+- R8 semantic hypothesis + clarification kararları authority olarak izlendi.
+- R3.1 tek semantic owner, R3.2 parser creep yasağı ve R3.4 ambiguity-is-success
+  ilkeleri implementation sınırı olarak korundu.
+- R26B/NS2: gerçek ambiguity → clarification + query=0 + chip resume.
+
+**Yapılan**
+- `SemanticCandidate`, `SemanticHypothesis`, genişletilmiş `ClarificationState`
+  ve Day2 response contract'ları eklendi.
+- `SemanticResolver` raw kullanıcı sorusunu ALMAZ; yalnız typed
+  `TurnInterpretation` mention'larını grounding eder.
+- Candidate provenance generic mekanizma:
+  - explicit anchor
+  - current focus
+  - canonical name
+  - verified synonym
+  - exact entity value
+  - yalnız explicit verified provenance varsa company vocabulary
+  - fuzzy suggestion
+- Tek güçlü/material aday resolve olur.
+- Birden fazla material adayda auto-pick=0; clarification oluşur.
+- Fuzzy-only aday semantic truth olmaz; suggestion clarification olur.
+- Candidate yoksa semantic gap üretilir.
+- `Siyah / RAM-3 / gece / premium / bakiye` için production resolver'da
+  literal special-case/parser **yok**.
+- Hassas entity değerleri fuzzy discovery'ye girmez; exact user surface dışında değer
+  candidate label/value ile ifşa edilmez.
+- Signed clarification chip:
+  tenant + ContextVersion + session/thread + clarification + candidate + mention
+  integrity binding taşır.
+- Chip seçiminde client candidate payload'ına güvenilmez; candidate güncel tenant
+  schema/context'ten yeniden türetilir.
+- Free-text clarification answer TurnInterpreter'ın typed mention'ları üzerinden pending
+  candidate set'i daraltır; resolver raw question parser'a dönüşmez.
+- `/ask-v2` Day2 akışı:
+  `runtime → context → interpreter → resolver → resolved/clarify/gap`.
+- Clarification token stale/tampered/binding mismatch → 409 fail-closed.
+- Query / dry-plan / CubePlanner / SQL hâlâ **0**.
+
+**Ek reuse touch**
+- İlk ticket touch listesine sonradan yalnız
+  `control_plane/security.py::derive_hmac_key()` eklendi.
+- Gerekçe: V2'nin JWT secret/fallback seçimini kopyalayan ikinci security owner
+  yaratmaması; mevcut auth authority'den domain-separated integrity key türetmesi.
+- Auth/yetki davranışı değişmedi.
+
+**Commitler**
+- `1703e6701eaa9674ac48631acb7004bbf51e5f2f` — Day2 typed contracts.
+- `a51fcdddc6bd4b4b5409652029027208b2bdd101` — domain-separated HMAC key.
+- `f69413f705ec4210582a473d8d9675eeb7fc6d91` — generic SemanticResolver.
+- `5f9bab70f8f2d80167b55e2d9eca59114cb37aa1` — resolver/resume orchestration.
+- `3ea83e47419d68a6910e0e476e734e278ff36b59` — Day2 HTTP response/boundary.
+- `4d09ff992955a1aee087ba5925b02645a485630d` — focused P5 contracts.
+- `9df4ede9cbd68e7371259192dcc433f6b3756523` — closed Day1 gate manual-only.
+- `aefb487274204bdf074373a388cb4eb3420c493d` — explicit Day2 focused workflow.
+- `45b808b649fe75c34e234690b1768f0ab5f1ccba` — signing-key focused test.
+
+**Focused test / hız kanıtı**
+- Yalnız `tests/test_v2_day2.py` çalıştırıldı.
+- Workflow run: `35541275684`.
+- Sonuç: **19 passed / 0 failed**.
+- Süre: **4.58 saniye**.
+- Day0 baseline tekrar koşmadı.
+- Day1 23+28 acceptance tekrar koşmadı.
+- Corpus/full suite koşmadı.
+- Kaldırılmış `.github/workflows/backend-ci.yml` yeniden yaratılmadı.
+
+**P5 focused exit**
+- blocking ambiguity recall: **1/1 = %100** dedicated material-ambiguity case.
+- blocking false auto-resolution: **0/1 = 0**.
+- unnecessary clarification: **0/5 = %0** exact/verified cases.
+- clarification query count: **0**.
+- clarification recovery:
+  - signed chip **1/1**
+  - free text **1/1**
+  - focused toplam **2/2 = %100**.
+- sensitive fuzzy disclosure dedicated case: **0**.
+- literal special-case parser: **0**.
+- resolver raw-question parameter: **0**.
+
+Bu oranlar küçük **focused Day2 contract setinin** sonucudur; ürün-geneli istatistik diye
+sunulmaz. P5'in mimari/exit davranışını kısa ve deterministik olarak kilitler.
+
+**No-touch final cross-check**
+```text
+backend/app/routers/ask.py       unchanged
+backend/app/cube_router.py       unchanged
+backend/app/uyum.py              unchanged
+backend/app/plan_tuketici.py     unchanged
+backend/app/plan_semasi.py       unchanged
+backend/app/followup.py          unchanged
+backend/app/intent_semasi.py     unchanged
+```
+
+**Açık not — company vocabulary provenance**
+Current `WrenService.schema()` dedicated `company_vocabulary` provenance alanı
+yayımlamıyor. Onaylı overlay'ler bugün verified synonym yüzeyine birleşiyor.
+Resolver yalnız gerçekten `verified=True` provenance taşıyan explicit runtime alanı
+varsa `company_vocabulary` etiketi kullanır; provenance **uydurmaz**.
+Bu Day2 blocker değildir; P2D/P16 semantic-memory/provenance gelişiminde genişletilebilir.
+
+**Karar**
+Day 2 P5 tamamlandı. Day 3 henüz başlatılmadı.
+Bir sonraki geliştirici önce P6 + R10 + R5.5 + R5D'yi yeniden okuyacak; ardından
+`AnalyticsIR + RequirementLedger-lite + CubePlanner + principal-aware Wren execution`
+ticket'ını açacak. Day2 resolver'a SQL/query davranışı eklenmeyecek.
 
