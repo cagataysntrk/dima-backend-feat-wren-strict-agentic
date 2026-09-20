@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 0 COMPLETE — DAY 1 READY**  
-**Kod fazı:** Henüz başlamadı.
+**Durum:** **DAY 1 ACTIVE — CONTEXTPROVIDER V0 + TURNINTERPRETER**  
+**Kod fazı:** Day 1 / P4.
 
 ---
 
@@ -415,3 +415,130 @@ repoya alındı. Baseline workflow tekrar eden pushlarda çalışmayacak şekild
 - Day1 yalnız `ContextProviderV0 + TurnInterpreter + typed TurnInterpretation` kapsamına
   girecek.
 - SemanticResolver/clarification Day2'ye, CubePlanner/query Day3'e bırakılacak.
+
+
+## 8. DAY 1 ACTIVE TICKET — P4 CONTEXTPROVIDER V0 + TURNINTERPRETER
+
+**AMAÇ**  
+Dima'nın ilk kez “hangi query?” yerine “kullanıcı bu turda ne yapıyor?” sorusunu tek
+language-owner üzerinden typed cevaplaması. Day 1 hiçbir analitik query çalıştırmaz.
+
+**USER SCENARIO**
+```text
+“bu ay ciro”
+“makine bazında OEE”
+“teşekkürler”
+“bunu yorumla”
+“hayır son üç ay”
+“siyah fire”
+```
+
+**ROADMAP**  
+P4 / P4.1 / P4.2 / P4.3.
+
+**REPORT DAYANAK**  
+R7; sınır için ayrıca R3/R3A + R6 Katman 1–2. Raw kullanıcı dili yalnız
+`TurnInterpreter` tarafından yorumlanır; canonical data model seçimi Resolver'a aittir.
+
+**NEW OWNER**
+- `ContextProviderV0` → prompt'a girecek bounded semantic context + `ContextVersionV0`.
+- `TurnInterpreter` → raw user message'in tek language owner'ı.
+- `TurnInterpretation` → Day1 typed output.
+
+**REUSE EDİLEN PRIMITIVE**
+- tenant-bound `WrenService.schema()` / `mdl_version`.
+- Day0 `TenantAnalyticsRuntimeV0`.
+- mevcut `app.state.llm` provider/failover/telemetry/kaset **transport yatırımı**.
+- auth/principal/company runtime.
+
+**LLM ADAPTER KARARI**
+Legacy `select_cube/refine_cube/takip_siniflandir` V2'ye çağrılmayacak. Bunlar eski
+semantic owner davranışı taşır. Mevcut provider sınıflarına yalnız semantik-agnostic
+`structured_text(system,user)` taşıma yüzeyi eklenecek; prompt, Pydantic schema,
+validation ve retry policy tamamen `v2/interpreter.py` sahibi olacak.
+
+**FILES TO TOUCH**
+- `app/v2/models.py`
+- `app/v2/context_provider.py` (new)
+- `app/v2/interpreter.py` (new)
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `app/llm.py` — yalnız generic structured transport adapter
+- `tests/test_v2_day1.py` (new)
+- bu durum dosyası.
+
+**FILES NOT TO TOUCH**
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- semantic pack/MDL authoring dosyaları.
+
+**CONTEXT V0 CONTRACT**
+```text
+WrenService.schema()
+→ compact cube/metric/dimension/time/relationship metadata
+→ entity values EXCLUDED
+→ approved in-context business rules bounded + canonical hash
+→ ContextVersionV0 = sha256(
+     mdl_version
+     + compact_catalog_builder_version
+     + business_rules_hash
+     + prompt_context_policy_version
+   )
+```
+
+Canonical isimler prompt context'te görülebilir; **çıktıda canonical ref alanı yoktur**.
+Interpreter yalnız kullanıcı mesajından exact surface span'ler çıkarır. Canonical binding
+Day2 Resolver işidir.
+
+**TURN ACTS**
+```text
+ANALYTIC_NEW
+ANALYTIC_REFINE
+CLARIFICATION_ANSWER
+USER_REPAIR
+RESULT_EXPLAIN
+SOCIAL
+UNSUPPORTED
+```
+
+**RETRY / FAILURE POLICY**
+- normal: 1 structured LLM call, k=1.
+- yalnız JSON/schema format-invalid ise: en fazla 1 format-only retry.
+- semantic ambiguity retry: 0.
+- output'ta kullanıcı mesajında bulunmayan semantic/reference span: fail-closed,
+  semantic retry yok.
+- SQL/canonical id/physical table alanı model sözleşmesinde bulunmaz.
+- LLM unavailable: legacy fallback yok; explicit typed interpretation failure.
+
+**TARGETED TEST / DEMO**
+- ContextVersion determinism + business-rule hash.
+- compact context entity values içermez.
+- valid JSON = exactly 1 LLM call.
+- malformed JSON = exactly 1 format retry, sonra success/fail.
+- canonical-id hallucination/span invention = reject.
+- seven act family + six canonical Day1 phrases.
+- interpreter source içinde SQL/query/dry-plan/legacy semantic imports = 0.
+- `/ask-v2` Day1 response query_executed=false.
+
+**EXIT**
+- structured-output success after ≤1 format retry >=99% validation corpus.
+- turn_act_accuracy >=95% Day1 labeled corpus.
+- canonical-id/surface hallucination = 0 dedicated set.
+- SQL generation/execution in interpreter = 0.
+- raw question parser owner count = 1.
+- ContextVersionV0 non-null, deterministic and runtime-bound.
+
+**STOP-THE-LINE**
+- regex/keyword parser TurnInterpreter'ın ikinci sahibi olursa,
+- Resolver işi Day1'e çekilirse,
+- model canonical metric/dimension/entity ID seçerse,
+- `select_cube/refine_cube/followup` V2 hot path'e girerse,
+- query/SQL üretilirse,
+- entity values prompt'a topluca dökülürse,
+- malformed output legacy semantic path'e fallback ederse.
+
