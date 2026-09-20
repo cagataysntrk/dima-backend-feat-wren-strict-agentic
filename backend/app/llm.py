@@ -905,12 +905,21 @@ class OpenAICompatibleSqlGenerator:
             headers["Authorization"] = f"Bearer {self._keys[self._key_ix]}"
         payload = {
             "model": use_model,
-            "temperature": 0,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
         }
+        # OpenRouter's current OpenAI reasoning families (GPT-5+/o-series) do not
+        # advertise temperature as a supported chat-completions parameter. Sending
+        # temperature=0 can therefore turn a healthy model into HTTP 400. Keep the
+        # deterministic hint for other compatible providers/models only.
+        _or_openai_reasoning = (
+            self._provider == "openrouter"
+            and use_model.startswith(("openai/gpt-5", "openai/o"))
+        )
+        if not _or_openai_reasoning:
+            payload["temperature"] = 0
         # 🔴🔴 **AKIL YÜRÜTME SICAK YOLDA KAPALIDIR — ve bu ÖLÇÜLDÜ.**
         #
         # `deepseek/deepseek-v4-flash` bir kasetli korpus koşumunda **384 saniye** sürdü
@@ -964,8 +973,14 @@ class OpenAICompatibleSqlGenerator:
                              self._provider, self._key_ix + 1, len(self._keys))
             # Log-and-rethrow — bkz. AnthropicSqlGenerator._ask (aynı desen). Groq/Ollama/
             # Gemini/xAI HEPSİ bu sınıftan geçer; `provider` alanı hangisi olduğunu netleştirir.
-            _log.warning("%s API çağrısı başarısız (model=%s, %dms): %s",
-                        self._provider, use_model, int((time.monotonic() - _t0) * 1000), exc, exc_info=True)
+            _body = ""
+            try:
+                _body = str(getattr(locals().get("resp"), "text", "") or "")[:800]
+            except Exception:
+                _body = ""
+            _log.warning("%s API çağrısı başarısız (model=%s, %dms): %s%s",
+                        self._provider, use_model, int((time.monotonic() - _t0) * 1000), exc,
+                        f" | body={_body}" if _body else "", exc_info=True)
             raise
         elapsed_ms = int((time.monotonic() - _t0) * 1000)
         try:  # telemetri — asla yanıtı bozmaz
