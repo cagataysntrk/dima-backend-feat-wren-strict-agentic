@@ -188,6 +188,26 @@ class UserRepair(FrozenModel):
     correction_spans: tuple[str, ...] = ()
 
 
+class ClarificationState(FrozenModel):
+    """Minimum Day 1 domain marker; candidate resolution is implemented on Day 2."""
+
+    pending: bool = False
+    source_mention: str | None = None
+
+
+class Requirement(FrozenModel):
+    """Minimum contract placeholder. Ledger state/semantic refs arrive on Day 3."""
+
+    kind: SemanticMentionKind
+    must: bool = True
+
+
+class AnalyticsIR(FrozenModel):
+    """Reserved typed boundary for Day 3; Day 1 never constructs this object."""
+
+    requirements: tuple[Requirement, ...] = ()
+
+
 class ConversationStateV2(FrozenModel):
     """Bounded context supplied to TurnInterpreter; persistence arrives on Day 4."""
 
