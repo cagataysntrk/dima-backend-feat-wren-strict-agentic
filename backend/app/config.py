@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     # 15-20 az. duckdb'de UYGULANMAZ (gömülü — ağ yok, kilitlenecek uzak sunucu yok).
     db_statement_timeout: int = 60
 
+    # --- Dima V2 rollout --------------------------------------------------
+    # Day 0: new semantic/conversation core is dark by default. Rollback is an
+    # explicit tenant-server setting, never a per-request silent legacy fallback.
+    ask_v2_enabled: bool = False
+
     # --- LLM sağlayıcı ---------------------------------------------------
     # auto: anthropic → xai → gemini → groq → ollama (ayakta ise) → kural-tabanlı.
     # Açık değerler: auto | anthropic | xai | gemini | groq | openrouter | ollama | rule
