@@ -3,17 +3,19 @@
   "measured_at": "2026-09-20",
   "roadmap": "P4",
   "report": "R7",
+  "product_code_snapshot": "b57c7c49dba49a40f8c3789ab4cc53dbb00a110a",
   "structural": {
-    "workflow_run_id": 35536670734,
+    "workflow_run_id": 35536961771,
     "focused_tests_passed": 23,
     "focused_tests_failed": 0,
-    "duration_seconds": 20.2,
+    "duration_seconds": 20.48,
     "status": "pass"
   },
   "live_provider": {
     "status": "live_provider_unavailable",
     "configured_provider_secrets": [],
-    "artifact_digest": "sha256:df451c9b50f8e875f72782e8f1f4bf5b652eae40aa679330642bdbf9a25b4530"
+    "artifact_id": 10613258675,
+    "artifact_digest": "sha256:75c7eaf5d37002383617f18db6d8d3a870d0600ad92614d6bc52cb1c0db27f8d"
   },
   "live_kpis": {
     "corpus_cases": 28,
@@ -24,5 +26,5 @@
     "status": "not_measured"
   },
   "blocker": "V2-D007",
-  "transition_policy": "Do not open Day 2 until live evaluator returns status=pass."
+  "transition_policy": "Do not open Day 2 until lab/v2_day1_eval.py returns status=pass with a real configured provider."
 }
