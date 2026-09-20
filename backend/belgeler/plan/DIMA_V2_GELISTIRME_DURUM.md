@@ -926,3 +926,48 @@ Test uğruna yeni special-case parser eklenmedi. Day 2 artık açılabilir.
 5. Blocking ambiguity'de query=0.
 6. CubePlanner/SQL Day3'e kadar yasak.
 
+
+
+### 2026-09-21 — OPENROUTER MODEL AUTHORITY + KALICI ÖĞRENİMLER
+
+**Kullanıcı kararı / ileriye dönük model**
+- OpenRouter runtime/focused-test varsayılanı:
+  `deepseek/deepseek-v4-flash`.
+- GitHub Environment variable:
+  `DIMA_OPENROUTER_MODEL=deepseek/deepseek-v4-flash`.
+- Kod fallback authority:
+  `app/config.py::openrouter_model = "deepseek/deepseek-v4-flash"`.
+- Focused Actions workflow modeli doğrudan hard-code etmez:
+  `vars.DIMA_OPENROUTER_MODEL` → yoksa aynı repo fallback.
+- `DIMA_OPENROUTER_SELECT_MODEL` ayrıca verilmezse ana model takip edilir.
+
+**Provenance kuralı**
+Day1 strict acceptance'ın `openai/gpt-5.6-luna` ile geçmiş olması tarihsel kanıttır;
+`eval/v2_day1_measurement.json` bu nedenle değiştirilmedi. Gelecekteki model kararı eski
+ölçümü yeniden yazmaz.
+
+**Kalıcı devir kuralları**
+`backend/AGENTS.md §11` eklendi. Bağlam/oturum kopsa bile aşağıdaki hatalar yeniden
+tekrarlanmayacak:
+1. always-on full `backend-ci` geri getirilmeyecek,
+2. full suite her küçük değişiklikte çalıştırılmayacak,
+3. Environment secret kullanan job environment'a açıkça bağlanacak,
+4. OpenRouter'da önce tek-call transport smoke, sonra corpus,
+5. reasoning'i kapatmak için `enabled:false`; `exclude:true` yeterli değil,
+6. GitHub CPU Ollama `qwen2.5:3b` 30s timeout yolu acceptance için tekrar denenmeyecek,
+7. infra/provider fail correctness fail diye etiketlenmeyecek,
+8. tarihsel measurement provenance sonradan model değiştirildi diye tahrif edilmeyecek,
+9. `sadece RAM-3` için special-case parser/hard-code yazılmayacak.
+
+**Commitler**
+- `b40ef77af4dbcf3ccd89453bbac93ee90a741123` — config OpenRouter default.
+- `b15a3c832ef191002fe6e3f66d1f233225b763a4` — focused workflow variable-driven model;
+  push başına otomatik rerun kaldırıldı.
+- `c7b3f2425a5d619adf801b2cc4d1f751c9aa019c` — AGENTS §11 kalıcı öğrenimler.
+- `4c884c310ad2dcdd2cb226e7f0101a6cfeea0c64` — CLAUDE compact-recovery pointer.
+
+**Test kararı**
+Bu değişiklik model/config/devir policy değişikliğidir. Day1 zaten strict exit'i geçtiği için
+yalnız bu kayıt uğruna 23+28 acceptance tekrar çalıştırılmadı. Yeni model gerçek bir sonraki
+fazın focused ölçümü gerektiğinde kullanılacak; gereksiz test yok.
+
