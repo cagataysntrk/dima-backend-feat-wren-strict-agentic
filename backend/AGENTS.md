@@ -200,3 +200,72 @@ Aşağıdakilerden biri görülürse yeni feature ekleme; sınırı düzelt:
 - V2 için legacy /ask davranışı authority oluyor
 
 Bu dosyanın görevi uygulama planını değiştirmek değil, mühürlü planı doğru uygulamaktır.
+
+
+## 11. V2 OPERASYONEL ÖĞRENİMLER — TEKRAR ETME
+
+Aşağıdaki maddeler bu branch'te yaşanmış ve ölçülmüş operasyonel derslerdir. Bağlam
+koptuğunda yeniden keşfedilmez; önce bunlar okunur.
+
+### 11.1 Test / CI
+
+- Eski sürekli `backend-ci.yml` kaldırıldı. **Yeniden yaratma.**
+- Full suite her commit/push/PR'de çalıştırılmaz.
+- Normal geliştirmede yalnız aktif P/R fazının focused contract/eval'ı çalıştırılır.
+- Full regression yalnız milestone/release/security/parity gerektirdiğinde bilinçli karar
+  ile çalıştırılır.
+- Bir test infra/provider hatası veriyorsa correctness FAIL diye sınıflandırma; önce
+  failure stage'i ayır.
+
+### 11.2 OpenRouter secret / environment
+
+- `DIMA_OPENROUTER_API_KEY` GitHub **Environment secret** olarak tutulur.
+- Environment adı da `DIMA_OPENROUTER_API_KEY`.
+- Secret kullanan Actions job'u açıkça
+  `environment: DIMA_OPENROUTER_API_KEY` bağlamalıdır; aksi halde `secrets.*` boş gelir.
+- API key hiçbir commit, .env örneği, log veya belge içine yazılmaz.
+
+### 11.3 OpenRouter model authority
+
+- V2 için varsayılan OpenRouter modeli:
+  `deepseek/deepseek-v4-flash`.
+- Runtime source-of-truth:
+  `app/config.py::openrouter_model`.
+- GitHub Actions override source:
+  Environment variable `DIMA_OPENROUTER_MODEL`.
+- Focused workflow fallback'u da aynı model olmak zorunda.
+- `DIMA_OPENROUTER_SELECT_MODEL` verilmezse ana model kullanılır.
+- Tarihsel ölçümde kullanılan modeli sonradan değiştirme; measurement provenance immutable
+  kalır. Yeni model kararı yalnız ileriye dönük uygulanır.
+
+### 11.4 OpenRouter reasoning / transport
+
+- OpenRouter reasoning-capable hot-path modellerinde uzun reasoning açık bırakılmaz.
+- `reasoning: {"exclude": true}` reasoning'i durdurmaz; yalnız dönen reasoning içeriğini
+  gizler.
+- Gerçek kapatma:
+  `reasoning: {"enabled": false}`.
+- Provider/model değiştirmeden önce tek-call transport smoke yap; model/config 400 veriyorsa
+  28 vakayı boşuna koşturma.
+- `openai/gpt-oss-120b` ile Day1 acceptance sırasında HTTP 400 görüldü; bunu tekrar
+  default yapma.
+
+### 11.5 Ollama / GitHub hosted runner
+
+- GitHub hosted CPU runner üzerinde `qwen2.5:3b` ile 28-case acceptance pratik çıkmadı:
+  structured çağrılar 30s HTTP read timeout'a girdi.
+- Bu yol correctness kanıtı değildir ve tekrar denenmez.
+- Local model ancak uygun donanım/timeout bütçesi olan gerçek local ortamda ayrıca ölçülür.
+
+### 11.6 Day 1 ölçüm gerçeği
+
+- Day1 strict P4 gerçek-provider kapısı OpenRouter üzerinde geçti:
+  - model: `openai/gpt-5.6-luna` **yalnız tarihsel acceptance provenance'ı**
+  - structured output: 28/28
+  - turn act: 27/28
+  - surface-grounding violation: 0
+- Bu tarihsel sonuç, gelecekteki varsayılan modelin `deepseek/deepseek-v4-flash` olmasıyla
+  yeniden yazılmaz.
+- `sadece RAM-3` refine-vs-repair farkı Day4 conversation sentinel'idir; özel-case
+  regex/hard-code yazma.
+
