@@ -6,6 +6,7 @@ name: v2-day1-turn-interpreter
       - wren-bağımsız
     types:
       - synchronize
+      - ready_for_review
     paths:
       - "backend/app/v2/**"
       - "backend/app/routers/ask_v2.py"
