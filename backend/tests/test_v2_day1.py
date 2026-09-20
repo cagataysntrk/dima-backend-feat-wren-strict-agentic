@@ -53,6 +53,14 @@ class FakeService:
                     "dimension_values": {"renk": ["ENTITY_VALUE_MUST_NOT_LEAK"]},
                 }
             ],
+            "kpis": [
+                {
+                    "name": "teslimat_performansi",
+                    "label": "Teslimat Performansı",
+                    "unit": "%",
+                    "synonyms": ["zamanında teslimat"],
+                }
+            ],
             "relationships": [
                 {
                     "name": "parti_makine",
@@ -118,6 +126,8 @@ def test_compact_context_keeps_canonical_catalog_but_excludes_entity_values_and_
     assert "toplam_fire_kg" in raw
     assert "makine" in raw
     assert "ciro" in raw
+    assert "teslimat_performansi" in raw
+    assert "zamanında teslimat" in raw
     assert "ENTITY_VALUE_MUST_NOT_LEAK" not in raw
     assert "PHYSICAL_JOIN_CONDITION_MUST_NOT_LEAK" not in raw
 
