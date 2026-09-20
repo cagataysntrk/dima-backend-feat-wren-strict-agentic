@@ -70,6 +70,7 @@ class ContextVersionV0(FrozenModel):
 class CompactSemanticFieldV0(FrozenModel):
     canonical_name: str
     display: str | None = None
+    description: str | None = None
     synonyms: tuple[str, ...] = ()
     unit: str | None = None
 
@@ -77,6 +78,7 @@ class CompactSemanticFieldV0(FrozenModel):
 class CompactCubeContextV0(FrozenModel):
     canonical_name: str
     display: str | None = None
+    description: str | None = None
     synonyms: tuple[str, ...] = ()
     measures: tuple[CompactSemanticFieldV0, ...] = ()
     dimensions: tuple[CompactSemanticFieldV0, ...] = ()
@@ -95,6 +97,7 @@ class BoundedSemanticContextV0(FrozenModel):
     cubes: tuple[CompactCubeContextV0, ...] = ()
     relationships: tuple[CompactRelationshipV0, ...] = ()
     approved_business_rules: str = ""
+    business_rules_truncated: bool = False
 
 
 # ---------------------------------------------------------------------------
