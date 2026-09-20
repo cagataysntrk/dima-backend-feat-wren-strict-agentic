@@ -349,3 +349,37 @@ def test_ask_v2_day1_http_path_never_executes_query(client, monkeypatch):
     assert data["context_version"]["version"]
     assert data["next_stage"] == "semantic_resolver_day2"
     assert fake.calls == 1
+
+
+def test_p4_minimum_domain_represents_required_surface_families():
+    from app.v2.models import (
+        AnalyticsIR,
+        AnalyticalRequest,
+        ClarificationState,
+        ComparisonSurface,
+        RankingSurface,
+        ReferenceMention,
+        Requirement,
+        SemanticMention,
+        SemanticMentionKind,
+        UserRepair,
+    )
+
+    request = AnalyticalRequest(
+        metric_mentions=(SemanticMention(text="ciro", kind="metric"),),
+        dimension_mentions=(SemanticMention(text="makine", kind="dimension"),),
+        filter_mentions=(SemanticMention(text="siyah", kind="filter"),),
+        time_mentions=(SemanticMention(text="son üç ay", kind="time"),),
+        ranking=RankingSurface(text="en çok 5", direction="desc", limit=5),
+        comparisons=(ComparisonSurface(text="geçen ayla"),),
+    )
+    assert request.ranking and request.ranking.limit == 5
+    assert request.comparisons[0].text == "geçen ayla"
+    assert ReferenceMention(text="bunu", kind="prior_result").text == "bunu"
+    assert UserRepair(correction_spans=("hayır",)).correction_spans == ("hayır",)
+    assert ClarificationState(pending=True, source_mention="siyah").pending is True
+
+    # P4 requires the domain names to exist, but Day 1 must not prematurely implement
+    # Day 3's resolved IR/ledger semantics.
+    marker = Requirement(kind=SemanticMentionKind.METRIC)
+    assert AnalyticsIR(requirements=(marker,)).requirements == (marker,)
