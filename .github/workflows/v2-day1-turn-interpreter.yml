@@ -1,17 +1,6 @@
 name: v2-day1-turn-interpreter
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/workflows/v2-day1-turn-interpreter.yml"
-      - "backend/app/v2/**"
-      - "backend/app/routers/ask_v2.py"
-      - "backend/app/llm.py"
-      - "backend/eval/v2_day1_cases.yaml"
-      - "backend/lab/v2_day1_eval.py"
-      - "backend/tests/test_v2_day*.py"
   pull_request:
     branches:
       - wren-bağımsız
@@ -46,8 +35,10 @@ jobs:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_LLM_PROVIDER: "openrouter"
-      DIMA_OPENROUTER_MODEL: "openai/gpt-5.6-luna"
-      DIMA_OPENROUTER_SELECT_MODEL: "openai/gpt-5.6-luna"
+      # Future focused runs use the GitHub Environment variable when present.
+      # The repository fallback is intentionally the same as app/config.py.
+      DIMA_OPENROUTER_MODEL: ${{ vars.DIMA_OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash' }}
+      DIMA_OPENROUTER_SELECT_MODEL: ${{ vars.DIMA_OPENROUTER_SELECT_MODEL || vars.DIMA_OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash' }}
       DIMA_ANTHROPIC_API_KEY: ${{ secrets.DIMA_ANTHROPIC_API_KEY || secrets.ANTHROPIC_API_KEY }}
       DIMA_GEMINI_API_KEY: ${{ secrets.DIMA_GEMINI_API_KEY || secrets.GEMINI_API_KEY }}
       DIMA_GROQ_API_KEY: ${{ secrets.DIMA_GROQ_API_KEY || secrets.GROQ_API_KEY }}
