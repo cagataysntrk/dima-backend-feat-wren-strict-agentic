@@ -26,6 +26,10 @@
 > full/corpus gate milestone/demet sonunda; ağır suite nightly CI'da. Daily dikey demo
 > ve P0 invariant testleri önceliklidir.
 >
+> **Kalıcı operasyon notu:** ayrıntılı tekrar-etme kuralları `AGENTS.md §11`'dedir.
+> OpenRouter varsayılan modeli `deepseek/deepseek-v4-flash`; model override'ı
+> `DIMA_OPENROUTER_MODEL` ile yapılır. Eski always-on `backend-ci.yml` yeniden kurulmaz.
+>
 > **İlk 10 gün wholesale refactor yasağı:** `routers/ask.py`, `cube_router.py`,
 > `uyum.py`, `plan_tuketici.py`, `plan_semasi.py`.
 >
