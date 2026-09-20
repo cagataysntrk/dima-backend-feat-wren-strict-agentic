@@ -691,3 +691,70 @@ UNSUPPORTED
 - P4 gerçek-model accuracy gate: **BLOCKED BY MISSING PROVIDER CREDENTIAL**.
 - Bu nedenle Day2 ticket'ı henüz açılmaz.
 
+
+
+### 2026-09-21 — DAY 1 / final structural seal
+
+**Final product-code snapshot**
+- `b57c7c49dba49a40f8c3789ab4cc53dbb00a110a`
+- Bu snapshot şunları içerir:
+  - KPI semantic surface preservation,
+  - synonym silent-truncation removal,
+  - P4 minimum domain,
+  - ContextVersionV0,
+  - single-owner TurnInterpreter,
+  - no-query/no-SQL/no-legacy-fallback contracts.
+
+**Final focused acceptance**
+- Workflow: `35536961771`
+- Result: **PASS**
+- Focused tests: **23 passed / 0 failed**
+- Duration: **20.48s**
+- Measurement artifact: `10613258675`
+- Artifact digest:
+  `sha256:75c7eaf5d37002383617f18db6d8d3a870d0600ad92614d6bc52cb1c0db27f8d`
+- Permanent record: `eval/v2_day1_measurement.json`
+  @ `a69bd514ba28257c18c1383ea3a6784833b6b097`.
+
+**Legacy owner no-touch final cross-check**
+```text
+backend/app/routers/ask.py       unchanged
+backend/app/cube_router.py       unchanged
+backend/app/uyum.py              unchanged
+backend/app/plan_tuketici.py     unchanged
+backend/app/plan_semasi.py       unchanged
+backend/app/followup.py          unchanged
+backend/app/intent_semasi.py     unchanged
+```
+
+**Strict P4 exit tablosu**
+- ContextProviderV0 implemented: **PASS**
+- ContextVersionV0 non-null/deterministic: **PASS**
+- all canonical cube/metric/dimension + KPI semantic surface preserved: **PASS**
+- verified synonym silent truncation: **0**
+- entity values in prompt context: **0 by contract**
+- physical join condition in prompt context: **0 by contract**
+- one language owner: **PASS**
+- k=1: **PASS**
+- max one format-only retry: **PASS**
+- semantic retry: **0**
+- canonical-ID output field: **0**
+- invented surface span: **fail-closed**
+- SQL generation/execution: **0**
+- request-level legacy fallback: **0**
+- focused structural tests: **23/23 PASS**
+- live structured-output >=99%: **NOT MEASURED — V2-D007**
+- live turn_act_accuracy >=95%: **NOT MEASURED — V2-D007**
+- live hallucination dedicated set =0: **NOT MEASURED — V2-D007**
+
+**Karar**
+Day 1'in **implementation ve structural acceptance** kısmı tamamlandı.
+Roadmap'in gerçek-model KPI'sı credentials yokluğu yüzünden ölçülmeden “PASS” ilan edilmedi.
+Bu nedenle mimari disiplin gereği **Day 2 henüz açılmayacak**.
+
+Bir sonraki geliştirici:
+1. önce V2-D007'yi kapatır,
+2. `python lab/v2_day1_eval.py --require-live` gerçek provider ile çalıştırır,
+3. `status=pass` artefaktını bu dosyaya işler,
+4. ancak sonra P5 + R8 okuyup Day2 ticket'ını açar.
+
