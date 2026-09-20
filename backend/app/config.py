@@ -111,7 +111,10 @@ class Settings(BaseSettings):
     openrouter_api_keys: str = ""
 
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_model: str = "openai/gpt-oss-120b"
+    # V2 operational default (2026-09-21): tek source-of-truth model.
+    # GitHub Environment variable DIMA_OPENROUTER_MODEL bunu override edebilir.
+    # select_model boş bırakılırsa LLM adapter ana modeli aynen kullanır.
+    openrouter_model: str = "deepseek/deepseek-v4-flash"
     openrouter_select_model: str = ""
     # Ollama (tam yerel, anahtarsız: `brew install ollama` + `ollama pull ...`)
     ollama_base_url: str = "http://localhost:11434/v1"
