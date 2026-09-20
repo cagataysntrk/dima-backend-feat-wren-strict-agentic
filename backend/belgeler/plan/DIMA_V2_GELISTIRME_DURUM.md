@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **PRE-DAY0 READY — GELİŞTİRME PLATFORMU HAZIR**  
+**Durum:** **DAY 0 ACTIVE — SOURCE LOCK + BASELINE + V2 STUB**  
 **Kod fazı:** Henüz başlamadı.
 
 ---
@@ -165,6 +165,93 @@ alınır → V2 kendi typed shell cevabını verir → legacy `/ask` semantic de
 - legacy behavior değişikliği = 0 P0
 
 ---
+
+## 5A. DAY 0 ACTIVE TICKET — P3 SOURCE LOCK + BASELINE
+
+**ROADMAP:** P0, P0A, P1/P1A/P1B, P2/P2B, **P3**  
+**REPORT DAYANAK:** R0–R6; özellikle R2, R3/R3A, R4, R5/R5.6 ve immutable runtime ilkesi  
+**NEW OWNER:** V2 bootstrap/runtime boundary + Day0 baseline artifact  
+**OLD OWNER:** legacy `/ask` yalnız baseline ölçümünün deneği; V2 authority değildir.
+
+### AMAÇ
+
+Yeni beynin başlangıç noktasını ölçülebilir hâle getir ve aynı repo içinde legacy semantic
+karar ağacına girmeyen, rollback edilebilir `/ask-v2` adasını boot ettir.
+
+### USER SCENARIO / ACCEPTANCE
+
+1. Basit KPI, top-N, comparison, ambiguity, follow-up, repair, social, explain-existing ve
+   kompleks multi-domain ailelerinden en az 30 legacy vaka source/correctness/failure-stage/
+   latency ile dondurulabilir bir baseline koşumuna girer.
+2. Feature flag açıkken kimlikli kullanıcı `/ask-v2` stub'ına gider; principal/tenant
+   çözülür; doğru tenant-bound Wren schema + mdl_version snapshot alınır; legacy semantic
+   router/planner çağrılmaz; query çalışmaz.
+3. Feature flag kapalıyken V2 görünmez/404; legacy davranış değişmez.
+
+### INPUT / OUTPUT
+
+**Input:** authenticated HTTP request + explicit `Principal` + tenant-bound `WrenService`.  
+**Output Day0:** typed `TenantAnalyticsRuntimeV0` + V2 bootstrap response; query yok.
+
+### FILES TO TOUCH
+
+Yeni:
+- `app/v2/__init__.py`
+- `app/v2/models.py`
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `lab/v2_day0_baseline.py`
+- `eval/v2_day0_cases.yaml`
+- gerekli küçük V2 architecture/bootstrap testleri
+
+Adapter:
+- `app/main.py`
+- `app/config.py`
+
+### FILES NOT TO TOUCH
+
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/wren_service.py` (Day0 için adapter ihtiyacı yoksa)
+
+### TEST / DEMO — HIZ POLİTİKASI
+
+Büyük suite yok. Yalnız:
+- architecture import-ban testi,
+- flag off/on bootstrap testi,
+- explicit runtime identity/snapshot testi,
+- baseline runner'ın case-selection/record schema testi.
+
+Baseline koşumu ayrı artefakt üretir; ağır full gate Day0 demetinin sonuna bırakılır.
+
+### KPI / EXIT
+
+- representative baseline case >= 30
+- known silent-wrong family coverage = 100% **envanterde tanımlanan set için**
+- every baseline record failure_stage field = 100%
+- `/ask-v2` stub boot = pass
+- legacy semantic hot-path import = 0
+- demo tenant Wren schema/mdl smoke = pass
+- feature-flag rollback = pass
+- legacy `/ask` code change = 0
+
+### STOP-THE-LINE
+
+- V2 bootstrap legacy semantic owner import ederse,
+- principal/runtime identity implicit ContextVar'a bırakılırsa,
+- Day0 stub query/LLM çalıştırmaya başlarsa,
+- baseline vakaları mevcut corpus yerine uydurulursa,
+- source lock sırasında legacy refactor açılırsa.
+
+### DAY 0 NOTU
+
+İlk PRE-DAY0 notundaki “Day0 sadece stub” kapsamı **P3 yeniden okununca düzeltildi**.
+Roadmap açıkça Source Lock + Baseline ister. Bu düzeltme plan sapması değil, plan authority'sine
+geri dönüştür.
+
 
 ## 6. İLERLEME GÜNLÜĞÜ
 
