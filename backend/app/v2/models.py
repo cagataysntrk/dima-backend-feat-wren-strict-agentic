@@ -95,6 +95,7 @@ class CompactRelationshipV0(FrozenModel):
 class BoundedSemanticContextV0(FrozenModel):
     context_version: ContextVersionV0
     cubes: tuple[CompactCubeContextV0, ...] = ()
+    kpis: tuple[CompactSemanticFieldV0, ...] = ()
     relationships: tuple[CompactRelationshipV0, ...] = ()
     approved_business_rules: str = ""
     business_rules_truncated: bool = False
