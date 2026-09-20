@@ -758,3 +758,38 @@ Bir sonraki geliştirici:
 3. `status=pass` artefaktını bu dosyaya işler,
 4. ancak sonra P5 + R8 okuyup Day2 ticket'ını açar.
 
+
+
+### V2-D010 — 28-case local acceptance Actions kapasite kuyruğunda
+
+- Kaynak: P4 strict exit / V2-D007.
+- Amaç: API key kullanmadan gerçek model davranışını ölçmek.
+- Uygulama:
+  - `.github/workflows/v2-day1-live-28.yml`
+  - yalnız `lab/v2_day1_eval.py --require-live`
+  - local Ollama `qwen2.5:3b`
+  - full suite **YOK**
+  - timeout 15 dk
+- Commit: `b528de33562270fc043bbd16d10840f9d828a013`.
+- Run: `35537876889`.
+- Mevcut blocker model/TurnInterpreter değil, **Actions runner kapasitesi**:
+  - legacy `backend-ci` eski commitlerden 20 concurrent full-suite job çalıştırıyor,
+  - ayrıca çok sayıda eski full-suite job queued.
+- Bu backlog, V2 hız politikası konmadan ÖNCE üretilen run'lardan geliyor.
+- Yeni V2 commitlerinde full suite otomatik tetiklenmesi zaten kapatıldı; problem tekrar
+  üretilmiyor.
+- PR geçici close/open ile denenmesine rağmen mevcut eski run'lar GitHub tarafından
+  otomatik iptal edilmedi.
+- Blocker: **P4 live local measurement için YES**, implementation için NO.
+- Kapanış:
+  1. eski `backend-ci` queued/in-progress run'ları iptal edilir **veya**
+  2. Actions kapasitesi doğal olarak boşalır;
+  sonra yalnız run `35537876889` / aynı 28-case local gate çalıştırılır.
+- API key bu borcu çözmek için repoya/commit'e ASLA yazılmaz. Remote provider gerekirse
+  yalnız secure secret/env üzerinden kullanılır.
+
+**Hız kuralı tekrar teyit**
+- Full suite tekrar çalıştırılmayacak.
+- Day1 için bundan sonra yalnız 28-case evaluator çalıştırılır.
+- 28-case sonucu gelmeden Day2 açılmaz.
+
