@@ -1,6 +1,17 @@
 name: v2-day1-turn-interpreter
 
 "on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day1-turn-interpreter.yml"
+      - "backend/app/v2/**"
+      - "backend/app/routers/ask_v2.py"
+      - "backend/app/llm.py"
+      - "backend/eval/v2_day1_cases.yaml"
+      - "backend/lab/v2_day1_eval.py"
+      - "backend/tests/test_v2_day*.py"
   pull_request:
     branches:
       - wren-bağımsız
