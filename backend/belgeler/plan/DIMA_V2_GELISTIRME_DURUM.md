@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 1 ACTIVE — CONTEXTPROVIDER V0 + TURNINTERPRETER**  
+**Durum:** **DAY 1 IMPLEMENTATION COMPLETE — LIVE P4 ACCEPTANCE BLOCKED**  
 **Kod fazı:** Day 1 / P4.
 
 ---
@@ -600,4 +600,94 @@ UNSUPPORTED
 - P4 live KPI: **ölçülmeden PASS sayılmayacak**.
 - Live provider secret Actions ortamında yoksa bu açık bir measurement debt/blocker olarak
   kaydedilecek; fake-output unit testleri `turn_act_accuracy` yerine sayılmayacak.
+
+
+
+### 2026-09-20 — DAY 1 / acceptance ara sonucu + CI borç temizliği
+
+**Focused contract evidence**
+- Run `35536670734`: **23/23 PASS** (20.20s).
+- Day0 runtime/rollback invariants + Day1 typed/context/interpreter contracts birlikte yeşil.
+- Bu koşu fake-output contract testidir; **turn_act_accuracy KPI'sı yerine sayılmıyor**.
+
+**Live P4 evidence**
+- Aynı run'da Actions ortamı kontrol edildi.
+- `DIMA_ANTHROPIC_API_KEY`: boş
+- `DIMA_GEMINI_API_KEY`: boş
+- `DIMA_GROQ_API_KEY`: boş
+- `DIMA_OPENROUTER_API_KEY`: boş
+- `DIMA_XAI_API_KEY`: boş
+- Sonuç: `live_provider_unavailable`.
+- Artifact digest: `sha256:df451c9b50f8e875f72782e8f1f4bf5b652eae40aa679330642bdbf9a25b4530`.
+
+### V2-D006 — /ask-v2 dark endpoint geçici API-only borcu
+
+- Kaynak: P2/P4 feature-flag dark development + iki mevcut orphan-endpoint gate.
+- Mevcut durum: `/ask-v2` Core MVP öncesi kullanıcı UI'ına bağlanmıyor.
+- Karar: endpoint silinmedi ve sahte frontend tüketicisi yazılmadı; iki gate'te çağıranı
+  “developer acceptance” olarak gerekçeli API-only/meşru yetim ilan edildi.
+- Borç tavanı geçici `8 → 9`; bu artış gizlenmedi.
+- Blocker: Day1 için **NO**.
+- Kapanış: frontend gerçek `askV2()` tüketicisi bağlandığında iki muafiyet kaldırılacak
+  ve tavan tekrar 8'e inecek.
+- Hedef: Core MVP frontend integration (en geç Day5).
+
+### V2-D007 — P4 live TurnInterpreter KPI ölçülemiyor
+
+- Kaynak: P4 exit.
+- Gerekli kanıt:
+  - structured-output success >=99%
+  - turn_act_accuracy >=95%
+  - canonical/surface hallucination = 0 dedicated set
+- Hazır ölçüm aracı: `lab/v2_day1_eval.py`.
+- Hazır corpus: `eval/v2_day1_cases.yaml` (**28 labeled case**).
+- Mevcut blocker: GitHub Actions'ta gerçek LLM provider secret yok.
+- Fake-output testler bu KPI yerine **sayılmayacak**.
+- Blocker: **Day1 strict exit / Day2 transition için YES**.
+- Kapanış: herhangi bir desteklenen provider credential ile evaluator'ı çalıştır;
+  result artifact `status=pass` olmadan Day2 ticket açma.
+
+### V2-D008 — source-lock full legacy suite kırmızı
+
+- Eski Day0 full-CI run `35535435497`:
+  - 5995 passed
+  - 94 skipped
+  - 28 failed
+  - süre 22:55
+- Bu sonuç Day1 focused gate değildir; source-lock çevresindeki legacy/test-infra borcunun
+  görünür fotoğrafıdır.
+- V2'nin doğrudan ürettiği kökler ayrı teşhis edildi:
+  1. repo-root `AGENTS.md` belge düzeni ihlali → **FIXED** `fdb01fb903a4a4fac5e436d3050225b95e84a958`.
+  2. `/ask-v2` yetim uç → **EXPLICIT DEBT** V2-D006; gate beyanları
+     `313e1760e67ee11cf0fb3d494a91c65529208b32` +
+     `4f04b5080fe9cddb3a2542fc2b1c2e5305df321f`.
+  3. V2 authority overlay'i `MIMARI.md` satır indeksini bayatlattı →
+     duplicate authority kaldırıldı, base current-state MIMARI'ya geri dönüldü
+     `2fea97730c072abdf48bffc41261b28a3bde19c9`.
+- Kalan legacy kırmızılar Day1 semantic implementation kapsamına çekilmeyecek.
+- Blocker: rapid Day1 için **NO**; milestone full regression için **YES, ayrı baseline/debt**.
+
+### V2-D009 — semantic description provenance henüz schema yüzeyinde yok
+
+- P4 bounded context modeli description alanını destekliyor.
+- Mevcut `WrenService.schema()` cube/metric/dimension descriptions yayımlamıyor;
+  ContextProvider bu yüzden açıklama **uydurmuyor**, alanı null bırakıyor.
+- Label/synonym/unit/relationship/business rules korunuyor.
+- Blocker: Day1 act classification için **NO**.
+- Kapanış: P2D Semantic Preservation Audit sırasında canonical description kaynağı
+  gerçekten varsa schema adapter ile expose et; yoksa yeni truth uydurma.
+
+**CI hız düzeltmesi**
+- Eski `backend-ci` her V2 commitinde ~23 dakikalık full suite açarak runner kuyruğu
+  oluşturdu.
+- `17cb232c6a8e52fb6dfb44dbb03a7bb7ba54e8d8`:
+  `feat/ask-v2-*` push/PR'larında full suite otomatik çalışmaz; `workflow_dispatch`
+  milestone kapısı olarak korunur.
+- Day1 workflow da artık push başına değil `ready_for_review + manual` milestone'da çalışır.
+
+**Day1 strict durum**
+- Kod/sınır/contract implementasyonu: **COMPLETE**.
+- Focused structural gate: **GREEN**.
+- P4 gerçek-model accuracy gate: **BLOCKED BY MISSING PROVIDER CREDENTIAL**.
+- Bu nedenle Day2 ticket'ı henüz açılmaz.
 
