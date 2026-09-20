@@ -22,7 +22,6 @@ from app.v2.models import (
 COMPACT_CATALOG_BUILDER_VERSION = "v0.1"
 PROMPT_CONTEXT_POLICY_VERSION = "v0.1"
 
-_MAX_SYNONYMS = 10
 _MAX_RULE_CHARS = 8_000
 _MAX_DESCRIPTION_CHARS = 320
 
@@ -38,13 +37,13 @@ def _text(value: Any, *, limit: int | None = None) -> str | None:
     return out
 
 
-def _strings(values: Any, *, limit: int) -> tuple[str, ...]:
+def _strings(values: Any, *, limit: int | None = None) -> tuple[str, ...]:
     out: list[str] = []
     for value in values or ():
         text = _text(value)
         if text and text not in out:
             out.append(text)
-        if len(out) >= limit:
+        if limit is not None and len(out) >= limit:
             break
     return tuple(out)
 
@@ -96,7 +95,7 @@ class ContextProviderV0:
                             (cube.get("measure_descriptions") or {}).get(name),
                             limit=_MAX_DESCRIPTION_CHARS,
                         ),
-                        synonyms=_strings(measure_synonyms.get(name), limit=_MAX_SYNONYMS),
+                        synonyms=_strings(measure_synonyms.get(name), limit=None),
                         unit=_text(units.get(name)),
                     )
                 )
@@ -114,7 +113,7 @@ class ContextProviderV0:
                             (cube.get("dimension_descriptions") or {}).get(name),
                             limit=_MAX_DESCRIPTION_CHARS,
                         ),
-                        synonyms=_strings(dimension_synonyms.get(name), limit=_MAX_SYNONYMS),
+                        synonyms=_strings(dimension_synonyms.get(name), limit=None),
                     )
                 )
 
@@ -123,7 +122,7 @@ class ContextProviderV0:
                     canonical_name=str(cube["name"]),
                     display=_text(cube.get("display")),
                     description=_text(cube.get("description"), limit=_MAX_DESCRIPTION_CHARS),
-                    synonyms=_strings(cube.get("synonyms"), limit=_MAX_SYNONYMS),
+                    synonyms=_strings(cube.get("synonyms"), limit=None),
                     measures=tuple(measures),
                     dimensions=tuple(dimensions),
                     time_dimensions=_strings(
@@ -142,7 +141,7 @@ class ContextProviderV0:
                     canonical_name=str(kpi["name"]),
                     display=_text(kpi.get("label")),
                     description=_text(kpi.get("description"), limit=_MAX_DESCRIPTION_CHARS),
-                    synonyms=_strings(kpi.get("synonyms"), limit=_MAX_SYNONYMS),
+                    synonyms=_strings(kpi.get("synonyms"), limit=None),
                     unit=_text(kpi.get("unit")),
                 )
             )
@@ -156,7 +155,7 @@ class ContextProviderV0:
             relationships.append(
                 CompactRelationshipV0(
                     name=str(rel["name"]),
-                    models=_strings(rel.get("models"), limit=8),
+                    models=_strings(rel.get("models"), limit=None),
                     join_type=_text(rel.get("join_type")),
                     certified=_text(rel.get("certified")),
                 )
