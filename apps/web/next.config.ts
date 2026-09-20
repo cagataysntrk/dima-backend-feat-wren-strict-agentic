@@ -24,16 +24,24 @@ const nextConfig: NextConfig = {
   // Temel güvenlik başlıkları. Tam CSP bilinçli eklenmedi: Next dev runtime'ı ve
   // Recharts/Framer Motion/Radix inline `style` attribute'ları kullanır; nonce'suz
   // sıkı `style-src` uygulamayı kırar. CSP istenirse önce Report-Only ile ölçülmeli.
+  // HSTS yalnız production'da (http localtld dev'i kırmamak için).
   async headers() {
+    const base = [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+    ];
+    if (process.env.NODE_ENV === "production") {
+      base.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      });
+    }
     return [
       {
         source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-        ],
+        headers: base,
       },
     ];
   },

@@ -14,7 +14,7 @@ import type { NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BACKEND = process.env.BACKEND_ORIGIN ?? "http://localhost:8000";
+const BACKEND = process.env.BACKEND_ORIGIN;
 const DEV = process.env.NODE_ENV !== "production";
 
 // hop-by-hop / encoding headers we must not forward verbatim
@@ -29,8 +29,24 @@ function normalizeSetCookie(cookie: string): string {
 }
 
 async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  // Prod fail-fast: BACKEND_ORIGIN tanımsızsa localhost'a sessizce düşme (prod 502
+  // tuzağı) — yanlış yapılandırmayı gürültülü yap. Dev'de localhost serbest.
+  if (!BACKEND) {
+    if (DEV) {
+      return proxyTo(req, ctx, "http://localhost:8000");
+    }
+    return Response.json({ detail: "BACKEND_ORIGIN is not configured." }, { status: 503 });
+  }
+  return proxyTo(req, ctx, BACKEND);
+}
+
+async function proxyTo(
+  req: NextRequest,
+  ctx: { params: Promise<{ path: string[] }> },
+  backend: string,
+) {
   const { path } = await ctx.params;
-  const target = `${BACKEND}/${path.join("/")}${req.nextUrl.search}`;
+  const target = `${backend}/${path.join("/")}${req.nextUrl.search}`;
 
   const headers = new Headers(req.headers);
   STRIP_REQ.forEach((h) => headers.delete(h));
@@ -46,7 +62,10 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
     });
   } catch {
     // Backend unreachable (e.g. not running in dev) — clean 502, don't crash the route.
-    return Response.json({ detail: "Backend'e ulaşılamadı." }, { status: 502 });
+    return Response.json(
+      { detail: "Backend'e ulaşılamadı. (Backend unreachable.)" },
+      { status: 502 },
+    );
   }
 
   const resHeaders = new Headers(res.headers);
