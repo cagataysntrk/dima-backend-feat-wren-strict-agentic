@@ -542,3 +542,62 @@ UNSUPPORTED
 - entity values prompt'a topluca dökülürse,
 - malformed output legacy semantic path'e fallback ederse.
 
+
+
+### 2026-09-20 — DAY 1 / implementation batch 1
+
+**Roadmap/Report çaprazı**
+- P4/P4.1/P4.2/P4.3 yeniden okundu.
+- R7 tek structured language owner sözleşmesi aktif implementation authority olarak kullanıldı.
+- R3/R3A'daki “aynı raw soru birden fazla parser tarafından tekrar yorumlanıyor” kök
+  hata sınıfı için V2 hot path tek-owner tutuldu.
+- R6 Katman 1–2 sınırı korundu: Interpreter doğal dili anlar, canonical data model seçmez.
+
+**Yapılan**
+- `app.llm` üzerine semantic-agnostic `structured_text(system,user)` taşıma kabiliyeti
+  eklendi; mevcut provider/failover/telemetry/kaset korunuyor.
+- RuleBased/NoLlm provider'larda structured language fallback açıkça RED: regex/kural motoru
+  ikinci language owner olmayacak.
+- Day1 typed domain modelleri eklendi; canonical semantic ID alanı
+  `TurnInterpretation` sözleşmesinde bilinçli olarak YOK.
+- `ContextProviderV0` eklendi:
+  - tüm canonical cube/metric/dimension isimlerini korur,
+  - synonym/rule payload'ını bounded tutar,
+  - entity values'ı prompt context'e almaz,
+  - physical relationship condition'ı taşımaz,
+  - business-rule truncation olursa bunu açıkça işaretler,
+  - gerçek `ContextVersionV0` üretir.
+- `TurnInterpreter` eklendi:
+  - k=1,
+  - maksimum 1 format-only retry,
+  - semantic retry=0,
+  - span-grounding fail-closed,
+  - SQL/query/canonical binding=0.
+- `/ask-v2` Day1 path'i:
+  `runtime → context → interpreter`.
+  Resolver/planner/query/legacy fallback yok.
+- Day0 runtime/rollback testinin beklentisi Day1 route'a uyarlanırken Day0 değişmezleri korundu.
+- 28-case `eval/v2_day1_cases.yaml` labeled P4 corpus eklendi.
+- `lab/v2_day1_eval.py` gerçek configured provider ile:
+  structured success, act accuracy, surface-grounding violations ve call count ölçer.
+- `v2-day1-turn-interpreter.yml` yalnız Day0+Day1 focused tests + varsa live P4 eval için eklendi.
+
+**Commitler**
+- `3e720fa6f72125b4b465c902c827cfe0663ae003` — generic structured transport
+- `5d784fcacb1af665cef94a59f7de6af038cc5ec4` — typed Day1 contracts
+- `fe5ccae2f4f7a3fd62436254d06f5bfedfbc6735` — bounded-context loss visibility
+- `a6bf721e2295f26f94edf6c18d8aa6163cbf27da` / `efb1544110f166f8c782234a9d046a87de2f1075` — ContextProviderV0
+- `eb8d0cee10ba72392af749087fd0294b1e44988d` — TurnInterpreter
+- `79ef1c4f5769dfb4ef0e44f01ab27e31646f3c8b` / `446b39a71a5d2e7dda30a5a878aa98690f707762` — Day1 orchestration/router
+- `a013af3f6c77fe1437135aecbc0aea3d5a602bb1` — focused Day1 contracts
+- `eb257bbec7dd72d4f05cc8a6dd8f88e21c3f0e11` — Day0 invariant adaptation
+- `a97f59ed68e329fe72f018be0b87e23cfec47f24` — labeled Day1 corpus
+- `0aa8c71b035cde8c5bc7f8264c934e62e0ebfa8d` — real-provider evaluator
+- `586fe6807803958869ffab1c6ba95446612594bb` — focused Day1 CI
+
+**Şu anki gate durumu**
+- Structural/contract code: implementation complete, CI ölçümü bekleniyor.
+- P4 live KPI: **ölçülmeden PASS sayılmayacak**.
+- Live provider secret Actions ortamında yoksa bu açık bir measurement debt/blocker olarak
+  kaydedilecek; fake-output unit testleri `turn_act_accuracy` yerine sayılmayacak.
+
