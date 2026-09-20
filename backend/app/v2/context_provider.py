@@ -22,8 +22,6 @@ from app.v2.models import (
 COMPACT_CATALOG_BUILDER_VERSION = "v0.1"
 PROMPT_CONTEXT_POLICY_VERSION = "v0.1"
 
-_MAX_CUBES = 64
-_MAX_FIELDS_PER_CUBE = 48
 _MAX_SYNONYMS = 10
 _MAX_RULE_CHARS = 8_000
 _MAX_DESCRIPTION_CHARS = 320
@@ -51,16 +49,16 @@ def _strings(values: Any, *, limit: int) -> tuple[str, ...]:
     return tuple(out)
 
 
-def _rules_for_prompt(schema: dict[str, Any]) -> str:
+def _rules_for_prompt(schema: dict[str, Any]) -> tuple[str, bool]:
     """Return only runtime-approved rules already exposed by WrenService.schema().
 
     The V2 provider does not read extra files or discover a second business-rule owner.
     """
     raw = schema.get("business_rules")
     if not isinstance(raw, str):
-        return ""
+        return "", False
     canonical = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
-    return canonical[:_MAX_RULE_CHARS]
+    return canonical[:_MAX_RULE_CHARS], len(canonical) > _MAX_RULE_CHARS
 
 
 def _sha256(text: str) -> str:
@@ -76,11 +74,11 @@ class ContextProviderV0:
         runtime: TenantAnalyticsRuntimeV0,
     ) -> BoundedSemanticContextV0:
         schema = service.schema()
-        rules = _rules_for_prompt(schema)
+        rules, rules_truncated = _rules_for_prompt(schema)
         rules_hash = _sha256(rules)
 
         cubes: list[CompactCubeContextV0] = []
-        for cube in (schema.get("cubes") or [])[:_MAX_CUBES]:
+        for cube in (schema.get("cubes") or []):
             if not isinstance(cube, dict) or not cube.get("name"):
                 continue
 
@@ -88,12 +86,16 @@ class ContextProviderV0:
             measure_display = cube.get("measure_synonyms_display") or {}
             units = cube.get("units") or {}
             measures: list[CompactSemanticFieldV0] = []
-            for name in (cube.get("measures") or [])[:_MAX_FIELDS_PER_CUBE]:
+            for name in (cube.get("measures") or []):
                 name = str(name)
                 measures.append(
                     CompactSemanticFieldV0(
                         canonical_name=name,
                         display=_text(measure_display.get(name)),
+                        description=_text(
+                            (cube.get("measure_descriptions") or {}).get(name),
+                            limit=_MAX_DESCRIPTION_CHARS,
+                        ),
                         synonyms=_strings(measure_synonyms.get(name), limit=_MAX_SYNONYMS),
                         unit=_text(units.get(name)),
                     )
@@ -102,12 +104,16 @@ class ContextProviderV0:
             dimension_synonyms = cube.get("dimension_synonyms") or {}
             dimension_labels = cube.get("dimension_labels") or {}
             dimensions: list[CompactSemanticFieldV0] = []
-            for name in (cube.get("dimensions") or [])[:_MAX_FIELDS_PER_CUBE]:
+            for name in (cube.get("dimensions") or []):
                 name = str(name)
                 dimensions.append(
                     CompactSemanticFieldV0(
                         canonical_name=name,
                         display=_text(dimension_labels.get(name)),
+                        description=_text(
+                            (cube.get("dimension_descriptions") or {}).get(name),
+                            limit=_MAX_DESCRIPTION_CHARS,
+                        ),
                         synonyms=_strings(dimension_synonyms.get(name), limit=_MAX_SYNONYMS),
                     )
                 )
@@ -116,17 +122,19 @@ class ContextProviderV0:
                 CompactCubeContextV0(
                     canonical_name=str(cube["name"]),
                     display=_text(cube.get("display")),
+                    description=_text(cube.get("description"), limit=_MAX_DESCRIPTION_CHARS),
                     synonyms=_strings(cube.get("synonyms"), limit=_MAX_SYNONYMS),
                     measures=tuple(measures),
                     dimensions=tuple(dimensions),
                     time_dimensions=_strings(
-                        cube.get("time_dimensions"), limit=_MAX_FIELDS_PER_CUBE
+                        cube.get("time_dimensions"),
+                        limit=max(1, len(cube.get("time_dimensions") or [])),
                     ),
                 )
             )
 
         relationships: list[CompactRelationshipV0] = []
-        for rel in (schema.get("relationships") or [])[:128]:
+        for rel in (schema.get("relationships") or []):
             if not isinstance(rel, dict) or not rel.get("name"):
                 continue
             # Physical join condition is intentionally omitted. The interpreter needs
@@ -161,4 +169,5 @@ class ContextProviderV0:
             cubes=tuple(cubes),
             relationships=tuple(relationships),
             approved_business_rules=rules,
+            business_rules_truncated=rules_truncated,
         )
