@@ -133,6 +133,20 @@ class ContextProviderV0:
                 )
             )
 
+        kpis: list[CompactSemanticFieldV0] = []
+        for kpi in (schema.get("kpis") or []):
+            if not isinstance(kpi, dict) or not kpi.get("name"):
+                continue
+            kpis.append(
+                CompactSemanticFieldV0(
+                    canonical_name=str(kpi["name"]),
+                    display=_text(kpi.get("label")),
+                    description=_text(kpi.get("description"), limit=_MAX_DESCRIPTION_CHARS),
+                    synonyms=_strings(kpi.get("synonyms"), limit=_MAX_SYNONYMS),
+                    unit=_text(kpi.get("unit")),
+                )
+            )
+
         relationships: list[CompactRelationshipV0] = []
         for rel in (schema.get("relationships") or []):
             if not isinstance(rel, dict) or not rel.get("name"):
@@ -167,6 +181,7 @@ class ContextProviderV0:
                 prompt_context_policy_version=PROMPT_CONTEXT_POLICY_VERSION,
             ),
             cubes=tuple(cubes),
+            kpis=tuple(kpis),
             relationships=tuple(relationships),
             approved_business_rules=rules,
             business_rules_truncated=rules_truncated,
