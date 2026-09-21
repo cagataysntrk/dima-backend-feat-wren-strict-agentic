@@ -6,6 +6,7 @@ name: v2-day4-live-conversation
     branches:
       - wren-bağımsız
     types:
+      - ready_for_review
       - synchronize
     paths:
       - "backend/app/v2/interpreter.py"
