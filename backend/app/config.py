@@ -114,7 +114,9 @@ class Settings(BaseSettings):
     # V2 operational default (2026-09-21): tek source-of-truth model.
     # GitHub Environment variable DIMA_OPENROUTER_MODEL bunu override edebilir.
     # select_model boş bırakılırsa LLM adapter ana modeli aynen kullanır.
-    openrouter_model: str = "deepseek/deepseek-v4-flash"
+    # Cost-first hot path: structured turn interpretation/extraction/clarification/repair.
+    # Harder reasoning is escalated explicitly; the fast default must stay cheap.
+    openrouter_model: str = "google/gemini-2.5-flash-lite"
     openrouter_select_model: str = ""
     # Ollama (tam yerel, anahtarsız: `brew install ollama` + `ollama pull ...`)
     ollama_base_url: str = "http://localhost:11434/v1"
