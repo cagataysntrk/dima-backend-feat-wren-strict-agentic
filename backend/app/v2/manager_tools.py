@@ -15,6 +15,7 @@ from pydantic import Field, model_validator
 
 from app.v2.manager_models import (
     ManagerState,
+    ManagerCapabilityKey,
     UserIntentEnvelope,
 )
 from app.v2.models import FrozenModel
@@ -55,6 +56,22 @@ class RunAnalyticsArgs(FrozenModel):
     comparison_handle: str | None = None
     ranking_direction: Literal["asc", "desc"] | None = None
     limit: int | None = Field(default=None, ge=1, le=1000)
+    derived_task_id: str | None = None
+    derived_parent_obligation_id: str | None = None
+    derived_capability_key: ManagerCapabilityKey | None = None
+
+    @model_validator(mode="after")
+    def _derived_contract(self):
+        values = (
+            self.derived_task_id,
+            self.derived_parent_obligation_id,
+            self.derived_capability_key,
+        )
+        if any(value is not None for value in values) and not all(
+            value is not None for value in values
+        ):
+            raise ValueError("derived task id/parent/capability birlikte verilmelidir")
+        return self
 
 
 class RunRelationshipArgs(FrozenModel):
