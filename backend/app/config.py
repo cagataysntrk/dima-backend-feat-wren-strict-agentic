@@ -136,6 +136,9 @@ class Settings(BaseSettings):
     v2_fast_language_reasoning: bool = False
     v2_reference_language_reasoning: bool = True
     v2_research_manager_reasoning: bool = True
+    # Native JSON-schema replies are compact. Bound only the provider output reservation;
+    # semantic contracts/context are unchanged. Prevents OpenRouter reserving full 65k.
+    v2_structured_max_tokens: int = 16384
     v2_manager_lab_enabled: bool = False
     # Internal scoped setting written by ModelRolePolicy before build_generator().
     # Legacy callers retain False, preserving the historical hot-path behavior.
