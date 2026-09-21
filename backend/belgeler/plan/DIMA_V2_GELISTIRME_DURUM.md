@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6 ACTIVE — PRODUCT MVP / RESEARCHBRIEF**  
-**Kod fazı:** Day 6 / P9 ACTIVE — kompleks kullanıcı talebini query çalıştırmadan typed ResearchBrief'e dönüştürme.
+**Durum:** **DAY 6.5 PREP HARDENED — HIDDEN HOLDOUT FREEZE BLOCKER**  
+**Kod fazı:** Day 6.5 / Manager Architecture Validation — production Manager implementation henüz başlamadı; contract/authority hardening tamamlanıyor.
 
 ---
 
@@ -3002,3 +3002,100 @@ count ve taxonomy metadata repoya yazılmalıdır.
 
 **NEXT ACTION:** Kullanıcı onayıyla Day6.5 implementation başlatılacak. İlk adım production
 kod değil, independent hidden-holdout freeze + contract-only models olacaktır.
+
+
+### 2026-09-21 — DAY 6.5 / FINAL PRE-IMPLEMENTATION HARDENING
+
+**Current branch HEAD before hardening:** `8b2a9aa44bf4c9e1dfde5e6f608a129d4c85e0d5`
+
+**External review cross-check**
+- Day6.5 hazırlığı genel olarak doğru bulundu.
+- Production Manager kodundan önce dört blocker teyit edildi:
+  1. simple/Core fast-path + latency/cost regression gate,
+  2. obligation origin + derived-parent ownership,
+  3. evidence-backed != VERIFIED completion semantics,
+  4. exactly-one accepted authority + rejected-attempt merge yasağı.
+- Ek hardening:
+  - runtime-issued SourceSpanRef,
+  - tenant/context-bound SemanticHandle,
+  - registered capability vocabulary,
+  - real trust-plane vertical proof before seal,
+  - ADR candidate-vs-accepted ayrımı,
+  - final seal sırasında MIMARI/CLAUDE/status authority sırası.
+
+**Yapılan hardening**
+- `DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+  - simple standard fast lane açıkça korundu,
+  - rejected FAST attempt semantic carry-over yasaklandı,
+  - obligation `origin` + `parent_obligation_id` eklendi,
+  - SourceSpanRegistry ve tenant-bound SemanticHandle sınırı eklendi,
+  - AcceptedTurnContract audit/lineage alanları güçlendirildi,
+  - evidence presence ile VERIFIED ayrıldı,
+  - fast-path p95/cost/model-call gate'leri eklendi,
+  - implementation sırası gate-before-runtime olacak şekilde düzeltildi,
+  - seal öncesi gerçek read-only trust-plane vertical proof zorunlu yapıldı.
+- `DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+  - `ObligationOrigin`: USER_MUST / USER_OPTIONAL / SYSTEM_REQUIRED / AGENT_DERIVED,
+  - lifecycle'da gerçek `VERIFIED` ve BLOCKED/LIMITED ayrımı,
+  - opaque SourceSpanRef + registry,
+  - capability_key registry gate,
+  - tenant-bound SemanticHandle,
+  - versioned/lineaged AcceptedTurnContract,
+  - exactly-one accepted authority,
+  - no rejected-attempt semantic merge,
+  - CompletionGate VERIFIED/PARTIAL/FAILED semantiği düzeltildi.
+- `eval/v2_day6_5_eval_manifest.yaml`
+  - authority, fast-path, completion hard gate'leri genişletildi.
+- `ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+  - one-shot rejection = ACCEPTED,
+  - bounded Manager = SELECTED CANDIDATE FOR VALIDATION,
+  - production acceptance yalnız Day6.5 seal sonrası.
+- `AGENTS.md` ve `CLAUDE.md`
+  - Day6.5 owner/authority override eklendi,
+  - tarihsel “raw language only TurnInterpreter” kuralının complex path için yanlışlıkla
+    uygulanması engellendi.
+
+**Commits**
+- architecture hardening: `07a3024f35162b7511c22c3f0710ec260547c391`
+- contract hardening: `f56108f3db29763c4a277f3974f63d21812117b2`
+- eval gates: `25612707c8da27b242d548f9f20876cdaad6cc71`
+- ADR candidate status: `42da43d42438e5e5533181b6a3a2a88ac6eacfd7`
+- AGENTS override: `4bd6b4debabaf64b2a5a716ed479cbab8cb0ea8b`
+- CLAUDE active operation: `2072a5a243a8572d60f3ae659e67e5a0e0bef118`
+
+### DAY 6.5 PRE-IMPLEMENTATION GATE
+
+```text
+one-shot P9 rejection documented                PASS
+Manager candidate/not-yet-production semantics  PASS
+simple Core fast-path gates                      PASS
+obligation origin/parent contract                PASS
+evidence-backed != VERIFIED                      PASS
+exactly-one accepted authority                   PASS
+rejected attempt semantic merge = 0 contract     PASS
+opaque source evidence contract                  PASS
+tenant/context-bound SemanticHandle contract     PASS
+gate-before-runtime implementation order         PASS
+real trust-plane vertical proof in exit plan     PASS
+MIMARI final-seal step recorded                  PASS
+hidden holdout SHA/count/taxonomy freeze         BLOCKED / REQUIRED
+```
+
+### V2-D0XX — Hidden architecture holdout henüz freeze edilmedi
+
+- Kaynak: Day6.5 eval manifest / architecture seal discipline.
+- Manifest current state:
+  - count = 50 target,
+  - `sha256 = REQUIRED_BEFORE_IMPLEMENTATION`,
+  - `taxonomy_sha256 = REQUIRED_BEFORE_IMPLEMENTATION`.
+- Blocker: **YES — production Manager implementation öncesi**.
+- Neden burada çözülmüyor: hidden corpus mevcut development model/implementation süreci
+  tarafından üretilir veya görülürse hidden niteliğini kaybeder.
+- Kapanış: bağımsız source/evaluator corpus'u external olarak dondurur; repo yalnız
+  hash/count/taxonomy metadata alır. Prompt text repo veya implementation context'e girmez.
+- Sonraki adım: holdout metadata freeze → ardından contract-only production models +
+  provider-free authority tests.
+
+**Karar**
+Bu blocker dışında Day6.5 contract/mimari hazırlığı production implementation'a hazırdır.
+Hidden freeze tamamlanmadan Manager runtime kodu yazılmayacak.
