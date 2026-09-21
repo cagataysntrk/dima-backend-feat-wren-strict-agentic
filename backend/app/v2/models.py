@@ -219,32 +219,33 @@ class ResearchGoalKind(StrEnum):
     BREAKDOWN = "breakdown"
     RANKING = "ranking"
     ROOT_CAUSE = "root_cause"
-    DELIVERABLE = "deliverable"
     OTHER = "other"
 
 
 class ResearchGoalSurface(FrozenModel):
-    """One explicit research goal expressed in the current message.
+    """One explicit analytical research goal expressed in the current message.
 
-    `text`, `subject_mentions`, and `related_mentions` are language-level surface
-    evidence only. Canonical binding is owned by SemanticResolver.
+    Deliverables are intentionally NOT research questions. `text`,
+    `subject_mentions`, and `related_mentions` are language-level surface evidence
+    only. Canonical binding is owned by SemanticResolver.
     """
 
     kind: ResearchGoalKind
     text: str = Field(min_length=1)
     subject_mentions: tuple[SemanticMention, ...] = ()
     related_mentions: tuple[SemanticMention, ...] = ()
-    deliverable: PresentationKind | None = None
+
+
+class ResearchDeliverableSurface(FrozenModel):
+    """Source-grounded requested research output, separate from analytical questions."""
+
+    kind: PresentationKind
+    text: str = Field(min_length=1)
 
     @model_validator(mode="after")
-    def _validate_goal_shape(self):
-        if self.kind == ResearchGoalKind.DELIVERABLE:
-            if self.deliverable is None:
-                raise ValueError("deliverable research goal requires deliverable kind")
-            if self.subject_mentions or self.related_mentions:
-                raise ValueError("deliverable goal cannot carry semantic subject refs")
-        elif self.deliverable is not None:
-            raise ValueError("non-deliverable research goal cannot set deliverable")
+    def _non_empty_deliverable(self):
+        if self.kind == PresentationKind.NONE:
+            raise ValueError("research deliverable cannot be none")
         return self
 
 
@@ -253,6 +254,7 @@ class ResearchRequestSurface(FrozenModel):
 
     goals: tuple[ResearchGoalSurface, ...] = Field(min_length=1)
     time_mentions: tuple[SemanticMention, ...] = ()
+    deliverables: tuple[ResearchDeliverableSurface, ...] = ()
 
 
 class UserRepair(FrozenModel):
@@ -563,11 +565,16 @@ class TurnInterpretation(FrozenModel):
                 raise ValueError("research dialogue act requires research_request")
             if self.analytical_request is not None:
                 raise ValueError("research dialogue act cannot carry analytical_request")
-            if (
-                self.dialogue_act == TurnAct.REPORT_REQUEST
-                and self.presentation_request != PresentationKind.REPORT
-            ):
-                raise ValueError("REPORT_REQUEST requires presentation_request=report")
+            if self.dialogue_act == TurnAct.REPORT_REQUEST:
+                if self.presentation_request != PresentationKind.REPORT:
+                    raise ValueError("REPORT_REQUEST requires presentation_request=report")
+                if not any(
+                    item.kind == PresentationKind.REPORT
+                    for item in self.research_request.deliverables
+                ):
+                    raise ValueError(
+                        "REPORT_REQUEST requires a source-grounded report deliverable"
+                    )
         elif self.research_request is not None:
             raise ValueError("research_request is valid only for research dialogue acts")
         return self
@@ -821,6 +828,13 @@ class ResearchQuestion(FrozenModel):
     status: ResearchGoalStatus
 
 
+class ResearchDeliverableRequirement(FrozenModel):
+    requirement_id: str
+    kind: PresentationKind
+    priority: Literal["MUST"] = "MUST"
+    source_text: str
+
+
 class ResearchScope(FrozenModel):
     semantic_refs: tuple[ResearchSemanticRef, ...] = ()
     time_surfaces: tuple[str, ...] = ()
@@ -847,7 +861,7 @@ class ResearchBrief(FrozenModel):
     scope: ResearchScope
     required_domains: tuple[str, ...] = ()
     questions: tuple[ResearchQuestion, ...] = ()
-    deliverables: tuple[PresentationKind, ...] = ()
+    deliverables: tuple[ResearchDeliverableRequirement, ...] = ()
     must_requirement_ids: tuple[str, ...] = ()
     blocking_goal_ids: tuple[str, ...] = ()
     budget: ResearchBudget = Field(default_factory=ResearchBudget)
