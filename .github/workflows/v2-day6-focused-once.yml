@@ -12,6 +12,7 @@ name: v2-day6-focused-once
 # deliverable-axis rerun — deliverable-contract rerun
 # current-head flat-schema migration audit
 # flat-schema + capability-registry + model-role closure
+# current-head reference-role closure
 
 "on":
   push:
@@ -56,7 +57,19 @@ jobs:
           assert len(ids) == len(set(ids)), ids
           assert sum(bool(case.get("expect_research", True)) for case in cases) >= 30
           assert sum(not bool(case.get("expect_research", True)) for case in cases) >= 8
-          print({"cases": len(cases), "research": sum(bool(c.get("expect_research", True)) for c in cases), "negative": sum(not bool(c.get("expect_research", True)) for c in cases)})
+
+          frozen = yaml.safe_load(open("eval/v2_day6_frozen16.yaml", encoding="utf-8"))
+          frozen_ids = list(frozen["case_ids"])
+          assert frozen["version"] == "day6-frozen16-v1"
+          assert len(frozen_ids) == 16, frozen_ids
+          assert len(frozen_ids) == len(set(frozen_ids)), frozen_ids
+          assert set(frozen_ids) <= set(ids), sorted(set(frozen_ids) - set(ids))
+          print({
+              "cases": len(cases),
+              "research": sum(bool(c.get("expect_research", True)) for c in cases),
+              "negative": sum(not bool(c.get("expect_research", True)) for c in cases),
+              "frozen16": len(frozen_ids),
+          })
           PY
 
       - uses: actions/setup-node@v4
