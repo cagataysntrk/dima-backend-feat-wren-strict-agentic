@@ -34,6 +34,7 @@ from app.v2.resolver import SemanticResolver
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ROOT / "eval" / "v2_day6_research_cases.yaml"
+FROZEN16 = ROOT / "eval" / "v2_day6_frozen16.yaml"
 DEFAULT_OUTPUT = ROOT / "lab" / "reports" / "v2_day6_research_eval.json"
 
 
@@ -405,10 +406,21 @@ def main() -> int:
         default=[],
         help="Run only named case(s). Repeatable; useful for cheap targeted reruns.",
     )
+    parser.add_argument(
+        "--frozen16",
+        action="store_true",
+        help="Run the immutable Day 6 reference corpus manifest.",
+    )
     args = parser.parse_args()
 
     all_cases = yaml.safe_load(CASES.read_text(encoding="utf-8"))["cases"]
-    selected = set(args.case_id)
+    if args.frozen16 and args.case_id:
+        raise SystemExit("--frozen16 and --case-id are mutually exclusive")
+    if args.frozen16:
+        frozen = yaml.safe_load(FROZEN16.read_text(encoding="utf-8"))
+        selected = {str(case_id) for case_id in frozen["case_ids"]}
+    else:
+        selected = set(args.case_id)
     cases = [
         case for case in all_cases
         if not selected or str(case["id"]) in selected
@@ -768,6 +780,9 @@ def main() -> int:
         "prompt_version": "day6-v0.6",
         "transport_schema_version": "dima_turn_interpreter_transport_v2",
         "contract_version": "p9-researchbrief-v2",
+        "corpus_version": (
+            "day6-frozen16-v1" if args.frozen16 else "custom-or-full"
+        ),
         "source_policy": (
             "real_provider_language_owner_plus_research_mode_policy_plus_real_resolver_and_brief_builder_"
             "synthetic_permuted_context_no_data_query"
