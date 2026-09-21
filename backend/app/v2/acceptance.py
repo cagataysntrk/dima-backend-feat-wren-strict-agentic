@@ -17,7 +17,7 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
     UserObligationLedger,
 )
-from app.v2.manager_policy import ManagerCapabilityRegistry
+from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 
@@ -127,6 +127,19 @@ class IntentAcceptanceGate:
                     )
                 except (KeyError, ValueError) as exc:
                     reject.append(f"invalid semantic handle {handle_id}: {exc}")
+
+            spec = self._capabilities.get(item.capability_key)
+            if (
+                item.origin == ObligationOrigin.USER_MUST
+                and item.priority == ObligationPriority.MUST
+                and item.polarity == ObligationPolarity.REQUIRED
+                and spec.executable
+                and spec.lane == ManagerCapabilityLane.STANDARD
+                and not item.semantic_handle_refs
+            ):
+                reject.append(
+                    f"standard USER_MUST {item.obligation_id} requires Resolver-issued semantic handles before acceptance"
+                )
 
             if item.open_questions and item.priority == ObligationPriority.MUST:
                 clarify.append(f"MUST obligation {item.obligation_id} has open questions")
