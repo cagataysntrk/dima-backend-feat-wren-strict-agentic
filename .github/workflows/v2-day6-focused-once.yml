@@ -1,4 +1,5 @@
 name: v2-day6-focused-once
+# relationship-proof rerun
 
 "on":
   push:
@@ -9,7 +10,7 @@ name: v2-day6-focused-once
 
 jobs:
   day6-contract:
-    if: "github.event.head_commit.message == 'test(v2-day6): rerun focused owner gate'"
+    if: "github.event.head_commit.message == 'test(v2-day6): run relationship-proof gate'"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
