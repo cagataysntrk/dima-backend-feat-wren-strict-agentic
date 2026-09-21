@@ -88,6 +88,14 @@ class ManagerRuntime:
     def has_accepted_contract(self) -> bool:
         return self._snapshot.accepted_contract_id is not None
 
+    def reset_semantic_resolution_receipts(self) -> None:
+        """Start a fresh pre-acceptance draft attempt without receipt carry-over."""
+        if self.has_accepted_contract:
+            raise ManagerStateError(
+                "accepted authority semantic receipts cannot be reset"
+            )
+        self._semantic_receipts = []
+
     def _record_semantic_receipts(self, result: Any) -> int:
         """Persist USER_SOURCE resolution provenance without canonical targets."""
         added = 0
