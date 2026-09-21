@@ -55,6 +55,10 @@ _LAST_N_RE = re.compile(
 _PREVIOUS_RE = re.compile(
     r"\b(?:gecen|onceki|previous|last)\s+(?P<unit>ay|month|yil|sene|year)[a-z]*\b"
 )
+_PREVIOUS_N_RE = re.compile(
+    rf"\b(?:gecen|onceki|previous|prior)\s+(?P<n>\d+|{SAYI_KALIBI})\s+"
+    r"(?P<unit>ay|month|months|gun|day|days)[a-z]*\b"
+)
 
 
 def resolve_period(
@@ -154,11 +158,54 @@ def resolve_comparison(
 
     source = comparisons[0].text
     text = _norm(source).strip()
+    previous_n = _PREVIOUS_N_RE.search(text)
     match = _PREVIOUS_RE.search(text)
-    if not match:
+    if not match and not previous_n:
         raise TemporalResolutionError(f"Day3 MVP comparison desteklenmiyor: {source!r}")
 
     now = today or date.today()
+
+    if previous_n:
+        n = sayi_coz(previous_n.group("n"))
+        if not n or n < 1:
+            raise TemporalResolutionError(f"geçersiz comparison period count: {source!r}")
+        unit_n = previous_n.group("unit")
+        if unit_n in {"ay", "month", "months"}:
+            if base_period is None or base_period.kind != PeriodKind.LAST_N_MONTHS or base_period.n != n:
+                raise TemporalResolutionError(
+                    "previous-N-month comparison aynı N ile LAST_N_MONTHS base gerektirir"
+                )
+            base_start = date.fromisoformat(base_period.start)
+            reference = ResolvedPeriod(
+                kind=PeriodKind.LAST_N_MONTHS,
+                source_text=source,
+                time_dimension=time_dimension,
+                start=_months_ago(base_start, n).isoformat(),
+                end=(base_start - timedelta(days=1)).isoformat(),
+                n=n,
+            )
+        else:
+            if base_period is None or base_period.kind != PeriodKind.LAST_N_DAYS or base_period.n != n:
+                raise TemporalResolutionError(
+                    "previous-N-day comparison aynı N ile LAST_N_DAYS base gerektirir"
+                )
+            base_start = date.fromisoformat(base_period.start)
+            reference = ResolvedPeriod(
+                kind=PeriodKind.LAST_N_DAYS,
+                source_text=source,
+                time_dimension=time_dimension,
+                start=(base_start - timedelta(days=n)).isoformat(),
+                end=(base_start - timedelta(days=1)).isoformat(),
+                n=n,
+            )
+        return ResolvedComparison(
+            mode="previous_period",
+            source_text=source,
+            base_period=base_period,
+            reference_period=reference,
+        )
+
+    assert match is not None
     unit = match.group("unit")
 
     if unit in {"ay", "month"}:
