@@ -929,6 +929,35 @@ class SemanticResolver:
     ) -> tuple[ResolutionStatus, str | None, str | None, ClarificationReason | None]:
         material = [candidate for candidate in candidates if candidate.material]
         if len(material) > 1:
+            # One exact/verified semantic match must not become a false ambiguity merely
+            # because another target is morphologically/fuzzily similar. Genuine
+            # ambiguity remains when multiple authoritative candidates match exactly.
+            authoritative_sources = {
+                CandidateSource.EXPLICIT_ANCHOR,
+                CandidateSource.CURRENT_FOCUS,
+                CandidateSource.CANONICAL_NAME,
+                CandidateSource.VERIFIED_SYNONYM,
+                CandidateSource.EXACT_ENTITY_VALUE,
+                CandidateSource.COMPANY_VOCABULARY,
+            }
+            authoritative = [
+                candidate
+                for candidate in material
+                if authoritative_sources.intersection(set(candidate.provenance))
+            ]
+            if len(authoritative) == 1:
+                candidate = authoritative[0]
+                return (
+                    ResolutionStatus.RESOLVED,
+                    candidate.candidate_id,
+                    (
+                        mention.text
+                        if candidate.target_kind == SemanticTargetKind.ENTITY_VALUE
+                        and candidate.sensitive
+                        else candidate.value
+                    ),
+                    None,
+                )
             return (
                 ResolutionStatus.CLARIFY,
                 None,
