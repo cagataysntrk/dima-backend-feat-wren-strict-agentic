@@ -827,13 +827,18 @@ class ResearchScope(FrozenModel):
 
 
 class ResearchBudget(FrozenModel):
-    """Policy envelope only; Day 6 never consumes this budget."""
+    """Typed budget envelope only; Day 6 does not invent execution limits.
 
-    default_data_queries: int = Field(default=8, ge=0)
-    hard_max_data_queries: int = Field(default=12, ge=0)
-    max_branch_depth: int = Field(default=3, ge=0)
-    max_llm_research_turns: int = Field(default=6, ge=0)
-    wall_clock_target_seconds: int = Field(default=90, ge=1)
+    Concrete limits belong to the Day 7 research execution/model/tool policy owner.
+    """
+
+    max_data_queries: int | None = Field(default=None, ge=0)
+    max_branch_depth: int | None = Field(default=None, ge=0)
+    max_llm_turns: int | None = Field(default=None, ge=0)
+    max_wall_clock_seconds: int | None = Field(default=None, ge=1)
+    assignment: Literal["deferred_to_research_execution_policy"] = (
+        "deferred_to_research_execution_policy"
+    )
 
 
 class ResearchBrief(FrozenModel):
