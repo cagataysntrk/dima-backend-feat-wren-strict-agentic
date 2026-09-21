@@ -367,12 +367,15 @@ MUTLAK SINIRLAR:
   5) prior analytical request varsa ve kullanıcı önceki talebi yanlışlamadan yeni
      filter/breakdown/scope ekliyor, tek bir üyeye daraltıyor veya kapsamı genişletiyorsa
      ANALYTIC_REFINE.
-  6) Yeni istek birden fazla BAĞIMSIZ araştırma hedefini koordine etmeyi gerektiriyorsa
-     veya açık bir ilişki/cross-domain araştırması istiyorsa research act seç:
-     - Bu kompleks araştırmanın çıktı olarak RAPOR üretmesi açıkça isteniyorsa REPORT_REQUEST.
+  6) Research act sınırı:
+     - Birden fazla BAĞIMSIZ araştırma hedefini koordine etmek research'tür.
+     - Açık RELATIONSHIP / bağlantı / etki-ilişkisi / root-cause araştırması, hedef sayısı
+       TEK olsa bile research'tür; Standard Analytics IR ilişki veya kök-neden sahibi değildir.
+     - Bu research isteğinde çıktı olarak RAPOR açıkça isteniyorsa REPORT_REQUEST.
      - Aksi halde COMPLEX_ANALYSIS.
-     Tek bir standart metric/filter/time/breakdown/ranking/comparison sorgusu kompleks
-     araştırma değildir.
+     - Tek bir metric/filter/time/breakdown/ranking/period-comparison sorgusu, yalnız
+       "raporla/grafik göster/tablo ver" dendi diye research OLMAZ; ANALYTIC_NEW kalır ve
+       presentation_request ilgili sunum tercihini taşır.
   7) bağımsız tek standart analitik istek ANALYTIC_NEW.
 - USER_REPAIR kararı kelime ezberi değildir; semantik olarak "önceki seçim yanlıştı,
   bunu onun yerine koy" anlamını gerektirir. Yalnız kapsam daraltmak veya ilk kez bir
