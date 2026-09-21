@@ -33,6 +33,20 @@ class StandardObligationVerifier:
 
         if obligation.obligation_id not in projection.obligation_ids:
             reasons.append("obligation is not included in executed StandardProjection")
+
+        projection_handles = {
+            *projection.metric_handles,
+            *projection.dimension_handles,
+            *projection.filter_handles,
+            *(() if projection.period_handle is None else (projection.period_handle,)),
+            *(() if projection.comparison_handle is None else (projection.comparison_handle,)),
+        }
+        missing_bound_handles = set(obligation.semantic_handle_refs) - projection_handles
+        if missing_bound_handles:
+            reasons.append(
+                "executed projection does not include obligation semantic bindings: "
+                + ", ".join(sorted(missing_bound_handles))
+            )
         if not evidence.verified:
             reasons.append("EvidenceArtifact is not verified")
         if not evidence.query_contract_refs:
