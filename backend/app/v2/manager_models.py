@@ -78,6 +78,24 @@ class ResearchRunTerminal(StrEnum):
     FAILED = "FAILED"
 
 
+class ResearchDirectiveType(StrEnum):
+    ADAPT_ON_EVIDENCE = "ADAPT_ON_EVIDENCE"
+
+
+class ResearchDirectiveCondition(StrEnum):
+    MATERIAL_NEW_DIRECTION = "MATERIAL_NEW_DIRECTION"
+
+
+class ResearchDirective(FrozenModel):
+    directive_id: str = Field(min_length=1)
+    directive_type: ResearchDirectiveType
+    parent_obligation_id: str = Field(min_length=1)
+    condition: ResearchDirectiveCondition = (
+        ResearchDirectiveCondition.MATERIAL_NEW_DIRECTION
+    )
+    source_refs: tuple[str, ...] = Field(min_length=1)
+
+
 class StandardProjection(FrozenModel):
     obligation_ids: tuple[str, ...] = Field(min_length=1)
     metric_handles: tuple[str, ...] = Field(min_length=1)
@@ -172,13 +190,23 @@ class UserIntentEnvelope(FrozenModel):
     source_message_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     model_role: str = Field(min_length=1)
     obligations: tuple[CandidateObligation, ...] = Field(min_length=1)
+    research_directives: tuple[ResearchDirective, ...] = ()
     unresolved_source_refs: tuple[str, ...] = ()
 
     @model_validator(mode="after")
-    def _unique_obligations(self):
+    def _unique_authority_items(self):
         ids = [item.obligation_id for item in self.obligations]
         if len(ids) != len(set(ids)):
             raise ValueError("candidate obligation IDs unique olmalı")
+        directive_ids = [item.directive_id for item in self.research_directives]
+        if len(directive_ids) != len(set(directive_ids)):
+            raise ValueError("research directive IDs unique olmalı")
+        obligation_ids = set(ids)
+        for directive in self.research_directives:
+            if directive.parent_obligation_id not in obligation_ids:
+                raise ValueError(
+                    "research directive parent accepted obligation içinde bulunmalı"
+                )
         return self
 
 
@@ -231,6 +259,7 @@ class AcceptedTurnContract(FrozenModel):
     model_role: str
     obligation_ids: tuple[str, ...]
     exclusion_ids: tuple[str, ...] = ()
+    research_directives: tuple[ResearchDirective, ...] = ()
     unresolved_ids: tuple[str, ...] = ()
     context_version: str
     accepted_at_iso: str
