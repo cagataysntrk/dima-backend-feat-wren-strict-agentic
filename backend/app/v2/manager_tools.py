@@ -16,6 +16,7 @@ from pydantic import Field, model_validator
 from app.v2.manager_models import (
     ManagerState,
     ManagerCapabilityKey,
+    StandardProjection,
     UserIntentEnvelope,
 )
 from app.v2.models import FrozenModel
@@ -72,6 +73,18 @@ class RunAnalyticsArgs(FrozenModel):
         ):
             raise ValueError("derived task id/parent/capability birlikte verilmelidir")
         return self
+
+    def to_standard_projection(self) -> StandardProjection:
+        return StandardProjection(
+            obligation_ids=self.obligation_ids,
+            metric_handles=self.metric_handles,
+            dimension_handles=self.dimension_handles,
+            filter_handles=self.filter_handles,
+            period_handle=self.period_handle,
+            comparison_handle=self.comparison_handle,
+            ranking_direction=self.ranking_direction,
+            limit=self.limit,
+        )
 
 
 class RunRelationshipArgs(FrozenModel):
