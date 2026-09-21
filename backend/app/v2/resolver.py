@@ -51,16 +51,31 @@ def _norm(value: str) -> str:
     return " ".join(re.sub(r"[^a-z0-9]+", " ", text).split())
 
 
-def _morph_signature(value: str) -> tuple[str, ...]:
-    """Turkish inflection signature for verified semantic aliases only.
+def _morph_token_forms(value: str) -> tuple[frozenset[str], ...]:
+    """Return conservative token forms for Turkish inflection comparison.
 
-    Snowball sees the original Turkish letters; the result is used only to compare a
-    current semantic surface against already-verified display/synonym surfaces. Entity
-    values are intentionally outside this path.
+    Snowball can stem a bare noun more aggressively than an inflected form (for example
+    bare-X -> shorter-root while inflected-X -> bare-X). Treat both the observed token and
+    its Snowball stem as admissible forms. This remains a comparison mechanism only:
+    canonical targets still come exclusively from verified semantic aliases.
     """
     lowered = str(value or "").lower().replace("̇", "")
     tokens = re.findall(r"[a-zçğıöşü]+", lowered)
-    return tuple(_TURKISH_STEMMER.stem_word(token) for token in tokens if token)
+    forms: list[frozenset[str]] = []
+    for token in tokens:
+        stem = _TURKISH_STEMMER.stem_word(token)
+        forms.append(frozenset((token, stem)))
+    return tuple(forms)
+
+
+def _morph_equivalent(left: str, right: str) -> bool:
+    left_forms = _morph_token_forms(left)
+    right_forms = _morph_token_forms(right)
+    return (
+        bool(left_forms)
+        and len(left_forms) == len(right_forms)
+        and all(a & b for a, b in zip(left_forms, right_forms, strict=True))
+    )
 
 
 def _uniq(values: Iterable[str]) -> tuple[str, ...]:
@@ -604,16 +619,10 @@ class SemanticResolver:
                 aliases=aliases,
             )
 
-        surface_stem = _morph_signature(surface)
         morph_aliases = _uniq((display or "", *synonyms))
         if (
-            surface_stem
-            and needle not in synonym_norms
-            and any(
-                _morph_signature(alias) == surface_stem
-                for alias in morph_aliases
-                if _morph_signature(alias)
-            )
+            needle not in synonym_norms
+            and any(_morph_equivalent(surface, alias) for alias in morph_aliases)
         ):
             self._add(
                 drafts,
