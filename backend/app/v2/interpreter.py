@@ -984,10 +984,10 @@ class TurnInterpreter:
 
         system = _system_prompt()
         user = _user_prompt(question, semantic_context, conversation)
-        schema = TurnInterpretation.model_json_schema()
+        schema = TurnInterpreterTransport.model_json_schema()
         transport_kwargs = {
             "schema": schema,
-            "schema_name": "dima_turn_interpretation_v2",
+            "schema_name": "dima_turn_interpreter_transport_v1",
         }
 
         try:
@@ -1001,13 +1001,13 @@ class TurnInterpreter:
             ) from exc
 
         try:
-            turn = _parse(raw)
+            transport = _parse(raw)
         except ValueError as first_error:
             repair_system = (
                 system
                 + "\n\nFORMAT_REPAIR_ONLY: Native schema çıktısı uygulama doğrulamasını "
                   "geçmedi. Aynı semantic kararı DEĞİŞTİRMEDEN yalnız şema-geçerli biçimde "
-                  "yeniden yaz. Yeni yorum, canonical ID veya yeni mention ekleme."
+                  "yeniden yaz. Yeni yorum, canonical ID veya yeni operation ekleme."
             )
             repair_user = (
                 user
@@ -1022,7 +1022,7 @@ class TurnInterpreter:
                     repair_user,
                     **transport_kwargs,
                 )
-                turn = _parse(repaired)
+                transport = _parse(repaired)
             except Exception as exc:
                 raise TurnInterpreterError(
                     TurnInterpretationFailure(
@@ -1034,11 +1034,24 @@ class TurnInterpreter:
                     )
                 ) from exc
 
+        transport = _align_transport_surfaces(question, transport)
+        _validate_transport_grounding(question, transport)
+
+        try:
+            turn = _compile_transport(question, transport)
+        except (ValidationError, TypeError, ValueError) as exc:
+            raise TurnInterpreterError(
+                TurnInterpretationFailure(
+                    code="invalid_structured_output",
+                    message=f"Research operation graph compile edilemedi: {exc}",
+                )
+            ) from exc
+
         turn = _normalize_interpretation(question, turn)
         _validate_surface_grounding(question, turn)
 
         # Final STANDARD/RESEARCH routing is deterministic and presentation-agnostic.
-        # This happens only after every provider surface has passed source grounding,
-        # so projection cannot hide hallucinated research/deliverable text.
+        # This happens only after every provider source has passed grounding + graph
+        # compilation, so routing never reparses raw language.
         turn = ResearchModePolicy().decide(turn).canonical_turn
         return turn
