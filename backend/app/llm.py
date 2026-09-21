@@ -1015,8 +1015,36 @@ class OpenAICompatibleSqlGenerator:
         return _icerik_cikar(data, self._provider, use_model)
 
     def structured_text(self, system: str, user: str) -> str:
-        """Semantic-agnostic structured-text transport; caller owns interpretation."""
+        """Legacy free-form structured transport; V2 typed language does not use it."""
         return self._chat(system, user, model=self._select_model)
+
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str:
+        """Native JSON-Schema transport; semantic meaning remains caller-owned."""
+        if self._provider not in {"openrouter", "openai"}:
+            raise RuntimeError(
+                f"{self._provider} native json_schema transport is not declared"
+            )
+        return self._chat(
+            system,
+            user,
+            model=self._select_model,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": schema_name,
+                    "strict": True,
+                    "schema": schema,
+                },
+            },
+            require_parameters=True,
+        )
 
     def generate_sql(self, question: str, schema: dict) -> str:
         return self._chat(_build_system(schema, self._dialect), question)
