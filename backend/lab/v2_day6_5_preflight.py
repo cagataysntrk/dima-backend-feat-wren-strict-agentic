@@ -1,4 +1,4 @@
-"""Day 6.5 pre-implementation gate.
+"""Day 6.5 implementation + architecture-seal gate.
 
 This module contains no Manager product logic. It only answers whether the external
 hidden architecture holdout has been frozen strongly enough to unlock production
@@ -16,7 +16,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "eval" / "v2_day6_5_eval_manifest.yaml"
 
-PLACEHOLDER = "REQUIRED_BEFORE_IMPLEMENTATION"
+PLACEHOLDER = "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
 
 
 @dataclass(frozen=True)
