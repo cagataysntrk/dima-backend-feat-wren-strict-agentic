@@ -199,7 +199,11 @@ Rules:
 - Rejected attempts leave no semantic fields to merge.
 - run_analytics/run_relationship may reference only accepted/derived obligation IDs.
 - Use inspect_evidence before making result-dependent next decisions when needed.
-- If ambiguity blocks a MUST, request_clarification rather than guessing.
+- Semantic ambiguity is NOT Manager authority. If a tenant term may be ambiguous, call
+  resolve_semantics first. Before acceptance, request_clarification is valid only after
+  SemanticResolver returned unresolved/clarification or AcceptanceGate returned
+  NEEDS_CLARIFICATION. Never stop on your own guess that a business word is ambiguous.
+- If governed ambiguity blocks a MUST, request_clarification rather than guessing.
 - finish is a proposal; deterministic CompletionGate decides whether completion is true.
 - One action per turn. No prose outside the schema.
 - The native schema is strict: emit EVERY field. Use [] for unused arrays and null for
@@ -215,6 +219,38 @@ Rules:
   explicit blocker, do not ask the user to choose a different task merely to avoid a
   partial result. Propose finish; CompletionGate will truthfully return PARTIAL.
 """
+
+
+def _clarification_has_governed_grounding(
+    observations: list[dict[str, Any]],
+    *,
+    accepted_contract_present: bool,
+) -> bool:
+    """Clarification must be grounded by deterministic authority, not Manager intuition.
+
+    After acceptance, blockers in the canonical ledger are sufficient grounding. Before
+    acceptance, either SemanticResolver or AcceptanceGate must have produced a concrete
+    clarification/unresolved state first.
+    """
+    if accepted_contract_present:
+        return True
+
+    for observation in reversed(observations):
+        if observation.get("kind") != "tool":
+            continue
+        tool = observation.get("tool")
+        result = observation.get("result") or {}
+        if tool == ManagerToolName.RESOLVE_SEMANTICS.value:
+            if (
+                result.get("clarification")
+                or result.get("unresolved_source_refs")
+                or result.get("unresolved_proposals")
+            ):
+                return True
+        if tool == ManagerToolName.PROPOSE_ACCEPTANCE.value:
+            if result.get("status") == "NEEDS_CLARIFICATION":
+                return True
+    return False
 
 
 def _safe(value: Any) -> Any:
@@ -484,6 +520,25 @@ class ResearchManagerLoop:
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
                 break
+
+            if (
+                decision.action == ManagerActionKind.REQUEST_CLARIFICATION
+                and not _clarification_has_governed_grounding(
+                    observations,
+                    accepted_contract_present=runtime.accepted_contract is not None,
+                )
+            ):
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": (
+                            "pre-acceptance clarification requires governed grounding; "
+                            "use resolve_semantics or AcceptanceGate first"
+                        ),
+                    }
+                )
+                continue
 
             if decision.action == ManagerActionKind.FINISH:
                 try:
