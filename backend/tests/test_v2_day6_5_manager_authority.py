@@ -138,8 +138,16 @@ def test_exactly_one_accepted_authority_per_turn():
     assert accepted.contract is not None
     registry = AcceptedContractRegistry()
     registry.commit(accepted.contract)
+
+    # Exact retry is idempotent.
+    registry.commit(accepted.contract)
+
+    # A different semantic authority for the same turn is forbidden.
+    conflicting = accepted.contract.model_copy(
+        update={"contract_id": "atc_" + "f" * 24}
+    )
     with pytest.raises(AcceptedAuthorityConflict):
-        registry.commit(accepted.contract)
+        registry.commit(conflicting)
 
 
 def test_standard_lossless_requires_complete_projection():
