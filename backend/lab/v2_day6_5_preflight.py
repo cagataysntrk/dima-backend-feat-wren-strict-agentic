@@ -26,6 +26,7 @@ class Day65Preflight:
     case_count: int
     corpus_sha256: str
     taxonomy_sha256: str
+    attestation_sha256: str
     blockers: tuple[str, ...]
 
 
@@ -42,6 +43,8 @@ def evaluate_day65_preflight() -> Day65Preflight:
     expected_count = int(hidden.get("count") or 0)
     corpus_sha = str(hidden.get("sha256") or "")
     taxonomy_sha = str(hidden.get("taxonomy_sha256") or "")
+    attestation_sha = str(hidden.get("attestation_sha256") or "")
+    attestation = hidden.get("external_attestation") or {}
 
     blockers: list[str] = []
     if expected_count != 50:
@@ -50,6 +53,24 @@ def evaluate_day65_preflight() -> Day65Preflight:
         blockers.append("external hidden corpus sha256 freeze edilmedi")
     if not taxonomy_sha or taxonomy_sha == PLACEHOLDER:
         blockers.append("external hidden taxonomy sha256 freeze edilmedi")
+    if not attestation_sha or attestation_sha == PLACEHOLDER:
+        blockers.append("external hidden attestation sha256 freeze edilmedi")
+
+    expected_attestation = {
+        "independent_evaluator": True,
+        "prompt_text_committed": False,
+        "prompt_text_shared_with_implementation": False,
+        "development_model_generated": False,
+        "frozen_before_implementation": True,
+    }
+    if not isinstance(attestation, dict):
+        blockers.append("external hidden attestation manifest object değil")
+    else:
+        for key, expected in expected_attestation.items():
+            if attestation.get(key) != expected:
+                blockers.append(
+                    f"external hidden attestation {key} beklenen {expected!r} değil"
+                )
     if bool(hidden.get("committed_to_repo", True)):
         blockers.append("hidden prompt corpus repo içine commit edilebilir görünüyor")
     if bool(hidden.get("generated_by_current_development_model", True)):
@@ -63,6 +84,7 @@ def evaluate_day65_preflight() -> Day65Preflight:
         case_count=expected_count,
         corpus_sha256=corpus_sha,
         taxonomy_sha256=taxonomy_sha,
+        attestation_sha256=attestation_sha,
         blockers=tuple(blockers),
     )
 
@@ -85,6 +107,7 @@ if __name__ == "__main__":
                 "case_count": result.case_count,
                 "corpus_sha256": result.corpus_sha256,
                 "taxonomy_sha256": result.taxonomy_sha256,
+                "attestation_sha256": result.attestation_sha256,
                 "blockers": list(result.blockers),
             },
             allow_unicode=True,
