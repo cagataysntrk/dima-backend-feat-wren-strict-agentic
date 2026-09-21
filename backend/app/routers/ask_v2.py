@@ -6,31 +6,34 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth.dependencies import get_current_principal, require, require_company
 from app.config import get_settings
+from app.v2.finalizer import ConversationFinalizerV0
 from app.v2.interpreter import TurnInterpreterError
-from app.v2.models import AskV2Day4Response, AskV2Request
+from app.v2.models import AskV2CoreResponse, AskV2Request
 from app.v2.orchestrator import V2Orchestrator
 from app.v2.resolver import ClarificationTokenError
 from control_plane.authorize import Principal
 
 router = APIRouter(tags=["ask-v2"])
 _orchestrator = V2Orchestrator()
+_finalizer = ConversationFinalizerV0()
 
 
 @router.post(
     "/ask-v2",
-    response_model=AskV2Day4Response,
+    response_model=AskV2CoreResponse,
     dependencies=[Depends(require("query:run")), Depends(require_company)],
 )
 def ask_v2(
     request: Request,
     body: AskV2Request,
     principal: Principal = Depends(get_current_principal),
-) -> AskV2Day4Response:
+) -> AskV2CoreResponse:
     if not get_settings().ask_v2_enabled:
         raise HTTPException(status_code=404, detail="ask-v2 kapalı")
 
     try:
-        return _orchestrator.handle(request, body, principal)
+        core = _orchestrator.handle(request, body, principal)
+        return _finalizer.finalize(core)
     except TurnInterpreterError as exc:
         status = 503 if exc.failure.code == "llm_unavailable" else 502
         raise HTTPException(
