@@ -15,6 +15,7 @@ import pytest
 from control_plane.authorize import Principal
 
 import app.v2.orchestrator as orchestrator_module
+from app.llm import OpenAICompatibleSqlGenerator
 from app.v2.context_provider import ContextProviderV0
 from app.v2.dialogue_policy import DialoguePolicyV0
 from app.v2.finalizer import ConversationFinalizerV0
@@ -676,6 +677,85 @@ def test_legacy_deliverable_pseudo_goal_is_not_silently_migrated():
 
     assert llm.calls == 2
     assert caught.value.failure.code == "invalid_structured_output"
+
+
+def test_openrouter_native_transport_sends_strict_json_schema_and_requires_parameter_support(
+    monkeypatch,
+):
+    import requests
+
+    captured = {}
+
+    class _Response:
+        text = '{"choices":[{"message":{"content":"{}"}}]}'
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"choices": [{"message": {"content": "{}"}}], "usage": {}}
+
+    def fake_post(url, *, json, headers, timeout):
+        captured.update(
+            {
+                "url": url,
+                "payload": json,
+                "headers": headers,
+                "timeout": timeout,
+            }
+        )
+        return _Response()
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    generator = OpenAICompatibleSqlGenerator(
+        "https://openrouter.ai/api/v1",
+        "test-key",
+        "google/gemini-2.5-flash",
+        "openrouter",
+        select_model="google/gemini-2.5-flash",
+    )
+    schema = {
+        "type": "object",
+        "properties": {"x": {"type": "string"}},
+        "required": ["x"],
+        "additionalProperties": False,
+    }
+
+    generator.structured_json(
+        "system",
+        "user",
+        schema=schema,
+        schema_name="opaque_contract",
+    )
+
+    payload = captured["payload"]
+    assert payload["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "opaque_contract",
+            "strict": True,
+            "schema": schema,
+        },
+    }
+    assert payload["provider"] == {"require_parameters": True}
+    assert payload["model"] == "google/gemini-2.5-flash"
+    assert "response_format" not in payload["messages"][0]["content"]
+
+
+def test_non_declared_openai_compatible_provider_cannot_silently_degrade_schema_transport():
+    generator = OpenAICompatibleSqlGenerator(
+        "https://example.invalid/v1",
+        "test-key",
+        "opaque-model",
+        "groq",
+    )
+    with pytest.raises(RuntimeError, match="native json_schema transport is not declared"):
+        generator.structured_json(
+            "system",
+            "user",
+            schema={"type": "object"},
+            schema_name="opaque_contract",
+        )
 
 
 def test_provider_schema_is_source_inventory_graph_not_internal_research_request():
