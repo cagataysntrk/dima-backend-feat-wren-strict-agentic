@@ -114,53 +114,82 @@ class IntentAcceptanceGate:
         *,
         envelope: UserIntentEnvelope,
         semantic_receipts: tuple[SemanticResolutionReceipt, ...],
+        tenant_binding: str,
+        context_version: str,
     ) -> tuple[str, ...]:
-        """Every current-user resolved semantic must remain grounded in accepted intent.
+        """Validate exact runtime-minted source->handle provenance edges.
 
-        REQUIRED obligations may cite a larger source span that contains the Resolver
-        span. EXCLUDED obligations are stricter: a semantic receipt can be accounted for
-        by exclusion only when that exact Resolver source span is cited. This prevents a
-        positive semantic mention from being silently repurposed under a disjoint
-        negative source span.
+        No source-span containment heuristics are used. A current-turn Resolver receipt
+        is covered only by an exact SemanticBindingRef carried by an obligation, and every
+        declared SemanticBindingRef must correspond to a current Resolver receipt.
         """
         reasons: list[str] = []
-        current_receipts: list[SemanticResolutionReceipt] = []
+        current_receipts: dict[tuple[str, str, str], SemanticResolutionReceipt] = {}
         for receipt in semantic_receipts:
             try:
-                span = self._source_spans.validate(
+                self._source_spans.validate(
                     receipt.source_ref,
                     expected_message_hash=envelope.source_message_hash,
                 )
             except (KeyError, ValueError):
-                # Receipts from another turn are irrelevant to this envelope.
                 continue
-            del span
-            current_receipts.append(receipt)
+            current_receipts[
+                (receipt.source_ref, receipt.handle_id, receipt.target_kind)
+            ] = receipt
 
-        for receipt in current_receipts:
-            users = [
-                item
-                for item in envelope.obligations
-                if receipt.handle_id in item.semantic_handle_refs
-            ]
-            required_covered = any(
-                item.polarity == ObligationPolarity.REQUIRED
-                and any(
-                    self._source_spans.contains(source_ref, receipt.source_ref)
-                    for source_ref in item.source_refs
+        declared_keys: set[tuple[str, str, str]] = set()
+        for item in envelope.obligations:
+            for binding in item.semantic_bindings:
+                key = (
+                    binding.source_ref,
+                    binding.handle_id,
+                    binding.target_kind,
                 )
-                for item in users
-            )
-            excluded_exact = any(
-                item.polarity == ObligationPolarity.EXCLUDED
-                and receipt.source_ref in item.source_refs
-                for item in users
-            )
-            if not required_covered and not excluded_exact:
+                declared_keys.add(key)
+                try:
+                    self._source_spans.validate(
+                        binding.source_ref,
+                        expected_message_hash=envelope.source_message_hash,
+                    )
+                except (KeyError, ValueError) as exc:
+                    reasons.append(
+                        f"invalid semantic binding source {binding.source_ref}: {exc}"
+                    )
+                    continue
+                try:
+                    handle = self._semantic_handles.validate(
+                        binding.handle_id,
+                        tenant_binding=tenant_binding,
+                        context_version=context_version,
+                    )
+                except (KeyError, ValueError) as exc:
+                    reasons.append(
+                        f"invalid semantic binding handle {binding.handle_id}: {exc}"
+                    )
+                    continue
+                if handle.target_kind != binding.target_kind:
+                    reasons.append(
+                        "semantic binding target kind mismatch: "
+                        f"{binding.source_ref}/{binding.target_kind}"
+                    )
+                if binding.handle_id not in item.semantic_handle_refs:
+                    reasons.append(
+                        "semantic binding handle omitted from obligation handle refs: "
+                        f"{item.obligation_id}/{binding.handle_id}"
+                    )
+                if key not in current_receipts:
+                    reasons.append(
+                        "semantic binding lacks current Resolver receipt: "
+                        f"{binding.source_ref}/{binding.target_kind}"
+                    )
+
+        for key, receipt in current_receipts.items():
+            if key not in declared_keys:
                 reasons.append(
-                    "resolved user semantic source omitted or provenance-laundered: "
+                    "resolved user semantic source omitted from explicit binding graph: "
                     f"{receipt.source_ref}/{receipt.target_kind}"
                 )
+
         return tuple(dict.fromkeys(reasons))
 
     def evaluate(
@@ -299,6 +328,8 @@ class IntentAcceptanceGate:
                 self._validate_resolution_receipt_coverage(
                     envelope=envelope,
                     semantic_receipts=semantic_receipts,
+                    tenant_binding=tenant_binding,
+                    context_version=context_version,
                 )
             )
 
@@ -388,6 +419,7 @@ class IntentAcceptanceGate:
                 status=ObligationStatus.ACCEPTED,
                 source_refs=item.source_refs,
                 semantic_handle_refs=item.semantic_handle_refs,
+                semantic_bindings=item.semantic_bindings,
                 ranking_direction=item.ranking_direction,
                 ranking_limit=item.ranking_limit,
                 introduced_in_version=version,
