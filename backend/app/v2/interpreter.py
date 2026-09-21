@@ -434,6 +434,10 @@ RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
   tarih aritmetiği yapma.
 - Semantic binding yapma. Mention kind (dimension/metric/filter/unknown) yalnız dil rolüdür;
   canonical target seçimi SemanticResolver authority'sidir.
+- Research goal içindeki açık subject/related surface semantic context'te tanınmıyorsa
+  goal'dan çıkarma. Surface'i subject_mentions/related_mentions içinde kind=unknown olarak
+  koru; gerekirse unresolved_mentions'a da taşı. Tanınmayan semantic anchor MUST hedefi
+  silmez; SemanticResolver daha sonra onu BLOCKED/semantic-gap olarak sınıflar.
 - REPORT_REQUEST yalnız kompleks research request + açık report deliverable birlikteliğidir.
   Tek standart sorgunun sunum tercihi "rapor" ise ANALYTIC_NEW + presentation_request=report
   kalabilir; gereksiz Research Mode açma.
