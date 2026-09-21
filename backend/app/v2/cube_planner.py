@@ -997,6 +997,31 @@ class ResultValidator:
 
             errors_by_result.append(tuple(errors))
 
+        if (
+            ir.ranking is not None
+            and ir.comparison is not None
+            and len(plans) == 2
+            and len(results) == 2
+            and len(ir.dimensions) == 1
+        ):
+            dimension = ir.dimensions[0].canonical_name
+            base_members = {
+                row.get(dimension)
+                for row in (results[0].get("rows") or ())
+                if row.get(dimension) is not None
+            }
+            reference_members = {
+                row.get(dimension)
+                for row in (results[1].get("rows") or ())
+                if row.get(dimension) is not None
+            }
+            leaked_members = reference_members - base_members
+            if leaked_members:
+                errors_by_result[1] = (
+                    *errors_by_result[1],
+                    "ranked comparison reference contains members outside base top-N",
+                )
+
         global_errors = [error for errors in errors_by_result for error in errors]
         if global_errors:
             raise StandardAnalyticsError(
