@@ -325,35 +325,86 @@ class ManagerSemanticResolutionAdapter:
             hints = args.target_kind_hints or tuple("unknown" for _ in args.source_refs)
 
             regular: list[tuple[str | None, str, str]] = []
-            resolved: list[ManagerResolvedSemantic] = []
-            unresolved_refs: list[str] = []
-
+            time_entries: list[tuple[str, str]] = []
+            comparison_entries: list[tuple[str, str]] = []
             for source_ref, hint, span in zip(args.source_refs, hints, spans, strict=True):
-                if hint in {"time", "comparison"}:
-                    try:
-                        handle = self._resolve_temporal(text=span.exact_surface, hint=hint, args=args)
-                        resolved.append(
-                            ManagerResolvedSemantic(
-                                source_ref=source_ref,
-                                provenance="USER_SOURCE",
-                                handle=handle,
-                            )
-                        )
-                    except (TemporalResolutionError, KeyError, ValueError):
-                        unresolved_refs.append(source_ref)
+                if hint == "time":
+                    time_entries.append((source_ref, span.exact_surface))
+                elif hint == "comparison":
+                    comparison_entries.append((source_ref, span.exact_surface))
                 else:
                     regular.append((source_ref, span.exact_surface, hint))
 
+            # Resolve tenant semantics first. A metric/dimension handle from this SAME
+            # governed call may safely anchor temporal normalization, avoiding an
+            # unnecessary extra Manager round-trip.
             regular_result = (
                 self._resolve_regular(entries=regular, args=args)
                 if regular
                 else ManagerSemanticResolutionResult()
             )
+            resolved: list[ManagerResolvedSemantic] = list(regular_result.resolved)
+            unresolved_refs: list[str] = list(regular_result.unresolved_source_refs)
+
+            effective_anchor = args.temporal_anchor_handle
+            if effective_anchor is None:
+                anchored = [
+                    item.handle.handle_id
+                    for item in regular_result.resolved
+                    if item.handle.target_kind in {"metric", "kpi", "dimension"}
+                ]
+                if anchored:
+                    effective_anchor = anchored[0]
+
+            temporal_args = args.model_copy(
+                update={"temporal_anchor_handle": effective_anchor}
+            )
+
+            period_handles: list[str] = []
+            for source_ref, text in time_entries:
+                try:
+                    handle = self._resolve_temporal(
+                        text=text,
+                        hint="time",
+                        args=temporal_args,
+                    )
+                    period_handles.append(handle.handle_id)
+                    resolved.append(
+                        ManagerResolvedSemantic(
+                            source_ref=source_ref,
+                            provenance="USER_SOURCE",
+                            handle=handle,
+                        )
+                    )
+                except (TemporalResolutionError, KeyError, ValueError):
+                    unresolved_refs.append(source_ref)
+
+            effective_base = args.base_period_handle
+            if effective_base is None and len(period_handles) == 1:
+                effective_base = period_handles[0]
+            comparison_args = temporal_args.model_copy(
+                update={"base_period_handle": effective_base}
+            )
+            for source_ref, text in comparison_entries:
+                try:
+                    handle = self._resolve_temporal(
+                        text=text,
+                        hint="comparison",
+                        args=comparison_args,
+                    )
+                    resolved.append(
+                        ManagerResolvedSemantic(
+                            source_ref=source_ref,
+                            provenance="USER_SOURCE",
+                            handle=handle,
+                        )
+                    )
+                except (TemporalResolutionError, KeyError, ValueError):
+                    unresolved_refs.append(source_ref)
+
             return ManagerSemanticResolutionResult(
-                resolved=(*resolved, *regular_result.resolved),
-                unresolved_source_refs=tuple(
-                    dict.fromkeys((*unresolved_refs, *regular_result.unresolved_source_refs))
-                ),
+                resolved=tuple(resolved),
+                unresolved_source_refs=tuple(dict.fromkeys(unresolved_refs)),
                 unresolved_proposals=regular_result.unresolved_proposals,
                 clarification=regular_result.clarification,
             )
