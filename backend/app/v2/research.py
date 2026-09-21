@@ -292,13 +292,15 @@ class ResearchBriefBuilder:
             )
 
         scope_refs = _unique_refs(all_refs)
-        required_domains = tuple(
-            dict.fromkeys(
-                ref.canonical_name
-                for ref in scope_refs
-                if ref.target_kind == SemanticTargetKind.CUBE
-            )
-        )
+        required_domain_candidates: list[str] = []
+        for ref in scope_refs:
+            if ref.target_kind == SemanticTargetKind.CUBE:
+                required_domain_candidates.append(ref.canonical_name)
+            elif len(ref.cube_names) == 1:
+                # Resolver provenance, not ResearchBrief inference. Ambiguous multi-cube
+                # ownership is intentionally not collapsed into a domain choice here.
+                required_domain_candidates.append(ref.cube_names[0])
+        required_domains = tuple(dict.fromkeys(required_domain_candidates))
         time_surfaces = tuple(
             dict.fromkeys(mention.text for mention in request.time_mentions)
         )
