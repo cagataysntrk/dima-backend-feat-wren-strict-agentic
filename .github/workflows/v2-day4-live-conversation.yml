@@ -1,0 +1,61 @@
+name: v2-day4-live-conversation
+
+"on":
+  pull_request:
+    branches:
+      - wren-bağımsız
+    types:
+      - ready_for_review
+    paths:
+      - "backend/app/v2/interpreter.py"
+      - "backend/app/v2/models.py"
+      - "backend/eval/v2_day4_conversation_cases.yaml"
+      - "backend/lab/v2_day4_eval.py"
+      - ".github/workflows/v2-day4-live-conversation.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: v2-day4-live-${{ github.sha }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  day4-live:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 15
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_LLM_PROVIDER: "openrouter"
+      DIMA_OPENROUTER_MODEL: ${{ vars.DIMA_OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash' }}
+      DIMA_OPENROUTER_SELECT_MODEL: ${{ vars.DIMA_OPENROUTER_SELECT_MODEL || vars.DIMA_OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash' }}
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Backend + dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: P7 real-provider DB-independent conversation acceptance
+        run: |
+          mkdir -p lab/reports
+          python lab/v2_day4_eval.py --require-live --output lab/reports/v2_day4_conversation_eval.json
+
+      - name: Upload Day 4 live measurement
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-day4-conversation-measurement
+          path: backend/lab/reports/v2_day4_conversation_eval.json
+          retention-days: 30
+          if-no-files-found: error
