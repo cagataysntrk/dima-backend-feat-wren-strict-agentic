@@ -9,12 +9,13 @@
 > 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
 > 2. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
 > 3. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
-> 4. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
-> 5. `eval/v2_day6_5_eval_manifest.yaml`
-> 6. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
-> 7. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
-> 8. `AGENTS.md`
-> 9. `MIMARI.md` ve yalnız aktif ticket'ın kodu
+> 4. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+> 5. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+> 6. `eval/v2_day6_5_eval_manifest.yaml`
+> 7. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
+> 8. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
+> 9. `AGENTS.md`
+> 10. `MIMARI.md` ve yalnız aktif ticket'ın kodu
 >
 > Nihai rapor ve roadmap **mühürlü / salt-okunur**. İlerleme, karar sonucu, commit SHA,
 > açık borç ve sonraki adım yalnız `DIMA_V2_GELISTIRME_DURUM.md` dosyasına yazılır.
@@ -23,6 +24,12 @@
 > birlikte oku. Rapor gerekçenin, roadmap icra sırasının authority'sidir.
 >
 > **Day 6.5 amacı:** one-shot universal complex-intent architecture artık production adayı değildir. Bounded Manager control plane'i; exactly-one accepted authority, opaque source/semantic handles, fast-path preservation ve deterministic trust plane altında doğrulanacaktır. Manager hard gate'leri geçmeden `MIMARI.md` production architecture olarak değiştirilmez.
+>
+> **Day 6.5 cognition/authority kuralı:** doğal dil yorumunu regex/morphology/fuzzy-score ile
+> deterministic semantic truth'a çevirmek yasaktır. Manager yolu:
+> `catalog candidates → bounded Semantic Linker → deterministic BindingGate`.
+> Coverage omission-only veto'dur; semantic/clarification authority değildir. Temporal
+> dil typed intent'e normalize edilir; tarih hesabı deterministic engine'dedir.
 >
 > **Test:** her küçük değişiklikte büyük kapı yok. Yalnız gerekli hedefli testler;
 > full/corpus gate milestone/demet sonunda; ağır suite nightly CI'da. Daily dikey demo
