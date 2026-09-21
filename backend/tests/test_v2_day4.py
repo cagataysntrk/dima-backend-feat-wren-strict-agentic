@@ -807,6 +807,106 @@ def test_dynamic_real_wren_time_repair_smoke_has_no_demo_literal_assumption(
 
 
 
+def test_self_contained_cross_cube_refine_rebases_without_topic_stack():
+    old, new = SPECS
+    old_metric = ResolvedSemanticRef(
+        candidate_id="old-metric",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name=old["metric"],
+        cube_names=(old["cube"],),
+    )
+    old_dimension = ResolvedSemanticRef(
+        candidate_id="old-dimension",
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name=old["dimension"],
+        cube_names=(old["cube"],),
+    )
+    prior = AnalyticsIR(
+        cube=old["cube"],
+        metrics=(old_metric,),
+        dimensions=(old_dimension,),
+        context_version="ctx-switch",
+    )
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.ANALYTIC_REFINE,
+        analytical_request=AnalyticalRequest(
+            metric_mentions=(
+                SemanticMention(
+                    text=new["metric_surface"],
+                    kind=SemanticMentionKind.METRIC,
+                ),
+            ),
+            dimension_mentions=(
+                SemanticMention(
+                    text=new["dimension_surface"],
+                    kind=SemanticMentionKind.DIMENSION,
+                ),
+            ),
+            time_mentions=(
+                SemanticMention(text="bu sene", kind=SemanticMentionKind.TIME),
+            ),
+        ),
+    )
+
+    metric_candidate = SemanticCandidate(
+        candidate_id="new-metric",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name=new["metric"],
+        cube_names=(new["cube"],),
+        display_label=new["metric_display"],
+        provenance=(CandidateSource.VERIFIED_SYNONYM,),
+        score=1.0,
+        material=True,
+    )
+    dimension_candidate = SemanticCandidate(
+        candidate_id="new-dimension",
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name=new["dimension"],
+        cube_names=(new["cube"],),
+        display_label=new["dimension_display"],
+        provenance=(CandidateSource.VERIFIED_SYNONYM,),
+        score=1.0,
+        material=True,
+    )
+    hypotheses = (
+        SemanticHypothesis(
+            source_mention=new["metric_surface"],
+            mention_kind=SemanticMentionKind.METRIC,
+            status=ResolutionStatus.RESOLVED,
+            candidates=(metric_candidate,),
+            resolved_candidate_id=metric_candidate.candidate_id,
+        ),
+        SemanticHypothesis(
+            source_mention=new["dimension_surface"],
+            mention_kind=SemanticMentionKind.DIMENSION,
+            status=ResolutionStatus.RESOLVED,
+            candidates=(dimension_candidate,),
+            resolved_candidate_id=dimension_candidate.candidate_id,
+        ),
+    )
+    first = schema_for(old)
+    second = schema_for(new)
+    schema = {
+        **first,
+        "models": [*first["models"], *second["models"]],
+        "cubes": [*first["cubes"], *second["cubes"]],
+    }
+
+    ir, ledger = V2Orchestrator()._effective_ir(
+        turn=turn,
+        hypotheses=hypotheses,
+        schema=schema,
+        context_version="ctx-switch",
+        prior_ir=prior,
+    )
+
+    assert ir.cube == new["cube"]
+    assert [item.canonical_name for item in ir.metrics] == [new["metric"]]
+    assert [item.canonical_name for item in ir.dimensions] == [new["dimension"]]
+    assert ir.period is not None and ir.period.kind == "this_year"
+    assert ledger.all_must_verified is False
+
+
 def test_empty_analytic_continuation_cannot_reach_query(monkeypatch):
     """Even a language-label miss with zero analytical delta is fail-closed before Wren."""
     import app.v2.orchestrator as module
