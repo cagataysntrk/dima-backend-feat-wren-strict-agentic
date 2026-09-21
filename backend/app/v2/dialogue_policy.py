@@ -54,10 +54,9 @@ class DialoguePolicyV0:
         # Research keeps every requested MUST goal visible in ResearchBrief even when
         # one semantic ref is blocking. The brief itself becomes BLOCKED; Day 6 does
         # not collapse a complex request into the first clarification.
-        if turn.dialogue_act in {
-            TurnAct.COMPLEX_ANALYSIS,
-            TurnAct.REPORT_REQUEST,
-        }:
+        # TurnInterpreter has already canonicalized the typed operation shape through
+        # ResearchModePolicy. Presentation/report labels are not routing authority here.
+        if turn.dialogue_act == TurnAct.COMPLEX_ANALYSIS:
             return DialogueAction.RESEARCH_BRIEF
         if bundle.clarification is not None:
             return DialogueAction.CLARIFY
