@@ -15,6 +15,7 @@ from app.v2.manager_models import (
     ObligationPolarity,
     ObligationPriority,
     ObligationStatus,
+    SemanticResolutionReceipt,
     UserIntentEnvelope,
     UserObligationLedger,
 )
@@ -108,6 +109,60 @@ class IntentAcceptanceGate:
                 seen.append((effect, item.polarity, item.obligation_id))
         return tuple(dict.fromkeys(conflicts))
 
+    def _validate_resolution_receipt_coverage(
+        self,
+        *,
+        envelope: UserIntentEnvelope,
+        semantic_receipts: tuple[SemanticResolutionReceipt, ...],
+    ) -> tuple[str, ...]:
+        """Every current-user resolved semantic must remain grounded in accepted intent.
+
+        REQUIRED obligations may cite a larger source span that contains the Resolver
+        span. EXCLUDED obligations are stricter: a semantic receipt can be accounted for
+        by exclusion only when that exact Resolver source span is cited. This prevents a
+        positive semantic mention from being silently repurposed under a disjoint
+        negative source span.
+        """
+        reasons: list[str] = []
+        current_receipts: list[SemanticResolutionReceipt] = []
+        for receipt in semantic_receipts:
+            try:
+                span = self._source_spans.validate(
+                    receipt.source_ref,
+                    expected_message_hash=envelope.source_message_hash,
+                )
+            except (KeyError, ValueError):
+                # Receipts from another turn are irrelevant to this envelope.
+                continue
+            del span
+            current_receipts.append(receipt)
+
+        for receipt in current_receipts:
+            users = [
+                item
+                for item in envelope.obligations
+                if receipt.handle_id in item.semantic_handle_refs
+            ]
+            required_covered = any(
+                item.polarity == ObligationPolarity.REQUIRED
+                and any(
+                    self._source_spans.contains(source_ref, receipt.source_ref)
+                    for source_ref in item.source_refs
+                )
+                for item in users
+            )
+            excluded_exact = any(
+                item.polarity == ObligationPolarity.EXCLUDED
+                and receipt.source_ref in item.source_refs
+                for item in users
+            )
+            if not required_covered and not excluded_exact:
+                reasons.append(
+                    "resolved user semantic source omitted or provenance-laundered: "
+                    f"{receipt.source_ref}/{receipt.target_kind}"
+                )
+        return tuple(dict.fromkeys(reasons))
+
     def evaluate(
         self,
         *,
@@ -117,6 +172,7 @@ class IntentAcceptanceGate:
         active_contract: AcceptedTurnContract | None = None,
         active_ledger: UserObligationLedger | None = None,
         lineage_id: str | None = None,
+        semantic_receipts: tuple[SemanticResolutionReceipt, ...] | None = None,
     ) -> AcceptanceResult:
         reject: list[str] = []
         clarify: list[str] = []
@@ -203,6 +259,14 @@ class IntentAcceptanceGate:
                 clarify.append(
                     f"MUST obligation {item.obligation_id} has open questions"
                 )
+
+        if semantic_receipts is not None:
+            reject.extend(
+                self._validate_resolution_receipt_coverage(
+                    envelope=envelope,
+                    semantic_receipts=semantic_receipts,
+                )
+            )
 
         replaced_ids = {item.obligation_id for item in envelope.obligations}
         carried_items = tuple(
