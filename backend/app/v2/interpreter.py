@@ -20,12 +20,21 @@ from app.v2.models import (
     BoundedSemanticContextV0,
     ConversationStateV2,
     PresentationKind,
-    ResearchGoalKind,
+    ResearchComparisonFrame,
+    ResearchDeliverableSurface,
+    ResearchFocusBinding,
+    ResearchGoalSurface,
     ResearchNonRelationshipGoalKind,
+    ResearchOperationPolarity,
+    ResearchRelationshipSurface,
+    ResearchRequestSurface,
+    ResearchRootCauseFrame,
+    SemanticMention,
     SemanticMentionKind,
     TurnAct,
     TurnInterpretation,
     TurnInterpretationFailure,
+    TurnInterpreterTransport,
 )
 
 _INTERPRETER_VERSION = "day6-v0.6"
