@@ -32,6 +32,7 @@ from app.v2.models import (
     DialogueAction,
     PresentationKind,
     ResearchBriefStatus,
+    ResearchDeliverableSurface,
     ResearchGoalKind,
     ResearchGoalStatus,
     ResearchGoalSurface,
@@ -140,10 +141,11 @@ def canonical_turn() -> TurnInterpretation:
                     text="satış performanslarını yorumla",
                     subject_mentions=(sales,),
                 ),
-                ResearchGoalSurface(
-                    kind=ResearchGoalKind.DELIVERABLE,
+            ),
+            deliverables=(
+                ResearchDeliverableSurface(
+                    kind=PresentationKind.REPORT,
                     text="raporla",
-                    deliverable=PresentationKind.REPORT,
                 ),
             ),
         ),
@@ -195,18 +197,20 @@ def test_canonical_typed_research_brief_preserves_all_five_must_goals():
         context_version="ctx-permuted-a",
     )
 
-    assert len(brief.questions) == 5
-    assert brief.must_requirement_ids == ("g1", "g2", "g3", "g4", "g5")
+    assert len(brief.questions) == 4
+    assert brief.must_requirement_ids == ("g1", "g2", "g3", "g4", "d1")
     assert [q.kind for q in brief.questions] == [
         ResearchGoalKind.COMPARISON,
         ResearchGoalKind.RELATIONSHIP,
         ResearchGoalKind.RELATIONSHIP,
         ResearchGoalKind.PERFORMANCE,
-        ResearchGoalKind.DELIVERABLE,
     ]
     assert all(q.priority == "MUST" for q in brief.questions)
     assert all(q.status == ResearchGoalStatus.RESOLVED for q in brief.questions)
-    assert brief.deliverables == (PresentationKind.REPORT,)
+    assert len(brief.deliverables) == 1
+    assert brief.deliverables[0].requirement_id == "d1"
+    assert brief.deliverables[0].kind == PresentationKind.REPORT
+    assert brief.deliverables[0].source_text == "raporla"
     assert brief.scope.time_surfaces == ("Son 12 ay",)
     assert brief.required_domains == ("fact_alpha", "fact_beta", "fact_gamma")
     assert brief.blocking_goal_ids == ()
@@ -225,12 +229,13 @@ def test_research_brief_never_invents_unrequested_goals_or_domains():
                     text="öğeleri karşılaştır",
                     subject_mentions=(product,),
                 ),
-                ResearchGoalSurface(
-                    kind=ResearchGoalKind.DELIVERABLE,
+            ),
+            deliverables=(
+                ResearchDeliverableSurface(
+                    kind=PresentationKind.REPORT,
                     text="rapor çıkar",
-                    deliverable=PresentationKind.REPORT,
                 ),
-            )
+            ),
         ),
     )
     hypotheses = (
@@ -251,11 +256,10 @@ def test_research_brief_never_invents_unrequested_goals_or_domains():
         context_version="ctx-permuted-b",
     )
 
-    assert [q.kind for q in brief.questions] == [
-        ResearchGoalKind.COMPARISON,
-        ResearchGoalKind.DELIVERABLE,
-    ]
-    assert len(brief.questions) == 2
+    assert [q.kind for q in brief.questions] == [ResearchGoalKind.COMPARISON]
+    assert len(brief.questions) == 1
+    assert brief.must_requirement_ids == ("g1", "d1")
+    assert brief.deliverables[0].kind == PresentationKind.REPORT
     # Single-cube ownership is Resolver provenance, not a ResearchBrief guess.
     assert brief.required_domains == ("fact_delta",)
     assert {ref.canonical_name for ref in brief.scope.semantic_refs} == {"axis_item_p9"}
@@ -279,7 +283,7 @@ def test_unresolved_must_relationship_is_preserved_and_blocks_brief():
         context_version="ctx-permuted-c",
     )
 
-    assert len(brief.questions) == 5
+    assert len(brief.questions) == 4
     personnel_goal = brief.questions[2]
     assert personnel_goal.goal_id == "g3"
     assert personnel_goal.status == ResearchGoalStatus.BLOCKED
@@ -433,12 +437,13 @@ class _TypedResearchInterpreter:
                         text="items compare",
                         subject_mentions=(item,),
                     ),
-                    ResearchGoalSurface(
-                        kind=ResearchGoalKind.DELIVERABLE,
+                ),
+                deliverables=(
+                    ResearchDeliverableSurface(
+                        kind=PresentationKind.REPORT,
                         text="report",
-                        deliverable=PresentationKind.REPORT,
                     ),
-                )
+                ),
             ),
         )
 
@@ -625,11 +630,10 @@ def test_interpreter_normalizes_provider_enum_case_and_inapplicable_deliverable_
     assert [goal.kind for goal in turn.research_request.goals] == [
         ResearchGoalKind.COMPARISON,
         ResearchGoalKind.RELATIONSHIP,
-        ResearchGoalKind.DELIVERABLE,
     ]
-    assert turn.research_request.goals[0].deliverable is None
-    assert turn.research_request.goals[1].deliverable is None
-    assert turn.research_request.goals[2].deliverable == PresentationKind.REPORT
+    assert len(turn.research_request.deliverables) == 1
+    assert turn.research_request.deliverables[0].kind == PresentationKind.REPORT
+    assert turn.research_request.deliverables[0].text == "raporla"
     assert turn.research_request.time_mentions[0].kind == SemanticMentionKind.TIME
 
 
@@ -674,10 +678,10 @@ def test_format_normalization_does_not_relax_surface_grounding():
 @pytest.mark.parametrize(
     "order",
     [
-        (0, 1, 2, 3, 4),
-        (4, 0, 3, 2, 1),
-        (3, 2, 1, 0, 4),
-        (1, 4, 0, 2, 3),
+        (0, 1, 2, 3),
+        (3, 0, 2, 1),
+        (2, 1, 0, 3),
+        (1, 3, 0, 2),
     ],
 )
 def test_goal_order_changes_never_drop_or_duplicate_must_requirements(order):
@@ -736,12 +740,12 @@ def test_semantic_gap_blocks_every_dependent_goal_without_silent_loss(
         context_version="ctx-gap",
     )
 
-    assert len(brief.questions) == 5
+    assert len(brief.questions) == 4
     assert set(brief.blocking_goal_ids) == expected_blocked
     assert {
         q.goal_id for q in brief.questions if q.status == ResearchGoalStatus.BLOCKED
     } == expected_blocked
-    assert brief.must_requirement_ids == ("g1", "g2", "g3", "g4", "g5")
+    assert brief.must_requirement_ids == ("g1", "g2", "g3", "g4", "d1")
     assert brief.status == ResearchBriefStatus.BLOCKED
 
 
@@ -887,31 +891,23 @@ def test_brief_id_is_deterministic_and_context_bound():
     assert first.brief_id != changed.brief_id
 
 
-def test_deliverable_goal_has_no_semantic_ref_and_does_not_invent_domain():
-    report_only = TurnInterpretation(
-        dialogue_act=TurnAct.REPORT_REQUEST,
-        presentation_request=PresentationKind.REPORT,
-        research_request=ResearchRequestSurface(
-            goals=(
-                ResearchGoalSurface(
-                    kind=ResearchGoalKind.DELIVERABLE,
-                    text="rapor çıkar",
-                    deliverable=PresentationKind.REPORT,
-                ),
-            )
-        ),
-    )
+def test_deliverable_requirement_is_separate_from_research_questions_and_domains():
     brief = ResearchBriefBuilder().build(
-        turn=report_only,
-        hypotheses=(),
+        turn=canonical_turn(),
+        hypotheses=canonical_hypotheses(),
         semantic_context=research_context(),
         context_version="ctx-deliverable",
     )
-    assert brief.questions[0].status == ResearchGoalStatus.RESOLVED
-    assert brief.questions[0].subject_refs == ()
-    assert brief.questions[0].related_refs == ()
-    assert brief.required_domains == ()
-    assert brief.deliverables == (PresentationKind.REPORT,)
+
+    assert len(brief.questions) == 4
+    assert len(brief.deliverables) == 1
+    deliverable = brief.deliverables[0]
+    assert deliverable.requirement_id == "d1"
+    assert deliverable.kind == PresentationKind.REPORT
+    assert deliverable.priority == "MUST"
+    assert deliverable.source_text == "raporla"
+    assert "d1" in brief.must_requirement_ids
+    assert all(question.kind != "deliverable" for question in brief.questions)
 
 
 def test_transitive_semantic_relationship_path_can_make_brief_ready_without_join_plan():
