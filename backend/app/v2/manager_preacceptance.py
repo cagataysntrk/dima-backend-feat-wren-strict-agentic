@@ -604,7 +604,12 @@ class PreAcceptanceController:
                 else spec.exclusion_required_kinds
             )
             for item in obligation.semantic_surfaces:
-                normalized_kind = self._normalized_hint_kind(item.kind_hint)
+                binding = grounded.get((item.surface, item.kind_hint))
+                bound_kind = (
+                    self._normalized_hint_kind(binding.target_kind)
+                    if binding is not None
+                    else None
+                )
                 requested.append(
                     {
                         "owner_id": obligation.obligation_id,
@@ -612,9 +617,11 @@ class PreAcceptanceController:
                         "polarity": obligation.polarity.value,
                         "surface": item.surface,
                         "kind_hint": item.kind_hint,
-                        "normalized_kind": normalized_kind,
-                        "required_by_capability": normalized_kind in required_kinds,
-                        "resolved": (item.surface, item.kind_hint) in grounded,
+                        "bound_kind": bound_kind,
+                        "required_by_capability": (
+                            bound_kind in required_kinds if bound_kind is not None else False
+                        ),
+                        "resolved": binding is not None,
                     }
                 )
         return {
@@ -657,9 +664,13 @@ class PreAcceptanceController:
             if not required:
                 continue
             resolved_kinds = {
-                self._normalized_hint_kind(surface.kind_hint)
+                self._normalized_hint_kind(binding.target_kind)
                 for surface in obligation.semantic_surfaces
-                if (surface.surface, surface.kind_hint) in grounded
+                if (
+                    binding := grounded.get(
+                        (surface.surface, surface.kind_hint)
+                    )
+                ) is not None
             }
             missing = sorted(required - resolved_kinds)
             if missing:
