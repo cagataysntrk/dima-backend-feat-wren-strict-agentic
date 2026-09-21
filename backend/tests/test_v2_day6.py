@@ -38,6 +38,8 @@ from app.v2.models import (
     ResearchGoalStatus,
     ResearchMode,
     ResearchModeReason,
+    ResearchNonRelationshipGoalKind,
+    ResearchRelationshipSurface,
     ResearchGoalSurface,
     ResearchRequestSurface,
     ResearchRelationshipSurface,
@@ -125,12 +127,12 @@ def canonical_turn() -> TurnInterpretation:
             time_mentions=(mention("Son 12 ay", SemanticMentionKind.TIME),),
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.COMPARISON,
+                    kind=ResearchNonRelationshipGoalKind.COMPARISON,
                     text="ürünleri karşılaştır",
                     subject_mentions=(product,),
                 ),
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.PERFORMANCE,
+                    kind=ResearchNonRelationshipGoalKind.PERFORMANCE,
                     text="satış performanslarını yorumla",
                     subject_mentions=(sales,),
                 ),
@@ -225,7 +227,7 @@ def test_research_brief_never_invents_unrequested_goals_or_domains():
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.COMPARISON,
+                    kind=ResearchNonRelationshipGoalKind.COMPARISON,
                     text="öğeleri karşılaştır",
                     subject_mentions=(product,),
                 ),
@@ -440,7 +442,7 @@ class _TypedResearchInterpreter:
             research_request=ResearchRequestSurface(
                 goals=(
                     ResearchGoalSurface(
-                        kind=ResearchGoalKind.COMPARISON,
+                        kind=ResearchNonRelationshipGoalKind.COMPARISON,
                         text="items compare",
                         subject_mentions=(item,),
                     ),
@@ -824,7 +826,7 @@ def test_multi_cube_resolver_provenance_is_not_collapsed_into_required_domain():
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.COMPARISON,
+                    kind=ResearchNonRelationshipGoalKind.COMPARISON,
                     text="kalemleri karşılaştır",
                     subject_mentions=(product,),
                 ),
@@ -870,7 +872,7 @@ def test_sensitive_semantic_ref_never_copies_hidden_value():
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.BREAKDOWN,
+                    kind=ResearchNonRelationshipGoalKind.BREAKDOWN,
                     text="özel üye için kırılımı incele",
                     subject_mentions=(member,),
                 ),
@@ -1020,7 +1022,7 @@ def test_unknown_research_anchor_survives_resolver_as_blocked_must_goal():
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.PERFORMANCE,
+                    kind=ResearchNonRelationshipGoalKind.PERFORMANCE,
                     text="lojistik performansını değerlendir",
                     subject_mentions=(unknown,),
                 ),
@@ -1063,12 +1065,12 @@ def test_research_mode_policy_ignores_report_presentation_for_standard_shape():
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.PERFORMANCE,
+                    kind=ResearchNonRelationshipGoalKind.PERFORMANCE,
                     text="satış performansını",
                     subject_mentions=(metric,),
                 ),
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.BREAKDOWN,
+                    kind=ResearchNonRelationshipGoalKind.BREAKDOWN,
                     text="ürün bazında",
                     subject_mentions=(metric,),
                     related_mentions=(dimension,),
@@ -1157,7 +1159,7 @@ def test_other_operation_is_fail_closed_not_research_escalation():
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.OTHER,
+                    kind=ResearchNonRelationshipGoalKind.OTHER,
                     text="belirsiz işlemi incele",
                     subject_mentions=(unknown,),
                 ),
@@ -1184,7 +1186,7 @@ def test_standard_ranking_operation_projects_without_raw_text_reparse():
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.RANKING,
+                    kind=ResearchNonRelationshipGoalKind.RANKING,
                     text="opaque ranking surface",
                     subject_mentions=(dimension,),
                     related_mentions=(metric,),
@@ -1220,7 +1222,7 @@ def test_standard_period_comparison_projects_only_from_typed_comparison_payload(
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.COMPARISON,
+                    kind=ResearchNonRelationshipGoalKind.COMPARISON,
                     text="opaque comparison operation",
                     subject_mentions=(metric,),
                     comparisons=(
@@ -1249,7 +1251,7 @@ def test_generic_comparison_without_core_payload_is_blocked_not_research():
         research_request=ResearchRequestSurface(
             goals=(
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.COMPARISON,
+                    kind=ResearchNonRelationshipGoalKind.COMPARISON,
                     text="opaque generic comparison",
                     subject_mentions=(dimension,),
                 ),
