@@ -23,6 +23,44 @@ class SemanticHandleRegistry:
     def __init__(self) -> None:
         self._bindings: dict[str, SemanticBinding] = {}
 
+    def _mint(
+        self,
+        *,
+        tenant_binding: str,
+        context_version: str,
+        provenance_id: str,
+        target_kind: str,
+        canonical_target: Any,
+        sensitive: bool = False,
+        provenance_type: str = "USER_SOURCE",
+        parent_obligation_id: str | None = None,
+        trigger_evidence_ref: str | None = None,
+    ) -> SemanticHandle:
+        if not tenant_binding or not context_version or not provenance_id:
+            raise ValueError("semantic handle binding alanları boş olamaz")
+        payload = (
+            f"{tenant_binding}\x1f{context_version}\x1f{provenance_id}"
+            f"\x1f{target_kind}\x1f{provenance_type}\x1f{parent_obligation_id or ''}"
+            f"\x1f{trigger_evidence_ref or ''}\x1f{repr(canonical_target)}"
+        )
+        handle_id = "sem_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
+        handle = SemanticHandle(
+            handle_id=handle_id,
+            tenant_binding=tenant_binding,
+            context_version=context_version,
+            resolver_provenance_id=provenance_id,
+            target_kind=target_kind,
+            provenance_type=provenance_type,
+            parent_obligation_id=parent_obligation_id,
+            trigger_evidence_ref=trigger_evidence_ref,
+            sensitive=sensitive,
+        )
+        self._bindings[handle_id] = SemanticBinding(
+            handle=handle,
+            canonical_target=canonical_target,
+        )
+        return handle
+
     def mint_from_resolver(
         self,
         *,
@@ -36,27 +74,46 @@ class SemanticHandleRegistry:
         parent_obligation_id: str | None = None,
         trigger_evidence_ref: str | None = None,
     ) -> SemanticHandle:
-        if not tenant_binding or not context_version or not resolver_provenance_id:
-            raise ValueError("semantic handle binding alanları boş olamaz")
-        payload = (
-            f"{tenant_binding}\x1f{context_version}\x1f{resolver_provenance_id}"
-            f"\x1f{target_kind}\x1f{provenance_type}\x1f{parent_obligation_id or ''}"
-            f"\x1f{trigger_evidence_ref or ''}\x1f{repr(canonical_target)}"
-        )
-        handle_id = "sem_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
-        handle = SemanticHandle(
-            handle_id=handle_id,
+        """Legacy/Day1-6 resolver authority path; preserved for non-Manager callers."""
+        return self._mint(
             tenant_binding=tenant_binding,
             context_version=context_version,
-            resolver_provenance_id=resolver_provenance_id,
+            provenance_id=resolver_provenance_id,
             target_kind=target_kind,
+            canonical_target=canonical_target,
+            sensitive=sensitive,
             provenance_type=provenance_type,
             parent_obligation_id=parent_obligation_id,
             trigger_evidence_ref=trigger_evidence_ref,
-            sensitive=sensitive,
         )
-        self._bindings[handle_id] = SemanticBinding(handle=handle, canonical_target=canonical_target)
-        return handle
+
+    def mint_from_binding_gate(
+        self,
+        *,
+        tenant_binding: str,
+        context_version: str,
+        candidate_id: str,
+        target_kind: str,
+        canonical_target: Any,
+        sensitive: bool = False,
+        provenance_type: str = "USER_SOURCE",
+        parent_obligation_id: str | None = None,
+        trigger_evidence_ref: str | None = None,
+    ) -> SemanticHandle:
+        """Day6.5 Manager authority path after bounded candidate selection + gate."""
+        if not str(candidate_id).startswith("cand_"):
+            raise ValueError("binding gate candidate_id must be runtime-issued cand_*")
+        return self._mint(
+            tenant_binding=tenant_binding,
+            context_version=context_version,
+            provenance_id=candidate_id,
+            target_kind=target_kind,
+            canonical_target=canonical_target,
+            sensitive=sensitive,
+            provenance_type=provenance_type,
+            parent_obligation_id=parent_obligation_id,
+            trigger_evidence_ref=trigger_evidence_ref,
+        )
 
     def validate(
         self,
