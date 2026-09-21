@@ -1,5 +1,35 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-DAY6.5-COGNITION-AUTHORITY-OVERLAY -->
+> ## 🔴 V2 Day 6.5 aktif cognition / semantic authority sınırı — 2026-09-22
+>
+> Bu branch'te V2 Manager semantik yorumlama için bağlayıcı addendum:
+> `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`.
+>
+> ```text
+> Semantic Catalog            = hangi kavramların var olduğunun truth'u
+> Bounded Semantic Linker     = surface → bounded cand_* yorumu; authority DEĞİL
+> Semantic Binding Gate       = candidate/tenant/context/kind doğrulaması ve sem_* authority
+> Typed Temporal Normalizer   = dil → kapalı temporal intent; tarih hesabı DEĞİL
+> Temporal Binding Engine     = deterministic tarih hesabı
+> Capability/Conflict gates   = contract validity
+> Wren/DB                     = sayısal truth
+> Evidence/Completion gates   = proof / completion truth
+> ```
+>
+> V2 Manager semantic hot path'te yeni regex, morphology/stemming, fuzzy/SequenceMatcher
+> threshold veya named-case phrase patch'i semantic authority olarak kullanılamaz.
+> Coverage critic yalnız omission/exclusion/directive coverage veto'sudur; canonical semantic
+> ve final clarification authority değildir. Model `open_questions` advisory'dir.
+> Semantic receipts anti-laundering provenance kanıtıdır; intent-completeness parser'ı değildir.
+>
+> Legacy `SemanticResolver` ve `temporal.py` mevcut/non-Manager yollar için compatibility
+> katmanı olarak korunur; bu onların Day 6.5 Manager language authority olduğu anlamına gelmez.
+>
+> Provider-free boundary proof: GitHub run `35660792599`, tested code SHA
+> `e2b00eabff26c0e3ee93a7a2327b33f6615a048d`, **70/70 PASS**.
+> Live DEV/validation/hidden certification tamamlanmadan production hybrid route açılmaz.
+
 > **Bu belge KANONİKTİR ve NORMATİFTİR.** Mimari bir soruda çelişki çıkarsa bu belge kazanır.
 > `belgeler/devir/*` tarihsel kayıttır, normatif değildir.
 > `belgeler/urun/Dima-0-100-Gorev-Takip.md` bir ÜRÜN şartnamesidir, mimari otorite değildir (§8).
