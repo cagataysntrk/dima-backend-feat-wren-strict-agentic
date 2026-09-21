@@ -1,9 +1,14 @@
-"""Governed semantic-resolution adapter for the Day 6.5 bounded Manager.
+"""Governed semantic interpretation/binding adapter for the Day 6.5 bounded Manager.
 
 USER_SOURCE proposals must reference runtime-issued src_* spans. AGENT_DERIVED proposals
 must be tied to an accepted parent obligation and verified evidence by the executor.
-Existing SemanticResolver remains canonical entity/metric/dimension authority; temporal
-normalization reuses the closed-family Day 3 temporal primitives.
+
+Manager regular semantics do NOT use deterministic fuzzy/morphological language matching:
+catalog candidate generation is deterministic, bounded candidate interpretation belongs
+to BoundedSemanticLinker, and only SemanticBindingGate may mint sem_* authority.
+
+Legacy SemanticResolver remains available to non-Manager V2 paths. Temporal normalization
+is still isolated here and is migrated separately to typed temporal intent.
 """
 
 from __future__ import annotations
@@ -11,24 +16,21 @@ from __future__ import annotations
 from app.v2.manager_models import SemanticHandle
 from app.v2.manager_tools import ResolveSemanticsArgs
 from app.v2.models import (
-    AnalyticalRequest,
     BoundedSemanticContextV0,
     ClarificationState,
     ComparisonSurface,
     ConversationStateV2,
     FrozenModel,
     ResolvedComparison,
-    ResolvedFilterRef,
     ResolvedPeriod,
-    ResolvedSemanticRef,
     SemanticMention,
-    SemanticMentionKind,
-    SemanticTargetKind,
-    TurnAct,
-    TurnInterpretation,
-    UnresolvedMention,
 )
 from app.v2.resolver import SemanticResolver
+from app.v2.semantic_linker import (
+    BoundedSemanticLinker,
+    SemanticBindingGate,
+    SemanticCandidateGenerator,
+)
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.temporal import TemporalResolutionError, resolve_comparison, resolve_period
@@ -67,7 +69,7 @@ class ManagerSemanticResolutionAdapter:
     def __init__(
         self,
         *,
-        resolver: SemanticResolver,
+        resolver: SemanticResolver | None = None,
         source_spans: SourceSpanRegistry,
         semantic_handles: SemanticHandleRegistry,
         semantic_context: BoundedSemanticContextV0,
@@ -76,8 +78,9 @@ class ManagerSemanticResolutionAdapter:
         tenant_binding: str,
         session_id: str | None,
         thread_id: str | None,
+        semantic_linker_structured=None,
     ) -> None:
-        self._resolver = resolver
+        self._legacy_resolver = resolver
         self._source_spans = source_spans
         self._handles = semantic_handles
         self._semantic_context = semantic_context
@@ -86,6 +89,18 @@ class ManagerSemanticResolutionAdapter:
         self._tenant_binding = tenant_binding
         self._session_id = session_id
         self._thread_id = thread_id
+        self._semantic_linker = BoundedSemanticLinker(
+            generator=SemanticCandidateGenerator(
+                semantic_context=semantic_context,
+                schema=schema,
+            ),
+            binding_gate=SemanticBindingGate(
+                semantic_handles=semantic_handles,
+                tenant_binding=tenant_binding,
+                context_version=semantic_context.context_version.version,
+            ),
+            structured=semantic_linker_structured,
+        )
 
     def _time_dimension(self, anchor_handle: str | None) -> str:
         cube_names: set[str] = set()
@@ -191,106 +206,42 @@ class ManagerSemanticResolutionAdapter:
         entries: list[tuple[str | None, str, str]],
         args: ResolveSemanticsArgs,
     ) -> ManagerSemanticResolutionResult:
-        metrics: list[SemanticMention] = []
-        dimensions: list[SemanticMention] = []
-        filters: list[SemanticMention] = []
-        unresolved_mentions: list[UnresolvedMention] = []
-        ordered: list[tuple[str | None, str, SemanticMention]] = []
-
-        for source_ref, text, hint in entries:
-            kind = self._KIND_MAP[hint]
-            mention = SemanticMention(text=text, kind=kind)
-            ordered.append((source_ref, text, mention))
-            if kind == SemanticMentionKind.METRIC:
-                metrics.append(mention)
-            elif kind == SemanticMentionKind.DIMENSION:
-                dimensions.append(mention)
-            elif kind == SemanticMentionKind.FILTER:
-                filters.append(mention)
-            else:
-                unresolved_mentions.append(
-                    UnresolvedMention(
-                        text=text,
-                        reason="Manager requested semantic resolution without a trusted kind hint",
-                    )
-                )
-
-        turn = TurnInterpretation(
-            dialogue_act=TurnAct.ANALYTIC_NEW,
-            analytical_request=AnalyticalRequest(
-                metric_mentions=tuple(metrics),
-                dimension_mentions=tuple(dimensions),
-                filter_mentions=tuple(filters),
-            ),
-            unresolved_mentions=tuple(unresolved_mentions),
+        requests = tuple(
+            (
+                f"link:{index}:{source_ref or 'derived'}",
+                text,
+                hint,
+            )
+            for index, (source_ref, text, hint) in enumerate(entries)
         )
-        bundle = self._resolver.resolve_turn(
-            turn=turn,
-            schema=self._schema,
-            semantic_context=self._semantic_context,
-            conversation=self._conversation,
-            tenant_binding=self._tenant_binding,
-            session_id=self._session_id,
-            thread_id=self._thread_id,
+        selections = self._semantic_linker.resolve(
+            requests,
+            provenance_type=args.provenance,
+            parent_obligation_id=args.parent_obligation_id,
+            trigger_evidence_ref=args.evidence_ref,
         )
-
-        by_surface: dict[tuple[str, SemanticMentionKind], list[tuple[str | None, str]]] = {}
-        for source_ref, text, mention in ordered:
-            by_surface.setdefault((mention.text, mention.kind), []).append((source_ref, text))
 
         resolved: list[ManagerResolvedSemantic] = []
         unresolved_source_refs: list[str] = []
         unresolved_proposals: list[str] = []
 
-        for hypothesis in bundle.hypotheses:
-            slots = by_surface.get((hypothesis.source_mention, hypothesis.mention_kind)) or []
-            slot = slots.pop(0) if slots else None
-            if slot is None:
-                continue
-            source_ref, proposal_text = slot
-            candidate = next(
-                (
-                    item
-                    for item in hypothesis.candidates
-                    if item.candidate_id == hypothesis.resolved_candidate_id
-                ),
-                None,
-            )
-            if candidate is None:
+        for (source_ref, proposal_text, _), selection in zip(
+            entries,
+            selections,
+            strict=True,
+        ):
+            if selection.status != "BOUND":
                 if source_ref:
                     unresolved_source_refs.append(source_ref)
                 else:
                     unresolved_proposals.append(proposal_text)
                 continue
 
-            if candidate.target_kind == SemanticTargetKind.ENTITY_VALUE:
-                if not candidate.dimension_name or candidate.value is None:
-                    if source_ref:
-                        unresolved_source_refs.append(source_ref)
-                    else:
-                        unresolved_proposals.append(proposal_text)
-                    continue
-                canonical_target = ResolvedFilterRef(
-                    candidate_id=candidate.candidate_id,
-                    dimension_name=candidate.dimension_name,
-                    value=candidate.value,
-                    cube_names=candidate.cube_names,
-                    sensitive=candidate.sensitive,
-                )
-            else:
-                canonical_target = ResolvedSemanticRef(
-                    candidate_id=candidate.candidate_id,
-                    target_kind=candidate.target_kind,
-                    canonical_name=candidate.canonical_name,
-                    cube_names=candidate.cube_names,
-                )
-
-            handle = self._mint(
-                target_kind=candidate.target_kind.value,
-                canonical_target=canonical_target,
-                resolver_provenance_id=candidate.candidate_id,
-                sensitive=candidate.sensitive,
-                args=args,
+            handle = self._semantic_linker.bind_selection(
+                selection,
+                provenance_type=args.provenance,
+                parent_obligation_id=args.parent_obligation_id,
+                trigger_evidence_ref=args.evidence_ref,
             )
             resolved.append(
                 ManagerResolvedSemantic(
@@ -301,20 +252,11 @@ class ManagerSemanticResolutionAdapter:
                 )
             )
 
-        resolved_user_refs = {item.source_ref for item in resolved if item.source_ref}
-        for source_ref, _, _ in ordered:
-            if source_ref and source_ref not in resolved_user_refs and source_ref not in unresolved_source_refs:
-                unresolved_source_refs.append(source_ref)
-
-        if args.provenance == "AGENT_DERIVED" and not resolved and args.natural_language_proposal:
-            if args.natural_language_proposal not in unresolved_proposals:
-                unresolved_proposals.append(args.natural_language_proposal)
-
         return ManagerSemanticResolutionResult(
             resolved=tuple(resolved),
             unresolved_source_refs=tuple(dict.fromkeys(unresolved_source_refs)),
             unresolved_proposals=tuple(dict.fromkeys(unresolved_proposals)),
-            clarification=bundle.clarification,
+            clarification=None,
         )
 
     def resolve(self, args: ResolveSemanticsArgs, runtime=None) -> ManagerSemanticResolutionResult:
