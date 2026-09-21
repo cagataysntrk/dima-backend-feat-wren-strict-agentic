@@ -78,6 +78,27 @@ def _morph_equivalent(left: str, right: str) -> bool:
     )
 
 
+def _morph_contains(surface: str, verified_alias: str) -> bool:
+    """Whether a verified alias occurs as a morphologically-equivalent token window.
+
+    The interpreter may preserve a grammatical phrase ("<dimension> + grouping marker")
+    rather than only the noun. Resolver may ground the verified semantic noun inside that
+    typed DIMENSION/METRIC mention, but never skips tokens *inside* the alias and never
+    applies this to entity-value discovery. Multiple matching semantic aliases still become
+    multiple material candidates and therefore clarify.
+    """
+    surface_forms = _morph_token_forms(surface)
+    alias_forms = _morph_token_forms(verified_alias)
+    if not alias_forms or len(alias_forms) > len(surface_forms):
+        return False
+    width = len(alias_forms)
+    for start in range(len(surface_forms) - width + 1):
+        window = surface_forms[start : start + width]
+        if all(a & b for a, b in zip(window, alias_forms, strict=True)):
+            return True
+    return False
+
+
 def _uniq(values: Iterable[str]) -> tuple[str, ...]:
     out: list[str] = []
     seen: set[str] = set()
@@ -622,7 +643,7 @@ class SemanticResolver:
         morph_aliases = _uniq((display or "", *synonyms))
         if (
             needle not in synonym_norms
-            and any(_morph_equivalent(surface, alias) for alias in morph_aliases)
+            and any(_morph_contains(surface, alias) for alias in morph_aliases)
         ):
             self._add(
                 drafts,
