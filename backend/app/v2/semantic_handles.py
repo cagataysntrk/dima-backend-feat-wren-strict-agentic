@@ -115,6 +115,33 @@ class SemanticHandleRegistry:
             trigger_evidence_ref=trigger_evidence_ref,
         )
 
+    def mint_from_temporal_engine(
+        self,
+        *,
+        tenant_binding: str,
+        context_version: str,
+        temporal_provenance_id: str,
+        target_kind: str,
+        canonical_target: Any,
+        provenance_type: str = "USER_SOURCE",
+        parent_obligation_id: str | None = None,
+        trigger_evidence_ref: str | None = None,
+    ) -> SemanticHandle:
+        """Manager temporal authority after typed normalization + calendar arithmetic."""
+        if target_kind not in {"period", "comparison"}:
+            raise ValueError("temporal engine may mint only period/comparison handles")
+        return self._mint(
+            tenant_binding=tenant_binding,
+            context_version=context_version,
+            provenance_id=temporal_provenance_id,
+            target_kind=target_kind,
+            canonical_target=canonical_target,
+            sensitive=False,
+            provenance_type=provenance_type,
+            parent_obligation_id=parent_obligation_id,
+            trigger_evidence_ref=trigger_evidence_ref,
+        )
+
     def validate(
         self,
         handle_id: str,
