@@ -136,6 +136,7 @@ class Settings(BaseSettings):
     v2_fast_language_reasoning: bool = False
     v2_reference_language_reasoning: bool = True
     v2_research_manager_reasoning: bool = True
+    v2_manager_lab_enabled: bool = False
     # Internal scoped setting written by ModelRolePolicy before build_generator().
     # Legacy callers retain False, preserving the historical hot-path behavior.
     v2_structured_reasoning_enabled: bool = False
