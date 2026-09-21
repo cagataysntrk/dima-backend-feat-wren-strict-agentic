@@ -444,32 +444,41 @@ MUTLAK SINIRLAR:
 - Saf selam/teşekkür/gündelik sosyal tur SOCIAL.
 - Veri/ürün kapsamında olmayan ve analitik niyet taşımayan istek UNSUPPORTED.
 
-RESEARCH_REQUEST — rich typed analytical surface:
+RESEARCH_GRAPH — source inventory → typed operation graph:
 - Final STANDARD/RESEARCH route ResearchModePolicy'nindir. Presentation bu karara girmez.
-- goals[] yalnız NON-RELATIONSHIP analytical operation taşır:
-  comparison, performance, trend, breakdown, ranking, root_cause, other.
-- RELATIONSHIP goals[] içinde temsil EDİLMEZ; relationships[] kullanılır.
-- relationships[] kaydı tek bir focus ve bir veya daha fazla counterpart taşır:
-  * text = ilişki isteğini kanıtlayan exact CURRENT_MESSAGE span,
-  * focus_mentions = ilişkisi incelenen focus; aynı CURRENT_MESSAGE içinde daha önce
-    açıkça söylenmişse o exact source surface yeniden kullanılabilir,
-  * counterpart_mentions = focus ile ilişkisi istenen explicit counterpart surface'leri.
-  Focus dilde gerçekten kurulmamışsa boş bırak; downstream tahmin etmez.
-- N counterpart tek relationship request içinde taşınabilir; typed compiler bunu N atomik
-  ResearchQuestion'a açar. Aynı edge'i tekrar üretme.
-- Kullanıcının açıkça reddettiği operation/counterpart'ı taşıma. Aynı operation'ın yalnız
-  yeniden söylenmesi yeni requirement değildir.
-- goals[].text, subject_mentions, related_mentions ve relationship endpoint'leri yalnız
-  CURRENT_MESSAGE source evidence'ıdır; canonical ID/binding yoktur.
-- STANDARD-capable operation için Core'un ihtiyaç duyduğu typed payload'ı kaybetme:
-  * ranking operation → ranking zorunlu; direction/limit yalnız explicit ise,
-  * comparison operation → explicit Core period/reference comparison varsa comparisons[].
-  Policy bu bilgiyi goal.text'ten geri çıkarmayacaktır.
-- Açık output isteğini deliverables[] içinde source-grounded taşı. Deliverable analytical
-  question değildir ve route sebebi değildir.
-- time_mentions yalnız explicit dönem/süre surface'lerini taşır.
-- Semantic context'te tanınmayan explicit mention'ı düşürme; kind=unknown ile exact
-  surface'i koru. Resolver binding/clarification/gap sahibidir.
+- surfaces[] BU MESAJDA geçen semantic yüzeylerin tek envanteridir. Her surface:
+  * current-message exact text,
+  * yalnız bu graph içinde kullanılan local surface_id,
+  * language role kind taşır.
+  Bu local ID canonical semantic ID DEĞİLDİR; Resolver binding yapacaktır.
+- Aynı semantic source span'i farklı operation'larda tekrar tekrar text olarak yazma;
+  operation'lar local surface ref'leri kullanır.
+- operations[] relationship dışındaki analytical requirement'lardır ve polarity zorunludur:
+  requested → requirement üretir; excluded → kullanıcı açıkça reddetmiştir, requirement üretmez.
+- root_cause ayrı typed frame'dir:
+  * outcome_ref = açıklanması/kök nedeni araştırılması istenen sonuç,
+  * factor_refs = kullanıcının aynı root-cause requirement'ında ilişkilendirdiği explicit faktörler.
+  Aynı factor edge'ini ayrıca relationship olarak üretme; kullanıcı ayrıca ayrı relationship
+  analizi istemişse o zaman iki ayrı requirement vardır.
+- relationships[] yalnız ilişki requirement'ıdır:
+  * counterpart_refs = explicit ilişki tarafları,
+  * focus_binding=explicit ise focus_ref relationship.text içinde açıkça geçer,
+  * focus_binding=antecedent ise focus_ref aynı CURRENT_MESSAGE içinde daha önce kurulmuş
+    bir source surface'e bağlanır,
+  * focus_binding=unresolved ise focus_ref=null; downstream focus tahmin etmez.
+  Bir ilişki cümlesinde birden fazla counterpart varsa hepsini aynı frame'de ref olarak taşı;
+  compiler bunları atomik edge'lere açar.
+- Negation/exclusion keyword ezberi değildir. Dil seviyesinde reddedilen analytical operation
+  veya deliverable polarity=excluded olarak işaretlenir; deterministic compiler yalnız
+  requested olanları requirement'a dönüştürür.
+- time_refs yalnız surfaces[] içindeki TIME surface ID'lerine referans verir.
+- deliverables[] analytical question değildir; output requirement'ıdır ve polarity taşır.
+- STANDARD-capable operation typed Core payload'ını kaybetmez:
+  * ranking frame ranking payload'ını,
+  * period/reference comparison frame comparisons[] payload'ını taşır.
+  Policy operation text'ini yeniden parse ederek eksik slot tamamlamaz.
+- Semantic context'te tanınmayan ama kullanıcıda explicit geçen surface'i düşürme;
+  kind=unknown ile inventory'de koru. Resolver binding/clarification/gap sahibidir.
 
 ANALYTICAL_REQUEST:
 - metric_mentions, dimension_mentions, filter_mentions, time_mentions yalnız surface span.
