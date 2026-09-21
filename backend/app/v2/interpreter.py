@@ -770,7 +770,9 @@ def _align_transport_surfaces(
                 "deliverables": tuple(
                     item.model_copy(
                         update={
-                            "text": _align_near_copy_surface(question, item.text)
+                            "evidence_text": _align_near_copy_surface(
+                                question, item.evidence_text
+                            )
                         }
                     )
                     for item in graph.deliverables
