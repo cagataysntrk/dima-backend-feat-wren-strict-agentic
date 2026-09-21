@@ -1165,9 +1165,12 @@ class ResearchTask(FrozenModel):
 class EvidenceArtifact(FrozenModel):
     artifact_id: str
     task_id: str
+    obligation_ids: tuple[str, ...] = ()
     query_contract_refs: tuple[str, ...] = ()
     evidence_kind: str
+    verified: bool = False
     payload: dict[str, Any] = Field(default_factory=dict)
+    limitations: tuple[str, ...] = ()
 
 
 class Finding(FrozenModel):
