@@ -32,3 +32,5 @@ jobs:
           pytest -q             tests/test_v2_day6_5_manager_authority.py             tests/test_v2_day6_5_correctness_closure.py             tests/test_v2_day6_5_adaptive_branch.py
 
 # rerun: effective repair required-MUST guard
+
+# rerun: repair guard plus acceptance-only phase
