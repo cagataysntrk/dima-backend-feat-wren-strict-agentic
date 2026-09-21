@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 4 COMPLETE — DAY 5 CORE MVP ATTACK GATE READY**  
-**Kod fazı:** Day 4 / P7 COMPLETE — Day 5 / P8 henüz başlamadı.
+**Durum:** **DAY 5 ACTIVE — CORE MVP PRODUCT INTEGRATION**  
+**Kod fazı:** Day 5 / P8 ACTIVE — önce ürün entegrasyonu, sonra Core MVP exit saldırı masası.
 
 ---
 
@@ -2360,3 +2360,167 @@ clarify p95                         <= 6s
 ```
 
 Day5 bu saldırı masası geçmeden Research Mode / Day6 açılmaz.
+
+
+## 13. DAY 5 ACTIVE TICKET — P8 CORE MVP PRODUCT INTEGRATION
+
+**AMAÇ**  
+Day0–4'te ayrı ayrı kanıtlanan runtime → interpreter → resolver → AnalyticsIR/Ledger →
+planner/execution → conversation zincirini gerçek `/ask-v2` ürün akışında tek Core MVP
+olarak tamamlamak. Day5 yalnız denetim değildir: önce eksik ürün/finalization entegrasyonu
+kapanır; **sonra** P8 exit saldırı masası çalışır.
+
+**USER SCENARIO**
+Tek gerçek conversation içinde:
+```text
+1. basit analitik soru → text-first verified answer
+2. belirsiz soru → nokta atışı clarification + signed chips, query=0
+3. chip/free-text clarification answer → sibling slot kaybetmeden doğru query
+4. follow-up refinement → prior IR + current delta
+5. user repair → unrelated slot kaybı yok
+6. result explain → mevcut evidence/result, query=0
+7. pure social → insan-okur talk response, query=0
+```
+
+**ROADMAP**  
+P8 / P8.A; P6/P7 kullanıcı-facing kabul yüzeyleriyle birlikte.
+
+**REPORT DAYANAK**  
+R6.0 Katman 10 Conversation Finalizer, R6.1 L1–L2 capability ladder,
+R6.2/R6.3 text-first + visible-scope + clarify-in-place UX,
+R10 Standard Analytics yolu, R20 değişmezleri, R25.1 normal yol.
+R3A anti-pattern matrisi Day5 root-fix authority'sidir.
+
+**YORUM / P8 SINIRI**  
+P8'deki “Yeni özellik ekleme”:
+- Research/Decision/yeni analytics capability ekleme YOK;
+- Day0–4 çekirdeğini ürün yüzeyine tamamlayan **Finalizer / ConversationResponse / UI adapter**
+  entegrasyonu Day5'in Core MVP kapanış işidir.
+- Finalizer veya UI semantic eksikliği tahminle kapatamaz.
+
+**NEW OWNER**
+- `ConversationFinalizerV0` → yalnız doğrulanmış typed state/evidence'dan kullanıcı-facing
+  `ConversationResponseV0` üretir.
+- Finalizer **semantic owner değildir**:
+  - raw question parse etmez,
+  - metric/entity seçmez,
+  - requirement tamamlamaz,
+  - DB/Wren çağırmaz,
+  - yeni sayı/hesap üretmez.
+- `/ask-v2` route → orchestrator'ın typed Core sonucunu Finalizer'dan geçirip ürün
+  response contract'ını dönen HTTP product boundary.
+- Frontend V2 adapter → backend'in verdiği answer/scope/clarification/evidence contract'ını
+  render eder; client-side semantic heuristic yok.
+
+**REUSE EDİLEN PRIMITIVE**
+- Day0–4 V2 orchestrator + typed ConversationState.
+- MinimumQueryContract / ContractStore evidence refs.
+- mevcut frontend conversation shell / auth-enabled api client.
+- mevcut Wren/Principal/ContextVersion değişmezleri.
+
+**FILES TO TOUCH — beklenen**
+Backend:
+- `app/v2/models.py`
+- `app/v2/finalizer.py` (new)
+- `app/routers/ask_v2.py`
+- `app/v2/orchestrator.py` yalnız product-finalization için gerçekten gerekiyorsa minimal.
+Frontend:
+- `src/lib/types.ts`
+- `src/lib/api-client.ts`
+- mevcut conversation shell'e **küçük V2 adapter/surface**; full UI rewrite YOK.
+Docs:
+- bu yaşayan durum dosyası.
+
+**FILES NOT TO TOUCH**
+- sealed roadmap/report
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- historical Day0–4 measurement artefacts
+- removed `.github/workflows/backend-ci.yml`.
+
+**PRODUCT RESPONSE CONTRACT — DAY5**
+Minimum:
+```text
+ConversationResponseV0
+  kind                  answer | clarify | talk | explain | semantic_gap | unsupported | failure
+  text                  text-first user-facing body
+  scope_chips[]         backend-derived; semantic authority değil
+  clarification_chips[] signed backend tokens
+  evidence_refs[]       contract/execution refs
+  table?                verified execution preview; optional
+  official_verified
+```
+
+Kurallar:
+- numeric cell yalnız verified execution/result'tan gelir; Finalizer hesap yapmaz.
+- semantic display label yalnız resolver hypothesis/canonical state'ten gelir.
+- sensitive filter value açık scope chip'e sızmaz.
+- clarify/talk/explain typed action'a göre finalize edilir; raw text tekrar parse edilmez.
+- failure/semantic-gap boş veya “dead” response üretmez.
+- RESULT_EXPLAIN existing verified result kullanır; query açmaz.
+- UI backend state'ini heuristics ile yeniden çözmez.
+
+**TARGETED DEVELOPMENT PROOF — test fazına geçmeden önce**
+- endpoint response her terminal Core action için user-facing `ConversationResponseV0` taşır,
+- standard answer contract/evidence refs taşır,
+- clarification signed token UI'ya kadar taşınabilir,
+- conversation state bir sonraki V2 turn'de aynen yankılanabilir,
+- frontend'de gerçek `askV2()` consumer vardır; legacy `/ask` silent fallback YOK.
+
+**EXIT TEST — geliştirme bittikten sonra kısa/nokta atışı**
+Önce küçük Core MVP integration testleri; sonra P8 saldırı masası.
+Full suite / legacy corpus / uzun CI YOK.
+
+**P8 SALDIRI AİLELERİ**
+```text
+paraphrase · typo · ambiguity · clarification resume · repair · follow-up
+topic switch · comparison · ranking · result explain · pure social
+malformed clarification token · stale context/version · provider/infra failure
+cross-tenant attempt · silent-wrong
+```
+
+Her kırmızıda:
+```text
+observed failure
+→ failure stage
+→ normative requirement
+→ Bu kararın tek sahibi kim?
+→ yalnız owner'da root fix
+→ focused proof
+```
+
+**EXIT / RELEASE BLOCKER**
+```text
+P0 silent-wrong                     = 0 MVP holdout
+blocking ambiguity auto-selection   = 0
+clarification SQL                   = 0
+pure social SQL                     = 0
+user repair unrelated-slot loss     = 0
+canonical threads context break     = 0
+unhandled 500                       = 0
+executed queries principal-aware    = 100%
+standard E2E p95                    <= 10s
+clarify p95                         <= 6s
+dead/broken Core response           = 0
+frontend semantic re-interpretation = 0
+legacy silent fallback              = 0
+```
+
+**STOP-THE-LINE**
+- Finalizer raw question/SQL parse etmeye başlarsa,
+- Finalizer missing metric/filter/ranking'i tahmin ederse,
+- UI canonical semantic anlam seçerse,
+- response text evidence/result dışında yeni numeric claim üretirse,
+- `/ask-v2` başarısızlığında legacy `/ask` sessiz fallback açılırsa,
+- test için demo-boyahane/OEE/RAM-3 vb production special-case yazılırsa,
+- attack test oracle'ı implementation SQL'ini kopyalayıp kendini doğrularsa,
+- Research/Decision scope Day5'e çekilirse.
+
+**DAY5 BAŞLANGIÇ KARARI**  
+Önce product integration/finalization uygulanacak. Attack table **geliştirme sonrası exit gate**;
+Day5 geliştirmesinin yerine geçmez.
