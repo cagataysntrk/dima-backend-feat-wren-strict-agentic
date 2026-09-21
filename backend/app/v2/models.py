@@ -281,6 +281,177 @@ class ResearchRelationshipSurface(FrozenModel):
     counterpart_mentions: tuple[SemanticMention, ...] = Field(min_length=1)
 
 
+class ResearchOperationPolarity(StrEnum):
+    REQUESTED = "requested"
+    EXCLUDED = "excluded"
+
+
+class ResearchFocusBinding(StrEnum):
+    EXPLICIT = "explicit"
+    ANTECEDENT = "antecedent"
+    UNRESOLVED = "unresolved"
+
+
+class ResearchSourceSurface(FrozenModel):
+    """One source-grounded semantic surface emitted once for the whole research graph."""
+
+    surface_id: str = Field(
+        min_length=1,
+        description="Local ID unique only inside this current-message research graph.",
+    )
+    text: str = Field(
+        min_length=1,
+        description="Exact CURRENT_MESSAGE surface span; never a canonical semantic ID.",
+    )
+    kind: SemanticMentionKind
+
+
+class ResearchPerformanceFrame(FrozenModel):
+    kind: Literal["performance"] = "performance"
+    text: str = Field(min_length=1)
+    subject_refs: tuple[str, ...] = Field(min_length=1)
+    related_refs: tuple[str, ...] = ()
+    polarity: ResearchOperationPolarity
+
+
+class ResearchTrendFrame(FrozenModel):
+    kind: Literal["trend"] = "trend"
+    text: str = Field(min_length=1)
+    subject_refs: tuple[str, ...] = Field(min_length=1)
+    related_refs: tuple[str, ...] = ()
+    polarity: ResearchOperationPolarity
+
+
+class ResearchBreakdownFrame(FrozenModel):
+    kind: Literal["breakdown"] = "breakdown"
+    text: str = Field(min_length=1)
+    subject_refs: tuple[str, ...] = Field(min_length=1)
+    related_refs: tuple[str, ...] = ()
+    polarity: ResearchOperationPolarity
+
+
+class ResearchRankingFrame(FrozenModel):
+    kind: Literal["ranking"] = "ranking"
+    text: str = Field(min_length=1)
+    subject_refs: tuple[str, ...] = Field(min_length=1)
+    related_refs: tuple[str, ...] = ()
+    ranking: RankingSurface
+    polarity: ResearchOperationPolarity
+
+
+class ResearchComparisonFrame(FrozenModel):
+    kind: Literal["comparison"] = "comparison"
+    text: str = Field(min_length=1)
+    subject_refs: tuple[str, ...] = Field(min_length=1)
+    related_refs: tuple[str, ...] = ()
+    comparisons: tuple[ComparisonSurface, ...] = Field(default=(), max_length=1)
+    polarity: ResearchOperationPolarity
+
+
+class ResearchRootCauseFrame(FrozenModel):
+    """Causal investigation is one requirement, not an implicit extra relationship."""
+
+    kind: Literal["root_cause"] = "root_cause"
+    text: str = Field(min_length=1)
+    outcome_ref: str
+    factor_refs: tuple[str, ...] = ()
+    polarity: ResearchOperationPolarity
+
+
+class ResearchOtherFrame(FrozenModel):
+    kind: Literal["other"] = "other"
+    text: str = Field(min_length=1)
+    subject_refs: tuple[str, ...] = ()
+    related_refs: tuple[str, ...] = ()
+    polarity: ResearchOperationPolarity
+
+
+ResearchOperationFrame = (
+    ResearchPerformanceFrame
+    | ResearchTrendFrame
+    | ResearchBreakdownFrame
+    | ResearchRankingFrame
+    | ResearchComparisonFrame
+    | ResearchRootCauseFrame
+    | ResearchOtherFrame
+)
+
+
+class ResearchRelationshipFrame(FrozenModel):
+    """Provider-facing relationship frame using local source references only."""
+
+    text: str = Field(min_length=1)
+    focus_ref: str | None = None
+    focus_binding: ResearchFocusBinding
+    counterpart_refs: tuple[str, ...] = Field(min_length=1)
+    polarity: ResearchOperationPolarity
+
+    @model_validator(mode="after")
+    def _focus_binding_contract(self):
+        if self.focus_binding == ResearchFocusBinding.UNRESOLVED:
+            if self.focus_ref is not None:
+                raise ValueError("unresolved relationship focus cannot carry focus_ref")
+        elif self.focus_ref is None:
+            raise ValueError("explicit/antecedent relationship focus requires focus_ref")
+        return self
+
+
+class ResearchDeliverableFrame(FrozenModel):
+    kind: PresentationKind
+    text: str = Field(min_length=1)
+    polarity: ResearchOperationPolarity
+
+    @model_validator(mode="after")
+    def _valid_kind(self):
+        if self.kind == PresentationKind.NONE:
+            raise ValueError("research deliverable cannot be none")
+        return self
+
+
+class ResearchRequestGraph(FrozenModel):
+    """Provider-facing source inventory -> operation graph.
+
+    Local refs are not canonical semantic refs. They only point back to exact surfaces
+    from the current user message; semantic binding remains SemanticResolver authority.
+    """
+
+    surfaces: tuple[ResearchSourceSurface, ...] = Field(min_length=1)
+    operations: tuple[ResearchOperationFrame, ...] = ()
+    relationships: tuple[ResearchRelationshipFrame, ...] = ()
+    time_refs: tuple[str, ...] = ()
+    deliverables: tuple[ResearchDeliverableFrame, ...] = ()
+
+    @model_validator(mode="after")
+    def _graph_integrity(self):
+        ids = [item.surface_id for item in self.surfaces]
+        if len(ids) != len(set(ids)):
+            raise ValueError("research source surface IDs must be unique")
+        known = set(ids)
+
+        refs: list[str] = list(self.time_refs)
+        for operation in self.operations:
+            if isinstance(operation, ResearchRootCauseFrame):
+                refs.append(operation.outcome_ref)
+                refs.extend(operation.factor_refs)
+            else:
+                refs.extend(operation.subject_refs)
+                refs.extend(operation.related_refs)
+        for relationship in self.relationships:
+            if relationship.focus_ref is not None:
+                refs.append(relationship.focus_ref)
+            refs.extend(relationship.counterpart_refs)
+
+        unknown = sorted({ref for ref in refs if ref not in known})
+        if unknown:
+            raise ValueError(f"research graph contains unknown local surface refs: {unknown}")
+
+        surface_index = {item.surface_id: item for item in self.surfaces}
+        for ref in self.time_refs:
+            if surface_index[ref].kind != SemanticMentionKind.TIME:
+                raise ValueError("research time_refs must reference TIME surfaces")
+        return self
+
+
 class ResearchDeliverableSurface(FrozenModel):
     """Source-grounded requested research output, separate from analytical questions."""
 
@@ -319,6 +490,42 @@ class UserRepair(FrozenModel):
             "must be non-empty for a USER_REPAIR turn."
         ),
     )
+
+
+class TurnInterpreterTransport(FrozenModel):
+    """Provider-facing language contract.
+
+    Research uses a local source inventory and operation graph. The compiler converts
+    it into the stable internal TurnInterpretation before Resolver/Policy/Planner see it.
+    """
+
+    dialogue_act: TurnAct
+    references: tuple[ReferenceMention, ...] = ()
+    analytical_request: AnalyticalRequest | None = None
+    research_graph: ResearchRequestGraph | None = None
+    presentation_request: PresentationKind = PresentationKind.NONE
+    user_repair: "UserRepair | None" = None
+    unresolved_mentions: tuple[UnresolvedMention, ...] = ()
+
+    @model_validator(mode="after")
+    def _validate_transport_shape(self):
+        analytic_new_family = {
+            TurnAct.ANALYTIC_NEW,
+            TurnAct.COMPLEX_ANALYSIS,
+            TurnAct.REPORT_REQUEST,
+        }
+        if self.dialogue_act in analytic_new_family:
+            if self.analytical_request is None and self.research_graph is None:
+                raise ValueError(
+                    "new analytical transport requires analytical_request or research_graph"
+                )
+        elif self.research_graph is not None:
+            raise ValueError(
+                "research_graph is valid only on new analytical turn family"
+            )
+        return self
+
+
 
 
 class CandidateSource(StrEnum):
