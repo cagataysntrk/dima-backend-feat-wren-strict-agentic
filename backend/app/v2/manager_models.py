@@ -92,7 +92,9 @@ class ResearchDirective(FrozenModel):
     directive_id: str = Field(min_length=1)
     directive_type: ResearchDirectiveType
     parent_obligation_id: str = Field(min_length=1)
-    condition: ResearchDirectiveCondition
+    condition: ResearchDirectiveCondition = (
+        ResearchDirectiveCondition.MATERIAL_NEW_DIRECTION
+    )
     source_refs: tuple[str, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
