@@ -804,3 +804,50 @@ def test_dynamic_real_wren_time_repair_smoke_has_no_demo_literal_assumption(
     )
     assert errors == ((),)
     assert ledger.all_must_verified
+
+
+
+def test_empty_analytic_continuation_cannot_reach_query(monkeypatch):
+    """Even a language-label miss with zero analytical delta is fail-closed before Wren."""
+    import app.v2.orchestrator as module
+
+    spec = SPECS[0]
+    service = SyntheticService(spec)
+    llm = SequenceLLM(
+        [
+            outputs_for(spec)[0],
+            {
+                "dialogue_act": "ANALYTIC_REFINE",
+                "analytical_request": {},
+            },
+        ]
+    )
+    monkeypatch.setattr(module, "wren_for_request", lambda request: service)
+
+    orchestrator = V2Orchestrator()
+    req = request_for(llm, FakeContracts())
+    p = principal()
+
+    first = run_turn(
+        orchestrator,
+        req,
+        p,
+        spec["q1"],
+        ConversationStateV2(),
+    )
+    assert first.official_verified is True
+    assert service.query_calls == 1
+
+    second = run_turn(
+        orchestrator,
+        req,
+        p,
+        "tamamdır",
+        first.conversation,
+    )
+    assert second.official_verified is False
+    assert second.analytics_status == "not_executable"
+    assert second.failure is not None
+    assert second.failure.code == "empty_refinement_delta"
+    assert second.query_execution_count == 0
+    assert service.query_calls == 1
