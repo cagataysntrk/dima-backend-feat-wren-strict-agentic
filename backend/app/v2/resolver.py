@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from typing import Iterable
 
+from py_rust_stemmers import SnowballStemmer
+
 from app.llm import _norm as _legacy_norm
 from app.sensitivity import classify
 from app.v2.models import (
@@ -40,12 +42,25 @@ _FUZZY_MIN = 0.78
 _FUZZY_MATERIAL = 0.92
 _TOKEN_MATERIAL_MIN = 4
 _TOKEN_VERSION = 1
+_TURKISH_STEMMER = SnowballStemmer("turkish")
 
 
 def _norm(value: str) -> str:
     """Generic semantic-surface normalization; no domain literals or parsing rules."""
     text = _legacy_norm(str(value or ""))
     return " ".join(re.sub(r"[^a-z0-9]+", " ", text).split())
+
+
+def _morph_signature(value: str) -> tuple[str, ...]:
+    """Turkish inflection signature for verified semantic aliases only.
+
+    Snowball sees the original Turkish letters; the result is used only to compare a
+    current semantic surface against already-verified display/synonym surfaces. Entity
+    values are intentionally outside this path.
+    """
+    lowered = str(value or "").lower().replace("̇", "")
+    tokens = re.findall(r"[a-zçğıöşü]+", lowered)
+    return tuple(_TURKISH_STEMMER.stem_word(token) for token in tokens if token)
 
 
 def _uniq(values: Iterable[str]) -> tuple[str, ...]:
@@ -115,9 +130,10 @@ class _Draft:
             CandidateSource.CURRENT_FOCUS: 1,
             CandidateSource.CANONICAL_NAME: 2,
             CandidateSource.VERIFIED_SYNONYM: 3,
-            CandidateSource.EXACT_ENTITY_VALUE: 4,
-            CandidateSource.COMPANY_VOCABULARY: 5,
-            CandidateSource.FUZZY_SUGGESTION: 6,
+            CandidateSource.MORPHOLOGICAL_MATCH: 4,
+            CandidateSource.EXACT_ENTITY_VALUE: 5,
+            CandidateSource.COMPANY_VOCABULARY: 6,
+            CandidateSource.FUZZY_SUGGESTION: 7,
         }
         return SemanticCandidate(
             candidate_id=self.candidate_id,
@@ -488,6 +504,7 @@ class SemanticResolver:
                 self._match_semantic_surface(
                     drafts,
                     needle=needle,
+                    surface=mention.text,
                     target_kind=SemanticTargetKind.CUBE,
                     canonical_name=cube.canonical_name,
                     display=cube.display,
@@ -501,6 +518,7 @@ class SemanticResolver:
                 self._match_semantic_surface(
                     drafts,
                     needle=needle,
+                    surface=mention.text,
                     target_kind=SemanticTargetKind.METRIC,
                     canonical_name=metric.canonical_name,
                     display=metric.display,
@@ -514,6 +532,7 @@ class SemanticResolver:
                 self._match_semantic_surface(
                     drafts,
                     needle=needle,
+                    surface=mention.text,
                     target_kind=SemanticTargetKind.DIMENSION,
                     canonical_name=dimension.canonical_name,
                     display=dimension.display,
@@ -527,6 +546,7 @@ class SemanticResolver:
             self._match_semantic_surface(
                 drafts,
                 needle=needle,
+                surface=mention.text,
                 target_kind=SemanticTargetKind.KPI,
                 canonical_name=kpi.canonical_name,
                 display=kpi.display,
@@ -539,6 +559,7 @@ class SemanticResolver:
         drafts: dict[str, _Draft],
         *,
         needle: str,
+        surface: str,
         target_kind: SemanticTargetKind,
         canonical_name: str,
         display: str | None,
@@ -578,6 +599,33 @@ class SemanticResolver:
                 display_label=self._semantic_label(target_kind, display or canonical_name),
                 provenance=CandidateSource.VERIFIED_SYNONYM,
                 score=1.0,
+                material=True,
+                sensitive=False,
+                aliases=aliases,
+            )
+
+        surface_stem = _morph_signature(surface)
+        morph_aliases = _uniq((display or "", *synonyms))
+        if (
+            surface_stem
+            and needle not in synonym_norms
+            and any(
+                _morph_signature(alias) == surface_stem
+                for alias in morph_aliases
+                if _morph_signature(alias)
+            )
+        ):
+            self._add(
+                drafts,
+                target_kind=target_kind,
+                canonical_name=canonical_name,
+                dimension_name=None,
+                value=None,
+                identity_value=None,
+                cube_names=cube_names,
+                display_label=self._semantic_label(target_kind, display or canonical_name),
+                provenance=CandidateSource.MORPHOLOGICAL_MATCH,
+                score=0.98,
                 material=True,
                 sensitive=False,
                 aliases=aliases,
