@@ -556,10 +556,16 @@ def _normalize_structured_payload(data: Any) -> Any:
         return data
 
     out = dict(data)
-    out["dialogue_act"] = _enum_value(out.get("dialogue_act"), TurnAct)
-    out["presentation_request"] = _enum_value(
-        out.get("presentation_request"), PresentationKind
-    )
+    if "dialogue_act" in out:
+        out["dialogue_act"] = _enum_value(out.get("dialogue_act"), TurnAct)
+    if out.get("presentation_request") is None:
+        # Preserve TurnInterpretation's existing default instead of turning a missing
+        # optional provider field into an explicit invalid null.
+        out.pop("presentation_request", None)
+    else:
+        out["presentation_request"] = _enum_value(
+            out.get("presentation_request"), PresentationKind
+        )
 
     research = out.get("research_request")
     if isinstance(research, dict):
