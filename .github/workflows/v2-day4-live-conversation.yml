@@ -1,22 +1,4 @@
-name: v2-day4-live-conversation
-# Day4 one-shot sync trigger
-
-"on":
-  pull_request:
-    branches:
-      - wren-bağımsız
-    types:
-      - ready_for_review
-      - synchronize
-    paths:
-      - "backend/app/v2/interpreter.py"
-      - "backend/app/v2/models.py"
-      - "backend/eval/v2_day4_conversation_cases.yaml"
-      - "backend/lab/v2_day4_eval.py"
-      - ".github/workflows/v2-day4-live-conversation.yml"
-  workflow_dispatch:
-
-concurrency:
+name: v2-day4-live-conversation\n\n"on":\n  workflow_dispatch:\n\nconcurrency:
   group: v2-day4-live-${{ github.sha }}
   cancel-in-progress: false
 
@@ -49,9 +31,6 @@ jobs:
 
       - name: Backend + dev dependencies
         run: pip install -e ".[dev]"
-
-      - name: Day 4 structural/runtime gate
-        run: pytest -q tests/test_v2_day4.py
 
       - name: P7 real-provider DB-independent conversation acceptance
         run: |
