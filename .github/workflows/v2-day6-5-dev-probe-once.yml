@@ -34,7 +34,7 @@ jobs:
       - name: Stratified Day 6.5 DEV probe
         working-directory: backend
         run: |
-          python lab/v2_day6_5_manager_eval.py --require-live --workers 4 --model openai/gpt-5.6-luna --case-id "d65-dev-001" --case-id "d65-dev-007" --case-id "d65-dev-013" --case-id "d65-dev-019" --case-id "d65-dev-025" --case-id "d65-dev-037" --case-id "d65-dev-047" --case-id "d65-dev-055" --case-id "d65-dev-005" --case-id "d65-dev-067" --case-id "d65-dev-063" --case-id "d65-dev-075"
+          python lab/v2_day6_5_manager_eval.py --require-live --workers 3 --model openai/gpt-5.6-luna --case-id "d65-dev-001" --case-id "d65-dev-037" --case-id "d65-dev-075"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -43,3 +43,5 @@ jobs:
           retention-days: 14
 
 # rerun: bind environment-scoped OpenRouter secret
+
+# diagnostic rerun: standard/root-cause/adaptive
