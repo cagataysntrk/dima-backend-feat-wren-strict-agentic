@@ -18,12 +18,9 @@ from app.v2.manager_tools import ResolveSemanticsArgs
 from app.v2.models import (
     BoundedSemanticContextV0,
     ClarificationState,
-    ComparisonSurface,
     ConversationStateV2,
     FrozenModel,
-    ResolvedComparison,
     ResolvedPeriod,
-    SemanticMention,
 )
 from app.v2.resolver import SemanticResolver
 from app.v2.semantic_linker import (
@@ -63,13 +60,6 @@ class ManagerSemanticResolutionResult(FrozenModel):
 
 
 class ManagerSemanticResolutionAdapter:
-    _KIND_MAP = {
-        "metric": SemanticMentionKind.METRIC,
-        "dimension": SemanticMentionKind.DIMENSION,
-        "filter": SemanticMentionKind.FILTER,
-        "unknown": SemanticMentionKind.UNKNOWN,
-    }
-
     def __init__(
         self,
         *,
