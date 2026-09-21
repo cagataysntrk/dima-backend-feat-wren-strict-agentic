@@ -49,7 +49,9 @@ corpus_target:
       prompt_text_committed: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
       prompt_text_shared_with_implementation: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
       development_model_generated: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
-      frozen_before_implementation: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      development_corpus_seen: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      development_failure_outputs_seen: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      frozen_before_architecture_seal_run: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
 
 taxonomy:
   - multi_obligation
@@ -158,6 +160,7 @@ paid_test_policy:
 
 holdout_freeze_protocol:
   - "Generate/source hidden cases independently from the development model."
+  - "The external evaluator may use the public taxonomy/contract spec, but must not consume DEV/VALIDATION prompt bodies or their failure outputs."
   - "Review taxonomy balance without revealing prompt text to implementation process."
   - "Serialize the sealed corpus outside the repository."
   - "External evaluator signs an explicit provenance attestation; the freeze tool must not synthesize provenance booleans."
