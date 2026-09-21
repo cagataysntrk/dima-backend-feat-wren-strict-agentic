@@ -108,8 +108,26 @@ class GovernedManagerExecutor:
             contract = runtime.accepted_contract
             if contract is None:
                 raise RuntimeError("run_analytics requires accepted contract")
+            ledger = runtime.ledger
+            if ledger is None:
+                raise RuntimeError("run_analytics requires obligation ledger")
+
+            effective_args = validated_args
+            if validated_args.derived_task_id is not None:
+                ledger = self._obligations.add_agent_derived(
+                    ledger,
+                    obligation_id=validated_args.derived_task_id,
+                    parent_obligation_id=validated_args.derived_parent_obligation_id,
+                    capability_key=validated_args.derived_capability_key,
+                    source_refs=(),
+                )
+                runtime.replace_ledger(ledger)
+                effective_args = validated_args.model_copy(
+                    update={"obligation_ids": (validated_args.derived_task_id,)}
+                )
+
             result = self._core.run(
-                validated_args,
+                effective_args,
                 task_id=f"task:{runtime.snapshot.tool_calls}",
                 accepted_contract=contract,
                 tenant_binding=self._context.tenant_binding,
@@ -118,6 +136,7 @@ class GovernedManagerExecutor:
                 runtime=self._context.tenant_runtime,
                 contract_store=self._context.contract_store,
                 session_id=self._context.session_id,
+                allowed_obligation_ids={item.obligation_id for item in runtime.ledger.items},
             )
             if result.query_count > 1:
                 runtime.note_additional_data_queries(result.query_count - 1)
@@ -127,7 +146,7 @@ class GovernedManagerExecutor:
             ledger = runtime.ledger
             if ledger is None:
                 raise RuntimeError("run_analytics completed without obligation ledger")
-            for obligation_id in validated_args.obligation_ids:
+            for obligation_id in effective_args.obligation_ids:
                 item = self._obligations.get(ledger, obligation_id)
                 spec = self._capabilities.get(item.capability_key)
                 if (
