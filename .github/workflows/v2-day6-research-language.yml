@@ -1,0 +1,47 @@
+name: v2-day6-research-language
+
+"on":
+  workflow_dispatch:
+
+concurrency:
+  group: v2-day6-research-language-${{ github.sha }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  research-language:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 8
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      DIMA_LLM_PROVIDER: "openrouter"
+      DIMA_OPENROUTER_MODEL: "google/gemini-2.5-flash-lite"
+      DIMA_OPENROUTER_SELECT_MODEL: "google/gemini-2.5-flash-lite"
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend eval dependencies
+        run: pip install -e ".[dev]"
+      - name: Day 6 bounded ResearchBrief language gate
+        run: |
+          mkdir -p lab/reports
+          python lab/v2_day6_research_eval.py --require-live
+      - name: Upload Day 6 language measurement
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-day6-research-language
+          path: backend/lab/reports/v2_day6_research_eval.json
+          retention-days: 30
+          if-no-files-found: warn
