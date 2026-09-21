@@ -31,6 +31,7 @@ from app.v2.manager_executor import (
     GovernedManagerExecutor,
 )
 from app.v2.manager_loop import ResearchManagerLoop
+from app.v2.manager_preacceptance import FiniteAcceptanceStatus
 from app.v2.manager_models import ObligationOrigin, ObligationPolarity
 from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
 from app.v2.manager_runtime import ManagerRuntime
@@ -373,12 +374,18 @@ def _run_case(
         context_version=context.context_version.version,
     )
     expected_terminal = str(case["expected_terminal_state"])
+    evaluation_valid = outcome.status not in {
+        FiniteAcceptanceStatus.MODEL_FAILURE,
+        FiniteAcceptanceStatus.GROUNDING_FAILURE,
+    }
     actual_terminal = (
         "ACCEPTED"
-        if outcome.accepted
+        if outcome.status == FiniteAcceptanceStatus.ACCEPTED
         else "CLARIFICATION"
-        if outcome.clarification_required
+        if outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
         else "NOT_ACCEPTED"
+        if evaluation_valid
+        else None
     )
 
     expected_required = _expected_required(case)
@@ -433,7 +440,8 @@ def _run_case(
     security_ok = accepted_handle_violations == 0 and not forbidden_execution_tools
 
     case_pass = (
-        terminal_ok
+        evaluation_valid
+        and terminal_ok
         and obligation_ok
         and exclusion_ok
         and representability_ok
@@ -446,6 +454,8 @@ def _run_case(
         "question": case["prompt"],
         "expected_terminal": expected_terminal,
         "actual_terminal": actual_terminal,
+        "preacceptance_status": outcome.status.value,
+        "evaluation_valid": evaluation_valid,
         "expected_required": dict(expected_required),
         "actual_required": dict(required),
         "expected_excluded": dict(expected_excluded),
@@ -550,7 +560,10 @@ def main() -> int:
                         "id": case["id"],
                         "taxonomy": case["taxonomy"],
                         "question": case["prompt"],
-                        "case_pass": False,
+                        "case_pass": None,
+                        "evaluation_valid": False,
+                        "preacceptance_status": "HARNESS_FAILURE",
+                        "actual_terminal": None,
                         "fatal_error": f"{type(exc).__name__}: {exc}",
                         "expected_required_total": len(case.get("expected_obligations") or [])
                         + len(case.get("expected_deliverables") or []),
@@ -570,31 +583,62 @@ def main() -> int:
 
     records.sort(key=lambda item: str(item["id"]))
     n = len(records)
-    passed_cases = sum(bool(record.get("case_pass")) for record in records)
-    expected_must = sum(int(record.get("expected_required_total") or 0) for record in records)
-    matched_must = sum(int(record.get("matched_required") or 0) for record in records)
-    invented_must = sum(int(record.get("invented_required") or 0) for record in records)
-    missing_exclusions = sum(int(record.get("missing_exclusions") or 0) for record in records)
-    invented_exclusions = sum(int(record.get("invented_exclusions") or 0) for record in records)
-    handle_violations = sum(int(record.get("accepted_handle_violations") or 0) for record in records)
-    execution_violations = sum(len(record.get("forbidden_execution_tools") or []) for record in records)
+    evaluable_records = [
+        record for record in records if bool(record.get("evaluation_valid", True))
+    ]
+    evaluable_n = len(evaluable_records)
+    measurement_failures = n - evaluable_n
+    model_failures = sum(
+        record.get("preacceptance_status") == FiniteAcceptanceStatus.MODEL_FAILURE.value
+        for record in records
+    )
+    grounding_failures = sum(
+        record.get("preacceptance_status") == FiniteAcceptanceStatus.GROUNDING_FAILURE.value
+        for record in records
+    )
+    harness_failures = sum(
+        record.get("preacceptance_status") == "HARNESS_FAILURE"
+        for record in records
+    )
+
+    passed_cases = sum(bool(record.get("case_pass")) for record in evaluable_records)
+    expected_must = sum(
+        int(record.get("expected_required_total") or 0) for record in evaluable_records
+    )
+    matched_must = sum(
+        int(record.get("matched_required") or 0) for record in evaluable_records
+    )
+    invented_must = sum(
+        int(record.get("invented_required") or 0) for record in evaluable_records
+    )
+    missing_exclusions = sum(
+        int(record.get("missing_exclusions") or 0) for record in evaluable_records
+    )
+    invented_exclusions = sum(
+        int(record.get("invented_exclusions") or 0) for record in evaluable_records
+    )
+    handle_violations = sum(
+        int(record.get("accepted_handle_violations") or 0) for record in evaluable_records
+    )
+    execution_violations = sum(
+        len(record.get("forbidden_execution_tools") or [])
+        for record in evaluable_records
+    )
+
+    cases_by_id = {str(case["id"]): case for case in cases}
     silent_ambiguity_accept = sum(
         1
-        for case, record in zip(
-            sorted(cases, key=lambda item: str(item["id"])),
-            records,
-            strict=True,
-        )
-        if case["expected_terminal_state"] == "CLARIFICATION"
+        for record in evaluable_records
+        if cases_by_id[str(record["id"])]["expected_terminal_state"] == "CLARIFICATION"
         and record.get("actual_terminal") == "ACCEPTED"
     )
     expected_standard = [
-        record for record in records
+        record for record in evaluable_records
         if record.get("expected_representability") == "STANDARD_LOSSLESS"
     ]
     unsafe_fast = sum(
         1
-        for record in records
+        for record in evaluable_records
         if record.get("expected_representability") != "STANDARD_LOSSLESS"
         and record.get("actual_representability") == "STANDARD_LOSSLESS"
     )
@@ -604,23 +648,28 @@ def main() -> int:
         if record.get("actual_representability") == "STANDARD_LOSSLESS"
     )
     clarification_cases = [
-        record for record in records
+        record for record in evaluable_records
         if record.get("expected_terminal") == "CLARIFICATION"
     ]
     clarification_correct = sum(
-        1 for record in clarification_cases if record.get("actual_terminal") == "CLARIFICATION"
+        1
+        for record in clarification_cases
+        if record.get("actual_terminal") == "CLARIFICATION"
     )
 
-    case_pass_rate = passed_cases / n if n else 1.0
+    case_pass_rate = passed_cases / evaluable_n if evaluable_n else 0.0
     must_recall = matched_must / expected_must if expected_must else 1.0
     standard_rate = standard_correct / len(expected_standard) if expected_standard else 1.0
     clarification_rate = (
         clarification_correct / len(clarification_cases) if clarification_cases else 1.0
     )
-    max_turns = max((int(record.get("manager_turns") or 0) for record in records), default=0)
+    max_turns = max(
+        (int(record.get("manager_turns") or 0) for record in evaluable_records),
+        default=0,
+    )
 
     # DEV is tunable; the same hard authority gates still fail immediately.
-    passed = (
+    semantic_pass = (
         case_pass_rate >= 0.95
         and must_recall >= 0.95
         and invented_must == 0
@@ -634,10 +683,19 @@ def main() -> int:
         and clarification_rate == 1.0
         and max_turns <= 8
     )
+    complete_measurement = measurement_failures == 0
+    passed = complete_measurement and semantic_pass
+    run_status = (
+        "pass"
+        if passed
+        else "incomplete"
+        if not complete_measurement
+        else "fail"
+    )
 
     payload = {
         "kind": "dima_v2_day6_5_manager_eval",
-        "status": "pass" if passed else "fail",
+        "status": run_status,
         "corpus_version": document.get("version"),
         "case_count": n,
         "model_role": ModelRole.RESEARCH_MANAGER.value,
@@ -647,6 +705,14 @@ def main() -> int:
             "native_schema_required": profile.native_schema_required,
         },
         "workers": workers,
+        "measurement": {
+            "selected_cases": n,
+            "evaluable_cases": evaluable_n,
+            "measurement_failures": measurement_failures,
+            "model_failures": model_failures,
+            "grounding_failures": grounding_failures,
+            "harness_failures": harness_failures,
+        },
         "metrics": {
             "case_pass_rate": round(case_pass_rate, 4),
             "must_obligation_recall": round(must_recall, 4),
@@ -678,6 +744,8 @@ def main() -> int:
                     "id": record["id"],
                     "actual_terminal": record.get("actual_terminal"),
                     "expected_terminal": record.get("expected_terminal"),
+                    "preacceptance_status": record.get("preacceptance_status"),
+                    "evaluation_valid": record.get("evaluation_valid"),
                     "actual_required": record.get("actual_required"),
                     "expected_required": record.get("expected_required"),
                     "actual_excluded": record.get("actual_excluded"),
@@ -694,6 +762,8 @@ def main() -> int:
                 sort_keys=True,
             )
         )
+    if not complete_measurement:
+        return 2
     return 0 if passed else 1
 
 
