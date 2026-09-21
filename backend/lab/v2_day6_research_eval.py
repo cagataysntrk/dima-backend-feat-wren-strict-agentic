@@ -175,22 +175,78 @@ def _schema() -> dict:
     }
 
 
-def _goal_surface_values(goal) -> tuple[list[str], list[str], list[str]]:
-    subject = [item.text for item in goal.subject_mentions]
-    related = [item.text for item in goal.related_mentions]
-    all_values = [goal.text, *subject, *related]
-    return subject, related, all_values
+def _operation_records(request) -> tuple[dict, ...]:
+    """Flatten the typed language contract into eval-only atomic operations.
+
+    Production keeps relationship requests compact (one focus, N counterparts);
+    ResearchBriefBuilder expands them into N atomic questions. The evaluator mirrors
+    only that declared structure and never reparses raw text.
+    """
+    if request is None:
+        return ()
+
+    records: list[dict] = []
+    for goal in request.goals:
+        records.append(
+            {
+                "kind": goal.kind.value,
+                "text": goal.text,
+                "subjects": [item.text for item in goal.subject_mentions],
+                "related": [item.text for item in goal.related_mentions],
+            }
+        )
+    for relationship in request.relationships:
+        focus = [item.text for item in relationship.focus_mentions]
+        for counterpart in relationship.counterpart_mentions:
+            records.append(
+                {
+                    "kind": "relationship",
+                    "text": relationship.text,
+                    "subjects": focus,
+                    "related": [counterpart.text],
+                }
+            )
+    return tuple(records)
 
 
-def _signature_matches(signature: dict, goal) -> bool:
-    if goal.kind.value != str(signature["kind"]):
+def _signature_matches(signature: dict, operation: dict) -> bool:
+    if str(operation["kind"]) != str(signature["kind"]):
         return False
-    subject, related, _ = _goal_surface_values(goal)
+    subject = list(operation.get("subjects") or ())
+    related = list(operation.get("related") or ())
     if not all(_contains(subject, str(fragment)) for fragment in signature.get("subject") or ()):
         return False
     if not all(_contains(related, str(fragment)) for fragment in signature.get("related") or ()):
         return False
     return True
+
+
+def _maximum_signature_match(
+    signatures: list[dict],
+    operations: tuple[dict, ...],
+) -> tuple[int, list[tuple[int, int]]]:
+    """Maximum bipartite match; catches repeated wrong operations and silent loss."""
+
+    @lru_cache(maxsize=None)
+    def solve(index: int, used_mask: int) -> tuple[int, tuple[tuple[int, int], ...]]:
+        if index >= len(signatures):
+            return 0, ()
+
+        best_count, best_pairs = solve(index + 1, used_mask)
+        for operation_index, operation in enumerate(operations):
+            if used_mask & (1 << operation_index):
+                continue
+            if not _signature_matches(signatures[index], operation):
+                continue
+            count, pairs = solve(index + 1, used_mask | (1 << operation_index))
+            count += 1
+            candidate_pairs = ((index, operation_index), *pairs)
+            if count > best_count:
+                best_count, best_pairs = count, candidate_pairs
+        return best_count, best_pairs
+
+    count, pairs = solve(0, 0)
+    return count, list(pairs)
 
 
 def _deliverable_signature_matches(signature: dict, deliverable) -> bool:
@@ -257,9 +313,14 @@ def _forbidden_goal_hits(request, forbidden: list[str]) -> dict[str, bool]:
     if request is None:
         return {fragment: False for fragment in forbidden}
     values: list[str] = []
-    for goal in request.goals:
-        _, _, goal_values = _goal_surface_values(goal)
-        values.extend(goal_values)
+    for operation in _operation_records(request):
+        values.extend(
+            [
+                str(operation.get("text") or ""),
+                *(operation.get("subjects") or ()),
+                *(operation.get("related") or ()),
+            ]
+        )
     values.extend(item.text for item in request.deliverables)
     return {fragment: _contains(values, fragment) for fragment in forbidden}
 
@@ -432,9 +493,9 @@ def main() -> int:
             if expect_research:
                 research_act_total += 1
                 research_act_ok += int(act_ok and research_shape_ok)
-                goals = request.goals if request is not None else ()
+                operations = _operation_records(request)
                 deliverables = request.deliverables if request is not None else ()
-                matched_count, matched_pairs = _maximum_signature_match(signatures, goals)
+                matched_count, matched_pairs = _maximum_signature_match(signatures, operations)
                 matched_deliverable_count, matched_deliverable_pairs = (
                     _maximum_deliverable_match(
                         deliverable_signatures,
@@ -446,7 +507,7 @@ def main() -> int:
                 expected_deliverable_total += len(deliverable_signatures)
                 matched_deliverable_total += matched_deliverable_count
                 invented = (
-                    max(len(goals) - matched_count, 0)
+                    max(len(operations) - matched_count, 0)
                     + max(len(deliverables) - matched_deliverable_count, 0)
                 )
                 invented_goal_total += invented
@@ -499,7 +560,7 @@ def main() -> int:
                     act_ok
                     and research_shape_ok
                     and matched_count == len(signatures)
-                    and len(goals) == len(signatures)
+                    and len(operations) == len(signatures)
                     and matched_deliverable_count == len(deliverable_signatures)
                     and len(deliverables) == len(deliverable_signatures)
                     and all(time_results.values())
@@ -512,22 +573,14 @@ def main() -> int:
                 )
                 detail = {
                     "expected_goal_count": len(signatures),
-                    "actual_goal_count": len(goals),
+                    "actual_goal_count": len(operations),
                     "matched_goal_count": matched_count,
                     "matched_pairs": matched_pairs,
                     "expected_deliverable_count": len(deliverable_signatures),
                     "actual_deliverable_count": len(deliverables),
                     "matched_deliverable_count": matched_deliverable_count,
                     "matched_deliverable_pairs": matched_deliverable_pairs,
-                    "actual_goals": [
-                        {
-                            "kind": goal.kind.value,
-                            "text": goal.text,
-                            "subjects": [m.text for m in goal.subject_mentions],
-                            "related": [m.text for m in goal.related_mentions],
-                        }
-                        for goal in goals
-                    ],
+                    "actual_goals": list(operations),
                     "actual_deliverables": [
                         {
                             "kind": item.kind.value,
@@ -550,19 +603,9 @@ def main() -> int:
                 case_pass = act_ok and research_shape_ok
                 detail = {
                     "expected_goal_count": 0,
-                    "actual_goal_count": 0 if request is None else len(request.goals),
+                    "actual_goal_count": len(_operation_records(request)),
                     "matched_goal_count": 0,
-                    "actual_goals": (
-                        []
-                        if request is None
-                        else [
-                            {
-                                "kind": goal.kind.value,
-                                "text": goal.text,
-                            }
-                            for goal in request.goals
-                        ]
-                    ),
+                    "actual_goals": list(_operation_records(request)),
                 }
 
             if str(case["id"]) == "canonical":
