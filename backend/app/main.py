@@ -73,10 +73,6 @@ async def lifespan(app: FastAPI):
     from app.kaset import belki_sar
 
     app.state.llm = belki_sar(build_generator(settings))
-    # V2 TurnInterpreter has an explicit measured language-capability transport. It is
-    # deliberately separate from legacy/general SQL/select model choice.
-    from app.llm import build_v2_interpreter_generator
-    app.state.v2_interpreter_llm = build_v2_interpreter_generator(settings)
     # BAŞLANGIÇTA hangi LLM sağlayıcı(lar)ının GERÇEKTEN aktif olduğunu net biçimde logla
     # (1 Ağustos 2026, kullanıcı talebi: "llm mi patladı" sorusunun İLK adımı — hangi
     # sağlayıcı yapılandırılmış OLMALI ki sonraki llm.py loglarıyla karşılaştırılabilsin).
