@@ -125,3 +125,27 @@ class ManagerCapabilityRegistry:
 
     def registered(self, key: ManagerCapabilityKey) -> bool:
         return key in self._SPECS
+
+    def manager_contract(self) -> tuple[dict[str, object], ...]:
+        """Safe capability-shape projection for the Manager prompt.
+
+        It contains no canonical semantic identifiers or user-language heuristics.
+        """
+        rows: list[dict[str, object]] = []
+        for key in ManagerCapabilityKey:
+            spec = self.get(key)
+            rows.append(
+                {
+                    "capability": key.value,
+                    "lane": spec.lane.value,
+                    "executable": spec.executable,
+                    "required_semantic_kinds": sorted(spec.required_kinds),
+                    "excluded_required_semantic_kinds": sorted(
+                        spec.exclusion_required_kinds
+                    ),
+                    "allowed_semantic_kinds": sorted(spec.allowed_kinds),
+                    "required_operation_params": sorted(spec.required_params),
+                    "allowed_operation_params": sorted(spec.allowed_params),
+                }
+            )
+        return tuple(rows)
