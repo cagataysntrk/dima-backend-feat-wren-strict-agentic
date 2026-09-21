@@ -20,7 +20,9 @@ Evaluator önce aşağıdaki gibi ayrı bir attestation dosyası oluşturur:
   "development_model_generated": false,
   "prompt_text_committed": false,
   "prompt_text_shared_with_implementation": false,
-  "frozen_before_implementation": true
+  "development_corpus_seen": false,
+  "development_failure_outputs_seen": false,
+  "frozen_before_architecture_seal_run": true
 }
 ```
 
@@ -49,7 +51,9 @@ Beklenen güvenli metadata:
   "prompt_text_committed": false,
   "prompt_text_shared_with_implementation": false,
   "development_model_generated": false,
-  "frozen_before_implementation": true
+  "development_corpus_seen": false,
+  "development_failure_outputs_seen": false,
+  "frozen_before_architecture_seal_run": true
 }
 ```
 
@@ -58,7 +62,8 @@ Yasak:
 - prompt text'i issue/PR/log/chat'e yapıştırmak,
 - implementation yapan modele hidden promptları göstermek,
 - hash sonrası corpus'u değiştirmek,
-- development modelin ürettiği corpus için external attestation vermek.
+- development modelin ürettiği corpus için external attestation vermek,
+- DEV/VALIDATION prompt corpusunu veya failure çıktısını hidden üretiminde kullanmak.
 
 ## Architecture seal günü — hidden result receipt
 
@@ -84,4 +89,6 @@ aggregate_gate_metrics
 ve oracle/harness'ın hangisi olduğu denetlenebilir kalmalıdır. Prompt text, per-case prompt
 ve hidden expected-answer içeriği receipt'e girmez.
 
-Metadata geldikten sonra `eval/v2_day6_5_eval_manifest.yaml` içindeki corpus/taxonomy/attestation REQUIRED placeholder'ları gerçek değerlerle değiştirilir ve Day 6.5 architecture-seal gate açılır. Manager implementation bundan bağımsız ilerleyebilir.
+Metadata geldikten sonra `eval/v2_day6_5_eval_manifest.yaml` içindeki corpus/taxonomy/attestation REQUIRED placeholder'ları gerçek değerlerle değiştirilir ve Day 6.5 architecture-seal gate açılır. Manager implementation bundan bağımsız ilerleyebilir. Hidden corpus implementation
+başladıktan sonra da hazırlanabilir; geçerlilik şartı development prompt/failure
+çıktılarından bağımsız kalması ve architecture-seal run'dan önce freeze edilmesidir.
