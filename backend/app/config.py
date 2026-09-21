@@ -128,6 +128,14 @@ class Settings(BaseSettings):
     v2_fast_language_model: str = ""
     v2_reference_language_provider: str = "openrouter"
     v2_reference_language_model: str = ""
+    # Role-scoped structured inference policy. FAST keeps reasoning off for latency/cost;
+    # REFERENCE may use reasoning because correctness certification is its purpose and
+    # some capable endpoints require it. Concrete model names do not participate here.
+    v2_fast_language_reasoning: bool = False
+    v2_reference_language_reasoning: bool = True
+    # Internal scoped setting written by ModelRolePolicy before build_generator().
+    # Legacy callers retain False, preserving the historical hot-path behavior.
+    v2_structured_reasoning_enabled: bool = False
     # Ollama (tam yerel, anahtarsız: `brew install ollama` + `ollama pull ...`)
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "qwen2.5-coder:7b"
