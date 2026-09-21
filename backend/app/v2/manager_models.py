@@ -133,6 +133,8 @@ class CandidateObligation(FrozenModel):
     semantic_handle_refs: tuple[str, ...] = ()
     scope_refs: tuple[str, ...] = ()
     open_questions: tuple[str, ...] = ()
+    ranking_direction: Literal["asc", "desc"] | None = None
+    ranking_limit: int | None = Field(default=None, ge=1, le=1000)
 
     @model_validator(mode="after")
     def _origin_contract(self):
@@ -140,6 +142,13 @@ class CandidateObligation(FrozenModel):
             raise ValueError("AGENT_DERIVED obligation parent_obligation_id gerektirir")
         if self.origin != ObligationOrigin.AGENT_DERIVED and self.parent_obligation_id is not None:
             raise ValueError("yalnız AGENT_DERIVED obligation parent taşıyabilir")
+        if (self.ranking_direction is None) != (self.ranking_limit is None):
+            raise ValueError("ranking direction + limit birlikte verilmelidir")
+        if self.capability_key == ManagerCapabilityKey.RANKING:
+            if self.ranking_direction is None or self.ranking_limit is None:
+                raise ValueError("ranking obligation direction + limit gerektirir")
+        elif self.ranking_direction is not None or self.ranking_limit is not None:
+            raise ValueError("ranking parameters yalnız ranking obligation için geçerlidir")
         return self
 
 
@@ -170,6 +179,8 @@ class ObligationLedgerItem(FrozenModel):
     status: ObligationStatus
     source_refs: tuple[str, ...]
     semantic_handle_refs: tuple[str, ...] = ()
+    ranking_direction: Literal["asc", "desc"] | None = None
+    ranking_limit: int | None = Field(default=None, ge=1, le=1000)
     evidence_refs: tuple[str, ...] = ()
     verdict: str | None = None
     blocker: str | None = None
