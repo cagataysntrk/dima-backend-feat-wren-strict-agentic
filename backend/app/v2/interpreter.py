@@ -619,10 +619,11 @@ def _normalize_structured_payload(data: Any) -> Any:
                     if folded in {"asc", "desc", "unspecified"}:
                         ranking["direction"] = folded
                 item["ranking"] = ranking
-            item["comparisons"] = [
-                dict(value) if isinstance(value, dict) else value
-                for value in (item.get("comparisons") or ())
-            ]
+            if "comparisons" in item:
+                item["comparisons"] = [
+                    dict(value) if isinstance(value, dict) else value
+                    for value in (item.get("comparisons") or ())
+                ]
             operations.append(item)
 
         relationships = []
@@ -881,7 +882,9 @@ def _compile_research_graph(
             *relationship.counterpart_refs,
         )
         if relationship.polarity == ResearchOperationPolarity.EXCLUDED:
-            excluded.extend(mentions(referenced))
+            # Excluding an edge excludes its counterpart requirement, not the shared
+            # analytical focus itself. Focus may still anchor other requested edges.
+            excluded.extend(mentions(relationship.counterpart_refs))
             continue
 
         focus_mentions: tuple[SemanticMention, ...] = ()
