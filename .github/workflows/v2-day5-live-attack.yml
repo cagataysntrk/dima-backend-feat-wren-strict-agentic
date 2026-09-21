@@ -23,8 +23,10 @@ jobs:
       DIMA_INTERACTION_LOG: "false"
       DIMA_ASK_V2_ENABLED: "true"
       DIMA_LLM_PROVIDER: "openrouter"
-      DIMA_OPENROUTER_MODEL: ${{ vars.DIMA_OPENROUTER_MODEL || 'google/gemini-2.5-flash-lite' }}
-      DIMA_OPENROUTER_SELECT_MODEL: ${{ vars.DIMA_OPENROUTER_SELECT_MODEL || vars.DIMA_OPENROUTER_MODEL || 'google/gemini-2.5-flash-lite' }}
+      # Day5 paid exit measurement is intentionally pinned so provenance cannot be
+      # silently changed by repository/environment variables.
+      DIMA_OPENROUTER_MODEL: "google/gemini-2.5-flash-lite"
+      DIMA_OPENROUTER_SELECT_MODEL: "google/gemini-2.5-flash-lite"
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       DIMA_CRED_KEK: "dGVzdC1rZWstMzItYnl0ZS0wMTIzNDU2Nzg5YWJjZCE="
     steps:
