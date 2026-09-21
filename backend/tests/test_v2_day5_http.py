@@ -9,8 +9,15 @@ from __future__ import annotations
 
 import json
 
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from app.auth.dependencies import get_current_principal
 from app.contracts import result_hash
 from app.config import get_settings
+from app.routers.ask_v2 import router as ask_v2_router
+from control_plane.authorize import Principal
 
 
 SPEC = {
@@ -155,6 +162,34 @@ class HttpContracts:
         }
 
 
+@pytest.fixture
+def v2_client():
+    """Real FastAPI /ask-v2 route without booting the repository's native demo Wren.
+
+    Auth/permission middleware is not the oracle here; a typed Principal is injected through
+    FastAPI's own dependency graph so this gate can measure route validation/finalization and
+    explicit principal propagation without native-engine teardown noise.
+    """
+    app = FastAPI()
+    app.include_router(ask_v2_router)
+    principal = Principal(
+        user_id="day5-http-user",
+        tenant_id="day5-http-tenant",
+        roles=["owner"],
+        tenant_slug="day5-http",
+    )
+
+    route = next(route for route in app.routes if getattr(route, "path", None) == "/ask-v2")
+    for dependency in route.dependant.dependencies:
+        if dependency.call is get_current_principal:
+            app.dependency_overrides[dependency.call] = lambda: principal
+        else:
+            app.dependency_overrides[dependency.call] = lambda: None
+
+    with TestClient(app) as client:
+        yield client
+
+
 def enable_v2(client, monkeypatch, *, service, llm):
     import app.v2.orchestrator as orchestrator_module
 
@@ -176,7 +211,8 @@ def post_turn(client, question: str, *, conversation=None, token=None):
     return client.post("/ask-v2", json=body)
 
 
-def test_real_http_product_thread_is_core_mvp_and_keeps_query_policy(client, monkeypatch):
+def test_real_http_product_thread_is_core_mvp_and_keeps_query_policy(v2_client, monkeypatch):
+    client = v2_client
     service = HttpSyntheticService()
     llm = SequenceLlm([
         {
@@ -235,7 +271,8 @@ def test_real_http_product_thread_is_core_mvp_and_keeps_query_policy(client, mon
     assert all(principal is not None for _, principal in service.principals)
 
 
-def test_real_http_ambiguity_signed_resume_and_malformed_token_fail_closed(client, monkeypatch):
+def test_real_http_ambiguity_signed_resume_and_malformed_token_fail_closed(v2_client, monkeypatch):
+    client = v2_client
     service = HttpSyntheticService(ambiguous=True)
     llm = SequenceLlm([
         {
@@ -282,7 +319,8 @@ def test_real_http_ambiguity_signed_resume_and_malformed_token_fail_closed(clien
     assert service.query_calls == 1
 
 
-def test_real_http_stale_context_refine_is_typed_failure_and_never_queries(client, monkeypatch):
+def test_real_http_stale_context_refine_is_typed_failure_and_never_queries(v2_client, monkeypatch):
+    client = v2_client
     service = HttpSyntheticService()
     llm = SequenceLlm([
         {
@@ -321,7 +359,8 @@ def test_real_http_stale_context_refine_is_typed_failure_and_never_queries(clien
     assert service.query_calls == 0
 
 
-def test_real_http_provider_failure_is_503_and_cannot_reach_data(client, monkeypatch):
+def test_real_http_provider_failure_is_503_and_cannot_reach_data(v2_client, monkeypatch):
+    client = v2_client
     service = HttpSyntheticService()
     llm = SequenceLlm([RuntimeError("provider unavailable")])
     enable_v2(client, monkeypatch, service=service, llm=llm)
