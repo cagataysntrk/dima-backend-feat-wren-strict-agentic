@@ -100,6 +100,7 @@ class ManagerDecisionTransport(FrozenModel):
     derived_task_id: str | None = None
     derived_parent_obligation_id: str | None = None
     derived_capability_key: ManagerCapabilityKey | None = None
+    derived_evidence_ref: str | None = None
 
     relationship_obligation_id: str | None = None
     focus_handles: tuple[str, ...] = ()
@@ -145,6 +146,20 @@ class ManagerDecisionTransport(FrozenModel):
         elif self.action == ManagerActionKind.REQUEST_CLARIFICATION:
             if not self.clarification_reason:
                 raise ValueError("request_clarification reason gerektirir")
+
+        derived_values = (
+            self.derived_task_id,
+            self.derived_parent_obligation_id,
+            self.derived_capability_key,
+            self.derived_evidence_ref,
+        )
+        if any(value is not None for value in derived_values):
+            if self.action != ManagerActionKind.RUN_ANALYTICS:
+                raise ValueError("derived task fields are valid only for run_analytics")
+            if not all(value is not None for value in derived_values):
+                raise ValueError(
+                    "derived task id/parent/capability/evidence_ref birlikte verilmelidir"
+                )
         return self
 
 
@@ -195,9 +210,14 @@ Rules:
 - Human-language understanding may be iterative.
 - USER_SOURCE source_surfaces MUST be literal substrings of USER_MESSAGE.
 - AGENT_DERIVED semantic discovery MUST cite parent_obligation_id + evidence_ref + proposal.
+  That evidence_ref must first be observed through inspect_evidence in this run.
 - Before data execution, propose_acceptance must succeed.
 - Rejected attempts leave no semantic fields to merge.
 - run_analytics/run_relationship may reference only accepted/derived obligation IDs.
+- Every derived run_analytics branch MUST cite derived_parent_obligation_id +
+  derived_evidence_ref + derived_task_id + derived_capability_key. The evidence must
+  already have been observed through inspect_evidence; arbitrary post-acceptance branching
+  is forbidden.
 - Use inspect_evidence before making result-dependent next decisions when needed.
 - Semantic ambiguity is NOT Manager authority. If a tenant term may be ambiguous, call
   resolve_semantics first. Before acceptance, request_clarification is valid only after
@@ -219,6 +239,20 @@ Rules:
   explicit blocker, do not ask the user to choose a different task merely to avoid a
   partial result. Propose finish; CompletionGate will truthfully return PARTIAL.
 """
+
+
+def _evidence_was_inspected(
+    observations: list[dict[str, Any]],
+    evidence_ref: str | None,
+) -> bool:
+    if not evidence_ref:
+        return False
+    return any(
+        observation.get("kind") == "tool"
+        and observation.get("tool") == ManagerToolName.INSPECT_EVIDENCE.value
+        and (observation.get("result") or {}).get("artifact_id") == evidence_ref
+        for observation in observations
+    )
 
 
 def _clarification_has_governed_grounding(
@@ -452,6 +486,7 @@ class ResearchManagerLoop:
                         if decision.derived_capability_key is not None
                         else None
                     ),
+                    "derived_evidence_ref": decision.derived_evidence_ref,
                 },
             )
 
@@ -520,6 +555,46 @@ class ResearchManagerLoop:
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
                 break
+
+            if (
+                decision.action == ManagerActionKind.RESOLVE_SEMANTICS
+                and decision.resolve_provenance == "AGENT_DERIVED"
+                and not _evidence_was_inspected(
+                    observations,
+                    decision.semantic_evidence_ref,
+                )
+            ):
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": (
+                            "AGENT_DERIVED semantic discovery requires inspected evidence "
+                            "from the current run"
+                        ),
+                    }
+                )
+                continue
+
+            if (
+                decision.action == ManagerActionKind.RUN_ANALYTICS
+                and decision.derived_task_id is not None
+                and not _evidence_was_inspected(
+                    observations,
+                    decision.derived_evidence_ref,
+                )
+            ):
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": (
+                            "derived analytics branch requires inspect_evidence on "
+                            "derived_evidence_ref first"
+                        ),
+                    }
+                )
+                continue
 
             if (
                 decision.action == ManagerActionKind.REQUEST_CLARIFICATION
