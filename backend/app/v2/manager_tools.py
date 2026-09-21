@@ -36,7 +36,14 @@ class ResolveSemanticsArgs(FrozenModel):
     source_refs: tuple[str, ...] = ()
     target_kind_hints: tuple[
         Literal["metric", "dimension", "filter", "time", "comparison", "unknown"], ...
-    ] = ()
+    ] = Field(
+        default=(),
+        description=(
+            "One hint per source/proposal. metric/dimension/filter are tenant semantic "
+            "catalog concepts; time is a period phrase; comparison is a period-comparison "
+            "phrase. Ranking words such as top/highest/lowest are NOT semantic concepts."
+        ),
+    )
     temporal_anchor_handle: str | None = None
     base_period_handle: str | None = None
     parent_obligation_id: str | None = None
@@ -73,8 +80,16 @@ class RunAnalyticsArgs(FrozenModel):
     filter_handles: tuple[str, ...] = ()
     period_handle: str | None = None
     comparison_handle: str | None = None
-    ranking_direction: Literal["asc", "desc"] | None = None
-    limit: int | None = Field(default=None, ge=1, le=1000)
+    ranking_direction: Literal["asc", "desc"] | None = Field(
+        default=None,
+        description="Typed ranking operation parameter; never resolve ranking wording as semantics.",
+    )
+    limit: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description="Typed ranking N; never resolve the number/ranking phrase as semantics.",
+    )
     derived_task_id: str | None = None
     derived_parent_obligation_id: str | None = None
     derived_capability_key: ManagerCapabilityKey | None = None
