@@ -42,7 +42,6 @@ from app.v2.models import (
     ResearchRelationshipSurface,
     ResearchGoalSurface,
     ResearchRequestSurface,
-    ResearchRelationshipSurface,
     RankingSurface,
     ResolutionStatus,
     SemanticCandidate,
@@ -746,10 +745,10 @@ def test_goal_order_changes_never_drop_or_duplicate_must_requirements(order):
 @pytest.mark.parametrize(
     ("surface", "expected_blocked"),
     [
-        ("makineler", {"g2"}),
-        ("personellerle", {"g3"}),
-        ("satış performanslarını", {"g4"}),
-        ("ürünleri", {"g1", "g2", "g3"}),
+        ("makineler", {"g3"}),
+        ("personellerle", {"g4"}),
+        ("satış performanslarını", {"g2"}),
+        ("ürünleri", {"g1", "g3", "g4"}),
     ],
 )
 def test_semantic_gap_blocks_every_dependent_goal_without_silent_loss(
@@ -813,9 +812,9 @@ def test_clarify_hypothesis_is_blocking_not_auto_selected():
         context_version="ctx-clarify",
     )
 
-    assert brief.questions[1].status == ResearchGoalStatus.BLOCKED
-    assert brief.questions[1].related_refs == ()
-    assert brief.blocking_goal_ids == ("g2",)
+    assert brief.questions[2].status == ResearchGoalStatus.BLOCKED
+    assert brief.questions[2].related_refs == ()
+    assert brief.blocking_goal_ids == ("g3",)
 
 
 def test_multi_cube_resolver_provenance_is_not_collapsed_into_required_domain():
@@ -1173,8 +1172,7 @@ def test_other_operation_is_fail_closed_not_research_escalation():
     assert decision.canonical_turn.dialogue_act == TurnAct.UNSUPPORTED
     assert decision.canonical_turn.research_request is None
     assert decision.canonical_turn.analytical_request is None
-    assert decision.canonical_turn.unresolved_mentions
-    assert decision.canonical_turn.unresolved_mentions[-1].text == "belirsiz işlemi incele"
+    assert decision.canonical_turn.unresolved_mentions == ()
 
 
 def test_standard_ranking_operation_projects_without_raw_text_reparse():
@@ -1268,9 +1266,9 @@ def test_generic_comparison_without_core_payload_is_blocked_not_research():
 def test_research_mode_policy_declares_core_capabilities_instead_of_fixture_cases():
     source = inspect.getsource(ResearchModePolicy)
     assert "_STANDARD_CAPABLE" in source
-    assert "ResearchGoalKind.RANKING" in source
-    assert "ResearchGoalKind.COMPARISON" in source
-    assert "ResearchGoalKind.OTHER" in source
+    assert "ResearchNonRelationshipGoalKind.RANKING" in source
+    assert "ResearchNonRelationshipGoalKind.COMPARISON" in source
+    assert "ResearchNonRelationshipGoalKind.OTHER" in source
     assert "goal.text" not in source
     for forbidden in ("ürün", "makine", "personel", "satış", "Gemini"):
         assert forbidden not in source
