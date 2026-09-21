@@ -36,20 +36,13 @@ jobs:
         run: |
           python -m py_compile app/v2/resolver.py
           pytest -q \
-            tests/test_v2_day2.py::test_exact_verified_match_dominates_fuzzy_material_lookalike \
-            tests/test_v2_day2.py::test_multiple_exact_verified_matches_still_clarify \
-            tests/test_v2_day2.py::test_full_span_inflectional_match_dominates_shorter_contained_alias \
-            tests/test_v2_day2.py::test_equal_full_span_inflectional_matches_still_clarify
+            tests/test_v2_day6_5_manager_authority.py::test_opposite_breakdown_polarity_conflicts_on_same_semantic_dimension \
+            tests/test_v2_day6_5_manager_authority.py::test_required_product_breakdown_and_excluded_region_breakdown_are_not_conflicting \
+            tests/test_v2_day6_5_correctness_closure.py::test_missing_binding_rejection_is_governed_clarification_but_invalid_handle_is_not
       - name: Final stratified Day 6.5 probe
         working-directory: backend
         run: |
-          python lab/v2_day6_5_manager_eval.py --require-live --workers 4 --model openai/gpt-5.6-luna \
-            --case-id d65-dev-007 \
-            --case-id d65-dev-013 \
-            --case-id d65-dev-019 \
-            --case-id d65-dev-025 \
-            --case-id d65-dev-047 \
-            --case-id d65-dev-055 \
+          python lab/v2_day6_5_manager_eval.py --require-live --workers 2 --model openai/gpt-5.6-luna \
             --case-id d65-dev-063 \
             --case-id d65-dev-067
       - uses: actions/upload-artifact@v4
@@ -60,3 +53,5 @@ jobs:
           retention-days: 14
 
 # rerun: inflectional specificity policy
+
+# final closure rerun: conflict + coreference clarification
