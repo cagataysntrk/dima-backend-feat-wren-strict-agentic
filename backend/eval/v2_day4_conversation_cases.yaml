@@ -1,0 +1,95 @@
+kind: dima_v2_day4_realistic_conversation
+version: 1
+policy:
+  source: synthetic_business_context
+  demo_database_literals: forbidden
+  canonical_ids: generated_from_thread_id
+  note: >
+    These threads measure natural follow-up/repair language independently of any
+    repository demo database. Canonical identifiers are generated and unrelated to
+    the user's wording.
+
+threads:
+  - id: operations
+    cube_display: Operasyon Performansı
+    metric_display: Verimlilik Skoru
+    metric_synonyms: [verimlilik, randıman]
+    dimension_display: Hat
+    dimension_synonyms: [hat, üretim hattı]
+    entity: K-17
+    turns:
+      - {q: "bu yıl hatlara göre verimlilik nasıl gidiyor?", expected_act: ANALYTIC_NEW, expected_slots: [metric, dimension, time]}
+      - {q: "yalnız K-17 olsun", expected_act: ANALYTIC_REFINE, expected_slots: [filter]}
+      - {q: "yok, son üç ay olsun", expected_act: USER_REPAIR, expected_slots: [time]}
+      - {q: "bu sonucu biraz yorumlar mısın?", expected_act: RESULT_EXPLAIN, expected_slots: []}
+      - {q: "teşekkürler", expected_act: SOCIAL, expected_slots: []}
+
+  - id: retail
+    cube_display: Mağaza Performansı
+    metric_display: Net Satış
+    metric_synonyms: [net satış, satış]
+    dimension_display: Mağaza
+    dimension_synonyms: [mağaza, şube]
+    entity: Batı-7
+    turns:
+      - {q: "son altı ay mağazalara göre net satışa bakar mısın?", expected_act: ANALYTIC_NEW, expected_slots: [metric, dimension, time]}
+      - {q: "bir tek Batı-7 kalsın", expected_act: ANALYTIC_REFINE, expected_slots: [filter]}
+      - {q: "pardon, son iki ayı demiştim", expected_act: USER_REPAIR, expected_slots: [time]}
+      - {q: "bunun ne anlattığını söyler misin?", expected_act: RESULT_EXPLAIN, expected_slots: []}
+      - {q: "sağ ol", expected_act: SOCIAL, expected_slots: []}
+
+  - id: support
+    cube_display: Destek Operasyonları
+    metric_display: Çözüm Süresi
+    metric_synonyms: [çözüm süresi, sonuçlanma süresi]
+    dimension_display: Ekip
+    dimension_synonyms: [ekip, takım]
+    entity: Ekip-N
+    turns:
+      - {q: "bu sene ekip bazında çözüm süresi nasıl?", expected_act: ANALYTIC_NEW, expected_slots: [metric, dimension, time]}
+      - {q: "sadece Ekip-N'i göster", expected_act: ANALYTIC_REFINE, expected_slots: [filter]}
+      - {q: "hayır, geçen ay olsun", expected_act: USER_REPAIR, expected_slots: [time]}
+      - {q: "şunu biraz açıkla", expected_act: RESULT_EXPLAIN, expected_slots: []}
+      - {q: "tamamdır", expected_act: SOCIAL, expected_slots: []}
+
+  - id: logistics
+    cube_display: Lojistik Performansı
+    metric_display: Teslimat Gecikmesi
+    metric_synonyms: [teslimat gecikmesi, gecikme]
+    dimension_display: Bölge
+    dimension_synonyms: [bölge, saha]
+    entity: Kuzey-4
+    turns:
+      - {q: "son üç ay bölgelerde teslimat gecikmesi nasıl?", expected_act: ANALYTIC_NEW, expected_slots: [metric, dimension, time]}
+      - {q: "yalnız Kuzey-4'e bakalım", expected_act: ANALYTIC_REFINE, expected_slots: [filter]}
+      - {q: "yok, son otuz gün olsun", expected_act: USER_REPAIR, expected_slots: [time]}
+      - {q: "bu tabloyu yorumla", expected_act: RESULT_EXPLAIN, expected_slots: []}
+      - {q: "eyvallah", expected_act: SOCIAL, expected_slots: []}
+
+  - id: collections
+    cube_display: Tahsilat Performansı
+    metric_display: Tahsilat Oranı
+    metric_synonyms: [tahsilat oranı, tahsilat]
+    dimension_display: Bölge Ofisi
+    dimension_synonyms: [bölge ofisi, ofis]
+    entity: Merkez-2
+    turns:
+      - {q: "bu yıl ofislere göre tahsilat oranı nasıl?", expected_act: ANALYTIC_NEW, expected_slots: [metric, dimension, time]}
+      - {q: "sadece Merkez-2 olsun", expected_act: ANALYTIC_REFINE, expected_slots: [filter]}
+      - {q: "pardon, bu ayı kastettim", expected_act: USER_REPAIR, expected_slots: [time]}
+      - {q: "bu sonuç ne demek?", expected_act: RESULT_EXPLAIN, expected_slots: []}
+      - {q: "teşekkür ederim", expected_act: SOCIAL, expected_slots: []}
+
+  - id: energy
+    cube_display: Enerji Performansı
+    metric_display: Enerji Yoğunluğu
+    metric_synonyms: [enerji yoğunluğu, enerji tüketim yoğunluğu]
+    dimension_display: Tesis
+    dimension_synonyms: [tesis, fabrika]
+    entity: Tesis-C
+    turns:
+      - {q: "son dört ay tesis bazında enerji yoğunluğuna bak", expected_act: ANALYTIC_NEW, expected_slots: [metric, dimension, time]}
+      - {q: "yalnız Tesis-C kalsın", expected_act: ANALYTIC_REFINE, expected_slots: [filter]}
+      - {q: "yok, son iki ay olsun", expected_act: USER_REPAIR, expected_slots: [time]}
+      - {q: "bunu açıklar mısın?", expected_act: RESULT_EXPLAIN, expected_slots: []}
+      - {q: "sağolasın", expected_act: SOCIAL, expected_slots: []}
