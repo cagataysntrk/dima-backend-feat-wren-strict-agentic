@@ -420,6 +420,12 @@ class SemanticResolver:
             ordered.extend(req.dimension_mentions)
             ordered.extend(req.filter_mentions)
 
+        research = turn.research_request
+        if research is not None:
+            for goal in research.goals:
+                ordered.extend(goal.subject_mentions)
+                ordered.extend(goal.related_mentions)
+
         represented = {_norm(m.text) for m in ordered}
         for unresolved in turn.unresolved_mentions:
             if _norm(unresolved.text) not in represented:
