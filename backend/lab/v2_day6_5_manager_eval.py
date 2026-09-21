@@ -3,7 +3,8 @@
 This evaluator measures the bounded RESEARCH_MANAGER only through the pre-execution
 understanding boundary:
 
-  user turn -> Resolver-issued opaque handles -> IntentAcceptanceGate
+  user turn -> bounded semantic linker -> deterministic BindingGate -> opaque handles
+  -> IntentAcceptanceGate
   -> AcceptedTurnContract -> StandardProjectionCompiler -> RepresentabilityGate
 
 No query, Wren execution, DB access, raw SQL tool, or evidence fabrication occurs here.
@@ -314,6 +315,7 @@ def _run_case(
     case: dict[str, Any],
     *,
     role_settings,
+    linker_settings,
     tenant_binding: str,
 ) -> dict[str, Any]:
     started = time.perf_counter()
@@ -321,6 +323,10 @@ def _run_case(
     if not _is_real_llm(inner):
         raise RuntimeError("live RESEARCH_MANAGER provider unavailable")
     llm = CountingLlm(inner)
+    linker_inner = belki_sar(build_generator(linker_settings))
+    if not _is_real_llm(linker_inner):
+        raise RuntimeError("live SEMANTIC_LINKER provider unavailable")
+    linker_llm = CountingLlm(linker_inner)
 
     context = _context()
     conversation = ConversationStateV2.model_validate(case.get("conversation") or {})
@@ -336,6 +342,7 @@ def _run_case(
         tenant_binding=tenant_binding,
         session_id=f"eval-session:{case['id']}",
         thread_id=f"eval-thread:{case['id']}",
+        semantic_linker_structured=linker_llm.structured_json,
     )
     acceptance = IntentAcceptanceGate(
         source_spans=source_spans,
@@ -472,6 +479,7 @@ def _run_case(
         "accepted_handle_violations": accepted_handle_violations,
         "forbidden_execution_tools": forbidden_execution_tools,
         "model_calls": llm.calls,
+        "semantic_linker_calls": linker_llm.calls,
         "manager_turns": outcome.snapshot.manager_turns,
         "latency_s": round(time.perf_counter() - started, 4),
         "case_pass": case_pass,
@@ -490,6 +498,7 @@ def main() -> int:
     parser.add_argument("--taxonomy", action="append", default=[])
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--model", default="")
+    parser.add_argument("--linker-model", default="")
     parser.add_argument("--require-live", action="store_true")
     args = parser.parse_args()
 
@@ -514,6 +523,10 @@ def main() -> int:
             ModelRole.RESEARCH_MANAGER,
             model_override=(args.model.strip() or None),
         )
+        linker_settings, linker_profile = ModelRolePolicy(settings).scoped_settings(
+            ModelRole.SEMANTIC_LINKER,
+            model_override=(args.linker_model.strip() or None),
+        )
     except ValueError as exc:
         payload = {
             "kind": "dima_v2_day6_5_manager_eval",
@@ -526,11 +539,13 @@ def main() -> int:
         return 2 if args.require_live else 0
 
     probe = belki_sar(build_generator(role_settings))
-    if not _is_real_llm(probe):
+    linker_probe = belki_sar(build_generator(linker_settings))
+    if not _is_real_llm(probe) or not _is_real_llm(linker_probe):
         payload = {
             "kind": "dima_v2_day6_5_manager_eval",
             "status": "live_provider_unavailable",
             "model": profile.model,
+            "semantic_linker_model": linker_profile.model,
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -546,6 +561,7 @@ def main() -> int:
                 _run_case,
                 case,
                 role_settings=role_settings,
+                linker_settings=linker_settings,
                 tenant_binding=tenant_binding,
             ): case
             for case in cases
@@ -704,6 +720,11 @@ def main() -> int:
             "model": profile.model,
             "native_schema_required": profile.native_schema_required,
         },
+        "semantic_linker_profile": {
+            "provider": linker_profile.provider,
+            "model": linker_profile.model,
+            "native_schema_required": linker_profile.native_schema_required,
+        },
         "workers": workers,
         "measurement": {
             "selected_cases": n,
@@ -727,6 +748,9 @@ def main() -> int:
             "clarification_canonical_rate": round(clarification_rate, 4),
             "max_manager_turns": max_turns,
             "total_model_calls": sum(int(record.get("model_calls") or 0) for record in records),
+            "total_semantic_linker_calls": sum(
+                int(record.get("semantic_linker_calls") or 0) for record in records
+            ),
             "total_latency_s": round(sum(float(record.get("latency_s") or 0.0) for record in records), 4),
         },
         "records": records,
@@ -754,6 +778,7 @@ def main() -> int:
                     "expected_representability": record.get("expected_representability"),
                     "fatal_error": record.get("fatal_error"),
                     "model_calls": record.get("model_calls"),
+                    "semantic_linker_calls": record.get("semantic_linker_calls"),
                     "manager_turns": record.get("manager_turns"),
                     "observations": record.get("observations", [])[-8:],
                     "representability_detail": record.get("representability_detail"),
