@@ -7,7 +7,7 @@ absent from TurnInterpretation; that becomes the SemanticResolver's job on Day 2
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -273,16 +273,110 @@ class ClarificationState(FrozenModel):
 
 
 class Requirement(FrozenModel):
-    """Minimum contract placeholder. Ledger state/semantic refs arrive on Day 3."""
+    """Day 1 compatibility marker; Day 3 uses RequirementLedgerItem for lifecycle state."""
 
     kind: SemanticMentionKind
     must: bool = True
 
 
-class AnalyticsIR(FrozenModel):
-    """Reserved typed boundary for Day 3; Day 1 never constructs this object."""
+class RequirementKind(StrEnum):
+    METRIC = "metric"
+    DIMENSION = "dimension"
+    FILTER = "filter"
+    TIME = "time"
+    RANKING_DIRECTION = "ranking_direction"
+    LIMIT = "limit"
+    COMPARISON = "comparison"
 
+
+class RequirementState(StrEnum):
+    DETECTED = "DETECTED"
+    RESOLVED = "RESOLVED"
+    REPRESENTED_IN_IR = "REPRESENTED_IN_IR"
+    REPRESENTED_IN_PLAN = "REPRESENTED_IN_PLAN"
+    VERIFIED = "VERIFIED"
+    BLOCKED = "BLOCKED"
+
+
+class PeriodKind(StrEnum):
+    THIS_MONTH = "this_month"
+    THIS_YEAR = "this_year"
+    LAST_N_DAYS = "last_n_days"
+    LAST_N_MONTHS = "last_n_months"
+    PREVIOUS_MONTH = "previous_month"
+    PREVIOUS_YEAR = "previous_year"
+
+
+class ResolvedSemanticRef(FrozenModel):
+    candidate_id: str
+    target_kind: SemanticTargetKind
+    canonical_name: str
+    cube_names: tuple[str, ...] = ()
+
+
+class ResolvedFilterRef(FrozenModel):
+    candidate_id: str
+    dimension_name: str
+    value: str
+    cube_names: tuple[str, ...] = ()
+    sensitive: bool = False
+
+
+class ResolvedPeriod(FrozenModel):
+    kind: PeriodKind
+    source_text: str
+    time_dimension: str
+    start: str
+    end: str | None = None
+    n: int | None = None
+
+
+class ResolvedRanking(FrozenModel):
+    measure: str
+    direction: Literal["asc", "desc"]
+    limit: int = Field(ge=1, le=1000)
+
+
+class ResolvedComparison(FrozenModel):
+    mode: Literal["previous_period"]
+    source_text: str
+    base_period: ResolvedPeriod
+    reference_period: ResolvedPeriod
+
+
+class RequirementLedgerItem(FrozenModel):
+    requirement_id: str
+    kind: RequirementKind
+    source_text: str
+    must: bool = True
+    state: RequirementState = RequirementState.DETECTED
+    detail: str | None = None
+
+
+class RequirementLedger(FrozenModel):
+    items: tuple[RequirementLedgerItem, ...] = ()
+
+    @property
+    def all_must_verified(self) -> bool:
+        return all(
+            (not item.must) or item.state == RequirementState.VERIFIED
+            for item in self.items
+        )
+
+
+class AnalyticsIR(FrozenModel):
+    """Canonical standard-analytics request. No raw-question semantic selection lives here."""
+
+    # Compatibility surface retained for Day 1 imports/tests.
     requirements: tuple[Requirement, ...] = ()
+    cube: str
+    metrics: tuple[ResolvedSemanticRef, ...]
+    dimensions: tuple[ResolvedSemanticRef, ...] = ()
+    filters: tuple[ResolvedFilterRef, ...] = ()
+    period: ResolvedPeriod | None = None
+    ranking: ResolvedRanking | None = None
+    comparison: ResolvedComparison | None = None
+    context_version: str
 
 
 class ConversationStateV2(FrozenModel):
@@ -384,4 +478,117 @@ class AskV2Day2Response(FrozenModel):
         "analytics_ir_day3",
         "clarification_resume_day2",
         "conversation_policy_future",
+    ]
+
+
+
+# ---------------------------------------------------------------------------
+# Day 3 standard analytics / execution evidence
+# ---------------------------------------------------------------------------
+
+
+class StandardAnalyticsFailure(FrozenModel):
+    code: Literal[
+        "not_analytic_turn",
+        "semantic_not_resolved",
+        "missing_metric",
+        "unsupported_kpi",
+        "no_viable_cube",
+        "ambiguous_cube",
+        "missing_time_axis",
+        "ambiguous_time_axis",
+        "unsupported_time",
+        "unsupported_comparison",
+        "ranking_incomplete",
+        "plan_validation_failed",
+        "dry_plan_failed",
+        "query_failed",
+        "result_validation_failed",
+        "contract_seal_failed",
+        "context_version_mismatch",
+    ]
+    stage: Literal[
+        "policy",
+        "ir",
+        "temporal",
+        "planner",
+        "dry_plan",
+        "execution",
+        "result_validation",
+        "contract",
+    ]
+    message: str
+
+
+class PlannedExecution(FrozenModel):
+    execution_id: str
+    role: Literal["primary", "comparison_reference"] = "primary"
+    cube_query: dict[str, Any]
+    sql: str
+
+
+class ExecutionResultV0(FrozenModel):
+    execution_id: str
+    role: Literal["primary", "comparison_reference"]
+    columns: tuple[str, ...] = ()
+    rows: tuple[dict[str, Any], ...] = ()
+    row_count: int = 0
+    column_types: tuple[str, ...] = ()
+    verified: bool = False
+    verification_errors: tuple[str, ...] = ()
+
+
+class MinimumQueryContract(FrozenModel):
+    contract_id: str
+    execution_id: str
+    request_ref: str
+    planner_id: str
+    planner_version: str
+    mdl_version: str
+    context_version: str
+    executed_sql: str
+    result_hash: str | None = None
+    tenant_id: str | None = None
+    principal_user_id: str
+    principal_roles: tuple[str, ...] = ()
+    cube_query: dict[str, Any]
+    analytics_ir: dict[str, Any]
+    durability: Literal["db", "spool_pending", "none"]
+    sealed: bool
+
+
+class AskV2Day3Response(FrozenModel):
+    status: Literal["standard_analytics"] = "standard_analytics"
+    stage: Literal["day3_standard_analytics"] = "day3_standard_analytics"
+    semantic_status: Literal[
+        "resolved",
+        "clarification_required",
+        "semantic_gap",
+        "not_applicable",
+    ]
+    analytics_status: Literal[
+        "verified",
+        "not_executable",
+        "not_applicable",
+        "failed",
+    ]
+    official_verified: bool = False
+    runtime: TenantAnalyticsRuntimeV0
+    context_version: ContextVersionV0
+    turn: TurnInterpretation | None = None
+    hypotheses: tuple[SemanticHypothesis, ...] = ()
+    clarification: ClarificationState | None = None
+    analytics_ir: AnalyticsIR | None = None
+    ledger: RequirementLedger | None = None
+    executions: tuple[ExecutionResultV0, ...] = ()
+    query_contracts: tuple[MinimumQueryContract, ...] = ()
+    failure: StandardAnalyticsFailure | None = None
+    resumed_by: Literal["signed_chip", "free_text"] | None = None
+    session_id: str | None = None
+    thread_id: str | None = None
+    legacy_semantic_path_called: Literal[False] = False
+    next_stage: Literal[
+        "conversation_day4",
+        "clarification_resume_day2",
+        "standard_analytics_retry",
     ]
