@@ -21,7 +21,7 @@ from app import intent_semasi as _intent_semasi
 import contextvars
 import re
 import time
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.llm_guard import safe_call
 from app.logging_setup import get_logger
@@ -142,6 +142,14 @@ def _norm(text: str) -> str:
 class SqlGenerator(Protocol):
     def generate_sql(self, question: str, schema: dict) -> str: ...
     def structured_text(self, system: str, user: str) -> str: ...
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str: ...
 
 
 # --- ortak prompt -----------------------------------------------------------
@@ -896,7 +904,15 @@ class OpenAICompatibleSqlGenerator:
         self._provider = provider
         self._dialect = dialect
 
-    def _chat(self, system: str, user: str, model: str | None = None) -> str:
+    def _chat(
+        self,
+        system: str,
+        user: str,
+        model: str | None = None,
+        *,
+        response_format: dict[str, Any] | None = None,
+        require_parameters: bool = False,
+    ) -> str:
         import requests  # wrenai zaten requests'e bağımlı
 
         use_model = model or self._model
@@ -910,6 +926,13 @@ class OpenAICompatibleSqlGenerator:
                 {"role": "user", "content": user},
             ],
         }
+        if response_format is not None:
+            payload["response_format"] = response_format
+            # OpenRouter may otherwise route to a provider endpoint that silently
+            # ignores an unsupported parameter. Structured interpretation must never
+            # degrade to free-form text under the same method name.
+            if self._provider == "openrouter" and require_parameters:
+                payload["provider"] = {"require_parameters": True}
         # OpenRouter's current OpenAI reasoning families (GPT-5+/o-series) do not
         # advertise temperature as a supported chat-completions parameter. Sending
         # temperature=0 can therefore turn a healthy model into HTTP 400. Keep the
@@ -1219,6 +1242,18 @@ class RuleBasedSqlGenerator:
     def structured_text(self, system: str, user: str) -> str:  # noqa: ARG002
         # V2 TurnInterpreter'ın regex/kural fallback'e sessizce düşmesi yasaktır.
         raise RuntimeError("Structured language interpretation için gerçek LLM sağlayıcı gerekli.")
+
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str:  # noqa: ARG002
+        raise RuntimeError(
+            "Native structured language interpretation için gerçek LLM sağlayıcı gerekli."
+        )
 
     def generate_followup_sql(self, question: str, schema: dict, prev_question: str,  # noqa: ARG002
                               prev_sql: str, history: list[str]) -> str:  # noqa: ARG002
@@ -1676,6 +1711,37 @@ class FailoverSqlGenerator:
         raise RuntimeError("structured_text: tüm LLM sağlayıcıları başarısız: "
                            + " | ".join(errs))
 
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str:
+        """Fail over only among providers that explicitly expose native schema output."""
+        errs = []
+        for sira, g in enumerate(self._gens):
+            fn = getattr(g, "structured_json", None)
+            if not callable(fn):
+                continue
+            try:
+                out = fn(system, user, schema=schema, schema_name=schema_name)
+                if sira:
+                    self._dususu_kaydet(g, sira)
+                self._last = g
+                return out
+            except Exception as exc:
+                errs.append(f"{getattr(g, '_provider', type(g).__name__)}: {exc}")
+        _log.error(
+            "FailoverSqlGenerator.structured_json: native schema sağlayıcısı başarısız: %s",
+            " | ".join(errs),
+        )
+        raise RuntimeError(
+            "structured_json: native schema destekli LLM sağlayıcısı yok/başarısız: "
+            + " | ".join(errs)
+        )
+
     def generate_sql(self, question: str, schema: dict) -> str:
         errs = []
         for sira, g in enumerate(self._gens):
@@ -1889,6 +1955,16 @@ class NoLlmGenerator:
 
     def structured_text(self, system: str, user: str) -> str:  # noqa: ARG002
         raise RuntimeError("Structured language interpretation için LLM sağlayıcısı yok.")
+
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str:  # noqa: ARG002
+        raise RuntimeError("Native structured language interpretation için LLM sağlayıcısı yok.")
 
     def generate_sql(self, question: str, schema: dict) -> str:  # noqa: ARG002
         raise RuntimeError("LLM sağlayıcısı yok ve kural yedeği kapalı (DIMA_RULE_FALLBACK)")
