@@ -293,6 +293,7 @@ class V2Orchestrator:
                 brief = self._research_brief_builder.build(
                     turn=response_turn,
                     hypotheses=bundle.hypotheses,
+                    semantic_context=semantic_context,
                     context_version=context_version.version,
                 )
                 return AskV2Day4Response(
