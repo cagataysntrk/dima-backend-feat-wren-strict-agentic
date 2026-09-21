@@ -47,20 +47,31 @@ REQUIRED
 EXCLUDED
 ```
 
+### ObligationOrigin
+
+```text
+USER_MUST
+USER_OPTIONAL
+SYSTEM_REQUIRED
+AGENT_DERIVED
+```
+
 ### ObligationStatus
 
 ```text
 PROPOSED
 ACCEPTED
 NEEDS_CLARIFICATION
-SEMANTIC_BLOCKED
 READY
 IN_PROGRESS
-EVIDENCE_BACKED
-DATA_GAP
+VERIFIED
+BLOCKED_DATA_GAP
+LIMITED
 UNSUPPORTED
 SUPERSEDED
 ```
+
+Evidence varlığı status değildir; `evidence_refs` ayrı alandır.
 
 ### AcceptanceDecision
 
@@ -89,22 +100,27 @@ FAILED
 
 ---
 
-## 3. SourceEvidenceRef
+## 3. SourceSpanRegistry / SourceSpanRef
 
-Manager'ın proposal'ı kaynaksız authoritative olamaz.
+Manager'ın proposal'ı kaynaksız authoritative olamaz ve Manager source evidence
+uyduramaz.
 
-Minimum:
+Runtime current/prior authorized message üzerinde span registry üretir:
 
 ```python
-class SourceEvidenceRef:
-    source_message_id: str
-    source_span_id: str
-    quoted_surface: str
+class SourceSpanRef:
+    source_ref: str          # src_<opaque>
+    message_id: str
+    message_hash: str
+    start_offset: int
+    end_offset: int
+    exact_surface: str
 ```
 
 Rules:
-- source span current/prior authorized conversation source'a ait olmalı,
-- exact source surface audit için saklanabilir,
+- source ref yalnız runtime registry tarafından mint edilir,
+- offsets/hash/exact_surface gerçekten kaynak mesajla doğrulanır,
+- Manager yalnız `src_<opaque>` ref kullanır,
 - source evidence canonical semantic truth değildir,
 - downstream worker raw prompt'u reparse etmez.
 
@@ -115,10 +131,12 @@ Rules:
 ```python
 class CandidateObligation:
     obligation_id: str
-    kind: str
+    capability_key: str
+    origin: ObligationOrigin
+    parent_obligation_id: str | None
     priority: MUST | SHOULD
     polarity: REQUIRED | EXCLUDED
-    source_refs: list[SourceEvidenceRef]
+    source_refs: list[SourceSpanRef]
     scope_refs: list[str]
     semantic_handle_refs: list[str]
     open_questions: list[str]
@@ -128,8 +146,11 @@ Manager yalnız candidate üretir.
 
 Invariant:
 - source_refs boşsa ACCEPTED olamaz,
+- `capability_key` CapabilityRegistry'de kayıtlı değilse REJECT,
 - EXCLUDED obligation executable task'a dönüşemez,
-- semantic_handle_refs yalnız registry-issued olabilir.
+- semantic_handle_refs yalnız registry-issued olabilir,
+- `AGENT_DERIVED` obligation `USER_MUST`'a promote edilemez,
+- `AGENT_DERIVED.parent_obligation_id` accepted parent'a bağlanır.
 
 ---
 
@@ -163,10 +184,13 @@ Amaç:
 class ObligationLedgerItem:
     obligation_id: str
     version_introduced: int
+    capability_key: str
+    origin: ObligationOrigin
+    parent_obligation_id: str | None
     priority: MUST | SHOULD
     polarity: REQUIRED | EXCLUDED
     status: ObligationStatus
-    source_refs: list[SourceEvidenceRef]
+    source_refs: list[SourceSpanRef]
     semantic_handle_refs: list[str]
     evidence_refs: list[str]
     blocker: str | None
@@ -188,6 +212,7 @@ Opaque handle:
 ```python
 class SemanticHandle:
     handle_id: str          # sem_<opaque>
+    tenant_binding: str
     target_kind: str
     resolver_provenance_id: str
     context_version: str
@@ -262,9 +287,15 @@ Immutable.
 ```python
 class AcceptedTurnContract:
     contract_id: str
+    lineage_id: str
+    contract_schema_version: str
     version: int
-    supersedes: str | None
+    supersedes_contract_id: str | None
     turn_id: str
+    request_ref: str
+    source_message_hash: str
+    accepted_attempt_id: str
+    model_role: str
     obligation_ids: tuple[str, ...]
     exclusion_ids: tuple[str, ...]
     scope_ids: tuple[str, ...]
@@ -274,11 +305,14 @@ class AcceptedTurnContract:
     accepted_at: datetime
 ```
 
-Versioning:
+Versioning / authority:
 - update/mutation yok,
+- `version` aynı `lineage_id` içinde monoton artar,
 - repair → new version,
 - old contract immutable,
-- active pointer conversation state'te tutulur.
+- active pointer conversation state'te tutulur,
+- accepted non-clarification turn başına exactly one active accepted contract,
+- rejected model attempt hiçbir semantic field'i accepted attempt ile merge edemez.
 
 ---
 
@@ -436,22 +470,29 @@ Inputs:
 - active AcceptedTurnContract
 - obligation ledger
 - evidence refs
+- obligation verdict/status
 - blockers
 - failure records
 
 Rules:
 
 ```text
-all active MUST evidence-backed
+all active USER_MUST == VERIFIED
 → VERIFIED_COMPLETE
 
-some MUST evidence-backed
-+ at least one explicit data/semantic/tool gap
+all active USER_MUST accounted for
++ at least one BLOCKED_DATA_GAP / UNSUPPORTED / LIMITED
 → PARTIAL
 
-no valid route / fatal trust-plane failure
+unaccounted USER_MUST
+→ finish rejected
+
+no valid route / fatal trust-plane or authority failure
 → FAILED
 ```
+
+`evidence_refs != []` tek başına `VERIFIED` değildir. Evidence bir hipotezi reddedebilir,
+inconclusive olabilir veya yalnız limitation kanıtı olabilir.
 
 Manager'ın "bitti" demesi yalnız STOP proposal'dır; terminal status değildir.
 
@@ -516,11 +557,16 @@ Do NOT persist/show:
 - unsupported capability,
 - no tool bypass.
 
-### Representability
+### Representability / fast path
 - simple metric/breakdown → STANDARD_LOSSLESS,
 - ranking/comparison Core-capable → STANDARD_LOSSLESS,
 - relationship/root-cause complex → RESEARCH_REQUIRED,
-- unresolved ambiguity → NEEDS_CLARIFICATION.
+- unresolved ambiguity → NEEDS_CLARIFICATION,
+- unsafe_fast_admission = 0,
+- simple standard Manager loop = 0,
+- simple standard model calls <= 1,
+- simple standard p95/cost <= Day5 baseline * 1.10,
+- rejected attempt semantic merge = 0.
 
 ---
 
