@@ -205,6 +205,55 @@ def test_second_invalid_format_fails_without_third_call():
     assert llm.calls == 2
 
 
+def test_model_corrected_typos_are_realigned_to_exact_user_surface_without_retry():
+    llm = FakeLLM(json.dumps({
+        "dialogue_act": "ANALYTIC_NEW",
+        "analytical_request": {
+            "metric_mentions": [{"text": "net gelir", "kind": "metric"}],
+            "dimension_mentions": [{"text": "bölge", "kind": "dimension"}],
+            "time_mentions": [{"text": "bu ay", "kind": "time"}],
+        },
+    }, ensure_ascii=False))
+
+    turn = TurnInterpreter().interpret(
+        question="bu ay bolge bazında net gelr ne durumda?",
+        semantic_context=semantic_context(),
+        conversation=ConversationStateV2(),
+        llm=llm,
+    )
+
+    request = turn.analytical_request
+    assert request is not None
+    assert [m.text for m in request.metric_mentions] == ["net gelr"]
+    assert [m.text for m in request.dimension_mentions] == ["bolge"]
+    assert llm.calls == 1
+
+
+def test_explicit_adjacent_ranking_limit_is_restored_without_second_llm_call():
+    llm = FakeLLM(json.dumps({
+        "dialogue_act": "ANALYTIC_NEW",
+        "analytical_request": {
+            "metric_mentions": [{"text": "ciro", "kind": "metric"}],
+            "dimension_mentions": [{"text": "makine", "kind": "dimension"}],
+            "ranking": {"text": "en yüksek", "direction": "desc", "limit": None},
+        },
+    }, ensure_ascii=False))
+
+    turn = TurnInterpreter().interpret(
+        question="makine bazında en yüksek 2 ciro",
+        semantic_context=semantic_context(),
+        conversation=ConversationStateV2(),
+        llm=llm,
+    )
+
+    request = turn.analytical_request
+    assert request is not None
+    assert request.ranking is not None
+    assert request.ranking.text == "en yüksek 2"
+    assert request.ranking.limit == 2
+    assert llm.calls == 1
+
+
 def test_canonical_id_or_invented_span_is_rejected_without_semantic_retry():
     llm = FakeLLM(json.dumps({
         "dialogue_act": "ANALYTIC_NEW",
