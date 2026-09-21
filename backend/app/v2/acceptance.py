@@ -231,6 +231,8 @@ class IntentAcceptanceGate:
                 status=ObligationStatus.ACCEPTED,
                 source_refs=item.source_refs,
                 semantic_handle_refs=item.semantic_handle_refs,
+                ranking_direction=item.ranking_direction,
+                ranking_limit=item.ranking_limit,
                 introduced_in_version=version,
             )
             for item in envelope.obligations
