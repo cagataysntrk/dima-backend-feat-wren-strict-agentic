@@ -32,6 +32,7 @@ from app.v2.models import (
     SemanticAnchor,
     SemanticCandidate,
     SemanticHypothesis,
+    SemanticMention,
     SemanticMentionKind,
     SemanticTargetKind,
     StandardAnalyticsFailure,
@@ -349,9 +350,57 @@ class ConversationCoordinatorV0:
                 )
             )
 
+        analytical_request = pending.analytical_request
+        if analytical_request is not None:
+            resumed_entity_filters: list[SemanticMention] = []
+            normalized_merged: list[SemanticHypothesis] = []
+            for item in merged:
+                candidate = next(
+                    (
+                        candidate
+                        for candidate in item.candidates
+                        if candidate.candidate_id == item.resolved_candidate_id
+                    ),
+                    None,
+                )
+                if (
+                    item.status == ResolutionStatus.RESOLVED
+                    and item.mention_kind == SemanticMentionKind.UNKNOWN
+                    and candidate is not None
+                    and candidate.target_kind == SemanticTargetKind.ENTITY_VALUE
+                ):
+                    resumed_entity_filters.append(
+                        SemanticMention(
+                            text=item.source_mention,
+                            kind=SemanticMentionKind.FILTER,
+                        )
+                    )
+                    normalized_merged.append(
+                        item.model_copy(update={"mention_kind": SemanticMentionKind.FILTER})
+                    )
+                else:
+                    normalized_merged.append(item)
+            if resumed_entity_filters:
+                existing = {
+                    mention.text for mention in analytical_request.filter_mentions
+                }
+                analytical_request = analytical_request.model_copy(
+                    update={
+                        "filter_mentions": (
+                            *analytical_request.filter_mentions,
+                            *tuple(
+                                mention
+                                for mention in resumed_entity_filters
+                                if mention.text not in existing
+                            ),
+                        )
+                    }
+                )
+                merged = normalized_merged
+
         turn = TurnInterpretation(
             dialogue_act=pending.dialogue_act,
-            analytical_request=pending.analytical_request,
+            analytical_request=analytical_request,
             user_repair=pending.user_repair,
         )
         return turn, tuple(merged), pending.base_ir
