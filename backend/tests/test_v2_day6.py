@@ -530,18 +530,18 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
             "analytical_request": None,
             "research_graph": {
                 "surfaces": [
-                    {"surface_id": "s-product", "text": "ürünleri", "kind": "dimension"},
-                    {"surface_id": "s-time", "text": "Son 12 ay", "kind": "time"},
+                    {"surface_id": "s-product", "text": "ürünleri", "semantic_role": "dimension"},
+                    {"surface_id": "s-time", "text": "Son 12 ay", "semantic_role": "time"},
                     {
                         "surface_id": "s-invented",
                         "text": "uydurulmuş personel",
-                        "kind": "dimension",
+                        "semantic_role": "dimension",
                     },
                 ],
                 "operations": [
                     {
-                        "kind": "comparison",
-                        "text": "ürünleri karşılaştır",
+                        "operation": "comparison",
+                        "evidence_text": "ürünleri karşılaştır",
                         "subject_refs": ["s-product"],
                         "related_refs": [],
                         "comparisons": [],
@@ -550,7 +550,7 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
                 ],
                 "relationships": [
                     {
-                        "text": "uydurulmuş personel ilişkisi",
+                        "evidence_text": "uydurulmuş personel ilişkisi",
                         "focus_ref": "s-product",
                         "focus_binding": "antecedent",
                         "counterpart_refs": ["s-invented"],
@@ -559,7 +559,7 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
                 ],
                 "time_refs": ["s-time"],
                 "deliverables": [
-                    {"kind": "report", "text": "raporla", "polarity": "requested"}
+                    {"format": "report", "evidence_text": "raporla", "polarity": "requested"}
                 ],
             },
             "presentation_request": "report",
@@ -588,13 +588,13 @@ def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
             "analytical_request": None,
             "research_graph": {
                 "surfaces": [
-                    {"surface_id": "s-focus", "text": "Ürünlerin", "kind": "DIMENSION"},
-                    {"surface_id": "s-machine", "text": "makine", "kind": "DIMENSION"},
+                    {"surface_id": "s-focus", "text": "Ürünlerin", "semantic_role": "DIMENSION"},
+                    {"surface_id": "s-machine", "text": "makine", "semantic_role": "DIMENSION"},
                 ],
                 "operations": [],
                 "relationships": [
                     {
-                        "text": "Ürünlerin makine ilişkisini incele",
+                        "evidence_text": "Ürünlerin makine ilişkisini incele",
                         "focus_ref": "s-focus",
                         "focus_binding": "EXPLICIT",
                         "counterpart_refs": ["s-machine"],
@@ -603,7 +603,7 @@ def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
                 ],
                 "time_refs": [],
                 "deliverables": [
-                    {"kind": "REPORT", "text": "raporla", "polarity": "REQUESTED"}
+                    {"format": "REPORT", "evidence_text": "raporla", "polarity": "REQUESTED"}
                 ],
             },
             "presentation_request": "REPORT",
@@ -779,13 +779,13 @@ def test_antecedent_focus_ref_compiles_without_repeating_focus_text_in_relations
             "analytical_request": None,
             "research_graph": {
                 "surfaces": [
-                    {"surface_id": "s-focus", "text": "Kalemleri", "kind": "dimension"},
-                    {"surface_id": "s-machine", "text": "makinelerle", "kind": "dimension"},
+                    {"surface_id": "s-focus", "text": "Kalemleri", "semantic_role": "dimension"},
+                    {"surface_id": "s-machine", "text": "makinelerle", "semantic_role": "dimension"},
                 ],
                 "operations": [
                     {
-                        "kind": "comparison",
-                        "text": "Kalemleri karşılaştır",
+                        "operation": "comparison",
+                        "evidence_text": "Kalemleri karşılaştır",
                         "subject_refs": ["s-focus"],
                         "related_refs": [],
                         "comparisons": [],
@@ -794,7 +794,7 @@ def test_antecedent_focus_ref_compiles_without_repeating_focus_text_in_relations
                 ],
                 "relationships": [
                     {
-                        "text": "makinelerle ilişkisini de incele",
+                        "evidence_text": "makinelerle ilişkisini de incele",
                         "focus_ref": "s-focus",
                         "focus_binding": "antecedent",
                         "counterpart_refs": ["s-machine"],
@@ -832,14 +832,14 @@ def test_excluded_operation_and_relationship_never_become_requirements():
             "analytical_request": None,
             "research_graph": {
                 "surfaces": [
-                    {"surface_id": "s-focus", "text": "Kalemleri", "kind": "dimension"},
-                    {"surface_id": "s-person", "text": "personeli", "kind": "dimension"},
-                    {"surface_id": "s-machine", "text": "makinelerle", "kind": "dimension"},
+                    {"surface_id": "s-focus", "text": "Kalemleri", "semantic_role": "dimension"},
+                    {"surface_id": "s-person", "text": "personeli", "semantic_role": "dimension"},
+                    {"surface_id": "s-machine", "text": "makinelerle", "semantic_role": "dimension"},
                 ],
                 "operations": [
                     {
-                        "kind": "comparison",
-                        "text": "Kalemleri karşılaştır",
+                        "operation": "comparison",
+                        "evidence_text": "Kalemleri karşılaştır",
                         "subject_refs": ["s-focus"],
                         "related_refs": [],
                         "comparisons": [],
@@ -848,14 +848,14 @@ def test_excluded_operation_and_relationship_never_become_requirements():
                 ],
                 "relationships": [
                     {
-                        "text": "personeli inceleme",
+                        "evidence_text": "personeli inceleme",
                         "focus_ref": "s-focus",
                         "focus_binding": "antecedent",
                         "counterpart_refs": ["s-person"],
                         "polarity": "excluded",
                     },
                     {
-                        "text": "makinelerle ilişkisini incele",
+                        "evidence_text": "makinelerle ilişkisini incele",
                         "focus_ref": "s-focus",
                         "focus_binding": "antecedent",
                         "counterpart_refs": ["s-machine"],
@@ -893,12 +893,12 @@ def test_unresolved_relationship_focus_survives_to_blocked_brief():
             "analytical_request": None,
             "research_graph": {
                 "surfaces": [
-                    {"surface_id": "s-machine", "text": "Makinelerle", "kind": "dimension"}
+                    {"surface_id": "s-machine", "text": "Makinelerle", "semantic_role": "dimension"}
                 ],
                 "operations": [],
                 "relationships": [
                     {
-                        "text": "Makinelerle ilişkisini incele",
+                        "evidence_text": "Makinelerle ilişkisini incele",
                         "focus_ref": None,
                         "focus_binding": "unresolved",
                         "counterpart_refs": ["s-machine"],
@@ -972,13 +972,13 @@ def test_root_cause_frame_compiles_to_one_requirement_without_extra_relationship
             "analytical_request": None,
             "research_graph": {
                 "surfaces": [
-                    {"surface_id": "s-outcome", "text": "Verim düşüşünün", "kind": "metric"},
-                    {"surface_id": "s-factor", "text": "ekipman", "kind": "dimension"},
+                    {"surface_id": "s-outcome", "text": "Verim düşüşünün", "semantic_role": "metric"},
+                    {"surface_id": "s-factor", "text": "ekipman", "semantic_role": "dimension"},
                 ],
                 "operations": [
                     {
-                        "kind": "root_cause",
-                        "text": "Verim düşüşünün ekipman etkisini kök neden olarak araştır",
+                        "operation": "root_cause",
+                        "evidence_text": "Verim düşüşünün ekipman etkisini kök neden olarak araştır",
                         "outcome_ref": "s-outcome",
                         "factor_refs": ["s-factor"],
                         "polarity": "requested",
@@ -1025,13 +1025,13 @@ def test_format_normalization_does_not_relax_surface_grounding():
                     {
                         "surface_id": "s-machine",
                         "text": "Makinelerle",
-                        "kind": "dimension",
+                        "semantic_role": "dimension",
                     }
                 ],
                 "operations": [],
                 "relationships": [
                     {
-                        "text": "makinelerle ilişkilerini",
+                        "evidence_text": "makinelerle ilişkilerini",
                         "focus_ref": None,
                         "focus_binding": "unresolved",
                         "counterpart_refs": ["s-machine"],
