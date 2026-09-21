@@ -3911,3 +3911,157 @@ current-head canary16 PASS
 
 External HIDDEN50 development modelinden üretilemez; Issue #2 açık kalır ve yalnız final
 architecture seal'i bloklar.
+
+
+### 2026-09-21 — DAY 6.5 / FROZEN DEV80 RESULT — FAILURE-FAMILY CLASSIFICATION
+
+**Frozen semantic code**
+- code SHA: `8961a60a0255df691e5f1f42cf2131e83f8af674`
+- checkpoint: `checkpoint/day6.5-certification-8961a60`
+- DEV80 run: `35654163471`
+- model: `openai/gpt-5.6-sol`
+- workers: 1
+- provider-free sentinel before DEV80: **53/53 PASS**
+
+**Measurement validity**
+```text
+selected cases       80
+evaluable cases      80
+measurement failures 0
+model failures       0
+grounding failures   0
+harness failures     0
+```
+
+Bu nedenle run gerçek semantic/contract development sinyalidir; provider/harness failure değildir.
+
+**Aggregate**
+```text
+case pass rate                    59/80 = 0.7375
+MUST obligation recall            0.6923
+accepted invented MUST            0
+missing expected exclusions       1
+invented exclusions               0
+accepted handle violations        0
+preacceptance execution violations 0
+blocking ambiguity silent accept  0
+unsafe fast admission             0
+standard lossless rate            0.7949
+clarification canonical rate      1.0
+max manager turns                 4
+total model calls                 162
+```
+
+**Failing case IDs — 21**
+`002, 005, 015, 016, 021, 022, 024, 028, 029, 037, 044, 045, 046, 051, 064, 065, 066, 071, 076, 078, 079`
+
+**Kural**
+Bu liste 21 ayrı patch backlog'u DEĞİLDİR.
+Regex / morphology score / keyword / case-derived prompt / case-id branch yazılmayacak.
+Önce failure-family ve authority-owner analizi yapılır.
+
+#### Family A — Semantic grounding boundary too surface-shape-sensitive
+Temsilî failure:
+- `brüt gelir toplamı` → metric unresolved,
+- `hurda oranını` → metric unresolved,
+- `hattını` → dimension unresolved,
+- `hurda oranlı` → metric unresolved,
+- `önceki çeyrekle / geçen yılla / geçen haftayla` → comparison unresolved,
+- `hurda` → expected metric unresolved.
+
+Observation:
+Manager çoğu vakada doğru capability + doğru insan yüzeyini seçiyor; failure
+canonical semantic ownership'tan önce, selected source span ile verified semantic catalog
+eşleşmesinin fazla kırılgan olmasında oluşuyor.
+
+**Allowed root-fix direction**
+- semantic-model/canonical-catalog-driven verified alias/subspan grounding,
+- Resolver authority korunarak.
+
+**Forbidden**
+- Türkçe ek regex'i,
+- stemming/morphology score tuning,
+- vaka kelimeleri hard-code etme,
+- LLM canonical seçsin.
+
+#### Family B — Research phenomenon/scope is being mistaken for canonical semantic
+Temsilî yüzeyler:
+- `düşüş / düşüşünün / düşüşünü`,
+- `yüksek`.
+
+Root-cause capability yalnız gerçek tenant metric binding'e ihtiyaç duyduğu halde Coverage,
+bu fenomen/change predicate'leri bazen canonical `comparison` eksikliği sayıyor.
+
+Bu Day6 one-shot hastalığının başka biçimde dönmesidir:
+```text
+research meaning / phenomenon
+!=
+tenant canonical semantic dimension/metric/comparison
+```
+
+**Needed abstraction**
+First-class noncanonical research phenomenon/scope representation veya eşdeğer typed
+policy; canonical semantic handle değildir ve Resolver truth'u taklit etmez.
+
+#### Family C — Conditional/data-availability research policy missing
+- 029: `düşüş varsa kök nedenini araştır`
+- 046: `bakım duruş verisi yoksa bunu açıkça belirt`
+
+Bunlar canonical metric değil; research control/policy'dir.
+Current directive ontology `ADAPT_ON_EVIDENCE / BROADEN_WITHIN_BUDGET` dışında
+conditional activation / missing-data disclosure gibi policy'leri tam taşımıyor.
+
+#### Family D — Generic exclusion semantics
+- 066: kullanıcı `hiçbir ek kırılım veya ilişki inceleme` diyor.
+- Manager bunu EXCLUDED breakdown + relationship olarak algılıyor.
+- Current breakdown exclusion algebra dimension handle gerektiriyor → gereksiz clarification.
+- DEV oracle ise hiç exclusion beklemiyor.
+
+Burada hem contract hem oracle audit edilmeli.
+Generic/global exclusion semantiği first-class ise dimension zorunluluğu olmamalı.
+Oracle açık user exclusion'ını sessizce yok saymamalı.
+
+#### Family E — Multi-baseline/cardinality vs DEV oracle
+- 065: tek comparison obligation içinde iki verified comparison handle var.
+  Contract information-preserving; Representability doğru şekilde RESEARCH_REQUIRED.
+  DEV oracle iki ayrı comparison obligation bekliyor.
+- 064: iki ranking direction/limit aynı requested composition içinde.
+  Coverage presentation/composition eksikliği diye veto ediyor.
+
+Karar verilmesi gereken:
+```text
+user obligation count
+!= necessarily
+semantic baseline/reference count
+```
+Oracle cardinality semantic contract'a göre düzeltilmeli; sistemi test sayısına uydurmak yasak.
+
+#### Family F — Conversation trust-boundary vs stale DEV oracle
+- 071: `aynısını üretkenlik için yap`
+- yalnız client-supplied conversation summary labels var,
+- trusted prior AcceptedTurnContract / operation authority yok.
+- Manager clarification seçiyor.
+
+Day6.5 güvenlik kararı:
+client conversation labels canonical/operation authority değildir.
+Bu nedenle DEV oracle'nın ACCEPTED/performance beklentisi büyük ihtimalle outdated'dir.
+Security boundary oracle uğruna gevşetilmeyecek.
+
+**DEV80 interpretation**
+- bounded Manager architecture RETAINED,
+- DEV freeze NOT YET,
+- VALIDATION50 NOT OPEN,
+- third architecture search NOT justified,
+- next step = one controlled abstraction intervention + oracle audit,
+- single-case tuning forbidden.
+
+**Next controlled sequence**
+1. Day6.5 architecture validation + contract spec cross-read.
+2. Inspect current Resolver/Manager semantic boundary + research policy models.
+3. Define minimal architecture changes for Family A/B/C/D; no language heuristics.
+4. Audit Family E/F DEV oracle against current authority/security contracts.
+5. Provider-free abstraction invariants.
+6. Sol workers=1 focused family probe.
+7. Only if family probe passes → rerun frozen DEV80.
+8. DEV hard gates pass → DEV freeze → VALIDATION50 (no tuning).
+9. External HIDDEN50 remains final seal blocker.
