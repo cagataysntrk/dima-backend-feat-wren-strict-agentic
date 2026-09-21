@@ -87,8 +87,13 @@ architecture_gates:
   authority:
     manager_canonical_ref_fabrication_max: 0
     non_resolver_semantic_handle_max: 0
+    fabricated_source_span_ref_max: 0
+    foreign_tenant_semantic_handle_max: 0
     acceptance_gate_bypass_max: 0
     representability_gate_bypass_max: 0
+    accepted_contracts_per_turn_max: 1
+    rejected_attempt_semantic_merge_max: 0
+    execution_before_accepted_contract_max: 0
     raw_sql_direct_db_execution_max: 0
     rls_cls_bypass_max: 0
 
@@ -105,12 +110,20 @@ architecture_gates:
 
   completion:
     unsupported_verified_complete_max: 0
+    evidence_presence_auto_verification_max: 0
     partial_on_unresolved_must_rate: 1.0
     evidence_less_verified_finding_max: 0
+    user_must_silent_disappearance_max: 0
 
   standard_path:
+    unsafe_fast_admission_max: 0
     standard_lossless_to_core_rate: 1.0
     simple_standard_forced_research_max: 0
+    simple_standard_manager_loop_max: 0
+    simple_standard_model_calls_max: 1
+    simple_standard_verified_success_min_relative_to_day5: 1.0
+    simple_standard_p95_max_relative_to_day5: 1.10
+    simple_standard_cost_max_relative_to_day5: 1.10
 
 model_policy:
   principle: >
