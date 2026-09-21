@@ -122,6 +122,14 @@ class SemanticHandle(FrozenModel):
     sensitive: bool = False
 
 
+class SemanticResolutionReceipt(FrozenModel):
+    """Runtime proof that Resolver bound one current-user source span to one handle."""
+
+    source_ref: str = Field(pattern=r"^src_[a-f0-9]{24}$")
+    handle_id: str = Field(pattern=r"^sem_[a-f0-9]{24}$")
+    target_kind: str = Field(min_length=1)
+
+
 class CandidateObligation(FrozenModel):
     obligation_id: str = Field(min_length=1)
     capability_key: ManagerCapabilityKey
