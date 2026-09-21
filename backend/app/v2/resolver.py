@@ -1058,9 +1058,10 @@ class SemanticResolver:
             CandidateSource.CURRENT_FOCUS: 1,
             CandidateSource.CANONICAL_NAME: 2,
             CandidateSource.VERIFIED_SYNONYM: 3,
-            CandidateSource.EXACT_ENTITY_VALUE: 4,
-            CandidateSource.COMPANY_VOCABULARY: 5,
-            CandidateSource.FUZZY_SUGGESTION: 6,
+            CandidateSource.MORPHOLOGICAL_MATCH: 4,
+            CandidateSource.EXACT_ENTITY_VALUE: 5,
+            CandidateSource.COMPANY_VOCABULARY: 6,
+            CandidateSource.FUZZY_SUGGESTION: 7,
         }
         best = min(rank[source] for source in candidate.provenance)
         return (best, -candidate.score, candidate.display_label.casefold(), candidate.candidate_id)
