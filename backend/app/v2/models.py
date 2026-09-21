@@ -350,6 +350,7 @@ class RequirementLedgerItem(FrozenModel):
     source_text: str
     must: bool = True
     state: RequirementState = RequirementState.DETECTED
+    history: tuple[RequirementState, ...] = (RequirementState.DETECTED,)
     detail: str | None = None
 
 
