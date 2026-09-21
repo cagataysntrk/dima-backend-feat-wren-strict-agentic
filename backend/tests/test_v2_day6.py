@@ -859,18 +859,18 @@ def test_transitive_semantic_relationship_path_can_make_brief_ready_without_join
     assert brief.blocking_goal_ids == ()
 
 
-def test_research_budget_defaults_match_p9_policy_envelope():
+def test_research_budget_limits_are_not_invented_in_day6():
     brief = ResearchBriefBuilder().build(
         turn=canonical_turn(),
         hypotheses=canonical_hypotheses(),
         semantic_context=research_context(),
         context_version="ctx-budget",
     )
-    assert brief.budget.default_data_queries == 8
-    assert brief.budget.hard_max_data_queries == 12
-    assert brief.budget.max_branch_depth == 3
-    assert brief.budget.max_llm_research_turns == 6
-    assert brief.budget.wall_clock_target_seconds == 90
+    assert brief.budget.max_data_queries is None
+    assert brief.budget.max_branch_depth is None
+    assert brief.budget.max_llm_turns is None
+    assert brief.budget.max_wall_clock_seconds is None
+    assert brief.budget.assignment == "deferred_to_research_execution_policy"
 
 
 def test_unknown_research_anchor_survives_resolver_as_blocked_must_goal():
