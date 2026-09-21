@@ -1,5 +1,5 @@
 name: v2-day6-focused-once
-# final rerun after HTTP Day6 coverage
+# final closure rerun after UI/eval diagnostics
 
 "on":
   push:
