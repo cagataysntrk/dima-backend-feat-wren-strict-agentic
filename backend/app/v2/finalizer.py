@@ -232,10 +232,17 @@ class ConversationFinalizerV0:
                 goals = "\n".join(
                     f"- {question.source_text}" for question in brief.questions
                 )
+                period_line = (
+                    "Dönem: " + ", ".join(brief.scope.time_surfaces) + "\n"
+                    if brief.scope.time_surfaces
+                    else ""
+                )
                 response = ConversationResponseV0(
                     kind=ConversationResponseKind.RESEARCH_BRIEF,
                     text=(
-                        "Araştırma sözleşmesi hazır. İncelenecek MUST hedefler:\n"
+                        "Araştırma sözleşmesi hazır.\n"
+                        + period_line
+                        + "İncelenecek MUST hedefler:\n"
                         + goals
                     ),
                     official_verified=False,
@@ -249,11 +256,18 @@ class ConversationFinalizerV0:
                 lines = "\n".join(
                     f"- {source_text}" for source_text in blocked.values()
                 )
+                period_line = (
+                    "Dönem: " + ", ".join(brief.scope.time_surfaces) + "\n"
+                    if brief.scope.time_surfaces
+                    else ""
+                )
                 response = ConversationResponseV0(
                     kind=ConversationResponseKind.SEMANTIC_GAP,
                     text=(
-                        "Araştırma hedefleri kaybolmadan korundu; ancak şu MUST hedefler "
-                        "güvenilir semantic bağ kurulmadan araştırmaya açılamaz:\n"
+                        "Araştırma hedefleri kaybolmadan korundu.\n"
+                        + period_line
+                        + "Şu MUST hedefler güvenilir semantic bağ kurulmadan "
+                        "araştırmaya açılamaz:\n"
                         + lines
                     ),
                     # Research clarification resume is intentionally not a Day 6 feature.
