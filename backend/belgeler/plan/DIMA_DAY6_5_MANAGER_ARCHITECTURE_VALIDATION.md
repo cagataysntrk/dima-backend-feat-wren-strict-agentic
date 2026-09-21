@@ -487,12 +487,17 @@ Boyutlar:
 
 Hidden prompt metinleri repoya COMMIT EDİLMEZ.
 
-Kodlamadan önce:
+Architecture seal'den önce:
 1. bağımsız kaynak/evaluator ile üretilir,
-2. 50 vaka dondurulur,
-3. SHA-256 + case count + taxonomy manifest'e yazılır,
-4. geliştirme sırasında açılmaz,
-5. yalnız architecture exit gate'te kullanılır.
+2. evaluator DEV/VALIDATION prompt corpusunu ve failure çıktılarını görmez,
+3. 50 vaka dondurulur,
+4. SHA-256 + case count + taxonomy manifest'e yazılır,
+5. prompt metni development context'e hiçbir aşamada açılmaz,
+6. yalnız architecture exit gate'te kullanılır.
+
+Hidden freeze Manager implementation için blocker değildir. Geçerlilik şartı implementation
+başlamadan önce üretilmiş olması değil; development corpus/failure çıktılarından bağımsız
+kalması ve final architecture-seal run'dan önce freeze edilmesidir.
 
 Bu sohbet/model tarafından üretilen promptlar gerçek hidden holdout sayılmaz.
 
@@ -586,7 +591,7 @@ Eğer stronger model architecture gate'i geçip fast model geçmezse:
 ## 15. Day 6.5 sırası
 
 ```text
-0. freeze hidden holdout metadata
+0. establish external hidden-holdout handoff (metadata may arrive any time before seal)
 1. seal rejected one-shot ADR / candidate-manager status
 2. add contracts only
 3. provider-free invariant gate
