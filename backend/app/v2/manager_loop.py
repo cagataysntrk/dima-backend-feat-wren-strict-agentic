@@ -25,6 +25,8 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
 )
 from app.v2.manager_policy import ManagerCapabilityRegistry
+from app.v2.manager_preacceptance import PreAcceptanceController
+from app.v2.manager_progress import DynamicActionFrontier
 from app.v2.manager_runtime import (
     ManagerBudgetError,
     ManagerRuntime,
@@ -235,59 +237,26 @@ def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-_SYSTEM = """You are Dima's bounded RESEARCH_MANAGER.
+_SYSTEM = """You are Dima's bounded post-acceptance RESEARCH_MANAGER.
 
-Return exactly ONE next action using the provided JSON schema. Do not reveal or emit
-private chain-of-thought. Do not write SQL. Do not invent canonical metric/dimension
-identifiers. Canonical semantics are owned by resolve_semantics. The Manager never receives raw
-internal sem_* ids; Resolver-issued semantics are exposed only as run-local aliases
-(h1, h2, ...), which the runtime resolves back to opaque handles.
+AcceptedTurnContract is already the only semantic authority. Use typed governed tools to
+investigate accepted obligations, inspect evidence, open evidence-grounded derived work,
+and propose finish. Do not write SQL. Do not invent canonical identifiers or semantic
+handles. Capability meanings and semantic shapes come only from CAPABILITY_BINDING_CONTRACT.
 
 Rules:
-- Human-language understanding may be iterative.
-- Every analytical or presentation operation explicitly requested in USER_MESSAGE is
-  USER_MUST with MUST priority. USER_OPTIONAL/SHOULD is only for an operation the user
-  explicitly frames as optional or conditional; never downgrade the primary requested
-  investigation merely because a later branch is conditional.
-- Choose capability by CAPABILITY_BINDING_CONTRACT.intent_description. In particular,
-  a request to investigate why/causes/drivers of a decline, increase, change or anomaly
-  is root_cause, not performance.
-- USER_SOURCE source_surfaces MUST be literal substrings of USER_MESSAGE.
-- AGENT_DERIVED semantic discovery MUST cite parent_obligation_id + evidence_ref + proposal.
-  That evidence_ref must first be observed through inspect_evidence in this run.
-- Before data execution, propose_acceptance must succeed.
-- Rejected attempts leave no semantic fields to merge.
+- Never mutate, reinterpret, drop or replace accepted USER_MUST obligations.
+- Research directives are policy/authorization, not user obligations.
+- AGENT_DERIVED semantic discovery requires accepted parent + inspected verified evidence.
+- Rejected attempts leave no semantic authority to merge.
 - run_analytics/run_relationship may reference only accepted/derived obligation IDs.
-- Every derived run_analytics branch MUST cite derived_parent_obligation_id +
-  derived_evidence_ref + derived_task_id + derived_capability_key. The evidence must
-  already have been observed through inspect_evidence; arbitrary post-acceptance branching
-  is forbidden.
-- Use inspect_evidence before making result-dependent next decisions when needed.
-- Semantic ambiguity is NOT Manager authority. If a tenant term may be ambiguous, call
-  resolve_semantics first. Before acceptance, request_clarification is valid only after
-  SemanticResolver returned unresolved/clarification or AcceptanceGate returned
-  NEEDS_CLARIFICATION. Never stop on your own guess that a business word is ambiguous.
-- If governed ambiguity blocks a MUST, request_clarification rather than guessing.
-- If AcceptanceGate rejects an otherwise grounded standard obligation only because a
-  required Resolver semantic kind is missing from the current user turn, do not loop on
-  absent surfaces. Request clarification. Invalid/foreign/unissued handles are NOT a
-  clarification reason; correct the Manager action instead.
-- finish is a proposal; deterministic CompletionGate decides whether completion is true.
-- One action per turn. No prose outside the schema.
-- The native schema is strict: emit EVERY field. Use [] for unused arrays and null for
-  unused nullable scalar fields. Never omit a field.
-- Ranking is an OPERATION, not a semantic concept: resolve only the metric/dimension/filter
-  concepts. A ranking obligation MUST carry ranking_direction + ranking_limit in
-  propose_acceptance; execution later uses the same values. Never send top/highest/
-  lowest wording to resolve_semantics.
-- Time/comparison are governed normalization kinds: tag the base-period surface as "time"
-  and the reference/comparison surface as "comparison". They may be resolved together
-  with metric/dimension surfaces; the runtime derives the temporal anchor/base safely.
-- A standard USER_MUST must be accepted only after its required runtime handle aliases
-  (h1, h2, ...) have been issued by resolve_semantics. Never invent an h* alias or sem_* id.
-- If a research obligation becomes UNSUPPORTED, BLOCKED_DATA_GAP or LIMITED with an
-  explicit blocker, do not ask the user to choose a different task merely to avoid a
-  partial result. Propose finish; CompletionGate will truthfully return PARTIAL.
+- Every derived run_analytics branch must cite parent obligation + inspected evidence.
+- Use inspect_evidence before result-dependent replanning.
+- Follow ACTION_FRONTIER. Never repeat an exact action listed in blocked_exact_actions.
+- Semantic ambiguity is Resolver authority; do not guess canonical truth.
+- finish is only a proposal; deterministic CompletionGate decides completion truth.
+- One action per turn. No prose outside the strict schema.
+- Emit every schema field; use []/null for unused fields.
 """
 
 
@@ -331,34 +300,6 @@ def _evidence_was_inspected(
         and (observation.get("result") or {}).get("artifact_id") == evidence_ref
         for observation in observations
     )
-
-
-def _resolution_safe_stop_reason(
-    *,
-    result: Any,
-    receipts_before: int,
-    receipts_after: int,
-    conversation: ConversationStateV2 | None,
-) -> str | None:
-    """Return a deterministic clarification reason when semantic progress is impossible."""
-    if bool(getattr(result, "clarification_required", False)):
-        return "SemanticResolver requires user clarification before accepted authority"
-
-    prior_surface_context = bool(
-        conversation is not None
-        and conversation.has_prior_analytical_request
-        and (
-            conversation.selected_anchor_label
-            or conversation.focus_labels
-            or conversation.topic_labels
-        )
-    )
-    if prior_surface_context and receipts_after == receipts_before:
-        return (
-            "prior conversation has only surface context; no new trusted semantic "
-            "antecedent binding was established"
-        )
-    return None
 
 
 def _clarification_has_governed_grounding(
@@ -493,6 +434,7 @@ class ResearchManagerLoop:
         runtime: ManagerRuntime,
         observations: list[dict[str, Any]],
         conversation: ConversationStateV2 | None = None,
+        action_frontier: dict[str, Any] | None = None,
     ) -> str:
         ledger = runtime.ledger
         ledger_view = []
@@ -522,6 +464,15 @@ class ResearchManagerLoop:
             "EVIDENCE_REFS": list(runtime.snapshot.evidence_refs),
             "CONVERSATION_SURFACE": _conversation_surface_view(conversation),
             "CAPABILITY_BINDING_CONTRACT": self._capabilities.manager_contract(),
+            "ACCEPTED_RESEARCH_DIRECTIVES": (
+                [
+                    item.model_dump(mode="json")
+                    for item in runtime.accepted_contract.research_directives
+                ]
+                if runtime.accepted_contract is not None
+                else []
+            ),
+            "ACTION_FRONTIER": action_frontier or {},
             "RECENT_OBSERVATIONS": observations[-6:],
         }
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
@@ -538,12 +489,14 @@ class ResearchManagerLoop:
         runtime: ManagerRuntime,
         observations,
         conversation: ConversationStateV2 | None = None,
+        action_frontier: dict[str, Any] | None = None,
     ):
         user = self._prompt(
             question=question,
             runtime=runtime,
             observations=observations,
             conversation=conversation,
+            action_frontier=action_frontier,
         )
         schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
         kwargs = {
@@ -716,11 +669,8 @@ class ResearchManagerLoop:
         executor,
         conversation: ConversationStateV2 | None = None,
     ) -> ManagerUnderstandingOutcome:
-        """Bounded pre-execution phase: understand -> resolve -> accept/clarify only.
+        """Finite pre-acceptance boundary; Manager never chooses grounding tools."""
 
-        No analytics/evidence tool may execute here. This is the future hybrid-routing
-        boundary and the low-cost architecture-eval surface.
-        """
         source_hash = self._source_spans.register_message(
             message_id=message_id,
             text=question,
@@ -728,163 +678,34 @@ class ResearchManagerLoop:
         if runtime.snapshot.state == ManagerState.INITIAL:
             runtime.begin_understanding()
 
-        observations: list[dict[str, Any]] = [
-            {
-                "kind": "phase",
-                "name": "INTENT_ACCEPTANCE_ONLY",
-                "allowed_actions": [
-                    ManagerActionKind.RESOLVE_SEMANTICS.value,
-                    ManagerActionKind.PROPOSE_ACCEPTANCE.value,
-                    ManagerActionKind.REQUEST_CLARIFICATION.value,
-                ],
-            }
-        ]
-
-        while (
-            runtime.accepted_contract is None
-            and runtime.snapshot.state
-            not in {
-                ManagerState.FAILED,
-                ManagerState.BUDGET_EXHAUSTED,
-                ManagerState.NEEDS_CLARIFICATION,
-            }
-        ):
-            try:
-                runtime.note_manager_turn()
-            except ManagerBudgetError as exc:
-                observations.append({"kind": "budget", "message": str(exc)})
-                break
-
-            try:
-                decision = self._decision(
-                    question=question,
-                    runtime=runtime,
-                    observations=observations,
-                    conversation=conversation,
-                )
-            except Exception as exc:
-                observations.append({"kind": "model_error", "message": str(exc)})
-                break
-
-            if decision.action not in {
-                ManagerActionKind.RESOLVE_SEMANTICS,
-                ManagerActionKind.PROPOSE_ACCEPTANCE,
-                ManagerActionKind.REQUEST_CLARIFICATION,
-            }:
-                observations.append(
-                    {
-                        "kind": "tool_rejected",
-                        "action": decision.action.value,
-                        "message": (
-                            "intent-acceptance phase forbids execution/evidence/finish; "
-                            "resolve semantics or propose acceptance first"
-                        ),
-                    }
-                )
-                continue
-
-            if (
-                decision.action == ManagerActionKind.REQUEST_CLARIFICATION
-                and not _clarification_has_governed_grounding(
-                    observations,
-                    accepted_contract_present=False,
-                )
-            ):
-                observations.append(
-                    {
-                        "kind": "tool_rejected",
-                        "action": decision.action.value,
-                        "message": (
-                            "pre-acceptance clarification requires governed grounding; "
-                            "use resolve_semantics or AcceptanceGate first"
-                        ),
-                    }
-                )
-                continue
-
-            try:
-                call = self._compile_tool(
-                    decision=decision,
-                    message_id=message_id,
-                    source_hash=source_hash,
-                    request_ref=request_ref,
-                    runtime=runtime,
-                )
-            except Exception as exc:
-                observations.append(
-                    {
-                        "kind": "tool_rejected",
-                        "action": decision.action.value,
-                        "message": str(exc),
-                    }
-                )
-                continue
-
-            if call is None:
-                observations.append(
-                    {
-                        "kind": "tool_rejected",
-                        "action": decision.action.value,
-                        "message": "finish is invalid before accepted authority",
-                    }
-                )
-                continue
-
-            try:
-                receipts_before = len(runtime.semantic_resolution_receipts)
-                step = runtime.call_tool(call, executor=executor)
-                receipts_after = len(runtime.semantic_resolution_receipts)
-                observations.append(
-                    {
-                        "kind": "tool",
-                        "tool": call.name.value,
-                        "result": self._manager_safe(step.tool_result),
-                    }
-                )
-                if call.name == ManagerToolName.RESOLVE_SEMANTICS:
-                    safe_stop = _resolution_safe_stop_reason(
-                        result=step.tool_result,
-                        receipts_before=receipts_before,
-                        receipts_after=receipts_after,
-                        conversation=conversation,
-                    )
-                    if safe_stop is not None:
-                        runtime.require_clarification(safe_stop)
-                        observations.append(
-                            {
-                                "kind": "dialogue_policy",
-                                "status": "NEEDS_CLARIFICATION",
-                                "reason": safe_stop,
-                            }
-                        )
-                        break
-            except (ManagerRecoverableToolError, ManagerToolPolicyError) as exc:
-                observations.append(
-                    {
-                        "kind": "tool_error",
-                        "tool": call.name.value,
-                        "message": str(exc),
-                        "code": getattr(exc, "code", "tool_policy"),
-                    }
-                )
-                continue
-            except Exception as exc:
-                observations.append(
-                    {
-                        "kind": "fatal",
-                        "tool": call.name.value,
-                        "message": str(exc),
-                    }
-                )
-                break
+        controller = PreAcceptanceController(
+            structured=self._structured,
+            source_spans=self._source_spans,
+            capabilities=self._capabilities,
+        )
+        try:
+            outcome = controller.run(
+                question=question,
+                message_id=message_id,
+                request_ref=request_ref,
+                source_hash=source_hash,
+                runtime=runtime,
+                executor=executor,
+                conversation=conversation,
+            )
+        except ManagerBudgetError as exc:
+            return ManagerUnderstandingOutcome(
+                snapshot=runtime.snapshot,
+                accepted=False,
+                clarification_required=False,
+                observations=({"kind": "budget", "message": str(exc)},),
+            )
 
         return ManagerUnderstandingOutcome(
             snapshot=runtime.snapshot,
-            accepted=runtime.accepted_contract is not None,
-            clarification_required=(
-                runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
-            ),
-            observations=tuple(observations),
+            accepted=outcome.accepted,
+            clarification_required=outcome.clarification_required,
+            observations=outcome.observations,
         )
 
     def run(
