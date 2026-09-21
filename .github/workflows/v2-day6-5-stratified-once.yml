@@ -31,6 +31,15 @@ jobs:
       - name: Install backend eval dependencies
         working-directory: backend
         run: pip install -e ".[dev]"
+      - name: Provider-free morphology guard
+        working-directory: backend
+        run: |
+          python -m py_compile app/v2/resolver.py
+          pytest -q \
+            tests/test_v2_day2.py::test_exact_verified_match_dominates_fuzzy_material_lookalike \
+            tests/test_v2_day2.py::test_multiple_exact_verified_matches_still_clarify \
+            tests/test_v2_day2.py::test_full_span_inflectional_match_dominates_shorter_contained_alias \
+            tests/test_v2_day2.py::test_equal_full_span_inflectional_matches_still_clarify
       - name: Final stratified Day 6.5 probe
         working-directory: backend
         run: |
@@ -49,3 +58,5 @@ jobs:
           name: v2-day6-5-final-stratified
           path: backend/lab/reports/v2_day6_5_manager_eval.json
           retention-days: 14
+
+# rerun: inflectional specificity policy
