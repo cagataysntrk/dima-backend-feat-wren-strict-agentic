@@ -273,8 +273,8 @@ def _align_turn_surfaces(question: str, turn: TurnInterpretation) -> TurnInterpr
                 "deliverables": tuple(
                     item.model_copy(
                         update={
-                            "evidence_text": _align_near_copy_surface(
-                                question, item.evidence_text
+                            "text": _align_near_copy_surface(
+                                question, item.text
                             )
                         }
                     )
