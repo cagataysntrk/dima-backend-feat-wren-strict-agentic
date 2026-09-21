@@ -32,6 +32,7 @@ from app.v2.models import (
     PeriodKind,
 )
 from app.v2.representability import RepresentabilityGate
+from app.v2.standard_projection import StandardProjectionCompiler
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 
@@ -354,3 +355,162 @@ def test_repair_supersedes_and_preserves_unrelated_obligations():
     assert revenue.introduced_in_version == 1
     assert relation.polarity == ObligationPolarity.EXCLUDED
     assert relation.introduced_in_version == 2
+
+
+def test_ranking_authority_survives_acceptance_and_compiles_losslessly():
+    spans = SourceSpanRegistry()
+    text = "bölgelerde en yüksek 2 net geliri göster"
+    source_hash = spans.register_message(message_id="rank-1", text=text)
+    source = spans.mint_exact(message_id="rank-1", surface=text)
+
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-rank",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-rank",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    dimension = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="dimension-rank",
+        target_kind="dimension",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="dimension-rank",
+            target_kind=SemanticTargetKind.DIMENSION,
+            canonical_name="Sales.region",
+            cube_names=("Sales",),
+        ),
+    )
+    gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
+    accepted = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="rank-a1",
+            turn_id="rank-1",
+            request_ref="rank-request",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_RANK",
+                    capability_key=ManagerCapabilityKey.RANKING,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(source.source_ref,),
+                    semantic_handle_refs=(metric.handle_id, dimension.handle_id),
+                    ranking_direction="desc",
+                    ranking_limit=2,
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    assert accepted.status.value == "ACCEPTED"
+    item = accepted.ledger.items[0]
+    assert item.ranking_direction == "desc"
+    assert item.ranking_limit == 2
+
+    compiled = StandardProjectionCompiler(
+        semantic_handles=handles,
+    ).compile(
+        contract=accepted.contract,
+        ledger=accepted.ledger,
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    assert compiled.compiled is True
+    assert compiled.projection is not None
+    assert compiled.projection.metric_handles == (metric.handle_id,)
+    assert compiled.projection.dimension_handles == (dimension.handle_id,)
+    assert compiled.projection.ranking_direction == "desc"
+    assert compiled.projection.limit == 2
+
+    decision = RepresentabilityGate().decide(
+        contract=accepted.contract,
+        ledger=accepted.ledger,
+        projection=compiled.projection,
+    )
+    assert decision.decision == RepresentabilityDecision.STANDARD_LOSSLESS
+
+
+def test_standard_projection_compiler_rejects_research_and_foreign_handle():
+    spans = SourceSpanRegistry()
+    text = "net gelir ve hat ilişkisini incele"
+    source_hash = spans.register_message(message_id="mix-1", text=text)
+    revenue_source = spans.mint_exact(message_id="mix-1", surface="net gelir")
+    relation_source = spans.mint_exact(message_id="mix-1", surface="hat ilişkisini incele")
+
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-mix",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-mix",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
+    accepted = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="mix-a1",
+            turn_id="mix-1",
+            request_ref="mix-request",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_PERF",
+                    capability_key=ManagerCapabilityKey.PERFORMANCE,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(revenue_source.source_ref,),
+                    semantic_handle_refs=(metric.handle_id,),
+                ),
+                CandidateObligation(
+                    obligation_id="U_REL",
+                    capability_key=ManagerCapabilityKey.RELATIONSHIP,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(relation_source.source_ref,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    compiled = StandardProjectionCompiler(
+        semantic_handles=handles,
+    ).compile(
+        contract=accepted.contract,
+        ledger=accepted.ledger,
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    assert compiled.compiled is False
+    assert any("not standard" in reason for reason in compiled.reasons)
+
+    # Compiler also independently re-validates tenant/context ownership.
+    standard_only = accepted.ledger.model_copy(
+        update={"items": (accepted.ledger.items[0],)}
+    )
+    contract_only = accepted.contract.model_copy(
+        update={"obligation_ids": ("U_PERF",)}
+    )
+    foreign = StandardProjectionCompiler(
+        semantic_handles=handles,
+    ).compile(
+        contract=contract_only,
+        ledger=standard_only,
+        tenant_binding="tenant-b",
+        context_version="ctx-1",
+    )
+    assert foreign.compiled is False
+    assert any("foreign-tenant" in reason for reason in foreign.reasons)
