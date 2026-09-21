@@ -276,6 +276,9 @@ def main() -> int:
             "official_verified": body.get("official_verified") if body else None,
             "response_kind": (body.get("response") or {}).get("kind") if body else None,
             "failure": body.get("failure") if body else None,
+            "turn": body.get("turn") if body else None,
+            "analytics_ir": body.get("analytics_ir") if body else None,
+            "hypotheses": body.get("hypotheses") if body else None,
             "pass": ok,
         })
         if latency_class == "standard" and response.status_code == 200:
@@ -315,12 +318,24 @@ def main() -> int:
         response, elapsed = post(client, "bu ay bolge bazında net gelr ne durumda?")
         body = response.json() if response.status_code == 200 else {}
         ir = body.get("analytics_ir") or {}
+        typo_kind = (body.get("response") or {}).get("kind")
+        typo_safe_clarify = (
+            typo_kind == "clarify"
+            and body.get("query_execution_count") == 0
+            and body.get("official_verified") is False
+        )
+        typo_safe_answer = (
+            typo_kind == "answer"
+            and ir.get("cube") == "sales_omega"
+            and [x.get("canonical_name") for x in ir.get("metrics") or []] == ["net_value_x"]
+            and [x.get("canonical_name") for x in ir.get("dimensions") or []] == ["region_axis_m"]
+            and (ir.get("period") or {}).get("kind") == "this_month"
+        )
         record("typo", response, elapsed, {
-            "answer": (body.get("response") or {}).get("kind") == "answer",
-            "cube": ir.get("cube") == "sales_omega",
-            "metric": [x.get("canonical_name") for x in ir.get("metrics") or []] == ["net_value_x"],
-            "dimension": [x.get("canonical_name") for x in ir.get("dimensions") or []] == ["region_axis_m"],
-            "time": (ir.get("period") or {}).get("kind") == "this_month",
+            "safe_resolve_or_clarify": typo_safe_answer or typo_safe_clarify,
+            "no_silent_wrong": not (
+                body.get("official_verified") is True and not typo_safe_answer
+            ),
         }, latency_class="standard")
 
         # 3 — ranking + comparison: all material requirements must survive.
