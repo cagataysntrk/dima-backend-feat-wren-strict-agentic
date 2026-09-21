@@ -128,6 +128,12 @@ class CoverageAudit(FrozenModel):
         return self
 
 
+class DraftSurfaceViolation(FrozenModel):
+    owner_id: str
+    field: Literal["source_surface", "semantic_surface", "directive_surface"]
+    surface: str = Field(min_length=1)
+
+
 @dataclass(frozen=True)
 class FiniteAcceptanceOutcome:
     accepted: bool
@@ -156,9 +162,10 @@ Return only the strict schema.
 
 _COVERAGE_SYSTEM = """You are Dima's veto-only intent coverage auditor.
 
-Compare USER_MESSAGE against INTENT_DRAFT and decide only whether material user intent is
-left uncovered, polarity is materially inconsistent, a conditional research directive is
-unmodeled, or a reference cannot be safely represented from the current turn/context.
+Compare USER_MESSAGE against INTENT_DRAFT and GROUNDING_SUMMARY. Decide only whether
+material user intent is left uncovered, polarity is materially inconsistent, a conditional
+research directive is unmodeled, or a material reference remains unresolved from the
+current turn/context.
 
 You are NOT semantic authority. You MUST NOT:
 - choose or suggest a capability,
@@ -296,12 +303,14 @@ class PreAcceptanceController:
         *,
         question: str,
         draft: IntentDraft,
+        grounding_summary: dict[str, Any],
         conversation: ConversationStateV2 | None,
     ) -> CoverageAudit:
         payload = {
             "USER_MESSAGE": question,
             "CONVERSATION_SURFACE": _conversation_surface_view(conversation),
             "INTENT_DRAFT": draft.model_dump(mode="json"),
+            "GROUNDING_SUMMARY": grounding_summary,
         }
         return self._structured_call(
             system=_COVERAGE_SYSTEM,
@@ -309,6 +318,50 @@ class PreAcceptanceController:
             model=CoverageAudit,
             schema_name="dima_intent_coverage_v1",
         )
+
+    def _validate_draft_surfaces(
+        self,
+        *,
+        draft: IntentDraft,
+        message_id: str,
+    ) -> tuple[DraftSurfaceViolation, ...]:
+        """Validate the draft's only language contract: exact current-turn provenance."""
+        violations: list[DraftSurfaceViolation] = []
+
+        def validate(owner_id: str, field: str, surfaces: tuple[str, ...]) -> None:
+            for surface in surfaces:
+                try:
+                    self._source_spans.mint_exact(
+                        message_id=message_id,
+                        surface=surface,
+                    )
+                except (KeyError, ValueError):
+                    violations.append(
+                        DraftSurfaceViolation(
+                            owner_id=owner_id,
+                            field=field,
+                            surface=surface,
+                        )
+                    )
+
+        for obligation in draft.obligations:
+            validate(
+                obligation.obligation_id,
+                "source_surface",
+                obligation.source_surfaces,
+            )
+            validate(
+                obligation.obligation_id,
+                "semantic_surface",
+                tuple(item.surface for item in obligation.semantic_surfaces),
+            )
+        for directive in draft.research_directives:
+            validate(
+                directive.directive_id,
+                "directive_surface",
+                directive.source_surfaces,
+            )
+        return tuple(violations)
 
     def _source_refs(
         self,
@@ -441,6 +494,61 @@ class PreAcceptanceController:
         )
 
     @staticmethod
+    def _grounding_summary(
+        *,
+        draft: IntentDraft,
+        grounded: dict[tuple[str, str], str],
+        resolution: Any | None,
+    ) -> dict[str, Any]:
+        requested = [
+            {
+                "owner_id": obligation.obligation_id,
+                "surface": item.surface,
+                "kind_hint": item.kind_hint,
+                "resolved": (item.surface, item.kind_hint) in grounded,
+            }
+            for obligation in draft.obligations
+            for item in obligation.semantic_surfaces
+        ]
+        return {
+            "requested": requested,
+            "resolver_clarification": bool(
+                resolution is not None
+                and getattr(resolution, "clarification", None) is not None
+            ),
+            "unresolved_source_refs": list(
+                tuple(getattr(resolution, "unresolved_source_refs", ()) or ())
+                if resolution is not None
+                else ()
+            ),
+            "unresolved_proposals": list(
+                tuple(getattr(resolution, "unresolved_proposals", ()) or ())
+                if resolution is not None
+                else ()
+            ),
+        }
+
+    @staticmethod
+    def _coverage_requires_clarification(audit: CoverageAudit) -> bool:
+        clarification_kinds = {
+            CoverageIssueKind.POLARITY_CONFLICT,
+            CoverageIssueKind.UNRESOLVED_REFERENCE,
+        }
+        return any(issue.kind in clarification_kinds for issue in audit.issues)
+
+    @staticmethod
+    def _surface_feedback(
+        violations: tuple[DraftSurfaceViolation, ...],
+    ) -> dict[str, Any]:
+        return {
+            "kind": "DRAFT_SOURCE_CONTRACT_REJECTED",
+            "violations": [
+                item.model_dump(mode="json")
+                for item in violations
+            ],
+        }
+
+    @staticmethod
     def _coverage_feedback(audit: CoverageAudit) -> dict[str, Any]:
         return {
             "kind": "COVERAGE_VETO",
@@ -520,6 +628,31 @@ class PreAcceptanceController:
                 }
             )
 
+            surface_violations = self._validate_draft_surfaces(
+                draft=draft,
+                message_id=message_id,
+            )
+            if surface_violations:
+                observations.append(
+                    {
+                        "kind": "draft_source_contract",
+                        "attempt": attempt,
+                        "status": "REJECTED",
+                        "violations": [
+                            item.model_dump(mode="json")
+                            for item in surface_violations
+                        ],
+                    }
+                )
+                if attempt < self._max_draft_attempts:
+                    revision_feedback = self._surface_feedback(surface_violations)
+                    continue
+                return FiniteAcceptanceOutcome(
+                    accepted=False,
+                    clarification_required=False,
+                    observations=tuple(observations),
+                )
+
             try:
                 grounded, resolution = self._ground(
                     draft=draft,
@@ -535,37 +668,30 @@ class PreAcceptanceController:
                         "message": str(exc),
                     }
                 )
+                if attempt < self._max_draft_attempts:
+                    revision_feedback = {
+                        "kind": "GROUNDING_RUNTIME_REJECTED",
+                        "message": str(exc),
+                    }
+                    continue
                 return FiniteAcceptanceOutcome(
                     accepted=False,
                     clarification_required=False,
                     observations=tuple(observations),
                 )
 
-            if resolution is not None and bool(
-                getattr(resolution, "clarification_required", False)
-            ):
-                runtime.require_clarification(
-                    "SemanticResolver requires clarification for draft grounding"
-                )
-                observations.append(
-                    {
-                        "kind": "grounding",
-                        "attempt": attempt,
-                        "status": "NEEDS_CLARIFICATION",
-                    }
-                )
-                return FiniteAcceptanceOutcome(
-                    accepted=False,
-                    clarification_required=True,
-                    observations=tuple(observations),
-                )
-
+            grounding_summary = self._grounding_summary(
+                draft=draft,
+                grounded=grounded,
+                resolution=resolution,
+            )
             observations.append(
                 {
                     "kind": "grounding",
                     "attempt": attempt,
-                    "status": "GROUNDED",
+                    "status": "OBSERVED",
                     "receipt_count": len(runtime.semantic_resolution_receipts),
+                    "summary": grounding_summary,
                 }
             )
 
@@ -574,6 +700,7 @@ class PreAcceptanceController:
                 coverage = self._coverage(
                     question=question,
                     draft=draft,
+                    grounding_summary=grounding_summary,
                     conversation=conversation,
                 )
             except Exception as exc:
@@ -610,6 +737,15 @@ class PreAcceptanceController:
                 if attempt < self._max_draft_attempts:
                     revision_feedback = self._coverage_feedback(coverage)
                     continue
+                if self._coverage_requires_clarification(coverage):
+                    runtime.require_clarification(
+                        "coverage audit found unresolved material intent"
+                    )
+                    return FiniteAcceptanceOutcome(
+                        accepted=False,
+                        clarification_required=True,
+                        observations=tuple(observations),
+                    )
                 return FiniteAcceptanceOutcome(
                     accepted=False,
                     clarification_required=False,
@@ -655,24 +791,24 @@ class PreAcceptanceController:
                     observations=tuple(observations),
                 )
 
-            if attempt < self._max_draft_attempts:
-                revision_feedback = self._validity_feedback(result)
-                continue
-
             missing_binding_only = bool(result.reasons) and all(
                 "missing required semantic kinds:" in str(reason)
                 for reason in result.reasons
             )
             if missing_binding_only:
                 runtime.require_clarification(
-                    "accepted intent needs a trusted semantic binding unavailable "
-                    "from the current turn"
+                    "contract validity requires a trusted semantic binding that "
+                    "coverage-complete current authority does not provide"
                 )
                 return FiniteAcceptanceOutcome(
                     accepted=False,
                     clarification_required=True,
                     observations=tuple(observations),
                 )
+
+            if attempt < self._max_draft_attempts:
+                revision_feedback = self._validity_feedback(result)
+                continue
 
             return FiniteAcceptanceOutcome(
                 accepted=False,
