@@ -140,6 +140,7 @@ class GovernedManagerExecutor:
                 context_version=self._context.context_version,
                 active_contract=runtime.accepted_contract,
                 active_ledger=runtime.ledger,
+                semantic_receipts=runtime.semantic_resolution_receipts,
             )
 
         if call.name == ManagerToolName.RESOLVE_SEMANTICS:
