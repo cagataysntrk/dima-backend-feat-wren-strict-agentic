@@ -145,6 +145,9 @@ export interface V2ResearchQuestion {
 export interface V2ResearchBrief {
   brief_id: string;
   objective: string;
+  scope: {
+    time_surfaces: string[];
+  };
   questions: V2ResearchQuestion[];
   deliverables: ("explain" | "table" | "chart" | "report" | "none")[];
   must_requirement_ids: string[];
