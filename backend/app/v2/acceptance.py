@@ -155,6 +155,17 @@ class IntentAcceptanceGate:
             else:
                 seen_polarity[polarity_key] = item.polarity
 
+        has_required_user_must = any(
+            item.origin == ObligationOrigin.USER_MUST
+            and item.priority == ObligationPriority.MUST
+            and item.polarity == ObligationPolarity.REQUIRED
+            for item in envelope.obligations
+        )
+        if not has_required_user_must:
+            reject.append(
+                "analytical contract requires at least one REQUIRED USER_MUST obligation"
+            )
+
         if reject:
             return AcceptanceResult(
                 status=AcceptanceStatus.REJECTED,
