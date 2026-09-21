@@ -7,7 +7,9 @@ It never chooses canonical semantic IDs, writes SQL, resolves ambiguity, or exec
 from __future__ import annotations
 
 import json
+import re
 import unicodedata
+from difflib import SequenceMatcher
 from typing import Any
 
 from pydantic import ValidationError
@@ -141,6 +143,138 @@ def _surface_spans(turn: TurnInterpretation) -> list[str]:
     return spans
 
 
+def _source_tokens(question: str) -> list[tuple[int, int]]:
+    """Return exact token character spans from the current message only."""
+    return [(m.start(), m.end()) for m in re.finditer(r"[\\wÇĞİÖŞÜçğıöşü-]+", question, flags=re.UNICODE)]
+
+
+def _align_near_copy_surface(question: str, span: str) -> str:
+    """Restore a model-normalized/typo-corrected span to the exact user surface.
+
+    This is deliberately conservative: same token count, unique best contiguous window,
+    high character similarity. It never chooses canonical semantics; it only repairs the
+    TurnInterpreter source-copy contract.
+    """
+    normalized = _normalized_surface(span)
+    if normalized and normalized in _normalized_surface(question):
+        return span
+
+    wanted_tokens = re.findall(r"[\\wÇĞİÖŞÜçğıöşü-]+", span, flags=re.UNICODE)
+    token_spans = _source_tokens(question)
+    width = len(wanted_tokens)
+    if width == 0 or width > len(token_spans):
+        return span
+
+    scored: list[tuple[float, str]] = []
+    for i in range(0, len(token_spans) - width + 1):
+        start = token_spans[i][0]
+        end = token_spans[i + width - 1][1]
+        candidate = question[start:end]
+        ratio = SequenceMatcher(
+            None,
+            _normalized_surface(span),
+            _normalized_surface(candidate),
+        ).ratio()
+        scored.append((ratio, candidate))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    if not scored or scored[0][0] < 0.82:
+        return span
+    if len(scored) > 1 and scored[0][0] - scored[1][0] < 0.05:
+        return span
+    return scored[0][1]
+
+
+def _align_turn_surfaces(question: str, turn: TurnInterpretation) -> TurnInterpretation:
+    """Conservatively restore near-copy spans before strict grounding validation."""
+    def aligned_model(item):
+        fixed = _align_near_copy_surface(question, item.text)
+        return item if fixed == item.text else item.model_copy(update={"text": fixed})
+
+    request = turn.analytical_request
+    if request is not None:
+        updates = {
+            "metric_mentions": tuple(aligned_model(x) for x in request.metric_mentions),
+            "dimension_mentions": tuple(aligned_model(x) for x in request.dimension_mentions),
+            "filter_mentions": tuple(aligned_model(x) for x in request.filter_mentions),
+            "time_mentions": tuple(aligned_model(x) for x in request.time_mentions),
+            "comparisons": tuple(aligned_model(x) for x in request.comparisons),
+        }
+        if request.ranking is not None:
+            updates["ranking"] = aligned_model(request.ranking)
+        request = request.model_copy(update=updates)
+
+    repair = turn.user_repair
+    if repair is not None:
+        repair = repair.model_copy(
+            update={
+                "correction_spans": tuple(
+                    _align_near_copy_surface(question, span)
+                    for span in repair.correction_spans
+                )
+            }
+        )
+
+    return turn.model_copy(
+        update={
+            "references": tuple(aligned_model(x) for x in turn.references),
+            "unresolved_mentions": tuple(aligned_model(x) for x in turn.unresolved_mentions),
+            "analytical_request": request,
+            "user_repair": repair,
+        }
+    )
+
+
+def _complete_explicit_ranking_limit(question: str, turn: TurnInterpretation) -> TurnInterpretation:
+    """Bind an explicit adjacent numeric top-N token without semantic guessing.
+
+    The model has already anchored the ranking surface. Copying an immediately adjacent
+    numeric token from the same source phrase is a language-contract repair owned by
+    TurnInterpreter, not a planner or business-semantic decision.
+    """
+    request = turn.analytical_request
+    if request is None or request.ranking is None:
+        return turn
+
+    ranking = request.ranking
+    limit = ranking.limit
+    text = ranking.text
+
+    in_span = re.search(r"(?<!\\d)([1-9]\\d{0,3})(?!\\d)", text)
+    if limit is None and in_span is not None:
+        value = int(in_span.group(1))
+        if value <= 1000:
+            limit = value
+
+    exact_positions = [m for m in re.finditer(re.escape(text), question, flags=re.IGNORECASE)]
+    if len(exact_positions) == 1:
+        match = exact_positions[0]
+        suffix = question[match.end():]
+        adjacent = re.match(r"([\\s:,-]*)([1-9]\\d{0,3})(?=\\b)", suffix)
+        if adjacent is not None:
+            value = int(adjacent.group(2))
+            if value <= 1000:
+                if limit is None:
+                    limit = value
+                if str(value) not in text:
+                    text = question[match.start(): match.end() + adjacent.end()]
+
+    if limit == ranking.limit and text == ranking.text:
+        return turn
+    updated_ranking = ranking.model_copy(update={"text": text, "limit": limit})
+    return turn.model_copy(
+        update={
+            "analytical_request": request.model_copy(update={"ranking": updated_ranking})
+        }
+    )
+
+
+def _normalize_interpretation(question: str, turn: TurnInterpretation) -> TurnInterpretation:
+    turn = _align_turn_surfaces(question, turn)
+    turn = _complete_explicit_ranking_limit(question, turn)
+    return turn
+
+
 def _validate_surface_grounding(question: str, turn: TurnInterpretation) -> None:
     """Reject invented/canonicalized mentions before they can become semantic authority."""
     haystack = _normalized_surface(question)
@@ -241,7 +375,11 @@ ANALYTICAL_REQUEST:
   member/value rolündeyse filter_mentions'a koy.
 - Aynı exact surface'i, kullanıcı aynı mesajda açıkça hem grouping hem filtering istemiyorsa
   dimension_mentions ve filter_mentions içine birlikte koyma.
-- ranking varsa ranking.text de CURRENT_MESSAGE span'i olmalı; limit yalnız açıkça yazıldıysa.
+- ranking varsa ranking.text CURRENT_MESSAGE içindeki ranking ifadesinin TAM surface span'i olmalı.
+  Açık top-N sayısı varsa (örn. "en yüksek 2") sayıyı ranking.text içinde KORU ve limit=2 yaz;
+  sayıyı düşürme, yeniden yazma veya tahmin etme. limit yalnız açıkça yazıldıysa.
+- Yazım hatalarını DÜZELTME: mention text alanları kullanıcının yazdığı biçimi birebir taşımalı.
+  Örn. kullanıcı "bolge" veya "net gelr" yazdıysa output da aynı surface'i kullanır; "bölge"/"net gelir" diye normalleştirme yapma.
 - time_mentions yalnız açık bir takvim/göreli dönem veya süre surface'idir; durum/aspect/soru kalıbı time değildir.
 - comparison ifadelerini hesaplama; reference/comparison surface'ini comparisons içine taşı. Aynı reference period span'ini time_mentions içine ayrıca kopyalama; time_mentions varsa base/current period içindir.
 - canonical ref alanı YOKTUR ve ek alan üretmek yasaktır.
@@ -369,5 +507,6 @@ class TurnInterpreter:
                     )
                 ) from exc
 
+        turn = _normalize_interpretation(question, turn)
         _validate_surface_grounding(question, turn)
         return turn
