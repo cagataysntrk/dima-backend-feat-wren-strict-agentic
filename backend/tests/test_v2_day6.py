@@ -40,6 +40,7 @@ from app.v2.models import (
     ResearchModeReason,
     ResearchGoalSurface,
     ResearchRequestSurface,
+    ResearchRelationshipSurface,
     RankingSurface,
     ResolutionStatus,
     SemanticCandidate,
@@ -129,21 +130,16 @@ def canonical_turn() -> TurnInterpretation:
                     subject_mentions=(product,),
                 ),
                 ResearchGoalSurface(
-                    kind=ResearchGoalKind.RELATIONSHIP,
-                    text="makineler ve personellerle ilişkisini analiz et",
-                    subject_mentions=(product,),
-                    related_mentions=(machine,),
-                ),
-                ResearchGoalSurface(
-                    kind=ResearchGoalKind.RELATIONSHIP,
-                    text="personellerle ilişkisini analiz et",
-                    subject_mentions=(product,),
-                    related_mentions=(personnel,),
-                ),
-                ResearchGoalSurface(
                     kind=ResearchGoalKind.PERFORMANCE,
                     text="satış performanslarını yorumla",
                     subject_mentions=(sales,),
+                ),
+            ),
+            relationships=(
+                ResearchRelationshipSurface(
+                    text="makineler ve personellerle ilişkisini analiz et",
+                    focus_mentions=(product,),
+                    counterpart_mentions=(machine, personnel),
                 ),
             ),
             deliverables=(
@@ -205,9 +201,9 @@ def test_canonical_typed_research_brief_preserves_all_five_must_goals():
     assert brief.must_requirement_ids == ("g1", "g2", "g3", "g4", "d1")
     assert [q.kind for q in brief.questions] == [
         ResearchGoalKind.COMPARISON,
-        ResearchGoalKind.RELATIONSHIP,
-        ResearchGoalKind.RELATIONSHIP,
         ResearchGoalKind.PERFORMANCE,
+        ResearchGoalKind.RELATIONSHIP,
+        ResearchGoalKind.RELATIONSHIP,
     ]
     assert all(q.priority == "MUST" for q in brief.questions)
     assert all(q.status == ResearchGoalStatus.RESOLVED for q in brief.questions)
@@ -288,15 +284,18 @@ def test_unresolved_must_relationship_is_preserved_and_blocks_brief():
     )
 
     assert len(brief.questions) == 4
-    personnel_goal = brief.questions[2]
-    assert personnel_goal.goal_id == "g3"
+    personnel_goal = next(
+        question
+        for question in brief.questions
+        if any(item.source_mention == "personellerle" for item in question.unresolved)
+    )
     assert personnel_goal.status == ResearchGoalStatus.BLOCKED
     assert personnel_goal.related_refs == ()
     assert personnel_goal.unresolved[0].source_mention == "personellerle"
     assert "axis_labor_z" not in {
         ref.canonical_name for ref in brief.scope.semantic_refs
     }
-    assert brief.blocking_goal_ids == ("g3",)
+    assert brief.blocking_goal_ids == (personnel_goal.goal_id,)
     assert brief.status == ResearchBriefStatus.BLOCKED
 
 
@@ -308,15 +307,19 @@ def test_cross_domain_relationship_without_semantic_path_is_blocking():
         context_version="ctx-permuted-no-path",
     )
 
-    # Machine relation shares fact_alpha and remains semantically available.
-    assert brief.questions[1].status == ResearchGoalStatus.RESOLVED
-    # Personnel ref resolves, but fact_alpha -> fact_beta has no typed semantic path.
-    assert brief.questions[2].status == ResearchGoalStatus.BLOCKED
+    relationship_questions = [
+        question
+        for question in brief.questions
+        if question.kind == ResearchGoalKind.RELATIONSHIP
+    ]
+    assert relationship_questions[0].status == ResearchGoalStatus.RESOLVED
+    blocked = relationship_questions[1]
+    assert blocked.status == ResearchGoalStatus.BLOCKED
     assert any(
         "no verified semantic relationship path" in item.reason
-        for item in brief.questions[2].unresolved
+        for item in blocked.unresolved
     )
-    assert brief.blocking_goal_ids == ("g3",)
+    assert brief.blocking_goal_ids == (blocked.goal_id,)
     assert brief.status == ResearchBriefStatus.BLOCKED
 
 
@@ -949,12 +952,11 @@ def test_transitive_semantic_relationship_path_can_make_brief_ready_without_join
     turn = TurnInterpretation(
         dialogue_act=TurnAct.COMPLEX_ANALYSIS,
         research_request=ResearchRequestSurface(
-            goals=(
-                ResearchGoalSurface(
-                    kind=ResearchGoalKind.RELATIONSHIP,
+            relationships=(
+                ResearchRelationshipSurface(
                     text="sol alan ile sağ alan ilişkisini incele",
-                    subject_mentions=(left,),
-                    related_mentions=(right,),
+                    focus_mentions=(left,),
+                    counterpart_mentions=(right,),
                 ),
             )
         ),
@@ -1122,12 +1124,11 @@ def test_research_mode_policy_is_presentation_invariant_for_complex_shape(presen
         ),
         presentation_request=presentation,
         research_request=ResearchRequestSurface(
-            goals=(
-                ResearchGoalSurface(
-                    kind=ResearchGoalKind.RELATIONSHIP,
+            relationships=(
+                ResearchRelationshipSurface(
                     text="ilişki",
-                    subject_mentions=(product,),
-                    related_mentions=(machine,),
+                    focus_mentions=(product,),
+                    counterpart_mentions=(machine,),
                 ),
             ),
             deliverables=deliverables,
@@ -1274,14 +1275,13 @@ def test_research_mode_policy_declares_core_capabilities_instead_of_fixture_case
         assert forbidden not in source
 
 
-def test_relationship_goal_schema_rejects_non_atomic_many_to_many_shape():
+def test_relationship_surface_schema_rejects_multiple_focus_endpoints():
     a = mention("a", SemanticMentionKind.DIMENSION)
     b = mention("b", SemanticMentionKind.DIMENSION)
     c = mention("c", SemanticMentionKind.DIMENSION)
     with pytest.raises(ValueError):
-        ResearchGoalSurface(
-            kind=ResearchGoalKind.RELATIONSHIP,
+        ResearchRelationshipSurface(
             text="a b c",
-            subject_mentions=(a, b),
-            related_mentions=(c,),
+            focus_mentions=(a, b),
+            counterpart_mentions=(c,),
         )
