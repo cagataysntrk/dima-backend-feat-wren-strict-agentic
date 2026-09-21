@@ -23,7 +23,7 @@ from app.v2.models import (
     TurnInterpretation,
     AnalyticalRequest,
 )
-from app.v2.resolver import ClarificationTokenError, SemanticResolver, _morph_signature
+from app.v2.resolver import ClarificationTokenError, SemanticResolver, _morph_token_forms
 
 
 CTX = ContextVersionV0(
@@ -269,10 +269,10 @@ def test_turkish_inflection_resolves_only_through_verified_semantic_aliases(
     bundle = resolve(surface, kind)
 
     assert bundle.clarification is None, {
-        "surface": _morph_signature(surface),
-        "customer": _morph_signature("müşteri"),
-        "shift": _morph_signature("vardiya"),
-        "sales": _morph_signature("satış"),
+        "surface": _morph_token_forms(surface),
+        "customer": _morph_token_forms("müşteri"),
+        "shift": _morph_token_forms("vardiya"),
+        "sales": _morph_token_forms("satış"),
     }
     hyp = bundle.hypotheses[0]
     assert hyp.status == ResolutionStatus.RESOLVED
