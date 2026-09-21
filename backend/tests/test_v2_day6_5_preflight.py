@@ -64,6 +64,10 @@ def test_hidden_holdout_prompt_corpus_is_not_committed():
 
 def test_placeholder_hashes_cannot_unlock_preflight():
     result = evaluate_day65_preflight()
-    if result.corpus_sha256 == PLACEHOLDER or result.taxonomy_sha256 == PLACEHOLDER:
+    if (
+        result.corpus_sha256 == PLACEHOLDER
+        or result.taxonomy_sha256 == PLACEHOLDER
+        or result.attestation_sha256 == PLACEHOLDER
+    ):
         assert result.ready is False
         assert result.status == "BLOCKED"
