@@ -422,6 +422,13 @@ RESEARCH_REQUEST — typed analytical operations that may require Research Mode:
 - goals[] yalnız analytical operation'dır; output biçimi goal değildir.
 - goal.kind yalnız schema value: comparison, relationship, performance, trend,
   breakdown, ranking, root_cause, other.
+- STANDARD-capable operation için Core'un ihtiyaç duyduğu typed payload'ı aynı goal içinde
+  koru; policy goal.text'i yeniden parse ETMEYECEK:
+  - RANKING goal → ranking zorunlu; ranking.text exact CURRENT_MESSAGE span, direction ve
+    limit yalnız açıkça ifade edildiyse typed değer olarak taşınır.
+  - COMPARISON goal → eğer explicit dönem/reference comparison surface'i varsa
+    comparisons[] içinde exact span olarak taşı. Genel araştırma karşılaştırmasını
+    period-comparison diye uydurma.
 - RELATIONSHIP atomiktir: bir goal EN FAZLA bir subject endpoint ve bir related endpoint
   taşır. Aynı focus için birden fazla explicit counterpart varsa her edge ayrı goal olur.
   Endpoint surface'i CURRENT_MESSAGE içinden exact span olmalı; eksik endpoint için
@@ -530,10 +537,11 @@ def _enum_value(value: Any, enum_type) -> Any:
 
 
 def _normalize_structured_payload(data: Any) -> Any:
-    """Normalize provider JSON quirks before Pydantic validation.
+    """Normalize transport-level JSON spelling only; never repair business meaning.
 
-    Only schema-shape/casing repairs are allowed here. No canonical business concept,
-    goal, metric, domain, period, or relationship is created or selected.
+    This boundary may normalize enum casing and structurally split an already-explicit
+    relationship endpoint list. It does not migrate old semantic schemas, invent goals,
+    infer standard/research mode, or recover missing ranking/comparison semantics.
     """
     if not isinstance(data, dict):
         return data
@@ -542,8 +550,6 @@ def _normalize_structured_payload(data: Any) -> Any:
     if "dialogue_act" in out:
         out["dialogue_act"] = _enum_value(out.get("dialogue_act"), TurnAct)
     if out.get("presentation_request") is None:
-        # Preserve TurnInterpretation's existing default instead of turning a missing
-        # optional provider field into an explicit invalid null.
         out.pop("presentation_request", None)
     else:
         out["presentation_request"] = _enum_value(
@@ -577,32 +583,9 @@ def _normalize_structured_payload(data: Any) -> Any:
             if not isinstance(raw_goal, dict):
                 goals.append(raw_goal)
                 continue
-            goal = dict(raw_goal)
-            raw_kind = str(goal.get("kind") or "").strip()
-            # Transition-safe shape repair: older/provider-learned outputs may still
-            # encode an output requirement as a pseudo research goal. Move only that
-            # explicitly source-grounded payload into the dedicated deliverables list.
-            if raw_kind.casefold() == "deliverable":
-                deliverable_kind = _enum_value(
-                    goal.get("deliverable"), PresentationKind
-                )
-                if (
-                    deliverable_kind
-                    and deliverable_kind != PresentationKind.NONE.value
-                    and goal.get("text")
-                ):
-                    deliverables.append(
-                        {
-                            "kind": deliverable_kind,
-                            "text": goal.get("text"),
-                        }
-                    )
-                continue
 
+            goal = dict(raw_goal)
             goal["kind"] = _enum_value(goal.get("kind"), ResearchGoalKind)
-            # Provider may copy the global presentation field into every analytical
-            # goal. It is structurally inapplicable here and carries no goal meaning.
-            goal.pop("deliverable", None)
             goal["subject_mentions"] = [
                 normalize_mention(item)
                 for item in (goal.get("subject_mentions") or ())
@@ -612,11 +595,26 @@ def _normalize_structured_payload(data: Any) -> Any:
                 for item in (goal.get("related_mentions") or ())
             ]
 
-            # Relationship atomicity is structural, not domain-specific. When the
-            # provider has already identified one endpoint and multiple explicit
-            # counterparts (or vice versa), split the typed edge list without reading
-            # raw language or inventing endpoints. Ambiguous many-to-many shapes are
-            # left for schema validation / the single format retry.
+            ranking = goal.get("ranking")
+            if isinstance(ranking, dict):
+                ranking = dict(ranking)
+                direction = ranking.get("direction")
+                if isinstance(direction, str):
+                    folded = direction.strip().casefold()
+                    if folded in {"asc", "desc", "unspecified"}:
+                        ranking["direction"] = folded
+                goal["ranking"] = ranking
+
+            comparisons = []
+            for comparison in goal.get("comparisons") or ():
+                comparisons.append(
+                    dict(comparison) if isinstance(comparison, dict) else comparison
+                )
+            goal["comparisons"] = comparisons
+
+            # Atomicity repair is purely structural. Endpoints have already been
+            # explicitly emitted by the language owner; no raw text/domain parsing
+            # occurs here.
             if goal.get("kind") == ResearchGoalKind.RELATIONSHIP.value:
                 subjects = list(goal["subject_mentions"])
                 related = list(goal["related_mentions"])
@@ -637,7 +635,7 @@ def _normalize_structured_payload(data: Any) -> Any:
 
             goals.append(goal)
 
-        # Deduplicate exact source-grounded output requirements without inventing any.
+        # Exact duplicate deliverables are a transport duplicate, not a new MUST.
         deduped_deliverables = []
         seen_deliverables = set()
         for item in deliverables:
@@ -660,7 +658,6 @@ def _normalize_structured_payload(data: Any) -> Any:
         ]
         research["deliverables"] = deduped_deliverables
         out["research_request"] = research
-
 
     return out
 
