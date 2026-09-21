@@ -537,3 +537,39 @@ def test_manager_rejects_unissued_or_raw_semantic_handle_references():
         loop._decode_handle("h99")
     with pytest.raises(ValueError, match=r"raw sem_\*"):
         loop._decode_handle("sem_" + "f" * 24)
+
+
+def test_missing_binding_rejection_is_governed_clarification_but_invalid_handle_is_not():
+    missing_binding = [
+        {
+            "kind": "tool",
+            "tool": "propose_acceptance",
+            "result": {
+                "status": "REJECTED",
+                "reasons": [
+                    "standard USER_MUST U1 missing Resolver semantic kinds: metric"
+                ],
+            },
+        }
+    ]
+    assert _clarification_has_governed_grounding(
+        missing_binding,
+        accepted_contract_present=False,
+    )
+
+    invalid_handle = [
+        {
+            "kind": "tool",
+            "tool": "propose_acceptance",
+            "result": {
+                "status": "REJECTED",
+                "reasons": [
+                    "invalid semantic handle sem_fake: unknown/non-Resolver semantic handle"
+                ],
+            },
+        }
+    ]
+    assert not _clarification_has_governed_grounding(
+        invalid_handle,
+        accepted_contract_present=False,
+    )
