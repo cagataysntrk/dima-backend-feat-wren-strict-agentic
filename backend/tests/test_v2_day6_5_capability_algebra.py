@@ -457,3 +457,38 @@ def test_manager_binding_contract_is_registry_derived_and_semantic_safe():
     assert "Sales.revenue" not in blob
     assert "sales_omega" not in blob
     assert "net_value_x" not in blob
+
+
+def test_global_breakdown_exclusion_needs_no_dimension_handle():
+    _, source_hash, source, handles, gate = _setup(
+        "üretkenlik neden düştü ama ek kırılım yapma"
+    )
+    metric = _handle(
+        handles,
+        candidate_id="metric-global-exclusion",
+        kind="metric",
+        canonical_name="Production.productivity",
+    )
+    result = gate.evaluate(
+        envelope=_envelope(
+            source_hash,
+            CandidateObligation(
+                obligation_id="U_ROOT",
+                capability_key=ManagerCapabilityKey.ROOT_CAUSE,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(source.source_ref,),
+                semantic_handle_refs=(metric.handle_id,),
+            ),
+            CandidateObligation(
+                obligation_id="X_BREAK",
+                capability_key=ManagerCapabilityKey.BREAKDOWN,
+                origin=ObligationOrigin.USER_MUST,
+                polarity=ObligationPolarity.EXCLUDED,
+                source_refs=(source.source_ref,),
+                semantic_handle_refs=(),
+            ),
+        ),
+        tenant_binding=TENANT,
+        context_version=CONTEXT,
+    )
+    assert result.status.value == "ACCEPTED"
