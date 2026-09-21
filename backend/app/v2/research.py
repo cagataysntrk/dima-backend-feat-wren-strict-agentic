@@ -16,9 +16,9 @@ import unicodedata
 
 from app.v2.models import (
     BoundedSemanticContextV0,
-    PresentationKind,
     ResearchBrief,
     ResearchBriefStatus,
+    ResearchDeliverableRequirement,
     ResearchGoalKind,
     ResearchGoalStatus,
     ResearchQuestion,
@@ -184,7 +184,6 @@ class ResearchBriefBuilder:
 
         questions: list[ResearchQuestion] = []
         all_refs: list[ResearchSemanticRef] = []
-        deliverables: list[PresentationKind] = []
         blocked_ids: list[str] = []
 
         for position, goal in enumerate(request.goals, start=1):
@@ -193,83 +192,79 @@ class ResearchBriefBuilder:
             related_refs: list[ResearchSemanticRef] = []
             unresolved: list[ResearchUnresolvedRef] = []
 
-            if goal.kind == ResearchGoalKind.DELIVERABLE:
-                if goal.deliverable is not None and goal.deliverable not in deliverables:
-                    deliverables.append(goal.deliverable)
-            else:
-                for mention in goal.subject_mentions:
-                    ref, reason = _resolved_ref(mention, hypothesis_index)
-                    if ref is None:
-                        unresolved.append(
-                            ResearchUnresolvedRef(
-                                source_mention=mention.text,
-                                role="subject",
-                                reason=reason or "semantic subject unresolved",
-                            )
+            for mention in goal.subject_mentions:
+                ref, reason = _resolved_ref(mention, hypothesis_index)
+                if ref is None:
+                    unresolved.append(
+                        ResearchUnresolvedRef(
+                            source_mention=mention.text,
+                            role="subject",
+                            reason=reason or "semantic subject unresolved",
                         )
-                    else:
-                        subject_refs.append(ref)
-                        all_refs.append(ref)
+                    )
+                else:
+                    subject_refs.append(ref)
+                    all_refs.append(ref)
 
-                for mention in goal.related_mentions:
-                    ref, reason = _resolved_ref(mention, hypothesis_index)
-                    if ref is None:
-                        unresolved.append(
-                            ResearchUnresolvedRef(
-                                source_mention=mention.text,
-                                role="related",
-                                reason=reason or "semantic related ref unresolved",
-                            )
+            for mention in goal.related_mentions:
+                ref, reason = _resolved_ref(mention, hypothesis_index)
+                if ref is None:
+                    unresolved.append(
+                        ResearchUnresolvedRef(
+                            source_mention=mention.text,
+                            role="related",
+                            reason=reason or "semantic related ref unresolved",
                         )
-                    else:
-                        related_refs.append(ref)
-                        all_refs.append(ref)
+                    )
+                else:
+                    related_refs.append(ref)
+                    all_refs.append(ref)
 
-                if not goal.subject_mentions and not goal.related_mentions:
+            if not goal.subject_mentions and not goal.related_mentions:
+                unresolved.append(
+                    ResearchUnresolvedRef(
+                        source_mention=goal.text,
+                        role="goal",
+                        reason="research goal has no explicit semantic anchor",
+                    )
+                )
+
+            if goal.kind == ResearchGoalKind.RELATIONSHIP:
+                if not goal.subject_mentions:
+                    unresolved.append(
+                        ResearchUnresolvedRef(
+                            source_mention=goal.text,
+                            role="subject",
+                            reason="relationship goal has no explicit subject",
+                        )
+                    )
+                if not goal.related_mentions:
+                    unresolved.append(
+                        ResearchUnresolvedRef(
+                            source_mention=goal.text,
+                            role="related",
+                            reason="relationship goal has no explicit related side",
+                        )
+                    )
+                if (
+                    subject_refs
+                    and related_refs
+                    and not _relationship_path_exists(
+                        subject_refs=subject_refs,
+                        related_refs=related_refs,
+                        semantic_context=semantic_context,
+                    )
+                ):
                     unresolved.append(
                         ResearchUnresolvedRef(
                             source_mention=goal.text,
                             role="goal",
-                            reason="research goal has no explicit semantic anchor",
+                            reason=(
+                                "no verified semantic relationship path between "
+                                "resolved research domains"
+                            ),
                         )
                     )
-
-                if goal.kind == ResearchGoalKind.RELATIONSHIP:
-                    if not goal.subject_mentions:
-                        unresolved.append(
-                            ResearchUnresolvedRef(
-                                source_mention=goal.text,
-                                role="subject",
-                                reason="relationship goal has no explicit subject",
-                            )
-                        )
-                    if not goal.related_mentions:
-                        unresolved.append(
-                            ResearchUnresolvedRef(
-                                source_mention=goal.text,
-                                role="related",
-                                reason="relationship goal has no explicit related side",
-                            )
-                        )
-                    if (
-                        subject_refs
-                        and related_refs
-                        and not _relationship_path_exists(
-                            subject_refs=subject_refs,
-                            related_refs=related_refs,
-                            semantic_context=semantic_context,
-                        )
-                    ):
-                        unresolved.append(
-                            ResearchUnresolvedRef(
-                                source_mention=goal.text,
-                                role="goal",
-                                reason=(
-                                    "no verified semantic relationship path between "
-                                    "resolved research domains"
-                                ),
-                            )
-                        )
 
             status = (
                 ResearchGoalStatus.BLOCKED
@@ -304,8 +299,18 @@ class ResearchBriefBuilder:
         time_surfaces = tuple(
             dict.fromkeys(mention.text for mention in request.time_mentions)
         )
+        deliverables = tuple(
+            ResearchDeliverableRequirement(
+                requirement_id=f"d{position}",
+                kind=item.kind,
+                source_text=item.text,
+            )
+            for position, item in enumerate(request.deliverables, start=1)
+        )
 
-        objective = " | ".join(question.source_text for question in questions)
+        objective_parts = [question.source_text for question in questions]
+        objective_parts.extend(item.source_text for item in deliverables)
+        objective = " | ".join(objective_parts)
         digest_payload = {
             "context_version": context_version,
             "goals": [
@@ -328,7 +333,14 @@ class ResearchBriefBuilder:
                 for question in questions
             ],
             "time_surfaces": time_surfaces,
-            "deliverables": [item.value for item in deliverables],
+            "deliverables": [
+                {
+                    "id": item.requirement_id,
+                    "kind": item.kind.value,
+                    "source_text": item.source_text,
+                }
+                for item in deliverables
+            ],
         }
         brief_id = "rb-" + hashlib.sha256(
             json.dumps(
@@ -348,8 +360,11 @@ class ResearchBriefBuilder:
             ),
             required_domains=required_domains,
             questions=tuple(questions),
-            deliverables=tuple(deliverables),
-            must_requirement_ids=tuple(question.goal_id for question in questions),
+            deliverables=deliverables,
+            must_requirement_ids=(
+                tuple(question.goal_id for question in questions)
+                + tuple(item.requirement_id for item in deliverables)
+            ),
             blocking_goal_ids=tuple(blocked_ids),
             context_version=context_version,
             status=(
