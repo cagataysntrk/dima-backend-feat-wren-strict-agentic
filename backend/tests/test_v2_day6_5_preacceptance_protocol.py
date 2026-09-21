@@ -439,7 +439,7 @@ def test_unresolved_nonrequired_grounding_does_not_short_circuit_validity():
     assert decline_items[0]["required_by_capability"] is False
 
 
-def test_persistent_polarity_coverage_veto_terminates_as_clarification():
+def test_persistent_coverage_veto_cannot_claim_user_clarification_authority():
     question = "net geliri bölgelere göre göster ama bölge kırılımı yapma"
     draft = {
         "obligations": [
@@ -486,8 +486,9 @@ def test_persistent_polarity_coverage_veto_terminates_as_clarification():
     )
 
     assert outcome.accepted is False
-    assert outcome.clarification_required is True
-    assert runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
+    assert outcome.clarification_required is False
+    assert outcome.status.value == "COGNITION_REJECTED"
+    assert runtime.snapshot.state != ManagerState.NEEDS_CLARIFICATION
 
 
 def test_invalid_current_source_surface_is_revision_input_not_fatal_exception():
