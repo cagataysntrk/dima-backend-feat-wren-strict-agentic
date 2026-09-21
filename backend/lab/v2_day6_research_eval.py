@@ -41,9 +41,14 @@ class CountingLlm:
         self.inner = inner
         self.calls = 0
 
-    def structured_text(self, system: str, user: str) -> str:
+    def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str) -> str:
         self.calls += 1
-        return self.inner.structured_text(system, user)
+        return self.inner.structured_json(
+            system,
+            user,
+            schema=schema,
+            schema_name=schema_name,
+        )
 
 
 def _provider_names(llm) -> list[str]:
