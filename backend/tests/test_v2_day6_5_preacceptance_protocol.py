@@ -269,7 +269,7 @@ def test_063_coverage_veto_then_effect_conflict_clarifies_without_case_rule():
     )
 
 
-def test_067_missing_trusted_metric_binding_clarifies_after_finite_revision():
+def test_067_missing_trusted_metric_binding_clarifies_without_context_fabrication():
     question = "peki bölgelere göre?"
     breakdown = {
         "obligations": [
@@ -283,11 +283,8 @@ def test_067_missing_trusted_metric_binding_clarifies_after_finite_revision():
         "research_directives": [],
     }
     scripted = _ScriptedStructured(
-        drafts=[breakdown, breakdown],
-        audits=[
-            {"status": "PASS", "issues": []},
-            {"status": "PASS", "issues": []},
-        ],
+        drafts=[breakdown],
+        audits=[{"status": "PASS", "issues": []}],
     )
     conversation = ConversationStateV2(
         has_prior_analytical_request=True,
@@ -312,13 +309,11 @@ def test_067_missing_trusted_metric_binding_clarifies_after_finite_revision():
     assert scripted.calls == [
         "dima_intent_draft_v1",
         "dima_intent_coverage_v1",
-        "dima_intent_draft_v1",
-        "dima_intent_coverage_v1",
     ]
     assert sum(
         item.get("kind") == "contract_validity"
         for item in outcome.observations
-    ) == 2
+    ) == 1
 
 
 def test_075_research_directive_is_not_user_obligation():
@@ -373,6 +368,161 @@ def test_075_research_directive_is_not_user_obligation():
     directive = runtime.accepted_contract.research_directives[0]
     assert directive.directive_type.value == "ADAPT_ON_EVIDENCE"
     assert directive.parent_obligation_id == "U_ROOT"
+
+
+def test_unresolved_nonrequired_grounding_does_not_short_circuit_validity():
+    question = (
+        "üretkenlik düşüşünü araştır; sonuç yeni bir yön gösterirse oraya da bak"
+    )
+    scripted = _ScriptedStructured(
+        drafts=[
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_ROOT",
+                        capability="root_cause",
+                        source_surfaces=("üretkenlik düşüşünü araştır",),
+                        semantic_surfaces=(
+                            ("üretkenlik", "metric"),
+                            ("düşüşünü", "comparison"),
+                        ),
+                    )
+                ],
+                "research_directives": [
+                    {
+                        "directive_id": "R1",
+                        "directive_type": "ADAPT_ON_EVIDENCE",
+                        "parent_obligation_id": "U_ROOT",
+                        "condition": "MATERIAL_NEW_DIRECTION",
+                        "source_surfaces": [
+                            "sonuç yeni bir yön gösterirse oraya da bak"
+                        ],
+                    }
+                ],
+            }
+        ],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    loop, runtime, executor = _loop(scripted)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-extra-unresolved",
+        request_ref="req-extra-unresolved",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is True
+    assert outcome.clarification_required is False
+    assert runtime.accepted_contract is not None
+    grounding = next(
+        item for item in outcome.observations if item.get("kind") == "grounding"
+    )
+    assert any(
+        not item["resolved"]
+        for item in grounding["summary"]["requested"]
+        if item["surface"] == "düşüşünü"
+    )
+
+
+def test_persistent_polarity_coverage_veto_terminates_as_clarification():
+    question = "net geliri bölgelere göre göster ama bölge kırılımı yapma"
+    draft = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_PERF",
+                capability="performance",
+                source_surfaces=("net geliri",),
+                semantic_surfaces=(("net geliri", "metric"),),
+            ),
+            _obligation(
+                obligation_id="X_BREAK",
+                capability="breakdown",
+                source_surfaces=("bölge kırılımı yapma",),
+                semantic_surfaces=(("bölge", "dimension"),),
+                polarity="EXCLUDED",
+            ),
+        ],
+        "research_directives": [],
+    }
+    veto = {
+        "status": "VETO",
+        "issues": [
+            {
+                "kind": "POLARITY_CONFLICT",
+                "source_surfaces": [
+                    "bölgelere göre göster",
+                    "bölge kırılımı yapma",
+                ],
+                "note": "material positive and negative effects conflict",
+            }
+        ],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[draft, draft],
+        audits=[veto, veto],
+    )
+    loop, runtime, executor = _loop(scripted)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-polarity-final",
+        request_ref="req-polarity-final",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is False
+    assert outcome.clarification_required is True
+    assert runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
+
+
+def test_invalid_current_source_surface_is_revision_input_not_fatal_exception():
+    question = "peki bölgelere göre?"
+    invalid = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_BREAK",
+                capability="breakdown",
+                source_surfaces=("bölgelere göre",),
+                semantic_surfaces=(
+                    ("bölgelere", "dimension"),
+                    ("Net Gelir", "metric"),
+                ),
+            )
+        ],
+        "research_directives": [],
+    }
+    valid_but_incomplete = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_BREAK",
+                capability="breakdown",
+                source_surfaces=("bölgelere göre",),
+                semantic_surfaces=(("bölgelere", "dimension"),),
+            )
+        ],
+        "research_directives": [],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[invalid, valid_but_incomplete],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    loop, runtime, executor = _loop(scripted)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-source-contract",
+        request_ref="req-source-contract",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.clarification_required is True
+    assert any(
+        item.get("kind") == "draft_source_contract"
+        and item.get("status") == "REJECTED"
+        for item in outcome.observations
+    )
+    assert not any(item.get("kind") == "grounding_error" for item in outcome.observations)
 
 
 def test_coverage_schema_is_veto_only_and_cannot_create_authority():
