@@ -222,12 +222,7 @@ def test_canonical_and_verified_synonym_resolve_without_clarification():
 )
 def test_exact_entity_families_use_same_generic_mechanism(surface, expected_dimension):
     bundle = resolve(surface, SemanticMentionKind.FILTER)
-    assert bundle.clarification is None, {
-        "surface": _morph_signature(surface),
-        "customer": _morph_signature("müşteri"),
-        "shift": _morph_signature("vardiya"),
-        "sales": _morph_signature("satış"),
-    }
+    assert bundle.clarification is None
     hyp = bundle.hypotheses[0]
     assert hyp.status == ResolutionStatus.RESOLVED
     chosen = next(c for c in hyp.candidates if c.candidate_id == hyp.resolved_candidate_id)
@@ -273,7 +268,12 @@ def test_turkish_inflection_resolves_only_through_verified_semantic_aliases(
 ):
     bundle = resolve(surface, kind)
 
-    assert bundle.clarification is None
+    assert bundle.clarification is None, {
+        "surface": _morph_signature(surface),
+        "customer": _morph_signature("müşteri"),
+        "shift": _morph_signature("vardiya"),
+        "sales": _morph_signature("satış"),
+    }
     hyp = bundle.hypotheses[0]
     assert hyp.status == ResolutionStatus.RESOLVED
     chosen = next(c for c in hyp.candidates if c.candidate_id == hyp.resolved_candidate_id)
