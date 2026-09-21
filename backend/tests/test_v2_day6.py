@@ -500,8 +500,10 @@ class _StaticStructuredLlm:
         self.payload = payload
         self.calls = 0
 
-    def structured_text(self, system: str, user: str) -> str:
+    def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str) -> str:
         self.calls += 1
+        assert schema_name == "dima_turn_interpretation_v2"
+        assert schema.get("type") == "object"
         return json.dumps(self.payload, ensure_ascii=False)
 
 
