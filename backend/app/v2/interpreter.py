@@ -438,7 +438,7 @@ RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
   goal.kind değerleri: comparison, relationship, performance, trend, breakdown,
   ranking, root_cause, other.
 - Açık TABLE/CHART/REPORT çıktı isteğini research_request.deliverables[] içinde ayrı ve
-  source-grounded tut: {"kind":"report|chart|table|explain","text":"CURRENT_MESSAGE span"}.
+  source-grounded tut: {{"kind":"report|chart|table|explain","text":"CURRENT_MESSAGE span"}}.
   Kullanıcının istemediği deliverable ekleme. "rapor hazırlama" gibi NEGATED çıktı talebi
   deliverable değildir.
 - Rapor deliverable'ı varsa REPORT_REQUEST + presentation_request=report kullan.
