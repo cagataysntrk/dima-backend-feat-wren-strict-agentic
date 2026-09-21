@@ -504,7 +504,7 @@ class _StaticStructuredLlm:
 
     def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str) -> str:
         self.calls += 1
-        assert schema_name == "dima_turn_interpreter_transport_v1"
+        assert schema_name == "dima_turn_interpreter_transport_v2"
         assert schema.get("type") == "object"
         return json.dumps(self.payload, ensure_ascii=False)
 
