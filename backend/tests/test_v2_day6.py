@@ -49,6 +49,7 @@ from app.v2.models import (
 )
 from app.v2.orchestrator import V2Orchestrator
 from app.v2.research import ResearchBriefBuilder
+from app.v2.resolver import SemanticResolver
 
 
 def mention(text: str, kind: SemanticMentionKind) -> SemanticMention:
@@ -870,3 +871,44 @@ def test_research_budget_defaults_match_p9_policy_envelope():
     assert brief.budget.max_branch_depth == 3
     assert brief.budget.max_llm_research_turns == 6
     assert brief.budget.wall_clock_target_seconds == 90
+
+
+def test_unknown_research_anchor_survives_resolver_as_blocked_must_goal():
+    unknown = mention("lojistik performansı", SemanticMentionKind.UNKNOWN)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.PERFORMANCE,
+                    text="lojistik performansını değerlendir",
+                    subject_mentions=(unknown,),
+                ),
+            )
+        ),
+    )
+    resolver = SemanticResolver(signing_key=b"day6-unknown-anchor")
+    bundle = resolver.resolve_turn(
+        turn=turn,
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+        semantic_context=research_context(),
+        conversation=ConversationStateV2(),
+        tenant_binding="id:tenant-x",
+        session_id="s-x",
+        thread_id="t-x",
+    )
+    brief = ResearchBriefBuilder().build(
+        turn=turn,
+        hypotheses=bundle.hypotheses,
+        semantic_context=research_context(),
+        context_version="ctx-unknown-anchor",
+    )
+
+    assert len(brief.questions) == 1
+    assert brief.must_requirement_ids == ("g1",)
+    assert brief.questions[0].source_text == "lojistik performansını değerlendir"
+    assert brief.questions[0].status == ResearchGoalStatus.BLOCKED
+    assert brief.questions[0].subject_refs == ()
+    assert brief.questions[0].unresolved[0].source_mention == "lojistik performansı"
+    assert brief.blocking_goal_ids == ("g1",)
+    assert brief.status == ResearchBriefStatus.BLOCKED
