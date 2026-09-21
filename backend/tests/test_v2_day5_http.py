@@ -412,6 +412,8 @@ def test_real_http_day6_research_brief_ready_stops_before_data_execution(v2_clie
     assert data["stage"] == "day6_research_brief"
     assert data["dialogue_action"] == "RESEARCH_BRIEF"
     assert data["response"]["kind"] == "research_brief"
+    assert "bu yıl" in data["response"]["text"]
+    assert data["research_brief"]["scope"]["time_surfaces"] == ["bu yıl"]
     assert data["research_brief"]["status"] == "READY_FOR_RESEARCH"
     assert len(data["research_brief"]["questions"]) == 2
     assert data["query_execution_count"] == 0
