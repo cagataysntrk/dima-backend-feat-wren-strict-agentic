@@ -452,7 +452,11 @@ incelenir.
 
 ```text
 raw user language / dialogue act / surface delta → TurnInterpreter
-canonical metric/dimension/entity binding        → SemanticResolver
+semantic catalog / candidate existence           → SemanticCandidateGenerator
+surface → bounded candidate interpretation        → BoundedSemanticLinker (probabilistic, no authority)
+candidate → canonical semantic authority          → SemanticBindingGate / SemanticHandleRegistry
+typed temporal language intent                    → TypedTemporalNormalizer
+temporal date arithmetic                          → TemporalBindingEngine
 prior IR + slot delta + focus/state              → ConversationCoordinator
 query gerekli mi                                 → DialoguePolicy
 canonical AnalyticsIR requirement completeness   → AnalyticsIRBuilder / RequirementLedger
@@ -519,3 +523,49 @@ silent-wrong attempts
 
 Her failure yine aynı soruyla açılır: **“Bu kararın tek sahibi kim?”**
 Day 5 boyunca yeni downstream semantic fallback birikimi kabul edilmez.
+
+
+## 14. DAY 6.5 COGNITION / AUTHORITY SINIRI — KALICI KURAL
+
+Day 6.5 ADR:
+`belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+
+Temel invariant:
+
+```text
+LLM interprets bounded language.
+Dima deterministic gates verify and confer authority.
+Database proves numbers.
+```
+
+Manager semantic hot path'te aşağıdakiler YASAKTIR:
+- yeni language regex ile semantic meaning çıkarmak,
+- morphology/stemming score'u semantic truth yapmak,
+- fuzzy/SequenceMatcher threshold'u ile `sem_*` authority üretmek,
+- named eval case'i geçirmek için prompt'a phrase/example eklemek,
+- Coverage critic'e canonical semantic veya clarification authority vermek,
+- model `open_questions` alanını otomatik blocker yapmak,
+- SemanticResolutionReceipt'i completeness parser'ına dönüştürmek,
+- provider/transport failure'ı semantic NOT_ACCEPTED olarak saymak.
+
+Doğru ownership:
+
+```text
+catalog concept exists?             → deterministic catalog
+user surface means which candidate? → bounded Semantic Linker
+candidate admissible/current?       → deterministic BindingGate
+sem_* mint                          → SemanticHandleRegistry after gate
+temporal phrase meaning             → typed temporal normalizer
+actual dates                        → deterministic calendar engine
+required binding complete?          → capability algebra / acceptance
+obligation omitted?                 → coverage critic veto-only
+numeric truth                       → governed Wren/DB
+```
+
+Unique exact verified alias doğrudan bağlanabilir; birden fazla exact candidate gerçek
+ambiguity'dir ve guess edilmez. Candidate set fazla büyükse mevcut davranış fail-closed'dur;
+bunu production phrase heuristic'i ile küçültmek yasaktır.
+
+Legacy `SemanticResolver` ve `temporal.py` compatibility için kalabilir; Day 6.5 Manager
+language authority olarak kullanılmaz. Bu ayrım değiştirilirse ADR + living status aynı
+commit serisinde güncellenmelidir.
