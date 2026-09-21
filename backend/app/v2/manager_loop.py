@@ -71,10 +71,15 @@ class ManagerObligationProposal(FrozenModel):
     def _ranking_contract(self):
         if (self.ranking_direction is None) != (self.ranking_limit is None):
             raise ValueError("ranking direction + limit together")
-        if self.capability_key == ManagerCapabilityKey.RANKING:
+        if (
+            self.capability_key == ManagerCapabilityKey.RANKING
+            and self.polarity == ObligationPolarity.REQUIRED
+        ):
             if self.ranking_direction is None or self.ranking_limit is None:
-                raise ValueError("ranking proposal requires direction + limit")
-        elif self.ranking_direction is not None or self.ranking_limit is not None:
+                raise ValueError("required ranking proposal requires direction + limit")
+        elif self.capability_key != ManagerCapabilityKey.RANKING and (
+            self.ranking_direction is not None or self.ranking_limit is not None
+        ):
             raise ValueError("ranking params only valid for ranking proposal")
         return self
 
