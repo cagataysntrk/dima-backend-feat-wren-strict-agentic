@@ -1,20 +1,6 @@
 name: v2-day3-standard-analytics
 
 "on":
-  pull_request:
-    branches:
-      - wren-bağımsız
-    types:
-      - ready_for_review
-    paths:
-      - "backend/app/v2/models.py"
-      - "backend/app/v2/temporal.py"
-      - "backend/app/v2/cube_planner.py"
-      - "backend/app/v2/orchestrator.py"
-      - "backend/app/routers/ask_v2.py"
-      - "backend/app/contracts.py"
-      - "backend/tests/test_v2_day3.py"
-      - ".github/workflows/v2-day3-standard-analytics.yml"
   workflow_dispatch:
 
 concurrency:
