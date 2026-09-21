@@ -37,6 +37,11 @@ export function V2CoreCard({
               <span>·</span>
               <span>{data.research_brief.status}</span>
             </div>
+            {data.research_brief.scope.time_surfaces.length > 0 && (
+              <div className="mb-2 font-mono text-[11px] text-neutral-500">
+                Dönem: {data.research_brief.scope.time_surfaces.join(" · ")}
+              </div>
+            )}
             <div className="space-y-1.5">
               {data.research_brief.questions.map((question) => (
                 <div
