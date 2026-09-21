@@ -56,6 +56,27 @@ class ManagerObligationProposal(FrozenModel):
     source_surfaces: tuple[str, ...] = Field(min_length=1)
     semantic_handle_refs: tuple[str, ...] = ()
     open_questions: tuple[str, ...] = ()
+    ranking_direction: Literal["asc", "desc"] | None = Field(
+        default=None,
+        description="Required only for ranking obligation.",
+    )
+    ranking_limit: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description="Required only for ranking obligation.",
+    )
+
+    @model_validator(mode="after")
+    def _ranking_contract(self):
+        if (self.ranking_direction is None) != (self.ranking_limit is None):
+            raise ValueError("ranking direction + limit together")
+        if self.capability_key == ManagerCapabilityKey.RANKING:
+            if self.ranking_direction is None or self.ranking_limit is None:
+                raise ValueError("ranking proposal requires direction + limit")
+        elif self.ranking_direction is not None or self.ranking_limit is not None:
+            raise ValueError("ranking params only valid for ranking proposal")
+        return self
 
 
 class ManagerDecisionTransport(FrozenModel):
@@ -229,7 +250,8 @@ Rules:
 - The native schema is strict: emit EVERY field. Use [] for unused arrays and null for
   unused nullable scalar fields. Never omit a field.
 - Ranking is an OPERATION, not a semantic concept: resolve only the metric/dimension/filter
-  concepts, then send ranking_direction + limit in run_analytics. Never send top/highest/
+  concepts. A ranking obligation MUST carry ranking_direction + ranking_limit in
+  propose_acceptance; execution later uses the same values. Never send top/highest/
   lowest wording to resolve_semantics.
 - Time/comparison are governed normalization kinds: tag the base-period surface as "time"
   and the reference/comparison surface as "comparison". They may be resolved together
@@ -498,6 +520,8 @@ class ResearchManagerLoop:
                         source_refs=refs,
                         semantic_handle_refs=item.semantic_handle_refs,
                         open_questions=item.open_questions,
+                        ranking_direction=item.ranking_direction,
+                        ranking_limit=item.ranking_limit,
                     )
                 )
             envelope = UserIntentEnvelope(
