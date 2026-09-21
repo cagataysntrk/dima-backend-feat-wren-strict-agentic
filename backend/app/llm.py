@@ -1928,4 +1928,45 @@ def build_generator(settings) -> SqlGenerator:
     if not gens:
         return fallback
     return gens[0] if len(gens) == 1 else FailoverSqlGenerator(gens)
-\n\ndef build_v2_interpreter_generator(settings) -> SqlGenerator:\n    \"\"\"Build the dedicated V2 language-owner transport.\n\n    P7 measured that the cheap/general OpenRouter model can satisfy JSON structure while\n    remaining unstable on repair-vs-refine speech acts. TurnInterpreter therefore has an\n    explicit capability model. This changes transport quality only; semantic ownership\n    remains exclusively in TurnInterpreter.\n\n    'inherit' is an explicit opt-in to the global generator. Missing dedicated provider\n    credentials fail closed via NoLlmGenerator instead of silently downgrading.\n    \"\"\"\n    provider = str(getattr(settings, \"v2_interpreter_provider\", \"openrouter\") or \"\").strip().lower()\n    if provider in {\"\", \"inherit\"}:\n        return build_generator(settings)\n\n    if provider != \"openrouter\":\n        _log.error(\"V2 interpreter provider desteklenmiyor: %s\", provider)\n        return NoLlmGenerator()\n\n    if not settings.openrouter_api_key:\n        _log.error(\"V2 interpreter için OpenRouter anahtarı yok; silent fallback yapılmadı\")\n        return NoLlmGenerator()\n\n    model = str(\n        getattr(settings, \"v2_interpreter_model\", \"\")\n        or settings.openrouter_select_model\n        or settings.openrouter_model\n    ).strip()\n    if not model:\n        _log.error(\"V2 interpreter model boş; silent fallback yapılmadı\")\n        return NoLlmGenerator()\n\n    return OpenAICompatibleSqlGenerator(\n        settings.openrouter_base_url,\n        settings.openrouter_api_keys or settings.openrouter_api_key,\n        model,\n        \"openrouter\",\n        getattr(settings, \"datasource\", \"\") or \"\",\n        select_model=model,\n    )\n
+
+
+def build_v2_interpreter_generator(settings) -> SqlGenerator:
+    """Build the dedicated V2 language-owner transport.
+
+    P7 measured that the cheap/general OpenRouter model can satisfy JSON structure while
+    remaining unstable on repair-vs-refine speech acts. TurnInterpreter therefore has an
+    explicit capability model. This changes transport quality only; semantic ownership
+    remains exclusively in TurnInterpreter.
+
+    'inherit' is an explicit opt-in to the global generator. Missing dedicated provider
+    credentials fail closed via NoLlmGenerator instead of silently downgrading.
+    """
+    provider = str(getattr(settings, "v2_interpreter_provider", "openrouter") or "").strip().lower()
+    if provider in {"", "inherit"}:
+        return build_generator(settings)
+
+    if provider != "openrouter":
+        _log.error("V2 interpreter provider desteklenmiyor: %s", provider)
+        return NoLlmGenerator()
+
+    if not settings.openrouter_api_key:
+        _log.error("V2 interpreter için OpenRouter anahtarı yok; silent fallback yapılmadı")
+        return NoLlmGenerator()
+
+    model = str(
+        getattr(settings, "v2_interpreter_model", "")
+        or settings.openrouter_select_model
+        or settings.openrouter_model
+    ).strip()
+    if not model:
+        _log.error("V2 interpreter model boş; silent fallback yapılmadı")
+        return NoLlmGenerator()
+
+    return OpenAICompatibleSqlGenerator(
+        settings.openrouter_base_url,
+        settings.openrouter_api_keys or settings.openrouter_api_key,
+        model,
+        "openrouter",
+        getattr(settings, "datasource", "") or "",
+        select_model=model,
+    )
