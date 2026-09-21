@@ -1,4 +1,5 @@
 name: v2-day6-5-provider-free-seal-once
+# rerun provider-free seal after attestation fixture alignment
 
 "on":
   push:
