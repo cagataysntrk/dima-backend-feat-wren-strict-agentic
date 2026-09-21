@@ -21,7 +21,7 @@ from app.v2.models import (
     TurnInterpretationFailure,
 )
 
-_INTERPRETER_VERSION = "day5-v0.3"
+_INTERPRETER_VERSION = "day6-v0.4"
 
 
 class TurnInterpreterError(RuntimeError):
@@ -138,6 +138,14 @@ def _surface_spans(turn: TurnInterpretation) -> list[str]:
             spans.append(req.ranking.text)
         spans.extend(c.text for c in req.comparisons)
 
+    research = turn.research_request
+    if research is not None:
+        for goal in research.goals:
+            spans.append(goal.text)
+            spans.extend(m.text for m in goal.subject_mentions)
+            spans.extend(m.text for m in goal.related_mentions)
+        spans.extend(m.text for m in research.time_mentions)
+
     if turn.user_repair is not None:
         spans.extend(turn.user_repair.correction_spans)
     return spans
@@ -204,6 +212,30 @@ def _align_turn_surfaces(question: str, turn: TurnInterpretation) -> TurnInterpr
             updates["ranking"] = aligned_model(request.ranking)
         request = request.model_copy(update=updates)
 
+    research = turn.research_request
+    if research is not None:
+        research = research.model_copy(
+            update={
+                "goals": tuple(
+                    goal.model_copy(
+                        update={
+                            "text": _align_near_copy_surface(question, goal.text),
+                            "subject_mentions": tuple(
+                                aligned_model(x) for x in goal.subject_mentions
+                            ),
+                            "related_mentions": tuple(
+                                aligned_model(x) for x in goal.related_mentions
+                            ),
+                        }
+                    )
+                    for goal in research.goals
+                ),
+                "time_mentions": tuple(
+                    aligned_model(x) for x in research.time_mentions
+                ),
+            }
+        )
+
     repair = turn.user_repair
     if repair is not None:
         repair = repair.model_copy(
@@ -220,6 +252,7 @@ def _align_turn_surfaces(question: str, turn: TurnInterpretation) -> TurnInterpr
             "references": tuple(aligned_model(x) for x in turn.references),
             "unresolved_mentions": tuple(aligned_model(x) for x in turn.unresolved_mentions),
             "analytical_request": request,
+            "research_request": research,
             "user_repair": repair,
         }
     )
@@ -309,8 +342,9 @@ MUTLAK SINIRLAR:
 - Çıktı aşağıdaki JSON Schema'ya uymalı.
 - SQL, tablo adı, fiziksel kolon, CubeQuery veya sorgu planı üretme.
 - Canonical metric/dimension/entity ID SEÇME ve UYDURMA.
-- semantic/reference/unresolved/repair alanlarındaki her 'text' değeri CURRENT_MESSAGE
-  içinden kopyalanmış surface span olmalı. Katalogdaki canonical adı output'a taşıma.
+- semantic/reference/unresolved/repair/research alanlarındaki her 'text' değeri
+  CURRENT_MESSAGE içinden kopyalanmış surface span olmalı. Katalogdaki canonical adı
+  output'a taşıma.
 - Semantic context yalnız kullanıcının sözünün analitik mi/sosyal mi olduğunu ve hangi
   YÜZEY türlerinin geçtiğini anlamak içindir. Binding Day 2 SemanticResolver işidir.
 - Bir ifade birden fazla gerçek kavrama bağlanabilecekse seçim yapma; surface ifadeyi
@@ -329,7 +363,13 @@ MUTLAK SINIRLAR:
   5) prior analytical request varsa ve kullanıcı önceki talebi yanlışlamadan yeni
      filter/breakdown/scope ekliyor, tek bir üyeye daraltıyor veya kapsamı genişletiyorsa
      ANALYTIC_REFINE.
-  6) bağımsız yeni analitik istek ANALYTIC_NEW.
+  6) Yeni istek birden fazla BAĞIMSIZ araştırma hedefini koordine etmeyi gerektiriyorsa
+     veya açık bir ilişki/cross-domain araştırması istiyorsa research act seç:
+     - Bu kompleks araştırmanın çıktı olarak RAPOR üretmesi açıkça isteniyorsa REPORT_REQUEST.
+     - Aksi halde COMPLEX_ANALYSIS.
+     Tek bir standart metric/filter/time/breakdown/ranking/comparison sorgusu kompleks
+     araştırma değildir.
+  7) bağımsız tek standart analitik istek ANALYTIC_NEW.
 - USER_REPAIR kararı kelime ezberi değildir; semantik olarak "önceki seçim yanlıştı,
   bunu onun yerine koy" anlamını gerektirir. Yalnız kapsam daraltmak veya ilk kez bir
   entity filter eklemek REPAIR DEĞİL REFINE'dır.
@@ -362,6 +402,31 @@ MUTLAK SINIRLAR:
 - Yeni analitik soru ANALYTIC_NEW.
 - Saf selam/teşekkür/gündelik sosyal tur SOCIAL.
 - Veri/ürün kapsamında olmayan ve analitik niyet taşımayan istek UNSUPPORTED.
+
+RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
+- analytical_request=null olmalı; research_request zorunludur.
+- Kullanıcının açıkça istediği HER bağımsız araştırma amacı ayrı bir goals[] öğesidir.
+  İki ilişki hedefini tek öğede birleştirme; bir goal düşerse downstream onu geri bulamaz.
+- Kullanıcının söylemediği goal/domain/deliverable EKLEME. Örneğin iki ekseni karşılaştırmak
+  başka bir üçüncü ilişkiyi kendiliğinden istemek değildir.
+- goal.kind yalnız dildeki araştırma fiilini sınıflar:
+  COMPARISON, RELATIONSHIP, PERFORMANCE, TREND, BREAKDOWN, RANKING, ROOT_CAUSE, OTHER.
+- Açık çıktı talebi ayrı DELIVERABLE goal'dur. Rapor istenmişse:
+  kind=DELIVERABLE, deliverable=report ve presentation_request=report.
+- goal.text bu goal'u kanıtlayan CURRENT_MESSAGE içindeki kısa ama tam surface span'dir.
+- subject_mentions ve related_mentions yine CURRENT_MESSAGE surface'leridir; canonical ID
+  değildir. Aynı current message içinde daha önce açıkça söylenmiş bir subject, sonraki
+  ilişki cümleciğinin öznesiyse o exact surface yeniden referanslanabilir.
+- RELATIONSHIP goal'da mümkünse ilişkinin iki tarafını ayır:
+  subject_mentions = incelenen/ana taraf, related_mentions = ilişkisi istenen taraf.
+  İki taraftan biri dilde açık değilse canonical tahmin yapma.
+- research_request.time_mentions bütün brief'e ait açık dönem/süre surface'lerini taşır;
+  tarih aritmetiği yapma.
+- Semantic binding yapma. Mention kind (dimension/metric/filter/unknown) yalnız dil rolüdür;
+  canonical target seçimi SemanticResolver authority'sidir.
+- REPORT_REQUEST yalnız kompleks research request + açık report deliverable birlikteliğidir.
+  Tek standart sorgunun sunum tercihi "rapor" ise ANALYTIC_NEW + presentation_request=report
+  kalabilir; gereksiz Research Mode açma.
 
 ANALYTICAL_REQUEST:
 - metric_mentions, dimension_mentions, filter_mentions, time_mentions yalnız surface span.
