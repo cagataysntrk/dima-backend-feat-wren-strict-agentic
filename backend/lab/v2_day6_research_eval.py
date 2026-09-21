@@ -185,19 +185,17 @@ def _goal_surface_values(goal) -> tuple[list[str], list[str], list[str]]:
 def _signature_matches(signature: dict, goal) -> bool:
     if goal.kind.value != str(signature["kind"]):
         return False
-    expected_deliverable = signature.get("deliverable")
-    if expected_deliverable is not None:
-        if goal.deliverable is None or goal.deliverable.value != str(expected_deliverable):
-            return False
-    elif goal.deliverable is not None:
-        return False
-
     subject, related, _ = _goal_surface_values(goal)
     if not all(_contains(subject, str(fragment)) for fragment in signature.get("subject") or ()):
         return False
     if not all(_contains(related, str(fragment)) for fragment in signature.get("related") or ()):
         return False
     return True
+
+
+def _deliverable_signature_matches(signature: dict, deliverable) -> bool:
+    expected = str(signature.get("deliverable") or "")
+    return bool(expected) and deliverable.kind.value == expected
 
 
 def _maximum_signature_match(signatures: list[dict], goals: tuple) -> tuple[int, list[tuple[int, int]]]:
@@ -225,6 +223,31 @@ def _maximum_signature_match(signatures: list[dict], goals: tuple) -> tuple[int,
     return count, list(pairs)
 
 
+def _maximum_deliverable_match(
+    signatures: list[dict],
+    deliverables: tuple,
+) -> tuple[int, list[tuple[int, int]]]:
+    @lru_cache(maxsize=None)
+    def solve(index: int, used_mask: int) -> tuple[int, tuple[tuple[int, int], ...]]:
+        if index >= len(signatures):
+            return 0, ()
+        best_count, best_pairs = solve(index + 1, used_mask)
+        for item_index, item in enumerate(deliverables):
+            if used_mask & (1 << item_index):
+                continue
+            if not _deliverable_signature_matches(signatures[index], item):
+                continue
+            count, pairs = solve(index + 1, used_mask | (1 << item_index))
+            count += 1
+            candidate_pairs = ((index, item_index), *pairs)
+            if count > best_count:
+                best_count, best_pairs = count, candidate_pairs
+        return best_count, best_pairs
+
+    count, pairs = solve(0, 0)
+    return count, list(pairs)
+
+
 def _time_coverage(request, expected: list[str]) -> dict[str, bool]:
     values = [item.text for item in request.time_mentions] if request is not None else []
     return {fragment: _contains(values, fragment) for fragment in expected}
@@ -237,6 +260,7 @@ def _forbidden_goal_hits(request, forbidden: list[str]) -> dict[str, bool]:
     for goal in request.goals:
         _, _, goal_values = _goal_surface_values(goal)
         values.extend(goal_values)
+    values.extend(item.text for item in request.deliverables)
     return {fragment: _contains(values, fragment) for fragment in forbidden}
 
 
@@ -273,11 +297,16 @@ def _brief_safety(brief, hypotheses) -> dict[str, object]:
             (brief.status == ResearchBriefStatus.BLOCKED) == bool(expected_blocked)
         )
     )
+    expected_must_ids = (
+        tuple(question.goal_id for question in brief.questions)
+        + tuple(item.requirement_id for item in brief.deliverables)
+    )
     must_consistent = (
-        len(brief.must_requirement_ids) == len(brief.questions)
-        and brief.must_requirement_ids
-        == tuple(question.goal_id for question in brief.questions)
+        len(brief.must_requirement_ids)
+        == len(brief.questions) + len(brief.deliverables)
+        and brief.must_requirement_ids == expected_must_ids
         and all(question.priority == "MUST" for question in brief.questions)
+        and all(item.priority == "MUST" for item in brief.deliverables)
     )
 
     return {
@@ -332,6 +361,8 @@ def main() -> int:
     records: list[dict] = []
     expected_goal_total = 0
     matched_goal_total = 0
+    expected_deliverable_total = 0
+    matched_deliverable_total = 0
     expected_time_total = 0
     matched_time_total = 0
     invented_goal_total = 0
@@ -355,7 +386,15 @@ def main() -> int:
         counting = CountingLlm(llm)
         expect_research = bool(case.get("expect_research", True))
         expected_act = str(case["expected_act"])
-        signatures = list(case.get("goals") or ())
+        requirement_signatures = list(case.get("goals") or ())
+        signatures = [
+            item for item in requirement_signatures
+            if str(item.get("kind")) != "deliverable"
+        ]
+        deliverable_signatures = [
+            item for item in requirement_signatures
+            if str(item.get("kind")) == "deliverable"
+        ]
         expected_time = [str(x) for x in case.get("time") or ()]
         forbidden = [str(x) for x in case.get("forbidden_goal_fragments") or ()]
         expected_brief_status = case.get("brief_status")
@@ -389,10 +428,22 @@ def main() -> int:
                 research_act_total += 1
                 research_act_ok += int(act_ok and research_shape_ok)
                 goals = request.goals if request is not None else ()
+                deliverables = request.deliverables if request is not None else ()
                 matched_count, matched_pairs = _maximum_signature_match(signatures, goals)
+                matched_deliverable_count, matched_deliverable_pairs = (
+                    _maximum_deliverable_match(
+                        deliverable_signatures,
+                        deliverables,
+                    )
+                )
                 expected_goal_total += len(signatures)
                 matched_goal_total += matched_count
-                invented = max(len(goals) - matched_count, 0)
+                expected_deliverable_total += len(deliverable_signatures)
+                matched_deliverable_total += matched_deliverable_count
+                invented = (
+                    max(len(goals) - matched_count, 0)
+                    + max(len(deliverables) - matched_deliverable_count, 0)
+                )
                 invented_goal_total += invented
                 forbidden_hits = sum(forbidden_results.values())
                 forbidden_goal_hit_total += forbidden_hits
@@ -444,6 +495,8 @@ def main() -> int:
                     and research_shape_ok
                     and matched_count == len(signatures)
                     and len(goals) == len(signatures)
+                    and matched_deliverable_count == len(deliverable_signatures)
+                    and len(deliverables) == len(deliverable_signatures)
                     and all(time_results.values())
                     and forbidden_hits == 0
                     and brief_status_ok
@@ -457,17 +510,25 @@ def main() -> int:
                     "actual_goal_count": len(goals),
                     "matched_goal_count": matched_count,
                     "matched_pairs": matched_pairs,
+                    "expected_deliverable_count": len(deliverable_signatures),
+                    "actual_deliverable_count": len(deliverables),
+                    "matched_deliverable_count": matched_deliverable_count,
+                    "matched_deliverable_pairs": matched_deliverable_pairs,
                     "actual_goals": [
                         {
                             "kind": goal.kind.value,
                             "text": goal.text,
                             "subjects": [m.text for m in goal.subject_mentions],
                             "related": [m.text for m in goal.related_mentions],
-                            "deliverable": (
-                                goal.deliverable.value if goal.deliverable else None
-                            ),
                         }
                         for goal in goals
+                    ],
+                    "actual_deliverables": [
+                        {
+                            "kind": item.kind.value,
+                            "text": item.text,
+                        }
+                        for item in deliverables
                     ],
                     "semantic_status": (
                         bundle.semantic_status if bundle is not None else None
@@ -551,6 +612,16 @@ def main() -> int:
     goal_coverage = (
         matched_goal_total / expected_goal_total if expected_goal_total else 1.0
     )
+    deliverable_coverage = (
+        matched_deliverable_total / expected_deliverable_total
+        if expected_deliverable_total
+        else 1.0
+    )
+    total_expected_must = expected_goal_total + expected_deliverable_total
+    total_matched_must = matched_goal_total + matched_deliverable_total
+    must_requirement_coverage = (
+        total_matched_must / total_expected_must if total_expected_must else 1.0
+    )
     time_scope_coverage = (
         matched_time_total / expected_time_total if expected_time_total else 1.0
     )
@@ -579,6 +650,8 @@ def main() -> int:
     passed = (
         canonical_gate
         and goal_coverage >= 0.95
+        and deliverable_coverage == 1.0
+        and must_requirement_coverage >= 0.95
         and time_scope_coverage == 1.0
         and case_pass_rate >= 0.95
         and research_act_accuracy >= 0.95
@@ -608,6 +681,8 @@ def main() -> int:
         "case_pass_rate": round(case_pass_rate, 4),
         "canonical_complex_goal_extraction": bool(canonical_gate),
         "complex_validation_goal_coverage": round(goal_coverage, 4),
+        "deliverable_requirement_coverage": round(deliverable_coverage, 4),
+        "must_requirement_coverage": round(must_requirement_coverage, 4),
         "explicit_time_scope_coverage": round(time_scope_coverage, 4),
         "research_act_accuracy": round(research_act_accuracy, 4),
         "non_research_negative_accuracy": round(negative_act_accuracy, 4),
@@ -633,7 +708,8 @@ def main() -> int:
     print(
         "Day6 manual research gate: "
         f"cases={len(records)} pass={case_pass_rate:.1%} "
-        f"goals={goal_coverage:.1%} time={time_scope_coverage:.1%} "
+        f"goals={goal_coverage:.1%} deliverables={deliverable_coverage:.1%} "
+        f"must={must_requirement_coverage:.1%} time={time_scope_coverage:.1%} "
         f"research_act={research_act_accuracy:.1%} "
         f"negatives={negative_act_accuracy:.1%} invented={invented_goal_total} "
         f"calls={total_calls} retry_rate={format_retry_rate:.1%} status={payload['status']}"
@@ -652,6 +728,9 @@ def main() -> int:
                     "actual_goal_count": record.get("actual_goal_count"),
                     "matched_goal_count": record.get("matched_goal_count"),
                     "actual_goals": record.get("actual_goals", []),
+                    "actual_deliverables": record.get("actual_deliverables", []),
+                    "expected_deliverable_count": record.get("expected_deliverable_count"),
+                    "matched_deliverable_count": record.get("matched_deliverable_count"),
                     "brief_status": record.get("brief_status"),
                     "blocking_goal_ids": record.get("blocking_goal_ids", []),
                     "time_results": record.get("time_results", {}),
