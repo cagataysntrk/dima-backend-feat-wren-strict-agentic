@@ -6,6 +6,7 @@ No chain-of-thought is requested, persisted or returned.
 
 from __future__ import annotations
 
+import copy
 import json
 from dataclasses import dataclass
 from enum import StrEnum
@@ -142,6 +143,32 @@ class ManagerLoopOutcome:
     observations: tuple[dict[str, Any], ...]
 
 
+def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """Normalize Pydantic JSON Schema to OpenAI/OpenRouter strict-native rules.
+
+    Strict providers require every object property to appear in `required`. Optional
+    semantics are represented by nullable types, not by omitting keys. Defaults are
+    application conveniences and are removed from the provider contract.
+    """
+    out = copy.deepcopy(schema)
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            node.pop("default", None)
+            if node.get("type") == "object" or "properties" in node:
+                properties = node.get("properties") or {}
+                node["required"] = list(properties.keys())
+                node["additionalProperties"] = False
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(out)
+    return out
+
+
 _SYSTEM = """You are Dima's bounded RESEARCH_MANAGER.
 
 Return exactly ONE next action using the provided JSON schema. Do not reveal or emit
@@ -160,6 +187,8 @@ Rules:
 - If ambiguity blocks a MUST, request_clarification rather than guessing.
 - finish is a proposal; deterministic CompletionGate decides whether completion is true.
 - One action per turn. No prose outside the schema.
+- The native schema is strict: emit EVERY field. Use [] for unused arrays and null for
+  unused nullable scalar fields. Never omit a field.
 """
 
 
@@ -223,18 +252,46 @@ class ResearchManagerLoop:
         }
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
+    @staticmethod
+    def _parse_decision(raw: Any) -> ManagerDecisionTransport:
+        data = json.loads(raw) if isinstance(raw, str) else raw
+        return ManagerDecisionTransport.model_validate(data)
+
     def _decision(self, *, question: str, runtime: ManagerRuntime, observations):
-        raw = self._structured(
-            _SYSTEM,
-            self._prompt(question=question, runtime=runtime, observations=observations),
-            schema=ManagerDecisionTransport.model_json_schema(),
-            schema_name="dima_research_manager_action_v1",
+        user = self._prompt(
+            question=question,
+            runtime=runtime,
+            observations=observations,
         )
+        schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
+        kwargs = {
+            "schema": schema,
+            "schema_name": "dima_research_manager_action_v1",
+        }
+        raw = self._structured(_SYSTEM, user, **kwargs)
         try:
-            data = json.loads(raw) if isinstance(raw, str) else raw
-            return ManagerDecisionTransport.model_validate(data)
-        except Exception as exc:
-            raise RuntimeError(f"RESEARCH_MANAGER structured action invalid: {exc}") from exc
+            return self._parse_decision(raw)
+        except Exception as first_error:
+            repair_system = (
+                _SYSTEM
+                + "\n\nFORMAT_REPAIR_ONLY: Previous output failed the application schema. "
+                  "Keep the SAME next action and semantic decision. Only fill/fix schema "
+                  "fields. Do not add/remove obligations, change polarity, or choose another tool."
+            )
+            repair_user = (
+                user
+                + "\n\nPREVIOUS_INVALID_OUTPUT:\n"
+                + (raw if isinstance(raw, str) else json.dumps(raw, ensure_ascii=False))
+                + "\n\nFORMAT_ERROR:\n"
+                + str(first_error)[:1200]
+            )
+            repaired = self._structured(repair_system, repair_user, **kwargs)
+            try:
+                return self._parse_decision(repaired)
+            except Exception as exc:
+                raise RuntimeError(
+                    f"RESEARCH_MANAGER structured action invalid after one format retry: {exc}"
+                ) from exc
 
     def _source_refs(self, *, message_id: str, surfaces: tuple[str, ...]) -> tuple[str, ...]:
         return tuple(
