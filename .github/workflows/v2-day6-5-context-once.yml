@@ -28,9 +28,11 @@ jobs:
       - name: Day 6.5 repair/context closure
         working-directory: backend
         run: |
-          python -m py_compile app/v2/acceptance.py app/v2/manager_executor.py app/v2/manager_loop.py app/v2/manager_lab.py
+          python -m py_compile app/v2/acceptance.py app/v2/manager_executor.py app/v2/manager_loop.py app/v2/manager_lab.py app/v2/standard_projection.py
           pytest -q             tests/test_v2_day6_5_manager_authority.py             tests/test_v2_day6_5_correctness_closure.py             tests/test_v2_day6_5_adaptive_branch.py
 
 # rerun: effective repair required-MUST guard
 
 # rerun: repair guard plus acceptance-only phase
+
+# final rerun: ranking authority + deterministic projection compiler
