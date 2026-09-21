@@ -1,5 +1,5 @@
 <!-- DIMA-V2-ACTIVE-OPERATION -->
-# 🔴🔴 AKTİF OPERASYON — DIMA V2 GREENFIELD CORE
+# 🔴🔴 AKTİF OPERASYON — DIMA V2 DAY 6.5 MANAGER VALIDATION
 
 > **Bu branch'te eski “aktif operasyon” bloklarının üstünde BU BLOK okunur.**
 > Branch: `feat/ask-v2-mvp`.
@@ -7,10 +7,14 @@
 > Her geliştirme oturumunun ilk sırası:
 >
 > 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
-> 2. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
-> 3. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
-> 4. `AGENTS.md`
-> 5. `MIMARI.md` ve yalnız aktif ticket'ın kodu
+> 2. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+> 3. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+> 4. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+> 5. `eval/v2_day6_5_eval_manifest.yaml`
+> 6. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
+> 7. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
+> 8. `AGENTS.md`
+> 9. `MIMARI.md` ve yalnız aktif ticket'ın kodu
 >
 > Nihai rapor ve roadmap **mühürlü / salt-okunur**. İlerleme, karar sonucu, commit SHA,
 > açık borç ve sonraki adım yalnız `DIMA_V2_GELISTIRME_DURUM.md` dosyasına yazılır.
@@ -18,9 +22,7 @@
 > Koddan önce roadmap'teki aktif **P** bölümünü ve onun dayanak gösterdiği **R** bölümünü
 > birlikte oku. Rapor gerekçenin, roadmap icra sırasının authority'sidir.
 >
-> **V2 amacı:** legacy `/ask`i refactor etmek değil; mevcut repo içinde clean
-> `/ask-v2` island kurmak, çalışan auth/tenant/Wren/analytical primitive'leri adapter
-> ile reuse etmek ve eski semantic ownership hatalarını yeni çekirdeğe taşımamak.
+> **Day 6.5 amacı:** one-shot universal complex-intent architecture artık production adayı değildir. Bounded Manager control plane'i; exactly-one accepted authority, opaque source/semantic handles, fast-path preservation ve deterministic trust plane altında doğrulanacaktır. Manager hard gate'leri geçmeden `MIMARI.md` production architecture olarak değiştirilmez.
 >
 > **Test:** her küçük değişiklikte büyük kapı yok. Yalnız gerekli hedefli testler;
 > full/corpus gate milestone/demet sonunda; ağır suite nightly CI'da. Daily dikey demo
