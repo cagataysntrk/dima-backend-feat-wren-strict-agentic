@@ -25,7 +25,7 @@ cases:
       - {kind: deliverable, deliverable: report}
 
   - id: shift_relation
-    q: "Geçen 12 ay ürün performansını karşılaştır; makine ve vardiya bağlantılarını ayrı incele, satış performansını değerlendir ve rapor hazırla."
+    q: "Geçen 12 ay ürünleri karşılaştır; makine ve vardiya bağlantılarını ayrı incele, satış performansını değerlendir ve rapor hazırla."
     expected_act: REPORT_REQUEST
     brief_status: READY_FOR_RESEARCH
     time: ["12 ay"]
@@ -37,7 +37,7 @@ cases:
       - {kind: deliverable, deliverable: report}
 
   - id: reordered_sentences
-    q: "Ürün bazında son 12 aylık üretimi karşılaştır. Satış performansını da incele. Personel ilişkisini ve makine ilişkisini ayrı ayrı analiz et. Sonucu raporla."
+    q: "Son 12 aylık ürünleri karşılaştır. Satış performansını da incele. Personel ilişkisini ve makine ilişkisini ayrı ayrı analiz et. Sonucu raporla."
     expected_act: REPORT_REQUEST
     brief_status: READY_FOR_RESEARCH
     time: ["12 aylık"]
