@@ -16,6 +16,14 @@ from typing import Any
 
 import yaml
 
+REQUIRED_ATTESTATION = {
+    "independent_evaluator": True,
+    "development_model_generated": False,
+    "prompt_text_committed": False,
+    "prompt_text_shared_with_implementation": False,
+    "frozen_before_implementation": True,
+}
+
 REQUIRED_KEYS = {
     "case_id",
     "taxonomy",
@@ -59,6 +67,26 @@ def _load(path: Path) -> list[dict[str, Any]]:
     return cases
 
 
+def _load_attestation(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"invalid external attestation: {exc}") from exc
+
+    if not isinstance(data, dict):
+        raise SystemExit("external attestation must be a JSON object")
+
+    if data.get("status") != "ATTESTED_EXTERNAL":
+        raise SystemExit("external attestation status must be ATTESTED_EXTERNAL")
+
+    for key, expected in REQUIRED_ATTESTATION.items():
+        if data.get(key) != expected:
+            raise SystemExit(
+                f"external attestation {key} must be {expected!r}, got {data.get(key)!r}"
+            )
+    return data
+
+
 def _taxonomy_values(case: dict[str, Any]) -> list[str]:
     raw = case["taxonomy"]
     if isinstance(raw, str):
@@ -93,10 +121,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("corpus", type=Path)
     parser.add_argument("--expected-count", type=int, default=50)
+    parser.add_argument("--attestation", type=Path, required=True)
     parser.add_argument("--metadata-out", type=Path, required=True)
     args = parser.parse_args()
 
     raw = args.corpus.read_bytes()
+    attestation_raw = args.attestation.read_bytes()
+    attestation = _load_attestation(args.attestation)
     cases = _load(args.corpus)
     if len(cases) != args.expected_count:
         raise SystemExit(f"hidden case count {len(cases)} != expected {args.expected_count}")
@@ -116,8 +147,18 @@ def main() -> int:
         "corpus_sha256": hashlib.sha256(raw).hexdigest(),
         "taxonomy_sha256": hashlib.sha256(taxonomy_bytes).hexdigest(),
         "taxonomy_manifest": taxonomy,
-        "prompt_text_committed": False,
-        "development_model_generated": False,
+        "attestation_sha256": hashlib.sha256(attestation_raw).hexdigest(),
+        "independent_evaluator": bool(attestation["independent_evaluator"]),
+        "prompt_text_committed": bool(attestation["prompt_text_committed"]),
+        "prompt_text_shared_with_implementation": bool(
+            attestation["prompt_text_shared_with_implementation"]
+        ),
+        "development_model_generated": bool(
+            attestation["development_model_generated"]
+        ),
+        "frozen_before_implementation": bool(
+            attestation["frozen_before_implementation"]
+        ),
     }
 
     args.metadata_out.parent.mkdir(parents=True, exist_ok=True)
