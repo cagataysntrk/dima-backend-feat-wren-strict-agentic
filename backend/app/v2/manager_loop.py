@@ -17,6 +17,7 @@ from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
     ManagerState,
+    ResearchRunTerminal,
     ObligationOrigin,
     ObligationPolarity,
     ObligationPriority,
@@ -134,7 +135,9 @@ class ManagerDecisionTransport(FrozenModel):
 @dataclass(frozen=True)
 class ManagerLoopOutcome:
     snapshot: Any
-    completed: bool
+    run_finished: bool
+    verified_complete: bool
+    terminal_status: ResearchRunTerminal | None
     clarification_required: bool
     observations: tuple[dict[str, Any], ...]
 
@@ -445,7 +448,11 @@ class ResearchManagerLoop:
 
         return ManagerLoopOutcome(
             snapshot=runtime.snapshot,
-            completed=runtime.snapshot.state == ManagerState.COMPLETED,
+            run_finished=runtime.snapshot.state == ManagerState.COMPLETED,
+            verified_complete=(
+                runtime.snapshot.terminal_status == ResearchRunTerminal.VERIFIED_COMPLETE
+            ),
+            terminal_status=runtime.snapshot.terminal_status,
             clarification_required=runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION,
             observations=tuple(observations),
         )
