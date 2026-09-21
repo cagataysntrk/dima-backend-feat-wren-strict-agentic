@@ -3439,3 +3439,188 @@ external hidden architecture seal      PENDING
 4. Safe relationship blocker/gate → sonra CrossDomainJoinGate.
 5. Visible DEV architecture corpus.
 6. Hard gates geçmeden production `/ask-v2` hybrid routing açma.
+
+
+---
+
+### 2026-09-21 — DAY 6.5 / STABILIZATION INTERVENTION — FINITE PRE-ACCEPTANCE
+
+**Pre-stabilization checkpoint**
+- branch checkpoint: `checkpoint/day6.5-pre-stabilization-a3f5e0d`
+- checkpoint SHA: `a3f5e0dd89366d7b191b64256c55a8e18c286730`
+- karar: bu noktadan sonra live-case özel prompt/regex/Resolver heuristic patch YASAK.
+- `SemanticResolver` policy yeni vaka geçirmek için genişletilmeyecek.
+- `SemanticResolutionReceipt` yalnız provenance / anti-laundering kanıtıdır; intent completeness oracle'ı değildir.
+
+**Dış analizlerden çıkan kök teşhis**
+```text
+candidate contract validity
+!=
+intent completeness
+```
+
+Open pre-acceptance Manager loop:
+```text
+resolve
+→ resolve
+→ propose
+→ resolve
+→ clarify
+→ budget
+```
+gereğinden fazla yanlış action alanı bırakıyordu ve aynı problemi eski Dima tarzı
+case-derived prompt/gate patch'leriyle büyütme riski doğuruyordu.
+
+**Seçilen stabilization mimarisi**
+```text
+USER
+ ↓
+DRAFT                         probabilistic / non-authoritative
+ ↓
+DRAFT SOURCE CONTRACT         deterministic exact-source provenance
+ ↓
+AUTO-GROUND                   runtime → Resolver → opaque SemanticHandle
+ ↓
+COVERAGE VETO                 probabilistic, veto-only; authority ÜRETEMEZ
+ ↓
+CONTRACT VALIDITY             deterministic capability/binding/provenance/effect gate
+ ↓
+ACCEPT
+or one bounded REVISE
+or CLARIFY
+or NOT_ACCEPTED
+```
+
+**Önemli sınırlar**
+- Coverage auditor canonical semantic seçemez.
+- Coverage auditor handle mint edemez.
+- Coverage auditor obligation/directive commit edemez.
+- Capability anlamı yalnız `ManagerCapabilityRegistry` içindedir.
+- Pre-acceptance Manager artık `resolve_semantics` tool'unu serbestçe seçmez.
+- Runtime draft semantic surface'lerini otomatik ground eder.
+- Accepted authority oluşmadan analytics/evidence execution açılamaz.
+- Post-acceptance raw USER_SOURCE semantic reparse yasaktır.
+- Aynı action aynı progress epoch'ta aynı knowledge/state'i üretirse generic
+  `ActionFingerprint + ProgressFingerprint` frontier exact action'ı bloklar.
+
+**ResearchDirective ontology ayrımı**
+User obligation ile research behavior ayrıldı.
+
+İlk directive:
+```text
+ResearchDirectiveType.ADAPT_ON_EVIDENCE
+condition = MATERIAL_NEW_DIRECTION
+parent_obligation_id = accepted research obligation
+```
+
+Örnek:
+```text
+"üretkenlik düşüşünü araştır"
+→ USER_MUST root_cause
+
+"sonuç yeni bir yön gösterirse oraya da bak"
+→ ResearchDirective.ADAPT_ON_EVIDENCE
+```
+
+Directive `UserObligationLedger` içine USER_OPTIONAL/MUST gibi sokulmaz.
+AcceptedTurnContract içinde ayrı immutable research policy olarak yaşar.
+
+**Yeni/yeniden sahiplenen dosyalar**
+- `app/v2/manager_preacceptance.py`
+  - finite DRAFT → AUTO_GROUND → COVERAGE → VALIDITY controller.
+- `app/v2/manager_progress.py`
+  - generic action/progress fingerprints + dynamic exact-action frontier.
+- `app/v2/manager_models.py`
+  - `ResearchDirective` first-class contract.
+- `app/v2/manager_loop.py`
+  - `understand()` open tool-loop yerine finite controller'a delege eder.
+  - `run()` accepted research sonrasında agentic kalır.
+- `app/v2/acceptance.py`
+  - directive source/parent/lane validity; obligation ledger'dan ayrı.
+- `tests/test_v2_day6_5_preacceptance_protocol.py`
+  - provider-free finite-protocol sentinels.
+
+**Capability algebra**
+Aşağıdaki önceki doğru refactor korunuyor; geri alınmadı:
+- `ManagerCapabilitySpec.required_kinds/allowed_kinds/required_params/effect_family`
+- `CapabilityBindingValidator`
+- `ObligationEffect`
+- validated atomic obligations-only `StandardProjectionCompiler`.
+
+**Provider-free evidence**
+1. Stabilization closure run `35630382762`
+   - tested SHA: `c818d69486a7da8a12af9da35b310761aa59cea5`
+   - **45 passed / 0 failed**
+2. Finite terminal closure run `35631871166`
+   - tested SHA: `baf777d6da519c2e90ba7faa0be7ed2e2c743c16`
+   - **48 passed / 0 failed**
+
+Temporary provider-free one-shot workflow'lar PASS sonrası repodan kaldırıldı.
+
+**İlk stabilized Luna workers=1 run**
+- run: `35630602316`
+- tested SHA: `d19d00ac50e839d3969292ddd3754be423839f97`
+- sonuç: **6/15 PASS, 9/15 FAIL**
+- teşhis:
+  - 063: coverage conflict'i çoğu koşuda doğru buldu; terminal semantics NOT_ACCEPTED kaldı.
+  - 067: validity rejection sonrası ikinci draft prior conversation label'ını current-source
+    gibi kullanabildi.
+  - 075: extra unresolved `comparison` surface validity/coverage'den önce clarification'a
+    sıçradı.
+- karar: case patch YOK; finite phase/terminal semantics düzeltildi.
+
+**Finite terminal semantics düzeltmesi**
+- invalid literal current-source draft artık fatal exception değil, bounded revision input.
+- AUTO-GROUND unresolved yüzey artık otomatik user-clarification terminali değil;
+  grounding evidence olarak Coverage + Validity'ye taşınır.
+- final Coverage VETO:
+  - `POLARITY_CONFLICT` / `UNRESOLVED_REFERENCE` → deterministic CLARIFICATION,
+  - `UNCOVERED_SOURCE` / `UNMODELED_DIRECTIVE` → cognition failure / NOT_ACCEPTED.
+- Coverage PASS sonrasında ContractValidity yalnız required semantic binding eksik diyorsa
+  ikinci model draftının semantic uydurmasına izin verilmez; trusted binding yok → CLARIFICATION.
+
+**İkinci stabilized Luna workers=1 run**
+- run: `35632068198`
+- exact tested code SHA: `8bc89b5ea556e345452d611cbd8d95b288739f65`
+- sonuç: **14/15 PASS**
+  - 063: 4/5 PASS
+  - 067: 5/5 PASS
+  - 075: 5/5 PASS
+- 067 artık her koşuda 2 model çağrısında clarification'a kapandı.
+- 075 artık her koşuda `root_cause USER_MUST + ADAPT_ON_EVIDENCE` olarak accepted.
+- tek kalan 063 failure **unsafe accept değildir**:
+  - Coverage first pass conflict'i gördü.
+  - second draft Coverage PASS verdi.
+  - ContractValidity `resolved user semantic source omitted or provenance-laundered`
+    structural reject üretti.
+  - terminal NOT_ACCEPTED kaldı.
+- bu tek tail case için yeni prompt/regex/receipt exception YAZILMADI.
+
+**Model-floor A/B kararı**
+Plan gereği aynı exact tested backend SHA `8bc89b5...`, daha güçlü
+`RESEARCH_MANAGER = openai/gpt-5.6-sol` ile workers=1 repeated A/B'ye verildi.
+- reference run: `35632599458`
+- durum bu kayıt yazılırken: RUNNING.
+- yorum kuralı:
+  - Luna fail + Sol pass → MODEL CAPABILITY FLOOR; architecture patch YOK.
+  - Sol da aynı failure sınıfında fail → CONTRACT / COVERAGE boundary yeniden incelenir.
+  - iki model de geçerse next = 12–16 stratified canary.
+  - sonra 80 DEV.
+
+**Açık borçlar**
+- V2-D65-S1: Sol reference A/B sonucu.
+- V2-D65-S2: 12–16 stratified canary.
+- V2-D65-S3: DEV 80 full visible evaluation.
+- V2-D65-S4: relationship real trust-plane / CrossDomainJoinGate — Day7-grade capability;
+  Day6.5'te no-path unsafe execution = 0 korunmalı.
+- V2-D65-S5: external HIDDEN 50 final architecture seal; development loop blocker değildir.
+- production `/ask-v2` hybrid route hâlâ AÇILMAYACAK.
+
+**Stabilization STOP-THE-LINE**
+- failure → yeni regex/morphology score ekleme,
+- failure → `_SYSTEM` içine case-derived semantic cümle ekleme,
+- receipt'i completeness parser'ına dönüştürme,
+- Coverage auditor'a canonical/obligation authority verme,
+- user obligation ile research directive'i tekrar birleştirme,
+- workers=1 architecture certification bitmeden concurrency sonucu üzerinden semantic patch,
+- strong reference A/B görmeden model-floor problemini architecture patch'iyle örtme.
