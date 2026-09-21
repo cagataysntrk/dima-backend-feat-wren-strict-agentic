@@ -380,14 +380,14 @@ def test_real_http_day6_research_brief_ready_stops_before_data_execution(v2_clie
             "dialogue_act": "REPORT_REQUEST",
             "research_graph": {
                 "surfaces": [
-                    {"surface_id": "s-time", "text": "bu yıl", "kind": "time"},
-                    {"surface_id": "s-focus", "text": "çıktı verimi", "kind": "metric"},
-                    {"surface_id": "s-line", "text": "üretim hattı", "kind": "dimension"}
+                    {"surface_id": "s-time", "text": "bu yıl", "semantic_role": "time"},
+                    {"surface_id": "s-focus", "text": "çıktı verimi", "semantic_role": "metric"},
+                    {"surface_id": "s-line", "text": "üretim hattı", "semantic_role": "dimension"}
                 ],
                 "operations": [],
                 "relationships": [
                     {
-                        "text": "üretim hattı ile çıktı verimi ilişkisini incele",
+                        "evidence_text": "üretim hattı ile çıktı verimi ilişkisini incele",
                         "focus_ref": "s-focus",
                         "focus_binding": "explicit",
                         "counterpart_refs": ["s-line"],
@@ -396,7 +396,7 @@ def test_real_http_day6_research_brief_ready_stops_before_data_execution(v2_clie
                 ],
                 "time_refs": ["s-time"],
                 "deliverables": [
-                    {"kind": "report", "text": "raporla", "polarity": "requested"}
+                    {"format": "report", "evidence_text": "raporla", "polarity": "requested"}
                 ]
             },
             "presentation_request": "report",
@@ -437,13 +437,13 @@ def test_real_http_day6_blocked_goal_is_preserved_without_query(v2_client, monke
             "dialogue_act": "REPORT_REQUEST",
             "research_graph": {
                 "surfaces": [
-                    {"surface_id": "s-focus", "text": "çıktı verimi", "kind": "metric"},
-                    {"surface_id": "s-shift", "text": "vardiya", "kind": "dimension"}
+                    {"surface_id": "s-focus", "text": "çıktı verimi", "semantic_role": "metric"},
+                    {"surface_id": "s-shift", "text": "vardiya", "semantic_role": "dimension"}
                 ],
                 "operations": [],
                 "relationships": [
                     {
-                        "text": "çıktı verimi ile vardiya ilişkisini incele",
+                        "evidence_text": "çıktı verimi ile vardiya ilişkisini incele",
                         "focus_ref": "s-focus",
                         "focus_binding": "explicit",
                         "counterpart_refs": ["s-shift"],
@@ -452,7 +452,7 @@ def test_real_http_day6_blocked_goal_is_preserved_without_query(v2_client, monke
                 ],
                 "time_refs": [],
                 "deliverables": [
-                    {"kind": "report", "text": "raporla", "polarity": "requested"}
+                    {"format": "report", "evidence_text": "raporla", "polarity": "requested"}
                 ]
             },
             "presentation_request": "report",
