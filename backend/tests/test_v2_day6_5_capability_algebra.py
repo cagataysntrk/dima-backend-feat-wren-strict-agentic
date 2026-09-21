@@ -23,6 +23,7 @@ from app.v2.manager_models import (
     UserObligationLedger,
 )
 from app.v2.models import ResolvedSemanticRef, SemanticTargetKind
+from app.v2.manager_policy import ManagerCapabilityRegistry
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.standard_projection import StandardProjectionCompiler
@@ -432,3 +433,27 @@ def test_invalid_atom_cannot_be_laundered_by_valid_obligation_in_compiler():
         "performance contains forbidden semantic kinds: dimension" in reason
         for reason in compiled.reasons
     )
+
+
+def test_manager_binding_contract_is_registry_derived_and_semantic_safe():
+    contract = {
+        row["capability"]: row
+        for row in ManagerCapabilityRegistry().manager_contract()
+    }
+    performance = contract["performance"]
+    breakdown = contract["breakdown"]
+
+    assert performance["required_semantic_kinds"] == ["metric"]
+    assert "dimension" not in performance["allowed_semantic_kinds"]
+    assert breakdown["required_semantic_kinds"] == ["dimension", "metric"]
+    assert set(breakdown["allowed_semantic_kinds"]) == {
+        "dimension",
+        "filter",
+        "metric",
+        "period",
+    }
+
+    blob = str(contract)
+    assert "Sales.revenue" not in blob
+    assert "sales_omega" not in blob
+    assert "net_value_x" not in blob
