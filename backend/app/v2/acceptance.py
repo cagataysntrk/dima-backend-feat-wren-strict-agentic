@@ -109,7 +109,7 @@ class IntentAcceptanceGate:
                 seen.append((effect, item.polarity, item.obligation_id))
         return tuple(dict.fromkeys(conflicts))
 
-    def _validate_resolution_receipt_coverage(
+    def _validate_semantic_binding_provenance(
         self,
         *,
         envelope: UserIntentEnvelope,
@@ -119,9 +119,10 @@ class IntentAcceptanceGate:
     ) -> tuple[str, ...]:
         """Validate exact runtime-minted source->handle provenance edges.
 
-        No source-span containment heuristics are used. A current-turn Resolver receipt
-        is covered only by an exact SemanticBindingRef carried by an obligation, and every
-        declared SemanticBindingRef must correspond to a current Resolver receipt.
+        This is anti-laundering only, never intent-completeness inference. No containment
+        or language heuristics are used. A current-turn runtime binding receipt is covered
+        only by an exact SemanticBindingRef carried by an obligation, and every declared
+        SemanticBindingRef must correspond to a current runtime binding receipt.
         """
         reasons: list[str] = []
         current_receipts: dict[tuple[str, str, str], SemanticResolutionReceipt] = {}
@@ -179,14 +180,14 @@ class IntentAcceptanceGate:
                     )
                 if key not in current_receipts:
                     reasons.append(
-                        "semantic binding lacks current Resolver receipt: "
+                        "semantic binding lacks current runtime semantic binding receipt: "
                         f"{binding.source_ref}/{binding.target_kind}"
                     )
 
         for key, receipt in current_receipts.items():
             if key not in declared_keys:
                 reasons.append(
-                    "resolved user semantic source omitted from explicit binding graph: "
+                    "runtime-bound user semantic source omitted from explicit binding graph: "
                     f"{receipt.source_ref}/{receipt.target_kind}"
                 )
 
@@ -320,7 +321,7 @@ class IntentAcceptanceGate:
 
         if semantic_receipts is not None:
             reject.extend(
-                self._validate_resolution_receipt_coverage(
+                self._validate_semantic_binding_provenance(
                     envelope=envelope,
                     semantic_receipts=semantic_receipts,
                     tenant_binding=tenant_binding,
