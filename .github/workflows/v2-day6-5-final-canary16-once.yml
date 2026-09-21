@@ -24,9 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: f6b629139adccfa3ac5ee5df70750c3c23c64300
+          ref: 8961a60a0255df691e5f1f42cf2131e83f8af674
       - name: Verify exact frozen SHA
-        run: test "$(git rev-parse HEAD)" = "f6b629139adccfa3ac5ee5df70750c3c23c64300"
+        run: test "$(git rev-parse HEAD)" = "8961a60a0255df691e5f1f42cf2131e83f8af674"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
