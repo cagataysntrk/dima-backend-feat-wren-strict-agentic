@@ -48,22 +48,22 @@ jobs:
             --require-live \
             --workers 1 \
             --model openai/gpt-5.6-sol \
-            --case-id d65-dev-001 \\
-            --case-id d65-dev-009 \\
-            --case-id d65-dev-013 \\
-            --case-id d65-dev-019 \\
-            --case-id d65-dev-025 \\
-            --case-id d65-dev-028 \\
-            --case-id d65-dev-033 \\
-            --case-id d65-dev-034 \\
-            --case-id d65-dev-047 \\
-            --case-id d65-dev-055 \\
-            --case-id d65-dev-056 \\
-            --case-id d65-dev-063 \\
-            --case-id d65-dev-067 \\
-            --case-id d65-dev-072 \\
-            --case-id d65-dev-075 \\
-            --case-id d65-dev-080
+            --case-id d65-dev-001 \
+            --case-id d65-dev-009 \
+            --case-id d65-dev-013 \
+            --case-id d65-dev-019 \
+            --case-id d65-dev-025 \
+            --case-id d65-dev-028 \
+            --case-id d65-dev-033 \
+            --case-id d65-dev-034 \
+            --case-id d65-dev-047 \
+            --case-id d65-dev-055 \
+            --case-id d65-dev-056 \
+            --case-id d65-dev-063 \
+            --case-id d65-dev-067 \
+            --case-id d65-dev-072 \
+            --case-id d65-dev-075 \
+            --case-id d65-dev-080 \
             --output lab/reports/v2_day6_5_final_canary16.json
       - uses: actions/upload-artifact@v4
         if: always()
