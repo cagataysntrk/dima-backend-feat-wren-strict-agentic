@@ -20,6 +20,7 @@ from app.v2.models import (
     EvidenceRefV0,
     ExecutionResultV0,
     ResultExecutionAnchorV0,
+    ResearchBriefStatus,
     ScopeChipV0,
     SemanticHypothesis,
 )
@@ -219,7 +220,47 @@ class ConversationFinalizerV0:
         evidence = _evidence_refs(core)
         tables: tuple[ConversationTableV0, ...] = ()
 
-        if core.dialogue_action == DialogueAction.CLARIFY:
+        if core.dialogue_action == DialogueAction.RESEARCH_BRIEF:
+            brief = core.research_brief
+            if brief is None:
+                response = ConversationResponseV0(
+                    kind=ConversationResponseKind.FAILURE,
+                    text="Typed ResearchBrief üretilemedi.",
+                    official_verified=False,
+                )
+            elif brief.status == ResearchBriefStatus.READY_FOR_RESEARCH:
+                goals = "\n".join(
+                    f"- {question.source_text}" for question in brief.questions
+                )
+                response = ConversationResponseV0(
+                    kind=ConversationResponseKind.RESEARCH_BRIEF,
+                    text=(
+                        "Araştırma sözleşmesi hazır. İncelenecek MUST hedefler:\n"
+                        + goals
+                    ),
+                    official_verified=False,
+                )
+            else:
+                blocked = {
+                    question.goal_id: question.source_text
+                    for question in brief.questions
+                    if question.goal_id in brief.blocking_goal_ids
+                }
+                lines = "\n".join(
+                    f"- {source_text}" for source_text in blocked.values()
+                )
+                response = ConversationResponseV0(
+                    kind=ConversationResponseKind.SEMANTIC_GAP,
+                    text=(
+                        "Araştırma hedefleri kaybolmadan korundu; ancak şu MUST hedefler "
+                        "güvenilir semantic bağ kurulmadan araştırmaya açılamaz:\n"
+                        + lines
+                    ),
+                    # Research clarification resume is intentionally not a Day 6 feature.
+                    clarification_chips=(),
+                    official_verified=False,
+                )
+        elif core.dialogue_action == DialogueAction.CLARIFY:
             clarification = core.clarification
             kind = (
                 ConversationResponseKind.SEMANTIC_GAP
@@ -322,12 +363,13 @@ class ConversationFinalizerV0:
             )
 
         payload = core.model_dump(mode="python")
+        is_research = core.dialogue_action == DialogueAction.RESEARCH_BRIEF
         payload.update(
             {
-                "status": "core_mvp",
-                "stage": "day5_core_mvp",
+                "status": "research_brief" if is_research else "core_mvp",
+                "stage": "day6_research_brief" if is_research else "day5_core_mvp",
                 "response": response,
-                "next_stage": "core_mvp_gate",
+                "next_stage": core.next_stage if is_research else "core_mvp_gate",
             }
         )
         return AskV2CoreResponse.model_validate(payload)
