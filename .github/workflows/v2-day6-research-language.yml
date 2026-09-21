@@ -4,7 +4,19 @@ name: v2-day6-research-language
   workflow_dispatch:
     inputs:
       case_ids:
-        description: "Optional comma-separated case ids; empty runs the full Day 6 gate"
+        description: "Optional comma-separated case ids; empty runs the frozen Day 6 gate"
+        required: false
+        default: ""
+      model_role:
+        description: "V2 language role to certify/measure"
+        required: true
+        type: choice
+        default: REFERENCE_LANGUAGE
+        options:
+          - REFERENCE_LANGUAGE
+          - FAST_LANGUAGE
+      model_candidate:
+        description: "Optional explicit candidate override for this manual run"
         required: false
         default: ""
 
@@ -25,11 +37,10 @@ jobs:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
-      DIMA_LLM_PROVIDER: "openrouter"
-      DIMA_OPENROUTER_MODEL: "google/gemini-2.5-flash-lite"
-      DIMA_OPENROUTER_SELECT_MODEL: "google/gemini-2.5-flash-lite"
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       DAY6_CASE_IDS: ${{ inputs.case_ids }}
+      DAY6_MODEL_ROLE: ${{ inputs.model_role }}
+      DAY6_MODEL_CANDIDATE: ${{ inputs.model_candidate }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,7 +54,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p lab/reports
-          args=(--require-live)
+          args=(--require-live --model-role "${DAY6_MODEL_ROLE}")
+          if [[ -n "${DAY6_MODEL_CANDIDATE}" ]]; then
+            args+=(--model "${DAY6_MODEL_CANDIDATE}")
+          fi
           if [[ -n "${DAY6_CASE_IDS}" ]]; then
             IFS=',' read -ra ids <<< "${DAY6_CASE_IDS}"
             for id in "${ids[@]}"; do
