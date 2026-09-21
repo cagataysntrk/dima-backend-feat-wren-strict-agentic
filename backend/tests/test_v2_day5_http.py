@@ -379,22 +379,17 @@ def test_real_http_day6_research_brief_ready_stops_before_data_execution(v2_clie
             "dialogue_act": "REPORT_REQUEST",
             "research_request": {
                 "time_mentions": [{"text": "bu yıl", "kind": "time"}],
-                "goals": [
+                "goals": [],
+                "relationships": [
                     {
-                        "kind": "relationship",
                         "text": "üretim hattı ile çıktı verimi ilişkisini incele",
-                        "subject_mentions": [{"text": "çıktı verimi", "kind": "metric"}],
-                        "related_mentions": [{"text": "üretim hattı", "kind": "dimension"}],
-                        "deliverable": None,
-                    },
-                    {
-                        "kind": "deliverable",
-                        "text": "raporla",
-                        "subject_mentions": [],
-                        "related_mentions": [],
-                        "deliverable": "report",
-                    },
+                        "focus_mentions": [{"text": "çıktı verimi", "kind": "metric"}],
+                        "counterpart_mentions": [
+                            {"text": "üretim hattı", "kind": "dimension"}
+                        ],
+                    }
                 ],
+                "deliverables": [{"kind": "report", "text": "raporla"}],
             },
             "presentation_request": "report",
         }
@@ -433,22 +428,17 @@ def test_real_http_day6_blocked_goal_is_preserved_without_query(v2_client, monke
         {
             "dialogue_act": "REPORT_REQUEST",
             "research_request": {
-                "goals": [
+                "goals": [],
+                "relationships": [
                     {
-                        "kind": "relationship",
                         "text": "çıktı verimi ile vardiya ilişkisini incele",
-                        "subject_mentions": [{"text": "çıktı verimi", "kind": "metric"}],
-                        "related_mentions": [{"text": "vardiya", "kind": "dimension"}],
-                        "deliverable": None,
-                    },
-                    {
-                        "kind": "deliverable",
-                        "text": "raporla",
-                        "subject_mentions": [],
-                        "related_mentions": [],
-                        "deliverable": "report",
-                    },
+                        "focus_mentions": [{"text": "çıktı verimi", "kind": "metric"}],
+                        "counterpart_mentions": [
+                            {"text": "vardiya", "kind": "dimension"}
+                        ],
+                    }
                 ],
+                "deliverables": [{"kind": "report", "text": "raporla"}],
             },
             "presentation_request": "report",
         }
