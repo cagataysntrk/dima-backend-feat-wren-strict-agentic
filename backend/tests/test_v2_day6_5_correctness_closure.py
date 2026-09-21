@@ -9,6 +9,7 @@ import pytest
 
 from app.v2.completion import CompletionGate
 from app.v2.manager_errors import ManagerSemanticGap
+from app.v2.manager_loop import ManagerDecisionTransport, _strict_native_schema
 from app.v2.manager_executor import (
     GovernedManagerExecutionContext,
     GovernedManagerExecutor,
@@ -313,3 +314,23 @@ def test_s8_last_12_months_previous_12_months_is_typed():
     assert comparison.reference_period.kind == PeriodKind.LAST_N_MONTHS
     assert comparison.reference_period.n == 12
     assert comparison.reference_period.end < comparison.base_period.start
+
+
+def test_manager_native_schema_is_strict_provider_compatible():
+    schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get("type") == "object" or "properties" in node:
+                properties = set((node.get("properties") or {}).keys())
+                required = set(node.get("required") or ())
+                assert required == properties
+                assert node.get("additionalProperties") is False
+                assert "default" not in node
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(schema)
