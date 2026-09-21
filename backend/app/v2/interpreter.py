@@ -368,7 +368,6 @@ def _validate_surface_grounding(question: str, turn: TurnInterpretation) -> None
 
 
 def _system_prompt() -> str:
-    schema = TurnInterpretation.model_json_schema()
     return f"""Sen Dima V2 TurnInterpreter'sın. Kullanıcının BU TURDA ne yaptığını
 tek seferde typed bir dil sözleşmesine çevirirsin. Sen semantic resolver, planner veya
 SQL üreticisi değilsin.
@@ -376,8 +375,8 @@ SQL üreticisi değilsin.
 SÜRÜM: {_INTERPRETER_VERSION}
 
 MUTLAK SINIRLAR:
-- SADECE JSON döndür; markdown/açıklama ekleme.
-- Çıktı aşağıdaki JSON Schema'ya uymalı.
+- Çıktı transport katmanında native JSON Schema ile zorlanır; markdown/açıklama ekleme.
+- Şemayı prompt metninden yeniden yorumlama; yalnız alanların semantik anlamına uy.
 - SQL, tablo adı, fiziksel kolon, CubeQuery veya sorgu planı üretme.
 - Canonical metric/dimension/entity ID SEÇME ve UYDURMA.
 - semantic/reference/unresolved/repair/research alanlarındaki her 'text' değeri
@@ -484,8 +483,6 @@ ANALYTICAL_REQUEST:
 - comparison ifadelerini hesaplama; reference/comparison surface'ini comparisons içine taşı. Aynı reference period span'ini time_mentions içine ayrıca kopyalama; time_mentions varsa base/current period içindir.
 - canonical ref alanı YOKTUR ve ek alan üretmek yasaktır.
 
-JSON_SCHEMA:
-{json.dumps(schema, ensure_ascii=False, separators=(",", ":"))}
 """
 
 
@@ -687,7 +684,7 @@ def _parse(raw: str) -> TurnInterpretation:
 
 
 class TurnInterpreter:
-    """One structured call; at most one format-only retry; no semantic retry."""
+    """One native-schema call; at most one format-only retry; no semantic retry."""
 
     def interpret(
         self,
@@ -697,25 +694,33 @@ class TurnInterpreter:
         conversation: ConversationStateV2,
         llm,
     ) -> TurnInterpretation:
-        structured = getattr(llm, "structured_text", None)
+        structured = getattr(llm, "structured_json", None)
         if not callable(structured):
             raise TurnInterpreterError(
                 TurnInterpretationFailure(
                     code="llm_unavailable",
-                    message="Configured provider structured language interpretation desteklemiyor.",
+                    message=(
+                        "Configured provider native JSON-schema language interpretation "
+                        "desteklemiyor."
+                    ),
                 )
             )
 
         system = _system_prompt()
         user = _user_prompt(question, semantic_context, conversation)
+        schema = TurnInterpretation.model_json_schema()
+        transport_kwargs = {
+            "schema": schema,
+            "schema_name": "dima_turn_interpretation_v2",
+        }
 
         try:
-            raw = structured(system, user)
+            raw = structured(system, user, **transport_kwargs)
         except Exception as exc:
             raise TurnInterpreterError(
                 TurnInterpretationFailure(
                     code="llm_unavailable",
-                    message=f"TurnInterpreter LLM çağrısı başarısız: {exc}",
+                    message=f"TurnInterpreter native schema çağrısı başarısız: {exc}",
                 )
             ) from exc
 
@@ -724,9 +729,9 @@ class TurnInterpreter:
         except ValueError as first_error:
             repair_system = (
                 system
-                + "\n\nFORMAT_REPAIR_ONLY: Önceki cevabın JSON/schema biçimi geçersizdi. "
-                  "Aynı semantic kararı DEĞİŞTİRMEDEN yalnız geçerli JSON olarak yeniden yaz. "
-                  "Yeni yorum, canonical ID veya yeni mention ekleme."
+                + "\n\nFORMAT_REPAIR_ONLY: Native schema çıktısı uygulama doğrulamasını "
+                  "geçmedi. Aynı semantic kararı DEĞİŞTİRMEDEN yalnız şema-geçerli biçimde "
+                  "yeniden yaz. Yeni yorum, canonical ID veya yeni mention ekleme."
             )
             repair_user = (
                 user
@@ -736,13 +741,20 @@ class TurnInterpreter:
                 + str(first_error)[:1200]
             )
             try:
-                repaired = structured(repair_system, repair_user)
+                repaired = structured(
+                    repair_system,
+                    repair_user,
+                    **transport_kwargs,
+                )
                 turn = _parse(repaired)
             except Exception as exc:
                 raise TurnInterpreterError(
                     TurnInterpretationFailure(
                         code="invalid_structured_output",
-                        message=f"TurnInterpreter bir format retry sonrasında da geçersiz çıktı: {exc}",
+                        message=(
+                            "TurnInterpreter native schema + bir format retry sonrasında "
+                            f"geçersiz çıktı: {exc}"
+                        ),
                     )
                 ) from exc
 
