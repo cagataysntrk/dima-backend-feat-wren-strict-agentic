@@ -153,7 +153,7 @@ def _surface_spans(turn: TurnInterpretation) -> list[str]:
 
 def _source_tokens(question: str) -> list[tuple[int, int]]:
     """Return exact token character spans from the current message only."""
-    return [(m.start(), m.end()) for m in re.finditer(r"[\\wÇĞİÖŞÜçğıöşü-]+", question, flags=re.UNICODE)]
+    return [(m.start(), m.end()) for m in re.finditer(r"[\wÇĞİÖŞÜçğıöşü-]+", question, flags=re.UNICODE)]
 
 
 def _align_near_copy_surface(question: str, span: str) -> str:
@@ -167,7 +167,7 @@ def _align_near_copy_surface(question: str, span: str) -> str:
     if normalized and normalized in _normalized_surface(question):
         return span
 
-    wanted_tokens = re.findall(r"[\\wÇĞİÖŞÜçğıöşü-]+", span, flags=re.UNICODE)
+    wanted_tokens = re.findall(r"[\wÇĞİÖŞÜçğıöşü-]+", span, flags=re.UNICODE)
     token_spans = _source_tokens(question)
     width = len(wanted_tokens)
     if width == 0 or width > len(token_spans):
@@ -273,7 +273,7 @@ def _complete_explicit_ranking_limit(question: str, turn: TurnInterpretation) ->
     limit = ranking.limit
     text = ranking.text
 
-    in_span = re.search(r"(?<!\\d)([1-9]\\d{0,3})(?!\\d)", text)
+    in_span = re.search(r"(?<!\d)([1-9]\d{0,3})(?!\d)", text)
     if limit is None and in_span is not None:
         value = int(in_span.group(1))
         if value <= 1000:
@@ -283,7 +283,7 @@ def _complete_explicit_ranking_limit(question: str, turn: TurnInterpretation) ->
     if len(exact_positions) == 1:
         match = exact_positions[0]
         suffix = question[match.end():]
-        adjacent = re.match(r"([\\s:,-]*)([1-9]\\d{0,3})(?=\\b)", suffix)
+        adjacent = re.match(r"([\s:,-]*)([1-9]\d{0,3})(?=\b)", suffix)
         if adjacent is not None:
             value = int(adjacent.group(2))
             if value <= 1000:
