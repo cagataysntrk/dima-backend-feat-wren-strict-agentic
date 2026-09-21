@@ -51,3 +51,5 @@ jobs:
             tests/test_v2_day6_5_real_trust_plane.py \
             tests/test_v2_day6_5_transport_budget.py \
             tests/test_v2_day6_5_dev_corpus.py
+
+# rerun: legacy kind-map cleanup
