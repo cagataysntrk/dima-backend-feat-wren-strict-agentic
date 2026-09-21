@@ -694,3 +694,46 @@ def test_required_product_breakdown_and_excluded_region_breakdown_are_not_confli
         context_version="ctx-1",
     )
     assert result.status.value == "ACCEPTED"
+
+
+def test_model_open_questions_are_advisory_not_clarification_authority():
+    spans = SourceSpanRegistry()
+    text = "net gelir ne durumda?"
+    source_hash = spans.register_message(message_id="open-q-1", text=text)
+    source = spans.mint_exact(message_id="open-q-1", surface="net gelir")
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-open-q",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-open-q",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
+    result = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="open-q-a1",
+            turn_id="open-q-1",
+            request_ref="open-q-request",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_PERF",
+                    capability_key=ManagerCapabilityKey.PERFORMANCE,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(source.source_ref,),
+                    semantic_handle_refs=(metric.handle_id,),
+                    open_questions=("model thinks there may be more detail",),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    assert result.status.value == "ACCEPTED"
