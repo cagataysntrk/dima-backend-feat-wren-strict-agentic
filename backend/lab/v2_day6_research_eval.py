@@ -619,6 +619,31 @@ def main() -> int:
         f"negatives={negative_act_accuracy:.1%} invented={invented_goal_total} "
         f"calls={total_calls} status={payload['status']}"
     )
+    for record in records:
+        if record["case_pass"]:
+            continue
+        print(
+            "DAY6_FAIL_CASE "
+            + json.dumps(
+                {
+                    "id": record["id"],
+                    "expected_act": record["expected_act"],
+                    "actual_act": record.get("actual_act"),
+                    "expected_goal_count": record.get("expected_goal_count"),
+                    "actual_goal_count": record.get("actual_goal_count"),
+                    "matched_goal_count": record.get("matched_goal_count"),
+                    "actual_goals": record.get("actual_goals", []),
+                    "brief_status": record.get("brief_status"),
+                    "blocking_goal_ids": record.get("blocking_goal_ids", []),
+                    "time_results": record.get("time_results", {}),
+                    "forbidden_goal_results": record.get("forbidden_goal_results", {}),
+                    "failure": record.get("failure"),
+                    "calls": record.get("calls"),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
     return 0 if passed else 1
 
 
