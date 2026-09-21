@@ -257,7 +257,9 @@ def test_fuzzy_only_is_suggestion_not_auto_resolution():
     ("surface", "kind", "canonical"),
     [
         ("müşterilere", SemanticMentionKind.DIMENSION, "musteri"),
+        ("müşterilere göre", SemanticMentionKind.DIMENSION, "musteri"),
         ("vardiyalarda", SemanticMentionKind.DIMENSION, "vardiya"),
+        ("vardiyalarda bazında", SemanticMentionKind.DIMENSION, "vardiya"),
         ("satışların", SemanticMentionKind.METRIC, "ciro"),
     ],
 )
