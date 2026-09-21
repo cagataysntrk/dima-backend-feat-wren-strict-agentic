@@ -37,18 +37,18 @@ jobs:
             --require-live \
             --workers 4 \
             --model openai/gpt-5.6-luna \
-            --case-id "d65-dev-001--case-id " \
-            --case-id "d65-dev-007--case-id " \
-            --case-id "d65-dev-013--case-id " \
-            --case-id "d65-dev-019--case-id " \
-            --case-id "d65-dev-025--case-id " \
-            --case-id "d65-dev-037--case-id " \
-            --case-id "d65-dev-047--case-id " \
-            --case-id "d65-dev-055--case-id " \
-            --case-id "d65-dev-005--case-id " \
-            --case-id "d65-dev-067--case-id " \
-            --case-id "d65-dev-063--case-id " \
-            --case-id "d65-dev-075--case-id "
+            --case-id "d65-dev-001" \\
+            --case-id "d65-dev-007" \\
+            --case-id "d65-dev-013" \\
+            --case-id "d65-dev-019" \\
+            --case-id "d65-dev-025" \\
+            --case-id "d65-dev-037" \\
+            --case-id "d65-dev-047" \\
+            --case-id "d65-dev-055" \\
+            --case-id "d65-dev-005" \\
+            --case-id "d65-dev-067" \\
+            --case-id "d65-dev-063" \\
+            --case-id "d65-dev-075"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
