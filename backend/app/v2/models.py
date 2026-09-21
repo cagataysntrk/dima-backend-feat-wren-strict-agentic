@@ -173,20 +173,48 @@ class ComparisonSurface(FrozenModel):
 
 
 class AnalyticalRequest(FrozenModel):
-    """Language-level request only; canonical semantic resolution is intentionally absent."""
+    """Language-level delta/request only; canonical semantic resolution is absent.
 
-    metric_mentions: tuple[SemanticMention, ...] = ()
-    dimension_mentions: tuple[SemanticMention, ...] = ()
-    filter_mentions: tuple[SemanticMention, ...] = ()
-    time_mentions: tuple[SemanticMention, ...] = ()
+    A dimension mention denotes a grouping/breakdown axis. A filter mention denotes a
+    concrete member/value used to narrow scope. On REFINE/REPAIR turns only the slots
+    explicitly changed or added in the current message belong here.
+    """
+
+    metric_mentions: tuple[SemanticMention, ...] = Field(
+        default=(),
+        description="Metric surface spans explicitly mentioned in the current message.",
+    )
+    dimension_mentions: tuple[SemanticMention, ...] = Field(
+        default=(),
+        description=(
+            "Grouping/breakdown axis surfaces only; not a concrete selected member/value."
+        ),
+    )
+    filter_mentions: tuple[SemanticMention, ...] = Field(
+        default=(),
+        description=(
+            "Concrete member/value/identifier surfaces that narrow scope; do not duplicate "
+            "the same selected member as a dimension unless grouping is also explicitly requested."
+        ),
+    )
+    time_mentions: tuple[SemanticMention, ...] = Field(
+        default=(),
+        description="Current-message time/period surfaces only; no date arithmetic.",
+    )
     ranking: RankingSurface | None = None
     comparisons: tuple[ComparisonSurface, ...] = ()
 
 
 class UserRepair(FrozenModel):
-    """Surface-level correction signal. Prior semantic slots are not mutated on Day 1."""
+    """Current-message evidence that an existing analytical choice is being corrected/replaced."""
 
-    correction_spans: tuple[str, ...] = ()
+    correction_spans: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Surface spans showing retraction/correction/replacement of an existing slot; "
+            "must be non-empty for a USER_REPAIR turn."
+        ),
+    )
 
 
 class CandidateSource(StrEnum):
@@ -451,11 +479,24 @@ class ConversationStateV2(FrozenModel):
 
 
 class TurnInterpretation(FrozenModel):
-    dialogue_act: TurnAct
+    dialogue_act: TurnAct = Field(
+        description=(
+            "Speech act for this turn. USER_REPAIR has precedence when the user retracts, "
+            "corrects, or replaces an existing analytical slot. ANALYTIC_REFINE adds/narrows "
+            "without retracting a prior choice. CLARIFICATION_ANSWER is valid only while a "
+            "clarification is pending."
+        )
+    )
     references: tuple[ReferenceMention, ...] = ()
     analytical_request: AnalyticalRequest | None = None
     presentation_request: PresentationKind = PresentationKind.NONE
-    user_repair: UserRepair | None = None
+    user_repair: UserRepair | None = Field(
+        default=None,
+        description=(
+            "Required for USER_REPAIR; absent for ordinary ANALYTIC_REFINE. Contains only "
+            "current-message correction evidence, never reconstructed prior slots."
+        ),
+    )
     unresolved_mentions: tuple[UnresolvedMention, ...] = ()
 
 
