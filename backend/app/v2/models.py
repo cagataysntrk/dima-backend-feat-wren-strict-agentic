@@ -226,22 +226,40 @@ class ResearchGoalSurface(FrozenModel):
     """One explicit analytical operation expressed in the current message.
 
     Deliverables are intentionally NOT research questions. For RELATIONSHIP, one
-    surface object represents at most one edge; incomplete endpoints may remain empty
-    and are blocked later rather than guessed.
+    surface object represents at most one edge. Standard-capable RANKING/COMPARISON
+    carry the typed operation payload needed for lossless Core projection; the routing
+    policy never reparses goal.text to recover missing semantics.
     """
 
     kind: ResearchGoalKind
     text: str = Field(min_length=1)
     subject_mentions: tuple[SemanticMention, ...] = ()
     related_mentions: tuple[SemanticMention, ...] = ()
+    ranking: RankingSurface | None = None
+    comparisons: tuple[ComparisonSurface, ...] = ()
 
     @model_validator(mode="after")
-    def _relationship_is_atomic(self):
+    def _operation_shape_invariants(self):
         if self.kind == ResearchGoalKind.RELATIONSHIP:
             if len(self.subject_mentions) > 1 or len(self.related_mentions) > 1:
                 raise ValueError(
                     "relationship operation must represent at most one subject-to-related edge"
                 )
+        if self.kind == ResearchGoalKind.RANKING:
+            if self.ranking is None:
+                raise ValueError("ranking operation requires typed ranking payload")
+        elif self.ranking is not None:
+            raise ValueError("ranking payload is valid only for ranking operation")
+
+        if self.kind == ResearchGoalKind.COMPARISON:
+            if len(self.comparisons) > 1:
+                raise ValueError(
+                    "comparison operation may carry at most one Core comparison surface"
+                )
+        elif self.comparisons:
+            raise ValueError(
+                "comparison payload is valid only for comparison operation"
+            )
         return self
 
 
@@ -789,6 +807,7 @@ class AskV2Day3Response(FrozenModel):
 class ResearchMode(StrEnum):
     STANDARD = "STANDARD"
     RESEARCH = "RESEARCH"
+    BLOCKED = "BLOCKED"
 
 
 class ResearchModeReason(StrEnum):
@@ -797,6 +816,8 @@ class ResearchModeReason(StrEnum):
     MULTI_INDEPENDENT_GOALS = "multi_independent_goals"
     STANDARD_PROJECTABLE_OPERATIONS = "standard_projectable_operations"
     UNPROJECTABLE_RESEARCH_SURFACE = "unprojectable_research_surface"
+    UNCLASSIFIED_OPERATION = "unclassified_operation"
+    INCOMPLETE_STANDARD_OPERATION = "incomplete_standard_operation"
 
 
 class ResearchModeDecision(FrozenModel):
