@@ -80,20 +80,34 @@ class ResearchRunTerminal(StrEnum):
 
 class ResearchDirectiveType(StrEnum):
     ADAPT_ON_EVIDENCE = "ADAPT_ON_EVIDENCE"
+    BROADEN_WITHIN_BUDGET = "BROADEN_WITHIN_BUDGET"
 
 
 class ResearchDirectiveCondition(StrEnum):
     MATERIAL_NEW_DIRECTION = "MATERIAL_NEW_DIRECTION"
+    WITHIN_SYSTEM_BUDGET = "WITHIN_SYSTEM_BUDGET"
 
 
 class ResearchDirective(FrozenModel):
     directive_id: str = Field(min_length=1)
     directive_type: ResearchDirectiveType
     parent_obligation_id: str = Field(min_length=1)
-    condition: ResearchDirectiveCondition = (
-        ResearchDirectiveCondition.MATERIAL_NEW_DIRECTION
-    )
+    condition: ResearchDirectiveCondition
     source_refs: tuple[str, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _directive_shape(self):
+        expected = {
+            ResearchDirectiveType.ADAPT_ON_EVIDENCE:
+                ResearchDirectiveCondition.MATERIAL_NEW_DIRECTION,
+            ResearchDirectiveType.BROADEN_WITHIN_BUDGET:
+                ResearchDirectiveCondition.WITHIN_SYSTEM_BUDGET,
+        }[self.directive_type]
+        if self.condition != expected:
+            raise ValueError(
+                f"{self.directive_type.value} requires condition {expected.value}"
+            )
+        return self
 
 
 class StandardProjection(FrozenModel):
@@ -148,6 +162,14 @@ class SemanticResolutionReceipt(FrozenModel):
     target_kind: str = Field(min_length=1)
 
 
+class SemanticBindingRef(FrozenModel):
+    """Exact runtime-minted provenance edge: source span -> semantic handle."""
+
+    source_ref: str = Field(pattern=r"^src_[a-f0-9]{24}$")
+    handle_id: str = Field(pattern=r"^sem_[a-f0-9]{24}$")
+    target_kind: str = Field(min_length=1)
+
+
 class CandidateObligation(FrozenModel):
     obligation_id: str = Field(min_length=1)
     capability_key: ManagerCapabilityKey
@@ -157,6 +179,7 @@ class CandidateObligation(FrozenModel):
     polarity: ObligationPolarity = ObligationPolarity.REQUIRED
     source_refs: tuple[str, ...] = Field(min_length=1)
     semantic_handle_refs: tuple[str, ...] = ()
+    semantic_bindings: tuple[SemanticBindingRef, ...] = ()
     scope_refs: tuple[str, ...] = ()
     open_questions: tuple[str, ...] = ()
     ranking_direction: Literal["asc", "desc"] | None = None
@@ -180,6 +203,15 @@ class CandidateObligation(FrozenModel):
             self.ranking_direction is not None or self.ranking_limit is not None
         ):
             raise ValueError("ranking parameters yalnız ranking obligation için geçerlidir")
+        if self.semantic_bindings:
+            bound_handles = tuple(
+                dict.fromkeys(binding.handle_id for binding in self.semantic_bindings)
+            )
+            declared_handles = tuple(dict.fromkeys(self.semantic_handle_refs))
+            if bound_handles != declared_handles:
+                raise ValueError(
+                    "semantic_bindings handle set must exactly match semantic_handle_refs"
+                )
         return self
 
 
@@ -220,6 +252,7 @@ class ObligationLedgerItem(FrozenModel):
     status: ObligationStatus
     source_refs: tuple[str, ...]
     semantic_handle_refs: tuple[str, ...] = ()
+    semantic_bindings: tuple[SemanticBindingRef, ...] = ()
     ranking_direction: Literal["asc", "desc"] | None = None
     ranking_limit: int | None = Field(default=None, ge=1, le=1000)
     evidence_refs: tuple[str, ...] = ()
