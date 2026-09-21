@@ -562,6 +562,115 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
         raise AssertionError("invented research goal surface must fail closed")
 
 
+
+
+def test_interpreter_normalizes_provider_enum_case_and_inapplicable_deliverable_without_retry():
+    question = "Son 12 ay ürünleri karşılaştır, makine ilişkisini incele ve raporla."
+    llm = _StaticStructuredLlm(
+        {
+            "dialogue_act": "report_request",
+            "references": [],
+            "analytical_request": None,
+            "research_request": {
+                "goals": [
+                    {
+                        "kind": "COMPARISON",
+                        "text": "ürünleri karşılaştır",
+                        "subject_mentions": [
+                            {"text": "ürünleri", "kind": "DIMENSION"}
+                        ],
+                        "related_mentions": [],
+                        "deliverable": "report",
+                    },
+                    {
+                        "kind": "RELATIONSHIP",
+                        "text": "makine ilişkisini incele",
+                        "subject_mentions": [
+                            {"text": "ürünleri", "kind": "DIMENSION"}
+                        ],
+                        "related_mentions": [
+                            {"text": "makine", "kind": "DIMENSION"}
+                        ],
+                        "deliverable": "none",
+                    },
+                    {
+                        "kind": "DELIVERABLE",
+                        "text": "raporla",
+                        "subject_mentions": [],
+                        "related_mentions": [],
+                        "deliverable": "REPORT",
+                    },
+                ],
+                "time_mentions": [
+                    {"text": "Son 12 ay", "kind": "TIME"}
+                ],
+            },
+            "presentation_request": "REPORT",
+            "user_repair": None,
+            "unresolved_mentions": [],
+        }
+    )
+
+    turn = TurnInterpreter().interpret(
+        question=question,
+        semantic_context=_empty_context(),
+        conversation=ConversationStateV2(),
+        llm=llm,
+    )
+
+    assert llm.calls == 1
+    assert turn.dialogue_act == TurnAct.REPORT_REQUEST
+    assert turn.presentation_request == PresentationKind.REPORT
+    assert turn.research_request is not None
+    assert [goal.kind for goal in turn.research_request.goals] == [
+        ResearchGoalKind.COMPARISON,
+        ResearchGoalKind.RELATIONSHIP,
+        ResearchGoalKind.DELIVERABLE,
+    ]
+    assert turn.research_request.goals[0].deliverable is None
+    assert turn.research_request.goals[1].deliverable is None
+    assert turn.research_request.goals[2].deliverable == PresentationKind.REPORT
+    assert turn.research_request.time_mentions[0].kind == SemanticMentionKind.TIME
+
+
+def test_format_normalization_does_not_relax_surface_grounding():
+    question = "Makinelerle ve personelle ilişkilerini ayrı incele."
+    llm = _StaticStructuredLlm(
+        {
+            "dialogue_act": "COMPLEX_ANALYSIS",
+            "references": [],
+            "analytical_request": None,
+            "research_request": {
+                "goals": [
+                    {
+                        "kind": "RELATIONSHIP",
+                        "text": "makinelerle ilişkilerini",
+                        "subject_mentions": [
+                            {"text": "makinelerle", "kind": "DIMENSION"}
+                        ],
+                        "related_mentions": [],
+                        "deliverable": "none",
+                    }
+                ],
+                "time_mentions": [],
+            },
+            "presentation_request": "NONE",
+            "user_repair": None,
+            "unresolved_mentions": [],
+        }
+    )
+
+    with pytest.raises(TurnInterpreterError) as caught:
+        TurnInterpreter().interpret(
+            question=question,
+            semantic_context=_empty_context(),
+            conversation=ConversationStateV2(),
+            llm=llm,
+        )
+
+    assert caught.value.failure.code == "surface_grounding_violation"
+
+
 @pytest.mark.parametrize(
     "order",
     [
