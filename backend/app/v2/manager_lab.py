@@ -12,7 +12,7 @@ from control_plane.security import derive_hmac_key
 from app.config import get_settings
 from app.kaset import belki_sar
 from app.llm import build_generator
-from app.v2.acceptance import IntentAcceptanceGate
+from app.v2.acceptance import AcceptedContractRegistry, IntentAcceptanceGate
 from app.v2.context_provider import ContextProviderV0
 from app.v2.manager_core_adapter import ManagerCoreAnalyticsAdapter
 from app.v2.manager_executor import (
@@ -50,6 +50,9 @@ class ManagerLabResponse(FrozenModel):
 
 
 class ManagerLabHarness:
+    def __init__(self) -> None:
+        self._accepted_contracts = AcceptedContractRegistry()
+
     def run(
         self,
         *,
@@ -106,7 +109,10 @@ class ManagerLabHarness:
             semantic_resolution=semantic_adapter,
         )
         ref = request_ref(body)
-        manager_runtime = ManagerRuntime(request_ref=ref)
+        manager_runtime = ManagerRuntime(
+            request_ref=ref,
+            contract_registry=self._accepted_contracts,
+        )
         loop = ResearchManagerLoop(llm=llm, source_spans=source_spans)
         outcome = loop.run(
             question=body.question,
