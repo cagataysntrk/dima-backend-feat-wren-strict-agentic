@@ -24,6 +24,7 @@ from app.v2.manager_models import (
     ObligationPriority,
     UserIntentEnvelope,
 )
+from app.v2.manager_policy import ManagerCapabilityRegistry
 from app.v2.manager_runtime import (
     ManagerBudgetError,
     ManagerRuntime,
@@ -54,7 +55,10 @@ class ManagerObligationProposal(FrozenModel):
     priority: ObligationPriority
     polarity: ObligationPolarity
     source_surfaces: tuple[str, ...] = Field(min_length=1)
-    semantic_handle_refs: tuple[str, ...] = ()
+    semantic_handle_refs: tuple[str, ...] = Field(
+        default=(),
+        description="Use only runtime-issued h1/h2/... aliases from resolve_semantics.",
+    )
     open_questions: tuple[str, ...] = ()
     ranking_direction: Literal["asc", "desc"] | None = Field(
         default=None,
@@ -99,8 +103,14 @@ class ManagerDecisionTransport(FrozenModel):
             "comparison phrase. Ranking words/numbers are never semantic hints."
         ),
     )
-    temporal_anchor_handle: str | None = None
-    base_period_handle: str | None = None
+    temporal_anchor_handle: str | None = Field(
+        default=None,
+        description="Optional runtime-issued h* alias used only as temporal anchor.",
+    )
+    base_period_handle: str | None = Field(
+        default=None,
+        description="Optional runtime-issued h* alias for a resolved base period.",
+    )
     semantic_parent_obligation_id: str | None = None
     semantic_evidence_ref: str | None = None
     semantic_proposal: str | None = Field(default=None, max_length=240)
@@ -388,6 +398,7 @@ class ResearchManagerLoop:
             raise ValueError("RESEARCH_MANAGER provider native structured_json desteklemiyor")
         self._structured = structured
         self._source_spans = source_spans
+        self._capabilities = ManagerCapabilityRegistry()
         self._alias_by_handle: dict[str, str] = {}
         self._handle_by_alias: dict[str, str] = {}
 
@@ -475,6 +486,7 @@ class ResearchManagerLoop:
             "OBLIGATION_LEDGER": ledger_view,
             "EVIDENCE_REFS": list(runtime.snapshot.evidence_refs),
             "CONVERSATION_SURFACE": _conversation_surface_view(conversation),
+            "CAPABILITY_BINDING_CONTRACT": self._capabilities.manager_contract(),
             "RECENT_OBSERVATIONS": observations[-6:],
         }
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
