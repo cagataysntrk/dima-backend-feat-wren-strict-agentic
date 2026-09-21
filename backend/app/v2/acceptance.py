@@ -9,6 +9,7 @@ from app.v2.manager_models import (
     AcceptedTurnContract,
     AcceptanceResult,
     AcceptanceStatus,
+    ManagerCapabilityKey,
     ObligationLedgerItem,
     ObligationOrigin,
     ObligationPolarity,
