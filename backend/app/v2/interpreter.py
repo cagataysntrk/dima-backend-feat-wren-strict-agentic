@@ -562,12 +562,7 @@ def _enum_value(value: Any, enum_type) -> Any:
 
 
 def _normalize_structured_payload(data: Any) -> Any:
-    """Normalize transport-level JSON spelling only; never repair business meaning.
-
-    This boundary may normalize enum casing and structurally split an already-explicit
-    relationship endpoint list. It does not migrate old semantic schemas, invent goals,
-    infer standard/research mode, or recover missing ranking/comparison semantics.
-    """
+    """Normalize transport spelling only; never repair analytical meaning."""
     if not isinstance(data, dict):
         return data
 
@@ -581,64 +576,32 @@ def _normalize_structured_payload(data: Any) -> Any:
             out.get("presentation_request"), PresentationKind
         )
 
-    research = out.get("research_request")
-    if isinstance(research, dict):
-        research = dict(research)
+    graph = out.get("research_graph")
+    if isinstance(graph, dict):
+        graph = dict(graph)
 
-        def normalize_mention(raw_mention):
-            if not isinstance(raw_mention, dict):
-                return raw_mention
-            mention = dict(raw_mention)
-            mention["kind"] = _enum_value(
-                mention.get("kind"), SemanticMentionKind
+        surfaces = []
+        for raw_surface in graph.get("surfaces") or ():
+            if not isinstance(raw_surface, dict):
+                surfaces.append(raw_surface)
+                continue
+            item = dict(raw_surface)
+            item["kind"] = _enum_value(item.get("kind"), SemanticMentionKind)
+            surfaces.append(item)
+
+        operations = []
+        for raw_operation in graph.get("operations") or ():
+            if not isinstance(raw_operation, dict):
+                operations.append(raw_operation)
+                continue
+            item = dict(raw_operation)
+            item["kind"] = _enum_value(
+                item.get("kind"), ResearchNonRelationshipGoalKind
             )
-            return mention
-
-        deliverables = []
-        for raw_deliverable in research.get("deliverables") or ():
-            if not isinstance(raw_deliverable, dict):
-                deliverables.append(raw_deliverable)
-                continue
-            item = dict(raw_deliverable)
-            item["kind"] = _enum_value(item.get("kind"), PresentationKind)
-            deliverables.append(item)
-
-        relationships = []
-        for raw_relationship in research.get("relationships") or ():
-            if not isinstance(raw_relationship, dict):
-                relationships.append(raw_relationship)
-                continue
-            relationship = dict(raw_relationship)
-            relationship["focus_mentions"] = [
-                normalize_mention(item)
-                for item in (relationship.get("focus_mentions") or ())
-            ]
-            relationship["counterpart_mentions"] = [
-                normalize_mention(item)
-                for item in (relationship.get("counterpart_mentions") or ())
-            ]
-            relationships.append(relationship)
-
-        goals = []
-        for raw_goal in research.get("goals") or ():
-            if not isinstance(raw_goal, dict):
-                goals.append(raw_goal)
-                continue
-
-            goal = dict(raw_goal)
-            goal["kind"] = _enum_value(
-                goal.get("kind"), ResearchNonRelationshipGoalKind
+            item["polarity"] = _enum_value(
+                item.get("polarity"), ResearchOperationPolarity
             )
-            goal["subject_mentions"] = [
-                normalize_mention(item)
-                for item in (goal.get("subject_mentions") or ())
-            ]
-            goal["related_mentions"] = [
-                normalize_mention(item)
-                for item in (goal.get("related_mentions") or ())
-            ]
-
-            ranking = goal.get("ranking")
+            ranking = item.get("ranking")
             if isinstance(ranking, dict):
                 ranking = dict(ranking)
                 direction = ranking.get("direction")
@@ -646,50 +609,345 @@ def _normalize_structured_payload(data: Any) -> Any:
                     folded = direction.strip().casefold()
                     if folded in {"asc", "desc", "unspecified"}:
                         ranking["direction"] = folded
-                goal["ranking"] = ranking
-
-            goal["comparisons"] = [
-                dict(item) if isinstance(item, dict) else item
-                for item in (goal.get("comparisons") or ())
+                item["ranking"] = ranking
+            item["comparisons"] = [
+                dict(value) if isinstance(value, dict) else value
+                for value in (item.get("comparisons") or ())
             ]
-            goals.append(goal)
+            operations.append(item)
 
-        # Exact duplicate deliverables are a transport duplicate, not a new MUST.
-        deduped_deliverables = []
-        seen_deliverables = set()
-        for item in deliverables:
-            if not isinstance(item, dict):
-                deduped_deliverables.append(item)
+        relationships = []
+        for raw_relationship in graph.get("relationships") or ():
+            if not isinstance(raw_relationship, dict):
+                relationships.append(raw_relationship)
                 continue
-            key = (
-                str(item.get("kind") or "").casefold(),
-                _normalized_surface(str(item.get("text") or "")),
+            item = dict(raw_relationship)
+            item["focus_binding"] = _enum_value(
+                item.get("focus_binding"), ResearchFocusBinding
             )
-            if key in seen_deliverables:
-                continue
-            seen_deliverables.add(key)
-            deduped_deliverables.append(item)
+            item["polarity"] = _enum_value(
+                item.get("polarity"), ResearchOperationPolarity
+            )
+            relationships.append(item)
 
-        research["goals"] = goals
-        research["relationships"] = relationships
-        research["time_mentions"] = [
-            normalize_mention(item)
-            for item in (research.get("time_mentions") or ())
-        ]
-        research["deliverables"] = deduped_deliverables
-        out["research_request"] = research
+        deliverables = []
+        for raw_deliverable in graph.get("deliverables") or ():
+            if not isinstance(raw_deliverable, dict):
+                deliverables.append(raw_deliverable)
+                continue
+            item = dict(raw_deliverable)
+            item["kind"] = _enum_value(item.get("kind"), PresentationKind)
+            item["polarity"] = _enum_value(
+                item.get("polarity"), ResearchOperationPolarity
+            )
+            deliverables.append(item)
+
+        graph["surfaces"] = surfaces
+        graph["operations"] = operations
+        graph["relationships"] = relationships
+        graph["deliverables"] = deliverables
+        out["research_graph"] = graph
 
     return out
 
 
-def _parse(raw: str) -> TurnInterpretation:
+def _parse(raw: str) -> TurnInterpreterTransport:
     try:
         data = json.loads(_strip_json_fence(raw))
         data = _normalize_structured_payload(data)
-        turn = TurnInterpretation.model_validate(data)
-        return _normalize_surface_role_overlap(turn)
+        return TurnInterpreterTransport.model_validate(data)
     except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as exc:
         raise ValueError(str(exc)) from exc
+
+
+def _transport_surface_spans(turn: TurnInterpreterTransport) -> list[str]:
+    spans: list[str] = []
+    spans.extend(item.text for item in turn.references)
+    spans.extend(item.text for item in turn.unresolved_mentions)
+
+    request = turn.analytical_request
+    if request is not None:
+        for group in (
+            request.metric_mentions,
+            request.dimension_mentions,
+            request.filter_mentions,
+            request.time_mentions,
+        ):
+            spans.extend(item.text for item in group)
+        if request.ranking is not None:
+            spans.append(request.ranking.text)
+        spans.extend(item.text for item in request.comparisons)
+
+    graph = turn.research_graph
+    if graph is not None:
+        spans.extend(item.text for item in graph.surfaces)
+        for operation in graph.operations:
+            spans.append(operation.text)
+            ranking = getattr(operation, "ranking", None)
+            if ranking is not None:
+                spans.append(ranking.text)
+            spans.extend(item.text for item in getattr(operation, "comparisons", ()))
+        spans.extend(item.text for item in graph.relationships)
+        spans.extend(item.text for item in graph.deliverables)
+
+    if turn.user_repair is not None:
+        spans.extend(turn.user_repair.correction_spans)
+    return spans
+
+
+def _align_transport_surfaces(
+    question: str,
+    turn: TurnInterpreterTransport,
+) -> TurnInterpreterTransport:
+    def aligned_model(item):
+        fixed = _align_near_copy_surface(question, item.text)
+        return item if fixed == item.text else item.model_copy(update={"text": fixed})
+
+    request = turn.analytical_request
+    if request is not None:
+        updates = {
+            "metric_mentions": tuple(aligned_model(x) for x in request.metric_mentions),
+            "dimension_mentions": tuple(aligned_model(x) for x in request.dimension_mentions),
+            "filter_mentions": tuple(aligned_model(x) for x in request.filter_mentions),
+            "time_mentions": tuple(aligned_model(x) for x in request.time_mentions),
+            "comparisons": tuple(aligned_model(x) for x in request.comparisons),
+        }
+        if request.ranking is not None:
+            updates["ranking"] = aligned_model(request.ranking)
+        request = request.model_copy(update=updates)
+
+    graph = turn.research_graph
+    if graph is not None:
+        operations = []
+        for operation in graph.operations:
+            updates = {
+                "text": _align_near_copy_surface(question, operation.text),
+            }
+            ranking = getattr(operation, "ranking", None)
+            if ranking is not None:
+                updates["ranking"] = aligned_model(ranking)
+            comparisons = getattr(operation, "comparisons", None)
+            if comparisons is not None:
+                updates["comparisons"] = tuple(
+                    aligned_model(item) for item in comparisons
+                )
+            operations.append(operation.model_copy(update=updates))
+
+        graph = graph.model_copy(
+            update={
+                "surfaces": tuple(aligned_model(item) for item in graph.surfaces),
+                "operations": tuple(operations),
+                "relationships": tuple(
+                    item.model_copy(
+                        update={
+                            "text": _align_near_copy_surface(question, item.text)
+                        }
+                    )
+                    for item in graph.relationships
+                ),
+                "deliverables": tuple(
+                    item.model_copy(
+                        update={
+                            "text": _align_near_copy_surface(question, item.text)
+                        }
+                    )
+                    for item in graph.deliverables
+                ),
+            }
+        )
+
+    repair = turn.user_repair
+    if repair is not None:
+        repair = repair.model_copy(
+            update={
+                "correction_spans": tuple(
+                    _align_near_copy_surface(question, span)
+                    for span in repair.correction_spans
+                )
+            }
+        )
+
+    return turn.model_copy(
+        update={
+            "references": tuple(aligned_model(x) for x in turn.references),
+            "unresolved_mentions": tuple(
+                aligned_model(x) for x in turn.unresolved_mentions
+            ),
+            "analytical_request": request,
+            "research_graph": graph,
+            "user_repair": repair,
+        }
+    )
+
+
+def _validate_transport_grounding(
+    question: str,
+    turn: TurnInterpreterTransport,
+) -> None:
+    haystack = _normalized_surface(question)
+    bad = [
+        span
+        for span in _transport_surface_spans(turn)
+        if not _normalized_surface(span)
+        or _normalized_surface(span) not in haystack
+    ]
+    if bad:
+        raise TurnInterpreterError(
+            TurnInterpretationFailure(
+                code="surface_grounding_violation",
+                message=(
+                    "TurnInterpreter kullanıcı mesajında bulunmayan source span üretti: "
+                    + ", ".join(repr(x) for x in bad[:5])
+                ),
+            )
+        )
+
+
+def _dedupe_mentions(
+    mentions: list[SemanticMention],
+) -> tuple[SemanticMention, ...]:
+    seen: set[tuple[str, str]] = set()
+    out: list[SemanticMention] = []
+    for mention in mentions:
+        key = (_normalized_surface(mention.text), mention.kind.value)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(mention)
+    return tuple(out)
+
+
+def _compile_research_graph(
+    question: str,
+    graph,
+) -> ResearchRequestSurface | None:
+    surface_index = {
+        item.surface_id: SemanticMention(text=item.text, kind=item.kind)
+        for item in graph.surfaces
+    }
+
+    def mentions(refs) -> tuple[SemanticMention, ...]:
+        return tuple(surface_index[ref] for ref in refs)
+
+    goals: list[ResearchGoalSurface] = []
+    relationships: list[ResearchRelationshipSurface] = []
+    excluded: list[SemanticMention] = []
+
+    for operation in graph.operations:
+        if isinstance(operation, ResearchRootCauseFrame):
+            refs = (operation.outcome_ref, *operation.factor_refs)
+        else:
+            refs = (*operation.subject_refs, *operation.related_refs)
+
+        if operation.polarity == ResearchOperationPolarity.EXCLUDED:
+            excluded.extend(mentions(refs))
+            continue
+
+        if isinstance(operation, ResearchRootCauseFrame):
+            goals.append(
+                ResearchGoalSurface(
+                    kind=ResearchNonRelationshipGoalKind.ROOT_CAUSE,
+                    text=operation.text,
+                    subject_mentions=(surface_index[operation.outcome_ref],),
+                    related_mentions=mentions(operation.factor_refs),
+                )
+            )
+            continue
+
+        goals.append(
+            ResearchGoalSurface(
+                kind=ResearchNonRelationshipGoalKind(operation.kind),
+                text=operation.text,
+                subject_mentions=mentions(operation.subject_refs),
+                related_mentions=mentions(operation.related_refs),
+                ranking=getattr(operation, "ranking", None),
+                comparisons=tuple(getattr(operation, "comparisons", ())),
+            )
+        )
+
+    normalized_question = _normalized_surface(question)
+    for relationship in graph.relationships:
+        referenced = (
+            *((relationship.focus_ref,) if relationship.focus_ref is not None else ()),
+            *relationship.counterpart_refs,
+        )
+        if relationship.polarity == ResearchOperationPolarity.EXCLUDED:
+            excluded.extend(mentions(referenced))
+            continue
+
+        focus_mentions: tuple[SemanticMention, ...] = ()
+        if relationship.focus_binding != ResearchFocusBinding.UNRESOLVED:
+            if relationship.focus_ref is None:
+                raise ValueError("resolved relationship focus requires local focus_ref")
+            focus = surface_index[relationship.focus_ref]
+            focus_mentions = (focus,)
+            focus_text = _normalized_surface(focus.text)
+            relationship_text = _normalized_surface(relationship.text)
+
+            if relationship.focus_binding == ResearchFocusBinding.EXPLICIT:
+                if focus_text not in relationship_text:
+                    raise ValueError(
+                        "explicit relationship focus must occur inside relationship source span"
+                    )
+            elif relationship.focus_binding == ResearchFocusBinding.ANTECEDENT:
+                focus_pos = normalized_question.find(focus_text)
+                relation_pos = normalized_question.find(relationship_text)
+                if focus_pos < 0 or relation_pos < 0 or focus_pos >= relation_pos:
+                    raise ValueError(
+                        "antecedent relationship focus must occur earlier in current message"
+                    )
+
+        relationships.append(
+            ResearchRelationshipSurface(
+                text=relationship.text,
+                focus_mentions=focus_mentions,
+                counterpart_mentions=mentions(relationship.counterpart_refs),
+            )
+        )
+
+    deliverables = tuple(
+        ResearchDeliverableSurface(kind=item.kind, text=item.text)
+        for item in graph.deliverables
+        if item.polarity == ResearchOperationPolarity.REQUESTED
+    )
+
+    if not goals and not relationships:
+        return None
+
+    return ResearchRequestSurface(
+        goals=tuple(goals),
+        relationships=tuple(relationships),
+        time_mentions=mentions(graph.time_refs),
+        deliverables=deliverables,
+        excluded_mentions=_dedupe_mentions(excluded),
+    )
+
+
+def _compile_transport(
+    question: str,
+    transport: TurnInterpreterTransport,
+) -> TurnInterpretation:
+    research_request = None
+    if transport.research_graph is not None:
+        research_request = _compile_research_graph(question, transport.research_graph)
+
+    dialogue_act = transport.dialogue_act
+    if (
+        transport.research_graph is not None
+        and research_request is None
+        and transport.analytical_request is None
+    ):
+        dialogue_act = TurnAct.UNSUPPORTED
+
+    return TurnInterpretation(
+        dialogue_act=dialogue_act,
+        references=transport.references,
+        analytical_request=transport.analytical_request,
+        research_request=research_request,
+        presentation_request=transport.presentation_request,
+        user_repair=transport.user_repair,
+        unresolved_mentions=transport.unresolved_mentions,
+    )
 
 
 class TurnInterpreter:
