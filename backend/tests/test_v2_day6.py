@@ -21,6 +21,7 @@ from app.v2.models import (
     BoundedSemanticContextV0,
     ContextVersionV0,
     CandidateSource,
+    CompactRelationshipV0,
     ClarificationReason,
     ClarificationState,
     ConversationResponseKind,
@@ -75,6 +76,29 @@ def resolved_hypothesis(
         status=ResolutionStatus.RESOLVED,
         candidates=(candidate,),
         resolved_candidate_id=candidate_id,
+    )
+
+
+def research_context(*, cross_domain_path: bool = True) -> BoundedSemanticContextV0:
+    return BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-research-day6",
+            mdl_version="mdl-research-day6",
+            compact_catalog_builder_version="test",
+            business_rules_hash="0" * 64,
+            prompt_context_policy_version="test",
+        ),
+        relationships=(
+            (
+                CompactRelationshipV0(
+                    name="rel-opaque",
+                    cube_names=("fact_alpha", "fact_beta"),
+                    certified="verified",
+                ),
+            )
+            if cross_domain_path
+            else ()
+        ),
     )
 
 
@@ -162,6 +186,7 @@ def test_canonical_typed_research_brief_preserves_all_five_must_goals():
     brief = ResearchBriefBuilder().build(
         turn=canonical_turn(),
         hypotheses=canonical_hypotheses(),
+        semantic_context=research_context(),
         context_version="ctx-permuted-a",
     )
 
@@ -216,6 +241,7 @@ def test_research_brief_never_invents_unrequested_goals_or_domains():
     brief = ResearchBriefBuilder().build(
         turn=turn,
         hypotheses=hypotheses,
+        semantic_context=research_context(),
         context_version="ctx-permuted-b",
     )
 
@@ -243,6 +269,7 @@ def test_unresolved_must_relationship_is_preserved_and_blocks_brief():
     brief = ResearchBriefBuilder().build(
         turn=turn,
         hypotheses=tuple(hypotheses),
+        semantic_context=research_context(),
         context_version="ctx-permuted-c",
     )
 
@@ -255,6 +282,26 @@ def test_unresolved_must_relationship_is_preserved_and_blocks_brief():
     assert "axis_labor_z" not in {
         ref.canonical_name for ref in brief.scope.semantic_refs
     }
+    assert brief.blocking_goal_ids == ("g3",)
+    assert brief.status == ResearchBriefStatus.BLOCKED
+
+
+def test_cross_domain_relationship_without_semantic_path_is_blocking():
+    brief = ResearchBriefBuilder().build(
+        turn=canonical_turn(),
+        hypotheses=canonical_hypotheses(),
+        semantic_context=research_context(cross_domain_path=False),
+        context_version="ctx-permuted-no-path",
+    )
+
+    # Machine relation shares fact_alpha and remains semantically available.
+    assert brief.questions[1].status == ResearchGoalStatus.RESOLVED
+    # Personnel ref resolves, but fact_alpha -> fact_beta has no typed semantic path.
+    assert brief.questions[2].status == ResearchGoalStatus.BLOCKED
+    assert any(
+        "no verified semantic relationship path" in item.reason
+        for item in brief.questions[2].unresolved
+    )
     assert brief.blocking_goal_ids == ("g3",)
     assert brief.status == ResearchBriefStatus.BLOCKED
 
