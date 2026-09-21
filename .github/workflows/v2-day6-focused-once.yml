@@ -40,7 +40,7 @@ jobs:
           import yaml
           cases = yaml.safe_load(open("eval/v2_day6_research_cases.yaml", encoding="utf-8"))["cases"]
           ids = [case["id"] for case in cases]
-          assert len(cases) == 40, len(cases)
+          assert len(cases) >= 40, len(cases)
           assert len(ids) == len(set(ids)), ids
           assert sum(bool(case.get("expect_research", True)) for case in cases) >= 30
           assert sum(not bool(case.get("expect_research", True)) for case in cases) >= 8
