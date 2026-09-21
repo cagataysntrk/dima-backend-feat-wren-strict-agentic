@@ -9,7 +9,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class FrozenModel(BaseModel):
@@ -112,6 +112,8 @@ class TurnAct(StrEnum):
     CLARIFICATION_ANSWER = "CLARIFICATION_ANSWER"
     USER_REPAIR = "USER_REPAIR"
     RESULT_EXPLAIN = "RESULT_EXPLAIN"
+    COMPLEX_ANALYSIS = "COMPLEX_ANALYSIS"
+    REPORT_REQUEST = "REPORT_REQUEST"
     SOCIAL = "SOCIAL"
     UNSUPPORTED = "UNSUPPORTED"
 
@@ -203,6 +205,51 @@ class AnalyticalRequest(FrozenModel):
     )
     ranking: RankingSurface | None = None
     comparisons: tuple[ComparisonSurface, ...] = ()
+
+
+
+class ResearchGoalKind(StrEnum):
+    COMPARISON = "comparison"
+    RELATIONSHIP = "relationship"
+    PERFORMANCE = "performance"
+    TREND = "trend"
+    BREAKDOWN = "breakdown"
+    RANKING = "ranking"
+    ROOT_CAUSE = "root_cause"
+    DELIVERABLE = "deliverable"
+    OTHER = "other"
+
+
+class ResearchGoalSurface(FrozenModel):
+    """One explicit research goal expressed in the current message.
+
+    `text`, `subject_mentions`, and `related_mentions` are language-level surface
+    evidence only. Canonical binding is owned by SemanticResolver.
+    """
+
+    kind: ResearchGoalKind
+    text: str = Field(min_length=1)
+    subject_mentions: tuple[SemanticMention, ...] = ()
+    related_mentions: tuple[SemanticMention, ...] = ()
+    deliverable: PresentationKind | None = None
+
+    @model_validator(mode="after")
+    def _validate_goal_shape(self):
+        if self.kind == ResearchGoalKind.DELIVERABLE:
+            if self.deliverable is None:
+                raise ValueError("deliverable research goal requires deliverable kind")
+            if self.subject_mentions or self.related_mentions:
+                raise ValueError("deliverable goal cannot carry semantic subject refs")
+        elif self.deliverable is not None:
+            raise ValueError("non-deliverable research goal cannot set deliverable")
+        return self
+
+
+class ResearchRequestSurface(FrozenModel):
+    """Typed complex-request surface produced once by TurnInterpreter."""
+
+    goals: tuple[ResearchGoalSurface, ...] = Field(min_length=1)
+    time_mentions: tuple[SemanticMention, ...] = ()
 
 
 class UserRepair(FrozenModel):
@@ -414,6 +461,7 @@ class DialogueAction(StrEnum):
     CLARIFY = "CLARIFY"
     EXPLAIN_EXISTING = "EXPLAIN_EXISTING"
     ANALYTIC_STANDARD = "ANALYTIC_STANDARD"
+    RESEARCH_BRIEF = "RESEARCH_BRIEF"
     UNSUPPORTED = "UNSUPPORTED"
 
 
@@ -484,12 +532,13 @@ class TurnInterpretation(FrozenModel):
         description=(
             "Speech act for this turn. USER_REPAIR has precedence when the user retracts, "
             "corrects, or replaces an existing analytical slot. ANALYTIC_REFINE adds/narrows "
-            "without retracting a prior choice. CLARIFICATION_ANSWER is valid only while a "
-            "clarification is pending."
+            "without retracting a prior choice. COMPLEX_ANALYSIS / REPORT_REQUEST carry a "
+            "ResearchRequestSurface and never a standard AnalyticalRequest."
         )
     )
     references: tuple[ReferenceMention, ...] = ()
     analytical_request: AnalyticalRequest | None = None
+    research_request: ResearchRequestSurface | None = None
     presentation_request: PresentationKind = PresentationKind.NONE
     user_repair: UserRepair | None = Field(
         default=None,
@@ -499,6 +548,26 @@ class TurnInterpretation(FrozenModel):
         ),
     )
     unresolved_mentions: tuple[UnresolvedMention, ...] = ()
+
+    @model_validator(mode="after")
+    def _validate_research_turn_contract(self):
+        research_act = self.dialogue_act in {
+            TurnAct.COMPLEX_ANALYSIS,
+            TurnAct.REPORT_REQUEST,
+        }
+        if research_act:
+            if self.research_request is None:
+                raise ValueError("research dialogue act requires research_request")
+            if self.analytical_request is not None:
+                raise ValueError("research dialogue act cannot carry analytical_request")
+            if (
+                self.dialogue_act == TurnAct.REPORT_REQUEST
+                and self.presentation_request != PresentationKind.REPORT
+            ):
+                raise ValueError("REPORT_REQUEST requires presentation_request=report")
+        elif self.research_request is not None:
+            raise ValueError("research_request is valid only for research dialogue acts")
+        return self
 
 
 class AskV2Request(FrozenModel):
@@ -702,6 +771,121 @@ class AskV2Day3Response(FrozenModel):
 
 
 # ---------------------------------------------------------------------------
+# Day 6 research-brief contracts (execution lifecycle remains Day 7+)
+# ---------------------------------------------------------------------------
+
+
+class ResearchGoalStatus(StrEnum):
+    RESOLVED = "RESOLVED"
+    BLOCKED = "BLOCKED"
+
+
+class ResearchBriefStatus(StrEnum):
+    READY_FOR_RESEARCH = "READY_FOR_RESEARCH"
+    BLOCKED = "BLOCKED"
+
+
+class ResearchSemanticRef(FrozenModel):
+    """Resolver-proven canonical ref with source provenance.
+
+    No ResearchBriefBuilder-created canonical identifier is permitted.
+    """
+
+    source_mention: str
+    candidate_id: str
+    target_kind: SemanticTargetKind
+    canonical_name: str
+    dimension_name: str | None = None
+    value: str | None = None
+    cube_names: tuple[str, ...] = ()
+    sensitive: bool = False
+
+
+class ResearchUnresolvedRef(FrozenModel):
+    source_mention: str
+    role: Literal["subject", "related", "goal"]
+    reason: str
+
+
+class ResearchQuestion(FrozenModel):
+    goal_id: str
+    kind: ResearchGoalKind
+    priority: Literal["MUST"] = "MUST"
+    source_text: str
+    subject_refs: tuple[ResearchSemanticRef, ...] = ()
+    related_refs: tuple[ResearchSemanticRef, ...] = ()
+    unresolved: tuple[ResearchUnresolvedRef, ...] = ()
+    status: ResearchGoalStatus
+
+
+class ResearchScope(FrozenModel):
+    semantic_refs: tuple[ResearchSemanticRef, ...] = ()
+    time_surfaces: tuple[str, ...] = ()
+
+
+class ResearchBudget(FrozenModel):
+    """Policy envelope only; Day 6 never consumes this budget."""
+
+    default_data_queries: int = Field(default=8, ge=0)
+    hard_max_data_queries: int = Field(default=12, ge=0)
+    max_branch_depth: int = Field(default=3, ge=0)
+    max_llm_research_turns: int = Field(default=6, ge=0)
+    wall_clock_target_seconds: int = Field(default=90, ge=1)
+
+
+class ResearchBrief(FrozenModel):
+    brief_id: str
+    objective: str
+    scope: ResearchScope
+    required_domains: tuple[str, ...] = ()
+    questions: tuple[ResearchQuestion, ...] = ()
+    deliverables: tuple[PresentationKind, ...] = ()
+    must_requirement_ids: tuple[str, ...] = ()
+    blocking_goal_ids: tuple[str, ...] = ()
+    budget: ResearchBudget = Field(default_factory=ResearchBudget)
+    context_version: str
+    status: ResearchBriefStatus
+
+
+# Contract shells only in Day 6. Runtime behavior starts in Day 7+.
+class ResearchRun(FrozenModel):
+    run_id: str
+    brief_id: str
+    state: Literal["pending", "running", "paused", "complete", "failed", "cancelled"] = "pending"
+
+
+class ResearchTask(FrozenModel):
+    task_id: str
+    question_id: str
+    task_kind: str
+    input_refs: tuple[str, ...] = ()
+    state: Literal["pending", "running", "complete", "failed", "blocked"] = "pending"
+
+
+class EvidenceArtifact(FrozenModel):
+    artifact_id: str
+    task_id: str
+    query_contract_refs: tuple[str, ...] = ()
+    evidence_kind: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class Finding(FrozenModel):
+    finding_id: str
+    question_id: str
+    statement: str
+    evidence_artifact_refs: tuple[str, ...] = ()
+
+
+class Hypothesis(FrozenModel):
+    hypothesis_id: str
+    question_id: str
+    statement: str
+    evidence_for_refs: tuple[str, ...] = ()
+    evidence_against_refs: tuple[str, ...] = ()
+
+
+# ---------------------------------------------------------------------------
 # Day 4 conversation / dialogue-policy surface
 # ---------------------------------------------------------------------------
 
@@ -733,6 +917,7 @@ class AskV2Day4Response(FrozenModel):
     executions: tuple[ExecutionResultV0, ...] = ()
     query_contracts: tuple[MinimumQueryContract, ...] = ()
     existing_result: ResultAnchorV0 | None = None
+    research_brief: ResearchBrief | None = None
     conversation: ConversationStateV2
     failure: StandardAnalyticsFailure | None = None
     resumed_by: Literal["signed_chip", "free_text"] | None = None
@@ -746,6 +931,8 @@ class AskV2Day4Response(FrozenModel):
         "clarification_resume_day4",
         "core_mvp_day5",
         "standard_analytics_retry",
+        "research_ready_day7",
+        "research_brief_blocked",
     ] = "conversation_day4"
 
 # ---------------------------------------------------------------------------
@@ -758,6 +945,7 @@ class ConversationResponseKind(StrEnum):
     CLARIFY = "clarify"
     TALK = "talk"
     EXPLAIN = "explain"
+    RESEARCH_BRIEF = "research_brief"
     SEMANTIC_GAP = "semantic_gap"
     UNSUPPORTED = "unsupported"
     FAILURE = "failure"
@@ -805,8 +993,12 @@ class ConversationResponseV0(FrozenModel):
 
 
 class AskV2CoreResponse(AskV2Day4Response):
-    status: Literal["core_mvp"] = "core_mvp"
-    stage: Literal["day5_core_mvp"] = "day5_core_mvp"
+    status: Literal["core_mvp", "research_brief"] = "core_mvp"
+    stage: Literal["day5_core_mvp", "day6_research_brief"] = "day5_core_mvp"
     response: ConversationResponseV0
-    next_stage: Literal["core_mvp_gate"] = "core_mvp_gate"
+    next_stage: Literal[
+        "core_mvp_gate",
+        "research_ready_day7",
+        "research_brief_blocked",
+    ] = "core_mvp_gate"
 
