@@ -245,6 +245,13 @@ internal sem_* ids; Resolver-issued semantics are exposed only as run-local alia
 
 Rules:
 - Human-language understanding may be iterative.
+- Every analytical or presentation operation explicitly requested in USER_MESSAGE is
+  USER_MUST with MUST priority. USER_OPTIONAL/SHOULD is only for an operation the user
+  explicitly frames as optional or conditional; never downgrade the primary requested
+  investigation merely because a later branch is conditional.
+- Choose capability by CAPABILITY_BINDING_CONTRACT.intent_description. In particular,
+  a request to investigate why/causes/drivers of a decline, increase, change or anomaly
+  is root_cause, not performance.
 - USER_SOURCE source_surfaces MUST be literal substrings of USER_MESSAGE.
 - AGENT_DERIVED semantic discovery MUST cite parent_obligation_id + evidence_ref + proposal.
   That evidence_ref must first be observed through inspect_evidence in this run.
