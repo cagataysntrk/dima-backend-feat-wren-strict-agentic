@@ -504,6 +504,105 @@ class V2Orchestrator:
                     status="failed",
                 )
 
+        if ir.ranking is not None and ir.comparison is not None:
+            if len(plans) != 1 or len(raw_results) != 1:
+                return self._failure_response(
+                    runtime=runtime,
+                    context_version=context_version,
+                    body=body,
+                    conversation=conversation,
+                    dialogue_action=DialogueAction.ANALYTIC_STANDARD,
+                    semantic_status="resolved",
+                    turn=turn,
+                    hypotheses=hypotheses,
+                    resumed_by=resumed_by,
+                    analytics_ir=ir,
+                    ledger=ledger,
+                    query_execution_count=query_count,
+                    failure=self._failure(
+                        "plan_validation_failed",
+                        "planner",
+                        "Ranked comparison base execution cardinality invalid.",
+                    ),
+                    status="failed",
+                )
+            try:
+                reference_plan, ledger = self._planner.plan_ranked_comparison_reference(
+                    ir=ir,
+                    ledger=ledger,
+                    primary_result=raw_results[0],
+                    service=service,
+                )
+            except StandardAnalyticsError as exc:
+                return self._failure_response(
+                    runtime=runtime,
+                    context_version=context_version,
+                    body=body,
+                    conversation=conversation,
+                    dialogue_action=DialogueAction.ANALYTIC_STANDARD,
+                    semantic_status="resolved",
+                    turn=turn,
+                    hypotheses=hypotheses,
+                    resumed_by=resumed_by,
+                    analytics_ir=ir,
+                    ledger=exc.ledger,
+                    query_execution_count=query_count,
+                    failure=exc.failure,
+                    status="not_executable",
+                )
+            try:
+                service.dry_plan(reference_plan.sql, principal=principal)
+            except Exception as exc:
+                return self._failure_response(
+                    runtime=runtime,
+                    context_version=context_version,
+                    body=body,
+                    conversation=conversation,
+                    dialogue_action=DialogueAction.ANALYTIC_STANDARD,
+                    semantic_status="resolved",
+                    turn=turn,
+                    hypotheses=hypotheses,
+                    resumed_by=resumed_by,
+                    analytics_ir=ir,
+                    ledger=ledger,
+                    query_execution_count=query_count,
+                    failure=self._failure(
+                        "dry_plan_failed",
+                        "dry_plan",
+                        f"Official aligned comparison dry-plan reddetti: {exc}",
+                    ),
+                    status="failed",
+                )
+            try:
+                reference_result = service.query(
+                    reference_plan.sql,
+                    principal=principal,
+                )
+                query_count += 1
+            except Exception as exc:
+                return self._failure_response(
+                    runtime=runtime,
+                    context_version=context_version,
+                    body=body,
+                    conversation=conversation,
+                    dialogue_action=DialogueAction.ANALYTIC_STANDARD,
+                    semantic_status="resolved",
+                    turn=turn,
+                    hypotheses=hypotheses,
+                    resumed_by=resumed_by,
+                    analytics_ir=ir,
+                    ledger=ledger,
+                    query_execution_count=query_count,
+                    failure=self._failure(
+                        "query_failed",
+                        "execution",
+                        f"Official aligned comparison execution başarısız: {exc}",
+                    ),
+                    status="failed",
+                )
+            plans = (*plans, reference_plan)
+            raw_results.append(reference_result)
+
         try:
             ledger, validation_errors = self._result_validator.validate(
                 ir=ir,
