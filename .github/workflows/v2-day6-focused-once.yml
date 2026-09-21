@@ -10,6 +10,7 @@ name: v2-day6-focused-once
 # provenance-order final rerun
 # contract-routing refactor rerun
 # deliverable-axis rerun — deliverable-contract rerun
+# current-head flat-schema migration audit
 
 "on":
   push:
