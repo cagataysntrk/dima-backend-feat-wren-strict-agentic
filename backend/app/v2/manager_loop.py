@@ -333,6 +333,14 @@ def _safe(value: Any) -> Any:
     return str(value)
 
 
+@dataclass(frozen=True)
+class ManagerUnderstandingOutcome:
+    snapshot: ManagerRunSnapshot
+    accepted: bool
+    clarification_required: bool
+    observations: tuple[dict[str, Any], ...]
+
+
 class ResearchManagerLoop:
     def __init__(self, *, llm, source_spans: SourceSpanRegistry) -> None:
         structured = getattr(llm, "structured_json", None)
@@ -554,6 +562,168 @@ class ResearchManagerLoop:
             )
 
         raise RuntimeError(f"unsupported Manager action: {decision.action}")
+
+    def understand(
+        self,
+        *,
+        question: str,
+        message_id: str,
+        request_ref: str,
+        runtime: ManagerRuntime,
+        executor,
+        conversation: ConversationStateV2 | None = None,
+    ) -> ManagerUnderstandingOutcome:
+        """Bounded pre-execution phase: understand -> resolve -> accept/clarify only.
+
+        No analytics/evidence tool may execute here. This is the future hybrid-routing
+        boundary and the low-cost architecture-eval surface.
+        """
+        source_hash = self._source_spans.register_message(
+            message_id=message_id,
+            text=question,
+        )
+        if runtime.snapshot.state == ManagerState.INITIAL:
+            runtime.begin_understanding()
+
+        observations: list[dict[str, Any]] = [
+            {
+                "kind": "phase",
+                "name": "INTENT_ACCEPTANCE_ONLY",
+                "allowed_actions": [
+                    ManagerActionKind.RESOLVE_SEMANTICS.value,
+                    ManagerActionKind.PROPOSE_ACCEPTANCE.value,
+                    ManagerActionKind.REQUEST_CLARIFICATION.value,
+                ],
+            }
+        ]
+
+        while (
+            runtime.accepted_contract is None
+            and runtime.snapshot.state
+            not in {
+                ManagerState.FAILED,
+                ManagerState.BUDGET_EXHAUSTED,
+                ManagerState.NEEDS_CLARIFICATION,
+            }
+        ):
+            try:
+                runtime.note_manager_turn()
+            except ManagerBudgetError as exc:
+                observations.append({"kind": "budget", "message": str(exc)})
+                break
+
+            try:
+                decision = self._decision(
+                    question=question,
+                    runtime=runtime,
+                    observations=observations,
+                    conversation=conversation,
+                )
+            except Exception as exc:
+                observations.append({"kind": "model_error", "message": str(exc)})
+                break
+
+            if decision.action not in {
+                ManagerActionKind.RESOLVE_SEMANTICS,
+                ManagerActionKind.PROPOSE_ACCEPTANCE,
+                ManagerActionKind.REQUEST_CLARIFICATION,
+            }:
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": (
+                            "intent-acceptance phase forbids execution/evidence/finish; "
+                            "resolve semantics or propose acceptance first"
+                        ),
+                    }
+                )
+                continue
+
+            if (
+                decision.action == ManagerActionKind.REQUEST_CLARIFICATION
+                and not _clarification_has_governed_grounding(
+                    observations,
+                    accepted_contract_present=False,
+                )
+            ):
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": (
+                            "pre-acceptance clarification requires governed grounding; "
+                            "use resolve_semantics or AcceptanceGate first"
+                        ),
+                    }
+                )
+                continue
+
+            try:
+                call = self._compile_tool(
+                    decision=decision,
+                    message_id=message_id,
+                    source_hash=source_hash,
+                    request_ref=request_ref,
+                    runtime=runtime,
+                )
+            except Exception as exc:
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": str(exc),
+                    }
+                )
+                continue
+
+            if call is None:
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": "finish is invalid before accepted authority",
+                    }
+                )
+                continue
+
+            try:
+                step = runtime.call_tool(call, executor=executor)
+                observations.append(
+                    {
+                        "kind": "tool",
+                        "tool": call.name.value,
+                        "result": _safe(step.tool_result),
+                    }
+                )
+            except (ManagerRecoverableToolError, ManagerToolPolicyError) as exc:
+                observations.append(
+                    {
+                        "kind": "tool_error",
+                        "tool": call.name.value,
+                        "message": str(exc),
+                        "code": getattr(exc, "code", "tool_policy"),
+                    }
+                )
+                continue
+            except Exception as exc:
+                observations.append(
+                    {
+                        "kind": "fatal",
+                        "tool": call.name.value,
+                        "message": str(exc),
+                    }
+                )
+                break
+
+        return ManagerUnderstandingOutcome(
+            snapshot=runtime.snapshot,
+            accepted=runtime.accepted_contract is not None,
+            clarification_required=(
+                runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
+            ),
+            observations=tuple(observations),
+        )
 
     def run(
         self,
