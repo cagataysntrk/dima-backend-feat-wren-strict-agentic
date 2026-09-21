@@ -23,6 +23,7 @@ from app.v2.manager_tools import (
     RunAnalyticsArgs,
     RunRelationshipArgs,
     InspectEvidenceArgs,
+    ManagerAnalyticsObservation,
 )
 from app.v2.models import EvidenceArtifact
 
@@ -140,7 +141,17 @@ class GovernedManagerExecutor:
                         verdict="governed standard analytics + QueryContract verified",
                     )
             runtime.replace_ledger(ledger)
-            return result
+            row_count = sum(
+                int(item.get("row_count") or 0)
+                for item in (result.evidence.payload.get("executions") or ())
+            )
+            return ManagerAnalyticsObservation(
+                evidence_ref=result.evidence.artifact_id,
+                verified=result.evidence.verified,
+                query_count=result.query_count,
+                row_count=row_count,
+                limitations=result.evidence.limitations,
+            )
 
         if call.name == ManagerToolName.RUN_RELATIONSHIP:
             assert isinstance(validated_args, RunRelationshipArgs)
