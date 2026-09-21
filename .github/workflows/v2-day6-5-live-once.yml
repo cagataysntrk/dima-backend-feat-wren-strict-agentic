@@ -19,8 +19,8 @@ jobs:
       DIMA_INTERACTION_LOG: "false"
       DIMA_LLM_PROVIDER: "openrouter"
       DIMA_V2_RESEARCH_MANAGER_PROVIDER: "openrouter"
-      DIMA_V2_RESEARCH_MANAGER_MODEL: "deepseek/deepseek-v4-flash"
-      DIMA_OPENROUTER_MODEL: "deepseek/deepseek-v4-flash"
+      DIMA_V2_RESEARCH_MANAGER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_OPENROUTER_MODEL: "openai/gpt-5.6-luna"
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
     steps:
       - uses: actions/checkout@v4
