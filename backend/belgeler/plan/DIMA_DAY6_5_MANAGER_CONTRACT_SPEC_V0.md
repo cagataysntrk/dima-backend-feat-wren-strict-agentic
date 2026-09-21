@@ -582,3 +582,97 @@ Do NOT persist/show:
 - migration/deletion of old P9 code.
 
 Day 6.5 validates and seals the Manager control plane architecture.
+
+
+---
+
+## 21. Semantic interpretation and binding contract — 2026-09-22 addendum
+
+Canonical ADR:
+`DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+
+### 21.1 Authority split
+
+```text
+Semantic Catalog                → what exists
+SemanticCandidateGenerator      → bounded candidate cards, no authority
+BoundedSemanticLinker           → SELECT(cand_*) | ABSTAIN
+SemanticBindingGate             → validates candidate membership + tenant/context/kind
+SemanticHandleRegistry          → mints sem_* after gate
+```
+
+A model selection is never executable authority by itself.
+
+### 21.2 Candidate contract
+
+Candidate cards are runtime-issued and bounded. A linker may only choose an opaque
+`cand_*` present in the request-specific set.
+
+Required properties:
+- candidate belongs to current tenant/context catalog,
+- target kind is compatible with requested kind,
+- candidate set is bounded,
+- sensitive entity values are not probabilistically exposed,
+- candidate outside set is deterministic reject.
+
+Unique exact verified alias may bypass model inference.
+Multiple exact verified aliases → ambiguity; never score/rank to a winner.
+
+Current scale safety:
+`CANDIDATE_SET_TOO_BROAD` is fail-closed. Future candidate retrieval may improve recall,
+but retrieval does not become semantic authority.
+
+### 21.3 Temporal contract
+
+Language owner emits only a closed temporal intent.
+Calendar engine owns concrete dates.
+
+```text
+TypedTemporalNormalizer
+→ TemporalIntent
+→ TemporalBindingEngine
+→ ResolvedPeriod / ResolvedComparison
+→ mint_from_temporal_engine()
+```
+
+The model never calculates date boundaries.
+
+### 21.4 Coverage contract
+
+Coverage is omission-only veto:
+- omitted requested obligation,
+- omitted / incorrect explicit exclusion,
+- omitted supported research directive.
+
+Coverage cannot:
+- select candidates,
+- decide canonical semantics,
+- decide semantic ambiguity,
+- mint authority,
+- directly establish user clarification truth.
+
+### 21.5 open_questions
+
+`open_questions` is advisory diagnostic metadata.
+It is not a sufficient condition for `NEEDS_CLARIFICATION`.
+
+Clarification requires a deterministic blocker such as missing required binding,
+required parameter gap, deterministic effect conflict, unavailable trusted previous
+authority, unsupported capability, or required bounded-linker abstention/ambiguity.
+
+### 21.6 Semantic receipts
+
+`SemanticResolutionReceipt` is an anti-laundering provenance receipt:
+`source_ref ↔ handle_id ↔ target_kind`.
+
+It MUST NOT be used as a completeness oracle.
+
+### 21.7 Failure typing
+
+Pre-acceptance model/grounding/harness failures remain distinct from semantic outcomes.
+Evaluation with such failures is `incomplete`, not semantic `fail`.
+
+### 21.8 Compatibility
+
+Legacy `SemanticResolver` / `temporal.py` remain compatibility primitives for non-Manager
+V2 paths. They are not the Day 6.5 Manager language-authority target.
