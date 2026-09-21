@@ -140,6 +140,7 @@ class IntentAcceptanceGate:
                     )
 
             handle_kinds: set[str] = set()
+            handle_refs_by_kind: dict[str, set[str]] = {}
             for handle_id in item.semantic_handle_refs:
                 try:
                     handle = self._semantic_handles.validate(
@@ -149,6 +150,7 @@ class IntentAcceptanceGate:
                     )
                     kind = "period" if handle.target_kind == "time" else handle.target_kind
                     handle_kinds.add(kind)
+                    handle_refs_by_kind.setdefault(kind, set()).add(handle_id)
                 except (KeyError, ValueError) as exc:
                     reject.append(f"invalid semantic handle {handle_id}: {exc}")
 
@@ -176,11 +178,28 @@ class IntentAcceptanceGate:
             if item.open_questions and item.priority == ObligationPriority.MUST:
                 clarify.append(f"MUST obligation {item.obligation_id} has open questions")
 
-            polarity_key = (item.capability_key.value, "|".join(sorted(item.source_refs)))
+            if item.capability_key in {
+                ManagerCapabilityKey.BREAKDOWN,
+                ManagerCapabilityKey.RANKING,
+            }:
+                semantic_scope = handle_refs_by_kind.get("dimension", set())
+            elif item.capability_key == ManagerCapabilityKey.COMPARISON:
+                semantic_scope = handle_refs_by_kind.get("comparison", set())
+            elif item.capability_key == ManagerCapabilityKey.PERFORMANCE:
+                semantic_scope = handle_refs_by_kind.get("metric", set())
+            else:
+                semantic_scope = set(item.semantic_handle_refs)
+
+            scope_key = (
+                "|".join(sorted(semantic_scope))
+                if semantic_scope
+                else "src:" + "|".join(sorted(item.source_refs))
+            )
+            polarity_key = (item.capability_key.value, scope_key)
             previous = seen_polarity.get(polarity_key)
             if previous is not None and previous != item.polarity:
                 clarify.append(
-                    f"conflicting polarity for {item.capability_key.value} on same source"
+                    f"conflicting polarity for {item.capability_key.value} on same semantic scope"
                 )
             else:
                 seen_polarity[polarity_key] = item.polarity
