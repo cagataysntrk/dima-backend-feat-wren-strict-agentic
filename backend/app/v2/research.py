@@ -14,6 +14,7 @@ import hashlib
 import json
 import unicodedata
 
+from app.v2.capabilities import AnalyticsCapabilityLane, AnalyticsCapabilityRegistry
 from app.v2.models import (
     AnalyticalRequest,
     BoundedSemanticContextV0,
@@ -176,23 +177,15 @@ def _dedupe_mentions(mentions: list[SemanticMention]) -> tuple[SemanticMention, 
 
 
 class ResearchModePolicy:
-    """Own STANDARD vs RESEARCH routing from typed analytical capability shape.
+    """Own STANDARD vs RESEARCH routing from typed capability shape only.
 
-    Presentation/deliverables and raw operation text are deliberately ignored. Core
-    routing is based only on declared typed capabilities. Missing semantics are never
-    recovered by regex, keyword rules, or business/domain literals.
+    Presentation/deliverables and raw operation text are deliberately ignored. Every
+    declared operation is capability-validated before any route is admitted; therefore
+    an unclassified operation can never hide behind a valid relationship/research goal.
     """
 
-    _COMPLEX_ONLY = {
-        ResearchNonRelationshipGoalKind.ROOT_CAUSE,
-        ResearchNonRelationshipGoalKind.TREND,
-    }
-    _STANDARD_CAPABLE = {
-        ResearchNonRelationshipGoalKind.PERFORMANCE,
-        ResearchNonRelationshipGoalKind.BREAKDOWN,
-        ResearchNonRelationshipGoalKind.RANKING,
-        ResearchNonRelationshipGoalKind.COMPARISON,
-    }
+    def __init__(self, registry: AnalyticsCapabilityRegistry | None = None):
+        self._registry = registry or AnalyticsCapabilityRegistry()
 
     def decide(self, turn: TurnInterpretation) -> ResearchModeDecision:
         request = turn.research_request
@@ -203,8 +196,21 @@ class ResearchModePolicy:
                 canonical_turn=turn,
             )
 
-        # A typed relationship request is a Research capability regardless of requested
-        # presentation. Relationship cardinality/execution remains Day 7 territory.
+        kinds = tuple(goal.kind for goal in request.goals)
+        assessment = self._registry.assess(kinds)
+
+        # Validate the full declared operation set before routing. This is deliberately
+        # before the relationship fast decision so OTHER/unknown semantics cannot be
+        # masked by an otherwise valid relationship edge.
+        if assessment.has_blocked:
+            return self._blocked(
+                turn,
+                reason=ResearchModeReason.UNCLASSIFIED_OPERATION,
+                detail="unclassified analytical operation; routing refused",
+            )
+
+        # Relationship is a declared Research capability. Cardinality/join execution
+        # remains Day 7 territory; presentation never participates in this decision.
         if request.relationships:
             return ResearchModeDecision(
                 mode=ResearchMode.RESEARCH,
@@ -214,29 +220,13 @@ class ResearchModePolicy:
                 ),
             )
 
-        kinds = tuple(goal.kind for goal in request.goals)
-
-        if any(kind == ResearchNonRelationshipGoalKind.OTHER for kind in kinds):
-            return self._blocked(
-                turn,
-                reason=ResearchModeReason.UNCLASSIFIED_OPERATION,
-                detail="unclassified analytical operation; research routing refused",
-            )
-
-        if any(kind in self._COMPLEX_ONLY for kind in kinds):
+        if assessment.has_research:
             return ResearchModeDecision(
                 mode=ResearchMode.RESEARCH,
                 reason=ResearchModeReason.COMPLEX_ONLY_OPERATION,
                 canonical_turn=turn.model_copy(
                     update={"dialogue_act": TurnAct.COMPLEX_ANALYSIS}
                 ),
-            )
-
-        if any(kind not in self._STANDARD_CAPABLE for kind in kinds):
-            return self._blocked(
-                turn,
-                reason=ResearchModeReason.UNCLASSIFIED_OPERATION,
-                detail="operation is not declared by Core or Research capability policy",
             )
 
         projected = self._project_standard(request)
@@ -253,6 +243,8 @@ class ResearchModePolicy:
                 ),
             )
 
+        # Several individually Core-capable operations may still require coordinated
+        # research if they cannot be represented as one lossless AnalyticalRequest.
         if len(request.goals) > 1:
             return ResearchModeDecision(
                 mode=ResearchMode.RESEARCH,
@@ -275,9 +267,6 @@ class ResearchModePolicy:
         reason: ResearchModeReason,
         detail: str,
     ) -> ResearchModeDecision:
-        # Routing policy deliberately does not inspect/copy operation text. The typed
-        # reason is sufficient for fail-closed routing; source evidence remains owned
-        # by the pre-policy interpretation/eval record; this boundary does not classify it.
         canonical = turn.model_copy(
             update={
                 "dialogue_act": TurnAct.UNSUPPORTED,
@@ -296,7 +285,11 @@ class ResearchModePolicy:
 
         if request.relationships or not request.goals:
             return None
-        if any(goal.kind not in self._STANDARD_CAPABLE for goal in request.goals):
+        if any(
+            self._registry.lane_for(goal.kind)
+            != AnalyticsCapabilityLane.CORE_STANDARD
+            for goal in request.goals
+        ):
             return None
 
         if sum(
@@ -359,7 +352,6 @@ class ResearchModePolicy:
             ranking=ranking,
             comparisons=comparisons,
         )
-
 
 class ResearchBriefBuilder:
     """Single Day 6 owner for the canonical typed research work order.
