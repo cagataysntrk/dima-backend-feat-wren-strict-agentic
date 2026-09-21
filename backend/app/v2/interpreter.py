@@ -149,6 +149,7 @@ def _surface_spans(turn: TurnInterpretation) -> list[str]:
             spans.extend(m.text for m in goal.subject_mentions)
             spans.extend(m.text for m in goal.related_mentions)
         spans.extend(m.text for m in research.time_mentions)
+        spans.extend(item.text for item in research.deliverables)
 
     if turn.user_repair is not None:
         spans.extend(turn.user_repair.correction_spans)
@@ -236,6 +237,14 @@ def _align_turn_surfaces(question: str, turn: TurnInterpretation) -> TurnInterpr
                 ),
                 "time_mentions": tuple(
                     aligned_model(x) for x in research.time_mentions
+                ),
+                "deliverables": tuple(
+                    item.model_copy(
+                        update={
+                            "text": _align_near_copy_surface(question, item.text)
+                        }
+                    )
+                    for item in research.deliverables
                 ),
             }
         )
@@ -423,18 +432,18 @@ RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
   gibi temsil etme.
 - Kullanıcının söylemediği goal/domain/deliverable EKLEME. Örneğin iki ekseni karşılaştırmak
   başka bir üçüncü ilişkiyi kendiliğinden istemek değildir.
-- "kısa olsun", "yönetici dilinde", "madde madde" gibi salt üslup/presentation modifiers
-  business research goal değildir. Açık TABLE/CHART/REPORT çıktı talebi ise DELIVERABLE
-  goal olarak korunur.
-- goal.kind yalnız dildeki araştırma fiilini sınıflar:
-  COMPARISON, RELATIONSHIP, PERFORMANCE, TREND, BREAKDOWN, RANKING, ROOT_CAUSE, OTHER.
-- Açık çıktı talebi ayrı DELIVERABLE goal'dur. Rapor istenmişse:
-  kind=deliverable, deliverable=report ve presentation_request=report.
-- research goal kind JSON değerleri KÜÇÜK HARF schema value'sudur:
-  comparison, relationship, performance, trend, breakdown, ranking, root_cause,
-  deliverable, other. Enum ADINI (RELATIONSHIP vb.) yazma.
-- deliverable alanını YALNIZ kind=deliverable goal'unda doldur. Diğer goal'larda
-  deliverable=null olmalı; global report/chart/table tercihini her goal'a kopyalama.
+- "kısa olsun", "yönetici dilinde", "madde madde" gibi salt üslup/presentation
+  modifiers business research goal veya deliverable değildir.
+- goals[] YALNIZ analitik araştırma sorularıdır. Çıktı biçimini ASLA goal yapma.
+  goal.kind değerleri: comparison, relationship, performance, trend, breakdown,
+  ranking, root_cause, other.
+- Açık TABLE/CHART/REPORT çıktı isteğini research_request.deliverables[] içinde ayrı ve
+  source-grounded tut: {"kind":"report|chart|table|explain","text":"CURRENT_MESSAGE span"}.
+  Kullanıcının istemediği deliverable ekleme. "rapor hazırlama" gibi NEGATED çıktı talebi
+  deliverable değildir.
+- Rapor deliverable'ı varsa REPORT_REQUEST + presentation_request=report kullan.
+  Yalnız chart/table/explain deliverable'ı varsa research act COMPLEX_ANALYSIS kalır.
+- Enum JSON değerlerini schema value biçiminde yaz; enum ADINI (RELATIONSHIP vb.) yazma.
 - goal.text bu goal'u kanıtlayan CURRENT_MESSAGE içindeki kısa ama tam surface span'dir.
   Koordineli/ortak ekli ifadelerde kelime atlayarak yeni phrase ÜRETME. Örn. dilde
   "<A> ve <B> ilişkilerini incele" varsa A goal'u için "<A> ilişkilerini" diye aradaki
@@ -442,9 +451,18 @@ RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
 - subject_mentions ve related_mentions yine CURRENT_MESSAGE surface'leridir; canonical ID
   değildir. Aynı current message içinde daha önce açıkça söylenmiş bir subject, sonraki
   ilişki cümleciğinin öznesiyse o exact surface yeniden referanslanabilir.
-- RELATIONSHIP goal'da mümkünse ilişkinin iki tarafını ayır:
+- RELATIONSHIP goal'da ilişkinin iki tarafını dilbilgisel olarak ayır:
   subject_mentions = incelenen/ana taraf, related_mentions = ilişkisi istenen taraf.
-  İki taraftan biri dilde açık değilse canonical tahmin yapma.
+  Koordineli related taraflar AYRI MUST goal'dur:
+    "<S>'yi incele; <A> ve <B> ile ilişkisini ayrı araştır"
+      → S→A ve S→B olmak üzere İKİ relationship goal.
+    "<S>'nin <A> ve <B> ilişkilerini incele"
+      → S→A ve S→B olmak üzere İKİ relationship goal.
+  Buna karşılık "<A> ile <B> arasındaki ilişkiyi araştır" TEK A↔B goal'dur; önceki
+  cümleden başka subject ödünç alma.
+  Elliptic devamda subject daha önce aynı CURRENT_MESSAGE içinde açık kurulmuşsa exact
+  eski subject surface span'ini yeniden kullanabilirsin; yeni/canonical bir kelime üretme.
+  İki taraftan biri dilde gerçekten yoksa canonical tahmin yapma.
 - research_request.time_mentions bütün brief'e ait açık dönem/süre surface'lerini taşır;
   tarih aritmetiği yapma.
 - Semantic binding yapma. Mention kind (dimension/metric/filter/unknown) yalnız dil rolüdür;
@@ -453,9 +471,13 @@ RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
   goal'dan çıkarma. Surface'i subject_mentions/related_mentions içinde kind=unknown olarak
   koru; gerekirse unresolved_mentions'a da taşı. Tanınmayan semantic anchor MUST hedefi
   silmez; SemanticResolver daha sonra onu BLOCKED/semantic-gap olarak sınıflar.
-- REPORT_REQUEST yalnız kompleks research request + açık report deliverable birlikteliğidir.
-  Tek standart sorgunun sunum tercihi "rapor" ise ANALYTIC_NEW + presentation_request=report
-  kalabilir; gereksiz Research Mode açma.
+- REPORT_REQUEST yalnız GERÇEKTEN research-level request + source-grounded report
+  deliverable birlikteliğidir.
+- "raporla" fiili TEK BAŞINA Research Mode sebebi DEĞİLDİR. Bir metric + dönem +
+  breakdown/filter/ranking/period-comparison tek governed analytical query ile ifade
+  edilebiliyorsa ANALYTIC_NEW kalır; presentation_request report/chart/table olabilir
+  ama research_request üretme. Research Mode için ilişki/root-cause veya birden fazla
+  bağımsız araştırma sorusu gerekir.
 
 ANALYTICAL_REQUEST:
 - metric_mentions, dimension_mentions, filter_mentions, time_mentions yalnız surface span.
@@ -583,24 +605,46 @@ def _normalize_structured_payload(data: Any) -> Any:
             )
             return mention
 
+        deliverables = []
+        for raw_deliverable in research.get("deliverables") or ():
+            if not isinstance(raw_deliverable, dict):
+                deliverables.append(raw_deliverable)
+                continue
+            item = dict(raw_deliverable)
+            item["kind"] = _enum_value(item.get("kind"), PresentationKind)
+            deliverables.append(item)
+
         goals = []
         for raw_goal in research.get("goals") or ():
             if not isinstance(raw_goal, dict):
                 goals.append(raw_goal)
                 continue
             goal = dict(raw_goal)
-            goal["kind"] = _enum_value(goal.get("kind"), ResearchGoalKind)
-            kind = goal.get("kind")
-            if kind == ResearchGoalKind.DELIVERABLE.value:
-                goal["deliverable"] = _enum_value(
+            raw_kind = str(goal.get("kind") or "").strip()
+            # Transition-safe shape repair: older/provider-learned outputs may still
+            # encode an output requirement as a pseudo research goal. Move only that
+            # explicitly source-grounded payload into the dedicated deliverables list.
+            if raw_kind.casefold() == "deliverable":
+                deliverable_kind = _enum_value(
                     goal.get("deliverable"), PresentationKind
                 )
-            else:
-                # This field is structurally inapplicable outside DELIVERABLE goals.
-                # Providers often copy global presentation_request ("report"/"chart")
-                # or explicit "none" to every goal. Removing an inapplicable field
-                # preserves, rather than changes, the typed semantic decision.
-                goal["deliverable"] = None
+                if (
+                    deliverable_kind
+                    and deliverable_kind != PresentationKind.NONE.value
+                    and goal.get("text")
+                ):
+                    deliverables.append(
+                        {
+                            "kind": deliverable_kind,
+                            "text": goal.get("text"),
+                        }
+                    )
+                continue
+
+            goal["kind"] = _enum_value(goal.get("kind"), ResearchGoalKind)
+            # Provider may copy the global presentation field into every analytical
+            # goal. It is structurally inapplicable here and carries no goal meaning.
+            goal.pop("deliverable", None)
             goal["subject_mentions"] = [
                 normalize_mention(item)
                 for item in (goal.get("subject_mentions") or ())
@@ -611,12 +655,43 @@ def _normalize_structured_payload(data: Any) -> Any:
             ]
             goals.append(goal)
 
+        # Deduplicate exact source-grounded output requirements without inventing any.
+        deduped_deliverables = []
+        seen_deliverables = set()
+        for item in deliverables:
+            if not isinstance(item, dict):
+                deduped_deliverables.append(item)
+                continue
+            key = (
+                str(item.get("kind") or "").casefold(),
+                _normalized_surface(str(item.get("text") or "")),
+            )
+            if key in seen_deliverables:
+                continue
+            seen_deliverables.add(key)
+            deduped_deliverables.append(item)
+
         research["goals"] = goals
         research["time_mentions"] = [
             normalize_mention(item)
             for item in (research.get("time_mentions") or ())
         ]
+        research["deliverables"] = deduped_deliverables
         out["research_request"] = research
+
+        has_report = any(
+            isinstance(item, dict)
+            and _enum_value(item.get("kind"), PresentationKind)
+            == PresentationKind.REPORT.value
+            for item in deduped_deliverables
+        )
+        if has_report:
+            out["dialogue_act"] = TurnAct.REPORT_REQUEST.value
+            out["presentation_request"] = PresentationKind.REPORT.value
+        elif out.get("dialogue_act") == TurnAct.REPORT_REQUEST.value:
+            # REPORT_REQUEST without source-grounded report evidence is internally
+            # inconsistent. Keep the research interpretation, but do not invent report.
+            out["dialogue_act"] = TurnAct.COMPLEX_ANALYSIS.value
 
     return out
 
