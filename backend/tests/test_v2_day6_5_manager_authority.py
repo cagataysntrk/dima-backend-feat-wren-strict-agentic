@@ -569,3 +569,128 @@ def test_excluded_ranking_does_not_require_operation_parameters():
     )
     assert item.ranking_direction is None
     assert item.ranking_limit is None
+
+
+def test_opposite_breakdown_polarity_conflicts_on_same_semantic_dimension():
+    spans = SourceSpanRegistry()
+    text = "net geliri bölgelere göre göster ama bölge kırılımı yapma"
+    source_hash = spans.register_message(message_id="polarity-1", text=text)
+    required_source = spans.mint_exact(message_id="polarity-1", surface="bölgelere göre")
+    excluded_source = spans.mint_exact(message_id="polarity-1", surface="bölge kırılımı yapma")
+
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-polarity",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-polarity",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    region = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="region-polarity",
+        target_kind="dimension",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="region-polarity",
+            target_kind=SemanticTargetKind.DIMENSION,
+            canonical_name="Sales.region",
+            cube_names=("Sales",),
+        ),
+    )
+    gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
+    result = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="polarity-a1",
+            turn_id="polarity-1",
+            request_ref="polarity-request",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_BREAK",
+                    capability_key=ManagerCapabilityKey.BREAKDOWN,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(required_source.source_ref,),
+                    semantic_handle_refs=(metric.handle_id, region.handle_id),
+                ),
+                CandidateObligation(
+                    obligation_id="X_BREAK",
+                    capability_key=ManagerCapabilityKey.BREAKDOWN,
+                    origin=ObligationOrigin.USER_MUST,
+                    polarity=ObligationPolarity.EXCLUDED,
+                    source_refs=(excluded_source.source_ref,),
+                    semantic_handle_refs=(region.handle_id,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    assert result.status.value == "NEEDS_CLARIFICATION"
+    assert any("same semantic scope" in reason for reason in result.reasons)
+
+
+def test_required_product_breakdown_and_excluded_region_breakdown_are_not_conflicting():
+    spans = SourceSpanRegistry()
+    text = "net geliri ürünlere göre göster ama bölge kırılımı yapma"
+    source_hash = spans.register_message(message_id="polarity-2", text=text)
+    required_source = spans.mint_exact(message_id="polarity-2", surface="ürünlere göre")
+    excluded_source = spans.mint_exact(message_id="polarity-2", surface="bölge kırılımı yapma")
+
+    handles = SemanticHandleRegistry()
+    def _mint(candidate_id, kind, canonical):
+        return handles.mint_from_resolver(
+            tenant_binding="tenant-a",
+            context_version="ctx-1",
+            resolver_provenance_id=candidate_id,
+            target_kind=kind,
+            canonical_target=ResolvedSemanticRef(
+                candidate_id=candidate_id,
+                target_kind=SemanticTargetKind(kind),
+                canonical_name=canonical,
+                cube_names=("Sales",),
+            ),
+        )
+
+    metric = _mint("metric-disjoint", "metric", "Sales.revenue")
+    product = _mint("product-disjoint", "dimension", "Sales.product")
+    region = _mint("region-disjoint", "dimension", "Sales.region")
+
+    result = IntentAcceptanceGate(
+        source_spans=spans,
+        semantic_handles=handles,
+    ).evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="polarity-a2",
+            turn_id="polarity-2",
+            request_ref="polarity-request-2",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_PRODUCT",
+                    capability_key=ManagerCapabilityKey.BREAKDOWN,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(required_source.source_ref,),
+                    semantic_handle_refs=(metric.handle_id, product.handle_id),
+                ),
+                CandidateObligation(
+                    obligation_id="X_REGION",
+                    capability_key=ManagerCapabilityKey.BREAKDOWN,
+                    origin=ObligationOrigin.USER_MUST,
+                    polarity=ObligationPolarity.EXCLUDED,
+                    source_refs=(excluded_source.source_ref,),
+                    semantic_handle_refs=(region.handle_id,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    assert result.status.value == "ACCEPTED"
