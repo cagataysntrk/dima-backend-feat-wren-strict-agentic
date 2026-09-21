@@ -650,10 +650,9 @@ class SemanticResolver:
             )
 
         morph_aliases = _uniq((display or "", *synonyms))
-        if (
-            needle not in synonym_norms
-            and any(_morph_contains(surface, alias) for alias in morph_aliases)
-        ):
+        morph_full = any(_morph_equivalent(surface, alias) for alias in morph_aliases)
+        morph_contained = any(_morph_contains(surface, alias) for alias in morph_aliases)
+        if needle not in synonym_norms and morph_contained:
             self._add(
                 drafts,
                 target_kind=target_kind,
@@ -664,7 +663,7 @@ class SemanticResolver:
                 cube_names=cube_names,
                 display_label=self._semantic_label(target_kind, display or canonical_name),
                 provenance=CandidateSource.MORPHOLOGICAL_MATCH,
-                score=0.98,
+                score=0.99 if morph_full else 0.94,
                 material=True,
                 sensitive=False,
                 aliases=aliases,
@@ -947,6 +946,31 @@ class SemanticResolver:
             ]
             if len(authoritative) == 1:
                 candidate = authoritative[0]
+                return (
+                    ResolutionStatus.RESOLVED,
+                    candidate.candidate_id,
+                    (
+                        mention.text
+                        if candidate.target_kind == SemanticTargetKind.ENTITY_VALUE
+                        and candidate.sensitive
+                        else candidate.value
+                    ),
+                    None,
+                )
+
+            # For morphology-only matches, prefer a unique full-span inflectional match
+            # over shorter contained aliases. Equal full-span matches remain ambiguous.
+            ranked = sorted(material, key=lambda candidate: candidate.score, reverse=True)
+            if (
+                ranked
+                and CandidateSource.MORPHOLOGICAL_MATCH in ranked[0].provenance
+                and ranked[0].score >= 0.99
+                and (
+                    len(ranked) == 1
+                    or ranked[0].score - ranked[1].score >= 0.03
+                )
+            ):
+                candidate = ranked[0]
                 return (
                     ResolutionStatus.RESOLVED,
                     candidate.candidate_id,
