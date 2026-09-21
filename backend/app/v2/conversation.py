@@ -279,6 +279,25 @@ class ConversationCoordinatorV0:
             }
         )
 
+    def refresh_pending_clarification(
+        self,
+        *,
+        conversation: ConversationStateV2,
+        clarification: ClarificationState,
+    ) -> ConversationStateV2:
+        pending = conversation.pending_analytical
+        return conversation.model_copy(
+            update={
+                "pending_clarification": True,
+                "clarification_state": clarification,
+                "pending_analytical": (
+                    pending.model_copy(update={"clarification": clarification})
+                    if pending is not None
+                    else None
+                ),
+            }
+        )
+
     def restore_pending(
         self,
         *,
