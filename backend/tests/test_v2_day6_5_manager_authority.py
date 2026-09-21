@@ -263,3 +263,94 @@ def test_partial_and_verified_complete_are_distinct():
     result = CompletionGate().evaluate(complete)
     assert result.allowed is True
     assert result.terminal == ResearchRunTerminal.VERIFIED_COMPLETE
+
+
+def test_repair_supersedes_and_preserves_unrelated_obligations():
+    spans = SourceSpanRegistry()
+    handles = SemanticHandleRegistry()
+    gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
+
+    first_text = "net geliri incele ve bölgelerle ilişkisini değerlendir"
+    first_hash = spans.register_message(message_id="turn-1", text=first_text)
+    revenue_span = spans.mint_exact(message_id="turn-1", surface="net geliri")
+    relation_span = spans.mint_exact(message_id="turn-1", surface="bölgelerle ilişkisini değerlendir")
+
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-revenue",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-revenue",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    first = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="a1",
+            turn_id="turn-1",
+            request_ref="repair-session",
+            source_message_hash=first_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_REVENUE",
+                    capability_key=ManagerCapabilityKey.PERFORMANCE,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(revenue_span.source_ref,),
+                    semantic_handle_refs=(metric.handle_id,),
+                ),
+                CandidateObligation(
+                    obligation_id="U_REL",
+                    capability_key=ManagerCapabilityKey.RELATIONSHIP,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(relation_span.source_ref,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    assert first.status.value == "ACCEPTED"
+    assert first.contract is not None and first.ledger is not None
+
+    repair_text = "bölge ilişkisini çıkar"
+    repair_hash = spans.register_message(message_id="turn-2", text=repair_text)
+    repair_span = spans.mint_exact(message_id="turn-2", surface=repair_text)
+    repaired = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="a2",
+            turn_id="turn-2",
+            request_ref="repair-session",
+            source_message_hash=repair_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_REL",
+                    capability_key=ManagerCapabilityKey.RELATIONSHIP,
+                    origin=ObligationOrigin.USER_MUST,
+                    polarity=ObligationPolarity.EXCLUDED,
+                    source_refs=(repair_span.source_ref,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        active_contract=first.contract,
+        active_ledger=first.ledger,
+    )
+    assert repaired.status.value == "ACCEPTED"
+    assert repaired.contract is not None and repaired.ledger is not None
+    assert repaired.contract.version == 2
+    assert repaired.contract.supersedes_contract_id == first.contract.contract_id
+    assert "U_REVENUE" in repaired.contract.obligation_ids
+    assert "U_REL" in repaired.contract.exclusion_ids
+
+    revenue = next(item for item in repaired.ledger.items if item.obligation_id == "U_REVENUE")
+    relation = next(item for item in repaired.ledger.items if item.obligation_id == "U_REL")
+    assert revenue.source_refs == (revenue_span.source_ref,)
+    assert revenue.introduced_in_version == 1
+    assert relation.polarity == ObligationPolarity.EXCLUDED
+    assert relation.introduced_in_version == 2
