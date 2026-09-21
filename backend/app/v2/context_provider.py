@@ -146,16 +146,31 @@ class ContextProviderV0:
                 )
             )
 
+        cube_bases = {
+            str(cube.get("name")): str(cube.get("base_object") or "")
+            for cube in (schema.get("cubes") or [])
+            if isinstance(cube, dict) and cube.get("name")
+        }
+
         relationships: list[CompactRelationshipV0] = []
         for rel in (schema.get("relationships") or []):
             if not isinstance(rel, dict) or not rel.get("name"):
                 continue
-            # Physical join condition is intentionally omitted. The interpreter needs
-            # relationship availability, not permission to design joins.
+            models = _strings(rel.get("models"), limit=None)
+            model_set = set(models)
+            cube_names = tuple(
+                cube_name
+                for cube_name, base_object in cube_bases.items()
+                if cube_name in model_set or (base_object and base_object in model_set)
+            )
+            # Physical join condition is intentionally omitted. Day 6 receives only
+            # typed relationship availability; Day 7 CrossDomainJoinGate still owns
+            # grain/cardinality/join safety and actual execution.
             relationships.append(
                 CompactRelationshipV0(
                     name=str(rel["name"]),
-                    models=_strings(rel.get("models"), limit=None),
+                    models=models,
+                    cube_names=cube_names,
                     join_type=_text(rel.get("join_type")),
                     certified=_text(rel.get("certified")),
                 )
