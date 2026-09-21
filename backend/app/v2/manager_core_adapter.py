@@ -229,6 +229,18 @@ class ManagerCoreAnalyticsAdapter:
 
         contract_refs: list[str] = []
         bounded_results: list[dict[str, Any]] = []
+        exposed_columns = {
+            binding.canonical_target.canonical_name: handle_id
+            for handle_id in (*args.metric_handles, *args.dimension_handles)
+            for binding in (
+                self._handles.binding_for_execution(
+                    handle_id,
+                    tenant_binding=tenant_binding,
+                    context_version=context_version,
+                ),
+            )
+            if isinstance(binding.canonical_target, ResolvedSemanticRef)
+        }
         limitations: list[str] = []
         ir_snapshot = ir.model_dump(mode="json")
 
@@ -265,13 +277,25 @@ class ManagerCoreAnalyticsAdapter:
                 limitations.append(
                     f"{plan.execution_id}: Manager evidence sample {self._sample_rows} satırla sınırlandı"
                 )
+            safe_rows = tuple(
+                {
+                    exposed_columns[key]: value
+                    for key, value in row.items()
+                    if key in exposed_columns
+                }
+                for row in rows[: self._sample_rows]
+            )
             bounded_results.append(
                 {
                     "execution_id": plan.execution_id,
                     "role": plan.role,
-                    "columns": tuple(str(col) for col in (result.get("columns") or ())),
+                    "columns": tuple(
+                        exposed_columns[str(col)]
+                        for col in (result.get("columns") or ())
+                        if str(col) in exposed_columns
+                    ),
                     "row_count": int(result.get("row_count") or 0),
-                    "rows": rows[: self._sample_rows],
+                    "rows": safe_rows,
                 }
             )
 
@@ -287,7 +311,6 @@ class ManagerCoreAnalyticsAdapter:
             verified=True,
             payload={
                 "executions": bounded_results,
-                "analytics_ir": ir_snapshot,
                 "query_count": query_count,
             },
             limitations=tuple(limitations),
