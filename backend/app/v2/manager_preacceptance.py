@@ -135,7 +135,6 @@ class CoverageIssueKind(StrEnum):
     UNCOVERED_SOURCE = "UNCOVERED_SOURCE"
     POLARITY_CONFLICT = "POLARITY_CONFLICT"
     UNMODELED_DIRECTIVE = "UNMODELED_DIRECTIVE"
-    UNRESOLVED_REFERENCE = "UNRESOLVED_REFERENCE"
 
 
 class CoverageIssue(FrozenModel):
@@ -226,17 +225,16 @@ Return only the strict schema.
 
 _COVERAGE_SYSTEM = """You are Dima's veto-only intent coverage auditor.
 
-Compare USER_MESSAGE against INTENT_DRAFT and GROUNDING_SUMMARY. Decide only whether
-material user intent is left uncovered, polarity is materially inconsistent, a conditional
-research directive is unmodeled, or a material reference remains unresolved from the
-current turn/context.
+Compare USER_MESSAGE against INTENT_DRAFT. Decide only whether material user intent is
+left uncovered, polarity is materially inconsistent, or a research directive/policy that
+the current Day 6.5 contract explicitly supports is left unmodeled.
 
-GROUNDING_SUMMARY.requested[*].required_by_capability is deterministic metadata from the
-capability algebra. An unresolved entry with required_by_capability=true is a material
-binding gap. An unresolved entry with required_by_capability=false is NOT, by itself, a
-reason to VETO; veto it only when USER_MESSAGE independently makes that semantic constraint
-material and it is not already represented by another resolved binding, capability, or
-research directive.
+GROUNDING_SUMMARY is diagnostic context only. It is NOT a semantic veto surface.
+Canonical binding completeness is decided deterministically by capability-required
+grounding + ContractValidity. Never VETO because a semantic surface is unresolved.
+A research phenomenon/scope phrase (change, anomaly, decline, increase, high/low state,
+or similar wording) does not need its own canonical handle unless capability algebra
+explicitly requires that semantic kind.
 
 You are NOT semantic authority. You MUST NOT:
 - choose or suggest a capability,
@@ -673,11 +671,10 @@ class PreAcceptanceController:
 
     @staticmethod
     def _coverage_requires_clarification(audit: CoverageAudit) -> bool:
-        clarification_kinds = {
-            CoverageIssueKind.POLARITY_CONFLICT,
-            CoverageIssueKind.UNRESOLVED_REFERENCE,
-        }
-        return any(issue.kind in clarification_kinds for issue in audit.issues)
+        return any(
+            issue.kind == CoverageIssueKind.POLARITY_CONFLICT
+            for issue in audit.issues
+        )
 
     @staticmethod
     def _surface_feedback(
