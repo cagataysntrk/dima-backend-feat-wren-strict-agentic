@@ -150,6 +150,18 @@ class ManagerRuntime:
 
         return ManagerStepResult(snapshot=self._snapshot, tool_result=result)
 
+    def note_additional_data_queries(self, count: int) -> ManagerRunSnapshot:
+        if count < 0:
+            raise ValueError("additional data query count negatif olamaz")
+        total = self._snapshot.data_queries + count
+        if total > self._budget.max_data_queries:
+            self._snapshot = self._snapshot.model_copy(
+                update={"state": ManagerState.BUDGET_EXHAUSTED}
+            )
+            raise ManagerBudgetError("manager data-query budget exhausted")
+        self._snapshot = self._snapshot.model_copy(update={"data_queries": total})
+        return self._snapshot
+
     def attach_evidence(self, evidence_ref: str) -> ManagerRunSnapshot:
         if self._snapshot.state not in {
             ManagerState.CONTRACT_ACCEPTED,
