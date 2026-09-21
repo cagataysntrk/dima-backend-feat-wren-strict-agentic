@@ -144,10 +144,15 @@ class CandidateObligation(FrozenModel):
             raise ValueError("yalnız AGENT_DERIVED obligation parent taşıyabilir")
         if (self.ranking_direction is None) != (self.ranking_limit is None):
             raise ValueError("ranking direction + limit birlikte verilmelidir")
-        if self.capability_key == ManagerCapabilityKey.RANKING:
+        if (
+            self.capability_key == ManagerCapabilityKey.RANKING
+            and self.polarity == ObligationPolarity.REQUIRED
+        ):
             if self.ranking_direction is None or self.ranking_limit is None:
-                raise ValueError("ranking obligation direction + limit gerektirir")
-        elif self.ranking_direction is not None or self.ranking_limit is not None:
+                raise ValueError("required ranking obligation direction + limit gerektirir")
+        elif self.capability_key != ManagerCapabilityKey.RANKING and (
+            self.ranking_direction is not None or self.ranking_limit is not None
+        ):
             raise ValueError("ranking parameters yalnız ranking obligation için geçerlidir")
         return self
 
