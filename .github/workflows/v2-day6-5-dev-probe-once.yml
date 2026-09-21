@@ -45,3 +45,5 @@ jobs:
 # rerun: bind environment-scoped OpenRouter secret
 
 # diagnostic rerun: standard/root-cause/adaptive
+
+# rerun: alias + exact-semantic policy
