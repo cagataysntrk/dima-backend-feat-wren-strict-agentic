@@ -178,7 +178,7 @@ def _align_near_copy_surface(question: str, span: str) -> str:
         scored.append((ratio, candidate))
 
     scored.sort(key=lambda item: item[0], reverse=True)
-    if not scored or scored[0][0] < 0.82:
+    if not scored or scored[0][0] < 0.78:
         return span
     if len(scored) > 1 and scored[0][0] - scored[1][0] < 0.05:
         return span
