@@ -136,10 +136,17 @@ export interface V2ConversationResponse {
 
 export interface V2ResearchQuestion {
   goal_id: string;
-  kind: "comparison" | "relationship" | "performance" | "trend" | "breakdown" | "ranking" | "root_cause" | "deliverable" | "other";
+  kind: "comparison" | "relationship" | "performance" | "trend" | "breakdown" | "ranking" | "root_cause" | "other";
   priority: "MUST";
   source_text: string;
   status: "RESOLVED" | "BLOCKED";
+}
+
+export interface V2ResearchDeliverableRequirement {
+  requirement_id: string;
+  kind: "explain" | "table" | "chart" | "report";
+  priority: "MUST";
+  source_text: string;
 }
 
 export interface V2ResearchBrief {
@@ -149,7 +156,7 @@ export interface V2ResearchBrief {
     time_surfaces: string[];
   };
   questions: V2ResearchQuestion[];
-  deliverables: ("explain" | "table" | "chart" | "report" | "none")[];
+  deliverables: V2ResearchDeliverableRequirement[];
   must_requirement_ids: string[];
   blocking_goal_ids: string[];
   context_version: string;
