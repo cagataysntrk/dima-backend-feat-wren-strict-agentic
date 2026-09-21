@@ -429,11 +429,14 @@ def test_unresolved_nonrequired_grounding_does_not_short_circuit_validity():
     grounding = next(
         item for item in outcome.observations if item.get("kind") == "grounding"
     )
-    assert any(
-        not item["resolved"]
+    decline_items = [
+        item
         for item in grounding["summary"]["requested"]
         if item["surface"] == "düşüşünü"
-    )
+    ]
+    assert len(decline_items) == 1
+    assert decline_items[0]["resolved"] is False
+    assert decline_items[0]["required_by_capability"] is False
 
 
 def test_persistent_polarity_coverage_veto_terminates_as_clarification():
