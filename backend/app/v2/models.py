@@ -235,14 +235,36 @@ class ResearchNonRelationshipGoalKind(StrEnum):
 class ResearchGoalSurface(FrozenModel):
     """One explicit non-relationship analytical operation.
 
-    Relationship edges use ResearchRelationshipSurface so endpoint cardinality is a
-    schema property rather than an instruction hidden in prose.
+    Relationship edges use ResearchRelationshipSurface. Standard-capable ranking and
+    comparison carry the exact typed Core payload required for lossless projection;
+    routing never reparses `text`.
     """
 
     kind: ResearchNonRelationshipGoalKind
     text: str = Field(min_length=1)
     subject_mentions: tuple[SemanticMention, ...] = ()
     related_mentions: tuple[SemanticMention, ...] = ()
+    ranking: RankingSurface | None = None
+    comparisons: tuple[ComparisonSurface, ...] = ()
+
+    @model_validator(mode="after")
+    def _operation_shape_invariants(self):
+        if self.kind == ResearchNonRelationshipGoalKind.RANKING:
+            if self.ranking is None:
+                raise ValueError("ranking operation requires typed ranking payload")
+        elif self.ranking is not None:
+            raise ValueError("ranking payload is valid only for ranking operation")
+
+        if self.kind == ResearchNonRelationshipGoalKind.COMPARISON:
+            if len(self.comparisons) > 1:
+                raise ValueError(
+                    "comparison operation may carry at most one Core comparison surface"
+                )
+        elif self.comparisons:
+            raise ValueError(
+                "comparison payload is valid only for comparison operation"
+            )
+        return self
 
 
 class ResearchRelationshipSurface(FrozenModel):
