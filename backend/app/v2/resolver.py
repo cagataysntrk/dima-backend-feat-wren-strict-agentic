@@ -425,6 +425,9 @@ class SemanticResolver:
             for goal in research.goals:
                 ordered.extend(goal.subject_mentions)
                 ordered.extend(goal.related_mentions)
+            for relationship in research.relationships:
+                ordered.extend(relationship.focus_mentions)
+                ordered.extend(relationship.counterpart_mentions)
 
         represented = {_norm(m.text) for m in ordered}
         for unresolved in turn.unresolved_mentions:
