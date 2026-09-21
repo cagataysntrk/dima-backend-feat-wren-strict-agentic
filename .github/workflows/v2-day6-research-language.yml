@@ -7,11 +7,6 @@ name: v2-day6-research-language
         description: "Optional comma-separated case ids; empty runs the full Day 6 gate"
         required: false
         default: ""
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/workflows/v2-day6-research-language.yml"
 
 concurrency:
   group: v2-day6-research-language-${{ github.sha }}
@@ -23,7 +18,6 @@ defaults:
 
 jobs:
   research-language:
-    if: "github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'test(v2-day6): run architecture-targeted Gemini gate'"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 12
@@ -35,7 +29,7 @@ jobs:
       DIMA_OPENROUTER_MODEL: "google/gemini-2.5-flash-lite"
       DIMA_OPENROUTER_SELECT_MODEL: "google/gemini-2.5-flash-lite"
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
-      DAY6_CASE_IDS: ${{ github.event_name == 'push' && 'canonical,three_relationships,complex_no_report,chart_deliverable,relationship_only,exclude_personnel,single_metric_report,standard_topn,standard_previous_period,standard_breakdown_report,standard_filter,no_diacritics,unknown_domain,ranking_plus_relationship,root_cause_goal,multi_deliverable_report_chart' || inputs.case_ids }}
+      DAY6_CASE_IDS: ${{ inputs.case_ids }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
