@@ -561,6 +561,10 @@ def main() -> int:
         sum(bool(record["case_pass"]) for record in records) / len(records)
         if records else 1.0
     )
+    format_retry_count = sum(max(int(record.get("calls") or 0) - 1, 0) for record in records)
+    format_retry_rate = (
+        format_retry_count / len(records) if records else 0.0
+    )
 
     # For targeted subsets, canonical may not be selected. Full gate requires it.
     canonical_gate = canonical_pass if not selected or "canonical" in selected else True
@@ -578,6 +582,7 @@ def main() -> int:
         and must_consistency_violations == 0
         and surface_violations == 0
         and max_calls <= 2
+        and format_retry_rate <= 0.10
     )
 
     payload = {
@@ -604,6 +609,8 @@ def main() -> int:
         "must_consistency_violations": must_consistency_violations,
         "surface_grounding_violations": surface_violations,
         "total_llm_calls": total_calls,
+        "format_retry_count": format_retry_count,
+        "format_retry_rate": round(format_retry_rate, 4),
         "max_calls_per_case": max_calls,
         "records": records,
     }
@@ -617,7 +624,7 @@ def main() -> int:
         f"cases={len(records)} pass={case_pass_rate:.1%} "
         f"goals={goal_coverage:.1%} research_act={research_act_accuracy:.1%} "
         f"negatives={negative_act_accuracy:.1%} invented={invented_goal_total} "
-        f"calls={total_calls} status={payload['status']}"
+        f"calls={total_calls} retry_rate={format_retry_rate:.1%} status={payload['status']}"
     )
     for record in records:
         if record["case_pass"]:
