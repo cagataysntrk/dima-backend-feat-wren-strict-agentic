@@ -12,6 +12,7 @@ from app.v2.manager_errors import ManagerSemanticGap
 from app.v2.manager_loop import (
     ManagerDecisionTransport,
     _clarification_has_governed_grounding,
+    _conversation_surface_view,
     _evidence_was_inspected,
     _strict_native_schema,
 )
@@ -435,3 +436,38 @@ def test_derived_run_contract_requires_parent_capability_and_evidence_together()
         derived_evidence_ref="evi_parent",
     )
     assert valid.derived_evidence_ref == "evi_parent"
+
+
+def test_manager_conversation_view_never_exposes_canonical_ir_or_anchor():
+    from app.v2.models import SemanticAnchor
+
+    conversation = ConversationStateV2(
+        has_prior_analytical_request=True,
+        has_active_result=True,
+        topic_labels=("Satış",),
+        focus_labels=("Net Gelir",),
+        selected_anchor_label="Net Gelir",
+        selected_anchor=SemanticAnchor(
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.secret_revenue_column",
+            display_label="Net Gelir",
+        ),
+        last_ir=AnalyticsIR(
+            cube="SecretCube",
+            metrics=(
+                ResolvedSemanticRef(
+                    candidate_id="m-secret",
+                    target_kind=SemanticTargetKind.METRIC,
+                    canonical_name="Sales.secret_revenue_column",
+                    cube_names=("SecretCube",),
+                ),
+            ),
+            context_version="ctx-1",
+        ),
+    )
+    view = _conversation_surface_view(conversation)
+    blob = str(view)
+    assert view["has_prior_analytical_request"] is True
+    assert view["focus_labels"] == ["Net Gelir"]
+    assert "Sales.secret_revenue_column" not in blob
+    assert "SecretCube" not in blob
