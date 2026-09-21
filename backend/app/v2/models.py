@@ -644,11 +644,16 @@ class RequirementState(StrEnum):
 
 
 class PeriodKind(StrEnum):
+    THIS_WEEK = "this_week"
     THIS_MONTH = "this_month"
+    THIS_QUARTER = "this_quarter"
     THIS_YEAR = "this_year"
     LAST_N_DAYS = "last_n_days"
+    LAST_N_WEEKS = "last_n_weeks"
     LAST_N_MONTHS = "last_n_months"
+    PREVIOUS_WEEK = "previous_week"
     PREVIOUS_MONTH = "previous_month"
+    PREVIOUS_QUARTER = "previous_quarter"
     PREVIOUS_YEAR = "previous_year"
 
 
