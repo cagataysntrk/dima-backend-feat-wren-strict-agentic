@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 2 COMPLETE — DAY 3 READY**  
-**Kod fazı:** Day 2 / P5 COMPLETE — Day 3 / P6 henüz başlamadı.
+**Durum:** **DAY 3 ACTIVE — ANALYTICSIR + LEDGER + CUBEPLANNER**  
+**Kod fazı:** Day 3 / P6 ACTIVE.
 
 ---
 
@@ -1237,4 +1237,239 @@ ticket'ını açacak. Day2 resolver'a SQL/query davranışı eklenmeyecek.
   gereksiz otomatik tekrar koşturmasın.
 - Bu policy-only değişiklik için test **tekrar çalıştırılmadı**.
 - Always-on/full CI yok; kapalı fazların focused gate'leri de otomatik rerun yapmaz.
+
+
+
+## 10. DAY 3 ACTIVE TICKET — P6 / R10 + R5.5 + R5D
+
+**AMAÇ**  
+Day1'in typed dil çıktısı ve Day2'nin canonical semantic grounding'ini, maddi hiçbir
+requirement düşmeden deterministik CubeQuery planına ve explicit-principal Wren execution'a
+dönüştürmek. İlk gerçek V2 data-touching cevap bu fazda doğduğu için
+`MinimumQueryContract` aynı anda zorunludur.
+
+**USER SCENARIO**
+```text
+“bu ay ciro”
+“makine bazında OEE”
+“son 3 ay en çok fire veren 5 makine”
+“bu ay ciro, geçen ayla kıyasla”
+```
+
+**ROADMAP**
+P6 / P6.1 / P6.2 / P6.3 / P6.4 / P6.5.
+
+**REPORT DAYANAK**
+- R10 — standard analytics canonical path.
+- R5.5 — Day3'ten itibaren Query Contract zorunlu; bir contract = bir execution.
+- R5D — formula/aggregation/grain/unit/time/relationship truth yalnız MDL/cube.
+- R3.7 / R3A — dry-plan geçse bile requirement düşebilir; ranking direction+limit ve
+  A-vs-B comparison dedicated olarak korunmalı.
+
+**NEW OWNER**
+- `AnalyticsIRBuilder` — resolved hypothesis + typed analytical surface →
+  canonical `AnalyticsIR`.
+- `TemporalResolverV0` — yalnız TurnInterpreter'ın çıkardığı time/comparison span'larını
+  tenant fiscal context ile deterministic period'e çevirir. Tam raw question ALMAZ.
+- `RequirementLedger` — her material requirement'ın
+  `DETECTED → RESOLVED → REPRESENTED_IN_IR → REPRESENTED_IN_PLAN → VERIFIED`
+  zincirini taşır.
+- `CubePlanner` — yalnız canonical IR'den mevcut CubeQuery-compatible plan üretir.
+- `ResultValidator` — planın/result'ın ledger requirement'larını gerçekten taşıdığını
+  doğrular.
+- `MinimumQueryContract` — her execution'ın immutable audit kaydı.
+
+**OLD OWNER / REUSE**
+- `WrenService.cube_sql` mevcut deterministic compiler olarak reuse.
+- `WrenService.dry_plan(..., principal=...)` + `query(..., principal=...)` official
+  execution boundary olarak reuse.
+- `mali_takvim` fiscal-year aritmetiğinin tek sahibi olarak reuse.
+- Mevcut `app/contracts.py::ContractStore` durability/result-hash altyapısı reuse edilir;
+  legacy `answer.record_contract` V2 official-seal authority yapılmaz.
+- Formula/unit/grain/additivity/relationship için yalnız current schema/MDL metadata okunur;
+  planner yeni semantic truth üretmez.
+
+**INPUT**
+```text
+TurnInterpretation
++ SemanticHypothesis[]
++ TenantAnalyticsRuntimeV0
++ ContextVersionV0
++ current WrenService schema
++ explicit Principal
+```
+
+**OUTPUT**
+```text
+AnalyticsIR
++ RequirementLedger
++ one or more PlannedExecution
++ principal-aware Wren result(s)
++ MinimumQueryContract[] 
++ official_verified flag
+```
+
+**ANALYTICS IR — DAY3 MVP**
+Canonical alanlar:
+- metric refs
+- dimension refs
+- entity filter refs
+- resolved period
+- ranking {measure, direction, limit}
+- optional `ResolvedComparison`
+- chosen cube
+- context_version.
+
+KPI/cross-cube semantic ref tek-cube CubePlanner ile kanıtlanamıyorsa silent coercion YOK;
+typed capability gap olur. Planner LLM'e dönmez ve legacy Discovery'ye düşmez.
+
+**CUBE SEÇİMİ**
+Planner yalnız schema'nın doğruladığı coverage üzerinden cube seçer:
+- requested metric cube'da bulunmalı,
+- requested dimensions/filter dimensions cube'da bulunmalı,
+- time requirement varsa kullanılabilir canonical time axis bulunmalı.
+Tek viable cube → plan.
+0 viable cube → capability/semantic-plan failure.
+>1 equally viable cube → first-candidate seçimi YOK; typed ambiguity/failure.
+CubePlanner raw question veya synonym sözlüğü görmez.
+
+**TIME — P6.2 SINIRI**
+Temporal resolver yalnız `SemanticMention(kind=time).text` gibi Interpreter'ın ayırdığı
+typed span'ı okur; bütün kullanıcı cümlesini yeniden parse etmez.
+İlk MVP:
+- this month,
+- this fiscal year,
+- last N days/months,
+- previous month/year.
+Date arithmetic mevcut kanıtlanmış davranışla uyumlu tutulur; fiscal year için
+`mali_takvim` sahibi çağrılır. Time axis 0 veya birden fazla belirsizse planner tahmin
+etmez.
+
+**COMPARISON**
+Comparison tek range'e çökmez. Day3 basit previous-period comparison typed
+`ResolvedComparison(base_period, reference_period)` üretir.
+İlk uygulamada iki execution gerekirse:
+- base execution → contract A
+- reference execution → contract B
+- üst cevap iki contract ref taşır.
+İkinci SQL ilk contract'a eklenip mutate edilmez.
+
+**RANKING**
+`ranking.direction` ve `ranking.limit` ledger'da AYRI MUST requirement'lardır.
+Semantic top-N `CubeQuery.order + limit` olarak planlanır; Wren transport row cap ile
+karıştırılmaz. Direction yoksa planner "top-N" uydurmaz.
+
+**FILTER**
+Day2 exact resolved entity candidate:
+`dimension + resolved value → eq filter`.
+Sensitive exact value için Day2'nin `resolved_surface_value` dışında entity catalog
+ifşası yapılmaz.
+
+**REQUIREMENT LEDGER**
+Her material item için typed state tutulur:
+```text
+DETECTED
+RESOLVED
+REPRESENTED_IN_IR
+REPRESENTED_IN_PLAN
+VERIFIED
+```
+Bir MUST item VERIFIED değilse cevap official olamaz.
+Planner requirement ekleyemez, silemez veya "yakınını" ikame edemez.
+
+**OFFICIAL EXECUTION**
+Her execution:
+```text
+CubePlanner
+→ WrenService.cube_sql
+→ WrenService.dry_plan(sql, principal=principal)
+→ WrenService.query(sql, principal=principal)
+→ ResultValidator
+→ MinimumQueryContract seal
+```
+Explicit principal argümanı zorunlu; ContextVar implicit execution authority değildir.
+
+**MINIMUM QUERY CONTRACT**
+Her execution için:
+```text
+request_ref
+AnalyticsIR snapshot
+planner id/version
+mdl_version
+context_version
+execution_id
+executed SQL
+result_hash
+tenant_id
+principal/execution identity
+cube_query
+verification status
+```
+Mevcut ContractLog tablosu + `provenance_json` taşıyıcı olarak reuse edilebilir.
+Legacy `ContractStore.record()` best-effort davranışı V2 official doğrulama için yeterli
+sayılmaz: DB/spool seal gerçekten oluşmadıysa `official_verified=false` ve typed
+contract failure üretilir; cevap legacy'ye düşmez.
+
+**FILES TO TOUCH — beklenen**
+- `app/v2/models.py`
+- `app/v2/temporal.py` (new, typed-span temporal owner)
+- `app/v2/cube_planner.py` (new)
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `app/contracts.py` yalnız V2 strict-seal adapter gerçekten gerekirse
+- `tests/test_v2_day3.py` (new focused)
+- gerekirse küçük Day3 explicit milestone workflow
+- bu yaşayan durum dosyası.
+
+**FILES NOT TO TOUCH**
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- Day0/Day1/Day2 historical measurement artefaktları.
+- kaldırılmış `.github/workflows/backend-ci.yml` ASLA geri gelmez.
+
+**TEST / DEMO — HIZ POLİTİKASI**
+- Full suite YOK.
+- Corpus YOK.
+- Day0/Day1/Day2 gate tekrar YOK.
+- Geliştirme sırasında test döngüsü açılmayacak.
+- Demet sonunda BİR focused Day3 gate:
+  1. pure IR/ledger/planner contracts,
+  2. ranking direction+limit sentinel,
+  3. explicit A-vs-B comparison sentinel,
+  4. explicit principal propagation,
+  5. contract seal/official fail-closed,
+  6. birkaç gerçek demo-Wren dikey smoke: metric/breakdown/time/ranking/compare.
+- Provider/LLM acceptance bu fazın planner correctness sahibi değildir; Day1 tarihi
+  yeniden ölçülmez.
+
+**KPI / EXIT**
+```text
+MUST requirement coverage      = 100% dedicated set
+core result equivalence        >= 95% focused canonical set
+P0 silent-wrong                = 0
+principal-aware execution      = 100%
+standard p95                   <= 10s initial focused demo
+metric/breakdown/time/ranking/simple compare real demo = PASS
+MinimumQueryContract per execution = 100%
+```
+
+**STOP-THE-LINE**
+- CubePlanner raw question okursa.
+- Planner synonym/fuzzy/entity language parsingi yaparsa.
+- Metric/dimension/filter/time/ranking/comparison requirement ledger'dan kaybolursa.
+- Multiple viable cube'da ilk eleman sessizce seçilirse.
+- Time axis belirsizken ilk axis alınırsa.
+- Formula/unit/grain planner tarafından yeniden tanımlanırsa.
+- ranking.limit transport row cap yerine kullanılır veya direction düşerse.
+- comparison tek geniş range'e çöküp A-vs-B semantiğini kaybederse.
+- `dry_plan PASS` tek başına verified kabul edilirse.
+- principal explicit verilmeden dry-plan/query çalışırsa.
+- contract seal başarısızken cevap `official_verified=true` olursa.
+- legacy /ask / raw Discovery fallback eklenirse.
+- sırf bir test vakası için literal/special-case parser yazılırsa.
 
