@@ -584,7 +584,9 @@
       "expected_terminal_state": "ACCEPTED",
       "requires_adaptive_branch": true,
       "adversarial_flags": [],
-      "conversation": {}
+      "conversation": {},
+      "phase_scope": "DEFERRED_DAY7",
+      "oracle_note": "Conditional research activation affects execution/completion policy; not certified by Day6.5 pre-acceptance."
     },
     {
       "id": "d65-dev-030",
@@ -939,7 +941,9 @@
       "expected_terminal_state": "ACCEPTED",
       "requires_adaptive_branch": true,
       "adversarial_flags": [],
-      "conversation": {}
+      "conversation": {},
+      "phase_scope": "DEFERRED_DAY9",
+      "oracle_note": "Missing-data disclosure is report/research completion policy; not certified by Day6.5 pre-acceptance."
     },
     {
       "id": "d65-dev-047",
@@ -1323,7 +1327,6 @@
       "source_language": "tr",
       "prompt": "net geliri hem geçen ayla hem geçen yılın aynı dönemiyle tek karşılaştırmada kıyasla",
       "expected_obligations": [
-        "comparison",
         "comparison"
       ],
       "expected_exclusions": [],
@@ -1333,7 +1336,8 @@
       "expected_terminal_state": "ACCEPTED",
       "requires_adaptive_branch": false,
       "adversarial_flags": [],
-      "conversation": {}
+      "conversation": {},
+      "oracle_note": "One user comparison obligation may preserve multiple verified baselines; baseline cardinality is not obligation cardinality."
     },
     {
       "id": "d65-dev-066",
@@ -1346,14 +1350,18 @@
       "expected_obligations": [
         "root_cause"
       ],
-      "expected_exclusions": [],
+      "expected_exclusions": [
+        "breakdown",
+        "relationship"
+      ],
       "expected_deliverables": [],
       "expected_ambiguities": [],
       "expected_representability": "RESEARCH_REQUIRED",
       "expected_terminal_state": "ACCEPTED",
       "requires_adaptive_branch": false,
       "adversarial_flags": [],
-      "conversation": {}
+      "conversation": {},
+      "oracle_note": "Explicit global exclusions are user intent and must not be silently dropped."
     },
     {
       "id": "d65-dev-067",
@@ -1486,14 +1494,14 @@
       ],
       "source_language": "tr",
       "prompt": "aynısını üretkenlik için yap",
-      "expected_obligations": [
-        "performance"
-      ],
+      "expected_obligations": [],
       "expected_exclusions": [],
       "expected_deliverables": [],
-      "expected_ambiguities": [],
-      "expected_representability": "STANDARD_LOSSLESS",
-      "expected_terminal_state": "ACCEPTED",
+      "expected_ambiguities": [
+        "prior operation authority unavailable; client-side conversation labels are not trusted semantic authority"
+      ],
+      "expected_representability": "CLARIFICATION_REQUIRED",
+      "expected_terminal_state": "CLARIFICATION",
       "requires_adaptive_branch": false,
       "adversarial_flags": [],
       "conversation": {
@@ -1506,7 +1514,8 @@
           "Üretkenlik"
         ],
         "selected_anchor_label": "Üretkenlik"
-      }
+      },
+      "oracle_note": "Current conversation fixture carries labels only, not trusted prior AcceptedTurnContract/operation authority."
     },
     {
       "id": "d65-dev-072",
