@@ -7,6 +7,7 @@ deliberately opaque/permuted so the product cannot pass by learning demo literal
 from __future__ import annotations
 
 import inspect
+import json
 from types import SimpleNamespace
 
 from control_plane.authorize import Principal
@@ -14,8 +15,11 @@ from control_plane.authorize import Principal
 import app.v2.orchestrator as orchestrator_module
 from app.v2.dialogue_policy import DialoguePolicyV0
 from app.v2.finalizer import ConversationFinalizerV0
+from app.v2.interpreter import TurnInterpreter, TurnInterpreterError
 from app.v2.models import (
     AskV2Request,
+    BoundedSemanticContextV0,
+    ContextVersionV0,
     CandidateSource,
     ClarificationReason,
     ClarificationState,
@@ -374,3 +378,84 @@ def test_day6_orchestrator_stops_before_wren_execution(monkeypatch):
     assert out.stage == "day6_research_brief"
     assert out.response.kind == ConversationResponseKind.RESEARCH_BRIEF
     assert out.next_stage == "research_ready_day7"
+
+
+class _StaticStructuredLlm:
+    def __init__(self, payload: dict):
+        self.payload = payload
+        self.calls = 0
+
+    def structured_text(self, system: str, user: str) -> str:
+        self.calls += 1
+        return json.dumps(self.payload, ensure_ascii=False)
+
+
+def _empty_context() -> BoundedSemanticContextV0:
+    return BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-surface-day6",
+            mdl_version="mdl-surface-day6",
+            compact_catalog_builder_version="test",
+            business_rules_hash="0" * 64,
+            prompt_context_policy_version="test",
+        )
+    )
+
+
+def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
+    question = "Son 12 ay ürünleri karşılaştır ve raporla."
+    llm = _StaticStructuredLlm(
+        {
+            "dialogue_act": "REPORT_REQUEST",
+            "references": [],
+            "analytical_request": None,
+            "research_request": {
+                "goals": [
+                    {
+                        "kind": "comparison",
+                        "text": "ürünleri karşılaştır",
+                        "subject_mentions": [
+                            {"text": "ürünleri", "kind": "dimension"}
+                        ],
+                        "related_mentions": [],
+                        "deliverable": None,
+                    },
+                    {
+                        "kind": "relationship",
+                        "text": "uydurulmuş personel ilişkisi",
+                        "subject_mentions": [
+                            {"text": "ürünleri", "kind": "dimension"}
+                        ],
+                        "related_mentions": [],
+                        "deliverable": None,
+                    },
+                    {
+                        "kind": "deliverable",
+                        "text": "raporla",
+                        "subject_mentions": [],
+                        "related_mentions": [],
+                        "deliverable": "report",
+                    },
+                ],
+                "time_mentions": [
+                    {"text": "Son 12 ay", "kind": "time"}
+                ],
+            },
+            "presentation_request": "report",
+            "user_repair": None,
+            "unresolved_mentions": [],
+        }
+    )
+
+    try:
+        TurnInterpreter().interpret(
+            question=question,
+            semantic_context=_empty_context(),
+            conversation=ConversationStateV2(),
+            llm=llm,
+        )
+    except TurnInterpreterError as exc:
+        assert exc.failure.code == "surface_grounding_violation"
+        assert "uydurulmuş personel ilişkisi" in exc.failure.message
+    else:
+        raise AssertionError("invented research goal surface must fail closed")
