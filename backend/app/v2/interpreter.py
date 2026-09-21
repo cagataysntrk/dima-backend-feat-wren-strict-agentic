@@ -19,7 +19,7 @@ from app.v2.models import (
     TurnInterpretationFailure,
 )
 
-_INTERPRETER_VERSION = "day1-v0.1"
+_INTERPRETER_VERSION = "day4-v0.2"
 
 
 class TurnInterpreterError(RuntimeError):
@@ -38,6 +38,75 @@ def _normalized_surface(text: str) -> str:
     normalized = unicodedata.normalize("NFKC", str(text))
     normalized = normalized.casefold().replace("\u0307", "")
     return " ".join(normalized.split())
+
+
+def _safe_anchor(anchor) -> dict | None:
+    if anchor is None:
+        return None
+    return {
+        "target_kind": anchor.target_kind.value,
+        "canonical_name": anchor.canonical_name,
+        "dimension_name": anchor.dimension_name,
+        "display_label": anchor.display_label,
+        "value": None if anchor.sensitive else anchor.value,
+        "sensitive": anchor.sensitive,
+    }
+
+
+def _conversation_prompt_view(conversation: ConversationStateV2) -> dict:
+    """Expose only bounded conversation cues; never dump prior result rows or full IR."""
+    focus = conversation.focus
+    clarification = conversation.clarification_state
+    return {
+        "has_prior_analytical_request": conversation.has_prior_analytical_request,
+        "has_active_result": conversation.has_active_result,
+        "pending_clarification": conversation.pending_clarification,
+        "topic_labels": list(conversation.topic_labels),
+        "focus_labels": list(conversation.focus_labels),
+        "selected_anchor_label": conversation.selected_anchor_label,
+        "selected_anchor": _safe_anchor(conversation.selected_anchor),
+        "focus_anchors": [
+            _safe_anchor(anchor) for anchor in conversation.focus_anchors
+        ],
+        "topic": (
+            {
+                "topic_id": conversation.topic.topic_id,
+                "cube": conversation.topic.cube,
+                "context_version": conversation.topic.context_version,
+            }
+            if conversation.topic is not None
+            else None
+        ),
+        "focus": (
+            {
+                "metrics": [item.canonical_name for item in focus.metrics],
+                "dimensions": [item.canonical_name for item in focus.dimensions],
+                "filter_dimensions": [item.dimension_name for item in focus.filters],
+                "period_kind": focus.period.kind.value if focus.period is not None else None,
+                "last_contract_refs": list(focus.last_contract_refs),
+            }
+            if focus is not None
+            else None
+        ),
+        "clarification": (
+            {
+                "pending": clarification.pending,
+                "source_kind": (
+                    clarification.source_kind.value
+                    if clarification.source_kind is not None
+                    else None
+                ),
+                "question": clarification.question,
+            }
+            if clarification is not None
+            else None
+        ),
+        "pending_operation": (
+            conversation.pending_analytical.dialogue_act.value
+            if conversation.pending_analytical is not None
+            else None
+        ),
+    }
 
 
 def _strip_json_fence(raw: str) -> str:
@@ -118,6 +187,11 @@ MUTLAK SINIRLAR:
 - Kullanıcı mevcut sonucu açıklatıyorsa ve active result varsa RESULT_EXPLAIN.
 - Kullanıcı önceki analitik isteği geliştiriyorsa ANALYTIC_REFINE.
 - 'hayır / değil / demek istediğim' gibi önceki isteği düzeltiyorsa USER_REPAIR.
+- ANALYTIC_REFINE ve USER_REPAIR'de analytical_request yalnız BU MESAJDA eklenen/değişen
+  slotların surface span'lerini taşımalı. Önceki metric/dimension/filter/time slotlarını
+  kullanıcı bu mesajda tekrar etmediyse output'a yeniden yazma.
+- USER_REPAIR'de user_repair.correction_spans düzeltmeyi işaret eden CURRENT_MESSAGE
+  parçalarını taşır; hangi canonical slotun değişeceğine sen karar vermezsin.
 - pending_clarification=true ve kullanıcı o soruya cevap veriyorsa CLARIFICATION_ANSWER.
 - Yeni analitik soru ANALYTIC_NEW.
 - Saf selam/teşekkür/gündelik sosyal tur SOCIAL.
@@ -143,7 +217,7 @@ def _user_prompt(
         "CURRENT_MESSAGE:\n"
         + question
         + "\n\nCONVERSATION_STATE_JSON:\n"
-        + _compact_json(conversation)
+        + _compact_json(_conversation_prompt_view(conversation))
         + "\n\nBOUNDED_SEMANTIC_CONTEXT_JSON:\n"
         + _compact_json(semantic_context)
     )
