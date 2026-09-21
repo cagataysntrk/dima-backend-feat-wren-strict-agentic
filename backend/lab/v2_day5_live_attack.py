@@ -34,24 +34,20 @@ os.environ.setdefault("DIMA_SCHEDULER_ENABLED", "false")
 os.environ.setdefault("DIMA_VQR_EMBEDDER", "off")
 os.environ.setdefault("DIMA_INTERACTION_LOG", "false")
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import Session, select
 
+from app.auth.dependencies import get_current_principal
 from app.config import get_settings
 from app.contracts import result_hash
-from app.main import create_app
+from app.llm import build_generator
+from app.routers.ask_v2 import router as ask_v2_router
 import app.v2.orchestrator as orchestrator_module
-from control_plane.db import engine, init_db
-from control_plane.models import Membership, Role, Tenant, User
-from control_plane.security import hash_password
+from control_plane.authorize import Principal
 
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "lab" / "reports" / "v2_day5_live_attack.json"
-EMAIL = "day5-live@dima.local"
-PASSWORD = "day5-live-password-123"
-
-
 CUBES = {
     "ops_delta": {
         "display": "Operations Delta",
@@ -216,38 +212,6 @@ class LiveContracts:
         }
 
 
-def ensure_user() -> None:
-    init_db()
-    settings = get_settings()
-    with Session(engine) as session:
-        tenant = session.exec(select(Tenant).where(Tenant.slug == settings.company)).first()
-        if tenant is None:
-            tenant = Tenant(slug=settings.company, name=settings.company)
-            session.add(tenant)
-            session.commit()
-            session.refresh(tenant)
-            for key in ("owner", "admin", "analyst", "viewer"):
-                session.add(Role(tenant_id=tenant.id, key=key, name=key.capitalize()))
-            session.commit()
-
-        user = session.exec(select(User).where(User.email == EMAIL)).first()
-        if user is not None:
-            return
-        role = session.exec(
-            select(Role).where(Role.tenant_id == tenant.id, Role.key == "owner")
-        ).one()
-        user = User(
-            tenant_id=tenant.id,
-            email=EMAIL,
-            password_hash=hash_password(PASSWORD),
-        )
-        session.add(user)
-        session.commit()
-        session.refresh(user)
-        session.add(Membership(tenant_id=tenant.id, user_id=user.id, role_id=role.id))
-        session.commit()
-
-
 def p95(values: list[float]) -> float | None:
     if not values:
         return None
@@ -261,7 +225,23 @@ def main() -> int:
     service = LiveSyntheticService()
     orchestrator_module.wren_for_request = lambda request: service
 
-    app = create_app()
+    app = FastAPI()
+    app.include_router(ask_v2_router)
+    principal = Principal(
+        user_id="day5-live-user",
+        tenant_id="day5-live-tenant",
+        roles=["owner"],
+        tenant_slug="day5-live",
+    )
+    route = next(route for route in app.routes if getattr(route, "path", None) == "/ask-v2")
+    for dependency in route.dependant.dependencies:
+        if dependency.call is get_current_principal:
+            app.dependency_overrides[dependency.call] = lambda: principal
+        else:
+            app.dependency_overrides[dependency.call] = lambda: None
+    app.state.llm = build_generator(settings)
+    app.state.contracts = LiveContracts()
+
     records: list[dict[str, Any]] = []
     standard_latencies: list[float] = []
     clarify_latencies: list[float] = []
@@ -321,13 +301,6 @@ def main() -> int:
         return response, time.perf_counter() - started
 
     with TestClient(app) as client:
-        ensure_user()
-        login = client.post("/auth/login", json={"email": EMAIL, "password": PASSWORD})
-        if login.status_code != 200:
-            raise RuntimeError(f"live attack login failed: {login.status_code} {login.text}")
-        client.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
-        client.app.state.contracts = LiveContracts()
-
         # 1 — paraphrase/morphology: canonical ids are not present in the question.
         response, elapsed = post(client, "bu ay hatlara göre üretkenlik nasıl gidiyor?")
         body = response.json() if response.status_code == 200 else {}
