@@ -15,6 +15,7 @@ class ModelRole(StrEnum):
     FAST_LANGUAGE = "FAST_LANGUAGE"
     REFERENCE_LANGUAGE = "REFERENCE_LANGUAGE"
     RESEARCH_MANAGER = "RESEARCH_MANAGER"
+    SEMANTIC_LINKER = "SEMANTIC_LINKER"
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,21 @@ class ModelRolePolicy:
             configured = str(getattr(self._settings, "v2_research_manager_model", "") or "")
             fallback = str(getattr(self._settings, "v2_reference_language_model", "") or "")
             model = str(model_override or configured or fallback or "")
+        elif role == ModelRole.SEMANTIC_LINKER:
+            provider = str(
+                getattr(self._settings, "v2_semantic_linker_provider", "")
+                or getattr(self._settings, "v2_fast_language_provider", "")
+                or "openrouter"
+            )
+            configured = str(getattr(self._settings, "v2_semantic_linker_model", "") or "")
+            fast = str(getattr(self._settings, "v2_fast_language_model", "") or "")
+            model = str(
+                model_override
+                or configured
+                or fast
+                or self._provider_default(provider)
+                or ""
+            )
         else:
             raise ValueError(f"unsupported V2 model role: {role}")
 
@@ -77,7 +93,11 @@ class ModelRolePolicy:
                     else (
                         "v2_research_manager_reasoning"
                         if role == ModelRole.RESEARCH_MANAGER
-                        else "v2_reference_language_reasoning"
+                        else (
+                            "v2_semantic_linker_reasoning"
+                            if role == ModelRole.SEMANTIC_LINKER
+                            else "v2_reference_language_reasoning"
+                        )
                     )
                 ),
                 role in {ModelRole.REFERENCE_LANGUAGE, ModelRole.RESEARCH_MANAGER},
