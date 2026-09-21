@@ -14,6 +14,8 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from app.v2.research import ResearchModePolicy
+
 from app.v2.models import (
     BoundedSemanticContextV0,
     ConversationStateV2,
@@ -25,7 +27,7 @@ from app.v2.models import (
     TurnInterpretationFailure,
 )
 
-_INTERPRETER_VERSION = "day6-v0.4"
+_INTERPRETER_VERSION = "day6-v0.5"
 
 
 class TurnInterpreterError(RuntimeError):
@@ -365,27 +367,19 @@ MUTLAK SINIRLAR:
 - Tarih aritmetiği yapma. 'son üç ay', 'bu ay', 'geçen yılla' gibi ifadeyi yalnız
   surface text olarak taşı.
 - k=1: alternatif yorum listesi üretme.
-- DIALOGUE ACT KARAR SIRASI (semantic precedence):
-  1) Mesaj saf selam/teşekkür/onay/acknowledgement ise ve yeni analitik slot istemiyorsa SOCIAL.
-     Prior analytical state'in varlığı saf sosyal turu REFINE yapmaz.
-  2) pending_clarification=true VE mesaj pending soruya cevap veriyorsa CLARIFICATION_ANSWER.
-  3) active result varsa ve kullanıcı mevcut result/evidence'ı açıklatıyorsa RESULT_EXPLAIN.
-  4) prior analytical request varsa ve kullanıcı ÖNCEKİ SEÇİMİN YANLIŞ OLDUĞUNU / GERİ
-     ALINDIĞINI / DÜZELTİLDİĞİNİ ifade edip onun yerine başka değer/dönem/slot koyuyorsa
-     USER_REPAIR. Repair için correction/retraction intent açık olmalı.
-  5) prior analytical request varsa ve kullanıcı önceki talebi yanlışlamadan yeni
-     filter/breakdown/scope ekliyor, tek bir üyeye daraltıyor veya kapsamı genişletiyorsa
-     ANALYTIC_REFINE.
-  6) Research act sınırı:
-     - Birden fazla BAĞIMSIZ araştırma hedefini koordine etmek research'tür.
-     - Açık RELATIONSHIP / bağlantı / etki-ilişkisi / root-cause araştırması, hedef sayısı
-       TEK olsa bile research'tür; Standard Analytics IR ilişki veya kök-neden sahibi değildir.
-     - Bu research isteğinde çıktı olarak RAPOR açıkça isteniyorsa REPORT_REQUEST.
-     - Aksi halde COMPLEX_ANALYSIS.
-     - Tek bir metric/filter/time/breakdown/ranking/period-comparison sorgusu, yalnız
-       "raporla/grafik göster/tablo ver" dendi diye research OLMAZ; ANALYTIC_NEW kalır ve
-       presentation_request ilgili sunum tercihini taşır.
-  7) bağımsız tek standart analitik istek ANALYTIC_NEW.
+- DIALOGUE ACT KARAR SIRASI (conversation precedence):
+  1) Saf selam/teşekkür/onay ve yeni analitik talep yoksa SOCIAL.
+  2) pending clarification'a cevap ise CLARIFICATION_ANSWER.
+  3) aktif verified sonucu açıklatma ise RESULT_EXPLAIN.
+  4) önceki analitik seçimi açıkça geri alma/değiştirme ise USER_REPAIR.
+  5) önceki analitik talebi yanlışlamadan scope/filter/breakdown ekleme ise ANALYTIC_REFINE.
+  6) bağımsız yeni analitik talep için ANALYTIC_NEW veya COMPLEX_ANALYSIS üret.
+     Bu seçim yalnız analytical operation shape'i tarif eder; final STANDARD/RESEARCH
+     routing authority ResearchModePolicy'dir.
+  7) REPORT_REQUEST schema uyumluluğu için kabul edilir ama SUNUM kararı değildir.
+     "rapor/chart/table" kelimesi tek başına bu act'i seçme sebebi OLAMAZ.
+- Presentation orthogonal eksendir: presentation_request ve research deliverables,
+  analytical complexity kararını değiştirmez.
 - USER_REPAIR kararı kelime ezberi değildir; semantik olarak "önceki seçim yanlıştı,
   bunu onun yerine koy" anlamını gerektirir. Yalnız kapsam daraltmak veya ilk kez bir
   entity filter eklemek REPAIR DEĞİL REFINE'dır.
@@ -419,65 +413,29 @@ MUTLAK SINIRLAR:
 - Saf selam/teşekkür/gündelik sosyal tur SOCIAL.
 - Veri/ürün kapsamında olmayan ve analitik niyet taşımayan istek UNSUPPORTED.
 
-RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
-- analytical_request=null olmalı; research_request zorunludur.
-- Kullanıcının açıkça istediği HER bağımsız araştırma amacı ayrı bir goals[] öğesidir.
-  İki ilişki hedefini tek öğede birleştirme; bir goal düşerse downstream onu geri bulamaz.
-- Aynı araştırma amacının "yani/başka deyişle" ile tekrar söylenmesi ikinci goal değildir.
-  Ancak farklı related taraf, farklı metric veya farklı araştırma fiili gerçekten ayrı bir
-  hedef oluşturuyorsa ayrı goal olarak koru.
-- Açıkça REDDEDİLEN / HARİÇ TUTULAN hedef goal değildir. "personeli inceleme, yalnız
-  makineye bak" gibi bir cümlede personel surface'i CURRENT_MESSAGE'da bulunsa bile
-  personel relationship goal'u üretme. Negasyon/retraction ifadesini yeni araştırma hedefi
-  gibi temsil etme.
-- Kullanıcının söylemediği goal/domain/deliverable EKLEME. Örneğin iki ekseni karşılaştırmak
-  başka bir üçüncü ilişkiyi kendiliğinden istemek değildir.
-- "kısa olsun", "yönetici dilinde", "madde madde" gibi salt üslup/presentation
-  modifiers business research goal veya deliverable değildir.
-- goals[] YALNIZ analitik araştırma sorularıdır. Çıktı biçimini ASLA goal yapma.
-  goal.kind değerleri: comparison, relationship, performance, trend, breakdown,
-  ranking, root_cause, other.
-- Açık TABLE/CHART/REPORT çıktı isteğini research_request.deliverables[] içinde ayrı ve
-  source-grounded tut: {{"kind":"report|chart|table|explain","text":"CURRENT_MESSAGE span"}}.
-  Kullanıcının istemediği deliverable ekleme. "rapor hazırlama" gibi NEGATED çıktı talebi
-  deliverable değildir.
-- Rapor deliverable'ı varsa REPORT_REQUEST + presentation_request=report kullan.
-  Yalnız chart/table/explain deliverable'ı varsa research act COMPLEX_ANALYSIS kalır.
-- Enum JSON değerlerini schema value biçiminde yaz; enum ADINI (RELATIONSHIP vb.) yazma.
-- goal.text bu goal'u kanıtlayan CURRENT_MESSAGE içindeki kısa ama tam surface span'dir.
-  Koordineli/ortak ekli ifadelerde kelime atlayarak yeni phrase ÜRETME. Örn. dilde
-  "<A> ve <B> ilişkilerini incele" varsa A goal'u için "<A> ilişkilerini" diye aradaki
-  "<B>"yi silip sentetik span kurma; exact "<A>" span'ini veya exact ortak clause'u kullan.
-- subject_mentions ve related_mentions yine CURRENT_MESSAGE surface'leridir; canonical ID
-  değildir. Aynı current message içinde daha önce açıkça söylenmiş bir subject, sonraki
-  ilişki cümleciğinin öznesiyse o exact surface yeniden referanslanabilir.
-- RELATIONSHIP goal'da ilişkinin iki tarafını dilbilgisel olarak ayır:
-  subject_mentions = incelenen/ana taraf, related_mentions = ilişkisi istenen taraf.
-  Koordineli related taraflar AYRI MUST goal'dur:
-    "<S>'yi incele; <A> ve <B> ile ilişkisini ayrı araştır"
-      → S→A ve S→B olmak üzere İKİ relationship goal.
-    "<S>'nin <A> ve <B> ilişkilerini incele"
-      → S→A ve S→B olmak üzere İKİ relationship goal.
-  Buna karşılık "<A> ile <B> arasındaki ilişkiyi araştır" TEK A↔B goal'dur; önceki
-  cümleden başka subject ödünç alma.
-  Elliptic devamda subject daha önce aynı CURRENT_MESSAGE içinde açık kurulmuşsa exact
-  eski subject surface span'ini yeniden kullanabilirsin; yeni/canonical bir kelime üretme.
-  İki taraftan biri dilde gerçekten yoksa canonical tahmin yapma.
-- research_request.time_mentions bütün brief'e ait açık dönem/süre surface'lerini taşır;
-  tarih aritmetiği yapma.
-- Semantic binding yapma. Mention kind (dimension/metric/filter/unknown) yalnız dil rolüdür;
-  canonical target seçimi SemanticResolver authority'sidir.
-- Research goal içindeki açık subject/related surface semantic context'te tanınmıyorsa
-  goal'dan çıkarma. Surface'i subject_mentions/related_mentions içinde kind=unknown olarak
-  koru; gerekirse unresolved_mentions'a da taşı. Tanınmayan semantic anchor MUST hedefi
-  silmez; SemanticResolver daha sonra onu BLOCKED/semantic-gap olarak sınıflar.
-- REPORT_REQUEST yalnız GERÇEKTEN research-level request + source-grounded report
-  deliverable birlikteliğidir.
-- "raporla" fiili TEK BAŞINA Research Mode sebebi DEĞİLDİR. Bir metric + dönem +
-  breakdown/filter/ranking/period-comparison tek governed analytical query ile ifade
-  edilebiliyorsa ANALYTIC_NEW kalır; presentation_request report/chart/table olabilir
-  ama research_request üretme. Research Mode için ilişki/root-cause veya birden fazla
-  bağımsız araştırma sorusu gerekir.
+RESEARCH_REQUEST — typed analytical operations that may require Research Mode:
+- Bu yapı analytical operation surface'lerini taşır; final Research Mode kararını sen
+  sahiplenmezsin. ResearchModePolicy typed shape'ten karar verir.
+- Kullanıcının açıkça istediği HER bağımsız analytical operation ayrı goals[] öğesidir.
+  Kullanıcının istemediği operation/domain/deliverable ekleme; açıkça reddedileni çıkar.
+- Aynı operation'ın yalnız yeniden söylenmesi ikinci goal değildir.
+- goals[] yalnız analytical operation'dır; output biçimi goal değildir.
+- goal.kind yalnız schema value: comparison, relationship, performance, trend,
+  breakdown, ranking, root_cause, other.
+- RELATIONSHIP atomiktir: bir goal EN FAZLA bir subject endpoint ve bir related endpoint
+  taşır. Aynı focus için birden fazla explicit counterpart varsa her edge ayrı goal olur.
+  Endpoint surface'i CURRENT_MESSAGE içinden exact span olmalı; eksik endpoint için
+  canonical/business kavram uydurma.
+- goal.text, subject_mentions ve related_mentions CURRENT_MESSAGE source evidence'ıdır.
+  Canonical ID/binding yoktur.
+- Açık output isteğini research_request.deliverables[] içinde source-grounded taşı.
+  Deliverable analytical question değildir ve Research Mode sebebi değildir.
+- research_request.time_mentions yalnız explicit dönem/süre surface'lerini taşır.
+- Semantic context'te tanınmayan explicit endpoint'i düşürme; kind=unknown ile surface'i
+  koru. SemanticResolver daha sonra RESOLVED/CLARIFY/SEMANTIC_GAP kararını verir.
+- Tek governed standard request'e karşılık gelen performance + breakdown gibi operation
+  yüzeyi research_request içinde yanlışlıkla verilse bile presentation'a bakarak
+  COMPLEX/REPORT kararı üretme; final route typed policy'ye aittir.
 
 ANALYTICAL_REQUEST:
 - metric_mentions, dimension_mentions, filter_mentions, time_mentions yalnız surface span.
@@ -653,6 +611,30 @@ def _normalize_structured_payload(data: Any) -> Any:
                 normalize_mention(item)
                 for item in (goal.get("related_mentions") or ())
             ]
+
+            # Relationship atomicity is structural, not domain-specific. When the
+            # provider has already identified one endpoint and multiple explicit
+            # counterparts (or vice versa), split the typed edge list without reading
+            # raw language or inventing endpoints. Ambiguous many-to-many shapes are
+            # left for schema validation / the single format retry.
+            if goal.get("kind") == ResearchGoalKind.RELATIONSHIP.value:
+                subjects = list(goal["subject_mentions"])
+                related = list(goal["related_mentions"])
+                if len(subjects) == 1 and len(related) > 1:
+                    for counterpart in related:
+                        edge = dict(goal)
+                        edge["subject_mentions"] = subjects
+                        edge["related_mentions"] = [counterpart]
+                        goals.append(edge)
+                    continue
+                if len(subjects) > 1 and len(related) == 1:
+                    for subject in subjects:
+                        edge = dict(goal)
+                        edge["subject_mentions"] = [subject]
+                        edge["related_mentions"] = related
+                        goals.append(edge)
+                    continue
+
             goals.append(goal)
 
         # Deduplicate exact source-grounded output requirements without inventing any.
@@ -679,19 +661,6 @@ def _normalize_structured_payload(data: Any) -> Any:
         research["deliverables"] = deduped_deliverables
         out["research_request"] = research
 
-        has_report = any(
-            isinstance(item, dict)
-            and _enum_value(item.get("kind"), PresentationKind)
-            == PresentationKind.REPORT.value
-            for item in deduped_deliverables
-        )
-        if has_report:
-            out["dialogue_act"] = TurnAct.REPORT_REQUEST.value
-            out["presentation_request"] = PresentationKind.REPORT.value
-        elif out.get("dialogue_act") == TurnAct.REPORT_REQUEST.value:
-            # REPORT_REQUEST without source-grounded report evidence is internally
-            # inconsistent. Keep the research interpretation, but do not invent report.
-            out["dialogue_act"] = TurnAct.COMPLEX_ANALYSIS.value
 
     return out
 
@@ -768,4 +737,9 @@ class TurnInterpreter:
 
         turn = _normalize_interpretation(question, turn)
         _validate_surface_grounding(question, turn)
+
+        # Final STANDARD/RESEARCH routing is deterministic and presentation-agnostic.
+        # This happens only after every provider surface has passed source grounding,
+        # so projection cannot hide hallucinated research/deliverable text.
+        turn = ResearchModePolicy().decide(turn).canonical_turn
         return turn
