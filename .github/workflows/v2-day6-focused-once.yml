@@ -1,5 +1,5 @@
 name: v2-day6-focused-once
-# final closure rerun after UI/eval diagnostics
+# closure rerun after expanded holdout
 
 "on":
   push:
