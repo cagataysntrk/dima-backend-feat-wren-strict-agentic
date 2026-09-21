@@ -20,7 +20,11 @@ from app.v2.manager_executor import (
     GovernedManagerExecutor,
 )
 from app.v2.manager_loop import ResearchManagerLoop
-from app.v2.manager_models import ManagerRunSnapshot, UserObligationLedger
+from app.v2.manager_models import (
+    ManagerRunSnapshot,
+    ResearchRunTerminal,
+    UserObligationLedger,
+)
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.model_policy import ModelRole, ModelRolePolicy
 from app.v2.models import AskV2Request, FrozenModel
@@ -37,7 +41,9 @@ class ManagerLabResponse(FrozenModel):
     provider: str
     model: str
     snapshot: ManagerRunSnapshot
-    completed: bool
+    run_finished: bool
+    verified_complete: bool
+    terminal_status: ResearchRunTerminal | None = None
     clarification_required: bool
     ledger: UserObligationLedger | None = None
     observations: tuple[dict, ...] = ()
@@ -114,7 +120,9 @@ class ManagerLabHarness:
             provider=profile.provider,
             model=profile.model,
             snapshot=outcome.snapshot,
-            completed=outcome.completed,
+            run_finished=outcome.run_finished,
+            verified_complete=outcome.verified_complete,
+            terminal_status=outcome.terminal_status,
             clarification_required=outcome.clarification_required,
             ledger=manager_runtime.ledger,
             observations=outcome.observations,
