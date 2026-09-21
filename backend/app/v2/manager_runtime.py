@@ -12,12 +12,14 @@ from typing import Protocol, Any
 
 from app.v2.acceptance import AcceptedContractRegistry
 from app.v2.completion import CompletionGate
+from app.v2.manager_errors import ManagerRecoverableToolError
 from app.v2.manager_models import (
     AcceptanceResult,
     AcceptanceStatus,
     ManagerBudget,
     ManagerRunSnapshot,
     ManagerState,
+    ResearchRunTerminal,
     UserObligationLedger,
 )
 from app.v2.manager_tools import (
@@ -117,9 +119,18 @@ class ManagerRuntime:
         )
         try:
             result = executor.execute(call, validated, self)
+        except ManagerRecoverableToolError as exc:
+            self._snapshot = self._snapshot.model_copy(
+                update={"last_error": f"{exc.code}: {exc}"}
+            )
+            raise
         except Exception as exc:
             self._snapshot = self._snapshot.model_copy(
-                update={"state": ManagerState.FAILED, "last_error": str(exc)}
+                update={
+                    "state": ManagerState.FAILED,
+                    "terminal_status": ResearchRunTerminal.FAILED,
+                    "last_error": str(exc),
+                }
             )
             raise
 
@@ -193,5 +204,10 @@ class ManagerRuntime:
         outcome = (gate or CompletionGate()).evaluate(self._ledger)
         if not outcome.allowed:
             raise ManagerStateError("; ".join(outcome.reasons) or "completion rejected")
-        self._snapshot = self._snapshot.model_copy(update={"state": ManagerState.COMPLETED})
+        self._snapshot = self._snapshot.model_copy(
+            update={
+                "state": ManagerState.COMPLETED,
+                "terminal_status": outcome.terminal,
+            }
+        )
         return self._snapshot
