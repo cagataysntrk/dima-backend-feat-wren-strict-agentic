@@ -118,6 +118,16 @@ class Settings(BaseSettings):
     # Harder reasoning is escalated explicitly; the fast default must stay cheap.
     openrouter_model: str = "google/gemini-2.5-flash-lite"
     openrouter_select_model: str = ""
+
+    # --- Dima V2 model roles ---------------------------------------------
+    # Concrete model names are configuration; V2 product code asks for a role.
+    # Blank FAST model falls back to the configured provider default. REFERENCE is
+    # intentionally blank by default so a production-certification run must name or
+    # configure the stronger candidate explicitly instead of silently reusing FAST.
+    v2_fast_language_provider: str = "openrouter"
+    v2_fast_language_model: str = ""
+    v2_reference_language_provider: str = "openrouter"
+    v2_reference_language_model: str = ""
     # Ollama (tam yerel, anahtarsız: `brew install ollama` + `ollama pull ...`)
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "qwen2.5-coder:7b"
