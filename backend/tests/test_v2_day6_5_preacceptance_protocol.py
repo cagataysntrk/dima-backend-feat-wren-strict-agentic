@@ -1,0 +1,413 @@
+"""Provider-free certification for the stabilized Day 6.5 pre-acceptance protocol."""
+
+from __future__ import annotations
+
+from collections import deque
+
+from app.v2.acceptance import IntentAcceptanceGate
+from app.v2.manager_executor import (
+    GovernedManagerExecutionContext,
+    GovernedManagerExecutor,
+)
+from app.v2.manager_loop import ResearchManagerLoop
+from app.v2.manager_models import (
+    ManagerCapabilityKey,
+    ManagerState,
+    ObligationOrigin,
+    ObligationPolarity,
+)
+from app.v2.manager_preacceptance import CoverageAudit
+from app.v2.manager_progress import DynamicActionFrontier
+from app.v2.manager_runtime import ManagerRuntime
+from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
+from app.v2.models import (
+    BoundedSemanticContextV0,
+    CompactCubeContextV0,
+    CompactSemanticFieldV0,
+    ContextVersionV0,
+    ConversationStateV2,
+)
+from app.v2.resolver import SemanticResolver
+from app.v2.semantic_handles import SemanticHandleRegistry
+from app.v2.source_spans import SourceSpanRegistry
+
+
+class _ScriptedStructured:
+    def __init__(self, *, drafts, audits):
+        self._drafts = deque(drafts)
+        self._audits = deque(audits)
+        self.calls: list[str] = []
+
+    def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str):
+        del system, user, schema
+        self.calls.append(schema_name)
+        if schema_name == "dima_intent_draft_v1":
+            return self._drafts.popleft()
+        if schema_name == "dima_intent_coverage_v1":
+            return self._audits.popleft()
+        raise AssertionError(f"unexpected schema: {schema_name}")
+
+
+def _context() -> BoundedSemanticContextV0:
+    return BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-stabilized-v1",
+            mdl_version="mdl-stabilized-v1",
+            compact_catalog_builder_version="day65-stabilized",
+            business_rules_hash="0" * 64,
+            prompt_context_policy_version="day65-stabilized",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="sales",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="net_revenue",
+                        display="Net Gelir",
+                        synonyms=("net gelir", "net geliri"),
+                    ),
+                ),
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="region",
+                        display="Bölge",
+                        synonyms=("bölge", "bölgelere"),
+                    ),
+                ),
+            ),
+            CompactCubeContextV0(
+                canonical_name="production",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="productivity",
+                        display="Üretkenlik",
+                        synonyms=("üretkenlik",),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def _schema() -> dict:
+    return {
+        "models": [],
+        "cubes": [
+            {
+                "name": "sales",
+                "measures": ["net_revenue"],
+                "measure_synonyms": {"net_revenue": ["net gelir", "net geliri"]},
+                "dimensions": ["region"],
+                "dimension_labels": {"region": "Bölge"},
+                "dimension_synonyms": {"region": ["bölge", "bölgelere"]},
+                "dimension_values": {},
+                "time_dimensions": [],
+            },
+            {
+                "name": "production",
+                "measures": ["productivity"],
+                "measure_synonyms": {"productivity": ["üretkenlik"]},
+                "dimensions": [],
+                "dimension_labels": {},
+                "dimension_synonyms": {},
+                "dimension_values": {},
+                "time_dimensions": [],
+            },
+        ],
+        "kpis": [],
+        "relationships": [],
+        "business_rules": "",
+        "db_online": True,
+    }
+
+
+def _loop(scripted: _ScriptedStructured, *, conversation=None):
+    source_spans = SourceSpanRegistry()
+    handles = SemanticHandleRegistry()
+    context = _context()
+    conversation = conversation or ConversationStateV2()
+    semantic = ManagerSemanticResolutionAdapter(
+        resolver=SemanticResolver(signing_key=b"s" * 32),
+        source_spans=source_spans,
+        semantic_handles=handles,
+        semantic_context=context,
+        conversation=conversation,
+        schema=_schema(),
+        tenant_binding="tenant-stabilized",
+        session_id="session-stabilized",
+        thread_id="thread-stabilized",
+    )
+    executor = GovernedManagerExecutor(
+        acceptance=IntentAcceptanceGate(
+            source_spans=source_spans,
+            semantic_handles=handles,
+        ),
+        core_analytics=object(),
+        context=GovernedManagerExecutionContext(
+            tenant_binding="tenant-stabilized",
+            context_version=context.context_version.version,
+            principal=None,
+            service=None,
+            tenant_runtime=None,
+            contract_store=None,
+            session_id="session-stabilized",
+        ),
+        semantic_resolution=semantic,
+    )
+    return (
+        ResearchManagerLoop(llm=scripted, source_spans=source_spans),
+        ManagerRuntime(request_ref="stabilized-request"),
+        executor,
+    )
+
+
+def _obligation(
+    *,
+    obligation_id: str,
+    capability: str,
+    source_surfaces,
+    semantic_surfaces,
+    polarity: str = "REQUIRED",
+    origin: str = "USER_MUST",
+    priority: str = "MUST",
+):
+    return {
+        "obligation_id": obligation_id,
+        "capability_key": capability,
+        "origin": origin,
+        "priority": priority,
+        "polarity": polarity,
+        "source_surfaces": list(source_surfaces),
+        "semantic_surfaces": [
+            {"surface": surface, "kind_hint": kind}
+            for surface, kind in semantic_surfaces
+        ],
+        "open_questions": [],
+        "ranking_direction": None,
+        "ranking_limit": None,
+    }
+
+
+def test_063_coverage_veto_then_effect_conflict_clarifies_without_case_rule():
+    question = "net geliri bölgelere göre göster ama bölge kırılımı yapma"
+    scripted = _ScriptedStructured(
+        drafts=[
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_PERF",
+                        capability="performance",
+                        source_surfaces=("net geliri",),
+                        semantic_surfaces=(("net geliri", "metric"),),
+                    ),
+                    _obligation(
+                        obligation_id="X_BREAK",
+                        capability="breakdown",
+                        source_surfaces=("bölge kırılımı yapma",),
+                        semantic_surfaces=(("bölge", "dimension"),),
+                        polarity="EXCLUDED",
+                    ),
+                ],
+                "research_directives": [],
+            },
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_BREAK",
+                        capability="breakdown",
+                        source_surfaces=("net geliri bölgelere göre göster",),
+                        semantic_surfaces=(
+                            ("net geliri", "metric"),
+                            ("bölgelere", "dimension"),
+                        ),
+                    ),
+                    _obligation(
+                        obligation_id="X_BREAK",
+                        capability="breakdown",
+                        source_surfaces=("bölge kırılımı yapma",),
+                        semantic_surfaces=(("bölge", "dimension"),),
+                        polarity="EXCLUDED",
+                    ),
+                ],
+                "research_directives": [],
+            },
+        ],
+        audits=[
+            {
+                "status": "VETO",
+                "issues": [
+                    {
+                        "kind": "UNCOVERED_SOURCE",
+                        "source_surfaces": ["bölgelere göre göster"],
+                        "note": "material positive request is not represented in draft",
+                    }
+                ],
+            },
+            {"status": "PASS", "issues": []},
+        ],
+    )
+    loop, runtime, executor = _loop(scripted)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-063",
+        request_ref="req-063",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is False
+    assert outcome.clarification_required is True
+    assert runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
+    assert any(
+        item.get("kind") == "coverage_audit" and item.get("status") == "VETO"
+        for item in outcome.observations
+    )
+    assert any(
+        item.get("kind") == "contract_validity"
+        and item.get("status") == "NEEDS_CLARIFICATION"
+        for item in outcome.observations
+    )
+
+
+def test_067_missing_trusted_metric_binding_clarifies_after_finite_revision():
+    question = "peki bölgelere göre?"
+    breakdown = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_BREAK",
+                capability="breakdown",
+                source_surfaces=("bölgelere göre",),
+                semantic_surfaces=(("bölgelere", "dimension"),),
+            )
+        ],
+        "research_directives": [],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[breakdown, breakdown],
+        audits=[
+            {"status": "PASS", "issues": []},
+            {"status": "PASS", "issues": []},
+        ],
+    )
+    conversation = ConversationStateV2(
+        has_prior_analytical_request=True,
+        has_active_result=True,
+        topic_labels=("Satış",),
+        focus_labels=("Net Gelir",),
+        selected_anchor_label="Net Gelir",
+    )
+    loop, runtime, executor = _loop(scripted, conversation=conversation)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-067",
+        request_ref="req-067",
+        runtime=runtime,
+        executor=executor,
+        conversation=conversation,
+    )
+
+    assert outcome.accepted is False
+    assert outcome.clarification_required is True
+    assert runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    assert sum(
+        item.get("kind") == "contract_validity"
+        for item in outcome.observations
+    ) == 2
+
+
+def test_075_research_directive_is_not_user_obligation():
+    question = (
+        "üretkenlik düşüşünü araştır; sonuç yeni bir yön gösterirse oraya da bak"
+    )
+    scripted = _ScriptedStructured(
+        drafts=[
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_ROOT",
+                        capability="root_cause",
+                        source_surfaces=("üretkenlik düşüşünü araştır",),
+                        semantic_surfaces=(("üretkenlik", "metric"),),
+                    )
+                ],
+                "research_directives": [
+                    {
+                        "directive_id": "R1",
+                        "directive_type": "ADAPT_ON_EVIDENCE",
+                        "parent_obligation_id": "U_ROOT",
+                        "condition": "MATERIAL_NEW_DIRECTION",
+                        "source_surfaces": [
+                            "sonuç yeni bir yön gösterirse oraya da bak"
+                        ],
+                    }
+                ],
+            }
+        ],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    loop, runtime, executor = _loop(scripted)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-075",
+        request_ref="req-075",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is True
+    assert outcome.clarification_required is False
+    assert runtime.accepted_contract is not None
+    assert runtime.ledger is not None
+    assert len(runtime.ledger.items) == 1
+    item = runtime.ledger.items[0]
+    assert item.capability_key == ManagerCapabilityKey.ROOT_CAUSE
+    assert item.origin == ObligationOrigin.USER_MUST
+    assert item.polarity == ObligationPolarity.REQUIRED
+    assert len(runtime.accepted_contract.research_directives) == 1
+    directive = runtime.accepted_contract.research_directives[0]
+    assert directive.directive_type.value == "ADAPT_ON_EVIDENCE"
+    assert directive.parent_obligation_id == "U_ROOT"
+
+
+def test_coverage_schema_is_veto_only_and_cannot_create_authority():
+    properties = set(CoverageAudit.model_json_schema()["properties"])
+    assert properties == {"status", "issues"}
+    issue_properties = set(
+        CoverageAudit.model_json_schema()["$defs"]["CoverageIssue"]["properties"]
+    )
+    assert issue_properties == {"kind", "source_surfaces", "note"}
+    assert "capability_key" not in str(CoverageAudit.model_json_schema())
+    assert "semantic_handle" not in str(CoverageAudit.model_json_schema())
+
+
+def test_dynamic_action_frontier_blocks_exact_repeat_after_no_new_progress():
+    runtime = ManagerRuntime(request_ref="frontier")
+    runtime.begin_understanding()
+    frontier = DynamicActionFrontier()
+    action = {
+        "action": "inspect_evidence",
+        "evidence_ref": "E1",
+    }
+
+    first_progress = frontier.progress(runtime)
+    assert frontier.observe(
+        progress_before=first_progress,
+        action=action,
+        runtime=runtime,
+        result={"artifact_id": "E1", "verified": True},
+    ) is True
+
+    second_progress = frontier.progress(runtime)
+    assert frontier.observe(
+        progress_before=second_progress,
+        action=action,
+        runtime=runtime,
+        result={"artifact_id": "E1", "verified": True},
+    ) is False
+    assert frontier.blocked(progress=second_progress, action=action) is True
