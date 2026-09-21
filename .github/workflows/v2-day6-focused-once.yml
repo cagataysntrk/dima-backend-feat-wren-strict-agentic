@@ -14,6 +14,7 @@ name: v2-day6-focused-once
 # flat-schema + capability-registry + model-role closure
 # current-head reference-role closure
 # internal-deliverable-boundary final rerun
+# role-scoped reasoning closure
 
 "on":
   push:
