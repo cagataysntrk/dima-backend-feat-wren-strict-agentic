@@ -392,3 +392,64 @@ cases:
       - {kind: relationship, subject: ["ürün"], related: ["makine"]}
       - {kind: performance, subject: ["sales performance"]}
       - {kind: deliverable, deliverable: report}
+
+
+  # --- Additional ResearchBrief-kind / multi-deliverable coverage ---
+  - id: multi_deliverable_report_chart
+    q: "Son 12 ay ürünleri karşılaştır, makine ilişkisini incele; hem rapor hem grafik hazırla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: deliverable, deliverable: report}
+      - {kind: deliverable, deliverable: chart}
+
+  - id: two_performances_plus_relation
+    q: "Son 12 ay üretim performansını ve satış performansını ayrı ayrı değerlendir, aralarındaki ilişkiyi araştır ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: performance, subject: ["üretim"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: relationship, subject: ["üretim"], related: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: trend_plus_comparison
+    q: "Son 12 ay satış performansının trendini incele, ürünleri karşılaştır ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: trend, subject: ["satış"]}
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: ranking_plus_relationship
+    q: "Son 12 ay ürünleri satış performansına göre sırala, ürünlerin makine ilişkisini de araştır ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: ranking, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: root_cause_goal
+    q: "Üretim performansındaki düşüşün makineyle bağlantısını kök neden olarak araştır ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    goals:
+      - {kind: root_cause, subject: ["üretim"], related: ["makine"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: breakdown_plus_relationship
+    q: "Satış performansını ürün kırılımında analiz et, ürünlerin makine ilişkisini de incele ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    goals:
+      - {kind: breakdown, subject: ["satış"], related: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: deliverable, deliverable: report}
