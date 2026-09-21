@@ -157,7 +157,11 @@ class SemanticHandle(FrozenModel):
 
 
 class SemanticResolutionReceipt(FrozenModel):
-    """Runtime proof that Resolver bound one current-user source span to one handle."""
+    """Anti-laundering proof for one runtime-approved source -> semantic handle edge.
+
+    This receipt proves provenance only. It is not an intent-completeness signal and must
+    never be used to infer what other obligations or semantic surfaces the user intended.
+    """
 
     source_ref: str = Field(pattern=r"^src_[a-f0-9]{24}$")
     handle_id: str = Field(pattern=r"^sem_[a-f0-9]{24}$")
