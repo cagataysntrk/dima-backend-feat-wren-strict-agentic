@@ -51,6 +51,14 @@ class DialoguePolicyV0:
         turn: TurnInterpretation,
         bundle: SemanticResolutionBundle,
     ) -> DialogueAction:
+        # Research keeps every requested MUST goal visible in ResearchBrief even when
+        # one semantic ref is blocking. The brief itself becomes BLOCKED; Day 6 does
+        # not collapse a complex request into the first clarification.
+        if turn.dialogue_act in {
+            TurnAct.COMPLEX_ANALYSIS,
+            TurnAct.REPORT_REQUEST,
+        }:
+            return DialogueAction.RESEARCH_BRIEF
         if bundle.clarification is not None:
             return DialogueAction.CLARIFY
         if turn.dialogue_act in {
