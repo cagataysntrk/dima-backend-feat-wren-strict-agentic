@@ -13,6 +13,7 @@ from types import SimpleNamespace
 from control_plane.authorize import Principal
 
 import app.v2.orchestrator as orchestrator_module
+from app.v2.context_provider import ContextProviderV0
 from app.v2.dialogue_policy import DialoguePolicyV0
 from app.v2.finalizer import ConversationFinalizerV0
 from app.v2.interpreter import TurnInterpreter, TurnInterpreterError
@@ -40,6 +41,7 @@ from app.v2.models import (
     SemanticMentionKind,
     SemanticResolutionBundle,
     SemanticTargetKind,
+    TenantAnalyticsRuntimeV0,
     TurnAct,
     TurnInterpretation,
 )
@@ -330,6 +332,54 @@ def test_dialogue_policy_preserves_complex_brief_before_first_clarification():
     )
     action = DialoguePolicyV0().after_grounding(turn=turn, bundle=bundle)
     assert action == DialogueAction.RESEARCH_BRIEF
+
+
+class _RelationshipSchemaService:
+    def schema(self):
+        return {
+            "cubes": [
+                {
+                    "name": "cube_a",
+                    "base_object": "model_a",
+                    "measures": [],
+                    "dimensions": [],
+                    "time_dimensions": [],
+                },
+                {
+                    "name": "cube_b",
+                    "base_object": "model_b",
+                    "measures": [],
+                    "dimensions": [],
+                    "time_dimensions": [],
+                },
+            ],
+            "relationships": [
+                {
+                    "name": "rel_ab",
+                    "models": ["model_a", "model_b"],
+                    "join_type": "many_to_one",
+                    "condition": "model_a.secret_id = model_b.secret_id",
+                }
+            ],
+        }
+
+
+def test_context_provider_exposes_cube_relation_without_join_condition():
+    runtime = TenantAnalyticsRuntimeV0(
+        tenant_id="tenant-x",
+        tenant_slug="tenant-x",
+        principal_user_id="user-x",
+        roles=("analyst",),
+        mdl_version="mdl-x",
+        db_online=True,
+    )
+    context = ContextProviderV0().build(_RelationshipSchemaService(), runtime)
+    assert len(context.relationships) == 1
+    relationship = context.relationships[0]
+    assert relationship.cube_names == ("cube_a", "cube_b")
+    assert relationship.models == ("model_a", "model_b")
+    # Compact relationship contract deliberately has no physical join condition field.
+    assert "condition" not in relationship.model_dump(mode="json")
 
 
 class _NoQueryService:
