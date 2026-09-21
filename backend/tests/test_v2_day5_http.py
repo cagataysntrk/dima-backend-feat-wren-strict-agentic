@@ -369,3 +369,103 @@ def test_real_http_provider_failure_is_503_and_cannot_reach_data(v2_client, monk
     assert response.json()["detail"]["code"] == "llm_unavailable"
     assert service.query_calls == 0
     assert service.dry_calls == 0
+
+
+def test_real_http_day6_research_brief_ready_stops_before_data_execution(v2_client, monkeypatch):
+    client = v2_client
+    service = HttpSyntheticService()
+    llm = SequenceLlm([
+        {
+            "dialogue_act": "REPORT_REQUEST",
+            "research_request": {
+                "time_mentions": [{"text": "bu yıl", "kind": "time"}],
+                "goals": [
+                    {
+                        "kind": "relationship",
+                        "text": "üretim hattı ile çıktı verimi ilişkisini incele",
+                        "subject_mentions": [{"text": "çıktı verimi", "kind": "metric"}],
+                        "related_mentions": [{"text": "üretim hattı", "kind": "dimension"}],
+                        "deliverable": None,
+                    },
+                    {
+                        "kind": "deliverable",
+                        "text": "raporla",
+                        "subject_mentions": [],
+                        "related_mentions": [],
+                        "deliverable": "report",
+                    },
+                ],
+            },
+            "presentation_request": "report",
+        }
+    ])
+    enable_v2(client, monkeypatch, service=service, llm=llm)
+
+    response = post_turn(
+        client,
+        "bu yıl üretim hattı ile çıktı verimi ilişkisini incele ve raporla",
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+
+    assert data["status"] == "research_brief"
+    assert data["stage"] == "day6_research_brief"
+    assert data["dialogue_action"] == "RESEARCH_BRIEF"
+    assert data["response"]["kind"] == "research_brief"
+    assert data["research_brief"]["status"] == "READY_FOR_RESEARCH"
+    assert len(data["research_brief"]["questions"]) == 2
+    assert data["query_execution_count"] == 0
+    assert data["next_stage"] == "research_ready_day7"
+    assert data["official_verified"] is False
+    assert service.dry_calls == 0
+    assert service.query_calls == 0
+
+
+def test_real_http_day6_blocked_goal_is_preserved_without_query(v2_client, monkeypatch):
+    client = v2_client
+    service = HttpSyntheticService()
+    llm = SequenceLlm([
+        {
+            "dialogue_act": "REPORT_REQUEST",
+            "research_request": {
+                "goals": [
+                    {
+                        "kind": "relationship",
+                        "text": "çıktı verimi ile vardiya ilişkisini incele",
+                        "subject_mentions": [{"text": "çıktı verimi", "kind": "metric"}],
+                        "related_mentions": [{"text": "vardiya", "kind": "dimension"}],
+                        "deliverable": None,
+                    },
+                    {
+                        "kind": "deliverable",
+                        "text": "raporla",
+                        "subject_mentions": [],
+                        "related_mentions": [],
+                        "deliverable": "report",
+                    },
+                ],
+            },
+            "presentation_request": "report",
+        }
+    ])
+    enable_v2(client, monkeypatch, service=service, llm=llm)
+
+    response = post_turn(
+        client,
+        "çıktı verimi ile vardiya ilişkisini incele ve raporla",
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+
+    assert data["status"] == "research_brief"
+    assert data["response"]["kind"] == "semantic_gap"
+    assert data["research_brief"]["status"] == "BLOCKED"
+    assert data["research_brief"]["blocking_goal_ids"] == ["g1"]
+    assert len(data["research_brief"]["questions"]) == 2
+    assert data["research_brief"]["questions"][0]["status"] == "BLOCKED"
+    assert data["research_brief"]["questions"][1]["status"] == "RESOLVED"
+    assert data["query_execution_count"] == 0
+    assert data["next_stage"] == "research_brief_blocked"
+    assert data["response"]["clarification_chips"] == []
+    assert service.dry_calls == 0
+    assert service.query_calls == 0
