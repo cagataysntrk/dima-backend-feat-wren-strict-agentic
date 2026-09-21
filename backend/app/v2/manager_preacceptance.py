@@ -750,6 +750,17 @@ class PreAcceptanceController:
                     "draft": draft.model_dump(mode="json"),
                 }
             )
+            if draft.control_requests:
+                observations.append(
+                    {
+                        "kind": "non_authoritative_control_requests",
+                        "attempt": attempt,
+                        "requests": [
+                            item.model_dump(mode="json")
+                            for item in draft.control_requests
+                        ],
+                    }
+                )
 
             surface_violations = self._validate_draft_surfaces(
                 draft=draft,
@@ -809,6 +820,26 @@ class PreAcceptanceController:
                     "summary": grounding_summary,
                 }
             )
+
+            material_gaps = self._material_grounding_gaps(
+                draft=draft,
+                grounded=grounded,
+            )
+            if material_gaps:
+                runtime.require_clarification(
+                    "material capability-required semantic binding is unresolved"
+                )
+                observations.append(
+                    {
+                        "kind": "material_grounding_gap",
+                        "attempt": attempt,
+                        "gaps": list(material_gaps),
+                    }
+                )
+                return FiniteAcceptanceOutcome(
+                    status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
+                    observations=tuple(observations),
+                )
 
             try:
                 runtime.note_manager_turn()
