@@ -42,35 +42,47 @@ Bu nedenle Day 6.5 bir prompt/schema tuning turu değildir.
 
 ## 2. Mimari karar
 
-Complex control plane adayı:
+Complex control plane için seçilmiş **validation candidate** bounded Manager'dır.
+Production architecture ancak Day 6.5 hard gate'leri geçince seal edilir.
+
+Front-door standard maliyet/latency yolu ayrıca korunur:
 
 ```text
 USER
   ↓
-BOUNDED MANAGER RUNTIME
-  ├─ understand / revise
-  ├─ propose obligations
-  ├─ ask clarification
-  └─ resolve semantics when needed
-          ↓
-UserObligationLedger
-          +
-SemanticResolver → opaque SemanticHandle
-          ↓
-IntentAcceptanceGate
-          ↓
-AcceptedTurnContract vN
-          ↓
-RepresentabilityGate
-   ┌───────────────┴───────────────┐
-STANDARD_LOSSLESS             RESEARCH_REQUIRED
-   ↓                                ↓
-Core AnalyticsIR                bounded Manager loop
-                                    ↓
-                              governed task proposals
-                                    ↓
-                              TRUST / EXECUTION PLANE
+Language Runtime
+  ↓
+FAST_LANGUAGE candidate attempt
+  ↓
+Candidate intent / obligations
+  ↓
+Acceptance + Representability
+   ├─ STANDARD_LOSSLESS → Core Fast Path
+   └─ REJECTED / COMPLEX / INCOMPLETE
+              ↓
+       RESEARCH_MANAGER
+       iterative cognition
+              ↓
+       UserObligationLedger
+              +
+       SemanticResolver → opaque SemanticHandle
+              ↓
+       IntentAcceptanceGate
+              ↓
+       AcceptedTurnContract vN
+              ↓
+       RepresentabilityGate
+              ↓
+       bounded Manager research loop
+              ↓
+       governed task proposals
+              ↓
+       TRUST / EXECUTION PLANE
 ```
+
+**Authority invariant:** FAST attempt reddedilirse o attempt'ten downstream'a hiçbir
+semantic field/handle/obligation taşınmaz. Güçlü Manager sıfırdan tek authoritative
+candidate üretir. Rejected-attempt field merge yasaktır.
 
 Manager doğal dili iteratif anlayabilir. Fakat business truth, canonical semantics,
 query planning, authorization, grain/join safety, numeric truth, evidence ve completion
@@ -153,17 +165,24 @@ Her kullanıcı yükümlülüğü için:
 
 ```text
 obligation_id
-kind
+capability_key
+origin = USER_MUST | USER_OPTIONAL | SYSTEM_REQUIRED | AGENT_DERIVED
+parent_obligation_id
 priority = MUST | SHOULD
-source_evidence_ref
+source_span_refs[]
 polarity = REQUIRED | EXCLUDED
 status
 semantic_handle_refs[]
 evidence_refs[]
+verdict
 blocker
 introduced_in_version
 superseded_by
 ```
+
+`AGENT_DERIVED` hiçbir lifecycle geçişinde `USER_MUST`'a dönüşemez.
+Derived task kullanıcı borcunu değiştirmez; yalnız accepted obligation'ın araştırmasını
+genişletir.
 
 Kurallar:
 - MUST sessiz düşmez.
@@ -171,12 +190,32 @@ Kurallar:
 - Manager obligation ekleyebilir diye authoritative olmaz.
 - AcceptanceGate kabul etmeden obligation authoritative değildir.
 
-### 5.3 SemanticHandle
+### 5.3 SourceSpanRef + SemanticHandle
 
-Manager canonical ad yazamaz.
+Manager source evidence veya canonical ad uyduramaz.
+
+Raw message önce runtime-owned `SourceSpanRegistry` tarafından offset/hash ile kayıtlanır:
 
 ```text
-manager surface proposal
+message
+→ SourceSpanRegistry
+→ src_<opaque id>
+```
+
+Registry entry en az:
+```text
+source_ref
+message_id
+message_hash
+start_offset
+end_offset
+exact_surface
+```
+
+Semantic binding:
+
+```text
+manager source_ref proposal
 → SemanticResolver
 → sem_<opaque id>
 ```
@@ -192,15 +231,33 @@ kullanır.
 
 Handle içeriği Manager tarafından üretilemez/değiştirilemez.
 
+SemanticHandle registry entry en az:
+```text
+handle_id
+tenant_binding
+context_version
+resolver_provenance_id
+target_kind
+sensitive
+```
+
+Foreign-tenant, stale-context ve non-Resolver handle kullanımı deterministic reject'tir.
+
 ### 5.4 AcceptedTurnContract vN
 
 Immutable ve versioned:
 
 ```text
 contract_id
+lineage_id
+contract_schema_version
 version
-supersedes
+supersedes_contract_id
 turn_id
+request_ref
+source_message_hash
+accepted_attempt_id
+model_role
 accepted_obligation_ids[]
 accepted_exclusion_ids[]
 open_obligation_ids[]
@@ -209,6 +266,10 @@ context_version
 acceptance_status
 created_at
 ```
+
+`version` aynı `lineage_id` içinde monoton artar.
+Accepted non-clarification turn başına **exactly one active accepted contract** olabilir.
+Birden fazla model attempt olabilir; rejected attempt'ten semantic merge yapılamaz.
 
 Repair örneği:
 
@@ -254,13 +315,26 @@ PARTIAL
 FAILED
 ```
 
-Örnek:
+Evidence varlığı ile obligation verdict ayrıdır.
 
 ```text
-4 MUST
-3 evidence-backed
-1 data gap
+evidence_refs != []
+≠
+obligation == VERIFIED
+```
+
+Terminal run semantiği:
+
+```text
+all active USER_MUST == VERIFIED
+→ VERIFIED_COMPLETE
+
+all USER_MUST accounted for
++ en az biri BLOCKED_DATA_GAP / UNSUPPORTED / LIMITED
 → PARTIAL
+
+unaccounted MUST / fatal authority-trust invariant
+→ FAILED veya finish rejected
 ```
 
 ## 6. Manager yetkileri ve yasakları
@@ -473,8 +547,16 @@ evidence-less verified finding         = 0
 ### Standard path
 
 ```text
+unsafe_fast_admission                  = 0
 STANDARD_LOSSLESS routed to Core       = 100% canonical standard set
-simple query forced into Manager loop  = 0 canonical standard set
+simple_standard_manager_loop           = 0
+simple_standard_verified_success       >= Day5 baseline
+simple_standard_model_calls            <= 1
+simple_standard_p95                    <= Day5 baseline * 1.10
+simple_standard_cost                   <= Day5 baseline * 1.10
+rejected_attempt_semantic_merge        = 0
+accepted_contracts_per_turn            <= 1
+accepted non-clarification turn        → exactly 1 active accepted contract
 ```
 
 ## 13. Model policy
@@ -505,21 +587,28 @@ Eğer stronger model architecture gate'i geçip fast model geçmezse:
 
 ```text
 0. freeze hidden holdout metadata
-1. seal rejected one-shot ADR
+1. seal rejected one-shot ADR / candidate-manager status
 2. add contracts only
 3. provider-free invariant gate
-4. Manager runtime + governed tools
-5. AcceptanceGate + versioning
-6. SemanticHandle boundary
-7. RepresentabilityGate
-8. bounded adaptive proof
-9. CompletionGate
-10. DEV eval
-11. VALIDATION eval
-12. HIDDEN seal
-13. update living status
-14. only then open Day 7 production research execution
+4. SourceSpanRegistry + SemanticHandle boundary
+5. AcceptanceGate + versioning + exactly-one-authority invariant
+6. RepresentabilityGate + standard fast-path regression gates
+7. governed Manager tool registry
+8. bounded Manager runtime
+9. adaptive fake/governed evidence proof
+10. narrow REAL trust-plane vertical integration proof
+11. CompletionGate
+12. DEV eval
+13. VALIDATION eval
+14. HIDDEN seal
+15. architecture decision
+16. MIMARI.md canonical update
+17. CLAUDE.md active-operation index update
+18. DIMA_V2_GELISTIRME_DURUM.md seal
+19. only then open Day 7 production research execution
 ```
+
+Manager runtime, yetkisini sınırlayan registry/gate'lerden önce yazılmaz.
 
 ## 16. Stop-the-line
 
@@ -535,6 +624,26 @@ Aşağıdakilerden biri görülürse feature geliştirme durur:
 - evidence olmadan VERIFIED_COMPLETE üretiliyor,
 - standard-lossless istek research'e sürükleniyor,
 - yeni architecture eski monolitin yalnız dosyalara bölünmüş hali oluyor.
+
+## 16.5 Architecture seal için gerçek trust-plane proof
+
+Mock/fake evidence adaptive state machine'i kanıtlar fakat trust-plane entegrasyonunu tek
+başına kanıtlamaz. Seal öncesinde en az bir dar read-only dikey dilim zorunludur:
+
+```text
+Manager proposed task
+→ existing governed Core adapter
+→ AnalyticsIR
+→ RequirementLedger
+→ CubePlanner
+→ Wren dry-plan
+→ query
+→ QueryContract
+→ EvidenceArtifact
+→ Manager observes bounded evidence
+```
+
+Full relationship/root-cause tool ekosistemi Day 7'de kalır.
 
 ## 17. Day 6.5 başarılı olduğunda
 
