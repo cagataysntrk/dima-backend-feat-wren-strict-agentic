@@ -1,16 +1,8 @@
 name: v2-day5-live-attack
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - "backend/lab/v2_day5_live_attack.py"
-      - "backend/app/v2/**"
-      - "backend/app/routers/ask_v2.py"
-      - "backend/pyproject.toml"
-      - ".github/workflows/v2-day5-live-attack.yml"
   workflow_dispatch:
+
 
 concurrency:
   group: v2-day5-live-attack-${{ github.sha }}
