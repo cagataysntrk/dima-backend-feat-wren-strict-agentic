@@ -94,7 +94,74 @@ export interface AgentRun {
   truncation_reason?: string | null;
 }
 
+export type V2ConversationState = Record<string, unknown>;
+
+export interface V2ClarificationChip {
+  candidate_id: string;
+  label: string;
+  token: string;
+}
+
+export interface V2ScopeChip {
+  kind: "metric" | "dimension" | "filter" | "time" | "ranking" | "comparison";
+  label: string;
+  canonical_ref?: string | null;
+}
+
+export interface V2EvidenceRef {
+  contract_id: string;
+  execution_id: string;
+  role: "primary" | "comparison_reference";
+  sealed: boolean;
+}
+
+export interface V2ConversationTable {
+  execution_id: string;
+  role: "primary" | "comparison_reference";
+  columns: string[];
+  rows: Record<string, unknown>[];
+  row_count: number;
+  truncated: boolean;
+}
+
+export interface V2ConversationResponse {
+  kind: "answer" | "clarify" | "talk" | "explain" | "semantic_gap" | "unsupported" | "failure";
+  text: string;
+  scope_chips: V2ScopeChip[];
+  clarification_chips: V2ClarificationChip[];
+  evidence_refs: V2EvidenceRef[];
+  tables: V2ConversationTable[];
+  official_verified: boolean;
+}
+
+export interface AskV2Request {
+  question: string;
+  session_id?: string | null;
+  thread_id?: string | null;
+  conversation?: V2ConversationState;
+  clarification_token?: string | null;
+}
+
+export interface AskV2CoreResponse {
+  status: "core_mvp";
+  stage: "day5_core_mvp";
+  dialogue_action: "TALK" | "CLARIFY" | "EXPLAIN_EXISTING" | "ANALYTIC_STANDARD" | "UNSUPPORTED";
+  semantic_status: "resolved" | "clarification_required" | "semantic_gap" | "not_applicable";
+  analytics_status: "verified" | "not_executable" | "not_applicable" | "failed";
+  official_verified: boolean;
+  response: V2ConversationResponse;
+  conversation: V2ConversationState;
+  session_id?: string | null;
+  thread_id?: string | null;
+  query_execution_count: number;
+  used_existing_result: boolean;
+  legacy_semantic_path_called: false;
+  failure?: { code: string; stage: string; message: string } | null;
+}
+
 export interface AskResponse {
+  /** Day 5 Core MVP typed payload. UI renders this directly; legacy fields are only thread-shell compatibility. */
+  v2_core?: AskV2CoreResponse | null;
   // 🔴 FAZ 5.17 — TEK SES. `app/soz.py` katalogundan gelen metin: tek hitap kipinde,
   // jargonsuz ve *"önce ne anladığını söyle, sonra sor"* şeklinde.
   //
