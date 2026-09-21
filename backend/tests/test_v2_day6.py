@@ -21,6 +21,7 @@ from app.v2.context_provider import ContextProviderV0
 from app.v2.dialogue_policy import DialoguePolicyV0
 from app.v2.finalizer import ConversationFinalizerV0
 from app.v2.interpreter import TurnInterpreter, TurnInterpreterError
+from app.v2.model_policy import ModelRole, ModelRolePolicy
 from app.v2.models import (
     AskV2Request,
     BoundedSemanticContextV0,
@@ -1685,6 +1686,48 @@ def test_capability_registry_declares_core_and_research_lanes_without_fixture_lo
     for forbidden in ("ürün", "makine", "personel", "satış", "Gemini"):
         assert forbidden not in policy_source
         assert forbidden not in registry_source
+
+
+def test_language_model_roles_are_config_not_domain_branches():
+    settings = SimpleNamespace(
+        v2_fast_language_provider="openrouter",
+        v2_fast_language_model="",
+        v2_reference_language_provider="openrouter",
+        v2_reference_language_model="reference-model-x",
+        openrouter_model="fast-model-y",
+        openrouter_select_model="",
+    )
+    policy = ModelRolePolicy(settings)
+
+    fast = policy.profile(ModelRole.FAST_LANGUAGE)
+    reference = policy.profile(ModelRole.REFERENCE_LANGUAGE)
+    overridden = policy.profile(
+        ModelRole.REFERENCE_LANGUAGE,
+        model_override="candidate-z",
+    )
+
+    assert fast.provider == "openrouter"
+    assert fast.model == "fast-model-y"
+    assert reference.model == "reference-model-x"
+    assert overridden.model == "candidate-z"
+
+    source = inspect.getsource(ModelRolePolicy)
+    for forbidden in ("ürün", "makine", "personel", "satış"):
+        assert forbidden not in source
+
+
+def test_reference_language_role_never_silently_reuses_fast_model():
+    settings = SimpleNamespace(
+        v2_fast_language_provider="openrouter",
+        v2_fast_language_model="",
+        v2_reference_language_provider="openrouter",
+        v2_reference_language_model="",
+        openrouter_model="fast-only",
+        openrouter_select_model="",
+    )
+
+    with pytest.raises(ValueError, match="REFERENCE_LANGUAGE"):
+        ModelRolePolicy(settings).profile(ModelRole.REFERENCE_LANGUAGE)
 
 
 def test_relationship_surface_schema_rejects_multiple_focus_endpoints():
