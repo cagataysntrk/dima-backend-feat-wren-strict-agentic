@@ -380,9 +380,58 @@ class AnalyticsIR(FrozenModel):
     context_version: str = ""
 
 
-class ConversationStateV2(FrozenModel):
-    """Bounded context supplied to TurnInterpreter; persistence arrives on Day 4."""
+class DialogueAction(StrEnum):
+    TALK = "TALK"
+    CLARIFY = "CLARIFY"
+    EXPLAIN_EXISTING = "EXPLAIN_EXISTING"
+    ANALYTIC_STANDARD = "ANALYTIC_STANDARD"
+    UNSUPPORTED = "UNSUPPORTED"
 
+
+class TopicFrameV0(FrozenModel):
+    topic_id: str
+    cube: str
+    context_version: str
+
+
+class FocusStateV0(FrozenModel):
+    metrics: tuple[ResolvedSemanticRef, ...] = ()
+    dimensions: tuple[ResolvedSemanticRef, ...] = ()
+    filters: tuple[ResolvedFilterRef, ...] = ()
+    period: ResolvedPeriod | None = None
+    last_contract_refs: tuple[str, ...] = ()
+
+
+class ResultExecutionAnchorV0(FrozenModel):
+    execution_id: str
+    role: Literal["primary", "comparison_reference"]
+    columns: tuple[str, ...] = ()
+    rows: tuple[dict[str, Any], ...] = ()
+    row_count: int = 0
+    truncated: bool = False
+
+
+class ResultAnchorV0(FrozenModel):
+    contract_refs: tuple[str, ...] = ()
+    result_hashes: tuple[str, ...] = ()
+    executions: tuple[ResultExecutionAnchorV0, ...] = ()
+    verified: bool = False
+
+
+class PendingAnalyticalStateV0(FrozenModel):
+    dialogue_act: TurnAct
+    analytical_request: AnalyticalRequest
+    user_repair: UserRepair | None = None
+    hypotheses: tuple[SemanticHypothesis, ...] = ()
+    clarification: ClarificationState
+    base_ir: AnalyticsIR | None = None
+    context_version: str
+
+
+class ConversationStateV2(FrozenModel):
+    """Bounded typed conversation context. Durable server resume is a later phase."""
+
+    # Compatibility fields retained for the Day1 interpreter contract.
     has_prior_analytical_request: bool = False
     has_active_result: bool = False
     pending_clarification: bool = False
@@ -392,6 +441,13 @@ class ConversationStateV2(FrozenModel):
     selected_anchor: SemanticAnchor | None = None
     focus_anchors: tuple[SemanticAnchor, ...] = ()
     clarification_state: ClarificationState | None = None
+
+    # Day4 canonical state. Raw SQL/CubeQuery is intentionally absent.
+    topic: TopicFrameV0 | None = None
+    focus: FocusStateV0 | None = None
+    last_ir: AnalyticsIR | None = None
+    last_result: ResultAnchorV0 | None = None
+    pending_analytical: PendingAnalyticalStateV0 | None = None
 
 
 class TurnInterpretation(FrozenModel):
@@ -507,6 +563,12 @@ class StandardAnalyticsFailure(FrozenModel):
         "result_validation_failed",
         "contract_seal_failed",
         "context_version_mismatch",
+        "no_prior_ir",
+        "empty_refinement_delta",
+        "followup_cube_incompatible",
+        "pending_analytical_state_missing",
+        "no_active_result",
+        "clarification_state_mismatch",
     ]
     stage: Literal[
         "policy",
@@ -517,6 +579,7 @@ class StandardAnalyticsFailure(FrozenModel):
         "execution",
         "result_validation",
         "contract",
+        "conversation",
     ]
     message: str
 
@@ -593,3 +656,52 @@ class AskV2Day3Response(FrozenModel):
         "clarification_resume_day2",
         "standard_analytics_retry",
     ]
+
+
+
+# ---------------------------------------------------------------------------
+# Day 4 conversation / dialogue-policy surface
+# ---------------------------------------------------------------------------
+
+
+class AskV2Day4Response(FrozenModel):
+    status: Literal["conversation"] = "conversation"
+    stage: Literal["day4_conversation"] = "day4_conversation"
+    dialogue_action: DialogueAction
+    semantic_status: Literal[
+        "resolved",
+        "clarification_required",
+        "semantic_gap",
+        "not_applicable",
+    ]
+    analytics_status: Literal[
+        "verified",
+        "not_executable",
+        "not_applicable",
+        "failed",
+    ]
+    official_verified: bool = False
+    runtime: TenantAnalyticsRuntimeV0
+    context_version: ContextVersionV0
+    turn: TurnInterpretation | None = None
+    hypotheses: tuple[SemanticHypothesis, ...] = ()
+    clarification: ClarificationState | None = None
+    analytics_ir: AnalyticsIR | None = None
+    ledger: RequirementLedger | None = None
+    executions: tuple[ExecutionResultV0, ...] = ()
+    query_contracts: tuple[MinimumQueryContract, ...] = ()
+    existing_result: ResultAnchorV0 | None = None
+    conversation: ConversationStateV2
+    failure: StandardAnalyticsFailure | None = None
+    resumed_by: Literal["signed_chip", "free_text"] | None = None
+    session_id: str | None = None
+    thread_id: str | None = None
+    query_execution_count: int = 0
+    used_existing_result: bool = False
+    legacy_semantic_path_called: Literal[False] = False
+    next_stage: Literal[
+        "conversation_day4",
+        "clarification_resume_day4",
+        "core_mvp_day5",
+        "standard_analytics_retry",
+    ] = "conversation_day4"
