@@ -106,6 +106,8 @@ class HttpSyntheticService:
         for flt in query.get("filters") or ():
             if flt.get("operator") == "eq":
                 members = [flt.get("value")]
+            elif flt.get("operator") == "in":
+                members = list(flt.get("value") or ())
 
         rows = []
         for index, member in enumerate(members):
