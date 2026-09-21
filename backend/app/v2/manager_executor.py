@@ -158,12 +158,24 @@ class GovernedManagerExecutor:
 
             effective_args = validated_args
             if validated_args.derived_task_id is not None:
+                derived_handles = tuple(
+                    dict.fromkeys(
+                        (
+                            *validated_args.metric_handles,
+                            *validated_args.dimension_handles,
+                            *validated_args.filter_handles,
+                            *(() if validated_args.period_handle is None else (validated_args.period_handle,)),
+                            *(() if validated_args.comparison_handle is None else (validated_args.comparison_handle,)),
+                        )
+                    )
+                )
                 ledger = self._obligations.add_agent_derived(
                     ledger,
                     obligation_id=validated_args.derived_task_id,
                     parent_obligation_id=validated_args.derived_parent_obligation_id,
                     capability_key=validated_args.derived_capability_key,
                     source_refs=(),
+                    semantic_handle_refs=derived_handles,
                 )
                 runtime.replace_ledger(ledger)
                 effective_args = validated_args.model_copy(
