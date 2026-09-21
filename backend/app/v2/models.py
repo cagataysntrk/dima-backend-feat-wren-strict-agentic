@@ -223,17 +223,26 @@ class ResearchGoalKind(StrEnum):
 
 
 class ResearchGoalSurface(FrozenModel):
-    """One explicit analytical research goal expressed in the current message.
+    """One explicit analytical operation expressed in the current message.
 
-    Deliverables are intentionally NOT research questions. `text`,
-    `subject_mentions`, and `related_mentions` are language-level surface evidence
-    only. Canonical binding is owned by SemanticResolver.
+    Deliverables are intentionally NOT research questions. For RELATIONSHIP, one
+    surface object represents at most one edge; incomplete endpoints may remain empty
+    and are blocked later rather than guessed.
     """
 
     kind: ResearchGoalKind
     text: str = Field(min_length=1)
     subject_mentions: tuple[SemanticMention, ...] = ()
     related_mentions: tuple[SemanticMention, ...] = ()
+
+    @model_validator(mode="after")
+    def _relationship_is_atomic(self):
+        if self.kind == ResearchGoalKind.RELATIONSHIP:
+            if len(self.subject_mentions) > 1 or len(self.related_mentions) > 1:
+                raise ValueError(
+                    "relationship operation must represent at most one subject-to-related edge"
+                )
+        return self
 
 
 class ResearchDeliverableSurface(FrozenModel):
@@ -535,10 +544,9 @@ class ConversationStateV2(FrozenModel):
 class TurnInterpretation(FrozenModel):
     dialogue_act: TurnAct = Field(
         description=(
-            "Speech act for this turn. USER_REPAIR has precedence when the user retracts, "
-            "corrects, or replaces an existing analytical slot. ANALYTIC_REFINE adds/narrows "
-            "without retracting a prior choice. COMPLEX_ANALYSIS / REPORT_REQUEST carry a "
-            "ResearchRequestSurface and never a standard AnalyticalRequest."
+            "Conversation speech act proposed by the language owner. For new analytical "
+            "turns, COMPLEX_ANALYSIS / REPORT_REQUEST are transport hints only; the "
+            "deterministic ResearchModePolicy owns final STANDARD vs RESEARCH routing."
         )
     )
     references: tuple[ReferenceMention, ...] = ()
@@ -555,28 +563,21 @@ class TurnInterpretation(FrozenModel):
     unresolved_mentions: tuple[UnresolvedMention, ...] = ()
 
     @model_validator(mode="after")
-    def _validate_research_turn_contract(self):
-        research_act = self.dialogue_act in {
+    def _validate_turn_shape_without_routing_coupling(self):
+        analytic_new_family = {
+            TurnAct.ANALYTIC_NEW,
             TurnAct.COMPLEX_ANALYSIS,
             TurnAct.REPORT_REQUEST,
         }
-        if research_act:
-            if self.research_request is None:
-                raise ValueError("research dialogue act requires research_request")
-            if self.analytical_request is not None:
-                raise ValueError("research dialogue act cannot carry analytical_request")
-            if self.dialogue_act == TurnAct.REPORT_REQUEST:
-                if self.presentation_request != PresentationKind.REPORT:
-                    raise ValueError("REPORT_REQUEST requires presentation_request=report")
-                if not any(
-                    item.kind == PresentationKind.REPORT
-                    for item in self.research_request.deliverables
-                ):
-                    raise ValueError(
-                        "REPORT_REQUEST requires a source-grounded report deliverable"
-                    )
+        if self.dialogue_act in analytic_new_family:
+            if self.analytical_request is None and self.research_request is None:
+                raise ValueError(
+                    "new analytical turn requires analytical_request or research_request"
+                )
         elif self.research_request is not None:
-            raise ValueError("research_request is valid only for research dialogue acts")
+            raise ValueError(
+                "research operation surface is valid only on new analytical turn family"
+            )
         return self
 
 
@@ -783,6 +784,25 @@ class AskV2Day3Response(FrozenModel):
 # ---------------------------------------------------------------------------
 # Day 6 research-brief contracts (execution lifecycle remains Day 7+)
 # ---------------------------------------------------------------------------
+
+
+class ResearchMode(StrEnum):
+    STANDARD = "STANDARD"
+    RESEARCH = "RESEARCH"
+
+
+class ResearchModeReason(StrEnum):
+    EXISTING_STANDARD_SURFACE = "existing_standard_surface"
+    COMPLEX_ONLY_OPERATION = "complex_only_operation"
+    MULTI_INDEPENDENT_GOALS = "multi_independent_goals"
+    STANDARD_PROJECTABLE_OPERATIONS = "standard_projectable_operations"
+    UNPROJECTABLE_RESEARCH_SURFACE = "unprojectable_research_surface"
+
+
+class ResearchModeDecision(FrozenModel):
+    mode: ResearchMode
+    reason: ResearchModeReason
+    canonical_turn: TurnInterpretation
 
 
 class ResearchGoalStatus(StrEnum):
