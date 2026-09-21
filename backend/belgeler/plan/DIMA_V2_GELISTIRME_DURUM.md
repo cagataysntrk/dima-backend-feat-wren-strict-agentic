@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 PREP HARDENED — HIDDEN HOLDOUT FREEZE BLOCKER**  
+**Durum:** **DAY 6.5 IMPLEMENTATION ACTIVE — MANAGER CONTROL PLANE**  
 **Kod fazı:** Day 6.5 / Manager Architecture Validation — production Manager implementation henüz başlamadı; contract/authority hardening tamamlanıyor.
 
 ---
@@ -3156,3 +3156,196 @@ production Manager implementation                 LOCKED
 
 Issue #2 ancak gerçek external metadata alındıktan, manifest placeholder'ları kapatıldıktan
 ve `python lab/v2_day6_5_preflight.py` READY verdikten sonra kapatılacaktır.
+
+
+### 2026-09-21 — DAY 6.5 / IMPLEMENTATION BATCH 1
+
+**Owner kararı**
+- External hidden holdout/freeze disiplini korunuyor.
+- Hidden hash/receipt artık **implementation blocker değil, architecture-seal blocker**.
+- Otomatik/push-trigger paid LLM job YASAK; live eval manuel kalacak.
+- Geliştirme önceliği: control-plane architecture + governed tools.
+
+**Mimari ilerleme**
+
+1. `manager_models.py`
+   - `ObligationOrigin`, `ObligationStatus`, `ManagerCapabilityKey`
+   - `SourceSpanRef`, `SemanticHandle`
+   - `CandidateObligation`, `UserIntentEnvelope`
+   - `UserObligationLedger`, `AcceptedTurnContract`
+   - `ManagerState`, `ManagerBudget`, `ManagerRunSnapshot`
+   - terminal: VERIFIED_COMPLETE / PARTIAL / FAILED
+
+2. `source_spans.py`
+   - runtime-owned message hash + exact offset registry,
+   - Manager yalnız opaque `src_*` kullanır,
+   - fabricated/exact-surface mismatch fail-closed.
+
+3. `semantic_handles.py`
+   - Resolver-owned opaque `sem_*`,
+   - canonical target yalnız trusted registry içinde,
+   - tenant/context binding enforced,
+   - execution tarafı canonical binding'i registry üzerinden açar.
+
+4. `manager_policy.py`
+   - registered capability vocabulary,
+   - STANDARD / RESEARCH / PRESENTATION lane ayrımı,
+   - raw-language routing yok.
+
+5. `acceptance.py`
+   - `IntentAcceptanceGate`,
+   - source/provenance/handle/capability doğrulama,
+   - clarification vs rejection ayrımı,
+   - `AcceptedContractRegistry` ile exactly-one authority/turn,
+   - contract lineage + monotonic version.
+
+6. `representability.py`
+   - yalnız accepted typed contract/ledger okur,
+   - STANDARD_LOSSLESS / RESEARCH_REQUIRED / CLARIFICATION_REQUIRED / UNSUPPORTED,
+   - raw question/length/keyword kullanmaz.
+
+7. `completion.py`
+   - evidence presence != VERIFIED,
+   - bütün USER_MUST VERIFIED → VERIFIED_COMPLETE,
+   - explicit blocked/limited/unsupported → PARTIAL,
+   - non-terminal MUST → finish reject.
+
+8. `model_policy.py` + `config.py`
+   - yeni `RESEARCH_MANAGER` rolü,
+   - model/provider business logic içine hardcode edilmedi,
+   - reference model fallback yalnız config/policy seviyesinde.
+
+9. `manager_tools.py`
+   - kapalı 6-tool registry:
+     - resolve_semantics
+     - propose_acceptance
+     - run_analytics
+     - run_relationship
+     - inspect_evidence
+     - request_clarification
+   - raw SQL/direct DB/generic Python tool YOK,
+   - execution tools AcceptedTurnContract olmadan çağrılamaz.
+
+10. `manager_runtime.py`
+    - bounded state machine:
+      INITIAL → UNDERSTANDING → CONTRACT_ACCEPTED → INVESTIGATING
+      + CLARIFICATION/BLOCKED/BUDGET/FAILED/COMPLETED terminal/side states,
+    - tool/data-query/manager-turn budget,
+    - actual query fanout bütçeye ayrıca yazılır.
+
+11. `manager_semantics.py`
+    - `src_*` → existing SemanticResolver,
+    - canonical truth Resolver'da,
+    - Manager output yalnız `sem_*`,
+    - raw prompt downstream reparse edilmez.
+
+12. `cube_planner.py`
+    - yeni `ledger_from_canonical_ir()` pure reuse primitive,
+    - Manager adapter query-level RequirementLedger ID/state contractını yeniden icat etmez.
+
+13. `manager_core_adapter.py`
+    - ilk **REAL trust-plane vertical**:
+      SemanticHandle → AnalyticsIR → RequirementLedger → CubePlanner
+      → Wren dry-plan → Wren query → ResultValidator → ContractStore
+      → verified EvidenceArtifact,
+    - bounded evidence rows,
+    - QueryContract sealing zorunlu,
+    - accepted contract dışı obligation reject.
+
+14. `models.py / EvidenceArtifact`
+    - obligation refs,
+    - verified flag,
+    - limitations,
+    - query contract refs.
+
+15. `obligation_ledger.py`
+    - USER_MUST immutable promise,
+    - AGENT_DERIVED yalnız parent child olarak eklenebilir,
+    - VERIFIED için evidence + deterministic verdict şart,
+    - blocked/limited/unsupported explicit terminal.
+
+16. `manager_executor.py`
+    - governed tool executor boundary,
+    - standard analytics evidence store'a girer,
+    - actual query fanout budget'a yansır,
+    - yalnız STANDARD capability exact obligation için deterministic VERIFIED transition alır,
+    - relationship/root-cause standard evidence yüzünden yanlış tamamlanmaz.
+
+**Targeted authority test dosyası**
+- `tests/test_v2_day6_5_manager_authority.py`
+- fabricated source reject
+- foreign-tenant semantic handle reject
+- exactly-one accepted authority
+- standard vs research representability
+- evidence presence != VERIFIED
+- PARTIAL vs VERIFIED_COMPLETE ayrımı
+
+**Başlıca commits**
+- manager contracts: `972f5add80d3a4a538c28e97373f3142149ed9fd`
+- capability/source/semantic registries:
+  `8776cda8e428196534f1475a833d8b19ce980e99`,
+  `37cad6f588dabc570ae794192e58aef0f9f5e17a`,
+  `21fd3ffce01caee5bc9f3595897a57bc205a5950`
+- acceptance / representability:
+  `5af782daedd8f658fb04e4cac7637ec0091fa8d5`,
+  `e708d5ca920845f3af5b31060e0f2ec295e5b21a`
+- completion: `6af0c092828e1b534cdf601c753c1050b31c06cc`
+- RESEARCH_MANAGER role: `a8a6165d345832166ab676b4d084873734a6837a`
+- tool registry/runtime:
+  `40d9d44eb131eb96fbd6d810b2f3eb831f08b12b`,
+  `acea3dcf06b7e45b6f4e784559979a02bd31ad45`
+- canonical IR ledger: `8e78368433564d94ea07a52806b340910b58b4b5`
+- Core trust-plane adapter: `2c7d2ca662cc3b41625514bbb09f26aff35155b9`
+- semantic resolver adapter: `76e0f3535a0e62be94adb3b6a089ef5094c38113`
+- obligation ledger service: `f46d5354558568c9c4d145a8c06ea8e00073d7f5`
+- governed executor + ledger binding:
+  `d855315e7b8134d5e5feed2c6d4e5f63fcd9f27c`,
+  `40a33a3490538d5b840246431d311cc09d2d70ec`
+
+### Açık borçlar
+
+**V2-D65-01 — Hidden holdout architecture seal receipt**
+- implementation blocker: NO
+- architecture seal blocker: YES
+- promptlar development context'e girmeyecek.
+- final receipt: corpus/taxonomy/attestation SHA + tested_git_sha + eval_harness_sha + aggregate PASS/FAIL.
+
+**V2-D65-02 — run_relationship gerçek executor**
+- mevcut durum: tool contract/policy var, executor injection slotu var.
+- neden şimdi yok: CrossDomainJoinGate / grain-cardinality safety Day7 trust-plane capability.
+- blocker: Manager standard vertical proof için NO; relationship architecture proof için YES.
+- kapanış: verified relationship path + grain/cardinality gate → QueryContract/Evidence.
+
+**V2-D65-03 — Manager model loop/prompt**
+- mevcut durum: runtime/tool state machine hazır; model cognition henüz bağlanmadı.
+- blocker: YES — bir sonraki batch.
+- kural: tek güçlü `RESEARCH_MANAGER`, no cheap→strong escalation ilk spike'ta.
+
+**V2-D65-04 — DEV architecture corpus/evaluator**
+- hidden ayrı ve sealed kalır.
+- visible DEV cases Manager runtime bağlandıktan sonra yazılacak/koşulacak.
+- otomatik paid workflow yok.
+
+### NEXT
+
+```text
+1. Manager model loop → typed tool-call protocol
+2. propose_acceptance / resolve_semantics cycle
+3. real run_analytics adaptive observe loop
+4. inspect_evidence bounded context
+5. AGENT_DERIVED replanning proof
+6. manual focused provider-free contract check
+7. visible DEV manager corpus
+8. relationship executor / CrossDomainJoinGate
+9. VALIDATION
+10. external HIDDEN architecture seal
+```
+
+**STOP-THE-LINE hâlâ geçerli**
+- raw SQL tool eklemek,
+- canonical ref'i Manager schema'ya açmak,
+- second accepted semantic authority,
+- rejected attempt field merge,
+- evidence gördü diye otomatik research VERIFIED,
+- hidden promptları development context'e taşımak,
+- model-specific semantic case patch.
