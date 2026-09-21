@@ -1473,3 +1473,50 @@ MinimumQueryContract per execution = 100%
 - legacy /ask / raw Discovery fallback eklenirse.
 - sırf bir test vakası için literal/special-case parser yazılırsa.
 
+
+
+### 2026-09-21 — DAY 3 / implementation batch 1
+
+**P6/R10/R5.5/R5D uygulanan sınırlar**
+- `AnalyticsIR` canonical refs, filter, period, ranking, comparison ve context_version taşır.
+- `RequirementLedger` yalnız final state değil tam lifecycle history taşır:
+  `DETECTED → RESOLVED → REPRESENTED_IN_IR → REPRESENTED_IN_PLAN → VERIFIED`.
+- Multi-metric/dimension representation requirement-index bazında doğrulanır; “herhangi biri
+  var” kontrolü ile sahte yeşil üretilemez.
+- `TemporalResolverV0` yalnız typed time/comparison span alır; full raw question parametresi yok.
+- `mali_takvim` fiscal-year owner olarak reuse edilir; legacy `cube_router` V2 hot path'e
+  import edilmedi.
+- simple previous-period comparison iki ayrı period ve iki ayrı execution planlar.
+- ranking direction + semantic limit ayrı MUST requirement'lardır.
+- multiple viable cube veya multiple time axis → typed fail; ilk eleman seçilmez.
+- KPI/cross-cube ref tek-cube Day3 planner'a sessizce coerced edilmez.
+- `CubePlanner` canonical IR dışında language/synonym/fuzzy karar yapmaz.
+- execution her çağrıda explicit `principal` ile
+  `dry_plan → query` sırasını izler.
+- `ResultValidator` required result columns, semantic top-N row count ve numeric order
+  doğrular; dry-plan tek başına verified yapmaz.
+- `ContractStore.record_v2_minimum` legacy `record()` davranışına dokunmadan eklendi:
+  DB veya existing spool gerçekten yazılırsa sealed; ikisi de başarısızsa
+  `sealed=false`.
+- Her execution kendi immutable contract'ını alır; comparison iki contract üretir.
+- Signed clarification sonucu Day4 prior-request state olmadan query'ye zorlanmaz.
+
+**Commitler**
+- `8e224e6452e4a722cd46c3a249197d2b3b571cb6` — Day3 domain/execution/contract models.
+- `d4a047f69b974374154b558cded7a4bf12ef1014` — requirement lifecycle history.
+- `752277b7f49f188af8fe4bbed359486224b9b667` — typed temporal resolver.
+- `772334ad1d419b7136eeb9fcc09a4e3d804ec609` — IR/ledger/planner/result validator.
+- `4e968305352d0eef16ad0dd1afc095baccceb963` — per-requirement plan representation fix.
+- `951a9c54f9079466353390684cac13f9594995d5` — strict V2 contract seal.
+- `5b9b678b9691da959619e55714a01c16c4013e14` — official Day3 orchestration.
+- `aa5ce21466bcb6f2b51c4646ee08977a2ab80266` — Day3 HTTP response.
+- `2aa564d64bce1e8e024e3474939823dae44a68d2` — earlier AnalyticsIR construction compatibility.
+- `4c8a6118189379903c3cd3b04cf6f3e52b3fe453` — focused P6 test file.
+
+**Test kararı**
+Tek koşum: `pytest -q tests/test_v2_day3.py`.
+Dosya pure contract testleri + yalnız 5 canonical real-demo Wren result-equivalence case içerir.
+Full suite/corpus/Day0/Day1/Day2 gate tekrar yok.
+Test failure olursa önce failure-stage ayrılır; infra/provider failure correctness olarak
+etiketlenmez.
+
