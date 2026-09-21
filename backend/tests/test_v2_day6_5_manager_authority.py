@@ -1,8 +1,4 @@
-"""Focused provider-free Day 6.5 authority tests.
-
-Intentionally small: these protect architecture invariants while product development
-continues. They are not a broad regression suite.
-"""
+"""Focused provider-free Day 6.5 authority tests."""
 
 from __future__ import annotations
 
@@ -24,8 +20,16 @@ from app.v2.manager_models import (
     ObligationStatus,
     RepresentabilityDecision,
     ResearchRunTerminal,
+    StandardProjection,
     UserIntentEnvelope,
     UserObligationLedger,
+)
+from app.v2.models import (
+    ResolvedComparison,
+    ResolvedPeriod,
+    ResolvedSemanticRef,
+    SemanticTargetKind,
+    PeriodKind,
 )
 from app.v2.representability import RepresentabilityGate
 from app.v2.semantic_handles import SemanticHandleRegistry
@@ -40,7 +44,44 @@ def _setup():
     relationship = spans.mint_exact(message_id="m1", surface="makinelerle ilişkisini incele")
     handles = SemanticHandleRegistry()
     gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
-    return spans, handles, gate, source_hash, comparison, relationship
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-1",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-1",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    base = ResolvedPeriod(
+        kind=PeriodKind.THIS_MONTH,
+        source_text="bu ay",
+        time_dimension="Sales.order_date",
+        start="2026-09-01",
+        end="2026-09-21",
+    )
+    comp = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="comparison-1",
+        target_kind="comparison",
+        canonical_target=ResolvedComparison(
+            mode="previous_period",
+            source_text="önceki ay",
+            base_period=base,
+            reference_period=ResolvedPeriod(
+                kind=PeriodKind.PREVIOUS_MONTH,
+                source_text="önceki ay",
+                time_dimension="Sales.order_date",
+                start="2026-08-01",
+                end="2026-08-21",
+            ),
+        ),
+    )
+    return spans, handles, gate, source_hash, comparison, relationship, metric, comp
 
 
 def _envelope(*obligations, source_hash: str, attempt: str = "a1", turn: str = "t1"):
@@ -55,24 +96,14 @@ def _envelope(*obligations, source_hash: str, attempt: str = "a1", turn: str = "
 
 
 def test_runtime_source_refs_and_foreign_handle_are_non_bypassable():
-    spans, handles, gate, source_hash, comparison, _ = _setup()
-    handle = handles.mint_from_resolver(
-        tenant_binding="tenant-a",
-        context_version="ctx-1",
-        resolver_provenance_id="resolver-1",
-        target_kind="metric",
-        canonical_target={"canonical_name": "Revenue"},
-    )
+    _, handles, gate, source_hash, comparison, _, metric, _ = _setup()
     obligation = CandidateObligation(
         obligation_id="U1",
         capability_key=ManagerCapabilityKey.COMPARISON,
         origin=ObligationOrigin.USER_MUST,
-        priority=ObligationPriority.MUST,
-        polarity=ObligationPolarity.REQUIRED,
         source_refs=(comparison.source_ref,),
-        semantic_handle_refs=(handle.handle_id,),
+        semantic_handle_refs=(metric.handle_id,),
     )
-
     bad = gate.evaluate(
         envelope=_envelope(obligation, source_hash=source_hash),
         tenant_binding="tenant-b",
@@ -81,12 +112,7 @@ def test_runtime_source_refs_and_foreign_handle_are_non_bypassable():
     assert bad.status.value == "REJECTED"
     assert any("foreign-tenant" in reason for reason in bad.reasons)
 
-    fabricated = CandidateObligation(
-        obligation_id="U2",
-        capability_key=ManagerCapabilityKey.COMPARISON,
-        origin=ObligationOrigin.USER_MUST,
-        source_refs=("src_" + "0" * 24,),
-    )
+    fabricated = obligation.model_copy(update={"source_refs": ("src_" + "0" * 24,)})
     bad_source = gate.evaluate(
         envelope=_envelope(fabricated, source_hash=source_hash),
         tenant_binding="tenant-a",
@@ -96,12 +122,13 @@ def test_runtime_source_refs_and_foreign_handle_are_non_bypassable():
 
 
 def test_exactly_one_accepted_authority_per_turn():
-    _, _, gate, source_hash, comparison, _ = _setup()
+    _, _, gate, source_hash, comparison, _, metric, _ = _setup()
     obligation = CandidateObligation(
         obligation_id="U1",
-        capability_key=ManagerCapabilityKey.COMPARISON,
+        capability_key=ManagerCapabilityKey.PERFORMANCE,
         origin=ObligationOrigin.USER_MUST,
         source_refs=(comparison.source_ref,),
+        semantic_handle_refs=(metric.handle_id,),
     )
     accepted = gate.evaluate(
         envelope=_envelope(obligation, source_hash=source_hash),
@@ -109,48 +136,66 @@ def test_exactly_one_accepted_authority_per_turn():
         context_version="ctx-1",
     )
     assert accepted.contract is not None
-
     registry = AcceptedContractRegistry()
     registry.commit(accepted.contract)
     with pytest.raises(AcceptedAuthorityConflict):
         registry.commit(accepted.contract)
 
 
-def test_standard_and_research_representability_are_typed_not_raw_text():
-    _, _, gate, source_hash, comparison, relationship = _setup()
-    standard = CandidateObligation(
+def test_standard_lossless_requires_complete_projection():
+    _, _, gate, source_hash, comparison, _, metric, comp = _setup()
+    obligation = CandidateObligation(
         obligation_id="U1",
         capability_key=ManagerCapabilityKey.COMPARISON,
         origin=ObligationOrigin.USER_MUST,
         source_refs=(comparison.source_ref,),
+        semantic_handle_refs=(metric.handle_id, comp.handle_id),
     )
-    standard_accepted = gate.evaluate(
-        envelope=_envelope(standard, source_hash=source_hash),
+    accepted = gate.evaluate(
+        envelope=_envelope(obligation, source_hash=source_hash),
         tenant_binding="tenant-a",
         context_version="ctx-1",
     )
-    standard_decision = RepresentabilityGate().decide(
-        contract=standard_accepted.contract,
-        ledger=standard_accepted.ledger,
+    incomplete = RepresentabilityGate().decide(
+        contract=accepted.contract,
+        ledger=accepted.ledger,
+        projection=StandardProjection(
+            obligation_ids=("U1",),
+            metric_handles=(metric.handle_id,),
+        ),
     )
-    assert standard_decision.decision == RepresentabilityDecision.STANDARD_LOSSLESS
+    assert incomplete.decision == RepresentabilityDecision.RESEARCH_REQUIRED
 
-    research = CandidateObligation(
+    complete = RepresentabilityGate().decide(
+        contract=accepted.contract,
+        ledger=accepted.ledger,
+        projection=StandardProjection(
+            obligation_ids=("U1",),
+            metric_handles=(metric.handle_id,),
+            comparison_handle=comp.handle_id,
+        ),
+    )
+    assert complete.decision == RepresentabilityDecision.STANDARD_LOSSLESS
+
+
+def test_relationship_remains_research_required():
+    _, _, gate, source_hash, _, relationship, _, _ = _setup()
+    obligation = CandidateObligation(
         obligation_id="U2",
         capability_key=ManagerCapabilityKey.RELATIONSHIP,
         origin=ObligationOrigin.USER_MUST,
         source_refs=(relationship.source_ref,),
     )
-    research_accepted = gate.evaluate(
-        envelope=_envelope(research, source_hash=source_hash, attempt="a2", turn="t2"),
+    accepted = gate.evaluate(
+        envelope=_envelope(obligation, source_hash=source_hash, turn="t2"),
         tenant_binding="tenant-a",
         context_version="ctx-1",
     )
-    research_decision = RepresentabilityGate().decide(
-        contract=research_accepted.contract,
-        ledger=research_accepted.ledger,
+    decision = RepresentabilityGate().decide(
+        contract=accepted.contract,
+        ledger=accepted.ledger,
     )
-    assert research_decision.decision == RepresentabilityDecision.RESEARCH_REQUIRED
+    assert decision.decision == RepresentabilityDecision.RESEARCH_REQUIRED
 
 
 def test_evidence_presence_is_not_verification():
