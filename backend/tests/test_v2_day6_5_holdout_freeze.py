@@ -22,7 +22,9 @@ def test_valid_external_attestation_is_accepted(tmp_path):
         "development_model_generated": False,
         "prompt_text_committed": False,
         "prompt_text_shared_with_implementation": False,
-        "frozen_before_implementation": True,
+        "development_corpus_seen": False,
+        "development_failure_outputs_seen": False,
+        "frozen_before_architecture_seal_run": True,
     }
 
     assert _load_attestation(_write(tmp_path, payload)) == payload
@@ -35,7 +37,9 @@ def test_valid_external_attestation_is_accepted(tmp_path):
         ("development_model_generated", True),
         ("prompt_text_committed", True),
         ("prompt_text_shared_with_implementation", True),
-        ("frozen_before_implementation", False),
+        ("development_corpus_seen", True),
+        ("development_failure_outputs_seen", True),
+        ("frozen_before_architecture_seal_run", False),
     ],
 )
 def test_invalid_external_attestation_is_rejected(tmp_path, field, bad_value):
@@ -45,7 +49,9 @@ def test_invalid_external_attestation_is_rejected(tmp_path, field, bad_value):
         "development_model_generated": False,
         "prompt_text_committed": False,
         "prompt_text_shared_with_implementation": False,
-        "frozen_before_implementation": True,
+        "development_corpus_seen": False,
+        "development_failure_outputs_seen": False,
+        "frozen_before_architecture_seal_run": True,
     }
     payload[field] = bad_value
 
