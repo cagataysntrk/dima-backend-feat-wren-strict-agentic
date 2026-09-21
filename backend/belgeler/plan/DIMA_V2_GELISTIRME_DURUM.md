@@ -3845,3 +3845,69 @@ Provider erişimi geri geldiğinde code freeze SHA yeni typed-failure boundary d
 Canary PASS → DEV80 workers=1.
 Ortak failure family görülürse architecture incelenir.
 Tekil vaka failure'ı → regex/prompt/case patch YASAK.
+
+
+### 2026-09-21 — DAY 6.5 / CURRENT-HEAD CERTIFICATION CHECKPOINT
+
+**Semantic code freeze candidate**
+- tested code SHA: `8961a60a0255df691e5f1f42cf2131e83f8af674`
+- checkpoint branch: `checkpoint/day6.5-certification-8961a60`
+- bu SHA sonrası workflow/docs commit'leri certification harness değişikliğidir; semantic code değildir.
+- regex / morphology score / case-derived prompt / case-id production branch patch yasağı devam eder.
+
+**Provider-free current-head closure**
+- run: `35652163651`
+- result: **53/53 PASS**
+- generic abstraction:
+  `GROUNDING_SUMMARY.requested[*].required_by_capability`
+  capability algebra'dan deterministik üretilir.
+- unresolved semantic surface tek başına material grounding gap sayılmaz.
+- yalnız capability'nin gerçekten zorunlu tuttuğu semantic kind eksikliği blocking kabul edilir.
+
+**Current-head Sol canary16**
+- run: `35653766188`
+- exact checkout SHA: `8961a60a0255df691e5f1f42cf2131e83f8af674`
+- model: `openai/gpt-5.6-sol`
+- workers: 1
+- measurement: 16 selected / 16 evaluable / 0 measurement failure
+- result: **16/16 PASS**
+- metrics:
+  - case_pass_rate = 1.0
+  - MUST obligation recall = 1.0
+  - accepted invented MUST = 0
+  - missing expected exclusions = 0
+  - invented exclusions = 0
+  - accepted handle violations = 0
+  - preacceptance execution violations = 0
+  - blocking ambiguity silent accept = 0
+  - unsafe fast admission = 0
+  - standard lossless rate = 1.0
+  - clarification canonical rate = 1.0
+  - max manager turns = 4
+  - total model calls = 30
+  - measured latency total = 157.4476 s
+
+**Decision**
+Current-head canary gate PASS olduğu için semantic code'u değiştirmeden DEV80'e geçildi.
+Tekil DEV failure görülürse patch yapılmayacak; önce failure-family clustering yapılacak.
+
+**DEV80**
+- workflow run: `35654163471`
+- exact code SHA: `8961a60a0255df691e5f1f42cf2131e83f8af674`
+- model: Sol
+- workers: 1
+- state bu kayıt yazılırken: RUNNING
+
+**Seal discipline**
+```text
+current-head canary16 PASS
+→ DEV80
+→ DEV freeze
+→ VALIDATION50 (no tuning)
+→ external HIDDEN50 receipt
+→ bounded-manager ADR + MIMARI canonical migration
+→ Day 6.5 SEALED
+```
+
+External HIDDEN50 development modelinden üretilemez; Issue #2 açık kalır ve yalnız final
+architecture seal'i bloklar.
