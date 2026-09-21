@@ -177,11 +177,16 @@ class V2Orchestrator:
                 )
             working_conversation = self._conversation.clear_pending(body.conversation)
         else:
+            interpreter_llm = getattr(
+                request.app.state,
+                "v2_interpreter_llm",
+                request.app.state.llm,
+            )
             response_turn = self._interpreter.interpret(
                 question=body.question,
                 semantic_context=semantic_context,
                 conversation=body.conversation,
-                llm=request.app.state.llm,
+                llm=interpreter_llm,
             )
 
             early_action = self._dialogue_policy.before_grounding(
