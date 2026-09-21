@@ -15,12 +15,16 @@ import json
 import unicodedata
 
 from app.v2.models import (
+    AnalyticalRequest,
     BoundedSemanticContextV0,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchDeliverableRequirement,
     ResearchGoalKind,
     ResearchGoalStatus,
+    ResearchMode,
+    ResearchModeDecision,
+    ResearchModeReason,
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
@@ -28,6 +32,7 @@ from app.v2.models import (
     ResolutionStatus,
     SemanticHypothesis,
     SemanticMention,
+    SemanticMentionKind,
     SemanticTargetKind,
     TurnAct,
     TurnInterpretation,
@@ -157,6 +162,138 @@ def _relationship_path_exists(
     return False
 
 
+def _dedupe_mentions(mentions: list[SemanticMention]) -> tuple[SemanticMention, ...]:
+    seen: set[tuple[str, str]] = set()
+    out: list[SemanticMention] = []
+    for mention in mentions:
+        key = (_norm_surface(mention.text), mention.kind.value)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(mention)
+    return tuple(out)
+
+
+class ResearchModePolicy:
+    """Own STANDARD vs RESEARCH routing from typed analytical operation shape.
+
+    Presentation/deliverables are deliberately ignored. The policy never reads raw
+    user text and never selects canonical semantic refs.
+    """
+
+    _COMPLEX_ONLY = {
+        ResearchGoalKind.RELATIONSHIP,
+        ResearchGoalKind.ROOT_CAUSE,
+        ResearchGoalKind.TREND,
+        ResearchGoalKind.OTHER,
+    }
+
+    def decide(self, turn: TurnInterpretation) -> ResearchModeDecision:
+        request = turn.research_request
+        if request is None:
+            return ResearchModeDecision(
+                mode=ResearchMode.STANDARD,
+                reason=ResearchModeReason.EXISTING_STANDARD_SURFACE,
+                canonical_turn=turn,
+            )
+
+        kinds = tuple(goal.kind for goal in request.goals)
+        if any(kind in self._COMPLEX_ONLY for kind in kinds):
+            return ResearchModeDecision(
+                mode=ResearchMode.RESEARCH,
+                reason=ResearchModeReason.COMPLEX_ONLY_OPERATION,
+                canonical_turn=turn.model_copy(
+                    update={"dialogue_act": TurnAct.COMPLEX_ANALYSIS}
+                ),
+            )
+
+        projected = self._project_standard(request)
+        if projected is not None:
+            return ResearchModeDecision(
+                mode=ResearchMode.STANDARD,
+                reason=ResearchModeReason.STANDARD_PROJECTABLE_OPERATIONS,
+                canonical_turn=turn.model_copy(
+                    update={
+                        "dialogue_act": TurnAct.ANALYTIC_NEW,
+                        "analytical_request": projected,
+                        "research_request": None,
+                    }
+                ),
+            )
+
+        if len(request.goals) > 1:
+            reason = ResearchModeReason.MULTI_INDEPENDENT_GOALS
+        else:
+            reason = ResearchModeReason.UNPROJECTABLE_RESEARCH_SURFACE
+        return ResearchModeDecision(
+            mode=ResearchMode.RESEARCH,
+            reason=reason,
+            canonical_turn=turn.model_copy(
+                update={"dialogue_act": TurnAct.COMPLEX_ANALYSIS}
+            ),
+        )
+
+    def _project_standard(
+        self,
+        request,
+    ) -> AnalyticalRequest | None:
+        """Project only shapes already representable by Core AnalyticsIR.
+
+        This is structural projection from typed operations, not raw-language parsing.
+        It intentionally does not synthesize ranking direction/limit, comparison mode,
+        filters, or semantic IDs that are absent from the typed surface.
+        """
+
+        if not request.goals:
+            return None
+        if any(
+            goal.kind not in {ResearchGoalKind.PERFORMANCE, ResearchGoalKind.BREAKDOWN}
+            for goal in request.goals
+        ):
+            return None
+
+        performance_goals = [
+            goal for goal in request.goals if goal.kind == ResearchGoalKind.PERFORMANCE
+        ]
+        if len(performance_goals) > 1:
+            # Multiple independent performance questions are research coordination.
+            return None
+
+        metrics: list[SemanticMention] = []
+        dimensions: list[SemanticMention] = []
+
+        for goal in request.goals:
+            mentions = (*goal.subject_mentions, *goal.related_mentions)
+            if goal.kind == ResearchGoalKind.PERFORMANCE:
+                metrics.extend(
+                    mention
+                    for mention in mentions
+                    if mention.kind == SemanticMentionKind.METRIC
+                )
+            elif goal.kind == ResearchGoalKind.BREAKDOWN:
+                metrics.extend(
+                    mention
+                    for mention in mentions
+                    if mention.kind == SemanticMentionKind.METRIC
+                )
+                dimensions.extend(
+                    mention
+                    for mention in mentions
+                    if mention.kind == SemanticMentionKind.DIMENSION
+                )
+
+        metric_mentions = _dedupe_mentions(metrics)
+        dimension_mentions = _dedupe_mentions(dimensions)
+        if not metric_mentions:
+            return None
+
+        return AnalyticalRequest(
+            metric_mentions=metric_mentions,
+            dimension_mentions=dimension_mentions,
+            time_mentions=request.time_mentions,
+        )
+
+
 class ResearchBriefBuilder:
     """Single Day 6 owner for the canonical typed research work order.
 
@@ -171,11 +308,10 @@ class ResearchBriefBuilder:
         semantic_context: BoundedSemanticContextV0,
         context_version: str,
     ) -> ResearchBrief:
-        if turn.dialogue_act not in {
-            TurnAct.COMPLEX_ANALYSIS,
-            TurnAct.REPORT_REQUEST,
-        }:
-            raise ValueError("ResearchBriefBuilder requires a research dialogue act")
+        if turn.dialogue_act != TurnAct.COMPLEX_ANALYSIS:
+            raise ValueError(
+                "ResearchBriefBuilder requires canonical COMPLEX_ANALYSIS from ResearchModePolicy"
+            )
         if turn.research_request is None:
             raise ValueError("research_request is required")
 
