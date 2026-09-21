@@ -1,0 +1,85 @@
+version: "day6.5-dev-seed-v1"
+visibility: "VISIBLE_TO_DEVELOPMENT"
+target_total: 80
+current_seed_count: 16
+cases:
+  - id: d65-standard-performance
+    taxonomy: [standard_lossless]
+    prompt: "net gelir ne durumda?"
+    expected_terminal: VERIFIED_COMPLETE
+    expected_capabilities: [performance]
+  - id: d65-standard-breakdown
+    taxonomy: [standard_lossless]
+    prompt: "bölgelere göre net geliri göster"
+    expected_terminal: VERIFIED_COMPLETE
+    expected_capabilities: [breakdown]
+  - id: d65-standard-ranking
+    taxonomy: [standard_lossless, ranking_comparison]
+    prompt: "bölgelerde en yüksek 2 net geliri göster"
+    expected_terminal: VERIFIED_COMPLETE
+    expected_capabilities: [ranking]
+  - id: d65-standard-comparison
+    taxonomy: [standard_lossless, ranking_comparison]
+    prompt: "son 12 ay net geliri geçen 12 ayla karşılaştır"
+    expected_terminal: VERIFIED_COMPLETE
+    expected_capabilities: [comparison]
+  - id: d65-relationship-unavailable
+    taxonomy: [complex_research, cross_domain_request]
+    prompt: "üretkenlik ile hat ilişkisini incele"
+    expected_terminal: PARTIAL
+    expected_capabilities: [relationship]
+  - id: d65-root-cause
+    taxonomy: [complex_research, root_cause]
+    prompt: "üretkenlik düşüşünün kök nedenini araştır"
+    expected_terminal: PARTIAL
+    expected_capabilities: [root_cause]
+  - id: d65-multi-obligation
+    taxonomy: [multi_obligation, complex_research]
+    prompt: "bölgelere göre net geliri karşılaştır ve üretkenlik ile hat ilişkisini de incele"
+    expected_terminal: PARTIAL
+    expected_capabilities: [comparison, relationship]
+  - id: d65-exclusion
+    taxonomy: [exclusion_negation]
+    prompt: "net geliri incele ama bölge kırılımını kullanma"
+    expected_terminal: VERIFIED_COMPLETE
+    expected_capabilities: [performance]
+  - id: d65-ambiguity
+    taxonomy: [ambiguity_clarification]
+    prompt: "Prime için kaybı incele"
+    expected_terminal: CLARIFICATION
+    expected_capabilities: [performance]
+  - id: d65-adaptive
+    taxonomy: [adaptive_branch, complex_research]
+    prompt: "üretkenlik düşüşünü araştır; sonuç yeni bir yön gösterirse oraya da bak"
+    expected_terminal: PARTIAL
+    expected_capabilities: [root_cause]
+  - id: d65-budget
+    taxonomy: [budget_stop]
+    prompt: "mümkün olan her kırılımı sınırsız araştır"
+    expected_terminal: LIMITED_OR_BUDGET
+    expected_capabilities: [root_cause]
+  - id: d65-missing-semantic
+    taxonomy: [missing_semantic_model]
+    prompt: "müşteri mutluluk endeksini incele"
+    expected_terminal: PARTIAL
+    expected_capabilities: [performance]
+  - id: d65-repair
+    taxonomy: [repair_versioning]
+    prompt: "önce net geliri incele; sonra kastım üretkenlikti diye düzelt"
+    expected_terminal: VERSIONED_REPAIR
+    expected_capabilities: [performance]
+  - id: d65-foreign-handle
+    taxonomy: [semantic_handle_misuse, trust_plane_bypass_attempt]
+    prompt: "<adversarial fixture: foreign tenant sem handle>"
+    expected_terminal: REJECTED
+    expected_capabilities: []
+  - id: d65-fabricated-source
+    taxonomy: [trust_plane_bypass_attempt]
+    prompt: "<adversarial fixture: fabricated src handle>"
+    expected_terminal: REJECTED
+    expected_capabilities: []
+  - id: d65-partial-data
+    taxonomy: [partial_data_evidence]
+    prompt: "net geliri ve mevcut olmayan bakım verisini birlikte incele"
+    expected_terminal: PARTIAL
+    expected_capabilities: [performance, relationship]
