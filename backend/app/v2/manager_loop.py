@@ -718,19 +718,39 @@ class ResearchManagerLoop:
         executor,
         conversation: ConversationStateV2 | None = None,
     ) -> ManagerLoopOutcome:
+        observations: list[dict[str, Any]] = []
+
+        if runtime.accepted_contract is None:
+            understanding = self.understand(
+                question=question,
+                message_id=message_id,
+                request_ref=request_ref,
+                runtime=runtime,
+                executor=executor,
+                conversation=conversation,
+            )
+            observations.extend(understanding.observations)
+            if not understanding.accepted:
+                return ManagerLoopOutcome(
+                    snapshot=runtime.snapshot,
+                    run_finished=False,
+                    verified_complete=False,
+                    terminal_status=runtime.snapshot.terminal_status,
+                    clarification_required=understanding.clarification_required,
+                    observations=tuple(observations),
+                )
+
         source_hash = self._source_spans.register_message(
             message_id=message_id,
             text=question,
         )
-        if runtime.snapshot.state == ManagerState.INITIAL:
-            runtime.begin_understanding()
-
-        observations: list[dict[str, Any]] = []
+        frontier = DynamicActionFrontier()
 
         while runtime.snapshot.state not in {
             ManagerState.COMPLETED,
             ManagerState.FAILED,
             ManagerState.BUDGET_EXHAUSTED,
+            ManagerState.NEEDS_CLARIFICATION,
         }:
             try:
                 runtime.note_manager_turn()
@@ -738,16 +758,51 @@ class ResearchManagerLoop:
                 observations.append({"kind": "budget", "message": str(exc)})
                 break
 
+            frontier_view = frontier.view(runtime)
             try:
                 decision = self._decision(
                     question=question,
                     runtime=runtime,
                     observations=observations,
                     conversation=conversation,
+                    action_frontier=frontier_view,
                 )
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
                 break
+
+            progress_before = frontier.progress(runtime)
+            if frontier.blocked(progress=progress_before, action=decision):
+                observations.append(
+                    {
+                        "kind": "no_progress_blocked",
+                        "action": self._manager_safe(decision),
+                        "progress_fingerprint": progress_before,
+                    }
+                )
+                continue
+
+            if (
+                decision.action == ManagerActionKind.RESOLVE_SEMANTICS
+                and decision.resolve_provenance == "USER_SOURCE"
+            ):
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": (
+                            "post-acceptance USER_SOURCE semantic reparsing is forbidden; "
+                            "use accepted authority or AGENT_DERIVED evidence-grounded discovery"
+                        ),
+                    }
+                )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={"rejected": "post_acceptance_user_source_reparse"},
+                )
+                continue
 
             if (
                 decision.action == ManagerActionKind.RESOLVE_SEMANTICS
@@ -766,6 +821,12 @@ class ResearchManagerLoop:
                             "from the current run"
                         ),
                     }
+                )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={"rejected": "derived_semantic_requires_inspected_evidence"},
                 )
                 continue
 
@@ -787,24 +848,33 @@ class ResearchManagerLoop:
                         ),
                     }
                 )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={"rejected": "derived_run_requires_inspected_evidence"},
+                )
                 continue
 
             if (
                 decision.action == ManagerActionKind.REQUEST_CLARIFICATION
                 and not _clarification_has_governed_grounding(
                     observations,
-                    accepted_contract_present=runtime.accepted_contract is not None,
+                    accepted_contract_present=True,
                 )
             ):
                 observations.append(
                     {
                         "kind": "tool_rejected",
                         "action": decision.action.value,
-                        "message": (
-                            "pre-acceptance clarification requires governed grounding; "
-                            "use resolve_semantics or AcceptanceGate first"
-                        ),
+                        "message": "clarification lacks governed grounding",
                     }
+                )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={"rejected": "clarification_ungrounded"},
                 )
                 continue
 
@@ -817,6 +887,12 @@ class ResearchManagerLoop:
                     observations.append(
                         {"kind": "finish_rejected", "message": str(exc)}
                     )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result={"finish_rejected": str(exc)},
+                    )
                     continue
 
             try:
@@ -828,32 +904,29 @@ class ResearchManagerLoop:
                     runtime=runtime,
                 )
                 assert call is not None
-                receipts_before = len(runtime.semantic_resolution_receipts)
                 result = runtime.call_tool(call, executor=executor)
-                receipts_after = len(runtime.semantic_resolution_receipts)
+                manager_result = self._manager_safe(result.tool_result)
                 observations.append(
                     {
                         "kind": "tool",
                         "tool": call.name.value,
-                        "result": self._manager_safe(result.tool_result),
+                        "result": manager_result,
                     }
                 )
-                if call.name == ManagerToolName.RESOLVE_SEMANTICS:
-                    safe_stop = _resolution_safe_stop_reason(
-                        result=result.tool_result,
-                        receipts_before=receipts_before,
-                        receipts_after=receipts_after,
-                        conversation=conversation,
+                progressed = frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result=manager_result,
+                )
+                if not progressed:
+                    observations.append(
+                        {
+                            "kind": "no_progress",
+                            "action": self._manager_safe(decision),
+                            "progress_fingerprint": frontier.progress(runtime),
+                        }
                     )
-                    if safe_stop is not None:
-                        runtime.require_clarification(safe_stop)
-                        observations.append(
-                            {
-                                "kind": "dialogue_policy",
-                                "status": "NEEDS_CLARIFICATION",
-                                "reason": safe_stop,
-                            }
-                        )
             except Exception as exc:
                 observations.append(
                     {
@@ -862,12 +935,15 @@ class ResearchManagerLoop:
                         "message": str(exc),
                     }
                 )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={"tool_error": type(exc).__name__, "message": str(exc)},
+                )
                 if runtime.snapshot.state == ManagerState.FAILED:
                     break
                 continue
-
-            if runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION:
-                break
 
         return ManagerLoopOutcome(
             snapshot=runtime.snapshot,
@@ -876,6 +952,8 @@ class ResearchManagerLoop:
                 runtime.snapshot.terminal_status == ResearchRunTerminal.VERIFIED_COMPLETE
             ),
             terminal_status=runtime.snapshot.terminal_status,
-            clarification_required=runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION,
+            clarification_required=(
+                runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
+            ),
             observations=tuple(observations),
         )
