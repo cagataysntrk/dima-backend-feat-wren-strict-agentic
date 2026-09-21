@@ -11,6 +11,7 @@ name: v2-day6-focused-once
 # contract-routing refactor rerun
 # deliverable-axis rerun — deliverable-contract rerun
 # current-head flat-schema migration audit
+# flat-schema + capability-registry + model-role closure
 
 "on":
   push:
@@ -40,7 +41,7 @@ jobs:
         run: pip install -e ".[dev]"
       - name: Compile Day 6 evaluator and contracts
         working-directory: backend
-        run: python -m py_compile app/v2/models.py app/v2/interpreter.py app/v2/resolver.py app/v2/research.py app/v2/orchestrator.py app/v2/finalizer.py lab/v2_day6_research_eval.py
+        run: python -m py_compile app/config.py app/v2/models.py app/v2/interpreter.py app/v2/resolver.py app/v2/capabilities.py app/v2/model_policy.py app/v2/research.py app/v2/orchestrator.py app/v2/finalizer.py lab/v2_day6_research_eval.py
       - name: V2 Day 1-6 targeted deterministic integration
         working-directory: backend
         run: pytest -q tests/test_v2_day1.py tests/test_v2_day2.py tests/test_v2_day3.py tests/test_v2_day4.py tests/test_v2_day5.py tests/test_v2_day5_http.py tests/test_v2_day6.py
