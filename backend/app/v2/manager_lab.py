@@ -120,6 +120,7 @@ class ManagerLabHarness:
             request_ref=ref,
             runtime=manager_runtime,
             executor=executor,
+            conversation=body.conversation,
         )
         return ManagerLabResponse(
             model_role=profile.role.value,
