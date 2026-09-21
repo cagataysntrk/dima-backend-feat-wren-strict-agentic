@@ -3099,3 +3099,23 @@ hidden holdout SHA/count/taxonomy freeze         BLOCKED / REQUIRED
 **Karar**
 Bu blocker dışında Day6.5 contract/mimari hazırlığı production implementation'a hazırdır.
 Hidden freeze tamamlanmadan Manager runtime kodu yazılmayacak.
+
+
+**Holdout handoff tooling**
+- freeze utility: `lab/v2_day6_5_freeze_holdout.py` @ `347e207fa9cc6a0ccf167fdab9e8b15560ead525`
+- safe handoff contract: `eval/DAY6_5_HIDDEN_HOLDOUT_HANDOFF.md` @ `2e5532bbd0b4830cd81d771f8c922c1166fb84e3`
+- tracking issue: **#2 — Day 6.5 gate — external hidden holdout freeze**
+- issue prompt text kabul etmez; yalnız FROZEN_EXTERNAL metadata/hash alınır.
+
+**Implementation unlock condition**
+```text
+issue #2 metadata received
++ case_count == 50
++ corpus_sha256 present
++ taxonomy_sha256 present
++ prompt_text_committed == false
++ development_model_generated == false
+→ manifest placeholders replaced
+→ blocker CLOSED
+→ Day6.5 contract-only production implementation START
+```
