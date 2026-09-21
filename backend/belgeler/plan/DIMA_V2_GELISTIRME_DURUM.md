@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 5 ACTIVE — CORE MVP PRODUCT INTEGRATION**  
-**Kod fazı:** Day 5 / P8 ACTIVE — önce ürün entegrasyonu, sonra Core MVP exit saldırı masası.
+**Durum:** **DAY 6 ACTIVE — PRODUCT MVP / RESEARCHBRIEF**  
+**Kod fazı:** Day 6 / P9 ACTIVE — kompleks kullanıcı talebini query çalıştırmadan typed ResearchBrief'e dönüştürme.
 
 ---
 
@@ -2753,3 +2753,137 @@ paid CI accidental auto-run            CLOSED
 **NEXT**
 Day 6 açılabilir. Day6 başlamadan roadmap'teki ilgili P bölümü ve rapordaki referans
 bölümler yeniden okunacak; Day5'e yeni feature geri çekilmeyecek.
+
+
+---
+
+## 16. DAY 6 / P9 ACTIVE TICKET — PRODUCT MVP: RESEARCHBRIEF
+
+**AMAÇ**  
+Kompleks kullanıcı talebini tek SQL'e veya dev statik plana sıkıştırmadan, bütün açık
+araştırma hedeflerini kayıpsız ve denetlenebilir bir `ResearchBrief` sözleşmesine
+dönüştürmek. Day6 araştırmayı **çalıştırmaz**; araştırmanın typed iş emrini üretir.
+
+**USER SCENARIO**  
+Kanonik:
+> “Son 12 aylık üretilen ürünleri karşılaştır, üretildikleri makineler ve personellerle
+> ilişkisini analiz et, satış performanslarını yorumla ve raporla.”
+
+Kaybolmadan MUST olarak temsil edilmesi gereken hedefler:
+```text
+production comparison
+machine relationship
+personnel/shift relationship
+sales performance
+report deliverable
+```
+
+**ROADMAP**  
+P9 / P9.A.
+
+**REPORT DAYANAK**  
+R11.1 ResearchBrief; R11.3 raw-user-prompt almayan typed worker sınırı.
+R12 cross-domain grain/join gate Day7+ execution işi olduğundan Day6'ya çekilmez.
+R20 semantic-owner ve evidence/security değişmezleri geçerlidir.
+
+**NEW OWNER**
+- `TurnInterpreter` → raw dildeki COMPLEX_ANALYSIS / REPORT_REQUEST speech act'i ve
+  bağımsız research goal surface'lerini **bir kez** çıkarır.
+- `SemanticResolver` → Research goal içindeki semantic mention'ları mevcut canonical
+  authority ile bind eder; raw prompt okumaz.
+- `ResearchBriefBuilder` (`app/v2/research.py`) → typed language goals + resolver
+  hypotheses + context version'dan `ResearchBrief` üretir.
+- Day7 Supervisor yalnız `ResearchBrief` okuyacaktır; raw prompt semantic authority
+  olmayacaktır.
+
+**REUSE EDİLEN PRIMITIVE**
+- `TurnInterpretation` / surface-grounding invariant
+- `SemanticResolver` candidate provenance + clarification
+- `ContextVersionV0`
+- existing `SemanticHypothesis` / resolved candidate authority
+- mevcut `/ask-v2` runtime + principal boundary
+
+**FILES TO TOUCH — beklenen**
+- `app/v2/models.py`
+- `app/v2/interpreter.py`
+- `app/v2/resolver.py` — yalnız research typed mention integration
+- `app/v2/dialogue_policy.py`
+- `app/v2/research.py` — NEW
+- `app/v2/orchestrator.py` — yalnız routing/integration
+- `app/v2/finalizer.py` / `routers/ask_v2.py` — yalnız Day6 product response için minimal
+- `tests/test_v2_day6.py`
+- gerekirse küçük deterministic eval fixture; paid live eval YOK.
+
+**FILES NOT TO TOUCH**
+- sealed roadmap/report
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- Day7 adaptive research tools / ResearchToolContract execution
+- Wren query/planner execution semantics
+- removed always-on backend CI
+- manual-only paid live workflow
+
+**DAY6 EXECUTION CUTLINE**
+```text
+User complex request
+→ TurnInterpreter
+→ COMPLEX_ANALYSIS / REPORT_REQUEST
+→ SemanticResolver
+→ ResearchBriefBuilder
+→ ResearchBrief READY | BLOCKED
+→ STOP
+```
+
+Bu fazda:
+```text
+query execution      = 0
+dry_plan             = 0
+research tool call   = 0
+adaptive loop        = 0
+EvidenceArtifact lifecycle = 0
+report generation    = 0
+raw prompt reparse downstream = 0
+```
+
+**TARGETED TEST / DEMO — MALİYET DİSİPLİNİ**
+- Default testler LLM/provider çağırmayacak.
+- Synthetic/permuted semantic context kullanılacak.
+- Bir canonical + birkaç paraphrase/order/extra-clause fixture doğrudan typed
+  `TurnInterpretation` üstünden `ResearchBriefBuilder` contract'ını ölçecek.
+- Interpreter owner değişikliği için canlı provider suite otomatik koşmayacak.
+- Gerekirse faz sonunda **tek küçük manual** Gemini Flash-Lite smoke ayrıca karar verilecek;
+  Day6 correctness gate'i paid LLM'e bağımlı olmayacak.
+- Full backend suite / legacy corpus / always-on backend CI YOK.
+
+**EXIT**
+```text
+canonical complex goal extraction = 100%
+complex validation goal coverage  >= 95%
+invented semantic domain/ref       = 0
+blocking unresolved ignored        = 0
+query execution                    = 0
+downstream raw prompt reparse      = 0
+```
+
+**NEGATIVE SENTINELS**
+- “Ürünleri analiz et” → machine/personnel/sales/report goal icat ETME.
+- “Ürünleri ve makineleri karşılaştırıp raporla” → personnel goal icat ETME.
+- Semantic modelde relationship/domain güvenilir bağlanamıyorsa goal'u düşürme veya
+  tahminle READY yapma; BLOCKED / clarification / explicit semantic gap üret.
+- Aynı explicit user goal'un farklı paraphrase/order ifadesi coverage kaybına yol açmamalı.
+
+**STOP-THE-LINE**
+- ResearchBriefBuilder raw `question` okursa,
+- Research planner/supervisor Day6'da raw prompt reparse ederse,
+- semantic ref Resolver dışında icat edilirse,
+- unresolved MUST goal sessiz düşerse,
+- Day6 sırasında Wren/query/tool execution açılırsa,
+- canonical promptu geçirmek için “ürün/makine/personel/satış” literal special-case yazılırsa,
+- paid LLM workflow push ile otomatik tetiklenirse.
+
+**BAŞLANGIÇ KARARI**  
+Day6 implementation başlatıldı. İlk proof, language extraction ile semantic binding'i
+birbirinden ayıran typed contract + query=0 sentinel olacaktır.
