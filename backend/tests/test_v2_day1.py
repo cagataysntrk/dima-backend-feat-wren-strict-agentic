@@ -9,12 +9,38 @@ import json
 import pytest
 
 from app.v2.context_provider import ContextProviderV0
-from app.v2.interpreter import TurnInterpreter, TurnInterpreterError
+from app.v2.interpreter import TurnInterpreter, TurnInterpreterError, _normalize_surface_role_overlap
 from app.v2.models import (
+    AnalyticalRequest,
+    ComparisonSurface,
     ConversationStateV2,
+    SemanticMention,
+    SemanticMentionKind,
     TenantAnalyticsRuntimeV0,
     TurnAct,
+    TurnInterpretation,
 )
+
+
+
+def test_comparison_reference_overlap_is_not_a_second_base_time_requirement():
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.ANALYTIC_NEW,
+        analytical_request=AnalyticalRequest(
+            time_mentions=(
+                SemanticMention(text="current window", kind=SemanticMentionKind.TIME),
+                SemanticMention(text="reference window", kind=SemanticMentionKind.TIME),
+            ),
+            comparisons=(ComparisonSurface(text="reference window comparison"),),
+        ),
+    )
+
+    normalized = _normalize_surface_role_overlap(turn)
+    request = normalized.analytical_request
+    assert request is not None
+    assert [item.text for item in request.time_mentions] == ["current window"]
+    assert [item.text for item in request.comparisons] == ["reference window comparison"]
+
 
 
 class FakeService:
