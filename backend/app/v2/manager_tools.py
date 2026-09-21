@@ -32,15 +32,33 @@ class ManagerToolName(StrEnum):
 
 
 class ResolveSemanticsArgs(FrozenModel):
-    source_refs: tuple[str, ...] = Field(min_length=1)
+    provenance: Literal["USER_SOURCE", "AGENT_DERIVED"] = "USER_SOURCE"
+    source_refs: tuple[str, ...] = ()
     target_kind_hints: tuple[
-        Literal["metric", "dimension", "filter", "unknown"], ...
+        Literal["metric", "dimension", "filter", "time", "comparison", "unknown"], ...
     ] = ()
+    temporal_anchor_handle: str | None = None
+    base_period_handle: str | None = None
+    parent_obligation_id: str | None = None
+    evidence_ref: str | None = None
+    natural_language_proposal: str | None = Field(default=None, min_length=1, max_length=240)
 
     @model_validator(mode="after")
-    def _hint_cardinality(self):
-        if self.target_kind_hints and len(self.target_kind_hints) != len(self.source_refs):
-            raise ValueError("target_kind_hints boş olmalı veya source_refs ile aynı uzunlukta olmalı")
+    def _resolution_contract(self):
+        if self.provenance == "USER_SOURCE":
+            if not self.source_refs:
+                raise ValueError("USER_SOURCE resolve source_refs gerektirir")
+            if self.parent_obligation_id or self.evidence_ref or self.natural_language_proposal:
+                raise ValueError("USER_SOURCE derived provenance alanları taşıyamaz")
+            if self.target_kind_hints and len(self.target_kind_hints) != len(self.source_refs):
+                raise ValueError("target_kind_hints boş olmalı veya source_refs ile aynı uzunlukta olmalı")
+        else:
+            if self.source_refs:
+                raise ValueError("AGENT_DERIVED exact USER source ref kullanmaz")
+            if not self.parent_obligation_id or not self.evidence_ref or not self.natural_language_proposal:
+                raise ValueError("AGENT_DERIVED parent + evidence + proposal gerektirir")
+            if len(self.target_kind_hints) != 1:
+                raise ValueError("AGENT_DERIVED tek target kind hint gerektirir")
         return self
 
 
@@ -135,7 +153,12 @@ class ManagerToolRegistry:
             requires_contract=False,
             data_query=False,
             allowed_states=frozenset(
-                {ManagerState.INITIAL, ManagerState.UNDERSTANDING}
+                {
+                    ManagerState.INITIAL,
+                    ManagerState.UNDERSTANDING,
+                    ManagerState.CONTRACT_ACCEPTED,
+                    ManagerState.INVESTIGATING,
+                }
             ),
             args_model=ResolveSemanticsArgs,
         ),
