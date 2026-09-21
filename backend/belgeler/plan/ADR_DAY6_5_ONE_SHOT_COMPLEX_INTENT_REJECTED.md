@@ -98,7 +98,13 @@ Adding a Supervisor after an incorrect immutable brief does not solve the proble
 
 ## Decision
 
-Complex natural-language cognition moves to a **bounded iterative Manager runtime**.
+**Accepted decision:** one-shot universal complex intent compilation is rejected as a
+production architecture.
+
+**Selected candidate for validation:** bounded iterative Manager runtime.
+
+Manager is NOT yet sealed as production architecture. It becomes production authority
+only if Day 6.5 hidden/security/trust-plane/fast-path hard gates pass.
 
 ```text
 human language
@@ -124,6 +130,18 @@ Deterministic authority remains mandatory for:
 - evidence,
 - budget,
 - completion.
+
+### Candidate architecture
+
+```text
+human language
+→ bounded iterative Manager candidate
+→ proposed obligations / exclusions / ambiguity
+→ deterministic acceptance + semantic binding
+→ accepted versioned contract
+→ deterministic representability decision
+→ governed execution/evidence/completion
+```
 
 ## New principle
 
