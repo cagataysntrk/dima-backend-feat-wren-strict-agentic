@@ -6,6 +6,10 @@ name: v2-day5-live-attack
       - feat/ask-v2-mvp
     paths:
       - "backend/lab/v2_day5_live_attack.py"
+      - "backend/app/v2/resolver.py"
+      - "backend/app/v2/models.py"
+      - "backend/app/v2/interpreter.py"
+      - "backend/pyproject.toml"
       - ".github/workflows/v2-day5-live-attack.yml"
   workflow_dispatch:
 
