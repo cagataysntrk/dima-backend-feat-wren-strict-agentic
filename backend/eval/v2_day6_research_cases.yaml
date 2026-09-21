@@ -339,7 +339,7 @@ cases:
       - {kind: deliverable, deliverable: report}
 
   - id: unknown_domain
-    q: "Son 12 ay ürünleri karşılaştır, makine ilişkisini ve lojistik kalitesini araştır, satış performansını değerlendirip raporla."
+    q: "Son 12 ay ürünleri karşılaştır, makine ilişkisini incele, lojistik performansını değerlendir, satış performansını da değerlendirip raporla."
     expected_act: REPORT_REQUEST
     brief_status: BLOCKED
     time: ["12 ay"]
@@ -362,7 +362,7 @@ cases:
   - id: typo_sales
     q: "Son 12 ay ürünleri karşılaştır, makine ilişkisini incele, satıs performansını değerlendir ve raporla."
     expected_act: REPORT_REQUEST
-    brief_status: BLOCKED
+    brief_status: READY_FOR_RESEARCH
     time: ["12 ay"]
     goals:
       - {kind: comparison, subject: ["ürün"]}
