@@ -19,6 +19,7 @@ from app.v2.manager_errors import (
     ManagerAuthorityViolation,
     ManagerProjectionIncomplete,
     ManagerSemanticGap,
+    ManagerUnsupportedCapability,
 )
 from app.v2.manager_models import (
     ObligationStatus,
@@ -158,6 +159,41 @@ class GovernedManagerExecutor:
 
             effective_args = validated_args
             if validated_args.derived_task_id is not None:
+                assert validated_args.derived_parent_obligation_id is not None
+                assert validated_args.derived_capability_key is not None
+                assert validated_args.derived_evidence_ref is not None
+
+                parent = self._obligations.get(
+                    ledger,
+                    validated_args.derived_parent_obligation_id,
+                )
+                if parent.status == ObligationStatus.SUPERSEDED:
+                    raise ManagerAuthorityViolation(
+                        "derived analytics parent obligation is superseded"
+                    )
+
+                evidence = self._evidence.get(validated_args.derived_evidence_ref)
+                if validated_args.derived_evidence_ref not in runtime.snapshot.evidence_refs:
+                    raise ManagerAuthorityViolation(
+                        "derived analytics evidence is not attached to current run"
+                    )
+                if not evidence.verified:
+                    raise ManagerSemanticGap(
+                        "derived analytics requires verified execution evidence"
+                    )
+                if validated_args.derived_parent_obligation_id not in evidence.obligation_ids:
+                    raise ManagerAuthorityViolation(
+                        "derived analytics evidence does not support declared parent obligation"
+                    )
+
+                derived_spec = self._capabilities.get(
+                    validated_args.derived_capability_key
+                )
+                if derived_spec.lane != ManagerCapabilityLane.STANDARD:
+                    raise ManagerUnsupportedCapability(
+                        "run_analytics derived branch supports STANDARD capability only"
+                    )
+
                 derived_handles = tuple(
                     dict.fromkeys(
                         (
