@@ -47,6 +47,7 @@ from app.v2.models import (
 )
 from app.v2.resolver import SemanticResolver
 from app.v2.research import ResearchBriefBuilder
+from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
 
 
 class V2Orchestrator:
@@ -65,39 +66,15 @@ class V2Orchestrator:
 
     @staticmethod
     def _bind_runtime(request, principal: Principal):
-        service = wren_for_request(request)
-        schema = service.schema()
-        runtime = TenantAnalyticsRuntimeV0(
-            tenant_id=str(principal.tenant_id) if principal.tenant_id else None,
-            tenant_slug=principal.tenant_slug,
-            principal_user_id=str(principal.user_id),
-            roles=tuple(sorted(str(role) for role in (principal.roles or []))),
-            mdl_version=str(service.mdl_version),
-            catalog=schema.get("catalog"),
-            schema_name=schema.get("schema_name"),
-            db_online=bool(schema.get("db_online", True)),
-        )
-        return service, schema, runtime
+        return bind_runtime(request, principal)
 
     @staticmethod
     def _tenant_binding(runtime: TenantAnalyticsRuntimeV0) -> str:
-        if runtime.tenant_id:
-            return f"id:{runtime.tenant_id}"
-        return f"slug:{runtime.tenant_slug or ''}"
+        return tenant_binding(runtime)
 
     @staticmethod
     def _request_ref(body: AskV2Request) -> str:
-        payload = json.dumps(
-            {
-                "question": body.question,
-                "session_id": body.session_id,
-                "thread_id": body.thread_id,
-            },
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        return "r-" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:20]
+        return request_ref(body)
 
     @staticmethod
     def _failure(code: str, stage: str, message: str) -> StandardAnalyticsFailure:
