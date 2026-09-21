@@ -746,3 +746,66 @@ class AskV2Day4Response(FrozenModel):
         "core_mvp_day5",
         "standard_analytics_retry",
     ] = "conversation_day4"
+
+# ---------------------------------------------------------------------------
+# Day 5 Core MVP product / finalization surface
+# ---------------------------------------------------------------------------
+
+
+class ConversationResponseKind(StrEnum):
+    ANSWER = "answer"
+    CLARIFY = "clarify"
+    TALK = "talk"
+    EXPLAIN = "explain"
+    SEMANTIC_GAP = "semantic_gap"
+    UNSUPPORTED = "unsupported"
+    FAILURE = "failure"
+
+
+class ScopeChipV0(FrozenModel):
+    kind: Literal[
+        "metric",
+        "dimension",
+        "filter",
+        "time",
+        "ranking",
+        "comparison",
+    ]
+    label: str
+    canonical_ref: str | None = None
+
+
+class EvidenceRefV0(FrozenModel):
+    contract_id: str
+    execution_id: str
+    role: Literal["primary", "comparison_reference"]
+    sealed: bool = True
+
+
+class ConversationTableV0(FrozenModel):
+    execution_id: str
+    role: Literal["primary", "comparison_reference"]
+    columns: tuple[str, ...] = ()
+    rows: tuple[dict[str, Any], ...] = ()
+    row_count: int = 0
+    truncated: bool = False
+
+
+class ConversationResponseV0(FrozenModel):
+    """User-facing Core MVP response derived only from typed state/evidence."""
+
+    kind: ConversationResponseKind
+    text: str
+    scope_chips: tuple[ScopeChipV0, ...] = ()
+    clarification_chips: tuple[ClarificationChip, ...] = ()
+    evidence_refs: tuple[EvidenceRefV0, ...] = ()
+    tables: tuple[ConversationTableV0, ...] = ()
+    official_verified: bool = False
+
+
+class AskV2CoreResponse(AskV2Day4Response):
+    status: Literal["core_mvp"] = "core_mvp"
+    stage: Literal["day5_core_mvp"] = "day5_core_mvp"
+    response: ConversationResponseV0
+    next_stage: Literal["core_mvp_gate"] = "core_mvp_gate"
+
