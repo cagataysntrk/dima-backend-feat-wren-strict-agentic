@@ -466,12 +466,13 @@ class ResearchDeliverableSurface(FrozenModel):
 
 
 class ResearchRequestSurface(FrozenModel):
-    """Typed rich analytical surface produced once by the language owner."""
+    """Stable internal research surface consumed by Resolver/Policy/Builder."""
 
     goals: tuple[ResearchGoalSurface, ...] = ()
     relationships: tuple[ResearchRelationshipSurface, ...] = ()
     time_mentions: tuple[SemanticMention, ...] = ()
     deliverables: tuple[ResearchDeliverableSurface, ...] = ()
+    excluded_mentions: tuple[SemanticMention, ...] = ()
 
     @model_validator(mode="after")
     def _has_operation(self):
@@ -523,6 +524,20 @@ class TurnInterpreterTransport(FrozenModel):
             raise ValueError(
                 "research_graph is valid only on new analytical turn family"
             )
+
+        if self.research_graph is not None:
+            requested_deliverables = {
+                item.kind
+                for item in self.research_graph.deliverables
+                if item.polarity == ResearchOperationPolarity.REQUESTED
+            }
+            if (
+                self.presentation_request != PresentationKind.NONE
+                and self.presentation_request not in requested_deliverables
+            ):
+                raise ValueError(
+                    "research presentation_request must be backed by requested deliverable"
+                )
         return self
 
 
