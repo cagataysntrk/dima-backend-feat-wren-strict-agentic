@@ -269,3 +269,100 @@ koptuğunda yeniden keşfedilmez; önce bunlar okunur.
 - `sadece RAM-3` refine-vs-repair farkı Day4 conversation sentinel'idir; özel-case
   regex/hard-code yazma.
 
+
+
+## 12. DATASET-AGNOSTIC GELİŞTİRME VE GERÇEKÇİ TEST KURALI
+
+V2, repo içindeki demo veritabanına çalışan bir uygulama değil; farklı tenant/schema/data
+bağlandığında aynı mimari sözleşmeyle çalışan bir analitik üründür. Bu nedenle demo DB'nin
+isimleri, değerleri ve mevcut dağılımı **ürün mantığının gizli şartnamesi yapılamaz**.
+
+### 12.1 Production code yasağı
+
+Production V2 kodu:
+
+- `demo-boyahane`, `parti`, `oee`, `RAM-3`, `Siyah`, `toplam_ciro` gibi mevcut
+  fixture/tenant literal'larına göre branch açmaz.
+- Bir metric/dimension/entity/cube varmış gibi varsaymaz; capability current tenant'ın
+  `schema()/MDL/context` yüzeyinden türetilir.
+- Testi geçirmek için örnek veri değerine özel regex/synonym/fallback eklemez.
+- Tek demo şemada çalışan bir davranışı “generic” ilan etmez.
+- DB'deki mevcut satırları önceden bilerek semantic karar vermez.
+- Yeni tenant/schema bağlanınca uygulanamayacak hard-coded relationship, time axis, grain,
+  metric veya entity assumption üretmez.
+
+Bir capability yalnız belirli bir solution pack/domain'e aitse bu generic çekirdeğe
+gizlenmez; explicit pack/capability contract olarak beyan edilir.
+
+### 12.2 Test oracle bağımsızlığı
+
+Test sorusu yalnız “bu demo DB'de hangi değer var?” diye bakılarak seçilemez. Özellikle
+gerçekçi kullanıcı davranışını ölçen eval/test setlerinde:
+
+- doğal, eksik, kısa, bağlamsal ve paraphrase kullanıcı cümleleri bulunur,
+- canonical isimleri birebir söylemeye zorlayan yapay sorular ana doğruluk kanıtı olamaz,
+- exact DB value yalnız **entity-resolution** yeteneğini test ediyorsa bilinçli fixture
+  olabilir; genel language/planner başarısı diye sayılmaz,
+- test oracle'ı implementation'ın ürettiği SQL/planı kopyalayarak kurulmaz; canonical
+  semantic/result beklentisi bağımsız tanımlanır,
+- “DB'de bu satır var, o halde doğru” yerine requirement/result equivalence ölçülür.
+
+### 12.3 Her generic capability için en az iki kanıt türü
+
+Mümkün olan aktif fazlarda generic capability şu iki sınıfın ikisini de taşır:
+
+1. **Schema/data-independent contract test**
+   - sentetik veya permüte edilmiş canonical adlar,
+   - farklı metric/dimension/entity isimleri,
+   - gerekirse ikinci küçük schema fixture,
+   - aynı invariant'ın isimlerden bağımsız çalıştığını gösterir.
+
+2. **Real engine / realistic user smoke**
+   - gerçek Wren/DB execution,
+   - doğal kullanıcı cümlesi veya typed output'un gerçekçi karşılığı,
+   - yalnız demo fixture'ın varlığını değil gerçek boundary'yi sınar.
+
+Demo DB smoke önemlidir ama **tek başına generic correctness kanıtı değildir**.
+
+### 12.4 Metamorphic / permutation gate
+
+Bir generic mekanizmanın doğruluğu literal isimlere bağlı olabilecekse en ucuz koruma:
+
+```text
+schema A → invariant PASS
+canonical adları/değerleri permüte edilmiş schema B → aynı invariant PASS
+```
+
+Örnek:
+- metric `toplam_ciro` yerine `net_revenue_x`,
+- dimension `makine` yerine `asset_axis_q`,
+- entity `RAM-3` yerine `UNIT-Z17`,
+- cube `parti` yerine `fact_alpha`.
+
+Production kod değişmeden iki fixture da geçmelidir. Bu isimler test fixture'ıdır;
+production sözlüğü değildir.
+
+### 12.5 Cross-tenant / unseen-schema düşünme zorunluluğu
+
+Her yeni semantic/planner/conversation capability için code review'da şu soru sorulur:
+
+> “Yarın tamamen farklı isimlere, başka time axis'e ve başka entity değerlerine sahip
+> ikinci bir müşteri bağlansa bu kod hangi satırda bozulur?”
+
+Cevap “fixture adını/değerini bilen bir satırda” ise feature tamamlanmış sayılmaz.
+
+### 12.6 Test leakage STOP-THE-LINE
+
+Aşağıdakiler görülürse yeni feature ekleme:
+
+- production code test fixture literal'ını biliyor,
+- test yalnız mevcut DB'ye uyacak şekilde soru seçiyor,
+- canonical field adını söylemeyen gerçekçi paraphrase'ler sistematik olarak test dışı,
+- fake schema'da geçen generic test ikinci/permuted schema'da kırılıyor,
+- real DB smoke tek correctness kanıtı olarak sunuluyor,
+- test oracle implementation'ın aynı helper'ından türetilip kendini doğruluyor,
+- yeni tenant/schema için “sonra bakarız” denip generic çekirdek demo şemaya kilitleniyor.
+
+Bu kural test sayısını büyütmek için değil, **yanlış güveni azaltmak** için vardır.
+Az sayıda ama bağımsız, metamorphic ve gerçek boundary'yi ölçen test; çok sayıda
+demo-fixture'a ezberlenmiş testten daha değerlidir.
