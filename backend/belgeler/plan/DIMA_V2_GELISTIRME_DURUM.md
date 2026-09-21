@@ -2008,3 +2008,44 @@ TurnInterpreter sözleşmesi generic olarak keskinleştirilecek:
 Sonra **yalnız aynı 30-turn live gate** bir kez daha çalıştırılacak.
 Deterministik 8-test gate/full suite/corpus tekrar açılmayacak.
 
+
+
+### 2026-09-21 — DAY 4 / MODEL CAPABILITY KARARI
+
+Aynı 30-turn DB-independent corpus `deepseek/deepseek-v4-flash` ile birden fazla kez
+çalıştırıldı. Structured output %100 ve surface-grounding violation 0 kalırken ince
+conversation speech-act sınırları run'lar arasında ciddi oynadı:
+
+```text
+run 1: act 86.7% | follow-up 33.3% | repair 33.3%
+run 2: act 90.0% | follow-up 66.7% | repair 50.0%
+run 3: act 70.0% | follow-up 33.3% | repair 33.3%
+run 4: act 83.3% | follow-up 58.3% | repair 16.7%
+```
+
+`temperature=0` olmasına rağmen bu varyans ve eşik-altı sonuç, fixture/DB probleminden
+bağımsız bir **model capability / instruction-following stability** problemi olarak
+sınıflandırıldı. Prompt'a daha fazla fixture-benzeri örnek yığmak reddedildi.
+
+**Karar**
+- TurnInterpreter tek language owner olarak kalır.
+- V2 TurnInterpreter için ayrı, explicit model capability tanımlanır.
+- Default: `openai/gpt-5.6-luna` (OpenRouter), çünkü Day1 tarihsel acceptance'ta
+  structured 28/28 ve act 27/28 ölçülmüştür.
+- Core/general OpenRouter modeli `deepseek/deepseek-v4-flash` olarak kalır.
+- Legacy select/generate davranışı değişmez.
+- V2 interpreter model yoksa silent lower-quality fallback yapılmaz; mevcut global LLM
+  yalnız explicit configuration/fallback policy ile kullanılabilir.
+- Bu ayrım bir semantic-owner çoğalması değildir: model transport değişir, owner yine
+  yalnız `TurnInterpreter`dır.
+
+**Yeni config contract**
+```text
+DIMA_V2_INTERPRETER_PROVIDER=openrouter
+DIMA_V2_INTERPRETER_MODEL=openai/gpt-5.6-luna
+```
+
+**Exit ölçümü**
+Aynı 30-turn corpus DEĞİŞTİRİLMEDEN dedicated interpreter model ile yeniden çalışır.
+Pass olursa ayrıca yeni, tuning sırasında kullanılmamış küçük holdout çalıştırılır.
+
