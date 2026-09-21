@@ -312,14 +312,19 @@ def test_067_missing_trusted_metric_binding_clarifies_without_context_fabricatio
     assert outcome.accepted is False
     assert outcome.clarification_required is True
     assert runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
-    assert scripted.calls == [
-        "dima_intent_draft_v1",
-        "dima_intent_coverage_v1",
-    ]
-    assert sum(
+    assert scripted.calls == ["dima_intent_draft_v1"]
+    assert any(
+        item.get("kind") == "material_grounding_gap"
+        for item in outcome.observations
+    )
+    assert not any(
+        item.get("kind") == "coverage_audit"
+        for item in outcome.observations
+    )
+    assert not any(
         item.get("kind") == "contract_validity"
         for item in outcome.observations
-    ) == 1
+    )
 
 
 def test_075_research_directive_is_not_user_obligation():
