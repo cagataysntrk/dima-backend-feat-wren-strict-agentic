@@ -229,8 +229,9 @@ _SYSTEM = """You are Dima's bounded RESEARCH_MANAGER.
 
 Return exactly ONE next action using the provided JSON schema. Do not reveal or emit
 private chain-of-thought. Do not write SQL. Do not invent canonical metric/dimension
-identifiers. Canonical semantics are owned by resolve_semantics and appear only as
-opaque sem_* handles.
+identifiers. Canonical semantics are owned by resolve_semantics. The Manager never receives raw
+internal sem_* ids; Resolver-issued semantics are exposed only as run-local aliases
+(h1, h2, ...), which the runtime resolves back to opaque handles.
 
 Rules:
 - Human-language understanding may be iterative.
@@ -261,7 +262,8 @@ Rules:
 - Time/comparison are governed normalization kinds: tag the base-period surface as "time"
   and the reference/comparison surface as "comparison". They may be resolved together
   with metric/dimension surfaces; the runtime derives the temporal anchor/base safely.
-- A standard USER_MUST must be accepted only after its required sem_* handles exist.
+- A standard USER_MUST must be accepted only after its required runtime handle aliases
+  (h1, h2, ...) have been issued by resolve_semantics. Never invent an h* alias or sem_* id.
 - If a research obligation becomes UNSUPPORTED, BLOCKED_DATA_GAP or LIMITED with an
   explicit blocker, do not ask the user to choose a different task merely to avoid a
   partial result. Propose finish; CompletionGate will truthfully return PARTIAL.
@@ -375,6 +377,57 @@ class ResearchManagerLoop:
             raise ValueError("RESEARCH_MANAGER provider native structured_json desteklemiyor")
         self._structured = structured
         self._source_spans = source_spans
+        self._alias_by_handle: dict[str, str] = {}
+        self._handle_by_alias: dict[str, str] = {}
+
+    def _handle_alias(self, handle_id: str) -> str:
+        if not str(handle_id).startswith("sem_"):
+            return str(handle_id)
+        existing = self._alias_by_handle.get(handle_id)
+        if existing is not None:
+            return existing
+        alias = f"h{len(self._alias_by_handle) + 1}"
+        self._alias_by_handle[handle_id] = alias
+        self._handle_by_alias[alias] = handle_id
+        return alias
+
+    def _manager_safe(self, value: Any) -> Any:
+        """Serialize tool/runtime state for the Manager without exposing raw sem_* ids."""
+        if hasattr(value, "model_dump"):
+            return self._manager_safe(value.model_dump(mode="json"))
+        if hasattr(value, "__dict__"):
+            return {
+                key: self._manager_safe(item)
+                for key, item in vars(value).items()
+                if not key.startswith("_") and key not in {"analytics_ir"}
+            }
+        if isinstance(value, dict):
+            return {str(k): self._manager_safe(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self._manager_safe(item) for item in value]
+        if isinstance(value, str) and value.startswith("sem_"):
+            return self._handle_alias(value)
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            return value
+        return str(value)
+
+    def _decode_handle(self, ref: str | None) -> str | None:
+        if ref is None:
+            return None
+        raw = str(ref)
+        if raw.startswith("sem_"):
+            raise ValueError(
+                "Manager raw sem_* id kullanamaz; resolve_semantics tarafından verilen h* aliasını kullanın"
+            )
+        if raw.startswith("h"):
+            try:
+                return self._handle_by_alias[raw]
+            except KeyError as exc:
+                raise ValueError(f"unknown/unissued Manager handle alias: {raw}") from exc
+        raise ValueError(f"invalid Manager handle reference: {raw}")
+
+    def _decode_handles(self, refs: tuple[str, ...]) -> tuple[str, ...]:
+        return tuple(self._decode_handle(ref) for ref in refs)
 
     def _prompt(
         self,
@@ -395,7 +448,10 @@ class ResearchManagerLoop:
                     "priority": item.priority.value,
                     "polarity": item.polarity.value,
                     "status": item.status.value,
-                    "semantic_handle_refs": list(item.semantic_handle_refs),
+                    "semantic_handle_refs": [
+                        self._handle_alias(handle_id)
+                        for handle_id in item.semantic_handle_refs
+                    ],
                     "evidence_refs": list(item.evidence_refs),
                     "blocker": item.blocker,
                 }
@@ -489,16 +545,16 @@ class ResearchManagerLoop:
                     "provenance": "USER_SOURCE",
                     "source_refs": refs,
                     "target_kind_hints": decision.target_kind_hints,
-                    "temporal_anchor_handle": decision.temporal_anchor_handle,
-                    "base_period_handle": decision.base_period_handle,
+                    "temporal_anchor_handle": self._decode_handle(decision.temporal_anchor_handle),
+                    "base_period_handle": self._decode_handle(decision.base_period_handle),
                 }
             else:
                 args = {
                     "provenance": "AGENT_DERIVED",
                     "source_refs": (),
                     "target_kind_hints": decision.target_kind_hints,
-                    "temporal_anchor_handle": decision.temporal_anchor_handle,
-                    "base_period_handle": decision.base_period_handle,
+                    "temporal_anchor_handle": self._decode_handle(decision.temporal_anchor_handle),
+                    "base_period_handle": self._decode_handle(decision.base_period_handle),
                     "parent_obligation_id": decision.semantic_parent_obligation_id,
                     "evidence_ref": decision.semantic_evidence_ref,
                     "natural_language_proposal": decision.semantic_proposal,
@@ -523,7 +579,7 @@ class ResearchManagerLoop:
                         priority=item.priority,
                         polarity=item.polarity,
                         source_refs=refs,
-                        semantic_handle_refs=item.semantic_handle_refs,
+                        semantic_handle_refs=self._decode_handles(item.semantic_handle_refs),
                         open_questions=item.open_questions,
                         ranking_direction=item.ranking_direction,
                         ranking_limit=item.ranking_limit,
@@ -547,11 +603,11 @@ class ResearchManagerLoop:
                 name=ManagerToolName.RUN_ANALYTICS,
                 args={
                     "obligation_ids": decision.obligation_ids,
-                    "metric_handles": decision.metric_handles,
-                    "dimension_handles": decision.dimension_handles,
-                    "filter_handles": decision.filter_handles,
-                    "period_handle": decision.period_handle,
-                    "comparison_handle": decision.comparison_handle,
+                    "metric_handles": self._decode_handles(decision.metric_handles),
+                    "dimension_handles": self._decode_handles(decision.dimension_handles),
+                    "filter_handles": self._decode_handles(decision.filter_handles),
+                    "period_handle": self._decode_handle(decision.period_handle),
+                    "comparison_handle": self._decode_handle(decision.comparison_handle),
                     "ranking_direction": decision.ranking_direction,
                     "limit": decision.limit,
                     "derived_task_id": decision.derived_task_id,
@@ -570,8 +626,8 @@ class ResearchManagerLoop:
                 name=ManagerToolName.RUN_RELATIONSHIP,
                 args={
                     "obligation_id": decision.relationship_obligation_id,
-                    "focus_handles": decision.focus_handles,
-                    "counterpart_handles": decision.counterpart_handles,
+                    "focus_handles": self._decode_handles(decision.focus_handles),
+                    "counterpart_handles": self._decode_handles(decision.counterpart_handles),
                 },
             )
 
@@ -722,7 +778,7 @@ class ResearchManagerLoop:
                     {
                         "kind": "tool",
                         "tool": call.name.value,
-                        "result": _safe(step.tool_result),
+                        "result": self._manager_safe(step.tool_result),
                     }
                 )
             except (ManagerRecoverableToolError, ManagerToolPolicyError) as exc:
