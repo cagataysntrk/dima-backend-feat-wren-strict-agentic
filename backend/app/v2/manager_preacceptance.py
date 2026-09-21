@@ -134,11 +134,34 @@ class DraftSurfaceViolation(FrozenModel):
     surface: str = Field(min_length=1)
 
 
+class FiniteAcceptanceStatus(StrEnum):
+    ACCEPTED = "ACCEPTED"
+    CLARIFICATION_REQUIRED = "CLARIFICATION_REQUIRED"
+    COGNITION_REJECTED = "COGNITION_REJECTED"
+    CONTRACT_REJECTED = "CONTRACT_REJECTED"
+    MODEL_FAILURE = "MODEL_FAILURE"
+    GROUNDING_FAILURE = "GROUNDING_FAILURE"
+
+
 @dataclass(frozen=True)
 class FiniteAcceptanceOutcome:
-    accepted: bool
-    clarification_required: bool
+    status: FiniteAcceptanceStatus
     observations: tuple[dict[str, Any], ...]
+
+    @property
+    def accepted(self) -> bool:
+        return self.status == FiniteAcceptanceStatus.ACCEPTED
+
+    @property
+    def clarification_required(self) -> bool:
+        return self.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
+
+    @property
+    def evaluation_valid(self) -> bool:
+        return self.status not in {
+            FiniteAcceptanceStatus.MODEL_FAILURE,
+            FiniteAcceptanceStatus.GROUNDING_FAILURE,
+        }
 
 
 _DRAFT_SYSTEM = """You are Dima's bounded intent drafter.
@@ -615,8 +638,7 @@ class PreAcceptanceController:
                     }
                 )
                 return FiniteAcceptanceOutcome(
-                    accepted=False,
-                    clarification_required=False,
+                    status=FiniteAcceptanceStatus.MODEL_FAILURE,
                     observations=tuple(observations),
                 )
 
@@ -648,8 +670,7 @@ class PreAcceptanceController:
                     revision_feedback = self._surface_feedback(surface_violations)
                     continue
                 return FiniteAcceptanceOutcome(
-                    accepted=False,
-                    clarification_required=False,
+                    status=FiniteAcceptanceStatus.COGNITION_REJECTED,
                     observations=tuple(observations),
                 )
 
@@ -668,15 +689,8 @@ class PreAcceptanceController:
                         "message": str(exc),
                     }
                 )
-                if attempt < self._max_draft_attempts:
-                    revision_feedback = {
-                        "kind": "GROUNDING_RUNTIME_REJECTED",
-                        "message": str(exc),
-                    }
-                    continue
                 return FiniteAcceptanceOutcome(
-                    accepted=False,
-                    clarification_required=False,
+                    status=FiniteAcceptanceStatus.GROUNDING_FAILURE,
                     observations=tuple(observations),
                 )
 
@@ -703,6 +717,8 @@ class PreAcceptanceController:
                     grounding_summary=grounding_summary,
                     conversation=conversation,
                 )
+            except ManagerBudgetError:
+                raise
             except Exception as exc:
                 observations.append(
                     {
@@ -712,8 +728,7 @@ class PreAcceptanceController:
                     }
                 )
                 return FiniteAcceptanceOutcome(
-                    accepted=False,
-                    clarification_required=False,
+                    status=FiniteAcceptanceStatus.MODEL_FAILURE,
                     observations=tuple(observations),
                 )
 
@@ -742,13 +757,11 @@ class PreAcceptanceController:
                         "coverage audit found unresolved material intent"
                     )
                     return FiniteAcceptanceOutcome(
-                        accepted=False,
-                        clarification_required=True,
+                        status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
                         observations=tuple(observations),
                     )
                 return FiniteAcceptanceOutcome(
-                    accepted=False,
-                    clarification_required=False,
+                    status=FiniteAcceptanceStatus.COGNITION_REJECTED,
                     observations=tuple(observations),
                 )
 
@@ -760,13 +773,27 @@ class PreAcceptanceController:
                 request_ref=request_ref,
                 runtime=runtime,
             )
-            step = runtime.call_tool(
-                ManagerToolCall(
-                    name=ManagerToolName.PROPOSE_ACCEPTANCE,
-                    args={"envelope": envelope.model_dump(mode="json")},
-                ),
-                executor=executor,
-            )
+            try:
+                step = runtime.call_tool(
+                    ManagerToolCall(
+                        name=ManagerToolName.PROPOSE_ACCEPTANCE,
+                        args={"envelope": envelope.model_dump(mode="json")},
+                    ),
+                    executor=executor,
+                )
+            except Exception as exc:
+                observations.append(
+                    {
+                        "kind": "contract_validity_error",
+                        "attempt": attempt,
+                        "message": str(exc),
+                    }
+                )
+                return FiniteAcceptanceOutcome(
+                    status=FiniteAcceptanceStatus.GROUNDING_FAILURE,
+                    observations=tuple(observations),
+                )
+
             result = step.tool_result
             observations.append(
                 {
@@ -779,15 +806,13 @@ class PreAcceptanceController:
 
             if result.status == AcceptanceStatus.ACCEPTED:
                 return FiniteAcceptanceOutcome(
-                    accepted=True,
-                    clarification_required=False,
+                    status=FiniteAcceptanceStatus.ACCEPTED,
                     observations=tuple(observations),
                 )
 
             if result.status == AcceptanceStatus.NEEDS_CLARIFICATION:
                 return FiniteAcceptanceOutcome(
-                    accepted=False,
-                    clarification_required=True,
+                    status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
                     observations=tuple(observations),
                 )
 
@@ -801,8 +826,7 @@ class PreAcceptanceController:
                     "coverage-complete current authority does not provide"
                 )
                 return FiniteAcceptanceOutcome(
-                    accepted=False,
-                    clarification_required=True,
+                    status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
                     observations=tuple(observations),
                 )
 
@@ -811,13 +835,11 @@ class PreAcceptanceController:
                 continue
 
             return FiniteAcceptanceOutcome(
-                accepted=False,
-                clarification_required=False,
+                status=FiniteAcceptanceStatus.CONTRACT_REJECTED,
                 observations=tuple(observations),
             )
 
         return FiniteAcceptanceOutcome(
-            accepted=False,
-            clarification_required=False,
+            status=FiniteAcceptanceStatus.COGNITION_REJECTED,
             observations=tuple(observations),
         )
