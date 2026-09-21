@@ -400,13 +400,25 @@ class ResearchBriefBuilder:
         all_refs: list[ResearchSemanticRef] = []
         blocked_ids: list[str] = []
 
-        for position, goal in enumerate(request.goals, start=1):
-            goal_id = f"g{position}"
+        next_goal_number = 1
+
+        def append_question(
+            *,
+            kind: ResearchGoalKind,
+            source_text: str,
+            subject_mentions: tuple[SemanticMention, ...],
+            related_mentions: tuple[SemanticMention, ...],
+            require_relationship_sides: bool = False,
+        ) -> None:
+            nonlocal next_goal_number
+            goal_id = f"g{next_goal_number}"
+            next_goal_number += 1
+
             subject_refs: list[ResearchSemanticRef] = []
             related_refs: list[ResearchSemanticRef] = []
             unresolved: list[ResearchUnresolvedRef] = []
 
-            for mention in goal.subject_mentions:
+            for mention in subject_mentions:
                 ref, reason = _resolved_ref(mention, hypothesis_index)
                 if ref is None:
                     unresolved.append(
@@ -420,7 +432,7 @@ class ResearchBriefBuilder:
                     subject_refs.append(ref)
                     all_refs.append(ref)
 
-            for mention in goal.related_mentions:
+            for mention in related_mentions:
                 ref, reason = _resolved_ref(mention, hypothesis_index)
                 if ref is None:
                     unresolved.append(
@@ -434,30 +446,30 @@ class ResearchBriefBuilder:
                     related_refs.append(ref)
                     all_refs.append(ref)
 
-            if not goal.subject_mentions and not goal.related_mentions:
+            if not subject_mentions and not related_mentions:
                 unresolved.append(
                     ResearchUnresolvedRef(
-                        source_mention=goal.text,
+                        source_mention=source_text,
                         role="goal",
                         reason="research goal has no explicit semantic anchor",
                     )
                 )
 
-            if goal.kind == ResearchGoalKind.RELATIONSHIP:
-                if not goal.subject_mentions:
+            if require_relationship_sides:
+                if not subject_mentions:
                     unresolved.append(
                         ResearchUnresolvedRef(
-                            source_mention=goal.text,
+                            source_mention=source_text,
                             role="subject",
-                            reason="relationship goal has no explicit subject",
+                            reason="relationship goal has no explicit focus side",
                         )
                     )
-                if not goal.related_mentions:
+                if not related_mentions:
                     unresolved.append(
                         ResearchUnresolvedRef(
-                            source_mention=goal.text,
+                            source_mention=source_text,
                             role="related",
-                            reason="relationship goal has no explicit related side",
+                            reason="relationship goal has no explicit counterpart side",
                         )
                     )
                 if (
@@ -471,7 +483,7 @@ class ResearchBriefBuilder:
                 ):
                     unresolved.append(
                         ResearchUnresolvedRef(
-                            source_mention=goal.text,
+                            source_mention=source_text,
                             role="goal",
                             reason=(
                                 "no verified semantic relationship path between "
@@ -491,14 +503,34 @@ class ResearchBriefBuilder:
             questions.append(
                 ResearchQuestion(
                     goal_id=goal_id,
-                    kind=goal.kind,
-                    source_text=goal.text,
+                    kind=kind,
+                    source_text=source_text,
                     subject_refs=_unique_refs(subject_refs),
                     related_refs=_unique_refs(related_refs),
                     unresolved=tuple(unresolved),
                     status=status,
                 )
             )
+
+        for goal in request.goals:
+            append_question(
+                kind=ResearchGoalKind(goal.kind.value),
+                source_text=goal.text,
+                subject_mentions=goal.subject_mentions,
+                related_mentions=goal.related_mentions,
+            )
+
+        for relationship in request.relationships:
+            # One typed relationship request may name several counterparts, but each
+            # resulting ResearchQuestion is an atomic edge by construction.
+            for counterpart in relationship.counterpart_mentions:
+                append_question(
+                    kind=ResearchGoalKind.RELATIONSHIP,
+                    source_text=relationship.text,
+                    subject_mentions=relationship.focus_mentions,
+                    related_mentions=(counterpart,),
+                    require_relationship_sides=True,
+                )
 
         scope_refs = _unique_refs(all_refs)
         required_domain_candidates: list[str] = []
