@@ -318,11 +318,6 @@ class IntentAcceptanceGate:
             elif binding_result.binding is not None:
                 current_bindings[item.obligation_id] = binding_result.binding
 
-            if item.open_questions and item.priority == ObligationPriority.MUST:
-                clarify.append(
-                    f"MUST obligation {item.obligation_id} has open questions"
-                )
-
         if semantic_receipts is not None:
             reject.extend(
                 self._validate_resolution_receipt_coverage(
