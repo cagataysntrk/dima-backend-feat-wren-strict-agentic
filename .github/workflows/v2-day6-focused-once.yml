@@ -1,5 +1,5 @@
 name: v2-day6-focused-once
-# closure rerun after evaluator cost gate
+# final evaluator-exit closure rerun
 
 "on":
   push:
