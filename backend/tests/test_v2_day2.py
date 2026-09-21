@@ -494,3 +494,88 @@ def test_clarification_hmac_key_is_stable_and_domain_separated():
     assert a1 == a2
     assert a1 != other
     assert len(a1) == 32
+
+
+def test_exact_verified_match_dominates_fuzzy_material_lookalike():
+    context = BoundedSemanticContextV0(
+        context_version=CTX,
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="sales",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="net_revenue",
+                        display="Net Gelir",
+                        synonyms=("net gelir",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="gross_revenue",
+                        display="Brüt Gelir",
+                        synonyms=("gelir",),
+                    ),
+                ),
+            ),
+        ),
+    )
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.ANALYTIC_NEW,
+        analytical_request=AnalyticalRequest(
+            metric_mentions=(
+                SemanticMention(text="net gelir", kind=SemanticMentionKind.METRIC),
+            ),
+        ),
+    )
+    result = SemanticResolver(signing_key=b"x" * 32).resolve_turn(
+        turn=turn,
+        schema={"models": [], "cubes": [{"name": "sales", "dimension_values": {}}]},
+        semantic_context=context,
+        conversation=ConversationStateV2(),
+        tenant_binding="id:t1",
+        session_id="s1",
+        thread_id="th1",
+    )
+    assert result.clarification is None
+    assert result.hypotheses[0].status == ResolutionStatus.RESOLVED
+    assert result.hypotheses[0].candidates[0].canonical_name == "net_revenue"
+
+
+def test_multiple_exact_verified_matches_still_clarify():
+    context = BoundedSemanticContextV0(
+        context_version=CTX,
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="sales",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="metric_a",
+                        display="A",
+                        synonyms=("performans",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="metric_b",
+                        display="B",
+                        synonyms=("performans",),
+                    ),
+                ),
+            ),
+        ),
+    )
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.ANALYTIC_NEW,
+        analytical_request=AnalyticalRequest(
+            metric_mentions=(
+                SemanticMention(text="performans", kind=SemanticMentionKind.METRIC),
+            ),
+        ),
+    )
+    result = SemanticResolver(signing_key=b"x" * 32).resolve_turn(
+        turn=turn,
+        schema={"models": [], "cubes": [{"name": "sales", "dimension_values": {}}]},
+        semantic_context=context,
+        conversation=ConversationStateV2(),
+        tenant_binding="id:t1",
+        session_id="s1",
+        thread_id="th1",
+    )
+    assert result.clarification is not None
+    assert result.clarification.reason == ClarificationReason.MATERIAL_AMBIGUITY
