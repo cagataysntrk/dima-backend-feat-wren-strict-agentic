@@ -116,6 +116,13 @@ class Settings(BaseSettings):
     # select_model boş bırakılırsa LLM adapter ana modeli aynen kullanır.
     openrouter_model: str = "deepseek/deepseek-v4-flash"
     openrouter_select_model: str = ""
+
+    # V2 conversation front-door has its own measured capability contract. This does
+    # NOT change legacy/select/SQL model defaults. P7 DB-independent live eval showed
+    # deepseek-v4-flash was structurally valid but unstable on repair-vs-refine speech
+    # acts; Day1 acceptance had already measured GPT-5.6 Luna at 27/28 act accuracy.
+    v2_interpreter_provider: str = "openrouter"  # openrouter | inherit
+    v2_interpreter_model: str = "openai/gpt-5.6-luna"
     # Ollama (tam yerel, anahtarsız: `brew install ollama` + `ollama pull ...`)
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "qwen2.5-coder:7b"
