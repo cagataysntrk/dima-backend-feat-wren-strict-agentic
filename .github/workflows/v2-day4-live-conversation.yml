@@ -1,4 +1,9 @@
-name: v2-day4-live-conversation\n\n"on":\n  workflow_dispatch:\n\nconcurrency:
+name: v2-day4-live-conversation
+
+"on":
+  workflow_dispatch:
+
+concurrency:
   group: v2-day4-live-${{ github.sha }}
   cancel-in-progress: false
 
