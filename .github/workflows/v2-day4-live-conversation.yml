@@ -5,7 +5,7 @@ name: v2-day4-live-conversation
     branches:
       - wren-bağımsız
     types:
-      - ready_for_review
+      - synchronize
     paths:
       - "backend/app/v2/interpreter.py"
       - "backend/app/v2/models.py"
@@ -47,6 +47,9 @@ jobs:
 
       - name: Backend + dev dependencies
         run: pip install -e ".[dev]"
+
+      - name: Day 4 structural/runtime gate
+        run: pytest -q tests/test_v2_day4.py
 
       - name: P7 real-provider DB-independent conversation acceptance
         run: |
