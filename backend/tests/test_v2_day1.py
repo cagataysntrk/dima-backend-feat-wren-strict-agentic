@@ -119,10 +119,13 @@ class FakeLLM:
         self.outputs = list(outputs)
         self.calls = 0
 
-    def structured_text(self, system: str, user: str) -> str:
+    def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str) -> str:
         self.calls += 1
         assert "SQL" in system
         assert "CURRENT_MESSAGE" in user
+        assert schema_name == "dima_turn_interpretation_v2"
+        assert schema.get("type") == "object"
+        assert "JSON_SCHEMA:" not in system
         if not self.outputs:
             raise AssertionError("beklenmeyen LLM çağrısı")
         return self.outputs.pop(0)
