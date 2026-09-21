@@ -55,7 +55,9 @@ class ManagerCapabilityRegistry:
             key=ManagerCapabilityKey.BREAKDOWN,
             lane=ManagerCapabilityLane.STANDARD,
             required_kinds=frozenset({"metric", "dimension"}),
-            exclusion_required_kinds=frozenset({"dimension"}),
+            # Generic "no extra breakdown" is a valid global exclusion; when a
+            # dimension is supplied the effect remains scoped to that dimension.
+            exclusion_required_kinds=frozenset(),
             allowed_kinds=frozenset({"metric", "dimension", "filter", "period"}),
             effect_family="group_by",
             intent_description="Group/break down a metric by a requested dimension.",
