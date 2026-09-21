@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.v2.manager_models import (
     ManagerState,
@@ -31,7 +31,15 @@ class ManagerToolName(StrEnum):
 
 class ResolveSemanticsArgs(FrozenModel):
     source_refs: tuple[str, ...] = Field(min_length=1)
-    target_kind_hints: tuple[str, ...] = ()
+    target_kind_hints: tuple[
+        Literal["metric", "dimension", "filter", "unknown"], ...
+    ] = ()
+
+    @model_validator(mode="after")
+    def _hint_cardinality(self):
+        if self.target_kind_hints and len(self.target_kind_hints) != len(self.source_refs):
+            raise ValueError("target_kind_hints boş olmalı veya source_refs ile aynı uzunlukta olmalı")
+        return self
 
 
 class ProposeAcceptanceArgs(FrozenModel):
