@@ -253,6 +253,29 @@ def test_fuzzy_only_is_suggestion_not_auto_resolution():
     assert CandidateSource.FUZZY_SUGGESTION in bundle.clarification.candidates[0].provenance
 
 
+@pytest.mark.parametrize(
+    ("surface", "kind", "canonical"),
+    [
+        ("müşterilere", SemanticMentionKind.DIMENSION, "musteri"),
+        ("vardiyalarda", SemanticMentionKind.DIMENSION, "vardiya"),
+        ("satışların", SemanticMentionKind.METRIC, "ciro"),
+    ],
+)
+def test_turkish_inflection_resolves_only_through_verified_semantic_aliases(
+    surface,
+    kind,
+    canonical,
+):
+    bundle = resolve(surface, kind)
+
+    assert bundle.clarification is None
+    hyp = bundle.hypotheses[0]
+    assert hyp.status == ResolutionStatus.RESOLVED
+    chosen = next(c for c in hyp.candidates if c.candidate_id == hyp.resolved_candidate_id)
+    assert chosen.canonical_name == canonical
+    assert CandidateSource.MORPHOLOGICAL_MATCH in chosen.provenance
+
+
 def test_unknown_surface_becomes_semantic_gap():
     bundle = resolve("xyzqwerty", SemanticMentionKind.METRIC)
 
