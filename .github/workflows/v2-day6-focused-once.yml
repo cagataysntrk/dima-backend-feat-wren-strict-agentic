@@ -1,5 +1,5 @@
 name: v2-day6-focused-once
-# final rerun after regex root fix
+# final rerun after HTTP Day6 coverage
 
 "on":
   push:
@@ -46,3 +46,17 @@ jobs:
           assert sum(not bool(case.get("expect_research", True)) for case in cases) >= 8
           print({"cases": len(cases), "research": sum(bool(c.get("expect_research", True)) for c in cases), "negative": sum(not bool(c.get("expect_research", True)) for c in cases)})
           PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Activate canonical pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.12.1 --activate
+      - name: Install frontend dependencies
+        working-directory: dima-frontend-demo-master
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Day 6 frontend contract typecheck
+        working-directory: dima-frontend-demo-master
+        run: pnpm exec tsc --noEmit
