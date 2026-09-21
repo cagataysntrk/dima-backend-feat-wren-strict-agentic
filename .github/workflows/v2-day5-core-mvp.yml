@@ -1,21 +1,6 @@
 name: v2-day5-core-mvp
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - "backend/app/v2/**"
-      - "backend/app/routers/ask_v2.py"
-      - "backend/tests/test_v2_day1.py"
-      - "backend/tests/test_v2_day2.py"
-      - "backend/tests/test_v2_day3.py"
-      - "backend/tests/test_v2_day4.py"
-      - "backend/tests/test_v2_day5.py"
-      - "backend/tests/test_v2_day5_http.py"
-      - "backend/pyproject.toml"
-      - "dima-frontend-demo-master/src/**"
-      - ".github/workflows/v2-day5-core-mvp.yml"
   workflow_dispatch:
 
 concurrency:
