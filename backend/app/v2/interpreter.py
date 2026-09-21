@@ -184,12 +184,20 @@ MUTLAK SINIRLAR:
 - Tarih aritmetiği yapma. 'son üç ay', 'bu ay', 'geçen yılla' gibi ifadeyi yalnız
   surface text olarak taşı.
 - k=1: alternatif yorum listesi üretme.
-- Kullanıcı mevcut sonucu açıklatıyorsa ve active result varsa RESULT_EXPLAIN.
-- DIALOGUE ACT ÖNCELİĞİ: bir tur önceki aktif isteğin bir parçasını geri alıyor,
-  düzeltiyor, yeniden ifade ediyor veya "önceki değil, bunun yerine bu" anlamı taşıyorsa
-  USER_REPAIR seç. Bu anlam, aynı slotu değiştiren sıradan ANALYTIC_REFINE'dan önce gelir.
-- ANALYTIC_REFINE yalnız önceki isteği reddetmeden ona yeni scope/filter/breakdown ekleyen
-  veya onu daraltan/genişleten devam turudur.
+- DIALOGUE ACT KARAR SIRASI (semantic precedence):
+  1) pending_clarification=true VE mesaj pending soruya cevap veriyorsa CLARIFICATION_ANSWER.
+  2) active result varsa ve kullanıcı mevcut result/evidence'ı açıklatıyorsa RESULT_EXPLAIN.
+  3) prior analytical request varsa ve kullanıcı mevcut bir seçimi/dönemi/filtreyi geri
+     alıyor, düzeltiyor, "aslında başka..." diyor veya önceki slot yerine yeni slot koyuyorsa
+     USER_REPAIR. Bu, mesaj aynı zamanda yeni bir değer taşısa bile ANALYTIC_REFINE'dan üstündür.
+  4) prior analytical request varsa ve kullanıcı önceki seçimi REDDETMEDEN yeni bir
+     filter/breakdown/scope ekliyor, daraltıyor veya genişletiyorsa ANALYTIC_REFINE.
+  5) bağımsız yeni analitik istek ANALYTIC_NEW.
+- USER_REPAIR kararı kelime ezberi değildir: anlam "önceki tercihi değiştiriyorum" ise
+  kullanılan ifade ne olursa olsun repair'dir. Kısa konuşma işaretleri tek başına değil,
+  prior state + replacement anlamı birlikte değerlendirilir.
+- ANALYTIC_REFINE ile USER_REPAIR arasındaki ana test:
+  "Önceki slot hâlâ geçerli mi?" Evet → REFINE. Hayır, yeni slot onun yerine geçti → REPAIR.
 - ANALYTIC_REFINE ve USER_REPAIR'de analytical_request yalnız BU MESAJDA eklenen/değişen
   slotların surface span'lerini taşımalı. Önceki metric/dimension/filter/time slotlarını
   kullanıcı bu mesajda tekrar etmediyse output'a yeniden yazma.
@@ -204,12 +212,16 @@ MUTLAK SINIRLAR:
 
 ANALYTICAL_REQUEST:
 - metric_mentions, dimension_mentions, filter_mentions, time_mentions yalnız surface span.
-- DIMENSION bir gruplama/kırılım EKSENİ veya kategori TÜRÜDÜR.
-- FILTER belirli bir ÜYE/DEĞER/KİMLİK seçimi ya da scope daraltmasıdır. Bir surface'in
-  katalogdaki dimension adına benzemesi onu dimension yapmaz; kullanıcı somut bir üyeyi
-  seçiyorsa filter_mentions'a koy.
-- Somut member/value seçimini, kullanıcı aynı mesajda ayrıca grouping/breakdown istemiyorsa
-  hem dimension_mentions hem filter_mentions içine DUPLICATE etme.
+- DIMENSION = "hangi eksene göre gruplayalım/kıralım?" sorusunun cevabı olan kategori türü.
+- FILTER = "hangi somut üye/değer(ler) kalsın?" sorusunun cevabı olan seçili scope.
+- Bir kullanıcının "yalnız/sadece/bir tek <somut üye>" anlamındaki seçimi grouping değildir;
+  o surface FILTER'dır. Canonical modele bağlama yapma; yalnız dil rolünü ayır.
+- Buna karşılık "<kategori> bazında", "<kategori>lere göre", "<kategori> kırılımında"
+  gibi grouping niyeti DIMENSION'dır.
+- Bir surface'in katalogdaki dimension adına benzemesi onu dimension yapmaz; cümlede somut
+  member/value rolündeyse filter_mentions'a koy.
+- Aynı exact surface'i, kullanıcı aynı mesajda açıkça hem grouping hem filtering istemiyorsa
+  dimension_mentions ve filter_mentions içine birlikte koyma.
 - ranking varsa ranking.text de CURRENT_MESSAGE span'i olmalı; limit yalnız açıkça yazıldıysa.
 - comparison ifadelerini hesaplama; surface span olarak taşı.
 - canonical ref alanı YOKTUR ve ek alan üretmek yasaktır.
