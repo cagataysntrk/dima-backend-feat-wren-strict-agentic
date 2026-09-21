@@ -2,6 +2,11 @@ name: v2-day6-research-language
 
 "on":
   workflow_dispatch:
+    inputs:
+      case_ids:
+        description: "Optional comma-separated case ids; empty runs the full 40-case gate"
+        required: false
+        default: ""
 
 concurrency:
   group: v2-day6-research-language-${{ github.sha }}
@@ -15,7 +20,7 @@ jobs:
   research-language:
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
-    timeout-minutes: 8
+    timeout-minutes: 12
     env:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
@@ -24,6 +29,7 @@ jobs:
       DIMA_OPENROUTER_MODEL: "google/gemini-2.5-flash-lite"
       DIMA_OPENROUTER_SELECT_MODEL: "google/gemini-2.5-flash-lite"
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DAY6_CASE_IDS: ${{ inputs.case_ids }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,10 +39,19 @@ jobs:
           cache-dependency-path: backend/pyproject.toml
       - name: Install backend eval dependencies
         run: pip install -e ".[dev]"
-      - name: Day 6 bounded ResearchBrief language gate
+      - name: Day 6 manual ResearchBrief gate
+        shell: bash
         run: |
           mkdir -p lab/reports
-          python lab/v2_day6_research_eval.py --require-live
+          args=(--require-live)
+          if [[ -n "${DAY6_CASE_IDS}" ]]; then
+            IFS=',' read -ra ids <<< "${DAY6_CASE_IDS}"
+            for id in "${ids[@]}"; do
+              id="${id//[[:space:]]/}"
+              [[ -n "${id}" ]] && args+=(--case-id "${id}")
+            done
+          fi
+          python lab/v2_day6_research_eval.py "${args[@]}"
       - name: Upload Day 6 language measurement
         if: always()
         uses: actions/upload-artifact@v4
