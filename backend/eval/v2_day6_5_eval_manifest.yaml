@@ -42,6 +42,13 @@ corpus_target:
     required_before_manager_implementation: true
     sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
     taxonomy_sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
+    attestation_sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
+    external_attestation:
+      independent_evaluator: "REQUIRED_BEFORE_IMPLEMENTATION"
+      prompt_text_committed: "REQUIRED_BEFORE_IMPLEMENTATION"
+      prompt_text_shared_with_implementation: "REQUIRED_BEFORE_IMPLEMENTATION"
+      development_model_generated: "REQUIRED_BEFORE_IMPLEMENTATION"
+      frozen_before_implementation: "REQUIRED_BEFORE_IMPLEMENTATION"
 
 taxonomy:
   - multi_obligation
@@ -152,10 +159,12 @@ holdout_freeze_protocol:
   - "Generate/source hidden cases independently from the development model."
   - "Review taxonomy balance without revealing prompt text to implementation process."
   - "Serialize the sealed corpus outside the repository."
-  - "Compute SHA-256 for corpus bytes and taxonomy manifest."
-  - "Replace REQUIRED_BEFORE_IMPLEMENTATION hashes in this manifest."
+  - "External evaluator signs an explicit provenance attestation; the freeze tool must not synthesize provenance booleans."
+  - "Compute SHA-256 for corpus bytes, taxonomy manifest, and external attestation."
+  - "Replace REQUIRED_BEFORE_IMPLEMENTATION hashes/attestation fields in this manifest."
   - "Commit only hashes/counts/taxonomy metadata."
   - "Do not inspect hidden prompt text until the final architecture seal."
+  - "At seal, external evaluator returns only a receipt bound to corpus_sha256, tested_git_sha, and eval_harness_sha; prompt text stays hidden."
 
 stop_the_line:
   - "hidden holdout prompt text committed to repo"
