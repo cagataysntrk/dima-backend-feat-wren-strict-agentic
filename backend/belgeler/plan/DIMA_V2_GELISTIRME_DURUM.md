@@ -3349,3 +3349,93 @@ ve `python lab/v2_day6_5_preflight.py` READY verdikten sonra kapatılacaktır.
 - evidence gördü diye otomatik research VERIFIED,
 - hidden promptları development context'e taşımak,
 - model-specific semantic case patch.
+
+
+### 2026-09-21 — DAY 6.5 / IMPLEMENTATION BATCH 2
+
+**Amaç**
+Bounded Manager candidate'ını production `/ask-v2`ye bağlamadan gerçek Resolver/Core/Wren
+trust plane üzerinde manuel çalıştırılabilir hale getirmek.
+
+**Yapılan**
+- `manager_loop.py`
+  - tek structured action / manager turn,
+  - private chain-of-thought istenmez/persist edilmez,
+  - exact source surface runtime'da `src_*`e çevrilir,
+  - semantic observation yalnız opaque `sem_*`,
+  - finish yalnız CompletionGate tarafından kabul edilirse tamamlanır,
+  - tool rejection modelin bir sonraki turda düzeltmesine izin verir,
+  - manager turn budget enforced.
+- `manager_tools.py`
+  - `run_analytics` period/comparison opaque handle destekli,
+  - agent-derived standard task aynı tool içinde parent'a bağlı açılabilir.
+- `manager_executor.py`
+  - canonical internal adapter result Manager'a dönmez,
+  - Manager-safe observation: evidence_ref / verified / query_count / row_count / limitations,
+  - standard verified evidence obligation ledger'a deterministic verdict ile bağlanır,
+  - research USER_MUST standard evidence yüzünden tamamlanmaz.
+- `manager_core_adapter.py`
+  - Manager-facing evidence payload'dan canonical AnalyticsIR kaldırıldı,
+  - result columns/rows canonical DB field yerine `sem_*` handle anahtarlarıyla gösterilir.
+- `obligation_ledger.py`
+  - agent-derived branch parent USER_MUST'ı mutate etmez.
+- `runtime_boundary.py`
+  - Standard orchestrator + Manager Lab ortak tenant/principal/request identity owner kullanır.
+- `manager_lab.py`
+  - RESEARCH_MANAGER model role üzerinden ayrı candidate LLM,
+  - ContextProvider + Resolver + handles + gates + Core adapter + executor + loop tek harness.
+- `/ask-v2-manager-lab`
+  - default OFF,
+  - yalnız `v2_manager_lab_enabled=true` ve manuel HTTP isteği ile çalışır,
+  - production `/ask-v2` routing değişmedi,
+  - push/CI otomatik LLM çağrısı YOK.
+
+**Önemli güvenlik düzeltmesi**
+İlk adapter taslağında internal `AnalyticsIR`/canonical result column'larının Manager observation'a
+sızma riski bulundu ve production lab açılmadan kapatıldı.
+Manager artık canonical semantic isimleri tool result üzerinden de göremez.
+
+**Başlıca commits**
+- Manager loop: `349ba13609fcf523e12f790fc4e6deb30d2dcb38`
+- derived task contracts: `4fef64cb2708f5e39e0ead29b4d5d59f17149181`
+- derived executor: `1934b389a7743ff3809732f9a3c683570a6f510a`
+- safe analytics observation: `75f768e758b411de0a2c35f75e1aa8539c3e4a3a`
+- canonical leakage closure: `61d9fd3db1e6f5e13223dc99fbb96bbfcbb022a2`
+- executor safe return: `c121b79908c97722ea868197bfaea4bc71ed0f00`
+- shared runtime boundary: `0211bb3c2e16a3734fb17573221add5ee9bb1ece`
+- orchestrator boundary reuse: `03020fa2f3620cd3ac23e55c417bf6b894f68d8d`
+- manual Manager Lab harness: `fd73a282168de76f11f39eb646646689f7e6d34e`
+- default-off lab route: `179ce93315bb84becd17e037919d61540e6dece3`
+- lab route registration: `c13c1999b060f9364a05744f56340388c720362f`
+
+### Güncel mimari durum
+
+```text
+Manager contracts / authority          BUILT
+SourceSpanRegistry                     BUILT
+SemanticHandleRegistry                 BUILT
+AcceptanceGate                         BUILT
+RepresentabilityGate                   BUILT
+CompletionGate                         BUILT
+UserObligationLedger service           BUILT
+6-tool closed registry                 BUILT
+bounded Manager state machine          BUILT
+RESEARCH_MANAGER role                  BUILT
+resolve_semantics → real Resolver       BUILT
+run_analytics → real Core/Wren          BUILT
+QueryContract → Evidence               BUILT
+adaptive AGENT_DERIVED standard branch BUILT
+manual Manager Lab                     BUILT
+production /ask-v2 hybrid routing      NOT YET
+run_relationship real trust plane      NOT YET (Day7-grade)
+external hidden architecture seal      PENDING
+```
+
+### NEXT IMPLEMENTATION
+
+1. Manual Manager Lab smoke — az sayıda gerçek prompt; paid workflow yok.
+2. Tool-action schema/runtime hatalarını düzelt.
+3. Result-aware adaptive branch canonical scenario.
+4. Safe relationship blocker/gate → sonra CrossDomainJoinGate.
+5. Visible DEV architecture corpus.
+6. Hard gates geçmeden production `/ask-v2` hybrid routing açma.
