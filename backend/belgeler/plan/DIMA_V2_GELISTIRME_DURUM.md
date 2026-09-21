@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 IMPLEMENTATION ACTIVE — MANAGER CONTROL PLANE**  
-**Kod fazı:** Day 6.5 / Manager Architecture Validation — production Manager implementation henüz başlamadı; contract/authority hardening tamamlanıyor.
+**Durum:** **DAY 6.5 COGNITION/AUTHORITY BOUNDARY IMPLEMENTED — RECERTIFICATION PENDING**  
+**Kod fazı:** Day 6.5 / Manager Architecture Validation — bounded semantic linker + typed temporal boundary provider-free green; live DEV/validation/hidden seal henüz tamamlanmadı, production hybrid route kapalı.
 
 ---
 
@@ -4065,3 +4065,195 @@ Security boundary oracle uğruna gevşetilmeyecek.
 7. Only if family probe passes → rerun frozen DEV80.
 8. DEV hard gates pass → DEV freeze → VALIDATION50 (no tuning).
 9. External HIDDEN50 remains final seal blocker.
+
+
+---
+
+### 2026-09-22 — DAY 6.5 / COGNITION ↔ SEMANTIC AUTHORITY BOUNDARY CORRECTION
+
+**Karar kaynağı**
+- canonical addendum: `DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+- sealed roadmap/report DEĞİŞTİRİLMEDİ.
+- Day6.5 validation + contract spec + AGENTS + MIMARI + CLAUDE index güncellendi.
+
+**Neden**
+DEV80 artefaktı high-level Manager cognition'ın baskın failure olmadığını gösterdi:
+
+```text
+expected ACCEPTED                         66
+final Manager capability shape correct   61 / 66
+actually ACCEPTED                         46 / 66
+expected clarification                    14
+actual clarification                      31
+failed cases with correct high-level draft 16 / 21
+```
+
+Kök problem:
+```text
+LLM cognition çoğu vakada doğru
++
+deterministic Resolver raw language meaning tahmini yapıyor
++
+Coverage unresolved semantic'e fazla authority veriyor
+=
+correct intent downstream'da gereksiz clarification/reject
+```
+
+**Yeni canonical owner sınırı**
+```text
+Semantic Catalog
+  → what exists
+
+SemanticCandidateGenerator
+  → bounded cand_* enumeration, NO authority
+
+unique exact verified alias
+  → direct gate, no model call
+
+otherwise:
+BoundedSemanticLinker
+  → SELECT(cand_*) | ABSTAIN, NO authority
+
+SemanticBindingGate
+  → membership + tenant/context/kind validation
+
+SemanticHandleRegistry
+  → sem_* mint
+
+Coverage Critic
+  → obligation / exclusion / directive omission veto only
+
+Capability / Conflict / Completeness gates
+  → contract validity
+
+Wren / DB
+  → numeric truth
+```
+
+**Temporal boundary**
+```text
+raw temporal surface
+→ TypedTemporalNormalizer
+→ closed TemporalIntent
+→ TemporalBindingEngine
+→ deterministic concrete dates
+→ temporal sem_* authority
+```
+
+Manager path için raw-language temporal regex meaning owner değildir.
+
+**Yapılan kod**
+- `app/v2/semantic_linker.py`
+  - deterministic bounded catalog cards,
+  - exact verified fast path,
+  - exact ambiguity fail-closed,
+  - one bounded structured linker batch,
+  - candidate injection rejection,
+  - sensitive filter exact-only,
+  - `SemanticBindingGate`.
+- `app/v2/semantic_handles.py`
+  - `mint_from_binding_gate()`,
+  - `mint_from_temporal_engine()`,
+  - legacy `mint_from_resolver()` compatibility olarak korundu.
+- `app/v2/manager_semantics.py`
+  - Manager regular semantic path old Resolver fuzzy/morphology interpretation'dan çıkarıldı,
+  - bounded linker + binding gate'e taşındı,
+  - Manager temporal path typed normalizer + deterministic calendar engine'e taşındı.
+- `app/v2/temporal_intent.py`
+  - typed temporal intent + pure calendar arithmetic.
+- `app/v2/model_policy.py` / `app/config.py`
+  - first-class `SEMANTIC_LINKER` role,
+  - blank config FAST_LANGUAGE'a düşer,
+  - product/domain logic model adı bilmez.
+- `app/v2/manager_preacceptance.py`
+  - Coverage semantic/clarification authority azaltıldı,
+  - capability-required missing binding deterministic blocker olarak kalır.
+- `app/v2/acceptance.py`
+  - LLM `open_questions` automatic clarification authority olmaktan çıkarıldı.
+- `lab/v2_day6_5_manager_eval.py`
+  - MODEL_FAILURE / GROUNDING_FAILURE / HARNESS_FAILURE semantic denominator'dan ayrılır,
+  - incomplete measurement semantic fail değildir,
+  - semantic linker role/call telemetry eklendi.
+
+**Receipt sınırı**
+`SemanticResolutionReceipt` adı compatibility için şimdilik korunuyor fakat anlamı
+provenance/anti-laundering'dir:
+
+```text
+source_ref ↔ sem_* ↔ target_kind
+```
+
+Receipt:
+- binding gerçekten runtime tarafından üretildi mi? → EVET, kontrol eder.
+- user başka ne istedi / ne atlandı? → HAYIR, çıkarım yapamaz.
+
+**STOP-THE-LINE — kalıcı**
+Manager semantic path'te aşağıdakiler YASAK:
+- phrase-specific regex,
+- morphology/stemming score,
+- fuzzy/SequenceMatcher threshold'u semantic authority yapmak,
+- named DEV case için prompt example/phrase patch,
+- candidate set dışı model seçimini kabul etmek,
+- Coverage'a canonical semantic veya user clarification truth vermek,
+- `open_questions`ı automatic clarification yapmak,
+- receipt'i completeness parser yapmak,
+- LLM'e date arithmetic yaptırmak,
+- provider/transport failure'ı NOT_ACCEPTED saymak.
+
+**Provider-free proof**
+Run:
+`35660792599`
+
+Tested code SHA:
+`e2b00eabff26c0e3ee93a7a2327b33f6615a048d`
+
+Sonuç:
+```text
+compile                          PASS
+focused Day6.5 boundary suite    70 / 70 PASS
+real Wren trust-plane sentinel   PASS
+```
+
+One-shot workflow PASS sonrası silindi.
+
+**Korunan compatibility**
+- legacy/non-Manager V2 `SemanticResolver` silinmedi.
+- legacy/non-Manager `temporal.py` silinmedi.
+- production `/ask-v2` hybrid route açılmadı.
+- yeni boundary yalnız Day6.5 Manager path'te owner değiştiriyor.
+
+**Açık borçlar / seal blockers**
+- `V2-D65-B1` — large tenant catalog candidate retrieval:
+  - bugün bounded set fazla büyükse `CANDIDATE_SET_TOO_BROAD`,
+  - blocker: DEV80 için MAYBE, architecture safety için NO,
+  - çözüm: future retrieval/index; retrieval authority DEĞİL.
+- `V2-D65-B2` — live bounded-linker recertification:
+  - OpenRouter önceki canary'de 402 verdi,
+  - blocker: final Day6.5 live certification için YES,
+  - semantic architecture fail olarak sayılmaz.
+- `V2-D65-B3` — DEV80 rerun:
+  - new boundary ile NOT YET RUN.
+- `V2-D65-B4` — VALIDATION50:
+  - DEV freeze sonrası.
+- `V2-D65-B5` — external HIDDEN50:
+  - architecture seal blocker.
+- `V2-D65-B6` — relationship real CrossDomainJoinGate:
+  - Day7-grade capability; Day6.5'te unsafe no-path execution 0 kalmalı.
+
+**Bir sonraki kontrollü sıra**
+1. Provider capacity varsa 8-case semantic-linker-focused live experiment.
+2. workers=1 stratified canary.
+3. visible DEV80 recertification.
+4. failure varsa önce family clustering; named-case patch YOK.
+5. DEV hard gate → freeze.
+6. VALIDATION50.
+7. external HIDDEN50.
+8. architecture seal.
+9. ancak sonra production hybrid routing / Day7.
+
+**Day 6.5 mevcut hüküm**
+- Manager paradigması REDDEDİLMEDİ.
+- Eski deterministic-language Resolver paradigması Manager language authority olarak REDDEDİLDİ.
+- Bounded Manager + bounded semantic linker + deterministic BindingGate architecture
+  **provider-free olarak doğrulandı**.
+- Ürün mimarisi henüz `SEALED` değildir; live DEV/validation/hidden kanıtı bekleniyor.
