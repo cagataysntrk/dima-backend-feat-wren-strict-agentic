@@ -211,7 +211,7 @@ def test_real_http_product_thread_is_core_mvp_and_keeps_query_policy(client, mon
 
     state = {}
     expected = [
-        ("bu yıl üretim hatlarına göre çıktı verimi", "answer", 1),
+        ("bu yıl üretim hattı bazında çıktı verimi", "answer", 1),
         ("yalnız CELL-Q9", "answer", 1),
         ("yok son üç ay olsun", "answer", 1),
         ("bu sonucu açıklar mısın?", "explain", 0),
