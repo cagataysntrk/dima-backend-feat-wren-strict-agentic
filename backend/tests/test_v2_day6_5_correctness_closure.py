@@ -12,6 +12,7 @@ from app.v2.manager_errors import ManagerSemanticGap
 from app.v2.manager_loop import (
     ManagerDecisionTransport,
     _clarification_has_governed_grounding,
+    _evidence_was_inspected,
     _strict_native_schema,
 )
 from app.v2.manager_executor import (
@@ -37,6 +38,7 @@ from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
     ResolveSemanticsArgs,
+    RunAnalyticsArgs,
     RunRelationshipArgs,
 )
 from app.v2.models import (
@@ -389,3 +391,47 @@ def test_preacceptance_clarification_requires_governed_grounding():
         [],
         accepted_contract_present=True,
     )
+
+
+def test_adaptive_branch_requires_inspected_evidence_protocol():
+    observations = [
+        {
+            "kind": "tool",
+            "tool": "run_analytics",
+            "result": {"evidence_ref": "evi_parent"},
+        }
+    ]
+    assert not _evidence_was_inspected(observations, "evi_parent")
+
+    observations.append(
+        {
+            "kind": "tool",
+            "tool": "inspect_evidence",
+            "result": {"artifact_id": "evi_parent", "verified": True},
+        }
+    )
+    assert _evidence_was_inspected(observations, "evi_parent")
+    assert not _evidence_was_inspected(observations, "evi_other")
+
+
+def test_derived_run_contract_requires_parent_capability_and_evidence_together():
+    base = {
+        "obligation_ids": ("U1",),
+        "metric_handles": ("sem_" + "1" * 24,),
+    }
+    with pytest.raises(ValueError):
+        RunAnalyticsArgs(
+            **base,
+            derived_task_id="D1",
+            derived_parent_obligation_id="U1",
+            derived_capability_key=ManagerCapabilityKey.BREAKDOWN,
+        )
+
+    valid = RunAnalyticsArgs(
+        **base,
+        derived_task_id="D1",
+        derived_parent_obligation_id="U1",
+        derived_capability_key=ManagerCapabilityKey.BREAKDOWN,
+        derived_evidence_ref="evi_parent",
+    )
+    assert valid.derived_evidence_ref == "evi_parent"
