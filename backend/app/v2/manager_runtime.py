@@ -205,6 +205,24 @@ class ManagerRuntime:
 
         return ManagerStepResult(snapshot=self._snapshot, tool_result=result)
 
+    def require_clarification(self, reason: str) -> ManagerRunSnapshot:
+        """Deterministic safe stop when semantic authority cannot progress."""
+        if self._snapshot.state in {
+            ManagerState.COMPLETED,
+            ManagerState.FAILED,
+            ManagerState.BUDGET_EXHAUSTED,
+        }:
+            raise ManagerStateError(
+                "terminal Manager state cannot transition to clarification"
+            )
+        self._snapshot = self._snapshot.model_copy(
+            update={
+                "state": ManagerState.NEEDS_CLARIFICATION,
+                "last_error": reason,
+            }
+        )
+        return self._snapshot
+
     def note_additional_data_queries(self, count: int) -> ManagerRunSnapshot:
         if count < 0:
             raise ValueError("additional data query count negatif olamaz")
