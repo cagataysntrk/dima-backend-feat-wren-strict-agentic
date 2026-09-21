@@ -82,6 +82,17 @@ class SourceSpanRegistry:
         except KeyError as exc:
             raise KeyError("unknown/fabricated source span ref") from exc
 
+    def contains(self, container_ref: str, inner_ref: str) -> bool:
+        """True when both refs share one message and container fully covers inner."""
+        container = self.validate(container_ref)
+        inner = self.validate(inner_ref)
+        return (
+            container.message_id == inner.message_id
+            and container.message_hash == inner.message_hash
+            and container.start_offset <= inner.start_offset
+            and container.end_offset >= inner.end_offset
+        )
+
     def validate(self, source_ref: str, *, expected_message_hash: str | None = None) -> SourceSpanRef:
         span = self.get(source_ref)
         message = self._messages.get(span.message_id)
