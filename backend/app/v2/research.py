@@ -224,7 +224,7 @@ class ResearchModePolicy:
                 detail="unclassified analytical operation; research routing refused",
             )
 
-        if any(kind in self._COMPLEX_ONLY for kind in kinds):
+        if request.relationships or any(kind in self._COMPLEX_ONLY for kind in kinds):
             return ResearchModeDecision(
                 mode=ResearchMode.RESEARCH,
                 reason=ResearchModeReason.COMPLEX_ONLY_OPERATION,
