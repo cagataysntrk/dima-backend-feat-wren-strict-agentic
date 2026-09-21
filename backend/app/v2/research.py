@@ -36,6 +36,7 @@ from app.v2.models import (
     SemanticTargetKind,
     TurnAct,
     TurnInterpretation,
+    UnresolvedMention,
 )
 
 
@@ -175,17 +176,23 @@ def _dedupe_mentions(mentions: list[SemanticMention]) -> tuple[SemanticMention, 
 
 
 class ResearchModePolicy:
-    """Own STANDARD vs RESEARCH routing from typed analytical operation shape.
+    """Own STANDARD vs RESEARCH routing from typed analytical capability shape.
 
-    Presentation/deliverables are deliberately ignored. The policy never reads raw
-    user text and never selects canonical semantic refs.
+    Presentation/deliverables and raw goal text are deliberately ignored. Core routing
+    is based only on typed operations and the slots that Core AnalyticsIR can actually
+    represent. Missing typed semantics are never recovered by regex/text parsing.
     """
 
     _COMPLEX_ONLY = {
         ResearchGoalKind.RELATIONSHIP,
         ResearchGoalKind.ROOT_CAUSE,
         ResearchGoalKind.TREND,
-        ResearchGoalKind.OTHER,
+    }
+    _STANDARD_CAPABLE = {
+        ResearchGoalKind.PERFORMANCE,
+        ResearchGoalKind.BREAKDOWN,
+        ResearchGoalKind.RANKING,
+        ResearchGoalKind.COMPARISON,
     }
 
     def decide(self, turn: TurnInterpretation) -> ResearchModeDecision:
@@ -198,6 +205,16 @@ class ResearchModePolicy:
             )
 
         kinds = tuple(goal.kind for goal in request.goals)
+
+        # OTHER means the language owner could not classify the analytical capability.
+        # Escalating uncertainty into Research Mode would be fail-open.
+        if any(kind == ResearchGoalKind.OTHER for kind in kinds):
+            return self._blocked(
+                turn,
+                reason=ResearchModeReason.UNCLASSIFIED_OPERATION,
+                detail="unclassified analytical operation; research routing refused",
+            )
+
         if any(kind in self._COMPLEX_ONLY for kind in kinds):
             return ResearchModeDecision(
                 mode=ResearchMode.RESEARCH,
@@ -205,6 +222,13 @@ class ResearchModePolicy:
                 canonical_turn=turn.model_copy(
                     update={"dialogue_act": TurnAct.COMPLEX_ANALYSIS}
                 ),
+            )
+
+        if any(kind not in self._STANDARD_CAPABLE for kind in kinds):
+            return self._blocked(
+                turn,
+                reason=ResearchModeReason.UNCLASSIFIED_OPERATION,
+                detail="operation is not declared by Core or Research capability policy",
             )
 
         projected = self._project_standard(request)
@@ -221,76 +245,130 @@ class ResearchModePolicy:
                 ),
             )
 
+        # Multiple typed standard-capable operations that cannot be represented as one
+        # Core request are a coordination problem; a single incomplete operation is an
+        # uncertainty problem and must fail closed rather than silently become Research.
         if len(request.goals) > 1:
-            reason = ResearchModeReason.MULTI_INDEPENDENT_GOALS
-        else:
-            reason = ResearchModeReason.UNPROJECTABLE_RESEARCH_SURFACE
+            return ResearchModeDecision(
+                mode=ResearchMode.RESEARCH,
+                reason=ResearchModeReason.MULTI_INDEPENDENT_GOALS,
+                canonical_turn=turn.model_copy(
+                    update={"dialogue_act": TurnAct.COMPLEX_ANALYSIS}
+                ),
+            )
+
+        return self._blocked(
+            turn,
+            reason=ResearchModeReason.INCOMPLETE_STANDARD_OPERATION,
+            detail="standard-capable operation lacks typed slots required for Core projection",
+        )
+
+    def _blocked(
+        self,
+        turn: TurnInterpretation,
+        *,
+        reason: ResearchModeReason,
+        detail: str,
+    ) -> ResearchModeDecision:
+        request = turn.research_request
+        blocked = tuple(
+            UnresolvedMention(text=goal.text, reason=detail)
+            for goal in (request.goals if request is not None else ())
+        )
+        canonical = turn.model_copy(
+            update={
+                "dialogue_act": TurnAct.UNSUPPORTED,
+                "analytical_request": None,
+                "research_request": None,
+                "unresolved_mentions": (*turn.unresolved_mentions, *blocked),
+            }
+        )
         return ResearchModeDecision(
-            mode=ResearchMode.RESEARCH,
+            mode=ResearchMode.BLOCKED,
             reason=reason,
-            canonical_turn=turn.model_copy(
-                update={"dialogue_act": TurnAct.COMPLEX_ANALYSIS}
-            ),
+            canonical_turn=canonical,
         )
 
     def _project_standard(
         self,
         request,
     ) -> AnalyticalRequest | None:
-        """Project only shapes already representable by Core AnalyticsIR.
+        """Project typed operations into exactly the slots Core AnalyticsIR owns.
 
-        This is structural projection from typed operations, not raw-language parsing.
-        It intentionally does not synthesize ranking direction/limit, comparison mode,
-        filters, or semantic IDs that are absent from the typed surface.
+        No goal.text parsing occurs. If a standard-capable operation does not carry the
+        typed payload Core needs, projection returns None instead of guessing.
         """
 
         if not request.goals:
             return None
-        if any(
-            goal.kind not in {ResearchGoalKind.PERFORMANCE, ResearchGoalKind.BREAKDOWN}
-            for goal in request.goals
-        ):
+        if any(goal.kind not in self._STANDARD_CAPABLE for goal in request.goals):
             return None
 
-        performance_goals = [
-            goal for goal in request.goals if goal.kind == ResearchGoalKind.PERFORMANCE
+        # Multiple independent performance questions are coordination, not one Core
+        # request. Identical duplicated mentions are handled by interpreter dedup before
+        # this boundary; policy does not merge separate analytical questions by text.
+        if sum(
+            goal.kind == ResearchGoalKind.PERFORMANCE
+            for goal in request.goals
+        ) > 1:
+            return None
+
+        ranking_goals = [
+            goal for goal in request.goals if goal.kind == ResearchGoalKind.RANKING
         ]
-        if len(performance_goals) > 1:
-            # Multiple independent performance questions are research coordination.
+        comparison_goals = [
+            goal for goal in request.goals if goal.kind == ResearchGoalKind.COMPARISON
+        ]
+        if len(ranking_goals) > 1 or len(comparison_goals) > 1:
             return None
 
         metrics: list[SemanticMention] = []
         dimensions: list[SemanticMention] = []
+        filters: list[SemanticMention] = []
 
         for goal in request.goals:
             mentions = (*goal.subject_mentions, *goal.related_mentions)
-            if goal.kind == ResearchGoalKind.PERFORMANCE:
-                metrics.extend(
-                    mention
-                    for mention in mentions
-                    if mention.kind == SemanticMentionKind.METRIC
-                )
-            elif goal.kind == ResearchGoalKind.BREAKDOWN:
-                metrics.extend(
-                    mention
-                    for mention in mentions
-                    if mention.kind == SemanticMentionKind.METRIC
-                )
-                dimensions.extend(
-                    mention
-                    for mention in mentions
-                    if mention.kind == SemanticMentionKind.DIMENSION
-                )
+            metrics.extend(
+                mention
+                for mention in mentions
+                if mention.kind == SemanticMentionKind.METRIC
+            )
+            dimensions.extend(
+                mention
+                for mention in mentions
+                if mention.kind == SemanticMentionKind.DIMENSION
+            )
+            filters.extend(
+                mention
+                for mention in mentions
+                if mention.kind == SemanticMentionKind.FILTER
+            )
 
         metric_mentions = _dedupe_mentions(metrics)
         dimension_mentions = _dedupe_mentions(dimensions)
+        filter_mentions = _dedupe_mentions(filters)
         if not metric_mentions:
+            return None
+
+        ranking = ranking_goals[0].ranking if ranking_goals else None
+        if ranking_goals and ranking is None:
+            return None
+
+        comparisons = (
+            comparison_goals[0].comparisons
+            if comparison_goals
+            else ()
+        )
+        if comparison_goals and not comparisons:
             return None
 
         return AnalyticalRequest(
             metric_mentions=metric_mentions,
             dimension_mentions=dimension_mentions,
+            filter_mentions=filter_mentions,
             time_mentions=request.time_mentions,
+            ranking=ranking,
+            comparisons=comparisons,
         )
 
 
