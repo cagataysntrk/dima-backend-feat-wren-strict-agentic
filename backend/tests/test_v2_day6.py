@@ -10,6 +10,8 @@ import inspect
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from control_plane.authorize import Principal
 
 import app.v2.orchestrator as orchestrator_module
@@ -557,3 +559,314 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
         assert "uydurulmuş personel ilişkisi" in exc.failure.message
     else:
         raise AssertionError("invented research goal surface must fail closed")
+
+
+@pytest.mark.parametrize(
+    "order",
+    [
+        (0, 1, 2, 3, 4),
+        (4, 0, 3, 2, 1),
+        (3, 2, 1, 0, 4),
+        (1, 4, 0, 2, 3),
+    ],
+)
+def test_goal_order_changes_never_drop_or_duplicate_must_requirements(order):
+    base = canonical_turn()
+    request = base.research_request
+    assert request is not None
+    reordered = tuple(request.goals[index] for index in order)
+    turn = base.model_copy(
+        update={"research_request": request.model_copy(update={"goals": reordered})}
+    )
+
+    brief = ResearchBriefBuilder().build(
+        turn=turn,
+        hypotheses=canonical_hypotheses(),
+        semantic_context=research_context(),
+        context_version="ctx-order",
+    )
+
+    assert len(brief.questions) == len(reordered)
+    assert len(set(brief.must_requirement_ids)) == len(reordered)
+    assert [q.source_text for q in brief.questions] == [g.text for g in reordered]
+    assert [q.kind for q in brief.questions] == [g.kind for g in reordered]
+
+
+@pytest.mark.parametrize(
+    ("surface", "expected_blocked"),
+    [
+        ("makineler", {"g2"}),
+        ("personellerle", {"g3"}),
+        ("satış performanslarını", {"g4"}),
+        ("ürünleri", {"g1", "g2", "g3"}),
+    ],
+)
+def test_semantic_gap_blocks_every_dependent_goal_without_silent_loss(
+    surface,
+    expected_blocked,
+):
+    hypotheses = []
+    for hypothesis in canonical_hypotheses():
+        if hypothesis.source_mention == surface:
+            hypotheses.append(
+                SemanticHypothesis(
+                    source_mention=hypothesis.source_mention,
+                    mention_kind=hypothesis.mention_kind,
+                    status=ResolutionStatus.SEMANTIC_GAP,
+                    candidates=(),
+                )
+            )
+        else:
+            hypotheses.append(hypothesis)
+
+    brief = ResearchBriefBuilder().build(
+        turn=canonical_turn(),
+        hypotheses=tuple(hypotheses),
+        semantic_context=research_context(),
+        context_version="ctx-gap",
+    )
+
+    assert len(brief.questions) == 5
+    assert set(brief.blocking_goal_ids) == expected_blocked
+    assert {
+        q.goal_id for q in brief.questions if q.status == ResearchGoalStatus.BLOCKED
+    } == expected_blocked
+    assert brief.must_requirement_ids == ("g1", "g2", "g3", "g4", "g5")
+    assert brief.status == ResearchBriefStatus.BLOCKED
+
+
+def test_clarify_hypothesis_is_blocking_not_auto_selected():
+    hypotheses = list(canonical_hypotheses())
+    original = hypotheses[1]
+    candidate = original.candidates[0]
+    hypotheses[1] = SemanticHypothesis(
+        source_mention=original.source_mention,
+        mention_kind=original.mention_kind,
+        status=ResolutionStatus.CLARIFY,
+        candidates=(
+            candidate,
+            candidate.model_copy(
+                update={
+                    "candidate_id": "cand-machine-alt",
+                    "canonical_name": "axis_asset_alt",
+                }
+            ),
+        ),
+        resolved_candidate_id=None,
+    )
+
+    brief = ResearchBriefBuilder().build(
+        turn=canonical_turn(),
+        hypotheses=tuple(hypotheses),
+        semantic_context=research_context(),
+        context_version="ctx-clarify",
+    )
+
+    assert brief.questions[1].status == ResearchGoalStatus.BLOCKED
+    assert brief.questions[1].related_refs == ()
+    assert brief.blocking_goal_ids == ("g2",)
+
+
+def test_multi_cube_resolver_provenance_is_not_collapsed_into_required_domain():
+    product = mention("kalemleri", SemanticMentionKind.DIMENSION)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.COMPARISON,
+                    text="kalemleri karşılaştır",
+                    subject_mentions=(product,),
+                ),
+            )
+        ),
+    )
+    candidate = SemanticCandidate(
+        candidate_id="cand-multi",
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name="axis_shared_product",
+        cube_names=("cube-left", "cube-right"),
+        display_label="Shared Product",
+        provenance=(CandidateSource.CANONICAL_NAME,),
+        score=1.0,
+        material=True,
+    )
+    hypotheses = (
+        SemanticHypothesis(
+            source_mention="kalemleri",
+            mention_kind=SemanticMentionKind.DIMENSION,
+            status=ResolutionStatus.RESOLVED,
+            candidates=(candidate,),
+            resolved_candidate_id="cand-multi",
+        ),
+    )
+
+    brief = ResearchBriefBuilder().build(
+        turn=turn,
+        hypotheses=hypotheses,
+        semantic_context=research_context(),
+        context_version="ctx-multi",
+    )
+
+    assert brief.status == ResearchBriefStatus.READY_FOR_RESEARCH
+    assert brief.required_domains == ()
+    assert brief.scope.semantic_refs[0].cube_names == ("cube-left", "cube-right")
+
+
+def test_sensitive_semantic_ref_never_copies_hidden_value():
+    member = mention("özel üye", SemanticMentionKind.FILTER)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.BREAKDOWN,
+                    text="özel üye için kırılımı incele",
+                    subject_mentions=(member,),
+                ),
+            )
+        ),
+    )
+    candidate = SemanticCandidate(
+        candidate_id="cand-sensitive",
+        target_kind=SemanticTargetKind.ENTITY_VALUE,
+        canonical_name="dim_secret",
+        dimension_name="dim_secret",
+        value=None,
+        cube_names=("cube-secret",),
+        display_label="Sensitive member",
+        provenance=(CandidateSource.EXACT_ENTITY_VALUE,),
+        score=1.0,
+        material=True,
+        sensitive=True,
+    )
+    hypothesis = SemanticHypothesis(
+        source_mention="özel üye",
+        mention_kind=SemanticMentionKind.FILTER,
+        status=ResolutionStatus.RESOLVED,
+        candidates=(candidate,),
+        resolved_candidate_id="cand-sensitive",
+        resolved_surface_value="özel üye",
+    )
+
+    brief = ResearchBriefBuilder().build(
+        turn=turn,
+        hypotheses=(hypothesis,),
+        semantic_context=research_context(),
+        context_version="ctx-sensitive",
+    )
+
+    ref = brief.questions[0].subject_refs[0]
+    assert ref.sensitive is True
+    assert ref.value is None
+    assert "özel üye" not in str(ref.model_dump(mode="json").get("value"))
+
+
+def test_brief_id_is_deterministic_and_context_bound():
+    builder = ResearchBriefBuilder()
+    kwargs = dict(
+        turn=canonical_turn(),
+        hypotheses=canonical_hypotheses(),
+        semantic_context=research_context(),
+    )
+    first = builder.build(context_version="ctx-one", **kwargs)
+    same = builder.build(context_version="ctx-one", **kwargs)
+    changed = builder.build(context_version="ctx-two", **kwargs)
+
+    assert first.brief_id == same.brief_id
+    assert first.brief_id != changed.brief_id
+
+
+def test_deliverable_goal_has_no_semantic_ref_and_does_not_invent_domain():
+    report_only = TurnInterpretation(
+        dialogue_act=TurnAct.REPORT_REQUEST,
+        presentation_request=PresentationKind.REPORT,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.DELIVERABLE,
+                    text="rapor çıkar",
+                    deliverable=PresentationKind.REPORT,
+                ),
+            )
+        ),
+    )
+    brief = ResearchBriefBuilder().build(
+        turn=report_only,
+        hypotheses=(),
+        semantic_context=research_context(),
+        context_version="ctx-deliverable",
+    )
+    assert brief.questions[0].status == ResearchGoalStatus.RESOLVED
+    assert brief.questions[0].subject_refs == ()
+    assert brief.questions[0].related_refs == ()
+    assert brief.required_domains == ()
+    assert brief.deliverables == (PresentationKind.REPORT,)
+
+
+def test_transitive_semantic_relationship_path_can_make_brief_ready_without_join_plan():
+    left = mention("sol alan", SemanticMentionKind.DIMENSION)
+    right = mention("sağ alan", SemanticMentionKind.DIMENSION)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.RELATIONSHIP,
+                    text="sol alan ile sağ alan ilişkisini incele",
+                    subject_mentions=(left,),
+                    related_mentions=(right,),
+                ),
+            )
+        ),
+    )
+    hypotheses = (
+        resolved_hypothesis(
+            text="sol alan",
+            kind=SemanticMentionKind.DIMENSION,
+            candidate_id="left",
+            canonical_name="left_axis",
+            target_kind=SemanticTargetKind.DIMENSION,
+            cube="cube_a",
+        ),
+        resolved_hypothesis(
+            text="sağ alan",
+            kind=SemanticMentionKind.DIMENSION,
+            candidate_id="right",
+            canonical_name="right_axis",
+            target_kind=SemanticTargetKind.DIMENSION,
+            cube="cube_c",
+        ),
+    )
+    context = research_context().model_copy(
+        update={
+            "relationships": (
+                CompactRelationshipV0(name="ab", cube_names=("cube_a", "cube_b")),
+                CompactRelationshipV0(name="bc", cube_names=("cube_b", "cube_c")),
+            )
+        }
+    )
+
+    brief = ResearchBriefBuilder().build(
+        turn=turn,
+        hypotheses=hypotheses,
+        semantic_context=context,
+        context_version="ctx-transitive",
+    )
+
+    assert brief.status == ResearchBriefStatus.READY_FOR_RESEARCH
+    assert brief.blocking_goal_ids == ()
+
+
+def test_research_budget_defaults_match_p9_policy_envelope():
+    brief = ResearchBriefBuilder().build(
+        turn=canonical_turn(),
+        hypotheses=canonical_hypotheses(),
+        semantic_context=research_context(),
+        context_version="ctx-budget",
+    )
+    assert brief.budget.default_data_queries == 8
+    assert brief.budget.hard_max_data_queries == 12
+    assert brief.budget.max_branch_depth == 3
+    assert brief.budget.max_llm_research_turns == 6
+    assert brief.budget.wall_clock_target_seconds == 90
