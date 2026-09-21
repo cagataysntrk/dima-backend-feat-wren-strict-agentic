@@ -208,6 +208,36 @@ class AcceptanceResult(FrozenModel):
         return self
 
 
+class ManagerState(StrEnum):
+    INITIAL = "INITIAL"
+    UNDERSTANDING = "UNDERSTANDING"
+    CONTRACT_ACCEPTED = "CONTRACT_ACCEPTED"
+    INVESTIGATING = "INVESTIGATING"
+    NEEDS_CLARIFICATION = "NEEDS_CLARIFICATION"
+    BLOCKED = "BLOCKED"
+    BUDGET_EXHAUSTED = "BUDGET_EXHAUSTED"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
+
+
+class ManagerBudget(FrozenModel):
+    max_tool_calls: int = Field(default=12, ge=1)
+    max_data_queries: int = Field(default=8, ge=0)
+    max_manager_turns: int = Field(default=8, ge=1)
+
+
+class ManagerRunSnapshot(FrozenModel):
+    run_id: str
+    state: ManagerState
+    accepted_contract_id: str | None = None
+    lineage_id: str | None = None
+    tool_calls: int = 0
+    data_queries: int = 0
+    manager_turns: int = 0
+    evidence_refs: tuple[str, ...] = ()
+    last_error: str | None = None
+
+
 class RepresentabilityResult(FrozenModel):
     decision: RepresentabilityDecision
     reasons: tuple[str, ...] = ()
