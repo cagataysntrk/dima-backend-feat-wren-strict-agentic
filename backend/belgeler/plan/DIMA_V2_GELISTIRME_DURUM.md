@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 3 ACTIVE — ANALYTICSIR + LEDGER + CUBEPLANNER**  
-**Kod fazı:** Day 3 / P6 ACTIVE.
+**Durum:** **DAY 3 COMPLETE — DAY 4 READY**  
+**Kod fazı:** Day 3 / P6 COMPLETE — Day 4 / P7 henüz başlamadı.
 
 ---
 
@@ -1519,4 +1519,180 @@ Dosya pure contract testleri + yalnız 5 canonical real-demo Wren result-equival
 Full suite/corpus/Day0/Day1/Day2 gate tekrar yok.
 Test failure olursa önce failure-stage ayrılır; infra/provider failure correctness olarak
 etiketlenmez.
+
+
+
+### 2026-09-21 — DAY 3 / P6 COMPLETE — FINAL SEAL
+
+**Final P6 architecture**
+```text
+TurnInterpreter
+→ SemanticResolver
+→ AnalyticsIRBuilder
+→ RequirementLedger
+→ CubePlanner
+→ WrenService.cube_sql
+→ WrenService.dry_plan(principal=...)
+→ WrenService.query(principal=...)
+→ ResultValidator
+→ ContractStore.record_v2_minimum
+→ MinimumQueryContract[]
+```
+
+**Maddi requirement preservation**
+Day3 canonical ledger family:
+```text
+metric
+dimension
+filter
+time
+ranking_direction
+limit
+comparison
+```
+Her MUST item lifecycle history taşır:
+```text
+DETECTED
+→ RESOLVED
+→ REPRESENTED_IN_IR
+→ REPRESENTED_IN_PLAN
+→ VERIFIED
+```
+Lifecycle adımı atlanırsa kod fail eder. Multi-metric/dimension representation index
+bazında doğrulanır; bir requirement'ın varlığı diğerini yanlışlıkla yeşile çeviremez.
+
+**Semantic / computational ownership**
+- Raw full question CubePlanner/TemporalResolver'a verilmez.
+- TemporalResolver yalnız Interpreter'ın typed time/comparison span'ını okur.
+- `cube_router` V2 hot path'e import edilmedi.
+- Metric formula/aggregation/unit/grain ilişkisi yeniden yazılmadı; current Wren schema/MDL
+  canonical ref'leri kullanıldı.
+- Multiple viable cube → typed `ambiguous_cube`.
+- Multiple time axis → typed `ambiguous_time_axis`.
+- KPI/cross-cube semantic ref → Day3 single-cube planner'a sessiz coercion yok.
+- Ranking direction + semantic limit ayrı MUST requirement.
+- Semantic top-N transport row-cap ile karıştırılmıyor.
+- Comparison tek geniş range'e çökmüyor; A ve B ayrı typed period + ayrı execution.
+
+**Official execution**
+- `dry_plan` ve `query` her execution'da explicit aynı `Principal` ile çağrılır.
+- ContextVersion.mdl_version != runtime.mdl_version ise data-touch öncesi fail.
+- ResultValidator:
+  - requested metric/dimension columns,
+  - top-N row count,
+  - numeric ranking order
+  doğrulamasını yapar.
+- Dry-plan tek başına verified değildir.
+
+**MinimumQueryContract**
+Her execution:
+- request_ref
+- full AnalyticsIR snapshot
+- planner id/version
+- mdl_version
+- context_version
+- execution_id
+- executed SQL
+- result_hash
+- tenant_id
+- principal identity/roles
+- CubeQuery
+- durability/sealed
+taşır.
+Comparison iki execution ise loop her plan/result çifti için ayrı immutable contract seal
+üretir; ikinci SQL ilk contract'a yazılmaz.
+
+**Strict seal kararı**
+Legacy `ContractStore.record()` değiştirilmedi.
+Yeni `record_v2_minimum()`:
+- DB write → `durability=db, sealed=true`
+- DB fail + existing spool write → `spool_pending, sealed=true`
+- DB + spool fail → `durability=none, sealed=false`
+Son durumda result dönse bile `official_verified=false`; legacy fallback yok.
+
+**Focused acceptance run 1**
+- Run: `35558055708`
+- Sonuç: **17 passed / 0 failed**
+- Test süresi: **9.75s**
+- İlk run sonrası roadmap exit yeniden okununca gerçek demo time + simple compare'ın
+  yalnız fake compiler seviyesinde kaldığı görüldü.
+- Bu nedenle Day3 kapatılmadı; eksik acceptance coverage tamamlandı.
+
+**Final focused acceptance run**
+- Product/test snapshot: `26b8cad7ba0cd01376bb55c3c27266ab8b121103`
+- Run: `35558188351`
+- Sonuç: **19 passed / 0 failed**
+- Test süresi: **10.44s**
+- Full suite: **çalışmadı**
+- Corpus: **çalışmadı**
+- Day0/Day1/Day2 gate: **tekrar çalışmadı**
+- LLM/provider acceptance: **çalışmadı**
+
+**Real demo Wren acceptance**
+Gerçek Wren + demo DB üzerinde:
+- metric: PASS
+- breakdown: PASS
+- time period: PASS
+- ranking direction + limit: PASS
+- simple comparison A-vs-B: PASS
+- explicit principal dry-plan/query: PASS
+- planned-vs-canonical result equivalence focused set: **5/5 = 100%**
+- simple comparison: iki ayrı Wren execution + ResultValidator PASS
+- focused real-demo planned-query latency sample count: **7**
+- initial focused p95 gate: **PASS (<10s)**
+
+Bu küçük focused acceptance setidir; ürün-geneli performans/accuracy iddiası değildir.
+
+**P6 exit**
+```text
+MUST requirement coverage dedicated paths   100%  PASS
+core result equivalence focused canonical   100% (5/5) PASS
+P0 silent-wrong found in focused set        0     PASS
+principal-aware official execution          100%  PASS
+initial focused standard p95                <10s  PASS
+real demo metric                            PASS
+real demo breakdown                         PASS
+real demo time                              PASS
+real demo ranking                           PASS
+real demo simple compare                    PASS
+MinimumQueryContract per official execution structural contract PASS
+legacy request fallback                     0
+```
+
+**No-touch final cross-check — Day2 seal → Day3**
+```text
+backend/app/routers/ask.py       unchanged
+backend/app/cube_router.py       unchanged
+backend/app/uyum.py              unchanged
+backend/app/plan_tuketici.py     unchanged
+backend/app/plan_semasi.py       unchanged
+backend/app/followup.py          unchanged
+backend/app/intent_semasi.py     unchanged
+.github/workflows/backend-ci.yml absent / yeniden yaratılmadı
+```
+
+**Test-hız freeze**
+- `a2f8cf18866e04be15dcb539524b39751091d9ef`:
+  Day3 focused workflow başarı sonrası `workflow_dispatch`-only yapıldı.
+- Day4 ortak `models.py/orchestrator.py` değişiklikleri Day3 gate'i otomatik
+  yeniden koşturmayacak.
+- Always-on full CI yok ve geri getirilmeyecek.
+
+### V2-D012 — signed-chip sonrası full analytical resume Day4 state bekliyor
+
+- Signed chip Day2'de semantic slotu deterministic çözer.
+- Day3, original full `AnalyticalRequest` server-side conversation state'te henüz
+  persistent olmadığı için yalnız chip'ten eksik request uydurup query açmaz.
+- Bu deliberate fail-closed davranıştır; bug/fallback değil.
+- Blocker: Day3 standard fresh-turn query için **NO**.
+- Hedef kapanış: Day4 / P7 ConversationState + TopicFrame/FocusState + typed delta.
+- Kabul: chip/free-text clarification sonrası yalnız ilgili slot patch edilir ve kalan
+  request requirement'ları kaybolmadan standard analytics devam eder.
+
+**Karar**
+Day 3 P6 **COMPLETE**.
+Day 4 henüz açılmadı.
+Bir sonraki geliştirici önce roadmap **P7** ve report **R9**'u yeniden okuyacak; ayrıca
+R6 conversation-layer sınırını ve V2-D011/V2-D012 sentinel'lerini çaprazlayacak.
+Koddan önce Day4 ticket contract yaşayan deftere yazılacak.
 
