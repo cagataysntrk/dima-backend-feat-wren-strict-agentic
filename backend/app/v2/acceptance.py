@@ -19,7 +19,7 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
     UserObligationLedger,
 )
-from app.v2.manager_policy import ManagerCapabilityRegistry
+from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 
@@ -209,6 +209,40 @@ class IntentAcceptanceGate:
 
         current_bindings: dict[str, CapabilityBinding] = {}
 
+        obligation_by_id = {item.obligation_id: item for item in envelope.obligations}
+        for directive in envelope.research_directives:
+            parent = obligation_by_id.get(directive.parent_obligation_id)
+            if parent is None:
+                reject.append(
+                    f"research directive {directive.directive_id} parent obligation missing"
+                )
+                continue
+            if parent.polarity != ObligationPolarity.REQUIRED:
+                reject.append(
+                    "research directive parent must be REQUIRED research obligation"
+                )
+            try:
+                parent_spec = self._capabilities.get(parent.capability_key)
+            except KeyError:
+                parent_spec = None
+            if parent_spec is not None and parent_spec.lane != ManagerCapabilityLane.RESEARCH:
+                reject.append(
+                    "research directive parent must use RESEARCH capability"
+                )
+            for source_ref in directive.source_refs:
+                try:
+                    span = self._source_spans.validate(source_ref)
+                except (KeyError, ValueError) as exc:
+                    reject.append(
+                        f"invalid research directive source ref {source_ref}: {exc}"
+                    )
+                    continue
+                if span.message_hash != envelope.source_message_hash:
+                    reject.append(
+                        f"research directive {directive.directive_id} is not grounded "
+                        "in current source hash"
+                    )
+
         for item in envelope.obligations:
             if item.origin == ObligationOrigin.USER_MUST:
                 if item.priority != ObligationPriority.MUST:
@@ -392,6 +426,7 @@ class IntentAcceptanceGate:
             model_role=envelope.model_role,
             obligation_ids=obligation_ids,
             exclusion_ids=exclusion_ids,
+            research_directives=envelope.research_directives,
             unresolved_ids=(),
             context_version=context_version,
             accepted_at_iso=datetime.now(timezone.utc).isoformat(),
