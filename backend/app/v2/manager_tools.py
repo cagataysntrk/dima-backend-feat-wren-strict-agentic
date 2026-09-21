@@ -72,6 +72,14 @@ class RequestClarificationArgs(FrozenModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
+class ManagerAnalyticsObservation(FrozenModel):
+    evidence_ref: str
+    verified: bool
+    query_count: int = Field(ge=0)
+    row_count: int = Field(ge=0)
+    limitations: tuple[str, ...] = ()
+
+
 class ManagerToolCall(FrozenModel):
     name: ManagerToolName
     args: dict[str, Any]
