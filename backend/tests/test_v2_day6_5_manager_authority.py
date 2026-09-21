@@ -514,3 +514,58 @@ def test_standard_projection_compiler_rejects_research_and_foreign_handle():
     )
     assert foreign.compiled is False
     assert any("foreign-tenant" in reason for reason in foreign.reasons)
+
+
+def test_acceptance_rejects_incomplete_standard_semantic_shape():
+    spans = SourceSpanRegistry()
+    text = "bölgelere göre net geliri göster"
+    source_hash = spans.register_message(message_id="shape-1", text=text)
+    source = spans.mint_exact(message_id="shape-1", surface=text)
+    handles = SemanticHandleRegistry()
+    dimension = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="dim-only",
+        target_kind="dimension",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="dim-only",
+            target_kind=SemanticTargetKind.DIMENSION,
+            canonical_name="Sales.region",
+            cube_names=("Sales",),
+        ),
+    )
+    gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
+    result = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="shape-a1",
+            turn_id="shape-1",
+            request_ref="shape-request",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_BREAK",
+                    capability_key=ManagerCapabilityKey.BREAKDOWN,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(source.source_ref,),
+                    semantic_handle_refs=(dimension.handle_id,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    assert result.status.value == "REJECTED"
+    assert any("missing Resolver semantic kinds: metric" in reason for reason in result.reasons)
+
+
+def test_excluded_ranking_does_not_require_operation_parameters():
+    item = CandidateObligation(
+        obligation_id="X_RANK",
+        capability_key=ManagerCapabilityKey.RANKING,
+        origin=ObligationOrigin.USER_MUST,
+        polarity=ObligationPolarity.EXCLUDED,
+        source_refs=("src_" + "1" * 24,),
+    )
+    assert item.ranking_direction is None
+    assert item.ranking_limit is None
