@@ -397,14 +397,51 @@ class V2Orchestrator:
             return built.ir, built.ledger
 
         if turn.dialogue_act in {TurnAct.ANALYTIC_REFINE, TurnAct.USER_REPAIR}:
-            ir = self._conversation.apply_delta(
-                prior_ir=prior_ir,
-                turn=turn,
-                hypotheses=hypotheses,
-                schema=schema,
-                context_version=context_version,
-            )
-            return ir, ledger_from_ir(ir)
+            try:
+                ir = self._conversation.apply_delta(
+                    prior_ir=prior_ir,
+                    turn=turn,
+                    hypotheses=hypotheses,
+                    schema=schema,
+                    context_version=context_version,
+                )
+                return ir, ledger_from_ir(ir)
+            except StandardAnalyticsError as exc:
+                request = turn.analytical_request
+                self_contained_refine = bool(
+                    turn.dialogue_act == TurnAct.ANALYTIC_REFINE
+                    and request is not None
+                    and request.metric_mentions
+                    and (
+                        request.dimension_mentions
+                        or request.filter_mentions
+                        or request.time_mentions
+                        or request.ranking is not None
+                        or request.comparisons
+                    )
+                )
+                if (
+                    exc.failure.code != "followup_cube_incompatible"
+                    or not self_contained_refine
+                ):
+                    raise
+
+                # A self-contained current request that resolves cleanly to another cube is
+                # a new topic even if the language model labelled it REFINE. This is not a
+                # cross-cube coercion: the fresh IR must independently satisfy its own MUST
+                # requirements, and same-cube failures remain failures.
+                fresh_turn = turn.model_copy(
+                    update={"dialogue_act": TurnAct.ANALYTIC_NEW}
+                )
+                built = self._ir_builder.build(
+                    turn=fresh_turn,
+                    hypotheses=hypotheses,
+                    schema=schema,
+                    context_version=context_version,
+                )
+                if prior_ir is None or built.ir.cube == prior_ir.cube:
+                    raise exc
+                return built.ir, built.ledger
 
         raise StandardAnalyticsError(
             self._failure(
