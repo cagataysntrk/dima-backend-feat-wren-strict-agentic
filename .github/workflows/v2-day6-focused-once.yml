@@ -1,6 +1,7 @@
 name: v2-day6-focused-once
 # final source-audited Day6 closure
-# contract-routing refactor rerun — deliverable-contract rerun
+# contract-routing refactor rerun
+# deliverable-axis rerun — deliverable-contract rerun
 
 "on":
   push:
