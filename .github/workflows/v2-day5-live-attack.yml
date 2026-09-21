@@ -2,11 +2,6 @@ name: v2-day5-live-attack
 
 "on":
   workflow_dispatch:
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/day5-live-trigger"
 
 
 concurrency:
