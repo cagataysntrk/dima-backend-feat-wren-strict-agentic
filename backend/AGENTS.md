@@ -379,3 +379,113 @@ Aşağıdakiler görülürse yeni feature ekleme:
 Bu kural test sayısını büyütmek için değil, **yanlış güveni azaltmak** için vardır.
 Az sayıda ama bağımsız, metamorphic ve gerçek boundary'yi ölçen test; çok sayıda
 demo-fixture'a ezberlenmiş testten daha değerlidir.
+
+
+## 13. SINGLE-OWNER ROOT-FIX KURALI — PATCH ZİNCİRİ YASAK
+
+Her yeni failure'da ilk soru:
+
+> **“Bu kararın tek sahibi kim?”**
+
+Yeni hata görüldüğünde aşağıdaki refleks **yasaktır**:
+
+```text
+yeni prompt başarısız
+→ resolver'a özel if
+→ planner'a özel fallback
+→ orchestrator'a exception branch
+→ test yeşil
+```
+
+Bu zincir V1'de semantic kararların birçok katmana dağılmasının ve dev router/fallback
+yığınlarının ana sebebidir. V2'de testin yeşile dönmesi tek başına başarı değildir; karar
+doğru owner'da düzeltilmiş olmalıdır.
+
+### 13.1 Failure triage sırası
+
+Her failure için kod değiştirmeden önce:
+
+1. **Observed failure** — kullanıcıya yanlış görünen somut davranış ne?
+2. **Failure stage** — language, grounding, conversation, planning, execution, evidence,
+   finalization, provider/infra?
+3. **Normative requirement** — roadmap/report tam olarak neyi zorunlu kılıyor?
+4. **Single owner** — bu kararı vermesi gereken TEK katman hangisi?
+5. **Root fix** — yalnız owner contract/logic değişmeli.
+6. **Downstream invariant check** — diğer katmanlar yeni semantic fallback eklemeden
+   davranışı taşıyor mu?
+7. **Focused proof** — en küçük bağımsız test/eval ile doğrula.
+
+Owner dışında bir katmana semantic patch gerekiyorsa feature durdurulur ve mimari tekrar
+incelenir.
+
+### 13.2 Owner haritası
+
+```text
+raw user language / dialogue act / surface delta → TurnInterpreter
+canonical metric/dimension/entity binding        → SemanticResolver
+prior IR + slot delta + focus/state              → ConversationCoordinator
+query gerekli mi                                 → DialoguePolicy
+canonical AnalyticsIR requirement completeness   → AnalyticsIRBuilder / RequirementLedger
+CubeQuery composition                            → CubePlanner
+authorization / dry-plan / query                 → Official Wren execution boundary
+result requirement verification                  → ResultValidator
+execution evidence / seal                        → MinimumQueryContract / ContractStore
+final wording                                    → Finalizer (ilgili faz geldiğinde)
+```
+
+Bir owner'ın kararını başka katman tekrar vermez.
+
+### 13.3 Fallback yasağı
+
+Aşağıdakiler root fix değildir:
+
+- resolver'a bir phrase/literal için özel branch,
+- planner'a “bulamazsan ilkini seç” fallback'i,
+- orchestrator'a semantic exception yakalayıp başka yol deneme,
+- UI'da backend semantic hatasını gizleyen heuristic,
+- test fixture adını production sözlüğüne ekleme,
+- malformed state'i legacy /ask'e sessiz düşürme,
+- bir model hatasını downstream regex ile düzeltme.
+
+Fail-closed typed outcome, yanlış semantic fallback'ten üstündür.
+
+### 13.4 Test oracle da owner disiplinine uyar
+
+Bir test/evaluator, roadmap'in ölçmediği proxy metriği release blocker yapamaz.
+Örneğin iki farklı dialogue subtype aynı canonical state transition'ı ve aynı query policy'yi
+üretiyorsa, roadmap exit "slot preservation/context correctness" diyorsa evaluator yalnız
+etiket farkını semantic failure diye sayamaz.
+
+Böyle durumda:
+- raw measurement korunur,
+- proxy metric diagnostic olarak raporlanır,
+- normative exit metric kaynak belgeye göre yeniden hesaplanır,
+- test case silinmez/değiştirilmez,
+- production code test oracle'ına uydurulmaz.
+
+### 13.5 Day 5 saldırı masası
+
+Day 5 / P8 ciddi entegrasyon denetimidir. Yeni feature eklemek yerine gerçek kullanıcı gibi
+`/ask-v2` yüzeyine saldırılır:
+
+```text
+paraphrase
+typo
+ambiguity
+clarification
+repair
+follow-up
+topic switch
+comparison
+ranking
+result explain
+pure social
+malformed clarification token
+stale context/version
+provider/infra failure
+cross-tenant isolation
+silent-wrong attempts
+```
+
+Her failure yine aynı soruyla açılır: **“Bu kararın tek sahibi kim?”**
+Day 5 boyunca yeni downstream semantic fallback birikimi kabul edilmez.
