@@ -332,6 +332,8 @@ def main() -> int:
     records: list[dict] = []
     expected_goal_total = 0
     matched_goal_total = 0
+    expected_time_total = 0
+    matched_time_total = 0
     invented_goal_total = 0
     forbidden_goal_hit_total = 0
     research_act_ok = 0
@@ -370,6 +372,8 @@ def main() -> int:
             act_ok = turn.dialogue_act.value == expected_act
             research_shape_ok = (request is not None) == expect_research
             time_results = _time_coverage(request, expected_time)
+            expected_time_total += len(expected_time)
+            matched_time_total += sum(time_results.values())
             forbidden_results = _forbidden_goal_hits(request, forbidden)
 
             brief = None
@@ -515,6 +519,7 @@ def main() -> int:
         except TurnInterpreterError as exc:
             if exc.failure.code == "surface_grounding_violation":
                 surface_violations += 1
+            expected_time_total += len(expected_time)
             if expect_research:
                 research_act_total += 1
                 expected_goal_total += len(signatures)
@@ -546,6 +551,9 @@ def main() -> int:
     goal_coverage = (
         matched_goal_total / expected_goal_total if expected_goal_total else 1.0
     )
+    time_scope_coverage = (
+        matched_time_total / expected_time_total if expected_time_total else 1.0
+    )
     research_act_accuracy = (
         research_act_ok / research_act_total if research_act_total else 1.0
     )
@@ -571,6 +579,8 @@ def main() -> int:
     passed = (
         canonical_gate
         and goal_coverage >= 0.95
+        and time_scope_coverage == 1.0
+        and case_pass_rate >= 0.95
         and research_act_accuracy >= 0.95
         and negative_act_accuracy == 1.0
         and brief_status_accuracy == 1.0
@@ -598,6 +608,7 @@ def main() -> int:
         "case_pass_rate": round(case_pass_rate, 4),
         "canonical_complex_goal_extraction": bool(canonical_gate),
         "complex_validation_goal_coverage": round(goal_coverage, 4),
+        "explicit_time_scope_coverage": round(time_scope_coverage, 4),
         "research_act_accuracy": round(research_act_accuracy, 4),
         "non_research_negative_accuracy": round(negative_act_accuracy, 4),
         "expected_brief_status_accuracy": round(brief_status_accuracy, 4),
@@ -622,7 +633,8 @@ def main() -> int:
     print(
         "Day6 manual research gate: "
         f"cases={len(records)} pass={case_pass_rate:.1%} "
-        f"goals={goal_coverage:.1%} research_act={research_act_accuracy:.1%} "
+        f"goals={goal_coverage:.1%} time={time_scope_coverage:.1%} "
+        f"research_act={research_act_accuracy:.1%} "
         f"negatives={negative_act_accuracy:.1%} invented={invented_goal_total} "
         f"calls={total_calls} retry_rate={format_retry_rate:.1%} status={payload['status']}"
     )
