@@ -36,6 +36,8 @@ class AcceptedContractRegistry:
     def commit(self, contract: AcceptedTurnContract) -> None:
         existing_turn = self._by_turn.get(contract.turn_id)
         if existing_turn is not None:
+            if existing_turn.contract_id == contract.contract_id:
+                return  # idempotent retry of the same accepted authority
             raise AcceptedAuthorityConflict(
                 f"turn {contract.turn_id} already has accepted contract {existing_turn.contract_id}"
             )
