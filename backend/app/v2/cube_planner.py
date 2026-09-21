@@ -761,42 +761,50 @@ class CubePlanner:
             return set()
         primary = plans[0].cube_query
         represented: set[str] = set()
+
+        def index_of(requirement_id: str) -> int | None:
+            try:
+                return int(requirement_id.rsplit(":", 1)[1])
+            except (TypeError, ValueError):
+                return None
+
+        actual_eq = {
+            (str(f.get("dimension")), str(f.get("value")))
+            for f in (primary.get("filters") or ())
+            if f.get("operator") == "eq"
+        }
+        actual_filters = tuple(primary.get("filters") or ())
+
         for item in ledger.items:
-            if item.kind == RequirementKind.METRIC:
-                if any(
-                    metric.canonical_name in (primary.get("measures") or ())
-                    for metric in ir.metrics
+            idx = index_of(item.requirement_id)
+
+            if item.kind == RequirementKind.METRIC and idx is not None:
+                if (
+                    idx < len(ir.metrics)
+                    and ir.metrics[idx].canonical_name in (primary.get("measures") or ())
                 ):
                     represented.add(item.requirement_id)
-            elif item.kind == RequirementKind.DIMENSION:
-                if any(
-                    dimension.canonical_name in (primary.get("dimensions") or ())
-                    for dimension in ir.dimensions
+
+            elif item.kind == RequirementKind.DIMENSION and idx is not None:
+                if (
+                    idx < len(ir.dimensions)
+                    and ir.dimensions[idx].canonical_name in (primary.get("dimensions") or ())
                 ):
                     represented.add(item.requirement_id)
-            elif item.kind == RequirementKind.FILTER:
-                expected = {
-                    (flt.dimension_name, flt.value)
-                    for flt in ir.filters
-                }
-                actual = {
-                    (str(f.get("dimension")), str(f.get("value")))
-                    for f in (primary.get("filters") or ())
-                    if f.get("operator") == "eq"
-                }
-                if expected and expected <= actual:
-                    represented.add(item.requirement_id)
+
+            elif item.kind == RequirementKind.FILTER and idx is not None:
+                if idx < len(ir.filters):
+                    expected = ir.filters[idx]
+                    if (expected.dimension_name, expected.value) in actual_eq:
+                        represented.add(item.requirement_id)
+
             elif item.kind == RequirementKind.TIME:
-                periods = [ir.period]
-                if ir.comparison is not None:
-                    periods.append(ir.comparison.reference_period)
-                if all(
-                    period is None
-                    or all(f in (primary.get("filters") or ()) or len(plans) > 1
-                           for f in period_filters(period))
-                    for period in periods[:1]
+                target = ir.period
+                if target is not None and all(
+                    expected in actual_filters for expected in period_filters(target)
                 ):
                     represented.add(item.requirement_id)
+
             elif item.kind == RequirementKind.RANKING_DIRECTION:
                 order = primary.get("order") or {}
                 if (
@@ -805,13 +813,22 @@ class CubePlanner:
                     and order.get("measure") == ir.ranking.measure
                 ):
                     represented.add(item.requirement_id)
+
             elif item.kind == RequirementKind.LIMIT:
                 if ir.ranking is not None and primary.get("limit") == ir.ranking.limit:
                     represented.add(item.requirement_id)
+
             elif item.kind == RequirementKind.COMPARISON:
                 if ir.comparison is not None and len(plans) == 2:
-                    represented.add(item.requirement_id)
+                    reference_filters = tuple(plans[1].cube_query.get("filters") or ())
+                    if all(
+                        expected in reference_filters
+                        for expected in period_filters(ir.comparison.reference_period)
+                    ):
+                        represented.add(item.requirement_id)
+
         return represented
+
 
 
 class ResultValidator:
