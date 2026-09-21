@@ -3119,3 +3119,40 @@ issue #2 metadata received
 → blocker CLOSED
 → Day6.5 contract-only production implementation START
 ```
+
+
+### 2026-09-21 — DAY 6.5 / HIDDEN HOLDOUT PROVENANCE HARDENING
+
+External review sonrası hidden-freeze gate'in provenance beyanı sertleştirildi.
+
+Yapılan:
+- `lab/v2_day6_5_freeze_holdout.py` artık provenance boolean'larını kendisi sabit yazmaz.
+- External evaluator `ATTESTED_EXTERNAL` attestation dosyası vermeden freeze metadata üretilmez.
+- Metadata artık `attestation_sha256` ile attestation artefaktına bağlanır.
+- Zorunlu beyanlar:
+  - `independent_evaluator=true`
+  - `development_model_generated=false`
+  - `prompt_text_committed=false`
+  - `prompt_text_shared_with_implementation=false`
+  - `frozen_before_implementation=true`
+- Day6.5 preflight corpus + taxonomy yanında attestation hash/alanlarını da doğrular.
+- Final hidden seal promptları development context'e açmaz; external evaluator receipt'i
+  `tested_git_sha` + `eval_harness_sha` ile sonucu bağlar.
+- Issue #2 handoff sözleşmesi bu yeni protokole güncellendi.
+
+Commits:
+- freeze attestation: `debb47a54686f3ecacc7a056679002c176508f71`
+- handoff contract: `9b9f5d98be317d7fcba1418f42178de483af5345`
+- manifest attestation gate: `640f027db212a852197378f3915eb15a2ae7e95b`
+- preflight attestation enforcement: `caad2e298c7e9d40d1b515ec7d931d51efec58ae`
+- preflight placeholder test: `a4740099845e0b5a58f533077232338d2d104be2`
+- attestation unit tests: `b61c3e9742a8c65060dd809e94839f784d8f00a1`
+
+Current blocker değişmedi:
+```text
+external evaluator metadata/attestation receipt   WAITING
+production Manager implementation                 LOCKED
+```
+
+Issue #2 ancak gerçek external metadata alındıktan, manifest placeholder'ları kapatıldıktan
+ve `python lab/v2_day6_5_preflight.py` READY verdikten sonra kapatılacaktır.
