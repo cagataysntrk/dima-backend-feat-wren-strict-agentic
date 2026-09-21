@@ -894,6 +894,7 @@ class OpenAICompatibleSqlGenerator:
         dialect: str = "",
         select_model: str | None = None,
         structured_reasoning_enabled: bool = False,
+        structured_max_tokens: int = 16384,
     ):
         self._url = base_url.rstrip("/") + "/chat/completions"
         # 🔴 **ANAHTAR ZİNCİRİ.** `api_key` virgüllü bir liste olabilir; ilk eleman
@@ -914,6 +915,7 @@ class OpenAICompatibleSqlGenerator:
         # V2 structured inference can carry a role-scoped reasoning policy. Legacy
         # callers still default to False, preserving the historical hot path.
         self._structured_reasoning_enabled = bool(structured_reasoning_enabled)
+        self._structured_max_tokens = max(256, int(structured_max_tokens))
 
     def _chat(
         self,
@@ -940,6 +942,7 @@ class OpenAICompatibleSqlGenerator:
         }
         if response_format is not None:
             payload["response_format"] = response_format
+            payload["max_tokens"] = self._structured_max_tokens
             # OpenRouter may otherwise route to a provider endpoint that silently
             # ignores an unsupported parameter. Structured interpretation must never
             # degrade to free-form text under the same method name.
@@ -1964,18 +1967,21 @@ def _make(provider: str, settings, dialect: str):
             settings.xai_base_url, settings.xai_api_key, settings.xai_model, "xai", dialect,
             select_model=settings.xai_select_model,
             structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     if provider == "gemini" and settings.gemini_api_key:
         return OpenAICompatibleSqlGenerator(
             settings.gemini_base_url, settings.gemini_api_key, settings.gemini_model, "gemini", dialect,
             select_model=settings.gemini_select_model,
             structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     if provider == "groq" and settings.groq_api_key:
         return OpenAICompatibleSqlGenerator(
             settings.groq_base_url, settings.groq_api_key, settings.groq_model, "groq", dialect,
             select_model=settings.groq_select_model,
             structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     if provider == "openrouter" and settings.openrouter_api_key:
         return OpenAICompatibleSqlGenerator(
@@ -1985,12 +1991,14 @@ def _make(provider: str, settings, dialect: str):
             settings.openrouter_model, "openrouter", dialect,
             select_model=settings.openrouter_select_model,
             structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     if provider == "ollama" and _reachable(settings.ollama_base_url):
         return OpenAICompatibleSqlGenerator(
             settings.ollama_base_url, "", settings.ollama_model, "ollama", dialect,
             select_model=settings.ollama_select_model,
             structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     return None
 
