@@ -222,6 +222,7 @@ class CandidateSource(StrEnum):
     CURRENT_FOCUS = "current_focus"
     CANONICAL_NAME = "canonical_name"
     VERIFIED_SYNONYM = "verified_synonym"
+    MORPHOLOGICAL_MATCH = "morphological_match"
     EXACT_ENTITY_VALUE = "exact_entity_value"
     COMPANY_VOCABULARY = "company_vocabulary"
     FUZZY_SUGGESTION = "fuzzy_suggestion"
