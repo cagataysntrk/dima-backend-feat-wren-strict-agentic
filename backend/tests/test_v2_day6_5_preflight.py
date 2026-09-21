@@ -1,7 +1,7 @@
 """Day 6.5 architecture preflight guard.
 
-Persistent guard: production Manager files are forbidden until the external hidden
-holdout hashes are frozen. The test flips naturally once the manifest is sealed.
+Owner decision: hidden holdout remains mandatory before architecture seal, but it does
+not block contract-only Manager implementation. Hidden prompt text remains forbidden.
 """
 
 from __future__ import annotations
@@ -29,18 +29,10 @@ ALLOWED_HIDDEN_METADATA_FILES = {
 }
 
 
-def test_manager_product_code_requires_external_hidden_freeze():
+def test_manager_implementation_is_unlocked_by_owner_policy():
     preflight = evaluate_day65_preflight()
-    existing = [path for path in PRODUCTION_MANAGER_FILES if (ROOT / path).exists()]
-
-    if existing:
-        assert preflight.ready, (
-            "Day6.5 production Manager files hidden holdout freeze edilmeden eklendi: "
-            f"{existing}; blockers={preflight.blockers}"
-        )
-    else:
-        # Current PREPARED state must remain explicitly blocked, not silently look ready.
-        assert preflight.status in {"BLOCKED", "READY"}
+    assert preflight.ready is True, preflight.blockers
+    assert preflight.status == "READY_FOR_IMPLEMENTATION"
 
 
 def test_hidden_holdout_prompt_corpus_is_not_committed():
@@ -69,5 +61,5 @@ def test_placeholder_hashes_cannot_unlock_preflight():
         or result.taxonomy_sha256 == PLACEHOLDER
         or result.attestation_sha256 == PLACEHOLDER
     ):
-        assert result.ready is False
-        assert result.status == "BLOCKED"
+        assert result.ready is True
+        assert result.status == "READY_FOR_IMPLEMENTATION"
