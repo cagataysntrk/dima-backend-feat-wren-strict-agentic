@@ -15,6 +15,7 @@ import json
 import unicodedata
 
 from app.v2.models import (
+    BoundedSemanticContextV0,
     PresentationKind,
     ResearchBrief,
     ResearchBriefStatus,
@@ -104,6 +105,58 @@ def _unique_refs(refs: list[ResearchSemanticRef]) -> tuple[ResearchSemanticRef, 
     return tuple(out)
 
 
+def _relationship_path_exists(
+    *,
+    subject_refs: list[ResearchSemanticRef],
+    related_refs: list[ResearchSemanticRef],
+    semantic_context: BoundedSemanticContextV0,
+) -> bool:
+    """Check semantic relationship availability only; never design/validate a join.
+
+    Sharing a cube is sufficient availability evidence. Otherwise we use the compact
+    cube-level relationship graph already certified by ContextProvider. Cardinality,
+    grain, time alignment and executable join safety remain Day 7 responsibilities.
+    """
+
+    subject_cubes = {
+        cube
+        for ref in subject_refs
+        for cube in ref.cube_names
+        if cube
+    }
+    related_cubes = {
+        cube
+        for ref in related_refs
+        for cube in ref.cube_names
+        if cube
+    }
+    if not subject_cubes or not related_cubes:
+        return False
+    if subject_cubes.intersection(related_cubes):
+        return True
+
+    graph: dict[str, set[str]] = {}
+    for relationship in semantic_context.relationships:
+        names = tuple(dict.fromkeys(relationship.cube_names))
+        for left in names:
+            graph.setdefault(left, set())
+            for right in names:
+                if left != right:
+                    graph[left].add(right)
+
+    frontier = list(subject_cubes)
+    seen = set(subject_cubes)
+    while frontier:
+        current = frontier.pop()
+        for neighbor in graph.get(current, ()):
+            if neighbor in related_cubes:
+                return True
+            if neighbor not in seen:
+                seen.add(neighbor)
+                frontier.append(neighbor)
+    return False
+
+
 class ResearchBriefBuilder:
     """Single Day 6 owner for the canonical typed research work order.
 
@@ -115,6 +168,7 @@ class ResearchBriefBuilder:
         *,
         turn: TurnInterpretation,
         hypotheses: tuple[SemanticHypothesis, ...],
+        semantic_context: BoundedSemanticContextV0,
         context_version: str,
     ) -> ResearchBrief:
         if turn.dialogue_act not in {
@@ -195,6 +249,25 @@ class ResearchBriefBuilder:
                                 source_mention=goal.text,
                                 role="related",
                                 reason="relationship goal has no explicit related side",
+                            )
+                        )
+                    if (
+                        subject_refs
+                        and related_refs
+                        and not _relationship_path_exists(
+                            subject_refs=subject_refs,
+                            related_refs=related_refs,
+                            semantic_context=semantic_context,
+                        )
+                    ):
+                        unresolved.append(
+                            ResearchUnresolvedRef(
+                                source_mention=goal.text,
+                                role="goal",
+                                reason=(
+                                    "no verified semantic relationship path between "
+                                    "resolved research domains"
+                                ),
                             )
                         )
 
