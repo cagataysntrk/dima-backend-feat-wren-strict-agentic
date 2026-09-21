@@ -2887,3 +2887,118 @@ downstream raw prompt reparse      = 0
 **BAŞLANGIÇ KARARI**  
 Day6 implementation başlatıldı. İlk proof, language extraction ile semantic binding'i
 birbirinden ayıran typed contract + query=0 sentinel olacaktır.
+
+
+---
+
+## 17. DAY 6.5 PREPARED — MANAGER ARCHITECTURE VALIDATION & SEAL
+
+**STATUS:** PREPARED / NOT STARTED
+
+Day6 P9 çalışması downstream deterministic contract'ların doğruluğunu kanıtladı; ancak
+one-shot universal complex-intent compilation hipotezi product-quality live language
+gate'inde doğrulanamadı.
+
+Latest historical reference evidence:
+- Frozen16 reference-language run: `35593735023`
+- cases: 16
+- case pass: 43.8%
+- goal coverage: 65.6%
+- MUST coverage: 73.2%
+- invented operations: 12
+- negatives: 100%
+
+Bu nedenle:
+- P9 kodu silinmez; **legacy/reference baseline** olur.
+- Eski yola raw-intent okuyabilen ayrı Supervisor eklenmez; bu fiilen Manager olur.
+- Complex language cognition bounded iterative Manager runtime'a taşınır.
+- Deterministic truth plane korunur ve genişletilir.
+
+Day6.5 living authority:
+- `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+- `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+- `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+- `eval/v2_day6_5_eval_manifest.yaml`
+
+### Manager candidate control plane
+
+```text
+USER
+→ bounded Manager cognition
+→ UserObligationLedger
++ SemanticResolver → opaque SemanticHandle
+→ IntentAcceptanceGate
+→ AcceptedTurnContract vN
+→ RepresentabilityGate
+   ├─ STANDARD_LOSSLESS → Core
+   └─ RESEARCH_REQUIRED → bounded Manager research loop
+→ deterministic trust plane
+→ CompletionGate
+   ├─ VERIFIED_COMPLETE
+   ├─ PARTIAL
+   └─ FAILED
+```
+
+### Day6.5 hard rules
+
+- Contract completeness ≠ execution-plan completeness.
+- Manager candidate obligation üretir; authoritative commit runtime/gate işidir.
+- Manager canonical semantic ref üretemez.
+- SemanticHandle yalnız Resolver tarafından mint edilir.
+- AcceptedTurnContract immutable/versioned; repair yeni version yaratır.
+- Representability raw text/length/keyword ile karar vermez.
+- Manager direct SQL/DB/Wren çalıştıramaz.
+- Completion status Manager-owned değildir.
+- hidden chain-of-thought persist/show edilmez.
+- paid eval workflow manual-only kalır.
+- one-shot P9 failures için regex/provider-specific semantic patch yasaktır.
+
+### Eval governance
+
+Frozen16:
+- historical/reference baseline,
+- architecture selection oracle değil.
+
+Yeni architecture corpus hedefi:
+```text
+DEV         80
+VALIDATION  50
+HIDDEN      50
+TOTAL      180
+```
+
+Hidden prompt text repoya girmez.
+Kodlamadan önce independent source/evaluator tarafından dondurulup yalnız SHA-256,
+count ve taxonomy metadata repoya yazılmalıdır.
+
+### Day6.5 implementation order
+
+```text
+0. freeze hidden holdout hash
+1. contracts
+2. provider-free invariant gate
+3. SemanticHandle boundary
+4. AcceptanceGate + versioning
+5. RepresentabilityGate
+6. bounded Manager runtime/tools
+7. adaptive evidence-response proof
+8. CompletionGate
+9. DEV
+10. VALIDATION
+11. HIDDEN seal
+12. Day7 production research execution
+```
+
+### STOP-THE-LINE
+
+- hidden holdout implementation sırasında açılırsa,
+- Manager canonical truth icat ederse,
+- AcceptanceGate / RepresentabilityGate bypass edilirse,
+- old Frozen16 cümleleri production prompt/code'a taşınırsa,
+- Manager raw SQL veya direct DB tool alırsa,
+- accepted contract in-place mutate edilirse,
+- evidence olmadan VERIFIED_COMPLETE çıkarsa,
+- standard-lossless request gereksiz research loop'a sokulursa.
+
+**NEXT ACTION:** Kullanıcı onayıyla Day6.5 implementation başlatılacak. İlk adım production
+kod değil, independent hidden-holdout freeze + contract-only models olacaktır.
