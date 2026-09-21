@@ -7,6 +7,7 @@ name: v2-day5-core-mvp
     paths:
       - "backend/app/v2/**"
       - "backend/app/routers/ask_v2.py"
+      - "backend/tests/test_v2_day1.py"
       - "backend/tests/test_v2_day2.py"
       - "backend/tests/test_v2_day4.py"
       - "backend/tests/test_v2_day5.py"
@@ -40,6 +41,10 @@ jobs:
       - name: Backend dependencies
         working-directory: backend
         run: pip install -e ".[dev]"
+
+      - name: Focused interpreter role contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day1.py -k "comparison_reference_overlap"
 
       - name: Focused resolver morphology safety
         working-directory: backend
