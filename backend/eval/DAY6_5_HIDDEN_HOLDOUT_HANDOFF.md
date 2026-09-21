@@ -7,6 +7,7 @@ Bağımsız evaluator/arkadaş kendi ortamında 50-case corpus'u hazırlar ve ş
 ```bash
 python lab/v2_day6_5_freeze_holdout.py /secure/path/day65_hidden.jsonl \
   --expected-count 50 \
+  --attestation /secure/path/day65_hidden_attestation.json \
   --metadata-out /secure/path/day65_hidden_metadata.json
 ```
 
@@ -83,4 +84,4 @@ aggregate_gate_metrics
 ve oracle/harness'ın hangisi olduğu denetlenebilir kalmalıdır. Prompt text, per-case prompt
 ve hidden expected-answer içeriği receipt'e girmez.
 
-Metadata geldikten sonra `eval/v2_day6_5_eval_manifest.yaml` içindeki corpus/taxonomy/attestation REQUIRED placeholder'ları gerçek değerlerle değiştirilir ve Day 6.5 production implementation gate açılır.
+Metadata geldikten sonra `eval/v2_day6_5_eval_manifest.yaml` içindeki corpus/taxonomy/attestation REQUIRED placeholder'ları gerçek değerlerle değiştirilir ve Day 6.5 architecture-seal gate açılır. Manager implementation bundan bağımsız ilerleyebilir.
