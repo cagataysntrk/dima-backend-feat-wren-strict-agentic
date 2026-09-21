@@ -9,7 +9,11 @@ import pytest
 
 from app.v2.completion import CompletionGate
 from app.v2.manager_errors import ManagerSemanticGap
-from app.v2.manager_loop import ManagerDecisionTransport, _strict_native_schema
+from app.v2.manager_loop import (
+    ManagerDecisionTransport,
+    _clarification_has_governed_grounding,
+    _strict_native_schema,
+)
 from app.v2.manager_executor import (
     GovernedManagerExecutionContext,
     GovernedManagerExecutor,
@@ -334,3 +338,54 @@ def test_manager_native_schema_is_strict_provider_compatible():
                 walk(value)
 
     walk(schema)
+
+
+def test_preacceptance_clarification_requires_governed_grounding():
+    assert not _clarification_has_governed_grounding(
+        [],
+        accepted_contract_present=False,
+    )
+    assert not _clarification_has_governed_grounding(
+        [
+            {
+                "kind": "tool",
+                "tool": "resolve_semantics",
+                "result": {
+                    "resolved": [{"source_ref": "src_x"}],
+                    "unresolved_source_refs": [],
+                    "unresolved_proposals": [],
+                    "clarification": None,
+                },
+            }
+        ],
+        accepted_contract_present=False,
+    )
+    assert _clarification_has_governed_grounding(
+        [
+            {
+                "kind": "tool",
+                "tool": "resolve_semantics",
+                "result": {
+                    "resolved": [],
+                    "unresolved_source_refs": ["src_x"],
+                    "unresolved_proposals": [],
+                    "clarification": None,
+                },
+            }
+        ],
+        accepted_contract_present=False,
+    )
+    assert _clarification_has_governed_grounding(
+        [
+            {
+                "kind": "tool",
+                "tool": "propose_acceptance",
+                "result": {"status": "NEEDS_CLARIFICATION"},
+            }
+        ],
+        accepted_contract_present=False,
+    )
+    assert _clarification_has_governed_grounding(
+        [],
+        accepted_contract_present=True,
+    )
