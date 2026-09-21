@@ -235,7 +235,8 @@ ANALYTICAL_REQUEST:
 - Aynı exact surface'i, kullanıcı aynı mesajda açıkça hem grouping hem filtering istemiyorsa
   dimension_mentions ve filter_mentions içine birlikte koyma.
 - ranking varsa ranking.text de CURRENT_MESSAGE span'i olmalı; limit yalnız açıkça yazıldıysa.
-- comparison ifadelerini hesaplama; surface span olarak taşı.
+- time_mentions yalnız açık bir takvim/göreli dönem veya süre surface'idir; durum/aspect/soru kalıbı time değildir.
+- comparison ifadelerini hesaplama; reference/comparison surface'ini comparisons içine taşı. Aynı reference period span'ini time_mentions içine ayrıca kopyalama; time_mentions varsa base/current period içindir.
 - canonical ref alanı YOKTUR ve ek alan üretmek yasaktır.
 
 JSON_SCHEMA:
@@ -258,10 +259,45 @@ def _user_prompt(
     )
 
 
+def _normalize_surface_role_overlap(turn: TurnInterpretation) -> TurnInterpretation:
+    """Remove exact surface-role duplication without changing semantic meaning.
+
+    A comparison reference is sometimes emitted twice by the language model: once as a
+    TIME mention and again as part of COMPARISON. The reference period belongs to the
+    comparison role; leaving the duplicate in time_mentions makes the temporal owner see
+    two base periods. This normalization only removes a time span when its own grounded
+    text is wholly contained in a grounded comparison span. No date phrase is parsed and
+    no replacement meaning is inferred here.
+    """
+    request = turn.analytical_request
+    if request is None or not request.time_mentions or not request.comparisons:
+        return turn
+
+    comparisons = tuple(_normalized_surface(item.text) for item in request.comparisons)
+    kept = tuple(
+        mention
+        for mention in request.time_mentions
+        if not any(
+            normalized
+            and normalized in comparison
+            for normalized in (_normalized_surface(mention.text),)
+            for comparison in comparisons
+        )
+    )
+    if kept == request.time_mentions:
+        return turn
+    return turn.model_copy(
+        update={
+            "analytical_request": request.model_copy(update={"time_mentions": kept})
+        }
+    )
+
+
 def _parse(raw: str) -> TurnInterpretation:
     try:
         data = json.loads(_strip_json_fence(raw))
-        return TurnInterpretation.model_validate(data)
+        turn = TurnInterpretation.model_validate(data)
+        return _normalize_surface_role_overlap(turn)
     except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as exc:
         raise ValueError(str(exc)) from exc
 
