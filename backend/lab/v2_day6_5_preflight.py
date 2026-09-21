@@ -75,12 +75,16 @@ def evaluate_day65_preflight() -> Day65Preflight:
         blockers.append("hidden prompt corpus repo içine commit edilebilir görünüyor")
     if bool(hidden.get("generated_by_current_development_model", True)):
         blockers.append("hidden corpus development model tarafından üretilmiş görünüyor")
-    if not bool(hidden.get("required_before_manager_implementation", False)):
-        blockers.append("pre-implementation holdout gate manifestte zorunlu değil")
+    # Owner decision: external hidden corpus remains mandatory for architecture seal,
+    # but no longer blocks contract-only Manager implementation.
+    if bool(hidden.get("required_before_manager_implementation", False)):
+        blockers.append("manifest hâlâ hidden holdout'u implementation blocker yapıyor")
+    if not bool(hidden.get("required_before_architecture_seal", False)):
+        blockers.append("hidden holdout architecture seal için zorunlu değil")
 
     return Day65Preflight(
         ready=not blockers,
-        status="READY" if not blockers else "BLOCKED",
+        status="READY_FOR_IMPLEMENTATION" if not blockers else "BLOCKED",
         case_count=expected_count,
         corpus_sha256=corpus_sha,
         taxonomy_sha256=taxonomy_sha,
