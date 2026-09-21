@@ -1639,7 +1639,7 @@ Gerçek Wren + demo DB üzerinde:
 - planned-vs-canonical result equivalence focused set: **5/5 = 100%**
 - simple comparison: iki ayrı Wren execution + ResultValidator PASS
 - focused real-demo planned-query latency sample count: **7**
-- initial focused p95 gate: **PASS (<10s)**
+- focused Wren planned-query p95 gate: **PASS (<10s)**
 
 Bu küçük focused acceptance setidir; ürün-geneli performans/accuracy iddiası değildir.
 
@@ -1649,7 +1649,7 @@ MUST requirement coverage dedicated paths   100%  PASS
 core result equivalence focused canonical   100% (5/5) PASS
 P0 silent-wrong found in focused set        0     PASS
 principal-aware official execution          100%  PASS
-initial focused standard p95                <10s  PASS
+focused Wren planned-query p95             <10s  PASS
 real demo metric                            PASS
 real demo breakdown                         PASS
 real demo time                              PASS
@@ -1695,4 +1695,22 @@ Day 4 henüz açılmadı.
 Bir sonraki geliştirici önce roadmap **P7** ve report **R9**'u yeniden okuyacak; ayrıca
 R6 conversation-layer sınırını ve V2-D011/V2-D012 sentinel'lerini çaprazlayacak.
 Koddan önce Day4 ticket contract yaşayan deftere yazılacak.
+
+
+
+### V2-D013 — full standard-turn E2E p95 henüz ayrı ölçülmedi
+
+- P6 focused gate'in ölçtüğü latency:
+  `CubePlanner → WrenService.query` planned-query execution örnekleri (**7 sample**).
+- Bu örneklerde focused p95/max <10s kapısı geçti.
+- Bu ölçüm; dış provider `TurnInterpreter`, HTTP, resolver, contract persistence ve
+  response serialization toplamını kapsayan gerçek kullanıcı `/ask-v2` end-to-end p95
+  değildir.
+- Roadmap'teki `standard p95 <=10 sn başlangıç` ifadesi ürün deneyimi açısından daha geniş
+  okunabileceğinden bu ayrım gizlenmez.
+- Day3 correctness blocker: **NO**.
+- Core MVP / Day5 performance blocker: **YES**.
+- Kapanış: Day5 canonical standard analytics flow'larında küçük ve temsilî end-to-end
+  latency sample'ı; provider/infra failure correctness failure diye sayılmadan ölçülür.
+- Bu kayıt uğruna Day1 provider corpus'u veya Day3 focused gate **yeniden çalıştırılmadı**.
 
