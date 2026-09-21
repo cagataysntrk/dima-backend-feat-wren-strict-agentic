@@ -370,14 +370,14 @@ class AnalyticsIR(FrozenModel):
 
     # Compatibility surface retained for Day 1 imports/tests.
     requirements: tuple[Requirement, ...] = ()
-    cube: str
-    metrics: tuple[ResolvedSemanticRef, ...]
+    cube: str = ""
+    metrics: tuple[ResolvedSemanticRef, ...] = ()
     dimensions: tuple[ResolvedSemanticRef, ...] = ()
     filters: tuple[ResolvedFilterRef, ...] = ()
     period: ResolvedPeriod | None = None
     ranking: ResolvedRanking | None = None
     comparison: ResolvedComparison | None = None
-    context_version: str
+    context_version: str = ""
 
 
 class ConversationStateV2(FrozenModel):
