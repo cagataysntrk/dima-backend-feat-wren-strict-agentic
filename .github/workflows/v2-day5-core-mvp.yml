@@ -9,6 +9,7 @@ name: v2-day5-core-mvp
       - "backend/app/routers/ask_v2.py"
       - "backend/tests/test_v2_day1.py"
       - "backend/tests/test_v2_day2.py"
+      - "backend/tests/test_v2_day3.py"
       - "backend/tests/test_v2_day4.py"
       - "backend/tests/test_v2_day5.py"
       - "backend/tests/test_v2_day5_http.py"
@@ -49,6 +50,10 @@ jobs:
       - name: Focused resolver morphology safety
         working-directory: backend
         run: pytest -q tests/test_v2_day2.py -k "turkish_inflection or fuzzy_only or unknown_surface or material_entity_ambiguity"
+
+      - name: Focused ranked comparison contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day3.py -k "ranked_comparison_reference"
 
       - name: Focused Day4 + Day5 Core contracts
         working-directory: backend
