@@ -78,6 +78,23 @@ class ResearchRunTerminal(StrEnum):
     FAILED = "FAILED"
 
 
+class StandardProjection(FrozenModel):
+    obligation_ids: tuple[str, ...] = Field(min_length=1)
+    metric_handles: tuple[str, ...] = Field(min_length=1)
+    dimension_handles: tuple[str, ...] = ()
+    filter_handles: tuple[str, ...] = ()
+    period_handle: str | None = None
+    comparison_handle: str | None = None
+    ranking_direction: Literal["asc", "desc"] | None = None
+    limit: int | None = Field(default=None, ge=1, le=1000)
+
+    @model_validator(mode="after")
+    def _ranking_pair(self):
+        if (self.ranking_direction is None) != (self.limit is None):
+            raise ValueError("ranking direction ve limit birlikte verilmelidir")
+        return self
+
+
 class SourceSpanRef(FrozenModel):
     source_ref: str = Field(pattern=r"^src_[a-f0-9]{24}$")
     message_id: str = Field(min_length=1)
@@ -229,6 +246,7 @@ class ManagerBudget(FrozenModel):
 class ManagerRunSnapshot(FrozenModel):
     run_id: str
     state: ManagerState
+    terminal_status: ResearchRunTerminal | None = None
     accepted_contract_id: str | None = None
     lineage_id: str | None = None
     tool_calls: int = 0
@@ -243,3 +261,4 @@ class RepresentabilityResult(FrozenModel):
     reasons: tuple[str, ...] = ()
     standard_capability_keys: tuple[ManagerCapabilityKey, ...] = ()
     research_capability_keys: tuple[ManagerCapabilityKey, ...] = ()
+    standard_projection: StandardProjection | None = None
