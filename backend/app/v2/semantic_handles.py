@@ -32,12 +32,16 @@ class SemanticHandleRegistry:
         target_kind: str,
         canonical_target: Any,
         sensitive: bool = False,
+        provenance_type: str = "USER_SOURCE",
+        parent_obligation_id: str | None = None,
+        trigger_evidence_ref: str | None = None,
     ) -> SemanticHandle:
         if not tenant_binding or not context_version or not resolver_provenance_id:
             raise ValueError("semantic handle binding alanları boş olamaz")
         payload = (
             f"{tenant_binding}\x1f{context_version}\x1f{resolver_provenance_id}"
-            f"\x1f{target_kind}\x1f{repr(canonical_target)}"
+            f"\x1f{target_kind}\x1f{provenance_type}\x1f{parent_obligation_id or ''}"
+            f"\x1f{trigger_evidence_ref or ''}\x1f{repr(canonical_target)}"
         )
         handle_id = "sem_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
         handle = SemanticHandle(
@@ -46,6 +50,9 @@ class SemanticHandleRegistry:
             context_version=context_version,
             resolver_provenance_id=resolver_provenance_id,
             target_kind=target_kind,
+            provenance_type=provenance_type,
+            parent_obligation_id=parent_obligation_id,
+            trigger_evidence_ref=trigger_evidence_ref,
             sensitive=sensitive,
         )
         self._bindings[handle_id] = SemanticBinding(handle=handle, canonical_target=canonical_target)
