@@ -130,12 +130,17 @@ class Settings(BaseSettings):
     v2_reference_language_model: str = ""
     v2_research_manager_provider: str = "openrouter"
     v2_research_manager_model: str = ""
+    # Bounded semantic interpretation role. Blank values intentionally fall back to
+    # FAST_LANGUAGE configuration; semantic truth/handle minting remains deterministic.
+    v2_semantic_linker_provider: str = ""
+    v2_semantic_linker_model: str = ""
     # Role-scoped structured inference policy. FAST keeps reasoning off for latency/cost;
     # REFERENCE may use reasoning because correctness certification is its purpose and
     # some capable endpoints require it. Concrete model names do not participate here.
     v2_fast_language_reasoning: bool = False
     v2_reference_language_reasoning: bool = True
     v2_research_manager_reasoning: bool = True
+    v2_semantic_linker_reasoning: bool = False
     # Native JSON-schema replies are compact. Bound only the provider output reservation;
     # semantic contracts/context are unchanged. Prevents OpenRouter reserving full 65k.
     v2_structured_max_tokens: int = 16384
