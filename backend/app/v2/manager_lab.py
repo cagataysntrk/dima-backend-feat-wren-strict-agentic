@@ -40,6 +40,8 @@ class ManagerLabResponse(FrozenModel):
     model_role: str
     provider: str
     model: str
+    semantic_linker_provider: str
+    semantic_linker_model: str
     snapshot: ManagerRunSnapshot
     run_finished: bool
     verified_complete: bool
@@ -66,6 +68,10 @@ class ManagerLabHarness:
             ModelRole.RESEARCH_MANAGER
         )
         llm = belki_sar(build_generator(scoped_settings))
+        linker_settings, linker_profile = ModelRolePolicy(settings).scoped_settings(
+            ModelRole.SEMANTIC_LINKER
+        )
+        linker_llm = belki_sar(build_generator(linker_settings))
 
         service, schema, runtime = bind_runtime(request, principal)
         context = ContextProviderV0().build(service, runtime)
@@ -86,6 +92,7 @@ class ManagerLabHarness:
             tenant_binding=binding,
             session_id=body.session_id,
             thread_id=body.thread_id,
+            semantic_linker_structured=getattr(linker_llm, "structured_json", None),
         )
         acceptance = IntentAcceptanceGate(
             source_spans=source_spans,
@@ -127,6 +134,8 @@ class ManagerLabHarness:
             model_role=profile.role.value,
             provider=profile.provider,
             model=profile.model,
+            semantic_linker_provider=linker_profile.provider,
+            semantic_linker_model=linker_profile.model,
             snapshot=outcome.snapshot,
             run_finished=outcome.run_finished,
             verified_complete=outcome.verified_complete,
