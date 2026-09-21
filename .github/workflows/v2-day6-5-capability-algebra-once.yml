@@ -40,3 +40,5 @@ jobs:
             tests/test_v2_day6_5_correctness_closure.py \
             tests/test_v2_day6_5_adaptive_branch.py \
             tests/test_v2_day6_5_dev_corpus.py
+
+# rerun: canonical oracle wording
