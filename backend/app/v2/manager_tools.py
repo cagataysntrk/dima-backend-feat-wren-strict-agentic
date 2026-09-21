@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -40,12 +40,13 @@ class ProposeAcceptanceArgs(FrozenModel):
 
 class RunAnalyticsArgs(FrozenModel):
     obligation_ids: tuple[str, ...] = Field(min_length=1)
-    metric_handles: tuple[str, ...] = ()
+    metric_handles: tuple[str, ...] = Field(min_length=1)
     dimension_handles: tuple[str, ...] = ()
     filter_handles: tuple[str, ...] = ()
-    time_scope_ref: str | None = None
-    ranking_direction: str | None = None
-    limit: int | None = Field(default=None, ge=1)
+    period_handle: str | None = None
+    comparison_handle: str | None = None
+    ranking_direction: Literal["asc", "desc"] | None = None
+    limit: int | None = Field(default=None, ge=1, le=1000)
 
 
 class RunRelationshipArgs(FrozenModel):
