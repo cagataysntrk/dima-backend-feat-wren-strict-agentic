@@ -195,7 +195,7 @@ class SequenceLLM:
     def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str) -> str:
         self.calls += 1
         self.users.append(user)
-        assert schema_name == "dima_turn_interpretation_v2"
+        assert schema_name == "dima_turn_interpreter_transport_v1"
         assert schema.get("type") == "object"
         if not self.outputs:
             raise AssertionError("unexpected LLM call")
@@ -680,7 +680,7 @@ def test_interpreter_prompt_does_not_dump_prior_result_rows_or_sensitive_filter_
 
         def structured_json(self, system, user, *, schema, schema_name):
             self.user = user
-            assert schema_name == "dima_turn_interpretation_v2"
+            assert schema_name == "dima_turn_interpreter_transport_v1"
             return json.dumps({"dialogue_act": "SOCIAL"})
 
     llm = CaptureLLM()
