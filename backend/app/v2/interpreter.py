@@ -185,20 +185,31 @@ MUTLAK SINIRLAR:
   surface text olarak taşı.
 - k=1: alternatif yorum listesi üretme.
 - Kullanıcı mevcut sonucu açıklatıyorsa ve active result varsa RESULT_EXPLAIN.
-- Kullanıcı önceki analitik isteği geliştiriyorsa ANALYTIC_REFINE.
-- 'hayır / değil / demek istediğim' gibi önceki isteği düzeltiyorsa USER_REPAIR.
+- DIALOGUE ACT ÖNCELİĞİ: bir tur önceki aktif isteğin bir parçasını geri alıyor,
+  düzeltiyor, yeniden ifade ediyor veya "önceki değil, bunun yerine bu" anlamı taşıyorsa
+  USER_REPAIR seç. Bu anlam, aynı slotu değiştiren sıradan ANALYTIC_REFINE'dan önce gelir.
+- ANALYTIC_REFINE yalnız önceki isteği reddetmeden ona yeni scope/filter/breakdown ekleyen
+  veya onu daraltan/genişleten devam turudur.
 - ANALYTIC_REFINE ve USER_REPAIR'de analytical_request yalnız BU MESAJDA eklenen/değişen
   slotların surface span'lerini taşımalı. Önceki metric/dimension/filter/time slotlarını
   kullanıcı bu mesajda tekrar etmediyse output'a yeniden yazma.
-- USER_REPAIR'de user_repair.correction_spans düzeltmeyi işaret eden CURRENT_MESSAGE
-  parçalarını taşır; hangi canonical slotun değişeceğine sen karar vermezsin.
-- pending_clarification=true ve kullanıcı o soruya cevap veriyorsa CLARIFICATION_ANSWER.
+- USER_REPAIR'de user_repair.correction_spans düzeltme/retraction anlamını taşıyan
+  CURRENT_MESSAGE parçalarını taşır; hangi canonical slotun değişeceğine sen karar vermezsin.
+- CLARIFICATION_ANSWER yalnız CONVERSATION_STATE_JSON.pending_clarification=true ise
+  mümkündür. pending_clarification=false ise bu act'i ASLA seçme; mesaj düzeltmeyse
+  USER_REPAIR, ekleme/daraltmaysa ANALYTIC_REFINE, bağımsız soruyorsa ANALYTIC_NEW'dur.
 - Yeni analitik soru ANALYTIC_NEW.
 - Saf selam/teşekkür/gündelik sosyal tur SOCIAL.
 - Veri/ürün kapsamında olmayan ve analitik niyet taşımayan istek UNSUPPORTED.
 
 ANALYTICAL_REQUEST:
 - metric_mentions, dimension_mentions, filter_mentions, time_mentions yalnız surface span.
+- DIMENSION bir gruplama/kırılım EKSENİ veya kategori TÜRÜDÜR.
+- FILTER belirli bir ÜYE/DEĞER/KİMLİK seçimi ya da scope daraltmasıdır. Bir surface'in
+  katalogdaki dimension adına benzemesi onu dimension yapmaz; kullanıcı somut bir üyeyi
+  seçiyorsa filter_mentions'a koy.
+- Somut member/value seçimini, kullanıcı aynı mesajda ayrıca grouping/breakdown istemiyorsa
+  hem dimension_mentions hem filter_mentions içine DUPLICATE etme.
 - ranking varsa ranking.text de CURRENT_MESSAGE span'i olmalı; limit yalnız açıkça yazıldıysa.
 - comparison ifadelerini hesaplama; surface span olarak taşı.
 - canonical ref alanı YOKTUR ve ek alan üretmek yasaktır.
