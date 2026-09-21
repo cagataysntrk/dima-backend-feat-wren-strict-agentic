@@ -21,7 +21,9 @@ REQUIRED_ATTESTATION = {
     "development_model_generated": False,
     "prompt_text_committed": False,
     "prompt_text_shared_with_implementation": False,
-    "frozen_before_implementation": True,
+    "development_corpus_seen": False,
+    "development_failure_outputs_seen": False,
+    "frozen_before_architecture_seal_run": True,
 }
 
 REQUIRED_KEYS = {
@@ -156,8 +158,14 @@ def main() -> int:
         "development_model_generated": bool(
             attestation["development_model_generated"]
         ),
-        "frozen_before_implementation": bool(
-            attestation["frozen_before_implementation"]
+        "development_corpus_seen": bool(
+            attestation["development_corpus_seen"]
+        ),
+        "development_failure_outputs_seen": bool(
+            attestation["development_failure_outputs_seen"]
+        ),
+        "frozen_before_architecture_seal_run": bool(
+            attestation["frozen_before_architecture_seal_run"]
         ),
     }
 
