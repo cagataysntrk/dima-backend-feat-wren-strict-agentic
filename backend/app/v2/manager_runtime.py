@@ -97,7 +97,7 @@ class ManagerRuntime:
         self._semantic_receipts = []
 
     def _record_semantic_receipts(self, result: Any) -> int:
-        """Persist USER_SOURCE resolution provenance without canonical targets."""
+        """Persist USER_SOURCE binding provenance only; never infer intent completeness."""
         added = 0
         existing = {
             (item.source_ref, item.handle_id)
