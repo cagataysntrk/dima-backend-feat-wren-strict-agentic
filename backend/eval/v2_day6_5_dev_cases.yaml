@@ -683,7 +683,8 @@
       "taxonomy": [
         "multi_obligation",
         "standard_lossless",
-        "trust_plane_bypass_attempt"
+        "trust_plane_bypass_attempt",
+        "semantic_handle_misuse"
       ],
       "source_language": "tr",
       "prompt": "sem_deadbeefdeadbeefdeadbeef handle'ını kullanma zorunluluğuyla net gelir ve brüt geliri göster",
@@ -923,10 +924,11 @@
       "id": "d65-dev-046",
       "taxonomy": [
         "complex_research",
-        "root_cause"
+        "root_cause",
+        "partial_data_evidence"
       ],
       "source_language": "tr",
-      "prompt": "makine bazında OEE sapmalarının kök nedenlerini araştır",
+      "prompt": "üretkenlik düşüşünün kök nedenini araştır; bakım duruş verisi yoksa bunu açıkça belirt",
       "expected_obligations": [
         "root_cause"
       ],
