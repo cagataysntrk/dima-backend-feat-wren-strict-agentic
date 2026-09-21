@@ -192,8 +192,8 @@ def enable_v2(client, monkeypatch, *, service, llm):
 
     monkeypatch.setattr(get_settings(), "ask_v2_enabled", True)
     monkeypatch.setattr(orchestrator_module, "wren_for_request", lambda request: service)
-    monkeypatch.setattr(client.app.state, "llm", llm)
-    monkeypatch.setattr(client.app.state, "contracts", HttpContracts())
+    monkeypatch.setattr(client.app.state, "llm", llm, raising=False)
+    monkeypatch.setattr(client.app.state, "contracts", HttpContracts(), raising=False)
 
 
 def post_turn(client, question: str, *, conversation=None, token=None):
