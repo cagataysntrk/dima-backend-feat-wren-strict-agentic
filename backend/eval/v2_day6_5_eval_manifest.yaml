@@ -1,5 +1,5 @@
 version: "day6.5-manager-eval-v1"
-status: "PREPARED_NOT_STARTED"
+status: "IMPLEMENTATION_STARTED_OWNER_OVERRIDE"
 frozen_at: "2026-09-21"
 
 architecture_question: >
@@ -39,7 +39,8 @@ corpus_target:
     committed_to_repo: false
     tuning_allowed: false
     generated_by_current_development_model: false
-    required_before_manager_implementation: true
+    required_before_manager_implementation: false
+    required_before_architecture_seal: true
     sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
     taxonomy_sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
     attestation_sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
