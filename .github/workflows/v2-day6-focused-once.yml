@@ -13,6 +13,7 @@ name: v2-day6-focused-once
 # current-head flat-schema migration audit
 # flat-schema + capability-registry + model-role closure
 # current-head reference-role closure
+# internal-deliverable-boundary final rerun
 
 "on":
   push:
