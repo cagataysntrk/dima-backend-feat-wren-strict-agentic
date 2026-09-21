@@ -1,0 +1,55 @@
+cases:
+  - id: canonical
+    q: "Son 12 ay ürünleri karşılaştır, makineler ve personellerle ilişkisini analiz et, satış performanslarını yorumla ve raporla."
+    expected_act: REPORT_REQUEST
+    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
+    required_fragments: ["ürün", "makin", "personel", "satış"]
+    required_time_fragments: ["12 ay"]
+
+  - id: paraphrase_shift
+    q: "Son bir yılda ürünleri kıyasla; hangi makinelerde üretildikleriyle ve vardiyalarla bağlantılarını ayrı ayrı incele, satış performansını da değerlendirip rapor çıkar."
+    expected_act: REPORT_REQUEST
+    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
+    required_fragments: ["ürün", "makin", "vardiya", "satış"]
+    required_time_fragments: ["bir yıl"]
+
+  - id: reordered_sentences
+    q: "Ürün bazında son 12 aylık üretimi karşılaştır. Makine ilişkisini, personel ilişkisini ve satış performansını da incele. Sonucu raporla."
+    expected_act: REPORT_REQUEST
+    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
+    required_fragments: ["ürün", "makine", "personel", "satış"]
+    required_time_fragments: ["12 aylık"]
+
+  - id: complex_no_report
+    q: "Geçen bir yılda ürünleri karşılaştır; makine ve personel ilişkilerini ayrı ayrı analiz et, satış performansını da yorumla."
+    expected_act: COMPLEX_ANALYSIS
+    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1}
+    required_fragments: ["ürün", "makine", "personel", "satış"]
+    required_time_fragments: ["bir yıl"]
+
+  - id: extra_style_clause
+    q: "Kısa ve yönetici dilinde olsun: son 12 ay ürünleri karşılaştır, makine bağlantısını ve vardiya bağlantısını incele, satış performansını değerlendir ve raporla."
+    expected_act: REPORT_REQUEST
+    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
+    required_fragments: ["ürün", "makine", "vardiya", "satış"]
+    required_time_fragments: ["12 ay"]
+
+  - id: reverse_order
+    q: "Önce satış performansını değerlendir; sonra son 12 ay ürünleri karşılaştır ve ürünlerin makine ile personel bağlantılarını ayrı ayrı analiz et; sonunda raporla."
+    expected_act: REPORT_REQUEST
+    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
+    required_fragments: ["ürün", "makine", "personel", "satış"]
+    required_time_fragments: ["12 ay"]
+
+  - id: limited_complex_negative
+    q: "Son 12 ay ürünleri karşılaştır, makinelerle ilişkisini incele ve raporla."
+    expected_act: REPORT_REQUEST
+    expected_goal_counts: {comparison: 1, relationship: 1, deliverable: 1}
+    required_fragments: ["ürün", "makin"]
+    required_time_fragments: ["12 ay"]
+    forbidden_fragments: ["personel", "vardiya", "satış"]
+
+  - id: simple_not_research
+    q: "Ürünleri analiz et."
+    expected_act: ANALYTIC_NEW
+    expect_research: false
