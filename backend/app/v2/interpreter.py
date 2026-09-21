@@ -185,19 +185,31 @@ MUTLAK SINIRLAR:
   surface text olarak taşı.
 - k=1: alternatif yorum listesi üretme.
 - DIALOGUE ACT KARAR SIRASI (semantic precedence):
-  1) pending_clarification=true VE mesaj pending soruya cevap veriyorsa CLARIFICATION_ANSWER.
-  2) active result varsa ve kullanıcı mevcut result/evidence'ı açıklatıyorsa RESULT_EXPLAIN.
-  3) prior analytical request varsa ve kullanıcı mevcut bir seçimi/dönemi/filtreyi geri
-     alıyor, düzeltiyor, "aslında başka..." diyor veya önceki slot yerine yeni slot koyuyorsa
-     USER_REPAIR. Bu, mesaj aynı zamanda yeni bir değer taşısa bile ANALYTIC_REFINE'dan üstündür.
-  4) prior analytical request varsa ve kullanıcı önceki seçimi REDDETMEDEN yeni bir
-     filter/breakdown/scope ekliyor, daraltıyor veya genişletiyorsa ANALYTIC_REFINE.
-  5) bağımsız yeni analitik istek ANALYTIC_NEW.
-- USER_REPAIR kararı kelime ezberi değildir: anlam "önceki tercihi değiştiriyorum" ise
-  kullanılan ifade ne olursa olsun repair'dir. Kısa konuşma işaretleri tek başına değil,
-  prior state + replacement anlamı birlikte değerlendirilir.
-- ANALYTIC_REFINE ile USER_REPAIR arasındaki ana test:
-  "Önceki slot hâlâ geçerli mi?" Evet → REFINE. Hayır, yeni slot onun yerine geçti → REPAIR.
+  1) Mesaj saf selam/teşekkür/onay/acknowledgement ise ve yeni analitik slot istemiyorsa SOCIAL.
+     Prior analytical state'in varlığı saf sosyal turu REFINE yapmaz.
+  2) pending_clarification=true VE mesaj pending soruya cevap veriyorsa CLARIFICATION_ANSWER.
+  3) active result varsa ve kullanıcı mevcut result/evidence'ı açıklatıyorsa RESULT_EXPLAIN.
+  4) prior analytical request varsa ve kullanıcı ÖNCEKİ SEÇİMİN YANLIŞ OLDUĞUNU / GERİ
+     ALINDIĞINI / DÜZELTİLDİĞİNİ ifade edip onun yerine başka değer/dönem/slot koyuyorsa
+     USER_REPAIR. Repair için correction/retraction intent açık olmalı.
+  5) prior analytical request varsa ve kullanıcı önceki talebi yanlışlamadan yeni
+     filter/breakdown/scope ekliyor, tek bir üyeye daraltıyor veya kapsamı genişletiyorsa
+     ANALYTIC_REFINE.
+  6) bağımsız yeni analitik istek ANALYTIC_NEW.
+- USER_REPAIR kararı kelime ezberi değildir; semantik olarak "önceki seçim yanlıştı,
+  bunu onun yerine koy" anlamını gerektirir. Yalnız kapsam daraltmak veya ilk kez bir
+  entity filter eklemek REPAIR DEĞİL REFINE'dır.
+- ANALYTIC_REFINE ile USER_REPAIR ayrımının iki aşamalı testi:
+  A) Kullanıcı önceki tercihin yanlış/geri alınmış olduğunu bildiriyor mu?
+     Hayır → REFINE (yeni filtre ekleme/daraltma dahil).
+     Evet → B'ye geç.
+  B) Yeni surface önceki seçimin yerine mi geçiyor?
+     Evet → USER_REPAIR.
+     Hayır → REFINE.
+- Soyut örnekler (fixture değildir):
+  prior period=A; "A değil, B olsun" → USER_REPAIR + yalnız B time surface.
+  prior filter yok; "yalnız <member> kalsın" → ANALYTIC_REFINE + yalnız filter surface.
+  prior analytics var; "tamam/teşekkür" → SOCIAL, analytical_request yok.
 - ANALYTIC_REFINE ve USER_REPAIR'de analytical_request yalnız BU MESAJDA eklenen/değişen
   slotların surface span'lerini taşımalı. Önceki metric/dimension/filter/time slotlarını
   kullanıcı bu mesajda tekrar etmediyse output'a yeniden yazma.
