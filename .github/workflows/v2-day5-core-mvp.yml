@@ -7,9 +7,11 @@ name: v2-day5-core-mvp
     paths:
       - "backend/app/v2/**"
       - "backend/app/routers/ask_v2.py"
+      - "backend/tests/test_v2_day2.py"
       - "backend/tests/test_v2_day4.py"
       - "backend/tests/test_v2_day5.py"
       - "backend/tests/test_v2_day5_http.py"
+      - "backend/pyproject.toml"
       - "dima-frontend-demo-master/src/**"
       - ".github/workflows/v2-day5-core-mvp.yml"
   workflow_dispatch:
@@ -38,6 +40,10 @@ jobs:
       - name: Backend dependencies
         working-directory: backend
         run: pip install -e ".[dev]"
+
+      - name: Focused resolver morphology safety
+        working-directory: backend
+        run: pytest -q tests/test_v2_day2.py -k "turkish_inflection or fuzzy_only or unknown_surface or material_entity_ambiguity"
 
       - name: Focused Day4 + Day5 Core contracts
         working-directory: backend
