@@ -9,6 +9,7 @@ name: v2-day5-core-mvp
       - "backend/app/routers/ask_v2.py"
       - "backend/tests/test_v2_day4.py"
       - "backend/tests/test_v2_day5.py"
+      - "backend/tests/test_v2_day5_http.py"
       - "dima-frontend-demo-master/src/**"
       - ".github/workflows/v2-day5-core-mvp.yml"
   workflow_dispatch:
