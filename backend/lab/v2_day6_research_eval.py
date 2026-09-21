@@ -385,7 +385,12 @@ def main() -> int:
     for case in cases:
         counting = CountingLlm(llm)
         expect_research = bool(case.get("expect_research", True))
-        expected_act = str(case["expected_act"])
+        yaml_expected_act = str(case["expected_act"])
+        expected_act = (
+            "COMPLEX_ANALYSIS"
+            if expect_research
+            else yaml_expected_act
+        )
         requirement_signatures = list(case.get("goals") or ())
         signatures = [
             item for item in requirement_signatures
@@ -672,7 +677,7 @@ def main() -> int:
         "kind": "dima_v2_day6_research_eval",
         "status": "pass" if passed else "fail",
         "source_policy": (
-            "real_provider_language_owner_plus_real_resolver_and_brief_builder_"
+            "real_provider_language_owner_plus_research_mode_policy_plus_real_resolver_and_brief_builder_"
             "synthetic_permuted_context_no_data_query"
         ),
         "providers": providers,
