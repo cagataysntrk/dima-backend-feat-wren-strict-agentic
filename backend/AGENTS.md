@@ -227,14 +227,27 @@ koptuğunda yeniden keşfedilmez; önce bunlar okunur.
 
 ### 11.3 OpenRouter model authority
 
-- V2 için varsayılan OpenRouter modeli:
+- Genel/SQL OpenRouter varsayılanı:
   `deepseek/deepseek-v4-flash`.
-- Runtime source-of-truth:
+- Genel runtime source-of-truth:
   `app/config.py::openrouter_model`.
 - GitHub Actions override source:
   Environment variable `DIMA_OPENROUTER_MODEL`.
-- Focused workflow fallback'u da aynı model olmak zorunda.
-- `DIMA_OPENROUTER_SELECT_MODEL` verilmezse ana model kullanılır.
+- `DIMA_OPENROUTER_SELECT_MODEL` verilmezse legacy/general select ana modeli kullanır.
+- **V2 TurnInterpreter bunun bilinçli istisnasıdır.** P7 DB-independent 30-turn live
+  ölçümünde DeepSeek structured output'u korurken repair/refine speech-act gate'inde
+  istikrarlı biçimde eşik-altı kaldı. TurnInterpreter'ın dedicated capability contract'ı:
+  `app/config.py::v2_interpreter_provider` +
+  `app/config.py::v2_interpreter_model`.
+- Default dedicated interpreter:
+  `openrouter / openai/gpt-5.6-luna`.
+- Env overrides:
+  `DIMA_V2_INTERPRETER_PROVIDER`,
+  `DIMA_V2_INTERPRETER_MODEL`.
+- Dedicated interpreter credential/model yoksa silent biçimde ucuz modele düşme; fail-closed.
+  `provider=inherit` yalnız bilinçli explicit opt-in'dir.
+- Bu model ayrımı semantic owner çoğaltmaz: raw language owner yine yalnız
+  `TurnInterpreter`dır.
 - Tarihsel ölçümde kullanılan modeli sonradan değiştirme; measurement provenance immutable
   kalır. Yeni model kararı yalnız ileriye dönük uygulanır.
 
