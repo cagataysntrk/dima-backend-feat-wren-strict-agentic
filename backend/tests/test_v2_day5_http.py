@@ -142,7 +142,7 @@ class SequenceLlm:
 
     def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str) -> str:
         self.calls += 1
-        assert schema_name == "dima_turn_interpreter_transport_v1"
+        assert schema_name == "dima_turn_interpreter_transport_v2"
         if not self.outputs:
             raise AssertionError("unexpected LLM call")
         output = self.outputs.pop(0)
