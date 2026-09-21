@@ -88,6 +88,9 @@ class CompactCubeContextV0(FrozenModel):
 class CompactRelationshipV0(FrozenModel):
     name: str
     models: tuple[str, ...] = ()
+    # Semantic cube-level availability only. No join condition/grain proof lives here;
+    # Day 7 CrossDomainJoinGate remains execution authority.
+    cube_names: tuple[str, ...] = ()
     join_type: str | None = None
     certified: str | None = None
 
