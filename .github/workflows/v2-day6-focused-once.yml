@@ -9,7 +9,7 @@ name: v2-day6-focused-once
 
 jobs:
   day6-contract:
-    if: github.event.head_commit.message == 'test(v2-day6): run one-shot focused gate'
+    if: "github.event.head_commit.message == 'test(v2-day6): run one-shot focused gate'"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
