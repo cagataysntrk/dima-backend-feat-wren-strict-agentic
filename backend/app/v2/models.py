@@ -303,84 +303,68 @@ class ResearchSourceSurface(FrozenModel):
         min_length=1,
         description="Exact CURRENT_MESSAGE surface span; never a canonical semantic ID.",
     )
-    kind: SemanticMentionKind
+    semantic_role: SemanticMentionKind = Field(
+        description="Language role of this surface, not an analytical operation kind."
+    )
 
 
-class ResearchPerformanceFrame(FrozenModel):
-    kind: Literal["performance"] = "performance"
-    text: str = Field(min_length=1)
-    subject_refs: tuple[str, ...] = Field(min_length=1)
+class ResearchOperationFrame(FrozenModel):
+    """Flat tagged analytical operation for provider-facing structured output.
+
+    One enum field owns analytical capability classification. Operation-specific
+    payload rules are validated here so the provider schema does not need a deeply
+    nested anyOf/oneOf tree.
+    """
+
+    operation: ResearchNonRelationshipGoalKind = Field(
+        description="Analytical capability; never a metric/dimension/entity role."
+    )
+    evidence_text: str = Field(
+        min_length=1,
+        description="Exact CURRENT_MESSAGE span evidencing this analytical operation.",
+    )
+    subject_refs: tuple[str, ...] = ()
     related_refs: tuple[str, ...] = ()
-    polarity: ResearchOperationPolarity
-
-
-class ResearchTrendFrame(FrozenModel):
-    kind: Literal["trend"] = "trend"
-    text: str = Field(min_length=1)
-    subject_refs: tuple[str, ...] = Field(min_length=1)
-    related_refs: tuple[str, ...] = ()
-    polarity: ResearchOperationPolarity
-
-
-class ResearchBreakdownFrame(FrozenModel):
-    kind: Literal["breakdown"] = "breakdown"
-    text: str = Field(min_length=1)
-    subject_refs: tuple[str, ...] = Field(min_length=1)
-    related_refs: tuple[str, ...] = ()
-    polarity: ResearchOperationPolarity
-
-
-class ResearchRankingFrame(FrozenModel):
-    kind: Literal["ranking"] = "ranking"
-    text: str = Field(min_length=1)
-    subject_refs: tuple[str, ...] = Field(min_length=1)
-    related_refs: tuple[str, ...] = ()
-    ranking: RankingSurface
-    polarity: ResearchOperationPolarity
-
-
-class ResearchComparisonFrame(FrozenModel):
-    kind: Literal["comparison"] = "comparison"
-    text: str = Field(min_length=1)
-    subject_refs: tuple[str, ...] = Field(min_length=1)
-    related_refs: tuple[str, ...] = ()
+    ranking: RankingSurface | None = None
     comparisons: tuple[ComparisonSurface, ...] = Field(default=(), max_length=1)
-    polarity: ResearchOperationPolarity
-
-
-class ResearchRootCauseFrame(FrozenModel):
-    """Causal investigation is one requirement, not an implicit extra relationship."""
-
-    kind: Literal["root_cause"] = "root_cause"
-    text: str = Field(min_length=1)
-    outcome_ref: str
+    outcome_ref: str | None = None
     factor_refs: tuple[str, ...] = ()
     polarity: ResearchOperationPolarity
 
+    @model_validator(mode="after")
+    def _operation_contract(self):
+        if self.operation == ResearchNonRelationshipGoalKind.ROOT_CAUSE:
+            if self.outcome_ref is None:
+                raise ValueError("root_cause operation requires outcome_ref")
+            if self.subject_refs or self.related_refs:
+                raise ValueError(
+                    "root_cause uses outcome_ref/factor_refs, not subject/related refs"
+                )
+        elif self.outcome_ref is not None or self.factor_refs:
+            raise ValueError(
+                "outcome_ref/factor_refs are valid only for root_cause operation"
+            )
 
-class ResearchOtherFrame(FrozenModel):
-    kind: Literal["other"] = "other"
-    text: str = Field(min_length=1)
-    subject_refs: tuple[str, ...] = ()
-    related_refs: tuple[str, ...] = ()
-    polarity: ResearchOperationPolarity
+        if self.operation == ResearchNonRelationshipGoalKind.RANKING:
+            if self.ranking is None:
+                raise ValueError("ranking operation requires typed ranking payload")
+        elif self.ranking is not None:
+            raise ValueError("ranking payload is valid only for ranking operation")
 
-
-ResearchOperationFrame = (
-    ResearchPerformanceFrame
-    | ResearchTrendFrame
-    | ResearchBreakdownFrame
-    | ResearchRankingFrame
-    | ResearchComparisonFrame
-    | ResearchRootCauseFrame
-    | ResearchOtherFrame
-)
+        if self.operation != ResearchNonRelationshipGoalKind.COMPARISON and self.comparisons:
+            raise ValueError(
+                "comparison payload is valid only for comparison operation"
+            )
+        return self
 
 
 class ResearchRelationshipFrame(FrozenModel):
     """Provider-facing relationship frame using local source references only."""
 
-    text: str = Field(min_length=1)
+    evidence_text: str = Field(
+        min_length=1,
+        description="Exact CURRENT_MESSAGE span evidencing the relationship request.",
+    )
     focus_ref: str | None = None
     focus_binding: ResearchFocusBinding
     counterpart_refs: tuple[str, ...] = Field(min_length=1)
@@ -397,13 +381,18 @@ class ResearchRelationshipFrame(FrozenModel):
 
 
 class ResearchDeliverableFrame(FrozenModel):
-    kind: PresentationKind
-    text: str = Field(min_length=1)
+    format: PresentationKind = Field(
+        description="Requested output format; this is not an analytical operation."
+    )
+    evidence_text: str = Field(
+        min_length=1,
+        description="Exact CURRENT_MESSAGE span requesting this output format.",
+    )
     polarity: ResearchOperationPolarity
 
     @model_validator(mode="after")
-    def _valid_kind(self):
-        if self.kind == PresentationKind.NONE:
+    def _valid_format(self):
+        if self.format == PresentationKind.NONE:
             raise ValueError("research deliverable cannot be none")
         return self
 
@@ -430,8 +419,9 @@ class ResearchRequestGraph(FrozenModel):
 
         refs: list[str] = list(self.time_refs)
         for operation in self.operations:
-            if isinstance(operation, ResearchRootCauseFrame):
-                refs.append(operation.outcome_ref)
+            if operation.operation == ResearchNonRelationshipGoalKind.ROOT_CAUSE:
+                if operation.outcome_ref is not None:
+                    refs.append(operation.outcome_ref)
                 refs.extend(operation.factor_refs)
             else:
                 refs.extend(operation.subject_refs)
@@ -447,7 +437,7 @@ class ResearchRequestGraph(FrozenModel):
 
         surface_index = {item.surface_id: item for item in self.surfaces}
         for ref in self.time_refs:
-            if surface_index[ref].kind != SemanticMentionKind.TIME:
+            if surface_index[ref].semantic_role != SemanticMentionKind.TIME:
                 raise ValueError("research time_refs must reference TIME surfaces")
         return self
 
@@ -527,7 +517,7 @@ class TurnInterpreterTransport(FrozenModel):
 
         if self.research_graph is not None:
             requested_deliverables = {
-                item.kind
+                item.format
                 for item in self.research_graph.deliverables
                 if item.polarity == ResearchOperationPolarity.REQUESTED
             }
