@@ -53,6 +53,7 @@ from app.v2.models import (
     TenantAnalyticsRuntimeV0,
     TurnAct,
     TurnInterpretation,
+    TurnInterpreterTransport,
 )
 from app.v2.orchestrator import V2Orchestrator
 from app.v2.research import ResearchBriefBuilder, ResearchModePolicy
@@ -675,6 +676,261 @@ def test_legacy_deliverable_pseudo_goal_is_not_silently_migrated():
 
     assert llm.calls == 2
     assert caught.value.failure.code == "invalid_structured_output"
+
+
+def test_provider_schema_is_source_inventory_graph_not_internal_research_request():
+    schema = TurnInterpreterTransport.model_json_schema()
+    raw = json.dumps(schema, ensure_ascii=False)
+
+    assert "research_graph" in raw
+    assert "ResearchSourceSurface" in raw
+    assert "surface_id" in raw
+    assert "focus_binding" in raw
+    assert "polarity" in raw
+    assert "research_request" not in raw
+
+
+def test_antecedent_focus_ref_compiles_without_repeating_focus_text_in_relationship():
+    question = "Kalemleri karşılaştır; makinelerle ilişkisini de incele."
+    llm = _StaticStructuredLlm(
+        {
+            "dialogue_act": "COMPLEX_ANALYSIS",
+            "references": [],
+            "analytical_request": None,
+            "research_graph": {
+                "surfaces": [
+                    {"surface_id": "s-focus", "text": "Kalemleri", "kind": "dimension"},
+                    {"surface_id": "s-machine", "text": "makinelerle", "kind": "dimension"},
+                ],
+                "operations": [
+                    {
+                        "kind": "comparison",
+                        "text": "Kalemleri karşılaştır",
+                        "subject_refs": ["s-focus"],
+                        "related_refs": [],
+                        "comparisons": [],
+                        "polarity": "requested",
+                    }
+                ],
+                "relationships": [
+                    {
+                        "text": "makinelerle ilişkisini de incele",
+                        "focus_ref": "s-focus",
+                        "focus_binding": "antecedent",
+                        "counterpart_refs": ["s-machine"],
+                        "polarity": "requested",
+                    }
+                ],
+                "time_refs": [],
+                "deliverables": [],
+            },
+            "presentation_request": "none",
+            "user_repair": None,
+            "unresolved_mentions": [],
+        }
+    )
+
+    turn = TurnInterpreter().interpret(
+        question=question,
+        semantic_context=_empty_context(),
+        conversation=ConversationStateV2(),
+        llm=llm,
+    )
+
+    assert turn.research_request is not None
+    relationship = turn.research_request.relationships[0]
+    assert relationship.focus_mentions[0].text == "Kalemleri"
+    assert relationship.counterpart_mentions[0].text == "makinelerle"
+
+
+def test_excluded_operation_and_relationship_never_become_requirements():
+    question = "Kalemleri karşılaştır; personeli inceleme, yalnız makinelerle ilişkisini incele."
+    llm = _StaticStructuredLlm(
+        {
+            "dialogue_act": "COMPLEX_ANALYSIS",
+            "references": [],
+            "analytical_request": None,
+            "research_graph": {
+                "surfaces": [
+                    {"surface_id": "s-focus", "text": "Kalemleri", "kind": "dimension"},
+                    {"surface_id": "s-person", "text": "personeli", "kind": "dimension"},
+                    {"surface_id": "s-machine", "text": "makinelerle", "kind": "dimension"},
+                ],
+                "operations": [
+                    {
+                        "kind": "comparison",
+                        "text": "Kalemleri karşılaştır",
+                        "subject_refs": ["s-focus"],
+                        "related_refs": [],
+                        "comparisons": [],
+                        "polarity": "requested",
+                    }
+                ],
+                "relationships": [
+                    {
+                        "text": "personeli inceleme",
+                        "focus_ref": "s-focus",
+                        "focus_binding": "antecedent",
+                        "counterpart_refs": ["s-person"],
+                        "polarity": "excluded",
+                    },
+                    {
+                        "text": "makinelerle ilişkisini incele",
+                        "focus_ref": "s-focus",
+                        "focus_binding": "antecedent",
+                        "counterpart_refs": ["s-machine"],
+                        "polarity": "requested",
+                    },
+                ],
+                "time_refs": [],
+                "deliverables": [],
+            },
+            "presentation_request": "none",
+            "user_repair": None,
+            "unresolved_mentions": [],
+        }
+    )
+
+    turn = TurnInterpreter().interpret(
+        question=question,
+        semantic_context=_empty_context(),
+        conversation=ConversationStateV2(),
+        llm=llm,
+    )
+
+    assert turn.research_request is not None
+    assert len(turn.research_request.relationships) == 1
+    assert turn.research_request.relationships[0].counterpart_mentions[0].text == "makinelerle"
+    assert [item.text for item in turn.research_request.excluded_mentions] == ["personeli"]
+
+
+def test_unresolved_relationship_focus_survives_to_blocked_brief():
+    question = "Makinelerle ilişkisini incele."
+    llm = _StaticStructuredLlm(
+        {
+            "dialogue_act": "COMPLEX_ANALYSIS",
+            "references": [],
+            "analytical_request": None,
+            "research_graph": {
+                "surfaces": [
+                    {"surface_id": "s-machine", "text": "Makinelerle", "kind": "dimension"}
+                ],
+                "operations": [],
+                "relationships": [
+                    {
+                        "text": "Makinelerle ilişkisini incele",
+                        "focus_ref": None,
+                        "focus_binding": "unresolved",
+                        "counterpart_refs": ["s-machine"],
+                        "polarity": "requested",
+                    }
+                ],
+                "time_refs": [],
+                "deliverables": [],
+            },
+            "presentation_request": "none",
+            "user_repair": None,
+            "unresolved_mentions": [],
+        }
+    )
+
+    turn = TurnInterpreter().interpret(
+        question=question,
+        semantic_context=_empty_context(),
+        conversation=ConversationStateV2(),
+        llm=llm,
+    )
+    assert turn.research_request is not None
+    assert turn.research_request.relationships[0].focus_mentions == ()
+
+    bundle = SemanticResolver(signing_key=b"graph-test").resolve_turn(
+        turn=turn,
+        schema={
+            "cubes": [
+                {
+                    "name": "cube-x",
+                    "measures": [],
+                    "dimensions": ["axis-machine"],
+                    "dimension_synonyms": {"axis-machine": ["makine", "makineler"]},
+                    "dimension_labels": {"axis-machine": "Makine"},
+                    "time_dimensions": [],
+                }
+            ]
+        },
+        semantic_context=BoundedSemanticContextV0(
+            context_version=ContextVersionV0(
+                version="ctx-graph",
+                mdl_version="mdl-graph",
+                compact_catalog_builder_version="test",
+                business_rules_hash="0" * 64,
+                prompt_context_policy_version="test",
+            ),
+            cubes=(),
+        ),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-graph",
+        session_id="s",
+        thread_id="t",
+    )
+    brief = ResearchBriefBuilder().build(
+        turn=turn,
+        hypotheses=bundle.hypotheses,
+        semantic_context=_empty_context(),
+        context_version="ctx-graph",
+    )
+    assert brief.status == ResearchBriefStatus.BLOCKED
+    assert brief.questions[0].unresolved
+    assert any(item.role == "subject" for item in brief.questions[0].unresolved)
+
+
+def test_root_cause_frame_compiles_to_one_requirement_without_extra_relationship():
+    question = "Verim düşüşünün ekipman etkisini kök neden olarak araştır."
+    llm = _StaticStructuredLlm(
+        {
+            "dialogue_act": "COMPLEX_ANALYSIS",
+            "references": [],
+            "analytical_request": None,
+            "research_graph": {
+                "surfaces": [
+                    {"surface_id": "s-outcome", "text": "Verim düşüşünün", "kind": "metric"},
+                    {"surface_id": "s-factor", "text": "ekipman", "kind": "dimension"},
+                ],
+                "operations": [
+                    {
+                        "kind": "root_cause",
+                        "text": "Verim düşüşünün ekipman etkisini kök neden olarak araştır",
+                        "outcome_ref": "s-outcome",
+                        "factor_refs": ["s-factor"],
+                        "polarity": "requested",
+                    }
+                ],
+                "relationships": [],
+                "time_refs": [],
+                "deliverables": [],
+            },
+            "presentation_request": "none",
+            "user_repair": None,
+            "unresolved_mentions": [],
+        }
+    )
+
+    turn = TurnInterpreter().interpret(
+        question=question,
+        semantic_context=_empty_context(),
+        conversation=ConversationStateV2(),
+        llm=llm,
+    )
+
+    assert turn.research_request is not None
+    assert len(turn.research_request.goals) == 1
+    assert turn.research_request.goals[0].kind == ResearchNonRelationshipGoalKind.ROOT_CAUSE
+    assert [x.text for x in turn.research_request.goals[0].subject_mentions] == [
+        "Verim düşüşünün"
+    ]
+    assert [x.text for x in turn.research_request.goals[0].related_mentions] == [
+        "ekipman"
+    ]
+    assert turn.research_request.relationships == ()
 
 
 def test_format_normalization_does_not_relax_surface_grounding():
