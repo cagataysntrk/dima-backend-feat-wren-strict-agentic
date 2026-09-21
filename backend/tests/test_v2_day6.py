@@ -526,35 +526,38 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
             "dialogue_act": "COMPLEX_ANALYSIS",
             "references": [],
             "analytical_request": None,
-            "research_request": {
-                "goals": [
+            "research_graph": {
+                "surfaces": [
+                    {"surface_id": "s-product", "text": "ürünleri", "kind": "dimension"},
+                    {"surface_id": "s-time", "text": "Son 12 ay", "kind": "time"},
+                    {
+                        "surface_id": "s-invented",
+                        "text": "uydurulmuş personel",
+                        "kind": "dimension",
+                    },
+                ],
+                "operations": [
                     {
                         "kind": "comparison",
                         "text": "ürünleri karşılaştır",
-                        "subject_mentions": [
-                            {"text": "ürünleri", "kind": "dimension"}
-                        ],
-                        "related_mentions": [],
-                        "ranking": None,
+                        "subject_refs": ["s-product"],
+                        "related_refs": [],
                         "comparisons": [],
+                        "polarity": "requested",
                     }
                 ],
                 "relationships": [
                     {
                         "text": "uydurulmuş personel ilişkisi",
-                        "focus_mentions": [
-                            {"text": "ürünleri", "kind": "dimension"}
-                        ],
-                        "counterpart_mentions": [
-                            {"text": "uydurulmuş personel", "kind": "dimension"}
-                        ],
+                        "focus_ref": "s-product",
+                        "focus_binding": "antecedent",
+                        "counterpart_refs": ["s-invented"],
+                        "polarity": "requested",
                     }
                 ],
-                "time_mentions": [
-                    {"text": "Son 12 ay", "kind": "time"}
-                ],
+                "time_refs": ["s-time"],
                 "deliverables": [
-                    {"kind": "report", "text": "raporla"}
+                    {"kind": "report", "text": "raporla", "polarity": "requested"}
                 ],
             },
             "presentation_request": "report",
@@ -574,7 +577,6 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
     assert caught.value.failure.code == "surface_grounding_violation"
     assert "uydurulmuş" in caught.value.failure.message
 
-
 def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
     question = "Ürünlerin makine ilişkisini incele ve raporla."
     llm = _StaticStructuredLlm(
@@ -582,22 +584,24 @@ def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
             "dialogue_act": "complex_analysis",
             "references": [],
             "analytical_request": None,
-            "research_request": {
-                "goals": [],
+            "research_graph": {
+                "surfaces": [
+                    {"surface_id": "s-focus", "text": "Ürünlerin", "kind": "DIMENSION"},
+                    {"surface_id": "s-machine", "text": "makine", "kind": "DIMENSION"},
+                ],
+                "operations": [],
                 "relationships": [
                     {
                         "text": "Ürünlerin makine ilişkisini incele",
-                        "focus_mentions": [
-                            {"text": "Ürünlerin", "kind": "DIMENSION"}
-                        ],
-                        "counterpart_mentions": [
-                            {"text": "makine", "kind": "DIMENSION"}
-                        ],
+                        "focus_ref": "s-focus",
+                        "focus_binding": "EXPLICIT",
+                        "counterpart_refs": ["s-machine"],
+                        "polarity": "REQUESTED",
                     }
                 ],
-                "time_mentions": [],
+                "time_refs": [],
                 "deliverables": [
-                    {"kind": "REPORT", "text": "raporla"}
+                    {"kind": "REPORT", "text": "raporla", "polarity": "REQUESTED"}
                 ],
             },
             "presentation_request": "REPORT",
@@ -618,9 +622,13 @@ def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
     assert turn.presentation_request == PresentationKind.REPORT
     assert turn.research_request is not None
     assert len(turn.research_request.relationships) == 1
-    assert turn.research_request.relationships[0].focus_mentions[0].kind == SemanticMentionKind.DIMENSION
+    assert (
+        turn.research_request.relationships[0].focus_mentions[0].kind
+        == SemanticMentionKind.DIMENSION
+    )
+    assert turn.research_request.relationships[0].focus_mentions[0].text == "Ürünlerin"
+    assert turn.research_request.relationships[0].counterpart_mentions[0].text == "makine"
     assert turn.research_request.deliverables[0].kind == PresentationKind.REPORT
-
 
 def test_legacy_deliverable_pseudo_goal_is_not_silently_migrated():
     question = "Satış performansını incele ve raporla."
@@ -676,18 +684,25 @@ def test_format_normalization_does_not_relax_surface_grounding():
             "dialogue_act": "COMPLEX_ANALYSIS",
             "references": [],
             "analytical_request": None,
-            "research_request": {
-                "goals": [],
+            "research_graph": {
+                "surfaces": [
+                    {
+                        "surface_id": "s-machine",
+                        "text": "Makinelerle",
+                        "kind": "dimension",
+                    }
+                ],
+                "operations": [],
                 "relationships": [
                     {
                         "text": "makinelerle ilişkilerini",
-                        "focus_mentions": [],
-                        "counterpart_mentions": [
-                            {"text": "Makinelerle", "kind": "dimension"}
-                        ],
+                        "focus_ref": None,
+                        "focus_binding": "unresolved",
+                        "counterpart_refs": ["s-machine"],
+                        "polarity": "requested",
                     }
                 ],
-                "time_mentions": [],
+                "time_refs": [],
                 "deliverables": [],
             },
             "presentation_request": "NONE",
@@ -705,7 +720,6 @@ def test_format_normalization_does_not_relax_surface_grounding():
         )
 
     assert caught.value.failure.code == "surface_grounding_violation"
-
 
 @pytest.mark.parametrize(
     "order",
