@@ -14,6 +14,7 @@ from enum import StrEnum
 class ModelRole(StrEnum):
     FAST_LANGUAGE = "FAST_LANGUAGE"
     REFERENCE_LANGUAGE = "REFERENCE_LANGUAGE"
+    RESEARCH_MANAGER = "RESEARCH_MANAGER"
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,11 @@ class ModelRolePolicy:
             provider = str(getattr(self._settings, "v2_reference_language_provider", "") or "openrouter")
             configured = str(getattr(self._settings, "v2_reference_language_model", "") or "")
             model = str(model_override or configured or "")
+        elif role == ModelRole.RESEARCH_MANAGER:
+            provider = str(getattr(self._settings, "v2_research_manager_provider", "") or "openrouter")
+            configured = str(getattr(self._settings, "v2_research_manager_model", "") or "")
+            fallback = str(getattr(self._settings, "v2_reference_language_model", "") or "")
+            model = str(model_override or configured or fallback or "")
         else:
             raise ValueError(f"unsupported V2 model role: {role}")
 
@@ -68,9 +74,13 @@ class ModelRolePolicy:
                 (
                     "v2_fast_language_reasoning"
                     if role == ModelRole.FAST_LANGUAGE
-                    else "v2_reference_language_reasoning"
+                    else (
+                        "v2_research_manager_reasoning"
+                        if role == ModelRole.RESEARCH_MANAGER
+                        else "v2_reference_language_reasoning"
+                    )
                 ),
-                role == ModelRole.REFERENCE_LANGUAGE,
+                role in {ModelRole.REFERENCE_LANGUAGE, ModelRole.RESEARCH_MANAGER},
             )
         )
 
