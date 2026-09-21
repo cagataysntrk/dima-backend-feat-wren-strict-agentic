@@ -33,7 +33,11 @@ from app.v2.semantic_linker import (
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
-from app.v2.temporal import TemporalResolutionError, resolve_comparison, resolve_period
+from app.v2.temporal import TemporalResolutionError
+from app.v2.temporal_intent import (
+    TemporalBindingEngine,
+    TypedTemporalNormalizer,
+)
 
 
 class ManagerResolvedSemantic(FrozenModel):
@@ -89,6 +93,10 @@ class ManagerSemanticResolutionAdapter:
         self._tenant_binding = tenant_binding
         self._session_id = session_id
         self._thread_id = thread_id
+        self._temporal_normalizer = TypedTemporalNormalizer(
+            structured=semantic_linker_structured,
+        )
+        self._temporal_engine = TemporalBindingEngine()
         self._semantic_linker = BoundedSemanticLinker(
             generator=SemanticCandidateGenerator(
                 semantic_context=semantic_context,
@@ -125,22 +133,20 @@ class ManagerSemanticResolutionAdapter:
             )
         return next(iter(candidates))
 
-    def _mint(
+    def _mint_temporal(
         self,
         *,
         target_kind: str,
         canonical_target,
-        resolver_provenance_id: str,
-        sensitive: bool,
+        temporal_provenance_id: str,
         args: ResolveSemanticsArgs,
     ) -> SemanticHandle:
-        return self._handles.mint_from_resolver(
+        return self._handles.mint_from_temporal_engine(
             tenant_binding=self._tenant_binding,
             context_version=self._semantic_context.context_version.version,
-            resolver_provenance_id=resolver_provenance_id,
+            temporal_provenance_id=temporal_provenance_id,
             target_kind=target_kind,
             canonical_target=canonical_target,
-            sensitive=sensitive,
             provenance_type=args.provenance,
             parent_obligation_id=args.parent_obligation_id,
             trigger_evidence_ref=args.evidence_ref,
@@ -154,47 +160,57 @@ class ManagerSemanticResolutionAdapter:
         args: ResolveSemanticsArgs,
     ) -> SemanticHandle:
         time_dimension = self._time_dimension(args.temporal_anchor_handle)
+        target = "PERIOD" if hint == "time" else "COMPARISON"
+        choice = self._temporal_normalizer.normalize(
+            (("temporal:0", text, target),)
+        )[0]
+        if choice.decision != "NORMALIZED":
+            raise TemporalResolutionError(
+                f"typed temporal normalizer abstained: {choice.reason}"
+            )
+
         if hint == "time":
-            period = resolve_period(
-                (SemanticMention(text=text, kind=SemanticMentionKind.TIME),),
+            period = self._temporal_engine.period(
+                choice=choice,
+                source_text=text,
                 time_dimension=time_dimension,
             )
-            if period is None:
-                raise TemporalResolutionError("time period could not be resolved")
-            return self._mint(
+            return self._mint_temporal(
                 target_kind="period",
                 canonical_target=period,
-                resolver_provenance_id=f"temporal:{period.kind.value}:{period.start}:{period.end}",
-                sensitive=False,
+                temporal_provenance_id=(
+                    f"typed-period:{choice.period_kind}:{choice.n or ''}:"
+                    f"{period.start}:{period.end or ''}"
+                ),
                 args=args,
             )
 
         if hint == "comparison":
-            base_period = None
-            if args.base_period_handle:
-                binding = self._handles.binding_for_execution(
-                    args.base_period_handle,
-                    tenant_binding=self._tenant_binding,
-                    context_version=self._semantic_context.context_version.version,
+            if not args.base_period_handle:
+                raise TemporalResolutionError(
+                    "comparison requires governed base_period_handle"
                 )
-                if not isinstance(binding.canonical_target, ResolvedPeriod):
-                    raise TemporalResolutionError("base_period_handle period target değil")
-                base_period = binding.canonical_target
-            comparison = resolve_comparison(
-                (ComparisonSurface(text=text),),
-                base_period=base_period,
-                time_dimension=time_dimension,
+            binding = self._handles.binding_for_execution(
+                args.base_period_handle,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
             )
-            if comparison is None:
-                raise TemporalResolutionError("comparison could not be resolved")
-            return self._mint(
+            if not isinstance(binding.canonical_target, ResolvedPeriod):
+                raise TemporalResolutionError("base_period_handle period target değil")
+            comparison = self._temporal_engine.comparison(
+                choice=choice,
+                source_text=text,
+                time_dimension=time_dimension,
+                base_period=binding.canonical_target,
+            )
+            return self._mint_temporal(
                 target_kind="comparison",
                 canonical_target=comparison,
-                resolver_provenance_id=(
-                    f"comparison:{comparison.mode}:{comparison.base_period.start}:"
+                temporal_provenance_id=(
+                    f"typed-comparison:{choice.comparison_kind}:"
+                    f"{comparison.base_period.start}:"
                     f"{comparison.reference_period.start}"
                 ),
-                sensitive=False,
                 args=args,
             )
 
