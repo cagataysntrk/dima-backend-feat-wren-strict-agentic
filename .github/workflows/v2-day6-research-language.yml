@@ -4,7 +4,7 @@ name: v2-day6-research-language
   workflow_dispatch:
     inputs:
       case_ids:
-        description: "Optional comma-separated case ids; empty runs the full 40-case gate"
+        description: "Optional comma-separated case ids; empty runs the full Day 6 gate"
         required: false
         default: ""
 
