@@ -10,7 +10,9 @@ import pytest
 from app.v2.completion import CompletionGate
 from app.v2.manager_errors import ManagerSemanticGap
 from app.v2.manager_loop import (
+    ManagerActionKind,
     ManagerDecisionTransport,
+    ResearchManagerLoop,
     _clarification_has_governed_grounding,
     _conversation_surface_view,
     _evidence_was_inspected,
@@ -471,3 +473,67 @@ def test_manager_conversation_view_never_exposes_canonical_ir_or_anchor():
     assert view["focus_labels"] == ["Net Gelir"]
     assert "Sales.secret_revenue_column" not in blob
     assert "SecretCube" not in blob
+
+
+def test_manager_semantic_handle_aliases_are_runtime_issued_and_decoded():
+    class _NeverCalled:
+        def structured_json(self, *args, **kwargs):
+            raise AssertionError("LLM must not be called in alias unit test")
+
+    spans = SourceSpanRegistry()
+    question = "net gelir ne durumda?"
+    source_hash = spans.register_message(message_id="alias-turn", text=question)
+    loop = ResearchManagerLoop(llm=_NeverCalled(), source_spans=spans)
+
+    manager_view = loop._manager_safe(
+        {
+            "resolved": [
+                {"handle": {"handle_id": "sem_" + "a" * 24, "target_kind": "metric"}}
+            ]
+        }
+    )
+    alias = manager_view["resolved"][0]["handle"]["handle_id"]
+    assert alias == "h1"
+    assert "sem_" not in str(manager_view)
+
+    runtime = ManagerRuntime(request_ref="alias-request")
+    runtime.begin_understanding()
+    runtime.note_manager_turn()
+    decision = ManagerDecisionTransport(
+        action=ManagerActionKind.PROPOSE_ACCEPTANCE,
+        obligations=(
+            {
+                "obligation_id": "U1",
+                "capability_key": ManagerCapabilityKey.PERFORMANCE,
+                "origin": ObligationOrigin.USER_MUST,
+                "priority": ObligationPriority.MUST,
+                "polarity": ObligationPolarity.REQUIRED,
+                "source_surfaces": ("net gelir",),
+                "semantic_handle_refs": (alias,),
+            },
+        ),
+    )
+    call = loop._compile_tool(
+        decision=decision,
+        message_id="alias-turn",
+        source_hash=source_hash,
+        request_ref="alias-request",
+        runtime=runtime,
+    )
+    assert call is not None
+    envelope = call.args["envelope"]
+    assert envelope["obligations"][0]["semantic_handle_refs"] == [
+        "sem_" + "a" * 24
+    ]
+
+
+def test_manager_rejects_unissued_or_raw_semantic_handle_references():
+    class _NeverCalled:
+        def structured_json(self, *args, **kwargs):
+            raise AssertionError("LLM must not be called")
+
+    loop = ResearchManagerLoop(llm=_NeverCalled(), source_spans=SourceSpanRegistry())
+    with pytest.raises(ValueError, match="unknown/unissued"):
+        loop._decode_handle("h99")
+    with pytest.raises(ValueError, match=r"raw sem_\*"):
+        loop._decode_handle("sem_" + "f" * 24)
