@@ -16,7 +16,7 @@ from pathlib import Path
 import yaml
 
 from app.config import get_settings
-from app.llm import NoLlmGenerator, RuleBasedSqlGenerator, build_v2_interpreter_generator
+from app.llm import NoLlmGenerator, RuleBasedSqlGenerator, build_generator
 from app.v2.interpreter import TurnInterpreter, TurnInterpreterError
 from app.v2.models import (
     BoundedSemanticContextV0,
@@ -310,7 +310,7 @@ def main() -> int:
     if missing_selected:
         raise SystemExit(f"Unknown case ids: {sorted(missing_selected)}")
 
-    llm = build_v2_interpreter_generator(get_settings())
+    llm = build_generator(get_settings())
     providers = _provider_names(llm)
     if not _is_real_llm(llm):
         payload = {
