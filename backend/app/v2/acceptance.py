@@ -5,11 +5,11 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime, timezone
 
+from app.v2.capability_bindings import CapabilityBinding, CapabilityBindingValidator
 from app.v2.manager_models import (
     AcceptedTurnContract,
     AcceptanceResult,
     AcceptanceStatus,
-    ManagerCapabilityKey,
     ObligationLedgerItem,
     ObligationOrigin,
     ObligationPolarity,
@@ -18,7 +18,7 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
     UserObligationLedger,
 )
-from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
+from app.v2.manager_policy import ManagerCapabilityRegistry
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 
@@ -38,16 +38,21 @@ class AcceptedContractRegistry:
         existing_turn = self._by_turn.get(contract.turn_id)
         if existing_turn is not None:
             if existing_turn.contract_id == contract.contract_id:
-                return  # idempotent retry of the same accepted authority
+                return
             raise AcceptedAuthorityConflict(
-                f"turn {contract.turn_id} already has accepted contract {existing_turn.contract_id}"
+                f"turn {contract.turn_id} already has accepted contract "
+                f"{existing_turn.contract_id}"
             )
         current = self._active_by_lineage.get(contract.lineage_id)
         if current is not None:
             if contract.supersedes_contract_id != current.contract_id:
-                raise AcceptedAuthorityConflict("new contract version must supersede active lineage head")
+                raise AcceptedAuthorityConflict(
+                    "new contract version must supersede active lineage head"
+                )
             if contract.version != current.version + 1:
-                raise AcceptedAuthorityConflict("contract version must increase monotonically")
+                raise AcceptedAuthorityConflict(
+                    "contract version must increase monotonically"
+                )
         elif contract.version != 1 or contract.supersedes_contract_id is not None:
             raise AcceptedAuthorityConflict("new lineage must start at version 1")
 
@@ -59,7 +64,7 @@ class AcceptedContractRegistry:
 
 
 class IntentAcceptanceGate:
-    """Verify source/provenance/authority facts; never judge human intent by heuristics."""
+    """Verify deterministic authority facts; never infer human intent heuristically."""
 
     def __init__(
         self,
@@ -71,6 +76,37 @@ class IntentAcceptanceGate:
         self._source_spans = source_spans
         self._semantic_handles = semantic_handles
         self._capabilities = capabilities or ManagerCapabilityRegistry()
+        self._bindings = CapabilityBindingValidator(
+            semantic_handles=semantic_handles,
+            capabilities=self._capabilities,
+        )
+
+    def _validate_effect_conflicts(
+        self,
+        *,
+        items,
+        bindings: dict[str, CapabilityBinding],
+    ) -> tuple[str, ...]:
+        """Detect contradictory semantic effects, independent of capability wording."""
+        conflicts: list[str] = []
+        seen: list[tuple[object, ObligationPolarity, str]] = []
+        for item in items:
+            binding = bindings.get(item.obligation_id)
+            if binding is None:
+                continue
+            for effect in binding.effects:
+                for previous_effect, previous_polarity, previous_id in seen:
+                    if (
+                        previous_polarity != item.polarity
+                        and effect.conflicts_with(previous_effect)
+                    ):
+                        conflicts.append(
+                            "conflicting semantic effect "
+                            f"{effect.family}/{effect.scope_kind}/{effect.scope_ref} "
+                            f"between {previous_id} and {item.obligation_id}"
+                        )
+                seen.append((effect, item.polarity, item.obligation_id))
+        return tuple(dict.fromkeys(conflicts))
 
     def evaluate(
         self,
@@ -91,7 +127,6 @@ class IntentAcceptanceGate:
         if envelope.unresolved_source_refs:
             clarify.append("unresolved source refs remain")
 
-        seen_polarity: dict[tuple[str, str], ObligationPolarity] = {}
         active_ids = {
             item.obligation_id
             for item in (active_ledger.items if active_ledger is not None else ())
@@ -103,28 +138,40 @@ class IntentAcceptanceGate:
 
         if active_contract is not None:
             if active_ledger is None:
-                reject.append("active contract versioning requires active obligation ledger")
+                reject.append(
+                    "active contract versioning requires active obligation ledger"
+                )
             elif (
                 active_ledger.lineage_id != active_contract.lineage_id
                 or active_ledger.version != active_contract.version
             ):
-                reject.append("active obligation ledger does not match active contract head")
+                reject.append(
+                    "active obligation ledger does not match active contract head"
+                )
         elif active_ledger is not None:
             reject.append("active obligation ledger cannot exist without active contract")
 
-        for item in envelope.obligations:
-            if not self._capabilities.registered(item.capability_key):
-                reject.append(f"unregistered capability: {item.capability_key.value}")
+        current_bindings: dict[str, CapabilityBinding] = {}
 
-            if item.origin == ObligationOrigin.USER_MUST and item.priority != ObligationPriority.MUST:
-                reject.append(f"USER_MUST {item.obligation_id} must use MUST priority")
+        for item in envelope.obligations:
+            if item.origin == ObligationOrigin.USER_MUST:
+                if item.priority != ObligationPriority.MUST:
+                    reject.append(
+                        f"USER_MUST {item.obligation_id} must use MUST priority"
+                    )
 
             if item.origin == ObligationOrigin.AGENT_DERIVED:
-                # Derived investigations are research-state additions, not user-intent acceptance.
-                reject.append("AGENT_DERIVED obligation cannot enter initial accepted user contract")
+                reject.append(
+                    "AGENT_DERIVED obligation cannot enter initial accepted user contract"
+                )
 
-            if item.parent_obligation_id and item.parent_obligation_id not in candidate_ids:
-                reject.append(f"unknown parent obligation: {item.parent_obligation_id}")
+            if (
+                item.parent_obligation_id
+                and item.parent_obligation_id not in candidate_ids
+            ):
+                reject.append(
+                    f"unknown parent obligation: {item.parent_obligation_id}"
+                )
 
             for source_ref in item.source_refs:
                 try:
@@ -133,98 +180,72 @@ class IntentAcceptanceGate:
                     reject.append(f"invalid source ref {source_ref}: {exc}")
                     continue
                 if (
-                    item.origin in {ObligationOrigin.USER_MUST, ObligationOrigin.USER_OPTIONAL}
+                    item.origin
+                    in {ObligationOrigin.USER_MUST, ObligationOrigin.USER_OPTIONAL}
                     and span.message_hash != envelope.source_message_hash
                 ):
                     reject.append(
-                        f"user obligation {item.obligation_id} is not grounded in current source hash"
+                        f"user obligation {item.obligation_id} is not grounded "
+                        "in current source hash"
                     )
 
-            handle_kinds: set[str] = set()
-            handle_refs_by_kind: dict[str, set[str]] = {}
-            for handle_id in item.semantic_handle_refs:
-                try:
-                    handle = self._semantic_handles.validate(
-                        handle_id,
-                        tenant_binding=tenant_binding,
-                        context_version=context_version,
-                    )
-                    kind = "period" if handle.target_kind == "time" else handle.target_kind
-                    handle_kinds.add(kind)
-                    handle_refs_by_kind.setdefault(kind, set()).add(handle_id)
-                except (KeyError, ValueError) as exc:
-                    reject.append(f"invalid semantic handle {handle_id}: {exc}")
-
-            spec = self._capabilities.get(item.capability_key)
-            if (
-                item.origin == ObligationOrigin.USER_MUST
-                and item.priority == ObligationPriority.MUST
-                and item.polarity == ObligationPolarity.REQUIRED
-                and spec.executable
-                and spec.lane == ManagerCapabilityLane.STANDARD
-            ):
-                required_kinds = {
-                    "performance": {"metric"},
-                    "breakdown": {"metric", "dimension"},
-                    "ranking": {"metric", "dimension"},
-                    "comparison": {"metric", "comparison"},
-                }.get(item.capability_key.value, set())
-                missing_kinds = required_kinds - handle_kinds
-                if missing_kinds:
-                    reject.append(
-                        f"standard USER_MUST {item.obligation_id} missing Resolver semantic kinds: "
-                        + ", ".join(sorted(missing_kinds))
-                    )
+            binding_result = self._bindings.validate(
+                item,
+                tenant_binding=tenant_binding,
+                context_version=context_version,
+            )
+            if not binding_result.valid:
+                reject.extend(binding_result.reasons)
+            elif binding_result.binding is not None:
+                current_bindings[item.obligation_id] = binding_result.binding
 
             if item.open_questions and item.priority == ObligationPriority.MUST:
-                clarify.append(f"MUST obligation {item.obligation_id} has open questions")
-
-            if item.capability_key in {
-                ManagerCapabilityKey.BREAKDOWN,
-                ManagerCapabilityKey.RANKING,
-            }:
-                semantic_scope = handle_refs_by_kind.get("dimension", set())
-            elif item.capability_key == ManagerCapabilityKey.COMPARISON:
-                semantic_scope = handle_refs_by_kind.get("comparison", set())
-            elif item.capability_key == ManagerCapabilityKey.PERFORMANCE:
-                semantic_scope = handle_refs_by_kind.get("metric", set())
-            else:
-                semantic_scope = set(item.semantic_handle_refs)
-
-            scope_key = (
-                "|".join(sorted(semantic_scope))
-                if semantic_scope
-                else "src:" + "|".join(sorted(item.source_refs))
-            )
-            polarity_key = (item.capability_key.value, scope_key)
-            previous = seen_polarity.get(polarity_key)
-            if previous is not None and previous != item.polarity:
                 clarify.append(
-                    f"conflicting polarity for {item.capability_key.value} on same semantic scope"
+                    f"MUST obligation {item.obligation_id} has open questions"
                 )
-            else:
-                seen_polarity[polarity_key] = item.polarity
 
         replaced_ids = {item.obligation_id for item in envelope.obligations}
-        effective_required_candidates = (
-            *(
-                item
-                for item in (active_ledger.items if active_ledger is not None else ())
-                if item.obligation_id not in replaced_ids
-                and item.status != ObligationStatus.SUPERSEDED
-            ),
-            *envelope.obligations,
+        carried_items = tuple(
+            item
+            for item in (active_ledger.items if active_ledger is not None else ())
+            if item.obligation_id not in replaced_ids
+            and item.status != ObligationStatus.SUPERSEDED
         )
+        effective_items = (*carried_items, *envelope.obligations)
+
+        # Revalidate carried authority defensively against the current contract algebra.
+        effective_bindings = dict(current_bindings)
+        for item in carried_items:
+            result = self._bindings.validate(
+                item,
+                tenant_binding=tenant_binding,
+                context_version=context_version,
+            )
+            if not result.valid:
+                reject.extend(
+                    f"carried obligation {item.obligation_id}: {reason}"
+                    for reason in result.reasons
+                )
+            elif result.binding is not None:
+                effective_bindings[item.obligation_id] = result.binding
+
         has_required_user_must = any(
             item.origin == ObligationOrigin.USER_MUST
             and item.priority == ObligationPriority.MUST
             and item.polarity == ObligationPolarity.REQUIRED
-            for item in effective_required_candidates
+            for item in effective_items
         )
         if not has_required_user_must:
             reject.append(
                 "analytical contract requires at least one REQUIRED USER_MUST obligation"
             )
+
+        clarify.extend(
+            self._validate_effect_conflicts(
+                items=effective_items,
+                bindings=effective_bindings,
+            )
+        )
 
         if reject:
             return AcceptanceResult(
@@ -240,16 +261,23 @@ class IntentAcceptanceGate:
         lineage = lineage_id or (
             active_contract.lineage_id
             if active_contract is not None
-            else "atl_" + hashlib.sha256(envelope.request_ref.encode("utf-8")).hexdigest()[:20]
+            else "atl_"
+            + hashlib.sha256(envelope.request_ref.encode("utf-8")).hexdigest()[:20]
         )
         version = active_contract.version + 1 if active_contract is not None else 1
-        supersedes = active_contract.contract_id if active_contract is not None else None
+        supersedes = (
+            active_contract.contract_id if active_contract is not None else None
+        )
 
         contract_payload = (
-            f"{lineage}\x1f{version}\x1f{envelope.turn_id}\x1f{envelope.attempt_id}"
-            f"\x1f{context_version}\x1f{envelope.source_message_hash}"
+            f"{lineage}\x1f{version}\x1f{envelope.turn_id}\x1f"
+            f"{envelope.attempt_id}\x1f{context_version}\x1f"
+            f"{envelope.source_message_hash}"
         )
-        contract_id = "atc_" + hashlib.sha256(contract_payload.encode("utf-8")).hexdigest()[:24]
+        contract_id = (
+            "atc_"
+            + hashlib.sha256(contract_payload.encode("utf-8")).hexdigest()[:24]
+        )
 
         current_items = tuple(
             ObligationLedgerItem(
@@ -268,23 +296,23 @@ class IntentAcceptanceGate:
             )
             for item in envelope.obligations
         )
-        replaced_ids = {item.obligation_id for item in current_items}
-        carried_items = tuple(
+        current_ids = {item.obligation_id for item in current_items}
+        carried_ledger_items = tuple(
             item
             for item in (active_ledger.items if active_ledger is not None else ())
-            if item.obligation_id not in replaced_ids
+            if item.obligation_id not in current_ids
             and item.status != ObligationStatus.SUPERSEDED
         )
-        effective_items = (*carried_items, *current_items)
+        committed_items = (*carried_ledger_items, *current_items)
 
         obligation_ids = tuple(
             item.obligation_id
-            for item in effective_items
+            for item in committed_items
             if item.polarity == ObligationPolarity.REQUIRED
         )
         exclusion_ids = tuple(
             item.obligation_id
-            for item in effective_items
+            for item in committed_items
             if item.polarity == ObligationPolarity.EXCLUDED
         )
 
@@ -308,7 +336,7 @@ class IntentAcceptanceGate:
         ledger = UserObligationLedger(
             lineage_id=lineage,
             version=version,
-            items=effective_items,
+            items=committed_items,
         )
 
         return AcceptanceResult(
