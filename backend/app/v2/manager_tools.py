@@ -93,6 +93,7 @@ class RunAnalyticsArgs(FrozenModel):
     derived_task_id: str | None = None
     derived_parent_obligation_id: str | None = None
     derived_capability_key: ManagerCapabilityKey | None = None
+    derived_evidence_ref: str | None = None
 
     @model_validator(mode="after")
     def _derived_contract(self):
@@ -100,11 +101,14 @@ class RunAnalyticsArgs(FrozenModel):
             self.derived_task_id,
             self.derived_parent_obligation_id,
             self.derived_capability_key,
+            self.derived_evidence_ref,
         )
         if any(value is not None for value in values) and not all(
             value is not None for value in values
         ):
-            raise ValueError("derived task id/parent/capability birlikte verilmelidir")
+            raise ValueError(
+                "derived task id/parent/capability/evidence_ref birlikte verilmelidir"
+            )
         return self
 
     def to_standard_projection(self) -> StandardProjection:
