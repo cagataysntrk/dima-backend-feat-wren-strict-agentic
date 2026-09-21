@@ -35,6 +35,8 @@ from app.v2.models import (
     ResearchDeliverableSurface,
     ResearchGoalKind,
     ResearchGoalStatus,
+    ResearchMode,
+    ResearchModeReason,
     ResearchGoalSurface,
     ResearchRequestSurface,
     ResolutionStatus,
@@ -49,7 +51,7 @@ from app.v2.models import (
     TurnInterpretation,
 )
 from app.v2.orchestrator import V2Orchestrator
-from app.v2.research import ResearchBriefBuilder
+from app.v2.research import ResearchBriefBuilder, ResearchModePolicy
 from app.v2.resolver import SemanticResolver
 
 
@@ -114,7 +116,7 @@ def canonical_turn() -> TurnInterpretation:
     personnel = mention("personellerle", SemanticMentionKind.DIMENSION)
     sales = mention("satış performanslarını", SemanticMentionKind.METRIC)
     return TurnInterpretation(
-        dialogue_act=TurnAct.REPORT_REQUEST,
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
         presentation_request=PresentationKind.REPORT,
         research_request=ResearchRequestSurface(
             time_mentions=(mention("Son 12 ay", SemanticMentionKind.TIME),),
@@ -220,7 +222,7 @@ def test_canonical_typed_research_brief_preserves_all_five_must_goals():
 def test_research_brief_never_invents_unrequested_goals_or_domains():
     product = mention("öğeler", SemanticMentionKind.DIMENSION)
     turn = TurnInterpretation(
-        dialogue_act=TurnAct.REPORT_REQUEST,
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
         presentation_request=PresentationKind.REPORT,
         research_request=ResearchRequestSurface(
             goals=(
@@ -428,7 +430,7 @@ class _TypedResearchInterpreter:
     def interpret(self, **kwargs):
         item = mention("items", SemanticMentionKind.DIMENSION)
         return TurnInterpretation(
-            dialogue_act=TurnAct.REPORT_REQUEST,
+            dialogue_act=TurnAct.COMPLEX_ANALYSIS,
             presentation_request=PresentationKind.REPORT,
             research_request=ResearchRequestSurface(
                 goals=(
@@ -624,7 +626,7 @@ def test_interpreter_normalizes_provider_enum_case_and_inapplicable_deliverable_
     )
 
     assert llm.calls == 1
-    assert turn.dialogue_act == TurnAct.REPORT_REQUEST
+    assert turn.dialogue_act == TurnAct.COMPLEX_ANALYSIS
     assert turn.presentation_request == PresentationKind.REPORT
     assert turn.research_request is not None
     assert [goal.kind for goal in turn.research_request.goals] == [
@@ -701,7 +703,8 @@ def test_goal_order_changes_never_drop_or_duplicate_must_requirements(order):
     )
 
     assert len(brief.questions) == len(reordered)
-    assert len(set(brief.must_requirement_ids)) == len(reordered)
+    assert len(set(brief.must_requirement_ids)) == len(reordered) + len(request.deliverables)
+    assert brief.must_requirement_ids[-1:] == ("d1",)
     assert [q.source_text for q in brief.questions] == [g.text for g in reordered]
     assert [q.kind for q in brief.questions] == [g.kind for g in reordered]
 
@@ -1017,3 +1020,113 @@ def test_unknown_research_anchor_survives_resolver_as_blocked_must_goal():
     assert brief.questions[0].unresolved[0].source_mention == "lojistik performansı"
     assert brief.blocking_goal_ids == ("g1",)
     assert brief.status == ResearchBriefStatus.BLOCKED
+
+
+def test_research_mode_policy_ignores_report_presentation_for_standard_shape():
+    metric = mention("satış performansını", SemanticMentionKind.METRIC)
+    dimension = mention("ürün bazında", SemanticMentionKind.DIMENSION)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.REPORT_REQUEST,
+        presentation_request=PresentationKind.REPORT,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.PERFORMANCE,
+                    text="satış performansını",
+                    subject_mentions=(metric,),
+                ),
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.BREAKDOWN,
+                    text="ürün bazında",
+                    subject_mentions=(metric,),
+                    related_mentions=(dimension,),
+                ),
+            ),
+            deliverables=(
+                ResearchDeliverableSurface(
+                    kind=PresentationKind.REPORT,
+                    text="raporla",
+                ),
+            ),
+        ),
+    )
+
+    decision = ResearchModePolicy().decide(turn)
+
+    assert decision.mode == ResearchMode.STANDARD
+    assert decision.reason == ResearchModeReason.STANDARD_PROJECTABLE_OPERATIONS
+    assert decision.canonical_turn.dialogue_act == TurnAct.ANALYTIC_NEW
+    assert decision.canonical_turn.presentation_request == PresentationKind.REPORT
+    assert decision.canonical_turn.research_request is None
+    assert decision.canonical_turn.analytical_request is not None
+    assert [m.text for m in decision.canonical_turn.analytical_request.metric_mentions] == [
+        "satış performansını"
+    ]
+    assert [m.text for m in decision.canonical_turn.analytical_request.dimension_mentions] == [
+        "ürün bazında"
+    ]
+
+
+@pytest.mark.parametrize(
+    "presentation",
+    [PresentationKind.NONE, PresentationKind.REPORT, PresentationKind.CHART, PresentationKind.TABLE],
+)
+def test_research_mode_policy_is_presentation_invariant_for_complex_shape(presentation):
+    product = mention("ürünleri", SemanticMentionKind.DIMENSION)
+    machine = mention("makine", SemanticMentionKind.DIMENSION)
+    deliverables = (
+        ()
+        if presentation == PresentationKind.NONE
+        else (
+            ResearchDeliverableSurface(
+                kind=presentation,
+                text="çıktı",
+            ),
+        )
+    )
+    turn = TurnInterpretation(
+        dialogue_act=(
+            TurnAct.REPORT_REQUEST
+            if presentation == PresentationKind.REPORT
+            else TurnAct.COMPLEX_ANALYSIS
+        ),
+        presentation_request=presentation,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.RELATIONSHIP,
+                    text="ilişki",
+                    subject_mentions=(product,),
+                    related_mentions=(machine,),
+                ),
+            ),
+            deliverables=deliverables,
+        ),
+    )
+
+    decision = ResearchModePolicy().decide(turn)
+
+    assert decision.mode == ResearchMode.RESEARCH
+    assert decision.reason == ResearchModeReason.COMPLEX_ONLY_OPERATION
+    assert decision.canonical_turn.dialogue_act == TurnAct.COMPLEX_ANALYSIS
+    assert decision.canonical_turn.presentation_request == presentation
+
+
+def test_research_mode_policy_never_reads_deliverable_or_goal_text_for_route():
+    source = inspect.getsource(ResearchModePolicy)
+    assert ".deliverables" not in source
+    assert "goal.text" not in source
+    assert "re." not in source
+
+
+def test_relationship_goal_schema_rejects_non_atomic_many_to_many_shape():
+    a = mention("a", SemanticMentionKind.DIMENSION)
+    b = mention("b", SemanticMentionKind.DIMENSION)
+    c = mention("c", SemanticMentionKind.DIMENSION)
+    with pytest.raises(ValueError):
+        ResearchGoalSurface(
+            kind=ResearchGoalKind.RELATIONSHIP,
+            text="a b c",
+            subject_mentions=(a, b),
+            related_mentions=(c,),
+        )
