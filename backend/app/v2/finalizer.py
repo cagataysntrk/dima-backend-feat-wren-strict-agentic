@@ -232,9 +232,17 @@ class ConversationFinalizerV0:
                 goals = "\n".join(
                     f"- {question.source_text}" for question in brief.questions
                 )
+                deliverables = "\n".join(
+                    f"- {item.source_text}" for item in brief.deliverables
+                )
                 period_line = (
                     "Dönem: " + ", ".join(brief.scope.time_surfaces) + "\n"
                     if brief.scope.time_surfaces
+                    else ""
+                )
+                deliverable_line = (
+                    "\nİstenen MUST çıktılar:\n" + deliverables
+                    if deliverables
                     else ""
                 )
                 response = ConversationResponseV0(
@@ -244,6 +252,7 @@ class ConversationFinalizerV0:
                         + period_line
                         + "İncelenecek MUST hedefler:\n"
                         + goals
+                        + deliverable_line
                     ),
                     official_verified=False,
                 )
@@ -256,9 +265,17 @@ class ConversationFinalizerV0:
                 lines = "\n".join(
                     f"- {source_text}" for source_text in blocked.values()
                 )
+                deliverables = "\n".join(
+                    f"- {item.source_text}" for item in brief.deliverables
+                )
                 period_line = (
                     "Dönem: " + ", ".join(brief.scope.time_surfaces) + "\n"
                     if brief.scope.time_surfaces
+                    else ""
+                )
+                deliverable_line = (
+                    "\nKorunan MUST çıktılar:\n" + deliverables
+                    if deliverables
                     else ""
                 )
                 response = ConversationResponseV0(
@@ -269,6 +286,7 @@ class ConversationFinalizerV0:
                         + "Şu MUST hedefler güvenilir semantic bağ kurulmadan "
                         "araştırmaya açılamaz:\n"
                         + lines
+                        + deliverable_line
                     ),
                     # Research clarification resume is intentionally not a Day 6 feature.
                     clarification_chips=(),
