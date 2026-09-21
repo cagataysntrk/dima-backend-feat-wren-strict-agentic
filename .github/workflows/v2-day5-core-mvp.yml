@@ -1,0 +1,57 @@
+name: v2-day5-core-mvp
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/v2/**"
+      - "backend/app/routers/ask_v2.py"
+      - "backend/tests/test_v2_day4.py"
+      - "backend/tests/test_v2_day5.py"
+      - "dima-frontend-demo-master/src/**"
+      - ".github/workflows/v2-day5-core-mvp.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: v2-day5-core-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  focused-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_LLM_PROVIDER: "rule"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Backend dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Focused Day4 + Day5 Core contracts
+        working-directory: backend
+        run: pytest -q tests/test_v2_day4.py tests/test_v2_day5.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dima-frontend-demo-master/package-lock.json
+
+      - name: Frontend dependencies
+        working-directory: dima-frontend-demo-master
+        run: npm ci --ignore-scripts
+
+      - name: V2 frontend contract typecheck
+        working-directory: dima-frontend-demo-master
+        run: npx tsc --noEmit
