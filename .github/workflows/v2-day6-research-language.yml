@@ -64,6 +64,8 @@ jobs:
               id="${id//[[:space:]]/}"
               [[ -n "${id}" ]] && args+=(--case-id "${id}")
             done
+          else
+            args+=(--frozen16)
           fi
           python lab/v2_day6_research_eval.py "${args[@]}"
       - name: Upload Day 6 language measurement
