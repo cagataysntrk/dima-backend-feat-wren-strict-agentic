@@ -25,7 +25,10 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
 )
 from app.v2.manager_policy import ManagerCapabilityRegistry
-from app.v2.manager_preacceptance import PreAcceptanceController
+from app.v2.manager_preacceptance import (
+    FiniteAcceptanceStatus,
+    PreAcceptanceController,
+)
 from app.v2.manager_progress import DynamicActionFrontier
 from app.v2.manager_runtime import (
     ManagerBudgetError,
@@ -209,6 +212,7 @@ class ManagerLoopOutcome:
     terminal_status: ResearchRunTerminal | None
     clarification_required: bool
     observations: tuple[dict[str, Any], ...]
+    preacceptance_status: FiniteAcceptanceStatus | None = None
 
 
 def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
@@ -362,6 +366,7 @@ def _safe(value: Any) -> Any:
 @dataclass(frozen=True)
 class ManagerUnderstandingOutcome:
     snapshot: ManagerRunSnapshot
+    status: FiniteAcceptanceStatus
     accepted: bool
     clarification_required: bool
     observations: tuple[dict[str, Any], ...]
@@ -696,6 +701,7 @@ class ResearchManagerLoop:
         except ManagerBudgetError as exc:
             return ManagerUnderstandingOutcome(
                 snapshot=runtime.snapshot,
+                status=FiniteAcceptanceStatus.MODEL_FAILURE,
                 accepted=False,
                 clarification_required=False,
                 observations=({"kind": "budget", "message": str(exc)},),
@@ -703,6 +709,7 @@ class ResearchManagerLoop:
 
         return ManagerUnderstandingOutcome(
             snapshot=runtime.snapshot,
+            status=outcome.status,
             accepted=outcome.accepted,
             clarification_required=outcome.clarification_required,
             observations=outcome.observations,
@@ -738,6 +745,7 @@ class ResearchManagerLoop:
                     terminal_status=runtime.snapshot.terminal_status,
                     clarification_required=understanding.clarification_required,
                     observations=tuple(observations),
+                    preacceptance_status=understanding.status,
                 )
 
         source_hash = self._source_spans.register_message(
@@ -956,4 +964,5 @@ class ResearchManagerLoop:
                 runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
             ),
             observations=tuple(observations),
+            preacceptance_status=FiniteAcceptanceStatus.ACCEPTED,
         )
