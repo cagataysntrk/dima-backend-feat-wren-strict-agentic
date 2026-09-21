@@ -407,7 +407,12 @@ def test_interpreter_source_has_no_execution_or_legacy_semantic_owner():
         assert token not in source, token
 
 
-def test_ask_v2_day1_http_path_never_executes_query(client, monkeypatch):
+def test_ask_v2_http_path_preserves_interpreter_turn_inside_current_core_contract(client, monkeypatch):
+    """The old Day1-only HTTP envelope was superseded by the Day5 Core product path.
+
+    This regression keeps the Day1 language-owner evidence without asserting the obsolete
+    intermediate response shape or pretending the current product route never executes.
+    """
     from app.config import get_settings
 
     settings = get_settings()
@@ -426,13 +431,10 @@ def test_ask_v2_day1_http_path_never_executes_query(client, monkeypatch):
     assert response.status_code == 200, response.text
     data = response.json()
 
-    assert data["status"] == "interpreted"
+    assert data["status"] == "core_mvp"
     assert data["turn"]["dialogue_act"] == "ANALYTIC_NEW"
-    assert data["query_executed"] is False
-    assert data["sql_generated"] is False
     assert data["legacy_semantic_path_called"] is False
     assert data["context_version"]["version"]
-    assert data["next_stage"] == "semantic_resolver_day2"
     assert fake.calls == 1
 
 
