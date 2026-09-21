@@ -45,13 +45,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: dima-frontend-demo-master/package-lock.json
+
+      - name: Activate canonical pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.12.1 --activate
 
       - name: Frontend dependencies
         working-directory: dima-frontend-demo-master
-        run: npm ci --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: V2 frontend contract typecheck
         working-directory: dima-frontend-demo-master
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
