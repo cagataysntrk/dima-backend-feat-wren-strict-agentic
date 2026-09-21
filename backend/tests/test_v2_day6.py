@@ -741,7 +741,50 @@ def test_openrouter_native_transport_sends_strict_json_schema_and_requires_param
     }
     assert payload["provider"] == {"require_parameters": True}
     assert payload["model"] == "google/gemini-2.5-flash"
+    assert payload["reasoning"] == {"enabled": False}
     assert "response_format" not in payload["messages"][0]["content"]
+
+
+def test_reference_structured_transport_can_enable_reasoning_without_model_branch(
+    monkeypatch,
+):
+    import requests
+
+    captured = {}
+
+    class _Response:
+        text = '{"choices":[{"message":{"content":"{}"}}]}'
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"choices": [{"message": {"content": "{}"}}], "usage": {}}
+
+    def fake_post(url, *, json, headers, timeout):
+        captured["payload"] = json
+        return _Response()
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    generator = OpenAICompatibleSqlGenerator(
+        "https://openrouter.ai/api/v1",
+        "test-key",
+        "opaque-reference-model",
+        "openrouter",
+        select_model="opaque-reference-model",
+        structured_reasoning_enabled=True,
+    )
+    generator.structured_json(
+        "system",
+        "user",
+        schema={"type": "object", "properties": {}, "additionalProperties": False},
+        schema_name="opaque_contract",
+    )
+
+    assert captured["payload"]["reasoning"] == {"enabled": True}
+    source = inspect.getsource(OpenAICompatibleSqlGenerator.structured_json)
+    for forbidden in ("gemini-3", "gpt-5.4", "claude"):
+        assert forbidden not in source
 
 
 def test_non_declared_openai_compatible_provider_cannot_silently_degrade_schema_transport():
