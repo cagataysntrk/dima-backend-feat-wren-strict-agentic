@@ -45,3 +45,5 @@ jobs:
           path: backend/lab/reports/v2_day6_5_manager_live_smoke.json
           retention-days: 14
           if-no-files-found: warn
+
+# rerun: strict native schema transport
