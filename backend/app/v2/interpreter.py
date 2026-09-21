@@ -17,6 +17,10 @@ from pydantic import ValidationError
 from app.v2.models import (
     BoundedSemanticContextV0,
     ConversationStateV2,
+    PresentationKind,
+    ResearchGoalKind,
+    SemanticMentionKind,
+    TurnAct,
     TurnInterpretation,
     TurnInterpretationFailure,
 )
@@ -422,8 +426,16 @@ RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
 - goal.kind yalnız dildeki araştırma fiilini sınıflar:
   COMPARISON, RELATIONSHIP, PERFORMANCE, TREND, BREAKDOWN, RANKING, ROOT_CAUSE, OTHER.
 - Açık çıktı talebi ayrı DELIVERABLE goal'dur. Rapor istenmişse:
-  kind=DELIVERABLE, deliverable=report ve presentation_request=report.
+  kind=deliverable, deliverable=report ve presentation_request=report.
+- research goal kind JSON değerleri KÜÇÜK HARF schema value'sudur:
+  comparison, relationship, performance, trend, breakdown, ranking, root_cause,
+  deliverable, other. Enum ADINI (RELATIONSHIP vb.) yazma.
+- deliverable alanını YALNIZ kind=deliverable goal'unda doldur. Diğer goal'larda
+  deliverable=null olmalı; global report/chart/table tercihini her goal'a kopyalama.
 - goal.text bu goal'u kanıtlayan CURRENT_MESSAGE içindeki kısa ama tam surface span'dir.
+  Koordineli/ortak ekli ifadelerde kelime atlayarak yeni phrase ÜRETME. Örn. dilde
+  "<A> ve <B> ilişkilerini incele" varsa A goal'u için "<A> ilişkilerini" diye aradaki
+  "<B>"yi silip sentetik span kurma; exact "<A>" span'ini veya exact ortak clause'u kullan.
 - subject_mentions ve related_mentions yine CURRENT_MESSAGE surface'leridir; canonical ID
   değildir. Aynı current message içinde daha önce açıkça söylenmiş bir subject, sonraki
   ilişki cümleciğinin öznesiyse o exact surface yeniden referanslanabilir.
@@ -517,9 +529,93 @@ def _normalize_surface_role_overlap(turn: TurnInterpretation) -> TurnInterpretat
     )
 
 
+def _enum_value(value: Any, enum_type) -> Any:
+    """Case-insensitive enum spelling repair; never changes semantic category.
+
+    Provider structured-text transports do not enforce JSON Schema enums. Gemini can
+    emit an enum name (e.g. RELATIONSHIP) instead of the schema value (relationship).
+    Mapping a case-insensitive exact enum name/value back to its declared value is a
+    format normalization, not a semantic retry.
+    """
+    if not isinstance(value, str):
+        return value
+    folded = value.strip().casefold()
+    for member in enum_type:
+        if folded in {member.name.casefold(), str(member.value).casefold()}:
+            return member.value
+    return value
+
+
+def _normalize_structured_payload(data: Any) -> Any:
+    """Normalize provider JSON quirks before Pydantic validation.
+
+    Only schema-shape/casing repairs are allowed here. No canonical business concept,
+    goal, metric, domain, period, or relationship is created or selected.
+    """
+    if not isinstance(data, dict):
+        return data
+
+    out = dict(data)
+    out["dialogue_act"] = _enum_value(out.get("dialogue_act"), TurnAct)
+    out["presentation_request"] = _enum_value(
+        out.get("presentation_request"), PresentationKind
+    )
+
+    research = out.get("research_request")
+    if isinstance(research, dict):
+        research = dict(research)
+
+        def normalize_mention(raw_mention):
+            if not isinstance(raw_mention, dict):
+                return raw_mention
+            mention = dict(raw_mention)
+            mention["kind"] = _enum_value(
+                mention.get("kind"), SemanticMentionKind
+            )
+            return mention
+
+        goals = []
+        for raw_goal in research.get("goals") or ():
+            if not isinstance(raw_goal, dict):
+                goals.append(raw_goal)
+                continue
+            goal = dict(raw_goal)
+            goal["kind"] = _enum_value(goal.get("kind"), ResearchGoalKind)
+            kind = goal.get("kind")
+            if kind == ResearchGoalKind.DELIVERABLE.value:
+                goal["deliverable"] = _enum_value(
+                    goal.get("deliverable"), PresentationKind
+                )
+            else:
+                # This field is structurally inapplicable outside DELIVERABLE goals.
+                # Providers often copy global presentation_request ("report"/"chart")
+                # or explicit "none" to every goal. Removing an inapplicable field
+                # preserves, rather than changes, the typed semantic decision.
+                goal["deliverable"] = None
+            goal["subject_mentions"] = [
+                normalize_mention(item)
+                for item in (goal.get("subject_mentions") or ())
+            ]
+            goal["related_mentions"] = [
+                normalize_mention(item)
+                for item in (goal.get("related_mentions") or ())
+            ]
+            goals.append(goal)
+
+        research["goals"] = goals
+        research["time_mentions"] = [
+            normalize_mention(item)
+            for item in (research.get("time_mentions") or ())
+        ]
+        out["research_request"] = research
+
+    return out
+
+
 def _parse(raw: str) -> TurnInterpretation:
     try:
         data = json.loads(_strip_json_fence(raw))
+        data = _normalize_structured_payload(data)
         turn = TurnInterpretation.model_validate(data)
         return _normalize_surface_role_overlap(turn)
     except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as exc:
