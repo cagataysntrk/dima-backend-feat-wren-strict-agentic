@@ -521,7 +521,7 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
     question = "Son 12 ay ürünleri karşılaştır ve raporla."
     llm = _StaticStructuredLlm(
         {
-            "dialogue_act": "REPORT_REQUEST",
+            "dialogue_act": "COMPLEX_ANALYSIS",
             "references": [],
             "analytical_request": None,
             "research_request": {
@@ -533,27 +533,26 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
                             {"text": "ürünleri", "kind": "dimension"}
                         ],
                         "related_mentions": [],
-                        "deliverable": None,
-                    },
+                        "ranking": None,
+                        "comparisons": [],
+                    }
+                ],
+                "relationships": [
                     {
-                        "kind": "relationship",
                         "text": "uydurulmuş personel ilişkisi",
-                        "subject_mentions": [
+                        "focus_mentions": [
                             {"text": "ürünleri", "kind": "dimension"}
                         ],
-                        "related_mentions": [],
-                        "deliverable": None,
-                    },
-                    {
-                        "kind": "deliverable",
-                        "text": "raporla",
-                        "subject_mentions": [],
-                        "related_mentions": [],
-                        "deliverable": "report",
-                    },
+                        "counterpart_mentions": [
+                            {"text": "uydurulmuş personel", "kind": "dimension"}
+                        ],
+                    }
                 ],
                 "time_mentions": [
                     {"text": "Son 12 ay", "kind": "time"}
+                ],
+                "deliverables": [
+                    {"kind": "report", "text": "raporla"}
                 ],
             },
             "presentation_request": "report",
@@ -562,20 +561,16 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
         }
     )
 
-    try:
+    with pytest.raises(TurnInterpreterError) as caught:
         TurnInterpreter().interpret(
             question=question,
             semantic_context=_empty_context(),
             conversation=ConversationStateV2(),
             llm=llm,
         )
-    except TurnInterpreterError as exc:
-        assert exc.failure.code == "surface_grounding_violation"
-        assert "uydurulmuş personel ilişkisi" in exc.failure.message
-    else:
-        raise AssertionError("invented research goal surface must fail closed")
 
-
+    assert caught.value.failure.code == "surface_grounding_violation"
+    assert "uydurulmuş" in caught.value.failure.message
 
 
 def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
@@ -586,18 +581,16 @@ def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
             "references": [],
             "analytical_request": None,
             "research_request": {
-                "goals": [
+                "goals": [],
+                "relationships": [
                     {
-                        "kind": "RELATIONSHIP",
                         "text": "Ürünlerin makine ilişkisini incele",
-                        "subject_mentions": [
+                        "focus_mentions": [
                             {"text": "Ürünlerin", "kind": "DIMENSION"}
                         ],
-                        "related_mentions": [
+                        "counterpart_mentions": [
                             {"text": "makine", "kind": "DIMENSION"}
                         ],
-                        "ranking": None,
-                        "comparisons": [],
                     }
                 ],
                 "time_mentions": [],
@@ -622,27 +615,26 @@ def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
     assert turn.dialogue_act == TurnAct.COMPLEX_ANALYSIS
     assert turn.presentation_request == PresentationKind.REPORT
     assert turn.research_request is not None
-    assert turn.research_request.goals[0].kind == ResearchGoalKind.RELATIONSHIP
+    assert len(turn.research_request.relationships) == 1
+    assert turn.research_request.relationships[0].focus_mentions[0].kind == SemanticMentionKind.DIMENSION
     assert turn.research_request.deliverables[0].kind == PresentationKind.REPORT
 
 
 def test_legacy_deliverable_pseudo_goal_is_not_silently_migrated():
-    question = "Ürünlerin makine ilişkisini incele ve raporla."
+    question = "Satış performansını incele ve raporla."
     legacy_payload = {
-        "dialogue_act": "COMPLEX_ANALYSIS",
+        "dialogue_act": "ANALYTIC_NEW",
         "references": [],
         "analytical_request": None,
         "research_request": {
             "goals": [
                 {
-                    "kind": "RELATIONSHIP",
-                    "text": "Ürünlerin makine ilişkisini incele",
+                    "kind": "performance",
+                    "text": "Satış performansını incele",
                     "subject_mentions": [
-                        {"text": "Ürünlerin", "kind": "dimension"}
+                        {"text": "Satış performansını", "kind": "metric"}
                     ],
-                    "related_mentions": [
-                        {"text": "makine", "kind": "dimension"}
-                    ],
+                    "related_mentions": [],
                     "ranking": None,
                     "comparisons": [],
                 },
@@ -653,6 +645,7 @@ def test_legacy_deliverable_pseudo_goal_is_not_silently_migrated():
                     "related_mentions": [],
                 },
             ],
+            "relationships": [],
             "time_mentions": [],
             "deliverables": [],
         },
@@ -682,18 +675,18 @@ def test_format_normalization_does_not_relax_surface_grounding():
             "references": [],
             "analytical_request": None,
             "research_request": {
-                "goals": [
+                "goals": [],
+                "relationships": [
                     {
-                        "kind": "RELATIONSHIP",
                         "text": "makinelerle ilişkilerini",
-                        "subject_mentions": [
-                            {"text": "makinelerle", "kind": "DIMENSION"}
+                        "focus_mentions": [],
+                        "counterpart_mentions": [
+                            {"text": "Makinelerle", "kind": "dimension"}
                         ],
-                        "related_mentions": [],
-                        "deliverable": "none",
                     }
                 ],
                 "time_mentions": [],
+                "deliverables": [],
             },
             "presentation_request": "NONE",
             "user_repair": None,
@@ -715,10 +708,8 @@ def test_format_normalization_does_not_relax_surface_grounding():
 @pytest.mark.parametrize(
     "order",
     [
-        (0, 1, 2, 3),
-        (3, 0, 2, 1),
-        (2, 1, 0, 3),
-        (1, 3, 0, 2),
+        (0, 1),
+        (1, 0),
     ],
 )
 def test_goal_order_changes_never_drop_or_duplicate_must_requirements(order):
@@ -737,11 +728,19 @@ def test_goal_order_changes_never_drop_or_duplicate_must_requirements(order):
         context_version="ctx-order",
     )
 
-    assert len(brief.questions) == len(reordered)
-    assert len(set(brief.must_requirement_ids)) == len(reordered) + len(request.deliverables)
+    assert len(brief.questions) == len(reordered) + 2
+    assert len(set(brief.must_requirement_ids)) == len(brief.questions) + len(request.deliverables)
     assert brief.must_requirement_ids[-1:] == ("d1",)
-    assert [q.source_text for q in brief.questions] == [g.text for g in reordered]
-    assert [q.kind for q in brief.questions] == [g.kind for g in reordered]
+    assert [q.source_text for q in brief.questions[: len(reordered)]] == [
+        g.text for g in reordered
+    ]
+    assert [q.kind.value for q in brief.questions[: len(reordered)]] == [
+        g.kind.value for g in reordered
+    ]
+    assert all(
+        q.kind == ResearchGoalKind.RELATIONSHIP
+        for q in brief.questions[len(reordered):]
+    )
 
 
 @pytest.mark.parametrize(
