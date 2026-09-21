@@ -333,6 +333,34 @@ def _evidence_was_inspected(
     )
 
 
+def _resolution_safe_stop_reason(
+    *,
+    result: Any,
+    receipts_before: int,
+    receipts_after: int,
+    conversation: ConversationStateV2 | None,
+) -> str | None:
+    """Return a deterministic clarification reason when semantic progress is impossible."""
+    if bool(getattr(result, "clarification_required", False)):
+        return "SemanticResolver requires user clarification before accepted authority"
+
+    prior_surface_context = bool(
+        conversation is not None
+        and conversation.has_prior_analytical_request
+        and (
+            conversation.selected_anchor_label
+            or conversation.focus_labels
+            or conversation.topic_labels
+        )
+    )
+    if prior_surface_context and receipts_after == receipts_before:
+        return (
+            "prior conversation has only surface context; no new trusted semantic "
+            "antecedent binding was established"
+        )
+    return None
+
+
 def _clarification_has_governed_grounding(
     observations: list[dict[str, Any]],
     *,
@@ -803,7 +831,9 @@ class ResearchManagerLoop:
                 continue
 
             try:
+                receipts_before = len(runtime.semantic_resolution_receipts)
                 step = runtime.call_tool(call, executor=executor)
+                receipts_after = len(runtime.semantic_resolution_receipts)
                 observations.append(
                     {
                         "kind": "tool",
@@ -811,6 +841,23 @@ class ResearchManagerLoop:
                         "result": self._manager_safe(step.tool_result),
                     }
                 )
+                if call.name == ManagerToolName.RESOLVE_SEMANTICS:
+                    safe_stop = _resolution_safe_stop_reason(
+                        result=step.tool_result,
+                        receipts_before=receipts_before,
+                        receipts_after=receipts_after,
+                        conversation=conversation,
+                    )
+                    if safe_stop is not None:
+                        runtime.require_clarification(safe_stop)
+                        observations.append(
+                            {
+                                "kind": "dialogue_policy",
+                                "status": "NEEDS_CLARIFICATION",
+                                "reason": safe_stop,
+                            }
+                        )
+                        break
             except (ManagerRecoverableToolError, ManagerToolPolicyError) as exc:
                 observations.append(
                     {
@@ -960,14 +1007,32 @@ class ResearchManagerLoop:
                     runtime=runtime,
                 )
                 assert call is not None
+                receipts_before = len(runtime.semantic_resolution_receipts)
                 result = runtime.call_tool(call, executor=executor)
+                receipts_after = len(runtime.semantic_resolution_receipts)
                 observations.append(
                     {
                         "kind": "tool",
                         "tool": call.name.value,
-                        "result": _safe(result.tool_result),
+                        "result": self._manager_safe(result.tool_result),
                     }
                 )
+                if call.name == ManagerToolName.RESOLVE_SEMANTICS:
+                    safe_stop = _resolution_safe_stop_reason(
+                        result=result.tool_result,
+                        receipts_before=receipts_before,
+                        receipts_after=receipts_after,
+                        conversation=conversation,
+                    )
+                    if safe_stop is not None:
+                        runtime.require_clarification(safe_stop)
+                        observations.append(
+                            {
+                                "kind": "dialogue_policy",
+                                "status": "NEEDS_CLARIFICATION",
+                                "reason": safe_stop,
+                            }
+                        )
             except Exception as exc:
                 observations.append(
                     {
