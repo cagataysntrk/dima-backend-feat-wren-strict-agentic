@@ -122,10 +122,20 @@ class RequestClarificationArgs(FrozenModel):
 
 class ManagerAnalyticsObservation(FrozenModel):
     evidence_ref: str
-    verified: bool
+    evidence_verified: bool
     query_count: int = Field(ge=0)
     row_count: int = Field(ge=0)
+    obligations_verified: tuple[str, ...] = ()
+    obligations_unverified: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
+
+
+class ManagerRelationshipObservation(FrozenModel):
+    obligation_id: str
+    available: bool
+    status: Literal["EXECUTED", "UNSUPPORTED"]
+    evidence_ref: str | None = None
+    reason: str | None = None
 
 
 class ManagerToolCall(FrozenModel):
