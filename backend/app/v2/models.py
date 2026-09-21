@@ -222,45 +222,41 @@ class ResearchGoalKind(StrEnum):
     OTHER = "other"
 
 
-class ResearchGoalSurface(FrozenModel):
-    """One explicit analytical operation expressed in the current message.
+class ResearchNonRelationshipGoalKind(StrEnum):
+    COMPARISON = "comparison"
+    PERFORMANCE = "performance"
+    TREND = "trend"
+    BREAKDOWN = "breakdown"
+    RANKING = "ranking"
+    ROOT_CAUSE = "root_cause"
+    OTHER = "other"
 
-    Deliverables are intentionally NOT research questions. For RELATIONSHIP, one
-    surface object represents at most one edge. Standard-capable RANKING/COMPARISON
-    carry the typed operation payload needed for lossless Core projection; the routing
-    policy never reparses goal.text to recover missing semantics.
+
+class ResearchGoalSurface(FrozenModel):
+    """One explicit non-relationship analytical operation.
+
+    Relationship edges use ResearchRelationshipSurface so endpoint cardinality is a
+    schema property rather than an instruction hidden in prose.
     """
 
-    kind: ResearchGoalKind
+    kind: ResearchNonRelationshipGoalKind
     text: str = Field(min_length=1)
     subject_mentions: tuple[SemanticMention, ...] = ()
     related_mentions: tuple[SemanticMention, ...] = ()
-    ranking: RankingSurface | None = None
-    comparisons: tuple[ComparisonSurface, ...] = ()
 
-    @model_validator(mode="after")
-    def _operation_shape_invariants(self):
-        if self.kind == ResearchGoalKind.RELATIONSHIP:
-            if len(self.subject_mentions) > 1 or len(self.related_mentions) > 1:
-                raise ValueError(
-                    "relationship operation must represent at most one subject-to-related edge"
-                )
-        if self.kind == ResearchGoalKind.RANKING:
-            if self.ranking is None:
-                raise ValueError("ranking operation requires typed ranking payload")
-        elif self.ranking is not None:
-            raise ValueError("ranking payload is valid only for ranking operation")
 
-        if self.kind == ResearchGoalKind.COMPARISON:
-            if len(self.comparisons) > 1:
-                raise ValueError(
-                    "comparison operation may carry at most one Core comparison surface"
-                )
-        elif self.comparisons:
-            raise ValueError(
-                "comparison payload is valid only for comparison operation"
-            )
-        return self
+class ResearchRelationshipSurface(FrozenModel):
+    """One relationship request with one focus and one-or-more counterparts.
+
+    The focus may be an exact earlier surface from the same current message (coreference
+    resolution is language-owner work). Builder expands each counterpart into one
+    atomic ResearchQuestion. Missing focus is preserved and becomes BLOCKED; it is
+    never guessed downstream.
+    """
+
+    text: str = Field(min_length=1)
+    focus_mentions: tuple[SemanticMention, ...] = Field(default=(), max_length=1)
+    counterpart_mentions: tuple[SemanticMention, ...] = Field(min_length=1)
 
 
 class ResearchDeliverableSurface(FrozenModel):
@@ -277,11 +273,18 @@ class ResearchDeliverableSurface(FrozenModel):
 
 
 class ResearchRequestSurface(FrozenModel):
-    """Typed complex-request surface produced once by TurnInterpreter."""
+    """Typed rich analytical surface produced once by the language owner."""
 
-    goals: tuple[ResearchGoalSurface, ...] = Field(min_length=1)
+    goals: tuple[ResearchGoalSurface, ...] = ()
+    relationships: tuple[ResearchRelationshipSurface, ...] = ()
     time_mentions: tuple[SemanticMention, ...] = ()
     deliverables: tuple[ResearchDeliverableSurface, ...] = ()
+
+    @model_validator(mode="after")
+    def _has_operation(self):
+        if not self.goals and not self.relationships:
+            raise ValueError("research request requires at least one analytical operation")
+        return self
 
 
 class UserRepair(FrozenModel):
