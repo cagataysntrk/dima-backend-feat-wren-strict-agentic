@@ -37,7 +37,6 @@ from app.v2.models import (
     SemanticTargetKind,
     TurnAct,
     TurnInterpretation,
-    UnresolvedMention,
 )
 
 
@@ -224,7 +223,7 @@ class ResearchModePolicy:
                 detail="unclassified analytical operation; research routing refused",
             )
 
-        if request.relationships or any(kind in self._COMPLEX_ONLY for kind in kinds):
+        if any(kind in self._COMPLEX_ONLY for kind in kinds):
             return ResearchModeDecision(
                 mode=ResearchMode.RESEARCH,
                 reason=ResearchModeReason.COMPLEX_ONLY_OPERATION,
@@ -276,21 +275,14 @@ class ResearchModePolicy:
         reason: ResearchModeReason,
         detail: str,
     ) -> ResearchModeDecision:
-        request = turn.research_request
-        blocked_surfaces: list[str] = []
-        if request is not None:
-            blocked_surfaces.extend(goal.text for goal in request.goals)
-            blocked_surfaces.extend(item.text for item in request.relationships)
-        blocked = tuple(
-            UnresolvedMention(text=text, reason=detail)
-            for text in blocked_surfaces
-        )
+        # Routing policy deliberately does not inspect/copy operation text. The typed
+        # reason is sufficient for fail-closed routing; source evidence remains owned
+        # by the pre-policy interpretation/eval record, not reclassified here.
         canonical = turn.model_copy(
             update={
                 "dialogue_act": TurnAct.UNSUPPORTED,
                 "analytical_request": None,
                 "research_request": None,
-                "unresolved_mentions": (*turn.unresolved_mentions, *blocked),
             }
         )
         return ResearchModeDecision(
