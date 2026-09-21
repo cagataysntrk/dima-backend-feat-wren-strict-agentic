@@ -78,6 +78,7 @@ class IntentAcceptanceGate:
         tenant_binding: str,
         context_version: str,
         active_contract: AcceptedTurnContract | None = None,
+        active_ledger: UserObligationLedger | None = None,
         lineage_id: str | None = None,
     ) -> AcceptanceResult:
         reject: list[str] = []
@@ -90,7 +91,25 @@ class IntentAcceptanceGate:
             clarify.append("unresolved source refs remain")
 
         seen_polarity: dict[tuple[str, str], ObligationPolarity] = {}
-        candidate_ids = {item.obligation_id for item in envelope.obligations}
+        active_ids = {
+            item.obligation_id
+            for item in (active_ledger.items if active_ledger is not None else ())
+        }
+        candidate_ids = {
+            *active_ids,
+            *(item.obligation_id for item in envelope.obligations),
+        }
+
+        if active_contract is not None:
+            if active_ledger is None:
+                reject.append("active contract versioning requires active obligation ledger")
+            elif (
+                active_ledger.lineage_id != active_contract.lineage_id
+                or active_ledger.version != active_contract.version
+            ):
+                reject.append("active obligation ledger does not match active contract head")
+        elif active_ledger is not None:
+            reject.append("active obligation ledger cannot exist without active contract")
 
         for item in envelope.obligations:
             if not self._capabilities.registered(item.capability_key):
@@ -191,14 +210,38 @@ class IntentAcceptanceGate:
         )
         contract_id = "atc_" + hashlib.sha256(contract_payload.encode("utf-8")).hexdigest()[:24]
 
+        current_items = tuple(
+            ObligationLedgerItem(
+                obligation_id=item.obligation_id,
+                capability_key=item.capability_key,
+                origin=item.origin,
+                parent_obligation_id=item.parent_obligation_id,
+                priority=item.priority,
+                polarity=item.polarity,
+                status=ObligationStatus.ACCEPTED,
+                source_refs=item.source_refs,
+                semantic_handle_refs=item.semantic_handle_refs,
+                introduced_in_version=version,
+            )
+            for item in envelope.obligations
+        )
+        replaced_ids = {item.obligation_id for item in current_items}
+        carried_items = tuple(
+            item
+            for item in (active_ledger.items if active_ledger is not None else ())
+            if item.obligation_id not in replaced_ids
+            and item.status != ObligationStatus.SUPERSEDED
+        )
+        effective_items = (*carried_items, *current_items)
+
         obligation_ids = tuple(
             item.obligation_id
-            for item in envelope.obligations
+            for item in effective_items
             if item.polarity == ObligationPolarity.REQUIRED
         )
         exclusion_ids = tuple(
             item.obligation_id
-            for item in envelope.obligations
+            for item in effective_items
             if item.polarity == ObligationPolarity.EXCLUDED
         )
 
@@ -222,21 +265,7 @@ class IntentAcceptanceGate:
         ledger = UserObligationLedger(
             lineage_id=lineage,
             version=version,
-            items=tuple(
-                ObligationLedgerItem(
-                    obligation_id=item.obligation_id,
-                    capability_key=item.capability_key,
-                    origin=item.origin,
-                    parent_obligation_id=item.parent_obligation_id,
-                    priority=item.priority,
-                    polarity=item.polarity,
-                    status=ObligationStatus.ACCEPTED,
-                    source_refs=item.source_refs,
-                    semantic_handle_refs=item.semantic_handle_refs,
-                    introduced_in_version=version,
-                )
-                for item in envelope.obligations
-            ),
+            items=effective_items,
         )
 
         return AcceptanceResult(
