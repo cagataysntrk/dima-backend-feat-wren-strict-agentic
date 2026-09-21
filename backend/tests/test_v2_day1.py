@@ -123,7 +123,7 @@ class FakeLLM:
         self.calls += 1
         assert "SQL" in system
         assert "CURRENT_MESSAGE" in user
-        assert schema_name == "dima_turn_interpretation_v2"
+        assert schema_name == "dima_turn_interpreter_transport_v1"
         assert schema.get("type") == "object"
         assert "JSON_SCHEMA:" not in system
         if not self.outputs:
