@@ -60,12 +60,13 @@ RUN pip install \
       "mrml>=0.2" \
       "jinja2>=3.1" \
       "ruamel.yaml>=0.18" \
+      "py-rust-stemmers>=0.1.8,<0.2" \
       "alembic>=1.13"
 
 # 3b) Duman testi: bildirilen her runtime bağımlılığı GERÇEKTEN import edilebilmeli.
 #     Eksikse build BURADA kırılır, üretimde ilk e-posta/terfi denemesinde değil.
 RUN python -c "import fastapi, uvicorn, anthropic, openai, pydantic_settings, fastembed, \
-sqlmodel, argon2, jwt, psycopg, mrml, jinja2, ruamel.yaml, alembic, wren, wren_core; \
+sqlmodel, argon2, jwt, psycopg, mrml, jinja2, ruamel.yaml, alembic, wren, wren_core, py_rust_stemmers; \
 print('deps OK')"
 
 # 4) Application code + control-plane (auth) + bundled demo.
