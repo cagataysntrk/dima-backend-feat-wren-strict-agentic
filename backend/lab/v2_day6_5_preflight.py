@@ -69,7 +69,9 @@ def evaluate_day65_preflight() -> Day65Preflight:
         "prompt_text_committed": False,
         "prompt_text_shared_with_implementation": False,
         "development_model_generated": False,
-        "frozen_before_implementation": True,
+        "development_corpus_seen": False,
+        "development_failure_outputs_seen": False,
+        "frozen_before_architecture_seal_run": True,
     }
     if not isinstance(attestation, dict):
         seal_blockers.append("external hidden attestation manifest object değil")
