@@ -116,6 +116,9 @@ class SemanticHandle(FrozenModel):
     context_version: str = Field(min_length=1)
     resolver_provenance_id: str = Field(min_length=1)
     target_kind: str = Field(min_length=1)
+    provenance_type: Literal["USER_SOURCE", "AGENT_DERIVED"] = "USER_SOURCE"
+    parent_obligation_id: str | None = None
+    trigger_evidence_ref: str | None = None
     sensitive: bool = False
 
 
