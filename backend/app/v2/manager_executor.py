@@ -12,6 +12,8 @@ from typing import Any, Protocol
 
 from app.v2.acceptance import IntentAcceptanceGate
 from app.v2.manager_core_adapter import ManagerCoreAnalyticsAdapter
+from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
+from app.v2.obligation_ledger import UserObligationLedgerService
 from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
@@ -68,6 +70,8 @@ class GovernedManagerExecutor:
         evidence: EvidenceStore | None = None,
         semantic_resolution: SemanticResolutionExecutor | None = None,
         relationship: RelationshipToolExecutor | None = None,
+        obligation_ledger: UserObligationLedgerService | None = None,
+        capabilities: ManagerCapabilityRegistry | None = None,
     ) -> None:
         self._acceptance = acceptance
         self._core = core_analytics
@@ -75,6 +79,8 @@ class GovernedManagerExecutor:
         self._evidence = evidence or EvidenceStore()
         self._semantic_resolution = semantic_resolution
         self._relationship = relationship
+        self._obligations = obligation_ledger or UserObligationLedgerService()
+        self._capabilities = capabilities or ManagerCapabilityRegistry()
 
     @property
     def evidence_store(self) -> EvidenceStore:
@@ -116,6 +122,24 @@ class GovernedManagerExecutor:
                 runtime.note_additional_data_queries(result.query_count - 1)
             self._evidence.put(result.evidence)
             runtime.attach_evidence(result.evidence.artifact_id)
+
+            ledger = runtime.ledger
+            if ledger is None:
+                raise RuntimeError("run_analytics completed without obligation ledger")
+            for obligation_id in validated_args.obligation_ids:
+                item = self._obligations.get(ledger, obligation_id)
+                spec = self._capabilities.get(item.capability_key)
+                if (
+                    spec.lane == ManagerCapabilityLane.STANDARD
+                    and result.evidence.verified
+                ):
+                    ledger = self._obligations.verify(
+                        ledger,
+                        obligation_id,
+                        evidence_refs=(result.evidence.artifact_id,),
+                        verdict="governed standard analytics + QueryContract verified",
+                    )
+            runtime.replace_ledger(ledger)
             return result
 
         if call.name == ManagerToolName.RUN_RELATIONSHIP:
