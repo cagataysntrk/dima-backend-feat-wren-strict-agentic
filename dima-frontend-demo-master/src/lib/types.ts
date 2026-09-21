@@ -125,13 +125,32 @@ export interface V2ConversationTable {
 }
 
 export interface V2ConversationResponse {
-  kind: "answer" | "clarify" | "talk" | "explain" | "semantic_gap" | "unsupported" | "failure";
+  kind: "answer" | "clarify" | "talk" | "explain" | "research_brief" | "semantic_gap" | "unsupported" | "failure";
   text: string;
   scope_chips: V2ScopeChip[];
   clarification_chips: V2ClarificationChip[];
   evidence_refs: V2EvidenceRef[];
   tables: V2ConversationTable[];
   official_verified: boolean;
+}
+
+export interface V2ResearchQuestion {
+  goal_id: string;
+  kind: "comparison" | "relationship" | "performance" | "trend" | "breakdown" | "ranking" | "root_cause" | "deliverable" | "other";
+  priority: "MUST";
+  source_text: string;
+  status: "RESOLVED" | "BLOCKED";
+}
+
+export interface V2ResearchBrief {
+  brief_id: string;
+  objective: string;
+  questions: V2ResearchQuestion[];
+  deliverables: ("explain" | "table" | "chart" | "report" | "none")[];
+  must_requirement_ids: string[];
+  blocking_goal_ids: string[];
+  context_version: string;
+  status: "READY_FOR_RESEARCH" | "BLOCKED";
 }
 
 export interface AskV2Request {
@@ -143,13 +162,14 @@ export interface AskV2Request {
 }
 
 export interface AskV2CoreResponse {
-  status: "core_mvp";
-  stage: "day5_core_mvp";
-  dialogue_action: "TALK" | "CLARIFY" | "EXPLAIN_EXISTING" | "ANALYTIC_STANDARD" | "UNSUPPORTED";
+  status: "core_mvp" | "research_brief";
+  stage: "day5_core_mvp" | "day6_research_brief";
+  dialogue_action: "TALK" | "CLARIFY" | "EXPLAIN_EXISTING" | "ANALYTIC_STANDARD" | "RESEARCH_BRIEF" | "UNSUPPORTED";
   semantic_status: "resolved" | "clarification_required" | "semantic_gap" | "not_applicable";
   analytics_status: "verified" | "not_executable" | "not_applicable" | "failed";
   official_verified: boolean;
   response: V2ConversationResponse;
+  research_brief?: V2ResearchBrief | null;
   conversation: V2ConversationState;
   session_id?: string | null;
   thread_id?: string | null;
