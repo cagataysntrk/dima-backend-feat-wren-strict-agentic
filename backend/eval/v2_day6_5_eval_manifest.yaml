@@ -41,15 +41,15 @@ corpus_target:
     generated_by_current_development_model: false
     required_before_manager_implementation: false
     required_before_architecture_seal: true
-    sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
-    taxonomy_sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
-    attestation_sha256: "REQUIRED_BEFORE_IMPLEMENTATION"
+    sha256: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+    taxonomy_sha256: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+    attestation_sha256: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
     external_attestation:
-      independent_evaluator: "REQUIRED_BEFORE_IMPLEMENTATION"
-      prompt_text_committed: "REQUIRED_BEFORE_IMPLEMENTATION"
-      prompt_text_shared_with_implementation: "REQUIRED_BEFORE_IMPLEMENTATION"
-      development_model_generated: "REQUIRED_BEFORE_IMPLEMENTATION"
-      frozen_before_implementation: "REQUIRED_BEFORE_IMPLEMENTATION"
+      independent_evaluator: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      prompt_text_committed: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      prompt_text_shared_with_implementation: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      development_model_generated: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      frozen_before_implementation: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
 
 taxonomy:
   - multi_obligation
@@ -162,7 +162,7 @@ holdout_freeze_protocol:
   - "Serialize the sealed corpus outside the repository."
   - "External evaluator signs an explicit provenance attestation; the freeze tool must not synthesize provenance booleans."
   - "Compute SHA-256 for corpus bytes, taxonomy manifest, and external attestation."
-  - "Replace REQUIRED_BEFORE_IMPLEMENTATION hashes/attestation fields in this manifest."
+  - "Replace REQUIRED_BEFORE_ARCHITECTURE_SEAL hashes/attestation fields in this manifest."
   - "Commit only hashes/counts/taxonomy metadata."
   - "Do not expose hidden prompt text to the development context at any point; final architecture seal uses the external receipt only."
   - "At seal, external evaluator returns only a receipt bound to corpus_sha256, tested_git_sha, and eval_harness_sha; prompt text stays hidden."
