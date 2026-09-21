@@ -610,7 +610,7 @@ class FakeDay3Service:
 
 class FakeDay3LLM:
     def structured_json(self, system, user, *, schema, schema_name):
-        assert schema_name == "dima_turn_interpreter_transport_v1"
+        assert schema_name == "dima_turn_interpreter_transport_v2"
         return json.dumps(
             {
                 "dialogue_act": "ANALYTIC_NEW",
