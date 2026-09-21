@@ -1,6 +1,20 @@
 name: v2-day4-conversation
 
 "on":
+  pull_request:
+    branches:
+      - wren-bağımsız
+    types:
+      - ready_for_review
+    paths:
+      - "backend/app/v2/models.py"
+      - "backend/app/v2/conversation.py"
+      - "backend/app/v2/dialogue_policy.py"
+      - "backend/app/v2/interpreter.py"
+      - "backend/app/v2/orchestrator.py"
+      - "backend/app/routers/ask_v2.py"
+      - "backend/tests/test_v2_day4.py"
+      - ".github/workflows/v2-day4-conversation.yml"
   workflow_dispatch:
 
 concurrency:
