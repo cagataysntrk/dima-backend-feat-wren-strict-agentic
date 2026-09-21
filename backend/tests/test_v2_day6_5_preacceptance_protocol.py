@@ -16,7 +16,7 @@ from app.v2.manager_models import (
     ObligationOrigin,
     ObligationPolarity,
 )
-from app.v2.manager_preacceptance import CoverageAudit
+from app.v2.manager_preacceptance import CoverageAudit, FiniteAcceptanceStatus
 from app.v2.manager_progress import DynamicActionFrontier
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
@@ -30,6 +30,12 @@ from app.v2.models import (
 from app.v2.resolver import SemanticResolver
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
+
+
+class _FailingStructured:
+    def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str):
+        del system, user, schema, schema_name
+        raise RuntimeError("provider unavailable")
 
 
 class _ScriptedStructured:
@@ -523,6 +529,26 @@ def test_invalid_current_source_surface_is_revision_input_not_fatal_exception():
         for item in outcome.observations
     )
     assert not any(item.get("kind") == "grounding_error" for item in outcome.observations)
+
+
+def test_provider_failure_is_typed_and_never_semantic_not_accepted():
+    loop, runtime, executor = _loop(_FailingStructured())
+    outcome = loop.understand(
+        question="net gelir ne durumda?",
+        message_id="turn-provider-failure",
+        request_ref="req-provider-failure",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is False
+    assert outcome.clarification_required is False
+    assert outcome.status == FiniteAcceptanceStatus.MODEL_FAILURE
+    assert runtime.accepted_contract is None
+    assert any(
+        item.get("kind") == "draft_error"
+        for item in outcome.observations
+    )
 
 
 def test_coverage_schema_is_veto_only_and_cannot_create_authority():
