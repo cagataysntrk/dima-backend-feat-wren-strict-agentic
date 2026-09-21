@@ -47,3 +47,5 @@ jobs:
           if-no-files-found: warn
 
 # rerun: strict native schema transport
+
+# rerun: manager protocol ergonomics v2
