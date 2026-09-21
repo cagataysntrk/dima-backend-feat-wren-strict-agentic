@@ -217,7 +217,8 @@ Rules:
   independently names an actual tenant metric/dimension/filter/time/comparison concept.
 - source_surfaces and semantic_surfaces must be exact literal substrings of USER_MESSAGE.
 - semantic_surfaces identify only material tenant semantic concepts that runtime should ground.
-- Do not infer canonical semantics. Runtime/Resolver owns grounding.
+- Do not infer canonical semantics. Bounded Semantic Linker may interpret only supplied
+  catalog candidates; deterministic Semantic Binding Gate owns semantic authority.
 - Do not use examples, keyword rules, regex-like logic, or case-specific behavior.
 Return only the strict schema.
 """
@@ -225,13 +226,16 @@ Return only the strict schema.
 
 _COVERAGE_SYSTEM = """You are Dima's veto-only intent coverage auditor.
 
-Compare USER_MESSAGE against INTENT_DRAFT. Decide only whether material user intent is
-left uncovered, polarity is materially inconsistent, or a research directive/policy that
-the current Day 6.5 contract explicitly supports is left unmodeled.
+Compare USER_MESSAGE against INTENT_DRAFT only for coverage loss:
+- a materially requested business obligation is omitted,
+- an explicit user exclusion is omitted or represented with the wrong polarity,
+- a research directive/policy explicitly supported by the Day 6.5 contract is omitted.
 
 GROUNDING_SUMMARY is diagnostic context only. It is NOT a semantic veto surface.
-Canonical binding completeness is decided deterministically by capability-required
-grounding + ContractValidity. Never VETO because a semantic surface is unresolved.
+Canonical binding completeness and ambiguity are decided outside Coverage by bounded
+semantic linking plus deterministic capability-required grounding/ContractValidity.
+Never VETO because a semantic surface is unresolved or because you prefer another
+semantic interpretation.
 A research phenomenon/scope phrase (change, anomaly, decline, increase, high/low state,
 or similar wording) does not need its own canonical handle unless capability algebra
 explicitly requires that semantic kind.
@@ -670,13 +674,6 @@ class PreAcceptanceController:
         return tuple(gaps)
 
     @staticmethod
-    def _coverage_requires_clarification(audit: CoverageAudit) -> bool:
-        return any(
-            issue.kind == CoverageIssueKind.POLARITY_CONFLICT
-            for issue in audit.issues
-        )
-
-    @staticmethod
     def _surface_feedback(
         violations: tuple[DraftSurfaceViolation, ...],
     ) -> dict[str, Any]:
@@ -900,14 +897,8 @@ class PreAcceptanceController:
                 if attempt < self._max_draft_attempts:
                     revision_feedback = self._coverage_feedback(coverage)
                     continue
-                if self._coverage_requires_clarification(coverage):
-                    runtime.require_clarification(
-                        "coverage audit found unresolved material intent"
-                    )
-                    return FiniteAcceptanceOutcome(
-                        status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
-                        observations=tuple(observations),
-                    )
+                # Coverage is veto-only cognition quality control. It never owns user
+                # clarification truth; deterministic contract/semantic gates do.
                 return FiniteAcceptanceOutcome(
                     status=FiniteAcceptanceStatus.COGNITION_REJECTED,
                     observations=tuple(observations),
