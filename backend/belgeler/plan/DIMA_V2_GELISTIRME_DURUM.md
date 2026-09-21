@@ -3725,3 +3725,123 @@ Aynı finite architecture üzerinden:
 - GitHub job `35633167625 = failure` → provider billing failure.
 - Bu sonucu Day6.5 semantic/architecture fail saymak yasaktır.
 - Bakiye/transport düzeldikten sonra aynı frozen backend code yeniden ölçülmelidir.
+
+
+### 2026-09-21 — DAY 6.5 / TYPED FAILURE SEAL
+
+16-case canary'deki OpenRouter 402 olayı ikinci bir mimari borcu görünür kıldı:
+```text
+provider/model/runtime failure
+!=
+semantic NOT_ACCEPTED
+!=
+user CLARIFICATION
+```
+
+Eski Dima'daki `None/fallback/failure conflation` sınıfını V2'ye taşımamak için
+pre-acceptance terminal contract typed hale getirildi.
+
+**FiniteAcceptanceStatus**
+```text
+ACCEPTED
+CLARIFICATION_REQUIRED
+COGNITION_REJECTED
+CONTRACT_REJECTED
+MODEL_FAILURE
+GROUNDING_FAILURE
+```
+
+Semantik terminal yalnız ilk dört sınıftan türetilir.
+`MODEL_FAILURE` ve `GROUNDING_FAILURE` semantic eval sonucu değildir.
+
+**Propagation**
+```text
+PreAcceptanceController
+→ ManagerUnderstandingOutcome.status
+→ ManagerLoopOutcome.preacceptance_status
+→ ManagerLabResponse.preacceptance_status
+→ Day6.5 eval record.preacceptance_status
+```
+
+**Evaluator semantics**
+- measurement-invalid vaka semantic denominator'a girmez.
+- mid-run provider/model failure artık `NOT_ACCEPTED` sayılmaz.
+- measurement eksikse run status `incomplete`.
+- `incomplete` exit code = 2.
+- semantic architecture fail = exit code 1.
+- pass = exit code 0.
+- metrics yalnız evaluable records üzerinden hesaplanır.
+- payload ayrıca:
+  - selected_cases
+  - evaluable_cases
+  - measurement_failures
+  - model_failures
+  - grounding_failures
+  - harness_failures
+  taşır.
+
+Bu değişiklik 402'ye özel değildir; provider/model/grounding/harness failure family
+genel typed boundary'dir.
+
+**Regression**
+- run: `35635240206`
+- trigger SHA: `50538b1e82bdc5f7114a4007e195a20836985325`
+- compile:
+  - `manager_preacceptance.py`
+  - `manager_loop.py`
+  - `manager_lab.py`
+  - `v2_day6_5_manager_eval.py`
+- focused provider-free suite:
+  - **49 passed / 0 failed**
+- temporary one-shot workflow PASS sonrası kaldırıldı.
+
+**Post-stabilization anti-patch audit**
+Production V2 files:
+- `manager_preacceptance.py`
+- `manager_progress.py`
+- `manager_loop.py`
+- `acceptance.py`
+- `manager_models.py`
+- `manager_lab.py`
+
+Audit:
+```text
+import re / from re                = 0
+re.search/match/compile/sub/...     = 0
+d65-dev / 063 / 067 / 075 literal   = 0
+net gelir business literal          = 0
+bölge business literal              = 0
+üretkenlik business literal         = 0
+kök neden business literal          = 0
+```
+
+`lab/v2_day6_5_manager_eval.py` sentetik evaluation schema/fixture olduğu için
+test-domain literalları içerir; production semantic decision logic değildir.
+
+**Day 6.5 current judgment**
+Şu ana kadarki evidence:
+```text
+provider-free deterministic closure = 49/49 PASS
+Luna focused reference set          = 14/15
+Sol same-SHA reference set          = 15/15 PASS
+stratified Sol canary               = PROVIDER 402 ile yarım
+regex/case patch debt               = 0 detected
+unsafe semantic accept in focused A/B = 0
+```
+
+Dolayısıyla şu aşamada:
+- Manager architecture'ını yeniden kurmak için evidence YOK.
+- Luna tail error'ı architecture rewrite gerekçesi değildir; Sol A/B model floor'u kanıtladı.
+- production route açmak için ise evidence henüz YETERSİZ; stratified canary + DEV80 tamamlanmalı.
+- paid provider yeniden kullanılabilir olmadan daha fazla semantic code patch'i yapılmamalı.
+
+**Tek gerçek dış blocker**
+```text
+OpenRouter/provider billing capacity
+```
+
+Provider erişimi geri geldiğinde code freeze SHA yeni typed-failure boundary dahil branch HEAD
+üzerinden yeniden provider-free guard ile doğrulanır; ardından Sol canary16 baştan çalıştırılır.
+Canary PASS → DEV80 workers=1.
+Ortak failure family görülürse architecture incelenir.
+Tekil vaka failure'ı → regex/prompt/case patch YASAK.
