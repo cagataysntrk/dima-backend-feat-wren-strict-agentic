@@ -251,6 +251,10 @@ Rules:
   SemanticResolver returned unresolved/clarification or AcceptanceGate returned
   NEEDS_CLARIFICATION. Never stop on your own guess that a business word is ambiguous.
 - If governed ambiguity blocks a MUST, request_clarification rather than guessing.
+- If AcceptanceGate rejects an otherwise grounded standard obligation only because a
+  required Resolver semantic kind is missing from the current user turn, do not loop on
+  absent surfaces. Request clarification. Invalid/foreign/unissued handles are NOT a
+  clarification reason; correct the Manager action instead.
 - finish is a proposal; deterministic CompletionGate decides whether completion is true.
 - One action per turn. No prose outside the schema.
 - The native schema is strict: emit EVERY field. Use [] for unused arrays and null for
@@ -341,6 +345,13 @@ def _clarification_has_governed_grounding(
         if tool == ManagerToolName.PROPOSE_ACCEPTANCE.value:
             if result.get("status") == "NEEDS_CLARIFICATION":
                 return True
+            if result.get("status") == "REJECTED":
+                reasons = tuple(str(reason) for reason in (result.get("reasons") or ()))
+                if reasons and all(
+                    "missing Resolver semantic kinds:" in reason
+                    for reason in reasons
+                ):
+                    return True
     return False
 
 
