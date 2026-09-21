@@ -10,13 +10,14 @@ jobs:
   dev-probe:
     if: "github.event.head_commit.message == 'eval(v2-day6.5): run stratified DEV probe'"
     runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 15
     env:
       DIMA_LLM_PROVIDER: openrouter
       DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
       DIMA_V2_RESEARCH_MANAGER_MODEL: openai/gpt-5.6-luna
       DIMA_OPENROUTER_MODEL: openai/gpt-5.6-luna
-      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY }}
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
@@ -40,3 +41,5 @@ jobs:
           name: v2-day6-5-dev-probe
           path: backend/lab/reports/v2_day6_5_manager_eval.json
           retention-days: 14
+
+# rerun: bind environment-scoped OpenRouter secret
