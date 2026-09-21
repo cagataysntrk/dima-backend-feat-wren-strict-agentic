@@ -23,7 +23,7 @@ from app.v2.manager_models import (
 )
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
-from app.v2.manager_tools import ManagerToolCall, ManagerToolName
+from app.v2.manager_tools import ManagerToolCall, ManagerToolName, ResolveSemanticsArgs
 from app.v2.models import (
     BoundedSemanticContextV0,
     CompactCubeContextV0,
@@ -154,7 +154,7 @@ def test_result_aware_agent_derived_branch_is_evidence_grounded_end_to_end():
     )
 
     metric_result = semantic.resolve(
-        __import__("app.v2.manager_tools", fromlist=["ResolveSemanticsArgs"]).ResolveSemanticsArgs(
+        ResolveSemanticsArgs(
             provenance="USER_SOURCE",
             source_refs=(metric_span.source_ref,),
             target_kind_hints=("metric",),
