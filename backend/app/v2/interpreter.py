@@ -20,7 +20,6 @@ from app.v2.models import (
     BoundedSemanticContextV0,
     ConversationStateV2,
     PresentationKind,
-    ResearchComparisonFrame,
     ResearchDeliverableSurface,
     ResearchFocusBinding,
     ResearchGoalSurface,
@@ -28,7 +27,6 @@ from app.v2.models import (
     ResearchOperationPolarity,
     ResearchRelationshipSurface,
     ResearchRequestSurface,
-    ResearchRootCauseFrame,
     SemanticMention,
     SemanticMentionKind,
     TurnAct,
@@ -275,7 +273,9 @@ def _align_turn_surfaces(question: str, turn: TurnInterpretation) -> TurnInterpr
                 "deliverables": tuple(
                     item.model_copy(
                         update={
-                            "text": _align_near_copy_surface(question, item.text)
+                            "evidence_text": _align_near_copy_surface(
+                                question, item.evidence_text
+                            )
                         }
                     )
                     for item in research.deliverables
@@ -449,18 +449,22 @@ RESEARCH_GRAPH — source inventory → typed operation graph:
 - surfaces[] BU MESAJDA geçen semantic yüzeylerin tek envanteridir. Her surface:
   * current-message exact text,
   * yalnız bu graph içinde kullanılan local surface_id,
-  * language role kind taşır.
+  * semantic_role yalnız metric/dimension/filter/time/unknown gibi language rolünü taşır.
   Bu local ID canonical semantic ID DEĞİLDİR; Resolver binding yapacaktır.
 - Aynı semantic source span'i farklı operation'larda tekrar tekrar text olarak yazma;
   operation'lar local surface ref'leri kullanır.
-- operations[] relationship dışındaki analytical requirement'lardır ve polarity zorunludur:
+- operations[] relationship dışındaki analytical requirement'lardır:
+  * operation yalnız analytical capability enum'udur (comparison/performance/trend/
+    breakdown/ranking/root_cause/other); semantic_role DEĞİLDİR.
+  * evidence_text exact CURRENT_MESSAGE operation span'idir.
+  * polarity zorunludur:
   requested → requirement üretir; excluded → kullanıcı açıkça reddetmiştir, requirement üretmez.
 - root_cause ayrı typed frame'dir:
   * outcome_ref = açıklanması/kök nedeni araştırılması istenen sonuç,
   * factor_refs = kullanıcının aynı root-cause requirement'ında ilişkilendirdiği explicit faktörler.
   Aynı factor edge'ini ayrıca relationship olarak üretme; kullanıcı ayrıca ayrı relationship
   analizi istemişse o zaman iki ayrı requirement vardır.
-- relationships[] yalnız ilişki requirement'ıdır:
+- relationships[] yalnız ilişki requirement'ıdır; evidence_text exact source span'idir:
   * counterpart_refs = explicit ilişki tarafları,
   * focus_binding=explicit ise focus_ref relationship.text içinde açıkça geçer,
   * focus_binding=antecedent ise focus_ref aynı CURRENT_MESSAGE içinde daha önce kurulmuş
@@ -472,13 +476,13 @@ RESEARCH_GRAPH — source inventory → typed operation graph:
   veya deliverable polarity=excluded olarak işaretlenir; deterministic compiler yalnız
   requested olanları requirement'a dönüştürür.
 - time_refs yalnız surfaces[] içindeki TIME surface ID'lerine referans verir.
-- deliverables[] analytical question değildir; output requirement'ıdır ve polarity taşır.
+- deliverables[] analytical question değildir; format + evidence_text + polarity taşır.
 - STANDARD-capable operation typed Core payload'ını kaybetmez:
   * ranking frame ranking payload'ını,
   * period/reference comparison frame comparisons[] payload'ını taşır.
   Policy operation text'ini yeniden parse ederek eksik slot tamamlamaz.
 - Semantic context'te tanınmayan ama kullanıcıda explicit geçen surface'i düşürme;
-  kind=unknown ile inventory'de koru. Resolver binding/clarification/gap sahibidir.
+  semantic_role=unknown ile inventory'de koru. Resolver binding/clarification/gap sahibidir.
 
 ANALYTICAL_REQUEST:
 - metric_mentions, dimension_mentions, filter_mentions, time_mentions yalnız surface span.
@@ -595,7 +599,9 @@ def _normalize_structured_payload(data: Any) -> Any:
                 surfaces.append(raw_surface)
                 continue
             item = dict(raw_surface)
-            item["kind"] = _enum_value(item.get("kind"), SemanticMentionKind)
+            item["semantic_role"] = _enum_value(
+                item.get("semantic_role"), SemanticMentionKind
+            )
             surfaces.append(item)
 
         operations = []
@@ -604,8 +610,8 @@ def _normalize_structured_payload(data: Any) -> Any:
                 operations.append(raw_operation)
                 continue
             item = dict(raw_operation)
-            item["kind"] = _enum_value(
-                item.get("kind"), ResearchNonRelationshipGoalKind
+            item["operation"] = _enum_value(
+                item.get("operation"), ResearchNonRelationshipGoalKind
             )
             item["polarity"] = _enum_value(
                 item.get("polarity"), ResearchOperationPolarity
@@ -646,7 +652,9 @@ def _normalize_structured_payload(data: Any) -> Any:
                 deliverables.append(raw_deliverable)
                 continue
             item = dict(raw_deliverable)
-            item["kind"] = _enum_value(item.get("kind"), PresentationKind)
+            item["format"] = _enum_value(
+                item.get("format"), PresentationKind
+            )
             item["polarity"] = _enum_value(
                 item.get("polarity"), ResearchOperationPolarity
             )
@@ -692,13 +700,13 @@ def _transport_surface_spans(turn: TurnInterpreterTransport) -> list[str]:
     if graph is not None:
         spans.extend(item.text for item in graph.surfaces)
         for operation in graph.operations:
-            spans.append(operation.text)
+            spans.append(operation.evidence_text)
             ranking = getattr(operation, "ranking", None)
             if ranking is not None:
                 spans.append(ranking.text)
             spans.extend(item.text for item in getattr(operation, "comparisons", ()))
-        spans.extend(item.text for item in graph.relationships)
-        spans.extend(item.text for item in graph.deliverables)
+        spans.extend(item.evidence_text for item in graph.relationships)
+        spans.extend(item.evidence_text for item in graph.deliverables)
 
     if turn.user_repair is not None:
         spans.extend(turn.user_repair.correction_spans)
@@ -731,7 +739,9 @@ def _align_transport_surfaces(
         operations = []
         for operation in graph.operations:
             updates = {
-                "text": _align_near_copy_surface(question, operation.text),
+                "evidence_text": _align_near_copy_surface(
+                    question, operation.evidence_text
+                ),
             }
             ranking = getattr(operation, "ranking", None)
             if ranking is not None:
@@ -750,7 +760,9 @@ def _align_transport_surfaces(
                 "relationships": tuple(
                     item.model_copy(
                         update={
-                            "text": _align_near_copy_surface(question, item.text)
+                            "evidence_text": _align_near_copy_surface(
+                                question, item.evidence_text
+                            )
                         }
                     )
                     for item in graph.relationships
@@ -832,7 +844,10 @@ def _compile_research_graph(
     graph,
 ) -> ResearchRequestSurface | None:
     surface_index = {
-        item.surface_id: SemanticMention(text=item.text, kind=item.kind)
+        item.surface_id: SemanticMention(
+            text=item.text,
+            kind=item.semantic_role,
+        )
         for item in graph.surfaces
     }
 
@@ -844,7 +859,7 @@ def _compile_research_graph(
     excluded: list[SemanticMention] = []
 
     for operation in graph.operations:
-        if isinstance(operation, ResearchRootCauseFrame):
+        if operation.operation == ResearchNonRelationshipGoalKind.ROOT_CAUSE:
             refs = (operation.outcome_ref, *operation.factor_refs)
         else:
             refs = (*operation.subject_refs, *operation.related_refs)
@@ -853,11 +868,13 @@ def _compile_research_graph(
             excluded.extend(mentions(refs))
             continue
 
-        if isinstance(operation, ResearchRootCauseFrame):
+        if operation.operation == ResearchNonRelationshipGoalKind.ROOT_CAUSE:
+            if operation.outcome_ref is None:
+                raise ValueError("root_cause operation missing outcome_ref")
             goals.append(
                 ResearchGoalSurface(
                     kind=ResearchNonRelationshipGoalKind.ROOT_CAUSE,
-                    text=operation.text,
+                    text=operation.evidence_text,
                     subject_mentions=(surface_index[operation.outcome_ref],),
                     related_mentions=mentions(operation.factor_refs),
                 )
@@ -866,8 +883,8 @@ def _compile_research_graph(
 
         goals.append(
             ResearchGoalSurface(
-                kind=ResearchNonRelationshipGoalKind(operation.kind),
-                text=operation.text,
+                kind=operation.operation,
+                text=operation.evidence_text,
                 subject_mentions=mentions(operation.subject_refs),
                 related_mentions=mentions(operation.related_refs),
                 ranking=getattr(operation, "ranking", None),
@@ -894,7 +911,9 @@ def _compile_research_graph(
             focus = surface_index[relationship.focus_ref]
             focus_mentions = (focus,)
             focus_text = _normalized_surface(focus.text)
-            relationship_text = _normalized_surface(relationship.text)
+            relationship_text = _normalized_surface(
+                relationship.evidence_text
+            )
 
             if relationship.focus_binding == ResearchFocusBinding.EXPLICIT:
                 if focus_text not in relationship_text:
@@ -911,14 +930,17 @@ def _compile_research_graph(
 
         relationships.append(
             ResearchRelationshipSurface(
-                text=relationship.text,
+                text=relationship.evidence_text,
                 focus_mentions=focus_mentions,
                 counterpart_mentions=mentions(relationship.counterpart_refs),
             )
         )
 
     deliverables = tuple(
-        ResearchDeliverableSurface(kind=item.kind, text=item.text)
+        ResearchDeliverableSurface(
+            kind=item.format,
+            text=item.evidence_text,
+        )
         for item in graph.deliverables
         if item.polarity == ResearchOperationPolarity.REQUESTED
     )
@@ -990,7 +1012,7 @@ class TurnInterpreter:
         schema = TurnInterpreterTransport.model_json_schema()
         transport_kwargs = {
             "schema": schema,
-            "schema_name": "dima_turn_interpreter_transport_v1",
+            "schema_name": "dima_turn_interpreter_transport_v2",
         }
 
         try:
