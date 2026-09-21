@@ -101,8 +101,10 @@ class ManagerCoreAnalyticsAdapter:
         runtime: TenantAnalyticsRuntimeV0,
         contract_store,
         session_id: str | None,
+        allowed_obligation_ids: set[str] | None = None,
     ) -> ManagerCoreAnalyticsResult:
-        unknown_obligations = set(args.obligation_ids) - set(accepted_contract.obligation_ids)
+        allowed = allowed_obligation_ids or set(accepted_contract.obligation_ids)
+        unknown_obligations = set(args.obligation_ids) - allowed
         if unknown_obligations:
             raise ManagerCoreAdapterError(
                 "run_analytics accepted contract dışında obligation kullanamaz: "
