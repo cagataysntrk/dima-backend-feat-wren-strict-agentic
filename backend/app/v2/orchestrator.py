@@ -38,6 +38,7 @@ from app.v2.models import (
     ExecutionResultV0,
     MinimumQueryContract,
     RequirementLedger,
+    ResearchBriefStatus,
     SemanticHypothesis,
     StandardAnalyticsFailure,
     TenantAnalyticsRuntimeV0,
@@ -45,6 +46,7 @@ from app.v2.models import (
     TurnInterpretation,
 )
 from app.v2.resolver import SemanticResolver
+from app.v2.research import ResearchBriefBuilder
 
 
 class V2Orchestrator:
@@ -59,6 +61,7 @@ class V2Orchestrator:
         self._ir_builder = AnalyticsIRBuilder()
         self._planner = CubePlanner()
         self._result_validator = ResultValidator()
+        self._research_brief_builder = ResearchBriefBuilder()
 
     @staticmethod
     def _bind_runtime(request, principal: Principal):
@@ -286,6 +289,33 @@ class V2Orchestrator:
                 turn=response_turn,
                 bundle=bundle,
             )
+            if action == DialogueAction.RESEARCH_BRIEF:
+                brief = self._research_brief_builder.build(
+                    turn=response_turn,
+                    hypotheses=bundle.hypotheses,
+                    context_version=context_version.version,
+                )
+                return AskV2Day4Response(
+                    dialogue_action=DialogueAction.RESEARCH_BRIEF,
+                    semantic_status=bundle.semantic_status,
+                    analytics_status="not_applicable",
+                    official_verified=False,
+                    runtime=runtime,
+                    context_version=context_version,
+                    turn=response_turn,
+                    hypotheses=bundle.hypotheses,
+                    clarification=bundle.clarification,
+                    research_brief=brief,
+                    conversation=body.conversation,
+                    session_id=body.session_id,
+                    thread_id=body.thread_id,
+                    query_execution_count=0,
+                    next_stage=(
+                        "research_ready_day7"
+                        if brief.status == ResearchBriefStatus.READY_FOR_RESEARCH
+                        else "research_brief_blocked"
+                    ),
+                )
             if action == DialogueAction.CLARIFY:
                 if bundle.clarification is None:
                     raise RuntimeError("DialoguePolicy CLARIFY without ClarificationState")
