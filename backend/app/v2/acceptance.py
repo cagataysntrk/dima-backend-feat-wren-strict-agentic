@@ -139,13 +139,16 @@ class IntentAcceptanceGate:
                         f"user obligation {item.obligation_id} is not grounded in current source hash"
                     )
 
+            handle_kinds: set[str] = set()
             for handle_id in item.semantic_handle_refs:
                 try:
-                    self._semantic_handles.validate(
+                    handle = self._semantic_handles.validate(
                         handle_id,
                         tenant_binding=tenant_binding,
                         context_version=context_version,
                     )
+                    kind = "period" if handle.target_kind == "time" else handle.target_kind
+                    handle_kinds.add(kind)
                 except (KeyError, ValueError) as exc:
                     reject.append(f"invalid semantic handle {handle_id}: {exc}")
 
@@ -156,11 +159,19 @@ class IntentAcceptanceGate:
                 and item.polarity == ObligationPolarity.REQUIRED
                 and spec.executable
                 and spec.lane == ManagerCapabilityLane.STANDARD
-                and not item.semantic_handle_refs
             ):
-                reject.append(
-                    f"standard USER_MUST {item.obligation_id} requires Resolver-issued semantic handles before acceptance"
-                )
+                required_kinds = {
+                    "performance": {"metric"},
+                    "breakdown": {"metric", "dimension"},
+                    "ranking": {"metric", "dimension"},
+                    "comparison": {"metric", "comparison"},
+                }.get(item.capability_key.value, set())
+                missing_kinds = required_kinds - handle_kinds
+                if missing_kinds:
+                    reject.append(
+                        f"standard USER_MUST {item.obligation_id} missing Resolver semantic kinds: "
+                        + ", ".join(sorted(missing_kinds))
+                    )
 
             if item.open_questions and item.priority == ObligationPriority.MUST:
                 clarify.append(f"MUST obligation {item.obligation_id} has open questions")
