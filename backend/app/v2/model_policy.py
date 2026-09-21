@@ -62,12 +62,24 @@ class ModelRolePolicy:
         if not model:
             raise ValueError(f"model is not configured for role {role.value}")
 
+        reasoning_enabled = bool(
+            getattr(
+                self._settings,
+                (
+                    "v2_fast_language_reasoning"
+                    if role == ModelRole.FAST_LANGUAGE
+                    else "v2_reference_language_reasoning"
+                ),
+                role == ModelRole.REFERENCE_LANGUAGE,
+            )
+        )
+
         return ModelProfile(
             role=role,
             provider=provider,
             model=model,
             native_schema_required=True,
-            reasoning_enabled=False,
+            reasoning_enabled=reasoning_enabled,
         )
 
     def scoped_settings(
@@ -82,6 +94,7 @@ class ModelRolePolicy:
             "llm_provider": profile.provider,
             model_field: profile.model,
             select_field: profile.model,
+            "v2_structured_reasoning_enabled": profile.reasoning_enabled,
         }
         return self._settings.model_copy(update=updates), profile
 
