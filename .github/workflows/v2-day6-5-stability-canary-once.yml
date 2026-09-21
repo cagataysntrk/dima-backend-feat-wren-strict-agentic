@@ -1,0 +1,82 @@
+name: v2-day6-5-stability-canary-once
+
+"on":
+  push:
+    branches: [feat/ask-v2-mvp]
+    paths:
+      - ".github/workflows/v2-day6-5-stability-canary-once.yml"
+
+jobs:
+  stability-canary:
+    if: "github.event.head_commit.message == 'eval(v2-day6.5): run stability and architecture canary'"
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 30
+    env:
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_MODEL: openai/gpt-5.6-luna
+      DIMA_OPENROUTER_MODEL: openai/gpt-5.6-luna
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend eval dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Provider-free algebra guard
+        working-directory: backend
+        run: |
+          pytest -q tests/test_v2_day6_5_capability_algebra.py
+      - name: 063 contradiction stability 5x
+        working-directory: backend
+        shell: bash
+        run: |
+          mkdir -p lab/reports/day65-stability
+          failures=0
+          for i in 1 2 3 4 5; do
+            echo "=== 063 stability run $i ==="
+            python lab/v2_day6_5_manager_eval.py               --require-live               --workers 1               --model openai/gpt-5.6-luna               --case-id d65-dev-063               --output "lab/reports/day65-stability/063-$i.json"               || failures=$((failures+1))
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for path in sorted(Path("lab/reports/day65-stability").glob("063-*.json")):
+              data=json.loads(path.read_text())
+              record=(data.get("records") or [{}])[0]
+              rows.append({
+                  "file": path.name,
+                  "status": data.get("status"),
+                  "actual_terminal": record.get("actual_terminal"),
+                  "actual_required": record.get("actual_required"),
+                  "actual_excluded": record.get("actual_excluded"),
+                  "actual_representability": record.get("actual_representability"),
+                  "manager_turns": record.get("manager_turns"),
+              })
+          print(json.dumps({"runs": rows}, ensure_ascii=False))
+          PY
+          if [[ "$failures" -ne 0 ]]; then
+            echo "063 stability failed: $failures/5"
+            exit 1
+          fi
+          echo "063 stability: 5/5 PASS"
+      - name: Architecture canary 001-063-067-075
+        working-directory: backend
+        run: |
+          python lab/v2_day6_5_manager_eval.py             --require-live             --workers 4             --model openai/gpt-5.6-luna             --case-id d65-dev-001             --case-id d65-dev-063             --case-id d65-dev-067             --case-id d65-dev-075             --output lab/reports/v2_day6_5_architecture_canary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-stability-canary
+          path: |
+            backend/lab/reports/day65-stability/*.json
+            backend/lab/reports/v2_day6_5_architecture_canary.json
+          retention-days: 14
