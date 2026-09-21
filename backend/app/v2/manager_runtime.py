@@ -62,6 +62,7 @@ class ManagerRuntime:
         self._contracts = contract_registry or AcceptedContractRegistry()
         self._snapshot = ManagerRunSnapshot(run_id=run_id, state=ManagerState.INITIAL)
         self._ledger: UserObligationLedger | None = None
+        self._accepted_contract = None
 
     @property
     def snapshot(self) -> ManagerRunSnapshot:
@@ -70,6 +71,10 @@ class ManagerRuntime:
     @property
     def ledger(self) -> UserObligationLedger | None:
         return self._ledger
+
+    @property
+    def accepted_contract(self):
+        return self._accepted_contract
 
     @property
     def has_accepted_contract(self) -> bool:
@@ -127,6 +132,7 @@ class ManagerRuntime:
             if result.status == AcceptanceStatus.ACCEPTED:
                 assert result.contract is not None and result.ledger is not None
                 self._contracts.commit(result.contract)
+                self._accepted_contract = result.contract
                 self._ledger = result.ledger
                 self._snapshot = self._snapshot.model_copy(
                     update={
