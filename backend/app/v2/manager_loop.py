@@ -74,6 +74,9 @@ class ManagerDecisionTransport(FrozenModel):
     comparison_handle: str | None = None
     ranking_direction: Literal["asc", "desc"] | None = None
     limit: int | None = Field(default=None, ge=1, le=1000)
+    derived_task_id: str | None = None
+    derived_parent_obligation_id: str | None = None
+    derived_capability_key: ManagerCapabilityKey | None = None
 
     relationship_obligation_id: str | None = None
     focus_handles: tuple[str, ...] = ()
@@ -284,6 +287,13 @@ class ResearchManagerLoop:
                     "comparison_handle": decision.comparison_handle,
                     "ranking_direction": decision.ranking_direction,
                     "limit": decision.limit,
+                    "derived_task_id": decision.derived_task_id,
+                    "derived_parent_obligation_id": decision.derived_parent_obligation_id,
+                    "derived_capability_key": (
+                        decision.derived_capability_key.value
+                        if decision.derived_capability_key is not None
+                        else None
+                    ),
                 },
             )
 
