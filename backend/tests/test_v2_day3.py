@@ -443,6 +443,86 @@ def test_simple_comparison_plans_two_immutable_executions():
     assert next(x for x in ledger.items if x.kind == RequirementKind.COMPARISON).state == RequirementState.REPRESENTED_IN_PLAN
 
 
+def test_ranked_comparison_reference_is_aligned_to_base_top_n_members():
+    turn = analytic_turn(
+        dimension="müşteri",
+        time_text="bu ay",
+        ranking=RankingSurface(text="en çok 2", direction="desc", limit=2),
+        comparison="geçen ayla kıyasla",
+    )
+    built = AnalyticsIRBuilder().build(
+        turn=turn,
+        hypotheses=hypotheses_for(dimension_name="musteri"),
+        schema=fake_schema(),
+        context_version=CTX.version,
+        today=date(2026, 9, 21),
+    )
+    planner = CubePlanner()
+    plans, ledger = planner.plan(
+        ir=built.ir,
+        ledger=built.ledger,
+        service=FakeCompileService(),
+    )
+
+    assert [plan.role for plan in plans] == ["primary"]
+    comparison_item = next(
+        item for item in ledger.items if item.kind == RequirementKind.COMPARISON
+    )
+    assert comparison_item.state == RequirementState.REPRESENTED_IN_IR
+
+    primary_result = {
+        "columns": ["musteri", "toplam_ciro"],
+        "rows": [
+            {"musteri": "ENTITY-A", "toplam_ciro": 50},
+            {"musteri": "ENTITY-B", "toplam_ciro": 40},
+        ],
+        "row_count": 2,
+        "column_types": ["VARCHAR", "DOUBLE"],
+    }
+    reference, ledger = planner.plan_ranked_comparison_reference(
+        ir=built.ir,
+        ledger=ledger,
+        primary_result=primary_result,
+        service=FakeCompileService(),
+    )
+
+    assert reference.role == "comparison_reference"
+    assert "order" not in reference.cube_query
+    assert "limit" not in reference.cube_query
+    assert {
+        "dimension": "musteri",
+        "operator": "in",
+        "value": ["ENTITY-A", "ENTITY-B"],
+    } in reference.cube_query["filters"]
+    assert period_filters(built.ir.comparison.reference_period) == [
+        item
+        for item in reference.cube_query["filters"]
+        if item["dimension"] == "tarih"
+    ]
+    comparison_item = next(
+        item for item in ledger.items if item.kind == RequirementKind.COMPARISON
+    )
+    assert comparison_item.state == RequirementState.REPRESENTED_IN_PLAN
+
+    reference_result = {
+        "columns": ["musteri", "toplam_ciro"],
+        "rows": [
+            {"musteri": "ENTITY-A", "toplam_ciro": 45},
+            {"musteri": "ENTITY-B", "toplam_ciro": 35},
+        ],
+        "row_count": 2,
+        "column_types": ["VARCHAR", "DOUBLE"],
+    }
+    ledger, errors = ResultValidator().validate(
+        ir=built.ir,
+        ledger=ledger,
+        plans=(plans[0], reference),
+        results=(primary_result, reference_result),
+    )
+    assert errors == ((), ())
+    assert ledger.all_must_verified
+
+
 def test_strict_contract_seal_reports_db_spool_or_none(monkeypatch):
     import app.contracts as contracts
 
