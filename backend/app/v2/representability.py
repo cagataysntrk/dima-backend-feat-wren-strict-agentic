@@ -127,6 +127,20 @@ class RepresentabilityGate:
         for item in executable:
             if item.obligation_id not in supplied_ids:
                 continue
+            projection_handles = {
+                *projection.metric_handles,
+                *projection.dimension_handles,
+                *projection.filter_handles,
+                *(() if projection.period_handle is None else (projection.period_handle,)),
+                *(() if projection.comparison_handle is None else (projection.comparison_handle,)),
+            }
+            missing_bindings = set(item.semantic_handle_refs) - projection_handles
+            if missing_bindings:
+                reasons.append(
+                    f"{item.obligation_id}: projection misses accepted semantic bindings "
+                    + ", ".join(sorted(missing_bindings))
+                )
+
             capability = item.capability_key
             if capability == ManagerCapabilityKey.PERFORMANCE:
                 if not projection.metric_handles:
