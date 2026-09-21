@@ -170,6 +170,8 @@ class LiveSyntheticService:
         for flt in query.get("filters") or ():
             if flt.get("operator") == "eq" and flt.get("dimension") in dims:
                 values = [flt.get("value")]
+            elif flt.get("operator") == "in" and flt.get("dimension") in dims:
+                values = list(flt.get("value") or ())
 
         rows = []
         for index, value in enumerate(values or [None]):
