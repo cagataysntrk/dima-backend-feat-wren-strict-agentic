@@ -33,7 +33,7 @@ from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
 )
-from app.v2.models import FrozenModel
+from app.v2.models import ConversationStateV2, FrozenModel
 from app.v2.source_spans import SourceSpanRegistry
 
 
@@ -241,6 +241,34 @@ Rules:
 """
 
 
+def _conversation_surface_view(
+    conversation: ConversationStateV2 | None,
+) -> dict[str, Any]:
+    """Expose only bounded surface context; canonical IR/anchors never reach Manager."""
+    if conversation is None:
+        return {
+            "has_prior_analytical_request": False,
+            "has_active_result": False,
+            "pending_clarification": False,
+            "topic_labels": [],
+            "focus_labels": [],
+            "selected_anchor_label": None,
+            "pending_source_mention": None,
+        }
+    clarification = conversation.clarification_state
+    return {
+        "has_prior_analytical_request": conversation.has_prior_analytical_request,
+        "has_active_result": conversation.has_active_result,
+        "pending_clarification": conversation.pending_clarification,
+        "topic_labels": list(conversation.topic_labels[:8]),
+        "focus_labels": list(conversation.focus_labels[:8]),
+        "selected_anchor_label": conversation.selected_anchor_label,
+        "pending_source_mention": (
+            clarification.source_mention if clarification is not None else None
+        ),
+    }
+
+
 def _evidence_was_inspected(
     observations: list[dict[str, Any]],
     evidence_ref: str | None,
@@ -319,6 +347,7 @@ class ResearchManagerLoop:
         question: str,
         runtime: ManagerRuntime,
         observations: list[dict[str, Any]],
+        conversation: ConversationStateV2 | None = None,
     ) -> str:
         ledger = runtime.ledger
         ledger_view = []
@@ -343,6 +372,7 @@ class ResearchManagerLoop:
             "ACCEPTED_CONTRACT_ID": runtime.snapshot.accepted_contract_id,
             "OBLIGATION_LEDGER": ledger_view,
             "EVIDENCE_REFS": list(runtime.snapshot.evidence_refs),
+            "CONVERSATION_SURFACE": _conversation_surface_view(conversation),
             "RECENT_OBSERVATIONS": observations[-6:],
         }
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
@@ -352,11 +382,19 @@ class ResearchManagerLoop:
         data = json.loads(raw) if isinstance(raw, str) else raw
         return ManagerDecisionTransport.model_validate(data)
 
-    def _decision(self, *, question: str, runtime: ManagerRuntime, observations):
+    def _decision(
+        self,
+        *,
+        question: str,
+        runtime: ManagerRuntime,
+        observations,
+        conversation: ConversationStateV2 | None = None,
+    ):
         user = self._prompt(
             question=question,
             runtime=runtime,
             observations=observations,
+            conversation=conversation,
         )
         schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
         kwargs = {
@@ -525,6 +563,7 @@ class ResearchManagerLoop:
         request_ref: str,
         runtime: ManagerRuntime,
         executor,
+        conversation: ConversationStateV2 | None = None,
     ) -> ManagerLoopOutcome:
         source_hash = self._source_spans.register_message(
             message_id=message_id,
@@ -551,6 +590,7 @@ class ResearchManagerLoop:
                     question=question,
                     runtime=runtime,
                     observations=observations,
+                    conversation=conversation,
                 )
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
