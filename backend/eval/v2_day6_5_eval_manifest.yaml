@@ -163,7 +163,7 @@ holdout_freeze_protocol:
   - "Compute SHA-256 for corpus bytes, taxonomy manifest, and external attestation."
   - "Replace REQUIRED_BEFORE_IMPLEMENTATION hashes/attestation fields in this manifest."
   - "Commit only hashes/counts/taxonomy metadata."
-  - "Do not inspect hidden prompt text until the final architecture seal."
+  - "Do not expose hidden prompt text to the development context at any point; final architecture seal uses the external receipt only."
   - "At seal, external evaluator returns only a receipt bound to corpus_sha256, tested_git_sha, and eval_harness_sha; prompt text stays hidden."
 
 stop_the_line:
