@@ -277,7 +277,7 @@ class ResearchModePolicy:
     ) -> ResearchModeDecision:
         # Routing policy deliberately does not inspect/copy operation text. The typed
         # reason is sufficient for fail-closed routing; source evidence remains owned
-        # by the pre-policy interpretation/eval record, not classified here.
+        # by the pre-policy interpretation/eval record; this boundary does not classify it.
         canonical = turn.model_copy(
             update={
                 "dialogue_act": TurnAct.UNSUPPORTED,
