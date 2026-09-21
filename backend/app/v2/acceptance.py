@@ -174,11 +174,21 @@ class IntentAcceptanceGate:
             else:
                 seen_polarity[polarity_key] = item.polarity
 
+        replaced_ids = {item.obligation_id for item in envelope.obligations}
+        effective_required_candidates = (
+            *(
+                item
+                for item in (active_ledger.items if active_ledger is not None else ())
+                if item.obligation_id not in replaced_ids
+                and item.status != ObligationStatus.SUPERSEDED
+            ),
+            *envelope.obligations,
+        )
         has_required_user_must = any(
             item.origin == ObligationOrigin.USER_MUST
             and item.priority == ObligationPriority.MUST
             and item.polarity == ObligationPolarity.REQUIRED
-            for item in envelope.obligations
+            for item in effective_required_candidates
         )
         if not has_required_user_must:
             reject.append(
