@@ -25,6 +25,7 @@ from app.v2.models import (
     ContextVersionV0,
     CandidateSource,
     CompactRelationshipV0,
+    ComparisonSurface,
     ClarificationReason,
     ClarificationState,
     ConversationResponseKind,
@@ -39,6 +40,7 @@ from app.v2.models import (
     ResearchModeReason,
     ResearchGoalSurface,
     ResearchRequestSurface,
+    RankingSurface,
     ResolutionStatus,
     SemanticCandidate,
     SemanticHypothesis,
@@ -571,45 +573,31 @@ def test_interpreter_rejects_invented_research_goal_surface_before_resolver():
 
 
 
-def test_interpreter_normalizes_provider_enum_case_and_inapplicable_deliverable_without_retry():
-    question = "Son 12 ay ürünleri karşılaştır, makine ilişkisini incele ve raporla."
+def test_interpreter_normalizes_enum_case_without_semantic_schema_migration():
+    question = "Ürünlerin makine ilişkisini incele ve raporla."
     llm = _StaticStructuredLlm(
         {
-            "dialogue_act": "report_request",
+            "dialogue_act": "complex_analysis",
             "references": [],
             "analytical_request": None,
             "research_request": {
                 "goals": [
                     {
-                        "kind": "COMPARISON",
-                        "text": "ürünleri karşılaştır",
-                        "subject_mentions": [
-                            {"text": "ürünleri", "kind": "DIMENSION"}
-                        ],
-                        "related_mentions": [],
-                        "deliverable": "report",
-                    },
-                    {
                         "kind": "RELATIONSHIP",
-                        "text": "makine ilişkisini incele",
+                        "text": "Ürünlerin makine ilişkisini incele",
                         "subject_mentions": [
-                            {"text": "ürünleri", "kind": "DIMENSION"}
+                            {"text": "Ürünlerin", "kind": "DIMENSION"}
                         ],
                         "related_mentions": [
                             {"text": "makine", "kind": "DIMENSION"}
                         ],
-                        "deliverable": "none",
-                    },
-                    {
-                        "kind": "DELIVERABLE",
-                        "text": "raporla",
-                        "subject_mentions": [],
-                        "related_mentions": [],
-                        "deliverable": "REPORT",
-                    },
+                        "ranking": None,
+                        "comparisons": [],
+                    }
                 ],
-                "time_mentions": [
-                    {"text": "Son 12 ay", "kind": "TIME"}
+                "time_mentions": [],
+                "deliverables": [
+                    {"kind": "REPORT", "text": "raporla"}
                 ],
             },
             "presentation_request": "REPORT",
@@ -629,14 +617,56 @@ def test_interpreter_normalizes_provider_enum_case_and_inapplicable_deliverable_
     assert turn.dialogue_act == TurnAct.COMPLEX_ANALYSIS
     assert turn.presentation_request == PresentationKind.REPORT
     assert turn.research_request is not None
-    assert [goal.kind for goal in turn.research_request.goals] == [
-        ResearchGoalKind.COMPARISON,
-        ResearchGoalKind.RELATIONSHIP,
-    ]
-    assert len(turn.research_request.deliverables) == 1
+    assert turn.research_request.goals[0].kind == ResearchGoalKind.RELATIONSHIP
     assert turn.research_request.deliverables[0].kind == PresentationKind.REPORT
-    assert turn.research_request.deliverables[0].text == "raporla"
-    assert turn.research_request.time_mentions[0].kind == SemanticMentionKind.TIME
+
+
+def test_legacy_deliverable_pseudo_goal_is_not_silently_migrated():
+    question = "Ürünlerin makine ilişkisini incele ve raporla."
+    legacy_payload = {
+        "dialogue_act": "COMPLEX_ANALYSIS",
+        "references": [],
+        "analytical_request": None,
+        "research_request": {
+            "goals": [
+                {
+                    "kind": "RELATIONSHIP",
+                    "text": "Ürünlerin makine ilişkisini incele",
+                    "subject_mentions": [
+                        {"text": "Ürünlerin", "kind": "dimension"}
+                    ],
+                    "related_mentions": [
+                        {"text": "makine", "kind": "dimension"}
+                    ],
+                    "ranking": None,
+                    "comparisons": [],
+                },
+                {
+                    "kind": "deliverable",
+                    "text": "raporla",
+                    "subject_mentions": [],
+                    "related_mentions": [],
+                },
+            ],
+            "time_mentions": [],
+            "deliverables": [],
+        },
+        "presentation_request": "report",
+        "user_repair": None,
+        "unresolved_mentions": [],
+    }
+    llm = _StaticStructuredLlm(legacy_payload)
+
+    with pytest.raises(TurnInterpreterError) as caught:
+        TurnInterpreter().interpret(
+            question=question,
+            semantic_context=_empty_context(),
+            conversation=ConversationStateV2(),
+            llm=llm,
+        )
+
+    assert llm.calls == 2
+    assert caught.value.failure.code == "invalid_structured_output"
 
 
 def test_format_normalization_does_not_relax_surface_grounding():
@@ -1117,6 +1147,131 @@ def test_research_mode_policy_never_reads_deliverable_or_goal_text_for_route():
     assert ".deliverables" not in source
     assert "goal.text" not in source
     assert "re." not in source
+
+
+def test_other_operation_is_fail_closed_not_research_escalation():
+    unknown = mention("belirsiz eksen", SemanticMentionKind.UNKNOWN)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.OTHER,
+                    text="belirsiz işlemi incele",
+                    subject_mentions=(unknown,),
+                ),
+            )
+        ),
+    )
+
+    decision = ResearchModePolicy().decide(turn)
+
+    assert decision.mode == ResearchMode.BLOCKED
+    assert decision.reason == ResearchModeReason.UNCLASSIFIED_OPERATION
+    assert decision.canonical_turn.dialogue_act == TurnAct.UNSUPPORTED
+    assert decision.canonical_turn.research_request is None
+    assert decision.canonical_turn.analytical_request is None
+    assert decision.canonical_turn.unresolved_mentions
+    assert decision.canonical_turn.unresolved_mentions[-1].text == "belirsiz işlemi incele"
+
+
+def test_standard_ranking_operation_projects_without_raw_text_reparse():
+    metric = mention("metrik-z", SemanticMentionKind.METRIC)
+    dimension = mention("eksen-q", SemanticMentionKind.DIMENSION)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.RANKING,
+                    text="opaque ranking surface",
+                    subject_mentions=(dimension,),
+                    related_mentions=(metric,),
+                    ranking=RankingSurface(
+                        text="opaque ranking surface",
+                        direction="desc",
+                        limit=7,
+                    ),
+                ),
+            ),
+            time_mentions=(mention("opaque period", SemanticMentionKind.TIME),),
+        ),
+    )
+
+    decision = ResearchModePolicy().decide(turn)
+
+    assert decision.mode == ResearchMode.STANDARD
+    assert decision.reason == ResearchModeReason.STANDARD_PROJECTABLE_OPERATIONS
+    projected = decision.canonical_turn.analytical_request
+    assert projected is not None
+    assert [x.text for x in projected.metric_mentions] == ["metrik-z"]
+    assert [x.text for x in projected.dimension_mentions] == ["eksen-q"]
+    assert projected.ranking is not None
+    assert projected.ranking.direction == "desc"
+    assert projected.ranking.limit == 7
+    assert [x.text for x in projected.time_mentions] == ["opaque period"]
+
+
+def test_standard_period_comparison_projects_only_from_typed_comparison_payload():
+    metric = mention("metrik-p", SemanticMentionKind.METRIC)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.COMPARISON,
+                    text="opaque comparison operation",
+                    subject_mentions=(metric,),
+                    comparisons=(
+                        ComparisonSurface(text="opaque reference period"),
+                    ),
+                ),
+            ),
+            time_mentions=(mention("opaque base period", SemanticMentionKind.TIME),),
+        ),
+    )
+
+    decision = ResearchModePolicy().decide(turn)
+
+    assert decision.mode == ResearchMode.STANDARD
+    projected = decision.canonical_turn.analytical_request
+    assert projected is not None
+    assert [x.text for x in projected.metric_mentions] == ["metrik-p"]
+    assert [x.text for x in projected.comparisons] == ["opaque reference period"]
+    assert [x.text for x in projected.time_mentions] == ["opaque base period"]
+
+
+def test_generic_comparison_without_core_payload_is_blocked_not_research():
+    dimension = mention("eksen-k", SemanticMentionKind.DIMENSION)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchGoalKind.COMPARISON,
+                    text="opaque generic comparison",
+                    subject_mentions=(dimension,),
+                ),
+            )
+        ),
+    )
+
+    decision = ResearchModePolicy().decide(turn)
+
+    assert decision.mode == ResearchMode.BLOCKED
+    assert decision.reason == ResearchModeReason.INCOMPLETE_STANDARD_OPERATION
+    assert decision.canonical_turn.dialogue_act == TurnAct.UNSUPPORTED
+
+
+def test_research_mode_policy_declares_core_capabilities_instead_of_fixture_cases():
+    source = inspect.getsource(ResearchModePolicy)
+    assert "_STANDARD_CAPABLE" in source
+    assert "ResearchGoalKind.RANKING" in source
+    assert "ResearchGoalKind.COMPARISON" in source
+    assert "ResearchGoalKind.OTHER" in source
+    assert "goal.text" not in source
+    for forbidden in ("ürün", "makine", "personel", "satış", "Gemini"):
+        assert forbidden not in source
 
 
 def test_relationship_goal_schema_rejects_non_atomic_many_to_many_shape():
