@@ -59,10 +59,16 @@ class ManagerObligationProposal(FrozenModel):
 class ManagerDecisionTransport(FrozenModel):
     action: ManagerActionKind
 
+    resolve_provenance: Literal["USER_SOURCE", "AGENT_DERIVED"] = "USER_SOURCE"
     source_surfaces: tuple[str, ...] = ()
     target_kind_hints: tuple[
-        Literal["metric", "dimension", "filter", "unknown"], ...
+        Literal["metric", "dimension", "filter", "time", "comparison", "unknown"], ...
     ] = ()
+    temporal_anchor_handle: str | None = None
+    base_period_handle: str | None = None
+    semantic_parent_obligation_id: str | None = None
+    semantic_evidence_ref: str | None = None
+    semantic_proposal: str | None = Field(default=None, max_length=240)
 
     obligations: tuple[ManagerObligationProposal, ...] = ()
 
@@ -88,10 +94,21 @@ class ManagerDecisionTransport(FrozenModel):
     @model_validator(mode="after")
     def _action_shape(self):
         if self.action == ManagerActionKind.RESOLVE_SEMANTICS:
-            if not self.source_surfaces:
-                raise ValueError("resolve_semantics source_surfaces gerektirir")
-            if self.target_kind_hints and len(self.target_kind_hints) != len(self.source_surfaces):
-                raise ValueError("semantic hints source_surfaces ile aynı uzunlukta olmalı")
+            if self.resolve_provenance == "USER_SOURCE":
+                if not self.source_surfaces:
+                    raise ValueError("USER_SOURCE resolve source_surfaces gerektirir")
+                if self.target_kind_hints and len(self.target_kind_hints) != len(self.source_surfaces):
+                    raise ValueError("semantic hints source_surfaces ile aynı uzunlukta olmalı")
+            else:
+                if (
+                    not self.semantic_parent_obligation_id
+                    or not self.semantic_evidence_ref
+                    or not self.semantic_proposal
+                    or len(self.target_kind_hints) != 1
+                ):
+                    raise ValueError(
+                        "AGENT_DERIVED resolve parent obligation + evidence + proposal + one kind hint gerektirir"
+                    )
         elif self.action == ManagerActionKind.PROPOSE_ACCEPTANCE:
             if not self.obligations:
                 raise ValueError("propose_acceptance obligations gerektirir")
@@ -131,7 +148,8 @@ opaque sem_* handles.
 
 Rules:
 - Human-language understanding may be iterative.
-- Exact source_surfaces MUST be literal substrings of USER_MESSAGE.
+- USER_SOURCE source_surfaces MUST be literal substrings of USER_MESSAGE.
+- AGENT_DERIVED semantic discovery MUST cite parent_obligation_id + evidence_ref + proposal.
 - Before data execution, propose_acceptance must succeed.
 - Rejected attempts leave no semantic fields to merge.
 - run_analytics/run_relationship may reference only accepted/derived obligation IDs.
@@ -234,13 +252,32 @@ class ResearchManagerLoop:
             return None
 
         if decision.action == ManagerActionKind.RESOLVE_SEMANTICS:
-            refs = self._source_refs(message_id=message_id, surfaces=decision.source_surfaces)
-            return ManagerToolCall(
-                name=ManagerToolName.RESOLVE_SEMANTICS,
-                args={
+            if decision.resolve_provenance == "USER_SOURCE":
+                refs = self._source_refs(
+                    message_id=message_id,
+                    surfaces=decision.source_surfaces,
+                )
+                args = {
+                    "provenance": "USER_SOURCE",
                     "source_refs": refs,
                     "target_kind_hints": decision.target_kind_hints,
-                },
+                    "temporal_anchor_handle": decision.temporal_anchor_handle,
+                    "base_period_handle": decision.base_period_handle,
+                }
+            else:
+                args = {
+                    "provenance": "AGENT_DERIVED",
+                    "source_refs": (),
+                    "target_kind_hints": decision.target_kind_hints,
+                    "temporal_anchor_handle": decision.temporal_anchor_handle,
+                    "base_period_handle": decision.base_period_handle,
+                    "parent_obligation_id": decision.semantic_parent_obligation_id,
+                    "evidence_ref": decision.semantic_evidence_ref,
+                    "natural_language_proposal": decision.semantic_proposal,
+                }
+            return ManagerToolCall(
+                name=ManagerToolName.RESOLVE_SEMANTICS,
+                args=args,
             )
 
         if decision.action == ManagerActionKind.PROPOSE_ACCEPTANCE:
