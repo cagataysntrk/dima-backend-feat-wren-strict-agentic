@@ -433,6 +433,12 @@ class PreAcceptanceController:
                 "directive_surface",
                 directive.source_surfaces,
             )
+        for control in draft.control_requests:
+            validate(
+                control.request_id,
+                "control_surface",
+                control.source_surfaces,
+            )
         return tuple(violations)
 
     def _source_refs(
@@ -456,7 +462,7 @@ class PreAcceptanceController:
         message_id: str,
         runtime: ManagerRuntime,
         executor,
-    ) -> tuple[dict[tuple[str, str], str], Any | None]:
+    ) -> tuple[dict[tuple[str, str], SemanticBindingRef], Any | None]:
         requests: list[tuple[str, str]] = []
         for obligation in draft.obligations:
             for item in obligation.semantic_surfaces:
@@ -490,22 +496,26 @@ class PreAcceptanceController:
         )
         result = step.tool_result
         by_source_ref = {
-            item.source_ref: item.handle.handle_id
+            item.source_ref: item
             for item in tuple(getattr(result, "resolved", ()) or ())
             if item.source_ref is not None
         }
-        grounded: dict[tuple[str, str], str] = {}
+        grounded: dict[tuple[str, str], SemanticBindingRef] = {}
         for (surface, kind), source_ref in zip(requests, refs, strict=True):
-            handle_id = by_source_ref.get(source_ref)
-            if handle_id:
-                grounded[(surface, kind)] = handle_id
+            resolved = by_source_ref.get(source_ref)
+            if resolved is not None:
+                grounded[(surface, kind)] = SemanticBindingRef(
+                    source_ref=source_ref,
+                    handle_id=resolved.handle.handle_id,
+                    target_kind=resolved.handle.target_kind,
+                )
         return grounded, result
 
     def _envelope(
         self,
         *,
         draft: IntentDraft,
-        grounded: dict[tuple[str, str], str],
+        grounded: dict[tuple[str, str], SemanticBindingRef],
         message_id: str,
         source_hash: str,
         request_ref: str,
@@ -517,12 +527,15 @@ class PreAcceptanceController:
                 message_id=message_id,
                 surfaces=item.source_surfaces,
             )
-            semantic_handle_refs = tuple(
+            semantic_bindings = tuple(
                 dict.fromkeys(
                     grounded[(surface.surface, surface.kind_hint)]
                     for surface in item.semantic_surfaces
                     if (surface.surface, surface.kind_hint) in grounded
                 )
+            )
+            semantic_handle_refs = tuple(
+                dict.fromkeys(binding.handle_id for binding in semantic_bindings)
             )
             obligations.append(
                 CandidateObligation(
@@ -533,6 +546,7 @@ class PreAcceptanceController:
                     polarity=item.polarity,
                     source_refs=source_refs,
                     semantic_handle_refs=semantic_handle_refs,
+                    semantic_bindings=semantic_bindings,
                     open_questions=item.open_questions,
                     ranking_direction=item.ranking_direction,
                     ranking_limit=item.ranking_limit,
@@ -569,7 +583,7 @@ class PreAcceptanceController:
     def _grounding_summary(
         *,
         draft: IntentDraft,
-        grounded: dict[tuple[str, str], str],
+        grounded: dict[tuple[str, str], SemanticBindingRef],
         resolution: Any | None,
     ) -> dict[str, Any]:
         requested = [
@@ -599,6 +613,44 @@ class PreAcceptanceController:
                 else ()
             ),
         }
+
+    @staticmethod
+    def _normalized_hint_kind(kind: str) -> str:
+        return "period" if kind == "time" else kind
+
+    def _material_grounding_gaps(
+        self,
+        *,
+        draft: IntentDraft,
+        grounded: dict[tuple[str, str], SemanticBindingRef],
+    ) -> tuple[dict[str, Any], ...]:
+        """Find missing capability-required bindings; optional extra surfaces do not block."""
+        gaps: list[dict[str, Any]] = []
+        for obligation in draft.obligations:
+            spec = self._capabilities.get(obligation.capability_key)
+            required = (
+                spec.required_kinds
+                if obligation.polarity == ObligationPolarity.REQUIRED
+                else spec.exclusion_required_kinds
+            )
+            if not required:
+                continue
+            resolved_kinds = {
+                self._normalized_hint_kind(surface.kind_hint)
+                for surface in obligation.semantic_surfaces
+                if (surface.surface, surface.kind_hint) in grounded
+            }
+            missing = sorted(required - resolved_kinds)
+            if missing:
+                gaps.append(
+                    {
+                        "obligation_id": obligation.obligation_id,
+                        "capability": obligation.capability_key.value,
+                        "polarity": obligation.polarity.value,
+                        "missing_required_kinds": missing,
+                    }
+                )
+        return tuple(gaps)
 
     @staticmethod
     def _coverage_requires_clarification(audit: CoverageAudit) -> bool:
