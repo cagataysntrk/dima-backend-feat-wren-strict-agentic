@@ -4,6 +4,36 @@
 > **Amaç:** Dima V2'yi mühürlü nihai rapor ve yol haritasına göre hızlı, izlenebilir ve
 > eski semantic-front-door hatalarını tekrar etmeyecek biçimde geliştirmek.
 
+## DAY 6.5 OVERRIDE — MANAGER ARCHITECTURE VALIDATION
+
+> Bu bölüm Day 6.5 boyunca aşağıdaki tarihsel V2 semantic-owner maddelerinin üzerinde
+> okunur. Day 6.5 living authority:
+>
+> - `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+> - `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+> - `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+> - `eval/v2_day6_5_eval_manifest.yaml`
+>
+> Mühürlü nihai roadmap/report değiştirilmez. Manager production architecture henüz seal
+> edilmemiştir; validation candidate'dır.
+>
+> Day 6.5 owner map:
+>
+> - FAST_LANGUAGE yalnız candidate attempt üretir; reddedilirse semantic izi downstream'a taşınmaz.
+> - Complex raw-language cognition candidate owner = `ManagerRuntime`.
+> - Accepted authority owner = `IntentAcceptanceGate` + runtime commit.
+> - Canonical binding owner = `SemanticResolver`; Manager canonical ref yazamaz.
+> - Source grounding owner = runtime `SourceSpanRegistry`; Manager source span uyduramaz.
+> - Standard-vs-research owner = `RepresentabilityGate`; raw-length/keyword classifier yasak.
+> - Numeric/query truth = existing Planner/Wren/DB/QueryContract trust plane.
+> - Completion truth = `CompletionGate`; evidence varlığı VERIFIED anlamına gelmez.
+> - accepted non-clarification turn başına exactly one active `AcceptedTurnContract`.
+> - rejected model attempt semantic merge = 0.
+> - `USER_MUST` ile `AGENT_DERIVED` origin asla birbirine promote edilmez.
+>
+> Production Manager koduna geçmeden hidden holdout SHA/count/taxonomy metadata freeze edilmiş
+> olmalıdır.
+
 ## 0. Her oturumda ilk okunacaklar
 
 Sıra bağlayıcıdır:
@@ -73,7 +103,7 @@ eklenir.
 
 V2 hot path'te:
 
-- Raw kullanıcı dili yalnız `TurnInterpreter` tarafından yorumlanır.
+- Day0–5 standard/reference yolda raw kullanıcı dili `TurnInterpreter` owner'ıdır; Day6.5 complex validation candidate'ında iterative cognition `ManagerRuntime` owner'ıdır. Aynı turn'de iki accepted semantic authority üretilemez.
 - Resolver raw question'ı ikinci kez parse etmez.
 - Planner semantic anlam seçmez.
 - Research worker raw user prompt'tan metric/dimension seçmez.
