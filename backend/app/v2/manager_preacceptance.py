@@ -231,6 +231,13 @@ material user intent is left uncovered, polarity is materially inconsistent, a c
 research directive is unmodeled, or a material reference remains unresolved from the
 current turn/context.
 
+GROUNDING_SUMMARY.requested[*].required_by_capability is deterministic metadata from the
+capability algebra. An unresolved entry with required_by_capability=true is a material
+binding gap. An unresolved entry with required_by_capability=false is NOT, by itself, a
+reason to VETO; veto it only when USER_MESSAGE independently makes that semantic constraint
+material and it is not already represented by another resolved binding, capability, or
+research directive.
+
 You are NOT semantic authority. You MUST NOT:
 - choose or suggest a capability,
 - produce an obligation or directive,
@@ -579,23 +586,35 @@ class PreAcceptanceController:
             research_directives=directives,
         )
 
-    @staticmethod
     def _grounding_summary(
+        self,
         *,
         draft: IntentDraft,
         grounded: dict[tuple[str, str], SemanticBindingRef],
         resolution: Any | None,
     ) -> dict[str, Any]:
-        requested = [
-            {
-                "owner_id": obligation.obligation_id,
-                "surface": item.surface,
-                "kind_hint": item.kind_hint,
-                "resolved": (item.surface, item.kind_hint) in grounded,
-            }
-            for obligation in draft.obligations
-            for item in obligation.semantic_surfaces
-        ]
+        requested: list[dict[str, Any]] = []
+        for obligation in draft.obligations:
+            spec = self._capabilities.get(obligation.capability_key)
+            required_kinds = (
+                spec.required_kinds
+                if obligation.polarity == ObligationPolarity.REQUIRED
+                else spec.exclusion_required_kinds
+            )
+            for item in obligation.semantic_surfaces:
+                normalized_kind = self._normalized_hint_kind(item.kind_hint)
+                requested.append(
+                    {
+                        "owner_id": obligation.obligation_id,
+                        "capability": obligation.capability_key.value,
+                        "polarity": obligation.polarity.value,
+                        "surface": item.surface,
+                        "kind_hint": item.kind_hint,
+                        "normalized_kind": normalized_kind,
+                        "required_by_capability": normalized_kind in required_kinds,
+                        "resolved": (item.surface, item.kind_hint) in grounded,
+                    }
+                )
         return {
             "requested": requested,
             "resolver_clarification": bool(
