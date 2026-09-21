@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import time
 from datetime import date
 from types import SimpleNamespace
 
@@ -41,6 +42,9 @@ from app.v2.models import (
 from app.v2.orchestrator import V2Orchestrator
 from app.v2.temporal import period_filters, resolve_comparison, resolve_period
 from control_plane.authorize import Principal
+
+
+REAL_DEMO_LATENCIES: list[float] = []
 
 
 CTX = ContextVersionV0(
@@ -663,6 +667,7 @@ def _real_hypotheses(
             "metric_surface": "ciro",
             "metric": "toplam_ciro",
             "cube": "parti",
+            "time_text": "bu yıl",
         },
         {
             "metric_surface": "ciro",
@@ -699,6 +704,7 @@ def test_real_demo_core_result_equivalence_focused(case, wren, schema, _test_kim
     turn = analytic_turn(
         metric=case["metric_surface"],
         dimension=case.get("dimension_surface"),
+        time_text=case.get("time_text"),
         ranking=case.get("ranking"),
     )
     built = AnalyticsIRBuilder().build(
@@ -724,7 +730,7 @@ def test_real_demo_core_result_equivalence_focused(case, wren, schema, _test_kim
         "cube": case["cube"],
         "measures": [case["metric"]],
         "dimensions": [case["dimension"]] if case.get("dimension") else [],
-        "filters": [],
+        "filters": period_filters(built.ir.period),
     }
     if case.get("ranking"):
         expected["order"] = {
@@ -733,12 +739,58 @@ def test_real_demo_core_result_equivalence_focused(case, wren, schema, _test_kim
         }
         expected["limit"] = case["ranking"].limit
 
-    planned_result = wren.query(
-        wren.cube_sql(planned),
-        principal=_test_kimligi,
-    )
-    expected_result = wren.query(
-        wren.cube_sql(expected),
-        principal=_test_kimligi,
-    )
+    planned_sql = wren.cube_sql(planned)
+    wren.dry_plan(planned_sql, principal=_test_kimligi)
+    started = time.perf_counter()
+    planned_result = wren.query(planned_sql, principal=_test_kimligi)
+    REAL_DEMO_LATENCIES.append(time.perf_counter() - started)
+
+    expected_sql = wren.cube_sql(expected)
+    wren.dry_plan(expected_sql, principal=_test_kimligi)
+    expected_result = wren.query(expected_sql, principal=_test_kimligi)
     assert result_hash(planned_result) == result_hash(expected_result)
+
+
+def test_real_demo_simple_compare_executes_distinct_a_vs_b_periods(wren, schema, _test_kimligi):
+    turn = analytic_turn(time_text="bu ay", comparison="geçen ayla kıyasla")
+    built = AnalyticsIRBuilder().build(
+        turn=turn,
+        hypotheses=_real_hypotheses(
+            metric_surface="ciro",
+            metric_name="toplam_ciro",
+            cube="parti",
+        ),
+        schema=schema,
+        context_version=str(wren.mdl_version),
+    )
+    plans, ledger = CubePlanner().plan(
+        ir=built.ir,
+        ledger=built.ledger,
+        service=wren,
+    )
+    assert len(plans) == 2
+    assert plans[0].cube_query["filters"] != plans[1].cube_query["filters"]
+
+    results = []
+    for plan in plans:
+        wren.dry_plan(plan.sql, principal=_test_kimligi)
+        started = time.perf_counter()
+        results.append(wren.query(plan.sql, principal=_test_kimligi))
+        REAL_DEMO_LATENCIES.append(time.perf_counter() - started)
+
+    ledger, errors = ResultValidator().validate(
+        ir=built.ir,
+        ledger=ledger,
+        plans=plans,
+        results=tuple(results),
+    )
+    assert errors == ((), ())
+    assert ledger.all_must_verified
+
+
+def test_zzz_real_demo_initial_standard_p95_is_under_10_seconds():
+    assert len(REAL_DEMO_LATENCIES) >= 7
+    samples = sorted(REAL_DEMO_LATENCIES)
+    # Small focused demo set: nearest-rank p95 is effectively the max at n=7.
+    p95 = samples[-1]
+    assert p95 < 10.0
