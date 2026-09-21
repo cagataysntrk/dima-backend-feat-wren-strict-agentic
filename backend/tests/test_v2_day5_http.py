@@ -176,15 +176,12 @@ def v2_client():
         user_id="day5-http-user",
         tenant_id="day5-http-tenant",
         roles=["owner"],
-        tenant_slug="day5-http",
+        tenant_slug=get_settings().company,
     )
 
-    route = next(route for route in app.routes if getattr(route, "path", None) == "/ask-v2")
-    for dependency in route.dependant.dependencies:
-        if dependency.call is get_current_principal:
-            app.dependency_overrides[dependency.call] = lambda: principal
-        else:
-            app.dependency_overrides[dependency.call] = lambda: None
+    # Override only identity. Permission + company dependencies remain real and
+    # consume the same Principal through FastAPI's nested dependency graph.
+    app.dependency_overrides[get_current_principal] = lambda: principal
 
     with TestClient(app) as client:
         yield client
