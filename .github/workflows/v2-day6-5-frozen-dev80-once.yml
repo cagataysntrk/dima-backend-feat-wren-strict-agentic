@@ -59,3 +59,5 @@ jobs:
           name: v2-day6-5-frozen-dev80
           path: backend/lab/reports/v2_day6_5_frozen_dev80.json
           retention-days: 30
+
+# trigger: frozen DEV80 after canary16 16/16
