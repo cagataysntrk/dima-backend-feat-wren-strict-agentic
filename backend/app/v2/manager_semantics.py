@@ -1,8 +1,9 @@
-"""Semantic-resolution adapter for the Day 6.5 bounded Manager.
+"""Governed semantic-resolution adapter for the Day 6.5 bounded Manager.
 
-Manager supplies only runtime-issued src_* references and optional coarse kind hints.
-Existing SemanticResolver remains canonical binding authority and returns sem_* handles;
-canonical identifiers never enter Manager-facing contracts.
+USER_SOURCE proposals must reference runtime-issued src_* spans. AGENT_DERIVED proposals
+must be tied to an accepted parent obligation and verified evidence by the executor.
+Existing SemanticResolver remains canonical entity/metric/dimension authority; temporal
+normalization reuses the closed-family Day 3 temporal primitives.
 """
 
 from __future__ import annotations
@@ -13,9 +14,12 @@ from app.v2.models import (
     AnalyticalRequest,
     BoundedSemanticContextV0,
     ClarificationState,
+    ComparisonSurface,
     ConversationStateV2,
     FrozenModel,
+    ResolvedComparison,
     ResolvedFilterRef,
+    ResolvedPeriod,
     ResolvedSemanticRef,
     SemanticMention,
     SemanticMentionKind,
@@ -27,21 +31,29 @@ from app.v2.models import (
 from app.v2.resolver import SemanticResolver
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
+from app.v2.temporal import TemporalResolutionError, resolve_comparison, resolve_period
 
 
 class ManagerResolvedSemantic(FrozenModel):
-    source_ref: str
+    source_ref: str | None = None
+    proposal_text: str | None = None
+    provenance: str
     handle: SemanticHandle
 
 
 class ManagerSemanticResolutionResult(FrozenModel):
     resolved: tuple[ManagerResolvedSemantic, ...] = ()
     unresolved_source_refs: tuple[str, ...] = ()
+    unresolved_proposals: tuple[str, ...] = ()
     clarification: ClarificationState | None = None
 
     @property
     def clarification_required(self) -> bool:
-        return self.clarification is not None or bool(self.unresolved_source_refs)
+        return (
+            self.clarification is not None
+            or bool(self.unresolved_source_refs)
+            or bool(self.unresolved_proposals)
+        )
 
 
 class ManagerSemanticResolutionAdapter:
@@ -75,22 +87,120 @@ class ManagerSemanticResolutionAdapter:
         self._session_id = session_id
         self._thread_id = thread_id
 
-    def resolve(self, args: ResolveSemanticsArgs, runtime=None) -> ManagerSemanticResolutionResult:
-        del runtime  # protocol compatibility; semantic authority does not depend on Manager state.
+    def _time_dimension(self, anchor_handle: str | None) -> str:
+        cube_names: set[str] = set()
+        if anchor_handle:
+            binding = self._handles.binding_for_execution(
+                anchor_handle,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
+            )
+            target = binding.canonical_target
+            cube_names.update(getattr(target, "cube_names", ()) or ())
 
-        hints = args.target_kind_hints or tuple("unknown" for _ in args.source_refs)
-        spans = [self._source_spans.validate(source_ref) for source_ref in args.source_refs]
+        candidates: set[str] = set()
+        for cube in self._semantic_context.cubes:
+            if cube_names and cube.canonical_name not in cube_names:
+                continue
+            candidates.update(cube.time_dimensions)
 
+        if len(candidates) != 1:
+            raise TemporalResolutionError(
+                "temporal resolution exactly one governed time dimension requires"
+            )
+        return next(iter(candidates))
+
+    def _mint(
+        self,
+        *,
+        target_kind: str,
+        canonical_target,
+        resolver_provenance_id: str,
+        sensitive: bool,
+        args: ResolveSemanticsArgs,
+    ) -> SemanticHandle:
+        return self._handles.mint_from_resolver(
+            tenant_binding=self._tenant_binding,
+            context_version=self._semantic_context.context_version.version,
+            resolver_provenance_id=resolver_provenance_id,
+            target_kind=target_kind,
+            canonical_target=canonical_target,
+            sensitive=sensitive,
+            provenance_type=args.provenance,
+            parent_obligation_id=args.parent_obligation_id,
+            trigger_evidence_ref=args.evidence_ref,
+        )
+
+    def _resolve_temporal(
+        self,
+        *,
+        text: str,
+        hint: str,
+        args: ResolveSemanticsArgs,
+    ) -> SemanticHandle:
+        time_dimension = self._time_dimension(args.temporal_anchor_handle)
+        if hint == "time":
+            period = resolve_period(
+                (SemanticMention(text=text, kind=SemanticMentionKind.TIME),),
+                time_dimension=time_dimension,
+            )
+            if period is None:
+                raise TemporalResolutionError("time period could not be resolved")
+            return self._mint(
+                target_kind="period",
+                canonical_target=period,
+                resolver_provenance_id=f"temporal:{period.kind.value}:{period.start}:{period.end}",
+                sensitive=False,
+                args=args,
+            )
+
+        if hint == "comparison":
+            base_period = None
+            if args.base_period_handle:
+                binding = self._handles.binding_for_execution(
+                    args.base_period_handle,
+                    tenant_binding=self._tenant_binding,
+                    context_version=self._semantic_context.context_version.version,
+                )
+                if not isinstance(binding.canonical_target, ResolvedPeriod):
+                    raise TemporalResolutionError("base_period_handle period target değil")
+                base_period = binding.canonical_target
+            comparison = resolve_comparison(
+                (ComparisonSurface(text=text),),
+                base_period=base_period,
+                time_dimension=time_dimension,
+            )
+            if comparison is None:
+                raise TemporalResolutionError("comparison could not be resolved")
+            return self._mint(
+                target_kind="comparison",
+                canonical_target=comparison,
+                resolver_provenance_id=(
+                    f"comparison:{comparison.mode}:{comparison.base_period.start}:"
+                    f"{comparison.reference_period.start}"
+                ),
+                sensitive=False,
+                args=args,
+            )
+
+        raise TemporalResolutionError(f"unsupported temporal hint: {hint}")
+
+    def _resolve_regular(
+        self,
+        *,
+        entries: list[tuple[str | None, str, str]],
+        args: ResolveSemanticsArgs,
+    ) -> ManagerSemanticResolutionResult:
         metrics: list[SemanticMention] = []
         dimensions: list[SemanticMention] = []
         filters: list[SemanticMention] = []
-        unresolved: list[UnresolvedMention] = []
-        ordered_refs: list[tuple[str, SemanticMention]] = []
+        unresolved_mentions: list[UnresolvedMention] = []
+        ordered: list[tuple[str | None, str, SemanticMention]] = []
 
-        for source_ref, hint, span in zip(args.source_refs, hints, spans, strict=True):
+        for source_ref, text, hint in entries:
             kind = self._KIND_MAP[hint]
-            mention = SemanticMention(text=span.exact_surface, kind=kind)
-            ordered_refs.append((source_ref, mention))
+            mention = SemanticMention(text=text, kind=kind)
+            ordered.append((source_ref, text, mention))
             if kind == SemanticMentionKind.METRIC:
                 metrics.append(mention)
             elif kind == SemanticMentionKind.DIMENSION:
@@ -98,9 +208,9 @@ class ManagerSemanticResolutionAdapter:
             elif kind == SemanticMentionKind.FILTER:
                 filters.append(mention)
             else:
-                unresolved.append(
+                unresolved_mentions.append(
                     UnresolvedMention(
-                        text=span.exact_surface,
+                        text=text,
                         reason="Manager requested semantic resolution without a trusted kind hint",
                     )
                 )
@@ -112,7 +222,7 @@ class ManagerSemanticResolutionAdapter:
                 dimension_mentions=tuple(dimensions),
                 filter_mentions=tuple(filters),
             ),
-            unresolved_mentions=tuple(unresolved),
+            unresolved_mentions=tuple(unresolved_mentions),
         )
         bundle = self._resolver.resolve_turn(
             turn=turn,
@@ -124,20 +234,20 @@ class ManagerSemanticResolutionAdapter:
             thread_id=self._thread_id,
         )
 
-        by_surface: dict[tuple[str, SemanticMentionKind], list[str]] = {}
-        for source_ref, mention in ordered_refs:
-            by_surface.setdefault((mention.text, mention.kind), []).append(source_ref)
+        by_surface: dict[tuple[str, SemanticMentionKind], list[tuple[str | None, str]]] = {}
+        for source_ref, text, mention in ordered:
+            by_surface.setdefault((mention.text, mention.kind), []).append((source_ref, text))
 
         resolved: list[ManagerResolvedSemantic] = []
-        unresolved_refs: list[str] = []
+        unresolved_source_refs: list[str] = []
+        unresolved_proposals: list[str] = []
 
         for hypothesis in bundle.hypotheses:
-            key = (hypothesis.source_mention, hypothesis.mention_kind)
-            refs = by_surface.get(key) or []
-            source_ref = refs.pop(0) if refs else None
-            if source_ref is None:
+            slots = by_surface.get((hypothesis.source_mention, hypothesis.mention_kind)) or []
+            slot = slots.pop(0) if slots else None
+            if slot is None:
                 continue
-
+            source_ref, proposal_text = slot
             candidate = next(
                 (
                     item
@@ -147,12 +257,18 @@ class ManagerSemanticResolutionAdapter:
                 None,
             )
             if candidate is None:
-                unresolved_refs.append(source_ref)
+                if source_ref:
+                    unresolved_source_refs.append(source_ref)
+                else:
+                    unresolved_proposals.append(proposal_text)
                 continue
 
             if candidate.target_kind == SemanticTargetKind.ENTITY_VALUE:
                 if not candidate.dimension_name or candidate.value is None:
-                    unresolved_refs.append(source_ref)
+                    if source_ref:
+                        unresolved_source_refs.append(source_ref)
+                    else:
+                        unresolved_proposals.append(proposal_text)
                     continue
                 canonical_target = ResolvedFilterRef(
                     candidate_id=candidate.candidate_id,
@@ -169,22 +285,103 @@ class ManagerSemanticResolutionAdapter:
                     cube_names=candidate.cube_names,
                 )
 
-            handle = self._handles.mint_from_resolver(
-                tenant_binding=self._tenant_binding,
-                context_version=self._semantic_context.context_version.version,
-                resolver_provenance_id=candidate.candidate_id,
+            handle = self._mint(
                 target_kind=candidate.target_kind.value,
                 canonical_target=canonical_target,
+                resolver_provenance_id=candidate.candidate_id,
                 sensitive=candidate.sensitive,
+                args=args,
             )
-            resolved.append(ManagerResolvedSemantic(source_ref=source_ref, handle=handle))
+            resolved.append(
+                ManagerResolvedSemantic(
+                    source_ref=source_ref,
+                    proposal_text=None if source_ref else proposal_text,
+                    provenance=args.provenance,
+                    handle=handle,
+                )
+            )
 
-        for source_ref, _ in ordered_refs:
-            if source_ref not in {item.source_ref for item in resolved} and source_ref not in unresolved_refs:
-                unresolved_refs.append(source_ref)
+        resolved_user_refs = {item.source_ref for item in resolved if item.source_ref}
+        for source_ref, _, _ in ordered:
+            if source_ref and source_ref not in resolved_user_refs and source_ref not in unresolved_source_refs:
+                unresolved_source_refs.append(source_ref)
+
+        if args.provenance == "AGENT_DERIVED" and not resolved and args.natural_language_proposal:
+            if args.natural_language_proposal not in unresolved_proposals:
+                unresolved_proposals.append(args.natural_language_proposal)
 
         return ManagerSemanticResolutionResult(
             resolved=tuple(resolved),
-            unresolved_source_refs=tuple(dict.fromkeys(unresolved_refs)),
+            unresolved_source_refs=tuple(dict.fromkeys(unresolved_source_refs)),
+            unresolved_proposals=tuple(dict.fromkeys(unresolved_proposals)),
             clarification=bundle.clarification,
+        )
+
+    def resolve(self, args: ResolveSemanticsArgs, runtime=None) -> ManagerSemanticResolutionResult:
+        del runtime  # provenance authority is validated by GovernedManagerExecutor.
+
+        if args.provenance == "USER_SOURCE":
+            spans = [self._source_spans.validate(source_ref) for source_ref in args.source_refs]
+            hints = args.target_kind_hints or tuple("unknown" for _ in args.source_refs)
+
+            regular: list[tuple[str | None, str, str]] = []
+            resolved: list[ManagerResolvedSemantic] = []
+            unresolved_refs: list[str] = []
+
+            for source_ref, hint, span in zip(args.source_refs, hints, spans, strict=True):
+                if hint in {"time", "comparison"}:
+                    try:
+                        handle = self._resolve_temporal(text=span.exact_surface, hint=hint, args=args)
+                        resolved.append(
+                            ManagerResolvedSemantic(
+                                source_ref=source_ref,
+                                provenance="USER_SOURCE",
+                                handle=handle,
+                            )
+                        )
+                    except (TemporalResolutionError, KeyError, ValueError):
+                        unresolved_refs.append(source_ref)
+                else:
+                    regular.append((source_ref, span.exact_surface, hint))
+
+            regular_result = (
+                self._resolve_regular(entries=regular, args=args)
+                if regular
+                else ManagerSemanticResolutionResult()
+            )
+            return ManagerSemanticResolutionResult(
+                resolved=(*resolved, *regular_result.resolved),
+                unresolved_source_refs=tuple(
+                    dict.fromkeys((*unresolved_refs, *regular_result.unresolved_source_refs))
+                ),
+                unresolved_proposals=regular_result.unresolved_proposals,
+                clarification=regular_result.clarification,
+            )
+
+        assert args.natural_language_proposal is not None
+        hint = args.target_kind_hints[0]
+        if hint in {"time", "comparison"}:
+            try:
+                handle = self._resolve_temporal(
+                    text=args.natural_language_proposal,
+                    hint=hint,
+                    args=args,
+                )
+                return ManagerSemanticResolutionResult(
+                    resolved=(
+                        ManagerResolvedSemantic(
+                            proposal_text=args.natural_language_proposal,
+                            provenance="AGENT_DERIVED",
+                            handle=handle,
+                        ),
+                    ),
+                )
+            except (TemporalResolutionError, KeyError, ValueError):
+                return ManagerSemanticResolutionResult(
+                    unresolved_proposals=(args.natural_language_proposal,)
+                )
+
+        return self._resolve_regular(
+            entries=[(None, args.natural_language_proposal, hint)],
+            args=args,
         )
