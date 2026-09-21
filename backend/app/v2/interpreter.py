@@ -19,7 +19,7 @@ from app.v2.models import (
     TurnInterpretationFailure,
 )
 
-_INTERPRETER_VERSION = "day4-v0.2"
+_INTERPRETER_VERSION = "day5-v0.3"
 
 
 class TurnInterpreterError(RuntimeError):
@@ -215,7 +215,13 @@ MUTLAK SINIRLAR:
   kullanıcı bu mesajda tekrar etmediyse output'a yeniden yazma.
 - USER_REPAIR'de user_repair.correction_spans düzeltme/retraction anlamını taşıyan
   CURRENT_MESSAGE parçalarını taşır; hangi canonical slotun değişeceğine sen karar vermezsin.
-- Düzeltme/retraction işlevi gören söylem parçaları business semantic mention değildir; yalnız düzeltme işlevindeyse unresolved_mentions içine koyma. Replacement slot varsa USER_REPAIR + user_repair.correction_spans üzerinden taşı.
+- Düzeltme/retraction işlevi gören söylem parçaları business semantic mention değildir.
+  Bir parça yalnız "hayır/yok/değil/onu değil/vazgeçtim/yerine" gibi önceki seçimi reddetme
+  veya değiştirme işlevi görüyorsa onu references, unresolved_mentions veya analytical_request
+  semantic mention alanlarına ASLA koyma. Bu parçayı yalnız user_repair.correction_spans içinde
+  taşı. Replacement metric/dimension/filter/time surface'i analytical_request'te kendi gerçek
+  rolünde kalır. Correction marker'ın kendisi SemanticResolver'a gönderilecek bir business
+  kavramı değildir.
 - CLARIFICATION_ANSWER yalnız CONVERSATION_STATE_JSON.pending_clarification=true ise
   mümkündür. pending_clarification=false ise bu act'i ASLA seçme; mesaj düzeltmeyse
   USER_REPAIR, ekleme/daraltmaysa ANALYTIC_REFINE, bağımsız soruyorsa ANALYTIC_NEW'dur.
