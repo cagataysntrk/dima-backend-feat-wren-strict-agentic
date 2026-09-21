@@ -198,6 +198,47 @@ def _ledger_from_turn(turn: TurnInterpretation) -> RequirementLedger:
     return RequirementLedger(items=tuple(items))
 
 
+def ledger_from_canonical_ir(ir: AnalyticsIR) -> RequirementLedger:
+    """Build the query-level obligation ledger for an already canonical IR.
+
+    Manager adapters use this after deterministic semantic-handle binding. It mirrors
+    the existing Core requirement IDs but never reparses user language.
+    """
+    items: list[RequirementLedgerItem] = []
+
+    def add(requirement_id: str, kind: RequirementKind, source_text: str) -> None:
+        items.append(
+            RequirementLedgerItem(
+                requirement_id=requirement_id,
+                kind=kind,
+                source_text=source_text,
+                state=RequirementState.REPRESENTED_IN_IR,
+                history=(
+                    RequirementState.DETECTED,
+                    RequirementState.RESOLVED,
+                    RequirementState.REPRESENTED_IN_IR,
+                ),
+                detail="canonical AnalyticsIR from governed semantic handles",
+            )
+        )
+
+    for i, metric in enumerate(ir.metrics):
+        add(f"metric:{i}", RequirementKind.METRIC, metric.canonical_name)
+    for i, dimension in enumerate(ir.dimensions):
+        add(f"dimension:{i}", RequirementKind.DIMENSION, dimension.canonical_name)
+    for i, item in enumerate(ir.filters):
+        add(f"filter:{i}", RequirementKind.FILTER, f"{item.dimension_name}={item.value}")
+    if ir.period is not None:
+        add("time:0", RequirementKind.TIME, ir.period.source_text)
+    if ir.ranking is not None:
+        add("ranking:direction", RequirementKind.RANKING_DIRECTION, ir.ranking.direction)
+        add("ranking:limit", RequirementKind.LIMIT, str(ir.ranking.limit))
+    if ir.comparison is not None:
+        add("comparison:0", RequirementKind.COMPARISON, ir.comparison.source_text)
+
+    return RequirementLedger(items=tuple(items))
+
+
 def _resolved_candidate(hypothesis: SemanticHypothesis) -> SemanticCandidate | None:
     if (
         hypothesis.status != ResolutionStatus.RESOLVED
