@@ -567,7 +567,9 @@ def test_coverage_schema_is_veto_only_and_cannot_create_authority():
     )
     assert issue_properties == {"kind", "source_surfaces", "note"}
     assert "capability_key" not in str(CoverageAudit.model_json_schema())
-    assert "semantic_handle" not in str(CoverageAudit.model_json_schema())
+    schema_text = str(CoverageAudit.model_json_schema())
+    assert "semantic_handle" not in schema_text
+    assert "UNRESOLVED_REFERENCE" not in schema_text
 
 
 def test_dynamic_action_frontier_blocks_exact_repeat_after_no_new_progress():
@@ -793,3 +795,8 @@ def test_broaden_within_budget_is_research_policy_not_semantic_dimension():
         item["surface"] for item in grounding["summary"]["requested"]
     }
     assert "geniş kapsamda araştır" not in grounded_surfaces
+
+
+def test_coverage_cannot_veto_nonrequired_unresolved_semantic_surface():
+    schema_text = str(CoverageAudit.model_json_schema())
+    assert "UNRESOLVED_REFERENCE" not in schema_text
