@@ -3624,3 +3624,104 @@ Plan gereği aynı exact tested backend SHA `8bc89b5...`, daha güçlü
 - user obligation ile research directive'i tekrar birleştirme,
 - workers=1 architecture certification bitmeden concurrency sonucu üzerinden semantic patch,
 - strong reference A/B görmeden model-floor problemini architecture patch'iyle örtme.
+
+
+### 2026-09-21 — DAY 6.5 / MODEL FLOOR A-B + CANARY TRANSPORT CLASSIFICATION
+
+**Reference-model A/B completed**
+- run: `35632599458`
+- exact tested backend SHA: `8bc89b5ea556e345452d611cbd8d95b288739f65`
+- model: `openai/gpt-5.6-sol`
+- workers: 1
+- provider-free guard: PASS
+- repeated set:
+  - `d65-dev-063` 5/5 PASS → CLARIFICATION
+  - `d65-dev-067` 5/5 PASS → CLARIFICATION
+  - `d65-dev-075` 5/5 PASS → ACCEPTED / root_cause / RESEARCH_REQUIRED
+- aggregate: **15/15 PASS**
+
+**A/B interpretation**
+Same backend code:
+```text
+Luna  workers=1 repeated set → 14/15
+Sol   workers=1 repeated set → 15/15
+```
+
+Day6.5 model-policy karar kuralına göre bu kalan tail risk:
+```text
+MODEL_CAPABILITY_FLOOR
+```
+olarak sınıflandırıldı.
+
+Sonuç:
+- 063 tail'i için regex/prompt/receipt exception eklenmedi.
+- architecture code aynı bırakıldı.
+- Day6.5 correctness/reference RESEARCH_MANAGER için Sol seviyesi referans floor'dur.
+- Luna daha sonra latency/cost optimization veya guarded escalation adayı olabilir;
+  semantic correctness'i sağlamak için production business logic'e Luna-specific patch YOK.
+
+**16-case stratified canary**
+- corrected run: `35633167625`
+- exact tested backend SHA: `8bc89b5ea556e345452d611cbd8d95b288739f65`
+- model: Sol
+- workers: 1
+- selected taxonomy coverage:
+  standard / breakdown / ranking / comparison / multi-obligation / cross-domain /
+  root-cause / trust bypass / semantic-handle misuse / negation / ambiguity /
+  missing semantic model / conflict / coreference / repair / adaptive / budget.
+- provider-free authority guard: PASS.
+
+Canary final job status GitHub'da FAILURE görünür; **bu architecture/eval failure değildir**.
+Log sınıflandırması:
+```text
+001  executed
+009  executed
+013  executed
+019 onward → OpenRouter HTTP 402 Payment Required
+```
+
+Aggregate `case_pass_rate=0.1875` bu nedenle semantic metric olarak GEÇERSİZDİR.
+Çalıştırılmayan vakaların evaluator tarafından NOT_ACCEPTED sayılması yalnız provider
+transport failure sonucudur.
+
+Canonical classification:
+```text
+TRANSPORT / PROVIDER / BILLING BLOCKER
+not
+ARCHITECTURE FAILURE
+```
+
+Bu run'a dayanarak production code, prompt, Resolver veya contract değiştirmek YASAK.
+
+**Paid workflow cleanup**
+A/B ve canary için yaratılan push-trigger one-shot workflow'lar kaldırıldı.
+Permanent paid evaluator yalnız:
+`.github/workflows/v2-day6-5-manager-eval.yml`
+ve yalnız `workflow_dispatch` olarak kalır.
+
+**Current certification state**
+```text
+finite pre-acceptance provider-free       48/48 PASS
+Luna focused workers=1                    14/15
+Sol reference workers=1                   15/15 PASS
+Sol stratified canary16                   TRANSPORT_BLOCKED after 3 cases
+DEV 80                                    NOT YET CERTIFIED
+VALIDATION 50                             NOT STARTED
+HIDDEN 50 external seal                   PENDING
+production hybrid route                   OFF
+```
+
+**Next paid gate — code freeze**
+OpenRouter/provider capacity yeniden mevcut olduğunda YENİ CODE PATCH YOK.
+Aynı finite architecture üzerinden:
+1. Sol workers=1 16-case stratified canary tamamlanır.
+2. PASS ise Sol workers=1 visible DEV 80 çalıştırılır.
+3. Failure varsa önce taxonomy/failure-family clustering yapılır.
+4. ortak abstraction failure kanıtlanmadan code change YOK.
+5. DEV hard gates geçerse VALIDATION 50.
+6. final external HIDDEN receipt ile architecture seal.
+
+**Do not misread**
+- GitHub job `35633167625 = failure` → provider billing failure.
+- Bu sonucu Day6.5 semantic/architecture fail saymak yasaktır.
+- Bakiye/transport düzeldikten sonra aynı frozen backend code yeniden ölçülmelidir.
