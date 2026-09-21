@@ -25,6 +25,7 @@ from app.v2.models import (
     ResearchMode,
     ResearchModeDecision,
     ResearchModeReason,
+    ResearchNonRelationshipGoalKind,
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
@@ -178,21 +179,20 @@ def _dedupe_mentions(mentions: list[SemanticMention]) -> tuple[SemanticMention, 
 class ResearchModePolicy:
     """Own STANDARD vs RESEARCH routing from typed analytical capability shape.
 
-    Presentation/deliverables and raw goal text are deliberately ignored. Core routing
-    is based only on typed operations and the slots that Core AnalyticsIR can actually
-    represent. Missing typed semantics are never recovered by regex/text parsing.
+    Presentation/deliverables and raw operation text are deliberately ignored. Core
+    routing is based only on declared typed capabilities. Missing semantics are never
+    recovered by regex, keyword rules, or business/domain literals.
     """
 
     _COMPLEX_ONLY = {
-        ResearchGoalKind.RELATIONSHIP,
-        ResearchGoalKind.ROOT_CAUSE,
-        ResearchGoalKind.TREND,
+        ResearchNonRelationshipGoalKind.ROOT_CAUSE,
+        ResearchNonRelationshipGoalKind.TREND,
     }
     _STANDARD_CAPABLE = {
-        ResearchGoalKind.PERFORMANCE,
-        ResearchGoalKind.BREAKDOWN,
-        ResearchGoalKind.RANKING,
-        ResearchGoalKind.COMPARISON,
+        ResearchNonRelationshipGoalKind.PERFORMANCE,
+        ResearchNonRelationshipGoalKind.BREAKDOWN,
+        ResearchNonRelationshipGoalKind.RANKING,
+        ResearchNonRelationshipGoalKind.COMPARISON,
     }
 
     def decide(self, turn: TurnInterpretation) -> ResearchModeDecision:
@@ -204,11 +204,20 @@ class ResearchModePolicy:
                 canonical_turn=turn,
             )
 
+        # A typed relationship request is a Research capability regardless of requested
+        # presentation. Relationship cardinality/execution remains Day 7 territory.
+        if request.relationships:
+            return ResearchModeDecision(
+                mode=ResearchMode.RESEARCH,
+                reason=ResearchModeReason.COMPLEX_ONLY_OPERATION,
+                canonical_turn=turn.model_copy(
+                    update={"dialogue_act": TurnAct.COMPLEX_ANALYSIS}
+                ),
+            )
+
         kinds = tuple(goal.kind for goal in request.goals)
 
-        # OTHER means the language owner could not classify the analytical capability.
-        # Escalating uncertainty into Research Mode would be fail-open.
-        if any(kind == ResearchGoalKind.OTHER for kind in kinds):
+        if any(kind == ResearchNonRelationshipGoalKind.OTHER for kind in kinds):
             return self._blocked(
                 turn,
                 reason=ResearchModeReason.UNCLASSIFIED_OPERATION,
@@ -245,9 +254,6 @@ class ResearchModePolicy:
                 ),
             )
 
-        # Multiple typed standard-capable operations that cannot be represented as one
-        # Core request are a coordination problem; a single incomplete operation is an
-        # uncertainty problem and must fail closed rather than silently become Research.
         if len(request.goals) > 1:
             return ResearchModeDecision(
                 mode=ResearchMode.RESEARCH,
@@ -271,9 +277,13 @@ class ResearchModePolicy:
         detail: str,
     ) -> ResearchModeDecision:
         request = turn.research_request
+        blocked_surfaces: list[str] = []
+        if request is not None:
+            blocked_surfaces.extend(goal.text for goal in request.goals)
+            blocked_surfaces.extend(item.text for item in request.relationships)
         blocked = tuple(
-            UnresolvedMention(text=goal.text, reason=detail)
-            for goal in (request.goals if request is not None else ())
+            UnresolvedMention(text=text, reason=detail)
+            for text in blocked_surfaces
         )
         canonical = turn.model_copy(
             update={
@@ -289,35 +299,29 @@ class ResearchModePolicy:
             canonical_turn=canonical,
         )
 
-    def _project_standard(
-        self,
-        request,
-    ) -> AnalyticalRequest | None:
-        """Project typed operations into exactly the slots Core AnalyticsIR owns.
+    def _project_standard(self, request) -> AnalyticalRequest | None:
+        """Project exactly the typed slots already owned by Core AnalyticsIR."""
 
-        No goal.text parsing occurs. If a standard-capable operation does not carry the
-        typed payload Core needs, projection returns None instead of guessing.
-        """
-
-        if not request.goals:
+        if request.relationships or not request.goals:
             return None
         if any(goal.kind not in self._STANDARD_CAPABLE for goal in request.goals):
             return None
 
-        # Multiple independent performance questions are coordination, not one Core
-        # request. Identical duplicated mentions are handled by interpreter dedup before
-        # this boundary; policy does not merge separate analytical questions by text.
         if sum(
-            goal.kind == ResearchGoalKind.PERFORMANCE
+            goal.kind == ResearchNonRelationshipGoalKind.PERFORMANCE
             for goal in request.goals
         ) > 1:
             return None
 
         ranking_goals = [
-            goal for goal in request.goals if goal.kind == ResearchGoalKind.RANKING
+            goal
+            for goal in request.goals
+            if goal.kind == ResearchNonRelationshipGoalKind.RANKING
         ]
         comparison_goals = [
-            goal for goal in request.goals if goal.kind == ResearchGoalKind.COMPARISON
+            goal
+            for goal in request.goals
+            if goal.kind == ResearchNonRelationshipGoalKind.COMPARISON
         ]
         if len(ranking_goals) > 1 or len(comparison_goals) > 1:
             return None
@@ -329,18 +333,15 @@ class ResearchModePolicy:
         for goal in request.goals:
             mentions = (*goal.subject_mentions, *goal.related_mentions)
             metrics.extend(
-                mention
-                for mention in mentions
+                mention for mention in mentions
                 if mention.kind == SemanticMentionKind.METRIC
             )
             dimensions.extend(
-                mention
-                for mention in mentions
+                mention for mention in mentions
                 if mention.kind == SemanticMentionKind.DIMENSION
             )
             filters.extend(
-                mention
-                for mention in mentions
+                mention for mention in mentions
                 if mention.kind == SemanticMentionKind.FILTER
             )
 
@@ -354,11 +355,7 @@ class ResearchModePolicy:
         if ranking_goals and ranking is None:
             return None
 
-        comparisons = (
-            comparison_goals[0].comparisons
-            if comparison_goals
-            else ()
-        )
+        comparisons = comparison_goals[0].comparisons if comparison_goals else ()
         if comparison_goals and not comparisons:
             return None
 
