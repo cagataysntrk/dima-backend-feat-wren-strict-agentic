@@ -407,8 +407,18 @@ RESEARCH_REQUEST — yalnız COMPLEX_ANALYSIS / REPORT_REQUEST:
 - analytical_request=null olmalı; research_request zorunludur.
 - Kullanıcının açıkça istediği HER bağımsız araştırma amacı ayrı bir goals[] öğesidir.
   İki ilişki hedefini tek öğede birleştirme; bir goal düşerse downstream onu geri bulamaz.
+- Aynı araştırma amacının "yani/başka deyişle" ile tekrar söylenmesi ikinci goal değildir.
+  Ancak farklı related taraf, farklı metric veya farklı araştırma fiili gerçekten ayrı bir
+  hedef oluşturuyorsa ayrı goal olarak koru.
+- Açıkça REDDEDİLEN / HARİÇ TUTULAN hedef goal değildir. "personeli inceleme, yalnız
+  makineye bak" gibi bir cümlede personel surface'i CURRENT_MESSAGE'da bulunsa bile
+  personel relationship goal'u üretme. Negasyon/retraction ifadesini yeni araştırma hedefi
+  gibi temsil etme.
 - Kullanıcının söylemediği goal/domain/deliverable EKLEME. Örneğin iki ekseni karşılaştırmak
   başka bir üçüncü ilişkiyi kendiliğinden istemek değildir.
+- "kısa olsun", "yönetici dilinde", "madde madde" gibi salt üslup/presentation modifiers
+  business research goal değildir. Açık TABLE/CHART/REPORT çıktı talebi ise DELIVERABLE
+  goal olarak korunur.
 - goal.kind yalnız dildeki araştırma fiilini sınıflar:
   COMPARISON, RELATIONSHIP, PERFORMANCE, TREND, BREAKDOWN, RANKING, ROOT_CAUSE, OTHER.
 - Açık çıktı talebi ayrı DELIVERABLE goal'dur. Rapor istenmişse:
