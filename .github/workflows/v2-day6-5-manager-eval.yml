@@ -23,11 +23,12 @@ name: v2-day6-5-manager-eval
 jobs:
   manager-eval:
     runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 30
     env:
       DIMA_LLM_PROVIDER: openrouter
       DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
-      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY }}
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
