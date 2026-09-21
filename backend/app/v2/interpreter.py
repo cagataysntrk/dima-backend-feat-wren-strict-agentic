@@ -21,13 +21,14 @@ from app.v2.models import (
     ConversationStateV2,
     PresentationKind,
     ResearchGoalKind,
+    ResearchNonRelationshipGoalKind,
     SemanticMentionKind,
     TurnAct,
     TurnInterpretation,
     TurnInterpretationFailure,
 )
 
-_INTERPRETER_VERSION = "day6-v0.5"
+_INTERPRETER_VERSION = "day6-v0.6"
 
 
 class TurnInterpreterError(RuntimeError):
@@ -150,6 +151,10 @@ def _surface_spans(turn: TurnInterpretation) -> list[str]:
             spans.append(goal.text)
             spans.extend(m.text for m in goal.subject_mentions)
             spans.extend(m.text for m in goal.related_mentions)
+        for relationship in research.relationships:
+            spans.append(relationship.text)
+            spans.extend(m.text for m in relationship.focus_mentions)
+            spans.extend(m.text for m in relationship.counterpart_mentions)
         spans.extend(m.text for m in research.time_mentions)
         spans.extend(item.text for item in research.deliverables)
 
@@ -236,6 +241,24 @@ def _align_turn_surfaces(question: str, turn: TurnInterpretation) -> TurnInterpr
                         }
                     )
                     for goal in research.goals
+                ),
+                "relationships": tuple(
+                    relationship.model_copy(
+                        update={
+                            "text": _align_near_copy_surface(
+                                question, relationship.text
+                            ),
+                            "focus_mentions": tuple(
+                                aligned_model(x)
+                                for x in relationship.focus_mentions
+                            ),
+                            "counterpart_mentions": tuple(
+                                aligned_model(x)
+                                for x in relationship.counterpart_mentions
+                            ),
+                        }
+                    )
+                    for relationship in research.relationships
                 ),
                 "time_mentions": tuple(
                     aligned_model(x) for x in research.time_mentions
@@ -413,36 +436,32 @@ MUTLAK SINIRLAR:
 - Saf selam/teşekkür/gündelik sosyal tur SOCIAL.
 - Veri/ürün kapsamında olmayan ve analitik niyet taşımayan istek UNSUPPORTED.
 
-RESEARCH_REQUEST — typed analytical operations that may require Research Mode:
-- Bu yapı analytical operation surface'lerini taşır; final Research Mode kararını sen
-  sahiplenmezsin. ResearchModePolicy typed shape'ten karar verir.
-- Kullanıcının açıkça istediği HER bağımsız analytical operation ayrı goals[] öğesidir.
-  Kullanıcının istemediği operation/domain/deliverable ekleme; açıkça reddedileni çıkar.
-- Aynı operation'ın yalnız yeniden söylenmesi ikinci goal değildir.
-- goals[] yalnız analytical operation'dır; output biçimi goal değildir.
-- goal.kind yalnız schema value: comparison, relationship, performance, trend,
-  breakdown, ranking, root_cause, other.
-- STANDARD-capable operation için Core'un ihtiyaç duyduğu typed payload'ı aynı goal içinde
-  koru; policy goal.text'i yeniden parse ETMEYECEK:
-  - RANKING goal → ranking zorunlu; ranking.text exact CURRENT_MESSAGE span, direction ve
-    limit yalnız açıkça ifade edildiyse typed değer olarak taşınır.
-  - COMPARISON goal → eğer explicit dönem/reference comparison surface'i varsa
-    comparisons[] içinde exact span olarak taşı. Genel araştırma karşılaştırmasını
-    period-comparison diye uydurma.
-- RELATIONSHIP atomiktir: bir goal EN FAZLA bir subject endpoint ve bir related endpoint
-  taşır. Aynı focus için birden fazla explicit counterpart varsa her edge ayrı goal olur.
-  Endpoint surface'i CURRENT_MESSAGE içinden exact span olmalı; eksik endpoint için
-  canonical/business kavram uydurma.
-- goal.text, subject_mentions ve related_mentions CURRENT_MESSAGE source evidence'ıdır.
-  Canonical ID/binding yoktur.
-- Açık output isteğini research_request.deliverables[] içinde source-grounded taşı.
-  Deliverable analytical question değildir ve Research Mode sebebi değildir.
-- research_request.time_mentions yalnız explicit dönem/süre surface'lerini taşır.
-- Semantic context'te tanınmayan explicit endpoint'i düşürme; kind=unknown ile surface'i
-  koru. SemanticResolver daha sonra RESOLVED/CLARIFY/SEMANTIC_GAP kararını verir.
-- Tek governed standard request'e karşılık gelen performance + breakdown gibi operation
-  yüzeyi research_request içinde yanlışlıkla verilse bile presentation'a bakarak
-  COMPLEX/REPORT kararı üretme; final route typed policy'ye aittir.
+RESEARCH_REQUEST — rich typed analytical surface:
+- Final STANDARD/RESEARCH route ResearchModePolicy'nindir. Presentation bu karara girmez.
+- goals[] yalnız NON-RELATIONSHIP analytical operation taşır:
+  comparison, performance, trend, breakdown, ranking, root_cause, other.
+- RELATIONSHIP goals[] içinde temsil EDİLMEZ; relationships[] kullanılır.
+- relationships[] kaydı tek bir focus ve bir veya daha fazla counterpart taşır:
+  * text = ilişki isteğini kanıtlayan exact CURRENT_MESSAGE span,
+  * focus_mentions = ilişkisi incelenen focus; aynı CURRENT_MESSAGE içinde daha önce
+    açıkça söylenmişse o exact source surface yeniden kullanılabilir,
+  * counterpart_mentions = focus ile ilişkisi istenen explicit counterpart surface'leri.
+  Focus dilde gerçekten kurulmamışsa boş bırak; downstream tahmin etmez.
+- N counterpart tek relationship request içinde taşınabilir; typed compiler bunu N atomik
+  ResearchQuestion'a açar. Aynı edge'i tekrar üretme.
+- Kullanıcının açıkça reddettiği operation/counterpart'ı taşıma. Aynı operation'ın yalnız
+  yeniden söylenmesi yeni requirement değildir.
+- goals[].text, subject_mentions, related_mentions ve relationship endpoint'leri yalnız
+  CURRENT_MESSAGE source evidence'ıdır; canonical ID/binding yoktur.
+- STANDARD-capable operation için Core'un ihtiyaç duyduğu typed payload'ı kaybetme:
+  * ranking operation → ranking zorunlu; direction/limit yalnız explicit ise,
+  * comparison operation → explicit Core period/reference comparison varsa comparisons[].
+  Policy bu bilgiyi goal.text'ten geri çıkarmayacaktır.
+- Açık output isteğini deliverables[] içinde source-grounded taşı. Deliverable analytical
+  question değildir ve route sebebi değildir.
+- time_mentions yalnız explicit dönem/süre surface'lerini taşır.
+- Semantic context'te tanınmayan explicit mention'ı düşürme; kind=unknown ile exact
+  surface'i koru. Resolver binding/clarification/gap sahibidir.
 
 ANALYTICAL_REQUEST:
 - metric_mentions, dimension_mentions, filter_mentions, time_mentions yalnız surface span.
@@ -578,6 +597,22 @@ def _normalize_structured_payload(data: Any) -> Any:
             item["kind"] = _enum_value(item.get("kind"), PresentationKind)
             deliverables.append(item)
 
+        relationships = []
+        for raw_relationship in research.get("relationships") or ():
+            if not isinstance(raw_relationship, dict):
+                relationships.append(raw_relationship)
+                continue
+            relationship = dict(raw_relationship)
+            relationship["focus_mentions"] = [
+                normalize_mention(item)
+                for item in (relationship.get("focus_mentions") or ())
+            ]
+            relationship["counterpart_mentions"] = [
+                normalize_mention(item)
+                for item in (relationship.get("counterpart_mentions") or ())
+            ]
+            relationships.append(relationship)
+
         goals = []
         for raw_goal in research.get("goals") or ():
             if not isinstance(raw_goal, dict):
@@ -585,7 +620,9 @@ def _normalize_structured_payload(data: Any) -> Any:
                 continue
 
             goal = dict(raw_goal)
-            goal["kind"] = _enum_value(goal.get("kind"), ResearchGoalKind)
+            goal["kind"] = _enum_value(
+                goal.get("kind"), ResearchNonRelationshipGoalKind
+            )
             goal["subject_mentions"] = [
                 normalize_mention(item)
                 for item in (goal.get("subject_mentions") or ())
@@ -605,34 +642,10 @@ def _normalize_structured_payload(data: Any) -> Any:
                         ranking["direction"] = folded
                 goal["ranking"] = ranking
 
-            comparisons = []
-            for comparison in goal.get("comparisons") or ():
-                comparisons.append(
-                    dict(comparison) if isinstance(comparison, dict) else comparison
-                )
-            goal["comparisons"] = comparisons
-
-            # Atomicity repair is purely structural. Endpoints have already been
-            # explicitly emitted by the language owner; no raw text/domain parsing
-            # occurs here.
-            if goal.get("kind") == ResearchGoalKind.RELATIONSHIP.value:
-                subjects = list(goal["subject_mentions"])
-                related = list(goal["related_mentions"])
-                if len(subjects) == 1 and len(related) > 1:
-                    for counterpart in related:
-                        edge = dict(goal)
-                        edge["subject_mentions"] = subjects
-                        edge["related_mentions"] = [counterpart]
-                        goals.append(edge)
-                    continue
-                if len(subjects) > 1 and len(related) == 1:
-                    for subject in subjects:
-                        edge = dict(goal)
-                        edge["subject_mentions"] = [subject]
-                        edge["related_mentions"] = related
-                        goals.append(edge)
-                    continue
-
+            goal["comparisons"] = [
+                dict(item) if isinstance(item, dict) else item
+                for item in (goal.get("comparisons") or ())
+            ]
             goals.append(goal)
 
         # Exact duplicate deliverables are a transport duplicate, not a new MUST.
@@ -652,6 +665,7 @@ def _normalize_structured_payload(data: Any) -> Any:
             deduped_deliverables.append(item)
 
         research["goals"] = goals
+        research["relationships"] = relationships
         research["time_mentions"] = [
             normalize_mention(item)
             for item in (research.get("time_mentions") or ())
