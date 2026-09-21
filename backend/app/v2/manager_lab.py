@@ -45,6 +45,7 @@ class ManagerLabResponse(FrozenModel):
     verified_complete: bool
     terminal_status: ResearchRunTerminal | None = None
     clarification_required: bool
+    preacceptance_status: str | None = None
     ledger: UserObligationLedger | None = None
     observations: tuple[dict, ...] = ()
 
@@ -131,6 +132,11 @@ class ManagerLabHarness:
             verified_complete=outcome.verified_complete,
             terminal_status=outcome.terminal_status,
             clarification_required=outcome.clarification_required,
+            preacceptance_status=(
+                outcome.preacceptance_status.value
+                if outcome.preacceptance_status is not None
+                else None
+            ),
             ledger=manager_runtime.ledger,
             observations=outcome.observations,
         )
