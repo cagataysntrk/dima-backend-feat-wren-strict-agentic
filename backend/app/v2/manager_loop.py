@@ -65,7 +65,14 @@ class ManagerDecisionTransport(FrozenModel):
     source_surfaces: tuple[str, ...] = ()
     target_kind_hints: tuple[
         Literal["metric", "dimension", "filter", "time", "comparison", "unknown"], ...
-    ] = ()
+    ] = Field(
+        default=(),
+        description=(
+            "Aligned with source_surfaces. metric/dimension/filter are tenant catalog "
+            "concepts; time is a base period phrase; comparison is a reference-period/"
+            "comparison phrase. Ranking words/numbers are never semantic hints."
+        ),
+    )
     temporal_anchor_handle: str | None = None
     base_period_handle: str | None = None
     semantic_parent_obligation_id: str | None = None
@@ -80,8 +87,16 @@ class ManagerDecisionTransport(FrozenModel):
     filter_handles: tuple[str, ...] = ()
     period_handle: str | None = None
     comparison_handle: str | None = None
-    ranking_direction: Literal["asc", "desc"] | None = None
-    limit: int | None = Field(default=None, ge=1, le=1000)
+    ranking_direction: Literal["asc", "desc"] | None = Field(
+        default=None,
+        description="Operation parameter for ranking; do not resolve ranking wording semantically.",
+    )
+    limit: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description="Top/bottom N operation parameter; do not resolve this number as semantics.",
+    )
     derived_task_id: str | None = None
     derived_parent_obligation_id: str | None = None
     derived_capability_key: ManagerCapabilityKey | None = None
@@ -189,6 +204,16 @@ Rules:
 - One action per turn. No prose outside the schema.
 - The native schema is strict: emit EVERY field. Use [] for unused arrays and null for
   unused nullable scalar fields. Never omit a field.
+- Ranking is an OPERATION, not a semantic concept: resolve only the metric/dimension/filter
+  concepts, then send ranking_direction + limit in run_analytics. Never send top/highest/
+  lowest wording to resolve_semantics.
+- Time/comparison are governed normalization kinds: tag the base-period surface as "time"
+  and the reference/comparison surface as "comparison". They may be resolved together
+  with metric/dimension surfaces; the runtime derives the temporal anchor/base safely.
+- A standard USER_MUST must be accepted only after its required sem_* handles exist.
+- If a research obligation becomes UNSUPPORTED, BLOCKED_DATA_GAP or LIMITED with an
+  explicit blocker, do not ask the user to choose a different task merely to avoid a
+  partial result. Propose finish; CompletionGate will truthfully return PARTIAL.
 """
 
 
