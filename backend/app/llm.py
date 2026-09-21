@@ -885,8 +885,16 @@ class OpenAICompatibleSqlGenerator:
     Groq: base_url=https://api.groq.com/openai/v1 (Bearer key).
     Ollama: base_url=http://localhost:11434/v1 (key gerekmez)."""
 
-    def __init__(self, base_url: str, api_key: str, model: str, provider: str = "openai", dialect: str = "",
-                 select_model: str | None = None):
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        model: str,
+        provider: str = "openai",
+        dialect: str = "",
+        select_model: str | None = None,
+        structured_reasoning_enabled: bool = False,
+    ):
         self._url = base_url.rstrip("/") + "/chat/completions"
         # 🔴 **ANAHTAR ZİNCİRİ.** `api_key` virgüllü bir liste olabilir; ilk eleman
         # bugünkü tek anahtarla **birebir aynı** davranır. Kota dolunca (`402`/`429`)
@@ -903,6 +911,9 @@ class OpenAICompatibleSqlGenerator:
         self._select_model = select_model or model
         self._provider = provider
         self._dialect = dialect
+        # V2 structured inference can carry a role-scoped reasoning policy. Legacy
+        # callers still default to False, preserving the historical hot path.
+        self._structured_reasoning_enabled = bool(structured_reasoning_enabled)
 
     def _chat(
         self,
@@ -912,6 +923,7 @@ class OpenAICompatibleSqlGenerator:
         *,
         response_format: dict[str, Any] | None = None,
         require_parameters: bool = False,
+        reasoning_enabled: bool = False,
     ) -> str:
         import requests  # wrenai zaten requests'e bağımlı
 
@@ -972,7 +984,7 @@ class OpenAICompatibleSqlGenerator:
         #
         # *Bir modelin yavaşlığı bazen bilgisizliğinden değil, düşüncesini nereye
         # yazdığından gelir.*
-        payload["reasoning"] = {"enabled": False}
+        payload["reasoning"] = {"enabled": bool(reasoning_enabled)}
         _t0 = time.monotonic()
         try:
             resp = safe_call(
@@ -1044,6 +1056,7 @@ class OpenAICompatibleSqlGenerator:
                 },
             },
             require_parameters=True,
+            reasoning_enabled=self._structured_reasoning_enabled,
         )
 
     def generate_sql(self, question: str, schema: dict) -> str:
@@ -1950,16 +1963,19 @@ def _make(provider: str, settings, dialect: str):
         return OpenAICompatibleSqlGenerator(
             settings.xai_base_url, settings.xai_api_key, settings.xai_model, "xai", dialect,
             select_model=settings.xai_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
         )
     if provider == "gemini" and settings.gemini_api_key:
         return OpenAICompatibleSqlGenerator(
             settings.gemini_base_url, settings.gemini_api_key, settings.gemini_model, "gemini", dialect,
             select_model=settings.gemini_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
         )
     if provider == "groq" and settings.groq_api_key:
         return OpenAICompatibleSqlGenerator(
             settings.groq_base_url, settings.groq_api_key, settings.groq_model, "groq", dialect,
             select_model=settings.groq_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
         )
     if provider == "openrouter" and settings.openrouter_api_key:
         return OpenAICompatibleSqlGenerator(
@@ -1968,11 +1984,13 @@ def _make(provider: str, settings, dialect: str):
             settings.openrouter_api_keys or settings.openrouter_api_key,
             settings.openrouter_model, "openrouter", dialect,
             select_model=settings.openrouter_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
         )
     if provider == "ollama" and _reachable(settings.ollama_base_url):
         return OpenAICompatibleSqlGenerator(
             settings.ollama_base_url, "", settings.ollama_model, "ollama", dialect,
             select_model=settings.ollama_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
         )
     return None
 
