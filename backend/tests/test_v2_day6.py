@@ -15,6 +15,7 @@ import pytest
 from control_plane.authorize import Principal
 
 import app.v2.orchestrator as orchestrator_module
+from app.v2.capabilities import AnalyticsCapabilityLane, AnalyticsCapabilityRegistry
 from app.llm import OpenAICompatibleSqlGenerator
 from app.v2.context_provider import ContextProviderV0
 from app.v2.dialogue_policy import DialoguePolicyV0
@@ -1616,15 +1617,74 @@ def test_generic_comparison_without_core_payload_is_blocked_not_research():
     assert decision.canonical_turn.dialogue_act == TurnAct.UNSUPPORTED
 
 
-def test_research_mode_policy_declares_core_capabilities_instead_of_fixture_cases():
-    source = inspect.getsource(ResearchModePolicy)
-    assert "_STANDARD_CAPABLE" in source
-    assert "ResearchNonRelationshipGoalKind.RANKING" in source
-    assert "ResearchNonRelationshipGoalKind.COMPARISON" in source
-    assert "ResearchNonRelationshipGoalKind.OTHER" in source
-    assert "goal.text" not in source
+def test_relationship_cannot_mask_unclassified_operation():
+    focus = mention("opaque-focus", SemanticMentionKind.DIMENSION)
+    counterpart = mention("opaque-counterpart", SemanticMentionKind.DIMENSION)
+    unknown = mention("opaque-unknown", SemanticMentionKind.UNKNOWN)
+    turn = TurnInterpretation(
+        dialogue_act=TurnAct.COMPLEX_ANALYSIS,
+        research_request=ResearchRequestSurface(
+            goals=(
+                ResearchGoalSurface(
+                    kind=ResearchNonRelationshipGoalKind.OTHER,
+                    text="opaque operation evidence",
+                    subject_mentions=(unknown,),
+                ),
+            ),
+            relationships=(
+                ResearchRelationshipSurface(
+                    text="opaque relationship evidence",
+                    focus_mentions=(focus,),
+                    counterpart_mentions=(counterpart,),
+                ),
+            ),
+        ),
+    )
+
+    decision = ResearchModePolicy().decide(turn)
+
+    assert decision.mode == ResearchMode.BLOCKED
+    assert decision.reason == ResearchModeReason.UNCLASSIFIED_OPERATION
+    assert decision.canonical_turn.dialogue_act == TurnAct.UNSUPPORTED
+    assert decision.canonical_turn.research_request is None
+
+
+def test_capability_registry_declares_core_and_research_lanes_without_fixture_logic():
+    registry = AnalyticsCapabilityRegistry()
+
+    assert (
+        registry.lane_for(ResearchNonRelationshipGoalKind.PERFORMANCE)
+        == AnalyticsCapabilityLane.CORE_STANDARD
+    )
+    assert (
+        registry.lane_for(ResearchNonRelationshipGoalKind.RANKING)
+        == AnalyticsCapabilityLane.CORE_STANDARD
+    )
+    assert (
+        registry.lane_for(ResearchNonRelationshipGoalKind.COMPARISON)
+        == AnalyticsCapabilityLane.CORE_STANDARD
+    )
+    assert (
+        registry.lane_for(ResearchNonRelationshipGoalKind.ROOT_CAUSE)
+        == AnalyticsCapabilityLane.RESEARCH
+    )
+    assert (
+        registry.lane_for(ResearchNonRelationshipGoalKind.TREND)
+        == AnalyticsCapabilityLane.RESEARCH
+    )
+    assert (
+        registry.lane_for(ResearchNonRelationshipGoalKind.OTHER)
+        == AnalyticsCapabilityLane.BLOCKED
+    )
+
+    policy_source = inspect.getsource(ResearchModePolicy)
+    registry_source = inspect.getsource(AnalyticsCapabilityRegistry)
+    assert "_STANDARD_CAPABLE" not in policy_source
+    assert "_COMPLEX_ONLY" not in policy_source
+    assert "goal.text" not in policy_source
     for forbidden in ("ürün", "makine", "personel", "satış", "Gemini"):
-        assert forbidden not in source
+        assert forbidden not in policy_source
+        assert forbidden not in registry_source
 
 
 def test_relationship_surface_schema_rejects_multiple_focus_endpoints():
