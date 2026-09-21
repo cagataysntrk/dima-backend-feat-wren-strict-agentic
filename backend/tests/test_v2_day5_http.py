@@ -415,7 +415,10 @@ def test_real_http_day6_research_brief_ready_stops_before_data_execution(v2_clie
     assert "bu yıl" in data["response"]["text"]
     assert data["research_brief"]["scope"]["time_surfaces"] == ["bu yıl"]
     assert data["research_brief"]["status"] == "READY_FOR_RESEARCH"
-    assert len(data["research_brief"]["questions"]) == 2
+    assert len(data["research_brief"]["questions"]) == 1
+    assert len(data["research_brief"]["deliverables"]) == 1
+    assert data["research_brief"]["deliverables"][0]["kind"] == "report"
+    assert data["research_brief"]["must_requirement_ids"] == ["g1", "d1"]
     assert data["query_execution_count"] == 0
     assert data["next_stage"] == "research_ready_day7"
     assert data["official_verified"] is False
@@ -463,9 +466,11 @@ def test_real_http_day6_blocked_goal_is_preserved_without_query(v2_client, monke
     assert data["response"]["kind"] == "semantic_gap"
     assert data["research_brief"]["status"] == "BLOCKED"
     assert data["research_brief"]["blocking_goal_ids"] == ["g1"]
-    assert len(data["research_brief"]["questions"]) == 2
+    assert len(data["research_brief"]["questions"]) == 1
     assert data["research_brief"]["questions"][0]["status"] == "BLOCKED"
-    assert data["research_brief"]["questions"][1]["status"] == "RESOLVED"
+    assert len(data["research_brief"]["deliverables"]) == 1
+    assert data["research_brief"]["deliverables"][0]["kind"] == "report"
+    assert data["research_brief"]["must_requirement_ids"] == ["g1", "d1"]
     assert data["query_execution_count"] == 0
     assert data["next_stage"] == "research_brief_blocked"
     assert data["response"]["clarification_chips"] == []
