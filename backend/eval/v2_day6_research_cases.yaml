@@ -1,55 +1,394 @@
 cases:
+  # --- Canonical / paraphrase / ordering / deliverable family ---
   - id: canonical
     q: "Son 12 ay ürünleri karşılaştır, makineler ve personellerle ilişkisini analiz et, satış performanslarını yorumla ve raporla."
     expected_act: REPORT_REQUEST
-    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
-    required_fragments: ["ürün", "makin", "personel", "satış"]
-    required_time_fragments: ["12 ay"]
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
 
-  - id: paraphrase_shift
-    q: "Son bir yılda ürünleri kıyasla; hangi makinelerde üretildikleriyle ve vardiyalarla bağlantılarını ayrı ayrı incele, satış performansını da değerlendirip rapor çıkar."
+  - id: paraphrase_employee
+    q: "Son bir yılda ürünleri kıyasla; hangi makinelerde üretildiklerini ve çalışanlarla bağlantılarını ayrı ayrı incele, satış performansını da değerlendirip rapor çıkar."
     expected_act: REPORT_REQUEST
-    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
-    required_fragments: ["ürün", "makin", "vardiya", "satış"]
-    required_time_fragments: ["bir yıl"]
+    brief_status: READY_FOR_RESEARCH
+    time: ["bir yıl"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+      - {kind: relationship, subject: ["ürün"], related: ["çalışan"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: shift_relation
+    q: "Geçen 12 ay ürün performansını karşılaştır; makine ve vardiya bağlantılarını ayrı incele, satış performansını değerlendir ve rapor hazırla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: relationship, subject: ["ürün"], related: ["vardiya"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
 
   - id: reordered_sentences
-    q: "Ürün bazında son 12 aylık üretimi karşılaştır. Makine ilişkisini, personel ilişkisini ve satış performansını da incele. Sonucu raporla."
+    q: "Ürün bazında son 12 aylık üretimi karşılaştır. Satış performansını da incele. Personel ilişkisini ve makine ilişkisini ayrı ayrı analiz et. Sonucu raporla."
     expected_act: REPORT_REQUEST
-    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
-    required_fragments: ["ürün", "makine", "personel", "satış"]
-    required_time_fragments: ["12 aylık"]
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 aylık"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: deliverable, deliverable: report}
 
-  - id: complex_no_report
-    q: "Geçen bir yılda ürünleri karşılaştır; makine ve personel ilişkilerini ayrı ayrı analiz et, satış performansını da yorumla."
-    expected_act: COMPLEX_ANALYSIS
-    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1}
-    required_fragments: ["ürün", "makine", "personel", "satış"]
-    required_time_fragments: ["bir yıl"]
+  - id: report_first
+    q: "Bir rapor hazırla: son 12 ay ürünleri karşılaştır, makinelerle ve personelle ilişkilerini ayrı ayrı araştır, satış performansını yorumla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: deliverable, deliverable: report}
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: performance, subject: ["satış"]}
 
   - id: extra_style_clause
-    q: "Kısa ve yönetici dilinde olsun: son 12 ay ürünleri karşılaştır, makine bağlantısını ve vardiya bağlantısını incele, satış performansını değerlendir ve raporla."
+    q: "Kısa ve yönetici dilinde olsun: son 12 ay ürünleri karşılaştır, makine bağlantısını ve vardiya bağlantısını ayrı incele, satış performansını değerlendir ve raporla."
     expected_act: REPORT_REQUEST
-    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
-    required_fragments: ["ürün", "makine", "vardiya", "satış"]
-    required_time_fragments: ["12 ay"]
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    forbidden_goal_fragments: ["yönetici dilinde", "kısa"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: relationship, subject: ["ürün"], related: ["vardiya"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
 
   - id: reverse_order
     q: "Önce satış performansını değerlendir; sonra son 12 ay ürünleri karşılaştır ve ürünlerin makine ile personel bağlantılarını ayrı ayrı analiz et; sonunda raporla."
     expected_act: REPORT_REQUEST
-    expected_goal_counts: {comparison: 1, relationship: 2, performance: 1, deliverable: 1}
-    required_fragments: ["ürün", "makine", "personel", "satış"]
-    required_time_fragments: ["12 ay"]
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: performance, subject: ["satış"]}
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: deliverable, deliverable: report}
 
-  - id: limited_complex_negative
-    q: "Son 12 ay ürünleri karşılaştır, makinelerle ilişkisini incele ve raporla."
+  - id: multiline
+    q: "Son 12 ay için ürünleri karşılaştır.\nMakinelerle bağlarını incele.\nPersonelle bağlarını incele.\nSatış performansını yorumla.\nRapor çıkar."
     expected_act: REPORT_REQUEST
-    expected_goal_counts: {comparison: 1, relationship: 1, deliverable: 1}
-    required_fragments: ["ürün", "makin"]
-    required_time_fragments: ["12 ay"]
-    forbidden_fragments: ["personel", "vardiya", "satış"]
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
 
-  - id: simple_not_research
+  - id: punctuation_dense
+    q: "Son 12 ay: ürünleri karşılaştır; makine ilişkisi? incele; personel ilişkisi? incele; satış performansı? değerlendir; raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: three_relationships
+    q: "Son bir yılda ürünleri karşılaştır; ürünlerin makine, personel ve vardiya ilişkilerini ayrı ayrı araştır; satış performansını değerlendir ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["bir yıl"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: relationship, subject: ["ürün"], related: ["vardiya"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: complex_no_report
+    q: "Geçen bir yılda ürünleri karşılaştır; makine ve personel ilişkilerini ayrı ayrı analiz et, satış performansını da yorumla."
+    expected_act: COMPLEX_ANALYSIS
+    brief_status: READY_FOR_RESEARCH
+    time: ["bir yıl"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: performance, subject: ["satış"]}
+
+  - id: chart_deliverable
+    q: "Son 12 ay ürünleri karşılaştır ve makine ilişkisini incele; sonucu grafik olarak çıkar."
+    expected_act: COMPLEX_ANALYSIS
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: deliverable, deliverable: chart}
+
+  - id: table_deliverable
+    q: "Son bir yılda ürünleri karşılaştır, vardiya ilişkisini araştır ve sonucu tablo halinde sun."
+    expected_act: COMPLEX_ANALYSIS
+    brief_status: READY_FOR_RESEARCH
+    time: ["bir yıl"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["vardiya"]}
+      - {kind: deliverable, deliverable: table}
+
+  - id: relationship_only
+    q: "Ürünlerin makinelerle ilişkisini analiz et."
+    expected_act: COMPLEX_ANALYSIS
+    brief_status: READY_FOR_RESEARCH
+    goals:
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+
+  - id: production_sales_relation
+    q: "Son 12 ay üretim performansı ile satış performansı arasındaki ilişkiyi araştır."
+    expected_act: COMPLEX_ANALYSIS
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: relationship, subject: ["üretim"], related: ["satış"]}
+
+  # --- Negation / exclusion / duplicate-restatement family ---
+  - id: exclude_personnel
+    q: "Son 12 ay ürünleri karşılaştır, personeli inceleme; yalnız makine ilişkisini ve satış performansını değerlendirip raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    forbidden_goal_fragments: ["personel"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: exclude_sales
+    q: "Son 12 ay ürünleri karşılaştır, makine ve personel ilişkilerini ayrı araştır; satış performansını istemiyorum, raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    forbidden_goal_fragments: ["satış"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: exclude_machine_keep_personnel
+    q: "Ürünlerin makine ilişkisine bakma; personelle ilişkisini incele ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    forbidden_goal_fragments: ["makine"]
+    goals:
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: personel_not_shift
+    q: "Ürünlerde personel etkisini değil vardiya ilişkisini incele; satış performansını da değerlendir."
+    expected_act: COMPLEX_ANALYSIS
+    brief_status: READY_FOR_RESEARCH
+    forbidden_goal_fragments: ["personel"]
+    goals:
+      - {kind: relationship, subject: ["ürün"], related: ["vardiya"]}
+      - {kind: performance, subject: ["satış"]}
+
+  - id: no_report
+    q: "Son 12 ay ürünleri karşılaştır, makine ilişkisini ve satış performansını incele ama rapor hazırlama."
+    expected_act: COMPLEX_ANALYSIS
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    forbidden_goal_fragments: ["rapor hazırlama"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: performance, subject: ["satış"]}
+
+  - id: duplicate_machine_restatement
+    q: "Ürünlerin makine ilişkisini incele, yani ürünlerin makinelerle bağını analiz et ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    goals:
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: duplicate_sales_restatement
+    q: "Satış performansını değerlendir; başka deyişle satış performansını yorumla. Ürünleri de karşılaştır."
+    expected_act: COMPLEX_ANALYSIS
+    brief_status: READY_FOR_RESEARCH
+    goals:
+      - {kind: performance, subject: ["satış"]}
+      - {kind: comparison, subject: ["ürün"]}
+
+  - id: duplicate_report_restatement
+    q: "Ürünleri karşılaştır, makine ilişkisini incele ve rapor hazırla; sonucu rapor olarak sun."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: deliverable, deliverable: report}
+
+  # --- Standard/non-research negative family ---
+  - id: simple_product_analyze
     q: "Ürünleri analiz et."
     expected_act: ANALYTIC_NEW
     expect_research: false
+
+  - id: single_metric_report
+    q: "Bu ay satış performansını ürün bazında raporla."
+    expected_act: ANALYTIC_NEW
+    expect_research: false
+
+  - id: standard_topn
+    q: "Bu ay en yüksek 5 ürünün satış performansını göster."
+    expected_act: ANALYTIC_NEW
+    expect_research: false
+
+  - id: standard_previous_period
+    q: "Bu ay satış performansını geçen ayla karşılaştır."
+    expected_act: ANALYTIC_NEW
+    expect_research: false
+
+  - id: standard_breakdown_report
+    q: "Bu yıl üretim performansını makine bazında raporla."
+    expected_act: ANALYTIC_NEW
+    expect_research: false
+
+  - id: standard_filter
+    q: "Bu ay gece vardiyasının üretim performansını göster."
+    expected_act: ANALYTIC_NEW
+    expect_research: false
+
+  - id: standard_sales_only
+    q: "Son 12 ay satış performansını göster."
+    expected_act: ANALYTIC_NEW
+    expect_research: false
+
+  - id: pure_social
+    q: "Teşekkürler, çok iyi."
+    expected_act: SOCIAL
+    expect_research: false
+
+  # --- Robustness / blocking / semantic-safety family ---
+  - id: typo_personnel
+    q: "Son 12 ay ürünleri karşılaştır, makineler ve persnel ile ilişkisini incele, satış performansını değerlendir ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: BLOCKED
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+      - {kind: relationship, subject: ["ürün"], related: ["persnel"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: no_diacritics
+    q: "Son 12 ay urunleri karsilastir, makine ve personel iliskilerini ayri incele, satis performansini degerlendir ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["urun"]}
+      - {kind: relationship, subject: ["urun"], related: ["makine"]}
+      - {kind: relationship, subject: ["urun"], related: ["personel"]}
+      - {kind: performance, subject: ["satis"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: inflected_turkish
+    q: "Son bir yıldaki ürünleri karşılaştır; makinelerdeki ve vardiyalardaki bağlantılarını ayrı incele, satışların performansını değerlendirip raporlaştır."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["bir yıl"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makinelerde"]}
+      - {kind: relationship, subject: ["ürün"], related: ["vardiyalarda"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: long_extra_clause
+    q: "Yönetim toplantısında kullanacağım; gereksiz teknik ayrıntıya girme. Son 12 ay ürünleri karşılaştır, ürünlerin makinelerle ve personelle ilişkilerini ayrı ayrı araştır, satış performansını değerlendir ve sonunda rapor çıkar."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    forbidden_goal_fragments: ["yönetim toplantısı", "teknik ayrıntı"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: unknown_domain
+    q: "Son 12 ay ürünleri karşılaştır, makine ilişkisini ve lojistik kalitesini araştır, satış performansını değerlendirip raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: BLOCKED
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: performance, subject: ["lojistik"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: energy_sales_no_path
+    q: "Son 12 ay enerji tüketimi ile satış performansı arasındaki ilişkiyi araştır ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: BLOCKED
+    time: ["12 ay"]
+    goals:
+      - {kind: relationship, subject: ["enerji"], related: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: typo_sales
+    q: "Son 12 ay ürünleri karşılaştır, makine ilişkisini incele, satıs performansını değerlendir ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: BLOCKED
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: performance, subject: ["satıs"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: ellipsis_subject_reuse
+    q: "Son 12 ay ürünleri karşılaştır; önce makinelerle, sonra personelle ilişkisini ayrı ayrı incele; satış performansını yorumla ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makin"]}
+      - {kind: relationship, subject: ["ürün"], related: ["personel"]}
+      - {kind: performance, subject: ["satış"]}
+      - {kind: deliverable, deliverable: report}
+
+  - id: mixed_english_metric
+    q: "Son 12 ay ürünleri karşılaştır, makine ilişkisini incele, sales performance tarafını değerlendir ve raporla."
+    expected_act: REPORT_REQUEST
+    brief_status: READY_FOR_RESEARCH
+    time: ["12 ay"]
+    goals:
+      - {kind: comparison, subject: ["ürün"]}
+      - {kind: relationship, subject: ["ürün"], related: ["makine"]}
+      - {kind: performance, subject: ["sales performance"]}
+      - {kind: deliverable, deliverable: report}
