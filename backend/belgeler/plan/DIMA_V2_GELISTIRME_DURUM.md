@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 4 ACTIVE — CONVERSATION / FOLLOW-UP / USER REPAIR**  
-**Kod fazı:** Day 4 / P7 ACTIVE.
+**Durum:** **DAY 4 COMPLETE — DAY 5 CORE MVP ATTACK GATE READY**  
+**Kod fazı:** Day 4 / P7 COMPLETE — Day 5 / P8 henüz başlamadı.
 
 ---
 
@@ -2010,7 +2010,7 @@ Deterministik 8-test gate/full suite/corpus tekrar açılmayacak.
 
 
 
-### 2026-09-21 — DAY 4 / MODEL CAPABILITY KARARI
+### 2026-09-21 — DAY 4 / MODEL CAPABILITY KARARI — SUPERSEDED
 
 Aynı 30-turn DB-independent corpus `deepseek/deepseek-v4-flash` ile birden fazla kez
 çalıştırıldı. Structured output %100 ve surface-grounding violation 0 kalırken ince
@@ -2027,7 +2027,10 @@ run 4: act 83.3% | follow-up 58.3% | repair 16.7%
 bağımsız bir **model capability / instruction-following stability** problemi olarak
 sınıflandırıldı. Prompt'a daha fazla fixture-benzeri örnek yığmak reddedildi.
 
-**Karar**
+**SUPERSEDED NOTU — 2026-09-21**  
+Bu ara karar, kullanıcı tarafından daha önce açıkça mühürlenen ileriye dönük tek model authority'siyle çeliştiği için uygulanabilir son karar değildir. Day1 Luna measurement tarihsel provenance olarak kalır; yeni çalışma/test default'u `deepseek/deepseek-v4-flash`tır. Dedicated Luna transport yolu final Day4 seal öncesi kaldırılmıştır.
+
+**Tarihsel ara karar (uygulanmıyor)**
 - TurnInterpreter tek language owner olarak kalır.
 - V2 TurnInterpreter için ayrı, explicit model capability tanımlanır.
 - Default: `openai/gpt-5.6-luna` (OpenRouter), çünkü Day1 tarihsel acceptance'ta
@@ -2049,3 +2052,311 @@ DIMA_V2_INTERPRETER_MODEL=openai/gpt-5.6-luna
 Aynı 30-turn corpus DEĞİŞTİRİLMEDEN dedicated interpreter model ile yeniden çalışır.
 Pass olursa ayrıca yeni, tuning sırasında kullanılmamış küçük holdout çalıştırılır.
 
+
+
+### 2026-09-21 — DAY 4 / P7 COMPLETE — FINAL SEAL
+
+**Authority cross-check**
+- Roadmap P7 yeniden okundu.
+- Report R9 + R6 conversation boundary yeniden okundu.
+- P7 normatif correctness:
+  - prior IR + deterministic delta,
+  - unrelated-slot preservation,
+  - canonical 5-turn context continuity,
+  - social query = 0,
+  - result-explain unnecessary query = 0.
+- Exact `ANALYTIC_REFINE ↔ USER_REPAIR` subtype etiketi P7 release gate değildir;
+  semantic state transition doğruysa diagnostic olarak tutulur.
+
+**Final architecture**
+```text
+TurnInterpreter
+→ DialoguePolicyV0
+→ SemanticResolver
+→ ConversationCoordinatorV0
+→ prior AnalyticsIR + typed current delta
+→ RequirementLedger
+→ CubePlanner
+→ Wren execution
+→ ResultValidator
+→ MinimumQueryContract
+→ updated ConversationStateV2
+```
+
+**Conversation state**
+Canonical Day4 state artık şunları typed taşır:
+- `TopicFrameV0`
+- `FocusStateV0`
+- `ClarificationState`
+- `PendingAnalyticalStateV0`
+- `last_ir`
+- `last_result`
+- contract refs / result anchors.
+
+Raw SQL ve previous CubeQuery canonical memory değildir.
+
+**Typed delta semantics**
+- Current metric varsa metric slotu değişir; yoksa prior korunur.
+- Current dimension varsa breakdown slotu değişir; yoksa prior korunur.
+- Current entity filter yalnız kendi canonical dimension filter'ını değiştirir.
+- Unrelated filters korunur.
+- Current time varsa period değişir; yoksa prior period korunur.
+- Ranking/comparison yalnız current typed request'te varsa değişir.
+- Cross-cube uyuşmazlıkta silent coercion yok.
+- Empty continuation delta fail-closed; query açılmaz.
+
+**Clarification resume — V2-D012 CLOSED**
+- Pending clarification sırasında original analytical request saklanır.
+- Initial resolved sibling hypotheses saklanır.
+- Base prior IR saklanır.
+- Signed-chip resume yalnız ambiguous hypothesis'i patch eder.
+- Free-text resume aynı typed pending state'i kullanır.
+- Original turn yeniden semantic parse edilmez.
+- Sibling metric/request slotu kaybolmaz.
+- Dedicated focused testlerde signed + free-text resume PASS.
+
+**“sadece RAM-3” sentinel — V2-D011 CLOSED**
+- Production code'da `RAM-3` veya eşdeğer fixture literal special-case yok.
+- Concrete member/value → Resolver candidate → canonical filter delta.
+- Prior metric/dimension/time korunur.
+- `REFINE` ile `USER_REPAIR` subtype'ı semantic state transition'ı değiştirmiyorsa
+  downstream owner'lara özel patch yazılmaz.
+- Doğru owner:
+  - language surface → TurnInterpreter,
+  - canonical filter binding → SemanticResolver,
+  - prior IR + slot transition → ConversationCoordinator.
+
+**No-query policy**
+- Verified active result + RESULT_EXPLAIN → existing result/evidence, query=0.
+- SOCIAL → TALK, query=0.
+- Empty/mislabelled analytical continuation with zero delta → fail-closed before Wren,
+  query=0.
+- Clarification → query=0 until resolved.
+
+**Dataset-agnostic correctness**
+`backend/AGENTS.md §12` kalıcı kuraldır.
+Day4 primary correctness kanıtı repo demo DB'sine göre kurulmadı:
+- iki tamamen farklı synthetic/permuted schema,
+- user language ile canonical identifiers birbirinden farklı,
+- aynı 5-turn invariant iki schema'da production code değişmeden geçti,
+- production conversation code fixture literal ban PASS,
+- real Wren smoke capability'yi schema'dan dinamik seçti; demo metric/cube adı hard-code edilmedi.
+
+**Single-owner root-fix — kalıcı kural**
+`backend/AGENTS.md §13` eklendi:
+```text
+failure
+→ failure stage
+→ normative requirement
+→ “Bu kararın tek sahibi kim?”
+→ yalnız owner'da root fix
+→ focused proof
+```
+Şu refleks yasak:
+```text
+prompt başarısız
+→ resolver özel if
+→ planner fallback
+→ orchestrator exception branch
+→ test yeşil
+```
+
+**Final deterministic focused gate**
+- Workflow: `35563410971`
+- Result: **9 passed / 0 failed**
+- Pytest: **6.06s**
+- Full suite: **0**
+- legacy corpus: **0**
+- Day0/1/2/3 rerun: **0**
+- Includes:
+  - two-schema permutation,
+  - canonical natural 5-turn state flow,
+  - unrelated-slot preservation,
+  - same-dimension filter replacement,
+  - explain query=0,
+  - social query=0,
+  - signed clarification resume,
+  - free-text clarification resume,
+  - sensitive conversation prompt boundary,
+  - fixture-literal production ban,
+  - dynamic real-Wren time-repair smoke,
+  - empty continuation cannot query.
+
+**Live DB-independent language evidence — raw preserved**
+DeepSeek/OpenRouter run:
+- workflow: `35561951458`
+- artifact: `10622696301`
+- digest:
+  `sha256:6ad0e367d6892500b5340060fecb0450057ec7e7246db8dcb94ddbc8abeb7b78`
+- model provenance from workflow log:
+  `DIMA_OPENROUTER_MODEL=deepseek/deepseek-v4-flash`
+- threads: **6**
+- turns: **30**
+- demo DB access: **0**
+- structured output: **30/30 = 100%**
+- surface grounding violation: **0**
+- max LLM calls/case: **1**
+- exact raw turn-act label accuracy: **70% diagnostic**
+- exact social label: **5/6 diagnostic**
+
+**P7 normative re-score of SAME raw records**
+Test cases ve provider outputları değiştirilmedi.
+Roadmap P7 state-transition oracle'ına göre:
+```text
+routing action accuracy                 29/30 = 96.67%
+follow-up typed-delta correctness       12/12 = 100%
+repair changed-slot preservation         6/6  = 100%
+result-explain classification            6/6  = 100%
+social analytical-payload safety         6/6  = 100%
+structured output                       30/30 = 100%
+surface grounding violation                 0
+```
+Permanent record:
+`backend/eval/v2_day4_measurement.json`.
+
+**Neden eski live evaluator FAIL idi?**
+İlk evaluator proxy olarak exact `REFINE/USER_REPAIR` label eşitliğini semantic
+correctness sayıyordu. P7 ise bekleneni açıkça:
+```text
+turn2 prior IR + filter
+turn3 prior IR + time repair
+```
+diye tanımlar. Aynı typed delta / aynı state transition üretildiğinde subtype farkını
+release blocker yapmak roadmap'te olmayan bir şart ekliyordu.
+Raw measurement silinmedi veya değiştirilmedi; exact label metriği diagnostic kaldı.
+Evaluator owner/test-oracle kuralına göre düzeltildi.
+
+**Model authority — final**
+Kullanıcının daha önce mühürlediği ileriye dönük authority korunur:
+- operational/focused OpenRouter default:
+  `deepseek/deepseek-v4-flash`.
+- Day1 `openai/gpt-5.6-luna` ölçümü tarihsel provenance olarak DEĞİŞMEDİ.
+- Sonradan eklenen dedicated `v2_interpreter_model=openai/gpt-5.6-luna` yolu
+  **SUPERSEDED ve kaldırıldı**.
+- `config.py / llm.py / main.py / v2/orchestrator.py` DeepSeek run-3 öncesindeki
+  tek-model-policy hâline geri alındı.
+- Live workflow'taki V2 Luna env override kaldırıldı.
+- Yeni live test sırf bu policy restore için tekrar çalıştırılmadı; run-3 zaten
+  DeepSeek provenance taşıyor.
+
+**Workflow discipline**
+- `v2-day4-conversation.yml` → workflow_dispatch-only.
+- `v2-day4-live-conversation.yml` → workflow_dispatch-only.
+- live workflow structural testleri tekrar koşturmaz; yalnız language eval yapar.
+- removed `backend-ci.yml` yok ve geri gelmedi.
+- final status/document/model-policy commitleri otomatik test başlatmaz.
+
+### V2-D014 — exact continuation subtype / acknowledgment language diagnostic
+
+Day4 P7 blocker değildir; Day5 attack-table girdisidir.
+
+Observed:
+- `ANALYTIC_REFINE ↔ USER_REPAIR` exact subtype DeepSeek'te varyanslı.
+- Bir natural acknowledgement (`tamamdır`) bir run'da boş `ANALYTIC_REFINE` çıktı.
+
+Safety:
+- typed analytical slot payload doğru/boş kaldı,
+- ConversationCoordinator unrelated slots'u koruyor,
+- empty continuation fail-closed,
+- query=0 sentinel final focused testte PASS.
+
+Day5 beklentisi:
+- exact language quality ayrı diagnostic olarak saldırı masasında ölçülür,
+- fakat çözüm downstream özel if/fallback olmayacak,
+- failure sahibi TurnInterpreter ise yalnız onun contract/model/prompt boundary'si ele alınır.
+
+**P7 EXIT**
+```text
+followup_correctness focused realistic set       100%   PASS
+repair_slot_preservation regression              100%   PASS
+canonical 5-turn context break                      0   PASS
+pure_social_query_rate                              0   PASS
+result-explain unnecessary query                    0   PASS
+clarification resume sibling-slot loss              0   PASS
+schema-permutation invariant break                  0   PASS
+production fixture-literal dependency               0   PASS
+legacy semantic fallback                            0   PASS
+```
+
+**No-touch final cross-check**
+```text
+backend/app/routers/ask.py       unchanged
+backend/app/cube_router.py       unchanged
+backend/app/uyum.py              unchanged
+backend/app/plan_tuketici.py     unchanged
+backend/app/plan_semasi.py       unchanged
+backend/app/followup.py          unchanged
+backend/app/intent_semasi.py     unchanged
+.github/workflows/backend-ci.yml absent
+```
+
+**Karar**
+Day 4 / P7 **COMPLETE**.
+Day 5 / P8 henüz açılmadı.
+
+---
+
+## 12. DAY 5 READY DIRECTIVE — CORE MVP SALDIRI MASASI
+
+Day5 başlamadan:
+1. Roadmap **P8** yeniden oku.
+2. Report **R6.1 + R20** yeniden oku.
+3. V2-D013 (full E2E p95) + V2-D014 (language subtype diagnostic) çaprazla.
+4. Kod/feature eklemeden önce attack-ticket yaşayan deftere yaz.
+5. İlk çalışma **feature değil eval/trace/failure-classification** olacak.
+
+**Day5 ciddi denetim biçimi**
+Tek tek sınıflara unit-test eklemek yerine gerçek kullanıcı gibi `/ask-v2` yüzeyine
+uçtan uca saldır:
+
+| Attack | Beklenen invariant |
+|---|---|
+| paraphrase | aynı semantic requirement; fixture/canonical wording ezberi yok |
+| typo | silent wrong yok; safe resolve veya clarification |
+| ambiguity | blocking auto-selection=0; clarification query=0 |
+| clarification answer | yalnız pending slot patch; sibling loss=0 |
+| repair | unrelated-slot loss=0 |
+| follow-up | prior IR korunur; yalnız current delta |
+| topic switch | old focus bleed=0; yeni TopicFrame görünür |
+| comparison | A/B semantiği korunur; tek range'e çökme yok |
+| ranking | direction + semantic limit birlikte korunur |
+| result explain | active result yeterliyse query=0 |
+| pure social | SQL/query=0 |
+| malformed clarification token | fail-closed; semantic fallback=0 |
+| stale context/version | stale replay=0; fail-closed |
+| provider/infra failure | correctness fail diye sayma; typed unavailable/failure |
+| cross-tenant attempt | evidence/data leak=0 |
+| silent-wrong attack | wrong-but-plausible official answer=0 |
+
+**Day5 çalışma kuralı**
+Roadmap P8 zaten söyler:
+```text
+Yeni özellik ekleme.
+Yalnız:
+eval
+trace
+failure classify
+root fix
+```
+
+Her kırmızı için:
+```text
+Bu kararın tek sahibi kim?
+```
+sorusu cevaplanmadan kod değişikliği YOK.
+
+**Day5 blocker gate**
+```text
+P0 silent-wrong                     = 0 MVP holdout
+blocking ambiguity auto-selection   = 0
+clarification SQL                   = 0
+pure social SQL                     = 0
+user repair unrelated-slot loss     = 0
+canonical threads context break     = 0
+unhandled 500                       = 0
+executed queries principal-aware    = 100%
+standard E2E p95                    <= 10s
+clarify p95                         <= 6s
+```
+
+Day5 bu saldırı masası geçmeden Research Mode / Day6 açılmaz.
