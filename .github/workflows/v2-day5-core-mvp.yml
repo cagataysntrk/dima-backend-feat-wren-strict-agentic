@@ -40,7 +40,7 @@ jobs:
 
       - name: Focused Day4 + Day5 Core contracts
         working-directory: backend
-        run: pytest -q tests/test_v2_day4.py tests/test_v2_day5.py
+        run: pytest -q tests/test_v2_day4.py tests/test_v2_day5.py tests/test_v2_day5_http.py
 
       - uses: actions/setup-node@v4
         with:
