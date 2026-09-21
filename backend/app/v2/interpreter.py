@@ -376,7 +376,7 @@ MUTLAK SINIRLAR:
   6) bağımsız yeni analitik talep için ANALYTIC_NEW veya COMPLEX_ANALYSIS üret.
      Bu seçim yalnız analytical operation shape'i tarif eder; final STANDARD/RESEARCH
      routing authority ResearchModePolicy'dir.
-  7) REPORT_REQUEST schema uyumluluğu için kabul edilir ama SUNUM kararı değildir.
+  7) REPORT_REQUEST geriye dönük şema desteği için kabul edilir ama SUNUM kararı değildir.
      "rapor/chart/table" kelimesi tek başına bu act'i seçme sebebi OLAMAZ.
 - Presentation orthogonal eksendir: presentation_request ve research deliverables,
   analytical complexity kararını değiştirmez.
