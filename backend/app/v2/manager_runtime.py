@@ -20,6 +20,7 @@ from app.v2.manager_models import (
     ManagerRunSnapshot,
     ManagerState,
     ResearchRunTerminal,
+    SemanticResolutionReceipt,
     UserObligationLedger,
 )
 from app.v2.manager_tools import (
@@ -65,6 +66,7 @@ class ManagerRuntime:
         self._snapshot = ManagerRunSnapshot(run_id=run_id, state=ManagerState.INITIAL)
         self._ledger: UserObligationLedger | None = None
         self._accepted_contract = None
+        self._semantic_receipts: list[SemanticResolutionReceipt] = []
 
     @property
     def snapshot(self) -> ManagerRunSnapshot:
@@ -79,8 +81,43 @@ class ManagerRuntime:
         return self._accepted_contract
 
     @property
+    def semantic_resolution_receipts(self) -> tuple[SemanticResolutionReceipt, ...]:
+        return tuple(self._semantic_receipts)
+
+    @property
     def has_accepted_contract(self) -> bool:
         return self._snapshot.accepted_contract_id is not None
+
+    def _record_semantic_receipts(self, result: Any) -> int:
+        """Persist USER_SOURCE resolution provenance without canonical targets."""
+        added = 0
+        existing = {
+            (item.source_ref, item.handle_id)
+            for item in self._semantic_receipts
+        }
+        for resolved in tuple(getattr(result, "resolved", ()) or ()):
+            source_ref = getattr(resolved, "source_ref", None)
+            provenance = getattr(resolved, "provenance", None)
+            handle = getattr(resolved, "handle", None)
+            if (
+                provenance != "USER_SOURCE"
+                or not source_ref
+                or handle is None
+            ):
+                continue
+            key = (source_ref, handle.handle_id)
+            if key in existing:
+                continue
+            self._semantic_receipts.append(
+                SemanticResolutionReceipt(
+                    source_ref=source_ref,
+                    handle_id=handle.handle_id,
+                    target_kind=handle.target_kind,
+                )
+            )
+            existing.add(key)
+            added += 1
+        return added
 
     def begin_understanding(self) -> ManagerRunSnapshot:
         if self._snapshot.state != ManagerState.INITIAL:
@@ -135,6 +172,7 @@ class ManagerRuntime:
             raise
 
         if call.name == ManagerToolName.RESOLVE_SEMANTICS:
+            self._record_semantic_receipts(result)
             if self._snapshot.state == ManagerState.INITIAL:
                 self._snapshot = self._snapshot.model_copy(update={"state": ManagerState.UNDERSTANDING})
         elif call.name == ManagerToolName.PROPOSE_ACCEPTANCE:
