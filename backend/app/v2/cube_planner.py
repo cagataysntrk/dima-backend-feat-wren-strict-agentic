@@ -610,17 +610,6 @@ class AnalyticsIRBuilder:
                 limit=request.ranking.limit,
             )
 
-        if ranking is not None and comparison is not None:
-            raise StandardAnalyticsError(
-                _failure(
-                    "plan_validation_failed",
-                    "planner",
-                    "Day3 MVP ranking+comparison birleşimini sessizce iki bağımsız top-N "
-                    "kümesine çevirmiyor; entity alignment sonraki kapsam.",
-                ),
-                ledger=ledger,
-            )
-
         ir = AnalyticsIR(
             cube=cube_name,
             metrics=tuple(metric_refs),
@@ -646,7 +635,12 @@ class AnalyticsIRBuilder:
         return BuildOutput(ir=ir, ledger=ledger)
 
 
-def _cube_query(ir: AnalyticsIR, *, reference: bool = False) -> dict:
+def _cube_query(
+    ir: AnalyticsIR,
+    *,
+    reference: bool = False,
+    include_ranking: bool = True,
+) -> dict:
     period = (
         ir.comparison.reference_period
         if reference and ir.comparison is not None
@@ -666,7 +660,7 @@ def _cube_query(ir: AnalyticsIR, *, reference: bool = False) -> dict:
         ]
         + period_filters(period),
     }
-    if ir.ranking is not None:
+    if ir.ranking is not None and include_ranking:
         query["order"] = {
             "measure": ir.ranking.measure,
             "direction": ir.ranking.direction,
@@ -691,9 +685,15 @@ class CubePlanner:
         ledger: RequirementLedger,
         service,
     ) -> tuple[tuple[PlannedExecution, ...], RequirementLedger]:
+        ranked_comparison = ir.comparison is not None and ir.ranking is not None
         queries = [("primary", _cube_query(ir, reference=False))]
-        if ir.comparison is not None:
-            queries.append(("comparison_reference", _cube_query(ir, reference=True)))
+        if ir.comparison is not None and not ranked_comparison:
+            queries.append(
+                (
+                    "comparison_reference",
+                    _cube_query(ir, reference=True, include_ranking=False),
+                )
+            )
 
         plans: list[PlannedExecution] = []
         for role, cube_query in queries:
@@ -718,10 +718,17 @@ class CubePlanner:
             )
 
         represented = self._represented_requirements(ir, ledger, tuple(plans))
+        deferred = {
+            item.requirement_id
+            for item in ledger.items
+            if ranked_comparison and item.kind == RequirementKind.COMPARISON
+        }
         missing = [
             item.requirement_id
             for item in ledger.items
-            if item.must and item.requirement_id not in represented
+            if item.must
+            and item.requirement_id not in represented
+            and item.requirement_id not in deferred
         ]
         if missing:
             ledger = _block(
@@ -742,6 +749,7 @@ class CubePlanner:
             item.requirement_id
             for item in ledger.items
             if item.state == RequirementState.REPRESENTED_IN_IR
+            and item.requirement_id in represented
         ]
         ledger = _advance(
             ledger,
@@ -750,6 +758,113 @@ class CubePlanner:
             detail=f"{len(plans)} deterministic CubeQuery execution",
         )
         return tuple(plans), ledger
+
+    def plan_ranked_comparison_reference(
+        self,
+        *,
+        ir: AnalyticsIR,
+        ledger: RequirementLedger,
+        primary_result: dict,
+        service,
+    ) -> tuple[PlannedExecution, RequirementLedger]:
+        """Plan the reference period against the exact base top-N member set.
+
+        Ranking decides the member set on the base period. Running an independent top-N on
+        the reference period would compare different entities and is therefore forbidden.
+        The reference query is compiled only after the verified-shape base result exposes
+        the selected member values.
+        """
+        if ir.ranking is None or ir.comparison is None:
+            raise StandardAnalyticsError(
+                _failure(
+                    "plan_validation_failed",
+                    "planner",
+                    "Dependent comparison plan requires both ranking and comparison.",
+                ),
+                ledger=ledger,
+            )
+        if len(ir.dimensions) != 1:
+            raise StandardAnalyticsError(
+                _failure(
+                    "plan_validation_failed",
+                    "planner",
+                    "Ranked comparison Core MVP requires exactly one breakdown dimension; "
+                    "multi-dimensional tuple alignment is not guessed.",
+                ),
+                ledger=ledger,
+            )
+
+        dimension = ir.dimensions[0].canonical_name
+        rows = tuple(primary_result.get("rows") or ())
+        selected: list[object] = []
+        seen: set[object] = set()
+        for row in rows:
+            if dimension not in row:
+                raise StandardAnalyticsError(
+                    _failure(
+                        "plan_validation_failed",
+                        "planner",
+                        f"Base top-N result alignment dimension missing: {dimension}",
+                    ),
+                    ledger=ledger,
+                )
+            value = row.get(dimension)
+            if value is None or value in seen:
+                continue
+            seen.add(value)
+            selected.append(value)
+
+        if not selected:
+            raise StandardAnalyticsError(
+                _failure(
+                    "plan_validation_failed",
+                    "planner",
+                    "Base top-N result returned no alignable members; reference comparison "
+                    "is not executed against an invented entity set.",
+                ),
+                ledger=ledger,
+            )
+
+        cube_query = _cube_query(ir, reference=True, include_ranking=False)
+        cube_query["filters"] = [
+            *(cube_query.get("filters") or ()),
+            {
+                "dimension": dimension,
+                "operator": "in",
+                "value": selected,
+            },
+        ]
+        try:
+            sql = service.cube_sql(cube_query)
+        except Exception as exc:
+            raise StandardAnalyticsError(
+                _failure(
+                    "plan_validation_failed",
+                    "planner",
+                    f"Wren aligned comparison CubeQuery compile başarısız: {exc}",
+                ),
+                ledger=ledger,
+            ) from exc
+
+        plan = PlannedExecution(
+            execution_id=_execution_id(ir, "comparison_reference", cube_query),
+            role="comparison_reference",
+            cube_query=cube_query,
+            sql=sql,
+        )
+        comparison_ids = [
+            item.requirement_id
+            for item in ledger.items
+            if item.kind == RequirementKind.COMPARISON
+            and item.state == RequirementState.REPRESENTED_IN_IR
+        ]
+        ledger = _advance(
+            ledger,
+            comparison_ids,
+            RequirementState.REPRESENTED_IN_PLAN,
+            detail="reference period aligned to base ranked member set",
+        )
+        return plan, ledger
 
     def _represented_requirements(
         self,
