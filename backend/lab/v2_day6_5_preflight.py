@@ -28,6 +28,8 @@ class Day65Preflight:
     taxonomy_sha256: str
     attestation_sha256: str
     blockers: tuple[str, ...]
+    seal_ready: bool
+    seal_blockers: tuple[str, ...]
 
 
 def _manifest() -> dict[str, Any]:
@@ -46,15 +48,21 @@ def evaluate_day65_preflight() -> Day65Preflight:
     attestation_sha = str(hidden.get("attestation_sha256") or "")
     attestation = hidden.get("external_attestation") or {}
 
-    blockers: list[str] = []
+    implementation_blockers: list[str] = []
+    seal_blockers: list[str] = []
+
     if expected_count != 50:
-        blockers.append(f"hidden case_count 50 değil: {expected_count}")
+        implementation_blockers.append(f"hidden case_count 50 değil: {expected_count}")
+
+    # External hashes/attestation are architecture-seal requirements. Owner decision:
+    # contract/runtime implementation proceeds before they arrive, but architecture
+    # cannot be sealed without them.
     if not corpus_sha or corpus_sha == PLACEHOLDER:
-        blockers.append("external hidden corpus sha256 freeze edilmedi")
+        seal_blockers.append("external hidden corpus sha256 freeze edilmedi")
     if not taxonomy_sha or taxonomy_sha == PLACEHOLDER:
-        blockers.append("external hidden taxonomy sha256 freeze edilmedi")
+        seal_blockers.append("external hidden taxonomy sha256 freeze edilmedi")
     if not attestation_sha or attestation_sha == PLACEHOLDER:
-        blockers.append("external hidden attestation sha256 freeze edilmedi")
+        seal_blockers.append("external hidden attestation sha256 freeze edilmedi")
 
     expected_attestation = {
         "independent_evaluator": True,
@@ -64,32 +72,33 @@ def evaluate_day65_preflight() -> Day65Preflight:
         "frozen_before_implementation": True,
     }
     if not isinstance(attestation, dict):
-        blockers.append("external hidden attestation manifest object değil")
+        seal_blockers.append("external hidden attestation manifest object değil")
     else:
         for key, expected in expected_attestation.items():
             if attestation.get(key) != expected:
-                blockers.append(
+                seal_blockers.append(
                     f"external hidden attestation {key} beklenen {expected!r} değil"
                 )
+
     if bool(hidden.get("committed_to_repo", True)):
-        blockers.append("hidden prompt corpus repo içine commit edilebilir görünüyor")
+        implementation_blockers.append("hidden prompt corpus repo içine commit edilebilir görünüyor")
     if bool(hidden.get("generated_by_current_development_model", True)):
-        blockers.append("hidden corpus development model tarafından üretilmiş görünüyor")
-    # Owner decision: external hidden corpus remains mandatory for architecture seal,
-    # but no longer blocks contract-only Manager implementation.
+        implementation_blockers.append("hidden corpus development model tarafından üretilmiş görünüyor")
     if bool(hidden.get("required_before_manager_implementation", False)):
-        blockers.append("manifest hâlâ hidden holdout'u implementation blocker yapıyor")
+        implementation_blockers.append("manifest hâlâ hidden holdout'u implementation blocker yapıyor")
     if not bool(hidden.get("required_before_architecture_seal", False)):
-        blockers.append("hidden holdout architecture seal için zorunlu değil")
+        implementation_blockers.append("hidden holdout architecture seal için zorunlu değil")
 
     return Day65Preflight(
-        ready=not blockers,
-        status="READY_FOR_IMPLEMENTATION" if not blockers else "BLOCKED",
+        ready=not implementation_blockers,
+        status="READY_FOR_IMPLEMENTATION" if not implementation_blockers else "BLOCKED",
         case_count=expected_count,
         corpus_sha256=corpus_sha,
         taxonomy_sha256=taxonomy_sha,
         attestation_sha256=attestation_sha,
-        blockers=tuple(blockers),
+        blockers=tuple(implementation_blockers),
+        seal_ready=not implementation_blockers and not seal_blockers,
+        seal_blockers=tuple(seal_blockers),
     )
 
 
@@ -113,6 +122,8 @@ if __name__ == "__main__":
                 "taxonomy_sha256": result.taxonomy_sha256,
                 "attestation_sha256": result.attestation_sha256,
                 "blockers": list(result.blockers),
+                "seal_ready": result.seal_ready,
+                "seal_blockers": list(result.seal_blockers),
             },
             allow_unicode=True,
             sort_keys=False,
