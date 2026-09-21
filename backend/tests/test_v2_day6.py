@@ -205,6 +205,7 @@ def test_canonical_typed_research_brief_preserves_all_five_must_goals():
     assert all(q.status == ResearchGoalStatus.RESOLVED for q in brief.questions)
     assert brief.deliverables == (PresentationKind.REPORT,)
     assert brief.scope.time_surfaces == ("Son 12 ay",)
+    assert brief.required_domains == ("fact_alpha", "fact_beta", "fact_gamma")
     assert brief.blocking_goal_ids == ()
     assert brief.status == ResearchBriefStatus.READY_FOR_RESEARCH
 
@@ -252,8 +253,8 @@ def test_research_brief_never_invents_unrequested_goals_or_domains():
         ResearchGoalKind.DELIVERABLE,
     ]
     assert len(brief.questions) == 2
-    # cube_names are provenance, not permission to invent an explicit domain goal.
-    assert brief.required_domains == ()
+    # Single-cube ownership is Resolver provenance, not a ResearchBrief guess.
+    assert brief.required_domains == ("fact_delta",)
     assert {ref.canonical_name for ref in brief.scope.semantic_refs} == {"axis_item_p9"}
 
 
