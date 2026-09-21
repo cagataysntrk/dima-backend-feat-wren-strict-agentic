@@ -18,6 +18,7 @@ import yaml
 from app.config import get_settings
 from app.llm import NoLlmGenerator, RuleBasedSqlGenerator, build_generator
 from app.v2.interpreter import TurnInterpreter, TurnInterpreterError
+from app.v2.model_policy import ModelRole, ModelRolePolicy
 from app.v2.models import (
     BoundedSemanticContextV0,
     CompactCubeContextV0,
@@ -388,6 +389,17 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--require-live", action="store_true")
     parser.add_argument(
+        "--model-role",
+        choices=[role.value for role in ModelRole],
+        default=ModelRole.FAST_LANGUAGE.value,
+        help="Configured V2 language role used for this manual measurement.",
+    )
+    parser.add_argument(
+        "--model",
+        default="",
+        help="Optional manual candidate override for this run; never used by domain logic.",
+    )
+    parser.add_argument(
         "--case-id",
         action="append",
         default=[],
@@ -405,7 +417,29 @@ def main() -> int:
     if missing_selected:
         raise SystemExit(f"Unknown case ids: {sorted(missing_selected)}")
 
-    llm = build_generator(get_settings())
+    settings = get_settings()
+    role = ModelRole(args.model_role)
+    try:
+        role_settings, profile = ModelRolePolicy(settings).scoped_settings(
+            role,
+            model_override=(args.model.strip() or None),
+        )
+    except ValueError as exc:
+        payload = {
+            "kind": "dima_v2_day6_research_eval",
+            "status": "model_role_unconfigured",
+            "model_role": role.value,
+            "error": str(exc),
+        }
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(json.dumps(payload, ensure_ascii=False))
+        return 2 if args.require_live else 0
+
+    llm = build_generator(role_settings)
     providers = _provider_names(llm)
     if not _is_real_llm(llm):
         payload = {
@@ -724,6 +758,16 @@ def main() -> int:
     payload = {
         "kind": "dima_v2_day6_research_eval",
         "status": "pass" if passed else "fail",
+        "model_role": role.value,
+        "model_profile": {
+            "provider": profile.provider,
+            "model": profile.model,
+            "native_schema_required": profile.native_schema_required,
+            "reasoning_enabled": profile.reasoning_enabled,
+        },
+        "prompt_version": "day6-v0.6",
+        "transport_schema_version": "dima_turn_interpreter_transport_v2",
+        "contract_version": "p9-researchbrief-v2",
         "source_policy": (
             "real_provider_language_owner_plus_research_mode_policy_plus_real_resolver_and_brief_builder_"
             "synthetic_permuted_context_no_data_query"
