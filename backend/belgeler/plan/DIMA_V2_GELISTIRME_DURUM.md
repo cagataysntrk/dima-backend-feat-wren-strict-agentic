@@ -1951,3 +1951,60 @@ production fixture-literal dependency            0
 - second/permuted schema aynı generic invariant'ı bozarsa,
 - Day14 persistence kapsamı Day4'e wholesale çekilirse.
 
+
+
+### 2026-09-21 — DAY 4 / live realistic-language gate 1 — ROOT CLASSIFICATION
+
+**Run**
+- workflow: `v2-day4-live-conversation`
+- run: `35559963264`
+- artifact: `10621862234`
+- digest:
+  `sha256:8447fa93efcabafc2e49d7b5e22ea37aee58088989bceeac57db13af7247f61f`
+- source policy: `synthetic_schema_permuted_no_demo_db`
+- threads: **6**
+- natural turns: **30**
+- demo DB access: **0**
+
+**Measured**
+```text
+structured success              30/30 = 100%
+turn act accuracy               26/30 = 86.67%
+follow-up correctness            4/12 = 33.33%
+repair slot preservation         2/6  = 33.33%
+result explain classification    6/6  = 100%
+social classification            6/6  = 100%
+surface grounding violation      0
+max LLM calls/case               1
+```
+
+**Failure-stage analysis — DB/fixture değil language contract**
+1. Repair-vs-refine sınırı:
+   - düzeltme/retraction anlamı taşıyan bazı doğal turlar `USER_REPAIR` yerine
+     `ANALYTIC_REFINE` geldi.
+   - slot extraction doğruydu (time-only), dialogue act precedence eksikti.
+2. Entity-member vs grouping-axis sınırı:
+   - “yalnız/bir tek <somut üye/id>” refinement'larının bazılarında somut member
+     `filter` yerine `dimension` veya `dimension+filter` olarak etiketlendi.
+   - canonical DB bilgisi verilmediği için bu tam olarak generic language-role ayrımıdır.
+3. Bir turda `pending_clarification=false` olmasına rağmen correction
+   `CLARIFICATION_ANSWER` seçildi; state precondition istemde yeterince sert değildi.
+
+**Yapılmayacak**
+- K-17 / Kuzey-4 / Ekip-N / Tesis-C için branch, regex veya örnek sözlük eklenmeyecek.
+- Test case çıkarılıp oran yapay biçimde yükseltilmeyecek.
+- Demo DB değerleri prompt'a konup modelin işi kolaylaştırılmayacak.
+- Resolver/Planner'a ikinci language owner eklenmeyecek.
+
+**Kök düzeltme**
+TurnInterpreter sözleşmesi generic olarak keskinleştirilecek:
+- correction/retraction, additive refinement'tan önce gelir → `USER_REPAIR`;
+- `CLARIFICATION_ANSWER` için `pending_clarification=true` hard semantic precondition;
+- concrete selected member/value/identifier → `filter_mentions`;
+- grouping/category axis → `dimension_mentions`;
+- aynı concrete surface yalnız grouping açıkça istenmiyorsa dimension+filter diye
+  duplicate edilmez.
+
+Sonra **yalnız aynı 30-turn live gate** bir kez daha çalıştırılacak.
+Deterministik 8-test gate/full suite/corpus tekrar açılmayacak.
+
