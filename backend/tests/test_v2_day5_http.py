@@ -140,8 +140,9 @@ class SequenceLlm:
         self.outputs = list(outputs)
         self.calls = 0
 
-    def structured_text(self, system: str, user: str) -> str:
+    def structured_json(self, system: str, user: str, *, schema: dict, schema_name: str) -> str:
         self.calls += 1
+        assert schema_name == "dima_turn_interpreter_transport_v1"
         if not self.outputs:
             raise AssertionError("unexpected LLM call")
         output = self.outputs.pop(0)
@@ -377,19 +378,26 @@ def test_real_http_day6_research_brief_ready_stops_before_data_execution(v2_clie
     llm = SequenceLlm([
         {
             "dialogue_act": "REPORT_REQUEST",
-            "research_request": {
-                "time_mentions": [{"text": "bu yıl", "kind": "time"}],
-                "goals": [],
+            "research_graph": {
+                "surfaces": [
+                    {"surface_id": "s-time", "text": "bu yıl", "kind": "time"},
+                    {"surface_id": "s-focus", "text": "çıktı verimi", "kind": "metric"},
+                    {"surface_id": "s-line", "text": "üretim hattı", "kind": "dimension"}
+                ],
+                "operations": [],
                 "relationships": [
                     {
                         "text": "üretim hattı ile çıktı verimi ilişkisini incele",
-                        "focus_mentions": [{"text": "çıktı verimi", "kind": "metric"}],
-                        "counterpart_mentions": [
-                            {"text": "üretim hattı", "kind": "dimension"}
-                        ],
+                        "focus_ref": "s-focus",
+                        "focus_binding": "explicit",
+                        "counterpart_refs": ["s-line"],
+                        "polarity": "requested"
                     }
                 ],
-                "deliverables": [{"kind": "report", "text": "raporla"}],
+                "time_refs": ["s-time"],
+                "deliverables": [
+                    {"kind": "report", "text": "raporla", "polarity": "requested"}
+                ]
             },
             "presentation_request": "report",
         }
@@ -427,18 +435,25 @@ def test_real_http_day6_blocked_goal_is_preserved_without_query(v2_client, monke
     llm = SequenceLlm([
         {
             "dialogue_act": "REPORT_REQUEST",
-            "research_request": {
-                "goals": [],
+            "research_graph": {
+                "surfaces": [
+                    {"surface_id": "s-focus", "text": "çıktı verimi", "kind": "metric"},
+                    {"surface_id": "s-shift", "text": "vardiya", "kind": "dimension"}
+                ],
+                "operations": [],
                 "relationships": [
                     {
                         "text": "çıktı verimi ile vardiya ilişkisini incele",
-                        "focus_mentions": [{"text": "çıktı verimi", "kind": "metric"}],
-                        "counterpart_mentions": [
-                            {"text": "vardiya", "kind": "dimension"}
-                        ],
+                        "focus_ref": "s-focus",
+                        "focus_binding": "explicit",
+                        "counterpart_refs": ["s-shift"],
+                        "polarity": "requested"
                     }
                 ],
-                "deliverables": [{"kind": "report", "text": "raporla"}],
+                "time_refs": [],
+                "deliverables": [
+                    {"kind": "report", "text": "raporla", "polarity": "requested"}
+                ]
             },
             "presentation_request": "report",
         }
