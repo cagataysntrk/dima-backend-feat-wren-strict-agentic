@@ -1,8 +1,8 @@
 """Governed executor boundary for the bounded Day 6.5 Manager.
 
 Only declared Manager tools are executable. Standard analytics reuses the existing Core
-trust plane. Relationship/semantic adapters are injected explicitly; no hidden fallback
-or raw SQL path exists.
+trust plane. Manager proposals never become semantic/execution/completion truth by
+themselves.
 """
 
 from __future__ import annotations
@@ -11,10 +11,27 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from app.v2.acceptance import IntentAcceptanceGate
-from app.v2.manager_core_adapter import ManagerCoreAnalyticsAdapter
+from app.v2.manager_core_adapter import (
+    ManagerCoreAdapterError,
+    ManagerCoreAnalyticsAdapter,
+)
+from app.v2.manager_errors import (
+    ManagerAuthorityViolation,
+    ManagerProjectionIncomplete,
+    ManagerSemanticGap,
+)
+from app.v2.manager_models import (
+    ObligationStatus,
+    RepresentabilityDecision,
+)
 from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
 from app.v2.obligation_ledger import UserObligationLedgerService
+from app.v2.obligation_verifier import StandardObligationVerifier
+from app.v2.representability import RepresentabilityGate
 from app.v2.manager_tools import (
+    InspectEvidenceArgs,
+    ManagerAnalyticsObservation,
+    ManagerRelationshipObservation,
     ManagerToolCall,
     ManagerToolName,
     ProposeAcceptanceArgs,
@@ -22,8 +39,6 @@ from app.v2.manager_tools import (
     ResolveSemanticsArgs,
     RunAnalyticsArgs,
     RunRelationshipArgs,
-    InspectEvidenceArgs,
-    ManagerAnalyticsObservation,
 )
 from app.v2.models import EvidenceArtifact
 
@@ -47,7 +62,7 @@ class EvidenceStore:
         try:
             return self._items[artifact_id]
         except KeyError as exc:
-            raise KeyError(f"unknown evidence artifact: {artifact_id}") from exc
+            raise ManagerSemanticGap(f"unknown evidence artifact: {artifact_id}") from exc
 
 
 @dataclass(frozen=True)
@@ -73,6 +88,8 @@ class GovernedManagerExecutor:
         relationship: RelationshipToolExecutor | None = None,
         obligation_ledger: UserObligationLedgerService | None = None,
         capabilities: ManagerCapabilityRegistry | None = None,
+        representability: RepresentabilityGate | None = None,
+        obligation_verifier: StandardObligationVerifier | None = None,
     ) -> None:
         self._acceptance = acceptance
         self._core = core_analytics
@@ -82,10 +99,36 @@ class GovernedManagerExecutor:
         self._relationship = relationship
         self._obligations = obligation_ledger or UserObligationLedgerService()
         self._capabilities = capabilities or ManagerCapabilityRegistry()
+        self._representability = representability or RepresentabilityGate(self._capabilities)
+        self._obligation_verifier = obligation_verifier or StandardObligationVerifier()
 
     @property
     def evidence_store(self) -> EvidenceStore:
         return self._evidence
+
+    def _validate_derived_semantic_provenance(
+        self,
+        args: ResolveSemanticsArgs,
+        runtime,
+    ) -> None:
+        if args.provenance != "AGENT_DERIVED":
+            return
+        if runtime.accepted_contract is None or runtime.ledger is None:
+            raise ManagerAuthorityViolation(
+                "AGENT_DERIVED semantic resolution requires accepted contract"
+            )
+        parent = self._obligations.get(runtime.ledger, args.parent_obligation_id)
+        if parent.status == ObligationStatus.SUPERSEDED:
+            raise ManagerAuthorityViolation("derived semantic proposal parent is superseded")
+        evidence = self._evidence.get(args.evidence_ref)
+        if args.evidence_ref not in runtime.snapshot.evidence_refs:
+            raise ManagerAuthorityViolation(
+                "derived semantic proposal evidence is not attached to current run"
+            )
+        if not evidence.verified:
+            raise ManagerSemanticGap(
+                "derived semantic proposal requires verified execution evidence"
+            )
 
     def execute(self, call: ManagerToolCall, validated_args: Any, runtime) -> Any:
         if call.name == ManagerToolName.PROPOSE_ACCEPTANCE:
@@ -100,17 +143,18 @@ class GovernedManagerExecutor:
         if call.name == ManagerToolName.RESOLVE_SEMANTICS:
             assert isinstance(validated_args, ResolveSemanticsArgs)
             if self._semantic_resolution is None:
-                raise RuntimeError("resolve_semantics adapter not configured")
+                raise ManagerSemanticGap("resolve_semantics adapter not configured")
+            self._validate_derived_semantic_provenance(validated_args, runtime)
             return self._semantic_resolution.resolve(validated_args, runtime)
 
         if call.name == ManagerToolName.RUN_ANALYTICS:
             assert isinstance(validated_args, RunAnalyticsArgs)
             contract = runtime.accepted_contract
-            if contract is None:
-                raise RuntimeError("run_analytics requires accepted contract")
             ledger = runtime.ledger
-            if ledger is None:
-                raise RuntimeError("run_analytics requires obligation ledger")
+            if contract is None or ledger is None:
+                raise ManagerAuthorityViolation(
+                    "run_analytics requires accepted contract + obligation ledger"
+                )
 
             effective_args = validated_args
             if validated_args.derived_task_id is not None:
@@ -126,39 +170,91 @@ class GovernedManagerExecutor:
                     update={"obligation_ids": (validated_args.derived_task_id,)}
                 )
 
-            result = self._core.run(
-                effective_args,
-                task_id=f"task:{runtime.snapshot.tool_calls}",
-                accepted_contract=contract,
-                tenant_binding=self._context.tenant_binding,
-                principal=self._context.principal,
-                service=self._context.service,
-                runtime=self._context.tenant_runtime,
-                contract_store=self._context.contract_store,
-                session_id=self._context.session_id,
-                allowed_obligation_ids={item.obligation_id for item in runtime.ledger.items},
+            allowed_ids = {item.obligation_id for item in runtime.ledger.items}
+            unknown_ids = set(effective_args.obligation_ids) - allowed_ids
+            if unknown_ids:
+                raise ManagerAuthorityViolation(
+                    "run_analytics obligation outside ledger: "
+                    + ", ".join(sorted(unknown_ids))
+                )
+
+            # Wire RepresentabilityGate into real execution. A pure-standard accepted
+            # contract may execute only if this exact projection is lossless. Research
+            # contracts may still run standard sub-analyses inside the Manager loop.
+            projection = effective_args.to_standard_projection()
+            representation = self._representability.decide(
+                contract=contract,
+                ledger=runtime.ledger,
+                projection=projection,
             )
+            if (
+                not representation.research_capability_keys
+                and representation.decision != RepresentabilityDecision.STANDARD_LOSSLESS
+                and validated_args.derived_task_id is None
+            ):
+                raise ManagerProjectionIncomplete(
+                    "; ".join(representation.reasons)
+                    or "standard projection is not lossless"
+                )
+
+            ledger = runtime.ledger
+            for obligation_id in effective_args.obligation_ids:
+                item = self._obligations.get(ledger, obligation_id)
+                if item.status in {ObligationStatus.ACCEPTED, ObligationStatus.READY}:
+                    ledger = self._obligations.start(ledger, obligation_id)
+            runtime.replace_ledger(ledger)
+
+            try:
+                result = self._core.run(
+                    effective_args,
+                    task_id=f"task:{runtime.snapshot.tool_calls}",
+                    accepted_contract=contract,
+                    tenant_binding=self._context.tenant_binding,
+                    principal=self._context.principal,
+                    service=self._context.service,
+                    runtime=self._context.tenant_runtime,
+                    contract_store=self._context.contract_store,
+                    session_id=self._context.session_id,
+                    allowed_obligation_ids=allowed_ids
+                    | set(effective_args.obligation_ids),
+                )
+            except ManagerCoreAdapterError as exc:
+                raise ManagerSemanticGap(str(exc)) from exc
+
             if result.query_count > 1:
                 runtime.note_additional_data_queries(result.query_count - 1)
             self._evidence.put(result.evidence)
             runtime.attach_evidence(result.evidence.artifact_id)
 
             ledger = runtime.ledger
-            if ledger is None:
-                raise RuntimeError("run_analytics completed without obligation ledger")
+            verified_ids: list[str] = []
+            unverified_ids: list[str] = []
             for obligation_id in effective_args.obligation_ids:
                 item = self._obligations.get(ledger, obligation_id)
                 spec = self._capabilities.get(item.capability_key)
-                if (
-                    spec.lane == ManagerCapabilityLane.STANDARD
-                    and result.evidence.verified
-                ):
+                if spec.lane != ManagerCapabilityLane.STANDARD:
+                    unverified_ids.append(obligation_id)
+                    continue
+                proof = self._obligation_verifier.verify(
+                    obligation=item,
+                    projection=projection,
+                    ir=result.analytics_ir,
+                    evidence=result.evidence,
+                )
+                if proof.verified:
                     ledger = self._obligations.verify(
                         ledger,
                         obligation_id,
                         evidence_refs=(result.evidence.artifact_id,),
-                        verdict="governed standard analytics + QueryContract verified",
+                        verdict=(
+                            "capability-specific StandardProjection + AnalyticsIR + "
+                            "sealed QueryContract verified"
+                        ),
                     )
+                    verified_ids.append(obligation_id)
+                else:
+                    unverified_ids.append(obligation_id)
+
             runtime.replace_ledger(ledger)
             row_count = sum(
                 int(item.get("row_count") or 0)
@@ -166,16 +262,39 @@ class GovernedManagerExecutor:
             )
             return ManagerAnalyticsObservation(
                 evidence_ref=result.evidence.artifact_id,
-                verified=result.evidence.verified,
+                evidence_verified=result.evidence.verified,
                 query_count=result.query_count,
                 row_count=row_count,
+                obligations_verified=tuple(verified_ids),
+                obligations_unverified=tuple(unverified_ids),
                 limitations=result.evidence.limitations,
             )
 
         if call.name == ManagerToolName.RUN_RELATIONSHIP:
             assert isinstance(validated_args, RunRelationshipArgs)
+            ledger = runtime.ledger
+            if ledger is None:
+                raise ManagerAuthorityViolation("run_relationship requires obligation ledger")
+            item = self._obligations.get(ledger, validated_args.obligation_id)
+
             if self._relationship is None:
-                raise RuntimeError("run_relationship adapter not configured")
+                ledger = self._obligations.block(
+                    ledger,
+                    validated_args.obligation_id,
+                    status=ObligationStatus.UNSUPPORTED,
+                    reason=(
+                        "verified relationship execution path is not available yet; "
+                        "CrossDomainJoinGate required"
+                    ),
+                )
+                runtime.replace_ledger(ledger)
+                return ManagerRelationshipObservation(
+                    obligation_id=validated_args.obligation_id,
+                    available=False,
+                    status="UNSUPPORTED",
+                    reason="relationship trust-plane adapter unavailable",
+                )
+
             result = self._relationship.run(validated_args, runtime)
             artifact = getattr(result, "evidence", None)
             if isinstance(artifact, EvidenceArtifact):
@@ -191,4 +310,6 @@ class GovernedManagerExecutor:
             assert isinstance(validated_args, RequestClarificationArgs)
             return validated_args
 
-        raise RuntimeError(f"undeclared Manager tool reached executor: {call.name}")
+        raise ManagerAuthorityViolation(
+            f"undeclared Manager tool reached executor: {call.name}"
+        )
