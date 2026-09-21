@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 3 COMPLETE — DAY 4 READY**  
-**Kod fazı:** Day 3 / P6 COMPLETE — Day 4 / P7 henüz başlamadı.
+**Durum:** **DAY 4 ACTIVE — CONVERSATION / FOLLOW-UP / USER REPAIR**  
+**Kod fazı:** Day 4 / P7 ACTIVE.
 
 ---
 
@@ -1713,4 +1713,241 @@ Koddan önce Day4 ticket contract yaşayan deftere yazılacak.
 - Kapanış: Day5 canonical standard analytics flow'larında küçük ve temsilî end-to-end
   latency sample'ı; provider/infra failure correctness failure diye sayılmadan ölçülür.
 - Bu kayıt uğruna Day1 provider corpus'u veya Day3 focused gate **yeniden çalıştırılmadı**.
+
+
+
+## 11. DAY 4 ACTIVE TICKET — P7 / R9 + R6 CONVERSATION BOUNDARY
+
+**AMAÇ**  
+V2'yi tek-turn analitik uç olmaktan çıkarıp prior canonical IR, focus, clarification ve
+evidence/result anchor'larını taşıyan gerçek bir konuşma çekirdeğine dönüştürmek.
+Follow-up ve user repair'de yalnız kullanıcının bu turda değiştirdiği typed slot değişir;
+diğer canonical slotlar korunur. `RESULT_EXPLAIN` mevcut evidence yeterliyse yeni query
+açmaz; `SOCIAL` hiçbir data query çalıştırmaz.
+
+**USER SCENARIO — roadmap canonical**
+```text
+“bu yıl makine bazında OEE”
+→ “sadece RAM-3”
+→ “hayır son 3 ay”
+→ “bunu yorumla”
+→ “teşekkürler”
+```
+
+**ROADMAP**
+P7 / P7.1 / P7.2.
+
+**REPORT DAYANAK**
+- R9 — canonical conversation state: TopicFrame, FocusState, ClarificationState,
+  last contract, last IR; raw SQL memory değildir.
+- R6 Katman 1 — ConversationState/TopicFrame/FocusState/artifact anchors bounded context.
+- R6 Katman 4 — query gerekli mi kararının sahibi DialoguePolicy.
+- R3/R3A — prior IR + slot delta; USER_REPAIR typed diff; referential flow.
+- R26B NS3 — context preserved, yalnız ilgili slot değişir, explain mevcut evidence
+  yeterliyse query açmaz.
+
+**SENTINEL BORÇLAR**
+- V2-D011: `sadece RAM-3` refine-vs-repair special-case parser yazmadan doğru state
+  transition ile çözülmeli.
+- V2-D012: signed/free-text clarification sonrası original analytical request +
+  çözülmüş sibling hypotheses kaybolmadan yalnız ambiguous slot patch edilip standard
+  analytics devam etmeli.
+
+**NEW OWNER**
+- `ConversationCoordinatorV0`
+  - typed prior IR + typed current delta,
+  - FocusState / TopicFrame,
+  - pending analytical clarification state,
+  - last result/contract anchors,
+  - unrelated-slot preservation.
+- `DialoguePolicyV0`
+  - TALK
+  - CLARIFY
+  - EXPLAIN_EXISTING
+  - ANALYTIC_STANDARD
+  - UNSUPPORTED
+  kararının tek sahibi.
+- TurnInterpreter language owner olarak kalır.
+- SemanticResolver canonical binding owner olarak kalır.
+- CubePlanner query plan owner olarak kalır.
+
+**PERSISTENCE SINIRI**
+Day4 canonical conversation state HTTP turundan tura typed olarak taşınır ve response'ta
+geri döner. Existing `Conversation/ConversationMessage` altyapısı current-state/reuse
+kanıtı olarak incelendi; fakat roadmap Day14 persistence/resume işini ayrıca planladığı için
+Day4'te legacy AskResponse persistence formatını V2 semantic memory authority yapmayacağız.
+Raw SQL veya legacy payload canonical memory olmayacak.
+
+**MINIMUM CONVERSATION STATE**
+```text
+TopicFrameV0:
+  active topic/cube
+  last canonical IR identity
+
+FocusStateV0:
+  active metrics
+  active dimensions
+  active filters/entities
+  active period
+  last contract refs
+  last result anchor
+
+ClarificationState:
+  existing Day2 state
+
+PendingAnalyticalStateV0:
+  original TurnInterpretation
+  resolved sibling hypotheses
+  blocking clarification
+  base prior IR if operation refine/repair
+
+ConversationStateV2:
+  last_ir
+  topic
+  focus
+  pending analytical state
+  last result / contract anchors
+```
+
+**DELTA KURALI**
+For `ANALYTIC_REFINE` / `USER_REPAIR`:
+- current metric mention varsa metric slotu değişir; yoksa prior korunur,
+- current dimension mention varsa dimension slotu değişir; yoksa prior korunur,
+- current entity filter yalnız kendi canonical dimension'ındaki prior filter'ı değiştirir;
+  diğer filter dimensions korunur,
+- current time mention varsa period değişir; yoksa prior korunur,
+- ranking/comparison yalnız current typed request taşıyorsa değişir,
+- hiçbir slot raw text/SQL edit ile patch edilmez,
+- current resolved ref prior cube ile uyumsuzsa silent cross-cube coercion yok; typed
+  capability/follow-up failure.
+
+**USER_REPAIR CONTRACT**
+Interpreter `USER_REPAIR` çıktısında `analytical_request` yalnız düzeltilen/new typed
+surface slotları taşır; unrelated prior slotları model yeniden yazmaz.
+ConversationCoordinator bu delta'yı prior IR üstüne uygular.
+`correction_spans` tek başına hangi canonical slotun değişeceğini söylemiyorsa tahmin yok.
+
+**CLARIFICATION RESUME**
+Clarification oluştuğunda:
+```text
+original turn
++ all initial hypotheses
++ pending clarification
++ base prior IR (varsa)
+```
+typed state'te korunur.
+
+Signed/free-text resume:
+```text
+resolved ambiguous hypothesis
+→ pending hypothesis set içindeki aynı source slotu değiştir
+→ original turn yeniden yorumlanmaz
+→ NEW ise AnalyticsIRBuilder
+→ REFINE/REPAIR ise prior IR + typed delta
+```
+Client payload semantic truth sayılmaz; Day2 signed token integrity devam eder.
+
+**RESULT_EXPLAIN**
+Active verified result + contract anchor varsa:
+- query = 0
+- dry_plan = 0
+- existing result/evidence anchor response'a taşınır
+- Day4 finalizer/narration mimarisini gereksiz büyütmez; text synthesis Core MVP'de
+  ayrıca harden edilebilir.
+Active result yoksa yeni SQL uydurulmaz; typed no-active-result outcome.
+
+**SOCIAL**
+`SOCIAL` → TALK; query/dry-plan/cube_sql = 0.
+
+**DATASET-AGNOSTIC KURAL — YENİ KALICI İNVARIANT**
+Kullanıcı kararıyla `backend/AGENTS.md §12` eklendi
+(commit `495f7fe19c71b45c24269727269110ba76e6a6e9`).
+
+Day4 development/test buna özellikle uyar:
+- production code demo-boyahane / OEE / RAM-3 / parti / ciro literal'ını bilmez,
+- generic conversation mekanizması schema/MDL'den türetilir,
+- yalnız mevcut demo DB'ye uygun yapay sorular correctness kanıtı değildir,
+- deterministic contract test en az iki sentetik/permuted schema fixture'da aynı
+  conversation invariant'ını geçer,
+- canonical isimler fixture'da değiştirilince production code değişmez,
+- natural-language acceptance gerçekçi kısa/paraphrase follow-up'lardan oluşur,
+- real demo Wren smoke ek kanıttır; generic correctness'in tek kanıtı değildir.
+
+**TARGETED NATURAL THREAD A — synthetic manufacturing**
+```text
+“bu sene hatlara göre verimlilik nasıl?”
+→ “yalnız AX-17”
+→ “yok, son üç ay olsun”
+→ “bu sonucu biraz yorumlar mısın?”
+→ “sağ ol”
+```
+Canonical fixture names kullanıcı dilinden farklı tutulur
+(`efficiency_score_z / asset_axis_q / UNIT-Z17 / fact_alpha` gibi).
+
+**TARGETED NATURAL THREAD B — schema permutation**
+Aynı conversation invariants; canonical cube/metric/dimension/entity/time-axis adlarının
+tamamı değiştirilmiş ikinci fixture. Production code aynı kalır.
+
+**FILES TO TOUCH — beklenen**
+- `app/v2/models.py`
+- `app/v2/conversation.py` (new)
+- `app/v2/dialogue_policy.py` (new)
+- `app/v2/interpreter.py` — yalnız USER_REPAIR typed-delta prompt contract'ı
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `tests/test_v2_day4.py` (new focused)
+- gerekirse `eval/v2_day4_conversation_cases.yaml` + küçük live evaluator
+- bu yaşayan durum dosyası.
+
+**FILES NOT TO TOUCH**
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- sealed roadmap/report
+- historical Day0/1/2/3 measurement artefacts
+- removed `.github/workflows/backend-ci.yml`.
+
+**TARGETED TEST / DEMO — HIZ + BAĞIMSIZLIK**
+Tek development demetinin sonunda:
+1. two-schema metamorphic conversation contract,
+2. unrelated-slot preservation,
+3. filter same-dimension replacement / unrelated-filter preservation,
+4. result-explain query=0,
+5. pure-social query=0,
+6. signed/free-text clarification resume preserves sibling request slots,
+7. stale context/version fail-closed,
+8. production conversation source fixture literal ban,
+9. gerekiyorsa küçük real-provider realistic-language classification thread,
+10. real Wren yalnız ek smoke; sole oracle değil.
+
+Full suite/corpus yok.
+
+**KPI / EXIT**
+```text
+followup_correctness focused realistic set       >= 90%
+repair_slot_preservation regression              100%
+canonical 5-turn context break                   0
+pure_social_query_rate                           0
+result-explain unnecessary query                 0
+clarification resume sibling-slot loss           0
+schema-permutation invariant break               0
+production fixture-literal dependency            0
+```
+
+**STOP-THE-LINE**
+- prior SQL veya previous CubeQuery canonical conversation memory yapılırsa,
+- follow-up raw question ikinci kez parser ile çözülürse,
+- `RAM-3`, OEE, demo cube adları için production special-case yazılırsa,
+- repair'de current message'ta olmayan prior slotlar LLM tarafından yeniden yazdırılırsa,
+- pending clarification sibling hypotheses/request kaybedilirse,
+- RESULT_EXPLAIN mevcut result varken query açarsa,
+- SOCIAL query açarsa,
+- test yalnız demo DB'deki bilinen satırlara uyan sorularla yeşil yapılırsa,
+- fake schema tek correctness kanıtı olursa,
+- second/permuted schema aynı generic invariant'ı bozarsa,
+- Day14 persistence kapsamı Day4'e wholesale çekilirse.
 
