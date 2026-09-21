@@ -556,7 +556,7 @@ def test_acceptance_rejects_incomplete_standard_semantic_shape():
         context_version="ctx-1",
     )
     assert result.status.value == "REJECTED"
-    assert any("missing Resolver semantic kinds: metric" in reason for reason in result.reasons)
+    assert any("missing required semantic kinds: metric" in reason for reason in result.reasons)
 
 
 def test_excluded_ranking_does_not_require_operation_parameters():
@@ -633,7 +633,7 @@ def test_opposite_breakdown_polarity_conflicts_on_same_semantic_dimension():
         context_version="ctx-1",
     )
     assert result.status.value == "NEEDS_CLARIFICATION"
-    assert any("same semantic scope" in reason for reason in result.reasons)
+    assert any("conflicting semantic effect group_by/dimension" in reason for reason in result.reasons)
 
 
 def test_required_product_breakdown_and_excluded_region_breakdown_are_not_conflicting():
