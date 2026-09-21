@@ -663,3 +663,62 @@ Kanıtlanan şey:
 5. final completion/evidence iddiası governed gate'ten geliyor.
 
 Bu beş madde geçmeden Manager production architecture olarak seal edilmez.
+
+
+---
+
+## 18. Cognition / Semantic Authority Boundary Addendum — 2026-09-22
+
+Canonical ADR:
+`DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+
+DEV80 analizi, high-level Manager cognition ile downstream acceptance arasında sistematik
+bir kayıp gösterdi: expected ACCEPTED 66 vakanın 61'inde final Manager capability şekli
+doğruyken yalnız 46 vaka accepted olmuş; actual clarification 31, expected clarification
+14 olmuştur. Bu nedenle Day 6.5 validation artık yalnız Manager capability recall'ı değil,
+**cognition→authority boundary correctness** ölçer.
+
+Target boundary:
+
+```text
+Intent Draft
+→ deterministic catalog candidate generation
+→ exact verified binding OR bounded Semantic Linker SELECT/ABSTAIN
+→ deterministic Semantic Binding Gate
+→ omission-only Coverage Critic
+→ deterministic Capability/Conflict/Completeness
+→ AcceptedTurnContract
+```
+
+Manager path için validation invariants:
+- fuzzy/morphology/regex semantic authority = 0,
+- candidate-outside-set acceptance = 0,
+- exact ambiguous alias auto-pick = 0,
+- foreign/stale candidate/handle acceptance = 0,
+- Coverage semantic selection = 0,
+- Coverage user-clarification authority = 0,
+- LLM open_question automatic clarification = 0,
+- receipt-based intent completeness inference = 0,
+- model/transport failure counted as semantic NOT_ACCEPTED = 0.
+
+Temporal validation:
+```text
+language surface → typed temporal intent → deterministic calendar arithmetic
+```
+Raw-language regex parsing is not the target Manager temporal owner.
+
+Provider-free boundary proof:
+- run `35660792599`
+- tested SHA `e2b00eabff26c0e3ee93a7a2327b33f6615a048d`
+- compile PASS
+- **70/70 PASS**
+- real Wren trust-plane sentinel included.
+
+This proof establishes boundary mechanics only. Live linker/canary, DEV80 recertification,
+VALIDATION50 and external HIDDEN50 remain architecture-seal gates.
+
+Paid/live failure triage must classify before code changes:
+`MODEL_COGNITION | CONTRACT_UNDERCONSTRAINED | BINDING_AUTHORITY | EVAL_ORACLE |
+TRANSPORT_PROVIDER`.
+
+A named-case prompt/regex/morphology patch is not an admissible Day 6.5 response.
