@@ -2524,3 +2524,101 @@ legacy silent fallback              = 0
 **DAY5 BAŞLANGIÇ KARARI**  
 Önce product integration/finalization uygulanacak. Attack table **geliştirme sonrası exit gate**;
 Day5 geliştirmesinin yerine geçmez.
+
+
+---
+
+## 14. DAY 5 / P8 — EXIT ATTACK SONUCU VE AÇIK BORÇLAR (2026-09-21)
+
+**Focused Core gate**
+- workflow run: `35572034785`
+- result: **PASS**
+- interpreter role contract: PASS
+- resolver morphology safety: PASS
+- ranked-comparison contract: PASS
+- Day4 + Day5 Core contracts: PASS
+- frontend V2 typecheck: PASS
+- full/legacy corpus açılmadı.
+
+**Live /ask-v2 attack — son ölçülen durum**
+- workflow run: `35572057395`
+- provider: OpenRouter
+- gerçek kullanılan model: `deepseek/deepseek-v4-flash`
+- NOT: repo/environment variable workflow fallback'ını override ettiği için bu run
+  **Gemini Flash-Lite ölçümü değildir**.
+- synthetic/permuted semantic engine; demo DB correctness oracle değildir.
+- silent-wrong: **0**
+- unhandled 500: **0**
+- principal-aware execution: **100%**
+- standard p95: **8.3733s** → PASS (<=10s)
+- clarify p95: **2.4482s** → PASS (<=6s)
+- signed clarification resume filter binding: **PASS**
+- pure social query=0: **PASS**
+- topic switch old-focus bleed=0: **PASS**
+- paraphrase / typo safe path / ambiguity / ranking+comparison: **PASS**
+- tek blocker: natural repair turn
+  `"yok, son üç ay olsun"` language owner tarafından replacement time delta yanında
+  discourse/retraction surface'i semantic gap olarak da yayımlandı; sonuç
+  `semantic_gap` oldu. **Wrong official answer üretilmedi.**
+
+**Root classification**
+Bu failure'ın sahibi:
+`TurnInterpreter`.
+
+Downstream owner'lara özel patch YASAK:
+- SemanticResolver'a `yok` special-case eklenmeyecek.
+- ConversationCoordinator'a prompt-specific fallback eklenmeyecek.
+- Planner/Orchestrator exception branch eklenmeyecek.
+- test fixture'a göre production code yazılmayacak.
+
+Normatif düzeltme:
+- repair/retraction discourse marker business semantic mention değildir;
+- replacement slot typed delta olarak taşınır;
+- discourse marker `unresolved_mentions` üzerinden SemanticResolver'a gönderilmez;
+- owner fix yalnız TurnInterpreter contract/model boundary'sinde yapılır.
+
+**Clarification silent-wrong borcu — CLOSED**
+Önceki live attack'ta signed ambiguity resume seçilen ENTITY_VALUE'yu canonical filter
+slotuna taşımıyordu. `ConversationCoordinator.restore_pending()` içinde generic
+`UNKNOWN → resolved ENTITY_VALUE → FILTER` normalization ile kapatıldı.
+Son live run'da:
+- metric preserved: PASS
+- selected Segment=Prime filter bound: PASS
+- query_once: PASS
+- official_verified: true
+Bu düzeltme fixture literal veya resolver/planner fallback içermez.
+
+**LLM maliyet politikası — ACTIVE**
+Paid live-provider workflow artık **workflow_dispatch-only** olmalıdır; push başına ücretli
+LLM suite çalıştırmak yasaktır. Deterministic focused Core CI otomatik kalabilir.
+Live LLM yalnız:
+1. owner-level değişiklik sonrası,
+2. tek/nokta-atışı vaka veya küçük exit setiyle,
+3. sonuç karar değiştirecekse
+çalıştırılır.
+
+Fast-model hedefi:
+`google/gemini-2.5-flash-lite`.
+Smart escalation adayı:
+`gpt-5-mini`.
+Research modeli Day7 bake-off authority'sine bırakılır.
+
+**ÖNEMLİ MODEL PROVENANCE BORCU**
+`35572057395` Gemini testi sanılmamalıdır. GitHub Environment/Repository
+`DIMA_OPENROUTER_MODEL` variable'ı DeepSeek'i seçmiştir. Gemini karşılaştırması yapılacaksa
+manual live workflow model selection'ı explicit olarak Gemini'ye sabitlenmeli veya manual
+input ile seçilmeli; ardından yalnız gerekli küçük ölçüm çalıştırılmalıdır.
+
+**P8 release kararı**
+Day5 Core implementation **çalışıyor**, deterministic Core gate yeşildir ve önceki
+silent-wrong clarification kusuru kapanmıştır. Ancak P8 exit gate henüz **SEALED değildir**:
+natural repair blocker açık kaldığı için Day6/Research'e geçiş yapılmaz.
+
+**Açık borç sırası**
+1. TurnInterpreter owner boundary'sinde repair discourse-marker contract'ını kökten düzelt.
+2. Paid live workflow model provenance'ını explicit/yanlış-yorumlanamaz yap.
+3. Gemini Flash-Lite ile yalnız gerekli nokta-atışı repair + küçük smoke ölçümü yap.
+4. Doğruluk korunursa latency/cost kararını kaydet; bozulursa yalnız o zaman
+   `gpt-5-mini` validated escalation dene.
+5. P8 blocker'ların tamamı yeşil olduğunda Day5'i seal et ve ancak sonra Day6'yı aç.
+
