@@ -213,7 +213,8 @@ def test_canonical_typed_research_brief_preserves_all_five_must_goals():
     assert brief.deliverables[0].kind == PresentationKind.REPORT
     assert brief.deliverables[0].source_text == "raporla"
     assert brief.scope.time_surfaces == ("Son 12 ay",)
-    assert brief.required_domains == ("fact_alpha", "fact_beta", "fact_gamma")
+    assert set(brief.required_domains) == {"fact_alpha", "fact_beta", "fact_gamma"}
+    assert len(brief.required_domains) == 3
     assert brief.blocking_goal_ids == ()
     assert brief.status == ResearchBriefStatus.READY_FOR_RESEARCH
 
