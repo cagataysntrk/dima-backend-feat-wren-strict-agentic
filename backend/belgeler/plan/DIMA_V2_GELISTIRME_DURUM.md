@@ -2622,3 +2622,134 @@ natural repair blocker açık kaldığı için Day6/Research'e geçiş yapılmaz
    `gpt-5-mini` validated escalation dene.
 5. P8 blocker'ların tamamı yeşil olduğunda Day5'i seal et ve ancak sonra Day6'yı aç.
 
+
+
+---
+
+## 15. DAY 5 / P8 COMPLETE — FINAL SEAL (2026-09-21)
+
+**Karar**
+Day 5 / P8 **COMPLETE**. Core MVP release blocker'larının tamamı current code üzerinde
+deterministik gate + gerçek-provider HTTP attack ile geçti. Day 6 artık açılabilir.
+
+### Current code proof
+Owner-level son düzeltmeler:
+- `a2f3aed0f1e77faa5ab3f65ff94b86fa90fee2bd`
+  - repair/retraction discourse marker semantic mention olmaktan çıkarıldı.
+- `6b029bf6fc9649596aca6659e4c23e7036850a83`
+  - model typo surface'i normalize ederse exact user surface'e conservative realignment;
+  - explicit adjacent top-N sayısı model tarafından düşürülürse aynı grounded ranking
+    phrase'inden deterministik recovery.
+- `7460d5403e06ddf05e69869d34a5dab5e9d2a734`
+  - short-token conservative typo realignment eşiği düzeltildi.
+- `69ba65140d4748f4a9ebe01b3a92af3f06636140`
+  - typo grounding + explicit top-N recovery deterministic regression proof'ları.
+
+Bu düzeltmeler:
+- canonical/business semantic seçmez,
+- Resolver/Planner/Orchestrator'a prompt-specific fallback eklemez,
+- LLM semantic retry açmaz,
+- fixture literal içermez,
+- TurnInterpreter'ın tek language-owner sınırında kalır.
+
+### Deterministic Core gate
+- workflow: `v2-day5-core-mvp`
+- run: `35574230175`
+- head: `69ba65140d4748f4a9ebe01b3a92af3f06636140`
+- result: **SUCCESS**
+
+Kapsam:
+- interpreter role contracts
+- resolver morphology safety
+- ranked comparison contract
+- Day4 + Day5 Core contracts
+- frontend V2 typecheck
+
+### Final real-provider exit attack
+- workflow: `v2-day5-live-attack`
+- run: `35574379890`
+- head: `ac943a7e6a1d358714436cd3135832b95d9daa8e`
+- result: **SUCCESS**
+- provider: OpenRouter
+- exact model provenance:
+  `google/gemini-2.5-flash-lite`
+- source policy:
+  `real_http_real_provider_synthetic_semantic_engine_no_demo_db`
+- artifact: `10626619366`
+- artifact digest:
+  `sha256:cc7d50e50c1649f044c31119ed25c9a4ba21069312970fbf75b2e53edaa3b9ca`
+
+Attack sonuçları:
+```text
+paraphrase                         PASS
+typo safe resolve/clarify          PASS
+ranking + comparison               PASS
+blocking ambiguity                 PASS
+signed clarification resume        PASS
+thread base                        PASS
+follow-up filter                   PASS
+user repair                        PASS
+result explain query=0             PASS
+pure social query=0                PASS
+topic switch old-focus bleed=0     PASS
+```
+
+Release gate:
+```text
+all_attack_records_pass            true
+P0 silent-wrong                    0
+unhandled 500                      0
+principal-aware execution          100%
+standard E2E p95                   5.6234s   <= 10s PASS
+clarify p95                        0.9789s   <= 6s  PASS
+blocking ambiguity auto-select     0
+clarification query                0
+pure social query                  0
+repair unrelated-slot loss         0
+canonical thread context break     0
+dead/broken Core response          0
+legacy silent fallback             0
+```
+
+### Gemini model decision
+Day5 fast-path measurement artık gerçek provenance ile:
+`google/gemini-2.5-flash-lite`.
+
+DeepSeek önceki ölçümlere göre standard/clarify latency'nin ciddi kısmı düşmüştür;
+Day5 final gate Gemini ile doğrudan geçmiştir. Bu nedenle Day5 hot-path için GPT-5-mini
+escalation denemesi **gereksizdir** ve ek ücretli test yapılmayacaktır.
+
+Bu seal:
+- bütün Dima için gelecekteki `fast/smart/research` router tasarımını çözmüş saymaz;
+- yalnız V2 Day5 Core hot-path model authority/provenance'ını kapatır.
+ModelRouter/ModelPolicy genişletmesi ilgili sonraki roadmap fazında tek-owner olarak ele alınır.
+
+### Paid-test discipline
+Tek final Gemini exit run'ını connector dispatch desteği olmadığı için geçici
+one-shot sentinel ile tetikledik. Koşu başladıktan hemen sonra:
+- live workflow tekrar `workflow_dispatch-only` yapıldı;
+- sentinel silindi;
+- cleanup commitleri:
+  - `00a3de6cab044c73392dcb0bb65317cafa8293be`
+  - `d537a9691ec6d5eba5ccd2f9a82e24b5194e96e7`
+
+Current branch'te paid live workflow **manual-only** durumdadır. Push başına ücretli LLM
+suite çalışmaz.
+
+### P8 EXIT
+```text
+Day5 Core implementation               COMPLETE
+deterministic Core gate                PASS
+real-provider Core attack              PASS
+silent wrong                           0
+unhandled 5xx                          0
+principal propagation                  PASS
+standard p95                           PASS
+clarify p95                            PASS
+Gemini provenance                      VERIFIED
+paid CI accidental auto-run            CLOSED
+```
+
+**NEXT**
+Day 6 açılabilir. Day6 başlamadan roadmap'teki ilgili P bölümü ve rapordaki referans
+bölümler yeniden okunacak; Day5'e yeni feature geri çekilmeyecek.
