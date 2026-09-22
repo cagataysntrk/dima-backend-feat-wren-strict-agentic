@@ -1164,7 +1164,37 @@ class ResearchTask(FrozenModel):
     question_id: str
     task_kind: str
     input_refs: tuple[str, ...] = ()
+    origin: Literal["USER_SEED", "AGENT_DERIVED"] = "USER_SEED"
+    parent_task_id: str | None = None
+    parent_obligation_id: str | None = None
+    trigger_evidence_ref: str | None = None
+    branch_depth: int = Field(default=0, ge=0)
     state: Literal["pending", "running", "complete", "failed", "blocked"] = "pending"
+
+    @model_validator(mode="after")
+    def _day7_provenance(self):
+        if self.origin == "USER_SEED":
+            if (
+                self.parent_task_id is not None
+                or self.parent_obligation_id is not None
+                or self.trigger_evidence_ref is not None
+                or self.branch_depth != 0
+            ):
+                raise ValueError(
+                    "USER_SEED ResearchTask cannot carry derived provenance"
+                )
+        else:
+            if (
+                self.parent_task_id is None
+                or self.parent_obligation_id is None
+                or self.trigger_evidence_ref is None
+                or self.branch_depth < 1
+            ):
+                raise ValueError(
+                    "AGENT_DERIVED ResearchTask requires parent task/obligation, "
+                    "trigger evidence and branch_depth >= 1"
+                )
+        return self
 
 
 class EvidenceArtifact(FrozenModel):
