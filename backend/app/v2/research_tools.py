@@ -381,6 +381,40 @@ class ResearchToolRunner:
     def __init__(self, registry: ResearchToolRegistry | None = None) -> None:
         self._registry = registry or ResearchToolRegistry()
 
+    @staticmethod
+    def _execution_identity(*, principal: Principal, executor) -> dict[str, object]:
+        governed = getattr(executor, "principal", None)
+        tenant_binding = str(getattr(executor, "tenant_binding", "") or "")
+        if governed is None:
+            raise ResearchToolContractError(
+                "missing governed executor principal: Research execution fail-closed"
+            )
+        if not tenant_binding:
+            raise ResearchToolContractError(
+                "missing governed executor tenant binding: Research execution fail-closed"
+            )
+
+        if (
+            principal.user_id != governed.user_id
+            or principal.is_superadmin != governed.is_superadmin
+            or principal.tenant_id != governed.tenant_id
+        ):
+            raise ResearchToolContractError(
+                "Research principal mismatch between runner and governed executor"
+            )
+
+        for bound in (principal, governed):
+            if not bound.is_superadmin and bound.tenant_id != tenant_binding:
+                raise ResearchToolContractError(
+                    "Research principal tenant does not match governed execution tenant"
+                )
+
+        return {
+            "principal_subject": principal.user_id,
+            "tenant_binding": tenant_binding,
+            "superadmin": bool(principal.is_superadmin),
+        }
+
     def tool_id_for_task(self, task: ResearchTask) -> str:
         try:
             kind = ResearchTaskKind(task.task_kind)
@@ -407,6 +441,11 @@ class ResearchToolRunner:
             call=call,
             principal=principal,
         )
+        assert principal is not None
+        execution_identity = self._execution_identity(
+            principal=principal,
+            executor=executor,
+        )
 
         accepted = runtime.accepted_contract
         if accepted is None:
@@ -423,6 +462,7 @@ class ResearchToolRunner:
             {
                 "tool_id": tool_id,
                 "call": call.model_dump(mode="json"),
+                "execution_identity": execution_identity,
             }
         )
         # Every executable Research task gets a lifecycle/deadline lease.  The Manager
