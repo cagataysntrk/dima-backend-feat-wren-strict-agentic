@@ -106,11 +106,12 @@
 Sıra bağlayıcıdır:
 
 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md` — nerede kaldık, açık borçlar, sıradaki iş.
-2. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — Day 6.5 kesin closure sırası ve üç-mode front door.
-3. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md` — **icra sırası authority**.
-4. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md` — **hedef mimari ve gerekçe authority**.
-5. `MIMARI.md` — mevcut çalışan sistem, reuse edilecek altyapı ve güvenlik/değişmezler.
-6. Yalnız aktif ticket'ın dokunduğu kod ve testler.
+2. `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — current Day 6.5 runtime-kernel / STANDARD|RESEARCH uygulama authority.
+3. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — Day 6.5 kesin closure sırası ve trust-plane sınırları.
+4. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md` — **icra sırası authority**.
+5. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md` — **hedef mimari ve gerekçe authority**.
+6. `MIMARI.md` — mevcut çalışan sistem, reuse edilecek altyapı ve güvenlik/değişmezler.
+7. Yalnız aktif ticket'ın dokunduğu kod ve testler.
 
 Eski operasyon belgeleri V2'nin `nerede kaldık` kaynağı değildir.
 
