@@ -597,3 +597,73 @@ def test_contextual_chain_supplies_accepted_user_question_lineage_not_only_last_
         assert "Sonuç:" not in " ".join(third_call["source_questions"])
     finally:
         runs.shutdown(interrupt=False)
+
+
+
+def test_contextual_clarification_preserves_accepted_source_for_new_child_run():
+    ambiguous = "Peki hangi dönemde?"
+    clarification_answer = "Geçen ay"
+    waiting_resolution = FastFollowupResolution(
+        status=FastFollowupStatus.CLARIFICATION_REQUIRED,
+        reason="temporal period required",
+    )
+    clarified_resolution = FastFollowupResolution(
+        status=FastFollowupStatus.CONTEXTUAL,
+        inherited_slots=(
+            FastContextSlot.ENTITY,
+            FastContextSlot.AGGREGATION,
+            FastContextSlot.MEASURE,
+        ),
+        replaced_slots=(FastContextSlot.TEMPORAL,),
+        effective_draft=draft(
+            temporal=TemporalKind.PREVIOUS_MONTH,
+            days=None,
+        ),
+    )
+    followup = ScriptedFollowup(
+        {
+            ambiguous: waiting_resolution,
+            clarification_answer: clarified_resolution,
+        }
+    )
+    service, _, runs, followup, _, _ = make_service(followup=followup)
+    try:
+        conversation = service.create_conversation(principal=principal())
+        first = submit_and_complete(service, conversation.conversation_id, Q1)
+        assert first.accepted_context is not None
+
+        waiting = service.submit_turn(
+            conversation.conversation_id,
+            FastTurnCreateRequest(question=ambiguous),
+            principal=principal(),
+        )
+        waiting = wait_turn(
+            service,
+            waiting.turn_id,
+            {FastRunState.WAITING_CLARIFICATION},
+        )
+        assert waiting.context_source_turn_ids == (first.turn_id,)
+
+        answered = service.submit_turn(
+            conversation.conversation_id,
+            FastTurnCreateRequest(
+                question=clarification_answer,
+                clarifies_run_id=waiting.run_id,
+            ),
+            principal=principal(),
+        )
+        answered = wait_turn(
+            service,
+            answered.turn_id,
+            {FastRunState.COMPLETED},
+        )
+
+        old_run = runs.get_run(waiting.run_id, principal=principal())
+        assert old_run.state == FastRunState.CANCELLED
+        assert answered.run_id != waiting.run_id
+        assert answered.context_source_turn_ids == (first.turn_id,)
+        assert followup.calls[-1]["accepted_context"] is not None
+        assert followup.calls[-1]["source_questions"] == (Q1, ambiguous)
+        assert followup.calls[-1]["clarification_question"] == ambiguous
+    finally:
+        runs.shutdown(interrupt=False)
