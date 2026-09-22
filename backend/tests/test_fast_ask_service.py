@@ -10,6 +10,7 @@ from app.fast.ask_models import (
     AggregationKind,
     AskDraft,
     AskOutcomeStatus,
+    DraftStatus,
     DraftTemporalIntent,
     SelectionDecision,
     SelectionPurpose,
@@ -57,6 +58,8 @@ class ScriptedCognition:
         else:
             raise AssertionError(question)
         return AskDraft(
+            status=DraftStatus.SUPPORTED,
+            unsupported_reason=None,
             search_terms=("orders",),
             aggregation=aggregation,
             measure_hint=measure,
@@ -125,6 +128,12 @@ class FakeGateway:
 
     def search(self, *, term_queries=(), semantic_queries=()):
         assert term_queries == ("orders",)
+        assert len(semantic_queries) == 1
+        assert semantic_queries[0] in {
+            QUESTION_COUNT,
+            QUESTION_SUM,
+            QUESTION_BREAKDOWN,
+        }
         return SearchResponse(
             data=(
                 {
@@ -383,4 +392,84 @@ def test_invented_field_handle_fails_closed_before_construct_or_execute():
     assert response.status == AskOutcomeStatus.FAILED
     assert response.error is not None
     assert response.error.code == "COGNITION_INVALID"
+    assert gateway.constructed_queries == []
+
+
+
+class UnsupportedCognition(ScriptedCognition):
+    def draft(self, *, question: str) -> AskDraft:
+        return AskDraft(
+            status=DraftStatus.UNSUPPORTED,
+            unsupported_reason="aggregation is outside FT-003 COUNT/SUM",
+            search_terms=("orders",),
+            aggregation=AggregationKind.COUNT,
+            measure_hint=None,
+            breakdown_hint=None,
+            temporal=DraftTemporalIntent(
+                kind=TemporalKind.NONE,
+                days=None,
+                start_date=None,
+                end_date=None,
+            ),
+        )
+
+
+def test_unsupported_draft_stops_before_metadata_or_execution():
+    gateway = FakeGateway(response=_response(QUESTION_COUNT))
+    service = FastAskService(
+        cognition=UnsupportedCognition(QUESTION_COUNT),
+        gateway_factory=lambda principal: gateway,
+    )
+    request_cls = __import__("app.fast.ask_models", fromlist=["FastAskRequest"]).FastAskRequest
+
+    response = service.ask(
+        request_cls(question="Siparişlerin ortalama tutarı nedir?"),
+        principal=principal(),
+    )
+
+    assert response.status == AskOutcomeStatus.UNSUPPORTED
+    assert response.error is not None
+    assert response.error.code == "UNSUPPORTED"
+    assert gateway.constructed_queries == []
+
+
+class AmbiguousGateway(FakeGateway):
+    def search(self, *, term_queries=(), semantic_queries=()):
+        return SearchResponse(
+            data=(
+                {
+                    "type": "table",
+                    "id": 1,
+                    "uri": "metabase://table/1",
+                    "name": "orders",
+                    "database_id": 1,
+                },
+                {
+                    "type": "table",
+                    "id": 2,
+                    "uri": "metabase://table/2",
+                    "name": "orders_archive",
+                    "database_id": 1,
+                },
+            ),
+            total_count=2,
+        )
+
+
+def test_multiple_resource_candidates_fail_closed_even_if_model_guesses():
+    gateway = AmbiguousGateway(response=_response(QUESTION_COUNT))
+    service = FastAskService(
+        cognition=ScriptedCognition(QUESTION_COUNT),
+        gateway_factory=lambda principal: gateway,
+    )
+    request_cls = __import__("app.fast.ask_models", fromlist=["FastAskRequest"]).FastAskRequest
+
+    response = service.ask(
+        request_cls(question=QUESTION_COUNT, as_of_date=date(2026, 9, 7)),
+        principal=principal(),
+    )
+
+    assert response.status == AskOutcomeStatus.CLARIFICATION_REQUIRED
+    assert response.error is not None
+    assert response.error.code == "AMBIGUOUS_RESOURCE"
     assert gateway.constructed_queries == []

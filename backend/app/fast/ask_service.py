@@ -14,6 +14,7 @@ from app.fast.ask_errors import FastAskError, FastAskErrorCode
 from app.fast.ask_models import (
     AggregationKind,
     AskOutcomeStatus,
+    DraftStatus,
     FastAskErrorPayload,
     FastAskRequest,
     FastAskResponse,
@@ -99,13 +100,21 @@ class FastAskService:
         question = request.question.strip()
         try:
             draft = self._cognition.draft(question=question)
+            if draft.status == DraftStatus.UNSUPPORTED:
+                raise FastAskError(
+                    FastAskErrorCode.UNSUPPORTED,
+                    draft.unsupported_reason or "request is outside the FT-003 supported family",
+                )
             temporal_window = bind_temporal(
                 draft.temporal,
                 as_of_date=request.as_of_date,
             )
 
             with self._gateway_factory(principal) as gateway:
-                search = gateway.search(term_queries=draft.search_terms)
+                search = gateway.search(
+                    term_queries=draft.search_terms,
+                    semantic_queries=(question,),
+                )
                 registry = ResourceRegistry(
                     search.data,
                     max_candidates=self._max_resource_candidates,
@@ -120,14 +129,24 @@ class FastAskService:
                     question=question,
                     candidates=registry.candidates,
                 )
+                offered_resources = {item.handle for item in registry.candidates}
+                if (
+                    resource_decision.selected_handle is not None
+                    and resource_decision.selected_handle not in offered_resources
+                ):
+                    raise FastAskError(
+                        FastAskErrorCode.COGNITION_INVALID,
+                        "cognition selected a handle that was not offered",
+                    )
+                if len(registry.candidates) > 1:
+                    raise FastAskError(
+                        FastAskErrorCode.AMBIGUOUS_RESOURCE,
+                        "multiple permitted resources remain plausible; clarification required",
+                    )
                 resource_handle = _selected_handle(
                     decision_handle=resource_decision.selected_handle,
-                    offered_handles={item.handle for item in registry.candidates},
-                    missing_code=(
-                        FastAskErrorCode.AMBIGUOUS_RESOURCE
-                        if len(registry.candidates) > 1
-                        else FastAskErrorCode.CLARIFICATION_REQUIRED
-                    ),
+                    offered_handles=offered_resources,
+                    missing_code=FastAskErrorCode.CLARIFICATION_REQUIRED,
                     missing_message="resource selection requires clarification",
                 )
 

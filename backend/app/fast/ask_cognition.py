@@ -70,11 +70,17 @@ class StructuredJsonFastCognition:
         system = (
             "You are Dima Fast Ask cognition. Return only the requested JSON schema. "
             "Do not generate SQL, MBQL, database IDs, table IDs, field IDs, or answer numbers. "
-            "Supported aggregation is COUNT or SUM. Supported time kinds are NONE, "
-            "LAST_N_DAYS, CURRENT_MONTH, PREVIOUS_MONTH, ABSOLUTE_DATE_RANGE. "
-            "Search terms should help find the relevant business table in metadata. "
-            "For SUM provide a short measure hint; for COUNT measure_hint must be null. "
-            "breakdown_hint is null unless the user explicitly asks for grouping."
+            "FT-003 supports only row COUNT or SUM of one measure, with optional one breakdown "
+            "and optional supported time period. Set status=SUPPORTED only when the request is "
+            "fully representable by that family. If the request needs AVG, ratio, distinct count, "
+            "multiple measures, joins, arbitrary filters, forecasting, or another unsupported "
+            "operation, set status=UNSUPPORTED with a concise unsupported_reason; do not reinterpret "
+            "it as COUNT or SUM. For an UNSUPPORTED draft use a structurally valid neutral COUNT "
+            "placeholder because execution will stop before metadata/query work. Supported time "
+            "kinds are NONE, LAST_N_DAYS, CURRENT_MONTH, PREVIOUS_MONTH, ABSOLUTE_DATE_RANGE. "
+            "Search terms should describe the relevant business entity for metadata retrieval. "
+            "For supported SUM provide a short measure hint; for supported COUNT measure_hint must "
+            "be null. breakdown_hint is null unless the user explicitly asks for grouping."
         )
         return self._call(
             system=system,
@@ -91,9 +97,11 @@ class StructuredJsonFastCognition:
     ) -> SelectionDecision:
         public = [candidate.model_dump(mode="json") for candidate in candidates]
         system = (
-            "Choose exactly one opaque resource handle from the provided candidates when the "
-            "user intent clearly identifies it. Otherwise return selected_handle null. "
-            "Never invent a handle and never infer raw IDs."
+            "Choose exactly one opaque resource handle only when the user's wording contains "
+            "enough explicit distinguishing information to identify one candidate over every "
+            "other candidate. Candidate order, rank, generic familiarity, or a merely plausible "
+            "match is not sufficient evidence. If two or more candidates remain materially "
+            "plausible, return selected_handle null. Never invent a handle and never infer raw IDs."
         )
         return self._call(
             system=system,

@@ -17,6 +17,7 @@ from app.fast.ask_errors import FastAskError, FastAskErrorCode
 from app.fast.ask_models import (
     AggregationKind,
     AskDraft,
+    DraftStatus,
     DraftTemporalIntent,
     SelectionDecision,
     SelectionPurpose,
@@ -52,6 +53,8 @@ class BrowserCognition:
             measure = None
 
         return AskDraft(
+            status=DraftStatus.SUPPORTED,
+            unsupported_reason=None,
             search_terms=("orders",),
             aggregation=aggregation,
             measure_hint=measure,

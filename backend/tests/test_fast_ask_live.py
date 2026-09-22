@@ -14,6 +14,7 @@ from app.fast.application import create_fast_application
 from app.fast.ask_models import (
     AggregationKind,
     AskDraft,
+    DraftStatus,
     DraftTemporalIntent,
     SelectionDecision,
     SelectionPurpose,
@@ -54,6 +55,8 @@ class LabCognition:
             raise AssertionError(f"unexpected live question: {question}")
 
         return AskDraft(
+            status=DraftStatus.SUPPORTED,
+            unsupported_reason=None,
             search_terms=("orders",),
             aggregation=aggregation,
             measure_hint=measure,

@@ -13,6 +13,11 @@ class FrozenModel(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
+class DraftStatus(StrEnum):
+    SUPPORTED = "SUPPORTED"
+    UNSUPPORTED = "UNSUPPORTED"
+
+
 class AggregationKind(StrEnum):
     COUNT = "COUNT"
     SUM = "SUM"
@@ -65,6 +70,8 @@ class DraftTemporalIntent(FrozenModel):
 
 
 class AskDraft(FrozenModel):
+    status: DraftStatus
+    unsupported_reason: str | None
     search_terms: tuple[str, ...] = Field(min_length=1, max_length=4)
     aggregation: AggregationKind
     measure_hint: str | None
@@ -75,6 +82,12 @@ class AskDraft(FrozenModel):
     def _draft_shape(self):
         if any(not term.strip() for term in self.search_terms):
             raise ValueError("search_terms must be non-empty")
+        if self.status == DraftStatus.UNSUPPORTED:
+            if not (self.unsupported_reason or "").strip():
+                raise ValueError("UNSUPPORTED draft requires unsupported_reason")
+            return self
+        if self.unsupported_reason is not None:
+            raise ValueError("SUPPORTED draft must not carry unsupported_reason")
         if self.aggregation == AggregationKind.SUM and not (self.measure_hint or "").strip():
             raise ValueError("SUM requires measure_hint")
         if self.aggregation == AggregationKind.COUNT and self.measure_hint is not None:

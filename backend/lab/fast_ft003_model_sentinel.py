@@ -18,6 +18,7 @@ from app.config import Settings
 from app.fast.ask_cognition import StructuredJsonFastCognition
 from app.fast.ask_models import (
     AggregationKind,
+    DraftStatus,
     FieldCandidate,
     ResourceCandidate,
     SelectionPurpose,
@@ -188,6 +189,13 @@ def main() -> int:
                     draft = cognition.draft(question=case["question"])
                     observed["draft"] = draft.model_dump(mode="json")
                     observed["checks"]["schema_valid"] = True
+                    observed["checks"]["supported_status_correct"] = (
+                        draft.status == DraftStatus.SUPPORTED
+                    )
+                    if draft.status != DraftStatus.SUPPORTED:
+                        raise RuntimeError(
+                            f"supported request classified as {draft.status.value}: {draft.unsupported_reason}"
+                        )
                     observed["checks"]["aggregation_correct"] = (
                         draft.aggregation == case["aggregation"]
                     )
@@ -206,7 +214,10 @@ def main() -> int:
                         else True
                     )
 
-                    search = gateway.search(term_queries=draft.search_terms)
+                    search = gateway.search(
+                        term_queries=draft.search_terms,
+                        semantic_queries=(case["question"],),
+                    )
                     registry = ResourceRegistry(search.data)
                     observed["checks"]["search_terms_useful"] = any(
                         item.name.lower() == "orders" for item in registry.candidates
@@ -352,23 +363,29 @@ def main() -> int:
                     "error": f"{type(exc).__name__}: {exc}",
                 }
 
-            # FT-003 supports COUNT/SUM only. A request for AVG must not be silently
-            # coerced into one of those operations. Current contract is intentionally
-            # measured as-is; if this fails, classify the contract gap before patching.
+            # FT-003 supports COUNT/SUM only. AVG must be explicitly typed UNSUPPORTED,
+            # never coerced into an executable SUM/COUNT draft.
             unsupported_question = "Siparişlerin ortalama tutarı nedir?"
             try:
                 unsupported = cognition.draft(question=unsupported_question)
                 receipt["unsupported_case"] = {
                     "question": unsupported_question,
                     "observed_draft": unsupported.model_dump(mode="json"),
-                    "passed": False,
-                    "reason": "unsupported AVG request was coerced into the supported AskDraft schema",
+                    "passed": (
+                        unsupported.status == DraftStatus.UNSUPPORTED
+                        and bool((unsupported.unsupported_reason or "").strip())
+                    ),
+                    "reason": (
+                        "typed unsupported"
+                        if unsupported.status == DraftStatus.UNSUPPORTED
+                        else "unsupported request was coerced into an executable supported draft"
+                    ),
                 }
             except Exception as exc:
                 receipt["unsupported_case"] = {
                     "question": unsupported_question,
-                    "passed": True,
-                    "reason": "unsupported request did not produce an executable supported draft",
+                    "passed": False,
+                    "reason": "unsupported request did not produce the typed UNSUPPORTED contract",
                     "observed_error": f"{type(exc).__name__}: {exc}",
                 }
 
