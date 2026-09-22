@@ -606,3 +606,79 @@ The frozen J1 provider-free contract suite is the relevant eval-family proof: `3
 
 status:
 `CLOSED — eval-only classifier fixed at ebf229545ae91b9b0e202810ed8acb17eee62f86; provider-free run 35709387862 = 8/8 PASS; stored full-run artifacts reclassified without paid rerun; product semantic/temporal/authority code untouched.`
+
+
+---
+
+## Receipt — D65-J1T-TERRA-001 — conditional run transport RED
+
+run_id: `35709612688`
+
+tested_sha: `4a66d979a47cca4e7f499aabf383d2b0b7e26dfc`
+
+observed_failure:
+All Terra J1T-CHOICE calls failed before semantic evaluation; contract-fidelity did not start.
+
+failure_stage:
+`OpenRouter chat request → HTTP 402`
+
+failure_class: `TRANSPORT/PROVIDER`
+
+classification_evidence:
+- 58/58 J1T choice attempts returned HTTP 402.
+- OpenRouter error states the request reserved up to 65536 output tokens while the API-key
+  spend limit could fund only a smaller maximum.
+- No Terra choice was returned; evaluable_case_count = 0.
+- Corpus, prompt, ontology and product code were not implicated.
+
+single_owner:
+`backend/lab/v2_day6_5_j1_benchmark.py` chat transport output-token budget.
+
+root_cause:
+The bounded-decision lab request omitted an explicit output token cap, allowing provider/model
+defaults to advertise an economically irrelevant 65536-token maximum for a tiny JSON schema.
+
+failure_family:
+Bounded structured eval calls to higher-cost chat models where provider billing/credit checks use
+the maximum possible output reservation rather than expected tiny JSON output.
+
+why_not_model_only:
+No model response exists.
+
+why_not_oracle:
+Expected labels were never evaluated.
+
+why_not_transport:
+It IS transport/provider/environment; HTTP 402 is explicit.
+
+forbidden_patch_alternatives:
+- adding Terra-specific prompt wording
+- removing frozen cases
+- changing expected outputs
+- increasing semantic authority
+- running J1S Terra
+- changing product temporal code
+
+allowed_files_to_touch:
+- `backend/lab/v2_day6_5_j1_benchmark.py`
+- focused J1 benchmark tests
+- eval receipts/workflow only
+
+files_not_to_touch:
+- J1S/J1T frozen corpora
+- `app/v2/temporal_intent.py`
+- `app/v2/semantic_linker.py`
+- BindingGate / authority code
+- production topology
+
+invariant_being_fixed:
+Bounded decision JSON transport uses an explicit small output budget independent of model price.
+
+focused_proof:
+PENDING provider-free.
+
+family_regression_proof:
+PENDING provider-free.
+
+status:
+`FIX IMPLEMENTED / PROOF PENDING`.

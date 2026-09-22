@@ -33,6 +33,7 @@ FREEZE = EVAL / "v2_day6_5_j1_freeze_manifest.json"
 
 CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
 DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
+CHAT_MAX_TOKENS = 512
 PRIMARY_MODELS = (
     "google/gemini-2.5-flash-lite",
     "typesafe/jev-1.13",
@@ -235,6 +236,7 @@ def _chat_decide(
         },
         "provider": {"allow_fallbacks": False},
         "reasoning": {"enabled": model == REFERENCE_MODEL},
+        "max_tokens": CHAT_MAX_TOKENS,
     }
     started = time.perf_counter()
     try:
@@ -432,6 +434,7 @@ def _chat_temporal_contract(
         },
         "provider": {"allow_fallbacks": False},
         "reasoning": {"enabled": model == REFERENCE_MODEL},
+        "max_tokens": CHAT_MAX_TOKENS,
     }
     started = time.perf_counter()
     try:

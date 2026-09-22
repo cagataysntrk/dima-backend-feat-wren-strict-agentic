@@ -434,3 +434,19 @@ product-code touch  = 0
 ```
 
 `D65-J1-FULL-001` is CLOSED.
+
+
+## Terra conditional attempt 1 — transport invalid
+
+```text
+run                  = 35709612688
+tested SHA           = 4a66d979a47cca4e7f499aabf383d2b0b7e26dfc
+semantic evidence    = NONE
+J1T choice evaluable = 0
+failure              = HTTP 402 TRANSPORT/PROVIDER
+root cause           = missing explicit bounded max_tokens; provider reserved 65536
+corpus/prompt change = 0
+product-code touch   = 0
+```
+
+This run is not Terra model-quality evidence and does not count against the candidate.

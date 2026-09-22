@@ -308,3 +308,14 @@ def test_invalid_typed_contract_stays_in_semantic_denominator(monkeypatch):
     assert metrics["contract_valid_rate"] == 0.0
     assert metrics["exact_contract_accuracy"] == 0.0
     assert metrics["temporal_production_candidate"] is False
+
+
+def test_chat_transport_caps_bounded_decision_output_tokens():
+    path = LAB / "v2_day6_5_j1_benchmark.py"
+    spec = importlib.util.spec_from_file_location("dima_j1_token_cap", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    assert module.CHAT_MAX_TOKENS == 512
