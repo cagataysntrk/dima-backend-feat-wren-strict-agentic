@@ -1159,6 +1159,17 @@ class ResearchRun(FrozenModel):
     state: Literal["pending", "running", "paused", "complete", "failed", "cancelled"] = "pending"
 
 
+class ResearchTaskKind(StrEnum):
+    QUERY = "QUERY"
+    COMPARE = "COMPARE"
+    TREND = "TREND"
+    BREAKDOWN = "BREAKDOWN"
+    RANK = "RANK"
+    RELATIONSHIP = "RELATIONSHIP"
+    CONTRIBUTION = "CONTRIBUTION"
+    PEER_COMPARE = "PEER_COMPARE"
+
+
 class ResearchTask(FrozenModel):
     task_id: str
     question_id: str
