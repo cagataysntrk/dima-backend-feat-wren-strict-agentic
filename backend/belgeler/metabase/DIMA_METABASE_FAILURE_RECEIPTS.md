@@ -1272,8 +1272,11 @@ not_authorized:
 inventing or defaulting the missing access data, or declaring P5 GREEN from lab-admin execution.
 
 closure_condition:
-P5B produces a reviewed and tested effective-access snapshot issuer/attestor with fail-closed
-principal mapping.
+P10 produces and certifies the production effective-access snapshot issuer/attestor with fail-closed
+principal/tenant/security mapping.
 
 status:
-`OPEN / P5A MAY PROCEED; P5 CLOSURE BLOCKED`.
+`OPEN / TRANSFERRED TO P10 SECURITY MAPPING GATE`.
+
+P5 may close **CONTRACT GREEN** without a production issuer, but production official receipt issuance
+remains prohibited until this blocker closes at P10.

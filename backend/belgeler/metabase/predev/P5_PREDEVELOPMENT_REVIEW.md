@@ -11,8 +11,8 @@
 
 Status: SEALED / P5 CONTRACT IMPLEMENTATION AUTHORIZED
 
-Official Metabase receipt issuance remains **access-gated** and P5 may not close GREEN until the
-execution-access snapshot is produced from a proven principal/auth/lens boundary.
+Official production receipt issuance remains **access-gated**, but P5 now closes at the CONTRACT boundary.
+The production execution-access issuer is owned by P10 and must not be pulled into P5.
 
 ## 1. Normative P5 flow re-read
 
@@ -309,22 +309,23 @@ Authorized after this review governance is GREEN:
 - implement strict receipt sealer;
 - provider-free proof.
 
-### P5B — effective access attestation
+### Production effective-access attestation — transferred to P10
 
-Not automatically authorized by P5A.
+P5 defines the immutable snapshot contract and strict sealer only.
 
-Before P5 can close GREEN, a separate review/receipt must identify how a real execution obtains:
+P10 owns the real issuer/attestor that proves:
 - current Dima principal;
 - authenticated Metabase principal/lens;
 - database route/effective security context;
 - policy/RLS/CLS versions;
 - source-object security parameters.
 
-If the runtime cannot produce this faithfully, P5 remains BLOCKED rather than hashing guessed values.
+Until P10 closes DMP-P5-BLOCK-001, production official receipt issuance is prohibited. P5 contract
+tests may use explicit attested fixture snapshots; they may not manufacture missing fields.
 
 ## 13. Exit semantics
 
-P5 closes GREEN only when:
+P5 closes **CONTRACT GREEN** when:
 ```text
 official receipt missing access snapshot      = HARD FAIL
 principal_fingerprint == access fingerprint   = NOT ASSUMED
@@ -340,12 +341,13 @@ P4/P3/P3A/M1 regressions                      = GREEN
 product routing change                        = 0
 ```
 
-P5 GREEN does not mean P6 Wren/Metabase numeric/permission parity, Metabase primary routing, or Wren
-retirement.
+P5 CONTRACT GREEN does not mean production access issuance, P6 Wren/Metabase numeric/permission
+parity, Metabase primary routing, or Wren retirement. Production official receipt issuance remains
+blocked by DMP-P5-BLOCK-001 until P10.
 
 ## 14. Authorization
 
-P5A implementation may begin only after this review commit's governance workflow is GREEN.
+P5 contract implementation is authorized by the already-GREEN review governance.
 
-P5B effective-access implementation requires a subsequent explicit review/receipt. P5 product closure
-is forbidden before P5B is proven.
+Production effective-access issuer/mapping implementation is P10-owned and requires its own
+predevelopment/security gate. No P10 work is authorized inside P5.

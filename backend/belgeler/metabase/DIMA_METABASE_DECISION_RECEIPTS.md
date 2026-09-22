@@ -583,3 +583,32 @@ revisit_condition:
 Only if the normative R10.1 security contract changes under a new explicit decision.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0018 — receipt event identity vs durable execution fingerprint; P5 contract vs P10 issuer
+
+date: 2026-09-22
+
+decision:
+- `canonical_query_fingerprint` = durable query identity owned by P4;
+- `execution_access_fingerprint` = durable effective-access identity defined by P5 and issued in production by P10;
+- `receipt_fingerprint` = deterministic execution-content fingerprint binding authority, projection,
+  resolved intent, canonical query, access, semantic context, resources, runtime, step role,
+  result hash and row count;
+- `receipt_id` = execution-occurrence identity and includes explicit `execution_id`;
+- `executed_at` = event metadata and is not folded into `receipt_fingerprint`.
+
+P5 may close **CONTRACT GREEN** when the immutable `ExecutionAccessSnapshot` contract and strict
+receipt sealer are complete and proven provider-free. P5 does not implement or guess the production
+effective-access issuer.
+
+DMP-P5-BLOCK-001 is transferred to the P10 security-mapping gate. Until P10 proves a real issuer,
+production official receipt issuance remains blocked; P6/P7/P8/P9 development is not blocked by that
+issuer work.
+
+No secret/session token is durable identity. No default/guessed policy, RLS/CLS, database route,
+principal or admin fallback is authorized.
+
+status: SEALED.

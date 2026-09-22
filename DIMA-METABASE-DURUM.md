@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P5 PRE-DEVELOPMENT REVIEW SEALED — P5A GOVERNANCE GATE  
-**Product-code development:** P5A NOT STARTED; P5B ACCESS ISSUER BLOCKER OPEN  
+**Current phase:** P5 CONTRACT IMPLEMENTATION AUTHORIZED — P10 ISSUER BLOCKER SEPARATE  
+**Product-code development:** P5 CONTRACT NOT STARTED; PRODUCTION ACCESS ISSUER DEFERRED TO P10  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -587,7 +587,26 @@ principal_fingerprint                     = tenant/principal/roles identity
 legacy execution_access_fingerprint alias = M1_COMPAT_ONLY
 P5 official access fingerprint            = complete ExecutionAccessSnapshot required
 DMP-P5-BLOCK-001                          = OPEN
-P5A                                       = authorized after governance GREEN
-P5 closure                                = BLOCKED until P5B access attestation proof
+P5 contract                              = implementation authorized
+P5 CONTRACT GREEN                         = requires complete snapshot contract + strict sealer
+production official receipt issuance      = BLOCKED until P10 closes DMP-P5-BLOCK-001
 production routing                        = unchanged
 ```
+
+
+---
+
+## P5/P10 ownership clarification — DMP-DEC-0018
+
+```text
+P5 owner                         = ExecutionAccessSnapshot contract + strict receipt sealer
+P10 owner                        = production effective-access issuer/mapping
+P5 contract closure              = allowed independently
+production official receipt      = blocked until P10
+DMP-P5-BLOCK-001                 = OPEN / TRANSFERRED TO P10
+P6/P7/P8/P9                      = not blocked by issuer implementation
+```
+
+Receipt identities are now explicitly separated:
+`canonical_query_fingerprint` (query), `execution_access_fingerprint` (access),
+`receipt_fingerprint` (durable execution content), and `receipt_id` (execution occurrence).

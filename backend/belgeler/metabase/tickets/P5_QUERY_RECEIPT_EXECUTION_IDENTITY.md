@@ -3,7 +3,7 @@
 **Milestone:** P5  
 **Owner:** Dima durable query/result/access identity  
 **Branch:** `feat/dima-metabase-platform`  
-**Status:** PREDEV SEALED / P5A CONTRACT IMPLEMENTATION PENDING GOVERNANCE
+**Status:** CONTRACT IMPLEMENTATION AUTHORIZED / PRODUCTION ISSUER DEFERRED TO P10
 
 ## Goal
 
@@ -29,10 +29,11 @@ without treating runtime-local or compatibility-only identifiers as durable proo
 - focused provider-free tests;
 - dedicated P5 workflow.
 
-## P5B blocker
+## Production issuer blocker
 
-No official Metabase receipt may be certified until the real effective-access snapshot issuer is
-proven. Current `intent.principal.fingerprint` and M1 legacy writer are insufficient.
+DMP-P5-BLOCK-001 is P10-owned. P5 may certify the contract/sealer using explicit complete attested
+snapshots, but production official receipt issuance is forbidden until P10 proves the real issuer.
+Current `intent.principal.fingerprint` and M1 legacy writer remain insufficient.
 
 ## Stop conditions
 
