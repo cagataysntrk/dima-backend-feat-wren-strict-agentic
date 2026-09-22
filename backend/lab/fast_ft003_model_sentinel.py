@@ -223,9 +223,18 @@ def main() -> int:
                         for item in direct_search.data
                         if str(item.get("type") or "").lower() == "table"
                     }
+                    direct_search_hit = "orders" in direct_registry_names
                     observed["measurements"] = {
-                        "direct_search_hit": "orders" in direct_registry_names,
+                        "direct_search_hit": direct_search_hit,
+                        "direct_candidate_names": sorted(direct_registry_names),
+                        "direct_candidate_uris": sorted(
+                            str(item.get("uri") or "")
+                            for item in direct_search.data
+                            if str(item.get("type") or "").lower() == "table"
+                            and str(item.get("uri") or "").strip()
+                        ),
                     }
+                    observed["checks"]["metadata_search_direct_hit"] = direct_search_hit
                     registry, discovery_mode = discover_resource_registry(
                         gateway,
                         term_queries=draft.search_terms,
@@ -233,6 +242,15 @@ def main() -> int:
                         max_candidates=8,
                     )
                     observed["retrieval_mode"] = discovery_mode
+                    observed["search_terms"] = list(draft.search_terms)
+                    observed["candidate_count"] = len(registry.candidates)
+                    observed["candidate_names"] = [
+                        item.name for item in registry.candidates
+                    ]
+                    observed["candidate_uris"] = [
+                        registry.resource_uri(item.handle)
+                        for item in registry.candidates
+                    ]
                     observed["checks"]["resource_candidates_available"] = bool(
                         registry.candidates
                     )
@@ -240,6 +258,7 @@ def main() -> int:
                         question=case["question"],
                         candidates=registry.candidates,
                     )
+                    observed["selected_handle"] = decision.selected_handle
                     offered = {item.handle for item in registry.candidates}
                     if decision.selected_handle is not None and decision.selected_handle not in offered:
                         receipt["invented_id_count"] += 1
@@ -368,12 +387,14 @@ def main() -> int:
                 receipt["ambiguity_case"] = {
                     "question": "Siparişleri say.",
                     "selected_handle": ambiguity.selected_handle,
-                    "passed": ambiguity.selected_handle is None,
+                    "model_abstained": ambiguity.selected_handle is None,
+                    "hard_gate": "DIAGNOSTIC_ONLY_SERVICE_AUTHORITY_OWNS_BLOCKING",
                 }
             except Exception as exc:
                 receipt["ambiguity_case"] = {
                     "question": "Siparişleri say.",
-                    "passed": False,
+                    "model_abstained": False,
+                    "hard_gate": "DIAGNOSTIC_ONLY_SERVICE_AUTHORITY_OWNS_BLOCKING",
                     "error": f"{type(exc).__name__}: {exc}",
                 }
 
@@ -404,12 +425,10 @@ def main() -> int:
                 }
 
         all_supported = all(item.get("passed") for item in receipt["supported_cases"])
-        ambiguity_ok = bool((receipt["ambiguity_case"] or {}).get("passed"))
         unsupported_ok = bool((receipt["unsupported_case"] or {}).get("passed"))
         receipt["status"] = (
             "GREEN"
             if all_supported
-            and ambiguity_ok
             and unsupported_ok
             and receipt["invented_id_count"] == 0
             else "RED"
@@ -417,8 +436,6 @@ def main() -> int:
 
         if not all_supported:
             receipt["failures"].append("supported_case_failure")
-        if not ambiguity_ok:
-            receipt["failures"].append("ambiguity_abstention_failure")
         if not unsupported_ok:
             receipt["failures"].append("unsupported_contract_failure")
         if receipt["invented_id_count"]:
