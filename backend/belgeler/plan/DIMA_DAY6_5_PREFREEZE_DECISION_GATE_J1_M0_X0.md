@@ -41,60 +41,74 @@ Semantic conclusion: NONE. Product code was not changed for that failure.
 
 These proofs are preserved. **Do not create ENGINEERING FREEZE CANDIDATE or run DEV80 yet.**
 
-## 2. New pre-freeze decision topology
+## 2. Current Day 6.5 decision topology
 
 ```text
-                         CURRENT
-                           │
-             ┌─────────────┴─────────────┐
-             │                           │
-          D65-J1                      D65-M0
-   decision-model bake-off      Metabase adoption audit
-      ┌───────┴───────┐                  │
-      │               │                  │
-    J1S              J1T                 │
- semantic         temporal               │
- candidate        intent                 │
- decision         decision               │
-      └───────┬───────┘                  │
-              └─────────────┬─────────────┘
-                            ↓
-                         D65-X0
-                thin Metabase feasibility
-                            ↓
-                     promising?
-                     /        \
-                   NO          YES
-                   ↓            ↓
-              Wren primary    full D65-X
-                   \           /
-                    └────┬─────┘
-                         ↓
-               ONE PRIMARY SUBSTRATE
-                         ↓
-              DAY 6.5 DECISIONS CLOSED
-                         ↓
-                    DAY 7–15 CODE
-                         ↓
-        FINAL INTEGRATED RELEASE GATE
-                         ↓
-             FINAL ENGINEERING FREEZE
-                         ↓
-                    DEV80 ONCE
+                 CURRENT
+                    │
+          ┌─────────┴─────────┐
+          │                   │
+     J1 decision              M0
+   model-role evidence    source/adoption audit
+          │                   │
+          └─────────┬─────────┘
+                    ↓
+                  D65-SI
+        Standard Integration Closure
+                    ↓
+        real Standard Wren sentinel
+                    ↓
+                   X0
+       private self-hosted Metabase
+          feasibility experiment
+                    ↓
+               promising?
+              /          \
+            NO            YES
+            ↓              ↓
+       Wren remains     STOP / CONSULT
+          primary       before full D65-X
+                    │
+                    ↓
+                Day 7–15
+                    ↓
+        final integrated release gate
+                    ↓
+          FINAL FREEZE → DEV80 once
 ```
 
-D65-J1 and D65-M0 may proceed in parallel because both are isolated lab/research gates
-and neither is allowed to mutate production authority semantics during the first stage.
+J1 and M0 evidence may be developed independently, but X0 execution is no longer reachable
+directly from them. The mandatory bridge is:
+
+```text
+J1 topology decision
++ M0
+→ D65-SI
+→ real Standard Wren sentinel
+→ X0
+```
+
+Production semantic/temporal authority does not move during the J1 lab stage.
 
 ## 3. D65-J1 — two independent tracks
 
-Pinned challengers for both tracks:
+Current model-role authority:
 
 ```text
+PRIMARY:
 A = google/gemini-2.5-flash-lite
 B = typesafe/jev-1.13
-C = openai/gpt-5.6-sol
+C = openai/gpt-5.6-luna
+
+REFERENCE_CEILING:
+openai/gpt-5.6-sol
+
+CONDITIONAL:
+openai/gpt-5.6-terra
 ```
+
+Sol is not a cheap-tier peer. Terra is not automatic; the current consultation explicitly
+authorizes one J1T-only conditional frozen run.
 
 Forbidden:
 
@@ -238,41 +252,39 @@ case-derived prompt/rule = 0
 For Jev, raw probability/calibration is measurement only during J1.
 No production confidence threshold is activated in this phase.
 
-### 3.4 J1 decision rule
+### 3.4 J1 decision / consultation state
 
-If Jev is clearly poor or Turkish/temporal robustness is inadequate:
-
-```text
-REJECT JEV
-→ product code NO CHANGE
-→ preserve existing architecture
-```
-
-If Jev is promising in one or both bounded decision contracts:
+Measured result:
 
 ```text
-STOP AT DECISION GATE
-→ consult before integration
-→ open D65-J1B only after explicit approval
+Jev universal provider                   = REJECT
+Jev temporal provider                    = REJECT / capability floor
+Jev bounded semantic decision primitive  = PROMISING / NOT PRODUCTION-ACCEPTED
+
+Luna temporal typed provider             = PROMISING / NOT SEALED
 ```
 
-D65-J1B target, if approved:
+Consultation is complete for the following bounded work:
 
 ```text
-SemanticLinkDecisionProvider
-  ├─ StructuredLLMDecisionProvider
-  └─ JevDecisionProvider
-
-and physical cognition-role separation:
-
-SEMANTIC_LINKER
-= bounded catalog candidate decision
-
-TEMPORAL_NORMALIZER
-= temporal language → typed TemporalNormalizationChoice
+eval-oracle harness classification fix
+authority-document cleanup
+one frozen J1T-only Terra conditional run
+D65-J1B narrow engineering experiment after Terra
+D65-SI if J1B P0/architecture is GREEN
+self-hosted private X0 after D65-SI + real Wren sentinel GREEN
 ```
 
-No hidden fallback. Every provider/model attempt is explicit in telemetry.
+D65-J1B is an engineering experiment, not production activation. Its purpose is to test whether
+role-specialized providers preserve their standalone advantage inside the real Dima semantic /
+temporal flow.
+
+Still requires STOP/CONSULT:
+- production confidence threshold or fresh calibration design;
+- hidden fallback/cascade;
+- production Jev activation;
+- production Luna/Terra seal;
+- architecture redesign exposed by J1B or D65-SI.
 
 ## 4. D65-M0 — Metabase architecture extraction/adoption audit
 
@@ -372,11 +384,12 @@ Primary question:
 > Is Dima re-inventing a mechanism Metabase already solves, and can we adopt the pattern or
 > supported API without weakening Dima's authority/trust model?
 
-## 5. D65-X0 — thin Metabase feasibility before freeze
+## 5. D65-X0 — thin Metabase feasibility after D65-SI
 
-D65-X0 starts after enough M0 source/audit work exists to define a bounded spike.
+D65-X0 may execute only after D65-SI and the real Standard Wren sentinel are GREEN.
+M0 being sufficient permits preparation, not execution.
 
-Separate Metabase service only.
+Experiment deployment default = pinned self-hosted Metabase on a private network with an ephemeral/test app DB where useful. Cloud is not the default. Production Metabase dependency remains NOT APPROVED.
 
 Representative setup:
 
@@ -504,79 +517,71 @@ execution-substrate bake-off.
 ## 8. Updated binding sequence
 
 ```text
-CURRENT GREEN PROOFS
-↓
-D65-J1S + D65-J1T LAB BENCHMARKS
-+
-D65-M0 ADOPTION AUDIT
-↓
-decision receipts
-↓
-D65-X0 THIN FEASIBILITY
-↓
-Metabase not promising
-  → Wren primary
-or
-Metabase promising
-  → consult
-  → full D65-X
-  → ONE primary substrate
-↓
-ENGINEERING FREEZE CANDIDATE
-↓
-DEV80 once per candidate
-↓
-engineering closure
-↓
-VALIDATION50
-↓
-fresh external HIDDEN50
-↓
-certification seal
-↓
-production hybrid activation
+eval/docs cleanup
+→ Terra J1T conditional frozen run
+→ D65-J1B narrow real-flow experiment
+→ focused provider-free / failure-family / temporal / metamorphic proofs
+→ workers=1 focused real-LLM
+→ small representative canary
+→ D65-SI
+→ real Standard Wren sentinel
+→ self-hosted private X0
+→ if X0 promising: STOP / CONSULT for full D65-X
+→ otherwise Wren remains primary
+→ Day 7–15
+→ final rehearsal
+→ FINAL FREEZE
+→ DEV80 once
+→ Validation50
+→ Hidden50
 ```
 
-If J1 is promising and requires J1B product integration, affected focused/provider-free/live/
-canary/sentinel gates must re-run before X0/freeze as required.
+Broad DEV80/Validation/Hidden are not development loops.
 
 ## 9. STOP-THE-LINE / consultation gates
+
+Current consultation authorizes the bounded sequence through X0.
 
 STOP and consult before:
 
 ```text
-opening D65-J1B product integration
-choosing a Jev/Gemini/Sol production policy or cascade
-setting a production Jev confidence threshold
+J1B requires production threshold / calibration or material architecture redesign
+D65-SI reveals authority/integration redesign
 starting full D65-X after X0 looks promising
 choosing Metabase over Wren as primary substrate
 adopting a Metabase mechanism that changes Dima authority/security/trust boundaries
-creating ENGINEERING FREEZE CANDIDATE
+creating FINAL ENGINEERING FREEZE
 starting DEV80
+pilot activation
 ```
 
 Hard prohibitions remain:
 
 ```text
+production Jev activation without a later seal
+production confidence threshold derived from J1/J1B set
+hidden provider cascade/fallback
+production Luna/Terra seal
 Metabase source copy/port/vendor
 equal Wren + Metabase production truth engines
-Jev as named-case patch
-hidden model cascade
-case-specific regex/prompt
+case-specific regex/prompt patch
 model or Metabase as semantic/numeric authority beyond existing gates
-freeze/DEV80 before J1 + M0/X0 decisions are resolved
+X0 before D65-SI + real Standard Wren sentinel
+DEV80 before final release gate
 ```
 
 ## 10. Next exact work
 
-Without changing product semantic/temporal/authority code:
+Without reopening frozen corpora or touching product authority during eval cleanup:
 
-1. Finalize J1S frozen benchmark corpus + lab runner.
-2. Finalize J1T frozen temporal-intent corpus + lab runner.
-3. Start D65-M0 source audit and populate the adoption matrix.
-4. Produce separate J1 and M0 receipts.
-5. Then prepare D65-X0 feasibility ticket.
-6. Stop and consult at any promising integration/substrate decision.
+1. Fix `D65-J1-FULL-001`: invalid typed model output must not be labeled provider failure.
+2. Recompute stored J1 contract-fidelity classification/metrics from existing artifacts; no paid rerun.
+3. Run one frozen **J1T-only** Terra conditional benchmark: CHOICE + CONTRACT-FIDELITY + repeated/metamorphic evidence.
+4. Open D65-J1B narrow role-specialized provider experiment.
+5. If J1B P0/architecture is GREEN, execute D65-SI.
+6. Prove the real Standard Wren sentinel.
+7. Execute private self-hosted X0.
+8. Stop/consult if the defined next consultation condition is reached.
 
 ## 11. Release-level timing override
 
@@ -584,7 +589,7 @@ Without changing product semantic/temporal/authority code:
 
 This file decides J1/M0/X0 architecture choices. It does **not** authorize DEV80.
 
-After J1/M0/X0 resolve:
+After J1B + D65-SI + X0 resolve:
 ```text
 close Day6.5 architecture decisions
 → continue Day7–15

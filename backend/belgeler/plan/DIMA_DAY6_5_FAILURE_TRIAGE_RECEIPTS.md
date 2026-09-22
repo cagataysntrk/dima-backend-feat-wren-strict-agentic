@@ -606,5 +606,4 @@ family_regression_proof:
 `PENDING` — same reason.
 
 status:
-`OPEN AT CONSULTATION GATE — root cause classified; NO PRODUCT PATCH; eval-oracle patch deferred
-until user decision permits continuation.`
+`FIX IMPLEMENTED / FOCUSED PROOF PENDING — consultation now authorizes the eval-only repair. Product semantic/temporal/authority code remains untouched.`

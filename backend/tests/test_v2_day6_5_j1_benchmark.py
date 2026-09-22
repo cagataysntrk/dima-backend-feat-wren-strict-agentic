@@ -207,3 +207,104 @@ def test_jev_temporal_contract_fidelity_fails_closed_without_answer_enumeration(
     assert evidence["field_support"]["implicit_base_n"] == "NOT_DYNAMICALLY_REPRESENTABLE"
     assert evidence["case_answer_pre_enumeration_required_for_n"] is True
     assert evidence["temporal_production_candidate"] is False
+
+
+def test_invalid_typed_temporal_contract_is_not_provider_failure(monkeypatch):
+    path = LAB / "v2_day6_5_j1_benchmark.py"
+    spec = importlib.util.spec_from_file_location("dima_j1_invalid_contract", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    case = _load("v2_day6_5_j1t_frozen.json")["cases"][23]
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "request_id": case["id"],
+                                    "target": "COMPARISON",
+                                    "decision": "NORMALIZED",
+                                    "period_kind": None,
+                                    "comparison_kind": None,
+                                    "n": None,
+                                    "implicit_base_period_kind": None,
+                                    "implicit_base_n": None,
+                                    "reason": None,
+                                }
+                            )
+                        }
+                    }
+                ],
+                "usage": {"cost": 0.001, "input_tokens": 10, "output_tokens": 10},
+                "model": "fake-model",
+                "id": "fake-id",
+            }
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def post(self, *args, **kwargs):
+            return FakeResponse()
+
+    monkeypatch.setattr(module.httpx, "Client", FakeClient)
+    monkeypatch.setattr(module, "_api_key", lambda: "fake")
+
+    result = module._chat_temporal_contract(
+        model="openai/gpt-5.6-luna", case=case, timeout_s=1.0
+    )
+    assert result["status"] == "INVALID_TYPED_CONTRACT"
+    assert result["failure_class"] == "MODEL_COGNITION/INVALID_TYPED_CONTRACT"
+
+
+def test_invalid_typed_contract_stays_in_semantic_denominator(monkeypatch):
+    path = LAB / "v2_day6_5_j1_benchmark.py"
+    spec = importlib.util.spec_from_file_location("dima_j1_invalid_metrics", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    case = _load("v2_day6_5_j1t_frozen.json")["cases"][23]
+    monkeypatch.setattr(
+        module,
+        "_chat_temporal_contract",
+        lambda **kwargs: {
+            "status": "INVALID_TYPED_CONTRACT",
+            "failure_class": "MODEL_COGNITION/INVALID_TYPED_CONTRACT",
+            "error": "ValidationError: synthetic cross-field failure",
+            "invalid_payload": {},
+            "latency_s": 0.01,
+            "cost": 0.001,
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "response_model": "fake-model",
+            "response_id": "fake-id",
+        },
+    )
+
+    result = module.run_temporal_contract_fidelity(
+        model="openai/gpt-5.6-luna", cases=[case], timeout_s=1.0
+    )
+    metrics = result["metrics"]
+    assert metrics["evaluable_case_count"] == 1
+    assert metrics["valid_typed_count"] == 0
+    assert metrics["invalid_typed_output_count"] == 1
+    assert metrics["provider_failure_count"] == 0
+    assert metrics["contract_valid_rate"] == 0.0
+    assert metrics["exact_contract_accuracy"] == 0.0
+    assert metrics["temporal_production_candidate"] is False

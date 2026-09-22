@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from pydantic import ValidationError
 
 from app.v2.temporal_intent import TemporalNormalizationChoice
 
@@ -443,22 +444,44 @@ def _chat_temporal_contract(
                 },
                 json=payload,
             )
-        latency = time.perf_counter() - started
-        if response.status_code != 200:
-            return {
-                "status": "PROVIDER_FAILURE",
-                "failure_class": "TRANSPORT/PROVIDER",
-                "error": f"HTTP {response.status_code}: {response.text[:500]}",
-                "latency_s": latency,
-            }
+    except Exception as exc:
+        return {
+            "status": "TRANSPORT_PROVIDER_FAILURE",
+            "failure_class": "TRANSPORT/PROVIDER",
+            "error": f"{type(exc).__name__}: {exc}",
+            "latency_s": time.perf_counter() - started,
+        }
+
+    latency = time.perf_counter() - started
+    if response.status_code != 200:
+        return {
+            "status": "TRANSPORT_PROVIDER_FAILURE",
+            "failure_class": "TRANSPORT/PROVIDER",
+            "error": f"HTTP {response.status_code}: {response.text[:500]}",
+            "latency_s": latency,
+        }
+
+    try:
         raw = response.json()
         content = raw["choices"][0]["message"]["content"]
+    except Exception as exc:
+        return {
+            "status": "TRANSPORT_PROVIDER_FAILURE",
+            "failure_class": "TRANSPORT/PROVIDER",
+            "error": f"invalid provider response: {type(exc).__name__}: {exc}",
+            "latency_s": latency,
+        }
+
+    cost, inp, out = _usage(raw)
+    try:
         parsed = content if isinstance(content, dict) else json.loads(content)
         choice = TemporalNormalizationChoice.model_validate(parsed)
-        cost, inp, out = _usage(raw)
+    except (json.JSONDecodeError, TypeError, ValidationError) as exc:
         return {
-            "status": "OK",
-            "choice": choice.model_dump(mode="json"),
+            "status": "INVALID_TYPED_CONTRACT",
+            "failure_class": "MODEL_COGNITION/INVALID_TYPED_CONTRACT",
+            "error": f"{type(exc).__name__}: {exc}",
+            "invalid_payload": content if isinstance(content, dict) else str(content),
             "latency_s": latency,
             "cost": cost,
             "input_tokens": inp,
@@ -466,14 +489,17 @@ def _chat_temporal_contract(
             "response_model": raw.get("model"),
             "response_id": raw.get("id"),
         }
-    except Exception as exc:
-        return {
-            "status": "HARNESS_OR_TRANSPORT_FAILURE",
-            "failure_class": "TRANSPORT/PROVIDER",
-            "error": f"{type(exc).__name__}: {exc}",
-            "latency_s": time.perf_counter() - started,
-        }
 
+    return {
+        "status": "OK",
+        "choice": choice.model_dump(mode="json"),
+        "latency_s": latency,
+        "cost": cost,
+        "input_tokens": inp,
+        "output_tokens": out,
+        "response_model": raw.get("model"),
+        "response_id": raw.get("id"),
+    }
 
 def _jev_temporal_contract_capability() -> dict[str, Any]:
     return {
@@ -534,6 +560,7 @@ def run_temporal_contract_fidelity(
                 "status": result["status"],
                 "failure_class": result.get("failure_class"),
                 "error": result.get("error"),
+                "invalid_payload": result.get("invalid_payload"),
                 "contract_exact": result["status"] == "OK" and actual == expected,
                 "latency_s": round(float(result.get("latency_s") or 0.0), 6),
                 "cost": result.get("cost"),
@@ -545,8 +572,12 @@ def run_temporal_contract_fidelity(
         )
 
     ok = [r for r in records if r["status"] == "OK"]
-    provider_failures = len(records) - len(ok)
-    exact = sum(bool(r["contract_exact"]) for r in ok)
+    invalid_typed = [r for r in records if r["status"] == "INVALID_TYPED_CONTRACT"]
+    semantic_evaluable = [*ok, *invalid_typed]
+    provider_failures = [
+        r for r in records if r["status"] == "TRANSPORT_PROVIDER_FAILURE"
+    ]
+    exact = sum(bool(r["contract_exact"]) for r in semantic_evaluable)
     dynamic = [r for r in ok if r["expected"].get("n") is not None]
     implicit_n = [r for r in ok if r["expected"].get("implicit_base_n") is not None]
     comparisons = [r for r in ok if r["expected"].get("comparison_kind") is not None]
@@ -574,10 +605,16 @@ def run_temporal_contract_fidelity(
         "reasoning_policy": _reasoning_policy(model),
         "metrics": {
             "case_count": len(cases),
-            "evaluable_case_count": len(ok),
-            "provider_failure_count": provider_failures,
-            "contract_valid_rate": len(ok) / len(cases) if cases else None,
-            "exact_contract_accuracy": exact / len(ok) if ok else None,
+            "evaluable_case_count": len(semantic_evaluable),
+            "valid_typed_count": len(ok),
+            "invalid_typed_output_count": len(invalid_typed),
+            "provider_failure_count": len(provider_failures),
+            "contract_valid_rate": (
+                len(ok) / len(semantic_evaluable) if semantic_evaluable else None
+            ),
+            "exact_contract_accuracy": (
+                exact / len(semantic_evaluable) if semantic_evaluable else None
+            ),
             "dynamic_n_accuracy": field_rate(dynamic, "n"),
             "comparison_kind_accuracy": field_rate(comparisons, "comparison_kind"),
             "implicit_base_kind_accuracy": field_rate(
@@ -586,7 +623,12 @@ def run_temporal_contract_fidelity(
             ),
             "implicit_base_n_accuracy": field_rate(implicit_n, "implicit_base_n"),
             "abstain_reason_accuracy": field_rate(abstains, "reason"),
-            "temporal_production_candidate": provider_failures == 0 and exact == len(ok),
+            "temporal_production_candidate": (
+                len(provider_failures) == 0
+                and len(invalid_typed) == 0
+                and len(semantic_evaluable) == len(cases)
+                and exact == len(semantic_evaluable)
+            ),
         },
         "records": records,
     }

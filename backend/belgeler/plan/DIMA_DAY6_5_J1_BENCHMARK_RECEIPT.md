@@ -80,9 +80,9 @@ manager semantic authority     NO TOUCH
 production /ask-v2             NO TOUCH
 ```
 
-## Live execution table
+## Historical pre-run execution table — SUPERSEDED
 
-Fill only from manual-only workflow artifacts.
+The NOT RUN rows below are retained only as the original pre-run template. They are not current status and must not be used for decisions; authoritative results are in the corrected full bake-off section below.
 
 | Track | Model | Run | Evaluable | Accuracy | Abstain P/R | Turkish | Metamorphic | Repeat | p50/p95 | Cost | Failure class |
 |---|---|---:|---:|---:|---|---:|---:|---:|---|---:|---|
@@ -379,3 +379,44 @@ This does not authorize production activation. It only proves the provider seam 
 behavior under real Dima flow.
 
 STOP/CONSULT remains active before J1B.
+
+
+## Stored-artifact reclassification after D65-J1-FULL-001 fix
+
+No paid J1 rerun was performed.
+
+Existing full-run artifact:
+`35705668833 / v2-day6-5-j1-corrected-full`
+
+Reclassification rule:
+
+```text
+HTTP/network/provider failure
+→ TRANSPORT/PROVIDER
+
+HTTP 200 + parseable model output rejected by TemporalNormalizationChoice cross-field validation
+→ MODEL_COGNITION / INVALID_TYPED_CONTRACT
+→ remains an evaluable wrong answer
+```
+
+Stored-artifact recomputation:
+
+```text
+Gemini
+  valid typed              = 28
+  invalid typed            = 6
+  real provider failures   = 0
+  exact contract           = 25/34 = 73.53%
+
+Luna
+  valid typed              = 32
+  invalid typed            = 2
+  real provider failures   = 0
+  exact contract           = 32/34 = 94.12%
+
+Jev
+  temporal contract        = TEMPORAL_INTEGRATION_LIMITATION
+```
+
+The old harness field `provider_failure_count=6/2` for Gemini/Luna is historical measurement
+error and is superseded by this classification.
