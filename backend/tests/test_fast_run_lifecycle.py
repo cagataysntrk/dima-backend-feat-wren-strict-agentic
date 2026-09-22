@@ -473,3 +473,34 @@ def test_postseal_retry_requires_same_as_of_date():
             )
     finally:
         manager.shutdown(interrupt=False)
+
+
+
+def test_internal_operation_seam_reuses_same_run_lifecycle_without_changing_default():
+    default_service = StubService(success_response())
+    override_service = StubService(
+        FastAskResponse(
+            status=AskOutcomeStatus.FAILED,
+            question="Son 30 günde kaç sipariş var?",
+            error=FastAskErrorPayload(code="OVERRIDE", message="override used"),
+        )
+    )
+    manager = FastRunManager(service=default_service, max_workers=1)
+    try:
+        created = manager.create_run_with_operation(
+            request(),
+            principal=principal(),
+            operation=override_service,
+        )
+        final = wait_state(manager, created.run_id, {FastRunState.FAILED})
+        assert override_service.calls == 1
+        assert default_service.calls == 0
+        assert final.error is not None
+        assert final.error.code == "OVERRIDE"
+
+        normal = manager.create_run(request(), principal=principal())
+        completed = wait_state(manager, normal.run_id, {FastRunState.COMPLETED})
+        assert completed.response is not None
+        assert default_service.calls == 1
+    finally:
+        manager.shutdown(interrupt=False)
