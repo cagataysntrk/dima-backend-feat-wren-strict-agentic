@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      TARGET_SHA: "5834b0acae315afa94741c409f07bfe448c0c316"
+      TARGET_SHA: "ffbdc224066dc4c85a9e46b510ae3535f83f3416"
       DIMA_LLM_PROVIDER: "rule"
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
