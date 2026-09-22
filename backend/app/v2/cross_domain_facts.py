@@ -48,6 +48,8 @@ class JoinFactCode(StrEnum):
     MODEL_MAPPING_MISSING = "MODEL_MAPPING_MISSING"
     ROW_GRAIN_UNKNOWN = "ROW_GRAIN_UNKNOWN"
     TARGET_GRAIN_NOT_GOVERNED = "TARGET_GRAIN_NOT_GOVERNED"
+    FANOUT_UNVERIFIED = "FANOUT_UNVERIFIED"
+    FANOUT_UNSAFE = "FANOUT_UNSAFE"
     NO_WREN_PATH = "NO_WREN_PATH"
     AMBIGUOUS_WREN_PATH = "AMBIGUOUS_WREN_PATH"
     GATE_DENIED = "GATE_DENIED"
@@ -103,6 +105,7 @@ class CrossDomainJoinFactResult(FrozenModel):
     ready: bool
     code: JoinFactCode
     facts: CrossDomainJoinFacts | None = None
+    fanout_proofs: tuple[FanoutFact, ...] = ()
     gate_decision: CrossDomainJoinDecision | None = None
     reason: str
 
@@ -123,10 +126,16 @@ class CrossDomainJoinFactBuilder:
         self._gate = CrossDomainJoinGate()
 
     @staticmethod
-    def _fail(code: JoinFactCode, reason: str) -> CrossDomainJoinFactResult:
+    def _fail(
+        code: JoinFactCode,
+        reason: str,
+        *,
+        fanout_proofs: tuple[FanoutFact, ...] = (),
+    ) -> CrossDomainJoinFactResult:
         return CrossDomainJoinFactResult(
             ready=False,
             code=code,
+            fanout_proofs=fanout_proofs,
             reason=reason,
         )
 
@@ -330,13 +339,41 @@ class CrossDomainJoinFactBuilder:
         proofs: list[FanoutFact] = []
         cardinalities: list[str] = []
         for relation in path:
-            proof = relation.get("fanout_proof")
-            if not isinstance(proof, dict):
+            raw_proof = relation.get("fanout_proof")
+            if not isinstance(raw_proof, dict):
                 return self._fail(
-                    JoinFactCode.GATE_DENIED,
+                    JoinFactCode.FANOUT_UNVERIFIED,
                     f"relationship {relation.get('name')} lacks version-bound fanout proof",
                 )
-            proofs.append(FanoutFact.model_validate(proof))
+            proof = FanoutFact.model_validate(raw_proof)
+            proofs.append(proof)
+            current_proofs = tuple(proofs)
+
+            if (
+                proof.current_mdl_version != current_mdl
+                or proof.certificate_mdl_version != current_mdl
+                or not proof.measured_at
+            ):
+                return self._fail(
+                    JoinFactCode.FANOUT_UNVERIFIED,
+                    (
+                        f"relationship {relation.get('name')} fanout proof is not bound "
+                        f"to current MDL {current_mdl}"
+                    ),
+                    fanout_proofs=current_proofs,
+                )
+            if proof.status == "RISKY" or proof.certified == "olculdu:riskli":
+                return self._fail(
+                    JoinFactCode.FANOUT_UNSAFE,
+                    f"relationship {relation.get('name')} measured fanout is unsafe",
+                    fanout_proofs=current_proofs,
+                )
+            if proof.status != "HEALTHY" or proof.certified != "olculdu:saglikli":
+                return self._fail(
+                    JoinFactCode.FANOUT_UNVERIFIED,
+                    f"relationship {relation.get('name')} fanout proof is not healthy",
+                    fanout_proofs=current_proofs,
+                )
             cardinalities.append(str(relation.get("join_type") or ""))
 
         facts = CrossDomainJoinFacts(
@@ -377,6 +414,7 @@ class CrossDomainJoinFactBuilder:
             ready=True,
             code=JoinFactCode.READY,
             facts=facts,
+            fanout_proofs=tuple(proofs),
             gate_decision=decision,
             reason="governed handles + Wren row grain/path + version-bound fanout proof verified",
         )
