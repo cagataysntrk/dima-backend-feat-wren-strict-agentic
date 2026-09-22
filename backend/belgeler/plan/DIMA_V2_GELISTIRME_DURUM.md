@@ -27,12 +27,27 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology ve substrate/reference authority.
 - `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **current J1S/J1T + M0/X0 decision authority**.
 - `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
+- `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T frozen lab benchmark contract.
+- `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
 - `../../AGENTS.md` — V2 geliştirici/ajan çalışma sözleşmesi.
 - `../../CLAUDE.md` — repo kuralları; V2 branch override üstte olmalıdır.
 
 ---
 
+### Historical sequence precedence rule
+
+Bu living status eski commit/run kararlarını audit amacıyla silmez.
+Eski günlük bölümlerinde görülen `Day6.5 freeze → DEV80`, `DEV80 → D65-X`,
+`one DEV80 per candidate` gibi ifadeler **historical record** kabul edilir.
+
+Current timing authority yalnız:
+1. `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — current Day6.5 decisions,
+2. `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — final release freeze/80/50/50 timing.
+
+Çelişkide bu iki current authority üstün gelir.
+
+---
 ## 1. NORTH STAR — TEK CÜMLE
 
 Eski `/ask` karar ağacını temizlemek değil; yanında izole, conversation-first,
