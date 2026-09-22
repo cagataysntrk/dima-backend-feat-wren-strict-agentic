@@ -1668,3 +1668,541 @@ Bu yol haritasının son ilkesi:
 
 “Metabase Dima’nın altındaki analytics işletim sistemi olur; Dima’nın semantic hakikati, muhakemesi ve karar zekâsı Dima’da kalır.”
 
+
+---
+
+# MBP13 — HER GÜN İÇİN ZORUNLU ÇIKIŞ PAKETİ
+
+Her M günü/fazı şu yedi artifact olmadan CLOSED sayılamaz:
+
+1. exact tested SHA
+2. implementation receipt
+3. focused provider-free result
+4. gerekiyorsa workers=1 live result
+5. open debt list
+6. rollback note
+7. next authorized step
+
+Living status şablonu:
+
+    PHASE:
+    STATUS:
+    BASE_SHA:
+    TESTED_SHA:
+    OWNER:
+    FILES:
+    CHANGE:
+    WHY:
+    PROVIDER_FREE:
+    LIVE:
+    FAILURE_RECEIPTS:
+    OPEN_DEBT:
+    BLOCKERS:
+    ROLLBACK:
+    NEXT:
+
+“tests pass” tek başına closure değildir.
+
+---
+
+# MBP14 — UÇTAN UCA SİMÜLASYON MATRİSİ
+
+Aşağıdaki senaryolar geliştirme boyunca tekrar kullanılacak canonical simulations’tır.
+
+## SIM-01 Standard aggregation
+
+Input:
+“Bu ay toplam net gelir ne?”
+
+Expected:
+- one metric
+- one period
+- no dimension
+- Standard
+- one authority
+- one execution
+- one evidence
+
+## SIM-02 Standard breakdown
+
+Input:
+“Bu ay net geliri bölgelere göre göster.”
+
+Expected:
+metric + region + current month.
+
+## SIM-03 Ranking
+
+Input:
+“Bu yıl en yüksek ciro yapan 5 müşteriyi göster.”
+
+Expected:
+ranking direction + limit preserved.
+
+## SIM-04 Explicit comparison
+
+Input:
+“Bu ayı geçen ayla karşılaştır.”
+
+Expected:
+two periods / comparison semantics exact.
+
+## SIM-05 Ambiguous entity
+
+Input:
+“Siyahın satışını göster.”
+
+Expected:
+clarify; query 0.
+
+## SIM-06 User repair
+
+Input sequence:
+“müşteriye göre göster”
+“yok müşteri değil ürün grubu”
+
+Expected:
+conversation repair.
+No business exclusion invention.
+
+## SIM-07 Follow-up
+
+Input:
+“Peki geçen sene?”
+Expected:
+same topic/metric/dimension, period delta.
+
+## SIM-08 Research multi-MUST
+
+Input:
+“Son 12 ay ürünleri karşılaştır, makineler ve personellerle ilişkisini analiz et, satış performansını yorumla ve raporla.”
+
+Expected:
+all MUST tracked.
+
+## SIM-09 Evidence replan
+
+Initial evidence invalidates machine hypothesis.
+
+Expected:
+Manager changes derived task.
+USER_MUST unchanged.
+
+## SIM-10 Cross-domain no path
+
+Expected:
+BLOCKED.
+No join invention.
+
+## SIM-11 Many-to-many risk
+
+Expected:
+CrossDomainJoinGate reject or governed bridge.
+
+## SIM-12 Permission revoke
+
+Execute then revoke permission before result read.
+
+Expected:
+cached/evidence read denied if incompatible.
+
+## SIM-13 Semantic drift
+
+DCSS version changes mid-session.
+
+Expected:
+old request immutable; new request new version.
+
+## SIM-14 Metabase repair mutation
+
+Repair attempts semantic change.
+
+Expected:
+equivalence gate reject.
+
+## SIM-15 Metabase outage
+
+Expected:
+typed provider failure; no raw DB fallback.
+
+## SIM-16 DB outage
+
+Expected:
+DATABASE failure; no semantic reclassification.
+
+## SIM-17 App restart
+
+Research in progress.
+
+Expected:
+resume from durable state.
+
+## SIM-18 Duplicate queue delivery
+
+Expected:
+idempotent no duplicate evidence.
+
+## SIM-19 Dashboard save
+
+Verified Standard result saved.
+
+Expected:
+Dima provenance attached.
+
+## SIM-20 Manual Metabase question
+
+User-created BI question.
+
+Expected:
+not automatically Evidence VERIFIED.
+
+## SIM-21 Root cause
+
+Correlation only.
+
+Expected:
+CANDIDATE_CAUSE max; no CONFIRMED_CAUSE.
+
+## SIM-22 Report claim
+
+LLM tries number not in evidence.
+
+Expected:
+ReportClaimGate reject.
+
+## SIM-23 Tenant crossing
+
+Expected:
+hard deny at metadata/query/result layers.
+
+## SIM-24 High cardinality
+
+Expected:
+bounded retrieval/query result.
+
+## SIM-25 Upgrade
+
+Metabase candidate version changes representation schema.
+
+Expected:
+adapter contract detects before rollout.
+
+---
+
+# MBP15 — DELIVERABLE MANIFEST
+
+Program bitene kadar oluşturulması beklenen ana artifact sınıfları:
+
+Architecture:
+- MetabaseAnalyticsPort
+- DCSS
+- SemanticRuntimeMapping
+- MetabaseProjectionCompiler
+- MetabaseRepairEquivalenceGate
+- PrincipalMapper
+- CrossDomainJoinGate
+
+Authority:
+- AcceptedStandardAuthority
+- AcceptedTurnContract
+
+Execution:
+- canonical query ref
+- QueryContract
+
+Evidence:
+- EvidenceArtifact
+- durable evidence store
+
+Research:
+- UserObligationLedger
+- ResearchRun
+- HypothesisLedger
+- CompletionGate
+
+Reporting:
+- Finding
+- ReportDocument
+- ReportClaimGate
+
+Decision:
+- DecisionBrief
+- DecisionRecord
+
+Ops:
+- version pin
+- health
+- tracing
+- backup/restore
+- rollback flags
+
+Evaluation:
+- parity corpus
+- security corpus
+- final rehearsal
+- DEV80
+- Validation50
+- Hidden50
+
+---
+
+# MBP16 — DEVELOPER OKUMA SIRASI
+
+Yeni geliştirici:
+
+1. DIMA_METABASE_NIHAI_MIMARI_VE_FIZIBILITE_RAPORU.md MBR0–MBR7
+2. Bu roadmap MBP0–MBP1
+3. İlgili günün M bölümü
+4. Dima mevcut V2 authority/runtime kodu
+5. İlgili Metabase pinned source referansı
+6. Kod
+7. focused tests
+
+Bütün legacy Dima’yı veya bütün Metabase repository’sini baştan sona okumak zorunlu değildir.
+
+Owner-first review yapılır.
+
+---
+
+# MBP17 — BRANCH VE FREEZE DİSİPLİNİ
+
+Primary development branch:
+feat/dima-metabase-foundation
+
+Wren branch:
+reference/oracle.
+
+Her büyük milestone öncesi tag/checkpoint önerilir:
+
+- mb-m0-baseline
+- mb-m5-semantic-compiled
+- mb-m7-standard-vertical
+- mb-m10-research-substrate
+- mb-m14-report
+- mb-m19-wren-parity
+- mb-final-freeze
+
+A/B exact same Dima SHA üzerinde yapılır.
+
+Metabase version da sabitlenir.
+
+---
+
+# MBP18 — GÖÇ SIRASINDA USER-FACING ROUTING
+
+Başlangıç:
+
+    production = Wren/current path
+    Metabase = lab/shadow
+
+Orta:
+
+    selected standard canary
+    research still Wren primary
+
+Sonra:
+
+    standard Metabase primary
+    research Metabase shadow
+
+Sonra:
+
+    standard + research Metabase primary
+    Wren shadow oracle
+
+Final:
+
+    Metabase one primary substrate
+    Wren runtime disabled
+
+Hiçbir aşamada request başına silent Wren↔Metabase fallback yok.
+
+---
+
+# MBP19 — DATA/SEMANTIC BOOTSTRAP STRATEJİSİ
+
+Yeni müşteri onboarding’i nihai üründe:
+
+1. DB connect
+2. schema sync
+3. metadata snapshot
+4. sector pack select
+5. DCSS baseline compose
+6. candidate metric/dimension mapping
+7. deterministic validation
+8. admin review for unresolved semantics
+9. compile to Metabase
+10. parity/smoke
+11. activate semantic_version
+
+Amaç:
+müşteri başına manuel yüzlerce rule yazmak değil.
+
+Sector pack inheritance:
+
+    global archetypes
+    → sector pack
+    → customer overlay
+
+Customer overlay minimum tutulur.
+
+---
+
+# MBP20 — SEMANTIC PACK GELİŞTİRME KURALI
+
+Bir müşteri vakası fail ettiğinde sector pack’e hemen synonym eklenmez.
+
+Önce:
+
+- cognition?
+- candidate retrieval?
+- canonical semantic missing?
+- value resolution?
+- business terminology gerçekten sector-wide mı?
+- customer-only mı?
+
+sınıflandırılır.
+
+Global bilgi yalnız gerçekten global ise global pack’e gider.
+
+Bu, eski heuristic sözlük bataklığını DCSS içinde yeniden üretmemek içindir.
+
+---
+
+# MBP21 — METABASE OBJECT OWNERSHIP
+
+Dima-managed Metabase objects explicit işaretlenir.
+
+States:
+
+- DIMA_MANAGED
+- USER_MANAGED
+- VERIFIED_USER_MANAGED
+
+DIMA_MANAGED object kullanıcı tarafından değiştirilirse:
+
+- drift detected
+- silent accept yok
+- recompile veya explicit promote/fork
+
+Bu rule semantic compiler’ın deterministic kalması için zorunludur.
+
+---
+
+# MBP22 — QUERY REPAIR BUDGET
+
+Metabase representations repair açık-ended değildir.
+
+Default:
+
+- max one deterministic repair pipeline per proposal
+- semantic mismatch → no second semantic repair; return to Dima StandardBuilder
+- repeated same representation/state → NO_PROGRESS
+
+Metabase repair teknik representation düzeltir.
+
+Dima cognition gerekiyorsa yeni model turn Dima tarafında olur.
+
+---
+
+# MBP23 — RESEARCH BUDGET
+
+Başlangıç policy:
+
+- max manager turns
+- max analytical executions
+- max relationship executions
+- wall time
+- model token budget
+- evidence size budget
+
+Bu sayılar config’dir; architecture değildir.
+
+Budget bitince:
+LIMITED.
+“complete” denmez.
+
+---
+
+# MBP24 — EVIDENCE ACCESS MODEL
+
+EvidenceArtifact görünürlüğü:
+
+tenant boundary
+AND
+current principal permission
+AND
+compatible data lens
+AND
+artifact policy.
+
+Report paylaşımı evidence permission’ı bypass etmez.
+
+Bir report section’ın evidence’i viewer için görünmüyorsa:
+- redacted
+- summarized only if policy allows
+- veya section hidden
+
+Bu davranış security tests’e girer.
+
+---
+
+# MBP25 — FINAL CUTOVER RUNBOOK
+
+Cutover öncesi:
+
+- final freeze SHA
+- pinned Metabase version
+- app DB backup
+- semantic compile receipt
+- tenant mappings
+- parity green
+- security green
+- rollback image
+- Wren switch ready
+- observability dashboards
+- on-call checklist
+
+Cutover:
+
+1. enable Metabase substrate for pilot tenant.
+2. watch P0/P1 telemetry.
+3. compare shadow Wren where configured.
+4. no silent fallback.
+5. P0 mismatch → operator rollback.
+6. stable window.
+7. expand tenants.
+
+Wren removal only after rollback window.
+
+---
+
+# MBP26 — PROGRAM BİTTİĞİNDE “DONE” KRİTERİ
+
+Bu roadmap’in tamamlanması “bütün dosyalar yazıldı” demek değildir.
+
+DONE:
+
+- DCSS canonical source çalışıyor.
+- Wren semantic inventory accounted.
+- Metabase semantic compile deterministic.
+- Standard real path Metabase primary.
+- Research real path Metabase primary.
+- principal/tenant security certified.
+- QueryContract/Evidence complete.
+- cross-domain grain safety certified.
+- root-cause epistemic gates active.
+- report claim gates active.
+- dashboard/workspace integrated.
+- persistence/resume working.
+- observability/rollback operational.
+- Wren parity decision closed.
+- final rehearsal green.
+- DEV80 green.
+- Validation50 green.
+- Hidden50 green.
+- certification sealed.
+- pilot activated deliberately.
+
+Bunlardan biri eksikse “nihai Dima tamam” denmez.
+
