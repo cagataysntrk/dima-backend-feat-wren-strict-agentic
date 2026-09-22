@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P4 IMPLEMENTATION — EXECUTION BINDING PROMOTION AUDIT RED  
-**Product-code development:** P4 STARTED; DMP-P4-RED-001 OPEN; COMPILER BLOCKED  
+**Current phase:** P4 EXECUTION BINDING GREEN — COMPILER PRE-IMPLEMENTATION REVIEW NEXT  
+**Product-code development:** P4 BINDING CERTIFIED; COMPILER CODE NOT STARTED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -392,3 +392,40 @@ unified contract GREEN.
 The existing principal/access coherence debt is unchanged. Lab-admin P3/P3A/P4 representation proofs
 do not establish tenant isolation, permission parity, RLS/CLS parity, revocation parity, or final
 ExecutionAccessFingerprint correctness. Do not implement identity mapping inside the P4 compiler.
+
+
+---
+
+## P4 execution-binding promotion closure — GREEN
+
+```text
+binding implementation HEAD       = 1771becb3e59395cf28f993345703449feb9a98d
+P4 binding workflow               = 35742516216 = SUCCESS
+focused P4 binding                = 18 PASS
+provider-free P3A/P3/M1           = 40 PASS
+real Wren M1 regression           = 5 PASS
+pinned-live P3 + P3A              = 2 PASS
+P3A workflow                      = 35742516331 = SUCCESS
+P3 workflow                       = 35742516120 = SUCCESS
+M1 workflow                       = 35742516339 = SUCCESS
+governance                        = 35742516356 = SUCCESS
+binding type identity             = PASS
+parallel binding implementations  = 0
+current-catalog drift proof       = PASS
+compiler.py                       = ABSENT / NOT STARTED
+canonical.py                      = ABSENT / NOT STARTED
+source branch observed            = 70fb5933982467c4acf9ecd847d8e48f900058ed
+source branch writes/sync         = 0
+```
+
+DMP-P4-RED-001 is CLOSED GREEN.
+
+Authoritative binding owner:
+`backend/app/v3/substrate/metabase/execution_binding.py`
+
+P3A now imports/re-exports the exact production binding primitives; its synthetic fixture carries an
+explicit Dima-owned `CurrentCatalogSnapshot`, and P3A compilation validates expected SourceLineage
+against current catalog before emitting physical locators.
+
+**Next:** re-read P4 roadmap/report/compiler constraints and seal a compiler implementation review.
+Only after that review/governance may `compiler.py` / `canonical.py` be created.

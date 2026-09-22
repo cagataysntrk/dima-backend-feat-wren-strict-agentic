@@ -3,7 +3,7 @@
 **Milestone:** P4  
 **Predevelopment review:** `backend/belgeler/metabase/predev/P4_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** deterministic Dima semantic intent → canonical Metabase structured query  
-**Status:** IMPLEMENTATION STARTED / BINDING GATE RED — DMP-P4-RED-001 OPEN
+**Status:** EXECUTION BINDING GREEN / COMPILER PRE-IMPLEMENTATION REVIEW REQUIRED
 
 ## Goal
 
@@ -67,3 +67,25 @@ P3A consumers        = production binding types
 CurrentCatalog       = explicit governed observation, never search-derived
 P4 binding workflow  = GREEN
 ```
+
+
+---
+
+## Execution-binding gate closure
+
+```text
+binding HEAD                   1771becb3e59395cf28f993345703449feb9a98d
+P4 workflow                    35742516216 = SUCCESS
+focused binding                18 passed
+provider-free regressions      40 passed
+real Wren regression           5 passed
+pinned-live P3/P3A             2 passed
+P3A workflow                   35742516331 = SUCCESS
+P3 workflow                    35742516120 = SUCCESS
+M1 workflow                    35742516339 = SUCCESS
+governance                     35742516356 = SUCCESS
+```
+
+DMP-P4-RED-001: **CLOSED GREEN**.
+
+Compiler remains not-started until the mandatory compiler pre-implementation re-read/review is sealed.
