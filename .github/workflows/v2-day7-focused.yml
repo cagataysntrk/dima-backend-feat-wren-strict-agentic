@@ -1,0 +1,43 @@
+name: v2-day7-focused
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/v2/research_tools.py"
+      - "backend/app/v2/manager_tools.py"
+      - "backend/app/v2/manager_executor.py"
+      - "backend/tests/test_v2_day7_research_tool_contract.py"
+      - ".github/workflows/v2-day7-focused.yml"
+  workflow_dispatch:
+
+jobs:
+  research-tool-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DIMA_LLM_PROVIDER: "rule"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Compile Day7 slice
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v2/research_tools.py \
+            app/v2/manager_tools.py \
+            app/v2/manager_executor.py
+      - name: Focused provider-free Day7 test
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_tool_contract.py
