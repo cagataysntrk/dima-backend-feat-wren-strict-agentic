@@ -313,6 +313,8 @@ def test_research_state_separates_accumulated_evidence_from_latest_delta():
     assert before.latest_delta.availability == ResearchDeltaAvailability.AVAILABLE
     assert before.latest_delta.verified is True
     assert before.latest_delta.inspected is False
+    assert before.latest_delta.bounded_payload["executions"]
+    assert before.latest_delta.bounded_payload["executions"][0]["rows"]
     assert before.verified_user_must_ids == ("U_QUERY",)
     assert before.remaining_user_must_ids == ()
 
