@@ -116,6 +116,11 @@ class GovernedManagerExecutor:
         """Verified request identity used by governed execution; may be None only in tests/miswire."""
         return self._context.principal
 
+    @property
+    def tenant_binding(self) -> str:
+        """Tenant authority bound into this governed execution context."""
+        return self._context.tenant_binding
+
     def _validate_derived_semantic_provenance(
         self,
         args: ResolveSemanticsArgs,
