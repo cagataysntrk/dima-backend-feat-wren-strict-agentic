@@ -134,3 +134,69 @@ M0E-DEEP-DELTA                      still ACTIVE in parallel
 X0                                  BLOCKED
 DEV80 / Validation50 / Hidden50     FORBIDDEN
 ```
+
+
+## Exact same-product-semantics diagnostic — Path A PROVEN
+
+Diagnostic run:
+`35728413368`
+
+Artifact:
+`v2-day6-5-si-semantic-diagnostic-001`
+
+Precondition proved in workflow:
+```text
+git diff 4ad8238c... HEAD -- backend/app
+= EMPTY
+```
+
+Therefore product semantic code was unchanged from the failed full-live SHA.
+
+Observed trace:
+```text
+draft semantic surface
+= "tahsil edilmemiş cari bakiye"
+
+kind_hint
+= metric
+
+retriever backend
+= deterministic_enumeration_v1
+
+candidate_count_before_bound
+= 136
+
+exact_candidate_count
+= 0
+
+visible_candidate_count
+= 48
+
+too_broad
+= true
+
+semantic selection
+= CANDIDATE_SET_TOO_BROAD
+
+semantic_provider_called
+= false
+
+final
+= CLARIFICATION_REQUIRED
+authority = NONE
+query_count = 0
+```
+
+Exact subcause:
+```text
+PATH A = PROVEN
+PATH B = NOT OBSERVED
+SEMANTIC_DECISION_CONTEXT_LOSS = NOT OBSERVED FOR CASE 001
+```
+
+Root owner remains:
+`SemanticCatalogRetriever / SemanticCandidateGenerator discovery boundary`.
+
+Authorized next product change:
+implement the smallest generic bounded ranked retrieval backend over governed catalog metadata.
+Retrieval rank remains discovery-only and may never mint semantic authority.

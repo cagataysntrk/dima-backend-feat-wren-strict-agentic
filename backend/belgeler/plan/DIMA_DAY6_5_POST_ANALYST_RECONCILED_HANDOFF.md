@@ -378,3 +378,36 @@ After context reset:
 11. never start Metabase runtime before bridge preflight;
 12. consult only at listed STOP points.
 ```
+
+
+## 4A. Full-live composition RED — discovery scalability
+
+Full-live run `35724830736` stopped at frozen `si-live-001`.
+
+Exact same-product-semantics diagnostic `35728413368` proved:
+```text
+draft surface              "tahsil edilmemiş cari bakiye"
+retriever                  deterministic_enumeration_v1
+metric candidates          136
+exact                      0
+visible bound              48
+too_broad                  true
+semantic linker call       NO
+terminal                   CANDIDATE_SET_TOO_BROAD
+```
+
+Do not open semantic decision context repair: current surface retained the disambiguating `cari`
+evidence.
+
+Current next order:
+```text
+generic bounded semantic retrieval
+→ provider-free retrieval family tests
+→ catalog-growth/order metamorphic proof
+→ SI focused provider-free GREEN
+→ SAME frozen 6-case workers=1 full-live rerun
+```
+
+Forbidden:
+increase candidate bound, named alias/case patch, regex/stemming/fuzzy semantic authority,
+top-1 auto-binding, full catalog to Luna, frozen corpus change.

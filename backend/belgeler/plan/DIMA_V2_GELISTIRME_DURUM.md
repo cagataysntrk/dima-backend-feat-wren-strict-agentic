@@ -4,7 +4,7 @@
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
 **Durum:** **DAY 6.5 SI PARTIAL GREEN — SI FINAL COMPOSITION OPEN; M0E-v1 PRESERVED / M0E-DEEP-DELTA OPEN; X0-BRIDGE-PREFLIGHT BLOCKS X0; DEV80 FORBIDDEN**  
-**Kod fazı:** Verified checkpoint `3774484167...`. Provider topology `Semantic=Luna / Temporal=Sol / Research=Sol` remains P0 GREEN. SI focused `35718675540=25/25 PASS`; real Wren sentinels `35718883950=2/2 PASS` prove pure Standard post-cognition authority/execution plus retained Research trust plane. SI FINAL is still OPEN: semantic-surface completeness P0, shared Standard/Research cross-family authority arbiter, Research temporal-role wiring, then workers=1 raw-Turkish full-live Standard composition. Historical M0E-v1 remains a valid baseline but FINAL exhaustion is REOPENED as `D65-M0E-DEEP-DELTA`. X0 runtime is BLOCKED by SI final + M0E-DEEP-DELTA + `D65-X0-BRIDGE-PREFLIGHT`. `/ask-v2` remains legacy Day4 front-door and OFF; front-door ownership closure is Day10 release blocker.  
+**Kod fazı:** Verified checkpoint moved through SI structural GREEN into full-live composition RED. `35724650999`/`35728023633` keep focused/eval gates GREEN. Full-live `35724830736` failed at `si-live-001`; exact same-product-semantics diagnostic `35728413368` proved Path A: draft surface=`tahsil edilmemiş cari bakiye`, enumeration=136 metrics, exact=0, visible=48, `CANDIDATE_SET_TOO_BROAD`, Luna not called. Current single owner = bounded semantic discovery. Authorized next = generic retrieval backend + provider-free/metamorphic proofs; frozen corpus/provider topology/candidate bound remain unchanged. M0E-DEEP-DELTA continues in parallel; X0/DEV80 remain blocked.  
 
 ---
 
@@ -307,6 +307,30 @@ Parallel:
 
 Then:
 `workers=1 full-live Standard composition → SI FINAL + M0E delta FINAL → bridge preflight`.
+
+---
+
+## 0J. FULL-LIVE STANDARD RED — EXACT ROOT SUBCAUSE PROVEN
+
+```text
+failed full-live run       35724830736
+same-product diagnostic    35728413368
+
+surface                    "tahsil edilmemiş cari bakiye"
+metric catalog             136
+exact candidates           0
+linker bound               48
+too_broad                  true
+semantic provider called   false
+selection                  CANDIDATE_SET_TOO_BROAD
+```
+
+Classification:
+`CONTRACT/ARCHITECTURE → SEMANTIC_DISCOVERY_BREADTH`.
+
+No context-loss repair is authorized for this case.
+Next:
+`generic bounded retrieval → family/metamorphic provider-free proof → same frozen 6-case live rerun`.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE
