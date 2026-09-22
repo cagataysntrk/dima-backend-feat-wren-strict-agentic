@@ -57,3 +57,5 @@ jobs:
 # retry: bounded-semantic-token-index
 
 # retry: retrieval-oracle-fixed
+
+# retry: source-context-and-filter-contract
