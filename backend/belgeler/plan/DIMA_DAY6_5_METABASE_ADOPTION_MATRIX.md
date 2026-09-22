@@ -70,6 +70,11 @@ M0 itself does not write product code.
 | Dashboard | `src/metabase/mcp/v2/tools/dashboard.clj` | Dima dashboard/UI roadmap | UX/product pattern, not substrate winner itself | POST-MVP unless backend contract impacts release | DEFER_PRODUCT_UX |
 | Collections | `src/metabase/mcp/v2/tools/collection.clj` | Dima persistence/workspace concepts | Product/UX candidate | POST-MVP | DEFER_PRODUCT_UX |
 | Visualization | `src/metabase/mcp/v2/tools/visualize.clj` | Dima VizSpec/report/chart pipeline | Handle/UI separation is useful, not substrate criterion | DAY9-12 / POST-MVP | DEFER_PRODUCT_UX |
+| Deployment topology / self-hosted service | official Docker/JAR + production app-DB docs | No Dima equivalent; external component if selected | Operational/runtime burden must be measured | X0 | TEST_IN_X0 |
+| Horizontal scaling / HA | official Metabase scale docs | Dima service scaling is separate | Need coupled failure/latency/HA assessment | X0 / FULL-D65-X | TEST_IN_X0 |
+| Metabase application DB | production docs recommend dedicated PostgreSQL | Dima has its own persistence; Metabase adds separate state DB | Additional backup/migration/ops burden | X0 | TEST_IN_X0 |
+| Cloud vs self-host boundary | Metabase Cloud and self-host are distinct products | Dima trust model prefers controlled infra for experiment | Vendor-cloud data boundary must not be assumed | X0 | VERIFIED_SOURCE |
+| OSS licensing boundary | Metabase OSS = AGPL | Dima proprietary/product licensing separate | Source copy/fork/embedding requires explicit legal/license review | M0 / decision | DECISION_PENDING |
 | Native NLQ / Metabot behavior | `agent/core.clj`, `profiles.clj` | Dima Standard cognition | Multi-turn governed NLQ verified; quality unmeasured | FULL-D65-X secondary | DECISION_PENDING |
 | Workspace/exploration UX | explorations + MCP question/dashboard/collection tools | Dima future Research/workspace UI | State-channel patterns useful; not substrate criterion | POST-MVP | DEFER_PRODUCT_UX |
 
@@ -765,3 +770,32 @@ These findings strengthen the existing X0 P0s:
 blocked by `D65-SI STANDARD INTEGRATION CLOSURE`. The substrate comparison must consume the
 real `AcceptedStandardAuthority → StandardProjection` chain, never the historical Research
 surrogate.
+
+
+## 7. Deployment topology authority
+
+Detailed engineering decision record:
+`DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md`.
+
+Current X0 default:
+```text
+self-hosted pinned Metabase runtime
+private service network
+Agent API
+no vendor Cloud dependency
+```
+
+This is an experiment topology, not a production selection.
+
+Production selection must measure:
+- extra JVM/service footprint,
+- application PostgreSQL,
+- upgrade/migration/backup,
+- monitoring,
+- horizontal scaling,
+- tenant/principal mapping,
+- QueryContract/Evidence compatibility,
+- failure blast radius,
+- licensing/commercial implications.
+
+Direct source copy/port/vendor remains forbidden.
