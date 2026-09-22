@@ -82,12 +82,11 @@
 > comparison/temporal semantic seçimi taşınmaz. Yalnız raw SourceSpanRefs ve non-authoritative
 > discovery cache yeniden kullanılabilir.
 >
-> Current semantic code `c9629d9029db...` için **EXACT CURRENT SEMANTIC-SHA RECERTIFICATION** henüz yapılmalıdır.
-> DEV80 is once per engineering-freeze candidate; code change yeni candidate yaratır.
-> Validation/Hidden sonrası code değişirse certification invalid olur ve fresh certification set gerekir.
-> Sonraki closure sırası: recert → Retriever seam → StandardBuilder → Standard/Research authority
-> split → real Wren vertical → frozen DEV80 → engineering freeze → VALIDATION50 → external
-> HIDDEN50 → certification seal. Production hybrid route seal öncesi kapalıdır.
+> `c9629d9029db...` exact semantic-SHA recertification **70/70 GREEN**; Retriever seam **9/9 GREEN**. StandardBuilder/E4/E5 focused gates de green fakat runtime-kernel kararı nedeniyle provisional'dır.
+> Provider-free front-door family closure oracle sync sonrası `35691982389` üzerinde **88/88 PASS**.
+> Next product ticket: `D65-E3A-R` — minimal generic `BoundedAgentRuntimeKernel` + existing StandardBuilder mechanics realignment.
+> DEV80 is once per engineering-freeze candidate; code change yeni candidate yaratır. Validation/Hidden sonrası code değişirse certification invalid olur ve fresh set gerekir.
+> Closure: kernel realignment → focused/family gates → workers=1 live → canary → Wren sentinels → freeze candidate → DEV80 → ENGINEERING CLOSED → D65-X Wren/Metabase substrate challenger → Validation50 → fresh Hidden50 → seal. Production hybrid route seal öncesi kapalıdır.
 >
 > STOP-THE-LINE: ikinci semantic owner, silent requirement loss, unsafe standard admission,
 > ambiguity auto-pick, rejected authority merge, candidate-set dışı truth, raw SQL/direct DB,
