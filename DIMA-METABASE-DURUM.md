@@ -866,3 +866,35 @@ Wren/Metabase equivalence claim   = NO
 P6 result is **measurement GREEN / parity incomplete with typed gaps**.
 
 **Current phase:** P7 PRE-DEVELOPMENT — DimaSemanticSpec V1 + structured Wren MDL importer.
+
+
+---
+
+## P7 DimaSemanticSpec importer — CLOSED BASELINE
+
+```text
+implementation SHA                 = 2e233ea6122c9cc0ccc18ebe2978e2e896ebb41c
+P7 workflow                        = 35772646640 = SUCCESS
+focused importer                   = 8 PASS
+inherited provider-free            = 13 PASS / 2 SKIP
+M1/Wren                            = 35772646558 = SUCCESS
+governance                         = 35772646510 = SUCCESS
+models observed                    = 80
+cubes observed                     = 23
+metrics imported                   = 136
+regular dimensions imported        = 121
+time dimensions imported           = 23
+relationships observed             = 31
+views observed                     = 1
+duplicate semantic source names    = 0
+missing cube baseObject            = 0
+relationship join-key gaps         = 31
+calculated dimension gaps          = 29
+calculated model-column gaps       = 25
+cube semantic-entity gaps          = 23
+view definition gaps               = 1
+```
+
+P7 result: **migration baseline GREEN / typed representation gaps explicit**.
+
+**Current phase:** P8 PRE-DEVELOPMENT — semantic equivalence matrix.

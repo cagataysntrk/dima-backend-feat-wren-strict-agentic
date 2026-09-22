@@ -1765,3 +1765,29 @@ Carried debt:
 
 status:
 `P6 TARGETED PARITY PROBE CLOSED`.
+
+
+---
+
+## P7 structured semantic importer closure — GREEN baseline / typed gaps explicit
+
+implementation_sha: `2e233ea6122c9cc0ccc18ebe2978e2e896ebb41c`  
+p7_workflow: `35772646640 = SUCCESS`  
+governance: `35772646510 = SUCCESS`  
+m1_wren_regression: `35772646558 = SUCCESS`
+
+proof:
+- final composed MDL -> DimaSemanticSpec import is deterministic;
+- formulas are preserved opaque, never regex/SQL-text parsed;
+- exact model/table/column lineage is imported where structurally present;
+- final-composed override changes alter semantic fingerprints deterministically;
+- aliases, units, additivity and time dimensions are preserved from explicit structured fields;
+- relationships without structured join keys are typed gaps, not guessed;
+- calculated dimensions/model columns/views/cube semantic entity debt is explicit;
+- no Metabase search, fuzzy matching, morphology, raw prompt or source-branch inheritance.
+
+interpretation:
+`P7 MIGRATION BASELINE GREEN / LOSSLESS EQUIVALENCE NOT CLAIMED`.
+
+status:
+`P7 CLOSED FOR INITIAL CANONICAL IMPORT; P8 EQUIVALENCE MATRIX NEXT`.

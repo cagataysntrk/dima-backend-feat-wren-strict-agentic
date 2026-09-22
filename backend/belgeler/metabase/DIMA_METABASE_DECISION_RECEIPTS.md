@@ -678,3 +678,53 @@ The final natural-language integrated evaluation remains separate (`DEV80` exact
 Validation50/Hidden50).
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0021 — P7 closes as a loss-aware semantic migration baseline
+
+date: 2026-09-22
+
+evidence:
+- P7 implementation SHA `2e233ea6122c9cc0ccc18ebe2978e2e896ebb41c`;
+- P7 workflow `35772646640 = SUCCESS`;
+- focused structured importer = 8 PASS;
+- inherited provider-free regressions = 13 PASS / 2 SKIP;
+- M1/Wren workflow `35772646558 = SUCCESS`;
+- governance `35772646510 = SUCCESS`;
+- current final composed demo MDL imports deterministically.
+
+real composed inventory:
+- 80 models;
+- 23 cubes;
+- 136 measures;
+- 121 regular dimensions;
+- 23 time dimensions;
+- 31 relationships;
+- 1 view;
+- duplicate model/cube/relationship names = 0;
+- missing cube baseObject targets = 0;
+- dimension/time name overlap = 0.
+
+observed typed representation gaps:
+- 31 textual relationship join conditions lack structured JoinKeySpec;
+- 29 calculated/derived dimension expressions are not exact physical columns;
+- 25 calculated model columns are opaque in the current DimaSemanticSpec;
+- 23 cube-level semantic entity surfaces have no top-level Dima owner;
+- 1 view definition remains opaque;
+- structured relationship-origin dimensions observed = 9, unresolved origin = 0.
+
+decision:
+P7 does not parse SQL/formula/join-condition text merely to make migration appear lossless.
+The first importer establishes deterministic Dima-owned identity for structurally representable metric,
+dimension, time and lineage surfaces and emits exact typed gaps for material source richness that the
+current canonical spec cannot yet represent.
+
+Those gaps become explicit P8 equivalence-matrix inputs. P8 decides whether each capability is:
+`NATIVE_METABASE`, `DIMA_COMPILED`, `DIMA_RUNTIME`, `WREN_ONLY_GAP`, or `UNSUPPORTED`.
+
+A later change to DimaSemanticSpec is allowed only when P8 proves a concrete canonical representation
+need; importer convenience or gap-count reduction alone is not sufficient.
+
+status: SEALED.
