@@ -475,54 +475,90 @@ failure_triage_receipt_gate:
   forbidden_keyword_or_regex_semantic_patch: true
   forbidden_legacy_resolver_fallback: true
 
-d65_j1_decision_model_challenger:
+d65_prefreeze_decision_gate:
   phase: "PRE_ENGINEERING_FREEZE"
+  freeze_blocked_until_resolved: true
+  dev80_blocked_until_resolved: true
   canonical_roadmap_renumber: false
   day7_10_unchanged: true
-  d65x_unchanged: true
-  j1a:
+
+  proven_baseline:
+    provider_free_run: 35696652502
+    provider_free_pass: "102/102"
+    reference_canary_run: 35697064833
+    reference_canary_pass: "16/16"
+    sentinel_run: 35697471863
+    sentinel_pass: "2/2"
+    tested_code_sha: "8dfde62d46d1418f05cce3ed44c26a8025b3b20e"
+
+  d65_j1:
     mode: "ISOLATED_LAB_EVAL_ONLY"
     product_code_no_touch: true
-    manager_excluded: true
-    temporal_normalizer_excluded: true
     pinned_models:
       cheap_structured: "google/gemini-2.5-flash-lite"
       jev: "typesafe/jev-1.13"
       reference_structured: "openai/gpt-5.6-sol"
     forbidden_models:
       - "~typesafe/jev-latest"
-    jev_transport:
-      api: "OPENROUTER_DECISIONS_ALPHA"
-      endpoint: "https://openrouter.ai/api/alpha/decisions"
-      question_type: "choice"
-    output_contract:
-      allowed:
+    hidden_fallback_or_cascade: false
+    threshold_tuning_on_same_eval_set: false
+
+    j1s_semantic_candidate_decision:
+      manager_excluded: true
+      temporal_excluded: true
+      output:
         - "SUPPLIED_CANDIDATE_ID"
         - "ABSTAIN"
-      canonical_id_output: false
-      semantic_authority_mint: false
-    no_touch:
-      - "app/v2/semantic_linker.py"
-      - "app/v2/semantic_handles.py"
-      - "app/v2/manager_semantics.py"
-      - "app/v2/temporal_intent.py"
-      - "app/v2/acceptance.py"
-    required_strata:
-      - exact_alias_control
-      - turkish_non_exact_paraphrase
-      - synonym_surface
-      - multiple_plausible_candidates
-      - true_ambiguity
-      - no_match_abstain
-      - retrieval_miss
-      - bounded_high_cardinality
-      - entity_value
-      - sensitive_value_exact_only
-      - metric_dimension_variation
-      - metamorphic_permuted_schema_labels
-      - cross_tenant_candidate_isolation
-    metrics:
-      - candidate_selection_accuracy
+      candidate_card_fields:
+        - candidate_id
+        - target_kind
+        - label
+        - verified_aliases
+        - cube_labels
+      required_strata:
+        - exact_alias_control
+        - turkish_non_exact_paraphrase
+        - synonym_surface
+        - multiple_plausible_candidates
+        - true_ambiguity
+        - no_match_abstain
+        - retrieval_miss
+        - bounded_high_cardinality
+        - entity_value
+        - sensitive_value_exact_only
+        - metric_dimension_variation
+        - metamorphic_permuted_schema_labels
+        - cross_tenant_candidate_isolation
+      p0:
+        candidate_outside_supplied_set: 0
+        silent_ambiguity_auto_pick: 0
+        cross_tenant_semantic_leak: 0
+        semantic_authority_minted_by_model: 0
+
+    j1t_typed_temporal_normalization:
+      manager_excluded: true
+      candidate_linker_excluded: true
+      calendar_arithmetic_by_model: false
+      deterministic_date_owner: "TemporalBindingEngine"
+      required_strata:
+        - this_month
+        - previous_month
+        - this_year
+        - previous_year
+        - last_n_days
+        - last_n_weeks
+        - last_n_months
+        - previous_period
+        - same_period_previous_year
+        - explicit_base_comparison
+        - implicit_base_comparison
+        - turkish_paraphrases
+        - ambiguous_temporal_phrase
+        - unsupported_temporal_request
+      jev_unrepresentable_contract_behavior: "MEASURE_AND_REPORT_NO_WORKAROUND"
+
+    shared_metrics:
+      - accuracy
       - abstain_precision
       - abstain_recall
       - ambiguity_unsafe_pick_count
@@ -538,21 +574,49 @@ d65_j1_decision_model_challenger:
       - jev_brier_or_equivalent
       - jev_ece_or_equivalent
       - jev_high_confidence_wrong_count
-    p0:
-      candidate_outside_supplied_set: 0
-      silent_ambiguity_auto_pick: 0
-      cross_tenant_semantic_leak: 0
-      high_confidence_wrong_accepted: 0
-      semantic_authority_minted_by_model: 0
-    confidence_threshold_policy:
-      production_threshold_in_j1a: false
-      tune_on_same_eval_set: false
-  decision:
-    reject:
-      product_change: false
-      resume_current_architecture: true
-    promising:
-      next_ticket: "D65-J1B"
-      requires_decision_provider_seam: true
-      requires_semantic_temporal_role_split: true
-      requires_full_revalidation_before_freeze: true
+
+    decision:
+      reject:
+        product_change: false
+      promising:
+        stop_and_consult: true
+        next_ticket_if_approved: "D65-J1B"
+        requires_explicit_decision_provider_seam: true
+        requires_semantic_temporal_role_separation: true
+        requires_affected_gate_revalidation: true
+
+  d65_m0:
+    mode: "READ_RESEARCH_ADOPTION_AUDIT"
+    product_integration: false
+    canonical_repo: "metabase/metabase"
+    historical_pinned_sha: "74216b30981d8310c4cf724d63ca282e2e63529d"
+    current_upstream_sha: "fff70175e0b5f82dc0eb267593c717c4a6130206"
+    relevant_source_delta_between_shas: "NONE"
+    output: "DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md"
+
+  d65_x0:
+    mode: "THIN_SEPARATE_SERVICE_FEASIBILITY"
+    starts_after_m0_has_sufficient_evidence: true
+    representative_standard_projection_cases:
+      min: 5
+      max: 10
+    raw_sql_shortcut: false
+    remove_wren: false
+    production_route: false
+    equal_parallel_truth_engines: false
+    decision:
+      not_promising:
+        primary_substrate: "WREN"
+      promising:
+        stop_and_consult: true
+        next_ticket_if_approved: "D65-X"
+        must_choose_exactly_one_primary_substrate_before_freeze: true
+
+  consultation_gates:
+    - D65_J1B_PRODUCT_INTEGRATION
+    - PRODUCTION_MODEL_CASCADE_OR_THRESHOLD
+    - FULL_D65_X
+    - PRIMARY_SUBSTRATE_SWITCH
+    - AUTHORITY_OR_SECURITY_BOUNDARY_ADOPTION
+    - ENGINEERING_FREEZE_CANDIDATE
+    - DEV80
