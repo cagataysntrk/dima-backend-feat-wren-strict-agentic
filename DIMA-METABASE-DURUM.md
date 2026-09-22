@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P0 CLOSED / M1 READY — engine-independent Dima contracts + Wren adapter  
-**Product-code development:** M1 PREDEVELOPMENT REVIEW IN PROGRESS / NO PRODUCT CODE YET  
+**Current phase:** M1 / P1 CLOSED GREEN — M2 / P2 PRE-DEVELOPMENT REVIEW NEXT  
+**Product-code development:** M1 CLOSED GREEN; M2 PRODUCT CODE NOT STARTED  
 **Metabase runtime:** NOT SELECTED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -32,9 +32,16 @@ product code touched        0
 
 ## Open — next gate
 
-**M1 / P1 READY:** engine-independent contracts + Wren adapter with zero behavior drift.
+**M2 / P2:** Metabase source/runtime pin policy + isolated self-host lab bootstrap.
 
-Before any M1 product-code change, the engineer/agent must re-read the sealed architecture report and roadmap P1, validate the current source lock/status, inspect the certified-base implementation, and record the ticket scope/owner/invariants. No Metabase product routing before P3A bridge preflight.
+Before any M2 infrastructure/product change:
+1. re-read sealed roadmap P2 and relevant architecture report sections;
+2. revalidate source/runtime pin distinction and current living status;
+3. inspect existing repo infrastructure without changing v2/source;
+4. seal an M2 pre-development review + scoped ticket;
+5. only then select an exact supported Metabase runtime release + immutable image digest.
+
+No Dima product routing to Metabase is authorized in M2. P3A remains the semantic bridge gate.
 
 ## Known source-only deltas
 
@@ -89,4 +96,34 @@ Reviewed:
 - certified-base Standard authority/projection/execution/semantic-handle code;
 - moving ask-v2 post-base deltas READ-ONLY.
 
-Implementation remains blocked until the pre-development review commit and governance CI are GREEN.
+Historical result: review commit `67a1ded2...` and governance run `35727494650` were GREEN; M1 implementation subsequently completed and certified.
+
+
+---
+
+## M1 / P1 closure — GREEN
+
+```text
+final M1 implementation SHA  = 17942f179b13fd2cb81fd284789ba0f6366d2ed8
+M1 workflow run              = 35730916014 = SUCCESS
+governance run               = 35730916118 = SUCCESS
+provider-free contracts      = 15 PASS
+real Wren parity + sentinels = 5 PASS
+forbidden-file isolation     = PASS
+v2/source files modified     = 0
+ask-v2 source HEAD observed  = 7d970c6fc9f9cb275700e72e445427695e7252a4
+automatic source sync        = 0
+Metabase runtime dependency  = 0
+production routing change    = 0
+```
+
+M1 invariants certified:
+- engine-independent v3 contracts exist;
+- Dima resolves semantic handles before substrate execution;
+- Wren substrate does not own semantic handle resolution or raw-language interpretation;
+- original resolver candidate provenance survives the seam;
+- material semantic-surface completeness and shared Standard/Research XOR have v3 contract proofs;
+- Wren SQL/CubeQuery/result/provenance and legacy audit-question persistence are parity-checked;
+- retained v2 Wren trust-plane sentinels remain GREEN.
+
+**Next:** M2/P2 pre-development review. M2 does not authorize Metabase product routing.

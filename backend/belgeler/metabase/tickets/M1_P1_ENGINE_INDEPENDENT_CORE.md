@@ -3,7 +3,7 @@
 **Milestone:** M1 / P1  
 **Predevelopment review:** `backend/belgeler/metabase/predev/M1_P1_PREDEVELOPMENT_REVIEW.md` @ `67a1ded2a228855322116508c87047337f7a5a7b`  
 **Owner:** v3 core contract boundary  
-**Status:** AUTHORIZED / IMPLEMENTATION OPEN
+**Status:** CLOSED GREEN
 
 ## Goal
 
@@ -81,3 +81,29 @@ app/v3/substrate/wren.py
 
 Metabase lab/client/bridge remains CLOSED until M2/M3/P3A.
 DimaSemanticSpec importer and full semantic equivalence remain P7/P8.
+
+
+---
+
+## Closure receipt
+
+```text
+final implementation SHA     17942f179b13fd2cb81fd284789ba0f6366d2ed8
+M1 workflow                  35730916014 = SUCCESS
+governance                   35730916118 = SUCCESS
+provider-free                15 passed
+real Wren parity/sentinels   5 passed
+forbidden-file isolation     PASS
+source/v2 product edits      0
+```
+
+Closed failure receipts:
+- DMP-M1-RED-001 — test oracle lexical false positive;
+- DMP-M1-RED-002 — source candidate provenance loss;
+- DMP-M1-RED-003 — AST dedent oracle;
+- DMP-M1-RED-004 — shallow checkout isolation oracle;
+- DMP-M1-RED-005 — legacy QueryContract question-field drift;
+- DMP-M1-RED-006 — stale parity fixture constructor;
+- DMP-M1-RED-007 — evidence hash runtime import.
+
+Exit gate: **GREEN**.

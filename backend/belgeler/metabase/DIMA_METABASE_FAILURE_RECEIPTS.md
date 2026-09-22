@@ -529,3 +529,24 @@ full M1 workflow including retained v2 real-Wren sentinels.
 
 status:
 `CLASSIFIED / NARROW IMPLEMENTATION PATCH AUTHORIZED`.
+
+
+---
+
+## M1 closure matrix
+
+final_sha: `17942f179b13fd2cb81fd284789ba0f6366d2ed8`  
+workflow: `35730916014 = SUCCESS`  
+governance: `35730916118 = SUCCESS`
+
+```text
+DMP-M1-RED-001  CLOSED GREEN — corrected oracle
+DMP-M1-RED-002  CLOSED GREEN — candidate provenance preserved; real parity passed
+DMP-M1-RED-003  CLOSED GREEN — AST oracle corrected
+DMP-M1-RED-004  CLOSED GREEN — full-history isolation gate passed
+DMP-M1-RED-005  CLOSED GREEN — raw audit question preserved outside substrate; parity passed
+DMP-M1-RED-006  CLOSED GREEN — parity fixture aligned; 15 provider-free tests passed
+DMP-M1-RED-007  CLOSED GREEN — evidence hash dependency restored; real Wren step passed
+```
+
+No M1 failure remains open. Any future regression receives a new receipt id; historical receipts are not reopened.
