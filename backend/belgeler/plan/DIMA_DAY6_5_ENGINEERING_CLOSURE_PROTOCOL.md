@@ -52,6 +52,8 @@ AcceptedAuthority
 
 `STANDARD_DIRECT` ve `STANDARD_BUILDER` aynı Standard authority'yi üretir.
 
+`AcceptedResearchAuthority` yeni ikinci bir research semantic body DEĞİLDİR. Uygulamada mevcut `AcceptedTurnContract` research authority gövdesi olarak korunur; gerekiyorsa yalnız type alias / tagged-union etiketiyle `AcceptedResearchAuthority` adı verilir. Aynı research semantic gerçeği ikinci kez modellenmez.
+
 ## 3. Standard ile Research correctness problemi ayrıdır
 
 ### StandardBuilder
@@ -223,7 +225,8 @@ Initial config ölçüm başlangıcı:
 ```text
 max_model_turns = 4
 max_tool_calls = 8
-same_action_same_state = 1
+max_executions_per_action_state_pair = 1
+duplicate_reexecution_max = 0
 ```
 
 Sayılar benchmarkla değişebilir; değişmezler:
@@ -301,42 +304,81 @@ Sequence:
 ```text
 provider-free invariants
 → workers=1 focused stability
-→ strong reference A/B
+→ same-SHA strong reference / fast A/B when needed
 → 12–16 stratified canary
-→ frozen DEV80 (one final rerun after architecture change)
+→ real Wren Standard + Research sentinels
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 exactly once for that freeze candidate
 → engineering freeze
 → VALIDATION50 (no tuning)
-→ external HIDDEN50
+→ external fresh HIDDEN50
 → certification seal
 ```
 
 Hidden development blocker değildir; final certification blocker'dır.
 
-## 12. Exact current engineering closure sırası
+### 11.1 Freeze-candidate / corpus invalidation
+
+`DEV80 once` şu anlama gelir:
+
+```text
+one DEV80 per engineering-freeze candidate SHA
+```
+
+Aynı SHA'yı named-case tuning için tekrar tekrar DEV80'e sokmak yasaktır. DEV80 ortak bir
+`CONTRACT/ARCHITECTURE` veya `RESOLVER_TRUTH` failure family gösterir ve kod değişirse yeni SHA
+**yeni freeze candidate** olur; eski DEV80 yeni kodu certify etmez ve broad DEV80 proof yeniden
+gerekir.
+
+VALIDATION50 veya HIDDEN50 fail sonrası production/correctness code değişirse certification freeze
+geçersiz olur:
+
+```text
+certification STOP
+→ engineering REOPEN
+→ root-cause classification
+→ code/contract change if justified
+→ new freeze candidate
+→ provider-free / focused / canary / sentinels
+→ DEV80 for new candidate
+→ fresh certification sets
+```
+
+Görülmüş VALIDATION50 artık unbiased certification seti sayılmaz. HIDDEN50 fail sonrası
+architecture/code değişirse aynı hidden corpusunu tekrar tekrar kullanmak yasaktır; external
+evaluator yeni sealed hidden corpus üretir. Hidden prompt/per-case expected output development
+context'e yine girmez.
+
+## 12. Exact engineering closure sırası
 
 Current semantic code `c9629d9029db...` henüz önceki 70/70 run ile certify edilmedi.
 
 Sıra bağlayıcıdır:
 
-1. exact `c9629d...` focused provider-free cognition/authority closure,
+1. **EXACT CURRENT SEMANTIC-SHA RECERTIFICATION**: `c9629d...` focused provider-free cognition/authority closure,
 2. green → checkpoint SHA,
 3. `SemanticCatalogRetriever` seam; ilk backend current deterministic enumeration olabilir,
 4. safe candidate card/internal binding ayrımını koru,
 5. `StandardBuilder` bounded state machine; Direct = onun kısa yolu,
-6. Standard/Research accepted authority physical split,
-7. minimal `AcceptedStandardAuthority`,
+6. minimal `AcceptedStandardAuthority`; Research tarafında mevcut `AcceptedTurnContract` body korunur,
+7. Standard/Research accepted-authority tagged union / owner split,
 8. narrow final Standard CoverageVeto,
 9. provider-free failure-family tests,
-10. workers=1 small live architecture set,
-11. real Wren Standard vertical + existing Research sentinel,
-12. exact SHA = ENGINEERING FREEZE CANDIDATE,
-13. aynı SHA üzerinde DEV80 bir kez,
-14. fail → family clustering; named-case patch yok,
-15. P0/hard gates green → DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN,
-16. Day 7 lab/flag altında frozen architecture üzerinde açılabilir,
-17. tuning olmadan VALIDATION50 → external HIDDEN50,
-18. green → DAY 6.5 CERTIFICATION SEALED,
-19. ancak sonra production hybrid `/ask-v2` activation.
+10. workers=1 small focused live architecture set,
+11. gerektiğinde exact-same-SHA fast/reference model-floor A/B,
+12. 12–16 stratified canary,
+13. real Wren Standard vertical + existing Research sentinel,
+14. exact SHA = ENGINEERING FREEZE CANDIDATE,
+15. DEV80 **exactly once for that freeze candidate**,
+16. fail → family clustering; named-case patch yok; code change olursa yeni freeze candidate ve yeni DEV80 gerekir,
+17. phase thresholds + P0 hard gates green → DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN,
+18. Day 7 lab/flag altında frozen architecture üzerinde açılabilir,
+19. tuning olmadan VALIDATION50,
+20. Validation fail + code change → certification invalid, engineering reopen, fresh validation gerekir,
+21. external **fresh** HIDDEN50,
+22. Hidden fail + architecture/code change → new external sealed corpus gerekir,
+23. green → DAY 6.5 CERTIFICATION SEALED,
+24. ancak sonra production hybrid `/ask-v2` activation.
 
 ## 13. STOP-THE-LINE
 
@@ -360,14 +402,30 @@ Tek benchmark failure yeni architecture icat etme gerekçesi değildir.
 
 ## 14. Kapanış tanımı
 
-Engineering closure ile certification seal ayrıdır.
+Engineering closure ile certification seal ayrıdır. Phase quality gate'leri eval manifestte
+**run başlamadan önce dondurulur**; sonuç görüldükten sonra eşik değiştirilemez.
+
+Başlangıç architecture/reference-model phase gate:
+
+```text
+DEV80 semantic case pass >= 0.95
+DEV80 MUST recall        >= 0.95
+VALIDATION50 case pass   >= 0.95
+VALIDATION50 MUST recall >= 0.95
+HIDDEN50 case pass       >= 0.95
+HIDDEN50 MUST recall     >= 0.95
+adaptive cases           >= 0.90 where applicable
+all P0 authority/security/silent-wrong counters = 0
+```
 
 ```text
 ENGINEERING CLOSED
-= abstraction + provider-free + focused/live + real Wren + frozen DEV80 hard gates green
+= abstraction + provider-free + focused/live + stratified canary + real Wren
+  + DEV80 phase gate green for the exact freeze candidate
 
 CERTIFICATION SEALED
-= frozen architecture + VALIDATION50 + external HIDDEN50 green
+= same frozen architecture + fresh unbiased VALIDATION50
+  + external fresh HIDDEN50 green
 ```
 
 Production hybrid route yalnız certification seal sonrasında açılır.
