@@ -27,6 +27,20 @@ Bağlayıcı delta:
 - Metabase production dependency değildir. Ancak architecture extraction (D65-M0), thin feasibility (D65-X0) ve gerekirse full substrate bake-off artık **engineering freeze/DEV80 öncesi** çözülür.
 - Kernel kararı gelmeden yazılmış StandardBuilder/E4/E5 focused-green kodu geri alınmaz; fakat kernel realignment bitene kadar architecture-sealed sayılmaz.
 
+## 0A. Release-level DEV80 override
+
+`DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` is binding for expensive broad evaluation timing.
+
+```text
+DEV80 = FINAL BROAD ENGINEERING GATE
+DEV80 runs exactly once for this release
+DEV80 happens after Day15 code + final rehearsal, not during Day6.5
+Validation50 and Hidden50 happen only after DEV80 under code freeze
+```
+
+Development continues to use focused provider-free, focused real-LLM, failure-family,
+metamorphic, canary and sentinel tests throughout implementation.
+
 ## 1. Mimari arama bitti
 
 Day 6 one-shot complex semantic compiler'a geri dönülmez. Üçüncü bir genel cognition
@@ -493,42 +507,50 @@ D65-J1 = cognition / bounded decision model
 D65-X  = analytics execution substrate
 ```
 
-## 12. Exact engineering closure sırası
+## 12. Exact Day 6.5 decision / handoff sequence
 
-Current repo sequencing, yeni runtime-kernel kararıyla birlikte bağlayıcıdır.
+Day 6.5 no longer owns DEV80. Release-level DEV80 timing is governed by
+`DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
+
+Current Day 6.5 sequence:
 
 1. D65-E1 exact semantic-SHA recertification — **DONE GREEN 70/70**.
 2. D65-E2 `SemanticCatalogRetriever` seam — **DONE GREEN 9/9**.
-3. D65-E3A minimal `BoundedAgentRuntimeKernel`.
-4. Current `standard_builder.py` loop mechanics'i kernel consumer olacak şekilde re-home et; semantic behavior değiştirme.
-5. D65-E3B Standard profile/tool surface; DIRECT yalnız outcome/telemetry.
-6. D65-E3C lightweight StandardProjection compiler — mevcut implementation korunur/uyarlanır.
-7. D65-E4 minimal `AcceptedStandardAuthority`; Research body mevcut `AcceptedTurnContract`.
-8. D65-E5 narrow final Standard CoverageVeto.
-9. Provider-free failure-family closure.
-10. Workers=1 small focused live architecture set.
-11. Gerektiğinde exact-same-SHA fast/reference model-floor A/B.
-12. 12–16 stratified canary.
-13. D65-J1S semantic candidate-decision bake-off — lab/eval only.
-14. D65-J1T typed temporal-intent bake-off — lab/eval only; date arithmetic remains deterministic.
-15. In parallel: D65-M0 Metabase architecture extraction/adoption audit.
-16. If J1 promising: STOP/consult, then only approved D65-J1B DecisionProvider + semantic/temporal role separation; affected gates re-run.
-17. D65-X0 thin Metabase separate-service Agent API feasibility on 5–10 representative StandardProjection cases.
-18. X0 not promising → Wren remains primary. X0 promising → STOP/consult → full D65-X Wren-vs-Metabase bake-off.
-19. Choose exactly ONE primary execution substrate.
-20. Real Wren/Research sentinel proof revalidated if affected by J1B/substrate changes.
-21. Exact SHA = ENGINEERING FREEZE CANDIDATE.
-22. DEV80 exactly once for that freeze candidate.
-23. Fail → family clustering; named-case patch yok; code change = new candidate + new DEV80.
-24. Phase thresholds + P0 gates green → **DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN**.
-25. Day 7 lab/flag frozen architecture üzerinde ilerleyebilir.
-26. Tuning olmadan VALIDATION50.
-27. Validation fail + code change → certification invalid, engineering reopen, fresh validation.
-28. External fresh HIDDEN50.
-29. Hidden fail + architecture/code change → new external sealed corpus.
-30. Green → DAY 6.5 CERTIFICATION SEALED.
-31. Ancak sonra production hybrid `/ask-v2` activation.
+3. D65-E3A/R bounded runtime-kernel realignment — **DONE GREEN**.
+4. D65-E3B/E3C Standard profile/compiler verticals — **DONE / PRESERVED**.
+5. D65-E4 `AcceptedStandardAuthority` — **DONE / PRESERVED**.
+6. D65-E5 narrow CoverageVeto — **DONE / PRESERVED**.
+7. Provider-free family closure + anti-patch hardening — **DONE GREEN; current family 102/102**.
+8. Workers=1 focused live + failure triage discipline.
+9. Required same-SHA model-floor A/B only where owner is uncertain.
+10. Stratified live canary — current reference floor **16/16 GREEN**.
+11. Real Wren Standard + Research sentinel — current **2/2 GREEN**.
+12. D65-J1S semantic candidate-decision bake-off — lab/eval only.
+13. D65-J1T typed temporal-intent bake-off — lab/eval only; date arithmetic deterministic.
+14. In parallel: D65-M0 Metabase source/adoption audit.
+15. If J1 is promising: **STOP/CONSULT**; D65-J1B only after approval.
+16. D65-X0 thin separate-service Metabase Agent API feasibility.
+17. X0 not promising → Wren remains primary. X0 promising → **STOP/CONSULT** → full D65-X.
+18. Choose exactly ONE primary analytics substrate.
+19. Complete any explicitly-approved Jev/Metabase production integration and re-run affected focused/family/live/canary/sentinel gates.
+20. Record **DAY 6.5 ARCHITECTURE DECISIONS CLOSED** handoff.
+21. Continue Day 7–15 release development under canonical roadmap + release addenda.
 
+Day 6.5 may create checkpoint SHAs, but **not** the release FINAL ENGINEERING FREEZE CANDIDATE.
+
+Release-level continuation:
+```text
+Day7–15 code complete
+→ all cheap/focused/live/metamorphic/canary/sentinel gates GREEN
+→ 20–25 case final integration rehearsal
+→ FINAL ENGINEERING FREEZE CANDIDATE
+→ DEV80 EXACTLY ONCE
+→ CODE FREEZE
+→ Validation50 NO TUNING
+→ fresh external Hidden50 NO TUNING
+→ certification seal
+→ pilot activation
+```
 ### 12.1 Current sequencing exception — NO ROLLBACK
 
 Runtime-kernel kararı geldiğinde E3/E4/E5'in bazı vertical'ları zaten yazılmış ve focused green idi:
@@ -597,43 +619,38 @@ Aşağıdakilerden biri olursa feature geliştirme durur ve abstraction düzelti
 
 Tek benchmark failure yeni architecture icat etme gerekçesi değildir.
 
-## 14. Kapanış tanımı
+## 14. Day 6.5 kapanış tanımı vs release certification
 
-Engineering closure ile certification seal ayrıdır. Phase quality gate'leri eval manifestte
-**run başlamadan önce dondurulur**; sonuç görüldükten sonra eşik değiştirilemez.
-
-Başlangıç architecture/reference-model phase gate:
+Day 6.5 architecture closure and final release broad evaluation are now separate.
 
 ```text
-DEV80 semantic case pass >= 0.95
-DEV80 MUST recall        >= 0.95
-VALIDATION50 case pass   >= 0.95
-VALIDATION50 MUST recall >= 0.95
-HIDDEN50 case pass       >= 0.95
-HIDDEN50 MUST recall     >= 0.95
-adaptive cases           >= 0.90 where applicable
-all P0 authority/security/silent-wrong counters = 0
-```
+DAY 6.5 DECISIONS CLOSED
+= runtime-kernel + Standard/Research authority boundary
+  + anti-patch/triage discipline
+  + J1S/J1T decision resolved
+  + M0/X0 resolved
+  + full D65-X resolved if needed
+  + exactly one primary analytics substrate selected
+  + any approved J1B/substrate integration revalidated by cheap/focused gates
 
-```text
-PRE-FREEZE DECISIONS COMPLETE
-= D65-J1S/J1T resolved + D65-M0 adoption audit complete + D65-X0 resolved
-  + full D65-X resolved if X0 was promising + exactly one primary substrate selected
-
-ENGINEERING CLOSED
-= runtime-kernel + Standard/Research boundary + provider-free + focused/live
-  + stratified canary + pre-freeze decisions + applicable sentinels + DEV80 green for exact freeze candidate
-
-SUBSTRATE DECISION COMPLETE
-= X0 rejected Metabase and Wren remained primary, OR full D65-X resolved to exactly one primary engine
+FINAL RELEASE ENGINEERING CLOSED
+= Day7–15 correctness-sensitive backend work complete
+  + final integration rehearsal GREEN
+  + FINAL ENGINEERING FREEZE CANDIDATE
+  + DEV80 one-shot broad gate GREEN
 
 CERTIFICATION SEALED
-= same frozen architecture/substrate + fresh unbiased VALIDATION50
-  + external fresh HIDDEN50 green
+= code-frozen candidate
+  + Validation50 no-tuning GREEN
+  + external fresh Hidden50 no-tuning GREEN
 ```
 
-Production hybrid route yalnız certification seal sonrasında açılır.
+DEV80 is **not** a Day 6.5 exit gate anymore.
 
+Detailed release authority:
+`DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
+
+Production hybrid route remains OFF until certification seal and explicit pilot activation.
 
 ### 12.3 Current pre-freeze override
 
