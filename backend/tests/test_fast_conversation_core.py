@@ -573,3 +573,27 @@ def test_accepted_context_persists_no_request_local_opaque_handles_or_assistant_
         assert context.accepted_field_refs["measure"] == "amount"
     finally:
         runs.shutdown(interrupt=False)
+
+
+
+def test_contextual_chain_supplies_accepted_user_question_lineage_not_only_last_fragment():
+    service, _, runs, followup, _, _ = make_service()
+    try:
+        conversation = service.create_conversation(principal=principal())
+        first = submit_and_complete(service, conversation.conversation_id, Q1)
+        second = submit_and_complete(service, conversation.conversation_id, Q2)
+        third = submit_and_complete(service, conversation.conversation_id, Q3)
+
+        assert first.accepted_context is not None
+        assert second.accepted_context is not None
+        assert third.accepted_context is not None
+
+        third_call = followup.calls[2]
+        assert third_call["source_questions"] == (Q1, Q2)
+        assert second.accepted_context.source_turn_ids == (
+            first.turn_id,
+            second.turn_id,
+        )
+        assert "Sonuç:" not in " ".join(third_call["source_questions"])
+    finally:
+        runs.shutdown(interrupt=False)
