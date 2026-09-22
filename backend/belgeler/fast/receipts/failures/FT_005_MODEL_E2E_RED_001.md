@@ -78,3 +78,36 @@ After diagnostics:
 - only after classification may a minimal fix be authorized.
 
 FT-005 remains OPEN.
+
+
+## Diagnostic rerun — observability enabled
+
+Run:
+`35788733890`
+
+Tested SHA:
+`12b00ee04161cd06947854430a7d22fd22af71a2`
+
+Result:
+`RED`
+
+Observed structured calls:
+- `e2e_turn_1`: transport PASS, parse PASS, structured validation PASS;
+- `e2e_turn_2`: transport PASS, parse PASS, structured validation FAIL.
+
+Turn 2 raw structured action had semantically plausible:
+- CONTEXTUAL;
+- SUM;
+- measure=amount;
+- PREVIOUS_MONTH.
+
+But it also emitted non-null executable `reason`, violating the current top-level resolution validator.
+
+Classification:
+`EXECUTABLE_REASON_SCHEMA_MISMATCH`
+
+The E2E therefore did not reach a complete three-turn certification chain.
+
+Pinned Metabase and independent DB oracle remain separately GREEN/available.
+
+No product semantics or prompt patch has been applied.
