@@ -62,7 +62,6 @@ from app.v2.models import (
     SemanticTargetKind,
 )
 from app.v2.obligation_verifier import StandardObligationVerifier
-from app.v2.resolver import SemanticResolver
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.temporal import resolve_comparison, resolve_period
@@ -166,7 +165,6 @@ def test_s4_agent_derived_semantic_resolution_can_discover_tenant_dimension():
     )
     handles = SemanticHandleRegistry()
     adapter = ManagerSemanticResolutionAdapter(
-        resolver=SemanticResolver(signing_key=b"x" * 32),
         source_spans=SourceSpanRegistry(),
         semantic_handles=handles,
         semantic_context=context,
