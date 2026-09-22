@@ -44,3 +44,10 @@ jobs:
 # retry: research-temporal-role-split
 
 # retry: standard-live-assembly-provider-free
+
+      - name: Collect live SI eval modules without paid providers
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v2_day6_5_si_full_live_standard.py             tests/test_v2_day6_5_si_semantic_diagnostic.py
+
+# retry: eval-harness-collect-all
