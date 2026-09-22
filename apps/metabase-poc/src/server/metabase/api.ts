@@ -13,6 +13,7 @@ import {
 } from "./guard";
 import { checkSelectOnly } from "./sql-guard";
 import { categoryClause, dateClause } from "./filters";
+import { widthOf, type Width } from "./layout";
 import { isDateFilter } from "@/lib/date-filter";
 
 // High-level gateway operations. Every function takes a resolved TenantContext
@@ -72,6 +73,9 @@ export interface Widget {
   col: number;
   sizeX: number;
   sizeY: number;
+  width: Width;
+  /** False when the dashboard filters don't apply to this widget (e.g. native SQL). */
+  filtered: boolean;
 }
 
 function publicParams(d: EngineDashboard): PublicParameter[] {
@@ -97,6 +101,8 @@ function widgets(d: EngineDashboard): Widget[] {
       col: dc.col,
       sizeX: dc.size_x,
       sizeY: dc.size_y,
+      width: widthOf(dc.size_x, dc.card.display),
+      filtered: dc.parameter_mappings.length > 0,
     }));
 }
 

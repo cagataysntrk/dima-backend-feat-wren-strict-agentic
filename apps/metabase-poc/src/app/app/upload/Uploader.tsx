@@ -55,7 +55,7 @@ export function Uploader() {
           pick(e.dataTransfer.files[0]);
         }}
         className={cn(
-          "flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors",
+          "flex w-full flex-col items-center gap-2 rounded-[1.25rem] border-2 border-dashed border-[var(--surface-edge-strong)] bg-card/40 px-6 py-12 text-center transition-colors",
           over ? "border-brand bg-brand/5" : "hover:border-brand/40 hover:bg-accent/40",
         )}
       >
@@ -73,7 +73,7 @@ export function Uploader() {
       />
 
       {file && (
-        <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
+        <div className="surface flex items-center gap-3 p-4">
           <FileSpreadsheet className="size-5 shrink-0 text-brand" aria-hidden />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">{file.name}</div>

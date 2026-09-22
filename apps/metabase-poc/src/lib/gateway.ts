@@ -63,7 +63,11 @@ export interface Widget {
   col: number;
   sizeX: number;
   sizeY: number;
+  width: WidgetWidth;
+  filtered: boolean;
 }
+
+export type WidgetWidth = "kpi" | "half" | "full";
 
 export interface DashboardMeta {
   id: number;
@@ -124,6 +128,14 @@ export const gateway = {
     return api<{ id: number }>("/api/uploads", { method: "POST", body: form });
   },
   /** Export is a plain download link (the browser handles the attachment). */
+  createDashboard: (name: string) => api<{ id: number }>("/api/dashboards", json({ name })),
+  updateDashboard: (id: number, patch: { name?: string; description?: string | null }) =>
+    api<{ ok: true }>(`/api/dashboards/${id}`, { ...json(patch), method: "PATCH" }),
+  archiveDashboard: (id: number) => api<{ ok: true }>(`/api/dashboards/${id}`, { method: "DELETE" }),
+  addToDashboard: (id: number, cardId: number) =>
+    api<{ wired: boolean }>(`/api/dashboards/${id}/cards`, json({ cardId })),
+  saveLayout: (id: number, widgets: { id: number; width: WidgetWidth }[]) =>
+    api<{ ok: true }>(`/api/dashboards/${id}/layout`, { ...json({ widgets }), method: "PUT" }),
   exportUrl: (cardId: number, format: "csv" | "xlsx", scope?: DrillScope) =>
     `/api/cards/${cardId}/export${qs(
       scope?.filters ?? {},

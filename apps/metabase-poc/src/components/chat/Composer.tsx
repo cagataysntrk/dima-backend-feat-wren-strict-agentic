@@ -59,10 +59,8 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, hero, auto
       {hero && <div aria-hidden className="dima-composer-halo" />}
       <div
         className={cn(
-          "relative flex flex-col rounded-[1.75rem] border bg-card transition-[border-color,box-shadow]",
-          "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.18)] dark:shadow-[0_1px_0_rgb(255_255_255/0.04)_inset,0_12px_32px_-16px_rgb(0_0_0/0.7)]",
+          "relative flex flex-col rounded-[1.75rem] border border-[var(--surface-edge)] bg-card shadow-[var(--surface-shadow)] transition-[border-color,box-shadow]",
           "focus-within:border-brand/40",
-          hero && "border-border/50",
         )}
       >
         <label htmlFor="question" className="sr-only">
@@ -135,7 +133,7 @@ function TablesMenu({ onPick, disabled }: { onPick: (name: string) => void; disa
         {q.isError && <p className="px-2 py-1.5 text-sm text-destructive">Tablolar yüklenemedi.</p>}
         {q.data?.map((t) => (
           <DropdownMenuItem key={t.name} onSelect={() => onPick(t.name)} className="flex-col items-start gap-0.5">
-            <span className="font-mono text-[13px]">{t.name}</span>
+            <span className="text-sm font-medium">{t.name}</span>
             <span className="line-clamp-1 text-xs text-muted-foreground">{t.columns.join(", ")}</span>
           </DropdownMenuItem>
         ))}

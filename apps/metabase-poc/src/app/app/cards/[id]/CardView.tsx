@@ -7,10 +7,11 @@ import { ArrowLeft } from "lucide-react";
 import { gateway } from "@/lib/gateway";
 import { ResultView } from "@/components/ResultView";
 import { ExportMenu } from "@/components/analytics/ExportMenu";
+import { AddToDashboard } from "@/components/analytics/DashboardActions";
 import { DrillSheet, type DrillTarget } from "@/components/analytics/DrillSheet";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function CardView({ id }: { id: number }) {
+export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
   const q = useQuery({ queryKey: ["card", id], queryFn: () => gateway.card(id) });
   const [drill, setDrill] = useState<DrillTarget | null>(null);
 
@@ -38,9 +39,12 @@ export function CardView({ id }: { id: number }) {
                 <p className="text-sm text-muted-foreground">{q.data.card.description}</p>
               )}
             </div>
-            <ExportMenu cardId={id} />
+            <div className="flex shrink-0 items-center gap-1">
+              {canEdit && <AddToDashboard resolveCardId={async () => id} />}
+              <ExportMenu cardId={id} />
+            </div>
           </header>
-          <div className="rounded-xl border bg-card p-4">
+          <div className="surface p-5">
             <ResultView
               result={q.data.result}
               size="wide"

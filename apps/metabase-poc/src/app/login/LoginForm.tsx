@@ -31,7 +31,7 @@ export function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-xl border bg-card p-6 shadow-sm">
+    <form onSubmit={onSubmit} className="surface space-y-4 p-6">
       <div className="space-y-2">
         <Label htmlFor="email">E-posta</Label>
         <Input id="email" name="email" type="email" autoComplete="email" required autoFocus />

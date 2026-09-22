@@ -84,6 +84,7 @@ export interface EngineDashcard {
   size_y: number;
   card: { id: number; name: string; display: string } | null;
   parameter_mappings: { parameter_id: string; card_id: number; target: unknown }[];
+  visualization_settings?: Record<string, unknown>;
 }
 
 export interface EngineDashboard {

@@ -1,7 +1,8 @@
 "use client";
 
 // POC COPY of apps/web/src/components/chart/Chart.tsx — adds the optional
-// `onPointClick` drill-down hook. Follow-up: extract to packages/ui.
+// `onPointClick` drill-down hook; tooltip edge uses the app surface tokens.
+// Follow-up: extract to packages/ui.
 
 import { useMemo, useState } from "react";
 import {
@@ -110,7 +111,7 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="grid min-w-[9rem] gap-1.5 rounded-lg border border-border/60 bg-popover px-2.5 py-2 text-xs shadow-lg">
+    <div className="grid min-w-[9rem] gap-1.5 rounded-lg border border-[var(--surface-edge)] bg-popover px-2.5 py-2 text-xs shadow-[var(--surface-shadow-raised)]">
       {label != null && <div className="font-medium text-foreground">{label}</div>}
       <div className="grid gap-1">
         {payload

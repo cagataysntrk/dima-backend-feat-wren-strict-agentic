@@ -22,6 +22,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 // Differences: no dima-backend /schema call (units come from column-name
 // suffixes via @dima/domain unitFor), and an optional `onDrill` hook that
 // makes bars clickable when the result has exactly one categorical dimension.
+// The chart sits directly on its parent surface (no nested bordered box).
 const EMPTY_LOWER: ReadonlySet<string> = new Set();
 
 // Metadata yoksa (eski/serbest ölçüler) ad kalıbından yedek çıkarım.
@@ -341,7 +342,7 @@ function ChartOrTable({
   // Isı haritası ve panelli görünüm Recharts primitifi değil — kendi bileşenleri
   // var. Geri kalan her tip <Chart> façade'ından geçer (DESIGN.md: tek motor).
   return (
-    <div className="rounded-lg border border-border p-3">
+    <div>
       {type === "heatmap" ? (
         <Heatmap
           result={result}

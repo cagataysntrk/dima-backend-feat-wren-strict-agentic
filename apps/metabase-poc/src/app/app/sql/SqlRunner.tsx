@@ -78,7 +78,7 @@ export function SqlRunner() {
       )}
 
       {run.data && (
-        <section className="space-y-4 rounded-xl border bg-card p-4" aria-label="Sonuç">
+        <section className="surface space-y-4 p-5" aria-label="Sonuç">
           <ResultView
             key={run.submittedAt}
             result={run.data}

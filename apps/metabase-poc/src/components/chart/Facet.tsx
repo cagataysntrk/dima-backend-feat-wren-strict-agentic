@@ -1,4 +1,4 @@
-// POC COPY of apps/web/src/components/chart/Facet.tsx — unchanged. Follow-up: extract to packages/ui.
+// POC COPY of apps/web/src/components/chart/Facet.tsx — only change: card/tooltip edges use the app surface tokens. Follow-up: extract to packages/ui.
 "use client";
 
 import { useMemo, useState } from "react";
@@ -289,7 +289,7 @@ function FacetTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="grid min-w-[9rem] gap-1.5 rounded-lg border border-border/60 bg-popover px-2.5 py-2 text-xs shadow-lg">
+    <div className="grid min-w-[9rem] gap-1.5 rounded-lg border border-[var(--surface-edge)] bg-popover px-2.5 py-2 text-xs shadow-[var(--surface-shadow-raised)]">
       {label != null && <div className="font-medium text-foreground">{label}</div>}
       <div className="grid gap-1">
         {payload

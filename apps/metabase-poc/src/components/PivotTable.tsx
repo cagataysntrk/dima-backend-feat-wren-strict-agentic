@@ -1,4 +1,4 @@
-// POC COPY of apps/web/src/components/PivotTable.tsx — unchanged. Follow-up: extract to packages/ui.
+// POC COPY of apps/web/src/components/PivotTable.tsx — only change: card/tooltip edges use the app surface tokens. Follow-up: extract to packages/ui.
 "use client";
 
 import { fmtTemporal, fmtValue } from "@dima/domain";
@@ -29,7 +29,7 @@ export function PivotTable({
   const entities = [...totals.keys()].sort((a, b) => (totals.get(b) ?? 0) - (totals.get(a) ?? 0));
 
   return (
-    <div className="overflow-auto rounded-lg border border-border">
+    <div className="surface-inset overflow-auto">
       <table className="w-full border-collapse font-mono text-[12px]">
         <thead>
           <tr className="border-b border-border bg-muted/40">

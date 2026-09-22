@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useConversations, type Entry } from "@/stores/conversations";
 import { TopbarActions } from "@/components/shell/AppShell";
 import { Composer } from "@/components/chat/Composer";
+import { AddToDashboard } from "@/components/analytics/DashboardActions";
 import { ResultView } from "@/components/ResultView";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -170,7 +171,7 @@ export function ChatView({
                     type="button"
                     disabled={!configured}
                     onClick={() => submit(s)}
-                    className="rounded-xl border bg-card px-4 py-3 text-left text-sm transition-colors hover:border-brand/40 hover:bg-accent/40 disabled:opacity-50"
+                    className="surface surface-interactive px-4 py-3 text-left text-sm disabled:opacity-50"
                   >
                     {s}
                   </button>
@@ -245,7 +246,7 @@ function Reply({ reply, question, canSave }: { reply: ChatAnswer; question: stri
     <div className="space-y-3">
       <p className="text-sm leading-relaxed whitespace-pre-wrap">{reply.answer}</p>
       {reply.result && reply.result.row_count > 0 && (
-        <div className="rounded-xl border bg-card p-4">
+        <div className="surface p-5">
           <ResultView
             result={reply.result}
             meta={
@@ -263,6 +264,10 @@ function Reply({ reply, question, canSave }: { reply: ChatAnswer; question: stri
             {showSql ? "Sorguyu gizle" : "Sorguyu göster"}
           </Button>
           {canSave && (
+            // Saves the answer as an analysis first (once), then adds that card.
+            <AddToDashboard size="xs" resolveCardId={async () => (save.data ?? (await save.mutateAsync())).id} />
+          )}
+          {canSave && (
             <Button variant="ghost" size="xs" onClick={() => save.mutate()} disabled={save.isPending || save.isSuccess}>
               <Save className="size-3.5" aria-hidden />
               {save.isSuccess ? "Kaydedildi" : "Analiz olarak kaydet"}
@@ -276,7 +281,7 @@ function Reply({ reply, question, canSave }: { reply: ChatAnswer; question: stri
         </div>
       )}
       {showSql && reply.sql && (
-        <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
+        <pre className="surface-inset overflow-x-auto p-3 font-mono text-xs leading-relaxed">
           {reply.sql}
         </pre>
       )}
@@ -352,7 +357,7 @@ function ChatPanel({
                   key={e.id}
                   type="button"
                   onClick={() => onPick(e.id)}
-                  className="block w-full rounded-lg border bg-card px-3 py-2.5 text-left transition-colors hover:border-brand/40 hover:bg-accent/40"
+                  className="surface-sm surface-interactive block w-full px-3 py-2.5 text-left"
                 >
                   <span className="line-clamp-2 text-sm font-medium">{e.question}</span>
                   <span className="mt-1 block truncate text-xs text-muted-foreground">
@@ -363,7 +368,7 @@ function ChatPanel({
           : entries
               .filter((e) => e.reply.sql)
               .map((e) => (
-                <div key={e.id} className="space-y-2 rounded-lg border bg-card p-3">
+                <div key={e.id} className="surface-sm space-y-2 p-3">
                   <button type="button" onClick={() => onPick(e.id)} className="text-left text-sm font-medium hover:underline">
                     {e.question}
                   </button>

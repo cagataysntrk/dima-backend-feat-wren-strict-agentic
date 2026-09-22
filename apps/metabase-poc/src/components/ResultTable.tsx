@@ -1,4 +1,4 @@
-// POC COPY of apps/web/src/components/ResultTable.tsx — unchanged. Follow-up: extract to packages/ui.
+// POC COPY of apps/web/src/components/ResultTable.tsx — only change: card/tooltip edges use the app surface tokens. Follow-up: extract to packages/ui.
 "use client";
 
 import { useMemo, useState } from "react";
@@ -109,7 +109,7 @@ export function ResultTable({ result }: { result: QueryResult }) {
 
   return (
     <div className="space-y-2">
-      <div className="overflow-auto rounded-lg border border-border">
+      <div className="surface-inset overflow-auto">
         <Table className="font-mono text-[13px]">
           <TableHeader>
             <TableRow>
