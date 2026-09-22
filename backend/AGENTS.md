@@ -21,6 +21,8 @@
 > `STANDARD_DIRECT`, bounded `STANDARD_BUILDER`, `RESEARCH`.
 > Bunlar iki accepted authority ailesi üretir:
 > `AcceptedStandardAuthority` ve `AcceptedResearchAuthority`.
+> `AcceptedResearchAuthority` yeni semantic body değildir; mevcut `AcceptedTurnContract`
+> research authority gövdesidir, yeni isim yalnız alias/tagged-union seviyesinde kullanılabilir.
 >
 > **Hidden50 development blocker değildir.** External hidden yalnız final architecture
 > certification seal'ini bloklar. Development/engineering closure current-head
@@ -37,6 +39,8 @@
 > **Workers=1 önce.** Semantic/mimari sertifikasyon concurrency'den önce tek işçidir.
 >
 > **Freeze disiplini:** önemli müdahale öncesi checkpoint SHA; A/B exact aynı backend SHA.
+> `one DEV80 per engineering-freeze candidate`; code değişirse yeni candidate ve yeni DEV80 gerekir.
+> Validation/Hidden fail sonrası code değişikliği certification freeze'i bozar; fresh set gerekir.
 >
 > **Operasyon sırası:** provider-free focused → workers=1 focused live → reference A/B
 > → stratified canary → frozen DEV80 → engineering freeze → VALIDATION50 → external HIDDEN50
