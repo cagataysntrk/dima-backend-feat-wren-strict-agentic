@@ -1,0 +1,86 @@
+name: dima-metabase-p3
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/substrate/metabase/**"
+      - "backend/tests/test_v3_p3_metabase_*.py"
+      - "backend/pyproject.toml"
+      - ".github/workflows/dima-metabase-p3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p3-metabase-client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce P3 forbidden-file isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="a05bd12ff56ac3c66eef01f7340c1f991ae07681"
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/app/v3/(analytics_contract|semantic_spec|authority)\.py$|backend/app/v3/substrate/wren\.py$|docker-compose\.yml$|backend/lab/docker-compose\.yml$|WrenAI-main/)'; then
+            echo "P3 forbidden file changed"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile P3 client boundary
+        working-directory: backend
+        run: |
+          python -m py_compile             app/v3/substrate/metabase/errors.py             app/v3/substrate/metabase/models.py             app/v3/substrate/metabase/telemetry.py             app/v3/substrate/metabase/client.py             app/v3/substrate/metabase/adapter.py
+
+      - name: Provider-free P3 client gate
+        working-directory: backend
+        run: pytest -q tests/test_v3_p3_metabase_client.py
+
+      - name: Start pinned M2 lab
+        working-directory: backend/lab/metabase
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env up -d
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+
+      - name: Live P3 REST Agent API client proof
+        working-directory: backend
+        env:
+          DIMA_METABASE_P3_LIVE: "1"
+          METABASE_PORT: "3300"
+          MB_ADMIN_EMAIL: "admin@dima-lab.local"
+          MB_ADMIN_PASSWORD: "DimaMetabaseLabAdmin!2026"
+        run: pytest -q tests/test_v3_p3_metabase_client_live.py
+
+      - name: Teardown
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env down -v --remove-orphans || true
