@@ -37,7 +37,7 @@ def _request(
     output_grain="order_id",
     path=(),
     aggregation=JoinAggregation.PRESERVE_SOURCE_GRAIN,
-    time=CompatibilityState.ALIGNED,
+    time=CompatibilityState.COMPATIBLE,
     unit=CompatibilityState.COMPATIBLE,
 ):
     return CrossDomainJoinRequest(
