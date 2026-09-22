@@ -133,3 +133,60 @@ def test_manager_typed_temporal_module_contains_no_language_regex_parser():
         "sayi_coz",
     ):
         assert marker not in source
+
+
+def test_comparison_can_carry_typed_implicit_base_period():
+    choice = TemporalNormalizationChoice(
+        request_id="cmp-implicit",
+        target="COMPARISON",
+        decision="NORMALIZED",
+        comparison_kind=ComparisonIntentKind.PREVIOUS_PERIOD,
+        implicit_base_period_kind=TemporalIntentKind.THIS_MONTH,
+    )
+    engine = TemporalBindingEngine()
+    base = engine.implicit_base_period(
+        choice=choice,
+        source_text="reference period",
+        time_dimension="Sales.date",
+        today=date(2026, 9, 22),
+    )
+    assert base.kind.value == "this_month"
+    assert base.start == "2026-09-01"
+    assert base.end == "2026-09-22"
+
+    comparison = engine.comparison(
+        choice=choice,
+        source_text="reference period",
+        time_dimension="Sales.date",
+        base_period=base,
+    )
+    assert comparison.base_period == base
+    assert comparison.reference_period.end < comparison.base_period.start
+
+
+def test_implicit_last_n_base_requires_bound_n():
+    from pydantic import ValidationError
+
+    try:
+        TemporalNormalizationChoice(
+            request_id="cmp-bad",
+            target="COMPARISON",
+            decision="NORMALIZED",
+            comparison_kind=ComparisonIntentKind.PREVIOUS_PERIOD,
+            implicit_base_period_kind=TemporalIntentKind.LAST_N_DAYS,
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("implicit LAST_N comparison base must require implicit_base_n")
+
+
+def test_comparison_without_explicit_or_implicit_base_remains_unbound_at_choice_level():
+    choice = TemporalNormalizationChoice(
+        request_id="cmp-no-base",
+        target="COMPARISON",
+        decision="NORMALIZED",
+        comparison_kind=ComparisonIntentKind.PREVIOUS_PERIOD,
+    )
+    assert choice.implicit_base_period_kind is None
+    assert choice.implicit_base_n is None
