@@ -1,5 +1,18 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-METABASE-SOURCE-REFERENCE-CONTRACT -->
+<!-- DIMA-V2-METABASE-SOURCE-REFERENCE-CONTRACT -->
+> ### Metabase source/reference boundary
+>
+> Canonical source authority: `metabase/metabase` @ `74216b30981d8310c4cf724d63ca282e2e63529d` for the current Day 6.5 reference snapshot.
+> Canonical files: `src/metabase/metabot/agent/core.clj`, `profiles.clj`, `agent_api/reference.md`, `agent_api/api.clj`, `agent_api/query_guards.clj`, `mcp/v2/tools/query.clj`.
+>
+> A local `public/metabase/master` checkout, if present, is read-only convenience only and never authority; exact SHA verification is mandatory.
+> Metabase source-copy/port/vendor into Dima is forbidden. D65-X uses a separate Metabase service via Agent API through a thin Dima adapter.
+>
+> Any Metabase-dependent architecture or implementation decision must execute the mandatory source-control/research protocol in `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md §17A.5` before coding or interpreting results.
+> D65-X receipts pin both source identity and running artifact identity: source SHA, runtime version, immutable image digest, Dima tested SHA, adapter SHA, corpus version and permission context.
+>
 <!-- DIMA-V2-DAY6.5-RUNTIME-KERNEL-SUBSTRATE-OVERLAY -->
 > ## 🔴 Day 6.5 runtime-kernel / substrate decision overlay — 2026-09-22
 >
