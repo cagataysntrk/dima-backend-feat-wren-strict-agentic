@@ -119,6 +119,18 @@ class ResearchToolRegistry:
                 f"undeclared Research tool: {tool_id}"
             ) from exc
 
+    def tool_id_for_task_kind(self, task_kind: ResearchTaskKind) -> str:
+        matches = [
+            tool_id
+            for tool_id, spec in self._SPECS.items()
+            if task_kind in spec.contract.accepted_task_kinds
+        ]
+        if len(matches) != 1:
+            raise ResearchToolContractError(
+                f"Research task kind {task_kind.value} has {len(matches)} declared tools"
+            )
+        return matches[0]
+
     @staticmethod
     def _task_kind(task: ResearchTask) -> ResearchTaskKind:
         try:
