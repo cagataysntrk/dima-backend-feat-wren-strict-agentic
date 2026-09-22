@@ -400,3 +400,62 @@ focused_proof: `PENDING combined rerun`
 family_regression_proof: `PENDING`
 
 status: `CLASSIFIED — fixture-only fix already applied in 385bf3b9c762`
+
+---
+
+## Receipt — D65-G-FAMILY-STALE-FIXTURES
+
+run_id: `35696376312`
+
+tested_sha: `5834b0acae315afa94741c409f07bfe448c0c316`
+
+observed_failure:
+`2 failed, 100 passed, 5 warnings`; both failures are removed-constructor TypeErrors.
+
+failure_stage: `provider-free test fixture construction`
+
+failure_class: `EVAL_ORACLE`
+
+classification_evidence:
+- Compile passed.
+- 100 provider-free tests passed.
+- `test_v2_day6_5_correctness_closure.py` passed obsolete `resolver=SemanticResolver(...)`.
+- `test_v2_day6_5_adaptive_branch.py` passed obsolete `resolver=SemanticResolver(...)`.
+- Both stop before semantic assertions.
+
+single_owner: `provider-free test fixtures that still encode the removed Manager resolver seam`
+
+root_cause:
+D65-G intentionally removed the inert legacy resolver dependency, while two broader family fixtures still constructed the old adapter signature.
+
+failure_family:
+Any test-only ManagerSemanticResolutionAdapter constructor still injecting `SemanticResolver` after the hot-path seam removal.
+
+why_not_model_only: `No model/provider path owns constructor TypeError.`
+
+why_not_oracle: `It IS EVAL_ORACLE/test fixture drift.`
+
+why_not_transport: `No transport failure; provider-free test setup fails locally.`
+
+forbidden_patch_alternatives:
+- restore production resolver arg
+- compatibility shim that accepts/ignores resolver
+- reintroduce legacy fallback
+
+allowed_files_to_touch:
+- test files containing obsolete ManagerSemanticResolutionAdapter resolver injection
+- test-only obsolete SemanticResolver imports used solely for that injection
+
+files_not_to_touch:
+- Manager production no-resolver contract
+- semantic linker/resolver behavior
+- repair/temporal/product semantics
+
+invariant_being_fixed:
+All test surfaces must exercise the same physically isolated Manager semantic authority boundary.
+
+focused_proof: `59/59 PASS on combined focused closure 35696222877`
+
+family_regression_proof: `PENDING exact-SHA rerun after fixture cleanup`
+
+status: `CLASSIFIED — test-only family cleanup allowed`
