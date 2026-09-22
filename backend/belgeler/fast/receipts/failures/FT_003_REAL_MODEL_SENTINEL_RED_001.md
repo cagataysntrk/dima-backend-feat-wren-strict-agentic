@@ -122,3 +122,53 @@ Required:
 - ambiguity fails closed;
 - unsupported becomes typed UNSUPPORTED;
 - invented ID = 0.
+
+
+## Observation 2 — run 35774170106
+
+Observed SHA:
+`6d495e97542e5927f76fc6e74d6b036322468c81`
+
+The second real-model run confirmed the remaining dominant failure as metadata retrieval language alignment.
+
+Model behavior that passed:
+- strict schema;
+- typed SUPPORTED/UNSUPPORTED;
+- COUNT/SUM;
+- LAST_N_DAYS;
+- CURRENT_MONTH;
+- PREVIOUS_MONTH;
+- ABSOLUTE_DATE_RANGE;
+- invented IDs = 0;
+- AVG -> typed UNSUPPORTED.
+
+Observed retrieval failure:
+Turkish metadata lookup terms such as `sipariş`, `sipariş tutarı`, and `bölge` did not directly match the pinned English table metadata `orders`.
+
+Classification:
+`RETRIEVAL_LANGUAGE_METADATA_ALIGNMENT`
+
+The ambiguity expectation was also refined: model abstention is diagnostic; the hard safety gate belongs to FastAskService.
+
+## Partial closure — run 35775125029
+
+Tested SHA:
+`1adc55467a02363db9a1fb76c09615a568696c35`
+
+Result:
+`GREEN`
+
+This run proves:
+- real structured model transport works;
+- supported typed cognition passes;
+- resource/field opaque handle selection passes;
+- typed UNSUPPORTED passes;
+- invented IDs = 0;
+- bounded metadata catalog fallback safely recovers cross-language lookup in the one-table FT-003 lab.
+
+However this does NOT fully close FT-003 because:
+1. many Turkish cases still reported `direct_search_hit=false`;
+2. the sentinel explicitly does not execute analytics queries;
+3. primary real-model -> real-Metabase -> DB-oracle E2E is still pending.
+
+Therefore this failure receipt is root-cause closed at the diagnostic layer but FT-003 remains OPEN until the final model E2E seal.
