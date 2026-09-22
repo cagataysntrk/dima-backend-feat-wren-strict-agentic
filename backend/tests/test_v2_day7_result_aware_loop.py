@@ -1,0 +1,330 @@
+"""Provider-free canonical Day 7 result-aware adaptive Research loop."""
+
+from __future__ import annotations
+
+import json
+
+from app.v2.acceptance import IntentAcceptanceGate
+from app.v2.manager_core_adapter import ManagerCoreAnalyticsAdapter
+from app.v2.manager_executor import (
+    GovernedManagerExecutionContext,
+    GovernedManagerExecutor,
+)
+from app.v2.manager_loop import ResearchManagerLoop
+from app.v2.manager_models import (
+    CandidateObligation,
+    ManagerCapabilityKey,
+    ObligationOrigin,
+    ObligationStatus,
+    UserIntentEnvelope,
+)
+from app.v2.manager_runtime import ManagerRuntime
+from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
+from app.v2.manager_tools import ManagerToolCall, ManagerToolName, ResolveSemanticsArgs
+from app.v2.models import (
+    BoundedSemanticContextV0,
+    CompactCubeContextV0,
+    CompactSemanticFieldV0,
+    ContextVersionV0,
+    ConversationStateV2,
+    TenantAnalyticsRuntimeV0,
+)
+from app.v2.research_tools import ResearchToolRunner
+from app.v2.semantic_handles import SemanticHandleRegistry
+from app.v2.source_spans import SourceSpanRegistry
+from control_plane.authorize import Principal
+
+
+class _AdaptiveService:
+    mdl_version = "mdl-day7-adaptive-v1"
+
+    def __init__(self) -> None:
+        self.query_calls = 0
+
+    def cube_sql(self, cube_query: dict) -> str:
+        return "DAY7ADAPT:" + json.dumps(
+            cube_query,
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+
+    def dry_plan(self, sql: str, *, principal=None):
+        assert principal is not None
+        return sql
+
+    def query(self, sql: str, limit=None, *, principal=None):
+        assert principal is not None
+        self.query_calls += 1
+        query = json.loads(sql.removeprefix("DAY7ADAPT:"))
+        dimensions = list(query.get("dimensions") or ())
+        measures = list(query.get("measures") or ())
+        columns = [*dimensions, *measures]
+        if dimensions:
+            rows = [
+                {dimensions[0]: "Kuzey", **{metric: 120.0 for metric in measures}},
+                {dimensions[0]: "Güney", **{metric: 75.0 for metric in measures}},
+            ]
+        else:
+            rows = [{metric: 195.0 for metric in measures}]
+        return {
+            "columns": columns,
+            "rows": rows,
+            "row_count": len(rows),
+            "column_types": [
+                "VARCHAR" if name in dimensions else "DOUBLE"
+                for name in columns
+            ],
+        }
+
+
+class _ContractStore:
+    def __init__(self) -> None:
+        self.n = 0
+
+    def record_v2_minimum(self, **kwargs):
+        self.n += 1
+        return {"id": f"day7-adaptive-qc-{self.n}", "sealed": True}
+
+
+class _AdaptiveFakeLLM:
+    """Deterministic cognition script driven only by typed state/evidence."""
+
+    def __init__(self) -> None:
+        self.prompts: list[dict] = []
+
+    def structured_json(self, system, user, **kwargs):
+        payload = json.loads(user)
+        self.prompts.append(payload)
+        delta = payload.get("CURRENT_RESULT_DELTA")
+        recent = payload.get("RECENT_OBSERVATIONS") or []
+
+        if not payload.get("EVIDENCE_REFS"):
+            return {
+                "action": "run_analytics",
+                "obligation_ids": ["U1"],
+                "metric_handles": ["h1"],
+            }
+
+        if delta and not delta.get("inspected"):
+            return {
+                "action": "inspect_evidence",
+                "evidence_ref": delta["evidence_ref"],
+            }
+
+        resolved_dimension = None
+        for observation in reversed(recent):
+            if (
+                observation.get("kind") == "tool"
+                and observation.get("tool") == "resolve_semantics"
+            ):
+                resolved = (observation.get("result") or {}).get("resolved") or []
+                if resolved:
+                    resolved_dimension = resolved[0]["handle"]["handle_id"]
+                    break
+
+        # After inspecting the first evidence, discover one evidence-grounded dimension.
+        if len(payload.get("EVIDENCE_REFS") or []) == 1 and resolved_dimension is None:
+            return {
+                "action": "resolve_semantics",
+                "resolve_provenance": "AGENT_DERIVED",
+                "target_kind_hints": ["dimension"],
+                "semantic_parent_obligation_id": "U1",
+                "semantic_evidence_ref": delta["evidence_ref"],
+                "semantic_proposal": "bölge",
+            }
+
+        if len(payload.get("EVIDENCE_REFS") or []) == 1 and resolved_dimension is not None:
+            return {
+                "action": "run_analytics",
+                "obligation_ids": ["U1"],
+                "metric_handles": ["h1"],
+                "dimension_handles": [resolved_dimension],
+                "derived_task_id": "D1",
+                "derived_parent_obligation_id": "U1",
+                "derived_capability_key": "breakdown",
+                "derived_evidence_ref": delta["evidence_ref"],
+                "derived_reason": (
+                    "verified first result warrants a bounded regional breakdown"
+                ),
+            }
+
+        # Second evidence was inspected, so there is no invented third branch.
+        return {"action": "finish"}
+
+
+def _context() -> BoundedSemanticContextV0:
+    return BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-day7-adaptive-v1",
+            mdl_version="mdl-day7-adaptive-v1",
+            compact_catalog_builder_version="v1",
+            business_rules_hash="none",
+            prompt_context_policy_version="v1",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="sales_omega",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="net_value_x",
+                        display="Net Gelir",
+                        synonyms=("net gelir", "gelir"),
+                    ),
+                ),
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="region_axis_m",
+                        display="Bölge",
+                        synonyms=("bölge", "region"),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_second_task():
+    tenant = "tenant-day7-adaptive"
+    context = _context()
+    spans = SourceSpanRegistry()
+    question = "net gelir ne durumda; sonuç başka yere işaret ederse incele"
+    source_hash = spans.register_message(message_id="day7-adaptive-turn", text=question)
+    metric_span = spans.mint_exact(
+        message_id="day7-adaptive-turn",
+        surface="net gelir",
+    )
+
+    handles = SemanticHandleRegistry()
+    semantic = ManagerSemanticResolutionAdapter(
+        source_spans=spans,
+        semantic_handles=handles,
+        semantic_context=context,
+        conversation=ConversationStateV2(),
+        schema={
+            "cubes": [
+                {
+                    "name": "sales_omega",
+                    "measures": ["net_value_x"],
+                    "dimensions": ["region_axis_m"],
+                    "time_dimensions": [],
+                }
+            ]
+        },
+        tenant_binding=tenant,
+        session_id=None,
+        thread_id=None,
+    )
+    metric_result = semantic.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(metric_span.source_ref,),
+            target_kind_hints=("metric",),
+        )
+    )
+    metric_handle = metric_result.resolved[0].handle.handle_id
+
+    principal = Principal(
+        user_id="day7-adaptive-user",
+        tenant_id=tenant,
+        roles=["owner"],
+        tenant_slug="day7-adaptive",
+    )
+    service = _AdaptiveService()
+    store = _ContractStore()
+    executor = GovernedManagerExecutor(
+        acceptance=IntentAcceptanceGate(
+            source_spans=spans,
+            semantic_handles=handles,
+        ),
+        core_analytics=ManagerCoreAnalyticsAdapter(semantic_handles=handles),
+        context=GovernedManagerExecutionContext(
+            tenant_binding=tenant,
+            context_version=context.context_version.version,
+            principal=principal,
+            service=service,
+            tenant_runtime=TenantAnalyticsRuntimeV0(
+                tenant_id=tenant,
+                tenant_slug="day7-adaptive",
+                principal_user_id=principal.user_id,
+                roles=tuple(principal.roles),
+                mdl_version=service.mdl_version,
+                catalog="day7-adaptive",
+                schema_name="main",
+                db_online=True,
+            ),
+            contract_store=store,
+            session_id="day7-adaptive-session",
+        ),
+        semantic_resolution=semantic,
+    )
+
+    runtime = ManagerRuntime(request_ref="day7-adaptive-request")
+    runtime.begin_understanding()
+    envelope = UserIntentEnvelope(
+        attempt_id="day7-adaptive-attempt",
+        turn_id="day7-adaptive-turn",
+        request_ref="day7-adaptive-request",
+        source_message_hash=source_hash,
+        model_role="RESEARCH_MANAGER",
+        obligations=(
+            CandidateObligation(
+                obligation_id="U1",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(metric_span.source_ref,),
+                semantic_handle_refs=(metric_handle,),
+            ),
+        ),
+    )
+    runtime.call_tool(
+        ManagerToolCall(
+            name=ManagerToolName.PROPOSE_ACCEPTANCE,
+            args={"envelope": envelope.model_dump(mode="json")},
+        ),
+        executor=executor,
+    )
+
+    llm = _AdaptiveFakeLLM()
+    outcome = ResearchManagerLoop(
+        llm=llm,
+        source_spans=spans,
+        research_tool_runner=ResearchToolRunner(),
+    ).run(
+        question=question,
+        message_id="day7-adaptive-turn",
+        request_ref="day7-adaptive-request",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.run_finished is True
+    assert outcome.verified_complete is True
+    assert service.query_calls == 2
+    assert store.n == 2
+    assert len(runtime.snapshot.evidence_refs) == 2
+    assert runtime.snapshot.inspected_evidence_refs == runtime.snapshot.evidence_refs
+
+    parent = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
+    child = next(item for item in runtime.ledger.items if item.obligation_id == "D1")
+    assert parent.origin == ObligationOrigin.USER_MUST
+    assert parent.status == ObligationStatus.VERIFIED
+    assert child.origin == ObligationOrigin.AGENT_DERIVED
+    assert child.parent_obligation_id == "U1"
+    assert child.capability_key == ManagerCapabilityKey.BREAKDOWN
+    assert child.status == ObligationStatus.VERIFIED
+
+    task_ids = [
+        item.get("research_task_id")
+        for item in outcome.observations
+        if item.get("kind") == "tool" and item.get("research_task_id")
+    ]
+    assert task_ids == ["seed:U1", "D1"]
+
+    # The second decision was grounded in actual bounded first-result content.
+    first_inspection_prompt = llm.prompts[1]
+    rows = first_inspection_prompt["CURRENT_RESULT_DELTA"]["bounded_payload"]["executions"][0]["rows"]
+    assert rows
+    assert len(rows) <= 20
+
+    # No third analytical branch is invented after the second evidence is inspected.
+    assert len(llm.prompts) == 6
