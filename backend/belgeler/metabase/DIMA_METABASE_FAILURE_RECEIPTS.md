@@ -550,3 +550,69 @@ DMP-M1-RED-007  CLOSED GREEN — evidence hash dependency restored; real Wren st
 ```
 
 No M1 failure remains open. Any future regression receives a new receipt id; historical receipts are not reopened.
+
+
+---
+
+## DMP-M2-RED-001 — shell-sourced lab env rejects unquoted spaced values
+
+receipt_id: `DMP-M2-RED-001`  
+ticket: `M2-P2-001`  
+tested_sha: `e4036a45027ccb963d92f9b2790420754e0efdff`  
+run_id: `35732250412`
+
+observed_failure:
+M2 stack creation succeeds and both PostgreSQL services become healthy. The bootstrap step exits
+127 before any Metabase API call because shell sourcing `.env` reports:
+`./.env: line 16: Lab: command not found`.
+
+failure_stage:
+CI/lab environment loading before bootstrap/capability probe.
+
+failure_class:
+`EVAL_ORACLE`
+
+classification_evidence:
+- M2 forbidden-file isolation = PASS;
+- immutable image pin gate = PASS;
+- Docker network/volumes/containers created successfully;
+- both Postgres services = healthy;
+- failure occurs at `source .env`, before runtime capability assertions;
+- `.env.example` contains whitespace-bearing values without shell quotes.
+
+single_owner:
+`backend/lab/metabase/.env.example` shell compatibility.
+
+root_cause:
+The same env file is intentionally consumed by both Docker Compose and shell scripts. Compose accepts
+unquoted whitespace values, while bash `source` interprets following words as commands.
+
+failure_family:
+dual-consumer env syntax mismatch in lab harness.
+
+forbidden_patch_alternatives:
+- remove shell `set -e`;
+- ignore source errors;
+- hard-code secrets/settings into scripts;
+- modify product config or existing compose files.
+
+allowed_files_to_touch:
+- `backend/lab/metabase/.env.example`
+
+files_not_to_touch:
+- Dima v2/v3 product code;
+- root compose;
+- existing SQL Server lab;
+- source branch.
+
+invariant_being_fixed:
+one lab env file must parse identically enough for Compose and POSIX-style bash sourcing.
+
+focused_proof:
+next M2 live workflow must pass env load and reach bootstrap API.
+
+family_or_live_proof:
+full M2 live workflow.
+
+status:
+`CLASSIFIED / TEST-HARNESS PATCH AUTHORIZED`.
