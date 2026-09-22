@@ -876,7 +876,7 @@ def test_source_context_does_not_auto_bind_without_linker_authority():
     assert selection.binding is None
 
 
-def test_exact_duplicate_alias_stays_ambiguous_even_with_source_context():
+def test_exact_duplicate_alias_with_source_context_uses_only_exact_bounded_set():
     generator = SemanticCandidateGenerator(
         semantic_context=_two_cube_same_dimension_context(),
         schema={"models": [], "cubes": [], "company_vocabulary": []},
@@ -898,9 +898,15 @@ def test_exact_duplicate_alias_stays_ambiguous_even_with_source_context():
         provenance_type="USER_SOURCE",
         decision_context="invoice total account code",
     )
-    assert selection.status == "AMBIGUOUS_EXACT"
-    assert selection.binding is None
-    assert provider.requests == ()
+    assert selection.status == "BOUND"
+    assert selection.mode == "LINKER"
+    assert selection.binding is not None
+    assert selection.binding.canonical_target.canonical_name == "orders.account_code"
+    assert len(provider.requests) == 1
+    assert len(provider.requests[0].candidates) == 2
+    assert {
+        tuple(card.cube_labels) for card in provider.requests[0].candidates
+    } == {("Orders",), ("Ledger",)}
 
 
 def test_decision_context_cannot_retrieve_candidate_outside_governed_catalog():
