@@ -72,6 +72,11 @@ class _EvidenceResponsiveLLM:
 
     def __init__(self) -> None:
         self.prompts: list[dict] = []
+        self.decisions: list[dict] = []
+
+    def _emit(self, value: dict):
+        self.decisions.append(value)
+        return value
 
     def structured_json(self, system, user, **kwargs):
         payload = json.loads(user)
@@ -85,35 +90,35 @@ class _EvidenceResponsiveLLM:
         delta = payload.get("CURRENT_RESULT_DELTA")
 
         if "U1" not in verified:
-            return {
+            return self._emit({
                 "action": "run_analytics",
                 "obligation_ids": ["U1"],
                 "metric_handles": ["h1"],
-            }
+            })
         if (
             delta
             and delta.get("obligation_ids") == ["U1"]
             and not delta.get("inspected")
         ):
-            return {
+            return self._emit({
                 "action": "inspect_evidence",
                 "evidence_ref": delta["evidence_ref"],
-            }
+            })
 
         # Inspected U1 result changes the next choice: U3 before U2.
         if "U3" not in verified:
-            return {
+            return self._emit({
                 "action": "run_analytics",
                 "obligation_ids": ["U3"],
                 "metric_handles": ["h3"],
-            }
+            })
         if "U2" not in verified:
-            return {
+            return self._emit({
                 "action": "run_analytics",
                 "obligation_ids": ["U2"],
                 "metric_handles": ["h2"],
-            }
-        return {"action": "finish"}
+            })
+        return self._emit({"action": "finish"})
 
 
 def _accepted_three_obligation_runtime():
@@ -260,6 +265,38 @@ def test_multi_obligation_loop_uses_seed_set_but_evidence_changes_next_ready_cho
         runtime=runtime,
         executor=executor,
     )
+
+    if not outcome.run_finished:
+        trace = {
+            "decisions": llm.decisions,
+            "prompt_states": [
+                {
+                    "turn": idx + 1,
+                    "verified": (
+                        prompt.get("ACCUMULATED_RESEARCH_STATE") or {}
+                    ).get("verified_user_must_ids"),
+                    "delta": prompt.get("CURRENT_RESULT_DELTA"),
+                    "ready_tasks": prompt.get("READY_RESEARCH_TASKS"),
+                    "frontier": prompt.get("ACTION_FRONTIER"),
+                }
+                for idx, prompt in enumerate(llm.prompts)
+            ],
+            "observations": list(outcome.observations),
+            "snapshot": outcome.snapshot.model_dump(mode="json"),
+            "ledger": [
+                {
+                    "id": item.obligation_id,
+                    "status": item.status.value,
+                    "evidence_refs": list(item.evidence_refs),
+                }
+                for item in runtime.ledger.items
+            ],
+            "query_calls": service.query_calls,
+        }
+        raise AssertionError(
+            "D7-SEED-SET TRACE\n"
+            + json.dumps(trace, ensure_ascii=False, indent=2, default=str)
+        )
 
     assert outcome.run_finished is True
     assert outcome.verified_complete is True
