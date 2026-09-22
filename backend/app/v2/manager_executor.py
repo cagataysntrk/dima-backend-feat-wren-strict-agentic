@@ -107,6 +107,11 @@ class GovernedManagerExecutor:
     def evidence_store(self) -> EvidenceStore:
         return self._evidence
 
+    @property
+    def principal(self):
+        """Verified request identity used by governed execution; may be None only in tests/miswire."""
+        return self._context.principal
+
     def _validate_derived_semantic_provenance(
         self,
         args: ResolveSemanticsArgs,
