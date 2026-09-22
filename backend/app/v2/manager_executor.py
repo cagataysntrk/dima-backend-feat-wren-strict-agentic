@@ -8,7 +8,7 @@ themselves.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from app.v2.acceptance import IntentAcceptanceGate
 from app.v2.manager_core_adapter import (
@@ -136,7 +136,14 @@ class GovernedManagerExecutor:
                 "derived semantic proposal requires verified execution evidence"
             )
 
-    def execute(self, call: ManagerToolCall, validated_args: Any, runtime) -> Any:
+    def execute(
+        self,
+        call: ManagerToolCall,
+        validated_args: Any,
+        runtime,
+        *,
+        commit_guard: Callable[[], None] | None = None,
+    ) -> Any:
         if call.name == ManagerToolName.PROPOSE_ACCEPTANCE:
             assert isinstance(validated_args, ProposeAcceptanceArgs)
             return self._acceptance.evaluate(
@@ -281,6 +288,13 @@ class GovernedManagerExecutor:
 
             if result.query_count > 1:
                 runtime.note_additional_data_queries(result.query_count - 1)
+
+            # Day7 lifecycle seam: the ResearchTaskRegistry remains the owner of
+            # delivery/cancel state.  A late result must be rejected BEFORE it can
+            # become accepted Evidence or verify an obligation.
+            if commit_guard is not None:
+                commit_guard()
+
             self._evidence.put(result.evidence)
             runtime.attach_evidence(result.evidence.artifact_id)
 
