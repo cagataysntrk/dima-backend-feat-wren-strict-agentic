@@ -645,3 +645,37 @@ Authority:
 X0 must compare the real
 `AcceptedStandardAuthority → StandardProjection → execution substrate` chain, never a surrogate
 Research `AcceptedTurnContract` path.
+
+
+---
+
+## WREN_SEMANTIC_BACKBONE_RETENTION_DECISION
+
+> **D65-X0 Wren'in MDL/cube semantic backbone'unu kaldırma deneyi değildir. İlk aşamada yalnız
+> analytics execution/query-lifecycle overlap'ını ölçer. Wren semantic-layer retention ayrı bir
+> architecture decision'dır.**
+
+Binding implications:
+
+```text
+X0 MAY compare:
+  StandardProjection → Wren execution/query lifecycle
+  vs
+  StandardProjection → Metabase construct/validate/execute lifecycle
+
+X0 MAY NOT infer:
+  "Metabase query execution works"
+  ⇒ "Wren MDL/cube semantic backbone is redundant"
+```
+
+During X0:
+- current Dima semantic authority remains `SemanticBindingGate + accepted authority`;
+- existing Wren MDL/cube semantics may remain the semantic backbone even if Metabase is tested as
+  an execution/query-lifecycle component;
+- metric meaning, cube relationships, grain/additivity/unit/time semantics are not silently
+  re-owned by Metabase;
+- removing or replacing the Wren semantic layer requires a separate explicit architecture
+  decision and consultation, with its own semantic-equivalence and migration evidence.
+
+Therefore a promising X0 can justify a **full execution-substrate/query-lifecycle comparison**,
+not automatic Wren semantic-layer removal.
