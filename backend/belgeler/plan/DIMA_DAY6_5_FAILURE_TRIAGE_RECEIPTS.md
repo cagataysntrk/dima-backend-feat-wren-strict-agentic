@@ -599,11 +599,10 @@ invariant_being_fixed:
 Invalid typed model output stays in the semantic/contract denominator.
 
 focused_proof:
-`PENDING` — no patch executed because the same full run triggers the mandatory Jev-promising
-consultation gate.
+`35709387862 = 8/8 PASS`; `python -m py_compile lab/v2_day6_5_j1_benchmark.py` PASS.
 
 family_regression_proof:
-`PENDING` — same reason.
+The frozen J1 provider-free contract suite is the relevant eval-family proof: `35709387862 = 8/8 PASS`. Primary paid J1 was deliberately NOT rerun; historical artifacts were deterministically reclassified.
 
 status:
-`FIX IMPLEMENTED / FOCUSED PROOF PENDING — consultation now authorizes the eval-only repair. Product semantic/temporal/authority code remains untouched.`
+`CLOSED — eval-only classifier fixed at ebf229545ae91b9b0e202810ed8acb17eee62f86; provider-free run 35709387862 = 8/8 PASS; stored full-run artifacts reclassified without paid rerun; product semantic/temporal/authority code untouched.`

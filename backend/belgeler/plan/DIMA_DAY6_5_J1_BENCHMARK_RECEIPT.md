@@ -420,3 +420,17 @@ Jev
 
 The old harness field `provider_failure_count=6/2` for Gemini/Luna is historical measurement
 error and is superseded by this classification.
+
+
+## Eval-oracle cleanup closure
+
+```text
+fix commit          = ebf229545ae91b9b0e202810ed8acb17eee62f86
+provider-free run   = 35709387862
+result              = 8/8 PASS
+compile             = PASS
+paid primary rerun  = NO
+product-code touch  = 0
+```
+
+`D65-J1-FULL-001` is CLOSED.
