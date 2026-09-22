@@ -6715,6 +6715,46 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 — DAY7 CARDINALITY-AWARE FANOUT POLICY GREEN
+
+**Checkpoint:** `7a4c2f45734f43b24d54a1c796374cd8031b4272`  
+**Focused workflow:** `35774624379` = **SUCCESS**
+
+### Metabase reference check — DD-15
+- mechanism: cardinality-bounded exploratory fanout;
+- disposition: **PATTERN_ONLY**;
+- Dima-native invariant adopted: LOW/HIGH/UNKNOWN all remain bounded by the canonical
+  Research query budget + branch depth + safety cap;
+- behavior NOT adopted: no Metabase runtime/code, no shared discovery cache, no synthetic
+  `Other` entity and no statistical ranking promoted to semantic authority.
+
+Provider-free attack proof:
+
+```text
+low cardinality                 PASS
+high cardinality                PASS
+unknown cardinality             PASS
+query budget nearly exhausted   PASS
+query budget exhausted          PASS
+branch depth exhausted          PASS
+duplicate candidates            PASS
+> safety-bound proposals        PASS
+Wren exact dimension_values     PASS
+missing values => UNKNOWN       PASS
+canonical Manager budget reuse  PASS
+```
+
+Important scope:
+- `ResearchFanoutPolicy` is a deterministic policy gate, not a second planner/scheduler;
+- existing Wren `dimension_values` can prove exact exposed low cardinality;
+- missing `dimension_values` means `UNKNOWN`, never silently `HIGH`;
+- `max_fanout` remains the final generic fuse; cardinality policy is the intended pre-fuse decision;
+- Day7 still has no claim that every tool family or relationship/timeout path is complete.
+
+Next: same-domain governed tool families, starting only with primitives already proven in the
+current V2/Wren trust plane.
+
+---
 ## 2026-09-22 — DAY7 D7-A2 + REAL ADAPTIVE WREN GREEN
 
 **Checkpoint:** `ce29f52e71f102f3ec18154c9aae2a045afa3f5d`  
