@@ -1791,3 +1791,32 @@ interpretation:
 
 status:
 `P7 CLOSED FOR INITIAL CANONICAL IMPORT; P8 EQUIVALENCE MATRIX NEXT`.
+
+
+---
+
+## P8 semantic equivalence matrix closure — GREEN
+
+implementation_sha: `23480aa433ba10fed84a015a85c9f1d88b31572e`  
+p8_workflow: `35773470252 = SUCCESS`  
+governance: `35773470111 = SUCCESS`  
+m1_wren_regression: `35773470027 = SUCCESS`
+
+proof:
+- focused equivalence matrix = 14 PASS;
+- P7 structured importer regression = 8 PASS;
+- deterministic matrix ordering/fingerprint = PASS;
+- exact physical dimension/time native classification = PASS;
+- explicit mechanical metric native fixture = PASS;
+- opaque formula metric remains `WREN_ONLY_GAP`;
+- structured relationship fixture = `DIMA_COMPILED`;
+- security/cube semantic ownership gaps = `DIMA_RUNTIME`;
+- relationship/calculated/view representation gaps = `WREN_ONLY_GAP`;
+- unknown gap code = HARD RED;
+- formula SQL parsing / fuzzy / regex / Metabase discovery = 0.
+
+interpretation:
+`P8 EQUIVALENCE MATRIX GREEN / WREN REMOVAL NOT AUTHORIZED`.
+
+status:
+`P8 CLOSED; P9 SEMANTIC RESOURCE PROVISIONER NEXT`.

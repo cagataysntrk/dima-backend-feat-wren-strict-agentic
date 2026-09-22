@@ -728,3 +728,34 @@ A later change to DimaSemanticSpec is allowed only when P8 proves a concrete can
 need; importer convenience or gap-count reduction alone is not sufficient.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0022 — P8 equivalence is a conservative capability matrix, not a parity score
+
+date: 2026-09-22
+
+evidence:
+- P8 implementation SHA `23480aa433ba10fed84a015a85c9f1d88b31572e`;
+- P8 workflow `35773470252 = SUCCESS`;
+- focused P8 equivalence proof = 14 PASS;
+- P7 importer regression = 8 PASS;
+- M1/Wren workflow `35773470027 = SUCCESS`;
+- governance `35773470111 = SUCCESS`.
+
+decision:
+P8 classifies each typed semantic surface independently as:
+`NATIVE_METABASE`, `DIMA_COMPILED`, `DIMA_RUNTIME`, `WREN_ONLY_GAP`, or `UNSUPPORTED`.
+
+The matrix is not a score and does not incentivize patches.
+
+Opaque Wren formulas are not text-parsed into false native equivalence. Exact physical
+dimension/time lineage may be native. Structured Dima relationship contracts may be Dima-compiled.
+Security and Dima-owned terminology remain runtime/ownership concerns. Unknown P7 gap codes fail
+closed.
+
+A `WREN_ONLY_GAP` may be removed only by a separately proven canonical/compiler/runtime capability,
+not by relabeling, regex parsing or Metabase name discovery.
+
+status: SEALED.

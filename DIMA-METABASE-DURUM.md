@@ -898,3 +898,26 @@ view definition gaps               = 1
 P7 result: **migration baseline GREEN / typed representation gaps explicit**.
 
 **Current phase:** P8 PRE-DEVELOPMENT — semantic equivalence matrix.
+
+
+---
+
+## P8 semantic equivalence matrix — CLOSED
+
+```text
+implementation SHA                 = 23480aa433ba10fed84a015a85c9f1d88b31572e
+P8 workflow                        = 35773470252 = SUCCESS
+focused equivalence                = 14 PASS
+P7 regression                      = 8 PASS
+M1/Wren                            = 35773470027 = SUCCESS
+governance                         = 35773470111 = SUCCESS
+unknown gap default                = 0 / HARD RED
+formula text parsing               = 0
+relationship-condition parsing     = 0
+Metabase semantic discovery        = 0
+Wren removal                       = NOT AUTHORIZED
+```
+
+P8 result: **capability matrix GREEN / semantic equivalence remains typed per feature**.
+
+**Current phase:** P9 PRE-DEVELOPMENT — semantic resource provisioner.
