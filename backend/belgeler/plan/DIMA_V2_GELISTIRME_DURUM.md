@@ -4683,3 +4683,252 @@ Day 6.5'in temel Manager fikri çalışıyor; eski Dima'yı yeniden üreten raw-
 heuristic authority sınırı söküldü ve bounded cognition + deterministic authority olarak
 yeniden kuruldu. Şimdi ihtiyaç yeni feature veya yeni heuristic değil; current HEAD'i
 recertify edip live DEV/validation/hidden evidence ile gerçekten mühürlemek.
+
+
+---
+
+## 2026-09-22 07:44 — DAY 6.5 ENGINEERING-CLOSURE HANDOFF
+
+### Authority / branch durumu
+
+```text
+branch                         = feat/ask-v2-mvp
+docs-prep HEAD before status   = 4f61d62d8ffa015937e961f20e5161157b7f055c
+latest semantic-code SHA       = c9629d9029db360e86a8592e12da646a2afc0621
+production hybrid /ask-v2      = OFF
+Day 6.5 engineering closure    = ACTIVE
+Day 6.5 certification seal     = NOT YET
+```
+
+Bu hazırlık turunda executable product code değiştirilmedi. Değişiklikler yalnız phase-local
+authority, operation protocol, MIMARI overlay ve eval/seal altyapısıdır.
+
+### Nihai Day 6.5 çalışma kararı
+
+Architecture search tekrar açılmayacak.
+
+```text
+STANDARD_DIRECT
+STANDARD_BUILDER
+RESEARCH
+```
+
+üç çalışma biçimi vardır; fakat iki accepted-authority ailesi vardır:
+
+```text
+AcceptedAuthority
+├── AcceptedStandardAuthority
+└── AcceptedResearchAuthority
+```
+
+- Direct = StandardBuilder'ın hemen seal edilen kısa yolu.
+- StandardBuilder = tek governed analytical projection için bounded discovery/self-correction.
+- Research = multi-obligation/adaptive evidence investigation.
+
+Standard query construction ile Research orchestration aynı correctness problemi değildir.
+
+### Yeni aktif phase-local authority
+
+`belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
+
+Bu belge:
+- mühürlü roadmap/report'u değiştirmez,
+- current Day6.5 closure sırasını tanımlar,
+- semantic discovery != authority,
+- StandardBuilder != Research Manager,
+- Standard → Research authority merge yasağı,
+- workers=1 / classify-before-patch / freeze/A-B disiplinini bağlayıcı hale getirir.
+
+Supporting current docs:
+- `DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+- `DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+- `DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+- `eval/v2_day6_5_eval_manifest.yaml`
+- `MIMARI.md` current closure overlay
+- `AGENTS.md` / `CLAUDE.md` active operation
+
+### Bu prep turunda yapılanlar
+
+```text
+c382dbfa07df  add final engineering closure protocol
+99f62311bfe3  align AGENTS with final closure architecture
+0dca179d4a73  make engineering closure active in CLAUDE
+f0ed81eda776  add three-mode MIMARI closure overlay
+4f61d62d8ffa  align eval manifest with StandardBuilder closure gates
+```
+
+### Superseded operational assumptions
+
+Aşağıdaki eski hazırlık notları artık aktif kural değildir:
+
+1. **"Hidden holdout Manager implementation blocker"** → SUPERSEDED.
+   Hidden50 development blocker değildir; final certification seal blocker'ıdır.
+2. **"simple standard model calls <= 1" universal gate** → SUPERSEDED.
+   `STANDARD_DIRECT` minimum-call hedefler; bounded `STANDARD_BUILDER` progress varsa
+   birden fazla tur yapabilir. Research Manager loop'a düşme ise standard için 0 kalmalıdır.
+3. **"standard veya research" iki-mode düşüncesi** → SUPERSEDED.
+   Üç mode, iki accepted-authority ailesi vardır.
+4. **retrieval score / miss = semantic truth** → YASAK.
+   Retriever yalnız bounded discovery seam'idir.
+
+### Güncel operasyon protokolü — kısa sürüm
+
+- geliştirme/mimari doğrulama test kampanyasından önce gelir,
+- mühürlü plan + rapor authority; progress yalnız living status,
+- her değişiklik kayıt altına alınır,
+- vertical slice önce,
+- normal loop: `code → 3–15 sn focused/provider-free → devam`,
+- workers=1 semantic certification önce,
+- fail → önce sınıflandır:
+  `MODEL_COGNITION | CONTRACT/ARCHITECTURE | RESOLVER_TRUTH | EVAL_ORACLE | TRANSPORT/PROVIDER`,
+- infra fail semantic fail değildir,
+- regex/morphology/keyword/case-ID/case-derived prompt/resolver heuristic yasak,
+- exactly-one semantic authority,
+- LLM cognition; Resolver/BindingGate/Planner/Wren/Evidence/Gates truth,
+- Coverage veto-only,
+- receipt provenance/anti-laundering only,
+- USER_MUST != ResearchDirective/AGENT_DERIVED,
+- pre-acceptance finite,
+- post-acceptance adaptation bounded + progress fingerprint,
+- model capability floor architecture ile karıştırılmaz,
+- önemli intervention öncesi checkpoint; A/B same SHA,
+- hidden only final seal,
+- STOP-THE-LINE ihlalinde feature değil abstraction düzeltilir.
+
+Tek prensip:
+**Vaka geçirerek sistem yapmıyoruz; doğru abstraction'ı kurup vakaların onun doğal sonucu
+olarak geçmesini istiyoruz.**
+
+### Current code evidence — değişmedi
+
+Son semantic code:
+`c9629d9029db360e86a8592e12da646a2afc0621`
+
+Bu SHA'nın parent architecture proof'u:
+
+```text
+tested SHA e2b00eab...
+provider-free cognition/authority closure 70/70 PASS
+real Wren trust-plane sentinel PASS
+```
+
+Ancak `c9629d...` bu koşumdan sonra geldiği için exact current semantic SHA recertification
+halen ilk engineering işi olmalıdır.
+
+### Açık borçlar
+
+#### D65-C1 — exact current semantic SHA recertification
+- blocker: YES / sonraki kod değişikliği öncesi.
+- action: focused provider-free cognition/authority closure.
+- fail olursa önce failure class; patch otomatik değil.
+
+#### D65-C2 — SemanticCatalogRetriever seam
+- current candidate enumeration doğrudan `SemanticCandidateGenerator` içindedir.
+- target: retrieval discovery interface arkasına almak.
+- first backend: mevcut deterministic enumeration olabilir.
+- retrieval authority değildir.
+- vector/BM25/RRF: DEFER.
+
+#### D65-C3 — bounded StandardBuilder yok
+- target: Direct + Builder tek engine/state machine.
+- bounded typed feedback + progress fingerprint.
+- no-progress fail closed.
+- Research Manager değildir.
+
+#### D65-C4 — Standard/Research authority fiziksel ayrımı yok
+- target: minimal `AcceptedStandardAuthority`.
+- Research `AcceptedTurnContract + UOL + CompletionGate` korunur.
+- failed Standard semantic authority Research'e taşınmaz.
+
+#### D65-C5 — Standard final CoverageVeto
+- şimdilik seal öncesi dar omission/exclusion/research-only capability vetosu.
+- canonical semantic/clarification/query authority yok.
+- sonradan benchmark kanıtıyla eval-only observer'a indirilebilir.
+
+#### D65-C6 — broad distribution / certification
+- final frozen DEV80: REQUIRED after engineering change.
+- VALIDATION50: after engineering freeze, no tuning.
+- external HIDDEN50: final certification seal only.
+- production hybrid route: certification seal sonrası.
+
+#### D65-C7 — large tenant catalog retrieval/index
+- `CANDIDATE_SET_TOO_BROAD` dürüst failure olmaya devam eder.
+- retrieval backend optimization architecture truth değildir.
+- Day6.5 seal için ancak real distribution blocker olursa ele alınır.
+
+#### D65-C8 — CrossDomainJoinGate full relationship capability
+- Day7-grade capability.
+- Day6.5 P0: unsafe no-path execution = 0.
+
+### Sıradaki ticket — D65-E1 EXACT CURRENT-HEAD RECERTIFICATION
+
+**AMAÇ**  
+Yeni code yazmadan önce `c9629d...` cognition/authority boundary'nin exact current semantic
+SHA üzerinde hâlâ green olduğunu kanıtlamak.
+
+**TOUCH**
+- test/workflow invocation only,
+- sonuç living status.
+
+**NO-TOUCH**
+- `semantic_linker.py`,
+- `manager_preacceptance.py`,
+- `manager_semantics.py`,
+- prompt/system schema,
+- Resolver,
+- DEV corpus/oracle.
+
+**TEST**
+- focused provider-free cognition/authority closure,
+- real Wren sentinel mevcut bundle içinde varsa birlikte,
+- paid/live yok.
+
+**FAIL CLASSIFICATION**
+Her failure önce:
+`MODEL_COGNITION | CONTRACT/ARCHITECTURE | RESOLVER_TRUTH | EVAL_ORACLE | TRANSPORT/PROVIDER`.
+
+Provider-free'da MODEL/TRANSPORT beklenmez; harness varsa semantic denominator dışı.
+
+**EXIT**
+- green → checkpoint SHA,
+- red → failure-family/owner diagnosis; case patch yok.
+
+### Recert green sonrası exact sıra
+
+```text
+checkpoint
+→ SemanticCatalogRetriever seam
+→ bounded StandardBuilder
+→ AcceptedStandardAuthority split
+→ narrow CoverageVeto
+→ provider-free family gates
+→ workers=1 live architecture set
+→ real Wren Standard vertical + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ frozen DEV80 once
+→ family clustering if fail
+→ ENGINEERING CLOSED / ARCHITECTURE FROZEN
+→ Day7 lab/flag may proceed
+→ VALIDATION50 no tuning
+→ external HIDDEN50
+→ CERTIFICATION SEALED
+→ production hybrid activation
+```
+
+### STOP-THE-LINE
+
+- second semantic owner,
+- silent USER requirement loss,
+- unsafe standard admission,
+- blocking ambiguity auto-pick,
+- rejected Standard authority → Research merge,
+- candidate set outside canonical truth,
+- raw SQL/direct DB authority,
+- cross-tenant/context handle,
+- post-acceptance raw prompt semantic reparse,
+- unverified numeric truth,
+- evidence-less VERIFIED completion,
+- model-specific business branch,
+- silent fallback.
+
+Tek benchmark vakası yeni architecture arama gerekçesi değildir.
