@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P3 / P3A PRE-DEVELOPMENT REVIEW SEALED — P3 TRANSPORT NEXT  
-**Product-code development:** P3 TRANSPORT NOT STARTED  
+**Current phase:** P3 TRANSPORT IMPLEMENTED / LIVE GATE RED — P3A BLOCKED  
+**Product-code development:** P3 TRANSPORT IMPLEMENTED; RED-001 CORRECTION IN PROGRESS  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -213,3 +213,46 @@ Decisions:
 - candidate B (`ResolvedAnalyticsIntent`) is the only P3A prototype seam;
 - P3A remains blocked until P3 is GREEN;
 - no P4 work is authorized.
+
+
+---
+
+## P3 live RED — DMP-P3-RED-001
+
+```text
+tested SHA                    = 3d3302baf52ad02d9fc6d59c758e418f91822a49
+P3 workflow                   = 35734065244 = FAILURE
+forbidden-file isolation      = PASS
+compile                       = PASS
+provider-free P3              = PASS
+pinned M2 lab startup         = PASS
+live P3 Agent API proof       = FAIL / KeyError: 'name'
+M1 regression                 = 35734065106 = SUCCESS
+governance                    = 35734065224 = SUCCESS
+M2                            = CLOSED GREEN / NOT REOPENED
+P3A                           = BLOCKED
+P4                            = FORBIDDEN
+```
+
+Owner: exact v0.63.18 read-resource transport contract, not semantic/compiler code.
+
+### Open architecture debt — principal/access coherence
+
+Not proven yet:
+
+```text
+ResolvedAnalyticsIntent.principal
+== Dima effective execution principal
+== Metabase authenticated principal
+== DB/effective access principal
+== durable ExecutionAccessFingerprint
+```
+
+P3 correctly receives a caller-injected Metabase session and does not own identity mapping.
+The current lab-admin proof therefore **does not** establish permission parity, tenant isolation,
+or a complete ExecutionAccessFingerprint. M1's current
+`execution_access_fingerprint = principal_fingerprint` remains an interim M1 compatibility value,
+not the final P5/P10 access-lens contract.
+
+This debt must be discharged fail-closed before the first security-sensitive Dima→Metabase
+execution/cutover. It is not a reason to add identity logic to P3 transport.

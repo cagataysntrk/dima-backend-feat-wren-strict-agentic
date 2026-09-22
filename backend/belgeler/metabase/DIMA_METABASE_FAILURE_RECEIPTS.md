@@ -718,3 +718,101 @@ restore                        PASS / 176 public tables
 ```
 
 No M2 failure remains open. Future M2 regressions use new receipt ids.
+
+
+---
+
+## DMP-P3-RED-001 — exact Agent API read-resource envelope not modeled
+
+receipt_id: `DMP-P3-RED-001`  
+ticket: `P3-001`  
+tested_sha: `3d3302baf52ad02d9fc6d59c758e418f91822a49`  
+run_id: `35734065244`
+
+observed_failure:
+Pinned v0.63.18 live proof reaches search/read-resource and fails with
+`KeyError: 'name'` because the live test assumes
+`resources[0].content.name`.
+
+Exact v0.63.18 source contract instead returns a per-resource envelope:
+
+```text
+resources[]
+  uri
+  content?  -> resource-specific payload, commonly {"structured-output": ...}
+  error?    -> per-resource failure even when outer HTTP status is 200
+output      -> formatted aggregate representation
+```
+
+For `metabase://database/{id}`, the database entity is produced through `entity-result`,
+so the programmatic name lives under:
+`resources[0].content["structured-output"]["name"]`.
+
+failure_stage:
+P3 typed read-resource transport contract / live runtime proof.
+
+failure_class:
+`CONTRACT/ARCHITECTURE`
+
+classification_evidence:
+- P3 forbidden-file isolation = PASS;
+- compile = PASS;
+- provider-free P3 = PASS;
+- pinned M2 lab startup = PASS;
+- M1 regression = PASS;
+- governance = PASS;
+- live failure is exactly `KeyError: 'name'`;
+- v0.63.18 `::read-resource-item` defines optional `content` and `error` with documented
+  either/or semantics;
+- `fetch-single-uri` returns `{uri, content}` OR `{uri, error}`;
+- `read-resource` returns both `resources` and top-level `output`;
+- current P3 model collapses resource items to raw dicts and therefore does not preserve
+  the resource-level error state as a typed contract;
+- current startup handshake reports `read_resource=True` without actually probing a resource.
+
+single_owner:
+P3 read-resource transport representation and capability handshake.
+
+root_cause:
+P3 modeled the outer HTTP call but not the exact v0.63.18 per-resource envelope. Callers therefore
+had to know raw nested dictionary layout, malformed/mixed resource states were not fail-closed, and
+the handshake could claim read-resource capability without direct proof.
+
+failure_family:
+transport-contract drift between typed client models and pinned Agent API resource envelopes.
+
+authorized_correction:
+- model an explicit resource content/envelope type;
+- require exactly one of content/error per resource;
+- model top-level `output`;
+- verify response resource count/order against requested URIs;
+- preserve resource-level error state without string/regex semantic classification;
+- make handshake execute a real read-resource probe before claiming the capability;
+- update live proof to use the exact `content["structured-output"]` contract with no fallback.
+
+forbidden_patch_alternatives:
+- hard-code `"Dima Analytics Lab"` fallback;
+- catch `KeyError` and continue;
+- treat resource-level error as content success;
+- map arbitrary error strings to permission/not-found taxonomy;
+- change Metabase source/runtime;
+- reopen M2;
+- enter P3A/compiler code;
+- add schema/name guessing;
+- touch v2/Wren/authority/semantic contracts.
+
+allowed_files_to_touch:
+- `backend/app/v3/substrate/metabase/models.py`
+- `backend/app/v3/substrate/metabase/client.py`
+- `backend/tests/test_v3_p3_metabase_client.py`
+- `backend/tests/test_v3_p3_metabase_client_live.py`
+- P3 failure/status/ticket docs
+
+focused_proof:
+provider-free typed resource envelope, resource-error, malformed-envelope and handshake tests.
+
+family_or_live_proof:
+full P3 pinned-runtime workflow + M1 regression + governance.
+
+status:
+`CLASSIFIED / CONTRACT PATCH AUTHORIZED`.

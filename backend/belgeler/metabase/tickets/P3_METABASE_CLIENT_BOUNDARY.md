@@ -3,7 +3,7 @@
 **Milestone:** P3  
 **Predevelopment review:** `backend/belgeler/metabase/predev/P3_P3A_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** Metabase transport/runtime boundary  
-**Status:** AUTHORIZED AFTER PREDEV GOVERNANCE GREEN
+**Status:** IMPLEMENTED / LIVE GATE RED — DMP-P3-RED-001 OPEN
 
 ## Goal
 
@@ -72,3 +72,13 @@ No Dima front-door routing.
 ## Exit
 
 P3 GREEN is required before P3A implementation.
+
+
+---
+
+## RED receipt linkage
+
+`DMP-P3-RED-001` is open against live run `35734065244`.
+
+Do not advance to P3A. The correction owner is limited to the exact read-resource transport
+envelope + capability handshake. M2 remains GREEN.
