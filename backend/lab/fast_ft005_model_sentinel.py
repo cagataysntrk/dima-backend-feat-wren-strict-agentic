@@ -15,10 +15,12 @@ from app.fast.ask_models import AggregationKind, TemporalKind
 from app.fast.conversation_models import (
     FastAcceptedContext,
     FastContextSlot,
+    FastFollowupResolution,
     FastFollowupStatus,
 )
 from app.fast.followup_cognition import StructuredJsonFastFollowupCognition
 from app.llm import build_generator
+from fast_model_eval import RecordingStructuredGenerator
 
 
 MODEL = os.getenv("DIMA_OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
@@ -99,6 +101,15 @@ CTX_Q2 = _ctx(
 )
 
 
+def _entity_retrieval_hit(search_terms, expected_entity: str) -> bool:
+    target = expected_entity.strip().lower()
+    return any(
+        term.strip().lower() in target or target in term.strip().lower()
+        for term in search_terms
+        if term.strip()
+    )
+
+
 def _assert_no_authority_invention(resolution) -> None:
     dumped = resolution.model_dump_json()
     assert "fast_res_" not in dumped
@@ -115,9 +126,15 @@ def _supported_draft(resolution):
 
 
 def main() -> int:
-    cognition = StructuredJsonFastFollowupCognition(
-        build_generator(_settings())
+    recorder = RecordingStructuredGenerator(
+        build_generator(_settings()),
+        model_role="THIRD_MODEL_DIAGNOSTIC",
+        exact_model_id=MODEL,
+        provider="openrouter",
+        validator_model=FastFollowupResolution,
+        reasoning_effort="disabled",
     )
+    cognition = StructuredJsonFastFollowupCognition(recorder)
 
     receipt: dict = {
         "status": "RED",
@@ -126,6 +143,10 @@ def main() -> int:
         "invented_handle_count": 0,
         "cases": [],
         "failures": [],
+        "hard_failures": [],
+        "diagnostic_observations": [],
+        "structured_calls": [],
+        "repeatability_probe": [],
     }
 
     cases = [
@@ -135,6 +156,7 @@ def main() -> int:
             "accepted_context": None,
             "source_questions": (),
             "clarification_question": None,
+            "expected_entity": "orders",
         },
         {
             "name": "q2_previous_month",
@@ -142,6 +164,7 @@ def main() -> int:
             "accepted_context": CTX_Q1,
             "source_questions": (Q1,),
             "clarification_question": None,
+            "expected_entity": "orders",
         },
         {
             "name": "q3_breakdown",
@@ -149,6 +172,7 @@ def main() -> int:
             "accepted_context": CTX_Q2,
             "source_questions": (Q1, Q2),
             "clarification_question": None,
+            "expected_entity": "orders",
         },
         {
             "name": "explicit_reply_older_turn",
@@ -156,6 +180,7 @@ def main() -> int:
             "accepted_context": CTX_Q1,
             "source_questions": (Q1,),
             "clarification_question": None,
+            "expected_entity": "orders",
         },
         {
             "name": "self_contained_topic_switch",
@@ -163,6 +188,7 @@ def main() -> int:
             "accepted_context": CTX_Q2,
             "source_questions": (Q1, Q2),
             "clarification_question": None,
+            "expected_entity": "customers",
         },
         {
             "name": "missing_safe_context",
@@ -170,6 +196,7 @@ def main() -> int:
             "accepted_context": None,
             "source_questions": (),
             "clarification_question": None,
+            "expected_entity": None,
         },
         {
             "name": "ambiguous_contextual_followup",
@@ -177,6 +204,7 @@ def main() -> int:
             "accepted_context": CTX_Q2,
             "source_questions": (Q1, Q2),
             "clarification_question": None,
+            "expected_entity": None,
         },
         {
             "name": "unsupported_avg",
@@ -184,6 +212,7 @@ def main() -> int:
             "accepted_context": CTX_Q2,
             "source_questions": (Q1, Q2),
             "clarification_question": None,
+            "expected_entity": None,
         },
         {
             "name": "clarification_answer",
@@ -191,6 +220,7 @@ def main() -> int:
             "accepted_context": CTX_Q1,
             "source_questions": (Q1, "Geçen ay ne oldu?"),
             "clarification_question": "Geçen ay ne oldu?",
+            "expected_entity": "orders",
         },
     ]
 
@@ -204,6 +234,7 @@ def main() -> int:
             "passed": False,
         }
         try:
+            recorder.set_case(case["name"])
             resolution = cognition.resolve(
                 question=case["question"],
                 accepted_context=case["accepted_context"],
@@ -228,10 +259,12 @@ def main() -> int:
                 draft = _supported_draft(resolution)
                 assert draft.aggregation == AggregationKind.SUM
                 assert draft.temporal.kind == TemporalKind.PREVIOUS_MONTH
-                assert FastContextSlot.ENTITY in resolution.inherited_slots
-                assert FastContextSlot.AGGREGATION in resolution.inherited_slots
-                assert FastContextSlot.MEASURE in resolution.inherited_slots
-                assert FastContextSlot.TEMPORAL in resolution.replaced_slots
+                observed["diagnostic_slots"] = {
+                    "inherited": [slot.value for slot in resolution.inherited_slots],
+                    "replaced": [slot.value for slot in resolution.replaced_slots],
+                    "expected_inherited_reference": ["ENTITY", "AGGREGATION", "MEASURE"],
+                    "expected_replaced_reference": ["TEMPORAL"],
+                }
 
             elif name == "q3_breakdown":
                 assert resolution.status == FastFollowupStatus.CONTEXTUAL
@@ -239,8 +272,10 @@ def main() -> int:
                 assert draft.aggregation == AggregationKind.SUM
                 assert draft.temporal.kind == TemporalKind.PREVIOUS_MONTH
                 assert (draft.breakdown_hint or "").strip()
-                assert FastContextSlot.TEMPORAL in resolution.inherited_slots
-                assert FastContextSlot.BREAKDOWN in resolution.replaced_slots
+                observed["diagnostic_slots"] = {
+                    "inherited": [slot.value for slot in resolution.inherited_slots],
+                    "replaced": [slot.value for slot in resolution.replaced_slots],
+                }
 
             elif name == "explicit_reply_older_turn":
                 assert resolution.status == FastFollowupStatus.CONTEXTUAL
@@ -275,18 +310,73 @@ def main() -> int:
                 draft = _supported_draft(resolution)
                 assert draft.aggregation == AggregationKind.SUM
                 assert draft.temporal.kind == TemporalKind.PREVIOUS_MONTH
-                assert FastContextSlot.ENTITY in resolution.inherited_slots
-                assert FastContextSlot.MEASURE in resolution.inherited_slots
-                assert FastContextSlot.TEMPORAL in resolution.replaced_slots
+                observed["diagnostic_slots"] = {
+                    "inherited": [slot.value for slot in resolution.inherited_slots],
+                    "replaced": [slot.value for slot in resolution.replaced_slots],
+                }
+
+            if resolution.effective_draft is not None and case["expected_entity"] is not None:
+                terms = list(resolution.effective_draft.search_terms)
+                retrieval_hit = _entity_retrieval_hit(
+                    terms,
+                    case["expected_entity"],
+                )
+                observed["retrieval_terms"] = terms
+                observed["retrieval_entity_hit"] = retrieval_hit
+                if not retrieval_hit:
+                    raise AssertionError(
+                        f"entity-centric retrieval miss for {case['expected_entity']}: {terms}"
+                    )
 
             observed["passed"] = True
         except Exception as exc:
             observed["error"] = f"{type(exc).__name__}: {exc}"
             receipt["failures"].append(case["name"])
+            receipt["hard_failures"].append(case["name"])
 
         receipt["cases"].append(observed)
 
-    receipt["status"] = "GREEN" if not receipt["failures"] else "RED"
+    # Repeatability classification only: same exact Q3 input/schema/model three times,
+    # sequential workers=1. This does not majority-vote or repair product behavior.
+    for index in range(1, 4):
+        case_id = f"repeat_q3_{index}"
+        recorder.set_case(case_id)
+        try:
+            resolution = cognition.resolve(
+                question=Q3,
+                accepted_context=CTX_Q2,
+                source_questions=(Q1, Q2),
+                clarification_question=None,
+            )
+            receipt["repeatability_probe"].append(
+                {
+                    "case_id": case_id,
+                    "success": True,
+                    "status": resolution.status.value,
+                    "structured_valid": True,
+                }
+            )
+        except Exception as exc:
+            receipt["repeatability_probe"].append(
+                {
+                    "case_id": case_id,
+                    "success": False,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            )
+
+    receipt["structured_calls"] = recorder.records
+    q2 = next(item for item in receipt["cases"] if item["name"] == "q2_previous_month")
+    if q2.get("diagnostic_slots"):
+        receipt["diagnostic_observations"].append(
+            {
+                "case_id": "q2_previous_month",
+                "kind": "SLOT_METADATA_ONLY",
+                "value": q2["diagnostic_slots"],
+            }
+        )
+
+    receipt["status"] = "GREEN" if not receipt["hard_failures"] else "RED"
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps(receipt, ensure_ascii=False, indent=2))
