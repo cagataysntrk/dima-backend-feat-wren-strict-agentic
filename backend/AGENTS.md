@@ -7,14 +7,13 @@
 > Architecture path only: `STANDARD | RESEARCH`.
 > `STANDARD_DIRECT` / `STANDARD_BUILDER` are Standard outcomes/telemetry, not separate engines or authorities.
 >
-> D65-E3A requires a minimal generic `BoundedAgentRuntimeKernel` in `app/v2/agent_runtime.py`.
-> Kernel owns only counters/budgets/observations/action+state fingerprints/duplicate prevention/terminal/no-progress/telemetry.
-> Kernel MUST NOT import or know `AcceptedTurnContract`, `UserObligationLedger`, `ResearchDirective`, Evidence verification, semantic truth, join/query/numeric truth or completion truth.
+> D65-E3A-R **GREEN**: `app/v2/agent_runtime.py` now provides the minimal generic `BoundedAgentRuntimeKernel`; StandardBuilder consumes it. Focused gate `35693039369` = 22/22 PASS; runtime-aligned family closure `35693146320` = 94/94 PASS.
+> Kernel owns only counters/budgets/observations/action+state fingerprints/duplicate prevention/terminal/no-progress/telemetry and MUST NOT import or know `AcceptedTurnContract`, `UserObligationLedger`, `ResearchDirective`, Evidence verification, semantic truth, join/query/numeric truth or completion truth.
 >
 > Do NOT refactor `manager_loop.py`, `manager_runtime.py`, `manager_tools.py`, `manager_preacceptance.py` into the kernel during Day 6.5.
 > Existing Research Manager stays as-is.
 >
-> Current StandardBuilder/E4/E5 focused-green code is NO-ROLLBACK but PROVISIONAL until StandardBuilder consumes the generic kernel.
+> StandardBuilder/E4/E5 remain NO-ROLLBACK; StandardBuilder now consumes the generic kernel. Next gate is workers=1 focused live architecture validation.
 >
 > Wren is current incumbent analytics substrate. Metabase is architecture reference + post-engineering-closure challenger only.
 > Do NOT add Metabase dependency/code/production query path now. Wren+Metabase equal production truth engines is STOP-THE-LINE.
@@ -48,7 +47,7 @@
 > `AcceptedResearchAuthority` yeni semantic body değildir; mevcut `AcceptedTurnContract`
 > research authority gövdesidir, yeni isim yalnız alias/tagged-union seviyesinde kullanılabilir.
 >
-> **Hidden50 development blocker değildir.** External hidden yalnız final architecture certification seal'ini bloklar. D65-E1 recert ve D65-E2 Retriever tamamlandı; current next ticket `D65-E3A-R` runtime-kernel realignment. Sonra focused/family gates → live/canary/Wren sentinels → freeze candidate → DEV80 → engineering closure → D65-X substrate challenger → certification.
+> **Hidden50 development blocker değildir.** External hidden yalnız final architecture certification seal'ini bloklar. D65-E1/E2 ve D65-E3A-R tamamlandı; current next gate workers=1 focused live architecture set. Sonra same-SHA A/B if needed → canary → Wren sentinels → freeze candidate → DEV80 → engineering closure → D65-X substrate challenger → certification.
 >
 > **Standard != daima one-shot.** `simple_standard_model_calls <= 1` evrensel mimari
 > gate değildir. Direct yol minimum call hedefler; Builder bounded progress-driven retry yapabilir.
