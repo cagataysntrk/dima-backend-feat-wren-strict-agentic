@@ -6715,6 +6715,97 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 — DAY7 D7-A2 + REAL ADAPTIVE WREN GREEN
+
+**Checkpoint:** `ce29f52e71f102f3ec18154c9aae2a045afa3f5d`  
+**Focused workflow:** `35774115600` = **SUCCESS**
+
+Focused proof:
+
+```text
+ResearchToolContract                     PASS
+ResearchTask lifecycle                   PASS
+ResearchTaskRegistry lifecycle           10/10 PASS
+ResearchTaskRegistry execution path      2/2 PASS
+Manager contract mode                    PASS
+provider-free adaptive result-aware      PASS
+real Wren single task                    PASS
+real Wren adaptive two-task chain        PASS
+```
+
+### D7-A2 — GREEN
+
+Run-scoped ownership is now explicit:
+
+```text
+ResearchManagerLoop
+→ ONE ResearchTaskRegistry per run
+→ begin_execution / receipt reuse
+→ ResearchToolContract
+→ governed executor
+→ pre-commit lifecycle guard
+→ Evidence/UOL commit
+→ complete_execution
+```
+
+Proven invariants:
+- same task identity + same completed delivery reuses prior receipt;
+- same task id + different immutable identity rejects;
+- duplicate IN_FLIGHT rejects;
+- FAILED/CANCELLED are terminal and do not silently restart;
+- generic `max_fanout` remains a final safety fuse;
+- duplicate delivery causes exactly one governed DB query;
+- cancel during query + late return cannot enter EvidenceStore, cannot verify the obligation,
+  and cannot resurrect the ResearchTask.
+
+`BoundedAgentRuntimeKernel` remains generic no-progress/budget mechanics.
+`ResearchTaskRegistry` remains Research delivery/lifecycle/idempotency authority.
+They are not merged.
+
+### D7-REAL-ADAPTIVE-WREN — GREEN
+
+Real trust-plane chain proven with existing demo Wren semantics:
+
+```text
+Accepted Research authority
+→ real Wren task #1
+→ QueryContract #1
+→ verified Evidence #1
+→ inspect actual bounded result
+→ evidence-grounded AGENT_DERIVED BREAKDOWN task
+→ ResearchTaskRegistry
+→ real Wren task #2
+→ QueryContract #2
+→ verified Evidence #2
+→ inspect
+→ USER_MUST preserved
+→ VERIFIED_COMPLETE
+```
+
+Assertions:
+- real Wren query count = 2;
+- sealed QueryContract count = 2;
+- accepted Evidence count = 2;
+- derived task carries parent obligation + trigger evidence + branch depth 1;
+- original USER_MUST item is unchanged by the child investigation;
+- no third invented branch.
+
+### Remaining Day7 order
+
+```text
+cardinality-aware fanout policy
+→ same-domain governed tool families
+→ CrossDomainJoinGate
+→ RELATIONSHIP only through gate
+→ deadline/cancel lifecycle
+→ focused workers=1 live Sol
+→ failure-family / metamorphic / small canary
+→ Day7 closeout receipt
+```
+
+Day7 remains ACTIVE. Day8 is NOT opened.
+
+---
 ## 2026-09-22 — DAY7 SUPERVISOR RECONCILIATION @ 5789e729
 
 **Current HEAD:** `5789e729115fe044b689739d5960021aba0aca32`  
