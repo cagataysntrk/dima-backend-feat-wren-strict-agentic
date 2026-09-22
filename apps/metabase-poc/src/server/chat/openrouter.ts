@@ -8,7 +8,7 @@ import { GatewayError } from "../metabase/errors";
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const TIMEOUT_MS = 120_000;
 // Lightweight, cheap and tool-capable; pinned (not a "~latest" alias) so behaviour is stable.
-export const DEFAULT_MODEL = "openai/gpt-5.6-luna";
+export const DEFAULT_MODEL = "openai/gpt-5.6-sol";
 
 export interface ToolCall {
   id: string;

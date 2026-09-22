@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUp, ChevronDown, Table2 } from "lucide-react";
 import { BorderBeam } from "border-beam";
@@ -34,6 +34,14 @@ interface Props {
 export function Composer({ value, onChange, onSubmit, disabled, busy, hero, autoFocus }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const { resolvedTheme } = useTheme();
+  // The beam builds its stylesheet in the browser and follows the theme, which
+  // the server can't know — rendering it before mount causes a hydration
+  // mismatch (React #418), so it is mounted client-side only.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const canSend = !disabled && !busy && value.trim().length > 0;
 
   /** Insert a table name at the cursor, then give focus back to the text. */
@@ -110,7 +118,7 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, hero, auto
       }}
       className="relative rounded-[1.75rem]"
     >
-      {hero ? (
+      {hero && mounted ? (
         // libraries.dev Border Beam: full-spectrum light travelling the edge, its bloom
         // reflecting into the box. Theme follows the app (not the OS); the library
         // handles prefers-reduced-motion itself.

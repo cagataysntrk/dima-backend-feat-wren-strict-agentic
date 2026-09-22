@@ -130,8 +130,10 @@ export const gateway = {
     api<{ fields: { id: number; name: string; label: string }[] }>(`/api/cards/${cardId}/breakouts`).then((r) => r.fields),
   breakout: (cardId: number, value: string, fieldId: number, scope?: DrillScope) =>
     api<{ result: QueryResult; by: string }>(`/api/cards/${cardId}/breakout`, json({ value, fieldId, scope })),
-  runSql: (sql: string) => api<{ result: QueryResult }>("/api/sql/run", json({ sql })).then((r) => r.result),
-  saveSql: (name: string, sql: string) => api<{ id: number }>("/api/sql/save", json({ name, sql })),
+  runSql: (sql: string, values?: Record<string, string>) =>
+    api<{ result: QueryResult }>("/api/sql/run", json({ sql, values })).then((r) => r.result),
+  saveSql: (name: string, sql: string, values?: Record<string, string>) =>
+    api<{ id: number }>("/api/sql/save", json({ name, sql, values })),
   upload: (file: File) => {
     const form = new FormData();
     form.set("file", file);

@@ -15,6 +15,7 @@ import { checkSelectOnly } from "./sql-guard";
 import { categoryClause, dateClause } from "./filters";
 import { widthOf, type Width } from "./layout";
 import { isDateFilter } from "@/lib/date-filter";
+import { parameterValues as varParameters, parseVariables, templateTags } from "@/lib/sql-vars";
 
 // High-level gateway operations. Every function takes a resolved TenantContext
 // and calls the engine with THAT tenant's API key, so the engine's own
@@ -308,15 +309,31 @@ export function slugify(s: string): string {
 
 const SQL_MAX_ROWS = 2000;
 
-function nativeQuery(ctx: TenantContext, sql: string) {
+/** SELECT-only native query plus its {{variables}} as engine template tags. */
+function nativeQuery(ctx: TenantContext, sql: string, values: Record<string, string> = {}, asDefaults = false) {
   const check = checkSelectOnly(sql);
   if (!check.ok) throw new GatewayError(400, check.reason);
-  return { database: ctx.tenant.databaseId, type: "native", native: { query: check.sql } };
+  const vars = parseVariables(check.sql);
+  return {
+    vars,
+    query: {
+      database: ctx.tenant.databaseId,
+      type: "native",
+      native: {
+        query: check.sql,
+        ...(vars.length ? { "template-tags": templateTags(vars, values, asDefaults) } : {}),
+      },
+    },
+  };
 }
 
-export async function runSql(ctx: TenantContext, sql: string): Promise<QueryResult> {
+export async function runSql(
+  ctx: TenantContext,
+  sql: string,
+  values: Record<string, string> = {},
+): Promise<QueryResult> {
   requireAnalyst(ctx);
-  return queryReadOnly(ctx, sql);
+  return queryReadOnly(ctx, sql, values);
 }
 
 /**
@@ -324,19 +341,36 @@ export async function runSql(ctx: TenantContext, sql: string): Promise<QueryResu
  * runner (after requireAnalyst) and by the chat agent, whose SQL is model output:
  * the same guard + tenant DB role apply to both.
  */
-export async function queryReadOnly(ctx: TenantContext, sql: string): Promise<QueryResult> {
+export async function queryReadOnly(
+  ctx: TenantContext,
+  sql: string,
+  values: Record<string, string> = {},
+): Promise<QueryResult> {
+  const { vars, query } = nativeQuery(ctx, sql, values);
   const ds = await mbPost<EngineDataset>(ctx.tenant, "/api/dataset", {
-    ...nativeQuery(ctx, sql),
+    ...query,
+    parameters: varParameters(vars, values),
     constraints: { "max-results": SQL_MAX_ROWS, "max-results-bare-rows": SQL_MAX_ROWS },
   });
   return toQueryResult(ds);
 }
 
-export async function saveSql(ctx: TenantContext, name: string, sql: string) {
+export async function saveSql(
+  ctx: TenantContext,
+  name: string,
+  sql: string,
+  values: Record<string, string> = {},
+) {
   requireAnalyst(ctx);
-  const dataset_query = nativeQuery(ctx, sql);
+  // Current values are stored as tag defaults, so the saved card runs on its own.
+  const { vars, query: dataset_query } = nativeQuery(ctx, sql, values, true);
   // Validate it runs before saving it as a shared card.
-  toQueryResult(await mbPost<EngineDataset>(ctx.tenant, "/api/dataset", dataset_query));
+  toQueryResult(
+    await mbPost<EngineDataset>(ctx.tenant, "/api/dataset", {
+      ...dataset_query,
+      parameters: varParameters(vars, values),
+    }),
+  );
   const card = await mbPost<{ id: number }>(ctx.tenant, "/api/card", {
     name,
     dataset_query,
