@@ -259,6 +259,15 @@ class ResearchToolRunner:
     def __init__(self, registry: ResearchToolRegistry | None = None) -> None:
         self._registry = registry or ResearchToolRegistry()
 
+    def tool_id_for_task(self, task: ResearchTask) -> str:
+        try:
+            kind = ResearchTaskKind(task.task_kind)
+        except ValueError as exc:
+            raise ResearchToolContractError(
+                f"unregistered Research task kind: {task.task_kind}"
+            ) from exc
+        return self._registry.tool_id_for_task_kind(kind)
+
     def execute(
         self,
         *,
