@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 DECISION GATE — CORRECTED J1 ACTIVE; M0 SUFFICIENT; D65-SI BEFORE X0; DEV80 DEFERRED**  
+**Durum:** **DAY 6.5 J1B ENGINEERING ACTIVE — JEV SEMANTIC + TERRA TEMPORAL CANDIDATES; D65-SI NEXT IF GREEN; DEV80 FORBIDDEN**  
 **Kod fazı:** D65-G hardening GREEN; baseline proofs remain 102/102 + 16/16 + 2/2 on exact `8dfde62d...`. J1 corpus blobs remain frozen; challenger metadata corrected pre-result to `d65-j1-freeze-v2` with PRIMARY=`Gemini Flash-Lite + Jev 1.13 + GPT-5.6 Luna`, Sol=`REFERENCE_CEILING`, Terra=`CONSULT-GATED CONDITIONAL`. Corrected provider-free J1 gate `35705204058` = **6/6 PASS**. Old wrong-peer run `35704627396` is INVALID J1 authority. M0 source audit is sufficient for X0 preparation, but **X0 execution is blocked until J1 decision → D65-SI → real Standard Wren sentinel**. Product semantic/temporal/authority code remains NO-TOUCH; production `/ask-v2` OFF.  
 
 ---
@@ -86,6 +86,38 @@ J1 evidence is split:
 Jev native Decisions has no dynamic integer output primitive; dynamic `n` /
 `implicit_base_n` is recorded as `TEMPORAL_INTEGRATION_LIMITATION`, not hidden by
 case-enumeration/prompt hacks.
+
+---
+
+## 0C. TERRA CONDITIONAL CLOSED / J1B OPEN
+
+```text
+Terra valid run                  35710080143
+J1T choice                       34/34
+unsafe ambiguity                 0
+repeat/metamorphic               100% / 100%
+J1T exact typed contract         34/34
+invalid typed                    0
+provider failure                 0
+
+J1B semantic candidate           typesafe/jev-1.13
+J1B temporal candidate           openai/gpt-5.6-terra
+production seal                  NO
+fallback/cascade/threshold       NONE
+```
+
+Current immediate sequence:
+
+```text
+D65-J1B narrow provider-contract split
+→ provider-free P0
+→ semantic ambiguity failure-family
+→ temporal typed-contract family
+→ metamorphic
+→ workers=1 real-LLM focused
+→ small representative canary
+→ if GREEN: D65-SI
+```
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE

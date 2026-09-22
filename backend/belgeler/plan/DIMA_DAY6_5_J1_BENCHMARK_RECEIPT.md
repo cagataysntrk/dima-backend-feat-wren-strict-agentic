@@ -466,3 +466,68 @@ product-code touch  = 0
 
 `D65-J1T-TERRA-001` is CLOSED. Retry is allowed because attempt 1 produced no model-quality
 evidence.
+
+
+## Terra conditional valid result
+
+Run:
+`35710080143`
+
+Tested SHA:
+`c336811bb7bdbc6a5687529b57b4b27d1b24fe57`
+
+Scope:
+`J1T only`; frozen corpus unchanged; J1S Terra not run.
+
+### J1T-CHOICE
+
+```text
+accuracy                       34/34 = 100%
+ABSTAIN precision/recall       100% / 100%
+unsafe ambiguity pick          0
+choice escape                  0
+Turkish accuracy               100%
+metamorphic consistency        100%
+repeat agreement               100%
+p50 / p95                      1.390s / 3.110s
+measured total cost            $0.071068
+provider failures              0
+```
+
+### J1T-CONTRACT-FIDELITY
+
+```text
+evaluable                      34/34
+valid typed                    34/34
+invalid typed                  0
+provider failures              0
+exact contract                 34/34 = 100%
+dynamic n                      100%
+comparison kind                100%
+implicit base kind             100%
+implicit base n                100%
+ABSTAIN reason                 100%
+```
+
+Acceptance gate:
+
+```text
+exact contract fidelity >=95%  PASS
+unsafe ambiguity pick = 0      PASS
+invalid typed materially safe  PASS (0)
+repeat instability = 0         PASS
+P0 = 0                         PASS
+```
+
+Decision:
+
+```text
+J1B semantic engineering candidate = Jev 1.13
+J1B temporal engineering candidate = GPT-5.6 Terra
+production activation              = NO
+production seal                    = NO
+fallback/cascade/threshold         = NONE
+```
+
+Terra is materially more expensive than the primary peers in this isolated run; this does not
+block the approved J1B engineering experiment, but cost/latency remain explicit topology evidence.

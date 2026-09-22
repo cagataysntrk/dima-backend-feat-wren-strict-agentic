@@ -286,6 +286,32 @@ Still requires STOP/CONSULT:
 - production Luna/Terra seal;
 - architecture redesign exposed by J1B or D65-SI.
 
+### 3.5 Terra conditional outcome
+
+```text
+run = 35710080143
+J1T-CHOICE = 34/34
+unsafe ambiguity = 0
+repeat agreement = 100%
+metamorphic = 100%
+J1T-CONTRACT-FIDELITY = 34/34
+invalid typed = 0
+provider failures = 0
+```
+
+Terra satisfies the approved conditional gate and is the J1B temporal engineering candidate.
+This does not seal production usage.
+
+J1B topology under test:
+
+```text
+SemanticCandidateDecisionProvider = JevDecisionProvider
+TemporalNormalizationProvider     = Terra structured provider
+SemanticBindingGate               = unchanged
+TemporalBindingEngine             = unchanged
+fallback/cascade/threshold        = none
+```
+
 ## 4. D65-M0 — Metabase architecture extraction/adoption audit
 
 D65-M0 is a **read/research gate**, not product integration.
@@ -576,8 +602,8 @@ Without reopening frozen corpora or touching product authority during eval clean
 
 1. Fix `D65-J1-FULL-001`: invalid typed model output must not be labeled provider failure.
 2. Recompute stored J1 contract-fidelity classification/metrics from existing artifacts; no paid rerun.
-3. Run one frozen **J1T-only** Terra conditional benchmark: CHOICE + CONTRACT-FIDELITY + repeated/metamorphic evidence.
-4. Open D65-J1B narrow role-specialized provider experiment.
+3. [DONE] Frozen **J1T-only** Terra conditional: `35710080143` — choice 34/34, contract 34/34, invalid=0, repeat/metamorphic=100%.
+4. [ACTIVE] Open D65-J1B narrow role-specialized provider experiment with Jev semantic + Terra temporal.
 5. If J1B P0/architecture is GREEN, execute D65-SI.
 6. Prove the real Standard Wren sentinel.
 7. Execute private self-hosted X0.
