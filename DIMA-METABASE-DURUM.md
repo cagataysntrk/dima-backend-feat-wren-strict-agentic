@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P3 CLOSED GREEN — P3A PREFLIGHT READY  
-**Product-code development:** P3 CLOSED GREEN; P3A PROTOTYPE NOT STARTED  
+**Current phase:** P3A CLOSED — PASS_B_SEAM; P4 PRE-DEVELOPMENT REVIEW NEXT  
+**Product-code development:** P3A PROTOTYPE CLOSED; P4 PRODUCT CODE NOT STARTED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -291,3 +291,47 @@ Historical RED `DMP-P3-RED-001` remains in the failure ledger and is now CLOSED 
 **Next:** P3A eight-family semantic-duplication preflight. P4 remains forbidden until P3A records
 one of: `PASS_B_SEAM`, `BLOCKED_DIMA_CONTRACT_GAP`, or
 `REJECT_METABASE_STRUCTURED_EXECUTION`.
+
+
+---
+
+## P3A closure — PASS_B_SEAM
+
+```text
+final P3A HEAD                 = 480ea9a12c8a23458319df445c34ec67ef720695
+P3A workflow                  = 35737923480 = SUCCESS
+P3A provider-free             = 7 PASS
+P3A pinned-live               = 1 PASS
+representative families       = 8 / 8 compiled
+portable query executions     = 9 / 9 completed
+P3A forbidden-file isolation  = PASS
+governance @ final HEAD        = 35737923380 = SUCCESS
+M1 regression @ app-code SHA  = 35737822084 = SUCCESS
+P3 regression @ app-code SHA  = 35737822159 = SUCCESS
+result                         = PASS_B_SEAM
+```
+
+What PASS_B_SEAM means:
+- candidate B remains viable: `ResolvedAnalyticsIntent + Dima-owned immutable execution snapshot`;
+- context-bound candidate ids are lookup keys only, never durable semantic identity;
+- stable business identity comes from DimaSemanticSpec ids;
+- DB/schema/table/field locators come only from Dima SourceLineage;
+- canonical/display names and `source_scopes` are not Metabase locators;
+- period compatibility token is mapped explicitly to a stable Dima dimension id;
+- missing mappings fail closed;
+- cross-table lineage fails closed without an approved Dima relationship path;
+- no Metabase search/read-resource is used as semantic authority;
+- no raw user language reaches the compiler;
+- no implicit FK join is emitted.
+
+What it does **not** mean:
+- production generation/reconciliation of the immutable snapshot is complete;
+- arbitrary metric formula expressivity is proven;
+- cross-table relationship compilation is proven;
+- Wren/Metabase numeric equivalence is proven;
+- permission/tenant/access-fingerprint parity is proven;
+- Metabase is production primary;
+- Wren can be retired.
+
+**Next:** P4 pre-development review only. P4 product code remains forbidden until that review/ticket
+is sealed and governance is GREEN.

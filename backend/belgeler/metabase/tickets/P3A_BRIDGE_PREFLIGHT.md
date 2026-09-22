@@ -3,7 +3,7 @@
 **Milestone:** P3A  
 **Predevelopment review:** `backend/belgeler/metabase/predev/P3_P3A_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** semantic-duplication feasibility gate  
-**Status:** READY / PREFLIGHT PROTOTYPE AUTHORIZED AFTER P3 CLOSURE GOVERNANCE GREEN
+**Status:** CLOSED — PASS_B_SEAM
 
 ## Question
 
@@ -56,3 +56,37 @@ M1 regression     = 35736253552 = SUCCESS
 ```
 
 P3A may now begin, but P4 remains forbidden until the explicit three-way P3A result is recorded.
+
+
+---
+
+## P3A result receipt — PASS_B_SEAM
+
+```text
+P3A HEAD                   480ea9a12c8a23458319df445c34ec67ef720695
+workflow                   35737923480 = SUCCESS
+provider-free              7 passed
+pinned-live                1 passed
+families                   8 / 8
+portable query executions  9 / 9
+result                     PASS_B_SEAM
+```
+
+Accepted seam:
+
+```text
+ResolvedAnalyticsIntent
++ context-scoped candidate→stable Dima semantic-id bindings
++ DimaSemanticSpec
++ explicit SourceLineage
++ explicit temporal compatibility-key→stable dimension-id binding
+→ deterministic Metabase portable representation
+```
+
+Constraints carried forward:
+- no name/label guessing;
+- no `source_scopes` physical locator;
+- no candidate id as durable semantic identity;
+- no implicit cross-table relationship;
+- arbitrary formula mapping remains fail-closed;
+- security/access coherence remains open debt.

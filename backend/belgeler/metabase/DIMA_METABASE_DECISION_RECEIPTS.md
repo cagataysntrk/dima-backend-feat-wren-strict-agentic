@@ -259,3 +259,57 @@ current context-bound source candidate IDs are not durable global Dima semantic 
 not hide, any identity/lineage gap.
 
 status: SEALED FOR PREFLIGHT; B NOT YET ACCEPTED.
+
+
+---
+
+## DMP-DEC-0008 — P3A result: candidate B passes representative bridge preflight
+
+date: 2026-09-22
+
+question:
+Can accepted Dima semantic execution intent reach Metabase structured-query semantics without
+raw-language reparse, semantic redefinition, label guessing, implicit joins or a second semantic owner?
+
+evidence:
+- P3A provider-free gate: 7 tests PASS;
+- all 8 mandated representative families compile;
+- negative proofs fail closed on missing candidate/time binding, stale semantic context and cross-table
+  lineage without approved Dima relationship;
+- compiler source does not use `canonical_name`, `source_scopes`, Metabase search/read-resource,
+  request_ref or source-message text as locators;
+- pinned v0.63.18 live gate constructs and executes 9 generated portable queries successfully;
+- M1 and P3 regressions remain GREEN on the P3A app-code SHA.
+
+decision:
+`PASS_B_SEAM`.
+
+Accepted architecture:
+```text
+ResolvedAnalyticsIntent
++ immutable DimaExecutionBindingSnapshot
+  - context candidate key -> stable Dima semantic id
+  - DimaSemanticSpec
+  - SourceLineage
+  - explicit temporal compatibility binding
+→ deterministic portable MBQL
+```
+
+interpretation:
+The snapshot is a Dima-owned execution projection, not a second semantic registry.
+Context-bound candidate ids are compatibility lookup keys only. Durable semantic identity is the
+Dima metric/dimension id. Physical lineage is explicit data from Dima SourceLineage.
+
+limits:
+- same-table representative preflight only; cross-table joins remain fail-closed;
+- arbitrary metric formulas are not translated;
+- snapshot production lifecycle/reconciliation is not implemented by this gate;
+- semantic/numeric equivalence with Wren is not established;
+- identity/tenant/security parity is not established;
+- PASS_B_SEAM does not authorize cutover or Wren retirement.
+
+next:
+P4 may enter pre-development review for the production MetabaseProjectionCompiler under these
+constraints.
+
+status: SEALED.
