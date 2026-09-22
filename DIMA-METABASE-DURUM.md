@@ -4,7 +4,7 @@
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
 **Current phase:** P0 CLOSED / M1 READY — engine-independent Dima contracts + Wren adapter  
-**Product-code development:** NOT STARTED  
+**Product-code development:** M1 PREDEVELOPMENT REVIEW IN PROGRESS / NO PRODUCT CODE YET  
 **Metabase runtime:** NOT SELECTED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -71,3 +71,22 @@ product-code changes        = 0
 
 Next authorized milestone: **M1 / P1 — engine-independent Dima contracts + Wren adapter with zero behavior drift.**
 This status does not authorize Metabase production routing, Wren retirement, or source-branch synchronization.
+
+
+---
+
+## M1 / P1 pre-development review
+
+Status: **SEALED / IMPLEMENTATION AUTHORIZED AFTER REVIEW COMMIT GREEN**
+
+Review path:
+`backend/belgeler/metabase/predev/M1_P1_PREDEVELOPMENT_REVIEW.md`
+
+Reviewed:
+- sealed roadmap P1;
+- sealed architecture R0.2, R2, R5, R6, R7;
+- source lock, operation, audit, failure/decision receipts;
+- certified-base Standard authority/projection/execution/semantic-handle code;
+- moving ask-v2 post-base deltas READ-ONLY.
+
+Implementation remains blocked until the pre-development review commit and governance CI are GREEN.

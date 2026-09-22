@@ -46,7 +46,29 @@ P1 başlamadan `app/v3/`, Metabase adapterı veya production request routing yaz
 
 ## 4. Her ticket döngüsü
 
+### 4.0 — Zorunlu pre-development review
+
+Her yeni milestone/ticket ailesinde **ürün koduna dokunmadan önce** ayrı bir pre-development review kaydı oluşturulur ve commit edilir.
+
+Minimum okuma/denetim:
+- mühürlü mimari raporun ilgili R* bölümleri;
+- mühürlü yol haritasının ilgili P*/M* bölümü ve exit gate'i;
+- SOURCE_LOCK + living status + açık failure/decision receipts;
+- certified-base'teki mevcut owner/akış;
+- gerekiyorsa moving source branch üzerindeki ilgili deltalar **READ-ONLY**;
+- files-to-touch / files-not-to-touch;
+- invariantlar;
+- baseline ölçüm ve planlanan proof.
+
+Review yolu:
+`backend/belgeler/metabase/predev/<MILESTONE>_PREDEVELOPMENT_REVIEW.md`
+
+Review commit edilmeden implementation commit'i açılamaz. Kaynak branchte daha yeni kod bulunması review yerine geçmez.
+
 ```text
+PRE-READ   → rapor + yol haritası + source lock + status + receipts
+INSPECT    → certified-base implementation + read-only source delta
+RECORD     → pre-development review commit
 READ       → ilgili P* / M* maddesini ve atıflarını yeniden oku
 SCOPE      → tek owner + files-to-touch + files-not-to-touch yaz
 MEASURE    → kusuru/boşluğu önce kanıtla

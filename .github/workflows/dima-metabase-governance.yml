@@ -43,6 +43,16 @@ jobs:
           test -f backend/belgeler/metabase/DIMA_METABASE_FAILURE_RECEIPTS.md
           test -f backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
 
+      - name: Require sealed M1 pre-development review before v3 code exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d backend/app/v3 ]; then
+            REVIEW="backend/belgeler/metabase/predev/M1_P1_PREDEVELOPMENT_REVIEW.md"
+            test -f "$REVIEW"
+            grep -q "Status: SEALED / IMPLEMENTATION AUTHORIZED" "$REVIEW"
+          fi
+
       - name: Guard v3 against legacy semantic resolver authority
         shell: bash
         run: |
