@@ -203,3 +203,59 @@ revisit_condition:
 Only through explicit runtime-upgrade ticket.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0006 — P3 primary integration surface is REST/Agent API
+
+date: 2026-09-22
+
+question:
+Which Metabase interface should Dima certify first for the substrate boundary?
+
+evidence:
+- sealed roadmap names versioned REST/Agent API as the primary candidate and MCP as optional lab;
+- M2 pinned-runtime proof exercised Agent API search/read/construct/execute/query successfully;
+- REST serialized query and continuation semantics are explicit and independently testable;
+- MCP query_handle lifecycle is session-bound and must not be conflated with durable Dima receipts.
+
+decision:
+P3 certifies REST/Agent API only. MCP is not part of the P3 production candidate boundary.
+
+scope:
+P3/P3A.
+
+invariants:
+- no raw-SQL method;
+- no admin/content/semantic mutation methods;
+- serialized query and continuation remain distinct types;
+- durable identity remains Dima-owned.
+
+revisit_condition:
+MCP may be evaluated later as an optional interface under a separate decision.
+
+status: SEALED.
+
+---
+
+## DMP-DEC-0007 — P3A seam candidate disposition
+
+date: 2026-09-22
+
+decision:
+- Candidate A (`StandardProjection + opaque handles`) is rejected as the substrate seam because it
+  would require semantic-handle resolution after the Dima authority boundary.
+- Candidate C (Wren-specific planned representation) is rejected as canonical because it re-couples
+  Dima to Wren.
+- Candidate B (`ResolvedAnalyticsIntent`) is the only prototype candidate, but remains unproven.
+
+P3A may pair B with an immutable **Dima-owned** lineage/spec snapshot. That snapshot may map stable
+Dima semantic identity to physical portable lineage and execution semantics, but it may not become a
+parallel Metabase business-semantic registry.
+
+Known risk:
+current context-bound source candidate IDs are not durable global Dima semantic IDs. P3A must expose,
+not hide, any identity/lineage gap.
+
+status: SEALED FOR PREFLIGHT; B NOT YET ACCEPTED.

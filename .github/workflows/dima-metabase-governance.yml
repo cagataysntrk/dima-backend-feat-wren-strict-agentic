@@ -53,6 +53,16 @@ jobs:
             grep -q "Status: SEALED / IMPLEMENTATION AUTHORIZED" "$REVIEW"
           fi
 
+      - name: Require sealed P3 review before Metabase substrate code exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d backend/app/v3/substrate/metabase ]; then
+            REVIEW="backend/belgeler/metabase/predev/P3_P3A_PREDEVELOPMENT_REVIEW.md"
+            test -f "$REVIEW"
+            grep -q "Status: SEALED / P3 TRANSPORT IMPLEMENTATION AUTHORIZED" "$REVIEW"
+          fi
+
       - name: Guard v3 against legacy semantic resolver authority
         shell: bash
         run: |

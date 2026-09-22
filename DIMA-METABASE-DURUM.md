@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** M2 / P2 CLOSED GREEN — P3 / P3A PRE-DEVELOPMENT REVIEW NEXT  
-**Product-code development:** M2 LAB CLOSED GREEN; P3 PRODUCT CODE NOT STARTED  
+**Current phase:** P3 / P3A PRE-DEVELOPMENT REVIEW SEALED — P3 TRANSPORT NEXT  
+**Product-code development:** P3 TRANSPORT NOT STARTED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -193,3 +193,23 @@ feasibility, semantic equivalence, production tenant mapping, or Metabase substr
 
 **Next authorized activity:** P3/P3A pre-development review only.
 No P3 product code until that review/ticket is sealed and governance is GREEN.
+
+
+---
+
+## P3 / P3A pre-development review
+
+Status: **SEALED — P3 transport implementation waits for governance GREEN**
+
+Review:
+`backend/belgeler/metabase/predev/P3_P3A_PREDEVELOPMENT_REVIEW.md`
+
+Tickets:
+- `backend/belgeler/metabase/tickets/P3_METABASE_CLIENT_BOUNDARY.md`
+- `backend/belgeler/metabase/tickets/P3A_BRIDGE_PREFLIGHT.md`
+
+Decisions:
+- REST/Agent API is the P3 primary surface;
+- candidate B (`ResolvedAnalyticsIntent`) is the only P3A prototype seam;
+- P3A remains blocked until P3 is GREEN;
+- no P4 work is authorized.
