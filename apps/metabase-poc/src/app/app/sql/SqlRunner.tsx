@@ -3,8 +3,9 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Play, Save, Table2 } from "lucide-react";
+import { ChevronRight, Play, Save, Table2, WrapText } from "lucide-react";
 import { toast } from "sonner";
+import { formatSql } from "@dima/domain";
 import { gateway } from "@/lib/gateway";
 import { parseVariables } from "@/lib/sql-vars";
 import { cn } from "@dima/ui/utils";
@@ -12,7 +13,7 @@ import { ResultView } from "@dima/ui/result/ResultView";
 import { Button } from "@dima/ui/primitives/button";
 import { Input } from "@dima/ui/primitives/input";
 import { Label } from "@dima/ui/primitives/label";
-import { Textarea } from "@dima/ui/primitives/textarea";
+import { SqlEditor } from "@dima/ui/report/SqlEditor";
 
 const EXAMPLE = `-- Yalnızca SELECT. {{değişken}} yazarsanız altta bir alan açılır;
 -- [[ ... ]] içine alınan koşul, değişken boşsa sorgudan düşer.
@@ -100,16 +101,12 @@ export function SqlRunner() {
           <Label htmlFor="sql" className="sr-only">
             SQL sorgusu
           </Label>
-          <Textarea
+          <SqlEditor
             id="sql"
             ref={editor}
             value={sql}
-            onChange={(e) => {
-              setSql(e.target.value);
-              setCaret(e.target.selectionStart);
-            }}
-            onKeyUp={(e) => setCaret(e.currentTarget.selectionStart)}
-            onClick={(e) => setCaret(e.currentTarget.selectionStart)}
+            onChange={setSql}
+            onCaret={setCaret}
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                 e.preventDefault();
@@ -120,8 +117,6 @@ export function SqlRunner() {
                 insert(suggestions[0].text, true);
               }
             }}
-            spellCheck={false}
-            className="min-h-56 font-mono text-base leading-relaxed md:text-[13px]"
           />
 
           {suggestions.length > 0 && (
@@ -171,6 +166,10 @@ export function SqlRunner() {
             <Button variant="brand" onClick={submit} disabled={run.isPending}>
               <Play className="size-4" aria-hidden />
               {run.isPending ? "Çalışıyor…" : "Çalıştır"}
+            </Button>
+            <Button variant="ghost" onClick={() => setSql(formatSql(sql))} disabled={!sql.trim()}>
+              <WrapText className="size-4" aria-hidden />
+              Biçimlendir
             </Button>
             <span className="text-xs text-muted-foreground">⌘/Ctrl + Enter · en fazla 2.000 satır</span>
           </div>

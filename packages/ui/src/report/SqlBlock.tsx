@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../primitives/tooltip";
 import { cn } from "../utils";
 
 // Renkler grafik token'larından gelir → tema değişince otomatik doğru.
-const TOKEN_CLASS: Record<SqlTokenType, string> = {
+export const TOKEN_CLASS: Record<SqlTokenType, string> = {
   keyword: "text-brand font-medium",
   function: "text-[var(--chart-5)]",
   string: "text-[var(--chart-2)]",

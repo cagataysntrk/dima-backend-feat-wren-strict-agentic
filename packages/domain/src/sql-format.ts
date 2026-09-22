@@ -59,6 +59,21 @@ export function tokenizeSql(sql: string): SqlToken[] {
       i = j;
       continue;
     }
+    // Şablon değişkeni {{ad}} ve isteğe bağlı blok [[ … ]] — biçimlendirici
+    // bunları bölerse sorgu çalışmaz; tek token olarak geçsinler.
+    if (c === "{" && sql[i + 1] === "{") {
+      const j = sql.indexOf("}}", i + 2);
+      if (j !== -1) {
+        out.push({ type: "ident", text: sql.slice(i, j + 2) });
+        i = j + 2;
+        continue;
+      }
+    }
+    if ((c === "[" || c === "]") && sql[i + 1] === c) {
+      out.push({ type: "punct", text: c + c });
+      i += 2;
+      continue;
+    }
     if (c === "-" && sql[i + 1] === "-") {
       const j = sql.indexOf("\n", i);
       const end = j === -1 ? sql.length : j;
@@ -133,8 +148,14 @@ export function formatSql(sql: string): string {
   let atLineStart = true;
   let prev: SqlToken | null = null;
   let inJoin = false; // "LEFT" yazıldı, ardından gelen JOIN aynı satırda kalsın
+  let optOpen = false; // "[[" yazıldı — ardından gelen AND/OR satır açmasın
 
   const nl = (indent: number) => {
+    // Zaten satır başındaysak (ör. yorum satırı kapattı) boş satır açma.
+    if (atLineStart) {
+      out = out.replace(/[ \t]+$/, "") + "  ".repeat(indent);
+      return;
+    }
     out = out.replace(/[ \t]+$/, "");
     out += "\n" + "  ".repeat(indent);
     atLineStart = true;
@@ -143,6 +164,10 @@ export function formatSql(sql: string): string {
     const noSpaceBefore =
       atLineStart ||
       /^[),;.]/.test(s) || // kapanış, virgül, nokta
+      s === "]]" ||
+      s === "::" || // tür dönüşümü operatörü iki yana da yapışır
+      out.endsWith("[[") ||
+      out.endsWith("::") ||
       out.endsWith("(") ||
       out.endsWith(".") ||
       // fonksiyon çağrısı: ad ile "(" bitişik
@@ -161,6 +186,13 @@ export function formatSql(sql: string): string {
     };
 
     if (t.type === "punct") {
+      // İsteğe bağlı blok kendi satırında başlar; içindeki AND/OR ona yapışır.
+      if (t.text === "[[") {
+        if (out) nl(1);
+        optOpen = true;
+        emit("[[");
+        continue;
+      }
       if (t.text === "(") {
         depth++;
         emit("(");
@@ -201,12 +233,24 @@ export function formatSql(sql: string): string {
           emit(upper);
           continue;
         }
-        if (out) nl(1);
+        if (out && !optOpen) nl(1);
+        optOpen = false;
         inJoin = JOIN_PREFIX.has(upper);
         emit(upper);
         continue;
       }
       emit(upper);
+      continue;
+    }
+
+    if (t.type === "comment") {
+      if (out && !atLineStart) out += " ";
+      out += t.text;
+      atLineStart = false;
+      prev = t;
+      // Satır yorumu satır sonuna kadar sürer: kapatmazsak ardındaki kod da
+      // yorumun içinde kalır.
+      if (t.text.startsWith("--")) nl(depth > 0 ? 1 : 0);
       continue;
     }
 

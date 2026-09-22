@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { BarChart3, Code2, Database, PanelRight, Save, X } from "lucide-react";
+import { BarChart3, Database, PanelRight, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { ThinkingOrb } from "thinking-orbs";
 import { gateway, type ChatAnswer, type ChatTurn } from "@/lib/gateway";
@@ -19,6 +19,7 @@ import { Bubble, DimaAvatar, Message, MessageScroller, UserAvatar } from "@dima/
 import { Markdown } from "@/components/chat/Markdown";
 import { AddToDashboard } from "@/components/analytics/DashboardActions";
 import { ResultView } from "@dima/ui/result/ResultView";
+import { SqlBlock } from "@dima/ui/report/SqlBlock";
 import { Button } from "@dima/ui/primitives/button";
 import { Sheet, SheetContent, SheetTitle } from "@dima/ui/primitives/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
@@ -343,7 +344,6 @@ function Reply({
   canSave: boolean;
   animate: boolean;
 }) {
-  const [showSql, setShowSql] = useState(false);
   const save = useMutation({
     mutationFn: () => gateway.saveSql(question.slice(0, 120), reply.sql!),
     onSuccess: () => toast.success("Analiz kaydedildi."),
@@ -370,10 +370,6 @@ function Reply({
           className={cn("flex flex-wrap items-center gap-1", animate && "dima-reveal-late")}
           style={animate ? ({ "--reveal-delay": "260ms" } as React.CSSProperties) : undefined}
         >
-          <Button variant="ghost" size="xs" onClick={() => setShowSql((v) => !v)} aria-expanded={showSql}>
-            <Code2 className="size-3.5" aria-hidden />
-            {showSql ? "Sorguyu gizle" : "Sorguyu göster"}
-          </Button>
           {canSave && (
             // Saves the answer as an analysis first (once), then adds that card.
             <AddToDashboard size="xs" resolveCardId={async () => (save.data ?? (await save.mutateAsync())).id} />
@@ -391,10 +387,13 @@ function Reply({
           )}
         </div>
       )}
-      {showSql && reply.sql && (
-        <pre className="surface-inset overflow-x-auto p-3 font-mono text-xs leading-relaxed">
-          {reply.sql}
-        </pre>
+      {reply.sql && (
+        <SqlBlock
+          sql={reply.sql}
+          label="Sorguyu göster"
+          copyLabel="Sorguyu panoya kopyala"
+          className={cn(animate && "dima-reveal-late")}
+        />
       )}
     </div>
   );
@@ -490,9 +489,7 @@ function ChatPanel({
                       </span>
                     ))}
                   </div>
-                  <pre className="max-h-40 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[11px] leading-relaxed">
-                    {e.reply.sql}
-                  </pre>
+                  <SqlBlock sql={e.reply.sql!} label="Sorgu" copyLabel="Sorguyu panoya kopyala" />
                 </div>
               ))}
       </div>
