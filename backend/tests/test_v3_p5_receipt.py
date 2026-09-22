@@ -123,6 +123,20 @@ def test_official_receipt_binds_all_p5_identity_surfaces():
     assert receipt.ephemeral_query_handle is None
 
 
+def test_missing_runtime_identity_hard_fails():
+    intent, projection = canonical()
+    with pytest.raises(ReceiptSealError) as exc:
+        DimaQueryReceiptSealer.seal_execution(
+            intent=intent,
+            projection=projection,
+            access_snapshot=access_for(intent, projection),
+            runtime=None,
+            results=(result(),),
+            events=(event("exec-1"),),
+        )
+    assert exc.value.code == "RUNTIME_IDENTITY_REQUIRED"
+
+
 def test_missing_access_snapshot_hard_fails():
     intent, projection = canonical()
     with pytest.raises(ReceiptSealError) as exc:

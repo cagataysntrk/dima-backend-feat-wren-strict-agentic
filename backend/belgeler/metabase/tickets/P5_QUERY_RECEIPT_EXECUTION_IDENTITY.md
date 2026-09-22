@@ -3,7 +3,7 @@
 **Milestone:** P5  
 **Owner:** Dima durable query/result/access identity  
 **Branch:** `feat/dima-metabase-platform`  
-**Status:** CONTRACT IMPLEMENTATION AUTHORIZED / PRODUCTION ISSUER DEFERRED TO P10
+**Status:** CONTRACT IMPLEMENTED / CLOSURE CANDIDATE LIVE GATE
 
 ## Goal
 
@@ -46,3 +46,16 @@ Current `intent.principal.fingerprint` and M1 legacy writer remain insufficient.
 ## Required closure evidence
 
 See `predev/P5_PREDEVELOPMENT_REVIEW.md` §13.
+
+
+## Closure candidate proof
+
+Implementation SHA `c8be6720f8f0f908b3cc6459fb817d760d417c8e`:
+- P5 workflow `35759329146 = SUCCESS`;
+- focused P5 = 34 PASS;
+- provider-free P4 = 44 PASS;
+- M1 critical = 15 PASS;
+- full M1/Wren workflow `35759329091 = SUCCESS`;
+- governance `35759329034 = SUCCESS`.
+
+One closure-candidate live P3/P3A/P4 regression remains before P5 CONTRACT GREEN.

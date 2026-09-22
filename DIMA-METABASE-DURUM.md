@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P5 CONTRACT IMPLEMENTATION AUTHORIZED — P10 ISSUER BLOCKER SEPARATE  
-**Product-code development:** P5 CONTRACT NOT STARTED; PRODUCTION ACCESS ISSUER DEFERRED TO P10  
+**Current phase:** P5 CONTRACT CLOSURE CANDIDATE — PINNED LIVE REGRESSION  
+**Product-code development:** P5 CONTRACT IMPLEMENTED; PRODUCTION ACCESS ISSUER DEFERRED TO P10  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -610,3 +610,23 @@ P6/P7/P8/P9                      = not blocked by issuer implementation
 Receipt identities are now explicitly separated:
 `canonical_query_fingerprint` (query), `execution_access_fingerprint` (access),
 `receipt_fingerprint` (durable execution content), and `receipt_id` (execution occurrence).
+
+
+---
+
+## P5 contract implementation candidate
+
+```text
+implementation SHA              = c8be6720f8f0f908b3cc6459fb817d760d417c8e
+P5 provider-free workflow       = 35759329146 = SUCCESS
+focused P5                      = 34 PASS
+provider-free P4 regression     = 44 PASS
+M1 critical regression          = 15 PASS
+full M1/Wren workflow           = 35759329091 = SUCCESS
+governance                      = 35759329034 = SUCCESS
+production access issuer        = NOT IMPLEMENTED / P10
+product routing                 = UNCHANGED
+```
+
+Closure candidate adds one missing runtime-identity negative proof and runs the pinned-live
+P3/P3A/P4 suite exactly once. P6 remains blocked until that closure proof is GREEN.

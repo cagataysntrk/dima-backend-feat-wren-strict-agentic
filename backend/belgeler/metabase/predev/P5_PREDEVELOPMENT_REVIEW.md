@@ -188,14 +188,18 @@ This is the P5 form of:
 
 ## 6. Durable vs ephemeral identity
 
-Durable receipt material:
+Durable receipt **fingerprint** material:
 - P4 stable canonical representation/fingerprint;
 - authority/projection/intent identity;
 - complete execution-access fingerprint;
 - resource identity;
 - runtime version + immutable image digest;
 - result hash + row count;
-- execution timestamp.
+- query-step role.
+
+Execution-event metadata:
+- `execution_id` distinguishes execution occurrences and participates in `receipt_id`;
+- `executed_at` is stored on the receipt but does not participate in `receipt_fingerprint`.
 
 Ephemeral and never durable identity:
 - pagination continuation token;
@@ -287,8 +291,9 @@ Provider-free:
 - tenant/principal/role mismatch hard-fails;
 - source-object mismatch hard-fails;
 - canonical step count/result count mismatch hard-fails;
-- stable receipt id on identical durable identity;
-- result mutation changes result hash/receipt id;
+- stable `receipt_fingerprint` on identical durable execution content;
+- different execution event id changes `receipt_id` without changing `receipt_fingerprint`;
+- result mutation changes result hash / `receipt_fingerprint` / `receipt_id`;
 - comparison plan produces one receipt per executed query step;
 - no ephemeral continuation/query handle enters durable receipt hash;
 - M1 compatibility writer is not accepted as an access attestor.
