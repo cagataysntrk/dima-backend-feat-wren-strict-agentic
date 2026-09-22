@@ -36,7 +36,7 @@ function launchChrome() {
     `--remote-debugging-port=${CDP_PORT}`,
     `--user-data-dir=${profileDir}`,
     "--window-size=1440,900",
-    FRONTEND_URL,
+    "about:blank",
   ], { stdio: "ignore" });
   return { proc, profileDir };
 }
@@ -111,6 +111,21 @@ try {
   const pageTarget = await target();
   cdp = await Cdp.connect(pageTarget.webSocketDebuggerUrl);
   await cdp.send("Runtime.enable");
+  await cdp.send("Network.enable");
+  await cdp.send("Page.enable");
+
+  const origin = new URL(FRONTEND_URL).origin;
+  const cookie = await cdp.send("Network.setCookie", {
+    name: "dima_refresh",
+    value: "fast-poc-e2e-route-guard",
+    url: origin,
+    path: "/",
+    httpOnly: true,
+    sameSite: "Lax",
+  });
+  if (cookie.success === false) throw new Error("failed to set route-guard test cookie");
+
+  await cdp.send("Page.navigate", { url: FRONTEND_URL });
 
   await waitFor(
     cdp,
