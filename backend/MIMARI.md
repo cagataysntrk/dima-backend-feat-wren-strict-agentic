@@ -1,5 +1,31 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-FINAL-INTEGRATED-RELEASE-GATE -->
+> ## 🔴 FINAL INTEGRATED RELEASE GATE — 2026-09-22
+>
+> Release authority: `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
+>
+> `DEV80` is no longer a Day6.5 gate. It is the **FINAL BROAD ENGINEERING GATE** and may run exactly once for this release.
+>
+> Development sequence before DEV80:
+> ```text
+> J1S/J1T + M0/X0 decisions
+> → exactly one primary substrate
+> → Day7–15 correctness-sensitive implementation
+> → continuous focused real-LLM / failure-family / metamorphic / canary / sentinel testing
+> → 20–25 case final integration rehearsal
+> → FINAL ENGINEERING FREEZE
+> → DEV80 once
+> → CODE FREEZE
+> → Validation50 no tuning
+> → Hidden50 no tuning
+> → certification
+> → pilot activation
+> ```
+>
+> Any older MIMARI wording that places DEV80 before Day7–15 or D65-X after DEV80 is historical and superseded.
+>
+
 <!-- DIMA-V2-PREFREEZE-J1-M0-X0-OVERRIDE -->
 > ## 🔴 Day 6.5 CURRENT PRE-FREEZE OVERRIDE — 2026-09-22
 >
@@ -66,9 +92,7 @@
 > `AcceptedResearchAuthority` remains an alias/tag view of the existing `AcceptedTurnContract` body.
 > No second Research semantic contract.
 >
-> Wren remains the incumbent analytics substrate through engineering closure. Metabase is only an
-> external architecture reference and an isolated D65-X challenger after engineering closure and
-> before final Validation/Hidden certification.
+> Wren remains the incumbent analytics substrate now. Metabase M0/X0 and any required D65-X are resolved before the release final freeze/DEV80; exactly one primary execution substrate is selected before Day7–15 final integration completes.
 >
 > Production must have exactly one primary analytics truth substrate. `Wren + Metabase` as equal
 > production truth engines is STOP-THE-LINE.
@@ -123,8 +147,7 @@
 > `c9629d9029db...` exact semantic-SHA recertification **70/70 GREEN**; Retriever seam **9/9 GREEN**. StandardBuilder/E4/E5 focused gates de green fakat runtime-kernel kararı nedeniyle provisional'dır.
 > Provider-free front-door family closure oracle sync sonrası `35691982389` üzerinde **88/88 PASS**.
 > Next product ticket: `D65-E3A-R` — minimal generic `BoundedAgentRuntimeKernel` + existing StandardBuilder mechanics realignment.
-> DEV80 is once per engineering-freeze candidate; code change yeni candidate yaratır. Validation/Hidden sonrası code değişirse certification invalid olur ve fresh set gerekir.
-> Closure: kernel realignment → focused/family gates → workers=1 live → canary → Wren sentinels → freeze candidate → DEV80 → ENGINEERING CLOSED → D65-X Wren/Metabase substrate challenger → Validation50 → fresh Hidden50 → seal. Production hybrid route seal öncesi kapalıdır.
+> Release-level override: DEV80 this release runs exactly once on the final integrated candidate after Day15 code + final rehearsal. D65-X cannot occur after DEV80. Validation50/Hidden50 run only under post-DEV80 code freeze. Production hybrid route remains off until certification and pilot activation.
 >
 > STOP-THE-LINE: ikinci semantic owner, silent requirement loss, unsafe standard admission,
 > ambiguity auto-pick, rejected authority merge, candidate-set dışı truth, raw SQL/direct DB,
