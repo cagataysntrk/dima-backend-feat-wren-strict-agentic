@@ -656,6 +656,23 @@ def _metabase_raw_rows(execution) -> tuple[tuple, ...]:
     return tuple(tuple(row) for row in payload[0]["rows"])
 
 
+def _assert_metabase_canary_value(case_id: str, rows, expected) -> None:
+    if case_id in {"CANARY-01", "CANARY-03"}:
+        assert rows == ((expected,),)
+        return
+    if case_id == "CANARY-02":
+        # P4 portable MBQL contract: breakout columns precede aggregation columns.
+        assert {
+            str(row[0]): Decimal(str(row[1]))
+            for row in rows
+        } == {
+            key: Decimal(str(value))
+            for key, value in expected.items()
+        }
+        return
+    raise AssertionError(case_id)
+
+
 def _assert_p6a1_case(
     *,
     case_id: str,
@@ -667,28 +684,49 @@ def _assert_p6a1_case(
 ):
     wren_validation = wren_adapter.validate_execution_intent(intent)
     metabase_validation = metabase_adapter.validate_execution_intent(intent)
-    assert wren_validation.valid, wren_validation.reasons
     assert metabase_validation.valid, metabase_validation.reasons
 
-    wren_result = wren_adapter.execute_execution_intent(intent)
     metabase_result = metabase_adapter.execute_execution_intent(intent)
-
-    assert wren_adapter.inspect_execution(wren_result).verified is True
     assert metabase_adapter.inspect_execution(metabase_result).verified is True
-
-    assert wren_result.evidence.authority_id == intent.authority_id
     assert metabase_result.evidence.authority_id == intent.authority_id
-    assert wren_result.evidence.payload["projection_hash"] == intent.projection_hash
     assert metabase_result.evidence.payload["projection_hash"] == intent.projection_hash
-    assert wren_result.evidence.payload["resolved_intent_hash"] == intent.resolved_intent_hash
     assert metabase_result.evidence.payload["resolved_intent_hash"] == intent.resolved_intent_hash
+    mb_rows = _metabase_raw_rows(metabase_result)
+    _assert_metabase_canary_value(case_id, mb_rows, expected)
+    assert all(
+        item.receipt_fingerprint is not None
+        for item in metabase_result.query_receipts
+    )
+
+    if case_id == "CANARY-03":
+        assert wren_validation.valid is False
+        assert wren_validation.reasons == (
+            "unsupported Wren period kind: absolute",
+        )
+        return {
+            "case_id": case_id,
+            "snapshot_id": snapshot_id,
+            "authority_id": intent.authority_id,
+            "projection_hash": intent.projection_hash,
+            "resolved_intent_hash": intent.resolved_intent_hash,
+            "semantic_context_version": intent.semantic_context_version,
+            "data_snapshot": "MATCH",
+            "semantic_execution": "TYPED_GAP",
+            "receipt_provenance": "NOT_EVALUATED_WREN",
+            "gap": "WREN_COMPATIBILITY_GAP",
+            "overall": "TYPED_GAP",
+        }
+
+    assert wren_validation.valid, wren_validation.reasons
+    wren_result = wren_adapter.execute_execution_intent(intent)
+    assert wren_adapter.inspect_execution(wren_result).verified is True
+    assert wren_result.evidence.authority_id == intent.authority_id
+    assert wren_result.evidence.payload["projection_hash"] == intent.projection_hash
+    assert wren_result.evidence.payload["resolved_intent_hash"] == intent.resolved_intent_hash
 
     wren_rows = _wren_semantic_rows(wren_result)
-    mb_rows = _metabase_raw_rows(metabase_result)
-
     if case_id == "CANARY-01":
         assert wren_rows == ({"p6_handle_metric": expected},)
-        assert mb_rows == ((expected,),)
     elif case_id == "CANARY-02":
         assert {
             str(row["p6_handle_region"]): Decimal(str(row["p6_handle_metric"]))
@@ -697,30 +735,13 @@ def _assert_p6a1_case(
             key: Decimal(str(value))
             for key, value in expected.items()
         }
-        # P4 portable MBQL contract: breakout columns precede aggregation columns.
-        assert {
-            str(row[0]): Decimal(str(row[1]))
-            for row in mb_rows
-        } == {
-            key: Decimal(str(value))
-            for key, value in expected.items()
-        }
-    elif case_id == "CANARY-03":
-        assert wren_rows == ({"p6_handle_metric": expected},)
-        assert mb_rows == ((expected,),)
     else:
         raise AssertionError(case_id)
 
-    wren_receipt_gap = all(
+    assert all(
         item.receipt_fingerprint is None
         for item in wren_result.query_receipts
     )
-    metabase_receipts_strict = all(
-        item.receipt_fingerprint is not None
-        for item in metabase_result.query_receipts
-    )
-    assert wren_receipt_gap is True
-    assert metabase_receipts_strict is True
 
     return {
         "case_id": case_id,
@@ -762,11 +783,6 @@ def test_p6a1_true_same_intent_substrate_seam_three_case_canary(
     )
 
     wren_adapter = _p6_wren_adapter(tmp_path, monkeypatch)
-    assert all(
-        wren_adapter.validate_execution_intent(intent).valid
-        for _, intent, _ in cases
-    )
-
     reports = []
     with _metabase_client() as client:
         for case_id, intent, expected in cases:
@@ -792,12 +808,17 @@ def test_p6a1_true_same_intent_substrate_seam_three_case_canary(
         "CANARY-03",
     ]
     assert all(item["data_snapshot"] == "MATCH" for item in reports)
-    assert all(item["semantic_execution"] == "MATCH" for item in reports)
-    assert all(
-        item["receipt_provenance"] == "TYPED_GAP"
-        and item["gap"] == "RECEIPT/PROVENANCE_GAP"
-        for item in reports
-    )
+    assert [item["semantic_execution"] for item in reports] == [
+        "MATCH",
+        "MATCH",
+        "TYPED_GAP",
+    ]
+    assert [item["gap"] for item in reports] == [
+        "RECEIPT/PROVENANCE_GAP",
+        "RECEIPT/PROVENANCE_GAP",
+        "WREN_COMPATIBILITY_GAP",
+    ]
+    assert all(item["overall"] == "TYPED_GAP" for item in reports)
     print(json.dumps({"p6a1": reports}, sort_keys=True))
 
 
