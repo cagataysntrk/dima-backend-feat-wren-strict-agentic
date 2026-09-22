@@ -2,6 +2,11 @@
 
 ## POST-ANALYST CURRENT OVERRIDE
 
+> **M0E-DEEP-DELTA: FINAL GREEN / SEALED (25/25, exit counters zero).**
+> Current sole ticket = `D65-X0-BRIDGE-PREFLIGHT`.
+> Metabase runtime/container remains FORBIDDEN until bridge preflight is GREEN.
+> Do not reopen D65-SI or semantic discovery absent new invalidating P0 evidence.
+
 > **D65-SI FINAL GREEN at c72eb913...**
 > Evidence: 35738044476 73/73; 35738400321 focused 001/005 GREEN; 35738912690 frozen six GREEN.
 > Semantic-discovery tuning is CLOSED without new P0 evidence.

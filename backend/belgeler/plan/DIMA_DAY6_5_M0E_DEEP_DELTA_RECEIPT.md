@@ -1,6 +1,6 @@
 # DIMA DAY 6.5 — M0E-DEEP-DELTA RECEIPT
 
-**Status:** PARTIAL / SOURCE AUDIT IN PROGRESS  
+**Status:** FINAL GREEN / SEALED — 25/25 DIMA-RELEVANT DELTA MECHANISMS CLASSIFIED  
 **Date:** 2026-09-22  
 **Metabase pin:** `74216b30981d8310c4cf724d63ca282e2e63529d`  
 **M0E-v1:** PRESERVED  
@@ -907,3 +907,46 @@ product code written     = 0
 Metabase runtime started = 0
 ```
 
+
+
+# FINAL EXIT AUDIT — GREEN
+
+Mechanical schema/coverage audit after DD-01…DD-25 classification:
+
+```text
+required delta mechanisms unclassified               = 0
+security/authority mechanism without owner            = 0
+runtime candidate without explicit proof question     = 0
+WREN_OWNS duplicated as Metabase semantic truth       = 0
+implicit-FK authority unanswered                      = 0
+bridge question unanswered                            = 0
+
+mandatory row-schema gaps                             = 0
+duplicate DD ids                                      = 0
+missing DD ids                                        = 0
+
+product code written during M0E-DEEP-DELTA            = 0
+Metabase runtime started                              = 0
+```
+
+Disposition summary:
+
+```text
+DIMA_CORE_NATIVE            = 01,02,04,05,06,09,11,12,14
+PATTERN_ONLY                = 03,08,10,13,15,16,17
+WREN_OWNS                   = 07,18,22
+METABASE_RUNTIME_CANDIDATE  = 19,20,25
+REJECT                      = 21,24
+DEFER_PRODUCT               = 23
+```
+
+Binding architecture conclusions:
+1. Wren remains semantic/business-knowledge truth.
+2. Dima remains accepted-authority / evidence / replay-security / provenance owner.
+3. Metabase runtime value remains plausible only in the already-accepted structured-query lifecycle:
+   bridge + Agent API runtime + idempotent repair.
+4. Agent-authored raw SQL is rejected.
+5. Autonomous Metabase physical-FK join inference is rejected as Dima semantic authority.
+6. The next mandatory gate is `D65-X0-BRIDGE-PREFLIGHT`; Metabase runtime is still forbidden.
+
+**M0E-DEEP-DELTA = FINAL GREEN / SEALED.**

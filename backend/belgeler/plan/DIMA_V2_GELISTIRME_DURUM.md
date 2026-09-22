@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **D65-SI FINAL GREEN / SEALED — M0E-DEEP-DELTA ACTIVE; X0-BRIDGE-PREFLIGHT NEXT AFTER M0E FINAL; X0/DEV80 FORBIDDEN**  
-**Kod fazı:** D65-SI SEALED. M0E-DEEP-DELTA mechanism classification now reaches `25/25` after Batch 6: bridge = `METABASE_RUNTIME_CANDIDATE` pending mandatory thin/lossless preflight; autonomous physical-FK implicit-join repair = `REJECT` as semantic authority with permanent `UNAPPROVED_METABASE_IMPLICIT_JOIN=0`; generic fixed-point representation repair = `METABASE_RUNTIME_CANDIDATE`, not to be reimplemented. No product code/runtime. Classification is complete, but M0E FINAL GREEN is not declared until a separate exit-counter audit confirms all contract counters = 0.  
+**Durum:** **D65-SI FINAL GREEN/SEALED + M0E-DEEP-DELTA FINAL GREEN/SEALED — X0-BRIDGE-PREFLIGHT ACTIVE; METABASE RUNTIME OFF; DEV80 FORBIDDEN**  
+**Kod fazı:** M0E-DEEP-DELTA is now FINAL GREEN/SEALED: all 25 required Metabase delta mechanisms classified with mandatory row fields; exit counters all zero. Binding outcomes: Dima owns authority/replay-security/provenance; Wren owns semantic/business knowledge and metric layer; Metabase runtime candidates are only bridge/Agent-API operational path/idempotent repair; raw SQL and autonomous implicit-FK semantic authority are rejected. Current sole next ticket = `D65-X0-BRIDGE-PREFLIGHT`. No Metabase container/service may start until preflight proves a thin/lossless bridge using real sealed Standard artifacts. `/ask-v2`, Day7+, DEV80 remain untouched.  
 
 ---
 
@@ -333,6 +333,32 @@ Classification:
 No context-loss repair is authorized for this case.
 Next:
 `generic bounded retrieval → family/metamorphic provider-free proof → same frozen 6-case live rerun`.
+
+---
+
+## 0J. M0E-DEEP-DELTA FINAL GREEN — BRIDGE PREFLIGHT ACTIVE
+
+```text
+D65-SI                          FINAL GREEN / SEALED
+M0E-DEEP-DELTA                 FINAL GREEN / SEALED
+delta mechanisms               25/25
+exit counters                  ALL ZERO
+
+current work                   D65-X0-BRIDGE-PREFLIGHT
+Metabase runtime               OFF
+Wren semantic backbone         RETAIN
+production /ask-v2             OFF
+DEV80                          FORBIDDEN
+```
+
+Preflight question:
+Can accepted Dima/Wren semantic intent become Metabase structured-query semantics through a
+thin deterministic translation without a second semantic truth?
+
+Candidate seams:
+`A StandardProjection+handles | B resolved AnalyticsIR | C Wren-specific planned representation`.
+
+Do not start X0-REST until bridge preflight is GREEN.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE

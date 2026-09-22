@@ -570,3 +570,26 @@ M0E-DEEP-DELTA FINAL
 → if bridge thin/lossless: bounded X0-REST
 → if X0 materially promising: STOP / CONSULT before full D65-X
 ```
+
+
+## 5C. M0E-DEEP-DELTA FINAL GREEN
+
+`DIMA_DAY6_5_M0E_DEEP_DELTA_RECEIPT.md` is sealed at 25/25 with every exit counter = 0.
+
+Current next ticket is automatically:
+`DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md`.
+
+No Metabase runtime/container yet.
+
+Bridge preflight must compare:
+- A: StandardProjection + opaque sem_* handles
+- B: resolved canonical Dima AnalyticsIR
+- C: later Wren-specific planned representation
+
+using real sealed Standard-pipeline artifacts.
+
+If bridge requires a second semantic compiler, dual metric/relationship/grain/time semantics,
+label guessing, large metadata sync, or unapproved Metabase implicit FK authority:
+`METABASE STRUCTURED EXECUTION ARM = REJECT` and proceed with retained Wren to Day7.
+
+Only a thin/lossless bridge authorizes X0-REST.

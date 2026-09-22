@@ -1,6 +1,6 @@
 # DIMA DAY 6.5 — M0E-DEEP-DELTA CONTRACT
 
-**Status:** ACTIVE SOURCE / CLASSIFICATION GATE  
+**Status:** FINAL GREEN / SEALED  
 **Date:** 2026-09-22  
 **M0E-v1:** PRESERVED VALID BASELINE  
 **Final exhaustion:** REOPENED  
@@ -169,3 +169,23 @@ Only then:
 `M0E-DEEP-DELTA FINAL GREEN`.
 
 M0E-DEEP-DELTA completion authorizes bridge preflight, not Metabase runtime X0.
+
+
+## 8. Final closure
+
+Detailed source/disposition evidence:
+`DIMA_DAY6_5_M0E_DEEP_DELTA_RECEIPT.md`.
+
+```text
+required delta mechanisms unclassified               = 0
+security/authority mechanism without owner            = 0
+runtime candidate without explicit proof question     = 0
+WREN_OWNS duplicated as Metabase semantic truth       = 0
+implicit-FK authority unanswered                      = 0
+bridge question unanswered                            = 0
+```
+
+`M0E-DEEP-DELTA FINAL GREEN / SEALED`.
+
+This authorizes **X0-BRIDGE-PREFLIGHT only**.
+It does not authorize Metabase runtime/container spin-up.
