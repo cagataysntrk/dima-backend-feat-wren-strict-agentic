@@ -4,7 +4,17 @@ from __future__ import annotations
 
 import pytest
 
-from app.v2.manager_models import AcceptedTurnContract, StandardProjection
+from app.v2.manager_models import (
+    AcceptedTurnContract,
+    AcceptanceResult,
+    AcceptanceStatus,
+    CandidateObligation,
+    ManagerCapabilityKey,
+    ObligationOrigin,
+    StandardProjection,
+    UserIntentEnvelope,
+    UserObligationLedger,
+)
 from app.v2.models import ResolvedSemanticRef, SemanticTargetKind
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.standard_authority import (
@@ -15,6 +25,8 @@ from app.v2.standard_authority import (
     StandardAuthoritySealer,
 )
 from app.v2.standard_builder import StandardWorkMode
+from app.v2.manager_runtime import ManagerRuntime
+from app.v2.manager_tools import ManagerToolCall, ManagerToolName
 
 
 def _metric_handle():
@@ -142,3 +154,128 @@ def test_cross_family_registry_allows_different_turns():
 
     assert registry.accepted("turn-standard")[0] == AcceptedAuthorityFamily.STANDARD
     assert registry.accepted("turn-research")[0] == AcceptedAuthorityFamily.RESEARCH
+
+
+
+class _AcceptedResearchExecutor:
+    def __init__(self, contract):
+        self.contract = contract
+
+    def execute(self, call, validated_args, runtime):
+        assert call.name == ManagerToolName.PROPOSE_ACCEPTANCE
+        return AcceptanceResult(
+            status=AcceptanceStatus.ACCEPTED,
+            contract=self.contract,
+            ledger=UserObligationLedger(
+                lineage_id=self.contract.lineage_id,
+                version=self.contract.version,
+                items=(),
+            ),
+        )
+
+
+def _research_acceptance_call(*, turn_id):
+    envelope = UserIntentEnvelope(
+        attempt_id="attempt-research",
+        turn_id=turn_id,
+        request_ref="req-research",
+        source_message_hash="d" * 64,
+        model_role="RESEARCH_MANAGER",
+        obligations=(
+            CandidateObligation(
+                obligation_id="U_REL",
+                capability_key=ManagerCapabilityKey.RELATIONSHIP,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=("src_" + "1" * 24,),
+            ),
+        ),
+    )
+    return ManagerToolCall(
+        name=ManagerToolName.PROPOSE_ACCEPTANCE,
+        args={"envelope": envelope.model_dump(mode="json")},
+    )
+
+
+def test_research_runtime_commits_into_shared_cross_family_arbiter():
+    turn_id = "turn-research-runtime"
+    research = _research_contract(turn_id=turn_id)
+    shared = AcceptedAuthorityRegistry()
+    runtime = ManagerRuntime(
+        request_ref="req-research-runtime",
+        authority_registry=shared,
+    )
+
+    runtime.call_tool(
+        _research_acceptance_call(turn_id=turn_id),
+        executor=_AcceptedResearchExecutor(research),
+    )
+
+    assert runtime.accepted_contract == research
+    assert shared.accepted(turn_id) == (
+        AcceptedAuthorityFamily.RESEARCH,
+        research.contract_id,
+    )
+
+
+def test_standard_then_research_same_turn_fails_before_research_lineage_mutation():
+    turn_id = "turn-xor-standard-first"
+    _, _, _, standard = _seal(turn_id=turn_id)
+    research = _research_contract(turn_id=turn_id)
+    shared = AcceptedAuthorityRegistry()
+    shared.commit(standard)
+
+    contracts = __import__(
+        "app.v2.acceptance", fromlist=["AcceptedContractRegistry"]
+    ).AcceptedContractRegistry()
+    runtime = ManagerRuntime(
+        request_ref="req-xor-standard-first",
+        contract_registry=contracts,
+        authority_registry=shared,
+    )
+
+    with pytest.raises(AcceptedAuthorityConflict):
+        runtime.call_tool(
+            _research_acceptance_call(turn_id=turn_id),
+            executor=_AcceptedResearchExecutor(research),
+        )
+
+    assert contracts.active(research.lineage_id) is None
+    assert shared.accepted(turn_id) == (
+        AcceptedAuthorityFamily.STANDARD,
+        standard.authority_id,
+    )
+
+
+def test_research_then_standard_same_turn_fails_closed():
+    turn_id = "turn-xor-research-first"
+    research = _research_contract(turn_id=turn_id)
+    _, _, _, standard = _seal(turn_id=turn_id)
+    shared = AcceptedAuthorityRegistry()
+    runtime = ManagerRuntime(
+        request_ref="req-xor-research-first",
+        authority_registry=shared,
+    )
+
+    runtime.call_tool(
+        _research_acceptance_call(turn_id=turn_id),
+        executor=_AcceptedResearchExecutor(research),
+    )
+
+    with pytest.raises(AcceptedAuthorityConflict):
+        shared.commit(standard)
+
+    assert shared.accepted(turn_id) == (
+        AcceptedAuthorityFamily.RESEARCH,
+        research.contract_id,
+    )
+
+
+def test_research_identical_cross_family_recommit_is_idempotent():
+    research = _research_contract(turn_id="turn-idempotent-research")
+    shared = AcceptedAuthorityRegistry()
+    shared.commit(research)
+    shared.commit(research)
+    assert shared.accepted(research.turn_id) == (
+        AcceptedAuthorityFamily.RESEARCH,
+        research.contract_id,
+    )

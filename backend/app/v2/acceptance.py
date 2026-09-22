@@ -22,10 +22,7 @@ from app.v2.manager_models import (
 from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
-
-
-class AcceptedAuthorityConflict(RuntimeError):
-    pass
+from app.v2.standard_authority import AcceptedAuthorityConflict
 
 
 class AcceptedContractRegistry:
@@ -35,7 +32,8 @@ class AcceptedContractRegistry:
         self._by_turn: dict[str, AcceptedTurnContract] = {}
         self._active_by_lineage: dict[str, AcceptedTurnContract] = {}
 
-    def commit(self, contract: AcceptedTurnContract) -> None:
+    def validate(self, contract: AcceptedTurnContract) -> None:
+        """Validate turn/lineage commit without mutating registry state."""
         existing_turn = self._by_turn.get(contract.turn_id)
         if existing_turn is not None:
             if existing_turn.contract_id == contract.contract_id:
@@ -57,6 +55,12 @@ class AcceptedContractRegistry:
         elif contract.version != 1 or contract.supersedes_contract_id is not None:
             raise AcceptedAuthorityConflict("new lineage must start at version 1")
 
+    def commit(self, contract: AcceptedTurnContract) -> None:
+        self.validate(contract)
+        existing_turn = self._by_turn.get(contract.turn_id)
+        if existing_turn is not None:
+            # validate() guarantees an existing row is the exact idempotent retry.
+            return
         self._by_turn[contract.turn_id] = contract
         self._active_by_lineage[contract.lineage_id] = contract
 

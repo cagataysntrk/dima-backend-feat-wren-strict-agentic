@@ -30,6 +30,7 @@ from app.v2.models import AskV2Request, FrozenModel
 from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
+from app.v2.standard_authority import AcceptedAuthorityRegistry
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
 from app.v2.semantic_linker import StructuredSemanticCandidateDecisionProvider
 from app.v2.temporal_intent import StructuredTemporalNormalizationProvider
@@ -55,6 +56,7 @@ class ManagerLabResponse(FrozenModel):
 class ManagerLabHarness:
     def __init__(self) -> None:
         self._accepted_contracts = AcceptedContractRegistry()
+        self._accepted_authorities = AcceptedAuthorityRegistry()
 
     def run(
         self,
@@ -129,6 +131,7 @@ class ManagerLabHarness:
         manager_runtime = ManagerRuntime(
             request_ref=ref,
             contract_registry=self._accepted_contracts,
+            authority_registry=self._accepted_authorities,
         )
         loop = ResearchManagerLoop(llm=llm, source_spans=source_spans)
         outcome = loop.run(

@@ -23,6 +23,7 @@ from app.v2.manager_models import (
     SemanticResolutionReceipt,
     UserObligationLedger,
 )
+from app.v2.standard_authority import AcceptedAuthorityRegistry
 from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
@@ -58,11 +59,13 @@ class ManagerRuntime:
         budget: ManagerBudget | None = None,
         tools: ManagerToolRegistry | None = None,
         contract_registry: AcceptedContractRegistry | None = None,
+        authority_registry: AcceptedAuthorityRegistry | None = None,
     ) -> None:
         run_id = "mgr_" + hashlib.sha256(request_ref.encode("utf-8")).hexdigest()[:20]
         self._budget = budget or ManagerBudget()
         self._tools = tools or ManagerToolRegistry()
         self._contracts = contract_registry or AcceptedContractRegistry()
+        self._authorities = authority_registry or AcceptedAuthorityRegistry()
         self._snapshot = ManagerRunSnapshot(run_id=run_id, state=ManagerState.INITIAL)
         self._ledger: UserObligationLedger | None = None
         self._accepted_contract = None
@@ -79,6 +82,10 @@ class ManagerRuntime:
     @property
     def accepted_contract(self):
         return self._accepted_contract
+
+    @property
+    def authority_registry(self) -> AcceptedAuthorityRegistry:
+        return self._authorities
 
     @property
     def semantic_resolution_receipts(self) -> tuple[SemanticResolutionReceipt, ...]:
@@ -188,7 +195,12 @@ class ManagerRuntime:
                 raise ManagerStateError("propose_acceptance executor must return AcceptanceResult")
             if result.status == AcceptanceStatus.ACCEPTED:
                 assert result.contract is not None and result.ledger is not None
+                # Two-phase validation keeps Research lineage/version truth and
+                # cross-family XOR aligned without creating a second Research body.
+                self._contracts.validate(result.contract)
+                self._authorities.validate(result.contract)
                 self._contracts.commit(result.contract)
+                self._authorities.commit(result.contract)
                 self._accepted_contract = result.contract
                 self._ledger = result.ledger
                 self._snapshot = self._snapshot.model_copy(

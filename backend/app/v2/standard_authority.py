@@ -157,19 +157,25 @@ class AcceptedAuthorityRegistry:
             authority.contract_id,
         )
 
-    def commit(self, authority: AcceptedAuthority) -> None:
+    def validate(self, authority: AcceptedAuthority) -> None:
+        """Validate cross-family XOR without mutating shared authority state."""
         turn_id, family, authority_id = self._identity(authority)
         existing = self._by_turn.get(turn_id)
         candidate = (family, authority_id)
-        if existing is None:
-            self._by_turn[turn_id] = candidate
-            return
-        if existing == candidate:
+        if existing is None or existing == candidate:
             return
         raise AcceptedAuthorityConflict(
             f"turn {turn_id} already has accepted {existing[0].value} authority "
             f"{existing[1]}"
         )
+
+    def commit(self, authority: AcceptedAuthority) -> None:
+        self.validate(authority)
+        turn_id, family, authority_id = self._identity(authority)
+        candidate = (family, authority_id)
+        if self._by_turn.get(turn_id) == candidate:
+            return
+        self._by_turn[turn_id] = candidate
 
     def accepted(
         self,
