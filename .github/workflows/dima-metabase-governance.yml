@@ -1,0 +1,55 @@
+name: dima-metabase-governance
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify branch identity and certified base ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="3774484167f1056d89da0e0609246fb4a05057ec"
+          test "$GITHUB_REF_NAME" = "feat/dima-metabase-platform"
+          git merge-base --is-ancestor "$BASE" HEAD
+
+      - name: Verify sealed normative document blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_FIZIBILITE_VE_MIMARI_RAPORU.md)" = "0ccbfc502a812d098b2c758f41deaa4208d8b180"
+          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_UYGULAMA_YOL_HARITASI.md)" = "e74720455c44b92868d9ffd50b6c745f77405c55"
+
+      - name: Verify mandatory governance files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f DIMA-METABASE-OPERASYON.md
+          test -f DIMA-METABASE-DENETIM.md
+          test -f DIMA-METABASE-DURUM.md
+          test -f backend/belgeler/metabase/DIMA_METABASE_SOURCE_LOCK.md
+          test -f backend/belgeler/metabase/DIMA_METABASE_FAILURE_RECEIPTS.md
+          test -f backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
+
+      - name: Guard v3 against legacy semantic resolver authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d backend/app/v3 ]; then
+            if grep -R --include='*.py' -nE 'from[[:space:]]+app\.v2\.resolver|import[[:space:]]+app\.v2\.resolver|SemanticResolver' backend/app/v3; then
+              echo "Legacy SemanticResolver authority import detected in app/v3"
+              exit 1
+            fi
+          fi
