@@ -187,6 +187,19 @@ def test_p8_structured_relationship_is_dima_compiled():
         ("VIEW_DEFINITION_GAP", EquivalenceClassification.WREN_ONLY_GAP),
         ("CUBE_SEMANTIC_ENTITY_GAP", EquivalenceClassification.DIMA_RUNTIME),
         ("ROW_SECURITY_DEFERRED_TO_P10", EquivalenceClassification.DIMA_RUNTIME),
+        ("SECURITY_METADATA_DEFERRED_TO_P10", EquivalenceClassification.DIMA_RUNTIME),
+        ("METRIC_DIRECTIONALITY_METADATA_GAP", EquivalenceClassification.DIMA_RUNTIME),
+        ("METRIC_NL_METADATA_GAP", EquivalenceClassification.DIMA_RUNTIME),
+        ("CUBE_DOMAIN_METADATA_GAP", EquivalenceClassification.DIMA_RUNTIME),
+        ("GRAIN_KEY_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
+        ("RELATIONSHIP_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
+        ("RELATIONSHIP_PATH_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
+        ("RELATIONSHIP_CARDINALITY_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
+        ("RELATIONSHIP_EXPOSE_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
+        ("METRIC_TYPE_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
+        ("CUBE_GRAIN_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
+        ("CUBE_PVM_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
+        ("VIEW_COLUMN_METADATA_GAP", EquivalenceClassification.WREN_ONLY_GAP),
         ("CUBE_BASE_OBJECT_MISSING", EquivalenceClassification.UNSUPPORTED),
     ],
 )
@@ -290,3 +303,20 @@ def test_p8_current_real_composed_manifest_classifies_without_unknown_gap():
         )
     )
     assert repeated.matrix_fingerprint == matrix.matrix_fingerprint
+
+
+
+def test_p8_unmapped_structured_field_remains_hard_red():
+    result = SemanticImportResult(
+        source_fingerprint=HEX,
+        spec=DimaSemanticSpec(semantic_context_version="ctx-p8"),
+        gaps=(
+            SemanticImportGap(
+                code="UNMAPPED_STRUCTURED_FIELD",
+                source_ref="cube:x.field:newThing",
+                detail="future structured field",
+            ),
+        ),
+    )
+    with pytest.raises(SemanticEquivalenceError, match="unknown P7"):
+        SemanticEquivalenceMatrixBuilder.build(result)

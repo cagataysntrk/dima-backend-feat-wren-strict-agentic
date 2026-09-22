@@ -1820,3 +1820,31 @@ interpretation:
 
 status:
 `P8 CLOSED; P9 SEMANTIC RESOURCE PROVISIONER NEXT`.
+
+
+---
+
+## DMP-P7-AUDIT-001 — structured source-field coverage
+
+receipt_id: `DMP-P7-AUDIT-001`  
+tested_sha: `c650ee1a9257d892b2b402ac2f3b1d687f54b8da`
+
+classification:
+`SEMANTIC MIGRATION COVERAGE`
+
+observed:
+The P7 importer was structurally safe but did not account for every non-empty structured field in the
+current composed MDL. Material metadata such as metric directionality/type/NL hints, sensitivity,
+grain/key markers, relationship cardinality/expose metadata and cube domain/PVM metadata could be
+present without a consumed/gap/non-semantic disposition.
+
+authorized correction:
+Introduce an exact-key structured-field coverage contract. Every non-empty source field must be:
+`CONSUMED`, `GAP_OWNED`, or `IGNORED_OPERATIONAL_METADATA`.
+Unknown non-empty fields become `UNMAPPED_STRUCTURED_FIELD`.
+
+No field content is interpreted. Formula/join-condition parsing, fuzzy matching and name inference
+remain forbidden.
+
+status:
+`CORRECTION APPLIED / AWAITING P7+P8 GREEN`.

@@ -921,3 +921,20 @@ Wren removal                       = NOT AUTHORIZED
 P8 result: **capability matrix GREEN / semantic equivalence remains typed per feature**.
 
 **Current phase:** P9 PRE-DEVELOPMENT — semantic resource provisioner.
+
+
+---
+
+## P7/P8 correctness hardening — structured-field coverage
+
+```text
+DMP-P7-AUDIT-001                = OPEN / CORRECTION APPLIED
+coverage invariant              = every non-empty structured key accounted
+unknown structured key          = UNMAPPED_STRUCTURED_FIELD / P8 HARD RED
+formula parsing                 = 0
+join-condition parsing          = 0
+fuzzy/name similarity           = 0
+P9B                              = HELD
+ASK_V2_RELATIONSHIP_REFERENCE   = b815d19cc8f07ecbd617e3e417e1405503a59542
+source disposition              = REFERENCE_ONLY
+```

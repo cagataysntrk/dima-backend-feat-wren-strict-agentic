@@ -42,10 +42,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BASE="bc4e4b2f784b1266e3be88faed42ae7f147e7c67"
+          BASE="c650ee1a9257d892b2b402ac2f3b1d687f54b8da"
           changed="$(git diff --name-only "$BASE"...HEAD)"
           printf '%s\n' "$changed"
-          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|semantic_import|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)'; then
+          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)'; then
             echo "P8 initial slice touched a forbidden file"
             exit 1
           fi

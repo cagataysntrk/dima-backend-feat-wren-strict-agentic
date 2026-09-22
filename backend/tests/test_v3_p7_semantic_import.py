@@ -317,3 +317,68 @@ def test_p7_current_composed_demo_mdl_imports_deterministically_with_typed_gaps(
         gap.code == "RELATIONSHIP_JOIN_KEY_GAP"
         for gap in first.gaps
     )
+
+
+
+def test_p7_real_manifest_structured_field_coverage_is_complete_and_loss_visible():
+    path = ROOT / "demo" / "wren-engine-proje" / "target" / "mdl.json"
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    result = WrenSemanticSpecImporter.import_manifest(
+        manifest,
+        semantic_context_version="demo-composed-p7-coverage",
+    )
+    codes = [gap.code for gap in result.gaps]
+
+    assert "UNMAPPED_STRUCTURED_FIELD" not in codes
+    expected_counts = {
+        "METRIC_DIRECTIONALITY_METADATA_GAP": 104,
+        "METRIC_NL_METADATA_GAP": 1,
+        "METRIC_TYPE_METADATA_GAP": 136,
+        "SECURITY_METADATA_DEFERRED_TO_P10": 24,
+        "GRAIN_KEY_METADATA_GAP": 76,
+        "RELATIONSHIP_METADATA_GAP": 20,
+        "RELATIONSHIP_PATH_METADATA_GAP": 9,
+        "RELATIONSHIP_CARDINALITY_METADATA_GAP": 31,
+        "RELATIONSHIP_EXPOSE_METADATA_GAP": 9,
+        "CUBE_GRAIN_METADATA_GAP": 1,
+        "CUBE_DOMAIN_METADATA_GAP": 1,
+        "CUBE_PVM_METADATA_GAP": 3,
+        "VIEW_COLUMN_METADATA_GAP": 1,
+    }
+    for code, expected in expected_counts.items():
+        assert codes.count(code) == expected
+
+
+def test_p7_unknown_nonempty_structured_field_is_never_silently_ignored():
+    manifest = _manifest()
+    manifest["cubes"][0]["futureSemanticKnob"] = {"mode": "new"}
+    result = WrenSemanticSpecImporter.import_manifest(
+        manifest,
+        semantic_context_version="ctx-p7-unknown-field",
+    )
+    gap = next(
+        item
+        for item in result.gaps
+        if item.code == "UNMAPPED_STRUCTURED_FIELD"
+    )
+    assert gap.source_ref == "cube:sales.field:futureSemanticKnob"
+
+
+def test_p7_explicit_operational_and_physical_constraints_do_not_emit_noise_gaps():
+    manifest = _manifest()
+    manifest["dataSource"] = "postgres"
+    manifest["layoutVersion"] = 1
+    manifest["catalog"] = "wren"
+    manifest["schema"] = "public"
+    manifest["models"][0]["columns"][0]["notNull"] = False
+    manifest["models"][0]["columns"][0]["type"] = "double"
+
+    result = WrenSemanticSpecImporter.import_manifest(
+        manifest,
+        semantic_context_version="ctx-p7-operational",
+    )
+    refs = {item.source_ref for item in result.gaps}
+    assert "manifest.field:dataSource" not in refs
+    assert "manifest.field:layoutVersion" not in refs
+    assert "model:orders.column:amount.field:notNull" not in refs
+    assert "model:orders.column:amount.field:type" not in refs
