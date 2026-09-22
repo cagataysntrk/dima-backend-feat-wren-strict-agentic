@@ -311,27 +311,37 @@ stop_the_line:
   - "model-specific semantic fix added to pass one case"
   - "Manager bypasses trust-plane authority"
 
-engineering_closure_sequence:
-  - "D65-E1 exact semantic-SHA recertification: DONE GREEN 70/70."
-  - "D65-E2 SemanticCatalogRetriever seam: DONE GREEN 9/9."
-  - "D65-E3A add minimal generic BoundedAgentRuntimeKernel; Research Manager remains untouched."
-  - "Re-home existing StandardBuilder loop mechanics into the kernel without semantic behavior changes."
-  - "Keep Direct as STANDARD outcome/telemetry, never a separate engine."
-  - "Keep lightweight StandardProjection compiler and Research compatibility wrapper."
-  - "Keep minimal AcceptedStandardAuthority; AcceptedResearchAuthority remains AcceptedTurnContract alias/tag."
-  - "Keep narrow Standard CoverageVeto."
-  - "Run focused provider-free failure-family closure."
-  - "Run workers=1 small focused live architectural boundary set."
-  - "Run exact-same-SHA fast/reference model-floor A/B when needed."
-  - "Run 12-16 stratified canary before DEV80."
-  - "Require real Wren Standard vertical and existing Research sentinel."
-  - "Mark exact SHA ENGINEERING FREEZE CANDIDATE."
-  - "Run frozen DEV80 once per engineering-freeze candidate SHA; classify failure families, never patch named cases."
-  - "If hard gates pass: DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN."
-  - "Run D65-X isolated Wren-vs-Metabase substrate-only challenger before certification."
-  - "Run VALIDATION50 with no tuning on the chosen frozen substrate."
-  - "Run external fresh HIDDEN50 for certification seal."
-  - "Only after seal activate production hybrid /ask-v2."
+engineering_closure_sequence_historical:
+  status: "HISTORICAL_SUPERSEDED"
+  authority: false
+  superseded_by:
+    - "belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md"
+    - "belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md"
+  note: >
+    Historical Day 6.5 sequence retained only for audit. It must not be used to
+    schedule freeze, DEV80, D65-X, Validation50, Hidden50, or pilot activation.
+  steps:
+    - "D65-E1 exact semantic-SHA recertification: DONE GREEN 70/70."
+    - "D65-E2 SemanticCatalogRetriever seam: DONE GREEN 9/9."
+    - "D65-E3A add minimal generic BoundedAgentRuntimeKernel; Research Manager remains untouched."
+    - "Re-home existing StandardBuilder loop mechanics into the kernel without semantic behavior changes."
+    - "Keep Direct as STANDARD outcome/telemetry, never a separate engine."
+    - "Keep lightweight StandardProjection compiler and Research compatibility wrapper."
+    - "Keep minimal AcceptedStandardAuthority; AcceptedResearchAuthority remains AcceptedTurnContract alias/tag."
+    - "Keep narrow Standard CoverageVeto."
+    - "Run focused provider-free failure-family closure."
+    - "Run workers=1 small focused live architectural boundary set."
+    - "Run exact-same-SHA fast/reference model-floor A/B when needed."
+    - "Run 12-16 stratified canary before DEV80."
+    - "Require real Wren Standard vertical and existing Research sentinel."
+    - "Mark exact SHA ENGINEERING FREEZE CANDIDATE."
+    - "Run frozen DEV80 once per engineering-freeze candidate SHA; classify failure families, never patch named cases."
+    - "If hard gates pass: DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN."
+    - "Run D65-X isolated Wren-vs-Metabase substrate-only challenger before certification."
+    - "Run VALIDATION50 with no tuning on the chosen frozen substrate."
+    - "Run external fresh HIDDEN50 for certification seal."
+    - "Only after seal activate production hybrid /ask-v2."
+  
 
 failure_classification:
   semantic_or_eval:
@@ -342,58 +352,71 @@ failure_classification:
     - "TRANSPORT/PROVIDER"
   rule: "Classify before patch; infra/provider failure is not semantic failure."
 
-substrate_challenger:
-  gate_id: "D65-X"
-  timing: "AFTER_ENGINEERING_CLOSED_BEFORE_VALIDATION50"
-  incumbent: "Wren"
-  challenger: "Metabase Agent API"
-  experiment_type: "SUBSTRATE_ONLY_PRIMARY"
-  fixed_inputs:
-    - dima_cognition
-    - accepted_semantics
-    - AcceptedStandardAuthority
-    - StandardProjection
-    - benchmark
-  variable: "governed_execution_substrate"
-  production_parallel_truth_engines_allowed: false
-  outcomes:
-    wren_win_or_tie:
-      action: "KEEP_WREN_AND_CONTINUE_CERTIFICATION"
-    metabase_clear_win:
-      action: "STOP_CERTIFICATION_OPEN_NEW_ENGINEERING_CANDIDATE"
-      requires:
-        - affected_standard_gates
-        - new_dev_broad_proof
-        - new_freeze_candidate
-        - fresh_validation
-        - fresh_hidden
-  p0:
-    silent_wrong_max: 0
-    cross_tenant_leakage_max: 0
-    permission_bypass_max: 0
-    unsafe_ambiguity_auto_pick_max: 0
-    unverified_semantic_substitution_max: 0
-    provenance_break_max: 0
-  measurements:
-    - semantic_correctness
-    - query_correctness
-    - result_correctness
-    - repair_success
-    - unsupported_handling
-    - ambiguity_handling
-    - p50_latency
-    - p95_latency
-    - llm_calls
-    - token_cost
-    - query_count
-    - integration_loc
-    - maintenance_surface
-    - schema_onboarding_effort
-    - query_contract_bindability
-    - executed_query_provability
-    - replay_permission_recheck
-    - evidence_artifact_compatibility
-    - tenant_context_end_to_end
+substrate_challenger_historical:
+  status: "HISTORICAL_SUPERSEDED"
+  authority: false
+  superseded_by:
+    - "d65_prefreeze_decision_gate.d65_m0"
+    - "d65_prefreeze_decision_gate.d65_x0"
+    - "final_integrated_release_gate"
+  previous_timing: "AFTER_ENGINEERING_CLOSED_BEFORE_VALIDATION50"
+  note: >
+    Historical substrate timing only. Current authority moves M0/X0 and any
+    required full D65-X before Day7-15 final integration and before the final
+    engineering freeze / one-shot DEV80.
+  historical_contract:
+    gate_id: "D65-X"
+    timing: "AFTER_ENGINEERING_CLOSED_BEFORE_VALIDATION50"
+    incumbent: "Wren"
+    challenger: "Metabase Agent API"
+    experiment_type: "SUBSTRATE_ONLY_PRIMARY"
+    fixed_inputs:
+      - dima_cognition
+      - accepted_semantics
+      - AcceptedStandardAuthority
+      - StandardProjection
+      - benchmark
+    variable: "governed_execution_substrate"
+    production_parallel_truth_engines_allowed: false
+    outcomes:
+      wren_win_or_tie:
+        action: "KEEP_WREN_AND_CONTINUE_CERTIFICATION"
+      metabase_clear_win:
+        action: "STOP_CERTIFICATION_OPEN_NEW_ENGINEERING_CANDIDATE"
+        requires:
+          - affected_standard_gates
+          - new_dev_broad_proof
+          - new_freeze_candidate
+          - fresh_validation
+          - fresh_hidden
+    p0:
+      silent_wrong_max: 0
+      cross_tenant_leakage_max: 0
+      permission_bypass_max: 0
+      unsafe_ambiguity_auto_pick_max: 0
+      unverified_semantic_substitution_max: 0
+      provenance_break_max: 0
+    measurements:
+      - semantic_correctness
+      - query_correctness
+      - result_correctness
+      - repair_success
+      - unsupported_handling
+      - ambiguity_handling
+      - p50_latency
+      - p95_latency
+      - llm_calls
+      - token_cost
+      - query_count
+      - integration_loc
+      - maintenance_surface
+      - schema_onboarding_effort
+      - query_contract_bindability
+      - executed_query_provability
+      - replay_permission_recheck
+      - evidence_artifact_compatibility
+      - tenant_context_end_to_end
+  
 
 metabase_source_reference_contract:
   canonical_repo: "metabase/metabase"
@@ -716,3 +739,36 @@ final_integrated_release_gate:
     - dev80_start
     - post_dev80_behavior_change
     - pilot_activation
+
+current_release_sequence:
+  status: "ACTIVE"
+  authority: true
+  authorities:
+    day65_decisions: "belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md"
+    final_release_gate: "belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md"
+  steps:
+    - "D65-J1S semantic candidate benchmark"
+    - "D65-J1T typed temporal benchmark"
+    - "D65-M0 Metabase source/adoption audit"
+    - "D65-X0 thin Metabase feasibility"
+    - "full D65-X only if X0 promising and explicitly approved"
+    - "choose exactly ONE primary analytics substrate"
+    - "complete any explicitly-approved J1B / Metabase production integration"
+    - "Day7 Result-Aware Research Loop / ToolContract / CrossDomainJoinGate"
+    - "Day8 HypothesisLedger / root-cause"
+    - "Day9 ReportDocument + evidence linkage"
+    - "Day10 Product MVP end-to-end"
+    - "Day11 real-language / metamorphic eval expansion"
+    - "Day12 QueryContract / evidence / telemetry hardening"
+    - "Day13 tenant / PII / principal security"
+    - "Day14 persistence / resume"
+    - "Day15 pilot flag + rollback code complete; flag remains OFF"
+    - "all focused/provider-free/live/metamorphic/canary/sentinel gates GREEN"
+    - "20-25 case final integrated real-LLM rehearsal GREEN"
+    - "FINAL ENGINEERING FREEZE CANDIDATE"
+    - "DEV80 exactly once"
+    - "CODE FREEZE"
+    - "VALIDATION50 no tuning"
+    - "external fresh HIDDEN50 no tuning"
+    - "CERTIFICATION SEALED"
+    - "pilot flag activation"
