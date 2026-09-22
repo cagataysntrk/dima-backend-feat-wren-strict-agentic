@@ -2,6 +2,12 @@
 
 ## POST-J1B CURRENT OVERRIDE — LUNA + M0E
 
+> **Provider topology gate: GREEN.**
+> Luna semantic `35716056419=20/20 P0=0`; Sol temporal exact-SHA `35716502261=8/8 P0=0`.
+> Day6.5 engineering topology: `SEMANTIC_LINKER=Luna`, `TEMPORAL_NORMALIZER=Sol`,
+> `RESEARCH_MANAGER=Sol`. This is NOT production activation.
+> Current blocker before D65-SI = M0E completion.
+
 > Current continuation authority:
 > `belgeler/plan/DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`.
 >

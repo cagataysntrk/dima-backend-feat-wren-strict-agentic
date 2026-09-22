@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 LUNA SEMANTIC GREEN / TEMPORAL A-B PENDING — M0E ACTIVE; D65-SI/X0 BLOCKED; DEV80 FORBIDDEN**  
-**Kod fazı:** Luna same-frozen control `35716056419` @ `c256ebfd...`: provider-free 31/31 PASS; semantic 20/20 P0=0 GREEN; temporal 6/8 RED with exactly the same two previous-period comparison scenarios as Terra. No provider/typed-contract failure. Semantic engineering candidate = Luna. Temporal failure owner remains `MODEL_COGNITION vs CONTRACT/ARCHITECTURE` unresolved; authorized next proof = Sol temporal-only REFERENCE_CEILING on the exact same frozen 8 and exact tested backend SHA. M0E runs in parallel. D65-SI/X0 blocked. Production `/ask-v2` OFF.  
+**Durum:** **DAY 6.5 PROVIDER TOPOLOGY P0 GREEN — M0E COMPLETION ACTIVE; D65-SI NEXT AFTER M0E; X0 BLOCKED; DEV80 FORBIDDEN**  
+**Kod fazı:** Provider control ladder closed. Luna semantic `35716056419=20/20 P0=0`; Luna temporal 6/8. Exact-same-SHA Sol temporal ceiling `35716502261=8/8 P0=0`, invalid/provider failure=0. Temporal RED family classified `MODEL_CAPABILITY_FLOOR / MODEL_COGNITION`, no architecture patch. Chosen engineering topology for D65-SI: `SEMANTIC_LINKER=Luna`, `TEMPORAL_NORMALIZER=Sol`, `RESEARCH_MANAGER=Sol`; BindingGate/TemporalBindingEngine unchanged, no fallback/cascade/threshold, production activation NO. Current blocker before D65-SI = M0E capability exhaustion/build-vs-buy completion. X0 remains after SI + real Wren sentinel + M0E final cross-check.  
 
 ---
 
@@ -29,6 +29,7 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
 - `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.
 - `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` — J1B real-flow evidence/RED receipt.
+- `DIMA_DAY6_5_PROVIDER_TOPOLOGY_ENGINEERING_RECEIPT.md` — **chosen P0=0 Day6.5 engineering model topology evidence**.
 - `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md` — **current continuation handoff / provider ladder / stop points**.
 - `DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md` — **current Metabase exhaustion/build-vs-buy completion gate**.
 - `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; J1 decision sonrası, X0 öncesi mandatory Standard integration gate**.
@@ -230,6 +231,28 @@ semantic engineering candidate = Luna
 temporal owner classification  = pending exact-same-SHA Sol ceiling
 D65-SI                         = BLOCKED
 ```
+
+---
+
+## 0G. PROVIDER TOPOLOGY P0 GREEN
+
+```text
+Luna semantic run             35716056419 = 20/20 P0=0
+Sol temporal exact-SHA run    35716502261 = 8/8 P0=0
+exact tested backend SHA      c256ebfda765ac35f1d3b51f59d53d1018dd695e
+
+SEMANTIC_LINKER               Luna
+TEMPORAL_NORMALIZER           Sol
+RESEARCH_MANAGER              Sol
+
+BindingGate                   unchanged
+TemporalBindingEngine         unchanged
+fallback/cascade/threshold    none
+production activation         NO
+```
+
+Provider topology P0 gate is closed. Current active blocker before D65-SI:
+`D65-M0E capability exhaustion/build-vs-buy completion`.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE

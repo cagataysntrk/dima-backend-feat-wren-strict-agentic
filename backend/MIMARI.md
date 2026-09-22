@@ -3,6 +3,11 @@
 <!-- DIMA-V2-POST-J1B-LUNA-M0E-OVERRIDE -->
 > ## 🔴 POST-J1B CURRENT ARCHITECTURE OVERRIDE — 2026-09-22
 >
+> **Provider topology P0 closure:** Luna semantic `35716056419=20/20`; Sol temporal
+> exact-SHA `35716502261=8/8`. Day6.5 engineering topology:
+> `SEMANTIC_LINKER=Luna | TEMPORAL_NORMALIZER=Sol | RESEARCH_MANAGER=Sol`.
+> This is not production activation.
+>
 > Current handoff:
 > `belgeler/plan/DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`.
 >

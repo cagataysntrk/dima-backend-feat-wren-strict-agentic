@@ -800,5 +800,43 @@ Sol REFERENCE_CEILING, temporal role only, same frozen 8, same tested backend SH
 `c256ebf...`.
 
 status:
-`OPEN — A/B CLASSIFICATION REQUIRED; D65-SI BLOCKED`.
+`CLOSED — exact-same-SHA Sol temporal ceiling run 35716502261 = 8/8 P0=0. Luna/Terra temporal RED for this family classified MODEL_CAPABILITY_FLOOR / MODEL_COGNITION. No temporal patch.`.
 
+
+
+---
+
+## Receipt — D65-POSTJ1B-SOL-TEMPORAL-001 — exact-SHA model-floor closure
+
+run_id: `35716502261`
+
+tested_backend_sha:
+`c256ebfda765ac35f1d3b51f59d53d1018dd695e`
+
+same frozen J1B temporal scenarios:
+`8`
+
+result:
+```text
+correct                    8/8
+real_flow_temporal_wrong   0
+invalid_typed_contract     0
+provider_failure           0
+hidden_fallback            0
+```
+
+exact-same-SHA A/B:
+```text
+Luna 6/8
+Sol  8/8
+```
+
+Terra had also produced 6/8 on the same failure family.
+
+failure_class:
+`MODEL_CAPABILITY_FLOOR / MODEL_COGNITION`.
+
+No product temporal architecture patch is justified by this family.
+
+status:
+`CLOSED`.

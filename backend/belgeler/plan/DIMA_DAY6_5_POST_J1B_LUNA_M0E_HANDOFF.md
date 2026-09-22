@@ -296,3 +296,29 @@ Temporal failures are exactly `tf-001` and `tf-002`, the same family Terra misse
 Do not patch. Run Sol REFERENCE_CEILING on temporal role only, exact same frozen 8 and exact
 same tested backend SHA. Sol result decides whether this is model floor or shared architecture/
 contract behavior.
+
+
+## 4B. Sol temporal exact-SHA closure
+
+```text
+run                         35716502261
+tested backend SHA          c256ebfda765ac35f1d3b51f59d53d1018dd695e
+same frozen temporal set    8
+Sol                         8/8
+wrong                       0
+invalid typed               0
+provider failure            0
+```
+
+Exact-same-SHA model-floor conclusion:
+
+```text
+SEMANTIC_LINKER      = Luna
+TEMPORAL_NORMALIZER  = Sol
+RESEARCH_MANAGER     = Sol
+
+provider topology P0 = GREEN
+production activation= NO
+```
+
+The next blocker is M0E completion. After M0E exit, proceed to D65-SI.

@@ -122,3 +122,25 @@ Luna on the unchanged frozen J1B real-flow corpus; failed role only may use Sol 
 
 M0E capability classification runs in parallel and must be completed before X0.
 D65-SI closure should not introduce duplicate ownership that contradicts M0E/WREN_OWNS decisions.
+
+
+---
+
+## Provider entry gate — CLOSED GREEN
+
+Evidence:
+- Luna semantic same-frozen `35716056419 = 20/20 P0=0`;
+- Sol temporal exact-same-SHA `35716502261 = 8/8 P0=0`.
+
+D65-SI engineering topology:
+
+```text
+SEMANTIC_LINKER      = Luna
+TEMPORAL_NORMALIZER  = Sol
+RESEARCH_MANAGER     = Sol
+```
+
+Binding/authority engines remain deterministic and unchanged.
+
+Remaining D65-SI start precondition:
+current M0E completion gate must be sufficiently closed.

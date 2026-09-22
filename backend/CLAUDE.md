@@ -2,6 +2,11 @@
 <!-- POST-J1B CURRENT CONTINUATION -->
 > ## CURRENT CONTINUATION — POST-J1B
 >
+> **PROVIDER TOPOLOGY P0 GREEN:** Luna semantic `20/20`; Sol temporal exact-SHA `8/8`.
+> Engineering topology = `Semantic Luna / Temporal Sol / Research Sol`.
+> BindingGate and TemporalBindingEngine unchanged. Production activation = NO.
+> Current blocker before D65-SI = M0E completion.
+>
 > Read first:
 > 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
 > 2. `belgeler/plan/DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`
