@@ -620,3 +620,99 @@ d65_prefreeze_decision_gate:
     - AUTHORITY_OR_SECURITY_BOUNDARY_ADOPTION
     - ENGINEERING_FREEZE_CANDIDATE
     - DEV80
+
+final_integrated_release_gate:
+  authority: "belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md"
+  dev80_semantics: "FINAL_BROAD_ENGINEERING_GATE"
+  dev80_max_runs_for_release: 1
+  dev80_exploratory_debugging: false
+  final_freeze_after_day15_code: true
+  final_freeze_after_j1_decision: true
+  final_freeze_after_substrate_decision: true
+  final_freeze_after_rehearsal: true
+
+  development_test_policy:
+    continuous:
+      - focused_provider_free
+      - focused_real_llm
+      - failure_family
+      - metamorphic
+      - same_sha_ab_when_needed
+      - small_realistic_scenario_set
+      - material_change_canary_8_to_16
+      - relevant_real_sentinel
+    broad_final_sets_during_development: false
+
+  final_rehearsal:
+    case_count_min: 20
+    case_count_max: 25
+    real_llm: true
+    chosen_substrate_real_execution: true
+    research_complex_cases: true
+    must_be_green_before_dev80: true
+
+  required_before_dev80:
+    - j1s_resolved
+    - j1t_resolved
+    - m0_complete
+    - x0_resolved
+    - full_x_resolved_if_needed
+    - one_primary_substrate
+    - day7_research_loop_complete
+    - day8_hypothesis_root_cause_complete
+    - day9_report_document_complete
+    - day10_product_mvp_complete
+    - day11_eval_metamorphic_expansion_complete
+    - day12_querycontract_evidence_telemetry_hardening_complete
+    - day13_tenant_pii_principal_safety_complete
+    - day14_persistence_resume_complete
+    - day15_pilot_flag_and_rollback_code_complete_flag_off
+    - all_cheap_focused_live_metamorphic_canary_sentinel_green
+    - final_rehearsal_green
+
+  post_dev80:
+    code_freeze: true
+    allowed:
+      - validation50
+      - hidden50
+      - certification_receipts
+      - non_behavioral_deployment
+      - already_implemented_flag_activation
+      - monitoring
+      - log_analysis
+      - non_behavioral_docs_ui_polish
+    forbidden_behavior_changes:
+      - semantic_behavior
+      - temporal_behavior
+      - prompt_or_typed_cognition_contracts
+      - model_provider_policy
+      - jev_policy
+      - analytics_substrate
+      - retriever_or_binding_authority
+      - standard_research_routing
+      - research_tool_contracts
+      - cross_domain_join_gate
+      - querycontract_semantics
+      - evidence_completion_semantics
+      - tenant_security_execution_semantics
+      - persistence_resume_semantics
+
+  validation50:
+    semantics: "FINAL_UNSEEN_VALIDATION"
+    no_tuning: true
+    after_dev80: true
+
+  hidden50:
+    semantics: "FINAL_SEALED_CERTIFICATION"
+    no_tuning: true
+    after_validation50: true
+
+  consultation_required_before:
+    - d65_j1b_product_integration
+    - production_model_cascade_or_threshold
+    - full_d65_x
+    - primary_substrate_switch
+    - final_engineering_freeze_candidate
+    - dev80_start
+    - post_dev80_behavior_change
+    - pilot_activation
