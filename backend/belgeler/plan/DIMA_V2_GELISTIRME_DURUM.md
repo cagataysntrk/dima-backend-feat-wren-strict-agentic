@@ -4,7 +4,7 @@
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
 **Durum:** **D65-SI FINAL GREEN / SEALED — M0E-DEEP-DELTA ACTIVE; X0-BRIDGE-PREFLIGHT NEXT AFTER M0E FINAL; X0/DEV80 FORBIDDEN**  
-**Kod fazı:** D65-SI stays SEALED. M0E-DEEP-DELTA Batch 1–3 classifies `13/25`. Batch 3 closed `8,13,15,16`: accumulated memory vs current-turn authority (`PATTERN_ONLY`), async plan/query idempotency+cancel/race invariants (`PATTERN_ONLY`), deterministic cardinality-bounded fanout (`PATTERN_ONLY`), and interestingness as non-authoritative prioritization (`PATTERN_ONLY`). No product code/runtime. Remaining = 12. Next batch = Agent API/transport/persistence/telemetry `10,11,12,20,21` plus REST-vs-MCP handle semantics.  
+**Kod fazı:** D65-SI stays SEALED. M0E-DEEP-DELTA Batch 1–4 classifies `18/25`. Batch 4 closed `10,11,12,20,21`: REST continuation vs MCP durable user-scoped handles (`PATTERN_ONLY`), client capability != authorization (`DIMA_CORE_NATIVE`), Dima-owned authoritative provenance with Metabase telemetry supplemental (`DIMA_CORE_NATIVE`), Agent API global AI-feature enablement as an explicit runtime candidate dependency (`METABASE_RUNTIME_CANDIDATE`), and agent-authored raw SQL path `REJECT` with kill-switch/native-smuggle P0. No product code/runtime. Remaining = 7: `17,18,19,22,23,24,25`. Next batch = official/content metadata + glossary/Wren knowledge + lib_metric multi-source + OSI interoperability `17,18,22,23`; final batch = bridge + implicit-FK + repair idempotency `19,24,25`.  
 
 ---
 

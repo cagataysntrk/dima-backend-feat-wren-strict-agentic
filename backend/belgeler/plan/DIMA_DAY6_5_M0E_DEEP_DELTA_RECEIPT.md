@@ -434,3 +434,183 @@ product code written     = 0
 Metabase runtime started = 0
 ```
 
+
+## Batch 4 — Agent API / MCP transport, authorization, provenance, feature gates
+
+### DD-10 — REST serialized continuation vs MCP server-side query_handle
+
+- **mechanism:** REST serialized query/continuation vs MCP server-side query_handle
+- **exact upstream source/function:**
+  - `src/metabase/agent_api/api.clj::generate-continuation-token`
+  - `::decode-continuation-token`
+  - `::initial-page-state`
+  - `::/v2/query` endpoint
+  - `src/metabase/mcp/v2/queries.clj::mint-query-handle!`
+  - `::resolve-query-handle!`
+  - `src/metabase/mcp/session.clj::store-handle!`
+  - `::resolve-query-handle`, `::find-handle-row`
+- **observed behavior:** Agent API REST continuation tokens are client-carried serialized state
+  containing the resolved query plus pagination state; decoding validates shape and re-checks current
+  query permissions before reuse, with QP execution as the authoritative backstop. MCP v2 query
+  handles are different: the server stores the exact encoded serialized query under an opaque UUID,
+  binds the row to a materialized user-owned core session, resolves handles by **user_id**, and on
+  MBQL reuse re-runs native-query/shape/permission guards. Cross-session reuse by the same user is
+  allowed; cross-user lookup is denied by the DB join/filter.
+- **problem solved:** give agents a compact continuation/reuse primitive without treating the token or
+  opaque handle as authorization and without forcing the model to carry full query payloads.
+- **Dima equivalent/owner:** Dima QueryContract/Evidence IDs and any future execution continuation.
+  For X0-REST, Dima should use REST semantics explicitly rather than accidentally depending on MCP
+  server-side handle persistence.
+- **Wren equivalent/owner:** Wren execution/query identifiers are current incumbent internals; Dima
+  owns cross-turn provenance/replay identity.
+- **disposition:** **PATTERN_ONLY**
+- **security/authority effect:** `HANDLE/TOKEN != AUTHORIZATION`. Every reuse must validate current
+  Principal/access and query shape. REST and MCP semantics must not be conflated in the X0 receipt.
+- **semantic duplication risk:** none if payload already represents accepted Dima semantics.
+- **native implementation cost:** LOW-MEDIUM for Dima-owned opaque provenance; HIGH if duplicating a
+  full durable handle/session product unnecessarily.
+- **Metabase runtime dependency:** REST continuation needs no MCP handle store; MCP handles require
+  Metabase app DB/session state. X0-REST should not take this dependency unless separately justified.
+- **required executable proof:** (a) REST continuation after permission revocation is denied;
+  (b) malformed/native continuation rejected; (c) MCP handle resolves for same user, not foreign user;
+  (d) X0-REST adapter works without MCP handle persistence.
+- **timing:** X0 preflight/runtime design; full durable replay hardening Day12–14.
+
+### DD-11 — client-declared capability != authorization
+
+- **mechanism:** client-declared capability != authorization
+- **exact upstream source/function:**
+  - `src/metabase/mcp/v2/registry.clj` namespace contract
+  - `::list-tools`, `::dispatch-tool-call`
+  - `src/metabase/mcp/session.clj::session-parts`
+  - `::supports-mcp-ui?`
+  - `src/metabase/mcp/transport.clj::handle-initialize`
+- **observed behavior:** Metabase explicitly documents that client extension/capability declarations
+  are UX/rendering hints, not authorization boundaries. Tool listing may hide tools a client cannot
+  render, but call-time authorization is enforced from verified token scopes. The session capability
+  payload is server-signed before being trusted; invalid/unsigned capability claims downgrade rather
+  than grant capability. Tool dispatch checks OAuth/token scope separately from required client
+  extensions.
+- **problem solved:** prevent a client from self-declaring a capability/extension and thereby obtaining
+  data/action authority.
+- **Dima equivalent/owner:** Dima tool/profile capability registry + authenticated Principal/policy
+  checks. Model/tool availability, UI capability, requested feature flags and client metadata are all
+  non-authoritative hints.
+- **Wren equivalent/owner:** Wren executes under an explicit Principal; it does not decide Dima client
+  capabilities.
+- **disposition:** **DIMA_CORE_NATIVE**
+- **security/authority effect:** P0. A caller/model saying “I support/can use X” never grants X.
+  Authorization comes from server-owned policy/Principal only.
+- **semantic duplication risk:** none.
+- **native implementation cost:** LOW-MEDIUM.
+- **Metabase runtime dependency:** NONE for Dima outer authorization. Metabase scopes remain an inner
+  defense if runtime is adopted.
+- **required executable proof:** unsigned/forged capability changes tool visibility at most, never
+  privilege; missing scope/principal permission denies call even when client advertises support.
+- **timing:** permanent invariant; X0 scope mapping proof.
+
+### DD-12 — Dima-owned Agent API telemetry / provenance
+
+- **mechanism:** Dima-owned Agent API telemetry/provenance
+- **exact upstream source/function:**
+  - `src/metabase/agent_api/api.clj` construct endpoints using
+    `metabase.ai-tracing.core/record!` with resolved query payload
+  - `src/metabase/agent_api/usage.clj::wrap-record-cli-usage`
+  - `::record-agent-api-call!`
+  - `enterprise/backend/src/metabase_enterprise/agent_api/usage.clj::record-agent-api-call!`
+  - `src/metabase/mcp/transport.clj` eval tracing/redaction path
+- **observed behavior:** Metabase has two different observability families: AI/eval tracing can capture
+  resolved query/tool data for evaluation, while Agent API usage middleware records caller/operation/
+  status/duration (EE write, OSS no-op) and explicitly treats self-reported User-Agent only as analytics,
+  never access control. Logging is best-effort and failures are swallowed so telemetry cannot fail the
+  request. Sensitive fields are retention-gated/redacted.
+- **problem solved:** operational usage/debug/eval observability without making logging a correctness or
+  authorization dependency.
+- **Dima equivalent/owner:** Dima QueryContract, EvidenceArtifact, audit/DecisionRecord and request
+  telemetry. Dima must own the authoritative provenance chain that ties accepted authority → execution
+  adapter → result/evidence. Metabase trace/call logs are supplemental runtime telemetry only.
+- **Wren equivalent/owner:** Wren can contribute compiler/execution metadata; Dima seals final provenance.
+- **disposition:** **DIMA_CORE_NATIVE**
+- **security/authority effect:** telemetry cannot authorize, verify or replace QueryContract/Evidence.
+  Secrets/credentials/raw sensitive attributes must not leak into durable traces.
+- **semantic duplication risk:** none; provenance references semantic authority, it does not redefine it.
+- **native implementation cost:** MEDIUM; core QueryContract/Evidence already exists.
+- **Metabase runtime dependency:** NONE for authoritative provenance. If X0 uses Metabase, collect
+  operation/request/runtime IDs as secondary evidence.
+- **required executable proof:** X0 result carries Dima authority ID + adapter ID + Metabase operation/
+  request correlation + current Principal/access fingerprint reference into QueryContract/Evidence;
+  turning Metabase usage logging off/failing must not break Dima provenance or execution. Credential/
+  secret redaction test mandatory.
+- **timing:** X0 receipt field + Day9/12–14 audit hardening.
+
+### DD-20 — Agent API global AI-feature dependency
+
+- **mechanism:** Agent API global AI-feature dependency
+- **exact upstream source/function:**
+  - `src/metabase/agent_api/settings.clj::agent-api-enabled?`
+  - `src/metabase/agent_api/validation.clj::check-agent-api-enabled`
+  - `::enforce-agent-api-enabled`
+- **observed behavior:** `agent-api-enabled?` is not an independent switch: its getter ANDs the
+  Agent API setting with global `llm.settings/ai-features-enabled?`. External Agent API routes are
+  middleware-gated and return 403 when either global AI features or Agent API itself is disabled.
+- **problem solved:** central operational enable/disable control for the whole external Agent API.
+- **Dima equivalent/owner:** no equivalent semantic/trust owner. This is a **runtime prerequisite and
+  blast-radius dependency** introduced only if Metabase Agent API becomes an execution substrate.
+- **Wren equivalent/owner:** none; current Wren execution does not require enabling Metabase AI features.
+- **disposition:** **METABASE_RUNTIME_CANDIDATE**
+- **security/authority effect:** enabling the runtime may enable/affect a broader AI feature surface;
+  this must be explicitly configured and threat-reviewed rather than silently inherited.
+- **semantic duplication risk:** none directly.
+- **native implementation cost:** N/A; this is adoption cost, not something Dima should rebuild.
+- **Metabase runtime dependency:** YES — Agent API X0/full-X requires global AI features + Agent API
+  enabled in the self-hosted service.
+- **required executable proof:** pinned self-hosted X0 shows exact minimal settings needed; Agent API
+  structured endpoints work with intended external-LLM configuration; disabling either gate fails
+  closed; enabling them does not accidentally expose an unapproved tool/scope surface to Dima.
+- **timing:** X0-REST mandatory operational receipt; full-X decision input.
+
+### DD-21 — raw SQL kill-switch operational dependency
+
+- **mechanism:** raw SQL kill-switch operational dependency
+- **exact upstream source/function:**
+  - `src/metabase/agent_api/settings.clj::mcp-execute-sql-enabled`
+  - `src/metabase/agent_api/api.clj::/v1/execute-sql`
+  - `src/metabase/agent_api/query_guards.clj::reject-native-query!`
+  - `::check-mcp-ui-native-query!`
+  - `src/metabase/mcp/v2/queries.clj::check-execute-sql-enabled!`
+- **observed behavior:** raw SQL is a distinct capability with a dedicated instance kill-switch and
+  native-query permission/scope. Structured MBQL execution explicitly rejects native queries,
+  including buried/native markers in client-reachable serialized payloads, to prevent MBQL scopes
+  from smuggling SQL and bypassing the kill-switch. MCP v2 applies the kill-switch to agent-authored
+  SQL paths including validate-only/write staging; saved pre-existing native questions are a separate
+  read/execution capability.
+- **problem solved:** keep structured governed execution separate from an intentionally more powerful
+  raw-SQL escape hatch and allow administrators to remove agent-authored SQL completely.
+- **Dima equivalent/owner:** Dima Manager/Standard governed path has **no raw SQL tool**. SQL authoring
+  is outside the selected Day6.5 architecture.
+- **Wren equivalent/owner:** Wren compiles governed semantic requests; Dima does not delegate raw SQL
+  cognition to the model.
+- **disposition:** **REJECT**
+- **security/authority effect:** P0 for X0:
+  `MANAGER_RAW_SQL_EXECUTION=0`; `NATIVE_SQL_SMUGGLE=0`. Metabase raw-SQL tool must be disabled
+  and structured endpoints must still reject native payloads.
+- **semantic duplication risk:** raw SQL bypasses semantic authority entirely, hence unacceptable.
+- **native implementation cost:** none — do not implement.
+- **Metabase runtime dependency:** if X0-REST is run, configure `mcp-execute-sql-enabled=false` and
+  do not grant SQL authoring scopes.
+- **required executable proof:** execute-sql returns 403/absent under X0 config; native top-level and
+  nested payloads sent through structured query endpoints fail closed; no Dima adapter invokes native
+  construction/execution routes.
+- **timing:** X0 preflight/runtime P0 and permanent production invariant.
+
+### Batch 4 counters
+
+```text
+classified in this batch = 5
+mechanisms closed        = 10,11,12,20,21
+cumulative classified    = 18 / 25
+remaining                = 7
+product code written     = 0
+Metabase runtime started = 0
+```
+
