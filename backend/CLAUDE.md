@@ -29,7 +29,7 @@
 > Koddan önce roadmap'teki aktif **P** bölümünü ve onun dayanak gösterdiği **R** bölümünü
 > birlikte oku. Rapor gerekçenin, roadmap icra sırasının authority'sidir.
 >
-> **Day 6.5 amacı:** iki execution path'i (`STANDARD | RESEARCH`) trust-plane altında kapatmak. Standard'ın `DIRECT | BUILDER` outcome'ları aynı engine ve aynı `AcceptedStandardAuthority` ailesidir. D65-E3A-R'de yalnız process-control bilen minimal `BoundedAgentRuntimeKernel` kurulacak; Research Manager bu kernel'e şimdi migrate edilmeyecek. Production `/ask-v2` certification seal öncesi açılmaz.
+> **Day 6.5 current state:** iki execution path (`STANDARD | RESEARCH`) trust-plane altında korunuyor. `DIRECT | BUILDER` aynı Standard engine/outcome ailesidir. D65-E3A-R minimal `BoundedAgentRuntimeKernel` realignment **COMPLETED/GREEN**; Research Manager wholesale kernel migration yapılmadı. Current work J1S/J1T lab benchmark preparation + parallel M0 source audit → X0. Production `/ask-v2` certification seal öncesi açılmaz.
 >
 > **FAILURE TRIAGE RECEIPT:** RED live/canary/DEV/Validation/Hidden run sonrası semantic/product code'a dokunmadan önce `belgeler/plan/DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md` zorunlu schema'sı doldurulur.
 > `failure_class + single_owner + root_cause` kapanmadan ve gerekli same-SHA A/B bitmeden product patch yasaktır. `ONE FAILURE ≠ ONE NEW RULE`.
