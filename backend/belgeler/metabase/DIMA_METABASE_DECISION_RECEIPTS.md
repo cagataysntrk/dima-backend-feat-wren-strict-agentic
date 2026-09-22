@@ -898,3 +898,123 @@ P10B2 may not be simulated by role names or fake digest strings. It requires a r
 P10A + P10B1 do not close DMP-P5-BLOCK-001 by themselves.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0026 — LLM-first cognition + adaptive governance + semantic necessity gate
+
+date: 2026-09-23
+
+clarifies:
+The Metabase-platform architecture keeps Dima-owned semantic/security/evidence truth while making the
+LLM the default owner of analytical cognition. This does not replace DimaSemanticSpec and does not
+roll back P7-P10.
+
+binding principles:
+
+### LLM_FIRST_COGNITION
+
+Default cognition owner is the LLM:
+- analytical strategy;
+- hypothesis generation;
+- evidence-selection strategy;
+- next-tool choice;
+- adaptive replanning;
+- interpretive synthesis;
+- report reasoning.
+
+Dima deterministic code must not recreate these functions merely because they can be expressed as a
+state machine.
+
+### SEMANTIC_CORE_IS_NOT_ANALYTICAL_PLANNER
+
+DimaSemanticSpec remains canonical business truth:
+metric/dimension/relationship/time identity, grain, additivity, semantic version, source lineage,
+security metadata, business rules and managed-resource policy.
+
+It is not a universal research-plan or root-cause sequencing language.
+
+### MINIMUM EXECUTION ENVELOPE
+
+There is no anonymous/unscoped/admin-default Level 0.
+
+Even the thinnest native path is:
+
+```text
+LLM cognition
+→ Dima minimum security/execution/provenance envelope
+→ Metabase
+→ Dima receipt/evidence
+```
+
+Minimum envelope:
+authenticated principal, tenant binding, effective-access enforcement, database/resource boundary,
+execution identity, basic provenance and receipt/evidence identity.
+
+### ADAPTIVE_GOVERNANCE
+
+Progressive semantic depth:
+- Level 0 — native analytics + mandatory minimum Dima security/execution/provenance envelope;
+- Level 1 — canonical metric/dimension identity, aliases, basic governed time, lineage, version;
+- Level 2 — approved relationships, grain, additivity, advanced time/security/business lens;
+- Level 3 — sector/decision semantics, business rules, decision skills, specialized governed workflows.
+
+Effective governance may never be freely downgraded by the model:
+
+```text
+effective level
+>= tenant minimum
+>= capability-required minimum
+>= security-required minimum
+```
+
+LLM may request escalation. It may not lower a mandatory level.
+
+No generic GovernancePlanner/AdaptiveSemanticRouter framework is authorized merely to encode this
+documentation. Implementation waits for a concrete front-door/onboarding owner.
+
+### SEMANTIC_NECESSITY_GATE
+
+Before adding a new deterministic semantic/cognition mechanism:
+1. freeze a small high-information corpus, normally 5-20 cases;
+2. keep data, tools, prompt contract, semantic config, permissions, runtime and truth oracle fixed;
+3. run Luna first as default/economic baseline;
+4. run Sol on the exact same corpus as cognition ceiling;
+5. classify failure before adding architecture;
+6. add only the minimum generic guardrail if a material correctness/security/trust failure remains;
+7. rerun the same corpus;
+8. record Architecture Value Delta.
+
+Interpretation:
+- Luna PASS + Sol PASS -> do not add deterministic mechanism by default;
+- Luna FAIL + Sol PASS -> MODEL_COGNITION_GAP; prefer bounded context/tool-description or selective
+  Sol escalation before permanent deterministic cognition;
+- Luna FAIL + Sol FAIL on material semantic/security/provenance truth -> deterministic guardrail may
+  be justified;
+- any model violating mandatory security/trust invariant -> deterministic enforcement required.
+
+No model-specific prompt branch, hidden example enrichment, or different tool/data contract is allowed
+during the A/B.
+
+Project model policy:
+`LUNA = DEFAULT / ECONOMIC BASELINE`
+`SOL = CEILING / HEADROOM MEASUREMENT`.
+
+A Sol-only capability may be certified only as `SOL_ESCALATION_CAPABILITY`; it is not
+`LUNA_DEFAULT_CERTIFIED`.
+
+### Architecture Value Delta
+
+Every proposed deterministic cognition/semantic mechanism must show that verified-success,
+silent-wrong/security correctness, latency/cost/tool-call effects justify the added state,
+maintenance surface and failure modes. No single scalar score is required.
+
+### controlled harvest
+
+Fast Track and ask-v2 are moving references, not merge sources. At the owning Platform milestone,
+inspect the exact source contract, port only the smallest architecture-independent primitive, retain
+Platform security/semantic invariants and prove value on the Platform corpus. No bulk merge or
+cherry-pick.
+
+status: SEALED.

@@ -181,6 +181,30 @@ DB:
   numeric truth
 ```
 
+DMP-DEC-0026 binding clarification:
+
+```text
+LLM_FIRST_COGNITION
+SEMANTIC_CORE_IS_NOT_ANALYTICAL_PLANNER
+```
+
+LLM analitik strateji, hipotez, hangi kanıtın inceleneceği, sıradaki governed tool seçimi,
+adaptive replanning ve sentezin varsayılan sahibidir. Dima deterministic plane bunun yerine analist
+state-machine yazmaz; truth/trust sınırlarını korur.
+
+En hafif yol bile unscoped değildir:
+
+```text
+LLM
+→ Dima minimum security/execution/provenance envelope
+→ Metabase
+→ Dima receipt/evidence
+```
+
+Progressive governance Level 0-3 semantic derinliği değiştirir; tenant/principal/effective-access
+baseline security Level 0'da dahi zorunludur. Etkin seviye tenant, capability ve security minimumlarının
+altına indirilemez.
+
 ### R2.3 Raw SQL Manager’a default olarak yasak
 
 Metabase raw SQL desteklese bile Dima Manager production contract’ında SQL authority değildir. Metabase/MCP runtime kullanılıyorsa raw-SQL authoring capability explicit olarak kapatılır veya Dima client scope/policy ile erişilemez hâle getirilir; varsayılan upstream setting’e güvenilmez.
@@ -459,7 +483,13 @@ Metabase metric×dimension kombinasyonlarından bounded variant üretir:
 
 Dima için ders:
 
-> Manager her query/chart varyantını LLM ile üretmemeli; deterministic analytical variant generators olmalı.
+> Metabase deterministic variant generator'ları reusable **execution/research utilities** olabilir;
+> otomatik olarak Dima cognition değildir. Bir generator ancak DMP-DEC-0026 Semantic Necessity Gate,
+> LLM-first baseline'a karşı maddi correctness/cost/latency değeri kanıtlarsa Dima'nın kalıcı
+> execution primitive'i olarak promote edilir.
+
+Top-K + Other, bounded cardinality fanout veya deterministic date comparison gibi bounded utility'ler
+izinlidir; statüleri `TOOL / EXECUTION PRIMITIVE`dir, `COGNITION OWNER` değildir.
 
 ### R3.11 — Effective access lens birinci sınıf execution girdisidir
 
@@ -862,6 +892,24 @@ DimaSemanticSpec
 
 Bu, substrate değişimini gelecekte de mümkün kılar.
 
+### R6.0 — Semantic core truth'tür; analitik planner değildir
+
+`DimaSemanticSpec` canonical business truth sahibidir; analitik araştırma stratejisinin sahibi
+değildir. Yeni deterministic research-plan/root-cause-sequence alanları ancak
+`SEMANTIC_NECESSITY_GATE` ile kanıtlanmış generic correctness ihtiyacı varsa eklenebilir.
+
+Progressive semantic governance:
+
+```text
+Level 0  native analytics + mandatory security/execution/provenance envelope
+Level 1  canonical metric/dimension/time/lineage/version
+Level 2  relationship/grain/additivity/advanced time + governed security/business lens
+Level 3  sector/decision semantics + specialized governed workflows
+```
+
+LLM bütün seviyelerde cognition sahibi kalır. Governance seviyesi yalnız ne kadar truth/trust
+guardrail'i gerektiğini belirler.
+
 ### R6.1 — Semantic spec ile execution intent ayrıdır
 
 Metabase adapter’ının semantic handle çözmesi veya label/name üzerinden anlam çıkarması yasaktır.
@@ -967,11 +1015,26 @@ ReportDocument
 DecisionBrief
 ```
 
-Manager:
+Manager/LLM:
+- observe eder,
+- hipotez üretir,
+- sıradaki governed analytical tool'u seçer,
+- evidence gördükçe replanning yapar,
+- sentez ve rapor reasoning'ini yürütür,
 - SQL yazmaz,
 - semantic mint etmez,
 - permission bypass etmez,
 - numeric truth üretmez.
+
+Deterministic Dima tarafı:
+- budget/fanout/tool schema,
+- security,
+- relationship/grain approval,
+- evidence validity,
+- no-progress/idempotency/cancellation,
+- completion obligations
+
+gibi trust ve execution sınırlarını yönetir; universal analytical sequence belirlemez.
 
 ---
 
@@ -1323,6 +1386,12 @@ Kurallar:
 7. Wren semantic özellikleri DimaSemanticSpec’e taşınır/compile edilir.
 8. Wren ancak parity + semantic equivalence + security + provenance + performance sonrası çıkarılır.
 9. Metabase beklenen residual engineering value’yu sağlamazsa Wren primary kalabilir; bu deney başarısızlık değildir.
+10. LLM analytical cognition'ın default sahibidir; Dima semantic core truth/trust sahibidir.
+11. Level 0 bile authenticated tenant/principal/effective-access/provenance envelope'ını bypass edemez.
+12. Governance seviyesi model tarafından mandatory minimumların altına indirilemez.
+13. Yeni deterministic cognition/semantic mechanism önce Semantic Necessity Gate'ten geçer.
+14. Luna default/economic baseline, Sol ceiling/headroom ölçümüdür; aynı frozen corpus/tool/context kullanılır.
+15. Fast Track/ask-v2 code wholesale merge edilmez; milestone-owner altında controlled harvest yapılır.
 ```
 
 Bu rota Dima’yı “BI motoru yazma” işinden çıkarıp semantic/research/evidence/decision katmanına yoğunlaştırdığı için vizyona ulaşma açısından en güçlü adaydır; fakat Wren removal ideolojik hedef değil, ölçülen sonuçtur.

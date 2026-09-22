@@ -50,3 +50,14 @@ DMP-DEC-0025:
 - P10B2 = advanced row/column/impersonation/database-route security lens.
 
 Current OSS lab cannot certify P10B2. DMP-P5-BLOCK-001 remains open.
+
+
+## P10B1 live result
+
+`e422df46cefa9ef7207030e48fcc28cd0b78bb51` / workflow `35784824929`:
+same authenticated restricted session executes before revocation, receives permission denial after
+the exact permission-graph change, and executes again after restore. Admin is used only to mutate the
+isolated test permission graph; tenant-bound analytical execution never falls back to admin.
+
+P10B2 is classification-only. See
+`backend/belgeler/metabase/predev/P10B2_PREDEVELOPMENT_REVIEW.md`.

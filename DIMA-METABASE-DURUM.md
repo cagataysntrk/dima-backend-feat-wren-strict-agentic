@@ -1155,3 +1155,69 @@ current OSS lab can prove basic query permission/revocation, but cannot honestly
 sandbox/advanced-permission/impersonation row/column lens.
 
 **Current phase:** P10B1 isolated authenticated-user + permission-revocation proof.
+
+
+---
+
+## P10B1 BASIC REAL SECURITY CANARY — CLOSED GREEN
+
+```text
+audited HEAD                      = e422df46cefa9ef7207030e48fcc28cd0b78bb51
+P10B1 workflow                    = 35784824929 = SUCCESS
+P10A workflow                     = 35783766213 = SUCCESS
+P10A focused                      = 20 PASS
+P5/P9B inherited                  = 59 PASS
+same authenticated restricted user= PASS
+allow before revoke               = PASS
+same-session revoke               = HTTP 403 / PASS
+restore                           = PASS
+permission graph cleanup          = PASS
+admin analytical execution fallback= 0
+DMP-P5-BLOCK-001                  = OPEN
+```
+
+P10B1 proves the basic authenticated-subject + permission-revocation slice only. It does not certify
+RLS/CLS/impersonation/advanced route/cache-lens security.
+
+---
+
+## Architecture refinement — DMP-DEC-0026
+
+```text
+LLM_FIRST_COGNITION                  = BINDING
+SEMANTIC_CORE_IS_NOT_ANALYTICAL_PLANNER = BINDING
+ADAPTIVE_GOVERNANCE                  = LEVEL 0..3 / SECURITY BASELINE AT LEVEL 0
+SEMANTIC_NECESSITY_GATE              = REQUIRED FOR NEW DETERMINISTIC COGNITION
+Luna                                 = DEFAULT / ECONOMIC BASELINE
+Sol                                  = CEILING / HEADROOM
+Fast Track                           = CONTROLLED HARVEST ONLY
+ask-v2                               = CONTROLLED HARVEST / REFERENCE ONLY
+bulk merge/cherry-pick               = FORBIDDEN
+```
+
+Simple/native path remains scoped:
+`LLM → minimum Dima security/execution/provenance envelope → Metabase → receipt/evidence`.
+
+---
+
+## P10B2 capability classification
+
+```text
+advanced security implementation = NOT AUTHORIZED
+tenant identity                  = PROVEN
+principal identity               = PROVEN
+basic DB query permission        = PROVEN
+same-session revocation          = PROVEN
+collection permission            = CAPABILITY_GAP
+RLS                              = NOT_CONFIGURED / BLOCK IF REQUIRED
+CLS                              = NOT_CONFIGURED / BLOCK IF REQUIRED
+impersonation                    = REQUIRES_EXTERNAL_OWNER
+database routing                 = REQUIRES_EXTERNAL_OWNER
+cache/result reauthorization     = CAPABILITY_GAP
+service/admin fallback prohibition= PROVEN
+DMP-P5-BLOCK-001                 = OPEN / GLOBAL PRODUCTION OFFICIAL ISSUANCE
+```
+
+**Current phase:** P11 PRE-DEVELOPMENT — entity-value Semantic Necessity Gate.  
+Deterministic entity resolver: **NOT AUTHORIZED**.  
+First proposed Luna/Sol corpus: `P11_ENTITY_VALUE_NECESSITY_GATE.md`.

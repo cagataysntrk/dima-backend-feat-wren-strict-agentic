@@ -588,26 +588,39 @@ runtime-only security binding kayıpsız serialize edilemiyorsa persistence = fo
 
 # P11 — Entity values / filter resolution
 
-Metabase:
+P11, DMP-DEC-0026 gereği doğrudan büyük bir entity resolver implementasyonu ile başlamaz.
+
+İlk gate:
+
+```text
+small frozen value corpus
+→ Platform/Metabase + Luna baseline
+→ exact same corpus/tools/access lens + Sol ceiling
+→ failure classification
+→ only then minimum guardrail if materially necessary
+```
+
+İlk frozen family en az:
+- exact categorical value,
+- cross-language entity value,
+- ambiguous entity value,
+- missing value,
+- high-cardinality value,
+- stale indexed value,
+- permission-hidden value.
+
+Metabase reusable candidates:
 - field values,
 - indexed entities,
 - linked filters.
 
 Dima:
-- semantic truth.
+- semantic/security truth,
+- current-principal authoritative live re-read requirement where needed,
+- typed outcomes,
+- bind/clarify/block decision contract only when necessity is proven.
 
-Akış:
-
-```text
-surface
-→ candidate retrieval
-→ Metabase value search
-→ candidate set
-→ BindingGate
-→ canonical filter
-```
-
-Typed retrieval outcomes:
+Possible typed retrieval outcomes remain:
 
 ```text
 INDEX_UNAVAILABLE
@@ -617,10 +630,14 @@ MATCH_CANDIDATES
 SEMANTIC_GAP   # yalnız semantic gate sonrası
 ```
 
-No-match = clarify/gap; fuzzy truth yok. Sensitive/high-cardinality candidate current-principal authoritative live re-read görmeden bind edilmez.
+No-match = clarify/gap; fuzzy truth yok. Sensitive/high-cardinality candidate current-principal
+authoritative live re-read görmeden bind edilmez.
+
+If vanilla Metabase/Fast + Luna and Sol already solve a case family safely, duplicate Dima resolver is
+not built. Luna failure alone is not architecture evidence. A deterministic guardrail needs a
+material truth/security failure that survives the Semantic Necessity Gate.
 
 ---
-
 # P12 — BI workspace feasibility
 
 Değerlendir:
@@ -738,6 +755,12 @@ Alınmayacak:
 - Dima UserObligationLedger yerine Metabase thread semantics,
 - interestingness’ın truth/finding/cause authority olması.
 
+DMP-DEC-0026:
+deterministic variant/interestingness/planning mekanizması otomatik harvest edilmez. Önce aynı frozen
+problemde Luna baseline + Sol ceiling ile `SEMANTIC_NECESSITY_GATE` çalışır. Yalnız maddi Architecture
+Value Delta kanıtlanan bounded primitive harvest edilir. Harvest edilen primitive cognition owner
+olmaz.
+
 ---
 
 # P16 — Evidence Plane V2
@@ -790,6 +813,26 @@ No-progress:
 - ActionFingerprint,
 - StateFingerprint.
 
+Bu akış bir deterministic analytical sequence değildir. LLM/Research Manager:
+- observe,
+- hypothesize,
+- choose next governed analytical tool,
+- inspect evidence,
+- replan
+
+işlerinin cognition sahibidir.
+
+Deterministic sınırlar:
+- turns/tool/query/wall-time/cost budget,
+- tool schema,
+- security,
+- evidence validity,
+- completion constraints,
+- relationship/grain approval,
+- no-progress,
+- idempotency,
+- cancellation.
+
 Fanout policy:
 - metadata cardinality deterministic budget,
 - high cardinality → bounded Top-K + Other,
@@ -840,6 +883,11 @@ CONFIRMED_CAUSE
 ```
 
 Model gate olmadan epistemic promotion yapamaz.
+
+Universal deterministic:
+`trend → breakdown → segment → relationship`
+sequence'i yoktur. Bu analytical strategy LLM cognition'a aittir. Deterministic code yalnız evidence
+truth, relationship/grain/security approval, budget ve completion invariants'ını enforce eder.
 
 ---
 
@@ -1306,7 +1354,18 @@ NEXT ACTION
 - production switch ve code deletion aynı commit olmaz,
 - semantic surface completeness surface-level’dır; kind-level green unresolved sibling’i gizleyemez,
 - Standard/Research same-turn accepted authority XOR shared arbiter ile enforced,
-- semantic linker ve temporal normalizer ayrı model-role contract’larıdır.
+- semantic linker ve temporal normalizer ayrı model-role contract’larıdır,
+- LLM_FIRST_COGNITION; deterministic code analytical strategy sahibi olmaz,
+- SEMANTIC_CORE_IS_NOT_ANALYTICAL_PLANNER,
+- yeni deterministic cognition/semantic mechanism önce SEMANTIC_NECESSITY_GATE,
+- Luna default/economic baseline; Sol ceiling/headroom,
+- same frozen data/tools/prompt/context/permissions/oracle model A/B şartı,
+- Luna fail tek başına deterministic mechanism gerekçesi değildir,
+- Sol-only success açıkça SOL_ESCALATION_CAPABILITY olarak sınıflanır,
+- ADAPTIVE_GOVERNANCE; effective level mandatory tenant/capability/security minimumlarının altına düşmez,
+- Level 0 dahil principal/tenant/effective-access/provenance envelope zorunludur,
+- Fast Track/ask-v2 yalnız CONTROLLED HARVEST; bulk merge/cherry-pick yok,
+- architecture value delta kanıtı olmayan cognition mechanism eklenmez.
 
 ---
 
@@ -1349,6 +1408,10 @@ Aşağıdaki senaryolar doküman örneği değil, implementation acceptance sena
 
 | Senaryo | Beklenen authority/path | Yasak davranış |
 |---|---|---|
+| simple Level-0 native analytical request | LLM → minimum Dima envelope → Metabase → receipt/evidence | security/provenance bypass |
+| Level-1 canonical semantic request | LLM → canonical metric/dimension/time identity → Metabase | label/name as semantic truth |
+| Level-2 governed relationship request | LLM → approved RelationshipSpec/grain/security gates → Metabase | physical FK auto-authority |
+| frozen cognition necessity case | exact same corpus/tools/context: Luna baseline then Sol ceiling | model-specific prompt/example/tool changes |
 | “Bu ay net gelir” | Standard → metric → Metabase → receipt | Research açmak |
 | “Ürün bazında net gelir” | Standard breakdown | raw table/name guess |
 | “Geçen ayla karşılaştır” | typed temporal intent → deterministic dates | Türkçe keyword branch |
