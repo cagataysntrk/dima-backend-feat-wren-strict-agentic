@@ -6,6 +6,7 @@ from datetime import date
 from fastapi.testclient import TestClient
 
 from app.fast.application import create_fast_application
+from app.fast.ask_service import FastAskService
 from app.fast.ask_models import (
     AskOutcomeStatus,
     FastAskResponse,
@@ -18,7 +19,12 @@ from control_plane.security import create_access_token
 QUESTION = "Son 30 günde kaç sipariş var?"
 
 
-class ApiStubService:
+class ApiStubService(FastAskService):
+    def __init__(self) -> None:
+        # Focused HTTP fixture: preserve the sealed FastAskService owner type
+        # without constructing cognition/Metabase dependencies.
+        pass
+
     def ask(self, payload, *, principal):
         result = FastQueryResult(
             columns=("count",),
