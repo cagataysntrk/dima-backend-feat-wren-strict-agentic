@@ -1,0 +1,64 @@
+name: v2-day6-5-j1-live-benchmark
+
+"on":
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "J1S or J1T"
+        required: true
+        type: choice
+        options:
+          - J1S
+          - J1T
+      model:
+        description: "Pinned benchmark challenger"
+        required: true
+        type: choice
+        options:
+          - google/gemini-2.5-flash-lite
+          - typesafe/jev-1.13
+          - openai/gpt-5.6-sol
+      smoke:
+        description: "2-case transport smoke instead of frozen full track"
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  live-benchmark:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 30
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend eval dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Verify frozen J1 contract first
+        working-directory: backend
+        run: pytest -q tests/test_v2_day6_5_j1_benchmark.py
+      - name: Run selected live benchmark
+        working-directory: backend
+        shell: bash
+        run: |
+          args=(--track "${{ inputs.track }}" --model "${{ inputs.model }}")
+          if [[ "${{ inputs.smoke }}" == "true" ]]; then
+            args+=(--smoke)
+          fi
+          python lab/v2_day6_5_j1_benchmark.py "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: j1-${{ inputs.track }}-${{ inputs.model }}-${{ github.run_id }}
+          path: backend/lab/reports/v2_day6_5_j1*.json
+          retention-days: 90
