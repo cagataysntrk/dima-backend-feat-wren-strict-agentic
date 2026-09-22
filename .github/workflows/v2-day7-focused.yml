@@ -18,6 +18,7 @@ name: v2-day7-focused
       - "backend/app/v2/models.py"
       - "backend/tests/test_v2_day7_research_task_lifecycle.py"
       - "backend/tests/test_v2_day7_research_manager_loop.py"
+      - "backend/tests/test_v2_day7_result_aware_loop.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -64,6 +65,10 @@ jobs:
       - name: Manager loop Research contract mode
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_manager_loop.py
+
+      - name: Result-aware adaptive loop
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_result_aware_loop.py
 
       - name: Real Wren Day7 vertical
         working-directory: backend
