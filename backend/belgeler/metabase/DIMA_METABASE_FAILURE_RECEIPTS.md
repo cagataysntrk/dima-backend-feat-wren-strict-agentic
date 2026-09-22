@@ -1725,3 +1725,43 @@ authorized_correction:
 
 status:
 `CORRECTION APPLIED / AWAITING FINAL FOCUSED P6 WORKFLOW`.
+
+
+---
+
+## P6 targeted parity probe closure — GREEN measurement / typed gaps carried forward
+
+closure_sha: `03912a8702b27eca634e8411b151acdd56491d2c`  
+final_p6_workflow: `35771661991 = SUCCESS`  
+governance: `35771661812 = SUCCESS`
+
+P6A0:
+- shared physical snapshot = PASS;
+- deterministic snapshot identity = PASS;
+- independent golden total/breakdown/January anchors = PASS.
+
+P6A1:
+- same accepted intent identity is presented to both substrate seams = PASS;
+- thin Metabase real execution seam = PASS;
+- existing Wren real substrate seam attempted = PASS;
+- CANARY-01 = exact `SUBSTRATE_RUNTIME_GAP`;
+- CANARY-02 = exact `SUBSTRATE_RUNTIME_GAP`;
+- CANARY-03 = exact `WREN_COMPATIBILITY_GAP`;
+- unknown/unexplained mismatch = 0.
+
+Oracle:
+DMP-P6-AUDIT-007 is CLOSED. The evaluator now accepts future improvement to MATCH and recognizes only
+the exact already-receipted typed gaps; every other outcome remains RED.
+
+Interpretation:
+`P6 MEASUREMENT GREEN / WREN-METABASE PARITY INCOMPLETE WITH TYPED GAPS`.
+
+No claim of engine equivalence is made. Broad cross-engine certification is deferred by DMP-DEC-0020.
+
+Carried debt:
+- `WREN_POSTGRES_CONNECT_TIMEOUT_TYPE_DEBT` -> P8 or earliest genuine Wren PostgreSQL owner;
+- absolute-period temporal representation -> P7/P8 semantic-equivalence analysis;
+- receipt/provenance differences -> later genuine provenance owner; no fake Metabase projection for Wren.
+
+status:
+`P6 TARGETED PARITY PROBE CLOSED`.

@@ -841,3 +841,28 @@ ASK_V2_DAY7_REFERENCE_SHA = `5789e729115fe044b689739d5960021aba0aca32`
 disposition = `REFERENCE_ONLY / NO_CODE_INHERITANCE_YET`
 
 No merge, cherry-pick, rebase, certified-base replacement or source-branch write is authorized.
+
+
+---
+
+## P6 TARGETED PARITY PROBE — CLOSED
+
+```text
+closure SHA                       = 03912a8702b27eca634e8411b151acdd56491d2c
+final focused P6 workflow         = 35771661991 = SUCCESS
+governance                        = 35771661812 = SUCCESS
+P6A0 shared snapshot              = GREEN
+independent golden anchors        = GREEN
+P6A1 same-intent measurement      = COMPLETE
+CANARY-01                         = SUBSTRATE_RUNTIME_GAP
+CANARY-02                         = SUBSTRATE_RUNTIME_GAP
+CANARY-03                         = WREN_COMPATIBILITY_GAP
+UNEXPLAINED_MISMATCH              = 0
+oracle fossilization              = FIXED
+broad parity                      = DEFERRED / DMP-DEC-0020
+Wren/Metabase equivalence claim   = NO
+```
+
+P6 result is **measurement GREEN / parity incomplete with typed gaps**.
+
+**Current phase:** P7 PRE-DEVELOPMENT — DimaSemanticSpec V1 + structured Wren MDL importer.
