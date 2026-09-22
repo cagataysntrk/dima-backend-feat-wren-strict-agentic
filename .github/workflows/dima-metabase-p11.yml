@@ -1,0 +1,118 @@
+name: dima-metabase-p11
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/lab/metabase/p11/**"
+      - "backend/tests/test_v3_p11_necessity_contract.py"
+      - "backend/belgeler/metabase/predev/P11A_PINNED_SOURCE_CONTRACT.md"
+      - "backend/belgeler/metabase/predev/P11_PREDEVELOPMENT_REVIEW.md"
+      - "backend/belgeler/metabase/tickets/P11_ENTITY_VALUE_NECESSITY_GATE.md"
+      - ".github/workflows/dima-metabase-p11.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p11-provider-free-freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Compile P11 eval harness
+        working-directory: backend
+        run: |
+          python -m py_compile             lab/metabase/p11/run_eval.py             tests/test_v3_p11_necessity_contract.py
+      - name: Prove frozen P11 contract
+        working-directory: backend
+        run: pytest -q tests/test_v3_p11_necessity_contract.py
+
+  p11-luna-sol-live:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[p11-model-eval]')
+    needs: p11-provider-free-freeze
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 50
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      P6_ANALYTICS_DB_PORT: "55432"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Prepare isolated lab
+        working-directory: backend/lab/metabase
+        run: cp .env.example .env
+      - name: Start shared PostgreSQL services
+        working-directory: backend/lab/metabase
+        run: |
+          docker compose --env-file .env -f docker-compose.yml -f p6/docker-compose.override.yml up -d analytics-db metabase-app-db
+          for i in $(seq 1 60); do
+            if docker compose --env-file .env -f docker-compose.yml -f p6/docker-compose.override.yml exec -T analytics-db pg_isready -U "${ANALYTICS_DB_USER:-dima_analytics}" -d "${ANALYTICS_DB_NAME:-dima_analytics}"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+      - name: Seed frozen P11/P6 data
+        working-directory: backend
+        shell: bash
+        run: |
+          set -a
+          source lab/metabase/.env
+          set +a
+          python lab/metabase/p6/seed.py
+      - name: Start and bootstrap pinned Metabase
+        working-directory: backend/lab/metabase
+        run: |
+          docker compose --env-file .env -f docker-compose.yml -f p6/docker-compose.override.yml up -d metabase
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+      - name: Run frozen EV-01..EV-04 Luna then Sol
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          source lab/metabase/.env
+          set +a
+          python lab/metabase/p11/run_eval.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p11-luna-sol-eval
+          path: backend/lab/metabase/p11/p11_eval_report.json
+          retention-days: 30
+      - name: Teardown isolated lab
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env -f docker-compose.yml -f p6/docker-compose.override.yml down -v --remove-orphans || true

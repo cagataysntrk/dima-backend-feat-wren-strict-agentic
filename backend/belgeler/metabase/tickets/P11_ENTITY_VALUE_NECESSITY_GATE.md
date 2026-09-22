@@ -54,3 +54,15 @@ EV-05..07 are not silently approximated: they need explicit fixture/security own
 
 No deterministic entity resolver is authorized until model results show a material generic truth or
 security failure that native retrieval + LLM cognition cannot safely handle.
+
+
+## P11A pinned source/tool contract
+
+See `backend/belgeler/metabase/predev/P11A_PINNED_SOURCE_CONTRACT.md`.
+
+V1 deliberately preloads current-user low-cardinality values for the case's governed semantic scopes
+before one structured model decision. This preserves the 4×Luna + 4×Sol primary-call budget and tests
+whether a product resolver is needed before building one.
+
+The frozen artifact is `backend/lab/metabase/p11/corpus_v1.json`; its canonical SHA-256 is computed
+by the provider-free harness and repeated in the live result receipt.

@@ -1258,3 +1258,24 @@ P11 Luna/Sol necessity corpus V1 = PROPOSED / MODEL RUNS NOT STARTED
 
 P11 may now proceed only with the Semantic Necessity Gate. A deterministic entity resolver requires
 measured material failure first.
+
+
+---
+
+## P11A source contract + frozen necessity evaluation V1
+
+```text
+resolver product code              = 0
+pinned Metabase                    = v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+value list                         = GET /api/field/:id/values
+value search                       = GET /api/field/:id/search/:search-id
+current-user permission boundary   = PINNED SOURCE PROVEN
+physical field ids visible to LLM = 0
+indexed entities mandatory         = NO
+runnable now                       = EV-01..EV-04
+blocked                            = EV-05..EV-07
+Luna requested model               = openai/gpt-5.6-luna
+Sol requested model                = openai/gpt-5.6-sol
+primary evaluations                = 8 maximum before failure repeats
+model runs                         = AWAITING CI
+```
