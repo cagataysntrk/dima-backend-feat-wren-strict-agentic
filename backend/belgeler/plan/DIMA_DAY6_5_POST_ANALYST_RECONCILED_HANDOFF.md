@@ -486,3 +486,33 @@ Authorized fixes are generic only:
 After patch:
 focused provider-free + attack families + metamorphics must be GREEN.
 Then focused paid frozen 001+005 only.
+
+
+## 4D. Cheap architecture attacks GREEN
+
+Run:
+`35738044476 = 73 PASS + 2 skipped`.
+
+Closed generic contracts:
+- duplicate exact + immutable context → bounded linker over exact set only;
+- duplicate exact no context → ambiguity remains fail-closed;
+- candidate escape remains rejected;
+- material modifier/predicate loss is visible to CoverageVeto through actual bound semantic spans;
+- coverage remains veto-only;
+- Turkish inflection retrieval smoke GREEN;
+- catalog growth/order and source-context authority invariants remain GREEN.
+
+No frozen live case or provider topology was changed.
+
+Next:
+```text
+workers=1 focused paid
+  si-live-001
+  si-live-005
+same exact frozen wording
+same product SHA family
+same providers
+```
+
+If either RED: no full-six.  
+If both GREEN: exact frozen six-case full-live ONCE.

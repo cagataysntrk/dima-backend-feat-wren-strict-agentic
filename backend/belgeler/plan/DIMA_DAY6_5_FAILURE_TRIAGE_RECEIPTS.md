@@ -1074,7 +1074,7 @@ forbidden fixes for both families:
 - modifying frozen live corpus.
 
 status:
-`OPEN — TWO GENERIC PRODUCT CONTRACT PATCHES AUTHORIZED`.
+`CLOSED — generic patches fb2f2432...; hardened provider-free attack/focused run 35738044476 = 73 PASS + 2 skipped`.
 
 
 
@@ -1117,5 +1117,5 @@ product patch:
 NONE.
 
 status:
-`OPEN — TEST-ONLY PATCH AUTHORIZED`.
+`CLOSED — stale oracle updated test-only; hardened provider-free run 35738044476 GREEN`.
 
