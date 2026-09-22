@@ -71,3 +71,33 @@ Re-run `tests/test_fast_ask_service.py`.
 
 Expected:
 6 passed.
+
+
+## Root-cause refinement after first oracle patch
+
+The safe `getattr(route, "path", None)` patch removed the AttributeError but exposed
+FastAPI 0.141's nested included-router representation:
+
+```text
+observed top-level direct paths:
+{/docs, /docs/oauth2-redirect, /openapi.json, /redoc}
+```
+
+Meanwhile the authenticated HTTP test to `/fast/ask` in the same suite is GREEN.
+
+Therefore the route exists and is dispatchable, but the test is inspecting a private
+internal route-list representation that does not flatten included routers.
+
+Revised public oracle:
+
+```python
+paths = set(app.openapi()["paths"])
+```
+
+This checks the public API contract instead of FastAPI internals.
+
+Expected:
+- /fast/ask present
+- /fast/health present
+- /ask absent
+- /ask-v2 absent
