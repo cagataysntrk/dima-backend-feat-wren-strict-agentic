@@ -1106,14 +1106,32 @@ class WrenService:
         from app import fanout
 
         sert = fanout.oku(self.project_dir)
+        current_mdl_version = self.mdl_version
         for c in cubes:
             for origin in (c.get("dimension_origin") or {}).values():
                 if isinstance(origin, dict):
-                    origin["certified"] = fanout.rozet(sert, origin.get("relationship"))
-        # ⚠ İkinci bir rozet fonksiyonu YOK — aynı `fanout.rozet`, aynı artefakt (`KAT-1`).
+                    proof = fanout.kanit(
+                        sert,
+                        origin.get("relationship"),
+                        current_mdl_version=current_mdl_version,
+                    )
+                    origin["certified"] = (
+                        None if proof is None else proof["certified"]
+                    )
+                    if proof is not None:
+                        origin["fanout_proof"] = proof
+        # ⚠ Tek proof owner: same artifact + same current MDL binding for relationship
+        # and dimension-origin consumers.  Stale certificate can never retain a healthy
+        # badge on the current semantic model.
         for r in (iliskiler or []):
             if isinstance(r, dict) and r.get("name"):
-                r["certified"] = fanout.rozet(sert, str(r["name"]))
+                proof = fanout.kanit(
+                    sert,
+                    str(r["name"]),
+                    current_mdl_version=current_mdl_version,
+                )
+                r["certified"] = proof["certified"]
+                r["fanout_proof"] = proof
 
     def _apply_synonym_overlays(self, cubes: list) -> None:
         """Control-plane DB'deki ONAYLI sinonim overlay'lerini schema'ya BİRLEŞTİRİR
