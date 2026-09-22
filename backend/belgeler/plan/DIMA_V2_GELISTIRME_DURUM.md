@@ -6241,3 +6241,45 @@ Development still uses focused REAL LLM scenarios continuously. DEV80/Validation
 Consult before final freeze and before DEV80 start.
 
 Detailed authority: `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
+
+
+---
+
+## 0B. J1 FULL DECISION GATE — STOP / CONSULT
+
+Corrected full run:
+`35705668833` @ `bde3e5a21c159243002ef600ece007256d8482d0`.
+
+Current decision state:
+
+```text
+J1S Jev semantic decision primitive   = PROMISING
+J1T Jev temporal production role      = REJECTED BY CAPABILITY FLOOR
+J1T Luna typed contract evidence      = strongest primary peer, but 2 invalid typed outputs
+Gemini current cheap temporal evidence= weaker; one unsafe ambiguity pick + contract misses
+run-level RED                         = EVAL_ORACLE classification bug
+product code changes                  = 0
+J1B                                   = CLOSED / CONSULT REQUIRED
+D65-SI                                = WAITING FOR J1 TOPOLOGY DECISION
+X0 execution                          = BLOCKED BY D65-SI
+production /ask-v2                    = OFF
+DEV80                                 = FORBIDDEN
+```
+
+Mandatory stop is active because Jev is promising for a narrower bounded semantic role.
+Do not:
+- open J1B;
+- choose semantic/temporal production model topology;
+- introduce cascade/confidence threshold;
+- run Terra;
+- wire D65-SI against a topology not yet approved;
+- execute X0.
+
+Permitted while stopped:
+- documentation / receipt correction only;
+- user consultation.
+
+Open eval debt:
+`D65-J1-FULL-001` — invalid typed Pydantic output is currently mislabeled as
+TRANSPORT/PROVIDER by the harness. Root cause is classified EVAL_ORACLE; no patch has been made
+because the J1 promising consultation gate has precedence.
