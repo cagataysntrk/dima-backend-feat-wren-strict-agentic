@@ -109,14 +109,14 @@ def _base_real(
             mode="previous_period",
             source_text="Şubat 2024 ile Ocak 2024",
             base_period=ResolvedPeriod(
-                kind=PeriodKind.CUSTOM,
+                kind=PeriodKind.THIS_MONTH,
                 source_text="Şubat 2024",
                 time_dimension="tarih",
                 start="2024-02-01",
                 end="2024-02-29",
             ),
             reference_period=ResolvedPeriod(
-                kind=PeriodKind.CUSTOM,
+                kind=PeriodKind.PREVIOUS_MONTH,
                 source_text="Ocak 2024",
                 time_dimension="tarih",
                 start="2024-01-01",
