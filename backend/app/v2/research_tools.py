@@ -11,7 +11,6 @@ QueryContract/Evidence.  Missing principal fails closed before execution.
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
@@ -384,18 +383,23 @@ class ResearchToolRunner:
                 "call": call.model_dump(mode="json"),
             }
         )
-        if task_registry is not None:
-            prior = task_registry.begin_execution(
-                task=task,
-                tool_id=tool_id,
-                action_fingerprint=delivery_fingerprint,
-            )
-            if prior is not None:
-                if not isinstance(prior, ResearchToolExecution):
-                    raise ResearchToolContractError(
-                        "ResearchTask receipt type mismatch"
-                    )
-                return prior
+        # Every executable Research task gets a lifecycle/deadline lease.  The Manager
+        # loop supplies its run-scoped registry; direct single-call harnesses receive an
+        # ephemeral one rather than bypassing timeout atomicity.
+        active_registry = task_registry or ResearchTaskRegistry()
+        prior = active_registry.begin_execution(
+            task=task,
+            tool_id=tool_id,
+            action_fingerprint=delivery_fingerprint,
+            timeout_ms=spec.contract.timeout_ms,
+        )
+        if prior is not None:
+            if not isinstance(prior, ResearchToolExecution):
+                raise ResearchToolContractError(
+                    "ResearchTask receipt type mismatch"
+                )
+            return prior
+        lease = active_registry.execution_lease(task.task_id)
 
         # Inject only execution identity. Semantic/tool inputs remain exactly the
         # contract-validated call supplied above.
@@ -410,40 +414,36 @@ class ResearchToolRunner:
                 }
             )
 
-        execution_executor = executor
-        if task_registry is not None:
-            registry = task_registry
+        registry = active_registry
 
-            class _LifecycleBoundExecutor:
-                def execute(self, bound_call, validated_args, bound_runtime):
-                    return executor.execute(
-                        bound_call,
-                        validated_args,
-                        bound_runtime,
-                        commit_guard=lambda: registry.assert_execution_active(
-                            task_id=task.task_id,
-                            tool_id=tool_id,
-                            action_fingerprint=delivery_fingerprint,
-                        ),
-                    )
+        class _LifecycleBoundExecutor:
+            def execute(self, bound_call, validated_args, bound_runtime):
+                return executor.execute(
+                    bound_call,
+                    validated_args,
+                    bound_runtime,
+                    commit_guard=lambda: registry.assert_execution_active(
+                        task_id=task.task_id,
+                        tool_id=tool_id,
+                        action_fingerprint=delivery_fingerprint,
+                    ),
+                )
 
-            execution_executor = _LifecycleBoundExecutor()
-
-        started = time.monotonic()
         try:
-            step = runtime.call_tool(effective_call, executor=execution_executor)
-        except Exception:
-            if task_registry is not None:
-                current = task_registry.get(task.task_id)
-                if current.state != "cancelled":
-                    task_registry.fail(task.task_id)
-            raise
-        elapsed_ms = (time.monotonic() - started) * 1000.0
-        if elapsed_ms > spec.contract.timeout_ms:
-            raise ResearchToolContractError(
-                f"Research tool {tool_id} exceeded timeout policy "
-                f"({elapsed_ms:.1f}ms > {spec.contract.timeout_ms}ms)"
+            step = runtime.call_tool(
+                effective_call,
+                executor=_LifecycleBoundExecutor(),
             )
+        except Exception:
+            current = active_registry.get(task.task_id)
+            if current.state not in {"cancelled", "failed", "blocked"}:
+                active_registry.fail(task.task_id)
+            raise
+
+        # Deadline was already enforced atomically at the accepted-Evidence commit
+        # boundary.  This elapsed value is telemetry only; it must never turn a
+        # successfully committed result into an external timeout afterwards.
+        elapsed_ms = max(0.0, (active_registry.now() - lease.started_at) * 1000.0)
 
         observation = self._registry.validate_output(
             spec=spec,
@@ -484,11 +484,16 @@ class ResearchToolRunner:
             evidence=evidence,
             elapsed_ms=elapsed_ms,
         )
-        if task_registry is not None:
-            task_registry.complete_execution(
+        try:
+            active_registry.complete_execution(
                 task_id=task.task_id,
                 tool_id=tool_id,
                 action_fingerprint=delivery_fingerprint,
                 result=execution,
             )
+        except Exception:
+            current = active_registry.get(task.task_id)
+            if current.state not in {"cancelled", "failed", "blocked"}:
+                active_registry.fail(task.task_id)
+            raise
         return execution
