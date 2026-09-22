@@ -7,21 +7,12 @@ name: v2-day6-5-provider-free-closure
         description: "Exact semantic-code SHA to certify"
         required: true
         default: "c9629d9029db360e86a8592e12da646a2afc0621"
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/workflows/v2-day6-5-provider-free-closure.yml"
-
 jobs:
   provider-free-closure:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event.head_commit.message == 'test(v2-day6.5): run exact semantic-sha recertification'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.target_sha || 'c9629d9029db360e86a8592e12da646a2afc0621' }}
+      TARGET_SHA: ${{ inputs.target_sha }}
       DIMA_LLM_PROVIDER: "rule"
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
