@@ -40,3 +40,5 @@ jobs:
 # retry: semantic-surface-completeness-p0
 
 # retry: shared-cross-family-authority
+
+# retry: research-temporal-role-split
