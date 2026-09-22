@@ -173,7 +173,7 @@ def test_standard_lossless_requires_complete_projection():
             metric_handles=(metric.handle_id,),
         ),
     )
-    assert incomplete.decision == RepresentabilityDecision.RESEARCH_REQUIRED
+    assert incomplete.decision == RepresentabilityDecision.STANDARD_BUILD_REQUIRED
 
     complete = RepresentabilityGate().decide(
         contract=accepted.contract,
