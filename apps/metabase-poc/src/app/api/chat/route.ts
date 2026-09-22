@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { answerStream } from "@/server/chat/agent";
+import { chatPrefs } from "@/server/prefs";
 import { GatewayError } from "@/server/metabase/errors";
 import { requireTenant } from "@/server/metabase/guard";
 import { sseFrame } from "@/lib/sse";
@@ -24,7 +25,8 @@ export async function POST(req: Request) {
     const body = Body.safeParse(await req.json().catch(() => null));
     if (!body.success) throw new GatewayError(400, "Geçersiz istek.");
     // Keep the conversation short: the last few turns carry the context that matters.
-    events = answerStream(ctx, body.data.messages.slice(-10), req.signal);
+    const prefs = await chatPrefs();
+    events = answerStream(ctx, body.data.messages.slice(-10), req.signal, prefs);
   } catch (e) {
     const err = e instanceof GatewayError ? e : null;
     if (err?.detail) console.warn(`[gateway] ${err.status} ${err.detail}`);

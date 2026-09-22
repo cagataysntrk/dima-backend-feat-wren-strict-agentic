@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { GatewayError } from "./metabase/errors";
 import { requireTenant, type TenantContext } from "./metabase/guard";
 
@@ -21,6 +22,28 @@ export function withTenant<P>(
         if (e.detail) console.warn(`[gateway] ${e.status} ${e.detail}`);
         return NextResponse.json({ error: e.publicMessage }, { status: e.status });
       }
+      console.error("[gateway] unexpected", e);
+      return NextResponse.json({ error: "Beklenmeyen bir hata oluştu." }, { status: 500 });
+    }
+  };
+}
+
+/**
+ * Like `withTenant`, but for routes that only need a signed-in session (the
+ * settings screens administer the company, they don't query its data). Zod
+ * failures become a 400 rather than a 500.
+ */
+export function withSession(handler: (req: Request) => Promise<unknown>) {
+  return async (req: Request) => {
+    try {
+      const out = await handler(req);
+      return out instanceof Response ? out : NextResponse.json(out);
+    } catch (e) {
+      if (e instanceof GatewayError) {
+        if (e.detail) console.warn(`[gateway] ${e.status} ${e.detail}`);
+        return NextResponse.json({ error: e.publicMessage }, { status: e.status });
+      }
+      if (e instanceof ZodError) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
       console.error("[gateway] unexpected", e);
       return NextResponse.json({ error: "Beklenmeyen bir hata oluştu." }, { status: 500 });
     }

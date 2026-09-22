@@ -52,7 +52,13 @@ export function chatConfigured(): boolean {
 }
 
 /** toolChoice "none" forces a text answer while keeping tool definitions (required once history has tool calls). */
-export async function complete(messages: ChatMessage[], tools: ToolSpec[], toolChoice: "auto" | "none" = "auto") {
+export async function complete(
+  messages: ChatMessage[],
+  tools: ToolSpec[],
+  toolChoice: "auto" | "none" = "auto",
+  /** Company's chosen model (chat settings); falls back to env, then default. */
+  model?: string,
+) {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new GatewayError(503, "Sohbet servisi henüz yapılandırılmadı.", "OPENROUTER_API_KEY is not set");
   let res: Response;
@@ -65,7 +71,7 @@ export async function complete(messages: ChatMessage[], tools: ToolSpec[], toolC
         "X-Title": "dima",
       },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || DEFAULT_MODEL,
+        model: model || process.env.OPENROUTER_MODEL || DEFAULT_MODEL,
         messages,
         tools,
         tool_choice: toolChoice,
@@ -109,6 +115,7 @@ export async function* streamComplete(
   tools: ToolSpec[],
   toolChoice: "auto" | "none" = "auto",
   signal?: AbortSignal,
+  model?: string,
 ): AsyncGenerator<StreamChunk> {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new GatewayError(503, "Sohbet servisi henüz yapılandırılmadı.", "OPENROUTER_API_KEY is not set");
@@ -119,7 +126,7 @@ export async function* streamComplete(
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Title": "dima" },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || DEFAULT_MODEL,
+        model: model || process.env.OPENROUTER_MODEL || DEFAULT_MODEL,
         messages,
         tools,
         tool_choice: toolChoice,

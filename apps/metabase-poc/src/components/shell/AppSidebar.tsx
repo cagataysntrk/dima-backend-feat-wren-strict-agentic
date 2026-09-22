@@ -5,21 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-import {
-  Boxes,
-  Table2,
-  Building2,
-  ChevronsUpDown,
-  Database,
-  LayoutGrid,
-  LogOut,
-  MessageSquarePlus,
-  MessagesSquare,
-  Moon,
-  Sun,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { Boxes, Building2, ChevronsUpDown, Database, LayoutGrid, LogOut, MessageSquarePlus, MessagesSquare, Moon, Settings, Sun, Table2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { useConversations } from "@/stores/conversations";
@@ -99,6 +85,7 @@ export function AppSidebar({
     { href: "/app/sql", label: "SQL", icon: Database, show: canAnalyze },
     { href: "/app/model", label: "Veri modeli", icon: Boxes, show: canAnalyze },
     { href: "/app/upload", label: "Veri yükle", icon: Upload, show: canAnalyze },
+    { href: "/app/settings", label: "Ayarlar", icon: Settings, show: true },
   ].filter((n) => n.show);
 
   const go = (href: string) => {
@@ -243,6 +230,12 @@ function AccountMenu({ user, orgs, activeOrgId }: { user: ShellUser; orgs: Shell
                 <DropdownMenuSeparator />
               </>
             )}
+            <DropdownMenuItem asChild>
+              <Link href="/app/settings">
+                <Settings className="size-4" aria-hidden />
+                Ayarlar
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
               <Sun className="size-4 dark:hidden" aria-hidden />
               <Moon className="hidden size-4 dark:block" aria-hidden />

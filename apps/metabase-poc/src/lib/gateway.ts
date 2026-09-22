@@ -139,6 +139,22 @@ export interface ChatAnswer {
   result: QueryResult | null;
 }
 
+export type Role = "owner" | "admin" | "member";
+
+export interface Member {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  role: Role;
+  createdAt: string;
+}
+
+export interface ChatPrefs {
+  model: string;
+  maxRows: number;
+}
+
 export type ChatStreamEvent =
   | { type: "step"; id: number; text: string; done: boolean }
   | { type: "token"; text: string }
@@ -189,6 +205,15 @@ export const gateway = {
       }
     }
   },
+  members: () => api<{ members: Member[]; myRole: Role; myMemberId: string }>("/api/settings/members"),
+  addMember: (body: { email: string; name: string; role: "admin" | "member" }) =>
+    api<{ password: string | null }>("/api/settings/members", json(body)),
+  setMemberRole: (memberId: string, role: "admin" | "member") =>
+    api<{ ok: true }>("/api/settings/members", { ...json({ memberId, role }), method: "PATCH" }),
+  removeMember: (memberId: string) =>
+    api<{ ok: true }>("/api/settings/members", { ...json({ memberId }), method: "DELETE" }),
+  chatPrefs: () => api<ChatPrefs>("/api/settings/chat"),
+  setChatPrefs: (patch: Partial<ChatPrefs>) => api<ChatPrefs>("/api/settings/chat", { ...json(patch), method: "PUT" }),
   search: (q: string) => api<{ items: Item[] }>(`/api/search?q=${encodeURIComponent(q)}`).then((r) => r.items),
   trash: () => api<{ items: Item[] }>("/api/trash").then((r) => r.items),
   restore: (kind: "card" | "dashboard", id: number) => api<{ ok: true }>("/api/trash", json({ kind, id })),

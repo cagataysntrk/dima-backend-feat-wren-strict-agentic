@@ -386,12 +386,15 @@ export async function queryReadOnly(
   ctx: TenantContext,
   sql: string,
   values: Record<string, string> = {},
+  /** Company's own cap (chat settings); never above the hard SQL_MAX_ROWS. */
+  maxRows = SQL_MAX_ROWS,
 ): Promise<QueryResult> {
+  const cap = Math.min(maxRows, SQL_MAX_ROWS);
   const { vars, query } = nativeQuery(ctx, sql, values);
   const ds = await mbPost<EngineDataset>(ctx.tenant, "/api/dataset", {
     ...query,
     parameters: varParameters(vars, values),
-    constraints: { "max-results": SQL_MAX_ROWS, "max-results-bare-rows": SQL_MAX_ROWS },
+    constraints: { "max-results": cap, "max-results-bare-rows": cap },
   });
   return toQueryResult(ds);
 }

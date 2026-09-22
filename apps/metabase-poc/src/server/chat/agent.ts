@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import type { QueryResult } from "@dima/contracts";
 import { queryReadOnly } from "../metabase/api";
+import { DEFAULT_PREFS, type ChatPrefs } from "../prefs";
 import { mbGet } from "../metabase/client";
 import { GatewayError, scrub } from "../metabase/errors";
 import type { TenantContext } from "../metabase/guard";
@@ -70,7 +71,7 @@ function dbMessage(e: GatewayError): string {
 
 const RunSqlArgs = z.object({ sql: z.string().min(1).max(20_000), final: z.boolean().optional() });
 
-export async function answer(ctx: TenantContext, history: Turn[]): Promise<ChatAnswer> {
+export async function answer(ctx: TenantContext, history: Turn[], prefs = DEFAULT_PREFS): Promise<ChatAnswer> {
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt(ctx.tenant.name, describeSchema(await tenantTables(ctx))) },
     ...history,
@@ -79,7 +80,7 @@ export async function answer(ctx: TenantContext, history: Turn[]): Promise<ChatA
   let lastOk: { sql: string; result: QueryResult } | null = null;
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const choice = await complete(messages, [RUN_SQL_TOOL], round < MAX_TOOL_ROUNDS ? "auto" : "none");
+    const choice = await complete(messages, [RUN_SQL_TOOL], round < MAX_TOOL_ROUNDS ? "auto" : "none", prefs.model);
     const calls = choice.message.tool_calls ?? [];
     if (calls.length === 0) {
       const text = (choice.message.content ?? "").trim();
@@ -104,7 +105,7 @@ export async function answer(ctx: TenantContext, history: Turn[]): Promise<ChatA
         content = "Error: invalid tool call. Call run_sql with {sql, final}.";
       } else {
         try {
-          const result = await queryReadOnly(ctx, args.data.sql);
+          const result = await queryReadOnly(ctx, args.data.sql, {}, prefs.maxRows);
           lastOk = { sql: args.data.sql, result };
           if (args.data.final) shown = lastOk;
           content = summarizeForModel(result);
@@ -140,6 +141,7 @@ export async function* answerStream(
   ctx: TenantContext,
   history: Turn[],
   signal?: AbortSignal,
+  prefs: ChatPrefs = DEFAULT_PREFS,
 ): AsyncGenerator<ChatEvent> {
   const startedAt = Date.now();
   const steps: string[] = [];
@@ -178,7 +180,7 @@ export async function* answerStream(
     let text = "";
     let calls: ReturnType<typeof usableToolCalls> = [];
     let finish: string | null | undefined;
-    for await (const chunk of streamComplete(messages, [RUN_SQL_TOOL], round < MAX_TOOL_ROUNDS ? "auto" : "none", signal)) {
+    for await (const chunk of streamComplete(messages, [RUN_SQL_TOOL], round < MAX_TOOL_ROUNDS ? "auto" : "none", signal, prefs.model)) {
       if (chunk.text) {
         // The model answers only once it stops calling tools; from that point
         // the text is the answer and goes straight to the reader.
@@ -225,7 +227,7 @@ export async function* answerStream(
         continue;
       }
       try {
-        const result = await queryReadOnly(ctx, args.data.sql);
+        const result = await queryReadOnly(ctx, args.data.sql, {}, prefs.maxRows);
         lastOk = { sql: args.data.sql, result };
         if (args.data.final) shown = lastOk;
         messages.push({ role: "tool", tool_call_id: call.id, content: summarizeForModel(result) });
