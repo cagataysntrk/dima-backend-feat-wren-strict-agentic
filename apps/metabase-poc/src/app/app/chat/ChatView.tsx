@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useConversations, type Entry } from "@/stores/conversations";
 import { TopbarActions } from "@/components/shell/AppShell";
 import { Composer } from "@/components/chat/Composer";
+import { Markdown } from "@/components/chat/Markdown";
 import { AddToDashboard } from "@/components/analytics/DashboardActions";
 import { ResultView } from "@/components/ResultView";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,8 @@ export function ChatView({
   const [panelOpen, setPanelOpen] = useState(false);
   const [tab, setTab] = useState<PanelTab>("results");
   const bottom = useRef<HTMLDivElement>(null);
+  // Answers requested during this visit get the reveal; restored history renders still.
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(() => new Set());
 
   const entries = conv?.entries ?? [];
   const pending = entries.some((e) => e.status === "pending");
@@ -115,6 +118,7 @@ export function ChatView({
     const id = conv ? conv.id : create(orgId);
     if (!conv) router.replace(`/app/chat?c=${id}`);
     const entryId = addEntry(id, question);
+    setFresh((prev) => new Set(prev).add(`${id}:${entryId}`));
     setDraft("");
     gateway
       .chat([...history, { role: "user", content: question }])
@@ -202,7 +206,7 @@ export function ChatView({
                         {e.message}
                       </p>
                     ) : (
-                      <Reply reply={e.reply} question={e.question} canSave={canSave} />
+                      <Reply reply={e.reply} question={e.question} canSave={canSave} animate={fresh.has(`${conv?.id}:${e.id}`)} />
                     )}
                   </article>
                 ))}
@@ -234,7 +238,17 @@ export function ChatView({
   );
 }
 
-function Reply({ reply, question, canSave }: { reply: ChatAnswer; question: string; canSave: boolean }) {
+function Reply({
+  reply,
+  question,
+  canSave,
+  animate,
+}: {
+  reply: ChatAnswer;
+  question: string;
+  canSave: boolean;
+  animate: boolean;
+}) {
   const [showSql, setShowSql] = useState(false);
   const save = useMutation({
     mutationFn: () => gateway.saveSql(question.slice(0, 120), reply.sql!),
@@ -244,9 +258,9 @@ function Reply({ reply, question, canSave }: { reply: ChatAnswer; question: stri
 
   return (
     <div className="space-y-3">
-      <p className="text-sm leading-relaxed whitespace-pre-wrap">{reply.answer}</p>
+      <Markdown className={cn(animate && "dima-reveal dima-reveal-rows")}>{reply.answer}</Markdown>
       {reply.result && reply.result.row_count > 0 && (
-        <div className="surface p-5">
+        <div className={cn("surface p-5", animate && "dima-reveal-late dima-reveal-rows")}>
           <ResultView
             result={reply.result}
             meta={
@@ -258,7 +272,10 @@ function Reply({ reply, question, canSave }: { reply: ChatAnswer; question: stri
         </div>
       )}
       {reply.sql && (
-        <div className="flex flex-wrap items-center gap-1">
+        <div
+          className={cn("flex flex-wrap items-center gap-1", animate && "dima-reveal-late")}
+          style={animate ? ({ "--reveal-delay": "260ms" } as React.CSSProperties) : undefined}
+        >
           <Button variant="ghost" size="xs" onClick={() => setShowSql((v) => !v)} aria-expanded={showSql}>
             <Code2 className="size-3.5" aria-hidden />
             {showSql ? "Sorguyu gizle" : "Sorguyu göster"}

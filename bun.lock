@@ -17,6 +17,7 @@
         "@dima/domain": "workspace:*",
         "@tanstack/react-query": "^5.101.2",
         "better-auth": "1.7.5",
+        "border-beam": "1.4.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "lucide-react": "^1.26.0",
@@ -27,7 +28,9 @@
         "radix-ui": "^1.6.5",
         "react": "19.2.4",
         "react-dom": "19.2.4",
+        "react-markdown": "10.1.0",
         "recharts": "3.8.0",
+        "remark-gfm": "4.0.1",
         "server-only": "^0.0.1",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.6.0",
@@ -995,6 +998,8 @@
     "bl": ["bl@4.1.0", "", { "dependencies": { "buffer": "^5.5.0", "inherits": "^2.0.4", "readable-stream": "^3.4.0" } }, "sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w=="],
 
     "bluebird": ["bluebird@3.4.7", "", {}, "sha512-iD3898SR7sWVRHbiQv+sHUtHnMvC1o3nW5rAcqnq3uOn07DSAppZYUkIGslDz6gXC7HfunPe7YVBgoEJASPcHA=="],
+
+    "border-beam": ["border-beam@1.4.0", "", { "peerDependencies": { "react": ">=18.0.0", "react-dom": ">=18.0.0" } }, "sha512-BsRqN5GQB76V5BlaJd64d8F0lW13HzNt/08cdxzAjlaVMV5/nb9nk0GuZKTF3qLWV2fmfbuUzXxvXisxNnw2TA=="],
 
     "brace-expansion": ["brace-expansion@1.1.16", "", { "dependencies": { "balanced-match": "^1.0.0", "concat-map": "0.0.1" } }, "sha512-IDw48K2/2kRkg9LdJxurvq3lV3aBgq0REY89duEqFRthjlPdXHKMj7EnQOXVckxzgisinf3nHfrcE2FufFLXMw=="],
 

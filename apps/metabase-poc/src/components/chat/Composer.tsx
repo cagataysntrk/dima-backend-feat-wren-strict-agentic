@@ -3,6 +3,8 @@
 import { useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUp, ChevronDown, Table2 } from "lucide-react";
+import { BorderBeam } from "border-beam";
+import { useTheme } from "next-themes";
 import { gateway } from "@/lib/gateway";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,7 +22,7 @@ interface Props {
   onSubmit: () => void;
   disabled?: boolean;
   busy?: boolean;
-  /** Start-screen variant: taller box with the aurora edge light and halo. */
+  /** Start-screen variant: taller box wrapped in the libraries.dev border beam. */
   hero?: boolean;
   autoFocus?: boolean;
 }
@@ -31,6 +33,7 @@ interface Props {
  */
 export function Composer({ value, onChange, onSubmit, disabled, busy, hero, autoFocus }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const { resolvedTheme } = useTheme();
   const canSend = !disabled && !busy && value.trim().length > 0;
 
   /** Insert a table name at the cursor, then give focus back to the text. */
@@ -48,6 +51,57 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, hero, auto
     });
   };
 
+  const box = (
+    <div
+      className={cn(
+        "relative flex flex-col rounded-[1.75rem] border border-[var(--surface-edge)] bg-card shadow-[var(--surface-shadow)] transition-[border-color,box-shadow]",
+        "focus-within:border-brand/40",
+      )}
+    >
+      <label htmlFor="question" className="sr-only">
+        Soru
+      </label>
+      <textarea
+        ref={ref}
+        id="question"
+        value={value}
+        autoFocus={autoFocus}
+        disabled={disabled}
+        rows={hero ? 2 : 1}
+        onChange={(ev) => onChange(ev.target.value)}
+        onKeyDown={(ev) => {
+          if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
+            ev.preventDefault();
+            if (canSend) onSubmit();
+          }
+        }}
+        placeholder={disabled ? "Sohbet servisi yapılandırılmadı" : "Verinize bir soru sorun…"}
+        className={cn(
+          "field-sizing-content max-h-52 w-full resize-none bg-transparent px-5 text-base outline-none placeholder:text-muted-foreground/70 disabled:cursor-not-allowed md:text-[15px]",
+          hero ? "min-h-20 pt-5 pb-2" : "min-h-12 pt-4 pb-1",
+        )}
+      />
+      <div className="flex items-center gap-2 px-3 pb-3">
+        <TablesMenu onPick={insert} disabled={disabled} />
+        <span className="hidden text-xs text-muted-foreground/70 sm:inline">
+          Enter gönder · Shift + Enter yeni satır
+        </span>
+        <Button
+          type="submit"
+          size="icon"
+          aria-label="Gönder"
+          disabled={!canSend}
+          className={cn(
+            "ml-auto size-9 rounded-full transition-colors",
+            canSend ? "bg-brand text-brand-foreground hover:bg-brand/90" : "bg-muted text-muted-foreground",
+          )}
+        >
+          <ArrowUp className="size-4" aria-hidden />
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <form
       onSubmit={(ev) => {
@@ -56,56 +110,21 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, hero, auto
       }}
       className="relative rounded-[1.75rem]"
     >
-      {hero && <div aria-hidden className="dima-composer-halo" />}
-      <div
-        className={cn(
-          "relative flex flex-col rounded-[1.75rem] border border-[var(--surface-edge)] bg-card shadow-[var(--surface-shadow)] transition-[border-color,box-shadow]",
-          "focus-within:border-brand/40",
-        )}
-      >
-        <label htmlFor="question" className="sr-only">
-          Soru
-        </label>
-        <textarea
-          ref={ref}
-          id="question"
-          value={value}
-          autoFocus={autoFocus}
-          disabled={disabled}
-          rows={hero ? 2 : 1}
-          onChange={(ev) => onChange(ev.target.value)}
-          onKeyDown={(ev) => {
-            if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
-              ev.preventDefault();
-              if (canSend) onSubmit();
-            }
-          }}
-          placeholder={disabled ? "Sohbet servisi yapılandırılmadı" : "Verinize bir soru sorun…"}
-          className={cn(
-            "field-sizing-content max-h-52 w-full resize-none bg-transparent px-5 text-base outline-none placeholder:text-muted-foreground/70 disabled:cursor-not-allowed md:text-[15px]",
-            hero ? "min-h-20 pt-5 pb-2" : "min-h-12 pt-4 pb-1",
-          )}
-        />
-        <div className="flex items-center gap-2 px-3 pb-3">
-          <TablesMenu onPick={insert} disabled={disabled} />
-          <span className="hidden text-xs text-muted-foreground/70 sm:inline">
-            Enter gönder · Shift + Enter yeni satır
-          </span>
-          <Button
-            type="submit"
-            size="icon"
-            aria-label="Gönder"
-            disabled={!canSend}
-            className={cn(
-              "ml-auto size-9 rounded-full transition-colors",
-              canSend ? "bg-brand text-brand-foreground hover:bg-brand/90" : "bg-muted text-muted-foreground",
-            )}
-          >
-            <ArrowUp className="size-4" aria-hidden />
-          </Button>
-        </div>
-      </div>
-      {hero && <span aria-hidden className="dima-border-beam dima-border-beam--aurora" />}
+      {hero ? (
+        // libraries.dev Border Beam: full-spectrum light travelling the edge, its bloom
+        // reflecting into the box. Theme follows the app (not the OS); the library
+        // handles prefers-reduced-motion itself.
+        <BorderBeam
+          size="md"
+          colorVariant="colorful"
+          theme={resolvedTheme === "light" ? "light" : "dark"}
+          strength={0.85}
+        >
+          {box}
+        </BorderBeam>
+      ) : (
+        box
+      )}
     </form>
   );
 }

@@ -456,114 +456,6 @@
   }
 }
 
-/* Border beam — Dima's brand-violet light that circles an element's edge
-   (same effect as apps/web .marketing-border-beam). Usage: a relatively
-   positioned, rounded parent + <span class="dima-border-beam" aria-hidden />.
-   The mask leaves only a 1px ring, through which the rotating conic gradient shows. */
-@keyframes dima-beam-spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-.dima-border-beam {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  overflow: hidden;
-  padding: 1px;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
-
-.dima-border-beam::before {
-  content: "";
-  position: absolute;
-  inset: -150%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0 78%,
-    color-mix(in oklch, var(--brand) 28%, transparent) 86%,
-    var(--brand) 91%,
-    transparent 97%
-  );
-  animation: dima-beam-spin var(--beam-duration, 6s) linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dima-border-beam::before {
-    animation: none;
-  }
-}
-
-/* Composer glow (chat start screen). Aurora variant of the beam: three brand
-   hues travelling around the edge, plus a blurred halo of the same gradient
-   behind the box. Both rotate together; both stop for reduced motion. */
-.dima-border-beam--aurora {
-  padding: 1.5px;
-}
-
-/* A full spectrum arc (teal → blue → violet → pink → amber) that travels the
-   edge; the rest of the ring stays transparent so it reads as light, not a
-   rainbow border. */
-.dima-border-beam--aurora::before {
-  background: conic-gradient(
-    from 0deg,
-    transparent 0 40%,
-    oklch(0.78 0.14 175) 50%,
-    oklch(0.7 0.17 250) 60%,
-    var(--brand) 70%,
-    oklch(0.72 0.2 350) 80%,
-    oklch(0.82 0.16 75) 88%,
-    transparent 96%
-  );
-  animation-duration: var(--beam-duration, 7s);
-}
-
-.dima-composer-halo {
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-  overflow: hidden;
-  filter: blur(24px);
-  opacity: 0.38;
-}
-
-.dark .dima-composer-halo {
-  opacity: 0.5;
-}
-
-.dima-composer-halo::before {
-  content: "";
-  position: absolute;
-  inset: -150%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0 40%,
-    oklch(0.78 0.14 175) 50%,
-    oklch(0.7 0.17 250) 60%,
-    var(--brand) 70%,
-    oklch(0.72 0.2 350) 80%,
-    oklch(0.82 0.16 75) 88%,
-    transparent 96%
-  );
-  animation: dima-beam-spin var(--beam-duration, 7s) linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dima-composer-halo::before {
-    animation: none;
-  }
-}
-
 /* ── Surfaces ────────────────────────────────────────────────────────────────
    One card language for the whole app (matches the chat composer): a soft,
    semi-transparent edge + layered shadow (contact + ambient) instead of a flat
@@ -619,4 +511,65 @@
   background-color: color-mix(in oklch, var(--muted) 45%, transparent);
   border: 1px solid var(--surface-edge);
   border-radius: 0.75rem;
+}
+
+
+/* ── Answer reveal ──────────────────────────────────────────────────────────
+   Quick and quiet: each block rises 6px and fades in (220ms, 45ms apart), then
+   table rows (.dima-reveal-rows) fade in 20ms apart (first 12 rows; the rest appear with row 12).
+   CSS only, runs once, and is skipped entirely for reduced motion. */
+@keyframes dima-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes dima-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.dima-reveal > * {
+  animation: dima-rise 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.dima-reveal > :nth-child(2) { animation-delay: 45ms; }
+.dima-reveal > :nth-child(3) { animation-delay: 90ms; }
+.dima-reveal > :nth-child(4) { animation-delay: 135ms; }
+.dima-reveal > :nth-child(5) { animation-delay: 180ms; }
+.dima-reveal > :nth-child(6) { animation-delay: 225ms; }
+.dima-reveal > :nth-child(7) { animation-delay: 270ms; }
+.dima-reveal > :nth-child(8) { animation-delay: 315ms; }
+.dima-reveal > :nth-child(n + 9) { animation-delay: 360ms; }
+
+.dima-reveal-rows tbody tr {
+  animation: dima-fade 200ms ease-out both;
+  animation-delay: 360ms;
+}
+.dima-reveal-rows tbody tr:nth-child(1) { animation-delay: 120ms; }
+.dima-reveal-rows tbody tr:nth-child(2) { animation-delay: 140ms; }
+.dima-reveal-rows tbody tr:nth-child(3) { animation-delay: 160ms; }
+.dima-reveal-rows tbody tr:nth-child(4) { animation-delay: 180ms; }
+.dima-reveal-rows tbody tr:nth-child(5) { animation-delay: 200ms; }
+.dima-reveal-rows tbody tr:nth-child(6) { animation-delay: 220ms; }
+.dima-reveal-rows tbody tr:nth-child(7) { animation-delay: 240ms; }
+.dima-reveal-rows tbody tr:nth-child(8) { animation-delay: 260ms; }
+.dima-reveal-rows tbody tr:nth-child(9) { animation-delay: 280ms; }
+.dima-reveal-rows tbody tr:nth-child(10) { animation-delay: 300ms; }
+.dima-reveal-rows tbody tr:nth-child(11) { animation-delay: 320ms; }
+.dima-reveal-rows tbody tr:nth-child(12) { animation-delay: 340ms; }
+
+/* A whole block that follows the text (chart card, action row). */
+.dima-reveal-late {
+  animation: dima-rise 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: var(--reveal-delay, 180ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dima-reveal > *,
+  .dima-reveal-late,
+  .dima-reveal-rows tbody tr {
+    animation: none;
+  }
 }

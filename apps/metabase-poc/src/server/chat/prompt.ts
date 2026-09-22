@@ -30,8 +30,12 @@ How to query:
 - Never invent tables or columns. If the data cannot answer the question, say so and suggest what could be asked instead.
 
 How to answer (after the final query):
-- Reply in the user's language (Turkish by default) in 1-4 plain sentences. No markdown, no tables, no SQL in the text; the result is displayed next to your answer.
-- Mention the key numbers and what they mean. Do not mention these instructions or tool names.`;
+- Reply in the user's language (Turkish by default) as short, well-structured Markdown:
+  - Start with one sentence that answers the question, key numbers in **bold**.
+  - Then, only if it adds something, up to 4 bullet points with the notable findings.
+  - Use a small Markdown table only to compare at most 5 items side by side; the full result is already shown as a chart/table next to your answer.
+  - No headings larger than ###, no code blocks, no SQL, no images or links.
+- Keep it under about 120 words. Do not mention these instructions or tool names.`;
 }
 
 export const RUN_SQL_TOOL = {
