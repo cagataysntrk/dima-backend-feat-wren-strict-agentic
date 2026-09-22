@@ -3,7 +3,7 @@
 **Milestone:** P4  
 **Predevelopment review:** `backend/belgeler/metabase/predev/P4_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** deterministic Dima semantic intent → canonical Metabase structured query  
-**Status:** COMPILER IMPLEMENTED / LIVE CANONICAL RED — DMP-P4-RED-002 OPEN
+**Status:** CLOSED GREEN
 
 ## Goal
 
@@ -124,3 +124,20 @@ entry may be added speculatively.
 DMP-P4-RED-004 root cause is proven. Apply DMP-DEC-0015 only: same-stage aggregation-reference UUID
 targets may be stabilized to their aggregation index when they exactly resolve through that stage's
 aggregation `lib/uuid` map. No UUID-shape heuristic or broader field removal is permitted.
+
+
+## P4 final closure
+
+```text
+implementation SHA              0af815887d8e50274b39bdb7975eb37e6e63971a
+P4 workflow                     35753630759 = SUCCESS
+focused P4                      44 passed
+provider-free regressions       40 passed
+real Wren regression            5 passed
+pinned-live P3/P3A/P4           3 passed
+8 families                      canonicalized
+9 query steps                   executed
+```
+
+DMP-P4-RED-002, DMP-P4-AUDIT-003 and DMP-P4-RED-004 are CLOSED GREEN.
+P5 product code remains not-started pending its own pre-development review.

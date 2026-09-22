@@ -1169,3 +1169,66 @@ and similar-looking keys are not normalized.
 
 status:
 `ROOT CAUSE PROVEN / NARROW PATCH AUTHORIZED`.
+
+
+---
+
+## P4 closure — GREEN
+
+final_implementation_sha: `0af815887d8e50274b39bdb7975eb37e6e63971a`  
+p4_workflow: `35753630759 = SUCCESS`  
+p3_workflow_same_sha: `35753630526 = SUCCESS`  
+m1_workflow_same_sha: `35753630773 = SUCCESS`  
+governance_same_sha: `35753630765 = SUCCESS`
+
+```text
+execution-binding single owner         PASS
+parallel binding models                0
+
+focused P4 binding/compiler            44 PASS
+provider-free P3A/P3/M1                40 PASS
+real Wren + retained sentinels         5 PASS
+pinned-live P3/P3A/P4                  3 PASS
+P4 live families                       8 / 8
+P4 executable query steps              9 / 9
+
+raw-language reinterpretation          0
+canonical_name locator use             0
+source_scopes locator use              0
+Metabase semantic search               0
+
+regex/fuzzy semantic resolver          0
+special value sentinel semantics       0
+
+silent source rebind                   0
+implicit join                          0
+explicit unauthorized join             0
+silent semantic slot drop              0
+
+lib/uuid runtime volatility            tolerated exactly
+same-stage aggregation runtime ref      stabilized by proven UUID->index relation only
+unmatched/other canonical volatility    HARD FAIL
+
+stable canonical fingerprint           PASS across repeated canonicalize
+actual serialized execution            PASS
+current-catalog fingerprint             PASS
+literal "NULL" text equality            PASS
+
+production routing change              0
+Wren retirement                        0
+P5 implementation                      0
+source branch write/sync                0
+```
+
+Historical closure:
+- `DMP-P4-RED-001`: CLOSED GREEN;
+- `DMP-P4-RED-002`: CLOSED GREEN;
+- `DMP-P4-AUDIT-003`: CLOSED GREEN;
+- `DMP-P4-RED-004`: CLOSED GREEN.
+
+P4 proves only the initial supported semantic slice and canonical structured-query boundary.
+It does **not** prove P5 receipt persistence/completion, final principal/access-lens parity,
+P8 Wren/Metabase numeric equivalence, Metabase primary routing, or Wren retirement.
+
+status:
+`P4 CLOSED GREEN`.

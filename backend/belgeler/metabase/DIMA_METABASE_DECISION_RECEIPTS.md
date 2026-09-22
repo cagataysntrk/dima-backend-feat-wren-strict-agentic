@@ -504,3 +504,32 @@ documented index -> runtime UUID representation rewrite without treating arbitra
 values as volatile.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0016 — P4 initial compiler slice is certified; no semantic expansion in closure
+
+date: 2026-09-22
+
+decision:
+The initial P4 `ResolvedAnalyticsIntent + DimaExecutionBindingSnapshot -> portable MBQL -> pinned
+Metabase canonical serialized query` slice is certified GREEN at
+`0af815887d8e50274b39bdb7975eb37e6e63971a`.
+
+Certified scope remains intentionally narrow:
+- one governed metric;
+- frozen mechanical aggregation vocabulary;
+- same-table dimensions;
+- textual literal equality filters;
+- resolved time bounds;
+- previous-period comparison;
+- ranking/limit;
+- current-catalog anti-drift;
+- deterministic durable canonical identity after only the two proven runtime-identity transforms:
+  exact `lib/uuid` removal and exact same-stage aggregation-ref UUID -> index stabilization.
+
+No new aggregation aliases, typed filter inference, NULL predicates, cross-table joins, formula
+compiler, fuzzy matching, Metabase semantic lookup, product routing, or Wren retirement are implied.
+
+status: SEALED / P4 CLOSED GREEN.

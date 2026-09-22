@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P4 COMPILER IMPLEMENTED / LIVE CANONICAL GATE RED  
-**Product-code development:** P4 COMPILER STARTED; DMP-P4-RED-002 OPEN  
+**Current phase:** P4 CLOSED GREEN — P5 PRE-DEVELOPMENT REVIEW NEXT  
+**Product-code development:** P4 CLOSED GREEN; P5 PRODUCT CODE NOT STARTED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -531,3 +531,42 @@ P5                                = BLOCKED
 ```
 
 DMP-DEC-0015 is now the only authorized correction for this drift.
+
+
+---
+
+## P4 closure — GREEN
+
+```text
+final implementation SHA        = 0af815887d8e50274b39bdb7975eb37e6e63971a
+P4 workflow                     = 35753630759 = SUCCESS
+P3 same-SHA workflow            = 35753630526 = SUCCESS
+M1 same-SHA workflow            = 35753630773 = SUCCESS
+governance same-SHA             = 35753630765 = SUCCESS
+
+focused P4                      = 44 PASS
+provider-free P3A/P3/M1         = 40 PASS
+real Wren                       = 5 PASS
+pinned-live P3/P3A/P4           = 3 PASS
+8-family canonical proof        = PASS
+9/9 actual serialized execution = PASS
+
+exact lib/uuid volatility       = PROVEN / STABILIZED
+aggregation runtime refs        = PROVEN SAME-STAGE UUID->INDEX ONLY
+other canonical drift           = HARD FAIL
+literal NULL text               = literal equality / PASS
+regex/fuzzy/sentinel fallback   = 0
+implicit/unauthorized joins     = 0
+silent source rebind            = 0
+silent semantic slot loss       = 0
+production routing change       = 0
+Wren retirement                 = 0
+P5 code                         = 0
+source branch                   = READ ONLY @ 70fb5933982467c4acf9ecd847d8e48f900058ed
+```
+
+P4 is **CLOSED GREEN**.
+
+Next authorized activity is **P5 pre-development review only**. P5 implementation is not authorized
+until that review is sealed and governance is GREEN. The open principal/access coherence debt must be
+handled explicitly there; it must not be hidden behind the current lab-admin execution proof.
