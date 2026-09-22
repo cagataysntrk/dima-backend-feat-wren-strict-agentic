@@ -4932,3 +4932,23 @@ checkpoint
 - silent fallback.
 
 Tek benchmark vakası yeni architecture arama gerekçesi değildir.
+
+
+### Recertification runner hazır
+
+Manual-only provider-free workflow:
+`.github/workflows/v2-day6-5-provider-free-closure.yml`
+
+Commit:
+`f38a5fca97e618b5dba84084101838df4857adab`
+
+Özellikler:
+- push'ta otomatik çalışmaz,
+- paid provider/secrets kullanmaz,
+- `target_sha` input'u alır,
+- default exact semantic SHA = `c9629d9029db360e86a8592e12da646a2afc0621`,
+- önce exact SHA checkout eder,
+- 70/70 boundary run'da kullanılan compile + provider-free focused suite'i yeniden çalıştırır,
+- job sonunda `tested_sha == requested_sha` doğrular.
+
+Bir sonraki geliştirici yeni code yazmadan önce bu workflow'u default SHA ile dispatch eder.
