@@ -1392,3 +1392,38 @@ P10 issuer work                       0
 
 status:
 `CLOSED GREEN`.
+
+
+---
+
+## DMP-P6-RED-001 — stale M2 workflow cross-trigger on P6 lab-only files
+
+receipt_id: `DMP-P6-RED-001`  
+tested_sha: `65ef9cce522fe249ec98699c1b07b59b958ee207`  
+failed_run: `35764852700` / `dima-metabase-m2`
+
+observed:
+Adding only P6-scoped files under `backend/lab/metabase/p6/**` triggered the legacy M2 workflow.
+Its isolation gate compared the historical M2 base SHA to current HEAD, so already-certified later
+P3/P4/P5 `backend/app/v3/**` history was reclassified as an M2 forbidden change.
+
+classification:
+`CI/GOVERNANCE SCOPE`
+
+root_cause:
+- M2 trigger glob included later milestone subdirectories;
+- M2 isolation measured cumulative branch history rather than the current push/change set.
+
+authorized_correction:
+- exclude `backend/lab/metabase/p6/**` from M2 path triggering;
+- retain M2 forbidden-file rules, but evaluate them against `github.event.before...HEAD`;
+- on manual dispatch fallback to `HEAD^`;
+- do not alter M2 runtime pins, bootstrap, restore proof, product code, P6 canary semantics or any
+  P3/P4/P5 contract.
+
+proof_required:
+the corrective M2 workflow self-run must pass isolation and the P6A workflow on the unchanged P6
+candidate remains independently classified.
+
+status:
+`OPEN / CI OWNER CORRECTION AUTHORIZED`.
