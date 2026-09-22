@@ -47,3 +47,5 @@ jobs:
 # trigger: bridge-preflight-v1
 
 # rerun: context-scope-fixed
+
+# rerun: complete-receipt-metrics
