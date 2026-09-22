@@ -33,6 +33,7 @@ class JoinGateCode(StrEnum):
 class JoinAggregation(StrEnum):
     PRESERVE_SOURCE_GRAIN = "PRESERVE_SOURCE_GRAIN"
     PRE_AGGREGATE_TO_TARGET = "PRE_AGGREGATE_TO_TARGET"
+    GROUP_BY_TARGET_ATTRIBUTE = "GROUP_BY_TARGET_ATTRIBUTE"
 
 
 class CompatibilityState(StrEnum):
@@ -45,8 +46,11 @@ class CompatibilityState(StrEnum):
 class CrossDomainJoinRequest(FrozenModel):
     source_model: str = Field(min_length=1)
     target_model: str = Field(min_length=1)
+    # Row-grain metadata and analytical grain are deliberately separate.
     source_grain: str = Field(min_length=1)
     target_grain: str = Field(min_length=1)
+    source_analysis_grain: str | None = Field(default=None, min_length=1)
+    target_analysis_grain: str | None = Field(default=None, min_length=1)
     requested_output_grain: str = Field(min_length=1)
     relationship_path: tuple[str, ...] = ()
     aggregation: JoinAggregation
@@ -255,6 +259,14 @@ class CrossDomainJoinGate:
             required = JoinAggregation.PRESERVE_SOURCE_GRAIN
         elif request.requested_output_grain == request.target_grain:
             required = JoinAggregation.PRE_AGGREGATE_TO_TARGET
+        elif (
+            request.target_analysis_grain is not None
+            and request.requested_output_grain == request.target_analysis_grain
+        ):
+            # Many-to-one + healthy fanout proves each source row reaches at most one
+            # target row; grouping by a governed target attribute therefore cannot
+            # duplicate the source metric.  The attribute itself need not be unique.
+            required = JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
         else:
             return CrossDomainJoinDecision(
                 allowed=False,
@@ -262,7 +274,10 @@ class CrossDomainJoinGate:
                 relationship_path=tuple(relationship_names),
                 model_path=tuple(model_path),
                 cardinality_path=tuple(cardinalities),
-                reason="requested analytical grain is neither governed source nor target grain",
+                reason=(
+                    "requested analytical grain is not a governed row grain or "
+                    "explicit governed target analytical grain"
+                ),
             )
 
         if request.aggregation != required:
