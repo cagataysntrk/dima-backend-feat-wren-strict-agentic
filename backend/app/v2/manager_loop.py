@@ -54,6 +54,7 @@ from app.v2.source_spans import SourceSpanRegistry
 class ManagerActionKind(StrEnum):
     RESOLVE_SEMANTICS = "resolve_semantics"
     PROPOSE_ACCEPTANCE = "propose_acceptance"
+    PROPOSE_BRANCHES = "propose_branches"
     RUN_ANALYTICS = "run_analytics"
     RUN_RELATIONSHIP = "run_relationship"
     INSPECT_EVIDENCE = "inspect_evidence"
@@ -101,6 +102,16 @@ class ManagerObligationProposal(FrozenModel):
         return self
 
 
+class ManagerBranchCandidateProposal(FrozenModel):
+    task_id: str = Field(min_length=1)
+    capability_key: ManagerCapabilityKey
+    input_handles: tuple[str, ...] = Field(
+        min_length=1,
+        description="Runtime-issued h* aliases only; no raw sem_* identifiers.",
+    )
+    material_reason: str = Field(min_length=1, max_length=500)
+
+
 class ManagerDecisionTransport(FrozenModel):
     action: ManagerActionKind
 
@@ -129,6 +140,13 @@ class ManagerDecisionTransport(FrozenModel):
     semantic_proposal: str | None = Field(default=None, max_length=240)
 
     obligations: tuple[ManagerObligationProposal, ...] = ()
+
+    branch_parent_obligation_id: str | None = None
+    branch_evidence_ref: str | None = None
+    branch_candidates: tuple[ManagerBranchCandidateProposal, ...] = Field(
+        default=(),
+        max_length=12,
+    )
 
     obligation_ids: tuple[str, ...] = ()
     metric_handles: tuple[str, ...] = ()
@@ -180,6 +198,15 @@ class ManagerDecisionTransport(FrozenModel):
         elif self.action == ManagerActionKind.PROPOSE_ACCEPTANCE:
             if not self.obligations:
                 raise ValueError("propose_acceptance obligations gerektirir")
+        elif self.action == ManagerActionKind.PROPOSE_BRANCHES:
+            if (
+                not self.branch_parent_obligation_id
+                or not self.branch_evidence_ref
+                or not self.branch_candidates
+            ):
+                raise ValueError(
+                    "propose_branches parent obligation + evidence + candidates gerektirir"
+                )
         elif self.action == ManagerActionKind.RUN_ANALYTICS:
             if not self.obligation_ids or not self.metric_handles:
                 raise ValueError("run_analytics obligation_ids + metric_handles gerektirir")
@@ -196,6 +223,18 @@ class ManagerDecisionTransport(FrozenModel):
         elif self.action == ManagerActionKind.REQUEST_CLARIFICATION:
             if not self.clarification_reason:
                 raise ValueError("request_clarification reason gerektirir")
+
+        branch_values = (
+            self.branch_parent_obligation_id,
+            self.branch_evidence_ref,
+            self.branch_candidates,
+        )
+        if self.action != ManagerActionKind.PROPOSE_BRANCHES and (
+            self.branch_parent_obligation_id is not None
+            or self.branch_evidence_ref is not None
+            or bool(self.branch_candidates)
+        ):
+            raise ValueError("branch fields are valid only for propose_branches")
 
         derived_values = (
             self.derived_task_id,
@@ -264,7 +303,10 @@ Rules:
 - AGENT_DERIVED semantic discovery requires accepted parent + inspected verified evidence.
 - Rejected attempts leave no semantic authority to merge.
 - run_analytics/run_relationship may reference only accepted/derived obligation IDs.
-- Every derived run_analytics branch must cite parent obligation + inspected evidence.
+- Evidence-grounded executable branches MUST first be proposed with propose_branches.
+- propose_branches registers bounded typed candidates only; it NEVER executes data work.
+- Every derived run_analytics must select a task already listed in READY_RESEARCH_TASKS.
+- Every derived branch must cite parent obligation + inspected evidence.
 - Use inspect_evidence before result-dependent replanning.
 - Follow ACTION_FRONTIER. Never repeat an exact action listed in blocked_exact_actions.
 - Semantic ambiguity is Resolver authority; do not guess canonical truth.
@@ -460,6 +502,7 @@ class ResearchManagerLoop:
         conversation: ConversationStateV2 | None = None,
         action_frontier: dict[str, Any] | None = None,
         research_state: ResearchStateView | None = None,
+        ready_tasks: tuple[Any, ...] = (),
     ) -> str:
         ledger = runtime.ledger
         ledger_view = []
@@ -498,6 +541,23 @@ class ResearchManagerLoop:
                 else []
             ),
             "ACTION_FRONTIER": action_frontier or {},
+            "READY_RESEARCH_TASKS": [
+                {
+                    "task_id": task.task_id,
+                    "question_id": task.question_id,
+                    "task_kind": task.task_kind,
+                    "input_refs": [
+                        self._handle_alias(handle_id)
+                        for handle_id in task.input_refs
+                    ],
+                    "parent_task_id": task.parent_task_id,
+                    "parent_obligation_id": task.parent_obligation_id,
+                    "trigger_evidence_ref": task.trigger_evidence_ref,
+                    "branch_depth": task.branch_depth,
+                }
+                for task in ready_tasks
+                if task.state == "pending"
+            ],
             "ACCUMULATED_RESEARCH_STATE": (
                 None
                 if research_state is None
@@ -527,6 +587,7 @@ class ResearchManagerLoop:
         conversation: ConversationStateV2 | None = None,
         action_frontier: dict[str, Any] | None = None,
         research_state: ResearchStateView | None = None,
+        ready_tasks: tuple[Any, ...] = (),
     ):
         user = self._prompt(
             question=question,
@@ -535,6 +596,7 @@ class ResearchManagerLoop:
             conversation=conversation,
             action_frontier=action_frontier,
             research_state=research_state,
+            ready_tasks=ready_tasks,
         )
         schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
         kwargs = {
@@ -581,7 +643,10 @@ class ResearchManagerLoop:
         request_ref: str,
         runtime: ManagerRuntime,
     ) -> ManagerToolCall | None:
-        if decision.action == ManagerActionKind.FINISH:
+        if decision.action in {
+            ManagerActionKind.FINISH,
+            ManagerActionKind.PROPOSE_BRANCHES,
+        }:
             return None
 
         if decision.action == ManagerActionKind.RESOLVE_SEMANTICS:
@@ -813,6 +878,7 @@ class ResearchManagerLoop:
                     conversation=conversation,
                     action_frontier=frontier_view,
                     research_state=research_state,
+                    ready_tasks=task_registry.tasks,
                 )
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
@@ -900,6 +966,26 @@ class ResearchManagerLoop:
                 continue
 
             if (
+                decision.action == ManagerActionKind.PROPOSE_BRANCHES
+                and decision.branch_evidence_ref
+                not in runtime.snapshot.inspected_evidence_refs
+            ):
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": "branch proposal requires inspected current-run evidence",
+                    }
+                )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={"rejected": "branch_requires_inspected_evidence"},
+                )
+                continue
+
+            if (
                 decision.action == ManagerActionKind.REQUEST_CLARIFICATION
                 and not _clarification_has_governed_grounding(
                     observations,
@@ -919,6 +1005,74 @@ class ResearchManagerLoop:
                     runtime=runtime,
                     result={"rejected": "clarification_ungrounded"},
                 )
+                continue
+
+            if decision.action == ManagerActionKind.PROPOSE_BRANCHES:
+                try:
+                    evidence = executor.evidence_store.get(
+                        decision.branch_evidence_ref
+                    )
+                    parent_task = task_registry.get(evidence.task_id)
+                    proposals = tuple(
+                        DerivedResearchTaskProposal(
+                            task_id=item.task_id,
+                            task_kind=self._research_tasks.task_kind_for_capability(
+                                item.capability_key
+                            ),
+                            parent_task_id=parent_task.task_id,
+                            parent_obligation_id=decision.branch_parent_obligation_id,
+                            trigger_evidence_ref=decision.branch_evidence_ref,
+                            input_refs=self._decode_handles(item.input_handles),
+                            material_reason=item.material_reason,
+                        )
+                        for item in decision.branch_candidates
+                    )
+                    materialized = self._research_tasks.materialize_derived_candidates(
+                        runtime=runtime,
+                        evidence_store=executor.evidence_store,
+                        task_registry=task_registry,
+                        parent_task=parent_task,
+                        proposals=proposals,
+                    )
+                    result_view = {
+                        "strategy": materialized.decision.strategy.value,
+                        "classification": materialized.decision.classification.value,
+                        "allowed_children": materialized.decision.allowed_children,
+                        "selected_task_ids": [
+                            task.task_id for task in materialized.registered_tasks
+                        ],
+                        "remaining_query_budget": runtime.remaining_data_queries,
+                        "cardinality_source": "UNKNOWN",
+                    }
+                    observations.append(
+                        {
+                            "kind": "fanout_registered",
+                            "result": result_view,
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result=result_view,
+                    )
+                except Exception as exc:
+                    observations.append(
+                        {
+                            "kind": "tool_rejected",
+                            "action": decision.action.value,
+                            "message": str(exc),
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result={
+                            "branch_error": type(exc).__name__,
+                            "message": str(exc),
+                        },
+                    )
                 continue
 
             if decision.action == ManagerActionKind.FINISH:
@@ -971,51 +1125,17 @@ class ResearchManagerLoop:
                                 task_id=task_id,
                             )
                     else:
-                        evidence = executor.evidence_store.get(
-                            decision.derived_evidence_ref
-                        )
                         try:
-                            parent_task = task_registry.get(evidence.task_id)
+                            task = task_registry.get(decision.derived_task_id)
                         except Exception as exc:
                             raise ResearchTaskMaterializationError(
-                                "derived branch parent ResearchTask is not materialized"
+                                "derived execution requires pre-registered READY ResearchTask; "
+                                "use propose_branches first"
                             ) from exc
-                        handle_inputs = tuple(
-                            dict.fromkeys(
-                                (
-                                    *tuple(call.args.get("metric_handles") or ()),
-                                    *tuple(call.args.get("dimension_handles") or ()),
-                                    *tuple(call.args.get("filter_handles") or ()),
-                                    *(
-                                        ()
-                                        if call.args.get("period_handle") is None
-                                        else (call.args["period_handle"],)
-                                    ),
-                                    *(
-                                        ()
-                                        if call.args.get("comparison_handle") is None
-                                        else (call.args["comparison_handle"],)
-                                    ),
-                                )
+                        if task.state != "pending":
+                            raise ResearchTaskMaterializationError(
+                                "derived execution requires pending READY ResearchTask"
                             )
-                        )
-                        proposal = DerivedResearchTaskProposal(
-                            task_id=decision.derived_task_id,
-                            task_kind=self._research_tasks.task_kind_for_capability(
-                                decision.derived_capability_key
-                            ),
-                            parent_task_id=parent_task.task_id,
-                            parent_obligation_id=decision.derived_parent_obligation_id,
-                            trigger_evidence_ref=decision.derived_evidence_ref,
-                            input_refs=handle_inputs,
-                            material_reason=decision.derived_reason,
-                        )
-                        task = self._research_tasks.materialize_derived(
-                            runtime=runtime,
-                            evidence_store=executor.evidence_store,
-                            parent_task=parent_task,
-                            proposal=proposal,
-                        )
 
                     tool_id = self._research_tool_runner.tool_id_for_task(task)
                     research_execution = self._research_tool_runner.execute(
