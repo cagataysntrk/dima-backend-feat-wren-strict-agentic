@@ -38,7 +38,7 @@
 >
 > **Substrate kararı:** Wren current incumbent'tır. Metabase şimdi dependency/production path değildir. Day 6.5 engineering closure + DEV80 sonrasında, Validation/Hidden certification öncesinde isolated `D65-X` substrate-only challenger yapılır. Production'da Wren + Metabase equal truth engines yasaktır.
 >
-> **Family closure:** `35691982389` = **88/88 PASS** after `EVAL_ORACLE` schema sync. Next product ticket: `D65-E3A-R` runtime-kernel realignment.
+> **Runtime-kernel closure:** D65-E3A-R GREEN. Focused `35693039369` = **22/22 PASS**; runtime-aligned full provider-free family closure `35693146320` = **94/94 PASS**. Research remained NO-TOUCH. Next gate: workers=1 focused live architecture set.
 >
 > **Day 6.5 cognition/authority kuralı:** doğal dil yorumunu regex/morphology/fuzzy-score ile
 > deterministic semantic truth'a çevirmek yasaktır. Manager yolu:
