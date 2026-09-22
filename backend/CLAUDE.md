@@ -37,6 +37,28 @@
 > **Standard front-door:** retrieval/discovery authority değildir. DIRECT yalnız ilk-attempt seal outcome'udur; BUILDER aynı Standard engine'in bounded progress-driven repair outcome'udur. Standard loop generic kernel'i kullanır fakat kernel semantic/authority/research truth bilmez. `simple_standard_research_manager_loop = 0`.
 >
 > **Substrate kararı:** Wren current incumbent'tır. Metabase şimdi dependency/production path değildir. Day 6.5 engineering closure + DEV80 sonrasında, Validation/Hidden certification öncesinde isolated `D65-X` substrate-only challenger yapılır. Production'da Wren + Metabase equal truth engines yasaktır.
+> **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
+> Canonical upstream: `metabase/metabase`.
+> Current Day 6.5 reference SHA: `74216b30981d8310c4cf724d63ca282e2e63529d`.
+> Canonical pinned paths:
+> `src/metabase/metabot/agent/core.clj`,
+> `src/metabase/metabot/agent/profiles.clj`,
+> `src/metabase/agent_api/reference.md`,
+> `src/metabase/agent_api/api.clj`,
+> `src/metabase/agent_api/query_guards.clj`,
+> `src/metabase/mcp/v2/tools/query.clj`.
+>
+> `public/metabase/master` varsa yalnız **read-only convenience checkout**; canonical authority değildir. SHA doğrulanmadan kullanılmaz.
+> Source-copy / port / vendor / transliteration YASAK.
+> D65-X gerçek integration yalnız **separate-service Metabase Agent API** üzerinden thin adapter ile yapılır.
+>
+> Metabase'e dayanan her önemli architecture/implementation kararından önce `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md §17A.5` mandatory source-control / analysis / research protocolü uygulanır:
+> source identity → exact pinned source reading → pattern/API/security/runtime classification → Dima trust-plane cross-check → current external verification where changeable → decision receipt.
+> Required source files okunmadan, query guards/permissions doğrulanmadan veya source/runtime kimliği pinlenmeden Metabase işi yapılmaz.
+>
+> Her D65-X execution receipt `source_reference_sha + runtime_version + immutable runtime_image_digest + Dima tested SHA + adapter SHA + corpus/version + permission context` taşır.
+> Bu protokol mevcut product development sequence'ini DEĞİŞTİRMEZ.
+
 >
 > **Runtime-kernel closure:** D65-E3A-R GREEN. Focused `35693039369` = **22/22 PASS**; runtime-aligned full provider-free family closure `35693146320` = **94/94 PASS**. Research remained NO-TOUCH. Next gate: workers=1 focused live architecture set.
 >
