@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 DECISION GATE — J1S/J1T + M0/X0 ACTIVE; FINAL DEV80 DEFERRED TO RELEASE END**  
-**Kod fazı:** D65-G hardening GREEN; provider-free 102/102, reference-floor canary 16/16 and Wren+Research sentinels 2/2 GREEN on exact `8dfde62d...`. Freeze/DEV80 BLOCKED pending pre-freeze decisions: D65-J1S/J1T decision-model bake-offs + D65-M0 architecture adoption audit + D65-X0 thin Metabase feasibility. Production hybrid `/ask-v2` OFF.  
+**Durum:** **DAY 6.5 DECISION GATE — CORRECTED J1 ACTIVE; M0 SUFFICIENT; D65-SI BEFORE X0; DEV80 DEFERRED**  
+**Kod fazı:** D65-G hardening GREEN; baseline proofs remain 102/102 + 16/16 + 2/2 on exact `8dfde62d...`. J1 corpus blobs remain frozen; challenger metadata corrected pre-result to `d65-j1-freeze-v2` with PRIMARY=`Gemini Flash-Lite + Jev 1.13 + GPT-5.6 Luna`, Sol=`REFERENCE_CEILING`, Terra=`CONSULT-GATED CONDITIONAL`. Corrected provider-free J1 gate `35705204058` = **6/6 PASS**. Old wrong-peer run `35704627396` is INVALID J1 authority. M0 source audit is sufficient for X0 preparation, but **X0 execution is blocked until J1 decision → D65-SI → real Standard Wren sentinel**. Product semantic/temporal/authority code remains NO-TOUCH; production `/ask-v2` OFF.  
 
 ---
 
@@ -27,7 +27,8 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology ve substrate/reference authority.
 - `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **current J1S/J1T + M0/X0 decision authority**.
 - `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
-- `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T frozen lab benchmark contract.
+- `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.
+- `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; J1 decision sonrası, X0 öncesi mandatory Standard integration gate**.
 - `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
 - `../../AGENTS.md` — V2 geliştirici/ajan çalışma sözleşmesi.
@@ -46,6 +47,44 @@ Current timing authority yalnız:
 2. `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — final release freeze/80/50/50 timing.
 
 Çelişkide bu iki current authority üstün gelir.
+
+---
+
+## 0A. CURRENT PRE-RUN RECEIPT — 2026-09-22
+
+```text
+entry checkpoint                f2b246a7f186705f8ddd98a61e60d950f606d326
+J1 freeze                       d65-j1-freeze-v2
+J1S blob                        0dd53d5b1bb2ac39ba35f2c17c870c45c249d686 (UNCHANGED)
+J1T blob                        d18db04d26da1059e4ebb47d058f305e2e5a5bfb (UNCHANGED)
+corrected prep commit           732741be94ea7d5a618e5d566730875877d5fa59
+provider-free corrected run     35705204058 = 6/6 PASS
+wrong-topology run              35704627396 = INVALID AUTHORITY
+product semantic code touch     0
+product temporal code touch     0
+authority code touch            0
+```
+
+Current required order:
+
+```text
+corrected primary transport smoke
+→ corrected J1 full evidence
+→ J1 decision gate
+→ if Jev promising: STOP / consult before J1B or topology change
+→ else current topology retained
+→ D65-SI Standard Integration Closure
+→ real Standard Wren vertical
+→ X0
+→ if X0 promising: STOP / consult before full D65-X
+```
+
+J1 evidence is split:
+- J1S model-needed score vs deterministic/sensitive/retrieval controls;
+- J1T-CHOICE vs J1T-CONTRACT-FIDELITY.
+Jev native Decisions has no dynamic integer output primitive; dynamic `n` /
+`implicit_base_n` is recorded as `TEMPORAL_INTEGRATION_LIMITATION`, not hidden by
+case-enumeration/prompt hacks.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE
