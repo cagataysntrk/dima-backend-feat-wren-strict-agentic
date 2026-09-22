@@ -347,57 +347,55 @@ Büyük suite yalnız milestone/bundle/final gate.
 - önemli müdahale öncesi checkpoint SHA,
 - A/B exact same backend SHA.
 
-Sequence:
+Sequence — development/testing:
 
 ```text
 provider-free invariants
 → workers=1 focused stability
-→ same-SHA strong reference / fast A/B when needed
-→ 12–16 stratified canary
-→ D65-J1A isolated decision-model bake-off
-→ if promising: D65-J1B provider seam + role separation + focused/live/canary revalidation
-→ real Wren Standard + Research sentinels/revalidation
-→ ENGINEERING FREEZE CANDIDATE
-→ DEV80 exactly once for that freeze candidate
-→ engineering freeze
-→ VALIDATION50 (no tuning)
-→ external fresh HIDDEN50
+→ focused REAL LLM scenarios
+→ same-SHA model-floor A/B only when needed
+→ failure-family / metamorphic proof
+→ material 8–16 case canary
+→ relevant real Wren / Research / security sentinels
+→ continue vertical development
+```
+
+Broad final sets are end-only and are governed by
+`DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
+
+```text
+Day7–15 release code complete
+→ 20–25 case final integrated rehearsal GREEN
+→ FINAL ENGINEERING FREEZE CANDIDATE
+→ DEV80 EXACTLY ONCE FOR THIS RELEASE
+→ CODE FREEZE
+→ VALIDATION50 NO TUNING
+→ fresh external HIDDEN50 NO TUNING
 → certification seal
 ```
 
 Hidden development blocker değildir; final certification blocker'dır.
 
-### 11.1 Freeze-candidate / corpus invalidation
+### 11.1 Final-freeze / corpus invalidation — CURRENT RELEASE RULE
 
-`DEV80 once` şu anlama gelir:
+The previous `one DEV80 per engineering-freeze candidate` rule is **HISTORICAL_SUPERSEDED**
+for this release.
 
-```text
-one DEV80 per engineering-freeze candidate SHA
-```
-
-Aynı SHA'yı named-case tuning için tekrar tekrar DEV80'e sokmak yasaktır. DEV80 ortak bir
-`CONTRACT/ARCHITECTURE` veya `RESOLVER_TRUTH` failure family gösterir ve kod değişirse yeni SHA
-**yeni freeze candidate** olur; eski DEV80 yeni kodu certify etmez ve broad DEV80 proof yeniden
-gerekir.
-
-VALIDATION50 veya HIDDEN50 fail sonrası production/correctness code değişirse certification freeze
-geçersiz olur:
+Binding rule:
 
 ```text
-certification STOP
-→ engineering REOPEN
-→ root-cause classification
-→ code/contract change if justified
-→ new freeze candidate
-→ provider-free / focused / canary / sentinels
-→ DEV80 for new candidate
-→ fresh certification sets
+DEV80 maximum runs for this release = 1
 ```
 
-Görülmüş VALIDATION50 artık unbiased certification seti sayılmaz. HIDDEN50 fail sonrası
-architecture/code değişirse aynı hidden corpusunu tekrar tekrar kullanmak yasaktır; external
-evaluator yeni sealed hidden corpus üretir. Hidden prompt/per-case expected output development
-context'e yine girmez.
+Therefore DEV80 is entered only after Day7–15 code and the final 20–25 case rehearsal are green.
+If DEV80 reveals a real correctness/architecture defect that requires behavior-changing code,
+the tested candidate is invalid and this release STOPs; the original DEV80 cannot certify the
+changed code and no second DEV80 is budgeted.
+
+VALIDATION50 veya HIDDEN50 RED olursa mandatory failure triage yapılır, ancak bu sets
+development/tuning corpusuna çevrilmez. Behavior-changing code gerektirirse current certification
+candidate invalid olur and release stops under the one-shot rule. Hidden prompt/per-case expected
+output development context'e yine girmez.
 
 ### 11.2 Failure triage receipt gate
 
@@ -559,7 +557,16 @@ Runtime-kernel kararı geldiğinde E3/E4/E5'in bazı vertical'ları zaten yazıl
 - Standard authority split: 25/25 focused GREEN.
 - narrow CoverageVeto: 16/16 focused GREEN.
 
-Bunlar geri alınmaz. Ancak kernel öncesi loop mechanics architecture-sealed sayılmaz. Sıradaki product ticket: `D65-E3A-R — runtime-kernel realignment`.
+Bunlar geri alınmaz. D65-E3A-R runtime-kernel realignment **COMPLETED / GREEN** ve artık current next ticket değildir.
+
+Current next work:
+```text
+D65-J1S + D65-J1T lab/eval preparation/execution
+parallel D65-M0 deep Metabase source/adoption audit
+→ D65-X0 thin feasibility when M0 evidence is sufficient
+```
+
+Bu §12.1 satırı yalnız historical NO-ROLLBACK bağlamıdır.
 
 
 ### 12.2 D65-X mandatory Metabase source preflight
