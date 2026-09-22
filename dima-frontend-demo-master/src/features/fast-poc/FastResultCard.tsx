@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { EChartsOption } from "echarts";
 import { EChart } from "@/components/EChart";
 import { ResultTable } from "@/components/ResultTable";
@@ -37,16 +37,24 @@ function inferChart(result: QueryResult): {
   const y = numericColumns[0];
   if (!y) return null;
 
-  const dimensionColumns = result.columns.filter((column) => column !== y && !numericColumns.includes(column));
+  const dimensionColumns = result.columns.filter(
+    (column) => column !== y && !numericColumns.includes(column),
+  );
   const x =
-    dimensionColumns.find((column) => /(date|time|tarih|gun|ay|hafta|year|month)/i.test(column)) ??
-    dimensionColumns[0];
+    dimensionColumns.find((column) =>
+      /(date|time|tarih|gun|ay|hafta|year|month)/i.test(column),
+    ) ?? dimensionColumns[0];
 
   if (!x) return null;
 
   const points = result.rows
     .map((row) => ({ label: row[x], value: numeric(row[y]) }))
-    .filter((point) => point.label !== null && point.label !== undefined && point.value !== null);
+    .filter(
+      (point) =>
+        point.label !== null &&
+        point.label !== undefined &&
+        point.value !== null,
+    );
 
   if (points.length < 2) return null;
 
@@ -77,29 +85,30 @@ function inferChart(result: QueryResult): {
   };
 }
 
-export function FastResultCard({
-  result,
-}: {
-  result: QueryResult;
-}) {
+export function FastResultCard({ result }: { result: QueryResult }) {
   const chart = useMemo(() => inferChart(result), [result]);
   const [view, setView] = useState<ViewMode>(chart ? "chart" : "table");
+
+  useEffect(() => {
+    setView(chart ? "chart" : "table");
+  }, [chart, result]);
 
   return (
     <section
       aria-labelledby="fast-result-heading"
       className="border border-hairline bg-background p-4 shadow-[var(--shadow-1)] sm:p-5"
+      data-fast-result-card
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-neutral-500">
-            rendering proof · real Metabase fixture
+            live Metabase result
           </p>
           <h2 id="fast-result-heading" className="mt-1 text-base font-medium">
             Analitik sonuç
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-neutral-500">
-            Bu kart yalnız sonuç sunumunu kanıtlar; AI bulgusu veya kök neden iddiası üretmez.
+            Grafik ve tablo, Dima cevabının kanıtını gösterir; ürünün kendisi değildir.
           </p>
         </div>
 
@@ -128,10 +137,6 @@ export function FastResultCard({
 
       {view === "chart" && chart ? (
         <div data-fast-chart>
-          <div className="mb-2 flex gap-4 font-mono text-[10px] text-neutral-500">
-            <span>x: {chart.x}</span>
-            <span>y: {chart.y}</span>
-          </div>
           <EChart option={chart.option} aspect={0.42} minHeight={240} maxHeight={360} />
         </div>
       ) : (
@@ -141,7 +146,7 @@ export function FastResultCard({
       )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-3 font-mono text-[10px] text-neutral-500">
-        <span>{result.row_count} satırlık sentetik örnek</span>
+        <span>{result.row_count} satır</span>
         <span>chart-safe değilse tabloya düşer</span>
       </div>
     </section>

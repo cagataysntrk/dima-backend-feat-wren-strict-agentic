@@ -6,8 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://127.0.0.1:3000/fast-poc";
+const TOKEN = process.env.DIMA_FAST_E2E_TOKEN ?? "";
 const CDP_PORT = Number(process.env.CDP_PORT ?? 9232);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+if (!TOKEN) throw new Error("DIMA_FAST_E2E_TOKEN is required");
 
 function findChrome() {
   const candidates = [
@@ -24,7 +27,7 @@ function findChrome() {
 }
 
 function launchChrome() {
-  const profileDir = mkdtempSync(join(tmpdir(), "dima-fast-poc-"));
+  const profileDir = mkdtempSync(join(tmpdir(), "dima-fast-ask-"));
   const proc = spawn(findChrome(), [
     "--headless=new",
     "--no-sandbox",
@@ -42,7 +45,7 @@ function launchChrome() {
 }
 
 async function target() {
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 80; i++) {
     try {
       const response = await fetch(`http://127.0.0.1:${CDP_PORT}/json`);
       const targets = await response.json();
@@ -96,13 +99,35 @@ class Cdp {
   }
 }
 
-async function waitFor(cdp, expression, label) {
-  for (let i = 0; i < 60; i++) {
+async function waitFor(cdp, expression, label, attempts = 100) {
+  for (let i = 0; i < attempts; i++) {
     const value = await cdp.eval(expression);
     if (value) return value;
-    await sleep(250);
+    await sleep(200);
   }
   throw new Error(`timeout: ${label}`);
+}
+
+async function ask(cdp, question, expectedSelector, expectedText = null) {
+  const q = JSON.stringify(question);
+  const submitted = await cdp.eval(`(() => {
+    const input = document.querySelector('[data-fast-question]');
+    const form = document.querySelector('[data-fast-ask-form]');
+    if (!input || !form) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(input, ${q});
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    form.requestSubmit();
+    return true;
+  })()`);
+  if (!submitted) throw new Error(`could not submit question: ${question}`);
+
+  await waitFor(cdp, `!!document.querySelector('[data-fast-loading]')`, "loading state");
+  const expression = expectedText
+    ? `document.querySelector('${expectedSelector}')?.textContent?.includes(${JSON.stringify(expectedText)})`
+    : `!!document.querySelector('${expectedSelector}')`;
+  await waitFor(cdp, expression, `${expectedSelector} for ${question}`);
 }
 
 const chrome = launchChrome();
@@ -113,59 +138,82 @@ try {
   await cdp.send("Runtime.enable");
   await cdp.send("Network.enable");
   await cdp.send("Page.enable");
+  await cdp.send("Network.setExtraHTTPHeaders", {
+    headers: { Authorization: `Bearer ${TOKEN}` },
+  });
 
   const origin = new URL(FRONTEND_URL).origin;
   const cookie = await cdp.send("Network.setCookie", {
     name: "dima_refresh",
-    value: "fast-poc-e2e-route-guard",
+    value: "fast-ft003-e2e-route-guard",
     url: origin,
     path: "/",
     httpOnly: true,
     sameSite: "Lax",
   });
-  if (cookie.success === false) throw new Error("failed to set route-guard test cookie");
+  if (cookie.success === false) throw new Error("failed to set route-guard cookie");
 
   await cdp.send("Page.navigate", { url: FRONTEND_URL });
-
   await waitFor(
     cdp,
-    `document.querySelector('[data-fast-poc="true"] h1')?.textContent?.includes('Analyst rendering POC')`,
-    "POC heading",
+    `document.querySelector('[data-fast-poc="true"] h1')?.textContent?.includes('First real Ask')`,
+    "FT-003 heading",
   );
 
-  await waitFor(cdp, `!!document.querySelector('[data-fast-chart] canvas')`, "chart canvas");
+  // Browser-only network latency makes the loading state observable without
+  // changing product code or backend behavior.
+  await cdp.send("Network.emulateNetworkConditions", {
+    offline: false,
+    latency: 350,
+    downloadThroughput: -1,
+    uploadThroughput: -1,
+    connectionType: "wifi",
+  });
 
-  const chartMeta = await cdp.eval(`(() => ({
-    chart: !!document.querySelector('[data-fast-chart] canvas'),
-    workspaceText: document.body.innerText.includes('Collections') || document.body.innerText.includes('Query Builder'),
-    fast: !!document.querySelector('[data-fast-poc="true"]')
-  }))()`);
-
-  if (!chartMeta.chart || !chartMeta.fast) throw new Error("chart/shell missing");
-  if (chartMeta.workspaceText) throw new Error("generic Metabase workspace copy leaked into POC");
-
-  const switched = await cdp.eval(`(() => {
-    const button = [...document.querySelectorAll('button')].find((item) => item.textContent?.trim() === 'Tablo');
-    if (!button) return false;
-    button.click();
-    return true;
-  })()`);
-  if (!switched) throw new Error("table toggle missing");
-
-  const rows = await waitFor(
+  await ask(cdp, "Son 30 günde kaç sipariş var?", "[data-fast-answer]", "20 kayıt");
+  const countRows = await waitFor(
     cdp,
     `document.querySelectorAll('[data-fast-table] table tbody tr').length`,
-    "table rows",
+    "count table",
   );
-  if (rows !== 12) throw new Error(`expected 12 table rows, got ${rows}`);
+  if (countRows !== 1) throw new Error(`COUNT table rows expected 1, got ${countRows}`);
 
+  await ask(cdp, "Son 30 gündeki sipariş tutarı ne kadar?", "[data-fast-answer]", "16270");
+  const sumRows = await waitFor(
+    cdp,
+    `document.querySelectorAll('[data-fast-table] table tbody tr').length`,
+    "sum table",
+  );
+  if (sumRows !== 1) throw new Error(`SUM table rows expected 1, got ${sumRows}`);
+
+  await ask(cdp, "Son 30 günde bölgelere göre sipariş tutarı", "[data-fast-answer]", "4 kırılım");
+  await waitFor(cdp, `!!document.querySelector('[data-fast-chart] canvas')`, "breakdown chart");
+  const breakdownEvidence = await cdp.eval(`(() => ({
+    source: document.querySelector('[data-evidence-source]')?.textContent?.trim(),
+    period: document.querySelector('[data-evidence-period]')?.textContent?.trim(),
+    measure: document.querySelector('[data-evidence-measure]')?.textContent?.trim(),
+    breakdown: document.querySelector('[data-evidence-breakdown]')?.textContent?.trim(),
+    fingerprint: document.querySelector('[data-evidence-query-fingerprint]')?.textContent?.trim(),
+  }))()`);
+  if (breakdownEvidence.source !== "metabase://table/1") throw new Error(JSON.stringify(breakdownEvidence));
+  if (breakdownEvidence.measure !== "amount") throw new Error(JSON.stringify(breakdownEvidence));
+  if (breakdownEvidence.breakdown !== "region") throw new Error(JSON.stringify(breakdownEvidence));
+  if (!breakdownEvidence.fingerprint || breakdownEvidence.fingerprint.length !== 12) {
+    throw new Error(JSON.stringify(breakdownEvidence));
+  }
+
+  await ask(cdp, "Siparişleri say.", "[data-fast-clarification]");
+  await ask(cdp, "Siparişlerin ortalama tutarı nedir?", "[data-fast-unsupported]");
+  await ask(cdp, "Hatalı alanla sipariş tutarı", "[data-fast-failed]");
+
+  await ask(cdp, "Son 30 günde bölgelere göre sipariş tutarı", "[data-fast-answer]", "4 kırılım");
   await cdp.send("Emulation.setDeviceMetricsOverride", {
     width: 390,
     height: 844,
     deviceScaleFactor: 1,
     mobile: true,
   });
-  await sleep(300);
+  await sleep(350);
 
   const narrow = await cdp.eval(`(() => {
     const shell = document.querySelector('[data-fast-shell]');
@@ -176,17 +224,34 @@ try {
       scrollWidth: document.documentElement.scrollWidth,
     };
   })()`);
-
-  if (!narrow) throw new Error("narrow shell missing");
+  if (!narrow) throw new Error("mobile shell missing");
   if (narrow.width > narrow.viewport + 1) throw new Error(`shell overflow: ${JSON.stringify(narrow)}`);
   if (narrow.scrollWidth > narrow.viewport + 4) throw new Error(`document overflow: ${JSON.stringify(narrow)}`);
 
+  const leaked = await cdp.eval(`
+    document.body.innerText.includes('Collections') ||
+    document.body.innerText.includes('Query Builder') ||
+    document.body.innerText.includes('Metabase Search')
+  `);
+  if (leaked) throw new Error("generic Metabase workspace copy leaked into FT-003 UI");
+
   console.log(JSON.stringify({
     status: "GREEN",
-    chart: true,
-    table_rows: rows,
-    narrow,
-    route: "/fast-poc",
+    backend: "real /fast/ask",
+    cognition: "scripted browser harness",
+    metabase: "real pinned OSS",
+    db: "real synthetic lab",
+    count: "PASS",
+    sum: "PASS",
+    breakdown: "PASS",
+    loading: "PASS",
+    clarification: "PASS",
+    unsupported: "PASS",
+    failed: "PASS",
+    chart: "PASS",
+    table: "PASS",
+    desktop: "1440x900 PASS",
+    mobile: { width: 390, height: 844, ...narrow },
   }, null, 2));
 } finally {
   try { cdp?.ws?.close(); } catch {}
