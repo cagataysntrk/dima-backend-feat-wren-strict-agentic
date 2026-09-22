@@ -1,6 +1,6 @@
 # FT-003 FAILURE RECEIPT — LIVE_SENTINEL_RED_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / EVAL_ORACLE
 Date: 2026-09-22
 
 FAILURE_ID:
@@ -144,3 +144,27 @@ Required:
 
 The old RED run did not upload `ft003-live-receipt.json` because the test aborted before receipt creation.
 A new GREEN run must produce and upload a replacement receipt.
+
+
+## Closure
+
+Corrective test-only commit:
+`28173202404605c81a2f898ce56fc0fded3e1506`
+
+First GREEN rerun:
+`35772434074`
+
+Final live backend GREEN run after safety/provenance work:
+`35772731613`
+
+Final tested SHA:
+`82471af5c34ed1d47b4d2e9d066a9dc1bbcaea7e`
+
+Product formatter changes:
+`0`
+
+Product numeric result changes:
+`0`
+
+Failure closed as:
+`EVAL_ORACLE`
