@@ -19,6 +19,8 @@ from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
     CatalogCandidateBinding,
+    SemanticLinkBatchDecision,
+    SemanticLinkChoice,
     SemanticBindingGate,
     SemanticCandidateGenerator,
     StructuredSemanticCandidateDecisionProvider,
