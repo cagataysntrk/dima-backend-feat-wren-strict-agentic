@@ -772,3 +772,28 @@ P6A1 product patch      = UNCHANGED
 
 Correction is documentation-only: sealed authorization wording now explicitly states that corpus
 freeze/parity harness authorization is contingent on **P6A1 GREEN**.
+
+
+---
+
+## P6A1 first true-seam measurement — typed gap found
+
+```text
+product SHA                       = 28c4ca6525bbde0193901362b1d70c92ffc0347f
+P6 run                            = 35768149802 = FAILURE (measurement harness stopped early)
+P6A0 snapshot/golden              = PASS
+provider-free inherited gates     = PASS
+Metabase bootstrap                = PASS
+M1/Wren regression                = PASS @ 35768149702
+P3 regression                     = PASS @ 35768149806
+governance seal correction        = PASS @ 35768404434
+CANARY-03 validation              = WREN_COMPATIBILITY_GAP
+exact reason                      = unsupported Wren period kind: absolute
+wren.py changes                   = 0
+P4 compiler changes               = 0
+corpus                            = NOT FROZEN
+```
+
+Next harness run must measure cases independently:
+CANARY-01 and CANARY-02 execute through both real substrate seams; CANARY-03 is expected to remain a
+typed Wren compatibility gap unless a later milestone explicitly owns that feature.

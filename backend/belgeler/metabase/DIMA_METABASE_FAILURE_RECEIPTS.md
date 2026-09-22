@@ -1602,3 +1602,43 @@ under this receipt.
 
 status:
 `CORRECTION APPLIED / AWAITING GOVERNANCE GREEN`.
+
+
+---
+
+## DMP-P6-GAP-005 — Wren compatibility seam cannot represent absolute period intent
+
+receipt_id: `DMP-P6-GAP-005`  
+tested_product_sha: `28c4ca6525bbde0193901362b1d70c92ffc0347f`  
+p6_run: `35768149802`
+
+observed:
+P6A0 shared snapshot/golden proof remains GREEN. P6A1 reaches the real Wren substrate validation
+boundary and fails before execution because CANARY-03 carries
+`ResolvedPeriod(kind="absolute", start="2026-01-01", end="2026-01-31")`.
+
+Exact compatibility evidence:
+- `WrenSubstrateAdapter._period()` converts with `PeriodKind(value.kind)`;
+- current V2 `PeriodKind` supports `this_* / previous_* / last_n_*`;
+- `absolute` is not a valid V2 PeriodKind;
+- adapter therefore returns `unsupported Wren period kind: absolute`.
+
+classification:
+`TYPED_GAP / WREN_COMPATIBILITY_GAP`
+
+owner:
+current Wren compatibility contract, not P6 harness, not Metabase compiler, not data snapshot.
+
+not_a_failure_of:
+- shared PostgreSQL fixture;
+- Metabase execution;
+- P4 compiler/canonicalization;
+- P5 receipt contract;
+- Wren runtime connectivity.
+
+P6 rule:
+Do not modify `backend/app/v3/substrate/wren.py` to make the canary green.
+The harness must execute supported cases and report this unsupported semantic shape as a typed gap.
+
+status:
+`OPEN GAP / MEASUREMENT MUST REPORT; NO P6 PRODUCT PATCH AUTHORIZED`.

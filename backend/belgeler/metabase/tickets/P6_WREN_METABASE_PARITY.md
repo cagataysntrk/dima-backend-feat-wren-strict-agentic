@@ -70,3 +70,13 @@ Mismatch taxonomy additionally includes:
 
 Wren legacy receipt behavior must be measured, not rewritten or wrapped in fake Metabase projection
 objects to manufacture receipt parity.
+
+
+## P6A1 observed capability gap
+
+`DMP-P6-GAP-005`: current Wren compatibility adapter cannot represent
+`ResolvedPeriod.kind="absolute"`.
+
+P6 must report this as `TYPED_GAP / WREN_COMPATIBILITY_GAP`; `wren.py` remains forbidden.
+The P6A1 harness is authorized to continue measuring CANARY-01/02 and record CANARY-03 as the exact
+typed gap rather than aborting the entire instrument.
