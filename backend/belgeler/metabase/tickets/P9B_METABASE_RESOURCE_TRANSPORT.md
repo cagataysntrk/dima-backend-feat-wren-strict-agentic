@@ -36,3 +36,13 @@ provider-free `ProvisionAction(CREATE metric) + CanonicalProjection + explicit c
 → MetricCreateContract`.
 
 No HTTP mutation yet.
+
+
+## Identity hardening — DMP-P9B-AUDIT-002
+
+P9B1 transport contract is tenant-bound and retains the existing P4 projection/catalog provenance:
+`tenant_binding`, `projection_hash`, `resolved_intent_hash`,
+`current_catalog_fingerprint`, and `canonical_query_fingerprint`.
+
+The explicit target must carry the same tenant as the desired P9 resource. No tenant/collection
+discovery or default target is authorized.

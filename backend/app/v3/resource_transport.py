@@ -46,6 +46,7 @@ def _canonical_hash(value: Any) -> str:
 
 
 class MetricCreateTarget(FrozenModel):
+    tenant_binding: str = Field(min_length=1)
     collection_id: int = Field(ge=1)
 
 
@@ -60,9 +61,13 @@ class MetricAgentCreateRequest(FrozenModel):
 
 
 class MetricCreateContract(FrozenModel):
+    tenant_binding: str = Field(min_length=1)
     canonical_id: str = Field(min_length=1)
     desired_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     semantic_context_version: str = Field(min_length=1)
+    projection_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    resolved_intent_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    current_catalog_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     canonical_query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     collection_id: int = Field(ge=1)
     request: MetricAgentCreateRequest
@@ -197,6 +202,11 @@ class MetricCreateContractBuilder:
         desired = action.desired
         assert desired is not None
 
+        if target.tenant_binding != desired.tenant_binding:
+            raise ResourceTransportError(
+                "P9B1_TARGET_TENANT_MISMATCH",
+                "explicit persistence target tenant does not match desired resource tenant",
+            )
         if desired.semantic_context_version != projection.semantic_context_version:
             raise ResourceTransportError(
                 "P9B1_PROJECTION_CONTEXT_MISMATCH",
@@ -216,17 +226,25 @@ class MetricCreateContractBuilder:
             visualization_settings={},
         )
         payload = {
+            "tenant_binding": desired.tenant_binding,
             "canonical_id": desired.canonical_id,
             "desired_fingerprint": desired.desired_fingerprint,
             "semantic_context_version": desired.semantic_context_version,
+            "projection_hash": projection.projection_hash,
+            "resolved_intent_hash": projection.resolved_intent_hash,
+            "current_catalog_fingerprint": projection.current_catalog_fingerprint,
             "canonical_query_fingerprint": step.canonical_query_fingerprint,
             "collection_id": target.collection_id,
             "request": request.model_dump(mode="json"),
         }
         return MetricCreateContract(
+            tenant_binding=desired.tenant_binding,
             canonical_id=desired.canonical_id,
             desired_fingerprint=desired.desired_fingerprint,
             semantic_context_version=desired.semantic_context_version,
+            projection_hash=projection.projection_hash,
+            resolved_intent_hash=projection.resolved_intent_hash,
+            current_catalog_fingerprint=projection.current_catalog_fingerprint,
             canonical_query_fingerprint=step.canonical_query_fingerprint,
             collection_id=target.collection_id,
             request=request,

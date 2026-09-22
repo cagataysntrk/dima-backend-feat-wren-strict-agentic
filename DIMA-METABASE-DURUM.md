@@ -1038,3 +1038,26 @@ semantic/compiler changes     = 0
 
 DMP-P9B-RED-001 correction is minimal: structural rejection precedes semantic-id equality and the
 anti-SQL test no longer confuses Python import syntax with SQL.
+
+
+---
+
+## P9B1 identity hardening — DMP-P9B-AUDIT-002
+
+```text
+DMP-P9B-RED-001                  = CLOSED GREEN
+closing SHA                      = aa461134ddb044798be6275f7dc68d3979aff810
+closing workflow                 = 35780384430 = SUCCESS
+focused before audit             = 13 PASS
+P7/P8/P9 inherited              = 62 PASS
+DMP-P9B-AUDIT-002                = CORRECTION APPLIED / AWAITING GREEN
+transport tenant identity        = REQUIRED
+target tenant mismatch           = HARD FAIL
+projection_hash                  = CONTRACT-BOUND
+resolved_intent_hash             = CONTRACT-BOUND
+current_catalog_fingerprint      = CONTRACT-BOUND
+live writes                      = 0
+P10                              = NOT STARTED
+ASK_V2 observed                  = aef1032a514cf27bf41e53294b4e1ce669d45813
+ASK_V2 disposition               = REFERENCE_ONLY
+```

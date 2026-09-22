@@ -86,11 +86,18 @@ def test_p9b1_builds_exact_agent_metric_create_request_from_certified_query():
     contract = MetricCreateContractBuilder.build(
         action=action,
         projection=projection,
-        target=MetricCreateTarget(collection_id=17),
+        target=MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=17),
     )
 
+    assert contract.tenant_binding == "tenant-p9b"
     assert contract.canonical_id == "metric.revenue"
     assert contract.collection_id == 17
+    assert contract.projection_hash == projection.projection_hash
+    assert contract.resolved_intent_hash == projection.resolved_intent_hash
+    assert (
+        contract.current_catalog_fingerprint
+        == projection.current_catalog_fingerprint
+    )
     assert contract.request.model_dump(mode="json") == {
         "name": "Revenue",
         "query": projection.steps[0].serialized_query,
@@ -110,12 +117,12 @@ def test_p9b1_contract_is_deterministic():
     first = MetricCreateContractBuilder.build(
         action=action,
         projection=projection,
-        target=MetricCreateTarget(collection_id=17),
+        target=MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=17),
     )
     second = MetricCreateContractBuilder.build(
         action=action,
         projection=copy.deepcopy(projection),
-        target=MetricCreateTarget(collection_id=17),
+        target=MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=17),
     )
     assert first == second
 
@@ -123,7 +130,7 @@ def test_p9b1_contract_is_deterministic():
 @pytest.mark.parametrize("collection_id", [0, -1])
 def test_p9b1_requires_explicit_positive_collection_id(collection_id):
     with pytest.raises(ValidationError):
-        MetricCreateTarget(collection_id=collection_id)
+        MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=collection_id)
 
 
 def test_p9b1_rejects_projection_semantic_identity_mismatch():
@@ -139,7 +146,7 @@ def test_p9b1_rejects_projection_semantic_identity_mismatch():
         MetricCreateContractBuilder.build(
             action=action,
             projection=broken,
-            target=MetricCreateTarget(collection_id=17),
+            target=MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=17),
         )
     assert exc.value.code == "P9B1_PROJECTION_SEMANTIC_ID_MISMATCH"
 
@@ -153,7 +160,7 @@ def test_p9b1_rejects_projection_context_mismatch():
         MetricCreateContractBuilder.build(
             action=action,
             projection=broken,
-            target=MetricCreateTarget(collection_id=17),
+            target=MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=17),
         )
     assert exc.value.code == "P9B1_PROJECTION_CONTEXT_MISMATCH"
 
@@ -164,7 +171,7 @@ def test_p9b1_rejects_comparison_multi_step_projection():
         MetricCreateContractBuilder.build(
             action=action,
             projection=projection,
-            target=MetricCreateTarget(collection_id=17),
+            target=MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=17),
         )
     assert exc.value.code == "P9B1_QUERY_CARDINALITY"
 
@@ -176,7 +183,7 @@ def test_p9b1_initial_slice_rejects_non_metric_definition_clauses(case_index):
         MetricCreateContractBuilder.build(
             action=action,
             projection=projection,
-            target=MetricCreateTarget(collection_id=17),
+            target=MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=17),
         )
     assert exc.value.code == "P9B1_QUERY_SHAPE_UNSUPPORTED"
 
@@ -219,7 +226,7 @@ def test_p9b1_rejects_non_native_or_formula_payload_without_parsing_formula():
             MetricCreateContractBuilder.build(
                 action=broken,
                 projection=projection,
-                target=MetricCreateTarget(collection_id=17),
+                target=MetricCreateTarget(tenant_binding="tenant-p9b", collection_id=17),
             )
         assert exc.value.code == expected
 
@@ -257,3 +264,79 @@ def test_p9b1_transport_contract_has_no_http_search_regex_fuzzy_or_sql_builder()
         "construct_query(",
     ):
         assert forbidden not in source
+
+
+
+def test_p9b1_target_tenant_mismatch_hard_fails():
+    action, projection = _fixture()
+    with pytest.raises(ResourceTransportError) as exc:
+        MetricCreateContractBuilder.build(
+            action=action,
+            projection=projection,
+            target=MetricCreateTarget(
+                tenant_binding="tenant-other",
+                collection_id=17,
+            ),
+        )
+    assert exc.value.code == "P9B1_TARGET_TENANT_MISMATCH"
+
+
+def test_p9b1_tenant_changes_transport_contract_fingerprint():
+    action, projection = _fixture()
+    first = MetricCreateContractBuilder.build(
+        action=action,
+        projection=projection,
+        target=MetricCreateTarget(
+            tenant_binding="tenant-p9b",
+            collection_id=17,
+        ),
+    )
+    desired = action.desired
+    assert desired is not None
+    other_desired = desired.model_copy(
+        update={"tenant_binding": "tenant-other"}
+    )
+    other_action = action.model_copy(
+        update={"desired": other_desired}
+    )
+    second = MetricCreateContractBuilder.build(
+        action=other_action,
+        projection=projection,
+        target=MetricCreateTarget(
+            tenant_binding="tenant-other",
+            collection_id=17,
+        ),
+    )
+    assert first.contract_fingerprint != second.contract_fingerprint
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("projection_hash", "d" * 64),
+        ("current_catalog_fingerprint", "e" * 64),
+        ("resolved_intent_hash", "f" * 64),
+    ],
+)
+def test_p9b1_projection_provenance_changes_contract_fingerprint(field, value):
+    action, projection = _fixture()
+    first = MetricCreateContractBuilder.build(
+        action=action,
+        projection=projection,
+        target=MetricCreateTarget(
+            tenant_binding="tenant-p9b",
+            collection_id=17,
+        ),
+    )
+    changed_projection = projection.model_copy(
+        update={field: value}
+    )
+    second = MetricCreateContractBuilder.build(
+        action=action,
+        projection=changed_projection,
+        target=MetricCreateTarget(
+            tenant_binding="tenant-p9b",
+            collection_id=17,
+        ),
+    )
+    assert first.contract_fingerprint != second.contract_fingerprint

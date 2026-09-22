@@ -1939,3 +1939,55 @@ No HTTP write, query compiler, semantic expansion or fallback is authorized.
 
 status:
 `CORRECTION APPLIED / AWAITING P9B1 GREEN`.
+
+
+---
+
+## DMP-P9B-RED-001 closure — GREEN
+
+final_sha: `aa461134ddb044798be6275f7dc68d3979aff810`  
+p9b_workflow: `35780384430 = SUCCESS`  
+governance: `35780384123 = SUCCESS`  
+m1_wren: `35780384142 = SUCCESS`
+
+proof:
+- invalid query shape is rejected before semantic-id equality so the exact structural owner is visible;
+- anti-SQL test no longer mistakes Python import syntax for SQL;
+- focused P9B1 = 13 PASS;
+- inherited P7/P8/P9 = 62 PASS;
+- no semantic special case, regex workaround, fallback, query rewriting or HTTP write was added.
+
+status:
+`CLOSED GREEN`.
+
+---
+
+## DMP-P9B-AUDIT-002 — transport tenant identity and projection provenance
+
+receipt_id: `DMP-P9B-AUDIT-002`  
+tested_sha: `aa461134ddb044798be6275f7dc68d3979aff810`
+
+classification:
+`RESOURCE TRANSPORT IDENTITY / PROVENANCE`
+
+observed:
+P9A desired identity is tenant-scoped, but P9B1 `MetricCreateTarget` and
+`MetricCreateContract` omitted `tenant_binding`. The contract also persisted only the canonical
+query fingerprint from P4, omitting the enclosing `projection_hash`,
+`resolved_intent_hash`, and `current_catalog_fingerprint`.
+
+risk:
+Two otherwise identical resource requests from different tenants, or the same query bytes under a
+different certified projection/catalog state, could collapse to the same transport-contract identity.
+
+authorized correction:
+- require `MetricCreateTarget.tenant_binding`;
+- hard-fail target/desired tenant mismatch as `P9B1_TARGET_TENANT_MISMATCH`;
+- persist `tenant_binding`, `projection_hash`, `resolved_intent_hash`, and
+  `current_catalog_fingerprint` in `MetricCreateContract`;
+- include those exact existing identities in `contract_fingerprint`;
+- keep collection explicit;
+- no tenant discovery, collection search, default root/personal collection or P10 permission logic.
+
+status:
+`CORRECTION APPLIED / AWAITING PROVIDER-FREE P9B1 GREEN`.
