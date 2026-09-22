@@ -9,7 +9,7 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`68c53f4d1247a1fe813ebaf6bcc901916f6f2660`
+`b606a95f089cb4ca9fc65ea0024825ea4fc0fd5f`
 
 CURRENT_PRODUCT_GATE:
 `FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
@@ -337,3 +337,54 @@ Roles:
 - `gpt-5.6-sol` = SOL_CEILING / capability reference.
 
 Frozen inputs/contracts only; model changes.
+
+
+## FT-005 MODEL DEPENDENCY MATRIX — BLOCKED
+
+Matrix workflow:
+`35789207838`
+
+Matrix SHA:
+`b606a95f089cb4ca9fc65ea0024825ea4fc0fd5f`
+
+LUNA_BASELINE:
+`BLOCKED_NO_CREDENTIAL`
+
+Exact model:
+`gpt-5.6-luna`
+
+Artifact digest:
+`sha256:0ebe4d78b8671f9886d4ce189ee3e3c9fbbc3fe17db0c86369e621c81f1a9321`
+
+SOL_CEILING:
+`BLOCKED_NO_CREDENTIAL`
+
+Exact model:
+`gpt-5.6-sol`
+
+Artifact digest:
+`sha256:3a5aa74c90a47b959c80822ca4a5bce0145b04d8453d23a849665d81fbecd578`
+
+Missing canonical benchmark credential:
+`DIMA_OPENAI_API_KEY`
+(fallback accepted by workflow: `OPENAI_API_KEY`)
+
+Important:
+- workflow job conclusion SUCCESS means the blocker receipt was emitted successfully;
+- it does NOT mean either model corpus passed;
+- Luna was not silently replaced;
+- Sol was not silently replaced;
+- Gemini remains THIRD_MODEL_DIAGNOSTIC and remains RED;
+- no model-dependency conclusion is authorized until Luna/Sol actually execute.
+
+Latest Gemini frozen diagnostic:
+`35789186261 RED`
+
+Gemini artifact digest:
+`sha256:cd68d419c8262a123e9a99166afa8b2160bfee5102bba264974f2505473059d3`
+
+Current external blocker:
+`OPENAI_BENCHMARK_CREDENTIAL`
+
+Current product-code authorization:
+`NO PROMPT / SCHEMA / ALGORITHM PATCH UNTIL MODEL MATRIX EXECUTES`
