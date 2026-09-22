@@ -173,6 +173,29 @@ class FastConversationService:
             title=title,
         )
 
+    def _accepted_source_lineage(
+        self,
+        turn: FastTurnSnapshot,
+        *,
+        principal: Any,
+    ) -> tuple[str, ...]:
+        owner = FastRunOwner.from_principal(principal)
+        ordered: list[str] = []
+        for source_turn_id in turn.context_source_turn_ids:
+            source = self._store.turn(source_turn_id, owner)
+            source_ids = (
+                source.accepted_context.source_turn_ids
+                if source.accepted_context is not None
+                and source.accepted_context.source_turn_ids
+                else (source.turn_id,)
+            )
+            for item in source_ids:
+                if item not in ordered:
+                    ordered.append(item)
+        if turn.turn_id not in ordered:
+            ordered.append(turn.turn_id)
+        return tuple(ordered)
+
     def _refresh_turn(
         self,
         turn: FastTurnSnapshot,
@@ -184,7 +207,10 @@ class FastConversationService:
         if run.state == FastRunState.COMPLETED and run.response is not None:
             accepted = _accepted_context_from_response(
                 response=run.response,
-                source_turn_ids=(turn.turn_id,),
+                source_turn_ids=self._accepted_source_lineage(
+                    turn,
+                    principal=principal,
+                ),
             )
         return self._store.update_turn_from_run(
             turn_id=turn.turn_id,
@@ -312,11 +338,15 @@ class FastConversationService:
             if source_turn is not None
             else None
         )
-        source_questions = (
-            (source_turn.user_question,)
-            if source_turn is not None
-            else ()
-        )
+        if source_turn is not None and accepted_context is not None:
+            source_questions = tuple(
+                self._store.turn(source_turn_id, owner).user_question
+                for source_turn_id in accepted_context.source_turn_ids
+            )
+        elif source_turn is not None:
+            source_questions = (source_turn.user_question,)
+        else:
+            source_questions = ()
         if clarification_question is not None:
             source_questions = (*source_questions, clarification_question)
 
