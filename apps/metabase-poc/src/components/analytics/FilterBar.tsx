@@ -84,7 +84,7 @@ function DateRange({
         <Input
           id={`${param.slug}-from`}
           type="date"
-          className="h-8 w-[9.5rem] text-sm"
+          className="h-8 w-[9.5rem] text-base md:text-sm"
           value={from}
           onChange={(e) => update(e.target.value, to || e.target.value)}
         />
@@ -99,7 +99,7 @@ function DateRange({
         <Input
           id={`${param.slug}-to`}
           type="date"
-          className="h-8 w-[9.5rem] text-sm"
+          className="h-8 w-[9.5rem] text-base md:text-sm"
           value={to}
           onChange={(e) => update(from || e.target.value, e.target.value)}
         />

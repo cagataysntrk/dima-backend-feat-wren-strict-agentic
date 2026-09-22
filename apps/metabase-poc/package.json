@@ -33,7 +33,8 @@
     "tailwind-merge": "^3.6.0",
     "thinking-orbs": "0.3.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@dima/eslint-config": "workspace:*",

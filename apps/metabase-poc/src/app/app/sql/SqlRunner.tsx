@@ -60,7 +60,7 @@ export function SqlRunner() {
             }
           }}
           spellCheck={false}
-          className="min-h-56 font-mono text-[13px] leading-relaxed"
+          className="min-h-56 font-mono text-base leading-relaxed md:text-[13px]"
         />
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="brand" onClick={submit} disabled={run.isPending}>
@@ -95,7 +95,7 @@ export function SqlRunner() {
               if (name.trim()) save.mutate();
             }}
           >
-            <div className="min-w-64 flex-1 space-y-1.5">
+            <div className="w-full min-w-0 flex-1 space-y-1.5 sm:w-auto sm:min-w-64">
               <Label htmlFor="card-name" className="text-xs text-muted-foreground">
                 Analiz adı
               </Label>

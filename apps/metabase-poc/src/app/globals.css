@@ -455,3 +455,50 @@
     animation: none;
   }
 }
+
+/* Border beam — Dima's brand-violet light that circles an element's edge
+   (same effect as apps/web .marketing-border-beam). Usage: a relatively
+   positioned, rounded parent + <span class="dima-border-beam" aria-hidden />.
+   The mask leaves only a 1px ring, through which the rotating conic gradient shows. */
+@keyframes dima-beam-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.dima-border-beam {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  overflow: hidden;
+  padding: 1px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.dima-border-beam::before {
+  content: "";
+  position: absolute;
+  inset: -150%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 78%,
+    color-mix(in oklch, var(--brand) 28%, transparent) 86%,
+    var(--brand) 91%,
+    transparent 97%
+  );
+  animation: dima-beam-spin var(--beam-duration, 6s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dima-border-beam::before {
+    animation: none;
+  }
+}
