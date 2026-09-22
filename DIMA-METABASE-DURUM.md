@@ -1131,3 +1131,27 @@ P9B result: **metric transport proof GREEN in isolated lab only**.
 
 **Current phase:** P10 PRE-DEVELOPMENT — tenant/principal/security mapping + production
 ExecutionAccessSnapshot issuer. DMP-P5-BLOCK-001 remains OPEN.
+
+
+---
+
+## P10A ACCESS SNAPSHOT ISSUER — GREEN
+
+```text
+implementation SHA                 = 1abf43657453a771954a939de834e6b48f55620e
+P10 workflow                       = 35783766213 = SUCCESS
+focused P10A                       = 20 PASS
+P5 + P9B inherited                 = 59 PASS
+M1/Wren                            = 35783766157 = SUCCESS
+governance                         = 35783766051 = SUCCESS
+durable access model               = P5 ExecutionAccessSnapshot ONLY
+DMP-P5-BLOCK-001                   = OPEN
+production official receipt        = BLOCKED
+production P9B writes              = BLOCKED
+```
+
+DMP-P10-AUDIT-001:
+current OSS lab can prove basic query permission/revocation, but cannot honestly prove premium
+sandbox/advanced-permission/impersonation row/column lens.
+
+**Current phase:** P10B1 isolated authenticated-user + permission-revocation proof.

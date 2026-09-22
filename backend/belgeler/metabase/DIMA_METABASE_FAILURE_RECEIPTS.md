@@ -2078,3 +2078,56 @@ P10 security issuer gate is now the next architecture owner.
 
 status:
 `CLOSED GREEN`.
+
+
+---
+
+## P10A provider-free access snapshot issuer — GREEN
+
+implementation_sha: `1abf43657453a771954a939de834e6b48f55620e`  
+p10_workflow: `35783766213 = SUCCESS`  
+governance: `35783766051 = SUCCESS`  
+m1_wren: `35783766157 = SUCCESS`
+
+proof:
+- focused P10A = 20 PASS;
+- inherited P5 identity + P9B transport = 59 PASS;
+- current principal / accepted intent / canonical projection / verified facts mismatch paths fail closed;
+- source-object identity is exact;
+- security-lens changes alter the existing P5 execution-access fingerprint;
+- VerifiedExecutionSecurityFacts has no competing fingerprint and no session token/secret field;
+- P5 ExecutionAccessSnapshot remains the only durable access identity.
+
+status:
+`P10A CONTRACT GREEN / DMP-P5-BLOCK-001 STILL OPEN`.
+
+
+---
+
+## DMP-P10-AUDIT-001 — current OSS lab cannot prove advanced row/column/impersonation lens
+
+receipt_id: `DMP-P10-AUDIT-001`  
+classification: `SECURITY CAPABILITY / LAB TOPOLOGY`
+
+evidence:
+- current pinned lab image is OSS `metabase/metabase@sha256:1160...8a73`;
+- v0.63.18 `enable-sandboxes?` is a premium feature gate;
+- v0.63.18 `enable-advanced-permissions?` gates block access / connection impersonation;
+- OSS permission-graph augmentation returns no sandbox/impersonation state;
+- blocked view-data validation requires advanced-permissions;
+- basic `create-queries` permission and authenticated current-user identity are available in OSS.
+
+decision:
+Do not fake row restriction, CLS or impersonation with Dima role labels.
+
+P10B is split:
+- P10B1: isolated OSS proof for exact Metabase current-user attestation, basic query permission
+  revocation, same-session denial, no admin fallback, restore;
+- P10B2: real row/column/impersonation/database-route lens proof using an actually capable security
+  owner/runtime.
+
+DMP-P5-BLOCK-001 remains open until P10B2 (or an equivalent faithful DB-native security owner) is
+proven.
+
+status:
+`P10B1 AUTHORIZABLE / P10B2 CAPABILITY GAP OPEN`.

@@ -862,3 +862,39 @@ Production official P5 receipt issuance remains blocked until P10 closes
 `DMP-P5-BLOCK-001`.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0025 — split P10 live proof into basic revocation and advanced data-lens proof
+
+date: 2026-09-22
+
+decision:
+P10 live security certification has two independent evidence classes.
+
+```text
+P10B1
+  authenticated Metabase subject
+  basic data/query permission
+  revocation under same session
+  no admin/service fallback
+  restore
+  explicit permission revision evidence
+
+P10B2
+  row restriction
+  column restriction
+  sandbox / impersonation / database-route lens
+  cross-lens cache/read isolation
+  faithful RLS/CLS version issuance
+```
+
+P10B1 may run against the current pinned OSS lab.
+
+P10B2 may not be simulated by role names or fake digest strings. It requires a real capability owner
+(premium Metabase feature, DB-native security route, or another explicitly governed mechanism).
+
+P10A + P10B1 do not close DMP-P5-BLOCK-001 by themselves.
+
+status: SEALED.

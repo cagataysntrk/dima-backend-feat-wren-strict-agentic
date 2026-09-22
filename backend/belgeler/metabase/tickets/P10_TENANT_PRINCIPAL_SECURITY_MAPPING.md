@@ -36,3 +36,17 @@ After P10A GREEN:
 
 DMP-P5-BLOCK-001 remains OPEN until P10B. Production official receipts and production P9B resource
 writes remain blocked.
+
+
+## P10A result
+
+`1abf43657453a771954a939de834e6b48f55620e` is provider-free GREEN:
+20 focused PASS, 59 inherited P5/P9B PASS, M1/Wren GREEN.
+
+## P10B split
+
+DMP-DEC-0025:
+- P10B1 = one OSS authenticated-subject + basic permission revocation canary;
+- P10B2 = advanced row/column/impersonation/database-route security lens.
+
+Current OSS lab cannot certify P10B2. DMP-P5-BLOCK-001 remains open.
