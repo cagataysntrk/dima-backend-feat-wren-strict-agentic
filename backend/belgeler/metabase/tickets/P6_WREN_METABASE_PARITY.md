@@ -54,7 +54,9 @@ latency, receipt completeness, status and optional typed gap classification.
 ## Execution order correction
 
 ```text
-P6A  same-snapshot canary
+P6A0 shared-snapshot connectivity/golden proof = GREEN
+  ↓
+P6A1 true same-intent substrate-seam canary    = NEXT
   ↓
 P6B  deterministic 80-case corpus freeze
   ↓
@@ -64,7 +66,7 @@ P6C  full parity harness
 The shared-data assumption is proven before spending effort on the 80-case corpus.
 
 Mismatch taxonomy additionally includes:
-`RECEIPT/PROVENANCE_GAP`.
+`RECEIPT/PROVENANCE_GAP` and `WREN_COMPATIBILITY_GAP`.
 
 Wren legacy receipt behavior must be measured, not rewritten or wrapped in fake Metabase projection
 objects to manufacture receipt parity.

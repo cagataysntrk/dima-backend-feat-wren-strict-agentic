@@ -1487,3 +1487,85 @@ exclude only `backend/lab/metabase/p6/**` from the M2 path trigger, and evaluate
 isolation against the current push diff rather than cumulative post-M2 branch history.
 
 DMP-P6-RED-001 remains OPEN until the repaired M2 self-run is GREEN.
+
+
+---
+
+## DMP-P6-RED-001 closure
+
+final_corrective_sha: `5f64379c28187d021f9bb7a813bb678ce60f5174`  
+m2_workflow: `35765566147 = SUCCESS`
+
+Proof:
+- complete M2 workflow body restored;
+- immutable runtime pins unchanged;
+- bootstrap/backup/restore proof unchanged;
+- `backend/lab/metabase/p6/**` no longer cross-triggers M2;
+- isolation checks the current change set instead of cumulative post-M2 branch history.
+
+Nuance:
+the repaired current M2 self-run proves the workflow still functions after scope correction. It does
+not replace the original sealed historical M2 isolation certification.
+
+status:
+`CLOSED GREEN`.
+
+---
+
+## DMP-P6-RED-002 closure
+
+final_corrective_sha: `5f64379c28187d021f9bb7a813bb678ce60f5174`  
+p6_workflow: `35765566189 = SUCCESS`
+
+Proof:
+- psycopg harness uses `dbname`;
+- Wren PostgresConnectionInfo uses `database`;
+- typed `DataSource.postgres` validation passes;
+- deterministic shared PostgreSQL seed passes;
+- Wren and Metabase both reach the exact P6 physical snapshot;
+- 3-case lower-level live canary passes against independent fixture anchors.
+
+status:
+`CLOSED GREEN`.
+
+---
+
+## DMP-P6-AUDIT-003 — P6A0 connectivity proof is not yet substrate-seam parity
+
+receipt_id: `DMP-P6-AUDIT-003`  
+tested_sha: `5f64379c28187d021f9bb7a813bb678ce60f5174`
+
+observed:
+The current P6 live canary executes Wren with three hand-authored SQL statements while the Metabase
+arm executes a Dima `ResolvedAnalyticsIntent` through the production compiler/canonicalizer.
+
+classification:
+`EVAL_ORACLE / HARNESS ARCHITECTURE OVERCLAIM`
+
+what P6A0 proves:
+- same physical PostgreSQL snapshot;
+- same deterministic snapshot checksum;
+- Wren reaches and queries that snapshot;
+- Metabase reaches and queries that snapshot;
+- independent golden values agree.
+
+what it does not prove:
+- same `ResolvedAnalyticsIntent` reaches both engines;
+- existing `WrenSubstrateAdapter` executes the fixture;
+- production thin `MetabaseSubstrateAdapter` executes the fixture;
+- receipt/provenance parity.
+
+required_next_gate:
+`P6A1 — TRUE SUBSTRATE-SEAM CANARY` with exactly CANARY-01 metric,
+CANARY-02 metric+breakdown, CANARY-03 metric+absolute-period.
+
+forbidden:
+- modifying `backend/app/v3/substrate/wren.py`;
+- custom ResolvedIntent→Wren SQL compiler;
+- raw prompt input;
+- fuzzy/regex/synonym semantic binding;
+- fake Metabase projection for Wren receipts;
+- freezing the 80-case corpus before P6A1 resolves.
+
+status:
+`OPEN / P6A1 AUTHORIZED`.

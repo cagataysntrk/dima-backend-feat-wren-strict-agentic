@@ -719,3 +719,39 @@ P6 review is minimally amended:
 - implementation order is now P6A same-snapshot canary → P6B corpus freeze → P6C full parity.
 
 **Next:** P6A shared PostgreSQL same-snapshot canary.
+
+
+---
+
+## P6A0 shared-snapshot infrastructure canary — GREEN
+
+```text
+current corrective HEAD             = 5f64379c28187d021f9bb7a813bb678ce60f5174
+P6 workflow                         = 35765566189 = SUCCESS
+M2 repaired self-run                = 35765566147 = SUCCESS
+governance                          = 35765566328 = SUCCESS
+fixture version                     = p6-shared-v1
+p6_orders                           = 8 rows
+p6_customers                        = 4 rows
+snapshot_id                         = a6ef6ba31738b90e939adafb49830291b2d3a74497d83940ed3479adffa23f74
+content checksum                    = 78eec96fb8901b72828fbbeae9ea065da5e7bb8a60a87b39e66155d682c74a23
+golden total                        = 2000
+golden January                      = 750
+P6A0 live                           = 3 PASS
+DMP-P6-RED-001                      = CLOSED GREEN
+DMP-P6-RED-002                      = CLOSED GREEN
+DMP-P6-AUDIT-003                    = OPEN
+source branch observed              = 1e1c33e8750366d149bcceef1452b70da3774682
+source branch writes/sync           = 0
+```
+
+**Current phase:** P6A0 SHARED-SNAPSHOT INFRASTRUCTURE CANARY GREEN — P6A1 TRUE SUBSTRATE-SEAM CANARY NEXT
+
+P6A0 proves physical-data/connectivity and independent golden-anchor correctness only. It is not
+full substrate parity because the Wren arm currently uses hand-authored SQL.
+
+P6 full corpus: **NOT FROZEN**.  
+P6 full parity: **NOT STARTED**.
+
+P6A1 must send the same accepted Dima meaning through the existing Wren substrate seam and a thin
+Metabase execution adapter. Only substrate implementation may vary.

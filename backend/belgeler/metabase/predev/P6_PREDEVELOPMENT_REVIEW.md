@@ -206,20 +206,32 @@ feat/ask-v2-mvp
 
 ## 12. First implementation order
 
-### P6A — same-snapshot canary first
+### P6A0 — shared physical snapshot + golden connectivity proof — GREEN
 
-1. build deterministic shared PostgreSQL fixture with `p6_orders` and `p6_customers`;
-2. derive stable snapshot identity from schema/version, row counts, fixture manifest fingerprint and
-   deterministic content checksum;
-3. prove Wren and Metabase both reach that exact physical snapshot using legitimate structured paths;
-4. run only three post-authority canaries: metric aggregation, metric+breakdown, metric+period;
-5. if either arm cannot reach the same governed dataset, stop as `DATA/FIXTURE_GAP`.
+Existing 3-case lower-level proof is retained. It uses direct Wren SQL only as a connectivity/engine
+sanity diagnostic and Dima→Metabase structured execution on the other arm.
 
-No raw prompt, Metabase raw-SQL bypass, semantic search or parity conclusion is authorized in P6A.
+It proves same physical data + independent golden answers, but not same-intent substrate parity.
+
+### P6A1 — true substrate-seam canary — NEXT
+
+Before corpus freeze, execute exactly three cases:
+- CANARY-01 metric;
+- CANARY-02 metric + breakdown;
+- CANARY-03 metric + absolute period.
+
+For each case the authority id, projection hash, resolved intent hash, semantic context, semantic ids,
+principal and database snapshot identity must be identical. The Wren arm must use the existing
+`WrenSubstrateAdapter`; the Metabase arm must use a thin orchestration adapter. Hand-authored Wren
+SQL is forbidden in P6A1.
+
+Record three independent dimensions: data snapshot, semantic/execution result, receipt/provenance.
+A receipt gap is `TYPED_GAP / RECEIPT/PROVENANCE_GAP`, not a reason to fabricate a fake Metabase
+projection on the Wren side.
 
 ### P6B — corpus freeze
 
-Only after P6A is GREEN:
+Only after P6A1 is GREEN:
 - deterministically generate exactly 80 engine-neutral structural cases;
 - freeze stable case ids and normalized corpus fingerprint;
 - no engine-specific expectation branches.
