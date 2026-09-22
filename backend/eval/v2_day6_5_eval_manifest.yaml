@@ -394,3 +394,48 @@ substrate_challenger:
     - replay_permission_recheck
     - evidence_artifact_compatibility
     - tenant_context_end_to_end
+
+metabase_source_reference_contract:
+  canonical_repo: "metabase/metabase"
+  reference_sha: "74216b30981d8310c4cf724d63ca282e2e63529d"
+  canonical_paths:
+    - "src/metabase/metabot/agent/core.clj"
+    - "src/metabase/metabot/agent/profiles.clj"
+    - "src/metabase/agent_api/reference.md"
+    - "src/metabase/agent_api/api.clj"
+    - "src/metabase/agent_api/query_guards.clj"
+    - "src/metabase/mcp/v2/tools/query.clj"
+  local_convenience_checkout:
+    path: "public/metabase/master"
+    authority: false
+    read_only: true
+    sha_verification_required: true
+  source_copy_port_vendor_forbidden: true
+  d65x_integration_mode: "SEPARATE_SERVICE_AGENT_API"
+  mandatory_research_protocol:
+    - "verify canonical repo and exact source SHA"
+    - "read all canonical source paths at the declared SHA"
+    - "classify findings as pattern/api/security/runtime/Dima inference"
+    - "cross-check Dima trust-plane invariants"
+    - "verify current upstream when behavior/version/license/API may have changed"
+    - "record decision receipt before implementation/result interpretation"
+  required_bakeoff_receipt:
+    - canonical_source_repo
+    - source_reference_sha
+    - runtime_version
+    - runtime_image_digest
+    - service_api_identity
+    - dima_tested_sha
+    - adapter_sha
+    - benchmark_corpus_version
+    - tenant_user_permission_context
+    - timestamp
+  stop_the_line:
+    - source_sha_unknown
+    - local_checkout_sha_unverified
+    - canonical_paths_not_inspected
+    - permission_or_query_guard_behavior_unverified
+    - runtime_version_or_image_digest_unpinned
+    - source_copy_port_or_vendor_attempt
+    - trust_plane_weakened_to_match_metabase
+    - equal_parallel_production_truth_engines
