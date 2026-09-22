@@ -4,24 +4,42 @@ name: v2-day6-5-provider-free-closure
   workflow_dispatch:
     inputs:
       target_sha:
-        description: "Exact git SHA to certify"
+        description: "Exact semantic-code SHA to certify"
         required: true
         default: "c9629d9029db360e86a8592e12da646a2afc0621"
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day6-5-provider-free-closure.yml"
 
 jobs:
   provider-free-closure:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == 'test(v2-day6.5): run exact semantic-sha recertification'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
+      TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.target_sha || 'c9629d9029db360e86a8592e12da646a2afc0621' }}
       DIMA_LLM_PROVIDER: "rule"
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
+
     steps:
-      - name: Checkout exact certification SHA
+      - name: Capture workflow-source identity
+        shell: bash
+        run: |
+          echo "workflow_source_sha=$GITHUB_SHA" | tee /tmp/day65_recert_receipt.txt
+          echo "requested_code_sha=$TARGET_SHA" | tee -a /tmp/day65_recert_receipt.txt
+          echo "event_name=$GITHUB_EVENT_NAME" | tee -a /tmp/day65_recert_receipt.txt
+          echo "workflow_ref=$GITHUB_WORKFLOW_REF" | tee -a /tmp/day65_recert_receipt.txt
+
+      - name: Checkout exact semantic-code SHA
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.target_sha }}
+          ref: ${{ env.TARGET_SHA }}
 
       - uses: actions/setup-python@v5
         with:
@@ -62,7 +80,18 @@ jobs:
             tests/test_v2_day6_5_dev_corpus.py
 
       - name: Certification identity
+        shell: bash
         run: |
-          echo "requested_sha=${{ inputs.target_sha }}"
-          echo "tested_sha=$(git rev-parse HEAD)"
-          test "$(git rev-parse HEAD)" = "${{ inputs.target_sha }}"
+          tested_sha="$(git rev-parse HEAD)"
+          echo "tested_code_sha=$tested_sha" | tee -a /tmp/day65_recert_receipt.txt
+          echo "requested_code_sha=$TARGET_SHA"
+          echo "tested_code_sha=$tested_sha"
+          test "$tested_sha" = "$TARGET_SHA"
+
+      - name: Upload recertification receipt
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-provider-free-recert-receipt
+          path: /tmp/day65_recert_receipt.txt
+          retention-days: 90
