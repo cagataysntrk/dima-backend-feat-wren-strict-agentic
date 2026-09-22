@@ -1,5 +1,25 @@
 # DIMA V2 — GELİŞTİRİCİ / AJAN ÇALIŞMA SÖZLEŞMESİ
 
+## CURRENT BRIDGE ACTIVE OVERRIDE
+
+> HEAD: `6d65600842731112f2362261a30660217cbde05d`.
+> `D65-SI = FINAL GREEN/SEALED`.
+> `M0E-DEEP-DELTA = FINAL GREEN/SEALED`.
+> Current sole ticket = `D65-X0-BRIDGE-PREFLIGHT`.
+>
+> Do NOT reopen semantic discovery/SI/M0E absent new independent P0.
+> Do NOT start Metabase runtime/container yet.
+>
+> Compare exactly seams A/B/C using real sealed Standard artifacts.
+> Bridge may translate runtime identity mechanically, but may not reconstruct meaning.
+> `UNAPPROVED_METABASE_IMPLICIT_JOIN=0`, second semantic authority=0.
+>
+> Terminal:
+> THIN_LOSSLESS → X0-REST automatically;
+> HEAVY_SEMANTIC_DUPLICATION → reject Metabase structured execution, retain Wren, Day7;
+> ARCHITECTURE_CHANGE_REQUIRED → STOP/CONSULT.
+
+
 ## POST-ANALYST CURRENT OVERRIDE
 
 > **M0E-DEEP-DELTA: FINAL GREEN / SEALED (25/25, exit counters zero).**

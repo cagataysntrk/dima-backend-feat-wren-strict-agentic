@@ -2,14 +2,36 @@
 
 **Date:** 2026-09-22  
 **Branch:** `feat/ask-v2-mvp`  
-**Verified checkpoint HEAD:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Status:** **D65-SI FINAL GREEN / M0E-DEEP-DELTA ACTIVE / X0 BRIDGE BLOCKED**  
+**Verified checkpoint HEAD:** `6d65600842731112f2362261a30660217cbde05d`  
+**Status:** **D65-SI FINAL GREEN / M0E-DEEP-DELTA FINAL GREEN / X0-BRIDGE-PREFLIGHT ACTIVE**  
 **Production /ask-v2:** OFF  
 **DEV80 / Validation50 / Hidden50 / FINAL FREEZE:** FORBIDDEN NOW
 
 This is the single current continuation authority after the analyst audit.
 It supersedes `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md` for "where do I continue?" purposes.
 Older receipts remain historical evidence and MUST NOT be erased.
+
+## 0. CURRENT SUPERVISOR OVERRIDE — BRIDGE ACTIVE
+
+```text
+HEAD                     6d65600842731112f2362261a30660217cbde05d
+D65-SI                   FINAL GREEN / SEALED
+M0E-DEEP-DELTA           FINAL GREEN / SEALED
+X0-BRIDGE-PREFLIGHT      CURRENT ACTIVE TICKET
+Metabase runtime         OFF
+production /ask-v2       OFF
+DEV80                    FORBIDDEN
+```
+
+Closed unless new independent P0:
+`J1/J1B, provider topology, semantic discovery, semantic retrieval tuning, SI full-live,
+M0E source exhaustion`.
+
+Current objective:
+prove whether already-accepted Dima/Wren semantics can cross into Metabase structured-query
+semantics through a thin deterministic execution bridge **without** any second semantic truth.
+
+Do not start Metabase runtime until bridge preflight terminal is `THIN_LOSSLESS`.
 
 ## 1. Read first after context reset
 
@@ -593,3 +615,35 @@ label guessing, large metadata sync, or unapproved Metabase implicit FK authorit
 `METABASE STRUCTURED EXECUTION ARM = REJECT` and proceed with retained Wren to Day7.
 
 Only a thin/lossless bridge authorizes X0-REST.
+
+
+## 6A. Current bridge execution order
+
+```text
+D65-SI SEALED
++
+M0E-DEEP-DELTA SEALED
+↓
+D65-X0-BRIDGE-PREFLIGHT
+  compare exactly A / B / C
+  use real sealed Standard artifacts
+  runtime OFF
+
+if HEAVY_SEMANTIC_DUPLICATION
+→ reject Metabase structured execution
+→ Wren remains primary
+→ Day7
+
+if THIN_LOSSLESS
+→ X0-REST
+
+if ARCHITECTURE_CHANGE_REQUIRED
+→ STOP / CONSULT
+```
+
+Current bridge P0:
+raw language reparse, manual metric/relationship/grain/time redefinition, label guessing,
+unapproved implicit FK join, second semantic authority, semantic handle remint, cross-tenant
+mapping, stale identity reuse as authority = all zero.
+
+No fourth generic substrate abstraction.

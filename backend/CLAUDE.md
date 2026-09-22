@@ -1,4 +1,12 @@
 <!-- DIMA-V2-ACTIVE-OPERATION -->
+<!-- CURRENT-BRIDGE-ACTIVE -->
+> HEAD `6d65600842731112f2362261a30660217cbde05d`.
+> SI and M0E-DEEP-DELTA are SEALED.
+> Current ticket = `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md`.
+> Runtime/container OFF. Provider-free deterministic proof only.
+> Compare A/B/C, real sealed Standard artifacts, no fourth framework.
+> Thin/lossless → X0-REST; heavy semantic duplication → reject execution arm; authority change → STOP.
+
 <!-- POST-ANALYST CURRENT AUTHORITY -->
 > D65-SI FINAL GREEN at `c72eb913...`.
 > Current authority: `belgeler/plan/DIMA_DAY6_5_SI_FINAL_SEAL.md` then

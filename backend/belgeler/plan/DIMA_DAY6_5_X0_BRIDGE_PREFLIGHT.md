@@ -1,10 +1,23 @@
 # DIMA DAY 6.5 — X0 BRIDGE PREFLIGHT
 
-**Status:** OPEN / BLOCKS X0 RUNTIME  
+**Status:** ACTIVE / CURRENT SOLE DAY6.5 TICKET / BLOCKS X0 RUNTIME  
 **Date:** 2026-09-22  
 **Metabase runtime spin-up:** FORBIDDEN UNTIL PREFLIGHT GREEN  
 **Wren semantic backbone:** RETAIN  
 **Dima accepted authority/evidence:** UNCHANGED
+
+## Current sealed authority
+
+```text
+HEAD                    6d65600842731112f2362261a30660217cbde05d
+D65-SI                  FINAL GREEN / SEALED
+M0E-DEEP-DELTA          FINAL GREEN / SEALED
+Metabase runtime        OFF
+production /ask-v2      OFF
+DEV80                   FORBIDDEN
+```
+
+No semantic/SI/M0E reopening without new independent P0.
 
 ## Question
 
@@ -12,6 +25,19 @@
 > semantics deterministically and losslessly without creating a second semantic truth?
 
 This is a design/prototype proof, not a Metabase runtime benchmark.
+
+## Identity mapping is not semantic mapping
+
+Allowed:
+existing accepted Dima/Wren canonical identity → exact physical lineage → current Metabase
+runtime identity, mechanically and tenant/version scoped.
+
+Every mapping receipt is classified:
+`IDENTITY_ONLY` or `SEMANTIC_DUPLICATION`.
+
+Forbidden:
+label/name lookup as meaning, manual metric formula recreation, manual relationship recreation,
+or physical FK inference as business truth.
 
 ## Candidate seams
 

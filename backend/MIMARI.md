@@ -1,5 +1,23 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-CURRENT-BRIDGE-ACTIVE -->
+> ## 🔴 CURRENT DAY6.5 AUTHORITY — BRIDGE PREFLIGHT
+>
+> HEAD `6d65600842731112f2362261a30660217cbde05d`.
+> D65-SI and M0E-DEEP-DELTA are FINAL GREEN/SEALED.
+> Current sole architecture ticket = `D65-X0-BRIDGE-PREFLIGHT`.
+>
+> Allowed bridge input is already-accepted Dima/Wren semantic artifacts only.
+> Metabase is downstream execution candidate, never upstream semantic cognition.
+> Runtime identity mapping is allowed only when mechanically derived from existing accepted
+> Dima/Wren canonical/physical lineage and tenant/version scoped.
+>
+> Candidate seams: A=`StandardProjection+handles`, B=`resolved AnalyticsIR`,
+> C=`Wren-specific planned representation`. No fourth generic framework.
+>
+> Metabase runtime remains OFF until THIN_LOSSLESS preflight.
+
+
 <!-- DIMA-V2-POST-ANALYST-RECONCILIATION -->
 > **D65-SI FINAL GREEN / SEALED**
 >
