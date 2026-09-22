@@ -74,5 +74,38 @@
       "joinType": "many_to_one",
       "condition": "\"p6_orders\".customer_id = \"p6_customers\".id"
     }
+  ],
+  "cubes": [
+    {
+      "name": "p6_orders",
+      "label": "P6 governed orders fixture",
+      "baseObject": "p6_orders",
+      "measures": [
+        {
+          "name": "p6_revenue",
+          "expression": "SUM(amount)",
+          "type": "DOUBLE"
+        }
+      ],
+      "dimensions": [
+        {
+          "name": "region",
+          "expression": "region",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "channel",
+          "expression": "channel",
+          "type": "VARCHAR"
+        }
+      ],
+      "timeDimensions": [
+        {
+          "name": "order_date",
+          "expression": "order_date",
+          "type": "DATE"
+        }
+      ]
+    }
   ]
 }

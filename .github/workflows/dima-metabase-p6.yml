@@ -56,9 +56,12 @@ jobs:
         working-directory: backend
         run: |
           python -m py_compile \
+            app/v3/substrate/metabase/execution_adapter.py \
             lab/metabase/p6/seed.py \
-            tests/test_v3_p6_same_snapshot_canary.py
+            tests/test_v3_p6_same_snapshot_canary.py \
+            tests/test_v3_p6_metabase_execution_adapter.py
           pytest -q \
+            tests/test_v3_p6_metabase_execution_adapter.py \
             tests/test_v3_p6_same_snapshot_canary.py \
             tests/test_v3_p5_execution_identity.py \
             tests/test_v3_p5_receipt.py \
@@ -114,7 +117,7 @@ jobs:
           set +a
           python3 scripts/bootstrap.py
 
-      - name: Run P6A three-case shared-snapshot canary
+      - name: Run P6A0 plus P6A1 substrate-seam canaries
         working-directory: backend
         shell: bash
         run: |
@@ -123,6 +126,7 @@ jobs:
           source lab/metabase/.env
           set +a
           export DIMA_METABASE_P6A_LIVE=1
+          export DIMA_METABASE_P6A1_LIVE=1
           pytest -q -s tests/test_v3_p6_same_snapshot_canary.py
 
       - name: Teardown

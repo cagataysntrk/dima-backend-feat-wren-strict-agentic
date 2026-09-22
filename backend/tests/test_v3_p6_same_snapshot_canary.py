@@ -9,18 +9,23 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
+from app import contracts as contracts_module
+
 import httpx
 import psycopg
 import pytest
 from wren import WrenEngine
 from wren.model.data_source import DataSource
 
+from app.v2.models import TenantAnalyticsRuntimeV0
 from app.v3.analytics_contract import (
     PrincipalContextRef,
     ResolvedAnalyticsIntent,
     ResolvedPeriod,
     ResolvedSemanticRef,
 )
+from app.v3.execution_identity import ExecutionAccessSnapshot, RuntimeIdentity
+from app.v3.legacy_contract import LegacyV2QueryReceiptWriter
 from app.v3.semantic_spec import (
     DimensionSpec,
     DimaSemanticSpec,
@@ -31,6 +36,7 @@ from app.v3.semantic_spec import (
 from app.v3.substrate.metabase.canonical import MetabaseCanonicalizer
 from app.v3.substrate.metabase.client import MetabaseAgentClient
 from app.v3.substrate.metabase.compiler import MetabaseProjectionCompiler
+from app.v3.substrate.metabase.execution_adapter import MetabaseSubstrateAdapter
 from app.v3.substrate.metabase.execution_binding import (
     CandidateSemanticBinding,
     CurrentCatalogObject,
@@ -39,6 +45,9 @@ from app.v3.substrate.metabase.execution_binding import (
     TemporalSemanticBinding,
 )
 from app.v3.substrate.metabase.models import ConstructedQuery, MetabaseRuntimePolicy
+from app.v3.substrate.wren import WrenSubstrateAdapter
+from app.wren_service import WrenService
+from control_plane.authorize import Principal
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,7 +56,7 @@ FIXTURE = json.loads((P6 / "fixture.json").read_text(encoding="utf-8"))
 WREN_MANIFEST = json.loads((P6 / "wren_manifest.json").read_text(encoding="utf-8"))
 
 CTX = "p6-shared-v1"
-TIME_KEY = "p6/p6_orders.order_date"
+TIME_KEY = "order_date"
 HEX_A = "a" * 64
 HEX_B = "b" * 64
 
@@ -313,7 +322,7 @@ def _metric_ref():
         semantic_ref="p6_handle_metric",
         source_candidate_id="p6_metric",
         kind="metric",
-        canonical_name="P6 Revenue",
+        canonical_name="p6_revenue",
         source_scopes=("p6_orders",),
     )
 
@@ -323,7 +332,7 @@ def _region_ref():
         semantic_ref="p6_handle_region",
         source_candidate_id="p6_region",
         kind="dimension",
-        canonical_name="P6 Region",
+        canonical_name="region",
         source_scopes=("p6_orders",),
     )
 
@@ -525,3 +534,289 @@ def test_p6a_same_physical_postgres_snapshot_three_case_canary():
             sort_keys=True,
         )
     )
+
+
+def _p6_wren_service(tmp_path: Path) -> WrenService:
+    project_dir = tmp_path / "p6-wren-project"
+    target = project_dir / "target"
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "mdl.json").write_text(
+        json.dumps(
+            WREN_MANIFEST,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        encoding="utf-8",
+    )
+    return WrenService(
+        project_dir=project_dir,
+        datasource="postgres",
+        connection_info=_wren_db_kwargs(),
+        company_slug=None,
+    )
+
+
+def _p6_principal() -> Principal:
+    return Principal(
+        user_id="p6-canary-user",
+        tenant_id="tenant-p6-fixture",
+        roles=["analyst"],
+        tenant_slug="p6-fixture",
+    )
+
+
+def _p6_wren_adapter(tmp_path: Path, monkeypatch) -> WrenSubstrateAdapter:
+    service = _p6_wren_service(tmp_path)
+    principal = _p6_principal()
+    runtime = TenantAnalyticsRuntimeV0(
+        tenant_id=principal.tenant_id,
+        tenant_slug=principal.tenant_slug,
+        principal_user_id=principal.user_id,
+        roles=tuple(principal.roles),
+        mdl_version=service.mdl_version,
+        catalog="wren",
+        schema_name="public",
+        db_online=True,
+    )
+    # P6 measures execution behavior, not control-plane persistence durability.
+    # Keep the production legacy writer while making its storage sink hermetic.
+    monkeypatch.setattr(
+        contracts_module,
+        "_persist",
+        lambda row: None,
+    )
+    writer = LegacyV2QueryReceiptWriter(
+        contract_store=contracts_module.ContractStore(),
+        runtime=runtime,
+        session_id="p6a1-canary",
+        question="p6a1 post-authority canary",
+    )
+    return WrenSubstrateAdapter(
+        service=service,
+        principal=principal,
+        runtime=runtime,
+        receipt_writer=writer,
+    )
+
+
+def _p6_access_snapshot(
+    intent: ResolvedAnalyticsIntent,
+) -> ExecutionAccessSnapshot:
+    plan = MetabaseProjectionCompiler.compile(
+        intent=intent,
+        snapshot=_binding_snapshot(),
+    )
+    return ExecutionAccessSnapshot(
+        tenant_binding=intent.principal.tenant_binding,
+        principal_subject=intent.principal.principal_subject,
+        roles=intent.principal.roles,
+        attribute_policy_digest=HEX_A,
+        policy_version="p6-fixture-policy-v1",
+        rls_versions=("p6-rls-v1",),
+        cls_versions=("p6-cls-v1",),
+        database_route="p6-shared-postgres",
+        database_destination="p6-shared-postgres",
+        impersonation_role=None,
+        semantic_context_version=intent.semantic_context_version,
+        source_object_refs=plan.manifest.resource_entity_ids,
+        security_parameter_digest=HEX_B,
+        attestation_refs=("attestation:p6-fixture",),
+    )
+
+
+def _p6_metabase_adapter(
+    client: MetabaseAgentClient,
+    intent: ResolvedAnalyticsIntent,
+    snapshot_id: str,
+) -> MetabaseSubstrateAdapter:
+    return MetabaseSubstrateAdapter(
+        client=client,
+        binding_snapshot=_binding_snapshot(),
+        access_snapshot=_p6_access_snapshot(intent),
+        runtime=RuntimeIdentity(
+            substrate="metabase",
+            runtime_version=client.policy.runtime_version,
+            image_digest=client.policy.runtime_image_digest,
+            database_id=f"p6-snapshot:{snapshot_id}",
+        ),
+    )
+
+
+def _wren_semantic_rows(execution) -> tuple[dict, ...]:
+    payload = execution.evidence.payload["executions"]
+    assert len(payload) == 1
+    rows = payload[0]["rows"]
+    return tuple(dict(row) for row in rows)
+
+
+def _metabase_raw_rows(execution) -> tuple[tuple, ...]:
+    payload = execution.evidence.payload["executions"]
+    assert len(payload) == 1
+    return tuple(tuple(row) for row in payload[0]["rows"])
+
+
+def _assert_p6a1_case(
+    *,
+    case_id: str,
+    intent: ResolvedAnalyticsIntent,
+    expected,
+    wren_adapter: WrenSubstrateAdapter,
+    metabase_adapter: MetabaseSubstrateAdapter,
+    snapshot_id: str,
+):
+    wren_validation = wren_adapter.validate_execution_intent(intent)
+    metabase_validation = metabase_adapter.validate_execution_intent(intent)
+    assert wren_validation.valid, wren_validation.reasons
+    assert metabase_validation.valid, metabase_validation.reasons
+
+    wren_result = wren_adapter.execute_execution_intent(intent)
+    metabase_result = metabase_adapter.execute_execution_intent(intent)
+
+    assert wren_adapter.inspect_execution(wren_result).verified is True
+    assert metabase_adapter.inspect_execution(metabase_result).verified is True
+
+    assert wren_result.evidence.authority_id == intent.authority_id
+    assert metabase_result.evidence.authority_id == intent.authority_id
+    assert wren_result.evidence.payload["projection_hash"] == intent.projection_hash
+    assert metabase_result.evidence.payload["projection_hash"] == intent.projection_hash
+    assert wren_result.evidence.payload["resolved_intent_hash"] == intent.resolved_intent_hash
+    assert metabase_result.evidence.payload["resolved_intent_hash"] == intent.resolved_intent_hash
+
+    wren_rows = _wren_semantic_rows(wren_result)
+    mb_rows = _metabase_raw_rows(metabase_result)
+
+    if case_id == "CANARY-01":
+        assert wren_rows == ({"p6_handle_metric": expected},)
+        assert mb_rows == ((expected,),)
+    elif case_id == "CANARY-02":
+        assert {
+            str(row["p6_handle_region"]): Decimal(str(row["p6_handle_metric"]))
+            for row in wren_rows
+        } == {
+            key: Decimal(str(value))
+            for key, value in expected.items()
+        }
+        # P4 portable MBQL contract: breakout columns precede aggregation columns.
+        assert {
+            str(row[0]): Decimal(str(row[1]))
+            for row in mb_rows
+        } == {
+            key: Decimal(str(value))
+            for key, value in expected.items()
+        }
+    elif case_id == "CANARY-03":
+        assert wren_rows == ({"p6_handle_metric": expected},)
+        assert mb_rows == ((expected,),)
+    else:
+        raise AssertionError(case_id)
+
+    wren_receipt_gap = all(
+        item.receipt_fingerprint is None
+        for item in wren_result.query_receipts
+    )
+    metabase_receipts_strict = all(
+        item.receipt_fingerprint is not None
+        for item in metabase_result.query_receipts
+    )
+    assert wren_receipt_gap is True
+    assert metabase_receipts_strict is True
+
+    return {
+        "case_id": case_id,
+        "snapshot_id": snapshot_id,
+        "authority_id": intent.authority_id,
+        "projection_hash": intent.projection_hash,
+        "resolved_intent_hash": intent.resolved_intent_hash,
+        "semantic_context_version": intent.semantic_context_version,
+        "data_snapshot": "MATCH",
+        "semantic_execution": "MATCH",
+        "receipt_provenance": "TYPED_GAP",
+        "gap": "RECEIPT/PROVENANCE_GAP",
+        "overall": "TYPED_GAP",
+    }
+
+
+@pytest.mark.skipif(
+    os.getenv("DIMA_METABASE_P6A1_LIVE") != "1",
+    reason="P6A1 true substrate-seam canary requires shared PostgreSQL + pinned Metabase",
+)
+def test_p6a1_true_same_intent_substrate_seam_three_case_canary(
+    tmp_path,
+    monkeypatch,
+):
+    _, snapshot_id = _actual_snapshot_identity()
+    expected_total, expected_breakdown, expected_january = _expected_anchors()
+
+    cases = (
+        ("CANARY-01", _intent(), Decimal(str(expected_total))),
+        (
+            "CANARY-02",
+            _intent(breakdown=True),
+            {
+                key: Decimal(str(value))
+                for key, value in expected_breakdown.items()
+            },
+        ),
+        ("CANARY-03", _intent(period=True), Decimal(str(expected_january))),
+    )
+
+    wren_adapter = _p6_wren_adapter(tmp_path, monkeypatch)
+    assert all(
+        wren_adapter.validate_execution_intent(intent).valid
+        for _, intent, _ in cases
+    )
+
+    reports = []
+    with _metabase_client() as client:
+        for case_id, intent, expected in cases:
+            metabase_adapter = _p6_metabase_adapter(
+                client,
+                intent,
+                snapshot_id,
+            )
+            reports.append(
+                _assert_p6a1_case(
+                    case_id=case_id,
+                    intent=intent,
+                    expected=expected,
+                    wren_adapter=wren_adapter,
+                    metabase_adapter=metabase_adapter,
+                    snapshot_id=snapshot_id,
+                )
+            )
+
+    assert [item["case_id"] for item in reports] == [
+        "CANARY-01",
+        "CANARY-02",
+        "CANARY-03",
+    ]
+    assert all(item["data_snapshot"] == "MATCH" for item in reports)
+    assert all(item["semantic_execution"] == "MATCH" for item in reports)
+    assert all(
+        item["receipt_provenance"] == "TYPED_GAP"
+        and item["gap"] == "RECEIPT/PROVENANCE_GAP"
+        for item in reports
+    )
+    print(json.dumps({"p6a1": reports}, sort_keys=True))
+
+
+def test_p6a1_wren_fixture_uses_governed_cube_semantics_not_name_bridge():
+    cubes = {
+        cube["name"]: cube
+        for cube in WREN_MANIFEST.get("cubes", [])
+    }
+    cube = cubes["p6_orders"]
+    assert cube["baseObject"] == "p6_orders"
+    assert {
+        item["name"]: item["expression"]
+        for item in cube["measures"]
+    } == {"p6_revenue": "SUM(amount)"}
+    assert {
+        item["name"]: item["expression"]
+        for item in cube["dimensions"]
+    }["region"] == "region"
+    assert {
+        item["name"]: item["expression"]
+        for item in cube["timeDimensions"]
+    }["order_date"] == "order_date"
