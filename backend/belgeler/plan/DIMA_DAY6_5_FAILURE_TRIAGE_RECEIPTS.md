@@ -459,3 +459,63 @@ focused_proof: `59/59 PASS on combined focused closure 35696222877`
 family_regression_proof: `PENDING exact-SHA rerun after fixture cleanup`
 
 status: `CLASSIFIED — test-only family cleanup allowed`
+
+---
+
+## Receipt — D65-CANARY16-HARNESS-STALE-RESOLVER
+
+run_id: `35696811902`
+
+tested_sha: `ffbdc224066dc4c85a9e46b510ae3535f83f3416`
+
+observed_failure:
+`16 selected / 0 evaluable / 16 HARNESS_FAILURE`; every case failed before model invocation with `TypeError: ManagerSemanticResolutionAdapter.__init__() got an unexpected keyword argument 'resolver'`.
+
+failure_stage: `live evaluator harness construction`
+
+failure_class: `EVAL_ORACLE`
+
+classification_evidence:
+- `model_failures = 0`
+- `grounding_failures = 0`
+- `harness_failures = 16`
+- `total_model_calls = 0`
+- all 16 cases share identical constructor TypeError
+- provider-free product family at same semantic code state already passed 102/102
+
+single_owner: `backend/lab/v2_day6_5_manager_eval.py live harness adapter construction`
+
+root_cause:
+D65-G physically removed the legacy resolver constructor seam from Manager semantics, but the live eval harness still encoded the superseded constructor.
+
+failure_family:
+Any non-production lab/eval harness instantiating ManagerSemanticResolutionAdapter with the removed `resolver=` dependency.
+
+why_not_model_only: `No model calls occurred.`
+
+why_not_oracle: `It IS evaluator/harness drift.`
+
+why_not_transport: `Provider transport was never reached.`
+
+forbidden_patch_alternatives:
+- restore resolver arg in production
+- compatibility shim
+- semantic testcase weakening
+
+allowed_files_to_touch:
+- `backend/lab/v2_day6_5_manager_eval.py` stale constructor/import cleanup
+- other lab-only harnesses if scan finds same obsolete injection
+
+files_not_to_touch:
+- Manager semantic production contract
+- temporal/linker/repair behavior
+- DEV expected labels
+
+invariant_being_fixed:
+Live evaluator must exercise the same physically isolated no-legacy-resolver Manager path as production/lab HTTP harness.
+
+focused_proof: `PENDING rerun`
+
+family_regression_proof: `102/102 provider-free product family already GREEN on ffbdc224`
+
+status: `CLASSIFIED — harness-only cleanup allowed`
