@@ -20,6 +20,7 @@ from enum import StrEnum
 
 from pydantic import Field
 
+from app import fanout as fanout_module
 from app.v2.cross_domain_join import (
     CompatibilityState,
     CrossDomainJoinDecision,
@@ -76,6 +77,8 @@ class CrossDomainJoinFacts(FrozenModel):
 
     source_row_grain: str
     target_row_grain: str
+    source_join_key: str
+    target_join_key: str
     requested_output_grain: str
 
     relationship_path: tuple[str, ...] = Field(min_length=1)
@@ -280,62 +283,119 @@ class CrossDomainJoinFactBuilder:
         schema = service.schema()
         current_mdl = str(service.mdl_version)
         source_model = self._cube_model(schema, source_cube)
-        target_model = self._cube_model(schema, target_cube)
-        if not source_model or not target_model:
+        if not source_model:
             return self._fail(
                 JoinFactCode.MODEL_MAPPING_MISSING,
-                "accepted cube does not expose a governed Wren base_object",
-            )
-        if source_model == target_model:
-            return self._fail(
-                JoinFactCode.UNSUPPORTED_HANDLE_SHAPE,
-                "relationship primitive requires distinct governed Wren models",
+                "accepted source cube does not expose a governed Wren base_object",
             )
 
         source_meta = self._model(schema, source_model)
-        target_meta = self._model(schema, target_model)
         source_pk = (
             str(source_meta.get("primary_key"))
             if isinstance(source_meta, dict) and source_meta.get("primary_key")
             else None
         )
+        if not source_pk:
+            return self._fail(
+                JoinFactCode.ROW_GRAIN_UNKNOWN,
+                "source model row grain is UNKNOWN; primary_key is not declared",
+            )
+
+        source_join_key: str | None = None
+        target_join_key: str | None = None
+
+        if target_cube == source_cube:
+            # Common governed shape in Dima: the accepted counterpart is the source
+            # cube's local FK dimension (e.g. makine_duruslari.makine).  Target model
+            # authority comes ONLY from a Wren relationship whose parsed source key is
+            # exactly that accepted dimension.
+            local_candidates: list[tuple[dict, tuple[str, str, str, str]]] = []
+            for relation in tuple(schema.get("relationships") or ()):
+                if not isinstance(relation, dict):
+                    continue
+                parsed = fanout_module.ayristir(relation)
+                if (
+                    parsed is not None
+                    and parsed[0] == source_model
+                    and parsed[1] == target_ref.canonical_name
+                ):
+                    local_candidates.append((relation, parsed))
+            if not local_candidates:
+                return self._fail(
+                    JoinFactCode.NO_WREN_PATH,
+                    "accepted local dimension has no Wren business relationship to a target model",
+                )
+            if len(local_candidates) != 1:
+                return self._fail(
+                    JoinFactCode.AMBIGUOUS_WREN_PATH,
+                    "accepted local dimension maps to multiple Wren relationships",
+                )
+            relation, parsed = local_candidates[0]
+            _, source_join_key, target_model, target_join_key = parsed
+            path = (relation,)
+        else:
+            target_model = self._cube_model(schema, target_cube)
+            if not target_model:
+                return self._fail(
+                    JoinFactCode.MODEL_MAPPING_MISSING,
+                    "accepted target cube does not expose a governed Wren base_object",
+                )
+            if source_model == target_model:
+                return self._fail(
+                    JoinFactCode.UNSUPPORTED_HANDLE_SHAPE,
+                    "relationship primitive requires distinct governed Wren models",
+                )
+            paths = self._directed_paths(
+                schema,
+                source_model=source_model,
+                target_model=target_model,
+            )
+            if not paths:
+                return self._fail(
+                    JoinFactCode.NO_WREN_PATH,
+                    "no directed Wren relationship path connects accepted source/target models",
+                )
+            if len(paths) != 1:
+                return self._fail(
+                    JoinFactCode.AMBIGUOUS_WREN_PATH,
+                    "multiple Wren relationship paths exist; fact construction refuses auto-pick",
+                )
+            path = paths[0]
+            first = fanout_module.ayristir(path[0])
+            last = fanout_module.ayristir(path[-1])
+            if first is None or last is None:
+                return self._fail(
+                    JoinFactCode.NO_WREN_PATH,
+                    "Wren relationship condition is not a governed single-key path",
+                )
+            source_join_key = first[1]
+            target_join_key = last[3]
+
+        target_meta = self._model(schema, target_model)
         target_pk = (
             str(target_meta.get("primary_key"))
             if isinstance(target_meta, dict) and target_meta.get("primary_key")
             else None
         )
-        if not source_pk or not target_pk:
+        if not target_pk:
             return self._fail(
                 JoinFactCode.ROW_GRAIN_UNKNOWN,
-                "material model row grain is UNKNOWN; primary_key is not declared",
+                "target model row grain is UNKNOWN; primary_key is not declared",
+            )
+        if target_join_key != target_pk:
+            return self._fail(
+                JoinFactCode.TARGET_GRAIN_NOT_GOVERNED,
+                "Wren relationship target key is not the governed target primary key",
             )
 
-        # This is NOT a universal analytical-grain inference. The initial primitive is
-        # explicitly target-row breakdown, so the accepted counterpart must itself be
-        # the governed target primary-key dimension.
-        if target_ref.canonical_name != target_pk:
+        # Separate target-cube shape: the counterpart semantic itself must be the target
+        # row key. Same-cube local-FK shape is proven equivalent to that row key by the
+        # Wren relationship condition above.
+        if target_cube != source_cube and target_ref.canonical_name != target_pk:
             return self._fail(
                 JoinFactCode.TARGET_GRAIN_NOT_GOVERNED,
                 "counterpart dimension is not the governed target row-key; broader analytical grain unsupported",
             )
-
-        paths = self._directed_paths(
-            schema,
-            source_model=source_model,
-            target_model=target_model,
-        )
-        if not paths:
-            return self._fail(
-                JoinFactCode.NO_WREN_PATH,
-                "no directed Wren relationship path connects accepted source/target models",
-            )
-        if len(paths) != 1:
-            return self._fail(
-                JoinFactCode.AMBIGUOUS_WREN_PATH,
-                "multiple Wren relationship paths exist; fact construction refuses auto-pick",
-            )
-
-        path = paths[0]
         proofs: list[FanoutFact] = []
         cardinalities: list[str] = []
         for relation in path:
@@ -386,6 +446,8 @@ class CrossDomainJoinFactBuilder:
             target_model=target_model,
             source_row_grain=source_pk,
             target_row_grain=target_pk,
+            source_join_key=str(source_join_key),
+            target_join_key=str(target_join_key),
             requested_output_grain=target_pk,
             relationship_path=tuple(str(item["name"]) for item in path),
             cardinality_path=tuple(cardinalities),
