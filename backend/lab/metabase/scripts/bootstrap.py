@@ -13,6 +13,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 
 
 BASE = os.environ.get("METABASE_URL", f"http://localhost:{os.environ.get('METABASE_PORT', '3300')}").rstrip("/")
@@ -117,7 +118,8 @@ def ensure_setup() -> str:
 
 
 def set_setting(session: str, key: str, value) -> None:
-    request("PUT", f"/api/setting/{key}", {"value": value}, session=session)
+    encoded = urllib.parse.quote(key, safe="")
+    request("PUT", f"/api/setting/{encoded}", {"value": value}, session=session)
     print(f"setting {key}={value!r}")
 
 
@@ -210,8 +212,8 @@ def ensure_membership(session: str, user_id: int, group_id: int) -> None:
 def main() -> None:
     wait_health()
     session = ensure_setup()
-    set_setting(session, "ai-features-enabled", True)
-    set_setting(session, "agent-api-enabled", True)
+    set_setting(session, "ai-features-enabled?", True)
+    set_setting(session, "agent-api-enabled?", True)
     set_setting(session, "mcp-execute-sql-enabled", False)
     database_id = ensure_database(session)
     group_id = ensure_group(session)
