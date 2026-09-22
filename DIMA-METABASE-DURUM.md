@@ -938,3 +938,32 @@ P9B                              = HELD
 ASK_V2_RELATIONSHIP_REFERENCE   = b815d19cc8f07ecbd617e3e417e1405503a59542
 source disposition              = REFERENCE_ONLY
 ```
+
+
+---
+
+## P7/P8 hardening — GREEN
+
+```text
+hardening SHA                    = d0bbb77c846713f50f856146dd3377bd5d025a9d
+P7 workflow                     = 35777948476 = SUCCESS
+P7 focused                      = 11 PASS
+P8 workflow                     = 35777948438 = SUCCESS
+P8 focused                      = 28 PASS
+P7 regression inside P8         = 11 PASS
+M1/Wren                         = 35777948408 = SUCCESS
+governance                      = 35777948509 = SUCCESS
+DMP-P7-AUDIT-001                = CLOSED GREEN
+unknown structured field        = HARD GAP / P8 RED
+```
+
+## P9A lifecycle hardening
+
+```text
+DMP-P9-AUDIT-002                = OPEN / CORRECTION APPLIED
+stale DIMA_MANAGED lifecycle    = explicit reconciliation
+NOOP metadata coherence         = enforced
+mutating rollback contract      = enforced
+real P7→P8→policy→P9 proof      = added
+P9B                             = HELD UNTIL GREEN
+```

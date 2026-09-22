@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import ast
 import inspect
+import json
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -10,6 +12,7 @@ from app.v3 import resource_provisioning as provisioning_module
 from app.v3.resource_provisioning import (
     ManagedResourceBinding,
     ObservedMetabaseResource,
+    ProvisionAction,
     ProvisionActionKind,
     ProvisionSkipReason,
     ResourceInventorySnapshot,
@@ -18,8 +21,14 @@ from app.v3.resource_provisioning import (
     RollbackKind,
     SemanticResourceProvisionPlanner,
 )
-from app.v3.semantic_equivalence import SemanticEquivalenceMatrixBuilder
-from app.v3.semantic_import import SemanticImportResult
+from app.v3.semantic_equivalence import (
+    EquivalenceClassification,
+    SemanticEquivalenceMatrixBuilder,
+)
+from app.v3.semantic_import import (
+    SemanticImportResult,
+    WrenSemanticSpecImporter,
+)
 from app.v3.semantic_spec import (
     DimaSemanticSpec,
     ManagedResourcePolicy,
@@ -29,6 +38,7 @@ from app.v3.semantic_spec import (
 
 
 HEX = "a" * 64
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _import_result(
@@ -377,3 +387,191 @@ def test_p9a_has_no_search_fuzzy_regex_or_external_transport_dependency():
         "raw prompt",
     ):
         assert forbidden not in source
+
+
+
+def test_p9a_mutating_action_contract_requires_rollback_descriptor():
+    with pytest.raises(
+        ValidationError,
+        match="mutating provision action requires rollback",
+    ):
+        ProvisionAction(
+            action=ProvisionActionKind.CREATE,
+            canonical_id="metric.x",
+            resource_kind=ResourceKind.METRIC,
+            reason_code="fixture",
+        )
+
+    action = ProvisionAction(
+        action=ProvisionActionKind.REJECT_DRIFT,
+        canonical_id="metric.x",
+        resource_kind=ResourceKind.METRIC,
+        reason_code="fixture",
+    )
+    assert action.rollback is None
+    assert action.mutating is False
+
+
+def test_p9a_removed_semantic_retires_stale_dima_binding_with_rollback():
+    prior = _plan()
+    desired = prior.desired_resources[0]
+    inventory = _applied_inventory(desired)
+
+    current = SemanticImportResult(
+        source_fingerprint="d" * 64,
+        spec=DimaSemanticSpec(
+            semantic_context_version="ctx-p9-next",
+        ),
+    )
+    matrix = SemanticEquivalenceMatrixBuilder.build(current)
+    plan = SemanticResourceProvisionPlanner.plan(
+        tenant_binding="tenant-a",
+        import_result=current,
+        matrix=matrix,
+        inventory=inventory,
+    )
+
+    assert plan.desired_resources == ()
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.action == ProvisionActionKind.RETIRE_STALE
+    assert action.reason_code == "SEMANTIC_REMOVED_FROM_DESIRED_STATE"
+    assert action.binding == inventory.bindings[0]
+    assert action.rollback is not None
+    assert action.rollback.kind == RollbackKind.RESTORE_PREVIOUS_BINDING
+    assert action.rollback.prior_binding == inventory.bindings[0]
+    assert action.rollback.prior_payload == inventory.resources[0].managed_payload
+
+
+def test_p9a_semantic_still_exists_but_not_provisionable_rejects_stale_representation():
+    prior = _plan()
+    inventory = _applied_inventory(prior.desired_resources[0])
+    current = _import_result(formula="SUM(amount)")
+    plan = _plan(
+        import_result=current,
+        inventory=inventory,
+    )
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.action == ProvisionActionKind.REJECT_DRIFT
+    assert action.reason_code == "REPRESENTATION_NO_LONGER_PROVISIONABLE"
+    assert action.mutating is False
+
+
+def test_p9a_ownership_transfer_never_auto_deletes_old_dima_resource():
+    prior = _plan()
+    inventory = _applied_inventory(prior.desired_resources[0])
+    current = _import_result(
+        ownership="USER_MANAGED",
+        reconciliation=None,
+    )
+    plan = _plan(
+        import_result=current,
+        inventory=inventory,
+    )
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.action == ProvisionActionKind.REJECT_DRIFT
+    assert (
+        action.reason_code
+        == "OWNERSHIP_TRANSFER_REQUIRES_EXPLICIT_DECISION"
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "reason"),
+    [
+        (
+            "semantic_context_version",
+            "ctx-stale",
+            "BINDING_CONTEXT_VERSION_DRIFT",
+        ),
+        (
+            "applied_version",
+            "metric-old",
+            "BINDING_APPLIED_VERSION_DRIFT",
+        ),
+    ],
+)
+def test_p9a_matching_payload_is_not_noop_when_binding_metadata_drifts(
+    field,
+    value,
+    reason,
+):
+    first = _plan()
+    desired = first.desired_resources[0]
+    inventory = _applied_inventory(desired)
+    binding = inventory.bindings[0].model_copy(
+        update={field: value}
+    )
+    drifted = inventory.model_copy(
+        update={"bindings": (binding,)}
+    )
+
+    plan = _plan(inventory=drifted)
+    assert plan.actions[0].action == ProvisionActionKind.REJECT_DRIFT
+    assert plan.actions[0].reason_code == reason
+
+
+def test_p9a_real_composed_p7_p8_explicit_policy_p9_chain_creates_one_stable_resource():
+    manifest = json.loads(
+        (
+            ROOT
+            / "demo"
+            / "wren-engine-proje"
+            / "target"
+            / "mdl.json"
+        ).read_text(encoding="utf-8")
+    )
+    imported = WrenSemanticSpecImporter.import_manifest(
+        manifest,
+        semantic_context_version="demo-real-chain-p9",
+    )
+    base_matrix = SemanticEquivalenceMatrixBuilder.build(imported)
+    native = next(
+        row
+        for row in base_matrix.rows
+        if (
+            row.dima_state.value == "REPRESENTED"
+            and row.classification
+            == EquivalenceClassification.NATIVE_METABASE
+            and row.feature_kind in {"dimension", "time"}
+        )
+    )
+    policy = ManagedResourcePolicy(
+        semantic_ref=native.feature_ref,
+        ownership="DIMA_MANAGED",
+        reconciliation="OVERWRITE",
+    )
+    with_policy = imported.model_copy(
+        update={
+            "spec": imported.spec.model_copy(
+                update={"managed_resources": (policy,)}
+            )
+        }
+    )
+    matrix = SemanticEquivalenceMatrixBuilder.build(with_policy)
+
+    first = SemanticResourceProvisionPlanner.plan(
+        tenant_binding="tenant-real-chain",
+        import_result=with_policy,
+        matrix=matrix,
+        inventory=ResourceInventorySnapshot(),
+    )
+    second = SemanticResourceProvisionPlanner.plan(
+        tenant_binding="tenant-real-chain",
+        import_result=with_policy,
+        matrix=matrix,
+        inventory=ResourceInventorySnapshot(),
+    )
+
+    assert len(first.desired_resources) == 1
+    assert len(first.actions) == 1
+    assert first.actions[0].action == ProvisionActionKind.CREATE
+    assert first.actions[0].canonical_id == native.feature_ref
+    assert first.actions[0].rollback is not None
+    assert first.actions[0].rollback.kind == RollbackKind.ARCHIVE_CREATED_RESOURCE
+    assert first.plan_fingerprint == second.plan_fingerprint
+    assert first.desired_resources[0].desired_fingerprint == (
+        second.desired_resources[0].desired_fingerprint
+    )

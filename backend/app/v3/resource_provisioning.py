@@ -291,6 +291,17 @@ class ProvisionAction(FrozenModel):
     )
     rollback: RollbackDescriptor | None = None
 
+    @model_validator(mode="after")
+    def _mutating_action_requires_rollback(self):
+        if self.action in {
+            ProvisionActionKind.CREATE,
+            ProvisionActionKind.UPDATE,
+            ProvisionActionKind.IMPORT_AS_NEW_VERSION,
+            ProvisionActionKind.RETIRE_STALE,
+        } and self.rollback is None:
+            raise ValueError("mutating provision action requires rollback descriptor")
+        return self
+
     @property
     def mutating(self) -> bool:
         return self.action in {
@@ -582,6 +593,29 @@ class SemanticResourceProvisionPlanner:
             == desired.desired_fingerprint
             == binding.applied_fingerprint
         ):
+            if (
+                binding.semantic_context_version
+                != desired.semantic_context_version
+            ):
+                return ProvisionAction(
+                    action=ProvisionActionKind.REJECT_DRIFT,
+                    canonical_id=desired.canonical_id,
+                    resource_kind=desired.resource_kind,
+                    reason_code="BINDING_CONTEXT_VERSION_DRIFT",
+                    desired=desired,
+                    binding=binding,
+                    observed_fingerprint=observed.resource_fingerprint,
+                )
+            if binding.applied_version != desired.desired_version:
+                return ProvisionAction(
+                    action=ProvisionActionKind.REJECT_DRIFT,
+                    canonical_id=desired.canonical_id,
+                    resource_kind=desired.resource_kind,
+                    reason_code="BINDING_APPLIED_VERSION_DRIFT",
+                    desired=desired,
+                    binding=binding,
+                    observed_fingerprint=observed.resource_fingerprint,
+                )
             return ProvisionAction(
                 action=ProvisionActionKind.NOOP,
                 canonical_id=desired.canonical_id,
@@ -651,6 +685,132 @@ class SemanticResourceProvisionPlanner:
         raise AssertionError("validated reconciliation policy lost")
 
     @classmethod
+    def _stale_actions(
+        cls,
+        *,
+        tenant_binding: str,
+        import_result: SemanticImportResult,
+        matrix: SemanticEquivalenceMatrix,
+        inventory: ResourceInventorySnapshot,
+        desired: tuple[DesiredResource, ...],
+    ) -> tuple[ProvisionAction, ...]:
+        semantic_index = cls._semantic_index(import_result)
+        policies = cls._policy_index(import_result.spec.managed_resources)
+        desired_keys = {
+            (
+                item.tenant_binding,
+                item.resource_kind.value,
+                item.canonical_id,
+            )
+            for item in desired
+        }
+
+        actions: list[ProvisionAction] = []
+        for binding in sorted(
+            inventory.bindings,
+            key=lambda item: (
+                item.tenant_binding,
+                item.resource_kind.value,
+                item.canonical_id,
+            ),
+        ):
+            if (
+                binding.tenant_binding != tenant_binding
+                or binding.ownership != "DIMA_MANAGED"
+                or binding.binding_key in desired_keys
+            ):
+                continue
+
+            indexed = semantic_index.get(binding.canonical_id)
+            if indexed is None:
+                observed = inventory.resource_for_binding(binding)
+                actions.append(
+                    ProvisionAction(
+                        action=ProvisionActionKind.RETIRE_STALE,
+                        canonical_id=binding.canonical_id,
+                        resource_kind=binding.resource_kind,
+                        reason_code="SEMANTIC_REMOVED_FROM_DESIRED_STATE",
+                        binding=binding,
+                        observed_fingerprint=(
+                            observed.resource_fingerprint
+                            if observed is not None
+                            else None
+                        ),
+                        rollback=RollbackDescriptor(
+                            kind=RollbackKind.RESTORE_PREVIOUS_BINDING,
+                            prior_binding=binding,
+                            prior_payload=(
+                                observed.managed_payload
+                                if observed is not None
+                                else None
+                            ),
+                        ),
+                    )
+                )
+                continue
+
+            current_kind, _ = indexed
+            if current_kind != binding.resource_kind:
+                actions.append(
+                    ProvisionAction(
+                        action=ProvisionActionKind.REJECT_DRIFT,
+                        canonical_id=binding.canonical_id,
+                        resource_kind=binding.resource_kind,
+                        reason_code="BINDING_RESOURCE_KIND_DRIFT",
+                        binding=binding,
+                    )
+                )
+                continue
+
+            policy = policies.get(binding.canonical_id)
+            if policy is None:
+                actions.append(
+                    ProvisionAction(
+                        action=ProvisionActionKind.REJECT_DRIFT,
+                        canonical_id=binding.canonical_id,
+                        resource_kind=binding.resource_kind,
+                        reason_code=(
+                            "MANAGEMENT_POLICY_REMOVED_REQUIRES_EXPLICIT_DECISION"
+                        ),
+                        binding=binding,
+                    )
+                )
+                continue
+
+            if policy.ownership != "DIMA_MANAGED":
+                actions.append(
+                    ProvisionAction(
+                        action=ProvisionActionKind.REJECT_DRIFT,
+                        canonical_id=binding.canonical_id,
+                        resource_kind=binding.resource_kind,
+                        reason_code=(
+                            "OWNERSHIP_TRANSFER_REQUIRES_EXPLICIT_DECISION"
+                        ),
+                        binding=binding,
+                    )
+                )
+                continue
+
+            row = cls._matrix_row(matrix, binding.canonical_id)
+            if row.classification not in cls._PROVISIONABLE:
+                actions.append(
+                    ProvisionAction(
+                        action=ProvisionActionKind.REJECT_DRIFT,
+                        canonical_id=binding.canonical_id,
+                        resource_kind=binding.resource_kind,
+                        reason_code="REPRESENTATION_NO_LONGER_PROVISIONABLE",
+                        binding=binding,
+                    )
+                )
+                continue
+
+            raise ResourceProvisioningError(
+                "DIMA-managed provisionable binding disappeared from desired resources"
+            )
+
+        return tuple(actions)
+
+    @classmethod
     def plan(
         cls,
         *,
@@ -667,18 +827,27 @@ class SemanticResourceProvisionPlanner:
             import_result=import_result,
             matrix=matrix,
         )
+        desired_actions = [
+            cls._action_for(
+                desired=item,
+                inventory=inventory,
+            )
+            for item in desired
+        ]
+        stale_actions = cls._stale_actions(
+            tenant_binding=tenant_binding,
+            import_result=import_result,
+            matrix=matrix,
+            inventory=inventory,
+            desired=desired,
+        )
         actions = tuple(
             sorted(
-                (
-                    cls._action_for(
-                        desired=item,
-                        inventory=inventory,
-                    )
-                    for item in desired
-                ),
+                (*desired_actions, *stale_actions),
                 key=lambda item: (
                     item.resource_kind.value,
                     item.canonical_id,
+                    item.action.value,
                 ),
             )
         )

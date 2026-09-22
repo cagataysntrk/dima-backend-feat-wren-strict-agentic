@@ -1848,3 +1848,38 @@ remain forbidden.
 
 status:
 `CORRECTION APPLIED / AWAITING P7+P8 GREEN`.
+
+
+---
+
+## DMP-P9-AUDIT-002 — stale Dima-managed resource lifecycle
+
+receipt_id: `DMP-P9-AUDIT-002`  
+tested_sha: `c650ee1a9257d892b2b402ac2f3b1d687f54b8da`
+
+classification:
+`RESOURCE LIFECYCLE / DESIRED-STATE RECONCILIATION`
+
+observed:
+`ProvisionActionKind.RETIRE_STALE` existed, but P9A built actions only by iterating current desired
+resources. A previously bound DIMA-managed resource whose semantic disappeared from desired state
+therefore produced no action and could survive indefinitely.
+
+Additional hardening:
+- matching payload fingerprints alone were sufficient for NOOP even when binding semantic context or
+  applied version drifted;
+- the ProvisionAction model documented rollback for mutating actions but did not enforce it.
+
+authorized correction:
+- reconcile current-tenant DIMA-managed inventory entries absent from desired;
+- removed semantic -> RETIRE_STALE + exact previous-binding rollback;
+- semantic still present but non-provisionable -> REJECT_DRIFT;
+- ownership transfer/policy removal -> REJECT_DRIFT;
+- enforce context/version coherence before NOOP;
+- require rollback for every mutating action in model validation;
+- add one real composed P7→P8→explicit policy→P9 provider-free proof.
+
+No Metabase write transport is authorized by this receipt.
+
+status:
+`CORRECTION APPLIED / AWAITING P9A GREEN`.

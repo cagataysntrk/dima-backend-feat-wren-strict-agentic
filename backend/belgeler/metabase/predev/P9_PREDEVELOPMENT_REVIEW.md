@@ -244,3 +244,18 @@ High-information cases:
 - unknown reconciliation -> validation fail.
 
 No live Metabase stack for P9A.
+
+
+## P9A correctness hardening before P9B
+
+P9B transport remains blocked until these provider-free invariants are executable:
+- stale `DIMA_MANAGED` bindings absent from desired state are reconciled explicitly;
+- removed semantic -> `RETIRE_STALE` with rollback;
+- still-existing but non-provisionable semantic -> `REJECT_DRIFT / REPRESENTATION_NO_LONGER_PROVISIONABLE`;
+- ownership transfer -> explicit `REJECT_DRIFT`, never deletion;
+- NOOP requires semantic context and applied version coherence in addition to fingerprints;
+- every mutating `ProvisionAction` requires rollback at model validation time;
+- one real composed P7→P8→explicit-policy→P9 chain proves integration.
+
+Managed-resource policy remains explicit input. P9A/P9B may not infer `DIMA_MANAGED` from a
+Metabase-native classification.

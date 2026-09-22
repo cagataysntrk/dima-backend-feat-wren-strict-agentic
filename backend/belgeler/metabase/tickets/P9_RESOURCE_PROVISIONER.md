@@ -25,3 +25,16 @@ patches.
 After P9A GREEN, inspect the exact v0.63.18 mutation API for each resource kind and add a narrow pinned
 transport under a separate receipt/live canary. Do not generalize one resource endpoint across all
 Metabase content.
+
+
+## P9A hardening gate before P9B
+
+Open audit: `DMP-P9-AUDIT-002`.
+
+Required closure:
+- stale managed-resource lifecycle;
+- binding context/applied-version coherence;
+- rollback-required mutating action contract;
+- one provider-free real P7→P8→explicit policy→P9 plan.
+
+P9B REST mutation transport is held until this gate is GREEN.

@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BASE="75c047b6a100d7b1e3a4d3be3dc6127f510672c5"
+          BASE="d0bbb77c846713f50f856146dd3377bd5d025a9d"
           changed="$(git diff --name-only "$BASE"...HEAD)"
           printf '%s\n' "$changed"
           if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|semantic_import|semantic_equivalence|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)'; then
