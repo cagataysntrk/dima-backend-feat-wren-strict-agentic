@@ -16,6 +16,7 @@ class ModelRole(StrEnum):
     REFERENCE_LANGUAGE = "REFERENCE_LANGUAGE"
     RESEARCH_MANAGER = "RESEARCH_MANAGER"
     SEMANTIC_LINKER = "SEMANTIC_LINKER"
+    TEMPORAL_NORMALIZER = "TEMPORAL_NORMALIZER"
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,19 @@ class ModelRolePolicy:
                 or self._provider_default(provider)
                 or ""
             )
+        elif role == ModelRole.TEMPORAL_NORMALIZER:
+            provider = str(
+                getattr(self._settings, "v2_temporal_normalizer_provider", "")
+                or getattr(self._settings, "v2_reference_language_provider", "")
+                or "openrouter"
+            )
+            configured = str(
+                getattr(self._settings, "v2_temporal_normalizer_model", "") or ""
+            )
+            reference = str(
+                getattr(self._settings, "v2_reference_language_model", "") or ""
+            )
+            model = str(model_override or configured or reference or "")
         else:
             raise ValueError(f"unsupported V2 model role: {role}")
 
@@ -96,11 +110,19 @@ class ModelRolePolicy:
                         else (
                             "v2_semantic_linker_reasoning"
                             if role == ModelRole.SEMANTIC_LINKER
-                            else "v2_reference_language_reasoning"
+                            else (
+                                "v2_temporal_normalizer_reasoning"
+                                if role == ModelRole.TEMPORAL_NORMALIZER
+                                else "v2_reference_language_reasoning"
+                            )
                         )
                     )
                 ),
-                role in {ModelRole.REFERENCE_LANGUAGE, ModelRole.RESEARCH_MANAGER},
+                role in {
+                    ModelRole.REFERENCE_LANGUAGE,
+                    ModelRole.RESEARCH_MANAGER,
+                    ModelRole.TEMPORAL_NORMALIZER,
+                },
             )
         )
 
