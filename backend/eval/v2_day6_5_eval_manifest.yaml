@@ -1,10 +1,27 @@
 version: "day6.5-manager-eval-v1"
-status: "IMPLEMENTATION_STARTED_OWNER_OVERRIDE"
+status: "ENGINEERING_CLOSURE_ACTIVE"
 frozen_at: "2026-09-21"
 
 architecture_question: >
-  Can the bounded iterative Manager preserve human intent while deterministic
-  trust-plane authorities remain non-bypassable?
+  Can Dima close the Day 6.5 architecture with STANDARD_DIRECT, bounded
+  STANDARD_BUILDER and RESEARCH while preserving non-bypassable trust-plane authority?
+
+work_modes:
+  standard_direct:
+    authority_family: "AcceptedStandardAuthority"
+    principle: "immediate lossless projection; minimal model calls"
+  standard_builder:
+    authority_family: "AcceptedStandardAuthority"
+    principle: "bounded progress-driven discovery/repair; never Research Manager"
+  research:
+    authority_family: "AcceptedResearchAuthority"
+    principle: "finite pre-acceptance plus evidence-aware bounded research"
+
+architecture_invariants:
+  semantic_discovery_is_not_authority: true
+  standard_query_construction_is_not_research_orchestration: true
+  bounded_standard_self_correction_allowed: true
+  standard_to_research_authority_merge_forbidden: true
 
 historical_baseline:
   name: "day6_frozen16_one_shot"
@@ -129,11 +146,16 @@ architecture_gates:
     unsafe_fast_admission_max: 0
     standard_lossless_to_core_rate: 1.0
     simple_standard_forced_research_max: 0
-    simple_standard_manager_loop_max: 0
-    simple_standard_model_calls_max: 1
-    simple_standard_verified_success_min_relative_to_day5: 1.0
-    simple_standard_p95_max_relative_to_day5: 1.10
-    simple_standard_cost_max_relative_to_day5: 1.10
+    simple_standard_research_manager_loop_max: 0
+    standard_direct_model_calls_target: "MINIMAL"
+    standard_builder_progress_required: true
+    standard_builder_same_action_same_state_max: 1
+    standard_builder_budget_fail_closed: true
+    standard_builder_default_max_model_turns: 4
+    standard_builder_default_max_tool_calls: 8
+    standard_verified_success_min_relative_to_day5: 1.0
+    standard_p95_measure_and_compare: true
+    standard_cost_measure_and_compare: true
 
 model_policy:
   principle: >
@@ -177,3 +199,29 @@ stop_the_line:
   - "production code contains eval literals"
   - "model-specific semantic fix added to pass one case"
   - "Manager bypasses trust-plane authority"
+
+engineering_closure_sequence:
+  - "Recertify exact c9629d9029db360e86a8592e12da646a2afc0621 with focused provider-free cognition/authority closure."
+  - "Create checkpoint SHA only if exact-head recertification is green."
+  - "Add SemanticCatalogRetriever seam; first backend may wrap current deterministic enumeration."
+  - "Add bounded StandardBuilder; STANDARD_DIRECT is its immediate-seal short path."
+  - "Split AcceptedStandardAuthority from AcceptedResearchAuthority physically."
+  - "Keep narrow Standard CoverageVeto for seal phase."
+  - "Run focused provider-free failure-family tests."
+  - "Run workers=1 small live architectural boundary set."
+  - "Require real Wren Standard vertical and existing Research sentinel."
+  - "Mark exact SHA ENGINEERING FREEZE CANDIDATE."
+  - "Run frozen DEV80 once on that SHA; classify failure families, never patch named cases."
+  - "If hard gates pass: DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN."
+  - "Run VALIDATION50 with no tuning."
+  - "Run external HIDDEN50 for certification seal."
+  - "Only after seal activate production hybrid /ask-v2."
+
+failure_classification:
+  semantic_or_eval:
+    - "MODEL_COGNITION"
+    - "CONTRACT/ARCHITECTURE"
+    - "RESOLVER_TRUTH"
+    - "EVAL_ORACLE"
+    - "TRANSPORT/PROVIDER"
+  rule: "Classify before patch; infra/provider failure is not semantic failure."
