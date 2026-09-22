@@ -12,6 +12,7 @@ on:
       - "backend/app/fast/query_builder.py"
       - "backend/app/fast/evidence.py"
       - "backend/tests/test_fast_ask_core.py"
+      - "backend/tests/test_fast_ask_service.py"
   workflow_dispatch:
 
 permissions:
@@ -42,7 +43,10 @@ jobs:
       - name: Compile FT-003 core
         working-directory: backend
         run: |
-          python -m py_compile             app/fast/ask_models.py             app/fast/ask_errors.py             app/fast/ask_cognition.py             app/fast/resource_registry.py             app/fast/temporal.py             app/fast/query_builder.py             app/fast/evidence.py
+          python -m py_compile             app/fast/ask_models.py             app/fast/ask_errors.py             app/fast/ask_cognition.py             app/fast/resource_registry.py             app/fast/temporal.py             app/fast/query_builder.py             app/fast/evidence.py \
+            app/fast/ask_service.py \
+            app/fast/router.py \
+            app/fast/application.py
 
       - name: Fast boundary static gate
         working-directory: backend
@@ -51,3 +55,7 @@ jobs:
       - name: FT-003 deterministic core tests
         working-directory: backend
         run: pytest -q tests/test_fast_ask_core.py
+
+      - name: FT-003 service and auth API tests
+        working-directory: backend
+        run: pytest -q tests/test_fast_ask_service.py
