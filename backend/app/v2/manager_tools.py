@@ -74,6 +74,7 @@ class ProposeAcceptanceArgs(FrozenModel):
 
 
 class RunAnalyticsArgs(FrozenModel):
+    research_task_id: str | None = Field(default=None, min_length=1)
     obligation_ids: tuple[str, ...] = Field(min_length=1)
     metric_handles: tuple[str, ...] = Field(min_length=1)
     dimension_handles: tuple[str, ...] = ()
