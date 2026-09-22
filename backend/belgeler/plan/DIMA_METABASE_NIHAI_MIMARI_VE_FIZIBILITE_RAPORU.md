@@ -1469,3 +1469,570 @@ Tek cümlelik prensip:
 
 “Dima’nın zekâsını ve semantic hakikatini koru; Metabase’in olgun analytics altyapısını kullan; hiçbir katmanı diğerinin authority alanına sokma.”
 
+
+---
+
+# MBR33 — RİSK REGISTER
+
+Bu bölüm teknik fizibilitenin release-blocking risk envanteridir.
+
+## R1 — Wren cube semantics’in sessiz kaybı
+
+Severity: P0.
+
+Risk:
+Metabase objects Wren Cube/MDL kavramlarının tümünü birebir taşımayabilir.
+
+Mitigation:
+DCSS canonical source.
+MigrationReceipt.
+Wren parity oracle.
+No direct Wren→Metabase ad-hoc migration.
+
+Gate:
+100% semantic inventory accounted.
+
+## R2 — Metric formula drift
+
+Severity: P0.
+
+Risk:
+Wren measure ile Metabase Measure/Metric aynı isimde fakat farklı aggregation/formula üretir.
+
+Mitigation:
+formula_hash + canonical result parity.
+
+Gate:
+Certified metric set = 100% parity.
+
+## R3 — Grain duplication
+
+Severity: P0.
+
+Risk:
+Join sonrası measure çoğalır.
+
+Mitigation:
+DCSS grain/additivity + CrossDomainJoinGate.
+
+Gate:
+dedicated many-to-many / one-to-many corpus.
+
+## R4 — Metabase repair semantic mutation
+
+Severity: P0.
+
+Risk:
+Representation repair teknik hatayı düzeltirken metric/filter/time meaning değiştirir.
+
+Mitigation:
+MetabaseRepairEquivalenceGate.
+
+Gate:
+semantic fingerprint exact match.
+
+## R5 — Metabot second semantic owner
+
+Severity: P0.
+
+Risk:
+Dima accepted authority sonrası Metabot raw prompt’tan başka query kurar.
+
+Mitigation:
+Metabot authoritative path dışında.
+Only typed MetabaseAnalyticsPort.
+
+Gate:
+architecture import/call graph test.
+
+## R6 — Numeric Metabase IDs canonical sanılır
+
+Severity: P0/P1.
+
+Risk:
+Environment migration sonrası ID değişir.
+
+Mitigation:
+Dima canonical ID + portable entity_id/UUID mapping.
+
+Gate:
+fresh-instance recompile test.
+
+## R7 — Semantic index lag
+
+Severity: P1.
+
+Risk:
+AI Context/synonym update ile retrieval index eşzamanlı değil.
+
+Mitigation:
+semantic_version + reconcile receipt + activation barrier.
+
+Gate:
+new version ACTIVE olmadan index compile/reconcile complete.
+
+## R8 — Warehouse schema drift
+
+Severity: P0/P1.
+
+Risk:
+Field removed/renamed but accepted semantic remains active.
+
+Mitigation:
+metadata_version and orphan detection.
+
+Gate:
+stale mapping query blocked.
+
+## R9 — Cached result data leak
+
+Severity: P0.
+
+Risk:
+Creator lens altında üretilen result başka viewer’a gösterilir.
+
+Mitigation:
+Metabase lens token + Dima evidence access gate.
+
+Gate:
+permission revoke / sandbox change / tenant crossing tests.
+
+## R10 — Dima evidence Metabase GC’ye bağımlı
+
+Severity: P1.
+
+Risk:
+Report audit sırasında Metabase cache yok.
+
+Mitigation:
+durable Dima evidence snapshot for promoted evidence.
+
+Gate:
+cache deletion simulation.
+
+## R11 — Global service account privilege
+
+Severity: P0.
+
+Risk:
+Dima backend superuser olarak query çalıştırır.
+
+Mitigation:
+principal mapping and least privilege.
+
+Gate:
+superuser execution hot path = 0.
+
+## R12 — Query handle authority laundering
+
+Severity: P0.
+
+Risk:
+Başka projection/query aynı handle veya authority ile execute edilir.
+
+Mitigation:
+authority_id + projection_hash + canonical query hash bind.
+
+Gate:
+tamper tests.
+
+## R13 — Native SQL escape
+
+Severity: P0.
+
+Risk:
+Manager veya Metabase tool raw SQL path açar.
+
+Mitigation:
+native SQL disabled in Dima hot path.
+Agent authored SQL kill switch.
+
+Gate:
+architecture and endpoint tests.
+
+## R14 — Permission mismatch between Dima and Metabase
+
+Severity: P0.
+
+Risk:
+Dima “allowed” der, Metabase “denied” veya tersi; daha kötüsü Dima evidence gösterir.
+
+Mitigation:
+deny-wins.
+Metabase execution permission is mandatory.
+Dima artifact gate additionally enforced.
+
+Gate:
+principal parity matrix.
+
+## R15 — Metabase upgrade breaks query dialect
+
+Severity: P1.
+
+Mitigation:
+pinned version + upgrade protocol + adapter contract tests.
+
+## R16 — Internal Metabase source coupling
+
+Severity: P1.
+
+Risk:
+Dima internal Clojure namespace davranışına runtime bağımlı hale gelir.
+
+Mitigation:
+HTTP/public supported contract only.
+
+## R17 — High cardinality explosion
+
+Severity: P1/P2.
+
+Mitigation:
+bounded result limits, field-value caps, top-N policy, research budgets.
+
+## R18 — Metadata prompt injection
+
+Severity: P0/P1.
+
+Risk:
+Table/description/AI context içinde instruction-like malicious text.
+
+Mitigation:
+metadata treated as untrusted data.
+System tool contract outranks metadata.
+No metadata can mint authority.
+
+## R19 — Semantic alias poisoning
+
+Severity: P0.
+
+Mitigation:
+DCSS change review + source provenance + tenant scope.
+
+## R20 — Research result fanout cost
+
+Severity: P2/P3.
+
+Mitigation:
+task budget, query budget, interestingness pruning, no-progress fingerprint.
+
+## R21 — Cross-domain temporal misalignment
+
+Severity: P0/P1.
+
+Mitigation:
+RelationshipEdge time-alignment policy.
+
+## R22 — Metric dimension orphaning
+
+Severity: P1.
+
+Mitigation:
+Metabase orphaned dimension status + DCSS compile verification.
+
+## R23 — Metabase application DB corruption/outage
+
+Severity: P1 operational.
+
+Mitigation:
+production PostgreSQL, backup, restore rehearsal, HA plan.
+
+## R24 — Duplicate execution on retry
+
+Severity: P1.
+
+Mitigation:
+execution idempotency key and persisted task state.
+
+## R25 — Two production truth engines
+
+Severity: P0 architecture.
+
+Mitigation:
+shadow-only challenger.
+One primary substrate at a time.
+Explicit operator rollback only.
+
+---
+
+# MBR34 — METABASE CAPABILITY ADOPTION MATRIX
+
+Capability: Generic agent loop
+Source: metabot/agent/core.clj, profiles.clj
+Decision: PATTERN ADOPT
+Reason: reusable bounded loop; do not copy code.
+
+Capability: Agent API
+Source: agent_api/*
+Decision: ADAPTER TARGET
+Reason: typed agent/query surface.
+
+Capability: Representations validation/repair/resolve
+Source: agent_lib/representations/*
+Decision: PRIMARY REUSE
+Reason: mature query lifecycle.
+
+Capability: Query handles
+Source: mcp/v2/queries.clj
+Decision: REUSE CONCEPT / API WHERE AVAILABLE
+Reason: query identity + recheck permissions.
+
+Capability: Measures/Metrics/Dimensions
+Source: measures/*, metrics/*, lib_metric/*
+Decision: RUNTIME PROJECTION TARGET
+Reason: semantic execution substrate; not canonical Dima truth.
+
+Capability: AI Context
+Source: osi/ai_context/*
+Decision: SECONDARY RETRIEVAL PROJECTION
+Reason: synonyms/examples/instructions; not authority.
+
+Capability: Entity retrieval
+Source: entity_retrieval/*
+Decision: CANDIDATE DISCOVERY
+Reason: retrieval only.
+
+Capability: Field values
+Source: parameters/field_values.clj
+Decision: REUSE
+Reason: permission-aware value discovery.
+
+Capability: Indexed entities
+Source: indexed_entities/*
+Decision: EVALUATE / REUSE
+Reason: high-cardinality entity-value search.
+
+Capability: Query Processor
+Source: query_processor/*
+Decision: PRIMARY EXECUTION ENGINE
+Reason: permissions, drivers, preprocessing, execution.
+
+Capability: Query permissions
+Source: query_permissions/*
+Decision: PRIMARY EXECUTION GUARD
+Reason: required but Dima tenant/evidence guard remains.
+
+Capability: Cached result lens
+Source: queries/cached_result.clj
+Decision: PATTERN + REUSE
+Reason: prevents derived-data leaks.
+
+Capability: Explorations
+Source: explorations/*
+Decision: SELECTIVE REUSE
+Reason: persistence/queue/chart/interestingness; not Dima research authority.
+
+Capability: Contextual interestingness
+Source: contextual_interestingness/*
+Decision: OPTIONAL SIGNAL
+Reason: ranking/surfacing only; never finding truth.
+
+Capability: Dashboards / collections / charts
+Decision: DIRECT PRODUCT REUSE.
+
+Capability: Revisions / content verification
+Decision: REUSE for BI governance.
+
+Capability: Glossary
+Decision: PROJECTION from DCSS.
+
+Capability: Remote sync
+Decision: EVALUATE for semantic/BI promotion workflow.
+
+Capability: Raw SQL authoring
+Decision: DISABLED in Dima Standard/Research hot path.
+
+---
+
+# MBR35 — METABASE SEMANTIC MODELİNİN WREN’DEN FARKI
+
+Wren’in semantic model yaklaşımı “business model first” karakterindedir.
+
+Metabase ise query platformu + reusable metric/dimension/content modelini birlikte taşır.
+
+Bu yüzden aşağıdaki yanlış çıkarım yasaktır:
+
+    “Metabase’de Metric var”
+    ⇒ “Wren MDL artık gereksiz”
+
+Doğru çıkarım:
+
+    “Metabase Metric/Measure/Dimension runtime execution için yeterince zengin olabilir”
+    +
+    “Dima business semantics substrate-independent DCSS’te korunmalıdır”
+
+Özellikle DCSS içinde Metabase’in natural olarak taşımadığı veya farklı temsil ettiği alanlar korunur:
+
+- domain/cube grouping
+- grain contract
+- additivity
+- relationship eligibility
+- business join constraints
+- lower_is_better
+- semantic exposure policy
+- specialized analytical operators
+- sector overlay inheritance
+- metric dependency graph
+- cross-domain time alignment
+
+Metabase’e sadece representable projection yapılır.
+
+---
+
+# MBR36 — QUERY COMPILATION İÇİN İKİ ALTERNATİF VE KARAR
+
+Alternatif A:
+Dima accepted semantics → free-form NL → Metabase Metabot → query.
+
+Red.
+Neden:
+ikinci semantic owner ve raw prompt reparse.
+
+Alternatif B:
+Dima AcceptedStandardAuthority → deterministic StandardProjection → portable query → Metabase representations pipeline.
+
+Selected.
+
+Alternatif C:
+Dima StandardProjection → direct raw SQL.
+
+Red.
+Neden:
+permission/query lifecycle/repair/semantic safety kaybı.
+
+Dolayısıyla target compilation:
+
+    AcceptedStandardAuthority
+    → StandardProjection
+    → MetabaseProjectionCompiler
+    → portable query representation
+    → validate
+    → repair
+    → resolve
+    → equivalence
+    → Query Processor
+
+---
+
+# MBR37 — OPERATIONAL FEASIBILITY
+
+Ek servis maliyeti gerçektir.
+
+Production minimum:
+
+- Metabase JVM container/service
+- PostgreSQL application DB
+- backups
+- migrations
+- monitoring
+- secrets
+- DB connection pool
+- service networking
+- pinned image
+- rolling upgrade strategy
+
+Fakat bu maliyet karşılığında Dima’nın yeniden yapmak zorunda kalmayacağı platform maliyetleri çok daha büyüktür:
+
+- dashboard engine
+- saved query model
+- query editor
+- visualization workspace
+- driver handling
+- cached results
+- query lifecycle
+- permission-aware metadata
+- revisions
+- BI collections
+- field values
+- result rendering
+
+Bu nedenle infrastructure TCO artar; product-development TCO belirgin azalır.
+
+Pilot fizibilite metriği yalnız latency değildir.
+
+    engineering LOC avoided
+    custom subsystem count removed
+    operational components added
+    incident surface
+    upgrade effort
+    p95
+    cost per verified success
+
+birlikte ölçülür.
+
+---
+
+# MBR38 — SOURCE REFERENCE INDEX
+
+Metabase pinned source references:
+
+Agent runtime:
+- src/metabase/metabot/agent/core.clj
+- src/metabase/metabot/agent/profiles.clj
+- src/metabase/metabot/agent/memory.clj
+
+Agent API:
+- src/metabase/agent_api/api.clj
+- src/metabase/agent_api/query_guards.clj
+- src/metabase/agent_api/validation.clj
+- src/metabase/agent_api/reference.md
+
+Query representation:
+- src/metabase/agent_lib/representations.clj
+- src/metabase/agent_lib/representations/repair.clj
+- src/metabase/agent_lib/representations/resolve.clj
+- src/metabase/mcp/v2/queries.clj
+
+Semantic objects:
+- src/metabase/measures/models/measure.clj
+- src/metabase/metrics/core.clj
+- src/metabase/lib_metric/core.cljc
+- src/metabase/lib_metric/dimension.cljc
+
+Retrieval/context:
+- src/metabase/entity_retrieval/*
+- src/metabase/osi/ai_context/*
+- src/metabase/glossary/*
+
+Execution/security:
+- src/metabase/query_processor/*
+- src/metabase/query_permissions/*
+- src/metabase/queries/cached_result.clj
+- enterprise/backend/src/metabase_enterprise/sandbox/query_processor/middleware/sandboxing.clj
+
+Values:
+- src/metabase/parameters/field_values.clj
+- src/metabase/indexed_entities/*
+
+Research/workspace:
+- src/metabase/explorations/*
+- src/metabase/contextual_interestingness/*
+- src/metabase/dashboards/*
+- src/metabase/collections/*
+- src/metabase/revisions/*
+
+Dima reference:
+- existing v2 authority/preacceptance/runtime modules
+- existing StandardProjection / AcceptedStandardAuthority
+- current WrenService / CubePlanner / QueryContract / Evidence
+- existing final V2 report and roadmap
+- Day6.5 failure triage and Metabase audit artifacts
+
+---
+
+# MBR39 — CONSULTATION GATES
+
+Geliştirici aşağıdaki kararlarda otomatik ilerlemez:
+
+1. DCSS canonical schema değişikliği semantic ownership’i etkiliyorsa.
+2. Metabase API yerine internal source coupling öneriliyorsa.
+3. Raw SQL hot path isteniyorsa.
+4. Metabot cognition Dima Manager’ın yerine geçirilecekse.
+5. Wren runtime kaldırılacaksa.
+6. Cross-domain relationship owner değişecekse.
+7. Principal mapping superuser/service-account shortcut’a dönüyorsa.
+8. Evidence storage Metabase cache’e tamamen devredilecekse.
+9. Accepted authority contract değişecekse.
+10. Final freeze / DEV80 başlatılacaksa.
+
+Bu rapor teknik fizibilite belgesidir. Önceki talebe uygun olarak lisans/hukuk değerlendirmesi bu teknik kararın dışında tutulmuştur; production ticari karar aşamasında ayrıca ele alınabilir.
+
