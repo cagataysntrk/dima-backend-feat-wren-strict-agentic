@@ -519,3 +519,92 @@ focused_proof: `PENDING rerun`
 family_regression_proof: `102/102 provider-free product family already GREEN on ffbdc224`
 
 status: `CLASSIFIED — harness-only cleanup allowed`
+
+
+---
+
+## Receipt — D65-J1-FULL-001 — corrected primary full bakeoff RED
+
+run_id: `35705668833`
+
+tested_sha: `bde3e5a21c159243002ef600ece007256d8482d0`
+
+observed_failure:
+Workflow concluded RED because J1T contract-fidelity harness reported 6 Gemini and 2 Luna
+records as `provider_failure_count`.
+
+failure_stage:
+`lab/v2_day6_5_j1_benchmark.py::_chat_temporal_contract → TemporalNormalizationChoice.model_validate`
+
+failure_class: `EVAL_ORACLE`
+
+classification_evidence:
+- All J1S/J1T choice runs completed with provider_failure_count = 0.
+- The eight contract-fidelity records labeled HARNESS_OR_TRANSPORT_FAILURE carry Pydantic
+  `ValidationError`, not HTTP/network/provider errors.
+- The model returned a parseable structured object; the object violated product cross-field
+  invariants (for example COMPARISON without comparison_kind).
+- The harness broad exception branch mapped both transport exceptions and product-model
+  validation failures to `TRANSPORT/PROVIDER`.
+- Therefore workflow RED is measurement classification drift.
+- Underlying invalid typed outputs remain real `MODEL_COGNITION / INVALID_TYPED_CONTRACT`
+  evidence and must count as wrong contract answers, not disappear from the denominator.
+
+single_owner:
+`backend/lab/v2_day6_5_j1_benchmark.py::_chat_temporal_contract` measurement/error classifier.
+
+root_cause:
+The eval boundary does not distinguish provider transport failure from a model response that is
+JSON-decodable / provider-schema-accepted but rejected by Pydantic's cross-field validator.
+
+failure_family:
+Any structured model response that passes provider JSON shape but violates a Pydantic
+`model_validator` / cross-field product invariant.
+
+why_not_model_only:
+The invalid model outputs themselves are model cognition failures, but they should produce an
+evaluable wrong answer. The reason the *run* became infrastructure-incomplete/RED is the harness
+misclassification.
+
+why_not_oracle:
+N/A — this receipt explicitly classifies the run-level failure as `EVAL_ORACLE`.
+
+why_not_transport:
+No failing record contains an HTTP status, timeout, connection error or provider rejection.
+Every reported "transport" record contains a local Pydantic `ValidationError`.
+
+forbidden_patch_alternatives:
+- product temporal enum change
+- product `TemporalNormalizationChoice` weakening
+- case-specific expected-output change
+- prompt micro-patch
+- regex/keyword temporal parser
+- removing invalid cases from denominator
+- counting invalid contract output as provider failure
+
+allowed_files_to_touch:
+- `backend/lab/v2_day6_5_j1_benchmark.py`
+- `backend/tests/test_v2_day6_5_j1_benchmark.py`
+- J1 eval/receipt documentation
+
+files_not_to_touch:
+- `app/v2/temporal_intent.py`
+- `app/v2/semantic_linker.py`
+- BindingGate / authority models
+- frozen J1S/J1T corpora
+- production model topology
+
+invariant_being_fixed:
+`transport/provider failure != invalid typed model answer`.
+Invalid typed model output stays in the semantic/contract denominator.
+
+focused_proof:
+`PENDING` — no patch executed because the same full run triggers the mandatory Jev-promising
+consultation gate.
+
+family_regression_proof:
+`PENDING` — same reason.
+
+status:
+`OPEN AT CONSULTATION GATE — root cause classified; NO PRODUCT PATCH; eval-oracle patch deferred
+until user decision permits continuation.`
