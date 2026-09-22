@@ -1169,7 +1169,7 @@ class ResearchTask(FrozenModel):
     parent_obligation_id: str | None = None
     trigger_evidence_ref: str | None = None
     branch_depth: int = Field(default=0, ge=0)
-    state: Literal["pending", "running", "complete", "failed", "blocked"] = "pending"
+    state: Literal["pending", "running", "complete", "failed", "blocked", "cancelled"] = "pending"
 
     @model_validator(mode="after")
     def _day7_provenance(self):
