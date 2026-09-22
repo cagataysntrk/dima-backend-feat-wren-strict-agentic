@@ -317,3 +317,89 @@ full M1 workflow.
 
 status:
 `CLASSIFIED / CI-ONLY PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-M1-RED-005 — hidden legacy QueryContract question-field behavior drift
+
+receipt_id: `DMP-M1-RED-005`  
+ticket: `M1-P1-001`  
+tested_sha: `580d17ae5f0d3d48f89f8de5be63c6c4ce861004`  
+run_id: `35729177007` (workflow GREEN; defect found by post-green architecture audit)
+
+observed_failure:
+The v3 Wren compatibility path writes `intent.request_ref` into the legacy
+`ContractStore.record_v2_minimum(question=...)` field, while the certified v2 path writes
+the original user question. SQL/result/IR parity is GREEN, but persisted audit behavior is not.
+
+failure_stage:
+post-execution QueryContract persistence / compatibility side effect.
+
+failure_class:
+`CONTRACT/ARCHITECTURE`
+
+classification_evidence:
+- P1 requires first Wren adapter behavior drift = 0;
+- `ContractLog.question` is a real product/audit field, not dead metadata;
+- `admin_app/routers/contracts.py` displays it and filters contracts with
+  `ContractLog.question ILIKE q`;
+- certified v2 `WrenStandardExecutionAdapter.execute(... question=raw_question)` persists
+  that raw question;
+- current v3 substrate substitutes `request_ref`, changing observable audit/search behavior;
+- the substrate must still not reparse or semantically consume raw user language.
+
+single_owner:
+M1 execution/persistence boundary between Dima-owned audit/receipt writing and
+`WrenSubstrateAdapter`.
+
+root_cause:
+The initial M1 seam made the Wren substrate itself own legacy QueryContract persistence.
+Because the substrate correctly receives only `ResolvedAnalyticsIntent`, the original
+non-semantic audit question was unavailable and was silently replaced by `request_ref`.
+
+failure_family:
+compatibility side effects that require non-semantic request/audit context even though the
+analytics substrate must consume only resolved execution intent.
+
+forbidden_patch_alternatives:
+- add raw user question to `ResolvedAnalyticsIntent`;
+- let Wren substrate parse/reinterpret raw language;
+- keep `request_ref` and weaken zero-drift definition;
+- modify v2 ContractStore/admin behavior;
+- pass semantic handles back into the substrate.
+
+allowed_files_to_touch:
+- `backend/app/v3/evidence.py`
+- `backend/app/v3/legacy_contract.py` (new Dima-owned compatibility writer)
+- `backend/app/v3/substrate/base.py`
+- `backend/app/v3/substrate/wren.py`
+- `backend/tests/test_v3_m1_wren_adapter.py`
+- `backend/tests/test_v3_m1_contracts.py`
+- `.github/workflows/dima-metabase-m1.yml` only if compile list needs the new module
+- M1 status/ticket/receipt docs
+
+files_not_to_touch:
+- `backend/app/v2/**`
+- `backend/app/routers/ask_v2.py`
+- `backend/app/main.py`
+- `backend/app/config.py`
+- `WrenAI-main/**`
+- `feat/ask-v2-mvp`
+
+invariant_being_fixed:
+- analytics substrate input remains only `ResolvedAnalyticsIntent`;
+- raw user language is not a substrate semantic input and is never reparsed there;
+- Dima-owned compatibility receipt writer may carry the immutable audit question solely
+  to reproduce the certified QueryContract side effect;
+- legacy persisted question, SQL, CubeQuery, result hash, row count, schema version and
+  v2 provenance remain behaviorally identical.
+
+focused_proof:
+v3-v2 parity test must assert persisted `question` equality in addition to SQL/query/result/provenance.
+
+family_or_live_proof:
+full M1 workflow + retained v2 real-Wren sentinels + forbidden-file isolation.
+
+status:
+`CLASSIFIED / ROOT BOUNDARY PATCH AUTHORIZED`.
