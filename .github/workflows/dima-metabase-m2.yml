@@ -1,0 +1,91 @@
+name: dima-metabase-m2
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/lab/metabase/**"
+      - ".github/workflows/dima-metabase-m2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  m2-isolated-metabase-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce M2 forbidden-file isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="17942f179b13fd2cb81fd284789ba0f6366d2ed8"
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|docker-compose\.yml$|backend/lab/docker-compose\.yml$|WrenAI-main/)'; then
+            echo "M2 forbidden file changed"
+            exit 1
+          fi
+
+      - name: Verify immutable runtime pins
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'image:.*:latest([[:space:]]|$)' docker-compose.yml
+          grep -F 'metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73' docker-compose.yml
+          test "$(grep -Fc 'postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675' docker-compose.yml)" -eq 2
+
+      - name: Prepare lab
+        working-directory: backend/lab/metabase
+        run: |
+          cp .env.example .env
+          mkdir -p artifacts
+          docker compose --env-file .env config >/dev/null
+          docker compose --env-file .env up -d
+
+      - name: Bootstrap and probe
+        working-directory: backend/lab/metabase
+        run: |
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+          python3 scripts/capability_probe.py --json-out artifacts/capability.json
+
+      - name: Restart persistence proof
+        working-directory: backend/lab/metabase
+        run: |
+          docker compose --env-file .env restart metabase
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/capability_probe.py --json-out artifacts/capability-after-restart.json
+
+      - name: App DB backup and restore smoke
+        working-directory: backend/lab/metabase
+        run: |
+          ./scripts/backup.sh artifacts/metabase-app-db.dump
+          ./scripts/restore-smoke.sh artifacts/metabase-app-db.dump
+
+      - name: Show receipt
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test ! -f artifacts/capability.json || cat artifacts/capability.json
+          test ! -f artifacts/capability-after-restart.json || cat artifacts/capability-after-restart.json
+          docker compose --env-file .env ps || true
+          docker compose --env-file .env logs --tail=200 metabase || true
+
+      - name: Teardown
+        if: always()
+        working-directory: backend/lab/metabase
+        run: docker compose --env-file .env down -v --remove-orphans || true
