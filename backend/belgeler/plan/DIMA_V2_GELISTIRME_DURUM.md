@@ -4444,7 +4444,42 @@ Security boundary oracle uğruna gevşetilmeyecek.
 
 ---
 
-### 2026-09-23 00:56 — D7-SEED-SET ROOT FIX GREEN
+### 2026-09-23 01:05 — DAY7 REAL WREN COMPARE / RANK GREEN
+
+```text
+product_sha     a7303dec8a83bbb11a1d40c992da75f88444858c
+focused_run     35789901494
+result          GREEN
+```
+
+Real-Wren capability proof:
+- `COMPARE`: real `bakim.ariza_sayisi`, governed typed base/reference periods,
+  **2 real Wren queries**, **2 sealed QueryContracts**, VERIFIED Evidence, UOL VERIFIED.
+- `RANK`: real `bakim.ariza_sayisi by ariza_tipi`, governed direction+limit,
+  real Wren top-N, deterministic result validation, sealed QueryContract, VERIFIED Evidence.
+- No new query engine, SQL path, comparison engine or ranking engine was introduced.
+- Existing `ManagerCoreAnalyticsAdapter → CubePlanner → Wren → QueryContract → Evidence`
+  remains the sole execution path.
+- Full Day7 focused suite remained GREEN on the exact same SHA, including seed-set,
+  principal binding, fanout, relationship safety, real two-Wren adaptive Research and
+  real governed RELATIONSHIP.
+
+Current next ticket:
+**D7 TOOL-FAMILY PRIMITIVE AUDIT — TREND / CONTRIBUTION / PEER_COMPARE.**
+
+Rule:
+- inventory existing `stats.py / contribution.py / drill.py / ilkeller.py / yoy.py`;
+- reuse only if a safe governed primitive already exists;
+- deterministic transformation must preserve explicit Evidence lineage;
+- contribution is decomposition/observed contribution, never causal truth;
+- peer comparison requires accepted/governed peer grouping;
+- if a safe primitive is absent, record `PRIMITIVE_GAP`; do not add wrapper theater.
+
+Live Sol remains BLOCKED until this deterministic disposition is closed.
+
+---
+
+## 2026-09-23 00:56 — D7-SEED-SET ROOT FIX GREEN
 
 ```text
 product_sha         aecd0c0c4642d18711feff58b864c2c866b1fcd6
