@@ -3,7 +3,7 @@
 **Milestone:** M2 / P2  
 **Predevelopment review:** `backend/belgeler/metabase/predev/M2_P2_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** Metabase runtime pin + isolated lab infrastructure  
-**Status:** RUNTIME PINNED / LAB IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE GREEN
+**Status:** CLOSED GREEN
 
 ## Goal
 
@@ -68,3 +68,35 @@ Postgres image     postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb
 ```
 
 Next: implement only the isolated lab allowlist.
+
+
+---
+
+## Closure receipt
+
+```text
+final implementation SHA       a05bd12ff56ac3c66eef01f7340c1f991ae07681
+M2 workflow                    35732633996 = SUCCESS
+governance                     35732633999 = SUCCESS
+bootstrap                      PASS
+Agent API ping                 PASS
+search/read-resource           PASS
+construct + execute            PASS
+combined query                 PASS
+pagination                     first=200, second=5
+raw SQL kill-switch            403 / PASS
+restart persistence            PASS
+app DB backup                  PASS
+restore smoke                  PASS / 176 public tables
+product routing                0
+v2/v3 product code edits       0
+source branch writes           0
+```
+
+Closed failure receipts:
+- DMP-M2-RED-001 — shell-sourced env quoting mismatch;
+- DMP-M2-RED-002 — exact v0.63.18 setting key/path encoding mismatch.
+
+Exit gate: **GREEN**.
+
+This closure does not authorize P3 client code until a separate P3/P3A pre-development review is sealed.

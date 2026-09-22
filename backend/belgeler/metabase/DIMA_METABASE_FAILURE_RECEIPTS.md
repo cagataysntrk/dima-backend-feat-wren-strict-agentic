@@ -683,3 +683,38 @@ full M2 live workflow.
 
 status:
 `CLASSIFIED / LAB API FIXTURE PATCH AUTHORIZED`.
+
+
+---
+
+## M2 closure matrix
+
+final_sha: `a05bd12ff56ac3c66eef01f7340c1f991ae07681`  
+workflow: `35732633996 = SUCCESS`  
+governance: `35732633999 = SUCCESS`
+
+```text
+DMP-M2-RED-001  CLOSED GREEN — shell/Compose env compatibility fixed; bootstrap reached runtime
+DMP-M2-RED-002  CLOSED GREEN — exact encoded v0.63.18 setting identifiers; full live lab passed
+```
+
+Certified runtime observations:
+```text
+health                         true
+unauthenticated Agent denied   true
+agent_api_ping                 true
+search                         true
+read_resource                  true
+construct_query                true
+execute_query                  true
+combined_query                 true
+continuation_observed          true
+observed_page_rows             200
+observed_second_page_rows      5
+raw_sql_disabled               true
+restart persistence            true
+backup                         PASS
+restore                        PASS / 176 public tables
+```
+
+No M2 failure remains open. Future M2 regressions use new receipt ids.

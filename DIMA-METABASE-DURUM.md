@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** M2 / P2 — RUNTIME PINNED; ISOLATED LAB IMPLEMENTATION READY  
-**Product-code development:** M1 CLOSED GREEN; M2 LAB IMPLEMENTATION NOT STARTED  
+**Current phase:** M2 / P2 CLOSED GREEN — P3 / P3A PRE-DEVELOPMENT REVIEW NEXT  
+**Product-code development:** M2 LAB CLOSED GREEN; P3 PRODUCT CODE NOT STARTED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -50,7 +50,7 @@ Any port requires Decision Receipt + branch-local proof.
 
 ## Stop conditions currently active
 
-- P0 bootstrap is closed; product code may change only under an authorized M1/P1 ticket after mandatory pre-development source review;
+- each new milestone requires its own sealed pre-development review + scoped ticket before code;
 - no source-branch synchronization;
 - no Metabase primary switch;
 - no Wren removal.
@@ -156,3 +156,40 @@ Postgres digest    = sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce93
 ```
 
 Lab implementation may begin only inside the M2 allowlist. Product routing remains forbidden.
+
+
+---
+
+## M2 / P2 closure — GREEN
+
+```text
+final M2 implementation SHA      = a05bd12ff56ac3c66eef01f7340c1f991ae07681
+M2 workflow run                  = 35732633996 = SUCCESS
+governance run                   = 35732633999 = SUCCESS
+immutable Metabase image pin     = PASS
+immutable PostgreSQL image pin   = PASS
+isolated stack startup           = PASS
+Metabase health                  = PASS
+initial bootstrap                = PASS
+Agent API authenticated ping     = PASS
+unauthenticated Agent denial     = PASS
+search/read-resource             = PASS
+construct-query                  = PASS
+execute                          = PASS
+combined query                   = PASS
+pagination                       = 200 + 5 rows observed
+raw-SQL kill-switch              = PASS / HTTP 403
+restart persistence              = PASS
+Metabase app-DB backup           = PASS
+restore smoke                    = PASS / 176 public tables
+Dima v2/v3 product-code changes  = 0
+Dima→Metabase product routing    = 0
+source-branch writes/sync        = 0
+ask-v2 source HEAD observed      = 6f7b3524dd692b6aefb68d9844cb606f0f25a2cd
+```
+
+M2 proves only the pinned runtime/lab capability boundary. It does **not** prove semantic bridge
+feasibility, semantic equivalence, production tenant mapping, or Metabase substrate selection.
+
+**Next authorized activity:** P3/P3A pre-development review only.
+No P3 product code until that review/ticket is sealed and governance is GREEN.
