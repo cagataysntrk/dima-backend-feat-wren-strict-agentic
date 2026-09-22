@@ -496,6 +496,7 @@ def test_canonicalizer_rejects_non_uuid_canonical_drift():
             client=NonDeterministicClient()
         ).canonicalize(plan)
     assert exc.value.code == "NON_DETERMINISTIC_CANONICAL_SEMANTICS"
+    assert "$.stages[0].source-table[2]" in exc.value.detail
 
 
 def test_canonicalizer_does_not_strip_similar_looking_uuid_keys():

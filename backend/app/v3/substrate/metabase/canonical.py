@@ -93,6 +93,57 @@ class MetabaseCanonicalizer:
 
         return value, 0
 
+    @classmethod
+    def _first_difference(
+        cls,
+        left: Any,
+        right: Any,
+        *,
+        path: str = "$",
+    ) -> tuple[str, Any, Any] | None:
+        """Return the first exact structural/value difference without normalizing either side."""
+
+        if type(left) is not type(right):
+            return path, left, right
+
+        if isinstance(left, dict):
+            left_keys = set(left)
+            right_keys = set(right)
+            if left_keys != right_keys:
+                missing_left = sorted(right_keys - left_keys, key=str)
+                missing_right = sorted(left_keys - right_keys, key=str)
+                return (
+                    path,
+                    {"missing_keys": missing_left},
+                    {"missing_keys": missing_right},
+                )
+            for key in sorted(left_keys, key=str):
+                found = cls._first_difference(
+                    left[key],
+                    right[key],
+                    path=f"{path}.{key}",
+                )
+                if found is not None:
+                    return found
+            return None
+
+        if isinstance(left, list):
+            if len(left) != len(right):
+                return f"{path}.length", len(left), len(right)
+            for index, (left_item, right_item) in enumerate(zip(left, right)):
+                found = cls._first_difference(
+                    left_item,
+                    right_item,
+                    path=f"{path}[{index}]",
+                )
+                if found is not None:
+                    return found
+            return None
+
+        if left != right:
+            return path, left, right
+        return None
+
     @staticmethod
     def _fingerprint(decoded: dict[str, Any]) -> str:
         raw = json.dumps(
@@ -157,9 +208,16 @@ class MetabaseCanonicalizer:
                 raise AssertionError("stable canonical query lost object shape")
 
             if first_stable != second_stable:
+                difference = self._first_difference(first_stable, second_stable)
+                if difference is None:
+                    raise AssertionError("canonical inequality had no observable difference")
+                diff_path, first_value, second_value = difference
                 raise MetabaseCompilationBlocked(
                     "NON_DETERMINISTIC_CANONICAL_SEMANTICS",
-                    f"non-volatile construct-query output changed for {step.role} step",
+                    (
+                        f"non-volatile construct-query output changed for {step.role} step "
+                        f"at {diff_path}: first={first_value!r}, second={second_value!r}"
+                    )[:1200],
                 )
 
             actual_manifest = query_structural_manifest(first_stable)
