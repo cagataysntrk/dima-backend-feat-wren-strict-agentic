@@ -5,24 +5,23 @@ Branch: `feat/dima-metabase-product-fast-track`
 
 ## CURRENT_STATE
 
-CURRENT_HEAD_BASELINE:
-`6c845b3dfdde70fa54590cef58a7a26c7b3dc6e5`
-
 CURRENT_BACKEND_GATE:
 `FT-002B CLOSED / GREEN`
 
 CURRENT_PRODUCT_GATE:
-`FT-UI-002 — Dima-native rendering/composition POC`
+`FT-003 — First Real Dima Ask Vertical Slice`
 
-FRONTEND_PRODUCT_IMPLEMENTATION:
-PAUSED
+FT-UI-002:
+`CLOSED / GREEN`
 
 FT-003:
-BLOCKED until FT-UI-002 GREEN
-
+`OPEN`
 
 TARGET:
 `Dima-native Intelligence Workspace on Metabase Analytics Substrate`
+
+SELECTED_RENDERING:
+`OPTION_A — Dima-native chart/table`
 
 ## SEALED BASELINES
 
@@ -32,56 +31,45 @@ F0_GREEN_BASELINE:
 F0A_TESTED_COMMIT:
 `c8175ea2a05be79eeae7c61d8fb568c36fbe3773`
 
-F0A_INITIAL_RUN:
-`35761155049`
-
-F0A_RECONCILIATION_RECERT_RUN:
-`35763007067`
-
-F0A_ARTIFACT_DIGEST:
-`sha256:98f6f68402a426cb903d12bff4cb20095db88d7b3c4561ca6e893bef21e8947b`
-
 FT-002B_TESTED_COMMIT:
 `6c845b3dfdde70fa54590cef58a7a26c7b3dc6e5`
 
 FT-002B_WORKFLOW_RUN:
 `35763124599`
 
+FT-UI-002_TESTED_COMMIT:
+`3f4a34356d7b32a78c3c18f1c96a1879253001a2`
+
+FT-UI-002_WORKFLOW_RUN:
+`35768067813`
+
+FT-UI-002_ARTIFACT_DIGEST:
+`sha256:2ecaec2ad248f5d22d12503fa3dad3dab46539b85f3999b7b404f556a03780b3`
+
 PARENT_SNAPSHOT:
 `352205f112fe735d8f80065c7d255d78905398b9`
 
 LAST_GREEN:
-Fast-owned Metabase Gateway — static + provider-free + real pinned-Metabase live proof.
+Dima-native rendering POC over real pinned Metabase result.
 
-## BACKEND COMPLETED
+## COMPLETED
 
-- F0 branch isolation sealed.
-- F0A pinned Metabase capability sealed.
-- F0A re-certification after UI documentation reconciliation passed.
-- Fast-owned auth/access-fingerprint contract implemented.
-- Fast-owned typed Metabase error taxonomy implemented.
-- Fast-owned transport/models/telemetry implemented.
-- Fast-owned Metabase Gateway implemented.
-- provider-free Gateway suite: 21 passed.
-- static boundary suite: 3 passed.
-- live pinned-Metabase Gateway suite: 1 passed.
-- real pagination: 200 + continuation + 5.
-- no V2/V3/Wren runtime import.
-- no raw SQL/admin method on Gateway.
-- source branches remain read-only.
-
-## UI ARCHITECTURE
-
-FT-UI-001:
-CLOSED / GREEN.
-
-SUPERSEDED:
-`Metabase-first Analytics Workspace + Dima Intelligence Experience`
-
-NORMATIVE:
-`Dima-native Intelligence Workspace on hidden Metabase analytics substrate`
-
-Metabase Collections/Questions/Query Builder/Search/native workspace are NOT Dima product requirements.
+- F0 branch isolation.
+- F0A pinned OSS Metabase substrate.
+- FT-002B Fast-owned typed Gateway.
+- Dima-native product boundary reconciliation.
+- zero-license core invariant.
+- real Metabase result fixture proof.
+- Dima-native chart rendering.
+- Dima-native table rendering.
+- safe table fallback.
+- Next production build.
+- protected-route browser proof.
+- 390px responsive proof.
+- guest embed feasibility evaluated.
+- rendering strategy selected: Option A.
+- no generic Metabase workspace dependency.
+- no paid Metabase dependency.
 
 ## CURRENT INVARIANTS
 
@@ -95,52 +83,43 @@ Metabase Collections/Questions/Query Builder/Search/native workspace are NOT Dim
 - modular SDK required in production = 0;
 - native Metabase workspace required for user = 0;
 - Dima product must run on Metabase OSS;
-- Metabase frontend fork = 0;
-- Metabase source patch for Dima UI = 0;
+- Metabase frontend fork/source patch = 0;
 - browser service/admin secret = 0;
 - Metabase AI is not Dima research owner;
-- Dima evidence/decision state remains Dima-owned;
-- external pilot before F9 = forbidden.
+- Dima owns user-facing analyst UX.
 
 ## OPEN DEBT / RISKS
 
-1. FT-UI-002 must prove the simplest rendering path against real Metabase result shape.
-2. Guest visualization is OSS-compatible but view-only and must remain optional.
-3. Guest JWT signing secret must remain server-side.
-4. Existing legacy dashboard/navigation UI must not become the Fast Track product shell.
-5. FT-003 remains the first real end-to-end Ask product flow.
+1. FT-003 must bind a real user question to bounded resource candidates.
+2. Temporal intent must be typed and date arithmetic deterministic.
+3. No model may invent Metabase resource identity.
+4. User-visible numeric claims require evidence.
+5. Guest embed remains optional only; do not promote it without a measured visualization gap.
 
 ## NEXT_EXACT_ACTION
 
-1. Commit this scope correction.
-2. Generate/seal a sanitized real Metabase result fixture from the pinned Gateway/lab path.
-3. Build isolated `/fast-poc` analyst shell.
-4. Prove native table + simple chart + safe fallback.
-5. Evaluate OSS guest visualization as optional, not required.
-6. Select A / B / C rendering strategy.
-7. Seal FT-UI-002.
-8. Immediately open FT-003 predev and continue to first real Ask vertical slice.
+1. Open `backend/belgeler/fast/predev/FT_003_PREDEVELOPMENT_REVIEW.md`.
+2. Implement a bounded first Ask family end-to-end:
+   question -> candidates -> temporal -> construct -> execute -> evidence -> answer -> Option-A rendering.
+3. Use the existing Fast Gateway as transport authority.
+4. Do not implement Analyst loop or Root Cause yet.
+5. Seal FT-003 only with real pinned-Metabase + frontend proof.
 
 ## FILES_NEXT_ALLOWED
 
-Until FT-UI-002 predev is committed:
-- `backend/belgeler/fast/**`
-
-- `dima-frontend-demo-master/src/app/fast-poc/**`
-- `dima-frontend-demo-master/src/features/fast-poc/**`
-- focused Fast POC fixture/tests/workflow
-- `backend/belgeler/fast/**`
-- no production UI migration.
+After FT-003 predev:
+- new Fast Ask/orchestration files under `backend/app/fast/**`;
+- Fast route/schema files;
+- focused Fast tests/workflow;
+- isolated `src/app/fast-poc/**` and `src/features/fast-poc/**` evolution;
+- minimal shared router registration only if predev explicitly authorizes it;
+- `backend/belgeler/fast/**`.
 
 ## FILES_NEXT_FORBIDDEN
 
 - source branch writes;
-- `backend/app/v2/**`;
-- V3 semantic/compiler mutation;
-- Wren mutation;
-- Metabase frontend source;
-- Metabase internal React patch;
-- FT-003 implementation before FT-UI-002 GREEN;
-- generic Metabase Collections/Questions/Search/Query Builder product UI;
+- V2/V3/Wren modification;
+- legacy Ask behavior modification;
+- generic Metabase Collections/Questions/Search/Query Builder UI;
 - paid Metabase embedding dependency;
-- production frontend migration before FT-UI-002 GREEN.
+- main frontend migration before FT-003 vertical slice is proven.

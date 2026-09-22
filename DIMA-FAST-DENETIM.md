@@ -5,82 +5,55 @@ Status: NORMATIVE AUDIT CHECKLIST
 ## A. Branch safety
 
 - [x] Fast Track exact SHA'dan açıldı.
-- [x] Dima+Metabase source branch read-only.
-- [x] Ask-v2 source branch read-only.
+- [x] source branches read-only.
 - [x] merge/rebase/cherry-pick source sync forbidden.
 - [x] source-lock exists.
 - [x] F0 branch-isolation receipt sealed.
 
-## B. Backend architecture
+## B. Backend foundation
 
-Required:
-- Metabase = analytics substrate.
-- Dima = orchestration/evidence/research/decision owner.
-- DB/tool result = numeric truth.
-- Wren hot path = 0.
-- V2 semantic/manager hot path = 0.
-- V3 semantic compiler hot path = 0.
-- Fast-owned Gateway is the only Fast Metabase transport owner.
-
-F0A:
-- [x] exact pinned Metabase booted.
-- [x] Agent API live.
-- [x] search/read/construct/execute/query live.
-- [x] pagination 200 + continuation verified.
+- [x] F0A pinned Metabase OSS live.
+- [x] Agent API search/read/construct/execute/query live.
+- [x] pagination 200 + continuation.
 - [x] raw SQL disabled.
-- [x] restart proof.
-- [x] app DB backup/restore proof.
-- [x] post-reconciliation recertification GREEN.
+- [x] backup/restore proof.
+- [x] FT-002B Fast-owned Gateway.
+- [x] provider-free Gateway: 21 passed.
+- [x] static Fast boundary: 3 passed.
+- [x] live Gateway: 1 passed.
+- [x] no V2/V3/Wren runtime import.
 
-FT-002B:
-- [x] Fast-owned typed Gateway.
-- [x] provider-free Gateway gate: 21 passed.
-- [x] no V2/V3/Wren import static gate: 3 passed.
-- [x] live pinned-Metabase Gateway proof: 1 passed.
-- [x] real 200 + continuation + 5 pagination.
-- [x] secret-free access fingerprint.
-- [x] no raw SQL/admin public surface.
-- [x] Gateway receipt sealed.
+## C. Product boundary
 
-## C. UI/product architecture
+- [x] Dima owns complete user-facing product.
+- [x] Metabase hidden analytics/query/optional-rendering substrate.
+- [x] zero-license core invariant.
+- [x] no generic Metabase workspace requirement.
+- [x] no paid embedding requirement.
+- [x] no Metabase frontend fork/source patch.
+- [x] no browser service/admin secret.
 
-Required:
-- Dima owns the complete user-facing product.
-- Metabase is a hidden analytics/query/optional-rendering substrate.
-- no Metabase frontend fork.
-- no Metabase source patch.
-- no raw DOM context scraping.
-- no service/admin secret in browser.
-- Metabase result/resource identity remains typed in backend/evidence.
-- Dima backend works without embed.
-- Dima evidence/decision state is not Metabase-only.
+## D. FT-UI-002 rendering gate
 
-FT-UI-001:
-- [x] feasibility review completed.
-- [x] old/new decisions reconciled.
-- [x] Model A/B/C compared.
-- [x] full-app classified as accelerator, not permanent architecture.
-- [x] modular composition classified as strategic context target.
+- [x] corrected predev.
+- [x] isolated /fast-poc analyst shell.
+- [x] real pinned-Metabase result fixture proof.
+- [x] simple chart path.
+- [x] simple table path.
+- [x] safe table fallback.
+- [x] guest visualization evaluated as optional.
+- [x] no Collections UI dependency.
+- [x] no Query Builder dependency.
+- [x] no native Metabase Search dependency.
+- [x] no paid Metabase feature dependency.
+- [x] frontend production build.
+- [x] protected-route browser proof.
+- [x] 390px responsive proof.
+- [x] selected rendering strategy: Option A.
+- [x] receipt sealed.
 
-FT-UI-002 — Dima-native rendering/composition:
-- [x] pre-development review corrected.
-- [x] F0A OSS runtime remains unchanged.
-- [x] zero-license core invariant documented.
-- [ ] isolated /fast-poc analyst shell.
-- [ ] real Metabase result rendered.
-- [ ] simple table path.
-- [ ] simple chart path.
-- [ ] safe fallback.
-- [ ] optional guest visualization evaluated.
-- [ ] no workspace/Collections/Query Builder/Search dependency.
-- [ ] no paid Metabase dependency.
-- [ ] no browser service/admin secret.
-- [ ] responsive analyst UX.
-- [ ] rendering strategy selected.
+## E. Stop-the-line
 
-## D. Stop-the-line
-
-Stop development if any occurs:
 - source branch write;
 - cross-tenant leak;
 - permission bypass;
@@ -88,108 +61,39 @@ Stop development if any occurs:
 - invented resource ID;
 - material ambiguity silent auto-pick;
 - hidden native SQL fallback;
-- unbounded agent loop;
+- unbounded loop;
 - missing principal -> admin/service authority;
 - browser service secret;
-- iframe DOM scraping for analytics context;
-- Metabase frontend source fork/patch;
-- phrase-specific patch before root-cause receipt.
+- Metabase frontend fork/patch;
+- paid capability enters core critical path.
 
-## E. Security gate
-
-Internal alpha:
-- isolated single-tenant/dev identity allowed.
-
-External pilot requires:
-- per-user/principal identity;
-- tenant isolation;
-- permission denial;
-- revocation;
-- evidence/history current-viewer auth;
-- cache isolation;
-- no browser service secret;
-- embed/SDK identity mapped to the same intended principal class.
-
-## F. Reliability families
-
-Backend:
-- Metabase unavailable;
-- Agent API disabled;
-- auth failed;
-- permission denied;
-- no/ambiguous resource;
-- construct failed;
-- execution timeout;
-- pagination/truncation;
-- stale resource;
-- cancel race;
-- duplicate delivery;
-- backend restart;
-- asset idempotency.
-
-UI:
-- embed unavailable;
-- SSO failure;
-- SDK/runtime mismatch;
-- iframe cookie/SameSite failure;
-- context desync;
-- navigation desync;
-- save/edit permission mismatch;
-- responsive failure.
-
-## G. Product correctness
-
-Zero tolerance:
-- silent numeric wrong;
-- resource hallucination;
-- finding without evidence;
-- tenant leak;
-- permission bypass;
-- silent fallback;
-- hidden identity/context guess.
-
-## H. Root-cause integrity
-
-Metric types:
-- ADDITIVE
-- SEMI_ADDITIVE
-- RATIO
-- DISTINCT_COUNT
-- NON_ADDITIVE
-- UNKNOWN
-
-UNKNOWN / unsupported decomposition -> explicit limitation.
-
-## I. Release progression
+## F. Release progression
 
 ```text
 F0       governance                         GREEN
-F0A      pinned Metabase capability         GREEN
+F0A      pinned Metabase OSS                GREEN
 FT-002B  Fast-owned Gateway                 GREEN
-FT-UI-001 architecture reconciliation       GREEN
-FT-UI-002 Dima-native rendering POC       NEXT
-F1       Ask vertical slice                 BLOCKED until FT-UI-002 GREEN
-F1A      temporal/resource safety
-F2       conversation
-F3       evidence
-F4       analyst
-F5       root cause
-F6       Metabase-first assets/dashboard integration
-F7       decision/report
-F8       polish
-F9       pilot security
-F10      benchmark
-F11      pilot readiness
-F12      production candidate
+FT-UI-002 Dima-native rendering             GREEN
+FT-003    First Real Ask                     OPEN
+F2        conversation
+F3        evidence expansion
+F4        analyst
+F5        root cause
+F6        optional assets
+F7        decision/report
+F8        polish
+F9        pilot security
+F10       benchmark
+F11       pilot readiness
+F12       production candidate
 ```
 
-## J. Audit seal
+## G. Audit seal
 
 BRANCH_ISOLATION: GREEN
-METABASE_SUBSTRATE_F0A: GREEN
+METABASE_OSS_SUBSTRATE: GREEN
 FAST_GATEWAY: GREEN
-UI_ARCHITECTURE_RECONCILIATION: GREEN
-UI_RENDERING_POC: OPEN / PREDEV
-FRONTEND_PRODUCT_IMPLEMENTATION: PAUSED
-SECURITY_MODEL: GATED
+UI_RENDERING_POC: GREEN
+SELECTED_RENDERING: OPTION_A
+FT_003: OPEN
 PRODUCTION: NOT CERTIFIED

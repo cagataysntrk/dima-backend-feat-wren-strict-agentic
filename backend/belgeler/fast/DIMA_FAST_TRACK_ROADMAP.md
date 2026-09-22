@@ -412,8 +412,8 @@ F0       governance                         GREEN
 F0A      pinned Metabase capability         GREEN
 FT-002B  Fast-owned Gateway                 GREEN
 FT-UI-001 architecture reconciliation       GREEN
-FT-UI-002 Dima-native rendering POC         NEXT
-FT-003    first real Ask vertical slice     BLOCKED until FT-UI-002 GREEN
+FT-UI-002 Dima-native rendering POC         GREEN
+FT-003    first real Ask vertical slice     OPEN
 ```
 
 Then:
@@ -550,3 +550,36 @@ A user can:
 without needing to operate Metabase, a query builder, a collection browser, or a generic BI workspace.
 
 Metabase remains an analytics engine behind Dima.
+
+
+## 22. FT-UI-002 sealed rendering decision
+
+Selected:
+`OPTION_A = DIMA_NATIVE_CHART_TABLE`
+
+Why:
+- real pinned-Metabase result shape rendered successfully;
+- existing generic `EChart` + `ResultTable` primitives are sufficient for the common product output;
+- no new visualization framework or paid Metabase dependency is required;
+- Dima keeps complete control over analyst narrative/evidence composition;
+- browser proof passed on desktop flow and 390px viewport;
+- guest embedding would add published-resource/JWT/locked-parameter machinery for a view-only surface that the common path does not currently need.
+
+Guest embedding remains:
+`OPTIONAL_FUTURE_VISUALIZATION_ESCAPE_HATCH`
+
+It is not:
+- FT-003 blocker;
+- production dependency;
+- required core capability.
+
+FT-UI-002 certified run:
+`35768067813`
+
+Tested commit:
+`3f4a34356d7b32a78c3c18f1c96a1879253001a2`
+
+Real-result artifact digest:
+`sha256:2ecaec2ad248f5d22d12503fa3dad3dab46539b85f3999b7b404f556a03780b3`
+
+FT-003 is now OPEN.

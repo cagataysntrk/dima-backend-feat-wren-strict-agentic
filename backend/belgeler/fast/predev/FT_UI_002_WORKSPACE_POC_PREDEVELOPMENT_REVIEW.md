@@ -1,6 +1,6 @@
 # FT-UI-002 — DIMA-NATIVE RENDERING / COMPOSITION POC PRE-DEVELOPMENT REVIEW
 
-Status: APPROVED
+Status: CLOSED / GREEN
 Branch: `feat/dima-metabase-product-fast-track`
 Supersedes: prior modular-workspace POC scope
 Date: 2026-09-22
@@ -178,22 +178,22 @@ Narrow:
 
 ## 13. Hard GREEN gate
 
-- [ ] Dima-native analyst shell POC
-- [ ] real Metabase result fixture rendered inside Dima
-- [ ] simple table path
-- [ ] simple chart path
-- [ ] safe table fallback
-- [ ] optional guest visualization evaluated
-- [ ] no Metabase workspace dependency
-- [ ] no Collections UI dependency
-- [ ] no Query Builder dependency
-- [ ] no native Metabase Search dependency
-- [ ] no paid Metabase feature dependency
-- [ ] no Metabase frontend fork
-- [ ] no browser service/admin secret
-- [ ] responsive analyst UX acceptable
-- [ ] selected rendering strategy documented
-- [ ] build/type gate green
+- [x] Dima-native analyst shell POC
+- [x] real Metabase result fixture rendered inside Dima
+- [x] simple table path
+- [x] simple chart path
+- [x] safe table fallback
+- [x] optional guest visualization evaluated
+- [x] no Metabase workspace dependency
+- [x] no Collections UI dependency
+- [x] no Query Builder dependency
+- [x] no native Metabase Search dependency
+- [x] no paid Metabase feature dependency
+- [x] no Metabase frontend fork
+- [x] no browser service/admin secret
+- [x] responsive analyst UX acceptable
+- [x] selected rendering strategy documented
+- [x] build/type gate green
 
 ## 14. Selection rule
 
@@ -226,3 +226,34 @@ question
 -> Dima answer
 -> appropriate chart/table
 ```
+
+
+## 16. Certification
+
+Selected strategy:
+`OPTION_A — Dima-native chart/table`
+
+Workflow:
+`dima-fast-ui-rendering-poc`
+
+GREEN run:
+`35768067813`
+
+Tested commit:
+`3f4a34356d7b32a78c3c18f1c96a1879253001a2`
+
+Proof:
+- real Metabase rows seen: 250;
+- committed rendering rows verified: 12;
+- chart canvas: GREEN;
+- table rows: 12;
+- 390x844 viewport: no horizontal overflow;
+- Next production build: GREEN;
+- package manifest unchanged: no embedding SDK dependency;
+- production main page unchanged.
+
+Guest embed evaluation result:
+use only as a future optional view-only visualization escape hatch. It is not justified for the common FT-003 path.
+
+Exit:
+FT-UI-002 GREEN. FT-003 OPEN.
