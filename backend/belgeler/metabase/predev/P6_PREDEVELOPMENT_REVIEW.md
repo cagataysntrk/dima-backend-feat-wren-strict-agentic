@@ -8,7 +8,7 @@
 **Metabase runtime:** `v0.63.18` immutable digest pinned  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY
 
-Status: **SEALED / CORPUS FREEZE + PARITY HARNESS AUTHORIZED AFTER P6A1 GREEN**
+Status: **SEALED / CORPUS FREEZE + PARITY HARNESS AUTHORIZED AFTER P6A1 GREEN** — historical governance seal token; DMP-DEC-0020 controls P6 closure.
 
 ## 1. Normative boundary re-read
 
@@ -75,9 +75,9 @@ Minimum fields support:
 
 No customer/production data.
 
-## 5. Corpus freeze
+## 5. Corpus freeze — SUPERSEDED AS P6 EXIT GATE BY DMP-DEC-0020
 
-Exactly 80 cases:
+Historical planned 80-case matrix (not a P6 closure requirement):
 ```text
 30 standard
 10 time/comparison
@@ -134,7 +134,7 @@ UNEXPLAINED_MISMATCH
 `TYPED_GAP` is not feature parity and is never counted as MATCH.
 
 P6 measurement closes only when:
-- corpus = exactly 80 and fingerprint-frozen;
+- broad parity corpus = deferred to integrated Standard certification under DMP-DEC-0020;
 - both arms consume the same frozen input ids/hashes;
 - both arms execute the same physical DB snapshot where execution is supported;
 - numeric/row/aggregation/time/ranking/filter outputs are compared canonically;
@@ -229,14 +229,12 @@ Record three independent dimensions: data snapshot, semantic/execution result, r
 A receipt gap is `TYPED_GAP / RECEIPT/PROVENANCE_GAP`, not a reason to fabricate a fake Metabase
 projection on the Wren side.
 
-### P6B — corpus freeze
+### P6B — broad corpus — DEFERRED BY DMP-DEC-0020
 
-Only after P6A1 is GREEN:
-- deterministically generate exactly 80 engine-neutral structural cases;
-- freeze stable case ids and normalized corpus fingerprint;
-- no engine-specific expectation branches.
+No broad live corpus is required for P6 closure. Around P14, after the relevant P10-P13 layers,
+run a risk-weighted capability pack with deterministic positive and negative/edge coverage.
 
-### P6C — full parity run
+### P6C — full parity run — DEFERRED TO INTEGRATED STANDARD CERTIFICATION
 
 Then:
 1. add the thin Metabase execution adapter;

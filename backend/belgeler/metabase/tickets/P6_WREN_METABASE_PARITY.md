@@ -6,10 +6,11 @@
 
 ## Goal
 
-Run an 80-case frozen post-authority Standard corpus against Wren and Metabase with identical intent,
-access contract and physical PostgreSQL snapshot.
+Complete a targeted post-authority same-intent substrate measurement on one physical PostgreSQL
+snapshot. Broad risk-weighted cross-engine certification is deferred by DMP-DEC-0020 to integrated
+Standard certification after the architecture is materially closer to final.
 
-## Corpus
+## Historical 80-case corpus plan — SUPERSEDED AS P6 EXIT GATE
 
 ```text
 standard           30
@@ -58,9 +59,9 @@ P6A0 shared-snapshot connectivity/golden proof = GREEN
   ↓
 P6A1 true same-intent substrate-seam canary    = NEXT
   ↓
-P6B  deterministic 80-case corpus freeze
+P6B/P6C broad parity corpus = DEFERRED BY DMP-DEC-0020
   ↓
-P6C  full parity harness
+P14-area integrated Standard certification
 ```
 
 The shared-data assumption is proven before spending effort on the 80-case corpus.
@@ -91,3 +92,12 @@ Classification: `TYPED_GAP / SUBSTRATE_RUNTIME_GAP`.
 
 P6 harness may recognize only this exact typed failure as a known gap. Any other Wren execution
 exception remains `UNEXPLAINED_MISMATCH`/RED. Production WrenService is not patched in P6.
+
+
+## DMP-DEC-0020 closure rule
+
+P6 closes as a **targeted parity probe** when P6A0/P6A1 measurement is complete, every observed
+difference is MATCH or an exact typed gap, and `UNEXPLAINED_MISMATCH = 0`.
+
+This does not certify Wren/Metabase equivalence. Known runtime, temporal compatibility and
+receipt/provenance gaps are carried forward to their real owners.

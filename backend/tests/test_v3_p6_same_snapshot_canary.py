@@ -711,6 +711,49 @@ def _assert_metabase_canary_value(case_id: str, rows, expected) -> None:
     raise AssertionError(case_id)
 
 
+def _classify_wren_validation_gap(
+    *,
+    case_id: str,
+    validation,
+) -> str | None:
+    """Recognize only the exact already-receipted temporal compatibility gap."""
+
+    if (
+        case_id == "CANARY-03"
+        and validation.valid is False
+        and validation.reasons == ("unsupported Wren period kind: absolute",)
+    ):
+        return "WREN_COMPATIBILITY_GAP"
+    return None
+
+
+def _assert_allowed_p6a1_outcome(report: dict) -> None:
+    """Allow improvement to MATCH; reject every unknown/unclassified outcome."""
+
+    case_id = report["case_id"]
+    assert report["data_snapshot"] == "MATCH"
+
+    if report["semantic_execution"] == "MATCH":
+        assert report["receipt_provenance"] in {"MATCH", "TYPED_GAP"}
+        if report["receipt_provenance"] == "MATCH":
+            assert report["gap"] is None
+            assert report["overall"] == "MATCH"
+        else:
+            assert report["gap"] == "RECEIPT/PROVENANCE_GAP"
+            assert report["overall"] == "TYPED_GAP"
+        return
+
+    assert report["semantic_execution"] == "TYPED_GAP"
+    assert report["receipt_provenance"] == "NOT_EVALUATED_WREN"
+    expected_gap = {
+        "CANARY-01": "SUBSTRATE_RUNTIME_GAP",
+        "CANARY-02": "SUBSTRATE_RUNTIME_GAP",
+        "CANARY-03": "WREN_COMPATIBILITY_GAP",
+    }[case_id]
+    assert report["gap"] == expected_gap
+    assert report["overall"] == "TYPED_GAP"
+
+
 def _assert_p6a1_case(
     *,
     case_id: str,
@@ -736,11 +779,16 @@ def _assert_p6a1_case(
         for item in metabase_result.query_receipts
     )
 
-    if case_id == "CANARY-03":
-        assert wren_validation.valid is False
-        assert wren_validation.reasons == (
-            "unsupported Wren period kind: absolute",
+    if not wren_validation.valid:
+        gap = _classify_wren_validation_gap(
+            case_id=case_id,
+            validation=wren_validation,
         )
+        if gap is None:
+            raise AssertionError(
+                f"UNEXPLAINED_MISMATCH: {case_id} Wren validation "
+                f"{wren_validation.reasons!r}"
+            )
         return {
             "case_id": case_id,
             "snapshot_id": snapshot_id,
@@ -751,16 +799,15 @@ def _assert_p6a1_case(
             "data_snapshot": "MATCH",
             "semantic_execution": "TYPED_GAP",
             "receipt_provenance": "NOT_EVALUATED_WREN",
-            "gap": "WREN_COMPATIBILITY_GAP",
+            "gap": gap,
             "overall": "TYPED_GAP",
         }
 
-    assert wren_validation.valid, wren_validation.reasons
     try:
         wren_result = wren_adapter.execute_execution_intent(intent)
     except Exception as exc:
         gap = _classify_wren_runtime_exception(exc)
-        if gap is None:
+        if gap is None or case_id not in {"CANARY-01", "CANARY-02"}:
             raise
         return {
             "case_id": case_id,
@@ -782,7 +829,7 @@ def _assert_p6a1_case(
     assert wren_result.evidence.payload["resolved_intent_hash"] == intent.resolved_intent_hash
 
     wren_rows = _wren_semantic_rows(wren_result)
-    if case_id == "CANARY-01":
+    if case_id in {"CANARY-01", "CANARY-03"}:
         assert wren_rows == ({"p6_handle_metric": expected},)
     elif case_id == "CANARY-02":
         assert {
@@ -795,11 +842,10 @@ def _assert_p6a1_case(
     else:
         raise AssertionError(case_id)
 
-    assert all(
-        item.receipt_fingerprint is None
+    strict_wren_receipts = all(
+        item.receipt_fingerprint is not None
         for item in wren_result.query_receipts
     )
-
     return {
         "case_id": case_id,
         "snapshot_id": snapshot_id,
@@ -809,10 +855,66 @@ def _assert_p6a1_case(
         "semantic_context_version": intent.semantic_context_version,
         "data_snapshot": "MATCH",
         "semantic_execution": "MATCH",
-        "receipt_provenance": "TYPED_GAP",
-        "gap": "RECEIPT/PROVENANCE_GAP",
-        "overall": "TYPED_GAP",
+        "receipt_provenance": (
+            "MATCH" if strict_wren_receipts else "TYPED_GAP"
+        ),
+        "gap": (
+            None if strict_wren_receipts else "RECEIPT/PROVENANCE_GAP"
+        ),
+        "overall": (
+            "MATCH" if strict_wren_receipts else "TYPED_GAP"
+        ),
     }
+
+
+def test_p6a1_known_gap_oracle_allows_future_match_and_rejects_wrong_gap():
+    for report in (
+        {
+            "case_id": "CANARY-01",
+            "data_snapshot": "MATCH",
+            "semantic_execution": "MATCH",
+            "receipt_provenance": "MATCH",
+            "gap": None,
+            "overall": "MATCH",
+        },
+        {
+            "case_id": "CANARY-01",
+            "data_snapshot": "MATCH",
+            "semantic_execution": "TYPED_GAP",
+            "receipt_provenance": "NOT_EVALUATED_WREN",
+            "gap": "SUBSTRATE_RUNTIME_GAP",
+            "overall": "TYPED_GAP",
+        },
+        {
+            "case_id": "CANARY-03",
+            "data_snapshot": "MATCH",
+            "semantic_execution": "MATCH",
+            "receipt_provenance": "TYPED_GAP",
+            "gap": "RECEIPT/PROVENANCE_GAP",
+            "overall": "TYPED_GAP",
+        },
+        {
+            "case_id": "CANARY-03",
+            "data_snapshot": "MATCH",
+            "semantic_execution": "TYPED_GAP",
+            "receipt_provenance": "NOT_EVALUATED_WREN",
+            "gap": "WREN_COMPATIBILITY_GAP",
+            "overall": "TYPED_GAP",
+        },
+    ):
+        _assert_allowed_p6a1_outcome(report)
+
+    with pytest.raises(AssertionError):
+        _assert_allowed_p6a1_outcome(
+            {
+                "case_id": "CANARY-03",
+                "data_snapshot": "MATCH",
+                "semantic_execution": "TYPED_GAP",
+                "receipt_provenance": "NOT_EVALUATED_WREN",
+                "gap": "SUBSTRATE_RUNTIME_GAP",
+                "overall": "TYPED_GAP",
+            }
+        )
 
 
 @pytest.mark.skipif(
@@ -864,18 +966,8 @@ def test_p6a1_true_same_intent_substrate_seam_three_case_canary(
         "CANARY-02",
         "CANARY-03",
     ]
-    assert all(item["data_snapshot"] == "MATCH" for item in reports)
-    assert [item["semantic_execution"] for item in reports] == [
-        "TYPED_GAP",
-        "TYPED_GAP",
-        "TYPED_GAP",
-    ]
-    assert [item["gap"] for item in reports] == [
-        "SUBSTRATE_RUNTIME_GAP",
-        "SUBSTRATE_RUNTIME_GAP",
-        "WREN_COMPATIBILITY_GAP",
-    ]
-    assert all(item["overall"] == "TYPED_GAP" for item in reports)
+    for report in reports:
+        _assert_allowed_p6a1_outcome(report)
     print(json.dumps({"p6a1": reports}, sort_keys=True))
 
 

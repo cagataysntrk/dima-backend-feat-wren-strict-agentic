@@ -821,3 +821,23 @@ corpus                           = NOT FROZEN
 
 P6A1 is now **TYPED GAP FOUND**, not GREEN. Measurement harness may continue and report the exact
 gaps; it may not repair WrenService inside P6.
+
+
+---
+
+## P6 closure strategy — DMP-DEC-0020
+
+```text
+P6 role                           = targeted architecture/capability measurement
+fixed 80-case P6 blocker          = SUPERSEDED
+broad cross-engine parity         = DEFERRED TO INTEGRATED STANDARD CERTIFICATION
+preferred broad timing            = after P10 minimum / preferably P13 / around P14
+current known semantic/runtime gaps= typed and carried forward
+unknown/unexplained mismatch      = MUST REMAIN 0
+test strategy                     = maximum information per test
+```
+
+ASK_V2_DAY7_REFERENCE_SHA = `5789e729115fe044b689739d5960021aba0aca32`  
+disposition = `REFERENCE_ONLY / NO_CODE_INHERITANCE_YET`
+
+No merge, cherry-pick, rebase, certified-base replacement or source-branch write is authorized.

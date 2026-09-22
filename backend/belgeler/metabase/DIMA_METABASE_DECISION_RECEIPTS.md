@@ -636,3 +636,45 @@ result semantics:
 MATCH, TYPED_GAP, or UNEXPLAINED_MISMATCH. Typed gaps remain visible and are not counted as parity.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0020 — P6 broad corpus deferral and risk-based parity strategy
+
+date: 2026-09-22
+
+supersedes:
+The exact 80-case corpus freeze/full-parity requirement as a **P6 closure gate**. It does not remove
+later integrated Standard certification.
+
+evidence:
+- P6A0 proves the shared physical PostgreSQL snapshot and independent golden anchors;
+- P6A1 exercises the true post-authority substrate seams;
+- the first three same-intent cases already expose independent typed capability gaps:
+  `SUBSTRATE_RUNTIME_GAP` and `WREN_COMPATIBILITY_GAP`;
+- repeatedly exercising known gaps at large volume before P7-P13 architecture work has low
+  information value and would be repeated after those layers change.
+
+decision:
+P6 is an early architecture/capability measurement milestone, not a declaration that Wren and
+Metabase are equivalent.
+
+P6 may close when:
+- P6A0 shared snapshot + independent golden anchors pass;
+- the same accepted Dima intent identity is offered to both real substrate seams;
+- the thin Metabase adapter executes real structured queries;
+- the real Wren seam is attempted without P6 product patching;
+- every observed difference is either MATCH or an exact typed gap;
+- `UNEXPLAINED_MISMATCH = 0`;
+- raw-language reinterpretation, semantic search, fuzzy/regex/morphology authority, named-case
+  product patches and silent fallback remain zero.
+
+The broad cross-engine parity pack moves to integrated Standard certification, preferably around P14
+after P10-P13 security/resource/entity-value work. That later pack is risk/capability weighted rather
+than fixed to 80 cases; material families receive high-information positive and negative/edge proofs.
+
+The final natural-language integrated evaluation remains separate (`DEV80` exactly once plus
+Validation50/Hidden50).
+
+status: SEALED.

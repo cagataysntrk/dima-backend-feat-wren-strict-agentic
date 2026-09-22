@@ -1691,3 +1691,37 @@ P6 measurement rule:
 
 status:
 `OPEN GAP / OWNER = WREN RUNTIME CONTRACT; NO P6 PRODUCT PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P6-AUDIT-007 — known-gap fossilization oracle
+
+receipt_id: `DMP-P6-AUDIT-007`  
+tested_sha: `e19ee7614ea39b6cab61b839252e4ecd44fe25e4`
+
+observed:
+The P6A1 evaluator required the currently observed defects as fixed expected outcomes:
+CANARY-01/02 had to be `SUBSTRATE_RUNTIME_GAP` and CANARY-03 had to be
+`WREN_COMPATIBILITY_GAP`.
+
+classification:
+`EVAL_ORACLE`
+
+risk:
+A future legitimate fix would improve a case from `TYPED_GAP` to `MATCH` but make the P6 CI fail,
+thereby fossilizing defects.
+
+authorized_correction:
+- CANARY-01/02 accept either semantic `MATCH` or the exact structurally classified
+  `SUBSTRATE_RUNTIME_GAP`;
+- CANARY-03 accepts either semantic `MATCH` or the exact
+  `WREN_COMPATIBILITY_GAP`;
+- a MATCH must still equal the independent golden oracle;
+- receipt/provenance remains an independent dimension and may be MATCH or exact
+  `RECEIPT/PROVENANCE_GAP`;
+- any other validation failure, runtime exception, gap class or result mismatch remains RED;
+- keep the exact pydantic runtime classifier; no message substring/regex/catch-all classification.
+
+status:
+`CORRECTION APPLIED / AWAITING FINAL FOCUSED P6 WORKFLOW`.
