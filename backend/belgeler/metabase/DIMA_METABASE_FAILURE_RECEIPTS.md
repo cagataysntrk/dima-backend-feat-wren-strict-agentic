@@ -2046,3 +2046,35 @@ authorized correction:
 
 status:
 `ORACLE CORRECTION APPLIED / ONE CORRECTED PINNED-LIVE RERUN AUTHORIZED`.
+
+
+---
+
+## DMP-P9B-RED-003 closure — GREEN
+
+final_sha: `d3f4bb8b8aa9a65796506193632f7c429eac8d7c`  
+p9b_workflow: `35782974669 = SUCCESS`  
+governance: `35782974647 = SUCCESS`  
+live_test: `1 PASS`
+
+proof:
+- pinned Metabase v0.63.18 health/bootstrap = PASS;
+- fresh P4 projection -> tenant-bound P9B metric-create contract = PASS;
+- exact metric create response numeric id captured;
+- exact-id Card read proves id/type/name/explicit collection/entity_id;
+- Dima canonical binding captures numeric id + stable entity_id;
+- observed snapshot + binding replans to P9 `NOOP`;
+- exact-id archive -> read proves archived state and stable entity_id;
+- archive Trash collection presentation handled according to pinned source;
+- exact-id restore -> read proves original explicit collection restored and entity_id stable;
+- exact-id hard-delete cleanup = PASS;
+- no search, list scan, name adoption, generic CRUD product client or production route change.
+
+interpretation:
+`P9B METRIC TRANSPORT PROOF GREEN IN ISOLATED LAB`.
+
+This authorizes no customer/production write. Dimension/time/relationship transport gaps remain open.
+P10 security issuer gate is now the next architecture owner.
+
+status:
+`CLOSED GREEN`.

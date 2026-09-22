@@ -830,3 +830,35 @@ P9B1 is provider-free and CREATE-only:
 It must prove exact identity/context/query-shape coherence before any HTTP write code is authorized.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0024 — P10 owns faithful issuance of the existing P5 access snapshot
+
+date: 2026-09-22
+
+decision:
+P10 will not create a second durable access-identity model.
+
+The durable execution-access contract remains P5 `ExecutionAccessSnapshot`.
+P10 owns the production-grade evidence/mapping chain that is allowed to issue that snapshot.
+
+Exact ownership:
+- Dima current principal identity comes from the authenticated `control_plane.authorize.Principal`;
+- accepted analytics identity comes from `ResolvedAnalyticsIntent.principal`;
+- semantic/source identity comes from the accepted intent + canonical projection;
+- effective policy/RLS/CLS/database-route/security facts must come from explicit authoritative
+  security/runtime owners;
+- Metabase session/service identity must be explicitly attested; possession of a session token alone
+  is not a durable principal identity.
+
+If any required snapshot field cannot be faithfully established, issuance fails closed.
+Missing tenant/principal may not fall back to superadmin, service account, root collection, or a
+different user. Superadmin execution still requires an explicit effective tenant/data lens before a
+tenant-bound Standard analytics receipt may be issued.
+
+Production official P5 receipt issuance remains blocked until P10 closes
+`DMP-P5-BLOCK-001`.
+
+status: SEALED.

@@ -1,0 +1,38 @@
+# P10-001 — Production ExecutionAccessSnapshot issuer and tenant/security mapping
+
+**Milestone:** P10  
+**Review:** `backend/belgeler/metabase/predev/P10_PREDEVELOPMENT_REVIEW.md`  
+**Status:** P10A PROVIDER-FREE CONTRACT AUTHORIZED / LIVE SECURITY PROOF NOT AUTHORIZED YET
+
+## Goal
+
+Build the fail-closed production issuance boundary for the existing P5
+`ExecutionAccessSnapshot`.
+
+No second durable access fingerprint or snapshot model.
+
+## P10A
+
+Pure/provider-free:
+- bind current Dima Principal to accepted ResolvedAnalyticsIntent principal;
+- bind canonical projection semantic/source identity;
+- accept only explicitly verified policy/RLS/CLS/database/security facts;
+- require an explicit attested Metabase authenticated subject;
+- produce the existing P5 snapshot;
+- hard-fail every identity/lens mismatch.
+
+## P10B
+
+After P10A GREEN:
+- tenant A/B topology;
+- A1/A2/admin/restricted/row-restricted;
+- real permission/lens mapping;
+- revocation reread denial;
+- cache isolation;
+- no service/admin fallback;
+- faithful serialization requirement.
+
+## Blocking rule
+
+DMP-P5-BLOCK-001 remains OPEN until P10B. Production official receipts and production P9B resource
+writes remain blocked.

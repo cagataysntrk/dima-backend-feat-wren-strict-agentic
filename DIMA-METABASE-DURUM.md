@@ -1101,3 +1101,33 @@ teardown                        = PASS
 
 Correction is test-only. Archived state no longer requires the original collection presentation;
 restore state still must return to the explicit original collection and preserve entity identity.
+
+
+---
+
+## P9B METRIC TRANSPORT — ISOLATED LIFECYCLE GREEN
+
+```text
+closure SHA                       = d3f4bb8b8aa9a65796506193632f7c429eac8d7c
+P9B workflow                      = 35782974669 = SUCCESS
+governance                        = 35782974647 = SUCCESS
+provider-free contract            = GREEN
+isolated pinned-live lifecycle    = 1 PASS
+create                            = PASS
+exact-id read                     = PASS
+stable entity_id                  = PASS
+P9 replan                         = NOOP
+archive / exact-id read           = PASS
+restore / exact-id read           = PASS
+cleanup                           = PASS
+search/name adoption              = 0
+production customer writes        = 0 / BLOCKED
+dimension transport               = GAP
+time transport                    = GAP
+relationship transport           = GAP
+```
+
+P9B result: **metric transport proof GREEN in isolated lab only**.
+
+**Current phase:** P10 PRE-DEVELOPMENT — tenant/principal/security mapping + production
+ExecutionAccessSnapshot issuer. DMP-P5-BLOCK-001 remains OPEN.
