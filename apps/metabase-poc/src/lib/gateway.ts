@@ -140,6 +140,8 @@ export const gateway = {
     api<{ result: QueryResult }>(`/api/cards/${cardId}/drill`, json({ column, value, scope })).then(
       (r) => r.result,
     ),
+  updateCard: (cardId: number, patch: { display?: string; goal?: number | null; name?: string }) =>
+    api<{ ok: true }>(`/api/cards/${cardId}`, { ...json(patch), method: "PATCH" }),
   zoom: (cardId: number, value: string, scope?: DrillScope) =>
     api<{ result: QueryResult; unit: string; range: [string, string] }>(
       `/api/cards/${cardId}/zoom`,

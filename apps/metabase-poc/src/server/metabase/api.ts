@@ -1,7 +1,7 @@
 import "server-only";
 import type { QueryResult } from "@dima/contracts";
 import { columnRefs, toQueryResult, type EngineDataset } from "./adapter";
-import { mbBinary, mbGet, mbPost } from "./client";
+import { mbBinary, mbGet, mbPost, mbPut } from "./client";
 import { GatewayError } from "./errors";
 import {
   assertCard,
@@ -64,6 +64,46 @@ export async function cardData(ctx: TenantContext, cardId: number) {
     result: toQueryResult(ds),
     drillable: card.query_type === "query" && card.table_id != null,
   };
+}
+
+/** Chart types a card may be saved as (engine display names we can render). */
+export const CARD_DISPLAYS = [
+  "table",
+  "bar",
+  "row",
+  "line",
+  "area",
+  "pie",
+  "scatter",
+  "combo",
+  "scalar",
+  "smartscalar",
+  "progress",
+  "funnel",
+  "waterfall",
+] as const;
+export type CardDisplay = (typeof CARD_DISPLAYS)[number];
+
+/** Save a card's chart type, goal or name (owner/admin). */
+export async function updateCard(
+  ctx: TenantContext,
+  cardId: number,
+  patch: { display?: CardDisplay; goal?: number | null; name?: string },
+) {
+  requireAnalyst(ctx);
+  const card = await assertCard(ctx, cardId);
+  const body: Record<string, unknown> = {};
+  if (patch.name) body.name = patch.name.trim().slice(0, 120);
+  if (patch.display) body.display = patch.display;
+  if (patch.goal !== undefined) {
+    const settings = { ...(card.visualization_settings ?? {}) };
+    if (patch.goal === null) delete settings["progress.goal"];
+    else settings["progress.goal"] = patch.goal;
+    body.visualization_settings = settings;
+  }
+  if (Object.keys(body).length === 0) return { ok: true };
+  await mbPut(ctx.tenant, `/api/card/${cardId}`, body);
+  return { ok: true };
 }
 
 // ── Dashboards & filters ─────────────────────────────────────────────────────

@@ -36,6 +36,22 @@ const EXTRA_LABEL: Record<ExtraKind, string> = {
   progress: "Hedef",
 };
 const isExtra = (k: Kind): k is ExtraKind => k in EXTRA_LABEL;
+/** Our view → engine card `display` (for saving the chart type). */
+const KIND_DISPLAY: Partial<Record<Kind, string>> = {
+  trend: "smartscalar",
+  funnel: "funnel",
+  waterfall: "waterfall",
+  progress: "progress",
+  "bar-h": "row",
+  "bar-stacked": "bar",
+  kpi: "scalar",
+  heatmap: "table",
+  facet: "table",
+  radial: "pie",
+  radar: "pie",
+  none: "table",
+};
+
 /** Engine card `display` → our initial view. */
 const DISPLAY_KIND: Record<string, Kind> = {
   smartscalar: "trend",
@@ -121,6 +137,7 @@ export function ResultView({
   onZoom,
   display,
   goal,
+  onTypeChange,
 }: {
   result: QueryResult;
   viewHint?: string;
@@ -138,6 +155,8 @@ export function ResultView({
   display?: string;
   /** Goal for "progress" cards. */
   goal?: number | null;
+  /** Fires when the reader picks another chart type (engine display name). */
+  onTypeChange?: (display: string) => void;
 }) {
   const lowerSet = EMPTY_LOWER;
   const hintBase = viewHint?.split(":")[0];
@@ -248,6 +267,7 @@ export function ResultView({
   const showControls = view === "chart" && canChart;
   const selectType = (next: Kind) => {
     setType(next);
+    onTypeChange?.(KIND_DISPLAY[next] ?? next);
     // Kombo ve dağılım iki ölçünün ilişkisidir; tek ölçü seçimi ekseni sessizce
     // kendisiyle karşılaştırmaya indirgerdi. Bu modlar her zaman iki ölçüyle açılır.
     if ((next === "combo" || next === "scatter") && a.measures.length > 1) {
