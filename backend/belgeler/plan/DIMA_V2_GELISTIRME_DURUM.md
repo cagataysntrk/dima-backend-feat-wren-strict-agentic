@@ -23,24 +23,24 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 ### Yaşayan belgeler
 
 - `DIMA_V2_GELISTIRME_DURUM.md` — bu dosya; tek “nerede kaldık?” kaynağı.
-- `DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — current Day 6.5 engineering closure authority.
-- `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology ve substrate/reference authority.
-- `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **current J1S/J1T + M0/X0 decision authority**.
-- `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
+- `DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md` — **CURRENT single Day6.5→Day7 continuation authority**.
+- `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **CURRENT release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
+- `DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — **HISTORICAL Day6.5 engineering protocol**.
+- `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — **HISTORICAL Day6.5 runtime/substrate decision process**.
+- `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **HISTORICAL resolved J1/M0/X0 decision gate**.
 - `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.
 - `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` — J1B real-flow evidence/RED receipt.
 - `DIMA_DAY6_5_PROVIDER_TOPOLOGY_ENGINEERING_RECEIPT.md` — **chosen P0=0 Day6.5 engineering model topology evidence**.
-- `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md` — **current continuation handoff / provider ladder / stop points**.
+- `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md` — **HISTORICAL / SUPERSEDED provider handoff**.
 - `DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md` — Metabase exhaustion/build-vs-buy contract.
-- `DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md` — **M0E GREEN mechanism classification receipt**.
+- `DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md` — **HISTORICAL M0E-v1 baseline receipt**.
 - `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; FINAL GREEN / SEALED**.
 - `DIMA_DAY6_5_SI_FINAL_SEAL.md` — **final SI evidence + causal chain + anti-patch seal**.
 - `DIMA_FRONTDOOR_OWNERSHIP_CLOSURE.md` — **Day10 release blocker for authoritative /ask-v2 ownership**.
 - `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` — **FINAL successful-negative bridge decision; X0 runtime not required**.
-- `DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md` — **CURRENT single authority for Day6.5 closure → Day7 handoff**.
-- `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`
-- `DIMA_DAY6_5_M0E_DEEP_DELTA_RECEIPT.md` — **append-only current deep-delta source/disposition receipt** — **reopened final Metabase exhaustion delta**.
-- `DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md` — **CURRENT continuation authority after analyst audit**.
+- `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md` — **SEALED Day6.5 source/classification contract**.
+- `DIMA_DAY6_5_M0E_DEEP_DELTA_RECEIPT.md` — **FINAL GREEN / SEALED deep-delta evidence receipt**.
+- `DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md` — **HISTORICAL / SUPERSEDED pre-closure handoff**.
 - `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
 - `DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` — Metabase Cloud/self-host/bundled-service/source-port deployment decision gate.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
@@ -55,15 +55,19 @@ Bu living status eski commit/run kararlarını audit amacıyla silmez.
 Eski günlük bölümlerinde görülen `Day6.5 freeze → DEV80`, `DEV80 → D65-X`,
 `one DEV80 per candidate` gibi ifadeler **historical record** kabul edilir.
 
-Current timing authority yalnız:
-1. `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — current Day6.5 decisions,
+Current timing/continuation authority yalnız:
+1. `DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md` — current phase / Day7 continuation,
 2. `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — final release freeze/80/50/50 timing.
 
-Çelişkide bu iki current authority üstün gelir.
+Older J1/M0/SI/bridge gates are resolved historical evidence. Çelişkide bu iki current authority üstün gelir.
 
 ---
 
-## 0A. CURRENT PRE-RUN RECEIPT — 2026-09-22
+### Historical snapshot note — 0A–0J
+
+Sections 0A–0J below are retained as chronological audit snapshots. Their internal `CURRENT/OPEN` wording is historical and cannot override §0K or the final Day6.5→Day7 handoff.
+
+## 0A. HISTORICAL PRE-RUN RECEIPT — 2026-09-22
 
 ```text
 entry checkpoint                f2b246a7f186705f8ddd98a61e60d950f606d326

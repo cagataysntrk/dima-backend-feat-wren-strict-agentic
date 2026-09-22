@@ -52,7 +52,7 @@
 > Metabase runtime remains OFF until THIN_LOSSLESS preflight.
 
 
-<!-- DIMA-V2-POST-ANALYST-RECONCILIATION -->
+<!-- DIMA-V2-POST-ANALYST-RECONCILIATION — SUPERSEDED/HISTORICAL -->
 > **D65-SI FINAL GREEN / SEALED**
 >
 > Tested HEAD `c72eb913...`; 73/73 provider-free, focused 001/005 GREEN, frozen six full-live GREEN.
@@ -60,7 +60,7 @@
 > Current Day6.5 question is now substrate/build-vs-buy:
 > M0E-DEEP-DELTA → X0-BRIDGE-PREFLIGHT → X0 only if thin/lossless.
 
-> ## 🔴 CURRENT ARCHITECTURE AUTHORITY — POST ANALYST
+> ## HISTORICAL — ARCHITECTURE AUTHORITY — POST ANALYST
 >
 > Continuation: `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
 >
@@ -82,8 +82,8 @@
 > Day4 orchestration and production flag stays OFF.
 
 
-<!-- DIMA-V2-POST-J1B-LUNA-M0E-OVERRIDE -->
-> ## 🔴 POST-J1B CURRENT ARCHITECTURE OVERRIDE — 2026-09-22
+<!-- DIMA-V2-POST-J1B-LUNA-M0E-OVERRIDE — SUPERSEDED/HISTORICAL -->
+> ## HISTORICAL — POST-J1B ARCHITECTURE OVERRIDE — 2026-09-22
 >
 > **Provider topology P0 closure:** Luna semantic `35716056419=20/20`; Sol temporal
 > exact-SHA `35716502261=8/8`. Day6.5 engineering topology:

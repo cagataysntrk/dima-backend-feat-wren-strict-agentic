@@ -3,6 +3,7 @@
 **Date:** 2026-09-22  
 **Branch:** `feat/ask-v2-mvp`  
 **Final Day6.5 product checkpoint:** `dd5c16bbe444b6d9183faea9e9937be11260f394`  
+**Documentation closure payload commit:** `2147a7e858a38e1526b0bbd343bdd750cac47a50`  
 **Day6.5:** **CLOSED**  
 **Next canonical ticket:** **P10 / DAY7 RESULT-AWARE RESEARCH LOOP**  
 **Production /ask-v2:** OFF  
@@ -11,9 +12,9 @@
 This is the single current continuation authority for a new developer.
 Historical receipts remain audit evidence but do not override this document.
 
-> Git note: a commit cannot contain its own final SHA. The authoritative handoff branch is
-> `feat/ask-v2-mvp`; verify its HEAD before work. Product behavior is frozen at the product checkpoint
-> above; documentation-only closure commits follow it.
+> Git note: the authoritative handoff branch is `feat/ask-v2-mvp`; verify its HEAD before work.
+> The product-code checkpoint is fixed above. `2147a7e...` is the complete closure payload commit;
+> any later commit in this closure must be documentation-only consistency metadata.
 
 ## A. Final checkpoint and closed evidence
 
