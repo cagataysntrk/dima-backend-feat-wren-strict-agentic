@@ -48,9 +48,11 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_fast_boundary_static.py
 
-      - name: FT-005 conversation semantics
+      - name: FT-005 conversation semantics and API
         working-directory: backend
-        run: pytest -q tests/test_fast_conversation_core.py
+        run: |
+          pytest -q tests/test_fast_conversation_core.py
+          pytest -q tests/test_fast_conversation_api.py
 
       - name: FT-004 lifecycle regression
         working-directory: backend
