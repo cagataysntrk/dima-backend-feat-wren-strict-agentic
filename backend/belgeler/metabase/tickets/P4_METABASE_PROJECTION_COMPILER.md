@@ -3,7 +3,7 @@
 **Milestone:** P4  
 **Predevelopment review:** `backend/belgeler/metabase/predev/P4_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** deterministic Dima semantic intent → canonical Metabase structured query  
-**Status:** EXECUTION BINDING GREEN / COMPILER PRE-IMPLEMENTATION REVIEW REQUIRED
+**Status:** EXECUTION BINDING GREEN / COMPILER IMPLEMENTATION AUTHORIZED
 
 ## Goal
 
@@ -89,3 +89,11 @@ governance                     35742516356 = SUCCESS
 DMP-P4-RED-001: **CLOSED GREEN**.
 
 Compiler remains not-started until the mandatory compiler pre-implementation re-read/review is sealed.
+
+
+## Compiler sub-gate authorization
+
+P4 predevelopment review §14 is SEALED.
+Decision `DMP-DEC-0012` fixes the canonicalization proof contract.
+
+Compiler implementation may now begin in the existing P4 allowlist.

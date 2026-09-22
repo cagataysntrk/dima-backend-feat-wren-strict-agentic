@@ -249,3 +249,124 @@ Metabase primary routing, or Wren retirement.
 
 After this review commit is governance GREEN, P4 implementation may begin only in the allowlist.
 No production front-door routing is authorized.
+
+
+---
+
+## 14. Compiler implementation sub-gate review — SEALED
+
+**Binding implementation HEAD:** `1771becb3e59395cf28f993345703449feb9a98d`  
+**Binding closure commit:** `2c736fa0030c1b025349c56c739b30a0a68983d7`  
+**Binding workflow:** `35742516216 = SUCCESS`  
+**Binding governance:** `35742964747 = SUCCESS`
+
+Status: **SEALED / COMPILER IMPLEMENTATION AUTHORIZED**
+
+Before compiler code, the P4 roadmap, architecture report, this review, production
+`execution_binding.py`, and pinned Metabase v0.63.18 representation source were re-read.
+
+### Exact pinned-runtime contract revalidated
+
+v0.63.18 `POST /api/agent/v2/construct-query`:
+1. accepts a portable external-query object;
+2. evaluates the representations pipeline;
+3. performs validation/conversion/repair/resolution;
+4. prepares the resolved MBQL query for serialization;
+5. JSON-encodes it;
+6. base64-encodes that JSON into response `query`.
+
+The repair layer is capable of implicit-join source-field insertion. Therefore P4 proof must inspect
+the returned canonical query for both:
+- explicit `joins`;
+- any `source-field`, `source-field-name`, or `source-field-join-alias` options.
+
+Either is forbidden in the initial same-table P4 compiler.
+
+### Production compiler split
+
+```text
+compiler.py
+  pure Dima intent/binding → portable MBQL
+  no HTTP
+  no Metabase search/read-resource
+  no semantic handle resolution
+  no raw user language
+
+canonical.py
+  portable MBQL → client.construct_query
+  exact double-construction determinism proof
+  base64 JSON decode for structural proof only
+  semantic-slot manifest comparison
+  canonical query fingerprint
+```
+
+### Supported semantics in the first production slice
+
+- exactly one metric;
+- simple mechanical aggregation: count/sum/avg/min/max/distinct;
+- same-table dimensions/breakdowns;
+- textual categorical equality filters;
+- multiple textual equality filters;
+- resolved period bounds;
+- previous-period comparison as base/reference query steps;
+- ranking by aggregation index plus limit;
+- nullable schema in portable references;
+- numeric metric aggregation lineage.
+
+### Explicit fail-closed semantics
+
+- zero or multiple metrics;
+- arbitrary metric formula;
+- filter value `"null"` where the upstream contract cannot distinguish a semantic NULL predicate;
+- non-textual dimension filter with untyped string value;
+- non-equality predicate (not represented upstream);
+- any approved relationship path in this initial same-table slice;
+- any cross-table lineage;
+- any grain constraint not represented by this compiler;
+- missing candidate/time/current-catalog binding;
+- source-lineage drift;
+- any compiler attempt to use canonical/display names or `source_scopes` as locators.
+
+### Semantic-slot manifest
+
+The plan/canonical proof records at minimum:
+- query count;
+- source count;
+- aggregation operator sequence;
+- breakout count;
+- filter leaf count;
+- time predicate count;
+- comparison query count;
+- ranking/order count;
+- per-query limit values;
+- explicit join count;
+- implicit-join source-field option count;
+- stable Dima semantic ids;
+- governed current-catalog resource fingerprints.
+
+Canonicalization fails `SILENT_FIELD_DROP_OR_REWRITE` if structural counts/operators/limits change or
+if any join/implicit-join reference appears.
+
+### Determinism
+
+For every portable query step P4 calls `construct-query` twice with the same input.
+
+Required:
+```text
+serialized_query_call_1 == serialized_query_call_2
+```
+
+Mismatch is `NON_DETERMINISTIC_CANONICAL_SERIALIZATION`.
+
+This is stronger than merely hashing sorted decoded JSON and is intentionally tied to the pinned
+v0.63.18 runtime.
+
+### Safety evidence policy
+
+P4 does **not** inherit P3A's default-zero `BridgeSafetyCounters` as proof.
+Safety is established by actual code-path restrictions + negative tests + canonical manifest checks.
+
+### Compiler gate
+
+Compiler/canonical implementation is now authorized only in the P4 allowlist. Product routing,
+P5 receipt completion, P8 numeric equivalence, security parity and Wren retirement remain out of scope.

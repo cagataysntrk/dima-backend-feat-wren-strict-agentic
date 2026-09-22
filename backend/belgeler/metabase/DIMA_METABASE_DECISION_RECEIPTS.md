@@ -369,3 +369,27 @@ If full typed null/numeric/non-equality filtering is required to close a later g
 semantic contract must receive its own explicit receipt and proof before modification.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0012 — P4 canonical proof uses double construct plus structural manifest
+
+date: 2026-09-22
+
+decision:
+P4 canonicalization on the pinned Metabase v0.63.18 runtime requires two identical
+`/api/agent/v2/construct-query` results for each identical portable input. The returned base64 JSON
+is decoded for structural proof and fingerprinting.
+
+The pre/post semantic-slot manifest treats both explicit joins and repair-added `source-field*`
+options as join behavior. Initial P4 requires both counts to remain zero.
+
+reason:
+The pinned representations repair layer can introduce implicit-join source-field metadata. Counting
+only top-level `joins` would not prove the invariant `unapproved implicit join = 0`.
+
+limits:
+This is structural/canonical proof, not P8 numeric equivalence or security parity.
+
+status: SEALED.

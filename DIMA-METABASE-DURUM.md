@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P4 EXECUTION BINDING GREEN — COMPILER PRE-IMPLEMENTATION REVIEW NEXT  
-**Product-code development:** P4 BINDING CERTIFIED; COMPILER CODE NOT STARTED  
+**Current phase:** P4 EXECUTION BINDING GREEN — COMPILER IMPLEMENTATION AUTHORIZED  
+**Product-code development:** P4 COMPILER AUTHORIZED; COMPILER CODE NOT STARTED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -429,3 +429,22 @@ against current catalog before emitting physical locators.
 
 **Next:** re-read P4 roadmap/report/compiler constraints and seal a compiler implementation review.
 Only after that review/governance may `compiler.py` / `canonical.py` be created.
+
+
+---
+
+## P4 compiler implementation sub-gate — SEALED
+
+Binding gate is CLOSED GREEN and the compiler-specific roadmap/report/pinned-runtime source re-read is
+complete.
+
+Authorized next files:
+```text
+backend/app/v3/substrate/metabase/compiler.py
+backend/app/v3/substrate/metabase/canonical.py
+backend/tests/test_v3_p4_metabase_compiler.py
+backend/tests/test_v3_p4_metabase_canonical_live.py
+.github/workflows/dima-metabase-p4.yml
+```
+
+No front-door/product routing is authorized.
