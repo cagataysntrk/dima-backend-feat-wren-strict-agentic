@@ -39,11 +39,12 @@
 >
 > **Standard front-door:** retrieval/discovery authority değildir. DIRECT yalnız ilk-attempt seal outcome'udur; BUILDER aynı Standard engine'in bounded progress-driven repair outcome'udur. Standard loop generic kernel'i kullanır fakat kernel semantic/authority/research truth bilmez. `simple_standard_research_manager_loop = 0`.
 >
-> **D65-J1 pre-freeze:** reference canary 35697064833 GREEN; freeze/DEV80'dan önce isolated decision-model challenger çözülür.
-> J1A product code'a dokunmaz. `typesafe/jev-1.13` yalnız OpenRouter Decisions API üzerinden frozen CandidateSet seçiminde Gemini Flash-Lite ve Sol ile kıyaslanır; Manager/TemporalNormalizer kapsam dışıdır.
-> Jev promising çıkarsa ancak D65-J1B ile explicit DecisionProvider seam + SemanticLinker/TemporalNormalizer role split yapılabilir ve tüm focused/family/live/canary/sentinel gates yeniden geçilir.
-> J1 cognition experiment ≠ D65-X substrate experiment.
->> **Substrate kararı:** Wren current incumbent'tır. Metabase şimdi dependency/production path değildir. Day 6.5 engineering closure + DEV80 sonrasında, Validation/Hidden certification öncesinde isolated `D65-X` substrate-only challenger yapılır. Production'da Wren + Metabase equal truth engines yasaktır.
+> **Current pre-freeze gate:** J1S + J1T + M0/X0. Freeze/DEV80 is blocked.
+> Baseline proofs: provider-free `35696652502=102/102`, reference canary `35697064833=16/16`, Wren+Research sentinel `35697471863=2/2`, exact SHA `8dfde62d...`.
+> J1S = semantic candidate decision; J1T = typed temporal intent classification. Both compare Gemini Flash-Lite vs pinned `typesafe/jev-1.13` vs Sol in lab/eval only. Jev uses OpenRouter Decisions API, not chat/completions. Product semantic/temporal/authority code stays NO-TOUCH during benchmark.
+> M0 = Metabase source/adoption audit; X0 = thin separate-service Agent API feasibility before freeze. Promising J1 or X0 result is a consultation gate, not automatic product integration.
+> Detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+>> **Substrate kararı:** Wren current incumbent'tır. Metabase production dependency değildir. Ancak M0 source/adoption audit + X0 thin feasibility ve gerekirse full D65-X artık engineering freeze/DEV80 ÖNCESİ çözülür. Production'da Wren + Metabase equal truth engines yasaktır.
 > **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
 > Canonical upstream: `metabase/metabase`.
 > Current Day 6.5 reference SHA: `74216b30981d8310c4cf724d63ca282e2e63529d`.
