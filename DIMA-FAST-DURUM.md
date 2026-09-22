@@ -5,38 +5,32 @@ Branch: `feat/dima-metabase-product-fast-track`
 
 ## CURRENT_STATE
 
-CURRENT_GATE: F0 CLOSED — next F0A / FT-002
-CURRENT_IMPLEMENTATION_BASELINE: 6569d0505565d0917b9f4c032ad2f7366f540f23
-LATEST_ISOLATION_RECEIPT_COMMIT: db79e05db9a1859a643629cac727c096ee476141
+CURRENT_GATE: F0A CLOSED — FT-002B Fast-owned Metabase Gateway
+F0_GREEN_BASELINE: a7bf0ccac99fa757f06919d0a043fd24e134bba0
+F0A_TESTED_COMMIT: c8175ea2a05be79eeae7c61d8fb568c36fbe3773
+F0A_WORKFLOW_RUN: 35761155049
+F0A_ARTIFACT_DIGEST: sha256:98f6f68402a426cb903d12bff4cb20095db88d7b3c4561ca6e893bef21e8947b
 PARENT_SNAPSHOT: 352205f112fe735d8f80065c7d255d78905398b9
-LAST_GREEN: F0 isolated governance/bootstrap
+LAST_GREEN: pinned Metabase F0A live capability + restart + backup/restore
 OPEN_RED: none
-OPEN_DEBT: F0A pinned Metabase capability preflight has not yet been re-certified inside Fast Track
+OPEN_DEBT: Fast-owned Gateway not yet implemented
 
 ## COMPLETED
 
-- New Fast Track branch created from exact SHA, not moving HEAD.
-- Branch-local source lock created.
-- Dima+Metabase and Ask-v2 branches declared read-only references.
-- merge/rebase/cherry-pick source synchronization forbidden.
-- Branch-local roadmap, operations, status and audit docs created.
-- FT-001 pre-development review created and closed.
-- Branch-isolation receipt sealed.
-- `backend/app/fast` namespace created EMPTY BY DESIGN.
-- Functional analytics intentionally not started.
-- Source branches were re-read after bootstrap; no Fast Track write targeted them.
-
-## OBSERVED READ-ONLY SOURCE HEADS AT F0 VERIFICATION
-
-Pinned snapshots remain authoritative inputs:
-- Dima+Metabase reference snapshot: `352205f112fe735d8f80065c7d255d78905398b9`
-- Ask-v2 reference snapshot: `6d65600842731112f2362261a30660217cbde05d`
-
-Moving branch heads observed later:
-- feat/dima-metabase-platform: `94e9b3da892a80253495324b2a256f128b037d1b`
-- feat/ask-v2-mvp: `875c446476b6ae4907f5cac5d1c7b512e5157538`
-
-These are READ-ONLY observations and are not inherited automatically.
+- F0 branch isolation sealed.
+- F0A exact pinned Metabase live gate passed.
+- Agent API auth denial without session verified.
+- Agent API authenticated ping verified.
+- resource search verified.
+- resource read verified.
+- construct-query verified.
+- execute verified.
+- combined query verified.
+- explicit pagination verified: 200 + 5 rows.
+- raw SQL disabled verified.
+- restart persistence verified.
+- app DB backup and restore smoke verified.
+- source branches remain read-only.
 
 ## CURRENT_INVARIANTS
 
@@ -44,30 +38,31 @@ These are READ-ONLY observations and are not inherited automatically.
 - Wren/V2/V3 semantic hot-path dependency = 0.
 - Silent fallback = 0.
 - Native SQL default = OFF.
-- Functional analytics before F0A = forbidden.
-- External pilot before F9 security = forbidden.
-- Source branch moving HEAD sync = forbidden.
+- No user-language analytics until Fast-owned Gateway is green.
+- External pilot before F9 = forbidden.
 
 ## NEXT_EXACT_ACTION
 
-1. Open `backend/belgeler/fast/predev/FT_002_PREDEVELOPMENT_REVIEW.md`.
-2. Re-probe pinned Metabase v0.63.18 from Fast Track.
-3. Record branch-local F0A live receipt.
-4. Only if F0A is green, build Fast-owned Metabase Gateway.
-5. Do not implement Ask/Analyst/Root-Cause before the gateway/capability gate closes.
+1. Read `backend/belgeler/fast/predev/FT_002B_GATEWAY_PREDEVELOPMENT_REVIEW.md`.
+2. Implement Fast-owned typed Metabase Gateway under `backend/app/fast/**`.
+3. Add provider-free tests.
+4. Add real pinned-Metabase live test.
+5. Seal FT-002B receipt.
+6. Only then open FT-003 real Ask vertical slice.
 
 ## FILES_NEXT_ALLOWED
 
+- backend/app/fast/metabase_*.py
+- backend/app/fast/auth_context.py
+- backend/tests/test_fast_metabase_gateway*.py
+- .github/workflows/dima-fast-ft002-gateway.yml
 - backend/belgeler/fast/**
-- backend/app/fast/**
-- Fast Track tests
-- minimal Fast-specific lab/config files after FT-002 predev review
 
 ## FILES_NEXT_FORBIDDEN
 
-- app.wren_*
 - backend/app/v2/**
 - backend/app/v3 semantic/compiler owners
-- feat/dima-metabase-platform writes
-- feat/ask-v2-mvp writes
-- legacy ask behavior changes
+- app.fast runtime import of app.v3
+- WrenAI-main/**
+- legacy ask behavior
+- source branch writes
