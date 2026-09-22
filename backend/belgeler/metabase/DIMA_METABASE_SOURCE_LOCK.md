@@ -13,8 +13,8 @@ DIMA_BASE_CERTIFIED_SHA         = 3774484167f1056d89da0e0609246fb4a05057ec
 WREN_REFERENCE_SHA              = 3774484167f1056d89da0e0609246fb4a05057ec
 METABASE_SOURCE_AUDIT_SHA       = 74216b30981d8310c4cf724d63ca282e2e63529d
 METABASE_UPSTREAM_OBSERVED_SHA  = fff70175e0b5f82dc0eb267593c717c4a6130206
-METABASE_RUNTIME_VERSION        = UNSELECTED
-METABASE_RUNTIME_IMAGE_DIGEST   = UNSELECTED
+METABASE_RUNTIME_VERSION        = v0.63.18
+METABASE_RUNTIME_IMAGE_DIGEST   = sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
 ```
 
 ## Why this Dima base
@@ -67,3 +67,25 @@ Repository sealed Git blobs:
 - architecture report blob: `0ccbfc502a812d098b2c758f41deaa4208d8b180`
 
 The Git blob identities are the branch-local immutability check used by CI.
+
+
+## M2 runtime artifact pins
+
+```text
+METABASE_RUNTIME_RELEASE_TAG    = v0.63.18
+METABASE_RUNTIME_IMAGE_REF      = metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
+METABASE_RUNTIME_AMD64_MANIFEST = sha256:3dd95de7e5dc6d62bfd8ac2c25245642861ab38b9c789b3eed3293f88cf163e9
+METABASE_RUNTIME_ARM64_MANIFEST = sha256:2cb77c45b264380514fdd084decedb95787491548900dbfad9fc91f5cb300a9f
+
+M2_POSTGRES_VERSION             = 17.11
+M2_POSTGRES_IMAGE_REF           = postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+```
+
+Pin evidence observed 2026-09-22:
+- official Metabase release: 63.18 / tag v0.63.18;
+- official OSS Docker release line: v0.63.18.x;
+- Docker Hub multi-platform index digest: sha256:1160...8a73;
+- PostgreSQL supported 17 current minor: 17.11;
+- Docker Official Image 17.11 index digest: sha256:67f417...5675.
+
+Runtime pins are immutable artifact identities. They do not change `METABASE_SOURCE_AUDIT_SHA`.

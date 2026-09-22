@@ -156,3 +156,50 @@ revisit_condition:
 Production packaging is a later decision after P3A/P8 evidence.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0005 — M2 exact runtime artifact pins
+
+date: 2026-09-22
+
+question:
+Which exact runtime artifacts should the isolated P2 lab certify?
+
+evidence:
+- official Metabase releases list 63.18 / tag `v0.63.18` as latest stable;
+- official release specifies OSS Docker line `metabase/metabase:v0.63.18.x`;
+- Docker Hub exposes multi-platform index digest
+  `sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73`;
+- Metabase recommends PostgreSQL for the application database;
+- PostgreSQL 17.11 is a supported current minor and its Docker Official Image index is
+  `sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675`.
+
+decision:
+- logical Metabase runtime version = `v0.63.18`;
+- execute immutable image =
+  `metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73`;
+- both lab PostgreSQL services use
+  `postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675`
+  (PostgreSQL 17.11).
+
+scope:
+M2 lab only.
+
+invariants:
+- no `latest`;
+- source audit SHA remains separate from runtime image;
+- exact digest is the executable identity;
+- later runtime upgrade requires new Decision Receipt + backup/restore/rehearsal.
+
+rejected_shortcuts:
+- floating `latest`;
+- beta v0.64 runtime;
+- assuming source-audit master SHA identifies Docker runtime;
+- H2 application DB.
+
+revisit_condition:
+Only through explicit runtime-upgrade ticket.
+
+status: SEALED.

@@ -3,9 +3,9 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** M1 / P1 CLOSED GREEN — M2 / P2 PRE-DEVELOPMENT REVIEW SEALED; RUNTIME PIN RESEARCH NEXT  
+**Current phase:** M2 / P2 — RUNTIME PINNED; ISOLATED LAB IMPLEMENTATION READY  
 **Product-code development:** M1 CLOSED GREEN; M2 LAB IMPLEMENTATION NOT STARTED  
-**Metabase runtime:** NOT SELECTED  
+**Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
 ## Completed
@@ -144,3 +144,15 @@ Ticket:
 Next action:
 verify an official supported Metabase runtime release and immutable image digest. No lab compose
 implementation is authorized until both pins are recorded.
+
+
+### M2 runtime pin — SEALED
+
+```text
+Metabase runtime   = v0.63.18
+Metabase digest    = sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
+PostgreSQL runtime = 17.11
+Postgres digest    = sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+```
+
+Lab implementation may begin only inside the M2 allowlist. Product routing remains forbidden.

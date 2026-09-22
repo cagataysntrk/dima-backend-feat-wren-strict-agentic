@@ -3,7 +3,7 @@
 **Milestone:** M2 / P2  
 **Predevelopment review:** `backend/belgeler/metabase/predev/M2_P2_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** Metabase runtime pin + isolated lab infrastructure  
-**Status:** REVIEW PENDING / NO IMPLEMENTATION YET
+**Status:** RUNTIME PINNED / LAB IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE GREEN
 
 ## Goal
 
@@ -14,8 +14,8 @@ self-hosted lab that can be started/restarted/backed-up/probed without any Dima 
 
 ```text
 METABASE_SOURCE_AUDIT_SHA      = 74216b30981d8310c4cf724d63ca282e2e63529d
-METABASE_RUNTIME_VERSION       = UNSELECTED
-METABASE_RUNTIME_IMAGE_DIGEST  = UNSELECTED
+METABASE_RUNTIME_VERSION       = v0.63.18
+METABASE_RUNTIME_IMAGE_DIGEST  = sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
 ```
 
 No `latest`.
@@ -56,3 +56,15 @@ raw SQL policy assumed from docs          = forbidden
 ## Exit
 
 Ticket closes only with exact run receipts and SOURCE_LOCK runtime pins.
+
+
+## Runtime pin receipt
+
+```text
+Metabase release   v0.63.18
+Metabase image     metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
+PostgreSQL         17.11
+Postgres image     postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+```
+
+Next: implement only the isolated lab allowlist.
