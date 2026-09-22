@@ -1,5 +1,5 @@
 <!-- DIMA-V2-ACTIVE-OPERATION -->
-# 🔴🔴 AKTİF OPERASYON — DIMA V2 DAY 6.5 MANAGER VALIDATION
+# 🔴🔴 AKTİF OPERASYON — DIMA V2 DAY 6.5 ENGINEERING CLOSURE
 
 > **Bu branch'te eski “aktif operasyon” bloklarının üstünde BU BLOK okunur.**
 > Branch: `feat/ask-v2-mvp`.
@@ -7,15 +7,16 @@
 > Her geliştirme oturumunun ilk sırası:
 >
 > 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
-> 2. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
-> 3. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
-> 4. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
-> 5. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
-> 6. `eval/v2_day6_5_eval_manifest.yaml`
-> 7. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
-> 8. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
-> 9. `AGENTS.md`
-> 10. `MIMARI.md` ve yalnız aktif ticket'ın kodu
+> 2. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
+> 3. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+> 4. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+> 5. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+> 6. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+> 7. `eval/v2_day6_5_eval_manifest.yaml`
+> 8. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
+> 9. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
+> 10. `AGENTS.md`
+> 11. `MIMARI.md` ve yalnız aktif ticket'ın kodu
 >
 > Nihai rapor ve roadmap **mühürlü / salt-okunur**. İlerleme, karar sonucu, commit SHA,
 > açık borç ve sonraki adım yalnız `DIMA_V2_GELISTIRME_DURUM.md` dosyasına yazılır.
@@ -23,7 +24,18 @@
 > Koddan önce roadmap'teki aktif **P** bölümünü ve onun dayanak gösterdiği **R** bölümünü
 > birlikte oku. Rapor gerekçenin, roadmap icra sırasının authority'sidir.
 >
-> **Day 6.5 amacı:** one-shot universal complex-intent architecture artık production adayı değildir. Bounded Manager control plane'i; exactly-one accepted authority, opaque source/semantic handles, fast-path preservation ve deterministic trust plane altında doğrulanacaktır. Manager hard gate'leri geçmeden `MIMARI.md` production architecture olarak değiştirilmez.
+> **Day 6.5 amacı:** architecture search'i bitirip mevcut Manager/trust-plane mimarisini üç çalışma modu ile tamamlamak: `STANDARD_DIRECT`, bounded `STANDARD_BUILDER`, `RESEARCH`. Standard ve Research ayrı accepted-authority ailesidir; Standard ağır research ledger/completion machinery'sini taşımaz. Production `/ask-v2` certification seal öncesi açılmaz.
+>
+> **Kısa operasyon protokolü:** geliştirme/mimari doğrulama önceliklidir; büyük test kampanyası
+> yerine vertical slice. Normal loop `code → 3–15 sn focused/provider-free → devam`.
+> Workers=1 önce. Fail sınıflandırmadan patch yok:
+> `MODEL_COGNITION | CONTRACT/ARCHITECTURE | RESOLVER_TRUTH | EVAL_ORACLE | TRANSPORT/PROVIDER`.
+> Regex/morphology/keyword/case-derived prompt/resolver heuristic yasak. Önemli müdahale
+> öncesi checkpoint SHA; A/B exact same backend SHA. Hidden yalnız final seal blocker'ıdır.
+>
+> **Standard front-door:** retrieval/discovery authority değildir. `STANDARD_DIRECT` tek-pass'a
+> yakın hedef; `STANDARD_BUILDER` bounded progress-driven self-correction yapabilir;
+> `simple_standard_research_manager_loop = 0`.
 >
 > **Day 6.5 cognition/authority kuralı:** doğal dil yorumunu regex/morphology/fuzzy-score ile
 > deterministic semantic truth'a çevirmek yasaktır. Manager yolu:
