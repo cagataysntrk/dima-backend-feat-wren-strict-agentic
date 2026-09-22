@@ -67,6 +67,7 @@ class FastRunManager:
             root_run_id, attempt = self._store.retry_lineage(
                 payload.retry_of_run_id,
                 owner,
+                payload,
             )
 
         snapshot = self._store.create(
