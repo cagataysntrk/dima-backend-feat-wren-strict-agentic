@@ -30,6 +30,7 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.
 - `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; J1 decision sonrası, X0 öncesi mandatory Standard integration gate**.
 - `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
+- `DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` — Metabase Cloud/self-host/bundled-service/source-port deployment decision gate.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
 - `../../AGENTS.md` — V2 geliştirici/ajan çalışma sözleşmesi.
 - `../../CLAUDE.md` — repo kuralları; V2 branch override üstte olmalıdır.
@@ -6283,3 +6284,80 @@ Open eval debt:
 `D65-J1-FULL-001` — invalid typed Pydantic output is currently mislabeled as
 TRANSPORT/PROVIDER by the harness. Root cause is classified EVAL_ORACLE; no patch has been made
 because the J1 promising consultation gate has precedence.
+
+
+---
+
+## 2026-09-22 — J1 RESULTS + METABASE DEPLOYMENT CONSULTATION
+
+Current HEAD before this documentation update:
+`978e6317822eadbcb3ac469804cc19f1d569be29`.
+
+J1 corrected full result:
+```text
+run                         = 35705668833
+tested SHA                  = bde3e5a21c159243002ef600ece007256d8482d0
+
+J1S Jev model-needed        = 93.33%
+J1S Gemini                  = 86.67%
+J1S Luna                    = 86.67%
+Jev p50                     = 0.266s
+Gemini p50                  = 0.537s
+Luna p50                    = 1.013s
+Jev measured cost           = $0.002282
+high-confidence Jev wrong   = 0
+```
+
+Interpretation:
+```text
+Jev universal replacement   = NO
+Jev bounded semantic choice = PROMISING
+Jev temporal provider       = NO / capability floor
+Luna temporal typed role    = PROMISING, not sealed
+J1B                         = CONSULT REQUIRED
+```
+
+Run-level workflow FAILURE was classified EVAL_ORACLE because typed-contract validation failures
+were mislabeled as TRANSPORT/PROVIDER. Real provider/network failures = 0. Product semantic code
+was not patched from this RED.
+
+Metabase deployment clarification:
+```text
+Agent API != Metabase Cloud requirement
+
+X0 default:
+Dima → private network → self-hosted pinned Metabase → analytical DB
+
+vendor Cloud = not selected
+source copy/port/vendor = forbidden
+same-stack sidecar/container packaging = feasible candidate
+same Python process/library embedding = not a supported realistic integration
+```
+
+Self-hosting adds real operational cost:
+- Metabase JVM/service,
+- production application DB,
+- upgrades/migrations/backups,
+- monitoring,
+- scaling/load balancing,
+- permission/tenant mapping.
+
+These costs are now mandatory X0 metrics.
+
+External current verification:
+- OSS edition uses AGPL;
+- Docker/JAR self-host are supported;
+- production app DB should be relational/PostgreSQL;
+- horizontal scaling is supported with shared app DB/load balancer.
+
+Detailed decision:
+`DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md`.
+
+Current STOP:
+```text
+J1B product experiment = WAITING USER APPROVAL
+D65-SI                 = WAITING J1 TOPOLOGY DECISION
+X0 execution           = WAITING consultation + D65-SI sequence
+product /ask-v2        = OFF
+DEV80                  = FORBIDDEN / final release only
+```
