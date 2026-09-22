@@ -277,3 +277,22 @@ If context is lost:
 7. only if provider topology P0=0 continue toward D65-SI;
 8. never execute X0 before SI + real Wren sentinel + M0E exit.
 ```
+
+
+## 4A. Luna control result
+
+```text
+run                    35716056419
+tested SHA             c256ebfda765ac35f1d3b51f59d53d1018dd695e
+provider-free          31/31 PASS
+semantic               20/20 GREEN / P0=0
+temporal               6/8 RED
+```
+
+Semantic role is now an engineering candidate:
+`SEMANTIC_LINKER = Luna`.
+
+Temporal failures are exactly `tf-001` and `tf-002`, the same family Terra missed.
+Do not patch. Run Sol REFERENCE_CEILING on temporal role only, exact same frozen 8 and exact
+same tested backend SHA. Sol result decides whether this is model floor or shared architecture/
+contract behavior.

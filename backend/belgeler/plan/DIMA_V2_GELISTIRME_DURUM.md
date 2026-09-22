@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 POST-J1B CONSULTATION RESOLVED — LUNA FROZEN CONTROLS + M0E ACTIVE; D65-SI/X0 BLOCKED; DEV80 FORBIDDEN**  
-**Kod fazı:** J1B fresh real-flow `35713785149` RED accepted: Jev AS-IS semantic role REJECT; Jev calibration/verifier DEFER/POST-MVP. Authorized next control is Luna on the unchanged frozen J1B 20 semantic + 8 temporal real-flow corpus; only a failed role may escalate to Sol reference ceiling. M0 is extended to D65-M0E capability-exhaustion/build-vs-buy classification. Wren MDL/cube semantic backbone default RETAIN. D65-SI starts only after provider topology P0=0; X0 only after SI + real Standard Wren sentinel + M0E exit. Production `/ask-v2` OFF.  
+**Durum:** **DAY 6.5 LUNA SEMANTIC GREEN / TEMPORAL A-B PENDING — M0E ACTIVE; D65-SI/X0 BLOCKED; DEV80 FORBIDDEN**  
+**Kod fazı:** Luna same-frozen control `35716056419` @ `c256ebfd...`: provider-free 31/31 PASS; semantic 20/20 P0=0 GREEN; temporal 6/8 RED with exactly the same two previous-period comparison scenarios as Terra. No provider/typed-contract failure. Semantic engineering candidate = Luna. Temporal failure owner remains `MODEL_COGNITION vs CONTRACT/ARCHITECTURE` unresolved; authorized next proof = Sol temporal-only REFERENCE_CEILING on the exact same frozen 8 and exact tested backend SHA. M0E runs in parallel. D65-SI/X0 blocked. Production `/ask-v2` OFF.  
 
 ---
 
@@ -201,6 +201,35 @@ M0E
 
 Wren semantic backbone:
 `RETAIN by default`; removal is a separate consultation.
+
+---
+
+## 0F. LUNA SAME-FROZEN CONTROL — SEMANTIC GREEN / TEMPORAL A-B
+
+```text
+run                         35716056419
+tested SHA                  c256ebfda765ac35f1d3b51f59d53d1018dd695e
+frozen corpus blob          cc68f87271dcaada1443d2cf9e48024b85bff9f3
+provider-free               31/31 PASS
+
+Luna semantic               20/20 GREEN
+silent semantic wrong       0
+unsafe ambiguity pick       0
+candidate escape            0
+cross-tenant leak           0
+
+Luna temporal               6/8 RED
+invalid typed               0
+provider failure            0
+failed family               previous-period comparison with separately bound base period
+```
+
+Terra failed the same two temporal scenarios. Therefore:
+```text
+semantic engineering candidate = Luna
+temporal owner classification  = pending exact-same-SHA Sol ceiling
+D65-SI                         = BLOCKED
+```
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE

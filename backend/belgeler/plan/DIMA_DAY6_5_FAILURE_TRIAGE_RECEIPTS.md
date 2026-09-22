@@ -726,3 +726,79 @@ forbidden_patch_alternatives:
 status:
 `STOP / CONSULTATION REQUIRED`.
 
+
+
+---
+
+## Receipt — D65-POSTJ1B-LUNA-001 — semantic GREEN / temporal RED
+
+run_id: `35716056419`
+
+tested_sha: `c256ebfda765ac35f1d3b51f59d53d1018dd695e`
+
+frozen corpus:
+`eval/v2_day6_5_j1b_real_flow_frozen.json`
+blob `cc68f87271dcaada1443d2cf9e48024b85bff9f3`
+
+provider-free:
+`31/31 PASS`; compile PASS.
+
+semantic result:
+```text
+model                        openai/gpt-5.6-luna
+cases                        20/20 correct
+silent_semantic_wrong        0
+unsafe_ambiguity_auto_pick   0
+candidate_escape             0
+cross_tenant_leak            0
+provider_failure             0
+invalid_typed_contract       0
+hidden_fallback              0
+```
+
+semantic classification:
+`GREEN / engineering candidate`.
+No semantic Sol ceiling is authorized/needed.
+
+temporal result:
+```text
+model                        openai/gpt-5.6-luna
+scenarios                    6/8 correct
+real_flow_temporal_wrong     2
+invalid_typed_contract       0
+provider_failure             0
+hidden_fallback              0
+```
+
+failed family:
+- `tf-001` — "bu ay" + "önceki dönemle karşılaştır": period bound, comparison unresolved.
+- `tf-002` — "son 30 günü" + "önceki dönemle karşılaştır": period bound, comparison unresolved.
+
+cross-model observation:
+Terra J1B real-flow failed the exact same two scenarios with provider_failure=0.
+This repeated failure across Terra and Luna raises a material
+`CONTRACT/ARCHITECTURE vs MODEL_COGNITION` ownership question.
+
+failure_class:
+`UNRESOLVED — exact-same-SHA Sol temporal reference ceiling required`.
+
+single_owner before A/B:
+none assigned yet; do not patch temporal product/prompt/schema.
+
+forbidden alternatives:
+- temporal prompt micro-patch;
+- special-case "önceki dönem" branch;
+- regex/keyword temporal fallback;
+- changing expected scenarios;
+- running Gemini;
+- retuning Terra;
+- semantic-provider changes;
+- confidence threshold/cascade/fallback.
+
+authorized next proof:
+Sol REFERENCE_CEILING, temporal role only, same frozen 8, same tested backend SHA
+`c256ebf...`.
+
+status:
+`OPEN — A/B CLASSIFICATION REQUIRED; D65-SI BLOCKED`.
+
