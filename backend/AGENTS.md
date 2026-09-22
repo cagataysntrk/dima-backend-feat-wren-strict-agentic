@@ -4,6 +4,47 @@
 > **Amaç:** Dima V2'yi mühürlü nihai rapor ve yol haritasına göre hızlı, izlenebilir ve
 > eski semantic-front-door hatalarını tekrar etmeyecek biçimde geliştirmek.
 
+## DAY 6.5 CURRENT CLOSURE OVERRIDE — 2026-09-22
+
+> Bu bölüm eski Day 6.5 hazırlık/validation maddelerinin üzerinde okunur.
+>
+> Aktif phase-local authority:
+> 1. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
+> 2. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
+> 3. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+> 4. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+> 5. `eval/v2_day6_5_eval_manifest.yaml`
+>
+> Mühürlü nihai roadmap/report salt-okunur ve üst düzey authority olarak korunur.
+>
+> **Nihai çalışma biçimleri:**
+> `STANDARD_DIRECT`, bounded `STANDARD_BUILDER`, `RESEARCH`.
+> Bunlar iki accepted authority ailesi üretir:
+> `AcceptedStandardAuthority` ve `AcceptedResearchAuthority`.
+>
+> **Hidden50 development blocker değildir.** External hidden yalnız final architecture
+> certification seal'ini bloklar. Development/engineering closure current-head
+> recertification + Retriever seam + StandardBuilder + authority split + frozen DEV80 ile ilerler.
+>
+> **Standard != daima one-shot.** `simple_standard_model_calls <= 1` evrensel mimari
+> gate değildir. Direct yol minimum call hedefler; Builder bounded progress-driven retry yapabilir.
+> Ancak `simple_standard_research_manager_loop = 0`.
+>
+> **Failure sınıflandırmadan patch YOK:**
+> `MODEL_COGNITION | CONTRACT/ARCHITECTURE | RESOLVER_TRUTH | EVAL_ORACLE | TRANSPORT/PROVIDER`.
+> Infra/provider failure semantic wrong değildir.
+>
+> **Workers=1 önce.** Semantic/mimari sertifikasyon concurrency'den önce tek işçidir.
+>
+> **Freeze disiplini:** önemli müdahale öncesi checkpoint SHA; A/B exact aynı backend SHA.
+>
+> **Operasyon sırası:** provider-free focused → workers=1 focused live → reference A/B
+> → stratified canary → frozen DEV80 → engineering freeze → VALIDATION50 → external HIDDEN50
+> → certification seal.
+>
+> **Tek cümlelik kural:** Vaka geçirerek sistem yapmıyoruz; doğru abstraction'ı kurup
+> vakaların onun doğal sonucu olarak geçmesini istiyoruz.
+
 ## DAY 6.5 OVERRIDE — MANAGER ARCHITECTURE VALIDATION
 
 > Bu bölüm Day 6.5 boyunca aşağıdaki tarihsel V2 semantic-owner maddelerinin üzerinde
@@ -31,18 +72,18 @@
 > - rejected model attempt semantic merge = 0.
 > - `USER_MUST` ile `AGENT_DERIVED` origin asla birbirine promote edilmez.
 >
-> Production Manager koduna geçmeden hidden holdout SHA/count/taxonomy metadata freeze edilmiş
-> olmalıdır.
+> Bu eski hazırlık kuralı SUPERSEDED: external HIDDEN50 development blocker değildir; final certification seal blocker'ıdır. Current rule üstteki CURRENT CLOSURE OVERRIDE ve eval manifestidir.
 
 ## 0. Her oturumda ilk okunacaklar
 
 Sıra bağlayıcıdır:
 
 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md` — nerede kaldık, açık borçlar, sıradaki iş.
-2. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md` — **icra sırası authority**.
-3. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md` — **hedef mimari ve gerekçe authority**.
-4. `MIMARI.md` — mevcut çalışan sistem, reuse edilecek altyapı ve güvenlik/değişmezler.
-5. Yalnız aktif ticket'ın dokunduğu kod ve testler.
+2. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — Day 6.5 kesin closure sırası ve üç-mode front door.
+3. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md` — **icra sırası authority**.
+4. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md` — **hedef mimari ve gerekçe authority**.
+5. `MIMARI.md` — mevcut çalışan sistem, reuse edilecek altyapı ve güvenlik/değişmezler.
+6. Yalnız aktif ticket'ın dokunduğu kod ve testler.
 
 Eski operasyon belgeleri V2'nin `nerede kaldık` kaynağı değildir.
 
