@@ -374,6 +374,15 @@ class ResearchToolRegistry:
     def declared_tools(self) -> tuple[str, ...]:
         return tuple(self._SPECS)
 
+    @property
+    def declared_task_kinds(self) -> tuple[ResearchTaskKind, ...]:
+        kinds: list[ResearchTaskKind] = []
+        for spec in self._SPECS.values():
+            for kind in spec.contract.accepted_task_kinds:
+                if kind not in kinds:
+                    kinds.append(kind)
+        return tuple(kinds)
+
 
 class ResearchToolRunner:
     """Thin contract/permission gate over the existing official Manager execution path."""
@@ -414,6 +423,10 @@ class ResearchToolRunner:
             "tenant_binding": tenant_binding,
             "superadmin": bool(principal.is_superadmin),
         }
+
+    @property
+    def declared_task_kinds(self) -> tuple[ResearchTaskKind, ...]:
+        return self._registry.declared_task_kinds
 
     def tool_id_for_task(self, task: ResearchTask) -> str:
         try:
