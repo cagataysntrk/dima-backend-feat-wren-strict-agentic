@@ -334,9 +334,11 @@ class ManagerState(StrEnum):
 
 
 class ManagerBudget(FrozenModel):
+    # Day7 canonical Research budget truth. Tool calls include non-query observation
+    # tools; data queries are independently capped and may never exceed the hard 12.
     max_tool_calls: int = Field(default=12, ge=1)
-    max_data_queries: int = Field(default=8, ge=0)
-    max_manager_turns: int = Field(default=8, ge=1)
+    max_data_queries: int = Field(default=8, ge=0, le=12)
+    max_manager_turns: int = Field(default=6, ge=1)
 
 
 class ManagerRunSnapshot(FrozenModel):
