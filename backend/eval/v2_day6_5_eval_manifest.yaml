@@ -439,3 +439,38 @@ metabase_source_reference_contract:
     - source_copy_port_or_vendor_attempt
     - trust_plane_weakened_to_match_metabase
     - equal_parallel_production_truth_engines
+
+failure_triage_receipt_gate:
+  required_after_red_phases:
+    - workers1_focused_live
+    - stratified_canary
+    - DEV80
+    - VALIDATION50
+    - HIDDEN50
+  no_product_semantic_code_before_receipt: true
+  same_sha_ab_required_when_owner_or_model_floor_uncertain: true
+  mandatory_fields:
+    - run_id
+    - tested_sha
+    - observed_failure
+    - failure_stage
+    - failure_class
+    - classification_evidence
+    - single_owner
+    - root_cause
+    - failure_family
+    - why_not_model_only
+    - why_not_oracle
+    - why_not_transport
+    - forbidden_patch_alternatives
+    - allowed_files_to_touch
+    - files_not_to_touch
+    - invariant_being_fixed
+    - focused_proof
+    - family_regression_proof
+    - status
+  one_failure_not_one_new_rule: true
+  forbidden_case_derived_prompt: true
+  forbidden_failed_phrase_example: true
+  forbidden_keyword_or_regex_semantic_patch: true
+  forbidden_legacy_resolver_fallback: true
