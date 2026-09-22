@@ -7,7 +7,6 @@ to the existing trust plane for explicit lab invocations only.
 from __future__ import annotations
 
 from control_plane.authorize import Principal
-from control_plane.security import derive_hmac_key
 
 from app.config import get_settings
 from app.kaset import belki_sar
@@ -28,7 +27,6 @@ from app.v2.manager_models import (
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.model_policy import ModelRole, ModelRolePolicy
 from app.v2.models import AskV2Request, FrozenModel
-from app.v2.resolver import SemanticResolver
 from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
@@ -79,11 +77,7 @@ class ManagerLabHarness:
 
         source_spans = SourceSpanRegistry()
         semantic_handles = SemanticHandleRegistry()
-        resolver = SemanticResolver(
-            signing_key=derive_hmac_key("v2-manager-clarification-v1")
-        )
         semantic_adapter = ManagerSemanticResolutionAdapter(
-            resolver=resolver,
             source_spans=source_spans,
             semantic_handles=semantic_handles,
             semantic_context=context,
