@@ -616,3 +616,70 @@ full M2 live workflow.
 
 status:
 `CLASSIFIED / TEST-HARNESS PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-M2-RED-002 — v0.63.18 boolean setting key suffix lost in bootstrap API path
+
+receipt_id: `DMP-M2-RED-002`  
+ticket: `M2-P2-001`  
+tested_sha: `4ea89e12bc900fe55f88e103799159eed6fdc3a2`  
+run_id: `35732445427`
+
+observed_failure:
+Metabase health passes and `POST /api/setup` returns 200. Bootstrap then receives HTTP 500 on
+`PUT /api/setting/ai-features-enabled`: runtime reports unknown setting and lists the registered
+setting as `ai-features-enabled?` (likewise `agent-api-enabled?`).
+
+failure_stage:
+lab bootstrap settings configuration after successful instance setup.
+
+failure_class:
+`EVAL_ORACLE`
+
+classification_evidence:
+- immutable image + stack startup = PASS;
+- health = PASS;
+- initial Metabase setup = PASS;
+- v0.63.18 runtime registered-setting list explicitly exposes `ai-features-enabled?` and
+  `agent-api-enabled?`;
+- audited v0.63.18 source defines those boolean settings with question-mark names;
+- a literal `?` in a URL path must be percent-encoded to avoid becoming query-string syntax.
+
+single_owner:
+`backend/lab/metabase/scripts/bootstrap.py::set_setting` and its setting keys.
+
+root_cause:
+bootstrap used display/export naming instead of exact REST setting identifiers and did not URL-encode
+setting path segments.
+
+failure_family:
+runtime API identifier encoding mismatch in lab harness.
+
+forbidden_patch_alternatives:
+- disable Agent API capability checks;
+- treat health as Agent API proof;
+- modify Metabase runtime/source;
+- ignore setting errors.
+
+allowed_files_to_touch:
+- `backend/lab/metabase/scripts/bootstrap.py`
+
+files_not_to_touch:
+- Dima product code;
+- source branch;
+- runtime pin;
+- existing compose files outside isolated lab.
+
+invariant_being_fixed:
+M2 bootstrap uses exact v0.63.18 runtime setting identifiers and verifies failures loudly.
+
+focused_proof:
+next M2 run must pass setup + settings and reach Agent API probe.
+
+family_or_live_proof:
+full M2 live workflow.
+
+status:
+`CLASSIFIED / LAB API FIXTURE PATCH AUTHORIZED`.
