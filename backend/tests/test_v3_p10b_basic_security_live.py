@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import os
+from contextlib import contextmanager
 
 import httpx
 import pytest
@@ -19,7 +20,10 @@ from app.v3.substrate.metabase.errors import (
     MetabaseClientError,
     MetabaseErrorCode,
 )
-from app.v3.substrate.metabase.models import MetabaseRuntimePolicy
+from app.v3.substrate.metabase.models import (
+    ConstructedQuery,
+    MetabaseRuntimePolicy,
+)
 from app.v3.substrate.metabase.p3a_fixture import build_cases, build_snapshot
 from control_plane.authorize import Principal
 
@@ -153,6 +157,30 @@ def _restore_graph(
     return _permission_graph(client)
 
 
+@contextmanager
+def _temporarily_revoke_query_creation(
+    client: httpx.Client,
+    *,
+    original_graph: dict,
+    group_ids: tuple[int, ...],
+    database_id: int,
+):
+    revoked = copy.deepcopy(original_graph)
+    for group_id in group_ids:
+        _set_create_queries(
+            revoked,
+            group_id=group_id,
+            database_id=database_id,
+            value="no",
+        )
+    response = client.put("/api/permissions/graph", json=revoked)
+    response.raise_for_status()
+    try:
+        yield
+    finally:
+        _restore_graph(client, original_graph)
+
+
 def test_p10b1_same_session_permission_revocation_and_restore():
     base_url = f"http://localhost:{os.environ.get('METABASE_PORT', '3300')}"
     admin_token = _login(
@@ -243,54 +271,29 @@ def test_p10b1_same_session_permission_revocation_and_restore():
         assert len(canonical.steps) == 1
         query = canonical.steps[0]
 
-        before = restricted_agent.execute_serialized(
-            query.model_copy(
-                include={"serialized_query"}
-            )
-            if False
-            else __import__(
-                "app.v3.substrate.metabase.models",
-                fromlist=["ConstructedQuery"],
-            ).ConstructedQuery(
-                serialized_query=query.serialized_query,
-            )
-        )
-        assert before.status.value == "completed"
-
-        original_graph = _permission_graph(admin_http)
-        revoked = copy.deepcopy(original_graph)
-        for group_id in (all_users_id, restricted_group_id):
-            _set_create_queries(
-                revoked,
-                group_id=group_id,
-                database_id=database_id,
-                value="no",
-            )
-
-        revoke_response = admin_http.put(
-            "/api/permissions/graph",
-            json=revoked,
-        )
-        revoke_response.raise_for_status()
-
-        same_user_after_revoke = _current_user(restricted_http)
-        assert int(same_user_after_revoke["id"]) == restricted_user_id
-        assert same_user_after_revoke.get("is_superuser") is False
-
-        from app.v3.substrate.metabase.models import ConstructedQuery
-
         same_query = ConstructedQuery(
             serialized_query=query.serialized_query,
         )
-        with pytest.raises(MetabaseClientError) as exc:
-            restricted_agent.execute_serialized(same_query)
-        assert exc.value.code == MetabaseErrorCode.PERMISSION
-        assert exc.value.status_code == 403
+        before = restricted_agent.execute_serialized(same_query)
+        assert before.status.value == "completed"
 
-        restored_graph = _restore_graph(
+        original_graph = _permission_graph(admin_http)
+        with _temporarily_revoke_query_creation(
             admin_http,
-            original_graph,
-        )
+            original_graph=original_graph,
+            group_ids=(all_users_id, restricted_group_id),
+            database_id=database_id,
+        ):
+            same_user_after_revoke = _current_user(restricted_http)
+            assert int(same_user_after_revoke["id"]) == restricted_user_id
+            assert same_user_after_revoke.get("is_superuser") is False
+
+            with pytest.raises(MetabaseClientError) as exc:
+                restricted_agent.execute_serialized(same_query)
+            assert exc.value.code == MetabaseErrorCode.PERMISSION
+            assert exc.value.status_code == 403
+
+        restored_graph = _permission_graph(admin_http)
 
         same_user_after_restore = _current_user(restricted_http)
         assert int(same_user_after_restore["id"]) == restricted_user_id
@@ -366,11 +369,3 @@ def test_p10b1_same_session_permission_revocation_and_restore():
             in access.attestation_refs
         )
 
-    if original_graph is not None and restored_graph is None:
-        # Defensive recovery if a failure happened after revocation but before normal restore.
-        with httpx.Client(
-            base_url=base_url,
-            headers=headers_admin,
-            timeout=30,
-        ) as recovery:
-            _restore_graph(recovery, original_graph)
