@@ -29,11 +29,11 @@ jobs:
       - name: Compile SI boundary
         working-directory: backend
         run: |
-          python -m py_compile             app/v2/model_policy.py             app/v2/standard_lane.py             app/v2/standard_execution.py             app/v2/standard_builder.py             app/v2/standard_authority.py             app/v2/standard_coverage.py
+          python -m py_compile             app/v2/model_policy.py             app/v2/semantic_retriever.py             app/v2/semantic_linker.py             app/v2/model_policy.py             app/v2/standard_lane.py             app/v2/standard_execution.py             app/v2/standard_builder.py             app/v2/standard_authority.py             app/v2/standard_coverage.py
       - name: Focused provider-free SI gate
         working-directory: backend
         run: |
-          pytest -q             tests/test_v2_day6_5_model_roles.py             tests/test_v2_day6_5_standard_lane.py             tests/test_v2_day6_5_standard_execution.py             tests/test_v2_day6_5_standard_builder.py             tests/test_v2_day6_5_standard_authority.py             tests/test_v2_day6_5_standard_coverage.py
+          pytest -q             tests/test_v2_day6_5_semantic_linker.py             tests/test_v2_day6_5_model_roles.py             tests/test_v2_day6_5_standard_lane.py             tests/test_v2_day6_5_standard_execution.py             tests/test_v2_day6_5_standard_builder.py             tests/test_v2_day6_5_standard_authority.py             tests/test_v2_day6_5_standard_coverage.py
 
 # retry: eval-oracle-fixed
 
@@ -53,3 +53,5 @@ jobs:
 # retry: eval-harness-collect-all
 
 # retry: eval-harness-triggered
+
+# retry: bounded-semantic-token-index
