@@ -301,3 +301,93 @@ def test_risky_current_certificate_is_denied_by_existing_join_gate():
     assert result.code == JoinFactCode.FANOUT_UNSAFE
     assert result.gate_decision is None
     assert result.fanout_proofs[0].status == "RISKY"
+
+
+
+def test_source_local_fk_dimension_is_mapped_to_target_pk_only_by_wren_relationship():
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-duration",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-duration",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="toplam_sure_dk",
+            cube_names=("makine_duruslari",),
+        ),
+    )
+    machine = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="dim-machine",
+        target_kind="dimension",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="dim-machine",
+            target_kind=SemanticTargetKind.DIMENSION,
+            canonical_name="makine",
+            cube_names=("makine_duruslari",),
+        ),
+    )
+    obligation = ObligationLedgerItem(
+        obligation_id="U_REL",
+        capability_key=ManagerCapabilityKey.RELATIONSHIP,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=("src-rel",),
+        semantic_handle_refs=(metric.handle_id, machine.handle_id),
+        introduced_in_version=1,
+    )
+    args = RunRelationshipArgs(
+        obligation_id="U_REL",
+        focus_handles=(metric.handle_id,),
+        counterpart_handles=(machine.handle_id,),
+    )
+    schema = {
+        "models": [
+            {"name": "makine_duruslari", "primary_key": "id", "columns": []},
+            {"name": "makineler", "primary_key": "makine", "columns": []},
+        ],
+        "cubes": [
+            {
+                "name": "makine_duruslari",
+                "base_object": "makine_duruslari",
+            }
+        ],
+        "relationships": [
+            {
+                "name": "makine_duruslari_makineler",
+                "models": ["makine_duruslari", "makineler"],
+                "join_type": "MANY_TO_ONE",
+                "condition": 'makine_duruslari."makine" = makineler."makine"',
+                "certified": "olculdu:saglikli",
+                "fanout_proof": _proof("makine_duruslari_makineler"),
+            }
+        ],
+    }
+    builder = CrossDomainJoinFactBuilder(
+        semantic_handles=handles,
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    result = builder.build(
+        args=args,
+        obligation=obligation,
+        service=_Service(schema),
+    )
+
+    assert result.ready is True
+    assert result.facts.source_cube == "makine_duruslari"
+    assert result.facts.target_cube == "makine_duruslari"
+    assert result.facts.source_model == "makine_duruslari"
+    assert result.facts.target_model == "makineler"
+    assert result.facts.source_row_grain == "id"
+    assert result.facts.target_row_grain == "makine"
+    assert result.facts.source_join_key == "makine"
+    assert result.facts.target_join_key == "makine"
+    assert result.facts.requested_output_grain == "makine"
+    assert result.facts.relationship_path == ("makine_duruslari_makineler",)
+    assert result.gate_decision.allowed is True
