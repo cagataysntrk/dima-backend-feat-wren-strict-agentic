@@ -1332,3 +1332,38 @@ invented/unapproved bind         = BLOCK
 frozen corpus changes            = 0
 next proof                       = exact same EV-01..04 Luna/Sol rerun
 ```
+
+
+---
+
+## P11 INITIAL NATIVE PATH — GREEN
+
+```text
+implementation SHA                  = d31b83437400dd7f1b70e1b478efad2e8cff781e
+P11 workflow                        = 35790011788 = SUCCESS
+provider-free                       = GREEN
+live Luna/Sol                       = GREEN
+M1/Wren                             = 35790011932 = SUCCESS
+governance                          = 35790011855 = SUCCESS
+corpus fingerprint                  = da7f13e804c643c376d085b0e0fa94e132fdd8877e1945e4c19257160d03e06c
+raw Luna first-pass                 = 3/4
+raw Sol first-pass                  = 3/4
+official Luna first-pass            = 4/4
+official Sol first-pass             = 4/4
+raw silent-wrong rerun              = 6
+official silent-wrong               = 0
+guardrail                           = SUFFICIENT
+resolver decision                   = NOT_NEEDED
+entity resolver framework           = 0
+translation/fuzzy/morphology        = 0
+EV-05 high-cardinality              = UNCERTIFIED / FIXTURE REQUIRED
+EV-06 stale index                   = UNCERTIFIED / FIXTURE REQUIRED
+EV-07 permission-hidden             = UNCERTIFIED / P10B2 OWNER REQUIRED
+DMP-P5-BLOCK-001                    = OPEN
+```
+
+P11 V1 proves that native current-user Metabase value retrieval + LLM cognition + the minimum Dima
+value-adoption truth gate is sufficient for the initial low-cardinality profile. It does **not** claim
+full entity-value resolution certification.
+
+DMP-P11-CI-RED-001 is a separate stale M2 cross-trigger correction.

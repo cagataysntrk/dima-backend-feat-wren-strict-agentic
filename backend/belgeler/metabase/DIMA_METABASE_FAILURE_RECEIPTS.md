@@ -2235,3 +2235,88 @@ prompt/case/tool/data changes.
 
 status:
 `MEASURED / MINIMUM GUARDRAIL CANDIDATE`.
+
+
+---
+
+## DMP-P11-CI-RED-001 — M2 stale cross-trigger on P11 lab files
+
+tested_sha: `d31b83437400dd7f1b70e1b478efad2e8cff781e`  
+failed_run: `35790011814`
+
+classification:
+`CI / MILESTONE CROSS-TRIGGER`.
+
+observed:
+The M2 workflow path filter still watched all `backend/lab/metabase/**` except P6. The P11 eval
+harness therefore triggered M2. M2's own isolation gate then correctly rejected the same commit's
+`backend/app/v3/entity_value_gate.py`, even though M2 neither owns nor needs P11 product code.
+
+evidence:
+- failure occurs at `Enforce M2 forbidden-file isolation` before runtime bootstrap;
+- P11 provider-free = GREEN;
+- P11 live = GREEN;
+- governance = GREEN;
+- full M1/Wren regression = GREEN;
+- an immediately preceding P11 freeze-only commit triggered M2 and completed full M2 smoke GREEN.
+
+authorized correction:
+Exclude `backend/lab/metabase/p11/**` from the M2 push path trigger, exactly as P6 lab files are
+already excluded. M2's own workflow file remains a trigger so M2 can self-validate this correction.
+
+No product code or M2 runtime behavior changes are authorized.
+
+status:
+`CORRECTION APPLIED / AWAITING M2 GREEN`.
+
+---
+
+## DMP-P11-MEASURE-001 closure — minimum adoption gate sufficient
+
+implementation_sha: `d31b83437400dd7f1b70e1b478efad2e8cff781e`  
+workflow: `35790011788 = SUCCESS`  
+artifact: `p11-luna-sol-eval / 10721593598`  
+corpus_fingerprint: `da7f13e804c643c376d085b0e0fa94e132fdd8877e1945e4c19257160d03e06c`
+
+same frozen contract:
+- cases/data/tool evidence/prompt/model ids/oracle unchanged;
+- Luna runtime = `openai/gpt-5.6-luna`;
+- Sol runtime = `openai/gpt-5.6-sol`;
+- 8 primary evaluations; EV-03 raw failure repeats retained;
+- 12 total model calls.
+
+post-guardrail:
+- raw first-pass Luna = 3/4;
+- raw first-pass Sol = 3/4;
+- official first-pass Luna = 4/4;
+- official first-pass Sol = 4/4;
+- raw silent-wrong occurrences = 6;
+- official silent-wrong occurrences = 0;
+- EV-03 official outcome on every attempt = `CLARIFY / AMBIGUOUS_SEMANTIC_SCOPE`;
+- EV-01/02 safe exact binds remain BIND;
+- EV-04 remains NO_MATCH.
+
+cost/latency including raw-failure repeats:
+- Luna: 6 calls, 3472 tokens, 18.560 s aggregate provider latency, USD 0.0014534;
+- Sol: 6 calls, 3125 tokens, 11.025 s aggregate provider latency, USD 0.0095460;
+- total: 12 calls, 6597 tokens, 29.585 s, USD 0.0109994.
+
+architecture value delta:
+- verified official first-pass: 6/8 -> 8/8;
+- official silent wrong: baseline 5 observed -> 0 on rerun;
+- raw model cognition is not hidden and still demonstrates the same failure family;
+- model calls added by guardrail = 0;
+- model/prompt/tool specialization added = 0;
+- new permanent product mechanism = one pure adoption gate;
+- new semantic resolver/search/translation/fuzzy state = 0.
+
+classification:
+`MINIMUM_GUARDRAIL SUFFICIENT / DETERMINISTIC ENTITY RESOLVER NOT NEEDED FOR P11 V1`.
+
+scope:
+This closes only the initial EV-01..EV-04 native-path family. EV-05 high-cardinality, EV-06 stale
+index and EV-07 permission-hidden remain explicitly uncertified and blocked on their real fixtures/
+security owners.
+
+status:
+`P11 INITIAL NATIVE PATH GREEN`.

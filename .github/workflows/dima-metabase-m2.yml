@@ -7,6 +7,7 @@ on:
     paths:
       - "backend/lab/metabase/**"
       - "!backend/lab/metabase/p6/**"
+      - "!backend/lab/metabase/p11/**"
       - ".github/workflows/dima-metabase-m2.yml"
   workflow_dispatch:
 

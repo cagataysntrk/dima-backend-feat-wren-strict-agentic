@@ -88,3 +88,20 @@ minimum adoption gate       = AUTHORIZED BY DMP-DEC-0027
 
 The post-guardrail run must reuse the same frozen artifact and preserve raw model decisions alongside
 the official guarded outcome.
+
+
+## Post-guardrail result
+
+`d31b83437400dd7f1b70e1b478efad2e8cff781e` / workflow `35790011788`:
+
+```text
+same corpus fingerprint       = da7f13e804c643c376d085b0e0fa94e132fdd8877e1945e4c19257160d03e06c
+raw model first-pass          = Luna 3/4, Sol 3/4
+official guarded first-pass   = Luna 4/4, Sol 4/4
+raw silent wrong              = 6
+official silent wrong         = 0
+guardrail                     = SUFFICIENT
+resolver decision             = NOT_NEEDED
+```
+
+P11 initial native path may close GREEN while EV-05/06/07 remain explicitly uncertified.
