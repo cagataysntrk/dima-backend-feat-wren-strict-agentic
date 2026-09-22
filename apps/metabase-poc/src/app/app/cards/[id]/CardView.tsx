@@ -9,6 +9,7 @@ import { gateway } from "@/lib/gateway";
 import { ResultView } from "@/components/ResultView";
 import { ExportMenu } from "@/components/analytics/ExportMenu";
 import { AddToDashboard } from "@/components/analytics/DashboardActions";
+import { HistoryMenu } from "@/components/analytics/HistoryMenu";
 import { DrillSheet, type DrillTarget } from "@/components/analytics/DrillSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,6 +121,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
                   saving={save.isPending}
                 />
               )}
+              <HistoryMenu cardId={id} canEdit={canEdit} />
               {canEdit && <AddToDashboard resolveCardId={async () => id} />}
               <ExportMenu cardId={id} />
             </div>

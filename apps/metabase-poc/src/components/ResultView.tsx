@@ -250,7 +250,9 @@ export function ResultView({
   const pivotable = pivotDim != null;
 
   const [view, setView] = useState<"chart" | "table" | "pivot">(() => {
-    if (wantsTable) return "table";
+    // Engine display types that are views rather than chart types.
+    if (display === "pivot" && pivotable) return "pivot";
+    if (display === "table" || wantsTable) return "table";
     // Çok-varlıklı zaman serisi: çizgi kalabalık, tablo çok uzun → PIVOT varsayılan.
     if (pivotable && result.rows.length > 12) return "pivot";
     if (!canChart) return "table";
@@ -328,7 +330,12 @@ export function ResultView({
               size="sm"
               variant="outline"
               value={view}
-              onValueChange={(v) => v && setView(v as "chart" | "table" | "pivot")}
+              onValueChange={(v) => {
+                if (!v) return;
+                const next = v as "chart" | "table" | "pivot";
+                setView(next);
+                onTypeChange?.(next === "chart" ? (KIND_DISPLAY[type] ?? type) : next);
+              }}
             >
               {a.kind !== "none" && canChart && (
                 <ToggleGroupItem value="chart" className="px-2.5 text-xs">

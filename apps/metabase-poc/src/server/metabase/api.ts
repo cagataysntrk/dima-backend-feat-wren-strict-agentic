@@ -69,6 +69,7 @@ export async function cardData(ctx: TenantContext, cardId: number) {
 /** Chart types a card may be saved as (engine display names we can render). */
 export const CARD_DISPLAYS = [
   "table",
+  "pivot",
   "bar",
   "row",
   "line",

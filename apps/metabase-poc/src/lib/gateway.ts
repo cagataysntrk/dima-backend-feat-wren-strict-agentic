@@ -34,6 +34,13 @@ function qs(filters: Filters, extra: Record<string, string> = {}): string {
   return s ? `?${s}` : "";
 }
 
+export interface Revision {
+  id: number;
+  at: string;
+  what: string;
+  current: boolean;
+}
+
 export interface BrowseTable {
   id: number;
   name: string;
@@ -157,6 +164,10 @@ export const gateway = {
     api<{ result: QueryResult }>(`/api/cards/${cardId}/drill`, json({ column, value, scope })).then(
       (r) => r.result,
     ),
+  cardHistory: (cardId: number) =>
+    api<{ revisions: Revision[] }>(`/api/cards/${cardId}/history`).then((r) => r.revisions),
+  revertCard: (cardId: number, revisionId: number) =>
+    api<{ ok: true }>(`/api/cards/${cardId}/history`, json({ revisionId })),
   updateCard: (cardId: number, patch: { display?: string; goal?: number | null; name?: string }) =>
     api<{ ok: true }>(`/api/cards/${cardId}`, { ...json(patch), method: "PATCH" }),
   zoom: (cardId: number, value: string, scope?: DrillScope) =>
