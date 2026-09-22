@@ -10,6 +10,7 @@ from app.v2.research_fanout import (
     CardinalitySource,
     FanoutRequest,
     FanoutStrategy,
+    PriorityProvenance,
     ResearchFanoutPolicy,
     governed_dimension_cardinality,
 )
@@ -32,10 +33,12 @@ def _request(
     max_depth=3,
     max_children=4,
     unknown_children=2,
+    priority=PriorityProvenance.NONE,
 ):
     return FanoutRequest(
         candidate_keys=tuple(candidates),
         cardinality=cardinality or CardinalityObservation(source=CardinalitySource.UNKNOWN),
+        priority_provenance=priority,
         remaining_query_budget=budget,
         current_branch_depth=depth,
         max_branch_depth=max_depth,
@@ -54,15 +57,29 @@ def test_low_cardinality_allows_complete_bounded_family():
     assert result.selected_candidate_keys == ("A", "B", "C")
 
 
-def test_high_cardinality_caps_to_bounded_top_k_without_fabricating_other():
+def test_high_cardinality_without_governed_priority_is_bounded_subset_not_fake_top_k():
     result = ResearchFanoutPolicy().decide(
         _request(cardinality=_known(250))
+    )
+    assert result.classification == CardinalityClass.HIGH
+    assert result.strategy == FanoutStrategy.BOUNDED_SUBSET
+    assert result.allowed_children == 4
+    assert result.selected_candidate_keys == ("A", "B", "C", "D")
+    assert "Top-K" in result.reason
+
+
+def test_high_cardinality_with_verified_evidence_priority_may_be_called_top_k():
+    result = ResearchFanoutPolicy().decide(
+        _request(
+            cardinality=_known(250),
+            priority=PriorityProvenance.VERIFIED_EVIDENCE,
+        )
     )
     assert result.classification == CardinalityClass.HIGH
     assert result.strategy == FanoutStrategy.BOUNDED_TOP_K
     assert result.allowed_children == 4
     assert result.selected_candidate_keys == ("A", "B", "C", "D")
-    assert "Other" not in result.selected_candidate_keys
+    assert "VERIFIED_EVIDENCE" in result.reason
     assert "synthetic Other" in result.reason
 
 
