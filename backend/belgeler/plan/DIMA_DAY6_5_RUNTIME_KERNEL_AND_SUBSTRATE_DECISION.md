@@ -1634,9 +1634,15 @@ D65-X0 thin feasibility
 ↓
 Wren primary OR consult → full D65-X → ONE primary substrate
 ↓
-ENGINEERING FREEZE CANDIDATE
+DAY 6.5 ARCHITECTURE DECISIONS CLOSED
 ↓
-DEV80
+DAY 7–15 RELEASE DEVELOPMENT
+↓
+FINAL INTEGRATED RELEASE GATE
+↓
+FINAL ENGINEERING FREEZE
+↓
+DEV80 ONCE
 ```
 
 Product semantic/temporal/authority code is NO-TOUCH during J1 lab benchmarks.
@@ -1714,3 +1720,29 @@ source families.
 
 Current detailed authority:
 `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+
+
+---
+
+## 35. FINAL INTEGRATED RELEASE GATE OVERRIDE
+
+`DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` is the release-level authority for final freeze and
+broad expensive evaluation.
+
+Binding changes:
+
+```text
+DEV80 is NOT a Day6.5 gate.
+DEV80 runs exactly once for this release.
+Day6.5 closes architecture decisions, then Day7–15 implementation continues.
+Final freeze is created only after Day15 code + final integration rehearsal.
+```
+
+Development testing remains continuous and targeted:
+provider-free → focused real LLM → failure-family/metamorphic → small canary → relevant sentinel.
+
+After final freeze:
+DEV80 once → code freeze → Validation50 no tuning → Hidden50 no tuning → certification.
+
+No wording elsewhere in this addendum may be interpreted to move DEV80 earlier than the release
+authority.
