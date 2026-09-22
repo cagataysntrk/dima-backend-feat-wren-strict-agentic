@@ -6715,6 +6715,52 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 — DAY7 CROSSDOMAINJOINGATE GREEN
+
+**Checkpoint:** `bc28716cdeef3c4b4ec9f4f8e776815bebef652c`  
+**Focused workflow:** `35776346727` = **SUCCESS**
+
+CrossDomainJoinGate provider-free attacks are GREEN and all previous Day7 focused
+steps remain GREEN on the same run.
+
+### Authority boundary
+
+```text
+PHYSICAL FK
+!= WREN business relationship authority
+
+model/name similarity
+!= relationship authority
+
+LLM relationship proposal
+!= execution authority
+```
+
+The gate consumes only explicit Wren relationships plus the repository's existing
+`fanout_certificate.json` health stamp. It does not create a second relationship graph.
+
+Proven deny/allow families:
+- healthy explicit MANY_TO_ONE path → eligible;
+- explicit safe two-hop bridge + required aggregation → eligible;
+- missing path → deny;
+- ambiguous path → deny until explicit binding;
+- MANY_TO_MANY → deny;
+- measured fanout risk → deny;
+- unmeasured relationship → deny;
+- grain mismatch / missing aggregation → deny;
+- time mismatch/unknown → deny;
+- unit/currency mismatch/unknown → deny;
+- physical FK without Wren relationship → deny;
+- reverse one-to-many interpretation → deny.
+
+Metabase reference disposition: **DIMA_CORE_NATIVE / PATTERN_ONLY**.
+Adopted invariant: relationship execution must be authorized by current Dima/Wren
+semantic + trust-plane facts. No Metabase runtime/code or implicit-FK behavior adopted.
+
+RELATIONSHIP tool execution is still CLOSED at this exact checkpoint; next work is
+to wire one controlled adapter through this gate, then prove positive + negative verticals.
+
+---
 ## 2026-09-22 — DAY7 SAME-DOMAIN TOOL INVENTORY + COMPARE/RANK GREEN
 
 **Checkpoint:** `4dd76fde3cfc60de67cf49f57eabd555123c29bc`  
