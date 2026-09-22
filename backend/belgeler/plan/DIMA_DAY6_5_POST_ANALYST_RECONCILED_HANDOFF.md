@@ -516,3 +516,31 @@ same providers
 
 If either RED: no full-six.  
 If both GREEN: exact frozen six-case full-live ONCE.
+
+
+## 4E. Focused paid 001+005 GREEN
+
+Run `35738400321`.
+
+```text
+cheap preflight   50/50 PASS
+selected frozen   si-live-001, si-live-005
+workers           1
+fallback/cascade  none
+failed_case_ids   []
+
+001:
+  final            ACCEPTED
+  semantic         cari.bakiye
+  query_count      1
+
+005:
+  final            ACCEPTED
+  dimension        ticaret.cari_kodu
+  metric           ticaret.toplam_tutar
+  ranking          desc / 5
+  query_count      1
+```
+
+This authorizes exactly one full frozen six-case closure run.
+No new corpus/case/prompt tuning is authorized.

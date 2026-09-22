@@ -267,3 +267,19 @@ Before more paid full-live work:
 5. focused paid 001+005 only.
 
 Only when both are GREEN may the exact frozen six-case closure run execute once.
+
+
+---
+
+## Focused paid remaining-family gate — GREEN
+
+Run `35738400321`.
+
+Exact frozen remaining RED families from prior product evidence are now GREEN:
+- `si-live-001` → ACCEPT / `cari.bakiye`;
+- `si-live-005` → ACCEPT / `ticaret.cari_kodu + ticaret.toplam_tutar`, desc/5.
+
+No frozen wording or provider topology changed.
+
+Next and only next live SI proof:
+exact frozen six-case full-live composition once.

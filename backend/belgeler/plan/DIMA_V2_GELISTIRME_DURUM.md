@@ -4,7 +4,7 @@
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
 **Durum:** **DAY 6.5 SI STRUCTURAL GREEN / FULL-LIVE PRODUCT EVIDENCE 001+005 OPEN; LATEST RED = EVAL HARNESS ONLY; M0E-DEEP-DELTA OPEN; X0/DEV80 FORBIDDEN**  
-**Kod fazı:** Latest harness-only RED was closed by transparent observer + parity. Pre-paid semantic contract attack exposed two generic gaps and both were patched without case literals: duplicate exact candidates may use immutable context only inside the exact candidate set, and CoverageVeto now sees actual bound semantic source spans + explicit material modifier/predicate loss rules. Hardened cheap gate `35738044476 = 73 PASS + 2 skipped` GREEN, including candidate-escape, Turkish inflection, catalog growth/order and source-context authority invariants. No paid full-six yet. Current next = workers=1 focused paid frozen `si-live-001` + `si-live-005` only, same providers/corpus/product code. If either RED: classify and stop full-six. If both GREEN: exact frozen six-case full-live once. M0E-DEEP-DELTA remains parallel; X0/DEV80 blocked.  
+**Kod fazı:** Cheap semantic contract family is GREEN (`35738044476 = 73 PASS + 2 skipped`). Focused paid frozen 001+005 run `35738400321` is GREEN on the exact frozen wording/providers: 001 ACCEPT → `cari.bakiye`, query_count=1; 005 ACCEPT → `ticaret.cari_kodu + ticaret.toplam_tutar`, ranking desc/5, query_count=1; failed_case_ids=0. No full-six result yet. Authorized next = exact same frozen six-case workers=1 full-live closure ONCE. If GREEN → anti-patch audit + D65-SI FINAL docs seal. If RED → classify from complete report; no case patch chain. M0E-DEEP-DELTA remains parallel; X0/DEV80 blocked.  
 
 ---
 
