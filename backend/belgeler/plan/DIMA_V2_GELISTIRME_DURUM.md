@@ -6715,6 +6715,44 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 — DAY7 PRINCIPAL-BOUND RESEARCH DELIVERY GREEN
+
+```text
+tested product SHA   3fb9c1ffe343374f946c63a07161031c6ab6a36b
+workflow             35785195280
+result               GREEN
+
+scope                 runner/executor principal + tenant binding
+receipt identity      principal subject + tenant binding
+durable replay owner  DEFERRED / Day14
+full access lens      DEFERRED / Day12–14
+```
+
+Proven:
+- runner principal == governed executor principal subject/tenant -> allowed,
+- runner/executor principal mismatch -> deny before DB,
+- same task completed by principal A cannot reuse receipt as principal B,
+- same task/same principal A receipt reuse remains idempotent,
+- missing runner/executor principal -> deny,
+- foreign tenant principal -> deny,
+- complete Day7 focused family remains GREEN on the same product SHA.
+
+Metabase DD-13/DD-14 Day7 minimum is now adopted at run-scoped lifecycle level.
+Receipt is not authorization; durable crash/restart identity remains Day14 debt.
+
+Current next ticket:
+**D7-FANOUT-LIVE — enforce ResearchFanoutPolicy at actual adaptive task materialization,
+using ManagerRuntime.remaining_data_queries and governed candidate-set provenance.**
+
+Hard rule:
+- no singleton pseudo-integration,
+- no second scheduler,
+- no second budget owner,
+- `BOUNDED_TOP_K` only with explicit VERIFIED_EVIDENCE/GOVERNED_METADATA priority;
+  otherwise use `BOUNDED_SUBSET`.
+
+---
+
 ## 2026-09-22 — DAY7 RELATIONSHIP VERTICAL ROOT FIX GREEN
 
 ```text
