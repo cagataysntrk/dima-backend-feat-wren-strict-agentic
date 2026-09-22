@@ -1427,3 +1427,63 @@ candidate remains independently classified.
 
 status:
 `OPEN / CI OWNER CORRECTION AUTHORIZED`.
+
+
+---
+
+## DMP-P6-RED-002 — P6A Wren PostgreSQL harness used psycopg field names
+
+receipt_id: `DMP-P6-RED-002`  
+tested_sha: `65ef9cce522fe249ec98699c1b07b59b958ee207`  
+failed_run: `35764852696` / P6A same-snapshot canary
+
+observed:
+P6A provider-free proof, shared PostgreSQL startup, deterministic seed, Metabase health and bootstrap
+all passed. The live canary failed before the first Wren query while validating connection info.
+
+exact_failure:
+`PostgresConnectionInfo` validation reported required field `database` missing.
+
+source_evidence:
+- Wren `DataSource.postgres` validates raw connection dicts as `PostgresConnectionInfo`;
+- `PostgresConnectionInfo` requires `host, port, database, user`;
+- the P6 harness reused psycopg kwargs, which correctly use `dbname`, for Wren as well.
+
+classification:
+`DATA/FIXTURE_GAP / HARNESS CONNECTION CONTRACT`
+
+root_cause:
+One connection dictionary was incorrectly shared across two libraries with different typed field
+names. No semantic, compiler, runtime, or database-content mismatch was observed.
+
+authorized_correction:
+- keep psycopg kwargs with `dbname`;
+- create a separate exact Wren connection dict with `database`;
+- add provider-free contract proof using `DataSource.postgres.get_connection_info`;
+- rerun the unchanged three-case same-snapshot canary.
+
+forbidden:
+- dependency pin changes;
+- Wren adapter/source changes;
+- semantic reinterpretation;
+- raw-SQL Metabase bypass;
+- changing fixture expected values to force GREEN.
+
+status:
+`OPEN / HARNESS CORRECTION AUTHORIZED`.
+
+
+### DMP-P6-RED-001 corrective-attempt addendum
+
+Corrective SHA `bf3a0fdf3d26489cd9d5c57d5815d6dfdaf5b0eb` attempted to scope M2 CI but
+the workflow text transformation malformed `.github/workflows/dima-metabase-m2.yml`, producing
+run `35765097935` with no executable jobs.
+
+This is a patch-construction defect, not an M2/P6 product failure.
+
+Authorized repair:
+restore the complete known-good M2 workflow body, retain immutable runtime/bootstrap/restore proof,
+exclude only `backend/lab/metabase/p6/**` from the M2 path trigger, and evaluate forbidden-file
+isolation against the current push diff rather than cumulative post-M2 branch history.
+
+DMP-P6-RED-001 remains OPEN until the repaired M2 self-run is GREEN.

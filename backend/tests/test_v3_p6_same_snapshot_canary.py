@@ -107,6 +107,8 @@ def test_p6_fixture_manifest_and_three_canary_anchors_are_deterministic():
 
 
 def _db_kwargs():
+    """psycopg connection kwargs use dbname."""
+
     return {
         "host": "127.0.0.1",
         "port": int(os.getenv("P6_ANALYTICS_DB_PORT", "55432")),
@@ -114,6 +116,27 @@ def _db_kwargs():
         "user": os.getenv("ANALYTICS_DB_USER", "dima_analytics"),
         "password": os.getenv("ANALYTICS_DB_PASSWORD", "dima-analytics-lab"),
     }
+
+
+def _wren_db_kwargs():
+    """Wren PostgresConnectionInfo uses database, not psycopg's dbname."""
+
+    psycopg_kwargs = _db_kwargs()
+    return {
+        "host": psycopg_kwargs["host"],
+        "port": psycopg_kwargs["port"],
+        "database": psycopg_kwargs["dbname"],
+        "user": psycopg_kwargs["user"],
+        "password": psycopg_kwargs["password"],
+    }
+
+
+def test_p6a_wren_postgres_connection_contract_is_exact():
+    info = DataSource.postgres.get_connection_info(_wren_db_kwargs())
+    assert info.database == os.getenv("ANALYTICS_DB_NAME", "dima_analytics")
+    assert info.host == "127.0.0.1"
+    assert str(info.port) == os.getenv("P6_ANALYTICS_DB_PORT", "55432")
+    assert "dbname" not in _wren_db_kwargs()
 
 
 def _actual_snapshot_identity():
@@ -345,7 +368,7 @@ def _wren_engine():
     return WrenEngine(
         manifest,
         DataSource.postgres,
-        _db_kwargs(),
+        _wren_db_kwargs(),
         fallback=False,
     )
 
