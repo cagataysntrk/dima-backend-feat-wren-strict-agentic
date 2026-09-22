@@ -187,3 +187,21 @@ After real matrix execution:
 6. run Sol ceiling confirmation;
 7. regress FT-003/FT-004;
 8. decide FT-005 seal honestly.
+
+
+## Fail-closed workflow confirmation
+
+Corrective workflow SHA:
+`f677493c2722cc2117e1795cd0aa94e283cc81d4`
+
+Canonical rerun:
+`35789534149`
+
+Both matrix jobs:
+- emitted the explicit BLOCKED_NO_CREDENTIAL receipt;
+- skipped the model corpus;
+- then failed the job intentionally.
+
+This prevents GitHub Actions green status from being confused with model-quality GREEN.
+
+No product code changed.

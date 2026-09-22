@@ -9,7 +9,7 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`b606a95f089cb4ca9fc65ea0024825ea4fc0fd5f`
+`f677493c2722cc2117e1795cd0aa94e283cc81d4`
 
 CURRENT_PRODUCT_GATE:
 `FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
@@ -388,3 +388,21 @@ Current external blocker:
 
 Current product-code authorization:
 `NO PROMPT / SCHEMA / ALGORITHM PATCH UNTIL MODEL MATRIX EXECUTES`
+
+
+## FT-005 MATRIX FAIL-CLOSED CONFIRMATION
+
+Canonical blocked rerun:
+`35789534149`
+
+Tested SHA:
+`f677493c2722cc2117e1795cd0aa94e283cc81d4`
+
+Luna job:
+`FAILURE / corpus SKIPPED / BLOCKED_NO_CREDENTIAL`
+
+Sol job:
+`FAILURE / corpus SKIPPED / BLOCKED_NO_CREDENTIAL`
+
+This replaces the misleading dashboard interpretation of the earlier successful blocker-emission run.
+The actual model matrix remains unexecuted.
