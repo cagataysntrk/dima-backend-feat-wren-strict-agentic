@@ -1,0 +1,103 @@
+name: dima-fast-ft005-openai-matrix
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft005-openai-matrix.yml"
+      - "backend/lab/fast_ft005_model_sentinel.py"
+      - "backend/lab/fast_model_eval.py"
+      - "backend/app/fast/followup_cognition.py"
+      - "backend/app/fast/conversation_models.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ft005-openai-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: luna
+            model: gpt-5.6-luna
+            role: LUNA_BASELINE
+            measurement_mode: MODEL_COMPARABLE
+            reasoning_effort: disabled
+          - label: sol
+            model: gpt-5.6-sol
+            role: SOL_CEILING
+            measurement_mode: MODEL_COMPARABLE
+            reasoning_effort: disabled
+
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      DIMA_OPENAI_API_KEY: ${{ secrets.DIMA_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+      DIMA_FAST_FT005_PROVIDER: "openai"
+      DIMA_FAST_FT005_MODEL: ${{ matrix.model }}
+      DIMA_FAST_FT005_MODEL_ROLE: ${{ matrix.role }}
+      DIMA_FAST_FT005_MEASUREMENT_MODE: ${{ matrix.measurement_mode }}
+      DIMA_FAST_FT005_REASONING_EFFORT: ${{ matrix.reasoning_effort }}
+      DIMA_FAST_FT005_MODEL_RECEIPT: lab/metabase/artifacts/ft005-model-${{ matrix.label }}.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Check OpenAI benchmark credential
+        id: credential
+        shell: bash
+        run: |
+          if [[ -n "$DIMA_OPENAI_API_KEY" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            mkdir -p backend/lab/metabase/artifacts
+            cat > "backend/$DIMA_FAST_FT005_MODEL_RECEIPT" <<JSON
+          {
+            "status": "BLOCKED_NO_CREDENTIAL",
+            "provider": "openai",
+            "model_role": "${{ matrix.role }}",
+            "exact_model_id": "${{ matrix.model }}",
+            "measurement_mode": "${{ matrix.measurement_mode }}",
+            "reasoning_effort": "${{ matrix.reasoning_effort }}"
+          }
+          JSON
+          fi
+
+      - name: Run frozen FT-005 focused corpus
+        if: steps.credential.outputs.available == 'true'
+        working-directory: backend
+        run: |
+          mkdir -p lab/metabase/artifacts
+          python lab/fast_ft005_model_sentinel.py
+
+      - name: Upload FT-005 OpenAI matrix receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-fast-ft005-openai-${{ matrix.label }}-${{ github.sha }}
+          path: backend/lab/metabase/artifacts/ft005-model-${{ matrix.label }}.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show FT-005 OpenAI matrix receipt
+        if: always()
+        working-directory: backend
+        run: |
+          test ! -f "lab/metabase/artifacts/ft005-model-${{ matrix.label }}.json" ||             cat "lab/metabase/artifacts/ft005-model-${{ matrix.label }}.json"
