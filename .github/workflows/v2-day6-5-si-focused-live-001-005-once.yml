@@ -1,0 +1,56 @@
+name: v2-day6-5-si-focused-live-001-005-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day6-5-si-focused-live-001-005-once.yml"
+
+jobs:
+  focused-live:
+    if: "github.event.head_commit.message == 'test(v2-day6.5): run focused live frozen 001 005'"
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 45
+    env:
+      DIMA_D65_SI_FOCUSED_LIVE: "1"
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_V2_REFERENCE_LANGUAGE_PROVIDER: "openrouter"
+      DIMA_V2_REFERENCE_LANGUAGE_MODEL: "openai/gpt-5.6-sol"
+      DIMA_V2_REFERENCE_LANGUAGE_REASONING: "true"
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: "openrouter"
+      DIMA_V2_SEMANTIC_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_V2_SEMANTIC_LINKER_REASONING: "false"
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: "openrouter"
+      DIMA_V2_TEMPORAL_NORMALIZER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_V2_TEMPORAL_NORMALIZER_REASONING: "true"
+      DIMA_V2_STRUCTURED_MAX_TOKENS: "4096"
+      DIMA_RULE_FALLBACK: "false"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Cheap preflight on same HEAD
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v2_day6_5_semantic_contract_attacks.py             tests/test_v2_day6_5_si_standard_eval_trace.py             tests/test_v2_day6_5_semantic_linker.py             tests/test_v2_day6_5_standard_lane.py             tests/test_v2_day6_5_standard_coverage.py
+      - name: Workers-1 focused live 001 + 005
+        working-directory: backend
+        run: pytest -q -s tests/test_v2_day6_5_si_focused_live_001_005.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-si-focused-live-001-005
+          path: backend/lab/reports/v2_day6_5_si_focused_live_001_005.json
+          retention-days: 90
+          if-no-files-found: error
