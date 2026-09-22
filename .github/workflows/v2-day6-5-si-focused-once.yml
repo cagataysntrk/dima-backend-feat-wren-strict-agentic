@@ -51,3 +51,5 @@ jobs:
           pytest -q             tests/test_v2_day6_5_si_full_live_standard.py             tests/test_v2_day6_5_si_semantic_diagnostic.py
 
 # retry: eval-harness-collect-all
+
+# retry: eval-harness-triggered
