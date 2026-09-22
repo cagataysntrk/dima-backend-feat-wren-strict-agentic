@@ -6,6 +6,7 @@
 > `belgeler/plan/DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` freezes corrected J1S/J1T lab scope.
 > `belgeler/plan/DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` is mandatory after J1 decision and before X0.
 > `belgeler/plan/DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` is the M0 research matrix.
+> `belgeler/plan/DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` controls Cloud vs self-host/bundled-service/source-port decisions.
 > Historical run/sequence text below is audit history and cannot override these current authorities.
 >
 ## DAY 6.5 RUNTIME-KERNEL / SUBSTRATE OVERRIDE — 2026-09-22
@@ -69,6 +70,11 @@
 > After DEV80: CODE FREEZE. Validation50/Hidden50 are no-tuning final gates.
 >
 > STOP/CONSULT before FINAL FREEZE, DEV80 start, post-DEV80 behavior change, and pilot activation.
+## J1 RESULT CONSULTATION STOP
+
+> Corrected full run `35705668833`: Jev is PROMISING only for bounded semantic CandidateSet decision; Jev temporal production role is rejected by native capability floor; Luna has strongest current temporal typed-contract evidence but is not sealed.
+> Do NOT open J1B, choose production model topology/cascade/threshold, wire D65-SI, or execute X0 without user approval.
+> Metabase X0 default, if approved later, is self-hosted/private-network Agent API — not vendor Cloud.
 ## D65 PRE-FREEZE DECISION GATE — J1S/J1T + M0/X0
 
 > Current proven baseline:
