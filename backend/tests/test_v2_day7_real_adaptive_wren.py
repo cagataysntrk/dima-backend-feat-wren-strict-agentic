@@ -25,6 +25,7 @@ from app.v2.models import (
     SemanticTargetKind,
     TenantAnalyticsRuntimeV0,
 )
+from app.v2.research_fanout import FanoutStrategy
 from app.v2.research_tasks import (
     DerivedResearchTaskProposal,
     ResearchTaskRegistry,
@@ -221,12 +222,17 @@ def test_real_wren_result_aware_two_task_chain_is_governed_and_terminal(
         input_refs=(metric.handle_id, dimension.handle_id),
         material_reason="verified first result exists; run one bounded governed breakdown",
     )
-    task2 = tasks.materialize_derived(
+    branch_set = tasks.materialize_derived_candidates(
         runtime=runtime,
         evidence_store=executor.evidence_store,
+        task_registry=registry,
         parent_task=result1.task,
-        proposal=proposal,
+        proposals=(proposal,),
     )
+    assert branch_set.decision.strategy == FanoutStrategy.CONSERVATIVE_BOUNDED
+    assert branch_set.decision.selected_candidate_keys == ("D_REAL_2",)
+    assert len(branch_set.registered_tasks) == 1
+    task2 = branch_set.registered_tasks[0]
     assert task2.origin == "AGENT_DERIVED"
     assert task2.parent_task_id == result1.task.task_id
     assert task2.parent_obligation_id == "U_REAL_ADAPTIVE"
