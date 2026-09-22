@@ -27,6 +27,18 @@
 > Do not run DEV80/Validation50/Hidden50.
 >
 > Before Day7 code, read the final handoff and its Day7 carry-forward matrix.
+>
+> Day7 portability/ablation authority:
+> `belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`.
+>
+> **Cross-cutting rule — invariant first, orchestration by evidence:**
+> Before introducing a new deterministic cognition/orchestration mechanism, classify
+> whether it protects authority, security, semantic truth, execution safety, Evidence,
+> completion truth, hard budgets/fanout or side-effect correctness.
+> If YES, focused deterministic enforcement is allowed.
+> If NO, classify it `BENCHMARK_REQUIRED` and require comparative evidence before making
+> it permanent. Flexible LLM cognition is not itself a correctness defect.
+> Never weaken the hard trust plane because a model performs well on average.
 
 
 ## SUPERSEDED / HISTORICAL — CURRENT BRIDGE ACTIVE OVERRIDE
