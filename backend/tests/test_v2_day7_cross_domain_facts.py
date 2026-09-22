@@ -349,7 +349,11 @@ def test_source_local_fk_dimension_is_mapped_to_target_pk_only_by_wren_relations
     schema = {
         "models": [
             {"name": "makine_duruslari", "primary_key": "id", "columns": []},
-            {"name": "makineler", "primary_key": "makine", "columns": []},
+            {
+                "name": "makineler",
+                "primary_key": "makine",
+                "columns": [{"name": "makine"}, {"name": "bolum"}],
+            },
         ],
         "cubes": [
             {
@@ -439,7 +443,11 @@ def test_relationship_derived_target_attribute_keeps_row_and_analysis_grain_sepa
     schema = {
         "models": [
             {"name": "makine_duruslari", "primary_key": "id", "columns": []},
-            {"name": "makineler", "primary_key": "makine", "columns": []},
+            {
+                "name": "makineler",
+                "primary_key": "makine",
+                "columns": [{"name": "makine"}, {"name": "bolum"}],
+            },
         ],
         "cubes": [
             {
@@ -492,3 +500,200 @@ def test_relationship_derived_target_attribute_keeps_row_and_analysis_grain_sepa
         result.gate_decision.required_aggregation
         == JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
     )
+
+
+
+def _relationship_derived_case(
+    *,
+    attribute="segment",
+    origin_relationship="orders_customer",
+    origin_model="customers",
+    origin_column=None,
+    hops=1,
+    target_pk="customer_id",
+    relationship_condition='orders."customer_id" = customers."customer_id"',
+    target_columns=("customer_id", "segment"),
+    proof_status="HEALTHY",
+    proof_certificate="mdl-current",
+):
+    origin_column = origin_column or attribute
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-derived-revenue",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-derived-revenue",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="revenue",
+            cube_names=("sales",),
+        ),
+    )
+    target = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="dim-derived-target",
+        target_kind="dimension",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="dim-derived-target",
+            target_kind=SemanticTargetKind.DIMENSION,
+            canonical_name=attribute,
+            cube_names=("sales",),
+        ),
+    )
+    obligation = ObligationLedgerItem(
+        obligation_id="U_REL_DERIVED",
+        capability_key=ManagerCapabilityKey.RELATIONSHIP,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=("src-rel-derived",),
+        semantic_handle_refs=(metric.handle_id, target.handle_id),
+        introduced_in_version=1,
+    )
+    args = RunRelationshipArgs(
+        obligation_id=obligation.obligation_id,
+        focus_handles=(metric.handle_id,),
+        counterpart_handles=(target.handle_id,),
+    )
+    schema = {
+        "models": [
+            {
+                "name": "orders",
+                "primary_key": "order_id",
+                "columns": [{"name": "order_id"}, {"name": "customer_id"}],
+            },
+            {
+                "name": "customers",
+                "primary_key": target_pk,
+                "columns": [{"name": name} for name in target_columns],
+            },
+        ],
+        "cubes": [
+            {
+                "name": "sales",
+                "base_object": "orders",
+                "dimension_origin": {
+                    attribute: {
+                        "model": origin_model,
+                        "column": origin_column,
+                        "relationship": origin_relationship,
+                        "hops": hops,
+                    }
+                },
+            }
+        ],
+        "relationships": [
+            {
+                "name": "orders_customer",
+                "models": ["orders", "customers"],
+                "join_type": "MANY_TO_ONE",
+                "condition": relationship_condition,
+                "certified": (
+                    "olculdu:saglikli"
+                    if proof_status == "HEALTHY"
+                    else "olculmedi"
+                ),
+                "fanout_proof": _proof(
+                    "orders_customer",
+                    status=proof_status,
+                    certificate=proof_certificate,
+                ),
+            }
+        ],
+    }
+    builder = CrossDomainJoinFactBuilder(
+        semantic_handles=handles,
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    return builder.build(
+        args=args,
+        obligation=obligation,
+        service=_Service(schema),
+    )
+
+
+def test_relationship_derived_attribute_distinct_from_target_pk_is_valid():
+    result = _relationship_derived_case(attribute="segment")
+
+    assert result.ready is True
+    assert result.code == JoinFactCode.READY
+    assert result.facts.target_row_grain == "customer_id"
+    assert result.facts.target_join_key == "customer_id"
+    assert result.facts.target_analysis_grain == "segment"
+    assert result.facts.target_analysis_column == "segment"
+    assert result.facts.requested_output_grain == "segment"
+    assert result.facts.aggregation == JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
+    assert result.gate_decision.allowed is True
+
+
+def test_relationship_derived_attribute_equal_to_target_pk_is_still_valid():
+    result = _relationship_derived_case(
+        attribute="customer_id",
+        origin_column="customer_id",
+        target_columns=("customer_id", "segment"),
+    )
+
+    assert result.ready is True
+    assert result.facts.target_row_grain == "customer_id"
+    assert result.facts.target_join_key == "customer_id"
+    assert result.facts.target_analysis_grain == "customer_id"
+    assert result.facts.target_analysis_column == "customer_id"
+    assert result.facts.requested_output_grain == "customer_id"
+    assert result.facts.aggregation == JoinAggregation.PRE_AGGREGATE_TO_TARGET
+    assert result.gate_decision.allowed is True
+
+
+def test_relationship_derived_origin_relationship_missing_from_current_wren_denies():
+    result = _relationship_derived_case(origin_relationship="missing_relationship")
+
+    assert result.ready is False
+    assert result.code == JoinFactCode.NO_WREN_PATH
+
+
+def test_relationship_derived_origin_model_must_equal_relationship_target_model():
+    result = _relationship_derived_case(origin_model="other_model")
+
+    assert result.ready is False
+    assert result.code == JoinFactCode.NO_WREN_PATH
+
+
+def test_relationship_derived_origin_column_must_exist_on_governed_target_model():
+    result = _relationship_derived_case(
+        attribute="segment",
+        origin_column="missing_attribute",
+        target_columns=("customer_id", "segment"),
+    )
+
+    assert result.ready is False
+    assert result.code == JoinFactCode.TARGET_ATTRIBUTE_NOT_GOVERNED
+
+
+def test_relationship_target_join_key_must_equal_governed_target_row_pk():
+    result = _relationship_derived_case(
+        relationship_condition='orders."customer_id" = customers."alternate_key"',
+        target_columns=("customer_id", "alternate_key", "segment"),
+    )
+
+    assert result.ready is False
+    assert result.code == JoinFactCode.TARGET_GRAIN_NOT_GOVERNED
+
+
+def test_relationship_derived_multi_hop_origin_is_not_inferred_from_single_relationship_name():
+    result = _relationship_derived_case(hops=2)
+
+    assert result.ready is False
+    assert result.code == JoinFactCode.UNSUPPORTED_HANDLE_SHAPE
+
+
+def test_relationship_derived_attribute_rejects_stale_fanout_proof():
+    result = _relationship_derived_case(
+        proof_status="MDL_MISMATCH",
+        proof_certificate="mdl-old",
+    )
+
+    assert result.ready is False
+    assert result.code == JoinFactCode.FANOUT_UNVERIFIED
