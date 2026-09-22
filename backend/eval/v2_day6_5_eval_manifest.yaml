@@ -99,6 +99,8 @@ required_case_metadata:
   - expected_deliverables
   - expected_ambiguities
   - expected_representability
+  - allowed_work_modes
+  - expected_authority_family
   - expected_terminal_state
   - requires_adaptive_branch
   - adversarial_flags
@@ -149,13 +151,74 @@ architecture_gates:
     simple_standard_research_manager_loop_max: 0
     standard_direct_model_calls_target: "MINIMAL"
     standard_builder_progress_required: true
-    standard_builder_same_action_same_state_max: 1
+    standard_builder_max_executions_per_action_state_pair: 1
+    standard_builder_duplicate_reexecution_max: 0
     standard_builder_budget_fail_closed: true
     standard_builder_default_max_model_turns: 4
     standard_builder_default_max_tool_calls: 8
     standard_verified_success_min_relative_to_day5: 1.0
     standard_p95_measure_and_compare: true
     standard_cost_measure_and_compare: true
+
+phase_gates:
+  dev80:
+    semantic_case_pass_min: 0.95
+    must_obligation_recall_min: 0.95
+    adaptive_branch_min_when_applicable: 0.90
+    accepted_invented_must_max: 0
+    blocking_ambiguity_silent_accept_max: 0
+    unsafe_standard_admission_max: 0
+    authority_security_bypass_max: 0
+    silent_requirement_loss_max: 0
+    measurement_failure_must_be_zero_or_typed_infra_excluded: true
+  validation50:
+    semantic_case_pass_min: 0.95
+    must_obligation_recall_min: 0.95
+    adaptive_branch_min_when_applicable: 0.90
+    accepted_invented_must_max: 0
+    blocking_ambiguity_silent_accept_max: 0
+    unsafe_standard_admission_max: 0
+    authority_security_bypass_max: 0
+    silent_requirement_loss_max: 0
+    tuning_allowed_after_result: false
+  hidden50:
+    semantic_case_pass_min: 0.95
+    must_obligation_recall_min: 0.95
+    adaptive_branch_min_when_applicable: 0.90
+    accepted_invented_must_max: 0
+    blocking_ambiguity_silent_accept_max: 0
+    unsafe_standard_admission_max: 0
+    authority_security_bypass_max: 0
+    silent_requirement_loss_max: 0
+    per_case_prompt_oracle_visible_to_development: false
+
+work_mode_oracle:
+  allowed_work_modes:
+    STANDARD_DIRECT:
+      authority_family: "AcceptedStandardAuthority"
+    STANDARD_BUILDER:
+      authority_family: "AcceptedStandardAuthority"
+    RESEARCH:
+      authority_family: "AcceptedResearchAuthority"
+  rule: >
+    A case may allow more than one valid Standard work mode. RESEARCH-only cases must
+    require RESEARCH. Evaluator scores authority family separately from concrete work mode.
+  research_authority_body: "AcceptedTurnContract"
+  accepted_research_authority_is_alias_or_tag_only: true
+
+freeze_candidate_policy:
+  dev80_runs_per_candidate_max: 1
+  repeated_case_driven_dev_reruns_forbidden: true
+  code_change_after_dev80_creates_new_candidate: true
+  new_candidate_requires_new_dev80: true
+  validation_failure_then_code_change:
+    engineering_reopen_required: true
+    prior_validation_unbiased_status: "INVALIDATED"
+    fresh_validation_set_required: true
+  hidden_failure_then_code_change:
+    engineering_reopen_required: true
+    prior_hidden_reuse_for_certification_forbidden: true
+    fresh_external_sealed_hidden_required: true
 
 model_policy:
   principle: >
@@ -208,13 +271,15 @@ engineering_closure_sequence:
   - "Split AcceptedStandardAuthority from AcceptedResearchAuthority physically."
   - "Keep narrow Standard CoverageVeto for seal phase."
   - "Run focused provider-free failure-family tests."
-  - "Run workers=1 small live architectural boundary set."
+  - "Run workers=1 small focused live architectural boundary set."
+  - "Run exact-same-SHA fast/reference model-floor A/B when needed."
+  - "Run 12-16 stratified canary before DEV80."
   - "Require real Wren Standard vertical and existing Research sentinel."
   - "Mark exact SHA ENGINEERING FREEZE CANDIDATE."
-  - "Run frozen DEV80 once on that SHA; classify failure families, never patch named cases."
+  - "Run frozen DEV80 once per engineering-freeze candidate SHA; classify failure families, never patch named cases."
   - "If hard gates pass: DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN."
-  - "Run VALIDATION50 with no tuning."
-  - "Run external HIDDEN50 for certification seal."
+  - "Run VALIDATION50 with no tuning; code change after a failure invalidates this certification set and reopens engineering."
+  - "Run external fresh HIDDEN50 for certification seal; code/architecture change after hidden failure requires a new external sealed corpus."
   - "Only after seal activate production hybrid /ask-v2."
 
 failure_classification:
