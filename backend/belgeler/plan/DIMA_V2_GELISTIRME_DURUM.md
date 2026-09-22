@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 COGNITION/AUTHORITY BOUNDARY IMPLEMENTED — RECERTIFICATION PENDING**  
-**Kod fazı:** Day 6.5 / Manager Architecture Validation — bounded semantic linker + typed temporal boundary provider-free green; live DEV/validation/hidden seal henüz tamamlanmadı, production hybrid route kapalı.
+**Durum:** **DAY 6.5 COGNITION/AUTHORITY BOUNDARY IMPLEMENTED — CURRENT-HEAD RECERTIFICATION PENDING**  
+**Kod fazı:** Day 6.5 / Manager Architecture Validation — finite pre-acceptance + bounded semantic linker + deterministic BindingGate + typed temporal boundary kuruldu; önceki boundary SHA provider-free green, current HEAD yeniden certify edilmemiştir; live DEV/validation/hidden seal henüz tamamlanmadı, production hybrid route kapalı.
 
 ---
 
@@ -4257,3 +4257,429 @@ One-shot workflow PASS sonrası silindi.
 - Bounded Manager + bounded semantic linker + deterministic BindingGate architecture
   **provider-free olarak doğrulandı**.
 - Ürün mimarisi henüz `SEALED` değildir; live DEV/validation/hidden kanıtı bekleniyor.
+
+
+---
+
+## 2026-09-22 06:51 — DAY 6.5 CURRENT-HANDOFF / NEREDEYİZ?
+
+### Branch / HEAD
+
+```text
+branch = feat/ask-v2-mvp
+HEAD   = c9629d9029db360e86a8592e12da646a2afc0621
+```
+
+Son anlamlı commit zinciri:
+
+```text
+e2b00eabff26  test: cognition-authority boundary closure
+ab59de22e10c  chore: one-shot cleanup
+1129eeebf129  ADR: cognition-authority boundary
+b37f89e3877b  AGENTS owner-map
+27ccc2a29832  Day6.5 architecture validation bounded-linker update
+19344aa04790  Day6.5 contract spec semantic-binding update
+0454958bf0cd  CLAUDE active-operation index
+b88fd1c58f04  MIMARI cognition-authority overlay
+c961ba753566  living status / implementation + debt record
+c9629d9029db  fix: completeness actual bound semantic kind'dan türetilir
+```
+
+### Day 6.5'in bugünkü mimari özeti
+
+İlk Day6 yaklaşımındaki:
+
+```text
+raw user language
+→ deterministic language heuristics
+→ bir kerede kusursuz semantic graph
+```
+
+zorunluluğu artık Manager path'in hedef mimarisi değildir.
+
+Bugünkü sınır:
+
+```text
+USER MESSAGE
+  ↓
+Finite Pre-Acceptance
+  DRAFT
+  → source provenance validation
+  → AUTO-GROUND
+  → COVERAGE VETO
+  → CONTRACT VALIDITY
+  → ACCEPT / bounded REVISE / CLARIFY
+  ↓
+AcceptedTurnContract
+  ↓
+RepresentabilityGate
+  ├─ STANDARD_LOSSLESS → Core fast path
+  └─ RESEARCH_REQUIRED → bounded Manager loop
+                               ↓
+                        governed typed tools
+                               ↓
+                    Wren / DB / Evidence
+                               ↓
+                 UserObligationLedger / CompletionGate
+```
+
+Semantic authority zinciri:
+
+```text
+Semantic Catalog
+  → what exists
+
+SemanticCandidateGenerator
+  → bounded cand_* enumeration; authority değil
+
+unique exact verified alias
+  → deterministic fast bind
+
+aksi halde
+BoundedSemanticLinker
+  → yalnız SELECT(cand_*) | ABSTAIN
+
+SemanticBindingGate
+  → candidate membership + tenant/context/kind/provenance verification
+
+SemanticHandleRegistry
+  → sem_* mint
+
+CapabilityBindingValidator / Effect / Completeness
+  → executable contract truth
+
+Wren / DB
+  → numeric truth
+
+QueryContract / EvidenceArtifact
+  → proof
+
+CompletionGate
+  → completion truth
+```
+
+Bu sınırda LLM:
+- candidate set dışı canonical truth üretemez,
+- `sem_*` mint edemez,
+- SQL yazamaz,
+- join authority uyduramaz,
+- RLS/CLS bypass edemez,
+- numeric truth veya completion truth sahibi değildir.
+
+### Neden bu noktaya geldik?
+
+Frozen DEV80 `8961a60...` üzerinde:
+
+```text
+59 / 80 PASS
+MUST recall 0.6923
+invented MUST 0
+security / handle / unsafe-fast P0 = 0
+```
+
+çıktı.
+
+21 failure tek tek patch listesine çevrilmedi.
+
+Kök analiz:
+- 16/21 fail'de high-level Manager intent shape zaten doğruydu.
+- Asıl baskın kusur semantic boundary'de:
+  raw dil yüzeyi deterministic Resolver fuzzy/morphology/token mantığına fazla bağımlıydı.
+- Research phenomenon/scope, canonical tenant semantic ile karışabiliyordu.
+- Coverage unresolved semantic'i gereğinden fazla blocking authority olarak kullanabiliyordu.
+- Bazı DEV oracle beklentileri yeni security/authority sınırıyla bayattı.
+
+Sonuç:
+**Manager paradigmasını atmak yerine cognition ↔ authority sınırı yeniden kuruldu.**
+
+### Eski Dima bataklığına karşı kalıcı yasak
+
+Manager semantic path'te:
+
+```text
+phrase-specific regex                         YASAK
+stemming / morphology score                   YASAK
+fuzzy / SequenceMatcher semantic authority    YASAK
+named DEV case prompt example                 YASAK
+case-id production branch                     YASAK
+LLM canonical ID seçsin / uydursun            YASAK
+Coverage semantic truth olsun                 YASAK
+receipt completeness parser olsun             YASAK
+provider failure → NOT_ACCEPTED               YASAK
+LLM date arithmetic                           YASAK
+```
+
+Son static/architectural auditlerde production Manager semantic path'ine named-case /
+regex / morphology authority borcu eklenmedi.
+
+### Finite pre-acceptance neden kaldı?
+
+Open agent loop:
+
+```text
+resolve → resolve → propose → repair → clarify → budget
+```
+
+yerine:
+
+```text
+DRAFT
+→ AUTO-GROUND
+→ COVERAGE VETO
+→ CONTRACT VALIDITY
+→ ACCEPT / one bounded REVISE / CLARIFY
+```
+
+kullanılıyor.
+
+Bu ayrım:
+- yanlış action alanını küçültüyor,
+- semantic binding'i runtime/gate sahibi yapıyor,
+- rejected attempt authority merge'ini engelliyor,
+- ambiguity ile provider failure'ı ayırıyor,
+- Manager'ı cognition/orchestration rolünde tutuyor.
+
+### Research policy / obligation ayrımı
+
+Research davranışı USER_MUST değildir.
+
+Örnek:
+
+```text
+"üretkenlik düşüşünü araştır"
+→ USER_MUST root_cause
+
+"sonuç yeni yön gösterirse oraya da bak"
+→ ResearchDirective.ADAPT_ON_EVIDENCE
+```
+
+Research directive / control request / tenant semantic üç ayrı typed domain'dir.
+
+Current draft contract ayrıca non-authoritative control-plane isteklerini
+`DraftControlRequest` olarak business obligation'dan ayırır.
+
+### Temporal boundary
+
+Manager raw temporal language için regex parser semantic owner değildir.
+
+```text
+raw temporal surface
+→ TypedTemporalNormalizer
+→ closed TemporalIntent
+→ TemporalBindingEngine
+→ deterministic concrete dates
+→ temporal sem_*
+```
+
+Model yalnız closed intent normalize eder; tarih aritmetiğini deterministic engine yapar.
+
+### Provider / model failure semantiği
+
+Pre-acceptance terminal outcome artık typed:
+
+```text
+ACCEPTED
+CLARIFICATION_REQUIRED
+COGNITION_REJECTED
+CONTRACT_REJECTED
+MODEL_FAILURE
+GROUNDING_FAILURE
+```
+
+Evaluator:
+- MODEL_FAILURE / GROUNDING_FAILURE / HARNESS_FAILURE'ı semantic denominator'a sokmaz,
+- incomplete measurement'ı architecture fail saymaz,
+- provider 402/timeout'u NOT_ACCEPTED gibi göstermez.
+
+Bu eski `None / fallback / semantic failure` conflation hastalığının V2'ye taşınmasını
+engelleyen yapısal sınırdır.
+
+### Kanıt tablosu
+
+#### Eski finite-manager stabilization kanıtları
+
+```text
+provider-free stabilization            45/45 PASS
+finite-terminal closure                48/48 PASS
+typed-failure closure                  49/49 PASS
+Luna focused workers=1                 14/15
+Sol exact-same-SHA focused A/B          15/15 PASS
+```
+
+Sol A/B:
+- architecture aynı,
+- model daha güçlü,
+- 15/15 sonucu kalan Luna tail'in model capability floor olduğunu gösterdi;
+- Luna'ya özel production patch yazılmadı.
+
+#### Eski architecture canary + DEV80
+
+Certification candidate:
+`8961a60a0255df691e5f1f42cf2131e83f8af674`
+
+```text
+provider-free current-head             53/53 PASS
+Sol canary16                           16/16 PASS
+Sol DEV80                              59/80
+measurement failures                   0
+P0 unsafe accept / handle / security   0
+```
+
+DEV80 architecture rewrite değil, semantic-owner boundary correction tetikledi.
+
+#### Yeni cognition-authority boundary proof
+
+Run:
+`35660792599`
+
+Tested code:
+`e2b00eabff26c0e3ee93a7a2327b33f6615a048d`
+
+```text
+compile                                PASS
+focused boundary suite                 70/70 PASS
+real Wren trust-plane sentinel         PASS
+```
+
+### Current HEAD ile son fark — ÖNEMLİ
+
+Current HEAD:
+`c9629d9029db360e86a8592e12da646a2afc0621`
+
+Son code change:
+```text
+fix(v2-day6.5): derive completeness from bound semantic kind
+```
+
+Önceki implementation capability-required completeness'i draft'ın
+`kind_hint` alanından türetebiliyordu.
+
+Current HEAD artık:
+```text
+semantic linker / binding gate sonucu
+→ SemanticBindingRef.target_kind
+→ normalized bound kind
+→ capability-required completeness
+```
+
+kullanır.
+
+Bu authority açısından doğru yöndür:
+**LLM hint'i truth değildir; doğrulanmış binding'in target_kind'ı truth-plane girdisidir.**
+
+Fakat bu commit `e2b00...` provider-free 70/70 run'ından SONRADIR.
+
+Dolayısıyla:
+```text
+current HEAD c9629d... = IMPLEMENTED
+current HEAD certification = NOT YET RUN
+```
+
+Bir sonraki geliştirici bu ayrımı kaybetmemelidir.
+
+### Bugünkü hüküm
+
+```text
+Manager paradigm                         RETAIN
+old deterministic language Resolver
+as Manager language authority            REJECTED
+
+finite pre-acceptance                    RETAIN
+bounded semantic linker                  RETAIN
+deterministic SemanticBindingGate        RETAIN
+capability/effect/completeness gates     RETAIN
+typed temporal boundary                  RETAIN
+Wren/DB truth plane                      RETAIN
+production hybrid route                  OFF
+Day 6.5 architecture seal                NOT YET
+```
+
+Şu an üçüncü bir architecture search başlatmak için kanıt YOK.
+
+Ancak yeni boundary live DEV corpusunda başarısız olursa:
+- named-case patch yapılmaz,
+- önce failure-family clustering yapılır,
+- failure semantic linker / candidate retrieval / capability algebra / oracle / model-floor
+  olarak sınıflandırılır,
+- yalnız ortak abstraction failure kanıtlanırsa mimari değiştirilir.
+
+### Açık borçlar / blockers
+
+#### V2-D65-B1 — Large tenant catalog retrieval
+- Bounded candidate set fazla büyürse `CANDIDATE_SET_TOO_BROAD`.
+- Safety blocker: NO.
+- Scale/DEV blocker: MAYBE.
+- Future çözüm: candidate retrieval/index.
+- Retrieval **authority değildir**; BindingGate değişmez.
+
+#### V2-D65-B2 — Current-head provider-free recertification
+- current HEAD `c9629d...`.
+- Son completeness-by-bound-kind commit henüz focused closure ile certify edilmedi.
+- Blocker: next live run için YES.
+- Kapanış: tek focused provider-free boundary bundle; büyük full suite gerekmez.
+
+#### V2-D65-B3 — Live bounded-linker focused recertification
+- new semantic owner boundary ile NOT YET RUN.
+- Önce current-head provider-free.
+- Sonra workers=1 küçük focused live set.
+- Blocker: DEV80 rerun için YES.
+
+#### V2-D65-B4 — DEV80 rerun
+- new bounded-linker boundary ile NOT YET RUN.
+- Eski 59/80 yeni mimarinin final skoru değildir.
+- Blocker: DEV freeze için YES.
+
+#### V2-D65-B5 — VALIDATION50
+- DEV hard gates + freeze sonrası.
+- Tuning yok.
+- Blocker: architecture seal için YES.
+
+#### V2-D65-B6 — External HIDDEN50
+- independent evaluator.
+- development model promptları görmez.
+- final receipt: corpus/taxonomy/attestation/tested_git_sha/eval_harness_sha + aggregate PASS/FAIL.
+- Blocker: final architecture seal için YES.
+
+#### V2-D65-B7 — Real relationship trust plane
+- `run_relationship` / real CrossDomainJoinGate Day7-grade capability.
+- Day6.5 requirement: no-path unsafe relationship execution = 0.
+- Full real capability Day7'ye taşınabilir.
+- Day6.5 core architecture blocker: NO, unsafe bypass blocker: YES.
+
+### Önümüzdeki doğru sıra
+
+```text
+1. current HEAD c9629d... focused provider-free recertification
+2. pass ise code freeze candidate SHA oluştur
+3. workers=1 small semantic-linker-focused live set
+4. stratified canary
+5. visible DEV80 recertification
+6. failure → family clustering, named-case patch YOK
+7. hard gates pass → DEV freeze
+8. VALIDATION50, no tuning
+9. external HIDDEN50 receipt
+10. Day6.5 ADR/MIMARI final seal
+11. production hybrid routing
+12. Day7
+```
+
+### Bir sonraki geliştirici için ilk okuma
+
+```text
+1. DIMA_V2_GELISTIRME_DURUM.md — bu section
+2. DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md
+3. DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md
+4. DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md
+5. AGENTS.md
+6. MIMARI.md Day6.5 cognition/authority overlay
+7. manager_preacceptance.py
+8. semantic_linker.py
+9. manager_semantics.py
+10. capability_bindings.py / acceptance.py / standard_projection.py
+```
+
+**Özet tek cümle:**
+Day 6.5'in temel Manager fikri çalışıyor; eski Dima'yı yeniden üreten raw-language
+heuristic authority sınırı söküldü ve bounded cognition + deterministic authority olarak
+yeniden kuruldu. Şimdi ihtiyaç yeni feature veya yeni heuristic değil; current HEAD'i
+recertify edip live DEV/validation/hidden evidence ile gerçekten mühürlemek.
