@@ -7,7 +7,7 @@
 **Pinned Metabase:** `v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4`  
 **Ask-v2 relationship reference:** `b815d19cc8f07ecbd617e3e417e1405503a59542` — REFERENCE ONLY
 
-Status: **SEALED / P9B SOURCE REVIEW COMPLETE / WRITE IMPLEMENTATION NOT YET AUTHORIZED**
+Status: **SEALED / P9B1 PROVIDER-FREE METRIC CREATE CONTRACT AUTHORIZED / LIVE WRITES NOT AUTHORIZED**
 
 ## 1. Review rule
 
@@ -142,3 +142,92 @@ Only after P9B1 provider-free GREEN may one isolated pinned-live metric mutation
 - assuming current master API equals v0.63.18;
 - writes before a sealed P9B1 contract;
 - source branch merge/cherry-pick/rebase.
+
+
+## 10. Pinned Agent metric persistence finding
+
+Pinned v0.63.18 provides a dedicated Agent persistence surface:
+
+```text
+POST /api/agent/v2/construct-query
+  -> base64 MBQL
+
+POST /api/agent/v1/metric
+  {name, query, display?, description?, collection_id?, visualization_settings?}
+  -> saved metric Card
+
+PUT /api/agent/v1/metric/:id
+  patch + optional replacement query
+```
+
+The create path decodes and validates the base64 query, applies metric shape validation, checks query
+run permission and target collection create permission, then creates a Card of type metric.
+
+Therefore P9B1 must reuse the certified serialized-query boundary. It must not rebuild an arbitrary
+Card `dataset_query` from names or formula text.
+
+## 11. P9B1 provider-free contract
+
+Authorized new module:
+`backend/app/v3/resource_transport.py`.
+
+Initial surface:
+```text
+MetricCreateTarget
+  collection_id       # required explicit positive int
+
+MetricCreateContract
+  canonical_id
+  desired_fingerprint
+  semantic_context_version
+  canonical_query_fingerprint
+  collection_id
+  request_body
+```
+
+Builder input:
+- one P9 `ProvisionActionKind.CREATE`;
+- `DesiredResource.resource_kind == METRIC`;
+- P8 classification in payload == `NATIVE_METABASE`;
+- exact P4 `CanonicalProjection`;
+- explicit collection id.
+
+Required coherence:
+- action canonical id == desired canonical id;
+- desired semantic context == projection semantic context;
+- projection has exactly one `primary` step;
+- semantic manifest contains exactly the desired metric id for the first slice;
+- exactly one aggregation;
+- zero breakout/filter/time/order/limit/join in the initial create slice;
+- serialized query is passed verbatim as Agent `query`;
+- request name comes from the exact structured MetricSpec payload;
+- display is `scalar`;
+- no description is invented;
+- no name search/adoption.
+
+Any mismatch fails closed with a typed `ResourceTransportError`.
+
+## 12. Identity after create
+
+The pinned Agent create response returns numeric `id`, not Card `entity_id`.
+The later live transport must:
+1. POST create;
+2. GET `/api/card/{returned_numeric_id}` by exact id;
+3. verify type is metric and obtain stable `entity_id`;
+4. bind both locators to Dima canonical id.
+
+No list/search endpoint may be used to discover the just-created resource.
+
+## 13. P9B1 gate
+
+Provider-free only:
+- exact CREATE request;
+- canonical-id/context mismatch hard fail;
+- comparison/multi-step projection hard fail;
+- breakout/filter/time/ranking/join query shape hard fail in initial slice;
+- non-metric/non-native desired resource hard fail;
+- collection id required;
+- no regex/fuzzy/search/raw SQL/formula parsing;
+- P9A/P8/P7 regressions GREEN.
+
+One pinned-live create/read/archive/restore/delete canary is a **separate later gate**, not part of P9B1.

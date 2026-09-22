@@ -1002,3 +1002,19 @@ live writes                       = 0
 
 **Current phase:** P9B1 PROVIDER-FREE METRIC CARD CONTRACT PRE-DEVELOPMENT.  
 P10: **NOT STARTED**.
+
+
+---
+
+## P9B1 boundary — AUTHORIZED PROVIDER-FREE
+
+```text
+DMP-DEC-0023                    = SEALED
+pinned create surface           = POST /api/agent/v1/metric
+pinned update surface           = PUT /api/agent/v1/metric/:id
+query source                    = construct-query base64 MBQL
+generic Card query reconstruction= FORBIDDEN
+P9B1                            = provider-free CREATE contract
+live writes                     = 0 / NOT AUTHORIZED
+dimension/time/relationship     = typed transport gaps
+```

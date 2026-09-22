@@ -791,3 +791,42 @@ Therefore every P9B transport kind requires its own proven representation contra
 mutation surfaces are typed transport gaps, not workarounds.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0023 — P9B metric persistence uses pinned Agent metric surface, not generic Card reconstruction
+
+date: 2026-09-22
+
+pinned source:
+`metabase/metabase@2ba2485c78d7e00a9a25f82c00fc201da71590c4`
+
+evidence:
+- `POST /api/agent/v2/construct-query` returns a base64-encoded MBQL query;
+- pinned `POST /api/agent/v1/metric` explicitly accepts that base64 query and saves a Card of
+  `type=metric`;
+- pinned metric endpoint validates the saved query has exactly one aggregation and at most one
+  date/datetime grouping;
+- pinned `PUT /api/agent/v1/metric/:id` updates only an existing metric Card and re-validates a
+  replacement query;
+- Agent create mirrors query-run and collection-create permission checks;
+- Agent update starts with Card write-check and re-checks permissions when query/collection changes;
+- Card model derives `:hook/entity-id`; insert generates NanoID when none is supplied;
+- Agent create response returns numeric Card id but not entity_id; exact follow-up
+  `GET /api/card/:id` may be used to read the created Card identity. Name search is forbidden.
+
+decision:
+P9B will not recreate Metabase's Card query persistence contract or add mutation methods to the P3
+execution client.
+
+A separate resource-transport boundary may consume an already-certified P4 canonical serialized query
+and construct the exact Agent metric request.
+
+P9B1 is provider-free and CREATE-only:
+`ProvisionAction(CREATE metric) + CanonicalProjection + explicit collection_id
+→ MetricCreateRequest`.
+
+It must prove exact identity/context/query-shape coherence before any HTTP write code is authorized.
+
+status: SEALED.

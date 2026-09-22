@@ -24,3 +24,15 @@ Provider-free P9B1 must prove an exact Dima metric desired-resource -> pinned Ca
 without formula parsing or raw SQL. Other kinds remain typed transport gaps until separately proven.
 
 No Metabase writes are authorized by this ticket yet.
+
+
+## DMP-DEC-0023 — P9B1 metric create boundary
+
+Pinned Agent API already accepts the exact base64 MBQL produced by `construct-query`.
+P9B1 therefore does not synthesize Card `dataset_query` independently.
+
+Next implementation:
+provider-free `ProvisionAction(CREATE metric) + CanonicalProjection + explicit collection_id
+→ MetricCreateContract`.
+
+No HTTP mutation yet.
