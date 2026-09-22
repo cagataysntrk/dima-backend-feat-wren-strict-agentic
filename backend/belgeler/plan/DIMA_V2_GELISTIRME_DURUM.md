@@ -6715,6 +6715,69 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 23:10 — DAY7 RELATIONSHIP RED FAILURE RECEIPT
+
+```text
+tested_sha      5259cfdd2de504b6639ab55246e4e87f6dc92bff
+run             35782082131
+failure_stage   CrossDomainJoinFactBuilder
+failure_class   CONTRACT/ARCHITECTURE
+sub_family      ROW_GRAIN / JOIN_KEY / ANALYTICAL_GRAIN SEPARATION
+single_owner    backend/app/v2/cross_domain_facts.py
+```
+
+Observed generic bug:
+
+```text
+relationship source model      makine_duruslari
+relationship source join key   makine
+relationship target model      makineler
+target row/join key             makine
+relationship-derived attribute  bolum
+
+valid path:
+makine_duruslari.makine
+→ makineler.makine
+→ GROUP BY makineler.bolum
+
+invalid current assumption:
+origin.column == relationship target join key
+```
+
+Correct invariant:
+
+```text
+relationship path truth
+  relationship.name/models
+  source join key
+  target join key
+  target join key == governed target row PK for current narrow primitive
+
+analytical target truth
+  dimension_origin.relationship == selected relationship
+  dimension_origin.model        == relationship target model
+  dimension_origin.column       == governed existing target-model column
+
+target_row_grain        = target PK
+target_join_key         = relationship target key
+target_analysis_grain   = accepted analytical dimension
+target_analysis_column  = origin.column
+requested_output_grain  = target_analysis_grain
+aggregation             = GROUP_BY_TARGET_ATTRIBUTE
+```
+
+Forbidden fixes:
+- no special-case `bolum`, `makine`, relationship literal or testcase branch,
+- no provenance weakening,
+- no CrossDomainJoinGate bypass,
+- no multi-hop inference; current executable primitive remains one-hop unless complete
+  governed path provenance exists.
+
+Required proof order:
+`cross_domain_facts → cross_domain_join_gate → real_relationship_vertical → full v2-day7-focused`.
+
+---
+
 ## 2026-09-22 — DAY7 CROSSDOMAINJOINGATE GREEN
 
 **Checkpoint:** `bc28716cdeef3c4b4ec9f4f8e776815bebef652c`  
