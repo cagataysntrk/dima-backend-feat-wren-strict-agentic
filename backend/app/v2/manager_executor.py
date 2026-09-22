@@ -29,6 +29,7 @@ from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegist
 from app.v2.obligation_ledger import UserObligationLedgerService
 from app.v2.obligation_verifier import StandardObligationVerifier
 from app.v2.representability import RepresentabilityGate
+from app.v2.standard_authority import AcceptedAuthorityFamily
 from app.v2.manager_tools import (
     InspectEvidenceArgs,
     ManagerAnalyticsObservation,
@@ -253,11 +254,24 @@ class GovernedManagerExecutor:
             # contract may execute only if this exact projection is lossless. Research
             # contracts may still run standard sub-analyses inside the Manager loop.
             projection = effective_args.to_standard_projection()
-            representation = self._representability.decide(
-                contract=contract,
-                ledger=runtime.ledger,
-                projection=projection,
+            accepted_authority = runtime.authority_registry.accepted(contract.turn_id)
+            is_research_authority = (
+                accepted_authority is not None
+                and accepted_authority[0] == AcceptedAuthorityFamily.RESEARCH
             )
+            if is_research_authority and validated_args.derived_task_id is None:
+                representation = self._representability.decide_execution_slice(
+                    contract=contract,
+                    ledger=runtime.ledger,
+                    obligation_ids=effective_args.obligation_ids,
+                    projection=projection,
+                )
+            else:
+                representation = self._representability.decide(
+                    contract=contract,
+                    ledger=runtime.ledger,
+                    projection=projection,
+                )
             if (
                 not representation.research_capability_keys
                 and representation.decision != RepresentabilityDecision.STANDARD_LOSSLESS
