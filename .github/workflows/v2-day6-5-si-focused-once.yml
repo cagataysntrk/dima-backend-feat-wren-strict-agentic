@@ -36,3 +36,5 @@ jobs:
           pytest -q             tests/test_v2_day6_5_model_roles.py             tests/test_v2_day6_5_standard_lane.py             tests/test_v2_day6_5_standard_execution.py             tests/test_v2_day6_5_standard_builder.py             tests/test_v2_day6_5_standard_authority.py             tests/test_v2_day6_5_standard_coverage.py
 
 # retry: eval-oracle-fixed
+
+# retry: semantic-surface-completeness-p0
