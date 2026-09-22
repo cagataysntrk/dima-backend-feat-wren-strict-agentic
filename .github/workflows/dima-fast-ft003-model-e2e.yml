@@ -1,0 +1,119 @@
+name: dima-fast-ft003-model-e2e
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft003-model-e2e.yml"
+      - "backend/lab/fast_ft003_model_e2e.py"
+      - "backend/app/fast/ask_cognition.py"
+      - "backend/app/fast/ask_models.py"
+      - "backend/app/fast/ask_service.py"
+      - "backend/app/fast/resource_registry.py"
+      - "backend/app/fast/temporal.py"
+      - "backend/app/fast/query_builder.py"
+      - "backend/app/fast/evidence.py"
+      - "backend/app/fast/metabase_gateway.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ft003-model-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: DIMA_OPENROUTER_API_KEY
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      DIMA_LLM_PROVIDER: "openrouter"
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_OPENROUTER_MODEL: "google/gemini-2.5-flash-lite"
+      DIMA_FAST_ASK_MODEL_E2E_RECEIPT: "lab/metabase/artifacts/ft003-model-e2e.json"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Start pinned Metabase OSS lab
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          docker compose --env-file .env up -d
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+
+      - name: Compute independent analytics DB oracle
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          source .env
+          set +a
+
+          count="$(
+            docker compose --env-file .env exec -T analytics-db               psql -U "$ANALYTICS_DB_USER" -d "$ANALYTICS_DB_NAME" -At               -c "SELECT COUNT(*) FROM orders WHERE order_date >= DATE '2026-08-09' AND order_date < DATE '2026-09-08';"
+          )"
+          sum="$(
+            docker compose --env-file .env exec -T analytics-db               psql -U "$ANALYTICS_DB_USER" -d "$ANALYTICS_DB_NAME" -At               -c "SELECT COALESCE(SUM(amount),0) FROM orders WHERE order_date >= DATE '2026-08-09' AND order_date < DATE '2026-09-08';"
+          )"
+          breakdown="$(
+            docker compose --env-file .env exec -T analytics-db               psql -U "$ANALYTICS_DB_USER" -d "$ANALYTICS_DB_NAME" -At               -c "SELECT json_object_agg(region,total) FROM (SELECT region, SUM(amount) AS total FROM orders WHERE order_date >= DATE '2026-08-09' AND order_date < DATE '2026-09-08' GROUP BY region ORDER BY region) s;"
+          )"
+
+          echo "FT003_EXPECTED_COUNT=$count" >> "$GITHUB_ENV"
+          echo "FT003_EXPECTED_SUM=$sum" >> "$GITHUB_ENV"
+          echo "FT003_EXPECTED_BREAKDOWN=$breakdown" >> "$GITHUB_ENV"
+
+          printf 'oracle count=%s sum=%s breakdown=%s\n' "$count" "$sum" "$breakdown"
+
+      - name: Run final real-model Fast Ask E2E sentinel
+        working-directory: backend
+        env:
+          METABASE_PORT: "3300"
+          MB_ADMIN_EMAIL: "admin@dima-lab.local"
+          MB_ADMIN_PASSWORD: "DimaMetabaseLabAdmin!2026"
+        run: |
+          test -n "$DIMA_OPENROUTER_API_KEY"
+          mkdir -p lab/metabase/artifacts
+          python lab/fast_ft003_model_e2e.py
+
+      - name: Upload final model E2E receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-fast-ft003-model-e2e-${{ github.sha }}
+          path: backend/lab/metabase/artifacts/ft003-model-e2e.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show final model E2E receipt
+        if: always()
+        working-directory: backend
+        run: |
+          test ! -f lab/metabase/artifacts/ft003-model-e2e.json || cat lab/metabase/artifacts/ft003-model-e2e.json
+
+      - name: Teardown
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env down -v --remove-orphans || true
