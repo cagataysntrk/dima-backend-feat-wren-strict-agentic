@@ -49,3 +49,27 @@ Any port requires Decision Receipt + branch-local proof.
 - no source-branch synchronization;
 - no Metabase primary switch;
 - no Wren removal.
+
+
+---
+
+## P0 bootstrap closure — GREEN
+
+```text
+bootstrap governance commit = e7c77da5ccd610f580e8213beb7de124ff5d3566
+governance CI run           = 35726153125
+governance CI result        = SUCCESS
+certified base ancestry     = PASS
+sealed report blob          = PASS
+sealed roadmap blob         = PASS
+mandatory governance files  = PASS
+legacy resolver v3 guard    = PASS
+ask-v2 source HEAD observed = 4ad8238c4fe8ada02a8a1a79e0682606a6fbfe1a
+ask-v2 writes               = 0
+product-code changes        = 0
+```
+
+**P0 infrastructure/bootstrap status: CLOSED GREEN.**
+
+Next authorized milestone: **M1 / P1 — engine-independent Dima contracts + Wren adapter with zero behavior drift.**
+This status does not authorize Metabase production routing, Wren retirement, or source-branch synchronization.
