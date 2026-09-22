@@ -7,6 +7,10 @@ It never creates semantic handles, USER_MUST obligations or query truth.
 
 from __future__ import annotations
 
+import time
+from dataclasses import dataclass
+from typing import Callable
+
 from pydantic import Field
 
 from app.v2.manager_errors import ManagerRecoverableToolError
@@ -185,6 +189,18 @@ class ResearchTaskLifecycleError(ManagerRecoverableToolError):
     code = "research_task_lifecycle"
 
 
+class ResearchTaskTimeoutError(ResearchTaskLifecycleError):
+    code = "research_task_timeout"
+
+
+@dataclass(frozen=True)
+class ResearchTaskExecutionLease:
+    tool_id: str
+    action_fingerprint: str
+    started_at: float
+    deadline_at: float | None
+
+
 class ResearchTaskRegistry:
     """Run-scoped task identity/lifecycle guard.
 
@@ -194,13 +210,19 @@ class ResearchTaskRegistry:
     terminal.
     """
 
-    def __init__(self, *, max_fanout: int = 4) -> None:
+    def __init__(
+        self,
+        *,
+        max_fanout: int = 4,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         if max_fanout < 1:
             raise ValueError("max_fanout must be >= 1")
         self.max_fanout = max_fanout
+        self._clock = clock
         self._tasks: dict[str, ResearchTask] = {}
         self._receipts: dict[str, tuple[str, str, object]] = {}
-        self._inflight: dict[str, tuple[str, str]] = {}
+        self._inflight: dict[str, ResearchTaskExecutionLease] = {}
 
     @staticmethod
     def _identity(task: ResearchTask) -> dict:
@@ -243,6 +265,7 @@ class ResearchTaskRegistry:
         task: ResearchTask,
         tool_id: str,
         action_fingerprint: str,
+        timeout_ms: int | None = None,
     ) -> object | None:
         current = self.register(task)
         if current.state in {"cancelled", "failed", "blocked"}:
@@ -261,7 +284,10 @@ class ResearchTaskRegistry:
 
         inflight = self._inflight.get(task.task_id)
         if inflight is not None:
-            if inflight != (tool_id, action_fingerprint):
+            if (
+                inflight.tool_id != tool_id
+                or inflight.action_fingerprint != action_fingerprint
+            ):
                 raise ResearchTaskLifecycleError(
                     f"ResearchTask in-flight identity conflict: {task.task_id}"
                 )
@@ -269,7 +295,18 @@ class ResearchTaskRegistry:
                 f"duplicate in-flight ResearchTask delivery: {task.task_id}"
             )
 
-        self._inflight[task.task_id] = (tool_id, action_fingerprint)
+        now = self._clock()
+        deadline_at = (
+            None
+            if timeout_ms is None
+            else now + (max(0, timeout_ms) / 1000.0)
+        )
+        self._inflight[task.task_id] = ResearchTaskExecutionLease(
+            tool_id=tool_id,
+            action_fingerprint=action_fingerprint,
+            started_at=now,
+            deadline_at=deadline_at,
+        )
         self._tasks[task.task_id] = current.model_copy(update={"state": "running"})
         return None
 
@@ -290,9 +327,22 @@ class ResearchTaskRegistry:
             raise ResearchTaskLifecycleError(
                 f"ResearchTask is not active for commit: {task_id} ({current.state})"
             )
-        if inflight != (tool_id, action_fingerprint):
+        if (
+            inflight is None
+            or inflight.tool_id != tool_id
+            or inflight.action_fingerprint != action_fingerprint
+        ):
             raise ResearchTaskLifecycleError(
                 f"ResearchTask completion identity mismatch: {task_id}"
+            )
+        if (
+            inflight.deadline_at is not None
+            and self._clock() >= inflight.deadline_at
+        ):
+            self._inflight.pop(task_id, None)
+            self._tasks[task_id] = current.model_copy(update={"state": "failed"})
+            raise ResearchTaskTimeoutError(
+                f"ResearchTask deadline exceeded before commit: {task_id}"
             )
 
     def complete_execution(
@@ -331,6 +381,17 @@ class ResearchTaskRegistry:
         self._tasks[task_id] = failed
         self._inflight.pop(task_id, None)
         return failed
+
+    def execution_lease(self, task_id: str) -> ResearchTaskExecutionLease:
+        try:
+            return self._inflight[task_id]
+        except KeyError as exc:
+            raise ResearchTaskLifecycleError(
+                f"ResearchTask has no active execution lease: {task_id}"
+            ) from exc
+
+    def now(self) -> float:
+        return self._clock()
 
     @property
     def tasks(self) -> tuple[ResearchTask, ...]:
