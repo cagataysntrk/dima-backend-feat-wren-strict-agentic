@@ -5,127 +5,140 @@ Branch: `feat/dima-metabase-product-fast-track`
 
 ## CURRENT_STATE
 
-OBSERVED_BRANCH_HEAD:
-`96cb65f2b05d8bc56e1dd86ced7b13b5c0f3fb3a`
+PRE_SEAL_HEAD:
+`9faa65eb8ac830285a55ce93940daf68da13f699`
 
 CURRENT_PRODUCT_GATE:
-`FT-003 — OPEN / FINAL MODEL E2E PENDING`
+`FT-004 — RUN LIFECYCLE / STREAMING / CANCEL`
+
+FT-003_FINAL:
+`CLOSED / GREEN`
+
+FT-004:
+`OPEN / PREDEVELOPMENT NEXT`
+
+OPEN_RED:
+`NONE`
+
+TARGET:
+`Dima-native Intelligence Workspace on Metabase Analytics Substrate`
+
+SELECTED_RENDERING:
+`OPTION_A — Dima-native chart/table`
+
+## FT-003 CERTIFIED RUNS
 
 FT-003_CORE:
 `GREEN`
-run: `35775125103`
-tested SHA: `1adc55467a02363db9a1fb76c09615a568696c35`
+run: `35776527074`
+tested SHA: `f86475228074530a426542b9f5674ba12cbb7298`
 
 FT-003_REAL_METABASE_LIVE:
 `GREEN`
-run: `35775124979`
-tested SHA: `1adc55467a02363db9a1fb76c09615a568696c35`
-
-FT-003_BROWSER_REAL_FAST_ASK:
-`GREEN`
-run: `35775350763`
-tested SHA: `11bd33a697ae91bb3dec611d0714c5dd6236bb79`
+run: `35776518129`
+tested SHA: `2635ecc26f8093b67636ba581e705a4ed132be6f`
 
 FT-003_GATEWAY_REGRESSION:
 `GREEN`
-run: `35775125074`
-tested SHA: `1adc55467a02363db9a1fb76c09615a568696c35`
+run: `35776518246`
+tested SHA: `2635ecc26f8093b67636ba581e705a4ed132be6f`
 
-FT-003_REAL_MODEL_DIAGNOSTIC:
+FT-003_REAL_MODEL_RETRIEVAL:
 `GREEN`
-run: `35775125029`
-tested SHA: `1adc55467a02363db9a1fb76c09615a568696c35`
+run: `35776518107`
+tested SHA: `2635ecc26f8093b67636ba581e705a4ed132be6f`
+
+FT-003_REAL_MODEL_E2E:
+`GREEN`
+run: `35776518184`
+tested SHA: `2635ecc26f8093b67636ba581e705a4ed132be6f`
+artifact digest:
+`sha256:14c4ea5e455f15643c46538afaaabad17eef756c93842f9915f523cc94310c5a`
+
+FT-003_BROWSER_REAL_FAST_ASK:
+`GREEN`
+run: `35777010348`
+tested SHA: `9faa65eb8ac830285a55ce93940daf68da13f699`
 
 FT-UI-002:
-`SEALED / MANUAL HISTORICAL GATE`
+`SEALED / HISTORICAL / workflow_dispatch only`
 freeze commit: `96cb65f2b05d8bc56e1dd86ced7b13b5c0f3fb3a`
 
-FT-003_FINAL:
-`OPEN`
-
-OPEN_RED:
-`NONE CURRENTLY`
-
-OPEN_BLOCKER:
-`REAL_MODEL_PRIMARY_E2E_NOT_YET_CERTIFIED`
-
-## WHAT IS ALREADY PROVEN
-
-- deterministic Ask core;
-- Fast-only application;
-- auth negative/positive path;
-- opaque resource authority;
-- opaque field authority;
-- deterministic temporal binding;
-- deterministic portable query construction;
-- real pinned Metabase execution;
-- independent DB equality for COUNT/SUM/BREAKDOWN;
-- evidence/query/access/result fingerprints;
-- raw SQL = 0;
-- joins = 0 for FT-003;
-- Wren/V2/V3 runtime dependency = 0;
-- duplicate canonical resource URI dedupe;
-- unknown field handle fail-closed before construct;
-- multi-resource ambiguity fail-closed at service authority;
-- typed UNSUPPORTED before query work;
-- isolated /fast-poc over real /fast/ask;
-- desktop/mobile browser proof;
-- loading/clarification/unsupported/failure UI states;
-- old FT-UI-002 workflow frozen to workflow_dispatch only;
-- small real-model structured cognition diagnostic GREEN;
-- invented model IDs observed = 0 in the GREEN diagnostic.
-
-## IMPORTANT REMAINING DISTINCTION
-
-The current real-model sentinel proves:
+## FT-003 PROVEN CHAIN
 
 ```text
-REAL MODEL
--> typed cognition
--> real Metabase metadata discovery
--> opaque resource/field selection diagnostics
-```
-
-It explicitly does NOT yet prove:
-
-```text
-REAL MODEL
--> FastAskService
+Turkish question
+-> real model bounded cognition
+-> real Metabase metadata SEARCH
+-> opaque Dima resource/field authority
+-> deterministic temporal bounds
+-> deterministic portable query
 -> real Metabase construct/execute
--> independent DB oracle equality
--> deterministic answer/evidence
+-> independent DB equality
+-> evidence
+-> deterministic answer
+-> Dima-native browser UI
 ```
 
-Therefore FT-003 is not sealed yet.
-
-## RETRIEVAL STATUS
-
-The latest GREEN model diagnostic still shows many Turkish cases with:
+Certified DB oracle:
 
 ```text
-direct_search_hit = false
-retrieval_mode = CATALOG_FALLBACK
+2026-08-09 <= order_date < 2026-09-08
+
+COUNT = 20
+SUM = 16270
+East = 4085
+North = 4015
+South = 4050
+West = 4120
 ```
 
-The bounded catalog fallback is safe and remains allowed, but it must not substitute for the intended generic metadata-discovery contract.
+Authority safety:
+- ambiguous resources -> clarification before metadata read/query;
+- construct = 0 on ambiguity;
+- execute = 0 on ambiguity;
+- unsupported AVG -> UNSUPPORTED before Gateway creation;
+- invented IDs = 0 in final model diagnostic;
+- raw SQL = 0;
+- join = 0;
+- Wren/V2/V3 runtime dependency = 0.
 
-The draft prompt must still be tightened generically so `search_terms` means:
-- primary business/data entity lookup terms;
-- user-language entity terminology where useful;
-- likely English metadata equivalents when schema language may differ;
-- no measure/dimension pollution unless required to distinguish the table;
-- maximum four terms.
+Browser:
+- real `/fast/ask`;
+- real pinned Metabase;
+- loading PASS;
+- COUNT PASS;
+- SUM PASS;
+- BREAKDOWN PASS;
+- chart PASS;
+- table PASS;
+- clarification PASS;
+- unsupported PASS;
+- failed PASS;
+- desktop 1440x900 PASS;
+- mobile 390x844 PASS;
+- scrollWidth = 390.
 
-No translation dictionary / phrase patch / regex glossary is allowed.
+## CLOSED FAILURE FAMILIES
 
-## CONSERVATIVE DEBT
+- FT_003_LIVE_SENTINEL_RED_001 -> EVAL_ORACLE -> CLOSED.
+- FT_003_REAL_MODEL_SENTINEL_RED_001 -> retrieval/unsupported/ambiguity contract -> CLOSED.
+- FT_003_MODEL_RETRIEVAL_RED_002 -> generic metadata retrieval contract -> CLOSED.
+- FT_003_BROWSER_HYDRATION_RACE_001 -> E2E hydration timing oracle -> CLOSED.
+- duplicate canonical resource candidate -> CLOSED by URI dedupe.
+- invented field handle -> fail-closed regression sealed.
+
+## OPEN DEBT / NOT FT-003 BLOCKERS
 
 MULTI_CANDIDATE_RESOLUTION:
 `CONSERVATIVE_CLARIFICATION`
 
-For FT-003, more than one remaining permitted resource candidate is clarification-required even if the model guesses one.
+CATALOG_FALLBACK:
+`BOUNDED_SAFETY_FALLBACK`
 
-This is intentional safety, not a current blocker.
+The fallback is permission-filtered and bounded. It is not a translation or semantic dictionary.
+
+Pilot-level broader model benchmark is still later roadmap work; the small FT-003 real-model certification is GREEN.
 
 ## CURRENT INVARIANTS
 
@@ -144,36 +157,14 @@ This is intentional safety, not a current blocker.
 
 ## NEXT_EXACT_ACTION
 
-1. Tighten Fast Ask `search_terms` prompt semantics generically; no phrase map.
-2. Extend model receipt with search terms, candidate count/names/URIs, selected handle.
-3. Make ambiguity/unsupported hard certification service-authority-level; cognition abstention remains diagnostic only.
-4. Add provider-free regression tests for the retrieval prompt/authority contract.
-5. Add three-prompt primary real-model E2E:
-   - COUNT last 30 days;
-   - SUM last 30 days;
-   - SUM by region last 30 days.
-6. Run those through real `FastAskService` + real pinned Metabase.
-7. Compare all results against independent DB oracle:
-   - COUNT = 20
-   - SUM = 16270
-   - East = 4085
-   - North = 4015
-   - South = 4050
-   - West = 4120
-8. Recheck core/live/browser/gateway/model gates.
-9. Seal FT-003 only after primary real-model E2E is GREEN.
-10. Then open FT-004 pre-development review immediately.
-
-## DO NOT START YET
-
-- FT-004 implementation before FT-003 seal;
-- Analyst;
-- Research manager;
-- Root Cause;
-- AVG/MIN/MAX;
-- arbitrary filters;
-- joins;
-- multi-table execution;
-- ontology/synonym/translation system;
-- main frontend migration;
-- UI redesign.
+1. Open `FT_004_PREDEVELOPMENT_REVIEW.md`.
+2. Add Dima-owned run lifecycle without changing FT-003 cognition/query semantics.
+3. Target API:
+   - `POST /fast/runs`
+   - `GET /fast/runs/{id}`
+   - `GET /fast/runs/{id}/events` via SSE
+   - `POST /fast/runs/{id}/cancel`
+4. Preserve `POST /fast/ask` as compatibility / simple quick adapter.
+5. Enforce terminal exactly once.
+6. Add cancellation, interruption, reconnect, retry lineage and duplicate-event handling.
+7. Do not add new semantic logic, aggregation families, joins, Analyst, Root Cause or conversation semantics in FT-004.

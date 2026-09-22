@@ -1,6 +1,6 @@
 # FT-003 FAILURE RECEIPT — BROWSER_HYDRATION_RACE_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / EVAL_ORACLE_TIMING
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -87,3 +87,31 @@ Required:
 - clarification/unsupported/failed PASS;
 - desktop PASS;
 - 390x844 mobile PASS.
+
+
+## Closure
+
+Test-only corrective commit:
+`9faa65eb8ac830285a55ce93940daf68da13f699`
+
+GREEN rerun:
+`35777010348`
+
+Observed:
+- real POST /fast/ask requests present;
+- loading PASS;
+- COUNT/SUM/BREAKDOWN PASS;
+- chart/table PASS;
+- clarification/unsupported/failed PASS;
+- desktop PASS;
+- 390x844 mobile PASS;
+- scrollWidth = 390.
+
+Production UI delay added:
+`NO`
+
+Production backend delay added:
+`NO`
+
+Failure closed as:
+`EVAL_ORACLE_TIMING`

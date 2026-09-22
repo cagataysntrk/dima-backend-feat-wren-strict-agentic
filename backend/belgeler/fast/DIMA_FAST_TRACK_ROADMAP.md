@@ -355,19 +355,19 @@ Use guest embed only when:
 
 FT-UI-002 GREEN requires:
 
-- [ ] Dima-native analyst shell POC;
-- [ ] real Metabase result rendered inside Dima;
-- [ ] simple chart/table path proven;
-- [ ] optional guest visualization path evaluated;
-- [ ] no Metabase workspace dependency;
-- [ ] no Collections UI dependency;
-- [ ] no Query Builder dependency;
-- [ ] no native Metabase Search dependency;
-- [ ] no paid Metabase feature dependency;
-- [ ] no Metabase frontend fork;
-- [ ] no browser service/admin secret;
-- [ ] responsive analyst UX acceptable;
-- [ ] selected rendering strategy documented.
+- [x] Dima-native analyst shell POC;
+- [x] real Metabase result rendered inside Dima;
+- [x] simple chart/table path proven;
+- [x] optional guest visualization path evaluated;
+- [x] no Metabase workspace dependency;
+- [x] no Collections UI dependency;
+- [x] no Query Builder dependency;
+- [x] no native Metabase Search dependency;
+- [x] no paid Metabase feature dependency;
+- [x] no Metabase frontend fork;
+- [x] no browser service/admin secret;
+- [x] responsive analyst UX acceptable;
+- [x] selected rendering strategy documented.
 
 No modular SDK or full-app embedding proof is required to open FT-003.
 
@@ -413,24 +413,24 @@ F0A      pinned Metabase capability         GREEN
 FT-002B  Fast-owned Gateway                 GREEN
 FT-UI-001 architecture reconciliation       GREEN
 FT-UI-002 Dima-native rendering POC         GREEN
-FT-003    first real Ask vertical slice     OPEN
+FT-003    first real Ask vertical slice     GREEN
+FT-004    run lifecycle / streaming / cancel OPEN
 ```
 
 Then:
 
 ```text
-F1A / FT-003 safety completion
-F2 / FT-005 conversation
-F3 / FT-006 evidence
-F4 / FT-007 analyst
-F5 / FT-008 root cause
-F6 / FT-009 selected analytical assets only where useful
-F7 decision/report
-F8 product polish
-F9 pilot security
-F10 benchmark
-F11 pilot readiness
-F12 production candidate
+FT-004 run lifecycle / streaming / cancel
+FT-005 conversation + follow-up context
+FT-006 evidence expansion
+FT-007 Analyst Mode
+FT-008 Root Cause v1
+FT-009 selected analytical assets only where useful
+FT-010 decision
+FT-011 report
+FT-012 product polish
+FT-013 pilot security
+FT-014 benchmark / failure injection / release rehearsal
 ```
 
 FT-009 does not create a Metabase-first asset-management UX.
@@ -583,3 +583,92 @@ Real-result artifact digest:
 `sha256:2ecaec2ad248f5d22d12503fa3dad3dab46539b85f3999b7b404f556a03780b3`
 
 FT-003 is now OPEN.
+
+
+## 23. FT-003 sealed — First Real Ask
+
+Status:
+`CLOSED / GREEN`
+
+Certified product retrieval/Ask SHA:
+`2635ecc26f8093b67636ba581e705a4ed132be6f`
+
+Provider-free retrieval-contract test SHA:
+`f86475228074530a426542b9f5674ba12cbb7298`
+
+Final browser oracle SHA:
+`9faa65eb8ac830285a55ce93940daf68da13f699`
+
+Certified runs:
+- core: `35776527074`
+- pinned-Metabase live: `35776518129`
+- Gateway regression: `35776518246`
+- real-model retrieval sentinel: `35776518107`
+- real-model + real-Metabase E2E: `35776518184`
+- browser real `/fast/ask`: `35777010348`
+
+FT-003 proves:
+
+```text
+Turkish user question
+-> real structured model
+-> entity-centric cross-language metadata discovery
+-> bounded opaque resource/field authority
+-> deterministic temporal binding
+-> deterministic portable query
+-> real OSS Metabase construct/execute
+-> real DB
+-> evidence
+-> deterministic answer
+-> Dima-native chart/table UI
+```
+
+Independent DB oracle for the certified 30-day window:
+
+```text
+2026-08-09 <= order_date < 2026-09-08
+
+COUNT = 20
+SUM = 16270
+
+East  = 4085
+North = 4015
+South = 4050
+West  = 4120
+```
+
+Authority fail-closed proof:
+- materially ambiguous two-resource set -> `CLARIFICATION_REQUIRED`;
+- metadata read = 0 after ambiguity gate;
+- construct = 0;
+- execute = 0;
+- unsupported AVG -> `UNSUPPORTED`;
+- Gateway creation = 0;
+- invented model ID observed = 0 in final real-model diagnostic.
+
+Retrieval policy:
+- no translation dictionary;
+- no phrase patch;
+- no regex glossary;
+- model search terms are primary-entity/table lookup terms;
+- non-English questions include likely English entity/table lookup terms;
+- metric/dimension/operation terms do not own table retrieval;
+- bounded permission-filtered catalog discovery remains a safe fallback, not semantic authority.
+
+Conservative debt:
+`MULTI_CANDIDATE_RESOLUTION = CONSERVATIVE_CLARIFICATION`
+
+This is not an FT-003 blocker.
+
+FT-003 does NOT add:
+- AVG/MIN/MAX;
+- joins;
+- arbitrary filters;
+- multi-table execution;
+- Analyst;
+- Research;
+- Root Cause;
+- generic BI workspace.
+
+Next:
+`FT-004 — run lifecycle / streaming / cancel`

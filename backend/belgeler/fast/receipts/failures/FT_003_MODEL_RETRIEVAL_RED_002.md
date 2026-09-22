@@ -1,6 +1,6 @@
 # FT-003 FAILURE RECEIPT — MODEL_RETRIEVAL_RED_002
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / RETRIEVAL_CONTRACT
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -92,3 +92,34 @@ Required:
 - candidate_count/candidate_names/candidate_uris recorded;
 - correct opaque selected handle;
 - invented IDs = 0.
+
+
+## Closure
+
+Generic corrective product SHA:
+`2635ecc26f8093b67636ba581e705a4ed132be6f`
+
+Provider-free contract-test SHA:
+`f86475228074530a426542b9f5674ba12cbb7298`
+
+Final real-model direct-search run:
+`35776518107`
+
+Result:
+`GREEN`
+
+All supported certification cases:
+- metadata_search_direct_hit = true;
+- retrieval_mode = SEARCH;
+- candidate identities recorded;
+- opaque selection retained;
+- invented IDs = 0.
+
+Hardcoded translation pairs added:
+`0`
+
+Phrase-specific repairs added:
+`0`
+
+Failure closed as:
+`GENERIC_ENTITY_CENTRIC_CROSS_LANGUAGE_RETRIEVAL_CONTRACT`

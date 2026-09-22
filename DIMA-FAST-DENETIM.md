@@ -16,11 +16,7 @@ Status: NORMATIVE AUDIT CHECKLIST
 - [x] Agent API search/read/construct/execute/query live.
 - [x] pagination 200 + continuation.
 - [x] raw SQL disabled.
-- [x] backup/restore proof.
 - [x] FT-002B Fast-owned Gateway.
-- [x] provider-free Gateway: 21 passed.
-- [x] static Fast boundary: 3 passed.
-- [x] live Gateway: 1 passed.
 - [x] no V2/V3/Wren runtime import.
 
 ## C. Product boundary
@@ -28,31 +24,59 @@ Status: NORMATIVE AUDIT CHECKLIST
 - [x] Dima owns complete user-facing product.
 - [x] Metabase hidden analytics/query/optional-rendering substrate.
 - [x] zero-license core invariant.
-- [x] no generic Metabase workspace requirement.
-- [x] no paid embedding requirement.
+- [x] no generic Metabase workspace.
+- [x] no paid embedding dependency.
 - [x] no Metabase frontend fork/source patch.
-- [x] no browser service/admin secret.
+- [x] no browser Metabase service/admin secret.
 
-## D. FT-UI-002 rendering gate
+## D. FT-UI-002
 
-- [x] corrected predev.
-- [x] isolated /fast-poc analyst shell.
-- [x] real pinned-Metabase result fixture proof.
-- [x] simple chart path.
-- [x] simple table path.
-- [x] safe table fallback.
-- [x] guest visualization evaluated as optional.
-- [x] no Collections UI dependency.
-- [x] no Query Builder dependency.
-- [x] no native Metabase Search dependency.
-- [x] no paid Metabase feature dependency.
-- [x] frontend production build.
-- [x] protected-route browser proof.
-- [x] 390px responsive proof.
-- [x] selected rendering strategy: Option A.
-- [x] receipt sealed.
+- [x] Dima-native analyst shell.
+- [x] real Metabase result rendering.
+- [x] chart/table.
+- [x] responsive proof.
+- [x] Option A selected.
+- [x] historical workflow frozen to manual dispatch.
 
-## E. Stop-the-line
+## E. FT-003 First Real Ask
+
+- [x] deterministic core.
+- [x] Fast-only application.
+- [x] auth negative/positive.
+- [x] opaque resource handles.
+- [x] opaque field handles.
+- [x] duplicate canonical URI dedupe.
+- [x] unknown field handle fail-closed.
+- [x] deterministic temporal authority.
+- [x] deterministic portable query builder.
+- [x] evidence/query/access/result fingerprints.
+- [x] real Metabase COUNT.
+- [x] real Metabase SUM.
+- [x] real Metabase BREAKDOWN.
+- [x] independent DB oracle equality.
+- [x] generic entity-centric cross-language metadata retrieval.
+- [x] direct SEARCH hit across supported model diagnostic corpus.
+- [x] no phrase dictionary/regex translation patch.
+- [x] real model primary E2E.
+- [x] ambiguity blocked by service authority.
+- [x] ambiguity construct = 0.
+- [x] ambiguity execute = 0.
+- [x] unsupported AVG -> UNSUPPORTED before Gateway.
+- [x] invented IDs = 0 in final model diagnostic.
+- [x] raw SQL = 0.
+- [x] join = 0.
+- [x] Wren/V2/V3 runtime dependency = 0.
+- [x] browser real /fast/ask.
+- [x] loading state.
+- [x] chart/table.
+- [x] clarification/unsupported/failed states.
+- [x] desktop.
+- [x] mobile.
+- [x] failure receipts closed.
+- [x] living status reconciled.
+- [x] FT-003 final receipt sealed.
+
+## F. Stop-the-line
 
 - source branch write;
 - cross-tenant leak;
@@ -64,36 +88,35 @@ Status: NORMATIVE AUDIT CHECKLIST
 - unbounded loop;
 - missing principal -> admin/service authority;
 - browser service secret;
-- Metabase frontend fork/patch;
 - paid capability enters core critical path.
 
-## F. Release progression
+## G. Release progression
 
 ```text
-F0       governance                         GREEN
-F0A      pinned Metabase OSS                GREEN
-FT-002B  Fast-owned Gateway                 GREEN
-FT-UI-002 Dima-native rendering             GREEN
-FT-003    First Real Ask                     OPEN
-F2        conversation
-F3        evidence expansion
-F4        analyst
-F5        root cause
-F6        optional assets
-F7        decision/report
-F8        polish
-F9        pilot security
-F10       benchmark
-F11       pilot readiness
-F12       production candidate
+F0        governance                         GREEN
+F0A       pinned Metabase OSS                GREEN
+FT-002B   Fast-owned Gateway                 GREEN
+FT-UI-002 Dima-native rendering              GREEN / SEALED
+FT-003     First Real Ask                     GREEN / CLOSED
+FT-004     run lifecycle / streaming / cancel OPEN
+FT-005     conversation + follow-up context
+FT-006     evidence expansion
+FT-007     Analyst
+FT-008     Root Cause
+FT-009     optional analytical assets
+FT-010     decision
+FT-011     report
+FT-012     polish
+FT-013     pilot security
+FT-014     benchmark / failure injection
 ```
 
-## G. Audit seal
+## H. Audit seal
 
 BRANCH_ISOLATION: GREEN
 METABASE_OSS_SUBSTRATE: GREEN
 FAST_GATEWAY: GREEN
-UI_RENDERING_POC: GREEN
-SELECTED_RENDERING: OPTION_A
-FT_003: OPEN
+UI_RENDERING_POC: GREEN / SEALED
+FT_003: GREEN / CLOSED
+FT_004: OPEN
 PRODUCTION: NOT CERTIFIED

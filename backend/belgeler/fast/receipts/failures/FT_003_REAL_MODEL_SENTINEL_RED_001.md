@@ -1,6 +1,6 @@
 # FT-003 FAILURE RECEIPT — REAL_MODEL_SENTINEL_RED_001
 
-Status: ROOT CAUSES CLASSIFIED
+Status: CLOSED / ROOT CAUSES RESOLVED
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -172,3 +172,23 @@ However this does NOT fully close FT-003 because:
 3. primary real-model -> real-Metabase -> DB-oracle E2E is still pending.
 
 Therefore this failure receipt is root-cause closed at the diagnostic layer but FT-003 remains OPEN until the final model E2E seal.
+
+
+## Final closure
+
+Direct metadata retrieval:
+`35776518107 GREEN`
+
+Primary real-model -> real-Metabase -> DB oracle E2E:
+`35776518184 GREEN`
+
+Authority ambiguity hard gate:
+`PASS`
+
+Typed unsupported hard gate:
+`PASS`
+
+Invented IDs:
+`0`
+
+This receipt is CLOSED.
