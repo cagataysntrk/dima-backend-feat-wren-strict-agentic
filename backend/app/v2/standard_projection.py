@@ -1,18 +1,26 @@
 """Deterministic StandardProjection compiler for Day 6.5.
 
-The compiler consumes only already-valid atomic obligations plus Resolver-issued opaque
-SemanticHandles. Semantic correctness belongs to CapabilityBindingValidator; this module
-only decides whether valid obligations can be losslessly merged into one Core request.
+The compiler consumes already-grounded standard binding atoms plus Resolver/BindingGate-issued
+opaque SemanticHandles. It does not infer user language and does not create semantic authority.
+
+The legacy Research wrapper remains supported so existing AcceptedTurnContract + UOL behavior
+is preserved while StandardBuilder uses the lightweight bound-input path.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.v2.capability_bindings import CapabilityBinding, CapabilityBindingValidator
+from app.v2.capability_bindings import (
+    BoundObligation,
+    CapabilityBinding,
+    CapabilityBindingValidator,
+)
 from app.v2.manager_models import (
     AcceptedTurnContract,
+    CandidateObligation,
     ManagerCapabilityKey,
+    ObligationLedgerItem,
     ObligationPolarity,
     ObligationStatus,
     StandardProjection,
@@ -36,6 +44,19 @@ class StandardProjectionCompileResult:
         return self.projection is not None
 
 
+@dataclass(frozen=True)
+class StandardProjectionInput:
+    """Lightweight accepted/bound input for StandardBuilder.
+
+    This is intentionally not a second research contract. It is only the set of atomic
+    standard obligations that the deterministic compiler must merge into one projection.
+    """
+
+    authority_ids: tuple[str, ...]
+    items: tuple[BoundObligation, ...]
+    context_version: str
+
+
 class StandardProjectionCompiler:
     """Merge validated standard obligations into one opaque Core projection."""
 
@@ -56,6 +77,29 @@ class StandardProjectionCompiler:
     def _unique(values: list[str]) -> tuple[str, ...]:
         return tuple(dict.fromkeys(values))
 
+    @staticmethod
+    def _active(item: BoundObligation) -> bool:
+        status = getattr(item, "status", None)
+        return status != ObligationStatus.SUPERSEDED
+
+    def compile_bound(
+        self,
+        *,
+        obligations: tuple[CandidateObligation, ...],
+        tenant_binding: str,
+        context_version: str,
+    ) -> StandardProjectionCompileResult:
+        """Compile a lightweight StandardBuilder proposal without Research UOL machinery."""
+        return self.compile_input(
+            standard_input=StandardProjectionInput(
+                authority_ids=tuple(item.obligation_id for item in obligations),
+                items=obligations,
+                context_version=context_version,
+            ),
+            tenant_binding=tenant_binding,
+            context_version=context_version,
+        )
+
     def compile(
         self,
         *,
@@ -64,8 +108,7 @@ class StandardProjectionCompiler:
         tenant_binding: str,
         context_version: str,
     ) -> StandardProjectionCompileResult:
-        reasons: list[str] = []
-
+        """Compatibility wrapper for the existing Research authority path."""
         if (
             contract.lineage_id != ledger.lineage_id
             or contract.version != ledger.version
@@ -80,15 +123,62 @@ class StandardProjectionCompiler:
                 reasons=("contract/context version mismatch",),
             )
 
-        authority_ids = {
-            *contract.obligation_ids,
-            *contract.exclusion_ids,
-        }
+        return self.compile_input(
+            standard_input=StandardProjectionInput(
+                authority_ids=tuple(
+                    dict.fromkeys(
+                        (*contract.obligation_ids, *contract.exclusion_ids)
+                    )
+                ),
+                items=ledger.items,
+                context_version=contract.context_version,
+            ),
+            tenant_binding=tenant_binding,
+            context_version=context_version,
+        )
+
+    def compile_input(
+        self,
+        *,
+        standard_input: StandardProjectionInput,
+        tenant_binding: str,
+        context_version: str,
+    ) -> StandardProjectionCompileResult:
+        reasons: list[str] = []
+
+        if standard_input.context_version != context_version:
+            return StandardProjectionCompileResult(
+                projection=None,
+                reasons=("standard input/context version mismatch",),
+            )
+
+        item_by_id: dict[str, BoundObligation] = {}
+        duplicate_ids: set[str] = set()
+        for item in standard_input.items:
+            if not self._active(item):
+                continue
+            if item.obligation_id in item_by_id:
+                duplicate_ids.add(item.obligation_id)
+            item_by_id[item.obligation_id] = item
+
+        if duplicate_ids:
+            reasons.append(
+                "duplicate standard obligation ids: "
+                + ", ".join(sorted(duplicate_ids))
+            )
+
+        authority_ids = tuple(dict.fromkeys(standard_input.authority_ids))
+        missing_ids = set(authority_ids) - set(item_by_id)
+        if missing_ids:
+            reasons.append(
+                "standard authority references missing obligation atoms: "
+                + ", ".join(sorted(missing_ids))
+            )
+
         authoritative_items = [
-            item
-            for item in ledger.items
-            if item.status != ObligationStatus.SUPERSEDED
-            and item.obligation_id in authority_ids
+            item_by_id[item_id]
+            for item_id in authority_ids
+            if item_id in item_by_id
         ]
 
         bindings: dict[str, CapabilityBinding] = {}
@@ -109,10 +199,9 @@ class StandardProjectionCompiler:
             item
             for item in authoritative_items
             if item.polarity == ObligationPolarity.REQUIRED
-            and item.obligation_id in set(contract.obligation_ids)
         ]
 
-        executable = []
+        executable: list[BoundObligation] = []
         for item in active_required:
             spec = self._capabilities.get(item.capability_key)
             if not spec.executable:
@@ -125,7 +214,7 @@ class StandardProjectionCompiler:
                 )
 
         if not executable:
-            reasons.append("accepted contract has no executable standard obligation")
+            reasons.append("standard input has no executable standard obligation")
 
         # Never union fields from an invalid obligation. This blocks cross-obligation
         # semantic laundering where one malformed atom could be completed by another.
@@ -151,7 +240,6 @@ class StandardProjectionCompiler:
             comparisons.extend(binding.refs("comparison"))
 
             if item.capability_key == ManagerCapabilityKey.RANKING:
-                # Atomic binding validation already proves these exist.
                 ranking_pairs.append(
                     (str(item.ranking_direction), int(item.ranking_limit))
                 )
