@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 ENGINEERING CLOSURE READY — D65-E1 EXACT RECERTIFICATION NEXT**  
+**Durum:** **DAY 6.5 D65-E1 GREEN — RETRIEVER SEAM NEXT**  
 **Kod fazı:** Day 6.5 engineering closure — latest semantic code `c9629d9029db...`; cognition/authority boundary uygulanmış durumda. Hedef front door `STANDARD_DIRECT + bounded STANDARD_BUILDER + RESEARCH`, iki accepted-authority ailesiyle kapanacak. StandardBuilder/Retriever seam henüz yazılmadı. İlk iş exact `c9629d...` provider-free recertification; production hybrid route kapalı.
 
 ---
@@ -5037,3 +5037,93 @@ Receipt records separately:
 - `tested_code_sha`
 
 Product semantic code was not modified before recertification.
+
+
+### D65-E1 — GREEN / EXACT CURRENT SEMANTIC-SHA RECERTIFIED
+
+**Exact semantic code**
+`c9629d9029db360e86a8592e12da646a2afc0621`
+
+**Run**
+`35689470508`
+
+**Result**
+```text
+compile cognition-authority boundary    PASS
+focused provider-free closure           70 / 70 PASS
+warnings                                5
+test time                               10.73s
+certification identity                  PASS
+receipt upload                          PASS
+```
+
+**Audit identity**
+```text
+workflow_source_sha = 521b1f768e75df1e36c833a57e0b28eeac082892
+requested_code_sha  = c9629d9029db360e86a8592e12da646a2afc0621
+tested_code_sha     = c9629d9029db360e86a8592e12da646a2afc0621
+artifact_id         = 10677887784
+artifact_digest     = sha256:685eade8e948c22b839e51db769f53210ef3839d5d4d42a78acfaf2afd78cd82
+```
+
+**Checkpoint**
+`checkpoint/day6.5-exact-recert-c9629d`
+→ points exactly to `c9629d9029db...`.
+
+**Interpretation**
+- no semantic/contract regression observed in the exact current semantic SHA,
+- completeness-by-bound-kind change preserved the 70/70 cognition-authority closure,
+- real Wren trust-plane sentinel remained inside the passing bundle,
+- no patch was required,
+- D65-E1 CLOSED GREEN.
+
+**Workflow hygiene**
+One-shot push trigger was used only because connector has no workflow-dispatch action.
+After the successful run, `v2-day6-5-provider-free-closure.yml` was restored to
+manual-only at `207e58fdabf12663356065dd5b1c344a22a483e6`.
+Paid/provider automation remains OFF.
+
+### D65-E2 — SemanticCatalogRetriever seam
+
+**AMAÇ**
+Semantic candidate discovery'yi explicit non-authoritative interface arkasına almak;
+current deterministic enumeration behavior'ını değiştirmeden ileride large-catalog retrieval
+backend'ine yer açmak.
+
+**ROADMAP / REPORT**
+Mühürlü plan/rapor değişmez. Aktif phase-local owner:
+`DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md §4 / §12`.
+
+**NEW OWNER**
+`SemanticCatalogRetriever` = discovery only.
+Canonical authority hâlâ `SemanticBindingGate`.
+
+**TOUCH**
+- `app/v2/semantic_retriever.py` NEW
+- `app/v2/semantic_linker.py` minimal seam wiring
+- `tests/test_v2_day6_5_semantic_linker.py` focused seam invariant
+- living status
+
+**NO-TOUCH**
+- Manager prompt/schema semantics
+- Resolver canonical rules
+- Capability algebra
+- temporal boundary
+- DEV80 corpus/oracle
+- production routing
+
+**INVARIANTS**
+- retrieval score != semantic truth,
+- retrieval miss != semantic does not exist,
+- retriever cannot mint `sem_*`,
+- candidate outside returned bounded set cannot bind,
+- exact alias deterministic fast bind remains unchanged,
+- sensitive filter fallback remains exact-only,
+- no regex/morphology/fuzzy semantic authority.
+
+**TARGETED TEST**
+`pytest -q tests/test_v2_day6_5_semantic_linker.py`
+
+**EXIT**
+Current behavior preserved and generator obtains discovery candidates through the explicit
+Retriever seam. No vector/BM25/RRF implementation in Day6.5.
