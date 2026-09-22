@@ -9,7 +9,7 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`d88e599ec702c4a3edaaecbaeba236af30a92139`
+`68c53f4d1247a1fe813ebaf6bcc901916f6f2660`
 
 CURRENT_PRODUCT_GATE:
 `FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
@@ -25,16 +25,20 @@ FT-005_CORE:
 run: `35784476690`
 
 FT-005_REAL_MODEL:
-`PENDING`
+`RED`
+run: `35786550995`
+tested SHA: `19628e973b6ceee3b50620a7a544903364823e77`
 
 FT-005_REAL_METABASE_FOLLOWUP:
-`PENDING`
+`RED`
+run: `35786695054`
+tested SHA: `68c53f4d1247a1fe813ebaf6bcc901916f6f2660`
 
 FT-005_FINAL:
 `OPEN`
 
 OPEN_RED:
-`NONE AT CURRENT HEAD`
+`FT-005 COGNITION CERTIFICATION`
 
 FT-004_POST_SEAL_INVARIANTS:
 `CLOSED / GREEN`
@@ -263,3 +267,46 @@ Hard debt:
 10. Keep `CONVERSATION_DURABILITY = NOT YET CERTIFIED`.
 11. Only after seal, add Research Doctrine docs-only reconciliation.
 12. Do not begin Analyst, Research, Root Cause, or new analytical algorithms inside FT-005.
+
+
+## FT-005 CURRENT CERTIFICATION RED
+
+Provider-free core:
+`35784476690 GREEN`
+
+Focused current third-model diagnostic:
+`35786550995 RED`
+
+Real-model + pinned-Metabase three-turn E2E:
+`35786695054 RED`
+
+Pinned Metabase startup:
+`GREEN`
+
+Independent DB oracle:
+
+```text
+Q1 last-30-day SUM = 16270
+Q2 previous-month SUM = 21994
+Q3 previous-month breakdown:
+East = 5523
+North = 5425
+South = 5474
+West = 5572
+```
+
+Current classification:
+- A: EVAL_ORACLE_OVERCONSTRAINT;
+- B: MODEL_STRUCTURED_OUTPUT_RELIABILITY;
+- C: RETRIEVAL_CONTRACT_DRIFT candidate.
+
+No product prompt patch is authorized yet.
+
+Next:
+1. open RED receipts;
+2. add eval-only structured-output diagnostics;
+3. separate HARD vs DIAGNOSTIC oracle;
+4. repeat current Gemini diagnostic;
+5. run Luna baseline and Sol ceiling on the frozen corpus;
+6. classify model dependency;
+7. only then authorize minimal fixes.
