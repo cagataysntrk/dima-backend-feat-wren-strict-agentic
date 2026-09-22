@@ -73,6 +73,9 @@ def test_direct_is_first_attempt_success_of_same_builder():
     assert result.projection is not None
     assert result.projection.metric_handles == (metric.handle_id,)
     assert result.proposal_executions == 1
+    assert session.runtime_telemetry["model_turns"] == 1
+    assert session.runtime_telemetry["observations"] == 1
+    assert session.runtime_telemetry["terminal_reason"] == "COMPLETED"
 
 
 def test_missing_standard_binding_requests_repair_not_research():
@@ -109,6 +112,9 @@ def test_repaired_standard_projection_uses_builder_mode():
     assert repaired.projection is not None
     assert repaired.projection.metric_handles == (metric.handle_id,)
     assert repaired.projection.dimension_handles == (dimension.handle_id,)
+    assert session.runtime_telemetry["model_turns"] == 2
+    assert session.runtime_telemetry["observations"] == 2
+    assert session.runtime_telemetry["terminal_reason"] == "COMPLETED"
 
 
 def test_same_action_same_unchanged_state_is_no_progress_without_reexecution():
@@ -124,6 +130,9 @@ def test_same_action_same_unchanged_state_is_no_progress_without_reexecution():
     assert duplicate.state == StandardBuilderState.NO_PROGRESS
     assert duplicate.proposal_executions == 1
     assert "without state progress" in duplicate.reasons[0]
+    assert session.runtime_telemetry["model_turns"] == 1
+    assert session.runtime_telemetry["observations"] == 1
+    assert session.runtime_telemetry["terminal_reason"] == "NO_PROGRESS"
 
 
 def test_research_capability_routes_to_research_without_standard_compile_retry():
@@ -153,3 +162,5 @@ def test_builder_budget_fails_closed_for_changed_repairs():
     assert changed.state == StandardBuilderState.BUDGET_EXHAUSTED
     assert changed.projection is None
     assert changed.proposal_executions == 1
+    assert session.runtime_telemetry["model_turns"] == 1
+    assert session.runtime_telemetry["terminal_reason"] == "BUDGET_EXHAUSTED"
