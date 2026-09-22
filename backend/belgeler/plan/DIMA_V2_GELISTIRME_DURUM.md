@@ -4444,7 +4444,53 @@ Security boundary oracle uğruna gevşetilmeyecek.
 
 ---
 
-### 2026-09-23 00:50 — D7-SEED-SET RED ROOT CAUSE
+### 2026-09-23 00:56 — D7-SEED-SET ROOT FIX GREEN
+
+```text
+product_sha         aecd0c0c4642d18711feff58b864c2c866b1fcd6
+focused_run         35789148336
+result              GREEN
+failure_family      CONTRACT / INTERFACE → REPRESENTABILITY_SCOPE
+canonical_budget    manager_turns=6 / tool_calls=12 / data_queries=8
+budget_change       NONE
+```
+
+Root cause closure:
+- whole-authority Standard losslessness remains unchanged;
+- accepted Research authority may execute one selected typed task as a scoped Standard
+  sub-analysis;
+- the selected obligation slice must itself be lossless and preserve that obligation's
+  accepted SemanticHandles;
+- obligations outside accepted authority are denied;
+- semantic binding laundering between obligations is denied;
+- unselected USER_MUST obligations stay in the full UOL and CompletionGate remains
+  whole-ledger completion truth.
+
+Proof:
+- full-contract U1-only projection still rejects because U2/U3 would be dropped;
+- scoped U1 execution is `STANDARD_LOSSLESS`;
+- U2 semantic handle cannot be laundered into U1 execution;
+- unknown U999 cannot enter execution;
+- multi-obligation loop naturally completes without budget increase;
+- full `v2-day7-focused` is GREEN on the same SHA;
+- principal/fanout/relationship/real-Wren regressions remain GREEN.
+
+Architecture decision:
+**NO task-id-only redesign now.** The trace proved semantic restatement was not the owner;
+the rejected whole-contract representability scope was. Keep cognition flexible and the
+existing typed action interface until comparative evidence says otherwise.
+
+Next:
+1. create single `DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`;
+2. add the cross-cutting invariant-vs-benchmark rule to AGENTS/CLAUDE;
+3. continue deterministic Day7 closure: real Wren COMPARE/RANK sentinels, then
+   TREND/CONTRIBUTION/PEER_COMPARE primitive audit.
+
+Day7 remains ACTIVE. Live Sol and Day8 remain blocked.
+
+---
+
+## 2026-09-23 00:50 — D7-SEED-SET RED ROOT CAUSE
 
 ```text
 baseline_sha       07c2c2b14c19825958f601d7a20074c5fb28f4aa
