@@ -48,11 +48,14 @@
 > DEV80 runs exactly once, after Day15 code + final rehearsal. Validation50/Hidden50 follow under code freeze with no tuning.
 > Development continues to use focused real-LLM, failure-family, metamorphic, canary and sentinel tests; broad 80/50/50 sets are end-only.
 > STOP/CONSULT before final freeze, DEV80, post-DEV80 behavior change and pilot activation.
+>> **J1 result STOP:** Jev semantic CandidateSet role is promising; Jev temporal role is not viable; Luna temporal evidence is promising but not sealed. J1B/D65-SI/X0 remain closed pending user approval.
+> Metabase Agent API does not imply Metabase Cloud; X0 default is self-hosted private service if/when approved.
 >> **Current pre-freeze gate:** J1S + J1T + M0/X0. Freeze/DEV80 is blocked.
 > Baseline proofs: provider-free `35696652502=102/102`, reference canary `35697064833=16/16`, Wren+Research sentinel `35697471863=2/2`, exact SHA `8dfde62d...`.
 > J1S = semantic candidate decision; J1T evidence = `J1T-CHOICE + J1T-CONTRACT-FIDELITY`. PRIMARY peers Gemini Flash-Lite vs pinned `typesafe/jev-1.13` vs GPT-5.6 Luna. Sol is REFERENCE_CEILING only; Terra is consult-gated conditional. Jev uses OpenRouter Decisions API, not chat/completions. Product semantic/temporal/authority code stays NO-TOUCH during benchmark.
 > M0 = Metabase source/adoption audit. D65-SI closes the actual pure Standard authority/execution chain after J1. X0 = thin separate-service Agent API feasibility only after D65-SI GREEN. Promising J1 or X0 result is a consultation gate, not automatic product integration.
 > Detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+> Metabase deployment decision: `belgeler/plan/DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md`.
 >> **Substrate kararı:** Wren current incumbent'tır. M0/X0/full-X (if needed) and one-primary-substrate selection happen before Day7–15 final integration and before the release final freeze/DEV80. Production'da Wren + Metabase equal truth engines yasaktır.
 > **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
 > Canonical upstream: `metabase/metabase`.
