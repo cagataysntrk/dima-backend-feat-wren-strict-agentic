@@ -13,10 +13,12 @@ import { useConversations } from "@/stores/conversations";
  */
 export function ChatNav({ orgId, activeId }: { orgId: string; activeId: string | null }) {
   const router = useRouter();
-  const chats = useConversations((s) =>
-    s.conversations.filter((c) => c.orgId === orgId && c.entries.length > 0),
-  );
-  const ordered = [...chats].sort((a, b) => b.updatedAt - a.updatedAt);
+  // Selector must return a stable reference: filtering inside it hands zustand
+  // a new array every render and the component re-renders forever (React #185).
+  const conversations = useConversations((s) => s.conversations);
+  const ordered = conversations
+    .filter((c) => c.orgId === orgId && c.entries.length > 0)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
   const idx = ordered.findIndex((c) => c.id === activeId);
   if (ordered.length < 2) return null;
 

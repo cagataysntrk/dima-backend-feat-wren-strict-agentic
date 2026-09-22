@@ -6,13 +6,38 @@ import { GatewayError } from "@/server/metabase/errors";
 import { requireTenant } from "@/server/metabase/guard";
 import { NewDashboardButton } from "@/components/analytics/DashboardActions";
 import { ItemMenu, LibrarySearch } from "@/components/analytics/LibraryTools";
+import { EmptyState } from "@/components/shell/EmptyState";
 
 export const metadata: Metadata = { title: "Genel bakış" };
 
-const GROUPS: { kind: Item["kind"]; title: string; icon: typeof BarChart3; empty: string }[] = [
-  { kind: "dashboard", title: "Panolar", icon: LayoutDashboard, empty: "Henüz pano yok." },
-  { kind: "card", title: "Analizler", icon: BarChart3, empty: "Henüz kayıtlı analiz yok." },
-  { kind: "model", title: "Yüklenen veriler", icon: FileSpreadsheet, empty: "Henüz veri yüklenmedi." },
+const GROUPS: {
+  kind: Item["kind"];
+  title: string;
+  icon: typeof BarChart3;
+  empty: string;
+  hint: string;
+}[] = [
+  {
+    kind: "dashboard",
+    title: "Panolar",
+    icon: LayoutDashboard,
+    empty: "Henüz pano yok.",
+    hint: "Kaydettiğiniz analizleri bir panoda yan yana toplayın.",
+  },
+  {
+    kind: "card",
+    title: "Analizler",
+    icon: BarChart3,
+    empty: "Henüz kayıtlı analiz yok.",
+    hint: "Sohbette bir soru sorun, beğendiğiniz yanıtı analiz olarak kaydedin.",
+  },
+  {
+    kind: "model",
+    title: "Yüklenen veriler",
+    icon: FileSpreadsheet,
+    empty: "Henüz veri yüklenmedi.",
+    hint: "CSV veya Excel yükleyerek kendi tablolarınızı sorgulayın.",
+  },
 ];
 
 export default async function Overview() {
@@ -49,7 +74,7 @@ export default async function Overview() {
         </div>
       </header>
       <LibrarySearch canEdit={canEdit} />
-      {GROUPS.map(({ kind, title, icon: Icon, empty }) => {
+      {GROUPS.map(({ kind, title, icon: Icon, empty, hint }) => {
         const list = items.filter((i) => i.kind === kind);
         if (kind === "model" && list.length === 0) return null;
         return (
@@ -58,7 +83,24 @@ export default async function Overview() {
               {title}
             </h2>
             {list.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{empty}</p>
+              <div className="surface-sm">
+                <EmptyState
+                  icon={Icon}
+                  title={empty}
+                  hint={hint}
+                  action={
+                    kind === "card" ? (
+                      <Link href="/app/chat" className="text-sm font-medium text-brand hover:underline">
+                        Sohbete git
+                      </Link>
+                    ) : kind === "model" && canEdit ? (
+                      <Link href="/app/upload" className="text-sm font-medium text-brand hover:underline">
+                        Veri yükle
+                      </Link>
+                    ) : undefined
+                  }
+                />
+              </div>
             ) : (
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {list.map((i) => (

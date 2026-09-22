@@ -1,8 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, LayoutDashboard, Undo2 } from "lucide-react";
+import { BarChart3, LayoutDashboard, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/shell/EmptyState";
 import { gateway, type Item } from "@/lib/gateway";
 import { Button } from "@dima/ui/primitives/button";
 import { Skeleton } from "@dima/ui/primitives/skeleton";
@@ -36,7 +37,15 @@ export function TrashView() {
           {items.error.message}
         </p>
       )}
-      {items.data?.length === 0 && <p className="text-sm text-muted-foreground">Çöp kutusu boş.</p>}
+      {items.data?.length === 0 && (
+        <div className="surface-sm">
+          <EmptyState
+            icon={Trash2}
+            title="Çöp kutusu boş."
+            hint="Sildiğiniz pano ve analizler kalıcı olarak silinmeden önce burada bekler."
+          />
+        </div>
+      )}
 
       <ul className="space-y-2">
         {items.data?.map((i) => (
