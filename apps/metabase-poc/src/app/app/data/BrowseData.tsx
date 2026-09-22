@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Table2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Sparkles, Table2 } from "lucide-react";
 import { gateway } from "@/lib/gateway";
+import { ResultView } from "@/components/ResultView";
+import { Button } from "@/components/ui/button";
 import { fmtValue } from "@dima/domain";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +17,14 @@ export function BrowseData() {
   const tables = useQuery({ queryKey: ["browse"], queryFn: gateway.browseTables });
   const [tableId, setTableId] = useState<number | null>(null);
   const [sort, setSort] = useState<Sort>(undefined);
+  const [insightsFor, setInsightsFor] = useState<number | null>(null);
   const active = tables.data?.find((t) => t.id === tableId) ?? tables.data?.[0];
+
+  const insights = useQuery({
+    queryKey: ["insights", insightsFor],
+    queryFn: () => gateway.tableInsights(insightsFor!),
+    enabled: insightsFor != null,
+  });
 
   const preview = useQuery({
     queryKey: ["preview", active?.id, sort],
@@ -53,6 +62,7 @@ export function BrowseData() {
                   onClick={() => {
                     setTableId(t.id);
                     setSort(undefined);
+                    setInsightsFor(null);
                   }}
                   className={cn(
                     "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
@@ -69,14 +79,49 @@ export function BrowseData() {
 
         <section className="surface min-w-0 overflow-hidden" aria-label="Önizleme">
           {active && (
-            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--surface-edge)] px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--surface-edge)] px-4 py-3">
               <h2 className="font-medium">{active.name}</h2>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {active.fields.length} sütun · ilk {preview.data?.row_count ?? 0} satır
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {active.fields.length} sütun · ilk {preview.data?.row_count ?? 0} satır
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-pressed={insightsFor === active.id}
+                  onClick={() => setInsightsFor(insightsFor === active.id ? null : active.id)}
+                >
+                  <Sparkles className="size-4" aria-hidden />
+                  {insightsFor === active.id ? "Önizlemeye dön" : "Otomatik içgörüler"}
+                </Button>
+              </div>
             </div>
           )}
-          {preview.isPending ? (
+          {insightsFor === active?.id ? (
+            <div className="p-4">
+              {insights.isPending && <p className="text-sm text-muted-foreground">İçgörüler hazırlanıyor…</p>}
+              {insights.isError && (
+                <p role="alert" className="text-sm text-destructive">
+                  {insights.error.message}
+                </p>
+              )}
+              <div className="grid gap-4 xl:grid-cols-2">
+                {insights.data?.insights.map((ins) => (
+                  <div key={ins.title} className="surface-sm p-4">
+                    <h3 className="mb-2 text-sm font-medium">{ins.title}</h3>
+                    {ins.error ? (
+                      <p className="text-sm text-muted-foreground">{ins.error}</p>
+                    ) : ins.result ? (
+                      <ResultView result={ins.result} display={ins.display} />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              {insights.data?.insights.length === 0 && (
+                <p className="text-sm text-muted-foreground">Bu tablo için içgörü üretilemedi.</p>
+              )}
+            </div>
+          ) : preview.isPending ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 8 }, (_, i) => (
                 <Skeleton key={i} className="h-6 w-full" />

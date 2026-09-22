@@ -34,6 +34,13 @@ function qs(filters: Filters, extra: Record<string, string> = {}): string {
   return s ? `?${s}` : "";
 }
 
+export interface Insight {
+  title: string;
+  display: string;
+  result: QueryResult | null;
+  error: string | null;
+}
+
 export interface Revision {
   id: number;
   at: string;
@@ -137,6 +144,8 @@ export const gateway = {
     api<{ result: QueryResult }>(
       `/api/browse/${tableId}${sort ? `?sort=${sort.fieldId}&dir=${sort.dir}` : ""}`,
     ).then((r) => r.result),
+  tableInsights: (tableId: number) =>
+    api<{ table: string; insights: Insight[] }>(`/api/browse/${tableId}/insights`),
   dataModel: () => api<{ tables: ModelTable[] }>("/api/model").then((r) => r.tables),
   updateField: (fieldId: number, patch: { displayName?: string; category?: boolean; hidden?: boolean }) =>
     api<{ field: ModelField }>(`/api/model/fields/${fieldId}`, { ...json(patch), method: "PATCH" }).then((r) => r.field),
