@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import inspect
 import json
+import textwrap
 
 from app import contracts as contracts_module
 from app.v2.manager_models import (
@@ -56,7 +57,7 @@ def test_wren_substrate_has_no_semantic_handle_or_raw_language_dependency():
     signature = inspect.signature(method)
     assert tuple(signature.parameters) == ("self", "intent")
 
-    method_tree = ast.parse(inspect.getsource(method))
+    method_tree = ast.parse(textwrap.dedent(inspect.getsource(method)))
     question_keywords = [
         node
         for node in ast.walk(method_tree)
