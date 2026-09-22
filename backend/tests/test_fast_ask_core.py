@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import date
+import json
 
 import pytest
 
+from app.fast.ask_cognition import StructuredJsonFastCognition
 from app.fast.ask_errors import FastAskError, FastAskErrorCode
 from app.fast.ask_models import (
     AggregationKind,
@@ -314,3 +316,47 @@ def test_breakdown_answer_reports_observed_result_rows_only():
         breakdown=_authority("region"),
         result=result,
     ) == "2 kırılım döndü."
+
+
+
+class _CaptureStructuredGenerator:
+    def __init__(self) -> None:
+        self.system = ""
+        self.user = ""
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        self.system = system
+        self.user = user
+        assert schema_name == "dima_fast_ask_draft"
+        return json.dumps(
+            {
+                "status": "SUPPORTED",
+                "unsupported_reason": None,
+                "search_terms": ["entity"],
+                "aggregation": "COUNT",
+                "measure_hint": None,
+                "breakdown_hint": None,
+                "temporal": {
+                    "kind": "NONE",
+                    "days": None,
+                    "start_date": None,
+                    "end_date": None,
+                },
+            }
+        )
+
+
+def test_fast_cognition_prompt_defines_generic_metadata_retrieval_contract():
+    generator = _CaptureStructuredGenerator()
+    cognition = StructuredJsonFastCognition(generator)
+
+    observed = cognition.draft(question="Herhangi bir iş varlığını say.")
+
+    assert observed.status == DraftStatus.SUPPORTED
+    system = generator.system.lower()
+    assert "primary business/data entity" in system
+    assert "likely english metadata equivalents" in system
+    assert "measure or dimension words" in system
+    assert "at most four search terms" in system
+    assert "orders" not in system
+    assert "sipariş" not in system
