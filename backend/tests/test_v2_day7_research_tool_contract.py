@@ -27,6 +27,10 @@ from app.v2.models import (
     SemanticTargetKind,
     TenantAnalyticsRuntimeV0,
 )
+from app.v2.research_state import (
+    ResearchDeltaAvailability,
+    build_research_state_view,
+)
 from app.v2.research_tools import (
     ResearchTaskKind,
     ResearchToolContractError,
@@ -285,3 +289,69 @@ def test_query_vertical_uses_official_boundary_and_returns_verified_evidence():
     exposed = result.evidence.payload["executions"][0]
     assert len(tuple(exposed.get("rows") or ())) <= result.contract.max_rows
     assert "Sales.revenue" not in tuple(exposed.get("columns") or ())
+
+
+def test_research_state_separates_accumulated_evidence_from_latest_delta():
+    principal, _, _, runtime, executor, task, call = _accepted_query_vertical()
+
+    result = ResearchToolRunner().execute(
+        task=task,
+        tool_id="wren.query",
+        call=call,
+        runtime=runtime,
+        executor=executor,
+        principal=principal,
+    )
+
+    before = build_research_state_view(
+        runtime=runtime,
+        evidence_store=executor.evidence_store,
+    )
+    assert before.accumulated_evidence_refs == (result.evidence.artifact_id,)
+    assert before.latest_delta is not None
+    assert before.latest_delta.evidence_ref == result.evidence.artifact_id
+    assert before.latest_delta.availability == ResearchDeltaAvailability.AVAILABLE
+    assert before.latest_delta.verified is True
+    assert before.latest_delta.inspected is False
+    assert before.verified_user_must_ids == ("U_QUERY",)
+    assert before.remaining_user_must_ids == ()
+
+    runtime.call_tool(
+        ManagerToolCall(
+            name=ManagerToolName.INSPECT_EVIDENCE,
+            args={"evidence_ref": result.evidence.artifact_id},
+        ),
+        executor=executor,
+    )
+
+    after = build_research_state_view(
+        runtime=runtime,
+        evidence_store=executor.evidence_store,
+    )
+    assert after.accumulated_evidence_refs == before.accumulated_evidence_refs
+    assert after.inspected_evidence_refs == (result.evidence.artifact_id,)
+    assert after.latest_delta is not None
+    assert after.latest_delta.inspected is True
+
+
+def test_latest_delta_unavailable_is_not_silently_treated_as_no_evidence():
+    principal, _, _, runtime, executor, task, call = _accepted_query_vertical()
+
+    result = ResearchToolRunner().execute(
+        task=task,
+        tool_id="wren.query",
+        call=call,
+        runtime=runtime,
+        executor=executor,
+        principal=principal,
+    )
+    state = build_research_state_view(
+        runtime=runtime,
+        evidence_store=None,
+    )
+
+    assert state.accumulated_evidence_refs == (result.evidence.artifact_id,)
+    assert state.latest_delta is not None
+    assert state.latest_delta.evidence_ref == result.evidence.artifact_id
+    assert state.latest_delta.availability == ResearchDeltaAvailability.UNAVAILABLE
+    assert state.latest_delta.verified is None
