@@ -614,3 +614,161 @@ product code written     = 0
 Metabase runtime started = 0
 ```
 
+
+## Batch 5 — Content curation, glossary ownership, lib_metric semantics, OSI watchlist
+
+### DD-17 — content verification / official-content metadata
+
+- **mechanism:** content verification / official-content metadata
+- **exact upstream source/function:**
+  - `src/metabase/queries/models/card.clj::card-is-verified?`
+  - `::unverify-card-if-needed!`
+  - Card search spec fields `:verified` and `:official-collection`
+  - `src/metabase/content_verification/models/moderation_review.clj::create-review!`
+  - collection `authority_level = "official"` surfaced through search/curation metadata
+- **observed behavior:** Metabase carries explicit curation signals distinct from query execution:
+  the latest moderation review can mark a Card `verified`; materially editing a verified query
+  automatically creates an “Unverified due to edit” review. Search metadata separately exposes
+  whether content lives in an official collection. These labels can be ranked/rendered as trust/
+  curation metadata but do not replace data permissions or QP execution correctness.
+- **problem solved:** let organizations distinguish reviewed/endorsed analytical content from ordinary
+  user-authored content and invalidate endorsement when the underlying query changes.
+- **Dima equivalent/owner:** Dima catalog/evidence/product metadata may later expose
+  `certified/official/reviewed` status with source/version. Numeric/query truth still belongs to
+  Wren/DB + QueryContract/Evidence; semantic truth remains Wren.
+- **Wren equivalent/owner:** Wren owns semantic definitions; it may supply version/context identity but
+  does not need Metabase moderation state to make a semantic object true.
+- **disposition:** **PATTERN_ONLY**
+- **security/authority effect:** `VERIFIED/OFFICIAL != AUTHORIZATION` and
+  `VERIFIED/OFFICIAL != EVIDENCE`. Curation may affect ranking/presentation only.
+- **semantic duplication risk:** LOW if it is metadata; HIGH if “official” starts minting semantic
+  handles or bypassing Wren definitions.
+- **native implementation cost:** LOW-MEDIUM.
+- **Metabase runtime dependency:** NONE for Dima core. If Metabase workspace is later adopted, its
+  curation metadata can remain workspace-local or be explicitly mapped.
+- **required executable proof:** changing the underlying governed definition/query invalidates or
+  version-splits certification; an unverified item can still execute if authorized; a verified item
+  cannot bypass permissions/Evidence; ranking may prefer certified items without altering canonical
+  semantic binding.
+- **timing:** Day8/9 provenance UX or post-MVP workspace.
+
+### DD-18 — glossary lifecycle vs retained Wren knowledge
+
+- **mechanism:** glossary lifecycle vs Wren knowledge
+- **exact upstream source/function:**
+  - `src/metabase/glossary/core.clj::entries`
+  - `::create-entry!`, `::update-entry!`, `::delete-entry!`
+  - `src/metabase/glossary/models/glossary.clj` serialization lifecycle
+  - `src/metabase/mcp/v2/tools/glossary.clj::glossary`
+- **observed behavior:** Metabase maintains an independent durable glossary of unique business terms
+  and definitions, with CRUD/events/serialization. The MCP glossary tool tells the agent these
+  analyst-authored definitions should override its ordinary-language reading of a term.
+- **problem solved:** centrally curate business-language definitions for AI/user interpretation.
+- **Dima equivalent/owner:** retained Wren `knowledge` / business context + Dima semantic context.
+  Business definitions that can affect interpretation or canonical binding must originate from the
+  same retained semantic source, not an independently edited second glossary.
+- **Wren equivalent/owner:** **WREN_OWNS** business-semantic knowledge.
+- **disposition:** **WREN_OWNS**
+- **security/authority effect:** a Metabase glossary term must never override an accepted Wren semantic
+  definition or mint Dima authority. If surfaced later, it is either derived from Wren or explicitly
+  non-authoritative workspace annotation.
+- **semantic duplication risk:** **VERY HIGH** if Wren Knowledge and Metabase Glossary are both manually
+  curated as authoritative.
+- **native implementation cost:** N/A for ownership; syncing two systems would create ongoing cost and
+  drift, which is precisely what must be avoided.
+- **Metabase runtime dependency:** NONE for semantic truth. Optional workspace glossary is a separate
+  later product decision.
+- **required executable proof:** conflicting Metabase glossary text cannot alter Wren-derived handle/
+  metric/relationship binding; `manual_dual_business_definition_maintenance = 0` in X0/full-X.
+  Any future export to a workspace must be one-way/derived or explicitly non-authoritative.
+- **timing:** permanent ownership decision; workspace integration post-MVP.
+
+### DD-22 — Metabase lib_metric multi-source semantics
+
+- **mechanism:** Metabase lib_metric multi-source semantics
+- **exact upstream source/function:**
+  - `src/metabase/lib_metric/core.cljc` module contract
+  - `src/metabase/lib_metric/definition.cljc::expression-leaves`
+  - `::->query-plan`
+  - `src/metabase/lib_metric/ast/plan.cljc::validate-arithmetic-ast!`
+  - `::plan-from-ast`, `::join-and-compute`
+  - `src/metabase/lib_metric/metadata/provider.cljc::MetricContextMetadataProvider`
+  - `::metric-context-metadata-provider`
+  - `src/metabase/lib_metric/dimension.cljc::group-by-source`
+  - `src/metabase/lib_metric/dimension/jvm.clj::compute-dimension-pairs`
+- **observed behavior:** `lib_metric` is a semantic/query-planning subsystem, not just display
+  metadata. A MetricDefinition can be a single metric/measure or an arithmetic expression over
+  multiple metric/measure leaves. Arithmetic plans compile multiple leaf MBQL queries, require
+  compatible breakout dimensions, then inner-join result tuples and compute the expression. Its
+  metadata provider explicitly has **no single database context** and can route metadata across
+  multiple databases. Metric dimensions have persistent UUIDs/mappings and can include explicit or
+  implicitly joinable connection groups.
+- **problem solved:** define reusable metric semantics, projections and arithmetic across multiple
+  semantic sources/databases.
+- **Dima equivalent/owner:** Dima consumes canonical metric/dimension/relationship semantics from
+  retained Wren and keeps analytical validity in Dima planner/trust plane. This Metabase subsystem is
+  a **competing semantic layer** for the same concepts.
+- **Wren equivalent/owner:** **WREN_OWNS** metric formulas, relationships, cubes/models, grain/time/
+  dimension semantics for Dima.
+- **disposition:** **WREN_OWNS**
+- **security/authority effect:** Metabase metric IDs/definitions/dimension mappings cannot become Dima
+  semantic authority. X0 may execute a translated accepted query but must not require recreating the
+  metric formula in `lib_metric`.
+- **semantic duplication risk:** **CRITICAL/VERY HIGH** — dual formulas, dimension UUID mappings,
+  implicit joins, compatible-breakout rules and multi-source arithmetic would create a second
+  semantic compiler/source of truth.
+- **native implementation cost:** N/A for ownership; adopting this layer would add large migration/
+  synchronization cost.
+- **Metabase runtime dependency:** structured X0 must work **without** maintaining parallel Metabase
+  metrics. If it cannot, the execution arm is rejected at bridge preflight.
+- **required executable proof:** representative Standard artifacts translate using accepted Dima/Wren
+  semantics with `manual_metabase_metric_definitions=0`, `metric_formula_duplication=0`,
+  `relationship_duplication=0`, `grain/time_duplication=0`. Any case requiring a Metabase metric
+  shadow definition fails bridge P0.
+- **timing:** permanent preflight ownership constraint.
+
+### DD-23 — OSI/Ossie interoperability watchlist
+
+- **mechanism:** OSI/Ossie interoperability watchlist
+- **exact upstream source/function/evidence at pinned SHA:**
+  - `src/metabase/osi/models/osi_ai_context.clj`
+  - `src/metabase/osi/schema.clj::osi-ai-context.ai-context`
+  - `src/metabase/osi/ai_context/api.clj`
+  - serialization/retrieval hooks around `OsiAiContext`
+  - repository search at the pinned source shows no production “Ossie” semantic model/interchange
+    implementation; the only unrelated `ossie` token is test fixture data.
+- **observed behavior:** the concrete OSI surface present in this source tree is a per-entity
+  `ai_context` object containing bounded `instructions`, `synonyms` and `examples`, keyed to
+  existing Metabase entities and serialized with them. Writes nudge a derived retrieval-index
+  reconcile. The pinned source does **not** provide sufficient evidence of a full portable
+  metric/relationship/grain semantic interchange contract that could replace Wren.
+- **problem solved:** attach interoperable/portable AI-facing context to existing semantic entities and
+  keep retrieval projections updated.
+- **Dima equivalent/owner:** Wren Knowledge/business context remains authoritative. Dima may later
+  export/import standardized AI annotations if a mature interoperability contract proves useful.
+- **Wren equivalent/owner:** Wren owns current semantic model/knowledge; any future OSI adapter must be
+  derived from or losslessly mapped to it.
+- **disposition:** **DEFER_PRODUCT**
+- **security/authority effect:** future external interoperability metadata cannot self-authorize or
+  become a second semantic source.
+- **semantic duplication risk:** currently LOW because this is annotations; could become HIGH if a
+  future standard carries full metric/relationship semantics and is independently curated.
+- **native implementation cost:** UNKNOWN until a mature target specification/runtime requirement is
+  concrete; do not pre-build.
+- **Metabase runtime dependency:** NONE today.
+- **required executable proof before future adoption:** round-trip a representative Wren semantic pack
+  through the target interoperability format with zero metric formula/relationship/grain/time loss and
+  no second editable authority. If not lossless, keep it annotations-only.
+- **timing:** watchlist / post-MVP; not an X0 blocker beyond confirming current source cannot replace Wren.
+
+### Batch 5 counters
+
+```text
+classified in this batch = 4
+mechanisms closed        = 17,18,22,23
+cumulative classified    = 22 / 25
+remaining                = 3
+product code written     = 0
+Metabase runtime started = 0
+```
+
