@@ -6953,6 +6953,37 @@ cardinality-aware fanout policy
 Day7 remains ACTIVE. Day8 is NOT opened.
 
 ---
+## 2026-09-22 — DAY7 CURRENT-HEAD WREN GRAIN RECERTIFICATION GREEN
+
+```text
+tested HEAD                    e08894dc5d438dbfdd9be880b45a16d6d866e7d6
+product Wren metadata commit   b815d19cc8f07ecbd617e3e417e1405503a59542
+focused workflow               35778730697 = GREEN
+```
+
+New certification proof:
+- `backend/app/wren_service.py` is now inside the Day7 focused workflow trigger;
+- real composed demo MDL is read through actual `wren.schema()`;
+- declared model `primaryKey` is preserved exactly as `model.primary_key`;
+- only MDL-declared PK columns receive `is_primary_key=true`;
+- non-PK columns/models do not receive inferred grain;
+- real Wren relationship export preserves `name/models/join_type/condition/certified`;
+- no model-name, column-name or physical-FK grain inference was introduced.
+
+Result:
+`CURRENT HEAD = TESTED CHECKPOINT`.
+
+Next exact P0:
+`timeout / accepted-Evidence commit atomicity`.
+
+Known distinction remains:
+```text
+logical lifecycle deadline = OPEN
+physical DB cancellation   = NOT CLAIMED / capability-dependent
+```
+
+---
+
 ## 2026-09-22 — DAY7 SUPERVISOR RECONCILIATION @ 5789e729
 
 **Current HEAD:** `5789e729115fe044b689739d5960021aba0aca32`  
