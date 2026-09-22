@@ -194,7 +194,7 @@ def _case(*, dimensions=(), filters=(), period=False, comparison=False, ranking=
         service=None,
         principal=None,
         runtime=None,
-        contract_store=None,
+        receipt_writer=None,
     )
     return intent, adapter._to_ir(intent)
 
