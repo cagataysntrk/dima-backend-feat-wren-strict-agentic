@@ -76,6 +76,15 @@ class ManagerRuntime:
         return self._snapshot
 
     @property
+    def budget(self) -> ManagerBudget:
+        """Read-only canonical Research budget; fanout must not invent a second budget."""
+        return self._budget
+
+    @property
+    def remaining_data_queries(self) -> int:
+        return max(self._budget.max_data_queries - self._snapshot.data_queries, 0)
+
+    @property
     def ledger(self) -> UserObligationLedger | None:
         return self._ledger
 
