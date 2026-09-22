@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import base64
 import inspect
 import json
@@ -12,6 +13,9 @@ from app.v3.analytics_contract import (
     ResolvedRanking,
 )
 from app.v3.semantic_spec import DimensionSpec, MetricSpec, SourceLineage
+from app.v3.substrate.metabase import canonical as canonical_module
+from app.v3.substrate.metabase import compiler as compiler_module
+from app.v3.substrate.metabase import execution_binding as execution_binding_module
 from app.v3.substrate.metabase.canonical import MetabaseCanonicalizer
 from app.v3.substrate.metabase.compiler import MetabaseProjectionCompiler
 from app.v3.substrate.metabase.execution_binding import (
@@ -56,6 +60,33 @@ class MutatingClient:
         return ConstructedQuery(serialized_query=_encode(copied))
 
 
+def _inject_runtime_uuids(value, token):
+    if isinstance(value, dict):
+        for item in value.values():
+            _inject_runtime_uuids(item, token)
+        return
+    if isinstance(value, list):
+        if (
+            len(value) >= 2
+            and isinstance(value[0], str)
+            and isinstance(value[1], dict)
+        ):
+            value[1]["lib/uuid"] = f"runtime-{token}-{value[0]}"
+        for item in value:
+            _inject_runtime_uuids(item, token)
+
+
+class UuidVolatileClient:
+    def __init__(self):
+        self.calls = 0
+
+    def construct_query(self, portable_query):
+        self.calls += 1
+        copied = json.loads(json.dumps(portable_query))
+        _inject_runtime_uuids(copied, self.calls)
+        return ConstructedQuery(serialized_query=_encode(copied))
+
+
 class NonDeterministicClient:
     def __init__(self):
         self.calls = 0
@@ -63,7 +94,27 @@ class NonDeterministicClient:
     def construct_query(self, portable_query):
         self.calls += 1
         copied = json.loads(json.dumps(portable_query))
-        copied["call"] = self.calls
+        _inject_runtime_uuids(copied, self.calls)
+        copied["stages"][0]["source-table"][-1] = (
+            "orders" if self.calls % 2 else "orders_v2"
+        )
+        return ConstructedQuery(serialized_query=_encode(copied))
+
+
+class SimilarUuidKeyDriftClient:
+    def __init__(self):
+        self.calls = 0
+
+    def construct_query(self, portable_query):
+        self.calls += 1
+        copied = json.loads(json.dumps(portable_query))
+        _inject_runtime_uuids(copied, self.calls)
+        copied["stages"][0]["aggregation"][0][1]["lib/uuid2"] = (
+            "A" if self.calls % 2 else "B"
+        )
+        copied["stages"][0]["aggregation"][0][1]["my_uuid"] = (
+            "same" if self.calls % 2 else "different"
+        )
         return ConstructedQuery(serialized_query=_encode(copied))
 
 
@@ -83,6 +134,32 @@ def test_compiler_source_has_no_semantic_retrieval_or_name_locator_dependencies(
     assert "request_ref" not in source
     assert "source_message_hash" not in source
     assert "semantic_handle" not in source.lower()
+
+
+
+
+def test_p4_production_boundary_has_no_regex_or_fuzzy_matching_dependencies():
+    forbidden = {
+        "re",
+        "regex",
+        "difflib",
+        "rapidfuzz",
+        "fuzzywuzzy",
+        "Levenshtein",
+    }
+    for module in (
+        compiler_module,
+        canonical_module,
+        execution_binding_module,
+    ):
+        tree = ast.parse(inspect.getsource(module))
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split(".")[0])
+        assert imported.isdisjoint(forbidden), (module.__name__, imported & forbidden)
 
 
 def test_eight_representative_families_compile_with_exact_manifest():
@@ -388,7 +465,23 @@ def test_provider_free_canonicalizer_accepts_deterministic_structure():
     assert len(canonical.canonical_query_fingerprint) == 64
 
 
-def test_canonicalizer_rejects_non_deterministic_serialization():
+def test_canonicalizer_tolerates_only_exact_lib_uuid_runtime_volatility():
+    plan = MetabaseProjectionCompiler.compile(
+        intent=_case(7),
+        snapshot=build_snapshot(),
+    )
+    client = UuidVolatileClient()
+    first = MetabaseCanonicalizer(client=client).canonicalize(plan)
+    second = MetabaseCanonicalizer(client=client).canonicalize(plan)
+
+    assert first.canonical_query_fingerprint == second.canonical_query_fingerprint
+    assert first.steps[0].canonical_query_fingerprint == second.steps[0].canonical_query_fingerprint
+    assert first.steps[0].volatile_lib_uuid_count > 1
+    rendered = repr(first.steps[0].decoded_query)
+    assert "'lib/uuid'" not in rendered
+
+
+def test_canonicalizer_rejects_non_uuid_canonical_drift():
     plan = MetabaseProjectionCompiler.compile(
         intent=_case(0),
         snapshot=build_snapshot(),
@@ -397,7 +490,19 @@ def test_canonicalizer_rejects_non_deterministic_serialization():
         MetabaseCanonicalizer(
             client=NonDeterministicClient()
         ).canonicalize(plan)
-    assert exc.value.code == "NON_DETERMINISTIC_CANONICAL_SERIALIZATION"
+    assert exc.value.code == "NON_DETERMINISTIC_CANONICAL_SEMANTICS"
+
+
+def test_canonicalizer_does_not_strip_similar_looking_uuid_keys():
+    plan = MetabaseProjectionCompiler.compile(
+        intent=_case(0),
+        snapshot=build_snapshot(),
+    )
+    with pytest.raises(MetabaseCompilationBlocked) as exc:
+        MetabaseCanonicalizer(
+            client=SimilarUuidKeyDriftClient()
+        ).canonicalize(plan)
+    assert exc.value.code == "NON_DETERMINISTIC_CANONICAL_SEMANTICS"
 
 
 def test_canonicalizer_rejects_silent_filter_drop():
