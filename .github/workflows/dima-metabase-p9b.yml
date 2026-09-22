@@ -1,0 +1,77 @@
+name: dima-metabase-p9b
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/resource_transport.py"
+      - "backend/tests/test_v3_p9b_resource_transport.py"
+      - "backend/belgeler/metabase/predev/P9B_PREDEVELOPMENT_REVIEW.md"
+      - "backend/belgeler/metabase/tickets/P9B_METABASE_RESOURCE_TRANSPORT.md"
+      - ".github/workflows/dima-metabase-p9b.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p9b1-metric-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require sealed P9B1 predevelopment review
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVIEW="backend/belgeler/metabase/predev/P9B_PREDEVELOPMENT_REVIEW.md"
+          grep -q "Status: \*\*SEALED / P9B1 PROVIDER-FREE METRIC CREATE CONTRACT AUTHORIZED / LIVE WRITES NOT AUTHORIZED\*\*" "$REVIEW"
+
+      - name: Enforce P9B1 provider-free isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="2cb7b3e54104cbba27bb6b7ccfa15c49a8c20dc9"
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|semantic_import|semantic_equivalence|resource_provisioning|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)'; then
+            echo "P9B1 touched a forbidden file"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile P9B1
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v3/resource_transport.py \
+            tests/test_v3_p9b_resource_transport.py
+
+      - name: Focused P9B1 metric persistence contract
+        working-directory: backend
+        run: pytest -q tests/test_v3_p9b_resource_transport.py
+
+      - name: P9A P8 P7 regressions
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_p9_resource_provisioning.py \
+            tests/test_v3_p8_semantic_equivalence.py \
+            tests/test_v3_p7_semantic_import.py
