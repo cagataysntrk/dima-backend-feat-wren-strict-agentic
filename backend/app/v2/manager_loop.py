@@ -853,6 +853,30 @@ class ResearchManagerLoop:
         frontier = DynamicActionFrontier()
         task_registry = ResearchTaskRegistry()
 
+        if self._research_tool_runner is not None:
+            seed_set = self._research_tasks.seed_initial_user_must(
+                runtime=runtime,
+                task_registry=task_registry,
+                executable_task_kinds=self._research_tool_runner.declared_task_kinds,
+            )
+            observations.append(
+                {
+                    "kind": "seed_tasks_registered",
+                    "considered_obligation_ids": list(
+                        seed_set.considered_obligation_ids
+                    ),
+                    "ready_task_ids": [
+                        task.task_id for task in seed_set.registered_tasks
+                    ],
+                    "deferred_obligation_ids": list(
+                        seed_set.deferred_obligation_ids
+                    ),
+                    "already_accounted_obligation_ids": list(
+                        seed_set.already_accounted_obligation_ids
+                    ),
+                }
+            )
+
         while runtime.snapshot.state not in {
             ManagerState.COMPLETED,
             ManagerState.FAILED,
@@ -1105,9 +1129,24 @@ class ResearchManagerLoop:
                 research_execution = None
                 if (
                     self._research_tool_runner is not None
-                    and decision.action == ManagerActionKind.RUN_ANALYTICS
+                    and decision.action in {
+                        ManagerActionKind.RUN_ANALYTICS,
+                        ManagerActionKind.RUN_RELATIONSHIP,
+                    }
                 ):
-                    if decision.derived_task_id is None:
+                    if decision.action == ManagerActionKind.RUN_RELATIONSHIP:
+                        obligation_id = decision.relationship_obligation_id
+                        task_id = f"seed:{obligation_id}"
+                        try:
+                            task = task_registry.get(task_id)
+                        except Exception:
+                            task = self._research_tasks.seed_for_obligation(
+                                runtime=runtime,
+                                obligation_id=obligation_id,
+                                task_id=task_id,
+                            )
+                            task_registry.register(task)
+                    elif decision.derived_task_id is None:
                         if len(decision.obligation_ids) != 1:
                             raise ResearchTaskMaterializationError(
                                 "Day7 one tool invocation maps to exactly one ResearchTask"
