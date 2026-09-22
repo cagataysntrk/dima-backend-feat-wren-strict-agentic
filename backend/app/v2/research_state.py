@@ -35,6 +35,7 @@ class ResearchEvidenceDelta(FrozenModel):
     query_count: int | None = None
     row_count: int | None = None
     limitations: tuple[str, ...] = ()
+    bounded_payload: dict[str, Any] = {}
 
 
 class ResearchObligationState(FrozenModel):
@@ -57,6 +58,33 @@ class ResearchStateView(FrozenModel):
     accumulated_evidence_refs: tuple[str, ...] = ()
     inspected_evidence_refs: tuple[str, ...] = ()
     latest_delta: ResearchEvidenceDelta | None = None
+
+
+def _manager_bounded_payload(
+    evidence: EvidenceArtifact,
+    *,
+    max_rows: int = 20,
+) -> dict[str, Any]:
+    """Return only the already-governed bounded analytical view.
+
+    QueryContract refs stay as refs and canonical SQL/schema details are not added here.
+    """
+    payload: dict[str, Any] = evidence.payload or {}
+    executions = []
+    for item in tuple(payload.get("executions") or ()):
+        executions.append(
+            {
+                "execution_id": item.get("execution_id"),
+                "role": item.get("role"),
+                "columns": tuple(item.get("columns") or ()),
+                "row_count": int(item.get("row_count") or 0),
+                "rows": tuple(item.get("rows") or ())[:max_rows],
+            }
+        )
+    return {
+        "query_count": payload.get("query_count"),
+        "executions": tuple(executions),
+    }
 
 
 def _bounded_counts(evidence: EvidenceArtifact) -> tuple[int | None, int | None]:
@@ -139,6 +167,7 @@ def build_research_state_view(*, runtime, evidence_store=None) -> ResearchStateV
                 query_count=query_count,
                 row_count=row_count,
                 limitations=artifact.limitations,
+                bounded_payload=_manager_bounded_payload(artifact),
             )
         else:
             latest_delta = ResearchEvidenceDelta(
