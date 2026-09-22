@@ -166,20 +166,80 @@ def oku(project_dir: str | Path) -> dict:
     return d if isinstance(d, dict) else {}
 
 
-def rozet(sert: dict, rel_adi: str | None) -> str | None:
-    """Tek ilişkinin özeti: `"olculdu:saglikli"` / `"olculdu:riskli"` / `"olculmedi"` / None.
+def kanit(
+    sert: dict,
+    rel_adi: str | None,
+    *,
+    current_mdl_version: str | None = None,
+) -> dict | None:
+    """Typed-ish fanout proof without inventing freshness.
 
-    `dimension_origin` ve Query Contract bunu taşır; UI (Faz H5) bunu rozete çevirir.
-    `None` = ilişki adı yok (yerel boyut — sertifika sorusu anlamsız).
+    Backward/legacy callers may omit `current_mdl_version`; in that compatibility mode
+    the historical measured relationship status is exposed exactly as before.  Day7
+    governed consumers MUST pass the current Wren MDL version.  Missing/corrupt/mismatched
+    certificates then fail closed to `olculmedi`.
     """
     if not rel_adi:
         return None
-    k = ((sert or {}).get("relationships") or {}).get(rel_adi)
-    if not k:
-        return "olculmedi"
-    if k.get("durum") != "olculdu":
-        return "olculmedi"
-    return "olculdu:saglikli" if k.get("saglikli") else "olculdu:riskli"
+
+    sert = sert if isinstance(sert, dict) else {}
+    certificate_mdl_version = sert.get("mdl_version")
+    measured_at = sert.get("olculme_zamani")
+    relationship = ((sert.get("relationships") or {}).get(rel_adi))
+
+    status = "MISSING"
+    certified = "olculmedi"
+    if current_mdl_version is not None:
+        if not certificate_mdl_version:
+            status = "MDL_VERSION_MISSING"
+        elif str(certificate_mdl_version) != str(current_mdl_version):
+            status = "MDL_MISMATCH"
+        elif not isinstance(relationship, dict):
+            status = "RELATIONSHIP_UNMEASURED"
+        elif relationship.get("durum") != "olculdu":
+            status = "RELATIONSHIP_UNMEASURED"
+        elif relationship.get("saglikli"):
+            status = "HEALTHY"
+            certified = "olculdu:saglikli"
+        else:
+            status = "RISKY"
+            certified = "olculdu:riskli"
+    else:
+        # Historical behavior for non-Day7 callers.
+        if not isinstance(relationship, dict):
+            status = "RELATIONSHIP_UNMEASURED"
+        elif relationship.get("durum") != "olculdu":
+            status = "RELATIONSHIP_UNMEASURED"
+        elif relationship.get("saglikli"):
+            status = "HEALTHY"
+            certified = "olculdu:saglikli"
+        else:
+            status = "RISKY"
+            certified = "olculdu:riskli"
+
+    return {
+        "relationship": rel_adi,
+        "status": status,
+        "certified": certified,
+        "certificate_mdl_version": certificate_mdl_version,
+        "current_mdl_version": current_mdl_version,
+        "measured_at": measured_at,
+    }
+
+
+def rozet(
+    sert: dict,
+    rel_adi: str | None,
+    *,
+    current_mdl_version: str | None = None,
+) -> str | None:
+    """Relationship badge; Day7 callers may bind it to the exact current MDL."""
+    proof = kanit(
+        sert,
+        rel_adi,
+        current_mdl_version=current_mdl_version,
+    )
+    return None if proof is None else str(proof["certified"])
 
 
 #: 🔴 `§F3` — ROZETİN TÜRKÇESİ, TEK SAHİPLİ (`KAT-1`).
