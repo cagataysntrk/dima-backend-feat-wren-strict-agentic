@@ -21,7 +21,7 @@
 >
 > After engineering closure and DEV80: run D65-X isolated Wren-vs-Metabase substrate bake-off before Validation50/Hidden50 certification.
 >
-> Current family-closure first run `35691397377` = 87 PASS / 1 FAIL, classified `EVAL_ORACLE` due stale corpus-schema key map; do not patch semantics for it.
+> Family closure history: first run `35691397377` = 87/88 with one `EVAL_ORACLE`; oracle sync sonrası `35691982389` = **88/88 PASS**. Do not reinterpret the first failure as semantic regression.
 
 
 > **Kapsam:** `feat/ask-v2-mvp` ve bu branch'ten türeyen V2 geliştirme dalları.
@@ -41,9 +41,9 @@
 >
 > Mühürlü nihai roadmap/report salt-okunur ve üst düzey authority olarak korunur.
 >
-> **Nihai çalışma biçimleri:**
-> `STANDARD_DIRECT`, bounded `STANDARD_BUILDER`, `RESEARCH`.
-> Bunlar iki accepted authority ailesi üretir:
+> **Nihai architecture paths:** `STANDARD | RESEARCH`.
+> Standard outcome telemetry: `DIRECT | BUILDER` (`STANDARD_DIRECT` / `STANDARD_BUILDER` eval labels may remain during transition).
+> İki accepted authority ailesi:
 > `AcceptedStandardAuthority` ve `AcceptedResearchAuthority`.
 > `AcceptedResearchAuthority` yeni semantic body değildir; mevcut `AcceptedTurnContract`
 > research authority gövdesidir, yeni isim yalnız alias/tagged-union seviyesinde kullanılabilir.
@@ -66,9 +66,10 @@
 > `one DEV80 per engineering-freeze candidate`; code değişirse yeni candidate ve yeni DEV80 gerekir.
 > Validation/Hidden fail sonrası code değişikliği certification freeze'i bozar; fresh set gerekir.
 >
-> **Operasyon sırası:** provider-free focused → workers=1 focused live → reference A/B
-> → stratified canary → frozen DEV80 → engineering freeze → VALIDATION50 → external HIDDEN50
-> → certification seal.
+> **Operasyon sırası:** D65-E3A-R runtime-kernel realignment → provider-free family closure
+> → workers=1 focused live → same-SHA reference A/B if needed → stratified canary
+> → real Wren Standard + Research sentinel → freeze candidate → DEV80 → engineering closure
+> → D65-X Wren-vs-Metabase substrate challenger → Validation50 → fresh Hidden50 → certification seal.
 >
 > **Tek cümlelik kural:** Vaka geçirerek sistem yapmıyoruz; doğru abstraction'ı kurup
 > vakaların onun doğal sonucu olarak geçmesini istiyoruz.
