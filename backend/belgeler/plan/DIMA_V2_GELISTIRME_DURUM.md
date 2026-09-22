@@ -5703,3 +5703,92 @@ expected:
 
 Classification is **NOT YET PATCHABLE**.
 Infra/provider/harness classes are ruled out. Next step is exact-same-SHA owner/model-floor A/B focused on comparison binding. No semantic code change before classification.
+
+---
+
+## 2026-09-22 — D65-G ROOT-FIX / ANTI-PATCH GUARD
+
+### Giriş kanıtı
+
+Stratified canary run `35695029547`, exact semantic SHA `f5ca942f83aaee0806d7119957c543ab17a59a37`:
+
+```text
+16 evaluable
+14 PASS / 2 FAIL
+measurement failures 0
+model failures 0
+grounding infrastructure failures 0
+harness failures 0
+P0 authority/security counters 0
+```
+
+Failures:
+- `d65-dev-019` explicit-base comparison
+- `d65-dev-073` conversation repair/versioning
+
+Mandatory receipts: `DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md`.
+
+`019` exact-same-SHA diagnostic `35695366379`:
+```text
+flash-lite SEMANTIC_LINKER → FAIL
+Sol SEMANTIC_LINKER        → PASS
+classification            → MODEL_CAPABILITY_FLOOR
+product correctness patch → FORBIDDEN
+```
+
+`073` same-SHA repeat diagnostic:
+```text
+FAIL / PASS / FAIL
+semantic-linker calls = 0
+classification = CONTRACT/ARCHITECTURE
+owner = finite pre-acceptance repair-vs-exclusion contract / CoverageVeto boundary
+```
+
+### D65-G ticket contract
+
+**AMAÇ**
+Yeni Manager semantic hot path'ten legacy heuristic resolver dependency'sini fiziksel olarak sökmek ve RED sonrası vaka-yama disiplinini architecture test + mandatory receipt ile zorlaştırmak.
+
+**USER SCENARIO**
+Bir semantic/linking failure olduğunda geliştirici `legacy SemanticResolver` fallback'i, fuzzy/morphology/regex branch'i veya failed phrase prompt example'ı ekleyememeli; önce root owner/classification kanıtlanmalı.
+
+**NEW OWNER**
+No new semantic owner. Existing owner map korunur. D65-G yalnız anti-regression boundary'dir.
+
+**FILES TO TOUCH**
+```text
+app/v2/manager_semantics.py
+app/v2/manager_lab.py
+tests/test_v2_day6_5_no_legacy_semantic_fallback.py  NEW
+focused existing tests only if constructor surface changes
+```
+
+**FILES NOT TO TOUCH**
+```text
+app/v2/resolver.py behavior
+semantic_linker.py truth/binding behavior
+manager_preacceptance.py repair behavior (separate D65-CANARY-073 owner ticket)
+temporal_intent.py
+StandardBuilder/E4/E5
+Research execution/evidence/completion
+DEV expected labels
+production /ask-v2
+```
+
+**HARDENING RULES**
+- `manager_semantics.py` may not import `app.v2.resolver`.
+- Manager hot path may not accept/store a legacy resolver dependency.
+- `manager_lab.py` may not instantiate/inject `SemanticResolver`.
+- authoritative Day6.5 semantic modules may not import/use `difflib`, `SequenceMatcher`, `py_rust_stemmers`, `SnowballStemmer`, `rapidfuzz`, `_FUZZY` or semantic-language regex parsing.
+- Scope-limited regex guard applies only to semantic authority modules; syntax/JSON/security regex elsewhere is not globally banned.
+
+**EXIT**
+```text
+legacy resolver import/injection from Manager hot path = 0
+anti-heuristic architecture test = GREEN
+focused Manager semantic tests = GREEN
+full provider-free family closure = GREEN
+Research behavior = NO-TOUCH
+```
+
+D65-G sonrasında active canary failures ayrı owner ticket'larıyla ele alınır; `019` için code patch yok, `073` için yalnız repair/coverage contract owner'ı yetkilidir.
