@@ -61,3 +61,5 @@ jobs:
             tests/test_v2_day6_5_standard_builder.py \
             tests/test_v2_day6_5_standard_authority.py \
             tests/test_v2_day6_5_standard_coverage.py
+
+# rerun-after-eval-oracle-sync
