@@ -6711,3 +6711,232 @@ During X0:
 
 Therefore a promising X0 can justify a **full execution-substrate/query-lifecycle comparison**,
 not automatic Wren semantic-layer removal.
+
+
+---
+
+## 2026-09-22 21:54 — DAY7 BUNDLE A — RESEARCH TOOL CONTRACT + RESULT-AWARE FIRST VERTICAL
+
+**Phase:** P10 / DAY7 RESULT-AWARE RESEARCH LOOP  
+**Status:** ACTIVE — first vertical GREEN; Day7 NOT complete  
+**Branch:** `feat/ask-v2-mvp`  
+**Bundle checkpoint:** `a1d9b90204752ba4c6a0b81635a98eb4126cc78a`  
+**Focused workflow:** `35770029440` / job `106889112459` = **SUCCESS**
+
+### Metabase Reference Check — Bundle A
+
+#### DD-14 / missing principal
+- relevant mechanism: async/governed execution identity must exist.
+- disposition: **DIMA_CORE_NATIVE**.
+- adopted invariant: `principal is None → FAIL CLOSED before governed execution`.
+- implementation: `ResearchToolRegistry.validate_invocation` reuses existing
+  `authorize(principal, "query:run", ...)`.
+- explicitly rejected: anonymous/default/admin widening.
+- behavioral proof: focused principal-negative test; query call count remains 0.
+
+#### DD-08 / accumulated state vs current-result delta
+- relevant mechanism: accumulated memory and latest execution result must not be conflated.
+- disposition: **PATTERN_ONLY**.
+- adopted invariant:
+  `ACCUMULATED_RESEARCH_STATE != CURRENT_RESULT_DELTA`.
+- implementation: Dima-native read-model `research_state.py`; no authority minting.
+- `UNAVAILABLE` evidence-store state is explicit and is not converted into NO_MATCH/semantic gap.
+- behavioral proof: focused state/delta tests + Manager-loop prompt proof.
+
+No Metabase runtime/source port/dependency was added.
+
+### Implemented vertical
+
+```text
+Accepted Research authority
+→ ResearchTask
+→ ResearchToolContract
+→ principal + permission + schema + task/tool gate
+→ existing ManagerRuntime
+→ existing GovernedManagerExecutor
+→ existing ManagerCoreAnalyticsAdapter
+→ CubePlanner / Wren dry-plan / Wren query
+→ QueryContract
+→ verified EvidenceArtifact
+→ explicit current-result delta
+→ inspect evidence
+→ bounded adaptive task proposal
+→ second governed task family
+→ completion
+```
+
+### New / changed code
+
+- `app/v2/research_tools.py`
+  - declarative `ResearchToolContract`;
+  - first families: `wren.query`, `wren.breakdown`;
+  - task-kind/schema/authority/principal/permission/input-handle/output/evidence gates;
+  - no raw SQL and no new execution engine.
+- `app/v2/research_state.py`
+  - accumulated state and latest-result delta separate;
+  - bounded evidence payload;
+  - evidence UNAVAILABLE remains typed.
+- `app/v2/research_tasks.py`
+  - seed task materialization from accepted obligation;
+  - derived task requires completed parent + current-run VERIFIED + INSPECTED evidence;
+  - parent/evidence/depth provenance.
+- `app/v2/models.py`
+  - existing Day6 `ResearchTask` shell extended; no parallel task model.
+- `app/v2/manager_runtime.py`
+  - `latest_evidence_ref`, `inspected_evidence_refs`;
+  - current-run inspection state is authoritative runtime state.
+- `app/v2/manager_executor.py`
+  - inspect_evidence fail-closed to current run;
+  - evidence binds to actual `research_task_id`;
+  - principal exposed read-only to Research contract gate.
+- `app/v2/manager_loop.py`
+  - Day7 ResearchToolRunner integration is **opt-in**;
+  - old Day6.5 path is not silently rewritten;
+  - Manager receives accumulated state and current result delta separately;
+  - post-acceptance derived work checks runtime-inspected evidence, not transcript scraping.
+- `app/v2/manager_models.py`
+  - single authoritative budget defaults aligned:
+    data queries=8, hard schema max=12, manager turns=6.
+- `.github/workflows/v2-day7-focused.yml`
+  - focused/provider-free only; no paid LLM, no DEV80/50/50.
+
+### Commit chain
+
+```text
+61aa63367f66  ResearchToolContract boundary
+47557acb755f  research_task_id through governed analytics
+6467d05e5927  EvidenceArtifact binds declared Research task
+3f1dd2c71643  focused first-contract tests
+ace7cde1dc1e  Day7 focused CI
+6ea55e227486  first real-Wren Research vertical
+336a1ca28eec  real-Wren CI step
+51ff55f6f9a9  accumulated-state/current-delta read model
+82367658500e  explicit inspected/latest evidence runtime state
+71a9134a97e4  authoritative evidence inspection state
+9fe7b50e6ed0  inspect current-run fail-closed
+bb0bffd54106  Manager prompt state/delta separation
+25247de62006  state/delta focused tests
+22220ba7ed9e  ResearchTask provenance shell
+25fdf95ab27d  evidence-grounded task materialization
+cbefdaed15c0  derived task provenance at tool gate
+713d0b21f7a7  lifecycle CI coverage
+aefbd7762809  CI harness correction: lifecycle step actually executed
+eac4d0e5330c  capability→ResearchTaskKind map
+8a5cd7692bc7  task-kind→declared tool lookup
+b0c9f2fb7ae5  execution principal exposure
+b8090f6131fb  ResearchTask→tool contract routing
+f292c3949404  opt-in Manager-loop ResearchTask execution
+30a8bf673696  negative/no-branch Manager contract-mode proof
+8b319fac994d  Manager loop focused CI step
+bb0ad73a66d8  BREAKDOWN second tool family
+8addf0bc2feb  bounded actual-result payload in delta
+2b06b1b1220f  delta payload test
+efbf17689195  closed-registry eval oracle sync
+5a9a510e3349  two-step adaptive provider-free scenario
+4a3485cc24af  adaptive CI step
+d32af58be8fe  canonical Research budget alignment
+a1d9b9020475  budget focused proof
+```
+
+### Focused gate evidence
+
+Run `35770029440`:
+
+```text
+compile Day7 slice               PASS
+ResearchToolContract             7/7 PASS
+Research task lifecycle          5/5 PASS
+Manager loop contract mode       1/1 PASS
+result-aware adaptive loop       1/1 PASS
+real Wren Research vertical      1/1 PASS
+```
+
+Real Wren vertical:
+```text
+1 passed in 10.11s
+```
+
+Only observed warnings are dependency/deprecation warnings
+(`duckdb.fetch_arrow_table`, `datetime.utcnow`, GitHub Action Node runtime).
+They are not semantic failures.
+
+### Failure receipts in this bundle
+
+1. orchestration script local variable shadowing:
+   - class: **TRANSPORT/HARNESS**
+   - product commits produced: 0
+   - product patch: 0
+
+2. lifecycle test path present but CI step initially absent:
+   - class: **EVAL_ORACLE / CI_HARNESS**
+   - fixed in workflow only;
+   - no semantic/product patch.
+
+No MODEL_COGNITION, CONTRACT/ARCHITECTURE, RESOLVER_TRUTH or provider semantic RED occurred
+in this bundle.
+
+### What is proven
+
+- declared Research tool execution can reach official Wren/QueryContract/Evidence boundary;
+- missing principal fails before execution;
+- worker cannot use semantic handles absent from typed ResearchTask;
+- evidence attachment and evidence inspection are distinct runtime facts;
+- latest result can be exposed as bounded actual data without raw canonical SQL/schema;
+- agent-derived task cannot materialize before verified+inspected parent evidence;
+- branch depth is bounded at task materialization;
+- negative path can inspect evidence and terminate without invented branch;
+- positive provider-free path can:
+  `QUERY → inspect → derived semantic discovery → BREAKDOWN → inspect → finish`;
+- USER_MUST stays immutable; derived child stays AGENT_DERIVED;
+- one existing budget truth is reused.
+
+### Not yet proven / open Day7 debt
+
+#### D7-A1 — real two-Wren adaptive chain
+Current real-Wren sentinel proves one declared QUERY task.
+The two-step adaptive scenario is provider-free/synthetic execution.
+Day7 real exit still requires:
+```text
+real Wren task 1
+→ inspect
+→ evidence-grounded adaptive task
+→ real Wren task 2
+→ second EvidenceArtifact
+→ terminal
+```
+
+#### D7-A2 — async/idempotency/cancel lifecycle
+Required carry-forward:
+- duplicate async delivery → no duplicate side effect,
+- cancelled task → late result cannot resurrect,
+- task identity idempotent.
+
+#### D7-A3 — fanout/cardinality
+Research fanout must be bounded.
+High/unknown-cardinality policy remains to be implemented/tested.
+
+#### D7-A4 — timeout semantics
+`ResearchToolContract.timeout_ms` is currently checked after synchronous execution.
+True cooperative deadline/cancellation belongs to async/task lifecycle work.
+Do not claim timeout cancellation is solved.
+
+#### D7-A5 — CrossDomainJoinGate
+Not yet implemented for Day7.
+No RELATIONSHIP execution should be opened until grain/path/cardinality/time/fanout gate exists.
+
+#### D7-A6 — live Research Manager quality metrics
+No paid/focused Sol run was executed in Bundle A.
+Later: focused workers=1 live → failure family → small representative canary.
+No DEV80 / Validation50 / Hidden50.
+
+### Next exact bundle
+
+```text
+D7-B
+Research task identity / idempotent delivery / cancel-race non-resurrection
+→ bounded fanout
+→ real two-Wren adaptive vertical
+→ then CrossDomainJoinGate
+```
+
+Day7 remains ACTIVE. Day8/Day9/Day10 are not opened.
