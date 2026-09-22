@@ -101,3 +101,10 @@ jobs:
         working-directory: backend
         run: |
           test ! -f "lab/metabase/artifacts/ft005-model-${{ matrix.label }}.json" ||             cat "lab/metabase/artifacts/ft005-model-${{ matrix.label }}.json"
+
+
+      - name: Fail closed when benchmark credential is unavailable
+        if: steps.credential.outputs.available != 'true'
+        run: |
+          echo "BLOCKED_NO_CREDENTIAL: DIMA_OPENAI_API_KEY / OPENAI_API_KEY"
+          exit 1
