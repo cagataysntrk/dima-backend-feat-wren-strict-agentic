@@ -7,6 +7,7 @@ authority. Query planning/execution mirrors the certified v2 Wren Standard path.
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 from app.v2.cube_planner import (
