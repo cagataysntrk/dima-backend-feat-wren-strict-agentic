@@ -63,10 +63,10 @@
 > `one DEV80 per engineering-freeze candidate`; code değişirse yeni candidate ve yeni DEV80 gerekir.
 > Validation/Hidden fail sonrası code değişikliği certification freeze'i bozar; fresh set gerekir.
 >
-> **Operasyon sırası:** D65-E3A-R runtime-kernel realignment → provider-free family closure
-> → workers=1 focused live → same-SHA reference A/B if needed → stratified canary
-> → real Wren Standard + Research sentinel → freeze candidate → DEV80 → engineering closure
-> → D65-X Wren-vs-Metabase substrate challenger → Validation50 → fresh Hidden50 → certification seal.
+> **Operasyon sırası:** workers=1 focused live → same-SHA reference A/B if needed
+> → stratified canary → real Wren Standard + Research sentinel → freeze candidate → DEV80
+> → engineering closure → D65-X Wren-vs-Metabase substrate challenger → Validation50
+> → fresh Hidden50 → certification seal.
 >
 > **Tek cümlelik kural:** Vaka geçirerek sistem yapmıyoruz; doğru abstraction'ı kurup
 > vakaların onun doğal sonucu olarak geçmesini istiyoruz.
