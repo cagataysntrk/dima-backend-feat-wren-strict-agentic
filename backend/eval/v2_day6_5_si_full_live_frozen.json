@@ -1,0 +1,87 @@
+{
+  "version": "d65-si-full-live-v1-frozen",
+  "frozen": true,
+  "workers": 1,
+  "provider_topology": {
+    "standard_cognition_role": "REFERENCE_LANGUAGE",
+    "standard_cognition_model": "openai/gpt-5.6-sol",
+    "semantic_linker_model": "openai/gpt-5.6-luna",
+    "temporal_normalizer_model": "openai/gpt-5.6-sol"
+  },
+  "cases": [
+    {
+      "id": "si-live-001",
+      "family": "metric_only_non_exact",
+      "question": "tahsil edilmemiş cari bakiyeyi göster",
+      "expected_status": "ACCEPTED",
+      "expected_cube": "cari",
+      "expected_metric": "bakiye",
+      "expected_dimensions": [],
+      "expected_period": false,
+      "expected_comparison": false,
+      "expected_ranking": null
+    },
+    {
+      "id": "si-live-002",
+      "family": "metric_dimension",
+      "question": "fatura toplamını fatura türüne göre göster",
+      "expected_status": "ACCEPTED",
+      "expected_cube": "ticaret",
+      "expected_metric": "toplam_tutar",
+      "expected_dimensions": [
+        "tur"
+      ],
+      "expected_period": false,
+      "expected_comparison": false,
+      "expected_ranking": null
+    },
+    {
+      "id": "si-live-003",
+      "family": "metric_period",
+      "question": "toplam matrahı bu ay göster",
+      "expected_status": "ACCEPTED",
+      "expected_cube": "ticaret",
+      "expected_metric": "toplam_matrah",
+      "expected_dimensions": [],
+      "expected_period": true,
+      "expected_comparison": false,
+      "expected_ranking": null
+    },
+    {
+      "id": "si-live-004",
+      "family": "previous_period_comparison",
+      "question": "toplam matrahı bu ay önceki dönemle karşılaştır",
+      "expected_status": "ACCEPTED",
+      "expected_cube": "ticaret",
+      "expected_metric": "toplam_matrah",
+      "expected_dimensions": [],
+      "expected_period": true,
+      "expected_comparison": true,
+      "expected_ranking": null
+    },
+    {
+      "id": "si-live-005",
+      "family": "ranking",
+      "question": "en yüksek 5 cari kodunu fatura toplamına göre göster",
+      "expected_status": "ACCEPTED",
+      "expected_cube": "ticaret",
+      "expected_metric": "toplam_tutar",
+      "expected_dimensions": [
+        "cari_kodu"
+      ],
+      "expected_period": false,
+      "expected_comparison": false,
+      "expected_ranking": {
+        "direction": "desc",
+        "limit": 5
+      }
+    },
+    {
+      "id": "si-live-006",
+      "family": "under_specified_ambiguity",
+      "question": "geliri göster",
+      "expected_status": "CLARIFICATION_REQUIRED",
+      "expected_query_count": 0
+    }
+  ]
+}
