@@ -31,6 +31,7 @@ class CanonicalProjectionStep(FrozenModel):
     decoded_query: dict[str, Any]
     canonical_query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     volatile_lib_uuid_count: int = Field(ge=0)
+    stabilized_aggregation_ref_count: int = Field(ge=0)
     manifest: QueryStructuralManifest
 
 
@@ -65,6 +66,116 @@ class MetabaseCanonicalizer:
                 "decoded canonical query is not an object",
             )
         return decoded
+
+    @classmethod
+    def _rewrite_aggregation_refs(
+        cls,
+        value: Any,
+        *,
+        uuid_to_index: dict[str, int],
+    ) -> tuple[Any, int]:
+        if isinstance(value, dict):
+            rewritten: dict[str, Any] = {}
+            count = 0
+            for key, item in value.items():
+                rewritten_item, item_count = cls._rewrite_aggregation_refs(
+                    item,
+                    uuid_to_index=uuid_to_index,
+                )
+                rewritten[key] = rewritten_item
+                count += item_count
+            return rewritten, count
+
+        if isinstance(value, list):
+            rewritten_items: list[Any] = []
+            count = 0
+            for item in value:
+                rewritten_item, item_count = cls._rewrite_aggregation_refs(
+                    item,
+                    uuid_to_index=uuid_to_index,
+                )
+                rewritten_items.append(rewritten_item)
+                count += item_count
+
+            if (
+                len(rewritten_items) >= 3
+                and rewritten_items[0] == "aggregation"
+                and isinstance(rewritten_items[1], dict)
+                and isinstance(rewritten_items[2], str)
+                and rewritten_items[2] in uuid_to_index
+            ):
+                rewritten_items[2] = uuid_to_index[rewritten_items[2]]
+                count += 1
+            return rewritten_items, count
+
+        return value, 0
+
+    @classmethod
+    def _stabilize_aggregation_references(
+        cls,
+        query: dict[str, Any],
+    ) -> tuple[dict[str, Any], int]:
+        stages = query.get("stages")
+        if not isinstance(stages, list):
+            rewritten, count = cls._rewrite_aggregation_refs(
+                query,
+                uuid_to_index={},
+            )
+            if not isinstance(rewritten, dict):
+                raise AssertionError("canonical query lost object shape")
+            return rewritten, count
+
+        stable_query: dict[str, Any] = {}
+        total = 0
+        for key, value in query.items():
+            if key != "stages":
+                rewritten, count = cls._rewrite_aggregation_refs(
+                    value,
+                    uuid_to_index={},
+                )
+                stable_query[key] = rewritten
+                total += count
+                continue
+
+            stable_stages: list[Any] = []
+            for stage in value:
+                if not isinstance(stage, dict):
+                    rewritten, count = cls._rewrite_aggregation_refs(
+                        stage,
+                        uuid_to_index={},
+                    )
+                    stable_stages.append(rewritten)
+                    total += count
+                    continue
+
+                uuid_to_index: dict[str, int] = {}
+                aggregations = stage.get("aggregation")
+                if isinstance(aggregations, list):
+                    for index, clause in enumerate(aggregations):
+                        if (
+                            isinstance(clause, list)
+                            and len(clause) >= 2
+                            and isinstance(clause[1], dict)
+                            and isinstance(clause[1].get("lib/uuid"), str)
+                        ):
+                            runtime_uuid = clause[1]["lib/uuid"]
+                            if runtime_uuid in uuid_to_index:
+                                raise MetabaseCompilationBlocked(
+                                    "AMBIGUOUS_RUNTIME_AGGREGATION_IDENTITY",
+                                    "duplicate same-stage aggregation lib/uuid",
+                                )
+                            uuid_to_index[runtime_uuid] = index
+
+                rewritten, count = cls._rewrite_aggregation_refs(
+                    stage,
+                    uuid_to_index=uuid_to_index,
+                )
+                stable_stages.append(rewritten)
+                total += count
+
+            stable_query[key] = stable_stages
+
+        return stable_query, total
 
     @classmethod
     def _strip_runtime_volatility(cls, value: Any) -> tuple[Any, int]:
@@ -198,11 +309,17 @@ class MetabaseCanonicalizer:
             first_decoded = self._decode(first.serialized_query)
             second_decoded = self._decode(second.serialized_query)
 
+            first_identity_stable, first_ref_count = (
+                self._stabilize_aggregation_references(first_decoded)
+            )
+            second_identity_stable, second_ref_count = (
+                self._stabilize_aggregation_references(second_decoded)
+            )
             first_stable, first_uuid_count = self._strip_runtime_volatility(
-                first_decoded
+                first_identity_stable
             )
             second_stable, second_uuid_count = self._strip_runtime_volatility(
-                second_decoded
+                second_identity_stable
             )
             if not isinstance(first_stable, dict) or not isinstance(second_stable, dict):
                 raise AssertionError("stable canonical query lost object shape")
@@ -235,6 +352,10 @@ class MetabaseCanonicalizer:
                     volatile_lib_uuid_count=max(
                         first_uuid_count,
                         second_uuid_count,
+                    ),
+                    stabilized_aggregation_ref_count=max(
+                        first_ref_count,
+                        second_ref_count,
                     ),
                     manifest=actual_manifest,
                 )

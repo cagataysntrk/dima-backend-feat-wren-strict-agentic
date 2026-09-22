@@ -101,6 +101,35 @@ class NonDeterministicClient:
         return ConstructedQuery(serialized_query=_encode(copied))
 
 
+class AggregationReferenceVolatileClient:
+    def __init__(self):
+        self.calls = 0
+
+    def construct_query(self, portable_query):
+        self.calls += 1
+        copied = json.loads(json.dumps(portable_query))
+        stage = copied["stages"][0]
+        runtime_uuid = f"runtime-aggregation-{self.calls}"
+        stage["aggregation"][0][1]["lib/uuid"] = runtime_uuid
+        stage["order-by"][0][2][1]["lib/uuid"] = f"runtime-ref-{self.calls}"
+        stage["order-by"][0][2][2] = runtime_uuid
+        return ConstructedQuery(serialized_query=_encode(copied))
+
+
+class UnmatchedAggregationReferenceDriftClient:
+    def __init__(self):
+        self.calls = 0
+
+    def construct_query(self, portable_query):
+        self.calls += 1
+        copied = json.loads(json.dumps(portable_query))
+        stage = copied["stages"][0]
+        stage["aggregation"][0][1]["lib/uuid"] = f"runtime-aggregation-{self.calls}"
+        stage["order-by"][0][2][1]["lib/uuid"] = f"runtime-ref-{self.calls}"
+        stage["order-by"][0][2][2] = f"unmatched-runtime-ref-{self.calls}"
+        return ConstructedQuery(serialized_query=_encode(copied))
+
+
 class SimilarUuidKeyDriftClient:
     def __init__(self):
         self.calls = 0
@@ -497,6 +526,34 @@ def test_canonicalizer_rejects_non_uuid_canonical_drift():
         ).canonicalize(plan)
     assert exc.value.code == "NON_DETERMINISTIC_CANONICAL_SEMANTICS"
     assert "$.stages[0].source-table[2]" in exc.value.detail
+
+
+def test_canonicalizer_stabilizes_only_matching_same_stage_aggregation_reference():
+    plan = MetabaseProjectionCompiler.compile(
+        intent=_case(5),
+        snapshot=build_snapshot(),
+    )
+    canonical = MetabaseCanonicalizer(
+        client=AggregationReferenceVolatileClient()
+    ).canonicalize(plan)
+
+    assert canonical.steps[0].stabilized_aggregation_ref_count == 1
+    order_ref = canonical.steps[0].decoded_query["stages"][0]["order-by"][0][2]
+    assert order_ref[0] == "aggregation"
+    assert order_ref[2] == 0
+
+
+def test_canonicalizer_rejects_unmatched_aggregation_reference_string_drift():
+    plan = MetabaseProjectionCompiler.compile(
+        intent=_case(5),
+        snapshot=build_snapshot(),
+    )
+    with pytest.raises(MetabaseCompilationBlocked) as exc:
+        MetabaseCanonicalizer(
+            client=UnmatchedAggregationReferenceDriftClient()
+        ).canonicalize(plan)
+    assert exc.value.code == "NON_DETERMINISTIC_CANONICAL_SEMANTICS"
+    assert "$.stages[0].order-by[0][2][2]" in exc.value.detail
 
 
 def test_canonicalizer_does_not_strip_similar_looking_uuid_keys():

@@ -51,6 +51,7 @@ def test_p4_all_eight_families_canonicalize_deterministically_and_execute():
     snapshot = build_snapshot()
     executed = 0
     observed_runtime_uuids = 0
+    stabilized_aggregation_refs = 0
 
     with MetabaseAgentClient(
         base_url=base_url,
@@ -86,6 +87,9 @@ def test_p4_all_eight_families_canonicalize_deterministically_and_execute():
             observed_runtime_uuids += sum(
                 item.volatile_lib_uuid_count for item in canonical.steps
             )
+            stabilized_aggregation_refs += sum(
+                item.stabilized_aggregation_ref_count for item in canonical.steps
+            )
 
             for item in canonical.steps:
                 result = client.execute_serialized(
@@ -96,3 +100,4 @@ def test_p4_all_eight_families_canonicalize_deterministically_and_execute():
 
     assert executed == 9
     assert observed_runtime_uuids > 0
+    assert stabilized_aggregation_refs > 0
