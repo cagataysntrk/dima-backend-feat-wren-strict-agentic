@@ -244,8 +244,6 @@ def _jev_decide(*, track: str, case: dict[str, Any], timeout_s: float) -> Decisi
                 "criteria": options,
             }
         },
-        "provider": {"allow_fallbacks": False},
-        "session_id": f"dima-day65-{track.lower()}-{case['id']}",
     }
     started = time.perf_counter()
     try:
