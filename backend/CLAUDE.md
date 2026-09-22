@@ -7,7 +7,9 @@
 > Her geliştirme oturumunun ilk sırası:
 >
 > 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
-> 2. `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`
+> 2. `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`
+> 3. `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`
+> 4. `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`
 > 3. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
 > 4. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
 > 5. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
@@ -39,12 +41,16 @@
 >
 > **Standard front-door:** retrieval/discovery authority değildir. DIRECT yalnız ilk-attempt seal outcome'udur; BUILDER aynı Standard engine'in bounded progress-driven repair outcome'udur. Standard loop generic kernel'i kullanır fakat kernel semantic/authority/research truth bilmez. `simple_standard_research_manager_loop = 0`.
 >
-> **Current pre-freeze gate:** J1S + J1T + M0/X0. Freeze/DEV80 is blocked.
+> **FINAL RELEASE TEST TIMING:** `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` has precedence for final freeze/DEV80 timing.
+> DEV80 runs exactly once, after Day15 code + final rehearsal. Validation50/Hidden50 follow under code freeze with no tuning.
+> Development continues to use focused real-LLM, failure-family, metamorphic, canary and sentinel tests; broad 80/50/50 sets are end-only.
+> STOP/CONSULT before final freeze, DEV80, post-DEV80 behavior change and pilot activation.
+>> **Current pre-freeze gate:** J1S + J1T + M0/X0. Freeze/DEV80 is blocked.
 > Baseline proofs: provider-free `35696652502=102/102`, reference canary `35697064833=16/16`, Wren+Research sentinel `35697471863=2/2`, exact SHA `8dfde62d...`.
 > J1S = semantic candidate decision; J1T = typed temporal intent classification. Both compare Gemini Flash-Lite vs pinned `typesafe/jev-1.13` vs Sol in lab/eval only. Jev uses OpenRouter Decisions API, not chat/completions. Product semantic/temporal/authority code stays NO-TOUCH during benchmark.
 > M0 = Metabase source/adoption audit; X0 = thin separate-service Agent API feasibility before freeze. Promising J1 or X0 result is a consultation gate, not automatic product integration.
 > Detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
->> **Substrate kararı:** Wren current incumbent'tır. Metabase production dependency değildir. Ancak M0 source/adoption audit + X0 thin feasibility ve gerekirse full D65-X artık engineering freeze/DEV80 ÖNCESİ çözülür. Production'da Wren + Metabase equal truth engines yasaktır.
+>> **Substrate kararı:** Wren current incumbent'tır. M0/X0/full-X (if needed) and one-primary-substrate selection happen before Day7–15 final integration and before the release final freeze/DEV80. Production'da Wren + Metabase equal truth engines yasaktır.
 > **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
 > Canonical upstream: `metabase/metabase`.
 > Current Day 6.5 reference SHA: `74216b30981d8310c4cf724d63ca282e2e63529d`.
