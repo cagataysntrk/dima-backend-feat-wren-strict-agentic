@@ -466,3 +466,66 @@ full M1 workflow including real Wren parity and retained v2 sentinels.
 
 status:
 `CLASSIFIED / TEST-ONLY PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-M1-RED-007 — Wren evidence-id hash import removed during receipt split
+
+receipt_id: `DMP-M1-RED-007`  
+ticket: `M1-P1-001`  
+tested_sha: `6a88a61399f741eb4a902f4e143e490cdba304a5`  
+run_id: `35730716030`
+
+observed_failure:
+Real Wren parity reaches verified execution and then fails while creating the v3 evidence
+artifact with `NameError: name 'hashlib' is not defined` in `app/v3/substrate/wren.py`.
+
+failure_stage:
+post-query evidence artifact identity construction.
+
+failure_class:
+`CONTRACT/ARCHITECTURE`
+
+classification_evidence:
+- forbidden-file isolation = PASS;
+- compile = PASS (undefined runtime symbol is not a syntax error);
+- provider-free v3 contract/family gate = 15 PASS;
+- retained real-Wren step reached the v3 execution path;
+- the receipt-boundary refactor removed `hashlib` together with moved query-fingerprint helpers,
+  but `hashlib.sha256` remains legitimately required for evidence artifact id generation.
+
+single_owner:
+`backend/app/v3/substrate/wren.py` import set.
+
+root_cause:
+over-broad import cleanup during DMP-M1-RED-005 implementation.
+
+failure_family:
+runtime-only missing imports after moving one of several hashing responsibilities between modules.
+
+forbidden_patch_alternatives:
+- move evidence-id hashing back into receipt writer;
+- weaken/skip real Wren parity;
+- change evidence identity contract;
+- modify v2.
+
+allowed_files_to_touch:
+- `backend/app/v3/substrate/wren.py`
+
+files_not_to_touch:
+- all v2 files
+- source branch
+- semantic/authority contracts for this failure
+
+invariant_being_fixed:
+existing deterministic evidence identity generation remains intact after persistence ownership split.
+
+focused_proof:
+real v3 Wren parity test.
+
+family_or_live_proof:
+full M1 workflow including retained v2 real-Wren sentinels.
+
+status:
+`CLASSIFIED / NARROW IMPLEMENTATION PATCH AUTHORIZED`.
