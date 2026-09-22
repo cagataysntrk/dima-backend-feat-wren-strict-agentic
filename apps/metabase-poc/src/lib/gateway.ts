@@ -2,6 +2,7 @@
 // in apps/web). Talks same-origin to /api/*; the server gateway does the rest.
 
 import type { QueryResult } from "@dima/contracts";
+import { frameData, splitFrames } from "@/lib/sse";
 
 export class ApiError extends Error {
   constructor(
@@ -138,6 +139,19 @@ export interface ChatAnswer {
   result: QueryResult | null;
 }
 
+export type ChatStreamEvent =
+  | { type: "step"; id: number; text: string; done: boolean }
+  | { type: "token"; text: string }
+  | {
+      type: "done";
+      answer: string;
+      sql: string | null;
+      result: QueryResult | null;
+      steps: string[];
+      durationMs: number;
+    }
+  | { type: "error"; message: string };
+
 export const gateway = {
   browseTables: () => api<{ tables: BrowseTable[] }>("/api/browse").then((r) => r.tables),
   previewTable: (tableId: number, sort?: { fieldId: number; dir: "asc" | "desc" }) =>
@@ -150,7 +164,31 @@ export const gateway = {
   updateField: (fieldId: number, patch: { displayName?: string; category?: boolean; hidden?: boolean }) =>
     api<{ field: ModelField }>(`/api/model/fields/${fieldId}`, { ...json(patch), method: "PATCH" }).then((r) => r.field),
   tables: () => api<{ tables: { name: string; columns: string[] }[] }>("/api/tables").then((r) => r.tables),
-  chat: (messages: ChatTurn[]) => api<ChatAnswer>("/api/chat", json({ messages })),
+  /**
+   * Streamed chat: yields each event as it arrives. Abort the signal to stop —
+   * the server sees the disconnect and stops generating too.
+   */
+  chatStream: async function* (messages: ChatTurn[], signal: AbortSignal): AsyncGenerator<ChatStreamEvent> {
+    const res = await fetch("/api/chat", { ...json({ messages }), signal, credentials: "same-origin" });
+    if (!res.ok || !res.body) {
+      const body = await res.json().catch(() => ({}) as { error?: string });
+      throw new ApiError(res.status, body.error ?? "Beklenmeyen bir hata oluştu.");
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const { frames, rest } = splitFrames(buffer);
+      buffer = rest;
+      for (const frame of frames) {
+        const data = frameData(frame);
+        if (data) yield JSON.parse(data) as ChatStreamEvent;
+      }
+    }
+  },
   search: (q: string) => api<{ items: Item[] }>(`/api/search?q=${encodeURIComponent(q)}`).then((r) => r.items),
   trash: () => api<{ items: Item[] }>("/api/trash").then((r) => r.items),
   restore: (kind: "card" | "dashboard", id: number) => api<{ ok: true }>("/api/trash", json({ kind, id })),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
@@ -9,7 +9,8 @@ import { toast } from "sonner";
 import { ThinkingOrb } from "thinking-orbs";
 import { gateway, type ChatAnswer, type ChatTurn } from "@/lib/gateway";
 import { cn } from "@dima/ui/utils";
-import { useConversations, type Entry } from "@/stores/conversations";
+import { useConversations, type Entry, type Step } from "@/stores/conversations";
+import { LiveSteps, Thought } from "@/components/chat/Steps";
 import { TopbarActions, TopbarLead } from "@/components/shell/AppShell";
 import { ChatNav } from "@/components/chat/ChatNav";
 import { ChatTitle } from "@/components/chat/ChatTitle";
@@ -80,7 +81,9 @@ export function ChatView({
   const convId = useSearchParams().get("c");
   const hydrated = useHydrated();
   const conv = useConversations((s) => s.conversations.find((c) => c.id === convId && c.orgId === orgId));
-  const { create, addEntry, settle } = useConversations.getState();
+  const { create, addEntry, progress, settle } = useConversations.getState();
+  // Held while an answer streams, so Stop (and leaving the page) can cancel it.
+  const inflight = useRef<AbortController | null>(null);
   const [draft, setDraft] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [tab, setTab] = useState<PanelTab>("results");
@@ -118,11 +121,72 @@ export function ChatView({
     const entryId = addEntry(id, question);
     setFresh((prev) => new Set(prev).add(`${id}:${entryId}`));
     setDraft("");
-    gateway
-      .chat([...history, { role: "user", content: question }])
-      .then((reply) => settle(id, entryId, { id: entryId, question, status: "done", reply }))
-      .catch((err: Error) => settle(id, entryId, { id: entryId, question, status: "error", message: err.message }));
+
+    const controller = new AbortController();
+    inflight.current = controller;
+    void (async () => {
+      const steps: Step[] = [];
+      let text = "";
+      let flushedAt = 0;
+      try {
+        for await (const ev of gateway.chatStream([...history, { role: "user", content: question }], controller.signal)) {
+          if (ev.type === "step") {
+            const at = steps.findIndex((s) => s.id === ev.id);
+            if (at >= 0) steps[at] = { id: ev.id, text: ev.text, done: ev.done };
+            else steps.push({ id: ev.id, text: ev.text, done: ev.done });
+            progress(id, entryId, { steps: [...steps] });
+          } else if (ev.type === "token") {
+            text += ev.text;
+            // Repainting Markdown on every token is wasteful; ~60ms reads as live.
+            const now = Date.now();
+            if (now - flushedAt > 60) {
+              flushedAt = now;
+              progress(id, entryId, { partial: text });
+            }
+          } else if (ev.type === "done") {
+            settle(id, entryId, {
+              id: entryId,
+              question,
+              status: "done",
+              reply: { answer: ev.answer, sql: ev.sql, result: ev.result },
+              steps: ev.steps,
+              durationMs: ev.durationMs,
+            });
+            return;
+          } else {
+            settle(id, entryId, { id: entryId, question, status: "error", message: ev.message });
+            return;
+          }
+        }
+        // Stream ended without a verdict: keep whatever text arrived.
+        settle(id, entryId, {
+          id: entryId,
+          question,
+          status: text ? "done" : "error",
+          ...(text
+            ? { reply: { answer: text, sql: null, result: null }, steps: steps.map((s) => s.text) }
+            : { message: "Yanıt yarıda kesildi." }),
+        } as Extract<Entry, { status: "done" | "error" }>);
+      } catch (err) {
+        if (controller.signal.aborted) {
+          settle(id, entryId, {
+            id: entryId,
+            question,
+            status: text ? "done" : "error",
+            ...(text
+              ? { reply: { answer: text, sql: null, result: null }, steps: steps.map((s) => s.text) }
+              : { message: "Durduruldu." }),
+          } as Extract<Entry, { status: "done" | "error" }>);
+        } else {
+          settle(id, entryId, { id: entryId, question, status: "error", message: (err as Error).message });
+        }
+      } finally {
+        if (inflight.current === controller) inflight.current = null;
+      }
+    })();
   };
+
+  const stop = () => inflight.current?.abort();
 
   const scrollTo = (entryId: number) =>
     document.getElementById(`entry-${entryId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -206,22 +270,31 @@ export function ChatView({
                       <DimaAvatar className="mt-0.5 shrink-0" thinking={e.status === "pending"} />
                       <Bubble from="assistant">
                         {e.status === "pending" ? (
-                          <div className="flex items-center gap-2.5 pt-1 text-sm" role="status">
-                            {/* libraries.dev thinking orb — follows the .dark class and prefers-reduced-motion on its own. */}
-                            <ThinkingOrb state="searching" size={32} color="#7e38f8" aria-hidden />
-                            <span className="dima-shimmer font-medium">Veriye bakılıyor…</span>
+                          <div className="space-y-3">
+                            {e.partial ? (
+                              <Markdown>{e.partial}</Markdown>
+                            ) : (
+                              <div className="flex items-start gap-2.5">
+                                {/* libraries.dev thinking orb — theme and reduced motion handled by the library. */}
+                                <ThinkingOrb state="searching" size={32} color="#7e38f8" aria-hidden />
+                                <LiveSteps steps={e.steps ?? []} />
+                              </div>
+                            )}
                           </div>
                         ) : e.status === "error" ? (
                           <p role="alert" className="text-sm text-destructive">
                             {e.message}
                           </p>
                         ) : (
-                          <Reply
-                            reply={e.reply}
-                            question={e.question}
-                            canSave={canSave}
-                            animate={fresh.has(`${conv?.id}:${e.id}`)}
-                          />
+                          <div className="space-y-2">
+                            <Thought steps={e.steps ?? []} durationMs={e.durationMs} />
+                            <Reply
+                              reply={e.reply}
+                              question={e.question}
+                              canSave={canSave}
+                              animate={fresh.has(`${conv?.id}:${e.id}`)}
+                            />
+                          </div>
                         )}
                       </Bubble>
                     </Message>
@@ -239,6 +312,7 @@ export function ChatView({
                   onSubmit={() => submit(draft)}
                   disabled={!configured}
                   busy={pending}
+                  onStop={stop}
                 />
               </div>
             </div>

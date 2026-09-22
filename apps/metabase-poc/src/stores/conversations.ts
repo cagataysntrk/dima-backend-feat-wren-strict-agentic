@@ -8,9 +8,15 @@ import type { ChatAnswer } from "@/lib/gateway";
 // organization so switching company never shows another tenant's chats.
 // Server-side history (dima-backend /conversations) is a later integration.
 
+export interface Step {
+  id: number;
+  text: string;
+  done: boolean;
+}
+
 export type Entry = { id: number; question: string } & (
-  | { status: "pending" }
-  | { status: "done"; reply: ChatAnswer }
+  | { status: "pending"; steps?: Step[]; partial?: string }
+  | { status: "done"; reply: ChatAnswer; steps?: string[]; durationMs?: number }
   | { status: "error"; message: string }
 );
 
@@ -27,6 +33,8 @@ interface State {
   conversations: Conversation[];
   create: (orgId: string) => string;
   addEntry: (convId: string, question: string) => number;
+  /** Live progress of a pending turn (steps + streamed text). */
+  progress: (convId: string, entryId: number, patch: { steps?: Step[]; partial?: string }) => void;
   settle: (convId: string, entryId: number, patch: Extract<Entry, { status: "done" | "error" }>) => void;
   rename: (convId: string, title: string) => void;
   remove: (convId: string) => void;
@@ -92,6 +100,17 @@ export const useConversations = create<State>()(
         }));
         return entryId;
       },
+      progress: (convId, entryId, patch) =>
+        set((s) => ({
+          conversations: s.conversations.map((c) =>
+            c.id === convId
+              ? touch(
+                  c,
+                  c.entries.map((e) => (e.id === entryId && e.status === "pending" ? { ...e, ...patch } : e)),
+                )
+              : c,
+          ),
+        })),
       settle: (convId, entryId, patch) =>
         set((s) => ({
           conversations: s.conversations.map((c) =>

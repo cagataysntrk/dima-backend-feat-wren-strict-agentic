@@ -2,7 +2,7 @@
 
 import { useRef, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUp, ChevronDown, Table2 } from "lucide-react";
+import { ArrowUp, ChevronDown, Square, Table2 } from "lucide-react";
 import { BorderBeam } from "border-beam";
 import { useTheme } from "next-themes";
 import { gateway } from "@/lib/gateway";
@@ -22,6 +22,8 @@ interface Props {
   onSubmit: () => void;
   disabled?: boolean;
   busy?: boolean;
+  /** Shown as a Stop button while `busy`; cancels the streaming answer. */
+  onStop?: () => void;
   /** Start-screen variant: taller box wrapped in the libraries.dev border beam. */
   hero?: boolean;
   autoFocus?: boolean;
@@ -31,7 +33,7 @@ interface Props {
  * Chat input: text on top, a toolbar row below (data-scope chip left, round
  * send button right). Enter sends, Shift+Enter adds a line.
  */
-export function Composer({ value, onChange, onSubmit, disabled, busy, hero, autoFocus }: Props) {
+export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, hero, autoFocus }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const { resolvedTheme } = useTheme();
   // The beam builds its stylesheet in the browser and follows the theme, which
@@ -94,18 +96,30 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, hero, auto
         <span className="hidden text-xs text-muted-foreground/70 sm:inline">
           Enter gönder · Shift + Enter yeni satır
         </span>
-        <Button
-          type="submit"
-          size="icon"
-          aria-label="Gönder"
-          disabled={!canSend}
-          className={cn(
-            "ml-auto size-9 rounded-full transition-colors",
-            canSend ? "bg-brand text-brand-foreground hover:bg-brand/90" : "bg-muted text-muted-foreground",
-          )}
-        >
-          <ArrowUp className="size-4" aria-hidden />
-        </Button>
+        {busy && onStop ? (
+          <Button
+            type="button"
+            size="icon"
+            aria-label="Durdur"
+            onClick={onStop}
+            className="ml-auto size-9 rounded-full bg-foreground text-background transition-colors hover:bg-foreground/90"
+          >
+            <Square className="size-3.5 fill-current" aria-hidden />
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            size="icon"
+            aria-label="Gönder"
+            disabled={!canSend}
+            className={cn(
+              "ml-auto size-9 rounded-full transition-colors",
+              canSend ? "bg-brand text-brand-foreground hover:bg-brand/90" : "bg-muted text-muted-foreground",
+            )}
+          >
+            <ArrowUp className="size-4" aria-hidden />
+          </Button>
+        )}
       </div>
     </div>
   );
