@@ -327,3 +327,149 @@ def test_retry_lineage_creates_new_immutable_run():
         assert manager.get_run(first.run_id, principal=principal()).attempt == 1
     finally:
         manager.shutdown(interrupt=False)
+
+
+
+# --- FT-004 post-seal focused invariant audit -------------------------------
+
+
+class _RunningTransitionBarrierStore(FastRunStore):
+    """Deterministically pauses the worker after its CREATED pre-check."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.running_transition_reached = threading.Event()
+        self.allow_running_transition = threading.Event()
+
+    def transition(self, run_id: str, **kwargs):
+        if (
+            kwargs.get("state") == FastRunState.RUNNING
+            and kwargs.get("dedupe_key") == "run-started"
+        ):
+            self.running_transition_reached.set()
+            assert self.allow_running_transition.wait(timeout=3)
+        return super().transition(run_id, **kwargs)
+
+
+def test_postseal_cancel_after_worker_precheck_before_running_never_calls_ask():
+    store = _RunningTransitionBarrierStore()
+    service = StubService(success_response())
+    manager = FastRunManager(service=service, store=store, max_workers=1)
+    try:
+        created = manager.create_run(request(), principal=principal())
+        assert store.running_transition_reached.wait(timeout=2)
+
+        cancelled = manager.cancel_run(created.run_id, principal=principal())
+        assert cancelled.state == FastRunState.CANCEL_REQUESTED
+
+        store.allow_running_transition.set()
+        final = wait_state(
+            manager,
+            created.run_id,
+            {FastRunState.CANCELLED},
+        )
+        assert final.state == FastRunState.CANCELLED
+        assert service.calls == 0
+
+        events, _ = manager.events_after(
+            created.run_id,
+            principal=principal(),
+        )
+        assert [event.type for event in events] == [
+            FastRunEventType.RUN_CREATED,
+            FastRunEventType.CANCEL_REQUESTED,
+            FastRunEventType.RUN_CANCELLED,
+        ]
+        assert all(
+            event.type != FastRunEventType.RUN_STARTED
+            for event in events
+        )
+    finally:
+        store.allow_running_transition.set()
+        manager.shutdown(interrupt=False)
+
+
+def test_postseal_owner_identity_is_stable_across_superadmin_claim_change():
+    store = FastRunStore()
+    original = SimpleNamespace(
+        user_id="stable-user",
+        tenant_id="tenant-a",
+        is_superadmin=False,
+        roles=["analyst"],
+        tenant_slug="tenant-a",
+    )
+    elevated = SimpleNamespace(
+        user_id="stable-user",
+        tenant_id="tenant-a",
+        is_superadmin=True,
+        roles=["superadmin"],
+        tenant_slug="tenant-a",
+    )
+    owner = FastRunOwner.from_principal(original)
+    created = store.create(request=request(), owner=owner)
+
+    observed = store.snapshot(
+        created.run_id,
+        FastRunOwner.from_principal(elevated),
+    )
+    assert observed.run_id == created.run_id
+
+
+def test_postseal_retry_requires_same_question():
+    failed = FastAskResponse(
+        status=AskOutcomeStatus.FAILED,
+        question="Hatalı alan",
+        error=FastAskErrorPayload(code="BLOCKED", message="blocked"),
+    )
+    manager = FastRunManager(service=StubService(failed), max_workers=1)
+    try:
+        first = manager.create_run(
+            FastRunCreateRequest(
+                question="Hatalı alan",
+                as_of_date=date(2026, 9, 7),
+            ),
+            principal=principal(),
+        )
+        wait_state(manager, first.run_id, {FastRunState.FAILED})
+
+        with pytest.raises(FastRunTransitionError):
+            manager.create_run(
+                FastRunCreateRequest(
+                    question="Başka analitik soru",
+                    as_of_date=date(2026, 9, 7),
+                    retry_of_run_id=first.run_id,
+                ),
+                principal=principal(),
+            )
+    finally:
+        manager.shutdown(interrupt=False)
+
+
+def test_postseal_retry_requires_same_as_of_date():
+    failed = FastAskResponse(
+        status=AskOutcomeStatus.FAILED,
+        question="Hatalı alan",
+        error=FastAskErrorPayload(code="BLOCKED", message="blocked"),
+    )
+    manager = FastRunManager(service=StubService(failed), max_workers=1)
+    try:
+        first = manager.create_run(
+            FastRunCreateRequest(
+                question="Hatalı alan",
+                as_of_date=date(2026, 9, 7),
+            ),
+            principal=principal(),
+        )
+        wait_state(manager, first.run_id, {FastRunState.FAILED})
+
+        with pytest.raises(FastRunTransitionError):
+            manager.create_run(
+                FastRunCreateRequest(
+                    question="Hatalı alan",
+                    as_of_date=date(2026, 9, 8),
+                    retry_of_run_id=first.run_id,
+                ),
+                principal=principal(),
+            )
+    finally:
+        manager.shutdown(interrupt=False)
