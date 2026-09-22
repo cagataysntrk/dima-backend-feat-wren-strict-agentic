@@ -19,11 +19,27 @@ from app.fast.conversation_models import (
     FastFollowupStatus,
 )
 from app.fast.followup_cognition import StructuredJsonFastFollowupCognition
-from app.llm import build_generator
+from app.llm import OpenAICompatibleSqlGenerator, build_generator
 from fast_model_eval import RecordingStructuredGenerator
 
 
-MODEL = os.getenv("DIMA_OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
+PROVIDER = os.getenv("DIMA_FAST_FT005_PROVIDER", "openrouter").strip().lower()
+MODEL = os.getenv(
+    "DIMA_FAST_FT005_MODEL",
+    os.getenv("DIMA_OPENROUTER_MODEL", "google/gemini-2.5-flash-lite"),
+)
+MODEL_ROLE = os.getenv(
+    "DIMA_FAST_FT005_MODEL_ROLE",
+    "THIRD_MODEL_DIAGNOSTIC",
+)
+MEASUREMENT_MODE = os.getenv(
+    "DIMA_FAST_FT005_MEASUREMENT_MODE",
+    "MODEL_DIAGNOSTIC",
+)
+REASONING_EFFORT = os.getenv(
+    "DIMA_FAST_FT005_REASONING_EFFORT",
+    "disabled",
+)
 OUT = Path(
     os.getenv(
         "DIMA_FAST_FT005_MODEL_RECEIPT",
@@ -53,6 +69,25 @@ def _settings() -> Settings:
         v2_structured_reasoning_enabled=False,
         v2_structured_max_tokens=4096,
     )
+
+
+def _build_generator():
+    if PROVIDER == "openrouter":
+        return build_generator(_settings())
+    if PROVIDER == "openai":
+        key = os.getenv("DIMA_OPENAI_API_KEY", "").strip()
+        if not key:
+            raise RuntimeError("BLOCKED_NO_CREDENTIAL:DIMA_OPENAI_API_KEY")
+        return OpenAICompatibleSqlGenerator(
+            "https://api.openai.com/v1",
+            key,
+            MODEL,
+            provider="openai",
+            select_model=MODEL,
+            structured_reasoning_enabled=False,
+            structured_max_tokens=4096,
+        )
+    raise RuntimeError(f"unsupported benchmark provider: {PROVIDER}")
 
 
 def _ctx(
@@ -127,18 +162,22 @@ def _supported_draft(resolution):
 
 def main() -> int:
     recorder = RecordingStructuredGenerator(
-        build_generator(_settings()),
-        model_role="THIRD_MODEL_DIAGNOSTIC",
+        _build_generator(),
+        model_role=MODEL_ROLE,
         exact_model_id=MODEL,
-        provider="openrouter",
+        provider=PROVIDER,
         validator_model=FastFollowupResolution,
-        reasoning_effort="disabled",
+        reasoning_effort=REASONING_EFFORT,
     )
     cognition = StructuredJsonFastFollowupCognition(recorder)
 
     receipt: dict = {
         "status": "RED",
         "model": MODEL,
+        "model_role": MODEL_ROLE,
+        "measurement_mode": MEASUREMENT_MODE,
+        "provider": PROVIDER,
+        "reasoning_effort": REASONING_EFFORT,
         "assistant_prose_authority": 0,
         "invented_handle_count": 0,
         "cases": [],
