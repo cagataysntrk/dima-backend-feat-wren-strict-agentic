@@ -3,9 +3,23 @@ status: "ENGINEERING_CLOSURE_ACTIVE"
 frozen_at: "2026-09-21"
 
 architecture_question: >
-  Can Dima close the Day 6.5 architecture with STANDARD_DIRECT, bounded
-  STANDARD_BUILDER and RESEARCH while preserving non-bypassable trust-plane authority?
+  Can Dima close Day 6.5 with two execution paths (STANDARD and RESEARCH), a
+  generic bounded process-control kernel proven first on Standard, and non-bypassable
+  trust-plane authority while keeping the analytics substrate independently replaceable?
 
+execution_paths:
+  standard:
+    authority_family: "AcceptedStandardAuthority"
+    standard_outcomes:
+      - "DIRECT"
+      - "BUILDER"
+    runtime: "BoundedAgentRuntimeKernel"
+  research:
+    authority_family: "AcceptedResearchAuthority"
+    authority_body: "AcceptedTurnContract"
+    runtime: "existing ResearchManagerLoop / ManagerRuntime"
+
+# Transition/eval telemetry labels only; NOT architecture-level paths or authority families.
 work_modes:
   standard_direct:
     authority_family: "AcceptedStandardAuthority"
@@ -22,6 +36,40 @@ architecture_invariants:
   standard_query_construction_is_not_research_orchestration: true
   bounded_standard_self_correction_allowed: true
   standard_to_research_authority_merge_forbidden: true
+  standard_direct_is_outcome_not_engine: true
+  generic_kernel_is_process_control_only: true
+  generic_kernel_must_not_own_semantic_truth: true
+  generic_kernel_must_not_own_authority_truth: true
+  generic_kernel_must_not_import_research_ledger_semantics: true
+  research_manager_migration_required_for_day65: false
+  wren_is_current_incumbent_substrate: true
+  equal_parallel_production_truth_engines_forbidden: true
+
+runtime_kernel_contract:
+  target_module: "app/v2/agent_runtime.py"
+  first_consumer: "StandardBuilder"
+  owns:
+    - model_turn_count
+    - tool_call_count
+    - budget_enforcement
+    - observation_lifecycle
+    - action_fingerprint
+    - domain_supplied_state_fingerprint
+    - duplicate_action_state_prevention
+    - terminal_detection
+    - no_progress
+    - structured_telemetry
+  must_not_know:
+    - AcceptedTurnContract
+    - UserObligationLedger
+    - ResearchDirective
+    - evidence_verification_semantics
+    - semantic_handle_minting
+    - canonical_semantic_truth
+    - join_truth
+    - query_truth
+    - numeric_truth
+    - completion_truth
 
 historical_baseline:
   name: "day6_frozen16_one_shot"
@@ -264,13 +312,15 @@ stop_the_line:
   - "Manager bypasses trust-plane authority"
 
 engineering_closure_sequence:
-  - "Recertify exact c9629d9029db360e86a8592e12da646a2afc0621 with focused provider-free cognition/authority closure."
-  - "Create checkpoint SHA only if exact-head recertification is green."
-  - "Add SemanticCatalogRetriever seam; first backend may wrap current deterministic enumeration."
-  - "Add bounded StandardBuilder; STANDARD_DIRECT is its immediate-seal short path."
-  - "Split AcceptedStandardAuthority from AcceptedResearchAuthority physically."
-  - "Keep narrow Standard CoverageVeto for seal phase."
-  - "Run focused provider-free failure-family tests."
+  - "D65-E1 exact semantic-SHA recertification: DONE GREEN 70/70."
+  - "D65-E2 SemanticCatalogRetriever seam: DONE GREEN 9/9."
+  - "D65-E3A add minimal generic BoundedAgentRuntimeKernel; Research Manager remains untouched."
+  - "Re-home existing StandardBuilder loop mechanics into the kernel without semantic behavior changes."
+  - "Keep Direct as STANDARD outcome/telemetry, never a separate engine."
+  - "Keep lightweight StandardProjection compiler and Research compatibility wrapper."
+  - "Keep minimal AcceptedStandardAuthority; AcceptedResearchAuthority remains AcceptedTurnContract alias/tag."
+  - "Keep narrow Standard CoverageVeto."
+  - "Run focused provider-free failure-family closure."
   - "Run workers=1 small focused live architectural boundary set."
   - "Run exact-same-SHA fast/reference model-floor A/B when needed."
   - "Run 12-16 stratified canary before DEV80."
@@ -278,8 +328,9 @@ engineering_closure_sequence:
   - "Mark exact SHA ENGINEERING FREEZE CANDIDATE."
   - "Run frozen DEV80 once per engineering-freeze candidate SHA; classify failure families, never patch named cases."
   - "If hard gates pass: DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN."
-  - "Run VALIDATION50 with no tuning; code change after a failure invalidates this certification set and reopens engineering."
-  - "Run external fresh HIDDEN50 for certification seal; code/architecture change after hidden failure requires a new external sealed corpus."
+  - "Run D65-X isolated Wren-vs-Metabase substrate-only challenger before certification."
+  - "Run VALIDATION50 with no tuning on the chosen frozen substrate."
+  - "Run external fresh HIDDEN50 for certification seal."
   - "Only after seal activate production hybrid /ask-v2."
 
 failure_classification:
@@ -290,3 +341,56 @@ failure_classification:
     - "EVAL_ORACLE"
     - "TRANSPORT/PROVIDER"
   rule: "Classify before patch; infra/provider failure is not semantic failure."
+
+substrate_challenger:
+  gate_id: "D65-X"
+  timing: "AFTER_ENGINEERING_CLOSED_BEFORE_VALIDATION50"
+  incumbent: "Wren"
+  challenger: "Metabase Agent API"
+  experiment_type: "SUBSTRATE_ONLY_PRIMARY"
+  fixed_inputs:
+    - dima_cognition
+    - accepted_semantics
+    - AcceptedStandardAuthority
+    - StandardProjection
+    - benchmark
+  variable: "governed_execution_substrate"
+  production_parallel_truth_engines_allowed: false
+  outcomes:
+    wren_win_or_tie:
+      action: "KEEP_WREN_AND_CONTINUE_CERTIFICATION"
+    metabase_clear_win:
+      action: "STOP_CERTIFICATION_OPEN_NEW_ENGINEERING_CANDIDATE"
+      requires:
+        - affected_standard_gates
+        - new_dev_broad_proof
+        - new_freeze_candidate
+        - fresh_validation
+        - fresh_hidden
+  p0:
+    silent_wrong_max: 0
+    cross_tenant_leakage_max: 0
+    permission_bypass_max: 0
+    unsafe_ambiguity_auto_pick_max: 0
+    unverified_semantic_substitution_max: 0
+    provenance_break_max: 0
+  measurements:
+    - semantic_correctness
+    - query_correctness
+    - result_correctness
+    - repair_success
+    - unsupported_handling
+    - ambiguity_handling
+    - p50_latency
+    - p95_latency
+    - llm_calls
+    - token_cost
+    - query_count
+    - integration_loc
+    - maintenance_surface
+    - schema_onboarding_effort
+    - query_contract_bindability
+    - executed_query_provability
+    - replay_permission_recheck
+    - evidence_artifact_compatibility
+    - tenant_context_end_to_end
