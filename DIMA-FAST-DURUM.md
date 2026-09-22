@@ -5,22 +5,20 @@ Branch: `feat/dima-metabase-product-fast-track`
 
 ## CURRENT_STATE
 
-CURRENT_HEAD_BEFORE_RECONCILIATION: `3f9b3d705f481da3d5939e90d9938025434fde61`
+CURRENT_HEAD_BASELINE:
+`6c845b3dfdde70fa54590cef58a7a26c7b3dc6e5`
 
 CURRENT_BACKEND_GATE:
-`FT-002B — Fast-owned Metabase Gateway`
+`FT-002B CLOSED / GREEN`
 
 CURRENT_PRODUCT_GATE:
-`FT-UI-001 CLOSED -> FT-UI-002 Workspace POC required before FT-003`
-
-BACKEND_STATUS:
-PRESERVED / IN PROGRESS
+`FT-UI-002 — Metabase/Dima Workspace POC`
 
 FRONTEND_PRODUCT_IMPLEMENTATION:
 PAUSED
 
-NEW_BLOCKER_BEFORE_FT-003:
-`FT-UI-002`
+FT-003:
+BLOCKED until FT-UI-002 GREEN
 
 TARGET:
 `Metabase-first Analytics Workspace + Dima Intelligence Experience`
@@ -33,57 +31,54 @@ F0_GREEN_BASELINE:
 F0A_TESTED_COMMIT:
 `c8175ea2a05be79eeae7c61d8fb568c36fbe3773`
 
-F0A_WORKFLOW_RUN:
+F0A_INITIAL_RUN:
 `35761155049`
+
+F0A_RECONCILIATION_RECERT_RUN:
+`35763007067`
 
 F0A_ARTIFACT_DIGEST:
 `sha256:98f6f68402a426cb903d12bff4cb20095db88d7b3c4561ca6e893bef21e8947b`
+
+FT-002B_TESTED_COMMIT:
+`6c845b3dfdde70fa54590cef58a7a26c7b3dc6e5`
+
+FT-002B_WORKFLOW_RUN:
+`35763124599`
 
 PARENT_SNAPSHOT:
 `352205f112fe735d8f80065c7d255d78905398b9`
 
 LAST_GREEN:
-Pinned Metabase F0A capability + restart + backup/restore.
+Fast-owned Metabase Gateway — static + provider-free + real pinned-Metabase live proof.
 
 ## BACKEND COMPLETED
 
 - F0 branch isolation sealed.
-- F0A pinned Metabase live gate passed.
-- unauthenticated Agent API denial verified.
-- authenticated Agent API ping verified.
-- search/read-resource verified.
-- construct/execute/combined query verified.
-- explicit pagination verified: 200 + 5.
-- raw SQL disabled verified.
-- restart persistence verified.
-- app DB backup/restore verified.
+- F0A pinned Metabase capability sealed.
+- F0A re-certification after UI documentation reconciliation passed.
+- Fast-owned auth/access-fingerprint contract implemented.
+- Fast-owned typed Metabase error taxonomy implemented.
+- Fast-owned transport/models/telemetry implemented.
+- Fast-owned Metabase Gateway implemented.
+- provider-free Gateway suite: 21 passed.
+- static boundary suite: 3 passed.
+- live pinned-Metabase Gateway suite: 1 passed.
+- real pagination: 200 + continuation + 5.
+- no V2/V3/Wren runtime import.
+- no raw SQL/admin method on Gateway.
 - source branches remain read-only.
 
-## FT-002B IN-PROGRESS STATE
+## UI ARCHITECTURE
 
-Fast-owned Gateway files have been started under `backend/app/fast/**`.
-
-Provider-free and live test files have been drafted.
-
-They are NOT yet certified GREEN.
-
-The Gateway CI workflow/live proof remains to be completed.
-
-This pre-existing backend work is preserved by the UI architecture reconciliation.
-
-## UI ARCHITECTURE RECONCILIATION
+FT-UI-001:
+CLOSED / GREEN.
 
 OLD:
 `Existing Dima frontend = primary BI/product workspace`
 
 NEW:
 `Metabase-first Analytics Workspace + Dima Intelligence Experience`
-
-Reason:
-Current Dima shell contains valuable Dima-native interaction surfaces but duplicates mature Metabase dashboard/query/navigation/search/asset UX.
-
-Normative path:
-`native baseline -> workspace/frame -> Dima sidecar -> typed context bridge -> Dima research/decision -> selective modularization`
 
 Full-app:
 acceleration strategy only.
@@ -104,46 +99,43 @@ strategic typed-context composition target.
 - typed Metabase resource context required;
 - Metabase AI is not Dima research owner;
 - Dima evidence/decision state remains Dima-owned;
+- Dima backend must run without embed;
 - external pilot before F9 = forbidden.
 
 ## OPEN DEBT / RISKS
 
-1. FT-002B Gateway still needs CI + live certification.
-2. FT-UI-002 needs an embedding-capable exact runtime and exact SDK pin.
-3. Current F0A OSS image proves Agent API, not authenticated full-app/modular embedding.
-4. Full-app iframe context bridge is insufficient as a permanent typed context strategy.
+1. FT-UI-002 needs an embedding-capable exact runtime.
+2. Matching exact Metabase SDK package/version must be pinned.
+3. Current F0A OSS image proves Agent API, not authenticated embedding entitlement.
+4. Full-app iframe does not provide the same typed host callback surface as modular SDK.
 5. SameSite/cross-domain session behavior must be tested.
-6. Responsive Metabase + Dima sidecar composition must be measured.
+6. Metabase workspace + Dima sidecar responsive composition must be tested.
 7. Modular SDK is client-side; Next.js SSR must not own SDK components.
+8. Typed analytics context schema must be proven against supported callbacks before FT-003.
 
 ## NEXT_EXACT_ACTION
 
-Backend first, because it is already authorized and independent of UI POC:
-
-1. finish `.github/workflows/dima-fast-ft002-gateway.yml`;
-2. run provider-free Fast Gateway suite;
-3. run Fast Gateway against pinned Metabase live lab;
-4. seal FT-002B if GREEN.
-
-Parallel/next product action:
-5. open FT-UI-002 predev;
-6. pin embedding-capable runtime + matching SDK;
-7. execute workspace/context POC.
-
-Do NOT begin FT-003 until FT-UI-002 is GREEN.
+1. Create `backend/belgeler/fast/predev/FT_UI_002_WORKSPACE_POC_PREDEVELOPMENT_REVIEW.md`.
+2. Record a separate UI POC source/capability lock:
+   - exact embedding-capable Metabase runtime;
+   - exact image digest;
+   - exact matching SDK version;
+   - auth mode;
+   - origin/SameSite assumptions.
+3. Execute UX-0 native Metabase baseline.
+4. Execute workspace/frame + Dima sidecar POC.
+5. Prove typed current-resource context.
+6. Seal FT-UI-002 only if its hard gate is GREEN.
+7. Only then open FT-003.
 
 ## FILES_NEXT_ALLOWED
 
-Backend FT-002B:
-- `backend/app/fast/metabase_*.py`
-- `backend/app/fast/auth_context.py`
-- `backend/tests/test_fast_metabase_gateway*.py`
-- `.github/workflows/dima-fast-ft002-gateway.yml`
+Until FT-UI-002 predev is committed:
 - `backend/belgeler/fast/**`
 
-UI documentation/POC preparation:
-- `backend/belgeler/fast/**`
-- isolated UI POC files only after FT-UI-002 predev
+After FT-UI-002 predev:
+- isolated UI POC files explicitly listed by that review;
+- no production UI migration.
 
 ## FILES_NEXT_FORBIDDEN
 
@@ -152,5 +144,6 @@ UI documentation/POC preparation:
 - V3 semantic/compiler mutation;
 - Wren mutation;
 - Metabase frontend source;
-- FT-003 product implementation;
-- production UI integration before FT-UI-002 GREEN.
+- Metabase internal React patch;
+- FT-003 implementation;
+- production frontend migration before FT-UI-002 GREEN.

@@ -30,12 +30,17 @@ F0A:
 - [x] raw SQL disabled.
 - [x] restart proof.
 - [x] app DB backup/restore proof.
+- [x] post-reconciliation recertification GREEN.
 
 FT-002B:
-- [ ] provider-free Gateway gate.
-- [ ] no V2/V3/Wren import guard.
-- [ ] live Fast Gateway proof.
-- [ ] Gateway receipt.
+- [x] Fast-owned typed Gateway.
+- [x] provider-free Gateway gate: 21 passed.
+- [x] no V2/V3/Wren import static gate: 3 passed.
+- [x] live pinned-Metabase Gateway proof: 1 passed.
+- [x] real 200 + continuation + 5 pagination.
+- [x] secret-free access fingerprint.
+- [x] no raw SQL/admin public surface.
+- [x] Gateway receipt sealed.
 
 ## C. UI/product architecture
 
@@ -58,6 +63,7 @@ FT-UI-001:
 - [x] modular composition classified as strategic context target.
 
 FT-UI-002:
+- [ ] pre-development review.
 - [ ] exact embedding-capable runtime pin.
 - [ ] exact matching SDK pin.
 - [ ] native Metabase UX baseline.
@@ -152,12 +158,12 @@ UNKNOWN / unsupported decomposition -> explicit limitation.
 ## I. Release progression
 
 ```text
-F0       governance
-F0A      pinned Metabase capability
-FT-002B  Fast-owned Gateway
-FT-UI-001 architecture reconciliation
-FT-UI-002 workspace/context POC
-F1       Ask vertical slice
+F0       governance                         GREEN
+F0A      pinned Metabase capability         GREEN
+FT-002B  Fast-owned Gateway                 GREEN
+FT-UI-001 architecture reconciliation       GREEN
+FT-UI-002 workspace/context POC             NEXT
+F1       Ask vertical slice                 BLOCKED
 F1A      temporal/resource safety
 F2       conversation
 F3       evidence
@@ -176,7 +182,7 @@ F12      production candidate
 
 BRANCH_ISOLATION: GREEN
 METABASE_SUBSTRATE_F0A: GREEN
-FAST_GATEWAY: IN PROGRESS / NOT CERTIFIED
+FAST_GATEWAY: GREEN
 UI_ARCHITECTURE_RECONCILIATION: GREEN
 UI_WORKSPACE_POC: NOT STARTED
 FRONTEND_PRODUCT_IMPLEMENTATION: PAUSED
