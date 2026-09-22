@@ -138,3 +138,64 @@ Corrected evidence also splits:
 - J1T-CHOICE from J1T-CONTRACT-FIDELITY;
 - Sol reference ceiling from primary peer latency/cost ranking;
 - Terra conditional second stage from all automatic runs.
+
+
+## Corrected primary transport smoke
+
+Run:
+`35705416468` — **workflow GREEN / transport complete**
+
+Primary set:
+`Gemini Flash-Lite + Jev 1.13 + GPT-5.6 Luna`
+
+Reasoning policy:
+- Gemini = `reasoning.enabled=false`
+- Jev = native Decisions, no chat reasoning layer
+- Luna = `reasoning.enabled=false`
+
+### J1S smoke
+
+```text
+Gemini  2/2 semantic cases, provider failures 0
+Jev     2/2 semantic cases, provider failures 0
+Luna    2/2 semantic cases, provider failures 0
+```
+
+### J1T-CHOICE smoke
+
+```text
+Gemini  1/2; unsafe ambiguity pick = 1
+Jev     2/2; unsafe ambiguity pick = 0
+Luna    2/2; unsafe ambiguity pick = 0
+```
+
+### J1T-CONTRACT-FIDELITY smoke
+
+```text
+Gemini  contract valid 2/2; exact 1/2; ABSTAIN reason miss
+Jev     TEMPORAL_INTEGRATION_LIMITATION
+        dynamic n / implicit_base_n not faithfully representable by native
+        choice|noul|score without answer enumeration
+Luna    contract valid 2/2; exact 2/2
+```
+
+### Failure classification before any patch
+
+Gemini temporal smoke:
+```text
+failure_class = MODEL_COGNITION (provisional)
+single_owner  = Gemini bounded temporal decision
+evidence      = exact-same harness/cases; Luna succeeds
+product patch = NONE
+```
+
+Jev temporal contract fidelity:
+```text
+failure_class = MODEL_CAPABILITY_FLOOR
+subclass      = TEMPORAL_INTEGRATION_LIMITATION
+single_owner  = Jev native Decisions transport capability
+product patch = NONE
+```
+
+No architecture/Resolver/product semantic code is changed from smoke evidence. Smoke is not the
+final winner decision; corrected full frozen primary bake-off remains required.
