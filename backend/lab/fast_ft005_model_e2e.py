@@ -23,11 +23,13 @@ from app.fast.conversation_service import (
 )
 from app.fast.conversation_store import FastConversationStore
 from app.fast.followup_cognition import StructuredJsonFastFollowupCognition
+from app.fast.conversation_models import FastFollowupResolution
 from app.fast.metabase_gateway import FastMetabaseGateway
 from app.fast.metabase_models import FastMetabaseRuntimePolicy
 from app.fast.run_manager import FastRunManager
 from app.fast.run_models import FastRunState
 from app.llm import build_generator
+from fast_model_eval import RecordingStructuredGenerator
 
 
 MODEL = os.getenv("DIMA_OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
@@ -203,10 +205,18 @@ def main() -> int:
             for key, value in json.loads(os.environ["FT005_EXPECTED_Q3_BREAKDOWN"]).items()
         }
 
-        generator = build_generator(_settings())
-        selector = StructuredJsonFastCognition(generator)
+        base_generator = build_generator(_settings())
+        followup_recorder = RecordingStructuredGenerator(
+            base_generator,
+            model_role="THIRD_MODEL_DIAGNOSTIC",
+            exact_model_id=MODEL,
+            provider="openrouter",
+            validator_model=FastFollowupResolution,
+            reasoning_effort="disabled",
+        )
+        selector = StructuredJsonFastCognition(base_generator)
         followup = RecordingFollowup(
-            StructuredJsonFastFollowupCognition(generator)
+            StructuredJsonFastFollowupCognition(followup_recorder)
         )
 
         base_url = f"http://localhost:{os.environ.get('METABASE_PORT', '3300')}"
@@ -252,7 +262,8 @@ def main() -> int:
         )
 
         settled = []
-        for question in (Q1, Q2, Q3):
+        for turn_index, question in enumerate((Q1, Q2, Q3), start=1):
+            followup_recorder.set_case(f"e2e_turn_{turn_index}")
             created = conversations.submit_turn(
                 conversation.conversation_id,
                 FastTurnCreateRequest(
@@ -398,9 +409,12 @@ def main() -> int:
             "assistant_prose_authority": 0,
             "context_lineage_exact": True,
         }
+        receipt["structured_calls"] = followup_recorder.records
         receipt["status"] = "GREEN"
 
     except Exception as exc:
+        if "followup_recorder" in locals():
+            receipt["structured_calls"] = followup_recorder.records
         receipt["failures"].append(
             f"{type(exc).__name__}: {exc}"
         )
