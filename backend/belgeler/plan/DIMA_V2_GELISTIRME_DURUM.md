@@ -6715,6 +6715,53 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 — DAY7 RELATIONSHIP VERTICAL ROOT FIX GREEN
+
+```text
+tested product SHA   06fc7eae94b6aeba9a2038dccc25c4dfff5cc6cd
+workflow             35784645498
+result               GREEN
+
+root family          ROW_GRAIN / JOIN_KEY / ANALYTICAL_GRAIN SEPARATION
+owner                app/v2/cross_domain_facts.py
+```
+
+Closed generically:
+- relationship target join key is no longer conflated with relationship-derived analytical column,
+- target join key still must equal governed target row PK for the narrow primitive,
+- analytical target column must exist on the governed target Wren model,
+- one-hop provenance is explicit; unsupported multi-hop is denied,
+- relationship-derived attribute != target PK is valid,
+- relationship-derived attribute == target PK remains valid with canonical target-row aggregation,
+- missing relationship / wrong target model / missing target column / stale fanout / unsafe grain deny,
+- physical FK still never creates relationship authority.
+
+Same-SHA focused proof:
+- governed cross-domain facts = GREEN,
+- CrossDomainJoinGate = GREEN,
+- fanout certificate freshness = GREEN,
+- real Wren schema grain metadata = GREEN,
+- real two-Wren adaptive vertical = GREEN,
+- real governed RELATIONSHIP positive + negative = GREEN,
+- complete `v2-day7-focused` = GREEN.
+
+Current next ticket:
+**D7-PRINCIPAL-BINDING — bind Research delivery/receipt identity to tenant + principal subject.**
+
+Required P0:
+```text
+runner principal A + executor principal A -> allow
+runner principal B + executor principal A -> deny before DB
+completed task as A redelivery as B -> prior receipt NOT reusable
+same task same principal A -> receipt reuse allowed
+missing principal -> deny
+foreign tenant -> deny
+```
+
+Day7 remains ACTIVE. Do not start live Sol or Day8.
+
+---
+
 ## 2026-09-22 23:10 — DAY7 RELATIONSHIP RED FAILURE RECEIPT
 
 ```text
