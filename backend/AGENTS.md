@@ -48,9 +48,7 @@
 > `AcceptedResearchAuthority` yeni semantic body değildir; mevcut `AcceptedTurnContract`
 > research authority gövdesidir, yeni isim yalnız alias/tagged-union seviyesinde kullanılabilir.
 >
-> **Hidden50 development blocker değildir.** External hidden yalnız final architecture
-> certification seal'ini bloklar. Development/engineering closure current-head
-> recertification + Retriever seam + StandardBuilder + authority split + frozen DEV80 ile ilerler.
+> **Hidden50 development blocker değildir.** External hidden yalnız final architecture certification seal'ini bloklar. D65-E1 recert ve D65-E2 Retriever tamamlandı; current next ticket `D65-E3A-R` runtime-kernel realignment. Sonra focused/family gates → live/canary/Wren sentinels → freeze candidate → DEV80 → engineering closure → D65-X substrate challenger → certification.
 >
 > **Standard != daima one-shot.** `simple_standard_model_calls <= 1` evrensel mimari
 > gate değildir. Direct yol minimum call hedefler; Builder bounded progress-driven retry yapabilir.
