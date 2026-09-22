@@ -5,6 +5,7 @@ import { listItems, type Item } from "@/server/metabase/api";
 import { GatewayError } from "@/server/metabase/errors";
 import { requireTenant } from "@/server/metabase/guard";
 import { NewDashboardButton } from "@/components/analytics/DashboardActions";
+import { ItemMenu, LibrarySearch } from "@/components/analytics/LibraryTools";
 
 export const metadata: Metadata = { title: "Genel bakış" };
 
@@ -35,8 +36,19 @@ export default async function Overview() {
           <p className="text-sm text-muted-foreground">{tenantName}</p>
           <h1 className="text-2xl font-semibold tracking-tight">Genel bakış</h1>
         </div>
-        {canEdit && <NewDashboardButton />}
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <Link
+              href="/app/trash"
+              className="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Çöp kutusu
+            </Link>
+          )}
+          {canEdit && <NewDashboardButton />}
+        </div>
       </header>
+      <LibrarySearch canEdit={canEdit} />
       {GROUPS.map(({ kind, title, icon: Icon, empty }) => {
         const list = items.filter((i) => i.kind === kind);
         if (kind === "model" && list.length === 0) return null;
@@ -50,7 +62,12 @@ export default async function Overview() {
             ) : (
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {list.map((i) => (
-                  <li key={`${i.kind}-${i.id}`}>
+                  <li key={`${i.kind}-${i.id}`} className="relative">
+                    {canEdit && i.kind === "card" && (
+                      <span className="absolute top-2 right-2 z-10">
+                        <ItemMenu item={i} />
+                      </span>
+                    )}
                     <Link
                       href={i.kind === "dashboard" ? `/app/dashboards/${i.id}` : `/app/cards/${i.id}`}
                       className="group flex h-full min-h-32 flex-col items-center justify-center gap-3 p-5 text-center surface surface-interactive"

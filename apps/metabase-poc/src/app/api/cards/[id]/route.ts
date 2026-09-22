@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CARD_DISPLAYS, updateCard } from "@/server/metabase/api";
+import { setArchived } from "@/server/metabase/library";
 import { GatewayError } from "@/server/metabase/errors";
 import { idParam, withTenant } from "@/server/http";
 
@@ -17,3 +18,8 @@ export const PATCH = withTenant<{ id: string }>(async (ctx, req, { id }) => {
   if (!body.success) throw new GatewayError(400, "Geçersiz istek.");
   return updateCard(ctx, idParam(id), body.data);
 });
+
+// DELETE /api/cards/:id — move the analysis to the trash (restorable).
+export const DELETE = withTenant<{ id: string }>(async (ctx, _req, { id }) =>
+  setArchived(ctx, "card", idParam(id), true),
+);
