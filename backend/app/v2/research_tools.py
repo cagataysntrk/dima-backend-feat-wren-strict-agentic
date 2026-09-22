@@ -24,7 +24,9 @@ from app.v2.manager_tools import (
     ManagerToolName,
     RunAnalyticsArgs,
 )
+from app.v2.manager_progress import action_fingerprint
 from app.v2.models import EvidenceArtifact, FrozenModel, ResearchTask, ResearchTaskKind
+from app.v2.research_tasks import ResearchTaskRegistry
 from control_plane.authorize import AuthzError, Principal, authorize
 
 
@@ -283,6 +285,7 @@ class ResearchToolRunner:
         runtime,
         executor,
         principal: Principal | None,
+        task_registry: ResearchTaskRegistry | None = None,
     ) -> ResearchToolExecution:
         spec, validated = self._registry.validate_invocation(
             task=task,
@@ -302,6 +305,25 @@ class ResearchToolRunner:
                 "Research execution requires accepted Research authority family"
             )
 
+        delivery_fingerprint = action_fingerprint(
+            {
+                "tool_id": tool_id,
+                "call": call.model_dump(mode="json"),
+            }
+        )
+        if task_registry is not None:
+            prior = task_registry.begin_execution(
+                task=task,
+                tool_id=tool_id,
+                action_fingerprint=delivery_fingerprint,
+            )
+            if prior is not None:
+                if not isinstance(prior, ResearchToolExecution):
+                    raise ResearchToolContractError(
+                        "ResearchTask receipt type mismatch"
+                    )
+                return prior
+
         # Inject only execution identity. Semantic/tool inputs remain exactly the
         # contract-validated call supplied above.
         effective_call = call
@@ -315,8 +337,34 @@ class ResearchToolRunner:
                 }
             )
 
+        execution_executor = executor
+        if task_registry is not None:
+            registry = task_registry
+
+            class _LifecycleBoundExecutor:
+                def execute(self, bound_call, validated_args, bound_runtime):
+                    return executor.execute(
+                        bound_call,
+                        validated_args,
+                        bound_runtime,
+                        commit_guard=lambda: registry.assert_execution_active(
+                            task_id=task.task_id,
+                            tool_id=tool_id,
+                            action_fingerprint=delivery_fingerprint,
+                        ),
+                    )
+
+            execution_executor = _LifecycleBoundExecutor()
+
         started = time.monotonic()
-        step = runtime.call_tool(effective_call, executor=executor)
+        try:
+            step = runtime.call_tool(effective_call, executor=execution_executor)
+        except Exception:
+            if task_registry is not None:
+                current = task_registry.get(task.task_id)
+                if current.state != "cancelled":
+                    task_registry.fail(task.task_id)
+            raise
         elapsed_ms = (time.monotonic() - started) * 1000.0
         if elapsed_ms > spec.contract.timeout_ms:
             raise ResearchToolContractError(
@@ -356,10 +404,18 @@ class ResearchToolRunner:
                 )
 
         completed = task.model_copy(update={"state": "complete"})
-        return ResearchToolExecution(
+        execution = ResearchToolExecution(
             task=completed,
             contract=spec.contract,
             observation=observation,
             evidence=evidence,
             elapsed_ms=elapsed_ms,
         )
+        if task_registry is not None:
+            task_registry.complete_execution(
+                task_id=task.task_id,
+                tool_id=tool_id,
+                action_fingerprint=delivery_fingerprint,
+                result=execution,
+            )
+        return execution
