@@ -1,5 +1,63 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-DAY6.5-ENGINEERING-CLOSURE-OVERLAY -->
+> ## 🔴 V2 Day 6.5 engineering-closure target — 2026-09-22
+>
+> Phase-local active decision:
+> `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`.
+> Bu overlay henüz production certification seal beyanı DEĞİLDİR; current implementation
+> ile sıradaki closure target'ı ayırır.
+>
+> Nihai front-door çalışma biçimleri:
+>
+> ```text
+> STANDARD_DIRECT
+> STANDARD_BUILDER
+> RESEARCH
+> ```
+>
+> Bunlar üç authority ailesi değildir:
+>
+> ```text
+> AcceptedAuthority
+> ├── AcceptedStandardAuthority
+> └── AcceptedResearchAuthority
+> ```
+>
+> **StandardBuilder** tek governed analytical projection'ın discovery/repair problemidir.
+> **Research Manager** user obligations + evidence-aware adaptive investigation problemidir.
+> Standard path ağır UOL/Completion machinery'sini taşımaz.
+>
+> Semantic discovery ile authority ayrıdır:
+>
+> ```text
+> SemanticCatalogRetriever  = candidate discovery only
+> SemanticBindingGate       = canonical semantic authority
+> StandardProjectionCompiler/RepresentabilityGate = standard losslessness
+> CubePlanner               = analytical validity
+> Wren/DB                   = numeric truth
+> QueryContract/Evidence    = proof
+> CompletionGate            = research completion truth
+> ```
+>
+> `STANDARD_DIRECT` StandardBuilder'ın hemen seal edilen kısa yoludur; standard sorguların
+> tamamını evrensel tek model çağrısına zorlamak mimari invariant değildir. Bounded builder
+> progress-driven self-correction yapabilir. Aynı action+state tekrarı `NO_PROGRESS`.
+>
+> Başarısız Standard attempt'tan Research authority'ye `sem_*`, projection, metric/operation/
+> comparison/temporal semantic seçimi taşınmaz. Yalnız raw SourceSpanRefs ve non-authoritative
+> discovery cache yeniden kullanılabilir.
+>
+> Current semantic code `c9629d9029db...` için exact focused recertification henüz yapılmalıdır.
+> Sonraki closure sırası: recert → Retriever seam → StandardBuilder → Standard/Research authority
+> split → real Wren vertical → frozen DEV80 → engineering freeze → VALIDATION50 → external
+> HIDDEN50 → certification seal. Production hybrid route seal öncesi kapalıdır.
+>
+> STOP-THE-LINE: ikinci semantic owner, silent requirement loss, unsafe standard admission,
+> ambiguity auto-pick, rejected authority merge, candidate-set dışı truth, raw SQL/direct DB,
+> cross-tenant handle, post-acceptance raw-prompt reparse, unverified numeric claim,
+> evidence'siz VERIFIED completion veya silent fallback.
+
 <!-- DIMA-V2-DAY6.5-COGNITION-AUTHORITY-OVERLAY -->
 > ## 🔴 V2 Day 6.5 aktif cognition / semantic authority sınırı — 2026-09-22
 >
