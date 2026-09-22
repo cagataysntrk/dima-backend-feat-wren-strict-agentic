@@ -102,6 +102,8 @@ class ManagerCoreAnalyticsAdapter:
         contract_store,
         session_id: str | None,
         allowed_obligation_ids: set[str] | None = None,
+        provenance_extra: dict[str, Any] | None = None,
+        evidence_kind: str = "standard_analytics",
     ) -> ManagerCoreAnalyticsResult:
         allowed = allowed_obligation_ids or set(accepted_contract.obligation_ids)
         unknown_obligations = set(args.obligation_ids) - allowed
@@ -278,6 +280,11 @@ class ManagerCoreAnalyticsAdapter:
                         "context_version": context_version,
                         "principal_user_id": runtime.principal_user_id,
                         "principal_roles": list(runtime.roles),
+                        **(
+                            {"governed_extension": provenance_extra}
+                            if provenance_extra is not None
+                            else {}
+                        ),
                     }
                 },
             )
@@ -320,7 +327,7 @@ class ManagerCoreAnalyticsAdapter:
             task_id=task_id,
             obligation_ids=args.obligation_ids,
             query_contract_refs=tuple(contract_refs),
-            evidence_kind="standard_analytics",
+            evidence_kind=evidence_kind,
             verified=True,
             payload={
                 "executions": bounded_results,
