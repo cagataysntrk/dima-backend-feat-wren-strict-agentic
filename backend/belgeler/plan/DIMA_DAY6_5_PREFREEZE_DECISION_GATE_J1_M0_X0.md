@@ -72,9 +72,15 @@ These proofs are preserved. **Do not create ENGINEERING FREEZE CANDIDATE or run 
                          ↓
                ONE PRIMARY SUBSTRATE
                          ↓
-              ENGINEERING FREEZE CANDIDATE
+              DAY 6.5 DECISIONS CLOSED
                          ↓
-                       DEV80
+                    DAY 7–15 CODE
+                         ↓
+        FINAL INTEGRATED RELEASE GATE
+                         ↓
+             FINAL ENGINEERING FREEZE
+                         ↓
+                    DEV80 ONCE
 ```
 
 D65-J1 and D65-M0 may proceed in parallel because both are isolated lab/research gates
@@ -571,3 +577,20 @@ Without changing product semantic/temporal/authority code:
 4. Produce separate J1 and M0 receipts.
 5. Then prepare D65-X0 feasibility ticket.
 6. Stop and consult at any promising integration/substrate decision.
+
+## 11. Release-level timing override
+
+`DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` supersedes every DEV80/final-freeze timing statement in this file.
+
+This file decides J1/M0/X0 architecture choices. It does **not** authorize DEV80.
+
+After J1/M0/X0 resolve:
+```text
+close Day6.5 architecture decisions
+→ continue Day7–15
+→ final integration rehearsal
+→ final release freeze
+→ DEV80 once
+```
+
+Day6.5 may record an architecture checkpoint SHA, but that is not the release FINAL ENGINEERING FREEZE CANDIDATE.
