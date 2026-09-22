@@ -33,6 +33,9 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_result_aware_loop.py"
       - "backend/app/v2/cross_domain_facts.py"
       - "backend/tests/test_v2_day7_cross_domain_facts.py"
+      - "backend/app/v2/manager_core_adapter.py"
+      - "backend/app/v2/relationship_adapter.py"
+      - "backend/tests/test_v2_day7_real_relationship_vertical.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -123,3 +126,7 @@ jobs:
       - name: Real two-Wren adaptive Research vertical
         working-directory: backend
         run: pytest -q tests/test_v2_day7_real_adaptive_wren.py
+
+      - name: Real governed RELATIONSHIP vertical
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_relationship_vertical.py
