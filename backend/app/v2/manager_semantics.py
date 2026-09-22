@@ -176,28 +176,42 @@ class ManagerSemanticResolutionAdapter:
             )
 
         if hint == "comparison":
-            if not args.base_period_handle:
-                raise TemporalResolutionError(
-                    "comparison requires governed base_period_handle"
+            if args.base_period_handle:
+                binding = self._handles.binding_for_execution(
+                    args.base_period_handle,
+                    tenant_binding=self._tenant_binding,
+                    context_version=self._semantic_context.context_version.version,
                 )
-            binding = self._handles.binding_for_execution(
-                args.base_period_handle,
-                tenant_binding=self._tenant_binding,
-                context_version=self._semantic_context.context_version.version,
-            )
-            if not isinstance(binding.canonical_target, ResolvedPeriod):
-                raise TemporalResolutionError("base_period_handle period target değil")
+                if not isinstance(binding.canonical_target, ResolvedPeriod):
+                    raise TemporalResolutionError("base_period_handle period target değil")
+                base_period = binding.canonical_target
+            elif choice.implicit_base_period_kind is not None:
+                try:
+                    base_period = self._temporal_engine.implicit_base_period(
+                        choice=choice,
+                        source_text=text,
+                        time_dimension=time_dimension,
+                    )
+                except ValueError as exc:
+                    raise TemporalResolutionError(str(exc)) from exc
+            else:
+                raise TemporalResolutionError(
+                    "comparison requires governed or typed implicit base period"
+                )
+
             comparison = self._temporal_engine.comparison(
                 choice=choice,
                 source_text=text,
                 time_dimension=time_dimension,
-                base_period=binding.canonical_target,
+                base_period=base_period,
             )
             return self._mint_temporal(
                 target_kind="comparison",
                 canonical_target=comparison,
                 temporal_provenance_id=(
                     f"typed-comparison:{choice.comparison_kind}:"
+                    f"{choice.implicit_base_period_kind or 'explicit-base'}:"
+                    f"{choice.implicit_base_n or ''}:"
                     f"{comparison.base_period.start}:"
                     f"{comparison.reference_period.start}"
                 ),
