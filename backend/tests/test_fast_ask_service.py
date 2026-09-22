@@ -327,7 +327,11 @@ def test_fast_http_requires_dima_auth_and_accepts_valid_superadmin_token():
 def test_fast_only_application_does_not_mount_legacy_ask():
     service, _ = service_for(QUESTION_COUNT)
     app = create_fast_application(service=service)
-    paths = {route.path for route in app.routes}
+    paths = {
+        path
+        for route in app.routes
+        if (path := getattr(route, "path", None)) is not None
+    }
     assert "/fast/ask" in paths
     assert "/fast/health" in paths
     assert "/ask" not in paths
