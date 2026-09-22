@@ -1312,3 +1312,23 @@ DMP-P5-BLOCK-001                   = OPEN
 ```
 
 Next: implement only the DMP-DEC-0027 adoption gate, then rerun the exact same frozen corpus.
+
+
+---
+
+## P11 minimum adoption gate implementation candidate
+
+```text
+decision                         = DMP-DEC-0027
+mechanism                        = EntityValueAdoptionGate
+language cognition              = 0
+candidate retrieval             = 0
+translation dictionary          = 0
+regex/fuzzy/stemming/morphology = 0
+physical field discovery        = 0
+multi-scope direct BIND          = VETO → CLARIFY
+single-scope exact current-lens  = ALLOW
+invented/unapproved bind         = BLOCK
+frozen corpus changes            = 0
+next proof                       = exact same EV-01..04 Luna/Sol rerun
+```

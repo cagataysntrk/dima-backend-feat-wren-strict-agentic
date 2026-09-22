@@ -17,6 +17,12 @@ from typing import Any
 
 import httpx
 
+from app.v3.entity_value_gate import (
+    CurrentLensValueEvidence,
+    EntityValueAdoptionGate,
+    EntityValueProposal,
+)
+
 
 HERE = Path(__file__).resolve().parent
 CORPUS_PATH = HERE / "corpus_v1.json"
@@ -233,7 +239,7 @@ def call_model(
 
 def normalized_decision(value: dict[str, Any]) -> dict[str, Any]:
     decision = value["decision"]
-    if decision in {"CLARIFY", "NO_MATCH"}:
+    if decision in {"CLARIFY", "NO_MATCH", "BLOCKED"}:
         return {"decision": decision, "semantic_ref": None, "value": None}
     return {
         "decision": decision,
@@ -250,6 +256,46 @@ def accepted(case: dict[str, Any], decision: dict[str, Any]) -> bool:
 
 def silent_wrong(case: dict[str, Any], decision: dict[str, Any]) -> bool:
     return decision.get("decision") == "BIND" and not accepted(case, decision)
+
+
+def guarded_decision(
+    *,
+    raw: dict[str, Any],
+    allowed_scopes: list[str],
+    evidence: list[dict[str, Any]],
+) -> dict[str, Any]:
+    lens_refs = {str(item["access_lens_ref"]) for item in evidence}
+    if len(lens_refs) != 1:
+        raise RuntimeError("P11 evidence must carry one coherent access lens")
+    expected_lens = next(iter(lens_refs))
+    proposal = EntityValueProposal(
+        decision=raw["decision"],
+        semantic_ref=(
+            raw.get("semantic_ref") if raw["decision"] == "BIND" else None
+        ),
+        value=raw.get("value") if raw["decision"] == "BIND" else None,
+    )
+    typed_evidence = tuple(
+        CurrentLensValueEvidence(
+            semantic_ref=item["semantic_ref"],
+            values=tuple(candidate["value"] for candidate in item["values"]),
+            access_lens_ref=item["access_lens_ref"],
+            freshness=item["freshness"],
+        )
+        for item in evidence
+    )
+    result = EntityValueAdoptionGate.adjudicate(
+        proposal=proposal,
+        allowed_semantic_scopes=tuple(allowed_scopes),
+        evidence=typed_evidence,
+        expected_access_lens_ref=expected_lens,
+    )
+    return {
+        "decision": result.decision.value,
+        "semantic_ref": result.semantic_ref,
+        "value": result.value,
+        "reason_code": result.reason_code,
+    }
 
 
 def run_case(
@@ -273,46 +319,70 @@ def run_case(
             "Do not mention or invent physical identifiers."
         ),
     }
-    attempts = []
-    first = call_model(
-        api_key=api_key,
-        model=model,
-        system=system,
-        user_payload=payload,
-        max_tokens=int(corpus["model_policy"]["max_tokens"]),
+
+    def measured_attempt() -> dict[str, Any]:
+        raw = call_model(
+            api_key=api_key,
+            model=model,
+            system=system,
+            user_payload=payload,
+            max_tokens=int(corpus["model_policy"]["max_tokens"]),
+        )
+        official = guarded_decision(
+            raw=raw["decision"],
+            allowed_scopes=case["allowed_scopes"],
+            evidence=evidence,
+        )
+        return {
+            **raw,
+            "raw_decision": raw["decision"],
+            "guarded_decision": official,
+        }
+
+    attempts = [measured_attempt()]
+    raw_first_pass = accepted(case, attempts[0]["raw_decision"])
+    official_first_pass = accepted(case, attempts[0]["guarded_decision"])
+    raw_first_silent_wrong = silent_wrong(case, attempts[0]["raw_decision"])
+    official_first_silent_wrong = silent_wrong(
+        case,
+        attempts[0]["guarded_decision"],
     )
-    attempts.append(first)
-    first_pass = accepted(case, first["decision"])
-    first_silent_wrong = silent_wrong(case, first["decision"])
 
-    if not first_pass:
-        for _ in range(2):
-            attempts.append(
-                call_model(
-                    api_key=api_key,
-                    model=model,
-                    system=system,
-                    user_payload=payload,
-                    max_tokens=int(corpus["model_policy"]["max_tokens"]),
-                )
-            )
+    # Preserve the frozen variance rule against raw cognition. A guardrail intercept
+    # does not erase evidence that the model itself produced a suspicious first answer.
+    if not raw_first_pass:
+        attempts.extend(measured_attempt() for _ in range(2))
 
-    any_silent_wrong = any(silent_wrong(case, item["decision"]) for item in attempts)
-    if first_pass:
+    raw_silent_wrong = any(
+        silent_wrong(case, item["raw_decision"]) for item in attempts
+    )
+    official_silent_wrong = any(
+        silent_wrong(case, item["guarded_decision"]) for item in attempts
+    )
+    official_all_pass = all(
+        accepted(case, item["guarded_decision"]) for item in attempts
+    )
+
+    if official_first_pass and not raw_first_pass:
+        classification = "PASS_WITH_MINIMUM_GUARDRAIL"
+    elif official_first_pass:
         classification = "PASS_INITIAL_SIGNAL"
-    elif any_silent_wrong:
-        classification = "MATERIAL_SILENT_WRONG"
-    elif all(accepted(case, item["decision"]) for item in attempts[1:]) and len(attempts) == 3:
-        classification = "STOCHASTIC_VARIANCE"
+    elif official_silent_wrong:
+        classification = "MATERIAL_SILENT_WRONG_AFTER_GUARDRAIL"
+    elif official_all_pass:
+        classification = "PASS_AFTER_VARIANCE"
     else:
-        classification = "PERSISTENT_FAILURE"
+        classification = "PERSISTENT_FAILURE_AFTER_GUARDRAIL"
 
     return {
         "case_id": case["id"],
         "requested_model": model,
-        "first_pass": first_pass,
-        "first_silent_wrong": first_silent_wrong,
-        "any_silent_wrong": any_silent_wrong,
+        "raw_first_pass": raw_first_pass,
+        "first_pass": official_first_pass,
+        "raw_first_silent_wrong": raw_first_silent_wrong,
+        "first_silent_wrong": official_first_silent_wrong,
+        "raw_any_silent_wrong": raw_silent_wrong,
+        "any_silent_wrong": official_silent_wrong,
         "classification": classification,
         "attempts": attempts,
     }
@@ -390,15 +460,22 @@ def main() -> int:
     luna_all_initial = all(item["first_pass"] for item in luna)
     sol_all_initial = all(item["first_pass"] for item in sol)
     any_silent = any(item["any_silent_wrong"] for item in results)
+    raw_any_silent = any(item["raw_any_silent_wrong"] for item in results)
 
     if any_silent:
         resolver_decision = "MINIMUM_GUARDRAIL_REQUIRED"
+        guardrail_status = "INSUFFICIENT"
     elif luna_all_initial and sol_all_initial:
         resolver_decision = "NOT_NEEDED"
+        guardrail_status = (
+            "SUFFICIENT" if raw_any_silent else "NOT_NEEDED_BY_RAW_MODEL"
+        )
     elif (not luna_all_initial) and sol_all_initial:
         resolver_decision = "MODEL_COGNITION_GAP"
+        guardrail_status = "INSUFFICIENT"
     else:
         resolver_decision = "MINIMUM_GUARDRAIL_REQUIRED"
+        guardrail_status = "INSUFFICIENT"
 
     total_attempts = sum(len(item["attempts"]) for item in results)
     payload = {
@@ -418,15 +495,31 @@ def main() -> int:
         "summary": {
             "luna_initial_passes": sum(item["first_pass"] for item in luna),
             "sol_initial_passes": sum(item["first_pass"] for item in sol),
+            "raw_luna_initial_passes": sum(
+                item["raw_first_pass"] for item in luna
+            ),
+            "raw_sol_initial_passes": sum(
+                item["raw_first_pass"] for item in sol
+            ),
+            "raw_silent_wrong_count": sum(
+                1
+                for item in results
+                for attempt in item["attempts"]
+                if silent_wrong(
+                    next(c for c in runnable if c["id"] == item["case_id"]),
+                    attempt["raw_decision"],
+                )
+            ),
             "silent_wrong_count": sum(
                 1
                 for item in results
                 for attempt in item["attempts"]
                 if silent_wrong(
                     next(c for c in runnable if c["id"] == item["case_id"]),
-                    attempt["decision"],
+                    attempt["guarded_decision"],
                 )
             ),
+            "guardrail_status": guardrail_status,
             "resolver_decision": resolver_decision,
         },
     }

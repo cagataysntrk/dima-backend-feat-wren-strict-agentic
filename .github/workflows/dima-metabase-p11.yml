@@ -5,8 +5,10 @@ on:
     branches:
       - feat/dima-metabase-platform
     paths:
+      - "backend/app/v3/entity_value_gate.py"
       - "backend/lab/metabase/p11/**"
       - "backend/tests/test_v3_p11_necessity_contract.py"
+      - "backend/tests/test_v3_p11_entity_value_gate.py"
       - "backend/belgeler/metabase/predev/P11A_PINNED_SOURCE_CONTRACT.md"
       - "backend/belgeler/metabase/predev/P11_PREDEVELOPMENT_REVIEW.md"
       - "backend/belgeler/metabase/tickets/P11_ENTITY_VALUE_NECESSITY_GATE.md"
