@@ -55,3 +55,5 @@ jobs:
 # retry: eval-harness-triggered
 
 # retry: bounded-semantic-token-index
+
+# retry: retrieval-oracle-fixed
