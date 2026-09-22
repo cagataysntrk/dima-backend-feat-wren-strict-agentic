@@ -34,6 +34,13 @@ function qs(filters: Filters, extra: Record<string, string> = {}): string {
   return s ? `?${s}` : "";
 }
 
+export interface BrowseTable {
+  id: number;
+  name: string;
+  displayName: string;
+  fields: { id: number; name: string; label: string }[];
+}
+
 export interface ModelField {
   id: number;
   name: string;
@@ -118,6 +125,11 @@ export interface ChatAnswer {
 }
 
 export const gateway = {
+  browseTables: () => api<{ tables: BrowseTable[] }>("/api/browse").then((r) => r.tables),
+  previewTable: (tableId: number, sort?: { fieldId: number; dir: "asc" | "desc" }) =>
+    api<{ result: QueryResult }>(
+      `/api/browse/${tableId}${sort ? `?sort=${sort.fieldId}&dir=${sort.dir}` : ""}`,
+    ).then((r) => r.result),
   dataModel: () => api<{ tables: ModelTable[] }>("/api/model").then((r) => r.tables),
   updateField: (fieldId: number, patch: { displayName?: string; category?: boolean; hidden?: boolean }) =>
     api<{ field: ModelField }>(`/api/model/fields/${fieldId}`, { ...json(patch), method: "PATCH" }).then((r) => r.field),
