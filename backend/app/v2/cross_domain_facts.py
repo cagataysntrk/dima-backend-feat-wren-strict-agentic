@@ -79,6 +79,9 @@ class CrossDomainJoinFacts(FrozenModel):
     target_row_grain: str
     source_join_key: str
     target_join_key: str
+    source_analysis_grain: str | None = None
+    target_analysis_grain: str | None = None
+    target_analysis_column: str | None = None
     requested_output_grain: str
 
     relationship_path: tuple[str, ...] = Field(min_length=1)
@@ -96,6 +99,8 @@ class CrossDomainJoinFacts(FrozenModel):
             target_model=self.target_model,
             source_grain=self.source_row_grain,
             target_grain=self.target_row_grain,
+            source_analysis_grain=self.source_analysis_grain,
+            target_analysis_grain=self.target_analysis_grain,
             requested_output_grain=self.requested_output_grain,
             relationship_path=self.relationship_path,
             aggregation=self.aggregation,
@@ -160,6 +165,17 @@ class CrossDomainJoinFactBuilder:
                 f"semantic ref requires exactly one governed cube; got {cubes}"
             )
         return cubes[0]
+
+    @staticmethod
+    def _cube(schema: dict, cube_name: str) -> dict | None:
+        return next(
+            (
+                item
+                for item in tuple(schema.get("cubes") or ())
+                if item.get("name") == cube_name
+            ),
+            None,
+        )
 
     @staticmethod
     def _cube_model(schema: dict, cube_name: str) -> str | None:
@@ -303,36 +319,83 @@ class CrossDomainJoinFactBuilder:
 
         source_join_key: str | None = None
         target_join_key: str | None = None
+        target_analysis_grain: str | None = None
+        target_analysis_column: str | None = None
+        requested_output_grain: str | None = None
+        aggregation = JoinAggregation.PRE_AGGREGATE_TO_TARGET
 
         if target_cube == source_cube:
-            # Common governed shape in Dima: the accepted counterpart is the source
-            # cube's local FK dimension (e.g. makine_duruslari.makine).  Target model
-            # authority comes ONLY from a Wren relationship whose parsed source key is
-            # exactly that accepted dimension.
-            local_candidates: list[tuple[dict, tuple[str, str, str, str]]] = []
-            for relation in tuple(schema.get("relationships") or ()):
-                if not isinstance(relation, dict):
-                    continue
+            source_cube_meta = self._cube(schema, source_cube) or {}
+            origin = (source_cube_meta.get("dimension_origin") or {}).get(
+                target_ref.canonical_name
+            )
+
+            if isinstance(origin, dict) and origin.get("relationship"):
+                # True Wren relationship-derived analytical attribute.  Provenance
+                # records the exact target model/column and relationship; no name-based
+                # join discovery is allowed.
+                relation_name = str(origin["relationship"])
+                relation = next(
+                    (
+                        item
+                        for item in tuple(schema.get("relationships") or ())
+                        if isinstance(item, dict)
+                        and item.get("name") == relation_name
+                    ),
+                    None,
+                )
+                if relation is None:
+                    return self._fail(
+                        JoinFactCode.NO_WREN_PATH,
+                        "dimension_origin relationship is absent from current Wren schema",
+                    )
                 parsed = fanout_module.ayristir(relation)
                 if (
-                    parsed is not None
-                    and parsed[0] == source_model
-                    and parsed[1] == target_ref.canonical_name
+                    parsed is None
+                    or parsed[0] != source_model
+                    or parsed[2] != str(origin.get("model"))
+                    or parsed[3] != str(origin.get("column"))
                 ):
-                    local_candidates.append((relation, parsed))
-            if not local_candidates:
-                return self._fail(
-                    JoinFactCode.NO_WREN_PATH,
-                    "accepted local dimension has no Wren business relationship to a target model",
-                )
-            if len(local_candidates) != 1:
-                return self._fail(
-                    JoinFactCode.AMBIGUOUS_WREN_PATH,
-                    "accepted local dimension maps to multiple Wren relationships",
-                )
-            relation, parsed = local_candidates[0]
-            _, source_join_key, target_model, target_join_key = parsed
-            path = (relation,)
+                    return self._fail(
+                        JoinFactCode.NO_WREN_PATH,
+                        "dimension_origin does not match current Wren relationship metadata",
+                    )
+                _, source_join_key, target_model, target_join_key = parsed
+                target_analysis_grain = target_ref.canonical_name
+                target_analysis_column = str(origin.get("column"))
+                requested_output_grain = target_analysis_grain
+                aggregation = JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
+                path = (relation,)
+            else:
+                # Accepted counterpart is the source cube's local FK dimension (e.g.
+                # makine_duruslari.makine). Target model authority comes ONLY from a
+                # Wren relationship whose parsed source key is exactly that dimension.
+                local_candidates: list[
+                    tuple[dict, tuple[str, str, str, str]]
+                ] = []
+                for relation in tuple(schema.get("relationships") or ()):
+                    if not isinstance(relation, dict):
+                        continue
+                    parsed = fanout_module.ayristir(relation)
+                    if (
+                        parsed is not None
+                        and parsed[0] == source_model
+                        and parsed[1] == target_ref.canonical_name
+                    ):
+                        local_candidates.append((relation, parsed))
+                if not local_candidates:
+                    return self._fail(
+                        JoinFactCode.NO_WREN_PATH,
+                        "accepted local dimension has no Wren business relationship to a target model",
+                    )
+                if len(local_candidates) != 1:
+                    return self._fail(
+                        JoinFactCode.AMBIGUOUS_WREN_PATH,
+                        "accepted local dimension maps to multiple Wren relationships",
+                    )
+                relation, parsed = local_candidates[0]
+                _, source_join_key, target_model, target_join_key = parsed
+                path = (relation,)
         else:
             target_model = self._cube_model(schema, target_cube)
             if not target_model:
@@ -390,12 +453,15 @@ class CrossDomainJoinFactBuilder:
 
         # Separate target-cube shape: the counterpart semantic itself must be the target
         # row key. Same-cube local-FK shape is proven equivalent to that row key by the
-        # Wren relationship condition above.
+        # Wren relationship condition. Relationship-derived attributes retain their own
+        # explicit analytical grain from dimension_origin instead.
         if target_cube != source_cube and target_ref.canonical_name != target_pk:
             return self._fail(
                 JoinFactCode.TARGET_GRAIN_NOT_GOVERNED,
                 "counterpart dimension is not the governed target row-key; broader analytical grain unsupported",
             )
+        if requested_output_grain is None:
+            requested_output_grain = target_pk
         proofs: list[FanoutFact] = []
         cardinalities: list[str] = []
         for relation in path:
@@ -448,11 +514,13 @@ class CrossDomainJoinFactBuilder:
             target_row_grain=target_pk,
             source_join_key=str(source_join_key),
             target_join_key=str(target_join_key),
-            requested_output_grain=target_pk,
+            target_analysis_grain=target_analysis_grain,
+            target_analysis_column=target_analysis_column,
+            requested_output_grain=requested_output_grain,
             relationship_path=tuple(str(item["name"]) for item in path),
             cardinality_path=tuple(cardinalities),
             fanout_proofs=tuple(proofs),
-            aggregation=JoinAggregation.PRE_AGGREGATE_TO_TARGET,
+            aggregation=aggregation,
             # For this exact primitive only: one source metric grouped by target row key.
             # No two-measure arithmetic and no cross-domain temporal comparison occurs.
             time_alignment=CompatibilityState.NOT_APPLICABLE,
