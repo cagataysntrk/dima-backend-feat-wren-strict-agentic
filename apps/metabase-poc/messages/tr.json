@@ -178,5 +178,38 @@
       "Son 12 ayın özetini çıkar.",
       "En önemli 5 göstergeyi listele."
     ]
+  },
+  "overview": {
+    "title": "Genel bakış",
+    "dashboards": "Panolar",
+    "analyses": "Analizler",
+    "uploads": "Yüklenen veriler",
+    "emptyDashboards": "Henüz pano yok.",
+    "hintDashboards": "Kaydettiğiniz analizleri bir panoda yan yana toplayın.",
+    "emptyAnalyses": "Henüz kayıtlı analiz yok.",
+    "hintAnalyses": "Sohbette bir soru sorun, beğendiğiniz yanıtı analiz olarak kaydedin.",
+    "emptyUploads": "Henüz veri yüklenmedi.",
+    "hintUploads": "CSV veya Excel yükleyerek kendi tablolarınızı sorgulayın.",
+    "goToChat": "Sohbete git",
+    "uploadData": "Veri yükle",
+    "loadFailed": "Veriler yüklenemedi."
+  },
+  "trash": {
+    "title": "Çöp kutusu",
+    "subtitle": "Silinen analiz ve panolar burada durur; geri aldığınızda bağlantıları ve panolardaki yerleri korunur.",
+    "restored": "Geri alındı.",
+    "empty": "Çöp kutusu boş.",
+    "emptyHint": "Sildiğiniz pano ve analizler kalıcı olarak silinmeden önce burada bekler."
+  },
+  "browse": {
+    "subtitle": "Şirketinizin tablolarına göz atın; ilk 100 satırı görün, sütun başlığına tıklayarak sıralayın.",
+    "preview": "Önizleme",
+    "columnsRows": "{columns} sütun · ilk {rows} satır",
+    "backToPreview": "Önizlemeye dön",
+    "autoInsights": "Otomatik içgörüler",
+    "insightsPending": "İçgörüler hazırlanıyor…",
+    "noInsights": "Bu tablo için içgörü üretilemedi.",
+    "sortBy": "{column} sütununa göre sırala",
+    "title": "Veriler"
   }
 }

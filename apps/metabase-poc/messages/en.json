@@ -178,5 +178,38 @@
       "Summarise the last 12 months.",
       "List the five most important indicators."
     ]
+  },
+  "overview": {
+    "title": "Overview",
+    "dashboards": "Dashboards",
+    "analyses": "Analyses",
+    "uploads": "Uploaded data",
+    "emptyDashboards": "No dashboards yet.",
+    "hintDashboards": "Collect your saved analyses side by side on a dashboard.",
+    "emptyAnalyses": "No saved analyses yet.",
+    "hintAnalyses": "Ask a question in chat and save an answer you like as an analysis.",
+    "emptyUploads": "No data uploaded yet.",
+    "hintUploads": "Upload a CSV or Excel file to query your own tables.",
+    "goToChat": "Go to chat",
+    "uploadData": "Upload data",
+    "loadFailed": "The data could not be loaded."
+  },
+  "trash": {
+    "title": "Trash",
+    "subtitle": "Deleted analyses and dashboards wait here; restoring one keeps its links and its place on dashboards.",
+    "restored": "Restored.",
+    "empty": "The trash is empty.",
+    "emptyHint": "Dashboards and analyses you delete wait here before they are removed for good."
+  },
+  "browse": {
+    "subtitle": "Browse your company's tables: see the first 100 rows, and click a column header to sort.",
+    "preview": "Preview",
+    "columnsRows": "{columns} columns · first {rows} rows",
+    "backToPreview": "Back to preview",
+    "autoInsights": "Automatic insights",
+    "insightsPending": "Preparing insights…",
+    "noInsights": "No insights could be produced for this table.",
+    "sortBy": "Sort by {column}",
+    "title": "Data"
   }
 }

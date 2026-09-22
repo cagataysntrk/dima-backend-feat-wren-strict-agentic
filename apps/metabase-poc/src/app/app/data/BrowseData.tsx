@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ArrowDown, ArrowUp, Sparkles, Table2 } from "lucide-react";
 import { gateway } from "@/lib/gateway";
 import { ResultView } from "@dima/ui/result/ResultView";
@@ -14,6 +15,7 @@ type Sort = { fieldId: number; dir: "asc" | "desc" } | undefined;
 
 /** Browse the company's tables and preview their first rows, sorted by any column. */
 export function BrowseData() {
+  const t = useTranslations("browse");
   const tables = useQuery({ queryKey: ["browse"], queryFn: gateway.browseTables });
   const [tableId, setTableId] = useState<number | null>(null);
   const [sort, setSort] = useState<Sort>(undefined);
@@ -39,9 +41,9 @@ export function BrowseData() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Veriler</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Şirketinizin tablolarına göz atın; ilk 100 satırı görün, sütun başlığına tıklayarak sıralayın.
+          {t("subtitle")}
         </p>
       </header>
 
@@ -77,13 +79,13 @@ export function BrowseData() {
           </ul>
         </nav>
 
-        <section className="surface min-w-0 overflow-hidden" aria-label="Önizleme">
+        <section className="surface min-w-0 overflow-hidden" aria-label={t("preview")}>
           {active && (
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--surface-edge)] px-4 py-3">
               <h2 className="font-medium">{active.name}</h2>
               <div className="flex items-center gap-3">
                 <p className="text-xs text-muted-foreground tabular-nums">
-                  {active.fields.length} sütun · ilk {preview.data?.row_count ?? 0} satır
+                  {t("columnsRows", { columns: active.fields.length, rows: preview.data?.row_count ?? 0 })}
                 </p>
                 <Button
                   variant="ghost"
@@ -92,14 +94,14 @@ export function BrowseData() {
                   onClick={() => setInsightsFor(insightsFor === active.id ? null : active.id)}
                 >
                   <Sparkles className="size-4" aria-hidden />
-                  {insightsFor === active.id ? "Önizlemeye dön" : "Otomatik içgörüler"}
+                  {insightsFor === active.id ? t("backToPreview") : t("autoInsights")}
                 </Button>
               </div>
             </div>
           )}
           {insightsFor === active?.id ? (
             <div className="p-4">
-              {insights.isPending && <p className="text-sm text-muted-foreground">İçgörüler hazırlanıyor…</p>}
+              {insights.isPending && <p className="text-sm text-muted-foreground">{t("insightsPending")}</p>}
               {insights.isError && (
                 <p role="alert" className="text-sm text-destructive">
                   {insights.error.message}
@@ -118,7 +120,7 @@ export function BrowseData() {
                 ))}
               </div>
               {insights.data?.insights.length === 0 && (
-                <p className="text-sm text-muted-foreground">Bu tablo için içgörü üretilemedi.</p>
+                <p className="text-sm text-muted-foreground">{t("noInsights")}</p>
               )}
             </div>
           ) : preview.isPending ? (
@@ -145,7 +147,7 @@ export function BrowseData() {
                             type="button"
                             disabled={!field}
                             onClick={() => field && toggleSort(field.id)}
-                            aria-label={`${c} sütununa göre sırala`}
+                            aria-label={t("sortBy", { column: c })}
                             className={cn(
                               "inline-flex items-center gap-1 whitespace-nowrap transition-colors",
                               field ? "hover:text-brand" : "cursor-default",

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, LayoutDashboard, Trash2, Undo2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { gateway, type Item } from "@/lib/gateway";
@@ -10,6 +11,7 @@ import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 /** Archived analyses and dashboards; restoring keeps their ids, so links survive. */
 export function TrashView() {
+  const t = useTranslations("trash");
   const queryClient = useQueryClient();
   const items = useQuery({ queryKey: ["trash"], queryFn: gateway.trash });
   const restore = useMutation({
@@ -17,7 +19,7 @@ export function TrashView() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["trash"] });
       void queryClient.invalidateQueries({ queryKey: ["items"] });
-      toast.success("Geri alındı.");
+      toast.success(t("restored"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -25,9 +27,9 @@ export function TrashView() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Çöp kutusu</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Silinen analiz ve panolar burada durur; geri aldığınızda bağlantıları ve panolardaki yerleri korunur.
+          {t("subtitle")}
         </p>
       </header>
 
@@ -41,8 +43,8 @@ export function TrashView() {
         <div className="surface-sm">
           <EmptyState
             icon={Trash2}
-            title="Çöp kutusu boş."
-            hint="Sildiğiniz pano ve analizler kalıcı olarak silinmeden önce burada bekler."
+            title={t("empty")}
+            hint={t("emptyHint")}
           />
         </div>
       )}

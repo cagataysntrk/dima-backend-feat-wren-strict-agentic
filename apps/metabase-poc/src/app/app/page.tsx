@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { BarChart3, FileSpreadsheet, LayoutDashboard } from "lucide-react";
 import { listItems, type Item } from "@/server/metabase/api";
 import { GatewayError } from "@/server/metabase/errors";
@@ -8,39 +9,18 @@ import { NewDashboardButton } from "@/components/analytics/DashboardActions";
 import { ItemMenu, LibrarySearch } from "@/components/analytics/LibraryTools";
 import { EmptyState } from "@/components/shell/EmptyState";
 
-export const metadata: Metadata = { title: "Genel bakış" };
+export const metadata: Metadata = { title: "dima" };
 
-const GROUPS: {
-  kind: Item["kind"];
-  title: string;
-  icon: typeof BarChart3;
-  empty: string;
-  hint: string;
-}[] = [
-  {
-    kind: "dashboard",
-    title: "Panolar",
-    icon: LayoutDashboard,
-    empty: "Henüz pano yok.",
-    hint: "Kaydettiğiniz analizleri bir panoda yan yana toplayın.",
-  },
-  {
-    kind: "card",
-    title: "Analizler",
-    icon: BarChart3,
-    empty: "Henüz kayıtlı analiz yok.",
-    hint: "Sohbette bir soru sorun, beğendiğiniz yanıtı analiz olarak kaydedin.",
-  },
-  {
-    kind: "model",
-    title: "Yüklenen veriler",
-    icon: FileSpreadsheet,
-    empty: "Henüz veri yüklenmedi.",
-    hint: "CSV veya Excel yükleyerek kendi tablolarınızı sorgulayın.",
-  },
-];
+/** Message keys per group; the wording lives in messages/*.json. */
+const GROUPS = [
+  { kind: "dashboard", title: "dashboards", icon: LayoutDashboard, empty: "emptyDashboards", hint: "hintDashboards" },
+  { kind: "card", title: "analyses", icon: BarChart3, empty: "emptyAnalyses", hint: "hintAnalyses" },
+  { kind: "model", title: "uploads", icon: FileSpreadsheet, empty: "emptyUploads", hint: "hintUploads" },
+] as const satisfies readonly { kind: Item["kind"]; title: string; icon: typeof BarChart3; empty: string; hint: string }[];
 
 export default async function Overview() {
+  const t = await getTranslations("overview");
+  const tNav = await getTranslations("nav");
   let items: Item[];
   let tenantName = "";
   let canEdit = false;
@@ -50,7 +30,7 @@ export default async function Overview() {
     canEdit = ctx.role === "owner" || ctx.role === "admin";
     items = await listItems(ctx);
   } catch (e) {
-    const msg = e instanceof GatewayError ? e.publicMessage : "Veriler yüklenemedi.";
+    const msg = e instanceof GatewayError ? e.publicMessage : t("loadFailed");
     return <p className="text-sm text-muted-foreground">{msg}</p>;
   }
 
@@ -59,7 +39,7 @@ export default async function Overview() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">{tenantName}</p>
-          <h1 className="text-2xl font-semibold tracking-tight">Genel bakış</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -67,7 +47,7 @@ export default async function Overview() {
               href="/app/trash"
               className="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Çöp kutusu
+              {tNav("trash")}
             </Link>
           )}
           {canEdit && <NewDashboardButton />}
@@ -80,22 +60,22 @@ export default async function Overview() {
         return (
           <section key={kind} className="space-y-3" aria-labelledby={`h-${kind}`}>
             <h2 id={`h-${kind}`} className="text-sm font-medium text-muted-foreground">
-              {title}
+              {t(title)}
             </h2>
             {list.length === 0 ? (
               <div className="surface-sm">
                 <EmptyState
                   icon={Icon}
-                  title={empty}
-                  hint={hint}
+                  title={t(empty)}
+                  hint={t(hint)}
                   action={
                     kind === "card" ? (
                       <Link href="/app/chat" className="text-sm font-medium text-brand hover:underline">
-                        Sohbete git
+                        {t("goToChat")}
                       </Link>
                     ) : kind === "model" && canEdit ? (
                       <Link href="/app/upload" className="text-sm font-medium text-brand hover:underline">
-                        Veri yükle
+                        {t("uploadData")}
                       </Link>
                     ) : undefined
                   }
