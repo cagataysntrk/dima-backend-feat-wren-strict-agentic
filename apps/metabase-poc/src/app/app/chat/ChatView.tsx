@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMutation } from "@tanstack/react-query";
 import { BarChart3, Database, PanelRight, Save, X } from "lucide-react";
 import { toast } from "sonner";
@@ -23,23 +24,6 @@ import { SqlBlock } from "@dima/ui/report/SqlBlock";
 import { Button } from "@dima/ui/primitives/button";
 import { Sheet, SheetContent, SheetTitle } from "@dima/ui/primitives/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
-
-// Suggested first questions per company (org slug); generic fallback otherwise.
-const STARTERS: Record<string, string[]> = {
-  boyahane: [
-    "Geçen yıl en yüksek cirolu 5 müşteri kim?",
-    "Aylık üretim nasıl bir trend izliyor?",
-    "Hangi makinede en çok duruş var ve neden?",
-    "Makine bazında ortalama OEE nedir?",
-  ],
-  tenant2: [
-    "Aylık fatura tutarı nasıl değişiyor?",
-    "Fatura türlerine göre toplam tutar nedir?",
-    "Stok hareketlerinde en çok hangi hareket tipi var?",
-    "Cari tipine göre borç ve alacak dağılımı nedir?",
-  ],
-};
-const GENERIC = ["Elimde hangi veriler var?", "Son 12 ayın özetini çıkar.", "En önemli 5 göstergeyi listele."];
 
 type Done = Extract<Entry, { status: "done" }>;
 
@@ -79,6 +63,7 @@ export function ChatView({
   canSave: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("chat");
   const convId = useSearchParams().get("c");
   const hydrated = useHydrated();
   const conv = useConversations((s) => s.conversations.find((c) => c.id === convId && c.orgId === orgId));
@@ -94,7 +79,9 @@ export function ChatView({
   const entries = conv?.entries ?? [];
   const pending = entries.some((e) => e.status === "pending");
   const started = entries.length > 0;
-  const starters = STARTERS[slug] ?? GENERIC;
+  // Suggested first questions per company (org slug), generic fallback.
+  const tStarters = useTranslations("starters");
+  const starters = tStarters.raw(["boyahane", "tenant2"].includes(slug) ? slug : "generic") as string[];
 
   // An unknown / other-company chat id falls back to a fresh chat.
   useEffect(() => {
@@ -166,7 +153,7 @@ export function ChatView({
           status: text ? "done" : "error",
           ...(text
             ? { reply: { answer: text, sql: null, result: null }, steps: steps.map((s) => s.text) }
-            : { message: "Yanıt yarıda kesildi." }),
+            : { message: t("interrupted") }),
         } as Extract<Entry, { status: "done" | "error" }>);
       } catch (err) {
         if (controller.signal.aborted) {
@@ -176,7 +163,7 @@ export function ChatView({
             status: text ? "done" : "error",
             ...(text
               ? { reply: { answer: text, sql: null, result: null }, steps: steps.map((s) => s.text) }
-              : { message: "Durduruldu." }),
+              : { message: t("stopped") }),
           } as Extract<Entry, { status: "done" | "error" }>);
         } else {
           settle(id, entryId, { id: entryId, question, status: "error", message: (err as Error).message });
@@ -223,15 +210,14 @@ export function ChatView({
           <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto py-6">
             <div className="my-auto w-full max-w-3xl space-y-6 px-4 pb-10">
               <div className="space-y-2 text-center">
-                <h1 className="text-2xl font-semibold tracking-tight">Verinize sorun</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">{t("heroTitle")}</h1>
                 <p className="text-sm text-muted-foreground">
-                  {company ? `${company} verisi üzerinde` : "Şirket verinizde"} doğal dilde soru sorun; yanıt, grafik ve
-                  kullanılan sorguyla gelsin.
+                  {company ? t("heroBodyCompany", { company }) : t("heroBodyGeneric")}
                 </p>
               </div>
               {!configured && (
                 <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-center text-sm text-amber-700 dark:text-amber-300">
-                  Sohbet servisi henüz yapılandırılmadı. Yöneticinizden anahtar tanımlamasını isteyin.
+                  {t("notConfigured")}
                 </p>
               )}
               <Composer value={draft} onChange={setDraft} onSubmit={() => submit(draft)} disabled={!configured} hero autoFocus />
@@ -351,6 +337,7 @@ function Reply({
   canSave: boolean;
   animate: boolean;
 }) {
+  const t = useTranslations("chat");
   const save = useMutation({
     mutationFn: () => gateway.saveSql(question.slice(0, 120), reply.sql!),
     onSuccess: () => toast.success("Analiz kaydedildi."),
@@ -366,7 +353,7 @@ function Reply({
             result={reply.result}
             meta={
               <span className="text-xs text-muted-foreground tabular-nums">
-                {reply.result.row_count.toLocaleString("tr-TR")} satır
+                {t("rows", { count: reply.result.row_count })}
               </span>
             }
           />
@@ -389,7 +376,7 @@ function Reply({
           )}
           {save.data && (
             <Link href={`/app/cards/${save.data.id}`} className="text-xs text-brand hover:underline">
-              Aç
+              {t("open")}
             </Link>
           )}
         </div>
@@ -397,8 +384,8 @@ function Reply({
       {reply.sql && (
         <SqlBlock
           sql={reply.sql}
-          label="Sorguyu göster"
-          copyLabel="Sorguyu panoya kopyala"
+          label={t("showSql")}
+          copyLabel={t("copySql")}
           className={cn(animate && "dima-reveal-late")}
         />
       )}
@@ -409,8 +396,8 @@ function Reply({
 // ── Right panel: about THIS chat only (apps/web ArtifactPanel pattern) ──────
 
 const PANEL_TABS = [
-  { id: "results", label: "Sonuçlar", icon: BarChart3 },
-  { id: "sources", label: "Kaynaklar", icon: Database },
+  { id: "results", icon: BarChart3 },
+  { id: "sources", icon: Database },
 ] as const;
 type PanelTab = (typeof PANEL_TABS)[number]["id"];
 
@@ -436,12 +423,13 @@ function ChatPanel({
   entries: Done[];
   onPick: (entryId: number) => void;
 }) {
+  const t = useTranslations("chat");
   const isNarrow = useIsNarrow();
   const body = (
     <>
       <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-2">
-        <div role="tablist" aria-label="Panel bölümleri" className="flex items-center gap-0.5">
-          {PANEL_TABS.map(({ id, label, icon: Icon }) => (
+        <div role="tablist" aria-label={t("panelSections")} className="flex items-center gap-0.5">
+          {PANEL_TABS.map(({ id, icon: Icon }) => (
             <button
               key={id}
               type="button"
@@ -456,7 +444,7 @@ function ChatPanel({
               )}
             >
               <Icon className="size-3.5" aria-hidden />
-              {label}
+              {t(id)}
             </button>
           ))}
         </div>
@@ -465,7 +453,7 @@ function ChatPanel({
         </Button>
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-        {entries.length === 0 && <p className="p-2 text-sm text-muted-foreground">Henüz sonuç yok.</p>}
+        {entries.length === 0 && <p className="p-2 text-sm text-muted-foreground">{t("noResults")}</p>}
         {tab === "results"
           ? entries
               .filter((e) => e.reply.result && e.reply.result.row_count > 0)
@@ -478,7 +466,7 @@ function ChatPanel({
                 >
                   <span className="line-clamp-2 text-sm font-medium">{e.question}</span>
                   <span className="mt-1 block truncate text-xs text-muted-foreground">
-                    {e.reply.result!.row_count.toLocaleString("tr-TR")} satır · {e.reply.result!.columns.join(", ")}
+                    {t("rows", { count: e.reply.result!.row_count })} · {e.reply.result!.columns.join(", ")}
                   </span>
                 </button>
               ))
@@ -496,7 +484,7 @@ function ChatPanel({
                       </span>
                     ))}
                   </div>
-                  <SqlBlock sql={e.reply.sql!} label="Sorgu" copyLabel="Sorguyu panoya kopyala" />
+                  <SqlBlock sql={e.reply.sql!} label={t("sqlShort")} copyLabel={t("copySql")} />
                 </div>
               ))}
       </div>

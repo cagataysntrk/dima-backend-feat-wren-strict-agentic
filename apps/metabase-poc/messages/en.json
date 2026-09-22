@@ -128,5 +128,55 @@
     "runSql": "Run the query",
     "shortcuts": "This dialog",
     "close": "Close"
+  },
+  "chat": {
+    "heroTitle": "Ask your data",
+    "heroBodyCompany": "Ask a question about {company}'s data in plain language; the answer comes with a chart and the query behind it.",
+    "heroBodyGeneric": "Ask a question about your company's data in plain language; the answer comes with a chart and the query behind it.",
+    "notConfigured": "The chat service is not configured yet. Ask your administrator to set a key.",
+    "placeholder": "Ask a question about your data…",
+    "placeholderDisabled": "Chat service not configured",
+    "questionLabel": "Question",
+    "send": "Send",
+    "stop": "Stop",
+    "enterHint": "Enter to send · Shift + Enter for a new line",
+    "tables": "Tables",
+    "tablesPick": "Pick a table to add to your question",
+    "tablesFailed": "Tables could not be loaded.",
+    "showSql": "Show the query",
+    "copySql": "Copy the query",
+    "sqlShort": "Query",
+    "rows": "{count} rows",
+    "interrupted": "The answer was cut short.",
+    "stopped": "Stopped.",
+    "panelSections": "Panel sections",
+    "results": "Results",
+    "noResults": "No results yet.",
+    "open": "Open",
+    "thinking": "Looking at your data…",
+    "thought": "thought for {seconds}s",
+    "save": "Save as analysis",
+    "saved": "Saved",
+    "savedToast": "Analysis saved.",
+    "sources": "Sources"
+  },
+  "starters": {
+    "boyahane": [
+      "Who were the five highest-revenue customers last year?",
+      "How is monthly production trending?",
+      "Which machine has the most downtime, and why?",
+      "What is the average OEE per machine?"
+    ],
+    "tenant2": [
+      "How does the monthly invoice total change?",
+      "What is the total amount by invoice type?",
+      "Which movement type appears most in stock movements?",
+      "How do debit and credit split by account type?"
+    ],
+    "generic": [
+      "What data do I have?",
+      "Summarise the last 12 months.",
+      "List the five most important indicators."
+    ]
   }
 }

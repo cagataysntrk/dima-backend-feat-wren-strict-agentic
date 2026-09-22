@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import { Database, FileSearch, Loader, PenLine, type LucideIcon } from "lucide-react";
 import { LiveStep, Reasoning, Shimmer } from "@dima/ui/ai/thinking";
 import { cn } from "@dima/ui/utils";
@@ -33,10 +34,11 @@ export function LiveSteps({
   streaming?: boolean;
   className?: string;
 }) {
+  const t = useTranslations("chat");
   if (steps.length === 0) return null;
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5 pt-1", className)} role="status">
-      {!streaming && <Shimmer className="text-sm font-medium">Veriye bakılıyor…</Shimmer>}
+      {!streaming && <Shimmer className="text-sm font-medium">{t("thinking")}</Shimmer>}
       <div className="flex flex-col gap-1 border-l border-border pl-3">
         <AnimatePresence initial={false}>
           {steps.map((s) => (
@@ -57,6 +59,7 @@ export function LiveSteps({
 
 /** Settled steps above a finished answer: "7 sn düşündü", collapsed. */
 export function Thought({ steps, durationMs }: { steps: string[]; durationMs?: number }) {
+  const t = useTranslations("chat");
   if (steps.length === 0) return null;
-  return <Reasoning trace={steps} durationMs={durationMs} summary={(n) => `${n} sn düşündü`} />;
+  return <Reasoning trace={steps} durationMs={durationMs} summary={(n) => t("thought", { seconds: n })} />;
 }

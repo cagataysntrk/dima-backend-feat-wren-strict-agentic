@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ArrowUp, ChevronDown, Square, Table2 } from "lucide-react";
 import { BorderBeam } from "border-beam";
 import { useTheme } from "next-themes";
@@ -37,6 +38,7 @@ interface Props {
  */
 export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, hero, autoFocus, focusKey }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const t = useTranslations("chat");
   const { resolvedTheme } = useTheme();
   // The beam builds its stylesheet in the browser and follows the theme, which
   // the server can't know — rendering it before mount causes a hydration
@@ -79,7 +81,7 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, he
       )}
     >
       <label htmlFor="question" className="sr-only">
-        Soru
+        {t("questionLabel")}
       </label>
       <textarea
         ref={ref}
@@ -95,7 +97,7 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, he
             if (canSend) onSubmit();
           }
         }}
-        placeholder={disabled ? "Sohbet servisi yapılandırılmadı" : "Verinize bir soru sorun…"}
+        placeholder={disabled ? t("placeholderDisabled") : t("placeholder")}
         className={cn(
           "field-sizing-content max-h-52 w-full resize-none bg-transparent px-5 text-base outline-none placeholder:text-muted-foreground/70 disabled:cursor-not-allowed md:text-[15px]",
           hero ? "min-h-20 pt-5 pb-2" : "min-h-12 pt-4 pb-1",
@@ -104,13 +106,13 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, he
       <div className="flex items-center gap-2 px-3 pb-3">
         <TablesMenu onPick={insert} disabled={disabled} />
         <span className="hidden text-xs text-muted-foreground/70 sm:inline">
-          Enter gönder · Shift + Enter yeni satır
+          {t("enterHint")}
         </span>
         {busy && onStop ? (
           <Button
             type="button"
             size="icon"
-            aria-label="Durdur"
+            aria-label={t("stop")}
             onClick={onStop}
             className="ml-auto size-9 rounded-full bg-foreground text-background transition-colors hover:bg-foreground/90"
           >
@@ -120,7 +122,7 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, he
           <Button
             type="submit"
             size="icon"
-            aria-label="Gönder"
+            aria-label={t("send")}
             disabled={!canSend}
             className={cn(
               "ml-auto size-9 rounded-full transition-colors",
@@ -163,6 +165,8 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, he
 
 /** "Tablolar" chip: browse the company's tables and drop one into the question. */
 function TablesMenu({ onPick, disabled }: { onPick: (name: string) => void; disabled?: boolean }) {
+  const t = useTranslations("chat");
+  const tCommon = useTranslations("common");
   const q = useQuery({ queryKey: ["tables"], queryFn: gateway.tables, staleTime: 10 * 60_000 });
   return (
     <DropdownMenu>
@@ -172,16 +176,16 @@ function TablesMenu({ onPick, disabled }: { onPick: (name: string) => void; disa
           className="inline-flex h-9 items-center gap-1.5 rounded-full border bg-background/60 px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none disabled:opacity-50"
         >
           <Table2 className="size-4" aria-hidden />
-          Tablolar
+          {t("tables")}
           <ChevronDown className="size-3.5 opacity-70" aria-hidden />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" className="max-h-80 w-72 overflow-y-auto">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Soruya eklemek için bir tablo seçin
+          {t("tablesPick")}
         </DropdownMenuLabel>
-        {q.isPending && <p className="px-2 py-1.5 text-sm text-muted-foreground">Yükleniyor…</p>}
-        {q.isError && <p className="px-2 py-1.5 text-sm text-destructive">Tablolar yüklenemedi.</p>}
+        {q.isPending && <p className="px-2 py-1.5 text-sm text-muted-foreground">{tCommon("loading")}</p>}
+        {q.isError && <p className="px-2 py-1.5 text-sm text-destructive">{t("tablesFailed")}</p>}
         {q.data?.map((t) => (
           <DropdownMenuItem key={t.name} onSelect={() => onPick(t.name)} className="flex-col items-start gap-0.5">
             <span className="text-sm font-medium">{t.name}</span>

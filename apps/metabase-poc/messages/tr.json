@@ -128,5 +128,55 @@
     "runSql": "Sorguyu çalıştır",
     "shortcuts": "Bu pencere",
     "close": "Kapat"
+  },
+  "chat": {
+    "heroTitle": "Verinize sorun",
+    "heroBodyCompany": "{company} verisi üzerinde doğal dilde soru sorun; yanıt, grafik ve kullanılan sorguyla gelsin.",
+    "heroBodyGeneric": "Şirket verinizde doğal dilde soru sorun; yanıt, grafik ve kullanılan sorguyla gelsin.",
+    "notConfigured": "Sohbet servisi henüz yapılandırılmadı. Yöneticinizden anahtar tanımlamasını isteyin.",
+    "placeholder": "Verinize bir soru sorun…",
+    "placeholderDisabled": "Sohbet servisi yapılandırılmadı",
+    "questionLabel": "Soru",
+    "send": "Gönder",
+    "stop": "Durdur",
+    "enterHint": "Enter gönder · Shift + Enter yeni satır",
+    "tables": "Tablolar",
+    "tablesPick": "Soruya eklemek için bir tablo seçin",
+    "tablesFailed": "Tablolar yüklenemedi.",
+    "showSql": "Sorguyu göster",
+    "copySql": "Sorguyu panoya kopyala",
+    "sqlShort": "Sorgu",
+    "rows": "{count} satır",
+    "interrupted": "Yanıt yarıda kesildi.",
+    "stopped": "Durduruldu.",
+    "panelSections": "Panel bölümleri",
+    "results": "Sonuçlar",
+    "noResults": "Henüz sonuç yok.",
+    "open": "Aç",
+    "thinking": "Veriye bakılıyor…",
+    "thought": "{seconds} sn düşündü",
+    "save": "Analiz olarak kaydet",
+    "saved": "Kaydedildi",
+    "savedToast": "Analiz kaydedildi.",
+    "sources": "Kaynaklar"
+  },
+  "starters": {
+    "boyahane": [
+      "Geçen yıl en yüksek cirolu 5 müşteri kim?",
+      "Aylık üretim nasıl bir trend izliyor?",
+      "Hangi makinede en çok duruş var ve neden?",
+      "Makine bazında ortalama OEE nedir?"
+    ],
+    "tenant2": [
+      "Aylık fatura tutarı nasıl değişiyor?",
+      "Fatura türlerine göre toplam tutar nedir?",
+      "Stok hareketlerinde en çok hangi hareket tipi var?",
+      "Cari tipine göre borç ve alacak dağılımı nedir?"
+    ],
+    "generic": [
+      "Elimde hangi veriler var?",
+      "Son 12 ayın özetini çıkar.",
+      "En önemli 5 göstergeyi listele."
+    ]
   }
 }
