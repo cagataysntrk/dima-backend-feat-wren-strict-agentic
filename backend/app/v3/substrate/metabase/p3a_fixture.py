@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from app.v3.analytics_contract import (
     PrincipalContextRef,
     ResolvedAnalyticsIntent,
@@ -12,12 +13,14 @@ from app.v3.analytics_contract import (
     ResolvedSemanticRef,
 )
 from app.v3.semantic_spec import DimensionSpec, DimaSemanticSpec, MetricSpec, SourceLineage, TimeSpec
-from app.v3.substrate.metabase.p3a_models import (
-    BridgeFamily,
+from app.v3.substrate.metabase.execution_binding import (
     CandidateSemanticBinding,
+    CurrentCatalogObject,
+    CurrentCatalogSnapshot,
     DimaExecutionBindingSnapshot,
     TemporalSemanticBinding,
 )
+from app.v3.substrate.metabase.p3a_models import BridgeFamily
 
 CTX = "p3a-lab-v1"
 TIME_KEY = "legacy-wren/orders.order_date"
@@ -34,6 +37,22 @@ def _lineage(column: str):
             table_name="orders",
             column_name=column,
         ),
+    )
+
+
+def _catalog_object(column: str) -> CurrentCatalogObject:
+    entity_id = f"lab:orders.{column}"
+    fingerprint = hashlib.sha256(
+        f"Dima Analytics Lab|public|orders|{column}|{entity_id}".encode("utf-8")
+    ).hexdigest()
+    return CurrentCatalogObject(
+        source_id=f"orders.{column}",
+        database_ref="Dima Analytics Lab",
+        schema_name="public",
+        table_name="orders",
+        column_name=column,
+        resource_entity_id=entity_id,
+        resource_fingerprint=fingerprint,
     )
 
 
@@ -81,6 +100,13 @@ def build_snapshot() -> DimaExecutionBindingSnapshot:
             ),
         ),
     )
+    current_catalog = CurrentCatalogSnapshot(
+        catalog_version="p3a-lab-catalog-v1",
+        objects=tuple(
+            _catalog_object(column)
+            for column in ("amount", "region", "channel", "order_date")
+        ),
+    )
     return DimaExecutionBindingSnapshot(
         semantic_context_version=CTX,
         semantic_spec=spec,
@@ -112,6 +138,7 @@ def build_snapshot() -> DimaExecutionBindingSnapshot:
                 dimension_id="dimension.order_date",
             ),
         ),
+        current_catalog=current_catalog,
     )
 
 

@@ -1,8 +1,9 @@
 """Deterministic P3A compiler prototype for the Metabase structured-execution arm.
 
-Business meaning comes only from Dima-owned ResolvedAnalyticsIntent plus an immutable
-DimaExecutionBindingSnapshot. No Metabase search, labels, raw language, or implicit joins
-participate in compilation.
+Business meaning comes only from Dima-owned ResolvedAnalyticsIntent plus the production
+DimaExecutionBindingSnapshot. Physical locators are emitted only after exact expected
+SourceLineage/current-catalog agreement. No Metabase search, labels, raw language, or
+implicit joins participate in compilation.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from typing import Any, Literal
 
 from app.v3.analytics_contract import ResolvedAnalyticsIntent, ResolvedPeriod
 from app.v3.semantic_spec import DimensionSpec, MetricSpec, SourceLineage
+from app.v3.substrate.metabase.execution_binding import CurrentCatalogObject
 from app.v3.substrate.metabase.p3a_models import (
     BridgeFamily,
     BridgeFamilyFinding,
@@ -72,43 +74,36 @@ class MetabaseBridgePreflightCompiler:
         if len(item.source_lineage) != 1:
             raise P3ABridgeBlocked(
                 "AMBIGUOUS_SOURCE_LINEAGE",
-                "P3A prototype requires exactly one explicit SourceLineage per semantic item",
+                "P3A requires exactly one explicit Dima SourceLineage per semantic item",
             )
-        lineage = item.source_lineage[0]
-        if not lineage.database_ref or not lineage.table_name:
-            raise P3ABridgeBlocked(
-                "INCOMPLETE_SOURCE_LINEAGE",
-                "portable source requires explicit database/table lineage",
-            )
-        return lineage
-
-    @staticmethod
-    def _table(lineage: SourceLineage) -> tuple[str, str | None, str]:
-        assert lineage.database_ref is not None
-        assert lineage.table_name is not None
-        return (lineage.database_ref, lineage.schema_name, lineage.table_name)
+        return item.source_lineage[0]
 
     @classmethod
-    def _field_ref(cls, item: DimensionSpec) -> list[Any]:
-        lineage = cls._lineage(item)
-        if not lineage.column_name:
-            raise P3ABridgeBlocked(
-                "INCOMPLETE_SOURCE_LINEAGE",
-                f"dimension {item.dimension_id} has no explicit column lineage",
-            )
-        return [
-            "field",
-            {},
-            [
-                lineage.database_ref,
-                lineage.schema_name,
-                lineage.table_name,
-                lineage.column_name,
-            ],
-        ]
+    def _current(
+        cls,
+        *,
+        snapshot: DimaExecutionBindingSnapshot,
+        item: MetricSpec | DimensionSpec,
+    ) -> CurrentCatalogObject:
+        return snapshot.current_lineage(cls._lineage(item))
 
     @classmethod
-    def _metric_clause(cls, metric: MetricSpec) -> list[Any]:
+    def _field_ref(
+        cls,
+        *,
+        snapshot: DimaExecutionBindingSnapshot,
+        item: DimensionSpec,
+    ) -> list[Any]:
+        current = cls._current(snapshot=snapshot, item=item)
+        return ["field", {}, list(current.portable_field)]
+
+    @classmethod
+    def _metric_clause(
+        cls,
+        *,
+        snapshot: DimaExecutionBindingSnapshot,
+        metric: MetricSpec,
+    ) -> list[Any]:
         if metric.formula:
             raise P3ABridgeBlocked(
                 "UNPROVEN_METRIC_FORMULA_EXPRESSIVITY",
@@ -123,35 +118,16 @@ class MetabaseBridgePreflightCompiler:
         if op == "count":
             return ["count", {}]
 
-        lineage = cls._lineage(metric)
-        if not lineage.column_name:
-            raise P3ABridgeBlocked(
-                "INCOMPLETE_SOURCE_LINEAGE",
-                f"metric {metric.metric_id} has no explicit aggregation column",
-            )
-        return [
-            op,
-            {},
-            [
-                "field",
-                {},
-                [
-                    lineage.database_ref,
-                    lineage.schema_name,
-                    lineage.table_name,
-                    lineage.column_name,
-                ],
-            ],
-        ]
+        current = cls._current(snapshot=snapshot, item=metric)
+        return [op, {}, ["field", {}, list(current.portable_field)]]
 
-    @classmethod
+    @staticmethod
     def _assert_same_table(
-        cls,
         *,
-        base: SourceLineage,
-        other: SourceLineage,
+        base: CurrentCatalogObject,
+        other: CurrentCatalogObject,
     ) -> None:
-        if cls._table(base) != cls._table(other):
+        if base.portable_table != other.portable_table:
             raise P3ABridgeBlocked(
                 "APPROVED_RELATIONSHIP_PATH_REQUIRED",
                 "cross-table compilation requires an explicit approved Dima relationship path",
@@ -163,13 +139,13 @@ class MetabaseBridgePreflightCompiler:
         *,
         period: ResolvedPeriod,
         snapshot: DimaExecutionBindingSnapshot,
-        base_lineage: SourceLineage,
+        base_current: CurrentCatalogObject,
     ) -> tuple[list[Any], ...]:
         dimension_id = snapshot.temporal_dimension(period.time_dimension)
         dimension = cls._dimension_by_id(snapshot, dimension_id)
-        lineage = cls._lineage(dimension)
-        cls._assert_same_table(base=base_lineage, other=lineage)
-        field = cls._field_ref(dimension)
+        current = cls._current(snapshot=snapshot, item=dimension)
+        cls._assert_same_table(base=base_current, other=current)
+        field = cls._field_ref(snapshot=snapshot, item=dimension)
         clauses: list[list[Any]] = [[">=", {}, field, period.start]]
         if period.end is not None:
             clauses.append(["<=", {}, field, period.end])
@@ -192,20 +168,22 @@ class MetabaseBridgePreflightCompiler:
         metric: MetricSpec,
         period: ResolvedPeriod | None,
     ) -> tuple[dict[str, Any], tuple[str, ...]]:
-        metric_lineage = cls._lineage(metric)
+        metric_current = cls._current(snapshot=snapshot, item=metric)
         stage: dict[str, Any] = {
             "lib/type": "mbql.stage/mbql",
-            "source-table": list(cls._table(metric_lineage)),
-            "aggregation": [cls._metric_clause(metric)],
+            "source-table": list(metric_current.portable_table),
+            "aggregation": [
+                cls._metric_clause(snapshot=snapshot, metric=metric)
+            ],
         }
         semantic_ids: list[str] = [metric.metric_id]
 
         breakouts: list[list[Any]] = []
         for ref in intent.dimensions:
             dimension = cls._dimension(snapshot, ref.source_candidate_id)
-            lineage = cls._lineage(dimension)
-            cls._assert_same_table(base=metric_lineage, other=lineage)
-            breakouts.append(cls._field_ref(dimension))
+            current = cls._current(snapshot=snapshot, item=dimension)
+            cls._assert_same_table(base=metric_current, other=current)
+            breakouts.append(cls._field_ref(snapshot=snapshot, item=dimension))
             semantic_ids.append(dimension.dimension_id)
         if breakouts:
             stage["breakout"] = breakouts
@@ -217,9 +195,16 @@ class MetabaseBridgePreflightCompiler:
                 ref.source_candidate_id,
                 kind="filter",
             )
-            lineage = cls._lineage(dimension)
-            cls._assert_same_table(base=metric_lineage, other=lineage)
-            filters.append(["=", {}, cls._field_ref(dimension), ref.value])
+            current = cls._current(snapshot=snapshot, item=dimension)
+            cls._assert_same_table(base=metric_current, other=current)
+            filters.append(
+                [
+                    "=",
+                    {},
+                    cls._field_ref(snapshot=snapshot, item=dimension),
+                    ref.value,
+                ]
+            )
             semantic_ids.append(dimension.dimension_id)
 
         if period is not None:
@@ -227,7 +212,7 @@ class MetabaseBridgePreflightCompiler:
                 cls._period_clauses(
                     period=period,
                     snapshot=snapshot,
-                    base_lineage=metric_lineage,
+                    base_current=metric_current,
                 )
             )
             semantic_ids.append(snapshot.temporal_dimension(period.time_dimension))
@@ -337,6 +322,8 @@ class MetabaseBridgePreflightCompiler:
                     )
                 )
 
+        # Historical P3A report shape retained for regression compatibility only.
+        # P4 does not treat default-zero counters as sufficient invariant evidence.
         counters = BridgeSafetyCounters()
         result = (
             P3AResult.PASS_B_SEAM

@@ -1,0 +1,104 @@
+name: dima-metabase-p4
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/substrate/metabase/execution_binding.py"
+      - "backend/app/v3/substrate/metabase/p3a_*.py"
+      - "backend/tests/test_v3_p4_*.py"
+      - "backend/tests/test_v3_p3a_bridge_preflight*.py"
+      - ".github/workflows/dima-metabase-p4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p4-execution-binding-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce P4 forbidden-file isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="f3eabfa872dce26602bf32a88930672a01fd50d2"
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(analytics_contract|semantic_spec|authority)\.py$|backend/app/v3/substrate/wren\.py$|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|WrenAI-main/)'; then
+            echo "P4 touched a forbidden file"
+            exit 1
+          fi
+          if printf '%s\n' "$changed" | grep -E '^backend/app/v3/substrate/metabase/(compiler|canonical)\.py$'; then
+            echo "P4 compiler/canonical is forbidden until execution-binding gate closes"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile unified binding boundary
+        working-directory: backend
+        run: |
+          python -m py_compile             app/v3/substrate/metabase/execution_binding.py             app/v3/substrate/metabase/p3a_models.py             app/v3/substrate/metabase/p3a_preflight.py             app/v3/substrate/metabase/p3a_fixture.py
+
+      - name: Focused P4 execution-binding proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_p4_execution_binding.py
+
+      - name: Provider-free P3A P3 M1 regressions
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_p3a_bridge_preflight.py             tests/test_v3_p3_metabase_client.py             tests/test_v3_m1_contracts.py             tests/test_v3_m1_parity_families.py
+
+      - name: Real Wren M1 regression
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_m1_wren_adapter.py             tests/test_v2_day6_5_real_standard_trust_plane.py             tests/test_v2_day6_5_real_trust_plane.py
+
+      - name: Start pinned M2 lab
+        working-directory: backend/lab/metabase
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env up -d
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+
+      - name: Pinned-live P3 and P3A regressions
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          source lab/metabase/.env
+          set +a
+          export DIMA_METABASE_P3_LIVE=1
+          export DIMA_METABASE_P3A_LIVE=1
+          pytest -q             tests/test_v3_p3_metabase_client_live.py             tests/test_v3_p3a_bridge_preflight_live.py
+
+      - name: Teardown
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env down -v --remove-orphans || true
