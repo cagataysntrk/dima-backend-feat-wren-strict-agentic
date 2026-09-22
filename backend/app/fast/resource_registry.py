@@ -83,6 +83,7 @@ class ResourceRegistry:
 
         public: list[ResourceCandidate] = []
         authority: dict[str, dict[str, Any]] = {}
+        seen_uris: set[str] = set()
 
         for row in search_rows:
             if str(row.get("type") or "").lower() != "table":
@@ -99,6 +100,9 @@ class ResourceRegistry:
                     continue
             if not uri.startswith("metabase://table/"):
                 continue
+            if uri in seen_uris:
+                continue
+            seen_uris.add(uri)
 
             handle = f"fast_res_{len(public) + 1:03d}"
             candidate = ResourceCandidate(
