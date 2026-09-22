@@ -977,6 +977,193 @@ Bu substrate-only karar deneyiyle karıştırılmaz.
 
 ---
 
+
+---
+
+## 18A. D65-J1 — Jev Decision-Model Challenger
+
+D65-J1 is **not** an analytics substrate decision and does not alter D65-X.
+
+```text
+D65-J1 = cognition / bounded semantic candidate decision model
+D65-X  = analytics execution substrate
+```
+
+### 18A.1 Pinned challenger / native API contract
+
+Pinned model:
+```text
+typesafe/jev-1.13
+```
+
+`~typesafe/jev-latest` is forbidden for certification/bake-off because it is a moving alias.
+
+Jev is not treated as a generic chat LLM. J1A uses its native OpenRouter Decisions surface:
+```text
+POST https://openrouter.ai/api/alpha/decisions
+state
++ choice question
+→ choice + probabilities
+```
+
+Do not force Jev through Dima's current `structured_json()` / chat-completions abstraction.
+
+### 18A.2 Existing role debt discovered
+
+Current `SEMANTIC_LINKER` model role supplies one structured-language callable to both:
+```text
+BoundedSemanticLinker
+TypedTemporalNormalizer
+```
+
+These are different cognition contracts.
+
+`d65-dev-019` Flash-Lite floor was measured in typed temporal comparison normalization, not bounded catalog candidate selection. Therefore:
+```text
+case019 != Jev justification
+case019 != Jev patch target
+```
+
+J1A intentionally excludes temporal normalization so the decision-model question is not contaminated by this role conflation.
+
+### 18A.3 J1A semantic boundary
+
+Frozen experimental boundary:
+```text
+USER SURFACE
+→ frozen safe CandidateSet[cand_*]
+→ challenger decision model
+→ candidate_id | ABSTAIN
+→ authority gate is conceptually downstream and unchanged
+```
+
+Jev can only propose one supplied candidate or ABSTAIN/NONE.
+
+Jev cannot:
+```text
+mint sem_*
+emit or infer canonical IDs outside candidate cards
+escape supplied candidate set
+see DB/raw SQL/numeric truth
+perform temporal arithmetic
+accept an authority contract
+change tenant/context identity
+silently trigger fallback/cascade
+```
+
+Canonical target names are omitted from Jev payload unless a future separately-approved benchmark proves them necessary. Candidate cards use the same bounded, LLM-safe surface class as current linker inputs.
+
+### 18A.4 J1A benchmark
+
+Three challengers over the same frozen candidate decision cases:
+```text
+A = google/gemini-2.5-flash-lite
+B = typesafe/jev-1.13
+C = openai/gpt-5.6-sol
+```
+
+Manager and TemporalNormalizer are outside the experiment.
+
+Required strata:
+```text
+exact alias control
+Turkish non-exact paraphrase
+synonym
+multiple plausible candidates
+true ambiguity → ABSTAIN
+no-match → ABSTAIN
+retrieval miss
+bounded high-cardinality set
+entity-value
+sensitive-value exact-only
+metric/dimension variation
+metamorphic/permuted schema labels
+cross-tenant isolation
+```
+
+Required metrics:
+```text
+candidate selection accuracy
+ABSTAIN precision / recall
+ambiguity unsafe-pick
+candidate escape
+Turkish paraphrase accuracy
+metamorphic consistency
+same-input repeated-run agreement
+p50 / p95 latency
+cost
+provider failures
+Jev choice probabilities
+Jev calibration (Brier/ECE or equivalent)
+Jev high-confidence-wrong count
+```
+
+P0:
+```text
+candidate outside supplied set = 0
+silent ambiguity auto-pick = 0
+cross-tenant semantic leak = 0
+high-confidence wrong accepted = 0
+semantic authority minted by model = 0
+```
+
+No production threshold/cascade policy is created in J1A. Raw probability calibration is measurement only.
+
+### 18A.5 J1A decision rule
+
+If Jev is clearly worse or Turkish robustness is inadequate:
+```text
+REJECT JEV
+product code = NO CHANGE
+resume current architecture closure
+```
+
+If Jev is promising:
+```text
+OPEN D65-J1B
+SemanticLinkDecisionProvider
+  ├─ StructuredLLMDecisionProvider
+  └─ JevDecisionProvider
+        ↓
+BoundedSemanticLinker
+        ↓
+SemanticBindingGate
+```
+
+Before any Jev production candidate wiring, split cognition roles:
+```text
+SEMANTIC_LINKER
+= bounded catalog candidate decision
+
+TEMPORAL_NORMALIZER
+= temporal language → TemporalNormalizationChoice
+```
+
+Minimal backward-compatible temporal provider/model settings may be introduced only in J1B and only if J1A is promising. Blank setting preserves existing current structured-language default.
+
+J1B is a new engineering candidate and must re-run focused provider-free → family closure → workers=1 live → stratified canary → Wren/Research sentinel before freeze.
+
+### 18A.6 Anti-patch
+
+Forbidden rationales/usages:
+```text
+use Jev to pass case019
+hide a Flash-Lite failure
+replace legacy resolver fallback with Jev fallback
+Sol failure → silent Jev
+Jev failure → silent Gemini/Sol
+case-derived prompt/question criteria
+threshold tuning on the same evaluation set
+```
+
+Every model attempt must be explicit in telemetry/receipt. Any future cascade requires its own measured and accepted policy.
+
+### 18A.7 Sequence effect
+
+D65-J1 is resolved **before ENGINEERING FREEZE CANDIDATE / DEV80**.
+
+Day7–10 and D65-X remain unchanged.
+
 ## 19. D65-X ölçütleri
 
 P0:
