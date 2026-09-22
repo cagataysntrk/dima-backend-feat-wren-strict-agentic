@@ -162,6 +162,9 @@ Rules:
 - Every source_surface and semantic surface MUST be an exact substring of USER_MESSAGE.
 - semantic_surfaces contain only tenant semantic concepts that need governed binding:
   metric, dimension, filter, time, comparison.
+- EVERY item placed in semantic_surfaces is MATERIAL and binding-required. A contextual/non-material
+  phrase must not be placed there. A declared semantic surface may never be silently dropped merely
+  because another surface of the same semantic kind resolved.
 - Do not invent canonical IDs, database fields, aliases, semantic handles, SQL or joins.
 - Ranking direction/limit are operation parameters, not semantic concepts.
 - A root-cause, relationship, investigative or other Research capability MUST remain
@@ -363,6 +366,39 @@ class StandardLaneEngine:
                     if (surface.surface, surface.kind_hint) in resolved_by_pair
                 )
             )
+            declared_pairs = tuple(
+                (surface.surface, surface.kind_hint)
+                for surface in item.semantic_surfaces
+            )
+            unresolved_declared = tuple(
+                pair
+                for pair in declared_pairs
+                if pair in unresolved_pairs or pair not in resolved_by_pair
+            )
+            if unresolved_declared:
+                material_gaps.append(
+                    f"{item.obligation_id}: unresolved governed semantic surfaces: "
+                    + ", ".join(
+                        f"{surface!r}/{kind}"
+                        for surface, kind in unresolved_declared
+                    )
+                )
+
+            # Accounting invariant: every declared semantic surface is either bound
+            # or explicitly unresolved. This prevents same-kind partial binding from
+            # being hidden by the older kind-level completeness check.
+            accounted_pairs = set(resolved_by_pair).union(unresolved_pairs)
+            unaccounted = tuple(
+                pair for pair in declared_pairs if pair not in accounted_pairs
+            )
+            if unaccounted:
+                raise RuntimeError(
+                    "standard semantic accounting invariant violated: "
+                    + ", ".join(
+                        f"{surface!r}/{kind}" for surface, kind in unaccounted
+                    )
+                )
+
             resolved_kinds = {
                 self._normalized_kind(binding.target_kind)
                 for binding in bindings

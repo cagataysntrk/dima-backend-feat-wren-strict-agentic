@@ -170,3 +170,321 @@ def test_research_capability_stops_without_standard_authority(monkeypatch):
     assert outcome.authority is None
     assert outcome.projection is None
     assert engine.authority_registry.accepted("turn-research") is None
+
+
+
+class _AlwaysAbstainProvider:
+    def decide(self, requests):
+        return SemanticLinkBatchDecision(
+            choices=tuple(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="ABSTAIN",
+                    reason="AMBIGUOUS",
+                )
+                for request in requests
+            )
+        )
+
+
+def _rich_context():
+    return BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-si-rich",
+            mdl_version="mdl-si-rich",
+            compact_catalog_builder_version="si-rich-test",
+            business_rules_hash="1" * 64,
+            prompt_context_policy_version="si-rich-test",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="Sales",
+                display="Satış",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="Sales.net_revenue",
+                        display="Net Gelir",
+                        synonyms=("net gelir",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="Sales.gross_margin",
+                        display="Brüt Marj",
+                        synonyms=("brüt marj",),
+                    ),
+                ),
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="Sales.region",
+                        display="Bölge",
+                        synonyms=("bölge",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="Sales.channel",
+                        display="Kanal",
+                        synonyms=("kanal",),
+                    ),
+                ),
+                time_dimensions=("event_date",),
+            ),
+        ),
+    )
+
+
+def _rich_schema():
+    return {
+        "models": [],
+        "cubes": [
+            {
+                "name": "Sales",
+                "dimension_values": {
+                    "Sales.region": ["Kuzey", "Güney"],
+                    "Sales.channel": ["Web", "Mağaza"],
+                },
+            }
+        ],
+    }
+
+
+def _draft(obligations):
+    return {"obligations": obligations, "control_requests": []}
+
+
+def _obligation(
+    *,
+    obligation_id,
+    capability,
+    source_surfaces,
+    semantic_surfaces,
+    origin="USER_MUST",
+    priority="MUST",
+):
+    return {
+        "obligation_id": obligation_id,
+        "capability_key": capability,
+        "origin": origin,
+        "priority": priority,
+        "polarity": "REQUIRED",
+        "source_surfaces": list(source_surfaces),
+        "semantic_surfaces": [
+            {"surface": surface, "kind_hint": kind}
+            for surface, kind in semantic_surfaces
+        ],
+        "ranking_direction": None,
+        "ranking_limit": None,
+    }
+
+
+def _run_surface_case(monkeypatch, *, question, draft_payload):
+    def intent(system, user, *, schema, schema_name):
+        assert schema_name == "dima_standard_intent_draft_v1"
+        return draft_payload
+
+    execution_calls = []
+
+    def no_execution(*args, **kwargs):
+        execution_calls.append((args, kwargs))
+        raise AssertionError("unresolved semantic surface reached execution")
+
+    monkeypatch.setattr(
+        "app.v2.standard_lane.WrenStandardExecutionAdapter.execute",
+        no_execution,
+    )
+
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=_coverage_pass,
+        semantic_provider=_AlwaysAbstainProvider(),
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id="turn-surface-accounting",
+        request_ref="request-surface-accounting",
+        semantic_context=_rich_context(),
+        schema=_rich_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="STANDARD_PROFILE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+    return engine, outcome, execution_calls
+
+
+def test_partial_same_kind_metric_binding_fails_closed(monkeypatch):
+    question = "net gelir ve belirsiz marj"
+    draft_payload = _draft(
+        [
+            _obligation(
+                obligation_id="U1",
+                capability="performance",
+                source_surfaces=(question,),
+                semantic_surfaces=(
+                    ("net gelir", "metric"),
+                    ("belirsiz marj", "metric"),
+                ),
+            )
+        ]
+    )
+    engine, outcome, calls = _run_surface_case(
+        monkeypatch,
+        question=question,
+        draft_payload=draft_payload,
+    )
+    assert outcome.status == StandardLaneStatus.CLARIFICATION_REQUIRED
+    assert any("belirsiz marj" in reason for reason in outcome.reasons)
+    assert outcome.authority is None
+    assert engine.authority_registry.accepted("turn-surface-accounting") is None
+    assert calls == []
+
+
+def test_partial_same_kind_dimension_binding_fails_closed(monkeypatch):
+    question = "net geliri bölge ve özel kanal bazında göster"
+    draft_payload = _draft(
+        [
+            _obligation(
+                obligation_id="U1",
+                capability="breakdown",
+                source_surfaces=(question,),
+                semantic_surfaces=(
+                    ("net gelir", "metric"),
+                    ("bölge", "dimension"),
+                    ("özel kanal", "dimension"),
+                ),
+            )
+        ]
+    )
+    engine, outcome, calls = _run_surface_case(
+        monkeypatch,
+        question=question,
+        draft_payload=draft_payload,
+    )
+    assert outcome.status == StandardLaneStatus.CLARIFICATION_REQUIRED
+    assert any("özel kanal" in reason for reason in outcome.reasons)
+    assert outcome.authority is None
+    assert engine.authority_registry.accepted("turn-surface-accounting") is None
+    assert calls == []
+
+
+def test_partial_filter_binding_fails_closed_even_when_metric_kind_is_complete(monkeypatch):
+    question = "net gelir Kuzey ve VIP müşteri"
+    draft_payload = _draft(
+        [
+            _obligation(
+                obligation_id="U1",
+                capability="performance",
+                source_surfaces=(question,),
+                semantic_surfaces=(
+                    ("net gelir", "metric"),
+                    ("Kuzey", "filter"),
+                    ("VIP müşteri", "filter"),
+                ),
+            )
+        ]
+    )
+    engine, outcome, calls = _run_surface_case(
+        monkeypatch,
+        question=question,
+        draft_payload=draft_payload,
+    )
+    assert outcome.status == StandardLaneStatus.CLARIFICATION_REQUIRED
+    assert any("VIP müşteri" in reason for reason in outcome.reasons)
+    assert outcome.authority is None
+    assert engine.authority_registry.accepted("turn-surface-accounting") is None
+    assert calls == []
+
+
+def test_optional_declared_semantic_surface_is_never_implicitly_discarded(monkeypatch):
+    question = "net gelir, mümkünse belirsiz marj da"
+    draft_payload = _draft(
+        [
+            _obligation(
+                obligation_id="U1",
+                capability="performance",
+                source_surfaces=("net gelir",),
+                semantic_surfaces=(("net gelir", "metric"),),
+            ),
+            _obligation(
+                obligation_id="U2",
+                capability="performance",
+                source_surfaces=("belirsiz marj",),
+                semantic_surfaces=(("belirsiz marj", "metric"),),
+                origin="USER_OPTIONAL",
+                priority="SHOULD",
+            ),
+        ]
+    )
+    engine, outcome, calls = _run_surface_case(
+        monkeypatch,
+        question=question,
+        draft_payload=draft_payload,
+    )
+    assert outcome.status == StandardLaneStatus.CLARIFICATION_REQUIRED
+    assert any("U2" in reason and "belirsiz marj" in reason for reason in outcome.reasons)
+    assert outcome.authority is None
+    assert engine.authority_registry.accepted("turn-surface-accounting") is None
+    assert calls == []
+
+
+def test_all_declared_semantic_surfaces_are_accounted_when_bound(monkeypatch):
+    question = "net gelir ve brüt marj"
+    draft_payload = _draft(
+        [
+            _obligation(
+                obligation_id="U1",
+                capability="performance",
+                source_surfaces=(question,),
+                semantic_surfaces=(
+                    ("net gelir", "metric"),
+                    ("brüt marj", "metric"),
+                ),
+            )
+        ]
+    )
+
+    def intent(system, user, *, schema, schema_name):
+        return draft_payload
+
+    class _ExecutionResult:
+        pass
+
+    monkeypatch.setattr(
+        "app.v2.standard_lane.WrenStandardExecutionAdapter.execute",
+        lambda *args, **kwargs: _ExecutionResult(),
+    )
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=_coverage_pass,
+        semantic_provider=_AlwaysAbstainProvider(),
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id="turn-all-bound",
+        request_ref="request-all-bound",
+        semantic_context=_rich_context(),
+        schema=_rich_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="STANDARD_PROFILE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert outcome.status == StandardLaneStatus.ACCEPTED
+    assert outcome.authority is not None
+    assert outcome.projection is not None
+    declared_refs = {
+        binding.source_ref
+        for obligation in outcome.obligations
+        for binding in obligation.semantic_bindings
+    }
+    assert len(declared_refs) == 2
+    assert len(outcome.authority.semantic_handle_refs) == 2
+    assert engine.authority_registry.accepted("turn-all-bound") is not None
