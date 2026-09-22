@@ -1,5 +1,44 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-DAY6.5-RUNTIME-KERNEL-SUBSTRATE-OVERLAY -->
+> ## 🔴 Day 6.5 runtime-kernel / substrate decision overlay — 2026-09-22
+>
+> Active addendum: `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`.
+>
+> Product-level execution paths are now only:
+>
+> ```text
+> STANDARD
+> RESEARCH
+> ```
+>
+> `STANDARD_DIRECT` and `STANDARD_BUILDER` are telemetry/outcomes of the same Standard engine:
+>
+> ```text
+> standard_outcome = DIRECT | BUILDER
+> ```
+>
+> Standard loop mechanics must use a small generic `BoundedAgentRuntimeKernel` that owns only
+> counters, budgets, observation lifecycle, action/state fingerprints, duplicate prevention,
+> terminal/no-progress and telemetry. It does not own semantic/business/authority/evidence truth.
+>
+> Existing Research Manager remains on its current `ManagerRuntime`/`AcceptedTurnContract`/UOL
+> implementation through Day 7–10. No wholesale migration now.
+>
+> `AcceptedResearchAuthority` remains an alias/tag view of the existing `AcceptedTurnContract` body.
+> No second Research semantic contract.
+>
+> Wren remains the incumbent analytics substrate through engineering closure. Metabase is only an
+> external architecture reference and an isolated D65-X challenger after engineering closure and
+> before final Validation/Hidden certification.
+>
+> Production must have exactly one primary analytics truth substrate. `Wren + Metabase` as equal
+> production truth engines is STOP-THE-LINE.
+>
+> Current sequencing exception: StandardBuilder/E4/E5 were implemented and focused-green before
+> the runtime-kernel decision. Do not rollback. Re-home only the generic loop mechanics into the
+> kernel, preserve Standard semantic behavior, then rerun provider-free family closure.
+>
 <!-- DIMA-V2-DAY6.5-ENGINEERING-CLOSURE-OVERLAY -->
 > ## 🔴 V2 Day 6.5 engineering-closure target — 2026-09-22
 >
@@ -8,13 +47,7 @@
 > Bu overlay henüz production certification seal beyanı DEĞİLDİR; current implementation
 > ile sıradaki closure target'ı ayırır.
 >
-> Nihai front-door çalışma biçimleri:
->
-> ```text
-> STANDARD_DIRECT
-> STANDARD_BUILDER
-> RESEARCH
-> ```
+> Legacy Day 6.5 telemetry labels below remain useful for eval, but architecture-level paths are now `STANDARD | RESEARCH`; `DIRECT | BUILDER` are Standard outcomes.
 >
 > Bunlar üç authority ailesi değildir:
 >
@@ -43,9 +76,7 @@
 > CompletionGate            = research completion truth
 > ```
 >
-> `STANDARD_DIRECT` StandardBuilder'ın hemen seal edilen kısa yoludur; standard sorguların
-> tamamını evrensel tek model çağrısına zorlamak mimari invariant değildir. Bounded builder
-> progress-driven self-correction yapabilir. Aynı action+state tekrarı `NO_PROGRESS`.
+> `DIRECT` Standard engine'in ilk-attempt seal outcome'udur; `BUILDER` aynı engine'in bounded repair outcome'udur. Bunlar ayrı engine/router/authority değildir. Aynı action+state tekrarı `NO_PROGRESS`.
 >
 > Başarısız Standard attempt'tan Research authority'ye `sem_*`, projection, metric/operation/
 > comparison/temporal semantic seçimi taşınmaz. Yalnız raw SourceSpanRefs ve non-authoritative
