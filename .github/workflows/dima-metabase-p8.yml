@@ -1,0 +1,76 @@
+name: dima-metabase-p8
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/semantic_equivalence.py"
+      - "backend/app/v3/semantic_spec.py"
+      - "backend/app/v3/semantic_import.py"
+      - "backend/tests/test_v3_p8_semantic_equivalence.py"
+      - "backend/belgeler/metabase/predev/P8_PREDEVELOPMENT_REVIEW.md"
+      - "backend/belgeler/metabase/tickets/P8_SEMANTIC_EQUIVALENCE_MATRIX.md"
+      - ".github/workflows/dima-metabase-p8.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p8-equivalence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require sealed P8 predevelopment review
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVIEW="backend/belgeler/metabase/predev/P8_PREDEVELOPMENT_REVIEW.md"
+          test -f "$REVIEW"
+          grep -q "Status: \*\*SEALED / P8 EQUIVALENCE MATRIX IMPLEMENTATION AUTHORIZED\*\*" "$REVIEW"
+
+      - name: Enforce P8 initial-slice isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="bc4e4b2f784b1266e3be88faed42ae7f147e7c67"
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|semantic_import|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)'; then
+            echo "P8 initial slice touched a forbidden file"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile P8 matrix
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v3/semantic_equivalence.py \
+            tests/test_v3_p8_semantic_equivalence.py
+
+      - name: Focused P8 equivalence proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_p8_semantic_equivalence.py
+
+      - name: P7 importer regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p7_semantic_import.py
