@@ -9,10 +9,10 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`f8018800c773019f0e79907fec3e15edec72dbb0`
+`d88e599ec702c4a3edaaecbaeba236af30a92139`
 
 CURRENT_PRODUCT_GATE:
-`FT-005 — CONVERSATION + FOLLOW-UP CONTEXT / PREDEVELOPMENT`
+`FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
 
 FT-003_FINAL:
 `CLOSED / GREEN`
@@ -20,11 +20,21 @@ FT-003_FINAL:
 FT-004_FINAL:
 `CLOSED / GREEN`
 
-FT-005:
-`OPEN / PREDEVELOPMENT NEXT`
+FT-005_CORE:
+`GREEN`
+run: `35784476690`
+
+FT-005_REAL_MODEL:
+`PENDING`
+
+FT-005_REAL_METABASE_FOLLOWUP:
+`PENDING`
+
+FT-005_FINAL:
+`OPEN`
 
 OPEN_RED:
-`NONE`
+`NONE AT CURRENT HEAD`
 
 FT-004_POST_SEAL_INVARIANTS:
 `CLOSED / GREEN`
@@ -212,12 +222,44 @@ Closed receipts:
 - `FT_004_POST_SEAL_OWNER_IDENTITY_001`;
 - `FT_004_POST_SEAL_RETRY_IDENTITY_001`.
 
+## FT-005 CURRENT IMPLEMENTATION
+
+Implemented and provider-free GREEN:
+- FastConversationStore;
+- FastConversationService;
+- StructuredJsonFastFollowupCognition;
+- ContextBoundFastCognition;
+- authenticated conversation HTTP surface;
+- typed accepted context;
+- turn lineage;
+- explicit older-turn reply;
+- self-contained topic switch isolation;
+- active-run conflict;
+- clarification continuation with new child turn/new run;
+- accepted USER-question lineage;
+- owner isolation;
+- retry/follow-up separation.
+
+Current core proof:
+`35784476690 GREEN`
+
+Current audited implementation SHA:
+`d88e599ec702c4a3edaaecbaeba236af30a92139`
+
+Hard debt:
+`CONVERSATION_DURABILITY = NOT YET CERTIFIED`
+
 ## NEXT_EXACT_ACTION
 
-1. Audit legacy conversation surfaces READ-ONLY.
-2. Open `FT_005_PREDEVELOPMENT_REVIEW.md`.
-3. Decide Fast conversation store strategy before implementation.
-4. Freeze conversation / turn / accepted-context authority contracts.
-5. Keep every analytical turn as a new immutable run.
-6. Keep retry, follow-up, clarification, new turn, and new run as distinct concepts.
-7. Do not begin Analyst or Root Cause inside FT-005.
+1. Add focused real-model follow-up sentinel.
+2. Add real-model + pinned-Metabase 3-turn follow-up sentinel.
+3. Compute independent DB oracle for every executed follow-up result.
+4. Require distinct run/evidence identities for every analytical turn.
+5. Prove current resource/field authority is revalidated on each turn.
+6. Prove assistant prose authority = 0 and prior request-local handles are not reused as authority.
+7. Re-run FT-003 and FT-004 regressions.
+8. Seal all FT-005 failure receipts.
+9. Seal FT-005 only after all certification gates are GREEN.
+10. Keep `CONVERSATION_DURABILITY = NOT YET CERTIFIED`.
+11. Only after seal, add Research Doctrine docs-only reconciliation.
+12. Do not begin Analyst, Research, Root Cause, or new analytical algorithms inside FT-005.

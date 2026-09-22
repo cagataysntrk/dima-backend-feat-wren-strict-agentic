@@ -1,6 +1,6 @@
 # FT-005 FAILURE RECEIPT — CLARIFICATION_CONTEXT_LINEAGE_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / CLARIFICATION_CONTEXT_LINEAGE
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -77,3 +77,23 @@ Do not copy assistant prose.
 - new turn/run are distinct;
 - new resolver call sees accepted context + accepted user-question lineage + original clarification question;
 - topic-switch and FT-003/004 regressions remain GREEN.
+
+
+## Closure
+
+Corrective commit:
+`d88e599ec702c4a3edaaecbaeba236af30a92139`
+
+Provider-free proof:
+`35784476690 GREEN`
+
+Verified:
+- contextual WAITING turn retains accepted source turn provenance;
+- clarification answer cancels/finalizes the old waiting run;
+- clarification answer creates a distinct child turn and distinct new run;
+- accepted user-question lineage is preserved into the new resolution;
+- the old WAITING run is not reopened;
+- topic-switch non-inheritance remains GREEN;
+- FT-004/FT-003 regression steps remain GREEN.
+
+Failure CLOSED.

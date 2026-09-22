@@ -1,6 +1,6 @@
 # FT-005 FAILURE RECEIPT — ACCEPTED_CONTEXT_LINEAGE_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / ACCEPTED_CONTEXT_LINEAGE
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -85,3 +85,21 @@ Do not alter FastAskService.
 - explicit older-turn reply still selects the requested lineage;
 - topic-switch non-inheritance remains GREEN;
 - FT-004 and FT-003 regressions GREEN.
+
+
+## Closure
+
+Corrective commit:
+`a010986a177715a74a387a7b9eab6130d8ac5aef`
+
+Final provider-free proof on current FT-005 head:
+`35784476690 GREEN`
+
+Verified:
+- accepted contextual lineage carries prior accepted source lineage + current turn;
+- Q3-style follow-up receives accepted USER-question lineage rather than only the latest elliptical fragment;
+- assistant prose authority remains zero;
+- explicit older-turn reply and self-contained topic-switch tests remain GREEN;
+- FT-004 and FT-003 regressions in the FT-005 core workflow remain GREEN.
+
+Failure CLOSED.
