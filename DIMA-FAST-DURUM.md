@@ -310,3 +310,30 @@ Next:
 5. run Luna baseline and Sol ceiling on the frozen corpus;
 6. classify model dependency;
 7. only then authorize minimal fixes.
+
+
+## FT-005 OBSERVABILITY DIAGNOSTIC
+
+Gemini focused diagnostic rerun:
+`35788724994 RED`
+
+Gemini E2E diagnostic rerun:
+`35788733890 RED`
+
+Current evidence:
+- provider transport = healthy;
+- JSON parse = healthy;
+- repeated q3 schema mismatch = systematic 3/3;
+- executable reason/schema mismatch = observed;
+- retrieval contract drift = observed;
+- exact inherited_slots labeling = DIAGNOSTIC, not execution authority.
+
+Authorized next step:
+`MODEL DEPENDENCY MATRIX`
+
+Roles:
+- `google/gemini-2.5-flash-lite` = THIRD_MODEL_DIAGNOSTIC;
+- `gpt-5.6-luna` = LUNA_BASELINE / economic default candidate;
+- `gpt-5.6-sol` = SOL_CEILING / capability reference.
+
+Frozen inputs/contracts only; model changes.
