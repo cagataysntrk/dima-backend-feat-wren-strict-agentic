@@ -5,14 +5,19 @@ import type { QueryResult } from "@dima/contracts";
 export interface TableSchema {
   schema: string;
   name: string;
-  columns: { name: string; type: string }[];
+  columns: { name: string; type: string; label?: string }[];
 }
 
 /** Deterministic, compact schema listing (sorted, so the prompt prefix stays stable for caching). */
 export function describeSchema(tables: TableSchema[]): string {
   return [...tables]
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map((t) => `${t.schema}.${t.name}(${t.columns.map((c) => `${c.name} ${c.type}`).join(", ")})`)
+    .map(
+      (t) =>
+        `${t.schema}.${t.name}(${t.columns
+          .map((c) => `${c.name} ${c.type}${c.label ? ` "${c.label}"` : ""}`)
+          .join(", ")})`,
+    )
     .join("\n");
 }
 

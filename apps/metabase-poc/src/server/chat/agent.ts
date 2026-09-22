@@ -38,7 +38,7 @@ export async function tenantTables(ctx: TenantContext): Promise<TableSchema[]> {
       schema: string;
       name: string;
       visibility_type: string | null;
-      fields: { name: string; database_type: string; visibility_type: string }[];
+      fields: { name: string; display_name: string; database_type: string; visibility_type: string }[];
     }[];
   }>(ctx.tenant, `/api/database/${ctx.tenant.databaseId}/metadata`);
   const tables: TableSchema[] = meta.tables
@@ -48,7 +48,12 @@ export async function tenantTables(ctx: TenantContext): Promise<TableSchema[]> {
       name: t.name,
       columns: t.fields
         .filter((f) => f.visibility_type === "normal" && !/^_mb_/i.test(f.name))
-        .map((f) => ({ name: f.name, type: f.database_type })),
+        // Friendly names (data model) are appended so the model knows what a column means.
+        .map((f) => ({
+          name: f.name,
+          type: f.database_type,
+          label: f.display_name && f.display_name.toLowerCase() !== f.name.replace(/_/g, " ") ? f.display_name : undefined,
+        })),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
   schemaCache.set(ctx.tenant.slug, { at: Date.now(), tables });

@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import {
+  Boxes,
   Building2,
   ChevronsUpDown,
   Database,
@@ -94,6 +95,7 @@ export function AppSidebar({
   const nav = [
     { href: "/app", label: "Genel bakış", icon: LayoutGrid, show: true },
     { href: "/app/sql", label: "SQL", icon: Database, show: canAnalyze },
+    { href: "/app/model", label: "Veri modeli", icon: Boxes, show: canAnalyze },
     { href: "/app/upload", label: "Veri yükle", icon: Upload, show: canAnalyze },
   ].filter((n) => n.show);
 

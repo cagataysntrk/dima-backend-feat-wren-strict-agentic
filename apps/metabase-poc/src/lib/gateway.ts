@@ -34,6 +34,22 @@ function qs(filters: Filters, extra: Record<string, string> = {}): string {
   return s ? `?${s}` : "";
 }
 
+export interface ModelField {
+  id: number;
+  name: string;
+  displayName: string;
+  type: string;
+  category: boolean;
+  hidden: boolean;
+}
+
+export interface ModelTable {
+  id: number;
+  name: string;
+  displayName: string;
+  fields: ModelField[];
+}
+
 export interface Item {
   kind: "card" | "dashboard" | "model";
   id: number;
@@ -102,6 +118,9 @@ export interface ChatAnswer {
 }
 
 export const gateway = {
+  dataModel: () => api<{ tables: ModelTable[] }>("/api/model").then((r) => r.tables),
+  updateField: (fieldId: number, patch: { displayName?: string; category?: boolean; hidden?: boolean }) =>
+    api<{ field: ModelField }>(`/api/model/fields/${fieldId}`, { ...json(patch), method: "PATCH" }).then((r) => r.field),
   tables: () => api<{ tables: { name: string; columns: string[] }[] }>("/api/tables").then((r) => r.tables),
   chat: (messages: ChatTurn[]) => api<ChatAnswer>("/api/chat", json({ messages })),
   items: () => api<{ items: Item[] }>("/api/items").then((r) => r.items),
