@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
+from app.v2.manager_errors import ManagerRecoverableToolError
 from app.v2.manager_models import (
     ManagerCapabilityKey,
     ObligationStatus,
@@ -180,8 +181,8 @@ class ResearchTaskService:
         )
 
 
-class ResearchTaskLifecycleError(RuntimeError):
-    pass
+class ResearchTaskLifecycleError(ManagerRecoverableToolError):
+    code = "research_task_lifecycle"
 
 
 class ResearchTaskRegistry:
@@ -272,6 +273,28 @@ class ResearchTaskRegistry:
         self._tasks[task.task_id] = current.model_copy(update={"state": "running"})
         return None
 
+    def assert_execution_active(
+        self,
+        *,
+        task_id: str,
+        tool_id: str,
+        action_fingerprint: str,
+    ) -> None:
+        current = self.get(task_id)
+        inflight = self._inflight.get(task_id)
+        if current.state == "cancelled":
+            raise ResearchTaskLifecycleError(
+                f"late completion cannot resurrect cancelled ResearchTask: {task_id}"
+            )
+        if current.state != "running":
+            raise ResearchTaskLifecycleError(
+                f"ResearchTask is not active for commit: {task_id} ({current.state})"
+            )
+        if inflight != (tool_id, action_fingerprint):
+            raise ResearchTaskLifecycleError(
+                f"ResearchTask completion identity mismatch: {task_id}"
+            )
+
     def complete_execution(
         self,
         *,
@@ -280,18 +303,12 @@ class ResearchTaskRegistry:
         action_fingerprint: str,
         result: object,
     ) -> ResearchTask:
+        self.assert_execution_active(
+            task_id=task_id,
+            tool_id=tool_id,
+            action_fingerprint=action_fingerprint,
+        )
         current = self.get(task_id)
-        inflight = self._inflight.get(task_id)
-        if current.state == "cancelled":
-            self._inflight.pop(task_id, None)
-            raise ResearchTaskLifecycleError(
-                f"late completion cannot resurrect cancelled ResearchTask: {task_id}"
-            )
-        if inflight != (tool_id, action_fingerprint):
-            raise ResearchTaskLifecycleError(
-                f"ResearchTask completion identity mismatch: {task_id}"
-            )
-
         self._inflight.pop(task_id, None)
         completed = current.model_copy(update={"state": "complete"})
         self._tasks[task_id] = completed
