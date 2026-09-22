@@ -6,7 +6,7 @@ and receives no raw user-language contract.
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict
 
@@ -48,6 +48,25 @@ class ExecutionInspection(FrozenModel):
     verified: bool
     reasons: tuple[str, ...] = ()
     query_count: int = 0
+
+
+@runtime_checkable
+class QueryReceiptWriter(Protocol):
+    """Dima-owned persistence/receipt seam; raw audit context stays outside substrate."""
+
+    def record(
+        self,
+        *,
+        intent: ResolvedAnalyticsIntent,
+        execution_id: str,
+        cube_query: dict,
+        sql: str,
+        result: dict[str, Any],
+        provenance: dict[str, Any],
+        substrate: str,
+        substrate_runtime_version: str | None,
+    ) -> DimaQueryReceipt:
+        ...
 
 
 @runtime_checkable

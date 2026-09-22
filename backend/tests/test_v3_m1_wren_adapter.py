@@ -34,6 +34,7 @@ from app.v3.authority import (
     StandardAuthoritySealer,
     StandardWorkMode,
 )
+from app.v3.legacy_contract import LegacyV2QueryReceiptWriter
 from app.v3.substrate.wren import WrenSubstrateAdapter
 from control_plane.authorize import Principal
 
@@ -58,19 +59,27 @@ def test_wren_substrate_has_no_semantic_handle_or_raw_language_dependency():
     assert tuple(signature.parameters) == ("self", "intent")
 
     method_tree = ast.parse(textwrap.dedent(inspect.getsource(method)))
-    question_keywords = [
+    assert not [
         node
         for node in ast.walk(method_tree)
         if isinstance(node, ast.keyword) and node.arg == "question"
     ]
-    assert len(question_keywords) == 1
-    value = question_keywords[0].value
-    assert isinstance(value, ast.Attribute)
-    assert value.attr == "request_ref"
-    assert isinstance(value.value, ast.Name)
-    assert value.value.id == "intent"
-
     assert "binding_for_execution" not in inspect.getsource(method)
+
+
+def test_legacy_receipt_writer_owns_raw_audit_question_outside_substrate():
+    import app.v3.legacy_contract as legacy_module
+    import app.v3.substrate.wren as wren_module
+
+    writer_source = inspect.getsource(legacy_module.LegacyV2QueryReceiptWriter)
+    substrate_source = inspect.getsource(wren_module.WrenSubstrateAdapter)
+
+    assert "question" in writer_source
+    assert "record_v2_minimum" in writer_source
+    assert "question" not in inspect.signature(
+        wren_module.WrenSubstrateAdapter
+    ).parameters
+    assert "record_v2_minimum" not in substrate_source
 
 
 def test_v3_wren_adapter_matches_certified_v2_query_behavior(
@@ -206,12 +215,17 @@ def test_v3_wren_adapter_matches_certified_v2_query_behavior(
         principal_roles=tuple(principal.roles),
     )
 
+    receipt_writer = LegacyV2QueryReceiptWriter(
+        contract_store=contracts_module.ContractStore(),
+        runtime=runtime,
+        session_id="m1-parity-v3",
+        question="m1 parity reference",
+    )
     adapter = WrenSubstrateAdapter(
         service=wren,
         principal=principal,
         runtime=runtime,
-        contract_store=contracts_module.ContractStore(),
-        session_id="m1-parity-v3",
+        receipt_writer=receipt_writer,
     )
     validation = adapter.validate_execution_intent(intent)
     assert validation.valid, validation.reasons
@@ -230,6 +244,7 @@ def test_v3_wren_adapter_matches_certified_v2_query_behavior(
 
     assert len(persisted) == 2
     old_row, new_row = persisted
+    assert old_row.question == new_row.question == "m1 parity reference"
     assert old_row.sql == new_row.sql
     assert old_row.cube_query_json == new_row.cube_query_json
     assert old_row.result_hash == new_row.result_hash

@@ -7,8 +7,6 @@ authority. Query planning/execution mirrors the certified v2 Wren Standard path.
 
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import Any
 
 from app.v2.cube_planner import (
@@ -39,6 +37,7 @@ from app.v3.substrate.base import (
     ExecutionIntentValidation,
     SubstrateCapabilities,
     SubstrateExecutionResult,
+    QueryReceiptWriter,
 )
 
 
@@ -56,9 +55,8 @@ class WrenSubstrateAdapter:
         *,
         service,
         principal,
-        runtime: TenantAnalyticsRuntimeV0,
-        contract_store,
-        session_id: str | None = None,
+        runtime: TenantAnalyticsRuntimeV0 | None,
+        receipt_writer: QueryReceiptWriter | None = None,
         planner: CubePlanner | None = None,
         validator: ResultValidator | None = None,
         sample_rows: int = 20,
@@ -66,8 +64,7 @@ class WrenSubstrateAdapter:
         self._service = service
         self._principal = principal
         self._runtime = runtime
-        self._contract_store = contract_store
-        self._session_id = session_id
+        self._receipt_writer = receipt_writer
         self._planner = planner or CubePlanner()
         self._validator = validator or ResultValidator()
         self._sample_rows = max(1, int(sample_rows))
@@ -205,27 +202,6 @@ class WrenSubstrateAdapter:
             reasons.append(str(exc))
         return ExecutionIntentValidation(valid=not reasons, reasons=tuple(reasons))
 
-    @staticmethod
-    def _query_fingerprint(*, cube_query: dict, sql: str) -> str:
-        raw = json.dumps(
-            {"cube_query": cube_query, "sql": " ".join(sql.split())},
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
-
-    @staticmethod
-    def _receipt_id(
-        *,
-        authority_id: str,
-        intent_hash: str,
-        query_fingerprint: str,
-        execution_id: str,
-    ) -> str:
-        raw = f"{authority_id}\x1f{intent_hash}\x1f{query_fingerprint}\x1f{execution_id}"
-        return "dqr_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
-
     def execute_execution_intent(
         self,
         intent: ResolvedAnalyticsIntent,
@@ -285,10 +261,10 @@ class WrenSubstrateAdapter:
 
         if not ledger.all_must_verified:
             raise WrenSubstrateError("query-level MUST ledger is not VERIFIED")
-        if self._contract_store is None or not callable(
-            getattr(self._contract_store, "record_v2_minimum", None)
-        ):
-            raise WrenSubstrateError("strict ContractStore unavailable")
+        if self._receipt_writer is None:
+            raise WrenSubstrateError("Dima QueryReceipt writer unavailable")
+        if self._runtime is None:
+            raise WrenSubstrateError("Wren runtime metadata unavailable")
 
         exposed_columns = {
             item.canonical_name: item.semantic_ref
@@ -313,14 +289,12 @@ class WrenSubstrateAdapter:
                     "verified result contains validation errors"
                 )
 
-            sealed = self._contract_store.record_v2_minimum(
-                session_id=self._session_id,
-                question=intent.request_ref,
+            receipt = self._receipt_writer.record(
+                intent=intent,
+                execution_id=plan.execution_id,
                 cube_query=plan.cube_query,
                 sql=plan.sql,
                 result=result,
-                schema_version=self._runtime.mdl_version,
-                tenant_id=self._runtime.tenant_id,
                 provenance={
                     "v2_standard": {
                         "adapter_id": self.adapter_id,
@@ -339,42 +313,12 @@ class WrenSubstrateAdapter:
                         "semantic_resolution_inside_substrate": False,
                     },
                 },
+                substrate="wren",
+                substrate_runtime_version=self._runtime.mdl_version,
             )
-            if not bool(sealed.get("sealed")):
-                raise WrenSubstrateError("QueryContract seal failed")
-
-            contract_ref = str(sealed["id"])
-            legacy_contract_refs.append(contract_ref)
-            query_fingerprint = self._query_fingerprint(
-                cube_query=plan.cube_query,
-                sql=plan.sql,
-            )
-            receipts.append(
-                DimaQueryReceipt(
-                    receipt_id=self._receipt_id(
-                        authority_id=intent.authority_id,
-                        intent_hash=intent_hash,
-                        query_fingerprint=query_fingerprint,
-                        execution_id=plan.execution_id,
-                    ),
-                    authority_id=intent.authority_id,
-                    projection_hash=intent.projection_hash,
-                    resolved_intent_hash=intent_hash,
-                    canonical_query_fingerprint=query_fingerprint,
-                    canonical_query_representation={
-                        "cube_query": plan.cube_query,
-                        "sql": plan.sql,
-                    },
-                    principal_fingerprint=intent.principal.fingerprint,
-                    execution_access_fingerprint=intent.principal.fingerprint,
-                    semantic_context_version=intent.semantic_context_version,
-                    substrate="wren",
-                    substrate_runtime_version=self._runtime.mdl_version,
-                    legacy_query_contract_ref=contract_ref,
-                    result_hash=sealed.get("result_hash"),
-                    row_count=int(result.get("row_count") or 0),
-                )
-            )
+            receipts.append(receipt)
+            if receipt.legacy_query_contract_ref is not None:
+                legacy_contract_refs.append(receipt.legacy_query_contract_ref)
 
             rows = tuple(dict(row) for row in (result.get("rows") or ()))
             if len(rows) > self._sample_rows:

@@ -50,7 +50,7 @@ jobs:
       - name: Compile v3 M1 boundary
         working-directory: backend
         run: |
-          python -m py_compile             app/v3/semantic_spec.py             app/v3/authority.py             app/v3/analytics_contract.py             app/v3/evidence.py             app/v3/substrate/base.py             app/v3/substrate/wren.py
+          python -m py_compile             app/v3/semantic_spec.py             app/v3/authority.py             app/v3/analytics_contract.py             app/v3/evidence.py             app/v3/legacy_contract.py             app/v3/substrate/base.py             app/v3/substrate/wren.py
 
       - name: Provider-free v3 M1 contract gate
         working-directory: backend
