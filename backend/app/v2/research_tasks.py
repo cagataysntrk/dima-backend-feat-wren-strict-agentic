@@ -48,6 +48,13 @@ class ResearchBranchMaterialization(FrozenModel):
     registered_tasks: tuple[ResearchTask, ...] = ()
 
 
+class ResearchSeedSet(FrozenModel):
+    considered_obligation_ids: tuple[str, ...]
+    registered_tasks: tuple[ResearchTask, ...] = ()
+    deferred_obligation_ids: tuple[str, ...] = ()
+    already_accounted_obligation_ids: tuple[str, ...] = ()
+
+
 class ResearchTaskService:
     """Materialize seed/derived tasks without owning cognition or execution truth."""
 
@@ -126,6 +133,82 @@ class ResearchTaskService:
             task_kind=task_kind.value,
             input_refs=item.semantic_handle_refs,
             origin="USER_SEED",
+        )
+
+    def seed_initial_user_must(
+        self,
+        *,
+        runtime,
+        task_registry,
+        executable_task_kinds: tuple[ResearchTaskKind, ...],
+        max_seed_tasks: int = 4,
+    ) -> ResearchSeedSet:
+        """Project accepted USER_MUST obligations into a bounded READY task set.
+
+        This is a projection over existing authority, not a planner.  It never executes
+        tasks and never drops non-executable obligations: unsupported/unready/excess
+        obligations are returned explicitly as deferred so the ledger remains the full
+        completion truth.
+        """
+        if max_seed_tasks < 1 or max_seed_tasks > 4:
+            raise ValueError("Day7 initial seed bound must be between 1 and 4")
+        ledger = runtime.ledger
+        if runtime.accepted_contract is None or ledger is None:
+            raise ResearchTaskMaterializationError(
+                "initial Research seed set requires accepted Research authority"
+            )
+
+        executable = set(executable_task_kinds)
+        considered = tuple(item.obligation_id for item in ledger.active_user_must)
+        selected: list[ResearchTask] = []
+        deferred: list[str] = []
+        accounted: list[str] = []
+        terminal = {
+            ObligationStatus.VERIFIED,
+            ObligationStatus.BLOCKED_DATA_GAP,
+            ObligationStatus.LIMITED,
+            ObligationStatus.UNSUPPORTED,
+        }
+        seedable = {
+            ObligationStatus.ACCEPTED,
+            ObligationStatus.READY,
+            ObligationStatus.IN_PROGRESS,
+        }
+
+        for item in ledger.active_user_must:
+            if item.status in terminal:
+                accounted.append(item.obligation_id)
+                continue
+            if item.status not in seedable:
+                deferred.append(item.obligation_id)
+                continue
+            try:
+                task_kind = self.task_kind_for_capability(item.capability_key)
+            except ResearchTaskMaterializationError:
+                deferred.append(item.obligation_id)
+                continue
+            if task_kind not in executable or not item.semantic_handle_refs:
+                deferred.append(item.obligation_id)
+                continue
+            if len(selected) >= max_seed_tasks:
+                deferred.append(item.obligation_id)
+                continue
+            selected.append(
+                ResearchTask(
+                    task_id=f"seed:{item.obligation_id}",
+                    question_id=item.obligation_id,
+                    task_kind=task_kind.value,
+                    input_refs=item.semantic_handle_refs,
+                    origin="USER_SEED",
+                )
+            )
+
+        registered = task_registry.register_many(tuple(selected))
+        return ResearchSeedSet(
+            considered_obligation_ids=considered,
+            registered_tasks=registered,
+            deferred_obligation_ids=tuple(deferred),
+            already_accounted_obligation_ids=tuple(accounted),
         )
 
     def materialize_derived(
