@@ -352,6 +352,10 @@ class GovernedManagerExecutor:
             if ledger is None:
                 raise ManagerAuthorityViolation("run_relationship requires obligation ledger")
             item = self._obligations.get(ledger, validated_args.obligation_id)
+            if item.capability_key.value != "relationship":
+                raise ManagerAuthorityViolation(
+                    "run_relationship requires accepted RELATIONSHIP obligation"
+                )
 
             if self._relationship is None:
                 ledger = self._obligations.block(
@@ -373,10 +377,61 @@ class GovernedManagerExecutor:
 
             result = self._relationship.run(validated_args, runtime)
             artifact = getattr(result, "evidence", None)
-            if isinstance(artifact, EvidenceArtifact):
-                self._evidence.put(artifact)
-                runtime.attach_evidence(artifact.artifact_id)
-            return result
+            available = bool(getattr(result, "available", False))
+            reason = getattr(result, "reason", None)
+
+            if not available or not isinstance(artifact, EvidenceArtifact):
+                ledger = self._obligations.block(
+                    runtime.ledger,
+                    validated_args.obligation_id,
+                    status=ObligationStatus.BLOCKED_DATA_GAP,
+                    reason=reason or "governed relationship facts/execution unavailable",
+                )
+                runtime.replace_ledger(ledger)
+                return ManagerRelationshipObservation(
+                    obligation_id=validated_args.obligation_id,
+                    available=False,
+                    status="UNSUPPORTED",
+                    reason=reason or "governed relationship execution denied",
+                )
+
+            if not artifact.verified or not artifact.query_contract_refs:
+                raise ManagerSemanticGap(
+                    "relationship execution requires verified Evidence + QueryContract"
+                )
+            if artifact.evidence_kind != "relationship_analytics":
+                raise ManagerSemanticGap(
+                    "relationship execution returned unexpected evidence kind"
+                )
+
+            query_count = int(getattr(result, "query_count", 0) or 0)
+            if query_count > 1:
+                runtime.note_additional_data_queries(query_count - 1)
+
+            # Same atomic boundary as standard analytics: cancelled/expired Research
+            # task may leave low-level audit receipts, but may never enter accepted
+            # Evidence/UOL truth.
+            if commit_guard is not None:
+                commit_guard()
+
+            self._evidence.put(artifact)
+            runtime.attach_evidence(artifact.artifact_id)
+            ledger = self._obligations.verify(
+                runtime.ledger,
+                validated_args.obligation_id,
+                evidence_refs=(artifact.artifact_id,),
+                verdict=(
+                    "governed CrossDomainJoinFacts + CrossDomainJoinGate + "
+                    "sealed Wren QueryContract verified"
+                ),
+            )
+            runtime.replace_ledger(ledger)
+            return ManagerRelationshipObservation(
+                obligation_id=validated_args.obligation_id,
+                available=True,
+                status="EXECUTED",
+                evidence_ref=artifact.artifact_id,
+            )
 
         if call.name == ManagerToolName.INSPECT_EVIDENCE:
             assert isinstance(validated_args, InspectEvidenceArgs)
