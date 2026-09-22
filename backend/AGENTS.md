@@ -15,7 +15,7 @@
 >
 > StandardBuilder/E4/E5 remain NO-ROLLBACK; StandardBuilder now consumes the generic kernel. Next gate is workers=1 focused live architecture validation.
 >
-> Wren is current incumbent analytics substrate. Metabase is architecture reference + post-engineering-closure challenger only.
+> Wren is current incumbent analytics substrate. Metabase M0/X0 and any needed D65-X are resolved before the final release freeze/DEV80; production dependency remains OFF until explicitly selected.
 > **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
 > Canonical upstream: `metabase/metabase`.
 > Current Day 6.5 reference SHA: `74216b30981d8310c4cf724d63ca282e2e63529d`.
@@ -40,7 +40,7 @@
 
 > Do NOT add Metabase dependency/code/production query path now. Wren+Metabase equal production truth engines is STOP-THE-LINE.
 >
-> After engineering closure and DEV80: run D65-X isolated Wren-vs-Metabase substrate bake-off before Validation50/Hidden50 certification.
+> D65-X MUST NOT be deferred until after DEV80. M0/X0/full-X (if needed) and the single-primary-substrate decision finish before Day7–15 final integration and final release freeze.
 >
 > Family closure history: first run `35691397377` = 87/88 with one `EVAL_ORACLE`; oracle sync sonrası `35691982389` = **88/88 PASS**. Do not reinterpret the first failure as semantic regression.
 
@@ -49,6 +49,18 @@
 > **Amaç:** Dima V2'yi mühürlü nihai rapor ve yol haritasına göre hızlı, izlenebilir ve
 > eski semantic-front-door hatalarını tekrar etmeyecek biçimde geliştirmek.
 
+## FINAL INTEGRATED RELEASE GATE — ONE-SHOT DEV80
+
+> Release authority: `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
+> `DEV80 = FINAL BROAD ENGINEERING GATE`, exactly one run for this release.
+> It is NOT a Day6.5 development/debug gate.
+>
+> Continuous development testing remains mandatory: focused provider-free → focused REAL LLM → failure-family/metamorphic → small realistic scenarios → material canary → relevant sentinel.
+>
+> DEV80 starts only after J1/Metabase decisions + Day7–15 correctness-sensitive code + all cheap gates + 20–25 case final integration rehearsal are GREEN.
+> After DEV80: CODE FREEZE. Validation50/Hidden50 are no-tuning final gates.
+>
+> STOP/CONSULT before FINAL FREEZE, DEV80 start, post-DEV80 behavior change, and pilot activation.
 ## D65 PRE-FREEZE DECISION GATE — J1S/J1T + M0/X0
 
 > Current proven baseline:
@@ -102,7 +114,7 @@
 > `AcceptedResearchAuthority` yeni semantic body değildir; mevcut `AcceptedTurnContract`
 > research authority gövdesidir, yeni isim yalnız alias/tagged-union seviyesinde kullanılabilir.
 >
-> **Hidden50 development blocker değildir.** External hidden yalnız final architecture certification seal'ini bloklar. D65-E1/E2 ve D65-E3A-R tamamlandı; current next gate workers=1 focused live architecture set. Sonra same-SHA A/B if needed → canary → Wren sentinels → freeze candidate → DEV80 → engineering closure → D65-X substrate challenger → certification.
+> **Hidden50 development blocker değildir.** DEV80/Validation50/Hidden50 are all final-stage gates. Development uses focused real-LLM/failure-family/metamorphic/canary/sentinel tests. Current next work is J1S/J1T + M0 → X0; Day7–15 follows; only then final rehearsal → final freeze → DEV80 once → Validation50 → Hidden50.
 >
 > **Standard != daima one-shot.** `simple_standard_model_calls <= 1` evrensel mimari
 > gate değildir. Direct yol minimum call hedefler; Builder bounded progress-driven retry yapabilir.
@@ -121,10 +133,10 @@
 > **Workers=1 önce.** Semantic/mimari sertifikasyon concurrency'den önce tek işçidir.
 >
 > **Freeze disiplini:** önemli müdahale öncesi checkpoint SHA; A/B exact aynı backend SHA.
-> `one DEV80 per engineering-freeze candidate`; code değişirse yeni candidate ve yeni DEV80 gerekir.
-> Validation/Hidden fail sonrası code değişikliği certification freeze'i bozar; fresh set gerekir.
+> Release-level authority `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`: DEV80 this release = EXACTLY ONE RUN and only after Day15 code + final rehearsal. DEV80 sonrası behavior-changing code/config release STOP condition'dır.
+> Validation50/Hidden50 final no-tuning gates; development corpusuna çevrilmez.
 >
-> **Operasyon sırası:** current green proofs → J1S + J1T lab bake-offs + M0 audit → X0 thin feasibility → if needed consult/full D65-X → ONE primary substrate → freeze candidate → DEV80 → engineering closure → Validation50 → fresh Hidden50 → certification seal.
+> **Operasyon sırası:** current green proofs → J1S + J1T + M0 → X0 → if needed consult/full D65-X → ONE primary substrate → Day7–15 release work → all cheap/focused/live/metamorphic/canary/sentinel gates GREEN → 20–25 final rehearsal → FINAL FREEZE → DEV80 ONCE → Validation50 → Hidden50 → certification → pilot activation.
 >
 > **Tek cümlelik kural:** Vaka geçirerek sistem yapmıyoruz; doğru abstraction'ı kurup
 > vakaların onun doğal sonucu olarak geçmesini istiyoruz.
