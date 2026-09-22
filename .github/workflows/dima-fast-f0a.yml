@@ -1,0 +1,162 @@
+name: dima-fast-f0a
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-f0a.yml"
+      - "backend/belgeler/fast/**"
+      - "backend/app/fast/**"
+      - "DIMA-FAST-OPERASYON.md"
+      - "DIMA-FAST-DURUM.md"
+      - "DIMA-FAST-DENETIM.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  f0a-pinned-metabase-capability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce Fast Track branch and F0A isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "feat/dima-metabase-product-fast-track"
+
+          BASE="352205f112fe735d8f80065c7d255d78905398b9"
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$changed"
+
+          unexpected="$(
+            printf '%s\n' "$changed" |
+              grep -Ev '^(DIMA-FAST-(OPERASYON|DURUM|DENETIM)\.md$|backend/belgeler/fast/|backend/app/fast/(README\.md|__init__\.py)$|\.github/workflows/dima-fast-f0a\.yml$)' || true
+          )"
+          if [ -n "$unexpected" ]; then
+            echo "F0A forbidden changed paths:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Verify immutable runtime pins
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -nE 'image:.*:latest([[:space:]]|$)' docker-compose.yml
+          grep -F 'metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73' docker-compose.yml
+          test "$(grep -Fc 'postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675' docker-compose.yml)" -eq 2
+          grep -F 'METABASE_RUNTIME_VERSION = v0.63.18' ../../belgeler/fast/DIMA_FAST_SOURCE_LOCK.md
+          grep -F 'METABASE_RUNTIME_IMAGE_REF = metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73' ../../belgeler/fast/DIMA_FAST_SOURCE_LOCK.md
+
+      - name: Prepare isolated pinned lab
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p artifacts
+          docker compose --env-file .env config >/dev/null
+          docker compose --env-file .env up -d
+
+      - name: Bootstrap and capability probe
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+          python3 scripts/capability_probe.py --json-out artifacts/fast-f0a-capability.json
+
+      - name: Restart persistence proof
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose --env-file .env restart metabase
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/capability_probe.py --json-out artifacts/fast-f0a-capability-after-restart.json
+
+      - name: App DB backup and restore smoke
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/backup.sh artifacts/metabase-app-db.dump
+          ./scripts/restore-smoke.sh artifacts/metabase-app-db.dump
+
+      - name: Validate F0A receipt fields
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          required_true = (
+              "process_health",
+              "unauthenticated_agent_denied",
+              "agent_api_ping",
+              "search",
+              "read_resource",
+              "construct_query",
+              "execute_query",
+              "combined_query",
+              "continuation_observed",
+              "raw_sql_disabled",
+          )
+
+          for name in (
+              "artifacts/fast-f0a-capability.json",
+              "artifacts/fast-f0a-capability-after-restart.json",
+          ):
+              payload = json.loads(Path(name).read_text())
+              assert payload["metabase_runtime"] == "v0.63.18", payload
+              assert all(payload[k] is True for k in required_true), payload
+              assert 1 <= int(payload["observed_page_rows"]) <= 200, payload
+              assert int(payload["observed_second_page_rows"]) >= 1, payload
+              print(f"{name}: GREEN")
+          PY
+
+      - name: Upload F0A capability receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-fast-f0a-capability-${{ github.sha }}
+          path: |
+            backend/lab/metabase/artifacts/fast-f0a-capability.json
+            backend/lab/metabase/artifacts/fast-f0a-capability-after-restart.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show diagnostic receipt
+        if: always()
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          test ! -f artifacts/fast-f0a-capability.json || cat artifacts/fast-f0a-capability.json
+          test ! -f artifacts/fast-f0a-capability-after-restart.json || cat artifacts/fast-f0a-capability-after-restart.json
+          docker compose --env-file .env ps || true
+          docker compose --env-file .env logs --tail=200 metabase || true
+
+      - name: Teardown
+        if: always()
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env down -v --remove-orphans || true
