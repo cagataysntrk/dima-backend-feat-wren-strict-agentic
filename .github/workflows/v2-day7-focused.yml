@@ -31,6 +31,7 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_research_fanout.py"
       - "backend/tests/test_v2_day7_seed_set.py"
       - "backend/tests/test_v2_day7_same_domain_tools.py"
+      - "backend/tests/test_v2_day7_real_same_domain_wren.py"
       - "backend/tests/test_v2_day7_cross_domain_join_gate.py"
       - "backend/tests/test_v2_day7_research_manager_loop.py"
       - "backend/tests/test_v2_day7_result_aware_loop.py"
@@ -110,6 +111,10 @@ jobs:
       - name: Governed same-domain Research tools
         working-directory: backend
         run: pytest -q tests/test_v2_day7_same_domain_tools.py
+
+      - name: Real Wren COMPARE and RANK
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_same_domain_wren.py
 
       - name: Governed cross-domain fact construction
         working-directory: backend
