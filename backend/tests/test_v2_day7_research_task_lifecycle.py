@@ -8,6 +8,7 @@ from app.v2.acceptance import IntentAcceptanceGate
 from app.v2.manager_executor import EvidenceStore
 from app.v2.manager_models import (
     CandidateObligation,
+    ManagerBudget,
     ManagerCapabilityKey,
     ObligationOrigin,
     UserIntentEnvelope,
@@ -288,3 +289,13 @@ def test_branch_depth_is_bounded():
             proposal=proposal,
             max_branch_depth=3,
         )
+
+
+def test_day7_canonical_budget_has_one_runtime_truth():
+    budget = ManagerBudget()
+    assert budget.max_data_queries == 8
+    assert budget.max_tool_calls == 12
+    assert budget.max_manager_turns == 6
+
+    with pytest.raises(Exception):
+        ManagerBudget(max_data_queries=13)
