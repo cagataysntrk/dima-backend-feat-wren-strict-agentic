@@ -349,6 +349,8 @@ class ManagerRunSnapshot(FrozenModel):
     data_queries: int = 0
     manager_turns: int = 0
     evidence_refs: tuple[str, ...] = ()
+    inspected_evidence_refs: tuple[str, ...] = ()
+    latest_evidence_ref: str | None = None
     last_error: str | None = None
 
 
