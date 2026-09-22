@@ -6,6 +6,8 @@ name: v2-day7-focused
       - feat/ask-v2-mvp
     paths:
       - "backend/app/wren_service.py"
+      - "backend/tests/test_v2_day7_fanout_certificate_version.py"
+      - "backend/app/fanout.py"
       - "backend/app/v2/research_tools.py"
       - "backend/app/v2/manager_tools.py"
       - "backend/app/v2/manager_executor.py"
@@ -91,6 +93,10 @@ jobs:
       - name: CrossDomainJoinGate attacks
         working-directory: backend
         run: pytest -q tests/test_v2_day7_cross_domain_join_gate.py
+
+      - name: Fanout certificate MDL freshness
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_fanout_certificate_version.py
 
       - name: Manager loop Research contract mode
         working-directory: backend
