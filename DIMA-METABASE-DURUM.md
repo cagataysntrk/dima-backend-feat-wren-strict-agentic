@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P3A CLOSED — PASS_B_SEAM; P4 PRE-DEVELOPMENT REVIEW NEXT  
-**Product-code development:** P3A PROTOTYPE CLOSED; P4 PRODUCT CODE NOT STARTED  
+**Current phase:** P4 PRE-DEVELOPMENT REVIEW SEALED — GOVERNANCE GATE  
+**Product-code development:** P4 PRODUCT CODE NOT STARTED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -335,3 +335,24 @@ What it does **not** mean:
 
 **Next:** P4 pre-development review only. P4 product code remains forbidden until that review/ticket
 is sealed and governance is GREEN.
+
+
+---
+
+## P4 pre-development review
+
+Status: **SEALED / IMPLEMENTATION WAITS FOR GOVERNANCE GREEN**
+
+Review:
+`backend/belgeler/metabase/predev/P4_PREDEVELOPMENT_REVIEW.md`
+
+Ticket:
+`backend/belgeler/metabase/tickets/P4_METABASE_PROJECTION_COMPILER.md`
+
+Key decisions:
+- promote P3A execution binding; do not fork it;
+- current catalog snapshot/fingerprint required for silent-rebind safety;
+- no invented NULL/numeric/non-equality filter semantics;
+- no cross-table implicit FK;
+- no arbitrary metric-formula translation;
+- no product routing.

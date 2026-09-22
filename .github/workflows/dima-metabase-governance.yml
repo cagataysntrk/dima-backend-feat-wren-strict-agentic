@@ -63,6 +63,16 @@ jobs:
             grep -q "Status: SEALED / P3 TRANSPORT IMPLEMENTATION AUTHORIZED" "$REVIEW"
           fi
 
+      - name: Require sealed P4 review before production Metabase compiler exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/substrate/metabase/compiler.py ] || [ -f backend/app/v3/substrate/metabase/execution_binding.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P4_PREDEVELOPMENT_REVIEW.md"
+            test -f "$REVIEW"
+            grep -q "Status: SEALED / P4 IMPLEMENTATION AUTHORIZED" "$REVIEW"
+          fi
+
       - name: Guard v3 against legacy semantic resolver authority
         shell: bash
         run: |

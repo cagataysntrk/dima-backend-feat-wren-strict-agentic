@@ -313,3 +313,59 @@ P4 may enter pre-development review for the production MetabaseProjectionCompile
 constraints.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0009 — P4 promotes P3A execution bindings instead of forking them
+
+date: 2026-09-22
+
+decision:
+P4 creates one production execution-binding/canonical compiler boundary and refactors P3A to consume
+or re-export those production primitives. P3A and P4 may not carry independent semantic binding models.
+
+reason:
+Two independently evolving candidate→semantic-id/lineage contracts would recreate the
+second-semantic-owner risk P3A was designed to eliminate.
+
+status: SEALED.
+
+---
+
+## DMP-DEC-0010 — P4 current-catalog snapshot is mandatory for rename/rebind safety
+
+date: 2026-09-22
+
+decision:
+`SourceLineage` physical names alone are insufficient for P4's
+`rename drift silent rebind = 0` invariant.
+
+P4 compiler requires a Dima-owned immutable current-catalog binding keyed by
+`SourceLineage.source_id`, carrying the exact current physical locator and a resource fingerprint.
+Expected SourceLineage and current catalog binding must match before a portable reference is emitted.
+
+A mismatch fails closed as source-lineage drift. The compiler does not search by label/name for a replacement.
+
+status: SEALED.
+
+---
+
+## DMP-DEC-0011 — P4 does not invent missing typed filter semantics
+
+date: 2026-09-22
+
+evidence:
+The current engine-independent `ResolvedFilterRef` inherited from the certified v2 path contains an
+entity-value equality payload with `value: str`; it does not encode a general predicate operator,
+semantic NULL predicate, or typed numeric literal.
+
+decision:
+P4 preserves current categorical equality semantics and fails closed where meaning would require
+string parsing/coercion or a missing predicate operator. It will not interpret `"null"` as SQL NULL
+or `"42"` as a numeric predicate merely because Metabase could coerce it.
+
+If full typed null/numeric/non-equality filtering is required to close a later gate, the upstream Dima
+semantic contract must receive its own explicit receipt and proof before modification.
+
+status: SEALED.
