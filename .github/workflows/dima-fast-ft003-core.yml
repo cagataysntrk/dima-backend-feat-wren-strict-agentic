@@ -1,0 +1,53 @@
+name: dima-fast-ft003-core
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft003-core.yml"
+      - "backend/app/fast/ask_*.py"
+      - "backend/app/fast/resource_registry.py"
+      - "backend/app/fast/temporal.py"
+      - "backend/app/fast/query_builder.py"
+      - "backend/app/fast/evidence.py"
+      - "backend/tests/test_fast_ask_core.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fast-ask-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile FT-003 core
+        working-directory: backend
+        run: |
+          python -m py_compile             app/fast/ask_models.py             app/fast/ask_errors.py             app/fast/ask_cognition.py             app/fast/resource_registry.py             app/fast/temporal.py             app/fast/query_builder.py             app/fast/evidence.py
+
+      - name: Fast boundary static gate
+        working-directory: backend
+        run: pytest -q tests/test_fast_boundary_static.py
+
+      - name: FT-003 deterministic core tests
+        working-directory: backend
+        run: pytest -q tests/test_fast_ask_core.py
