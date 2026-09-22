@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 D65-E2 RETRIEVER GREEN — STANDARD BUILDER NEXT**  
+**Durum:** **DAY 6.5 D65-E3 STANDARDBUILDER CORE GREEN — STANDARD AUTHORITY NEXT**  
 **Kod fazı:** Day 6.5 engineering closure — latest semantic code `c9629d9029db...`; cognition/authority boundary uygulanmış durumda. Hedef front door `STANDARD_DIRECT + bounded STANDARD_BUILDER + RESEARCH`, iki accepted-authority ailesiyle kapanacak. StandardBuilder/Retriever seam henüz yazılmadı. İlk iş exact `c9629d...` provider-free recertification; production hybrid route kapalı.
 
 ---
@@ -5206,3 +5206,44 @@ lossless short path'i olacak.
 - AcceptedTurnContract semantic body
 - DEV corpus/oracle
 - Resolver/BindingGate authority
+
+
+### D65-E3 — GREEN / bounded StandardBuilder core
+
+**Product commits**
+- `2fbcc31d1019` — add `STANDARD_BUILD_REQUIRED` representability outcome
+- `d62dcdcb0fba` — decouple StandardProjection compiler core from Research contract/UOL
+- `7884f7912f37` — reserve RESEARCH_REQUIRED for actual research capabilities
+- `1c13447e3c1a` — bounded StandardBuilder state machine
+- `de7a7751840e` — update old authority expectation
+- `151e16184ad2` — StandardBuilder provider-free invariants
+
+**Focused gate**
+- workflow run: `35690931816`
+- result: **20 / 20 PASS**
+- runtime: **5.69s**
+- compile: PASS
+- one-shot workflow cleanup: `d413e48a5c3e`
+
+**Closed architecture points**
+```text
+STANDARD_DIRECT = first successful attempt of StandardBuilder
+STANDARD_BUILDER = same engine after bounded repair
+missing/incomplete standard representation != RESEARCH_REQUIRED
+real research capability                     = RESEARCH_REQUIRED
+same proposal + unchanged state              = NO_PROGRESS
+budget exhausted                             = fail closed
+```
+
+`StandardProjectionCompiler.compile_bound(...)` now accepts lightweight grounded standard
+atoms without requiring `AcceptedTurnContract + UserObligationLedger`.
+Existing `compile(contract, ledger, ...)` wrapper remains for Research compatibility.
+
+### D65-E4 — Minimal Standard authority / cross-family exactly-one
+
+**TARGET**
+- minimal `AcceptedStandardAuthority` seal,
+- semantic body = `StandardProjection`; authority artifact does not duplicate it,
+- `AcceptedResearchAuthority` = existing `AcceptedTurnContract` alias/tag only,
+- same turn cannot commit both Standard and Research accepted authority,
+- Standard seal validates every `sem_*` against tenant/context before authority mint.
