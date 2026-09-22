@@ -24,6 +24,9 @@
 > └── AcceptedResearchAuthority
 > ```
 >
+> `AcceptedResearchAuthority` = existing `AcceptedTurnContract` body. Ayrı ikinci research
+> semantic contract/body oluşturulmaz; isim yalnız owner/type view'dur.
+>
 > **StandardBuilder** tek governed analytical projection'ın discovery/repair problemidir.
 > **Research Manager** user obligations + evidence-aware adaptive investigation problemidir.
 > Standard path ağır UOL/Completion machinery'sini taşımaz.
@@ -48,7 +51,9 @@
 > comparison/temporal semantic seçimi taşınmaz. Yalnız raw SourceSpanRefs ve non-authoritative
 > discovery cache yeniden kullanılabilir.
 >
-> Current semantic code `c9629d9029db...` için exact focused recertification henüz yapılmalıdır.
+> Current semantic code `c9629d9029db...` için **EXACT CURRENT SEMANTIC-SHA RECERTIFICATION** henüz yapılmalıdır.
+> DEV80 is once per engineering-freeze candidate; code change yeni candidate yaratır.
+> Validation/Hidden sonrası code değişirse certification invalid olur ve fresh certification set gerekir.
 > Sonraki closure sırası: recert → Retriever seam → StandardBuilder → Standard/Research authority
 > split → real Wren vertical → frozen DEV80 → engineering freeze → VALIDATION50 → external
 > HIDDEN50 → certification seal. Production hybrid route seal öncesi kapalıdır.
