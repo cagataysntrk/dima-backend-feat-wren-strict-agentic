@@ -7,8 +7,7 @@ Manager regular semantics do NOT use deterministic fuzzy/morphological language 
 catalog candidate generation is deterministic, bounded candidate interpretation belongs
 to BoundedSemanticLinker, and only SemanticBindingGate may mint sem_* authority.
 
-Legacy SemanticResolver remains available to non-Manager V2 paths. Temporal normalization
-is still isolated here and is migrated separately to typed temporal intent.
+Legacy SemanticResolver may remain for non-Manager compatibility paths, but this Manager semantic hot path has no import, constructor dependency, field, or fallback seam to it. Temporal normalization remains isolated in the typed temporal boundary.
 """
 
 from __future__ import annotations
@@ -22,7 +21,6 @@ from app.v2.models import (
     FrozenModel,
     ResolvedPeriod,
 )
-from app.v2.resolver import SemanticResolver
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
     SemanticBindingGate,
@@ -63,7 +61,6 @@ class ManagerSemanticResolutionAdapter:
     def __init__(
         self,
         *,
-        resolver: SemanticResolver | None = None,
         source_spans: SourceSpanRegistry,
         semantic_handles: SemanticHandleRegistry,
         semantic_context: BoundedSemanticContextV0,
@@ -74,7 +71,6 @@ class ManagerSemanticResolutionAdapter:
         thread_id: str | None,
         semantic_linker_structured=None,
     ) -> None:
-        self._legacy_resolver = resolver
         self._source_spans = source_spans
         self._handles = semantic_handles
         self._semantic_context = semantic_context
