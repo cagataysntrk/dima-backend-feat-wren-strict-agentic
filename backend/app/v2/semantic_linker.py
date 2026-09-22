@@ -29,6 +29,10 @@ from app.v2.models import (
     SemanticTargetKind,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
+from app.v2.semantic_retriever import (
+    EnumeratingSemanticCatalogRetriever,
+    SemanticCatalogRetriever,
+)
 
 
 def _exact_key(value: str) -> str:
@@ -113,6 +117,8 @@ class CandidateSet:
     kind_hint: str
     bindings: tuple[CatalogCandidateBinding, ...]
     too_broad: bool = False
+    retrieval_exhaustive: bool = True
+    retrieval_backend: str = "deterministic_enumeration_v1"
 
     @property
     def cards(self) -> tuple[SemanticLinkCandidateCard, ...]:
@@ -135,6 +141,7 @@ class BoundedSemanticSelection:
         "GAP",
         "AMBIGUOUS_EXACT",
         "CANDIDATE_SET_TOO_BROAD",
+        "RETRIEVAL_MISS",
         "LINKER_UNAVAILABLE",
     ]
     binding: CatalogCandidateBinding | None = None
@@ -155,11 +162,17 @@ class SemanticCandidateGenerator:
         semantic_context: BoundedSemanticContextV0,
         schema: dict,
         max_candidates: int = 48,
+        retriever: SemanticCatalogRetriever[CatalogCandidateBinding] | None = None,
     ) -> None:
         self._context = semantic_context
         self._schema = schema
         self._max_candidates = max(4, int(max_candidates))
         self._company_aliases = self._verified_company_aliases()
+        self._retriever = retriever or EnumeratingSemanticCatalogRetriever(
+            enumerate_candidates=lambda kind_hint: self._semantic_fields(
+                kind_hint=kind_hint
+            )
+        )
 
     def _verified_company_aliases(self) -> dict[tuple[str, str], tuple[str, ...]]:
         out: dict[tuple[str, str], list[str]] = {}
@@ -422,7 +435,12 @@ class SemanticCandidateGenerator:
         surface: str,
         kind_hint: str,
     ) -> CandidateSet:
-        bindings = self._semantic_fields(kind_hint=kind_hint)
+        retrieval = self._retriever.retrieve(
+            surface=surface,
+            kind_hint=kind_hint,
+            limit=self._max_candidates,
+        )
+        bindings = list(retrieval.candidates)
         key = _exact_key(surface)
 
         exact = [item for item in bindings if key and key in item.exact_keys]
@@ -435,6 +453,8 @@ class SemanticCandidateGenerator:
                 kind_hint=kind_hint,
                 bindings=tuple(exact),
                 too_broad=False,
+                retrieval_exhaustive=retrieval.exhaustive,
+                retrieval_backend=retrieval.backend,
             )
 
         linker_visible = [
@@ -449,6 +469,8 @@ class SemanticCandidateGenerator:
             kind_hint=kind_hint,
             bindings=tuple(linker_visible[: self._max_candidates]),
             too_broad=too_broad,
+            retrieval_exhaustive=retrieval.exhaustive,
+            retrieval_backend=retrieval.backend,
         )
 
 
@@ -565,12 +587,17 @@ class BoundedSemanticLinker:
                 )
                 continue
             if not candidate_set.bindings:
+                exhaustive = candidate_set.retrieval_exhaustive
                 outputs[candidate_set.request_id] = BoundedSemanticSelection(
                     request_id=candidate_set.request_id,
                     surface=candidate_set.surface,
-                    status="GAP",
+                    status="GAP" if exhaustive else "RETRIEVAL_MISS",
                     mode="NONE",
-                    reason="no bounded catalog candidates for requested kind",
+                    reason=(
+                        "no governed catalog candidates exist for requested kind"
+                        if exhaustive
+                        else "non-exhaustive retrieval returned no candidates; semantic existence unknown"
+                    ),
                 )
                 continue
             if candidate_set.too_broad:
