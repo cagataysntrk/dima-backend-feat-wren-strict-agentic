@@ -31,6 +31,8 @@ from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
+from app.v2.semantic_linker import StructuredSemanticCandidateDecisionProvider
+from app.v2.temporal_intent import StructuredTemporalNormalizationProvider
 
 
 class ManagerLabResponse(FrozenModel):
@@ -77,6 +79,18 @@ class ManagerLabHarness:
 
         source_spans = SourceSpanRegistry()
         semantic_handles = SemanticHandleRegistry()
+        semantic_structured = getattr(linker_llm, "structured_json", None)
+        semantic_provider = (
+            StructuredSemanticCandidateDecisionProvider(structured=semantic_structured)
+            if semantic_structured is not None
+            else None
+        )
+        temporal_provider = (
+            StructuredTemporalNormalizationProvider(structured=semantic_structured)
+            if semantic_structured is not None
+            else None
+        )
+
         semantic_adapter = ManagerSemanticResolutionAdapter(
             source_spans=source_spans,
             semantic_handles=semantic_handles,
@@ -86,7 +100,8 @@ class ManagerLabHarness:
             tenant_binding=binding,
             session_id=body.session_id,
             thread_id=body.thread_id,
-            semantic_linker_structured=getattr(linker_llm, "structured_json", None),
+            semantic_decision_provider=semantic_provider,
+            temporal_normalization_provider=temporal_provider,
         )
         acceptance = IntentAcceptanceGate(
             source_spans=source_spans,

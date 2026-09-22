@@ -24,6 +24,7 @@ from app.v2.models import (
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
     SemanticBindingGate,
+    SemanticCandidateDecisionProvider,
     SemanticCandidateGenerator,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
@@ -31,6 +32,7 @@ from app.v2.source_spans import SourceSpanRegistry
 from app.v2.temporal import TemporalResolutionError
 from app.v2.temporal_intent import (
     TemporalBindingEngine,
+    TemporalNormalizationProvider,
     TypedTemporalNormalizer,
 )
 
@@ -69,7 +71,8 @@ class ManagerSemanticResolutionAdapter:
         tenant_binding: str,
         session_id: str | None,
         thread_id: str | None,
-        semantic_linker_structured=None,
+        semantic_decision_provider: SemanticCandidateDecisionProvider | None = None,
+        temporal_normalization_provider: TemporalNormalizationProvider | None = None,
     ) -> None:
         self._source_spans = source_spans
         self._handles = semantic_handles
@@ -80,7 +83,7 @@ class ManagerSemanticResolutionAdapter:
         self._session_id = session_id
         self._thread_id = thread_id
         self._temporal_normalizer = TypedTemporalNormalizer(
-            structured=semantic_linker_structured,
+            provider=temporal_normalization_provider,
         )
         self._temporal_engine = TemporalBindingEngine()
         self._semantic_linker = BoundedSemanticLinker(
@@ -93,7 +96,7 @@ class ManagerSemanticResolutionAdapter:
                 tenant_binding=tenant_binding,
                 context_version=semantic_context.context_version.version,
             ),
-            structured=semantic_linker_structured,
+            provider=semantic_decision_provider,
         )
 
     def _time_dimension(self, anchor_handle: str | None) -> str:

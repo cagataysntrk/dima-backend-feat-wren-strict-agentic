@@ -11,6 +11,7 @@ from app.v2.temporal_intent import (
     TemporalBindingEngine,
     TemporalIntentKind,
     TemporalNormalizationChoice,
+    StructuredTemporalNormalizationProvider,
     TypedTemporalNormalizer,
 )
 
@@ -45,7 +46,11 @@ def test_model_normalizes_language_but_calendar_engine_computes_quarter_dates():
             ]
         }
     )
-    normalizer = TypedTemporalNormalizer(structured=scripted.structured_json)
+    normalizer = TypedTemporalNormalizer(
+        provider=StructuredTemporalNormalizationProvider(
+            structured=scripted.structured_json
+        )
+    )
     (choice,) = normalizer.normalize((("t1", "bu çeyrek", "PERIOD"),))
     assert choice.period_kind == TemporalIntentKind.THIS_QUARTER
     assert scripted.last_user["requests"][0]["surface"] == "bu çeyrek"
@@ -113,7 +118,9 @@ def test_temporal_normalizer_can_abstain_without_date_guess():
         }
     )
     (choice,) = TypedTemporalNormalizer(
-        structured=scripted.structured_json
+        provider=StructuredTemporalNormalizationProvider(
+            structured=scripted.structured_json
+        )
     ).normalize((("t1", "yakın zamanda", "PERIOD"),))
     assert choice.decision == "ABSTAIN"
 

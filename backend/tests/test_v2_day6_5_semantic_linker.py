@@ -21,6 +21,7 @@ from app.v2.semantic_linker import (
     CatalogCandidateBinding,
     SemanticBindingGate,
     SemanticCandidateGenerator,
+    StructuredSemanticCandidateDecisionProvider,
     SemanticLinkAuthorityError,
     SemanticLinkCandidateCard,
 )
@@ -109,7 +110,11 @@ def _linker(structured=None, *, max_candidates=48):
         BoundedSemanticLinker(
             generator=generator,
             binding_gate=gate,
-            structured=structured,
+            provider=(
+                StructuredSemanticCandidateDecisionProvider(structured=structured)
+                if structured is not None
+                else None
+            ),
         ),
         handles,
     )
@@ -380,7 +385,7 @@ def test_non_exhaustive_retrieval_miss_is_not_semantic_nonexistence():
             tenant_binding="tenant-a",
             context_version="ctx-linker-v1",
         ),
-        structured=None,
+        provider=None,
     )
 
     (selection,) = linker.resolve(

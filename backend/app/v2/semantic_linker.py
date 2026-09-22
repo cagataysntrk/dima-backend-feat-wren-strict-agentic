@@ -15,7 +15,7 @@ import hashlib
 import json
 import unicodedata
 from dataclasses import dataclass
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, Protocol
 
 from pydantic import Field, model_validator
 
@@ -486,6 +486,55 @@ Do not infer database structure. Do not repair the catalog. Return only strict s
 """
 
 
+
+class SemanticDecisionProviderError(RuntimeError):
+    """Typed provider/transport failure; never interpreted as ABSTAIN."""
+
+
+class SemanticCandidateDecisionProvider(Protocol):
+    """Cognition-only contract: bounded candidate cards -> SELECT | ABSTAIN."""
+
+    def decide(
+        self,
+        requests: tuple[SemanticLinkRequestCard, ...],
+    ) -> SemanticLinkBatchDecision:
+        ...
+
+
+class StructuredSemanticCandidateDecisionProvider:
+    """Adapter for strict JSON-schema chat models; owns no semantic authority."""
+
+    def __init__(self, *, structured: Callable[..., Any]) -> None:
+        self._structured = structured
+
+    def decide(
+        self,
+        requests: tuple[SemanticLinkRequestCard, ...],
+    ) -> SemanticLinkBatchDecision:
+        if not requests:
+            raise ValueError("semantic decision provider requires at least one request")
+        schema = _strict_schema(SemanticLinkBatchDecision.model_json_schema())
+        try:
+            raw = self._structured(
+                _LINKER_SYSTEM,
+                json.dumps(
+                    {"requests": [item.model_dump(mode="json") for item in requests]},
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+                schema=schema,
+                schema_name="dima_bounded_semantic_link_v1",
+            )
+            data = json.loads(raw) if isinstance(raw, str) else raw
+            return SemanticLinkBatchDecision.model_validate(data)
+        except SemanticDecisionProviderError:
+            raise
+        except Exception as exc:
+            raise SemanticDecisionProviderError(
+                f"structured semantic decision provider failed: {type(exc).__name__}: {exc}"
+            ) from exc
+
+
 class SemanticBindingGate:
     """Validate an LLM selection against the exact candidate set and mint authority."""
 
@@ -535,11 +584,11 @@ class BoundedSemanticLinker:
         *,
         generator: SemanticCandidateGenerator,
         binding_gate: SemanticBindingGate,
-        structured: Callable[..., Any] | None,
+        provider: SemanticCandidateDecisionProvider | None,
     ) -> None:
         self._generator = generator
         self._binding_gate = binding_gate
-        self._structured = structured
+        self._provider = provider
 
     def resolve(
         self,
@@ -609,13 +658,13 @@ class BoundedSemanticLinker:
                     reason="bounded candidate set exceeds configured linker limit",
                 )
                 continue
-            if self._structured is None:
+            if self._provider is None:
                 outputs[candidate_set.request_id] = BoundedSemanticSelection(
                     request_id=candidate_set.request_id,
                     surface=candidate_set.surface,
                     status="LINKER_UNAVAILABLE",
                     mode="NONE",
-                    reason="semantic linker model unavailable for non-exact surface",
+                    reason="semantic decision provider unavailable for non-exact surface",
                 )
                 continue
             llm_cards.append(
@@ -629,19 +678,8 @@ class BoundedSemanticLinker:
             llm_sets[candidate_set.request_id] = candidate_set
 
         if llm_cards:
-            schema = _strict_schema(SemanticLinkBatchDecision.model_json_schema())
-            raw = self._structured(
-                _LINKER_SYSTEM,
-                json.dumps(
-                    {"requests": [item.model_dump(mode="json") for item in llm_cards]},
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                ),
-                schema=schema,
-                schema_name="dima_bounded_semantic_link_v1",
-            )
-            data = json.loads(raw) if isinstance(raw, str) else raw
-            decision = SemanticLinkBatchDecision.model_validate(data)
+            assert self._provider is not None
+            decision = self._provider.decide(tuple(llm_cards))
             choices = {item.request_id: item for item in decision.choices}
             if set(choices) != set(llm_sets):
                 raise SemanticLinkAuthorityError(

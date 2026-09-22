@@ -13,7 +13,7 @@ import json
 from dataclasses import dataclass
 from datetime import date, timedelta
 from enum import StrEnum
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, Protocol
 
 from pydantic import Field, model_validator
 
@@ -153,9 +153,66 @@ def _strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-class TypedTemporalNormalizer:
-    def __init__(self, *, structured: Callable[..., Any] | None) -> None:
+
+class TemporalNormalizationProviderError(RuntimeError):
+    """Typed temporal-provider failure; never converted into semantic ABSTAIN."""
+
+
+class TemporalNormalizationProvider(Protocol):
+    """Language-only contract: exact temporal surfaces -> typed choices."""
+
+    def normalize(
+        self,
+        requests: tuple[tuple[str, str, Literal["PERIOD", "COMPARISON"]], ...],
+    ) -> TemporalNormalizationBatch:
+        ...
+
+
+class StructuredTemporalNormalizationProvider:
+    """Strict JSON-schema adapter; calendar arithmetic stays outside this provider."""
+
+    def __init__(self, *, structured: Callable[..., Any]) -> None:
         self._structured = structured
+
+    def normalize(
+        self,
+        requests: tuple[tuple[str, str, Literal["PERIOD", "COMPARISON"]], ...],
+    ) -> TemporalNormalizationBatch:
+        if not requests:
+            raise ValueError("temporal normalization provider requires at least one request")
+        try:
+            raw = self._structured(
+                _TEMPORAL_SYSTEM,
+                json.dumps(
+                    {
+                        "requests": [
+                            {
+                                "request_id": request_id,
+                                "surface": surface,
+                                "target": target,
+                            }
+                            for request_id, surface, target in requests
+                        ]
+                    },
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+                schema=_strict_schema(TemporalNormalizationBatch.model_json_schema()),
+                schema_name="dima_typed_temporal_intent_v1",
+            )
+            data = json.loads(raw) if isinstance(raw, str) else raw
+            return TemporalNormalizationBatch.model_validate(data)
+        except TemporalNormalizationProviderError:
+            raise
+        except Exception as exc:
+            raise TemporalNormalizationProviderError(
+                f"structured temporal normalization provider failed: {type(exc).__name__}: {exc}"
+            ) from exc
+
+
+class TypedTemporalNormalizer:
+    def __init__(self, *, provider: TemporalNormalizationProvider | None) -> None:
+        self._provider = provider
 
     def normalize(
         self,
@@ -163,7 +220,7 @@ class TypedTemporalNormalizer:
     ) -> tuple[TemporalNormalizationChoice, ...]:
         if not requests:
             return ()
-        if self._structured is None:
+        if self._provider is None:
             return tuple(
                 TemporalNormalizationChoice(
                     request_id=request_id,
@@ -174,27 +231,7 @@ class TypedTemporalNormalizer:
                 for request_id, _, target in requests
             )
 
-        raw = self._structured(
-            _TEMPORAL_SYSTEM,
-            json.dumps(
-                {
-                    "requests": [
-                        {
-                            "request_id": request_id,
-                            "surface": surface,
-                            "target": target,
-                        }
-                        for request_id, surface, target in requests
-                    ]
-                },
-                ensure_ascii=False,
-                separators=(",", ":"),
-            ),
-            schema=_strict_schema(TemporalNormalizationBatch.model_json_schema()),
-            schema_name="dima_typed_temporal_intent_v1",
-        )
-        data = json.loads(raw) if isinstance(raw, str) else raw
-        decision = TemporalNormalizationBatch.model_validate(data)
+        decision = self._provider.normalize(requests)
         by_id = {choice.request_id: choice for choice in decision.choices}
         expected = {request_id for request_id, _, _ in requests}
         if set(by_id) != expected:

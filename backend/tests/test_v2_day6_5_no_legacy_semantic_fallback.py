@@ -22,6 +22,7 @@ AUTHORITATIVE_SEMANTIC_MODULES = (
     "app/v2/semantic_linker.py",
     "app/v2/semantic_retriever.py",
     "app/v2/temporal_intent.py",
+    "app/v2/jev_decision_provider.py",
 )
 
 FORBIDDEN_IMPORT_ROOTS = {
@@ -56,6 +57,9 @@ def _imports(tree: ast.AST) -> set[str]:
 def test_manager_hot_path_has_no_legacy_resolver_dependency():
     signature = inspect.signature(ManagerSemanticResolutionAdapter.__init__)
     assert "resolver" not in signature.parameters
+    assert "semantic_linker_structured" not in signature.parameters
+    assert "semantic_decision_provider" in signature.parameters
+    assert "temporal_normalization_provider" in signature.parameters
 
     manager_semantics = (ROOT / "app/v2/manager_semantics.py").read_text(
         encoding="utf-8"
