@@ -6953,6 +6953,54 @@ cardinality-aware fanout policy
 Day7 remains ACTIVE. Day8 is NOT opened.
 
 ---
+## 2026-09-22 — DAY7 FANOUT FRESHNESS + GOVERNED JOIN FACTS GREEN
+
+```text
+tested code HEAD                 0fecde9c1579495e4f100dff7d1fffd7625478aa
+focused workflow                 35780536632 = GREEN
+CrossDomainJoinGate              GREEN / preserved
+fanout certificate MDL binding   GREEN
+CrossDomainJoinFacts builder     GREEN
+RELATIONSHIP execution           STILL OFF
+```
+
+Closed provenance gaps:
+- Wren schema fanout badge is now bound to exact current `mdl_version`;
+- missing / corrupt / stale certificate cannot remain `olculdu:saglikli`;
+- relationship schema exposes version-bound `fanout_proof`:
+  status, certificate MDL, current MDL, measurement timestamp;
+- display `certified` badge cannot launder a stale proof;
+- `CrossDomainJoinFactBuilder` consumes only accepted obligation handles +
+  current Wren schema/current MDL;
+- accepted handle -> cube -> declared `base_object` mapping is explicit;
+- row grain comes only from Wren-declared model primary key;
+- physical FK is not relationship authority;
+- multiple Wren paths are not auto-picked;
+- missing PK, foreign-tenant handle, authority-external handle, target grain not governed,
+  stale/risky fanout all fail closed.
+
+Initial supported fact shape remains deliberately narrow:
+```text
+one accepted source metric
+→ one accepted target row-key dimension
+→ Wren path
+→ target-row analytical output
+```
+
+For this exact primitive, time/unit compatibility are deterministically
+`NOT_APPLICABLE`; the model does not certify them.
+
+Important:
+`primary_key = governed ROW GRAIN`, not universal analytical grain.
+
+Next exact block:
+`real governed RELATIONSHIP vertical — positive + negative`.
+
+No raw SQL join engine. No model-created join key. No relationship execution until the
+adapter consumes these facts and the existing gate.
+
+---
+
 ## 2026-09-22 — DAY7 TIMEOUT / COMMIT ATOMICITY GREEN
 
 ```text
