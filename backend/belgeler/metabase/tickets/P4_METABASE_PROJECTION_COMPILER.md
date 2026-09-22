@@ -110,3 +110,10 @@ runtime-volatile `lib/uuid` key. No other canonical field may be ignored.
 DMP-P4-AUDIT-003 is authorized. Remove the content-based `"null"` special case only.
 Literal string equality remains the certified textual-filter behavior; typed NULL predicates remain
 outside the current contract.
+
+
+## DMP-P4-RED-004 diagnostic gate
+
+Pinned-live output still differs after exact `lib/uuid` removal. Only structured diff diagnostics
+are authorized until the exact non-UUID path is observed. No additional normalization allowlist
+entry may be added speculatively.

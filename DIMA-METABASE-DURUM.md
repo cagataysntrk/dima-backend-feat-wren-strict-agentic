@@ -490,3 +490,25 @@ P5                                     = BLOCKED
 
 DMP-DEC-0014 clarifies DMP-DEC-0011: supported textual filter values are literal equality payloads.
 `"NULL"` is not SQL NULL. No token table/fallback is permitted.
+
+
+---
+
+## P4 live canonical RED — DMP-P4-RED-004
+
+```text
+tested SHA                         = 428ba51845966c95baf97dcace3ca9851c85762f
+P4 workflow                        = 35752287941 = FAILURE
+focused P4                         = PASS
+provider-free regressions          = PASS
+real Wren                          = PASS
+pinned lab                         = PASS
+P3 same-SHA workflow               = PASS
+governance same-SHA                = PASS
+exact lib/uuid stripping           = PASS provider-free
+remaining live drift               = NON_DETERMINISTIC_CANONICAL_SEMANTICS
+exact differing JSON path          = NOT YET OBSERVED
+P5                                 = BLOCKED
+```
+
+No new volatile field is authorized. Next step is diagnostic-only exact path/value capture.

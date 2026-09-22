@@ -1081,3 +1081,59 @@ forbidden:
 
 status:
 `CLASSIFIED / NARROW HEURISTIC-REMOVAL PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P4-RED-004 — non-lib/uuid canonical drift remains after exact volatility stripping
+
+receipt_id: `DMP-P4-RED-004`  
+ticket: `P4-001`  
+tested_sha: `428ba51845966c95baf97dcace3ca9851c85762f`  
+run_id: `35752287941`
+
+observed_failure:
+The exact-key `lib/uuid` volatility correction passes focused/provider-free proof but pinned-live
+canonicalization still hard-fails:
+
+`NON_DETERMINISTIC_CANONICAL_SEMANTICS: non-volatile construct-query output changed for primary step`
+
+classification_evidence:
+- forbidden-file isolation = PASS;
+- P4 production compile = PASS;
+- focused P4 binding/compiler proof = PASS;
+- provider-free P3A/P3/M1 regressions = PASS;
+- real Wren M1 regression = PASS;
+- pinned M2 lab startup = PASS;
+- P3 live workflow at same SHA = SUCCESS;
+- governance at same SHA = SUCCESS;
+- only P4 pinned-live canonical equality = FAIL.
+
+failure_class:
+`RUNTIME-CONTRACT / CANONICAL-IDENTITY DIAGNOSTIC REQUIRED`
+
+current_root_cause:
+Unknown exact non-`lib/uuid` JSON path. No additional volatility field is authorized for
+normalization until observed directly in the pinned v0.63.18 output.
+
+single_owner:
+P4 canonical proof/diagnostics.
+
+authorized_next_step:
+- add deterministic structured diff diagnostics for the already UUID-stripped JSON trees;
+- report exact first differing JSON path and bounded values in the failure detail;
+- rerun pinned-live P4;
+- do not change equality semantics, fingerprint semantics, or volatility allowlist.
+
+forbidden:
+- strip `lib/source-uuid` or any other field based on name speculation;
+- regex/generalized UUID removal;
+- ignore map/list ordering;
+- sort arrays;
+- coerce values;
+- weaken structural manifest;
+- skip double construct;
+- move to P5.
+
+status:
+`OPEN / DIAGNOSTIC-ONLY PATCH AUTHORIZED`.
