@@ -8,6 +8,7 @@ name: v2-day6-5-j1-live-benchmark
         required: true
         type: choice
         options:
+          - BOTH
           - J1S
           - J1T
       model:
@@ -15,6 +16,7 @@ name: v2-day6-5-j1-live-benchmark
         required: true
         type: choice
         options:
+          - ALL
           - google/gemini-2.5-flash-lite
           - typesafe/jev-1.13
           - openai/gpt-5.6-sol
@@ -51,11 +53,31 @@ jobs:
         working-directory: backend
         shell: bash
         run: |
-          args=(--track "${{ inputs.track }}" --model "${{ inputs.model }}")
-          if [[ "${{ inputs.smoke }}" == "true" ]]; then
-            args+=(--smoke)
+          if [[ "${{ inputs.track }}" == "BOTH" ]]; then
+            tracks=(J1S J1T)
+          else
+            tracks=("${{ inputs.track }}")
           fi
-          python lab/v2_day6_5_j1_benchmark.py "${args[@]}"
+
+          if [[ "${{ inputs.model }}" == "ALL" ]]; then
+            models=(
+              "google/gemini-2.5-flash-lite"
+              "typesafe/jev-1.13"
+              "openai/gpt-5.6-sol"
+            )
+          else
+            models=("${{ inputs.model }}")
+          fi
+
+          for track in "${tracks[@]}"; do
+            for model in "${models[@]}"; do
+              args=(--track "$track" --model "$model")
+              if [[ "${{ inputs.smoke }}" == "true" ]]; then
+                args+=(--smoke)
+              fi
+              python lab/v2_day6_5_j1_benchmark.py "${args[@]}"
+            done
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
