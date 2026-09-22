@@ -50,6 +50,7 @@ def test_p4_all_eight_families_canonicalize_deterministically_and_execute():
     )
     snapshot = build_snapshot()
     executed = 0
+    observed_runtime_uuids = 0
 
     with MetabaseAgentClient(
         base_url=base_url,
@@ -63,14 +64,27 @@ def test_p4_all_eight_families_canonicalize_deterministically_and_execute():
                 snapshot=snapshot,
             )
             canonical = canonicalizer.canonicalize(plan)
+            repeated = canonicalizer.canonicalize(plan)
 
             assert canonical.projection_hash == intent.projection_hash
             assert canonical.resolved_intent_hash == intent.resolved_intent_hash
             assert canonical.manifest.query_count == len(canonical.steps)
+            assert (
+                canonical.canonical_query_fingerprint
+                == repeated.canonical_query_fingerprint
+            )
+            assert [
+                item.canonical_query_fingerprint for item in canonical.steps
+            ] == [
+                item.canonical_query_fingerprint for item in repeated.steps
+            ]
             assert all(
                 item.manifest.explicit_join_count == 0
                 and item.manifest.implicit_join_reference_count == 0
                 for item in canonical.steps
+            )
+            observed_runtime_uuids += sum(
+                item.volatile_lib_uuid_count for item in canonical.steps
             )
 
             for item in canonical.steps:
@@ -81,3 +95,4 @@ def test_p4_all_eight_families_canonicalize_deterministically_and_execute():
                 executed += 1
 
     assert executed == 9
+    assert observed_runtime_uuids > 0

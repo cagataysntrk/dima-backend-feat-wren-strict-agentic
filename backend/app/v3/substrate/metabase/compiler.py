@@ -388,11 +388,6 @@ class MetabaseProjectionCompiler:
                     "UNTYPED_NON_TEXT_FILTER_UNSUPPORTED",
                     f"filter {dimension.dimension_id} has non-text type {dimension.data_type!r}",
                 )
-            if ref.value.strip().lower() == "null":
-                raise MetabaseCompilationBlocked(
-                    "UNTYPED_NULL_FILTER_UNSUPPORTED",
-                    "string value 'null' cannot be promoted into semantic NULL",
-                )
             field, current = cls._field_ref(snapshot=snapshot, item=dimension)
             cls._assert_same_table(base=metric_current, other=current)
             filters.append(["=", {}, field, ref.value])

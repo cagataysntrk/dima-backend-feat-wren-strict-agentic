@@ -314,15 +314,20 @@ def test_metric_cardinality_fails_closed():
     assert exc.value.code == "P4_METRIC_CARDINALITY"
 
 
-def test_string_null_filter_is_not_promoted_to_semantic_null():
+def test_text_null_token_remains_literal_string_equality():
     intent = _case(2)
-    bad = intent.filters[0].model_copy(update={"value": "NULL"})
-    with pytest.raises(MetabaseCompilationBlocked) as exc:
-        MetabaseProjectionCompiler.compile(
-            intent=intent.model_copy(update={"filters": (bad,)}),
-            snapshot=build_snapshot(),
-        )
-    assert exc.value.code == "UNTYPED_NULL_FILTER_UNSUPPORTED"
+    literal = intent.filters[0].model_copy(update={"value": "NULL"})
+    plan = MetabaseProjectionCompiler.compile(
+        intent=intent.model_copy(update={"filters": (literal,)}),
+        snapshot=build_snapshot(),
+    )
+    filters = plan.steps[0].portable_query["stages"][0]["filters"]
+    assert filters == [[
+        "=",
+        {},
+        ["field", {}, ["Dima Analytics Lab", "public", "orders", "region"]],
+        "NULL",
+    ]]
 
 
 def test_untyped_non_text_filter_fails_closed():
