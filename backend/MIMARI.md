@@ -1,5 +1,28 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-POST-ANALYST-RECONCILIATION -->
+> ## 🔴 CURRENT ARCHITECTURE AUTHORITY — POST ANALYST
+>
+> Continuation: `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
+>
+> Verified HEAD `3774484167...`; SI focused `25/25`; real Wren sentinels `2/2`.
+> These prove partial SI, not final raw-language composition.
+>
+> Current open SI invariants:
+> `semantic surface completeness → shared Standard/Research authority arbiter → distinct
+> Research temporal role → full-live Standard composition`.
+>
+> M0E-v1 = valid baseline. Final exhaustion = `M0E-DEEP-DELTA`.
+> X0 runtime is blocked by mandatory bridge preflight.
+>
+> Permanent bridge authority:
+> Wren semantics retained; Metabase cannot reinterpret raw language, redefine metrics/relationships,
+> guess labels, introduce unapproved implicit FK joins, or mint a second semantic authority.
+>
+> `FRONTDOOR_OWNERSHIP_CLOSURE` is Day10 release-blocking debt. Current /ask-v2 remains legacy
+> Day4 orchestration and production flag stays OFF.
+
+
 <!-- DIMA-V2-POST-J1B-LUNA-M0E-OVERRIDE -->
 > ## 🔴 POST-J1B CURRENT ARCHITECTURE OVERRIDE — 2026-09-22
 >

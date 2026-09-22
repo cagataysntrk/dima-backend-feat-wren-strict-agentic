@@ -1,5 +1,29 @@
 # DIMA V2 — GELİŞTİRİCİ / AJAN ÇALIŞMA SÖZLEŞMESİ
 
+## POST-ANALYST CURRENT OVERRIDE
+
+> Current continuation authority:
+> `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
+>
+> Verified HEAD `3774484167...`; SI focused `35718675540=25/25`; real Wren sentinels
+> `35718883950=2/2`.
+>
+> SI is PARTIAL GREEN, not FINAL. Fix in exact order:
+> semantic-source completeness P0 → shared Standard/Research authority arbiter →
+> Research temporal role split → focused proofs → workers=1 full-live Standard composition.
+>
+> Historical M0E-v1 is preserved but no longer FINAL exhaustion. Current source gate:
+> `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`.
+>
+> Metabase runtime X0 is BLOCKED until `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` is GREEN.
+> `UNAPPROVED_METABASE_IMPLICIT_JOIN=0` is permanent.
+>
+> `FRONTDOOR_OWNERSHIP_CLOSURE` is OPEN, Day10, release blocker. Do not prematurely rewrite
+> /ask-v2 now, but FINAL FREEZE is forbidden while legacy Day4 resolver remains authoritative.
+>
+> DEV80/Validation50/Hidden50/FINAL FREEZE/pilot remain forbidden.
+
+
 ## POST-J1B CURRENT OVERRIDE — LUNA + M0E
 
 > **Provider topology gate: GREEN.**

@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 PROVIDER TOPOLOGY P0 GREEN + M0E GREEN — D65-SI ACTIVE NEXT; X0 BLOCKED UNTIL SI/WREN SENTINEL; DEV80 FORBIDDEN**  
-**Kod fazı:** Provider topology P0 GREEN + M0E GREEN. D65-SI implementation active: distinct `TEMPORAL_NORMALIZER` role, pure `StandardLaneEngine`, and pure `WrenStandardExecutionAdapter` added without Research AcceptedTurnContract/UOL dependency. Focused SI first run `35718301249` had 4 EVAL_ORACLE test failures; receipt opened before patch. Test-only repair then rerun `35718675540 = 25/25 PASS`, compile PASS. Current next gate = pure Standard real Wren sentinel + retained Research sentinel. `/ask-v2` still OFF; X0 blocked; DEV80 forbidden.  
+**Durum:** **DAY 6.5 SI PARTIAL GREEN — SI FINAL COMPOSITION OPEN; M0E-v1 PRESERVED / M0E-DEEP-DELTA OPEN; X0-BRIDGE-PREFLIGHT BLOCKS X0; DEV80 FORBIDDEN**  
+**Kod fazı:** Verified checkpoint `3774484167...`. Provider topology `Semantic=Luna / Temporal=Sol / Research=Sol` remains P0 GREEN. SI focused `35718675540=25/25 PASS`; real Wren sentinels `35718883950=2/2 PASS` prove pure Standard post-cognition authority/execution plus retained Research trust plane. SI FINAL is still OPEN: semantic-surface completeness P0, shared Standard/Research cross-family authority arbiter, Research temporal-role wiring, then workers=1 raw-Turkish full-live Standard composition. Historical M0E-v1 remains a valid baseline but FINAL exhaustion is REOPENED as `D65-M0E-DEEP-DELTA`. X0 runtime is BLOCKED by SI final + M0E-DEEP-DELTA + `D65-X0-BRIDGE-PREFLIGHT`. `/ask-v2` remains legacy Day4 front-door and OFF; front-door ownership closure is Day10 release blocker.  
 
 ---
 
@@ -34,6 +34,10 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md` — Metabase exhaustion/build-vs-buy contract.
 - `DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md` — **M0E GREEN mechanism classification receipt**.
 - `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; J1 decision sonrası, X0 öncesi mandatory Standard integration gate**.
+- `DIMA_FRONTDOOR_OWNERSHIP_CLOSURE.md` — **Day10 release blocker for authoritative /ask-v2 ownership**.
+- `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` — **mandatory bridge gate before Metabase runtime X0**.
+- `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md` — **reopened final Metabase exhaustion delta**.
+- `DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md` — **CURRENT continuation authority after analyst audit**.
 - `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
 - `DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` — Metabase Cloud/self-host/bundled-service/source-port deployment decision gate.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
@@ -272,6 +276,37 @@ Current next ticket:
 
 X0 remains blocked until:
 `D65-SI GREEN → real Standard Wren sentinel GREEN → M0E final cross-check`.
+
+---
+
+## 0I. POST-ANALYST RECONCILIATION — CURRENT AUTHORITY
+
+Current single handoff:
+`DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
+
+```text
+HEAD                         3774484167f1056d89da0e0609246fb4a05057ec
+SI focused                   35718675540 = 25/25 PASS
+real Wren sentinels          35718883950 = 2/2 PASS
+
+SI implementation            PARTIAL GREEN
+SI final composition         OPEN
+M0E-v1                       VALID BASELINE / PRESERVED
+M0E-DEEP-DELTA               OPEN
+X0-BRIDGE-PREFLIGHT          OPEN / BLOCKS X0
+X0 execution                 BLOCKED
+production /ask-v2           OFF
+DEV80                        FORBIDDEN
+```
+
+Immediate order:
+`semantic-surface P0 → shared authority arbiter → Research temporal split → focused proofs`.
+
+Parallel:
+`M0E-DEEP-DELTA`.
+
+Then:
+`workers=1 full-live Standard composition → SI FINAL + M0E delta FINAL → bridge preflight`.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE

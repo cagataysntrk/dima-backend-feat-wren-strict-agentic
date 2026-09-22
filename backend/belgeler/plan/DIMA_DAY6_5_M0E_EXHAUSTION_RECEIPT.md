@@ -1,6 +1,6 @@
 # DIMA DAY 6.5 — M0E CAPABILITY EXHAUSTION RECEIPT
 
-**Status:** GREEN / DIMA-RELEVANT CAPABILITY MAP CLASSIFIED  
+**Status:** M0E-v1 VALID BASELINE / FINAL EXHAUSTION SUPERSEDED BY M0E-DEEP-DELTA  
 **Date:** 2026-09-22  
 **Canonical upstream:** `metabase/metabase`  
 **Pinned source SHA:** `74216b30981d8310c4cf724d63ca282e2e63529d`  
@@ -9,9 +9,9 @@
 **Source copy/port/vendor:** NONE  
 **Production Metabase dependency:** OFF
 
-This receipt closes M0E at **Dima-relevant mechanism level**, not file-by-file enumeration.
-A family is exhausted when its material Dima mechanisms have a disposition; irrelevant internal
-implementation files do not require individual rows.
+This receipt preserves the **M0E-v1 capability classification baseline**. It no longer claims FINAL exhaustion.
+A deeper upstream source audit identified additional Dima-relevant mechanisms; final exhaustion is reopened in
+`DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`. Existing v1 rows remain valid evidence and are not deleted.
 
 ## M0E-01 — Generic agent loop / terminal mechanics
 
@@ -741,7 +741,7 @@ WREN_OWNS items with duplicate Metabase semantic ownership     = 0
 METABASE_RUNTIME_CANDIDATE items without X0/FULL-X proof       = 0
 ```
 
-**M0E RESULT = GREEN.**
+**M0E-v1 RESULT = VALID BASELINE. FINAL EXHAUSTION = REOPENED / NOT YET GREEN.**
 
 Deferred items are intentionally not implemented.
 
@@ -759,3 +759,13 @@ Deferred items are intentionally not implemented.
 5. Cache/materialization/dashboard/workspace/activity/embedding are deferred and cannot select X0.
 6. X0 may now be designed around runtime necessity, but may not execute until D65-SI + real
    Standard Wren sentinel are GREEN.
+
+
+# Final-exhaustion supersession
+
+The v1 claim `Dima-relevant UNCLASSIFIED = 0` is historical for the v1 map only.
+
+Current final-exhaustion authority:
+`DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`.
+
+Do not erase or rewrite the v1 mechanism rows.

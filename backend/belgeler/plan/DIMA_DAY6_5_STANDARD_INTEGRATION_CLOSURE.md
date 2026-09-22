@@ -1,7 +1,7 @@
 # DIMA DAY 6.5 — D65-SI STANDARD INTEGRATION CLOSURE
 
-**Status:** AUTHORIZED PLAN / BLOCKED UNTIL J1 DECISION  
-**Order:** J1 decision → D65-SI → real Standard vertical sentinel → X0  
+**Status:** PARTIAL GREEN / STRUCTURAL FINALIZATION + FULL-LIVE COMPOSITION OPEN  
+**Order:** structural SI closure → focused proofs → full-live Standard composition → M0E delta final → bridge preflight → X0  
 **Product code before J1 decision:** NO-TOUCH
 
 ## Purpose
@@ -190,3 +190,50 @@ Product integration built before this gate:
 
 Next mandatory proof:
 pure Standard REAL Wren sentinel + retained Research Wren sentinel.
+
+
+---
+
+## Real Wren sentinel — GREEN
+
+Run `35718883950` at HEAD `3774484167f1056d89da0e0609246fb4a05057ec`:
+
+```text
+pure Standard post-cognition Wren sentinel   PASS
+retained Research Wren sentinel              PASS
+total                                         2/2 PASS
+```
+
+This proves:
+`AcceptedStandardAuthority → StandardProjection → Wren → real DB → QueryContract → Evidence`
+after cognition.
+
+It does NOT prove raw-language composition.
+
+## Remaining SI FINAL blockers
+
+1. **P0 semantic source-surface completeness**
+   - every material declared semantic source must be bound or explicitly unresolved;
+   - same-kind partial loss is forbidden;
+   - CoverageVeto is not the owner.
+
+2. **Shared Standard/Research cross-family authority arbiter**
+   - Research lineage remains `AcceptedContractRegistry`;
+   - accepted Research identity must also commit into the shared family arbiter;
+   - same turn Standard xor Research must be enforced in real composition.
+
+3. **Research temporal role split**
+   - semantic provider from `SEMANTIC_LINKER=Luna`;
+   - temporal provider from `TEMPORAL_NORMALIZER=Sol`;
+   - Research cognition from `RESEARCH_MANAGER=Sol`;
+   - no shared semantic-linker client for temporal.
+
+4. **Workers=1 full-live Standard composition**
+   - raw Turkish → role-scoped cognition → StandardLane → shared authority → real Wren/DB →
+     QueryContract/Evidence;
+   - 3–5 positive Standard cases + at least one unresolved/ambiguity negative;
+   - no prompt tuning from failures.
+
+Only after these are GREEN may D65-SI be declared FINAL GREEN.
+
+X0 still remains blocked by M0E-DEEP-DELTA and X0-BRIDGE-PREFLIGHT.

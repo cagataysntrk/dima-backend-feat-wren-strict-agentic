@@ -1,8 +1,8 @@
 # DIMA DAY 6.5 — X0 THIN METABASE FEASIBILITY CONTRACT
 
 **Date:** 2026-09-22  
-**Status:** PREPARED / BLOCKED BY D65-SI / NOT EXECUTED  
-**Entry authority:** D65-M0 receipt + pre-freeze decision gate  
+**Status:** PREPARED / BLOCKED BY D65-SI FINAL + M0E-DEEP-DELTA + X0-BRIDGE-PREFLIGHT / NOT EXECUTED  
+**Entry authority:** D65-SI FINAL + M0E-DEEP-DELTA FINAL + X0-BRIDGE-PREFLIGHT GREEN  
 **Product integration:** FORBIDDEN  
 **Primary-substrate decision:** NOT AUTHORIZED
 
@@ -20,6 +20,17 @@ AcceptedStandardAuthority
 ```
 
 A Research `AcceptedTurnContract` surrogate is not valid X0 input.
+
+## Mandatory pre-runtime bridge gate
+
+Before any Metabase service/runtime X0:
+`DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` MUST be GREEN.
+
+Runtime spin-up is forbidden if the bridge requires manual metric/relationship redefinition,
+label guessing, second semantic authority, or unapproved implicit FK joins.
+
+Primary runtime surface, if preflight is GREEN, is `X0-REST` Agent API.
+MCP query-handle semantics are a separate optional experiment and must not be conflated with REST.
 
 ## Purpose
 
@@ -317,3 +328,15 @@ P0=0 plus material correctness/repair/permission/provenance/custom-code/product-
 STOP/CONSULT before full D65-X.
 
 No single percentage/latency threshold determines this decision.
+
+
+## Additional current P0
+
+```text
+unapproved_metabase_implicit_join       = 0
+manual_metric_definition_duplication    = 0
+manual_relationship_duplication         = 0
+semantic_reparse_from_label             = 0
+access_lens_mismatch_reuse              = 0
+second_semantic_authority               = 0
+```

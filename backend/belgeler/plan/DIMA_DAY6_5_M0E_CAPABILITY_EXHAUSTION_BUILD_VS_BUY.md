@@ -1,6 +1,6 @@
 # DIMA DAY 6.5 — M0E METABASE CAPABILITY EXHAUSTION + BUILD-vs-BUY
 
-**Status:** ACTIVE READ/CLASSIFICATION GATE  
+**Status:** M0E-v1 BASELINE COMPLETE / FINAL EXHAUSTION REOPENED AS M0E-DEEP-DELTA  
 **Date:** 2026-09-22  
 **Phase:** current M0 completion gate; **NOT a new Day**  
 **Implementation mandate:** NONE by default  
@@ -344,3 +344,12 @@ production Metabase dependency = 0
 M0E is closed for D65-SI entry.
 A final cross-check is still mandatory after the real Standard Wren sentinel and before X0
 execution, because D65-SI may expose a new overlap/gap.
+
+
+## M0E-v1 supersession
+
+The initial classification remains a valid baseline.
+Final exhaustion is now owned by:
+`DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`.
+
+No v1 row is discarded. No implementation spree is authorized.

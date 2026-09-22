@@ -1,4 +1,17 @@
 <!-- DIMA-V2-ACTIVE-OPERATION -->
+<!-- POST-ANALYST CURRENT AUTHORITY -->
+> Read first: `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
+>
+> Current: HEAD `3774484167...`; SI focused 25/25; Wren sentinels 2/2.
+> SI FINAL remains OPEN for semantic-surface completeness, shared cross-family authority,
+> Research temporal-role wiring and full-live Standard composition.
+>
+> M0E-v1 baseline is preserved; FINAL exhaustion reopened as M0E-DEEP-DELTA.
+> X0 runtime blocked by bridge preflight.
+>
+> Front-door ownership closure is a Day10 release blocker. Production /ask-v2 OFF.
+> Broad final gates forbidden.
+
 <!-- POST-J1B CURRENT CONTINUATION -->
 > ## CURRENT CONTINUATION — POST-J1B
 >
