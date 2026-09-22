@@ -2014,3 +2014,35 @@ proof:
 
 status:
 `CLOSED GREEN / ONE ISOLATED PINNED-LIVE METRIC LIFECYCLE AUTHORIZED`.
+
+
+---
+
+## DMP-P9B-RED-003 — archived Card GET presents Trash collection identity
+
+receipt_id: `DMP-P9B-RED-003`  
+tested_sha: `9f33d9f97faa331666a12fa2382fdb649a7481a2`  
+workflow: `35782467824`
+
+classification:
+`LIVE TEST ORACLE / PINNED READ REPRESENTATION`
+
+observed:
+The isolated lifecycle passed metric create, exact-id read-back, stable entity binding, P9 replanning
+to NOOP and archive mutation. It failed only because the archived exact-id GET was asserted to retain
+the original collection id.
+
+pinned-source evidence:
+Metabase v0.63.18 Card GET applies `present-in-trash-if-archived-directly`, which deliberately
+presents directly archived Cards with the Trash collection id. The underlying lifecycle identity
+remains the exact Card id/entity id.
+
+authorized correction:
+- archived exact-id read must still prove id/type/name/entity_id and `archived=true`;
+- do not require original collection while directly archived;
+- after restore, original explicit collection id is required again;
+- entity_id must remain stable across create/archive/restore;
+- no product transport, semantic, P9 planner or API behavior changes.
+
+status:
+`ORACLE CORRECTION APPLIED / ONE CORRECTED PINNED-LIVE RERUN AUTHORIZED`.

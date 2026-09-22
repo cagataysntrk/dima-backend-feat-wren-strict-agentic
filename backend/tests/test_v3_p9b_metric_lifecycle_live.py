@@ -105,13 +105,14 @@ def _assert_exact_card(
     *,
     card_id: int,
     expected_name: str,
-    collection_id: int,
+    collection_id: int | None,
     archived: bool,
 ) -> str:
     assert int(card["id"]) == card_id
     assert card["type"] == "metric"
     assert card["name"] == expected_name
-    assert int(card["collection_id"]) == collection_id
+    if collection_id is not None:
+        assert int(card["collection_id"]) == collection_id
     assert bool(card["archived"]) is archived
     entity_id = card.get("entity_id")
     assert isinstance(entity_id, str) and entity_id.strip()
@@ -231,13 +232,14 @@ def test_p9b_single_pinned_metric_lifecycle_canary():
             read_archived = raw.get(f"/api/card/{metric_id}")
             read_archived.raise_for_status()
             archived_card = read_archived.json()
-            _assert_exact_card(
+            archived_entity_id = _assert_exact_card(
                 archived_card,
                 card_id=metric_id,
                 expected_name=contract.request.name,
-                collection_id=collection_id,
+                collection_id=None,
                 archived=True,
             )
+            assert archived_entity_id == entity_id
 
             restored_response = raw.put(
                 f"/api/agent/v1/metric/{metric_id}",

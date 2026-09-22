@@ -1078,3 +1078,26 @@ DMP-P9B-AUDIT-002                  = CLOSED GREEN
 production writes                  = BLOCKED
 authorized next                    = ONE ISOLATED PINNED-LIVE METRIC LIFECYCLE
 ```
+
+
+---
+
+## P9B live lifecycle first RED — DMP-P9B-RED-003
+
+```text
+tested SHA                      = 9f33d9f97faa331666a12fa2382fdb649a7481a2
+workflow                        = 35782467824
+provider-free P9B               = GREEN
+create                          = PASS
+exact-id created read           = PASS
+stable entity binding           = PASS
+P9 replan NOOP                  = PASS
+archive mutation                = PASS
+archived exact-id read          = ORACLE RED
+root cause                      = Metabase presents directly archived Card in Trash collection
+product-code owner              = NONE
+teardown                        = PASS
+```
+
+Correction is test-only. Archived state no longer requires the original collection presentation;
+restore state still must return to the explicit original collection and preserve entity identity.
