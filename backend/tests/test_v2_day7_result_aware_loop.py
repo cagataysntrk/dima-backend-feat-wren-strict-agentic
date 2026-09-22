@@ -133,22 +133,59 @@ class _AdaptiveFakeLLM:
                 "semantic_proposal": "bölge",
             }
 
-        if len(payload.get("EVIDENCE_REFS") or []) == 1 and resolved_dimension is not None:
+        ready = payload.get("READY_RESEARCH_TASKS") or []
+        fanout_registered = any(
+            observation.get("kind") == "fanout_registered"
+            for observation in recent
+        )
+
+        if (
+            len(payload.get("EVIDENCE_REFS") or []) == 1
+            and resolved_dimension is not None
+            and not fanout_registered
+            and not ready
+        ):
+            return {
+                "action": "propose_branches",
+                "branch_parent_obligation_id": "U1",
+                "branch_evidence_ref": delta["evidence_ref"],
+                "branch_candidates": [
+                    {
+                        "task_id": "D1",
+                        "capability_key": "breakdown",
+                        "input_handles": ["h1", resolved_dimension],
+                        "material_reason": "regional breakdown is evidence-grounded",
+                    },
+                    {
+                        "task_id": "D2",
+                        "capability_key": "performance",
+                        "input_handles": ["h1"],
+                        "material_reason": "bounded metric re-check candidate",
+                    },
+                    {
+                        "task_id": "D3",
+                        "capability_key": "ranking",
+                        "input_handles": ["h1", resolved_dimension],
+                        "material_reason": "ranked regional follow-up candidate",
+                    },
+                ],
+            }
+
+        if len(payload.get("EVIDENCE_REFS") or []) == 1 and ready:
+            selected = next(item for item in ready if item["task_id"] == "D1")
             return {
                 "action": "run_analytics",
                 "obligation_ids": ["U1"],
                 "metric_handles": ["h1"],
                 "dimension_handles": [resolved_dimension],
-                "derived_task_id": "D1",
-                "derived_parent_obligation_id": "U1",
+                "derived_task_id": selected["task_id"],
+                "derived_parent_obligation_id": selected["parent_obligation_id"],
                 "derived_capability_key": "breakdown",
-                "derived_evidence_ref": delta["evidence_ref"],
-                "derived_reason": (
-                    "verified first result warrants a bounded regional breakdown"
-                ),
+                "derived_evidence_ref": selected["trigger_evidence_ref"],
+                "derived_reason": "execute one READY bounded branch",
             }
 
-        # Second evidence was inspected, so there is no invented third branch.
+        # Second verified evidence needs no further branch for this canonical case.
         return {"action": "finish"}
 
 
@@ -302,7 +339,8 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert service.query_calls == 2
     assert store.n == 2
     assert len(runtime.snapshot.evidence_refs) == 2
-    assert runtime.snapshot.inspected_evidence_refs == runtime.snapshot.evidence_refs
+    assert runtime.snapshot.evidence_refs[0] in runtime.snapshot.inspected_evidence_refs
+    assert len(runtime.snapshot.inspected_evidence_refs) == 1
 
     parent = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
     child = next(item for item in runtime.ledger.items if item.obligation_id == "D1")
@@ -326,5 +364,14 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert rows
     assert len(rows) <= 20
 
-    # No third analytical branch is invented after the second evidence is inspected.
+    fanout = next(
+        item for item in outcome.observations if item.get("kind") == "fanout_registered"
+    )
+    assert fanout["result"]["classification"] == "UNKNOWN"
+    assert fanout["result"]["strategy"] == "CONSERVATIVE_BOUNDED"
+    assert fanout["result"]["allowed_children"] == 2
+    assert fanout["result"]["selected_task_ids"] == ["D1", "D2"]
+
+    # Fanout registration is cognition-only; only one selected READY branch executes.
+    assert service.query_calls == 2
     assert len(llm.prompts) == 6
