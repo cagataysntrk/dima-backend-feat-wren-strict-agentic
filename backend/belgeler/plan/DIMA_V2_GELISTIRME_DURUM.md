@@ -5906,9 +5906,187 @@ workers          = 1
 
 ### Current exact next gate
 
+Reference-floor canary GREEN sonrasında yeni architecture decision gate açıldı:
+
 ```text
-real Wren Standard vertical
-+ existing Research adaptive/evidence sentinel
+D65-J1A isolated Jev candidate-selection bake-off
+→ Jev REJECTED: product code unchanged, existing Wren/Research sentinel proof remains historical-valid
+→ Jev PROMISING: D65-J1B DecisionProvider seam + semantic/temporal role separation
+→ focused provider-free
+→ family closure
+→ workers=1 live
+→ new stratified canary
+→ real Wren Standard + Research sentinel/revalidation
 → ENGINEERING FREEZE CANDIDATE
 → DEV80 once for that candidate
 ```
+
+Branch'te `35697471863` sentinel'i J1 kararı repo authority'ye işlenmeden önce opportunistically çalışmış ve exact `8dfde62d...` üzerinde 2/2 PASS olmuştur. Bu proof saklanır; fakat J1 engineering kararı çözülmeden freeze yetkisi vermez.
+
+---
+
+## 2026-09-22 — D65-J1 JEV DECISION-MODEL CHALLENGER
+
+### Trigger / neden şimdi
+
+D65-G CLOSED GREEN:
+```text
+provider-free family run 35696652502 = 102/102 PASS
+legacy SemanticResolver Manager hot path = REMOVED
+regex/fuzzy/morphology semantic fallback = architecture-test forbidden
+mandatory failure-triage receipt = ACTIVE
+```
+
+Reference-floor canary:
+```text
+run                  = 35697064833
+workflow source SHA  = 07ac8d47796b89634b2411def457bb85f4bc0da7
+tested code SHA      = 8dfde62d46d1418f05cce3ed44c26a8025b3b20e
+Manager              = openai/gpt-5.6-sol
+Semantic/Temporal    = openai/gpt-5.6-sol
+workers              = 1
+selected/evaluable   = 16/16
+case pass            = 16/16
+MUST recall          = 1.0
+all P0 counters      = 0
+measurement failures = 0
+```
+
+Earlier run `35696811902` = 16/16 HARNESS_FAILURE due stale `resolver=` evaluator constructor; classification `EVAL_ORACLE / HARNESS DRIFT`; semantic conclusion NONE; product code unchanged.
+
+Early Wren/Research sentinel:
+```text
+run             = 35697471863
+tested code SHA = 8dfde62d46d1418f05cce3ed44c26a8025b3b20e
+result          = 2/2 PASS
+```
+This proof is retained but freeze is BLOCKED pending D65-J1.
+
+### New architecture observation
+
+Current `SEMANTIC_LINKER` role conflates two distinct cognition contracts:
+```text
+1. bounded catalog candidate selection
+2. TypedTemporalNormalizer
+```
+
+`d65-dev-019` model-floor evidence belonged to typed temporal comparison normalization, not catalog candidate selection. Therefore Jev is NOT a case019 patch and case019 is not evidence to ship Jev.
+
+### D65-J1A — isolated lab/eval only
+
+Pinned challenger:
+```text
+typesafe/jev-1.13
+```
+
+Forbidden:
+```text
+~typesafe/jev-latest
+v2_semantic_linker_model=typesafe/jev-1.13
+Jev through chat/completions
+Jev through current structured_json adapter
+prompt wrapper/hack/fallback to make Jev look like a chat LLM
+product semantic_linker.py changes before bake-off result
+temporal normalization with Jev in J1A
+```
+
+Native surface:
+```text
+OpenRouter Decisions API
+POST /api/alpha/decisions
+state + typed choice question
+→ choice + probabilities
+```
+
+Candidate boundary remains:
+```text
+USER SURFACE
+→ frozen CandidateSet[cand_*]
+→ decision challenger
+→ candidate_id | ABSTAIN
+→ existing SemanticBindingGate conceptually remains authority
+```
+
+J1A compares:
+```text
+A = google/gemini-2.5-flash-lite
+B = typesafe/jev-1.13
+C = openai/gpt-5.6-sol
+```
+
+Manager is not part of this benchmark. TemporalNormalizer is excluded.
+
+Jev may not mint sem_*, see canonical IDs unnecessarily, escape candidate sets, write SQL, see DB/numeric truth, perform temporal arithmetic, or accept authority.
+
+Required strata:
+```text
+exact alias controls
+non-exact Turkish paraphrases
+synonym surfaces
+multiple plausible candidates
+true ambiguity
+no-match / ABSTAIN
+retrieval miss
+bounded high-cardinality candidate sets
+entity-value cases
+sensitive-value exact-only controls
+different metric/dimension names
+permuted/metamorphic schema names
+cross-tenant candidate isolation
+```
+
+Metrics:
+```text
+candidate-selection accuracy
+ABSTAIN precision/recall
+ambiguity unsafe-pick count
+candidate-escape count
+Turkish paraphrase accuracy
+metamorphic consistency
+same-input repeated-run agreement
+p50/p95 latency
+cost
+provider failures
+Jev raw choice probabilities
+Jev Brier/ECE or equivalent calibration
+Jev high-confidence-wrong count
+```
+
+P0:
+```text
+candidate outside supplied set = 0
+silent ambiguity auto-pick = 0
+cross-tenant semantic leak = 0
+high-confidence wrong accepted = 0
+semantic authority minted by model = 0
+```
+
+No confidence threshold is tuned or activated in J1A.
+
+### Decision rule
+
+Jev clearly poor / Turkish weak:
+```text
+REJECT JEV
+→ product code NO CHANGE
+→ current architecture continues
+→ Wren/Research sentinel proof can be retained/rechecked as needed
+→ freeze sequence resumes
+```
+
+Jev promising:
+```text
+OPEN D65-J1B
+→ SemanticLinkDecisionProvider seam
+→ StructuredLLMDecisionProvider | JevDecisionProvider
+→ SEMANTIC_LINKER = bounded candidate decision only
+→ TEMPORAL_NORMALIZER = separate language→TemporalNormalizationChoice role
+→ focused/provider-free/family/live/canary/sentinel revalidation
+→ freeze
+```
+
+Jev/Gemini/Sol = cognition decision-model experiment.
+Wren/Metabase D65-X = analytics execution-substrate experiment.
+They are independent and MUST NOT be conflated.
+
+Canonical roadmap numbering and Day7–10 remain unchanged.
