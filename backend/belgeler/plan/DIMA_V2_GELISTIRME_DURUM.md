@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 SI PARTIAL GREEN — SI FINAL COMPOSITION OPEN; M0E-v1 PRESERVED / M0E-DEEP-DELTA OPEN; X0-BRIDGE-PREFLIGHT BLOCKS X0; DEV80 FORBIDDEN**  
-**Kod fazı:** Verified checkpoint moved through SI structural GREEN into full-live composition RED. `35724650999`/`35728023633` keep focused/eval gates GREEN. Full-live `35724830736` failed at `si-live-001`; exact same-product-semantics diagnostic `35728413368` proved Path A: draft surface=`tahsil edilmemiş cari bakiye`, enumeration=136 metrics, exact=0, visible=48, `CANDIDATE_SET_TOO_BROAD`, Luna not called. Current single owner = bounded semantic discovery. Authorized next = generic retrieval backend + provider-free/metamorphic proofs; frozen corpus/provider topology/candidate bound remain unchanged. M0E-DEEP-DELTA continues in parallel; X0/DEV80 remain blocked.  
+**Durum:** **DAY 6.5 SI STRUCTURAL GREEN / FULL-LIVE PRODUCT EVIDENCE 001+005 OPEN; LATEST RED = EVAL HARNESS ONLY; M0E-DEEP-DELTA OPEN; X0/DEV80 FORBIDDEN**  
+**Kod fazı:** Current tested product evidence: full-live `35730014456` executed all six frozen cases; 002/003/004/006 GREEN, 001/005 genuine product-family RED. Generic source-context/filter-contract changes then passed cheap SI `35731771175 = 60 PASS`. Latest full-live `35732074699 @ 6f7b352...` is NOT product evidence: all six cases fail before retrieval/linker because `lab/si_standard_eval.py` duplicated the old `SemanticCandidateGenerator.generate` signature and rejects new `decision_context=`. Classification = `EVAL_ORACLE / HARNESS_COMPATIBILITY`; no product semantic patch authorized. Immediate order = transparent trace proxy + parity proof → cheap architecture attacks (exact duplicate+context; material qualifier/predicate conservation; retain inflection/catalog metamorphics) → focused paid frozen 001+005 → only if both GREEN, exact frozen six once. M0E-DEEP-DELTA continues; X0/DEV80 blocked.  
 
 ---
 

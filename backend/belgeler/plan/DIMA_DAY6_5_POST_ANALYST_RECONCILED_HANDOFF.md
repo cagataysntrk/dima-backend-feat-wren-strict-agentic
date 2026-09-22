@@ -411,3 +411,54 @@ generic bounded semantic retrieval
 Forbidden:
 increase candidate bound, named alias/case patch, regex/stemming/fuzzy semantic authority,
 top-1 auto-binding, full catalog to Luna, frozen corpus change.
+
+
+## 4B. Latest RED is measurement-only; last product RED = 001/005
+
+Latest run:
+```text
+35732074699 @ 6f7b3524dd692b6aefb68d9844cb606f0f25a2cd
+classification = EVAL_ORACLE / HARNESS_COMPATIBILITY
+```
+
+All six cases failed because the tracer copied an obsolete
+`SemanticCandidateGenerator.generate` signature and rejected `decision_context=`.
+No retrieval/linker decision was measured.
+
+Last valid product run:
+`35730014456`.
+
+```text
+002 GREEN
+003 GREEN
+004 GREEN
+006 GREEN
+
+001 RED
+  cari bakiyeyi → cari.bakiye BOUND
+  extra "tahsil edilmemiş" → unresolved filter
+
+005 RED
+  fatura toplamına → ticaret.toplam_tutar BOUND
+  cari kodunu → Luna ABSTAIN
+```
+
+Do not rerun full six immediately.
+
+Required sequence:
+```text
+transparent observer fix
+→ trace parity
+→ cheap SI
+→ generic interface attacks:
+     exact duplicate + immutable context
+     material qualifier/predicate conservation
+     Turkish inflection
+     catalog growth/order
+     source-context cannot widen authority
+→ if needed generic fixes only
+→ focused paid 001 + 005
+→ if both GREEN, exact frozen six once
+```
+
+Wrong GREEN from silent semantic loss is a P0.

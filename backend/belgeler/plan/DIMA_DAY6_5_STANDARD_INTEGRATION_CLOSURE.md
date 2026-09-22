@@ -237,3 +237,33 @@ It does NOT prove raw-language composition.
 Only after these are GREEN may D65-SI be declared FINAL GREEN.
 
 X0 still remains blocked by M0E-DEEP-DELTA and X0-BRIDGE-PREFLIGHT.
+
+
+---
+
+## Full-live evidence reconciliation — 001/005 + harness RED
+
+Valid product evidence:
+`35730014456`.
+
+```text
+002/003/004/006 = GREEN
+001 = draft/filter contract family RED
+005 = contextual dimension disambiguation family RED
+```
+
+After generic changes, focused cheap gate:
+`35731771175 = 60 PASS`.
+
+Latest paid run:
+`35732074699` is **EVAL_ORACLE / HARNESS_COMPATIBILITY**, not product evidence.
+The tracer rejected new `decision_context=` before semantic retrieval.
+
+Before more paid full-live work:
+1. transparent trace proxy + parity;
+2. exact-duplicate contextual ambiguity family;
+3. material qualifier/predicate semantic-conservation family;
+4. retained inflection/catalog-growth/source-context authority metamorphics;
+5. focused paid 001+005 only.
+
+Only when both are GREEN may the exact frozen six-case closure run execute once.

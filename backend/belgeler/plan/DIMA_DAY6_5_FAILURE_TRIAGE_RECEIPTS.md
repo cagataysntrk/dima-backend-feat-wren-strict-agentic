@@ -900,3 +900,85 @@ forbidden patch:
 status:
 `CLOSED — test-only oracle patch; rerun 35718675540 = 25/25 PASS, compile PASS; product SI code unchanged by the repair`.
 
+
+
+---
+
+## Receipt — D65-SI-FULL-LIVE-003 — tracer compatibility RED
+
+run_id: `35732074699`
+
+tested_sha: `6f7b3524dd692b6aefb68d9844cb606f0f25a2cd`
+
+preflight:
+```text
+role / harness tests = 6/6 PASS
+focused cheap gate   = 35731771175 = 60 PASS
+```
+
+observed:
+all six frozen cases reached the live Standard drafter, then failed before semantic retrieval
+because eval instrumentation raised:
+
+```text
+TypeError:
+install_standard_eval_trace.<locals>.traced_generate()
+got an unexpected keyword argument 'decision_context'
+```
+
+artifact evidence:
+```text
+candidate_retrieval        = []
+semantic_selections        = []
+semantic_provider_called   = false
+all six final_status       = FAILED
+```
+
+failure_class:
+`EVAL_ORACLE / HARNESS_COMPATIBILITY`
+
+single_owner:
+`backend/lab/si_standard_eval.py`
+
+root_cause:
+Product `SemanticCandidateGenerator.generate(..., decision_context=...)` evolved at
+`128c0c597b3e...`, while the evaluator duplicated the older method signature. The measurement
+layer altered execution instead of transparently observing it.
+
+product conclusion from this run:
+NONE. No semantic, temporal, Wren, authority or provider regression is established by
+`35732074699`.
+
+last valid product evidence:
+`35730014456`:
+- 002 / 003 / 004 / 006 = GREEN;
+- 001 = metric bound correctly, draft emitted an extra unresolved filter;
+- 005 = metric bound correctly, dimension abstained as ambiguous.
+
+allowed patch:
+- measurement layer only;
+- observer wrappers become `*args/**kwargs` passthrough;
+- inspect known fields without duplicating product signatures;
+- add traced-vs-untraced parity proof.
+
+forbidden patch:
+- semantic product code from this RED;
+- frozen corpus/expected outputs;
+- model topology;
+- candidate limits;
+- prompt micro-patch.
+
+next sequence:
+```text
+transparent trace fix
+→ trace parity provider-free
+→ cheap SI gate
+→ exact-duplicate+context and material-qualifier conservation attacks
+→ generic product fix only if cheap evidence proves a contract defect
+→ focused paid 001+005
+→ only if both GREEN, exact frozen six-case full-live once
+```
+
+status:
+`OPEN — TEST/EVAL-ONLY PATCH AUTHORIZED`.
+
