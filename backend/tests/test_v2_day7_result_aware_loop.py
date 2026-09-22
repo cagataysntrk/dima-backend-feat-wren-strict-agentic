@@ -105,7 +105,11 @@ class _AdaptiveFakeLLM:
                 "metric_handles": ["h1"],
             }
 
-        if delta and not delta.get("inspected"):
+        if (
+            delta
+            and not delta.get("inspected")
+            and len(payload.get("EVIDENCE_REFS") or []) == 1
+        ):
             return {
                 "action": "inspect_evidence",
                 "evidence_ref": delta["evidence_ref"],
