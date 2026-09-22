@@ -6715,6 +6715,67 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 — DAY7 SAME-DOMAIN TOOL INVENTORY + COMPARE/RANK GREEN
+
+**Checkpoint:** `4dd76fde3cfc60de67cf49f57eabd555123c29bc`  
+**Focused workflow:** `35775416365` = **SUCCESS**
+
+Declared governed Research tools now:
+
+```text
+wren.query       → QUERY
+wren.breakdown   → BREAKDOWN
+wren.compare     → COMPARE
+wren.rank        → RANK
+```
+
+COMPARE/RANK reuse the existing official path:
+
+```text
+ResearchTask
+→ ResearchToolContract shape gate
+→ RUN_ANALYTICS
+→ ManagerCoreAnalyticsAdapter
+→ AnalyticsIR / CubePlanner
+→ Wren
+→ sealed QueryContract
+→ verified EvidenceArtifact
+```
+
+Contract-specific guards:
+- COMPARE requires a governed comparison handle;
+- RANK requires governed dimension + direction + limit;
+- QUERY cannot smuggle breakdown/comparison/ranking semantics;
+- BREAKDOWN cannot silently become comparison/ranking;
+- plain COMPARE/RANK do not silently become ranked-comparison.
+
+### Temporal contract correction found during COMPARE inventory
+`ResolvedComparison` carries its governed `base_period`, but ManagerCoreAnalyticsAdapter
+previously left `AnalyticsIR.period=None` when no separate period handle was supplied.
+That could make the primary side all-time while the reference side used the comparison period.
+Adapter now mirrors canonical Core behavior:
+
+```text
+comparison + no explicit period
+→ primary period = comparison.base_period
+
+explicit period + comparison
+→ must equal comparison.base_period or fail closed
+```
+
+Focused COMPARE proof seals two QueryContracts and verifies primary/reference evidence.
+Focused RANK proof verifies top-N direction/limit through the official validator.
+
+### Deliberately not declared yet
+- TREND: current derived RUN_ANALYTICS accepts STANDARD capability only; no governed Day7
+  trend primitive has been proven yet.
+- CONTRIBUTION: mature deterministic legacy math exists, but no V2 Research adapter currently
+  owns typed QueryContract/Evidence production for it.
+- PEER_COMPARE: no verified governed primitive identified yet.
+
+No empty wrappers were added. Relationship remains fail-closed pending CrossDomainJoinGate.
+
+---
 ## 2026-09-22 — DAY7 CARDINALITY-AWARE FANOUT POLICY GREEN
 
 **Checkpoint:** `7a4c2f45734f43b24d54a1c796374cd8031b4272`  
