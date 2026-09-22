@@ -755,3 +755,20 @@ P6 full parity: **NOT STARTED**.
 
 P6A1 must send the same accepted Dima meaning through the existing Wren substrate seam and a thin
 Metabase execution adapter. Only substrate implementation may vary.
+
+
+---
+
+## P6A1 governance activation RED — DMP-P6-RED-004
+
+```text
+tested SHA              = 28c4ca6525bbde0193901362b1d70c92ffc0347f
+governance run          = 35768149721 = FAILURE
+failed gate             = Require sealed P6 review before parity code exists
+classification          = CI/GOVERNANCE SEAL-TOKEN DRIFT
+product/semantic owner  = NONE
+P6A1 product patch      = UNCHANGED
+```
+
+Correction is documentation-only: sealed authorization wording now explicitly states that corpus
+freeze/parity harness authorization is contingent on **P6A1 GREEN**.

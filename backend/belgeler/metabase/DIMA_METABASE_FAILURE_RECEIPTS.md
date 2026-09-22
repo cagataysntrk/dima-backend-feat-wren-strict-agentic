@@ -1569,3 +1569,36 @@ forbidden:
 
 status:
 `OPEN / P6A1 AUTHORIZED`.
+
+
+---
+
+## DMP-P6-RED-004 — dormant P6 governance seal predicate activated stale review wording
+
+receipt_id: `DMP-P6-RED-004`  
+tested_sha: `28c4ca6525bbde0193901362b1d70c92ffc0347f`  
+failed_run: `35768149721`
+
+observed:
+P6A1 added the first production `execution_adapter.py`, activating the governance guard that requires
+a sealed P6 predevelopment review. The guard still searched for the earlier authorization wording
+`CORPUS FREEZE + PARITY HARNESS AUTHORIZED`, while the review status line had evolved to
+`P6A SAME-SNAPSHOT CANARY NEXT`.
+
+classification:
+`CI/GOVERNANCE SEAL-TOKEN DRIFT`
+
+root_cause:
+The P6 guard was dormant before parity product code existed, so stale exact status wording was not
+exercised by prior GREEN governance runs.
+
+authorized_correction:
+Use a semantically accurate status line that preserves the existing sealed-authorization token while
+making the P6A1 prerequisite explicit:
+`SEALED / CORPUS FREEZE + PARITY HARNESS AUTHORIZED AFTER P6A1 GREEN`.
+
+No product code, semantic contract, adapter behavior, corpus, or workflow logic changes are authorized
+under this receipt.
+
+status:
+`CORRECTION APPLIED / AWAITING GOVERNANCE GREEN`.

@@ -8,7 +8,7 @@
 **Metabase runtime:** `v0.63.18` immutable digest pinned  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY
 
-Status: **SEALED / P6A SAME-SNAPSHOT CANARY NEXT**
+Status: **SEALED / CORPUS FREEZE + PARITY HARNESS AUTHORIZED AFTER P6A1 GREEN**
 
 ## 1. Normative boundary re-read
 
