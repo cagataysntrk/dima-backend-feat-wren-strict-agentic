@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Building2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
@@ -16,12 +17,13 @@ export function CompanySwitcher({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("settings.company");
 
   async function switchTo(organizationId: string) {
     if (organizationId === activeOrgId) return;
     const { error } = await authClient.organization.setActive({ organizationId });
     if (error) {
-      toast.error("Şirket değiştirilemedi.");
+      toast.error(t("switchFailed"));
       return;
     }
     // Everything cached belongs to the previous tenant.
@@ -33,7 +35,7 @@ export function CompanySwitcher({
     return (
       <p className="text-sm">
         <span className="font-medium">{orgs[0].name}</span>{" "}
-        <span className="text-muted-foreground">· başka şirkete erişiminiz yok</span>
+        <span className="text-muted-foreground">· {t("only")}</span>
       </p>
     );
   }

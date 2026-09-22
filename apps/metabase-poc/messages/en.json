@@ -1,0 +1,114 @@
+{
+  "nav": {
+    "newChat": "New chat",
+    "overview": "Overview",
+    "data": "Data",
+    "sql": "SQL",
+    "model": "Data model",
+    "schema": "Schema",
+    "upload": "Upload data",
+    "settings": "Settings",
+    "chats": "Chats",
+    "noChats": "No chats yet.",
+    "trash": "Trash",
+    "signOut": "Sign out",
+    "company": "Company",
+    "lightTheme": "Light theme",
+    "darkTheme": "Dark theme",
+    "toggleSidebar": "Sidebar"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Your account, your company, and how chat behaves.",
+    "account": {
+      "title": "Account and appearance",
+      "hint": "The account you are signed in with, and the interface theme.",
+      "name": "Name",
+      "email": "E-mail",
+      "theme": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "language": "Language"
+    },
+    "company": {
+      "title": "Company",
+      "hint": "The company whose data you see.",
+      "only": "you have no access to another company",
+      "switchFailed": "Could not switch company."
+    },
+    "members": {
+      "title": "Members and roles",
+      "hint": "Who can reach what. Roles are managed by the company owner.",
+      "you": "(you)",
+      "roleOf": "{name}'s role",
+      "removeMember": "Remove {name}",
+      "roleOwner": "Owner",
+      "roleAdmin": "Admin",
+      "roleMember": "Member",
+      "hintOwner": "Can do everything; manages the team.",
+      "hintAdmin": "Runs SQL, uploads data, edits dashboards.",
+      "hintMember": "Views dashboards and analyses.",
+      "add": "Add member",
+      "adding": "Adding…",
+      "addSubmit": "Add",
+      "cancel": "Cancel",
+      "fullName": "Full name",
+      "email": "E-mail",
+      "role": "Role",
+      "addNote": "If the person has no account yet, one is created and a single-use password is shown.",
+      "tempPasswordFor": "Temporary password for {email}",
+      "copy": "Copy",
+      "copied": "Password copied.",
+      "tempPasswordNote": "This password is shown once. Pass it on yourself and ask them to change it after signing in.",
+      "roleUpdated": "Role updated.",
+      "removed": "Member removed from the team.",
+      "added": "Member added."
+    },
+    "sources": {
+      "title": "Data sources",
+      "hint": "The database your queries run against.",
+      "none": "No data source is defined for this company.",
+      "tableCount": "{count} tables",
+      "viewTables": "View tables",
+      "managedElsewhere": "Connection settings live on the admin side and cannot be changed here."
+    },
+    "chat": {
+      "title": "Chat preferences",
+      "hint": "Which model answers your questions.",
+      "model": "Model",
+      "maxRows": "Row limit",
+      "maxRowsHint": "The most rows a single answer may return.",
+      "adminsOnly": "Only admins can change these settings.",
+      "saved": "Chat settings saved.",
+      "modelSolHint": "Fast and economical — for everyday questions.",
+      "modelLunaHint": "Stronger; more accurate on complex queries."
+    }
+  },
+  "schema": {
+    "title": "Schema",
+    "subtitle": "Your tables and the relationships between them. Relationships are declared in the data model.",
+    "emptyTitle": "No tables to show.",
+    "emptyHint": "Upload data, or ask your administrator to define a data source.",
+    "noEdges": "No relationships declared yet — the tables stand apart.",
+    "noEdgesLink": "In the data model",
+    "noEdgesTail": "point a column at another table's column."
+  },
+  "model": {
+    "relationOf": "{name} relationship",
+    "noRelation": "No relationship",
+    "relationUpdated": "Relationship updated."
+  },
+  "errors": {
+    "title": "Something went wrong.",
+    "body": "An unexpected error occurred. You can try again or go back to your dashboards.",
+    "retry": "Try again",
+    "home": "Back to dashboards",
+    "code": "Error code: {digest}",
+    "notFoundTitle": "This page was not found.",
+    "notFoundBody": "The address may have changed, the content may be in the trash, or it may belong to another company."
+  },
+  "common": {
+    "loading": "Loading…"
+  }
+}

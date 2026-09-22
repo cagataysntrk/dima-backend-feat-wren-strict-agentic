@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Copy, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { gateway, type Member } from "@/lib/gateway";
@@ -17,19 +18,16 @@ import {
 } from "@dima/ui/primitives/select";
 import { Skeleton } from "@dima/ui/primitives/skeleton";
 
-const ROLE_LABEL: Record<Member["role"], string> = {
-  owner: "Şirket sahibi",
-  admin: "Yönetici",
-  member: "Üye",
-};
-const ROLE_HINT: Record<Member["role"], string> = {
-  owner: "Her şeyi yapabilir; ekibi yönetir.",
-  admin: "SQL çalıştırır, veri yükler, pano düzenler.",
-  member: "Panoları ve analizleri görüntüler.",
+/** Message keys per role — the wording itself lives in messages/*.json. */
+const ROLE_KEY: Record<Member["role"], "roleOwner" | "roleAdmin" | "roleMember"> = {
+  owner: "roleOwner",
+  admin: "roleAdmin",
+  member: "roleMember",
 };
 
 export function Members() {
   const queryClient = useQueryClient();
+  const t = useTranslations("settings.members");
   const [adding, setAdding] = useState(false);
   // Shown once, right after creating a user: there is no mailer to send it.
   const [tempPassword, setTempPassword] = useState<{ email: string; password: string } | null>(null);
@@ -39,7 +37,7 @@ export function Members() {
   const setRole = useMutation({
     mutationFn: ({ id, role }: { id: string; role: "admin" | "member" }) => gateway.setMemberRole(id, role),
     onSuccess: () => {
-      toast.success("Rol güncellendi.");
+      toast.success(t("roleUpdated"));
       void invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -47,7 +45,7 @@ export function Members() {
   const remove = useMutation({
     mutationFn: (id: string) => gateway.removeMember(id),
     onSuccess: () => {
-      toast.success("Üye ekipten çıkarıldı.");
+      toast.success(t("removed"));
       void invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -83,7 +81,7 @@ export function Members() {
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium">
                 {m.name}
-                {m.id === myMemberId && <span className="ml-1.5 text-xs text-muted-foreground">(siz)</span>}
+                {m.id === myMemberId && <span className="ml-1.5 text-xs text-muted-foreground">{t("you")}</span>}
               </span>
               <span className="block truncate text-xs text-muted-foreground">{m.email}</span>
             </span>
@@ -92,22 +90,22 @@ export function Members() {
                 value={m.role}
                 onValueChange={(role) => setRole.mutate({ id: m.id, role: role as "admin" | "member" })}
               >
-                <SelectTrigger size="sm" className="w-36" aria-label={`${m.name} rolü`}>
+                <SelectTrigger size="sm" className="w-36" aria-label={t("roleOf", { name: m.name })}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">{ROLE_LABEL.admin}</SelectItem>
-                  <SelectItem value="member">{ROLE_LABEL.member}</SelectItem>
+                  <SelectItem value="admin">{t("roleAdmin")}</SelectItem>
+                  <SelectItem value="member">{t("roleMember")}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
-              <span className="text-xs text-muted-foreground">{ROLE_LABEL[m.role]}</span>
+              <span className="text-xs text-muted-foreground">{t(ROLE_KEY[m.role])}</span>
             )}
             {isOwner && m.role !== "owner" && m.id !== myMemberId && (
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`${m.name} adlı üyeyi çıkar`}
+                aria-label={t("removeMember", { name: m.name })}
                 onClick={() => remove.mutate(m.id)}
                 disabled={remove.isPending}
                 className="text-muted-foreground hover:text-destructive"
@@ -120,12 +118,12 @@ export function Members() {
       </ul>
 
       <p className="text-xs text-muted-foreground">
-        {ROLE_LABEL.admin}: {ROLE_HINT.admin} · {ROLE_LABEL.member}: {ROLE_HINT.member}
+        {t("roleAdmin")}: {t("hintAdmin")} · {t("roleMember")}: {t("hintMember")}
       </p>
 
       {tempPassword && (
         <div className="surface-inset space-y-2 p-3">
-          <p className="text-sm font-medium">{tempPassword.email} için geçici parola</p>
+          <p className="text-sm font-medium">{t("tempPasswordFor", { email: tempPassword.email })}</p>
           <div className="flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-md bg-muted/60 px-2 py-1 font-mono text-sm">
               {tempPassword.password}
@@ -135,15 +133,15 @@ export function Members() {
               size="sm"
               onClick={() => {
                 void navigator.clipboard?.writeText(tempPassword.password);
-                toast.success("Parola kopyalandı.");
+                toast.success(t("copied"));
               }}
             >
               <Copy className="size-3.5" aria-hidden />
-              Kopyala
+              {t("copy")}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Bu parola bir daha gösterilmez; kişiye siz iletin ve giriş sonrası değiştirmesini isteyin.
+            {t("tempPasswordNote")}
           </p>
         </div>
       )}
@@ -160,7 +158,7 @@ export function Members() {
         ) : (
           <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
             <UserPlus className="size-4" aria-hidden />
-            Üye ekle
+            {t("add")}
           </Button>
         ))}
     </div>
@@ -168,6 +166,7 @@ export function Members() {
 }
 
 function AddMemberForm({ onDone }: { onDone: (temp: { email: string; password: string } | null) => void }) {
+  const t = useTranslations("settings.members");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<"admin" | "member">("member");
@@ -175,7 +174,7 @@ function AddMemberForm({ onDone }: { onDone: (temp: { email: string; password: s
   const add = useMutation({
     mutationFn: () => gateway.addMember({ email: email.trim(), name: name.trim(), role }),
     onSuccess: ({ password }) => {
-      toast.success("Üye eklendi.");
+      toast.success(t("added"));
       onDone(password ? { email: email.trim(), password } : null);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -192,13 +191,13 @@ function AddMemberForm({ onDone }: { onDone: (temp: { email: string; password: s
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="m-name" className="text-xs">
-            Ad soyad
+            {t("fullName")}
           </Label>
           <Input id="m-name" value={name} onChange={(e) => setName(e.target.value)} className="h-9" required />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="m-email" className="text-xs">
-            E-posta
+            {t("email")}
           </Label>
           <Input
             id="m-email"
@@ -213,27 +212,27 @@ function AddMemberForm({ onDone }: { onDone: (temp: { email: string; password: s
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="m-role" className="text-xs">
-            Rol
+            {t("role")}
           </Label>
           <Select value={role} onValueChange={(v) => setRole(v as "admin" | "member")}>
             <SelectTrigger id="m-role" size="sm" className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="member">{ROLE_LABEL.member}</SelectItem>
-              <SelectItem value="admin">{ROLE_LABEL.admin}</SelectItem>
+              <SelectItem value="member">{t("roleMember")}</SelectItem>
+              <SelectItem value="admin">{t("roleAdmin")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <Button type="submit" variant="brand" size="sm" disabled={add.isPending}>
-          {add.isPending ? "Ekleniyor…" : "Ekle"}
+          {add.isPending ? t("adding") : t("addSubmit")}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={() => onDone(null)}>
-          Vazgeç
+          {t("cancel")}
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Kişi kayıtlı değilse hesabı oluşturulur ve tek seferlik bir parola gösterilir.
+        {t("addNote")}
       </p>
     </form>
   );

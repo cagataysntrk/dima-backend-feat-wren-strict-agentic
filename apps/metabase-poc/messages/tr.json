@@ -1,0 +1,114 @@
+{
+  "nav": {
+    "newChat": "Yeni sohbet",
+    "overview": "Genel bakış",
+    "data": "Veriler",
+    "sql": "SQL",
+    "model": "Veri modeli",
+    "schema": "Şema",
+    "upload": "Veri yükle",
+    "settings": "Ayarlar",
+    "chats": "Sohbetler",
+    "noChats": "Henüz sohbet yok.",
+    "trash": "Çöp kutusu",
+    "signOut": "Çıkış yap",
+    "company": "Şirket",
+    "lightTheme": "Açık tema",
+    "darkTheme": "Koyu tema",
+    "toggleSidebar": "Kenar çubuğu"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "subtitle": "Hesabınız, şirketiniz ve sohbetin nasıl çalıştığı.",
+    "account": {
+      "title": "Hesap ve görünüm",
+      "hint": "Oturum açtığınız hesap ve arayüz teması.",
+      "name": "Ad",
+      "email": "E-posta",
+      "theme": "Tema",
+      "light": "Açık",
+      "dark": "Koyu",
+      "system": "Sistem",
+      "language": "Dil"
+    },
+    "company": {
+      "title": "Şirket",
+      "hint": "Verilerini gördüğünüz şirket.",
+      "only": "başka şirkete erişiminiz yok",
+      "switchFailed": "Şirket değiştirilemedi."
+    },
+    "members": {
+      "title": "Üyeler ve roller",
+      "hint": "Kimin neye erişebildiği. Rolleri şirket sahibi yönetir.",
+      "you": "(siz)",
+      "roleOf": "{name} rolü",
+      "removeMember": "{name} adlı üyeyi çıkar",
+      "roleOwner": "Şirket sahibi",
+      "roleAdmin": "Yönetici",
+      "roleMember": "Üye",
+      "hintOwner": "Her şeyi yapabilir; ekibi yönetir.",
+      "hintAdmin": "SQL çalıştırır, veri yükler, pano düzenler.",
+      "hintMember": "Panoları ve analizleri görüntüler.",
+      "add": "Üye ekle",
+      "adding": "Ekleniyor…",
+      "addSubmit": "Ekle",
+      "cancel": "Vazgeç",
+      "fullName": "Ad soyad",
+      "email": "E-posta",
+      "role": "Rol",
+      "addNote": "Kişi kayıtlı değilse hesabı oluşturulur ve tek seferlik bir parola gösterilir.",
+      "tempPasswordFor": "{email} için geçici parola",
+      "copy": "Kopyala",
+      "copied": "Parola kopyalandı.",
+      "tempPasswordNote": "Bu parola bir daha gösterilmez; kişiye siz iletin ve giriş sonrası değiştirmesini isteyin.",
+      "roleUpdated": "Rol güncellendi.",
+      "removed": "Üye ekipten çıkarıldı.",
+      "added": "Üye eklendi."
+    },
+    "sources": {
+      "title": "Veri kaynakları",
+      "hint": "Sorguların çalıştığı veritabanı.",
+      "none": "Bu şirket için tanımlı veri kaynağı bulunamadı.",
+      "tableCount": "{count} tablo",
+      "viewTables": "Tabloları görüntüle",
+      "managedElsewhere": "Bağlantı ayarları yönetici tarafında tutulur; buradan değiştirilemez."
+    },
+    "chat": {
+      "title": "Sohbet tercihleri",
+      "hint": "Sorularınızı hangi modelin yanıtladığı.",
+      "model": "Model",
+      "maxRows": "En fazla satır",
+      "maxRowsHint": "Bir yanıtın döndürebileceği en fazla satır sayısı.",
+      "adminsOnly": "Bu ayarları yalnızca yöneticiler değiştirebilir.",
+      "saved": "Sohbet ayarları kaydedildi.",
+      "modelSolHint": "Hızlı ve ekonomik — günlük sorular için.",
+      "modelLunaHint": "Daha güçlü; karmaşık sorgularda daha isabetli."
+    }
+  },
+  "schema": {
+    "title": "Şema",
+    "subtitle": "Tablolarınız ve aralarındaki ilişkiler. İlişkiler veri modelinde tanımlanır.",
+    "emptyTitle": "Gösterilecek tablo yok.",
+    "emptyHint": "Veri yükleyin ya da yöneticinizden bir veri kaynağı tanımlamasını isteyin.",
+    "noEdges": "Henüz tanımlı ilişki yok — tablolar ayrı duruyor.",
+    "noEdgesLink": "Veri modelinde",
+    "noEdgesTail": "bir sütunu başka bir tablonun sütununa bağlayın."
+  },
+  "model": {
+    "relationOf": "{name} ilişkisi",
+    "noRelation": "İlişki yok",
+    "relationUpdated": "İlişki güncellendi."
+  },
+  "errors": {
+    "title": "Bir şeyler ters gitti.",
+    "body": "Beklenmeyen bir hata oluştu. Tekrar deneyebilir ya da panolara dönebilirsiniz.",
+    "retry": "Tekrar dene",
+    "home": "Panolara dön",
+    "code": "Hata kodu: {digest}",
+    "notFoundTitle": "Bu sayfa bulunamadı.",
+    "notFoundBody": "Adres değişmiş, içerik çöp kutusuna taşınmış ya da başka bir şirkete ait olabilir."
+  },
+  "common": {
+    "loading": "Yükleniyor…"
+  }
+}

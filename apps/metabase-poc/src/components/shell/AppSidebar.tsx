@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { Boxes, Building2, ChevronsUpDown, Database, LayoutGrid, LogOut, MessageSquarePlus, MessagesSquare, Moon, Settings, Share2, Sun, Table2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
@@ -74,19 +75,20 @@ export function AppSidebar({
     void useConversations.persist.rehydrate();
   }, []);
 
+  const t = useTranslations("nav");
   const activeChat = pathname === "/app/chat" ? params.get("c") : null;
   const chats = conversations
     .filter((c) => c.orgId === activeOrgId && c.entries.length > 0)
     .sort((a, b) => b.updatedAt - a.updatedAt);
 
   const nav = [
-    { href: "/app", label: "Genel bakış", icon: LayoutGrid, show: true },
-    { href: "/app/data", label: "Veriler", icon: Table2, show: true },
-    { href: "/app/sql", label: "SQL", icon: Database, show: canAnalyze },
-    { href: "/app/model", label: "Veri modeli", icon: Boxes, show: canAnalyze },
-    { href: "/app/schema", label: "Şema", icon: Share2, show: true },
-    { href: "/app/upload", label: "Veri yükle", icon: Upload, show: canAnalyze },
-    { href: "/app/settings", label: "Ayarlar", icon: Settings, show: true },
+    { href: "/app", label: t("overview"), icon: LayoutGrid, show: true },
+    { href: "/app/data", label: t("data"), icon: Table2, show: true },
+    { href: "/app/sql", label: t("sql"), icon: Database, show: canAnalyze },
+    { href: "/app/model", label: t("model"), icon: Boxes, show: canAnalyze },
+    { href: "/app/schema", label: t("schema"), icon: Share2, show: true },
+    { href: "/app/upload", label: t("upload"), icon: Upload, show: canAnalyze },
+    { href: "/app/settings", label: t("settings"), icon: Settings, show: true },
   ].filter((n) => n.show);
 
   const go = (href: string) => {
@@ -106,7 +108,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton onClick={() => go("/app/chat")} isActive={pathname === "/app/chat" && !activeChat}>
               <MessageSquarePlus className="size-4" />
-              <span>Yeni sohbet</span>
+              <span>{t("newChat")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           {nav.map(({ href, label, icon: Icon }) => {
@@ -127,11 +129,11 @@ export function AppSidebar({
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Sohbetler</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("chats")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {chats.length === 0 && (
-                <p className="px-2 py-1.5 text-xs text-muted-foreground">Henüz sohbet yok.</p>
+                <p className="px-2 py-1.5 text-xs text-muted-foreground">{t("noChats")}</p>
               )}
               {chats.map((c) => (
                 <SidebarMenuItem key={c.id}>
@@ -141,7 +143,7 @@ export function AppSidebar({
                     title={c.title}
                   >
                     <MessagesSquare className="size-4" />
-                    <span className="truncate">{c.title || "Yeni sohbet"}</span>
+                    <span className="truncate">{c.title || t("newChat")}</span>
                   </SidebarMenuButton>
                   <SidebarMenuAction
                     showOnHover
@@ -173,13 +175,15 @@ function AccountMenu({ user, orgs, activeOrgId }: { user: ShellUser; orgs: Shell
   const router = useRouter();
   const queryClient = useQueryClient();
   const { resolvedTheme, setTheme } = useTheme();
+  const t = useTranslations("nav");
+  const tSettings = useTranslations("settings.company");
   const activeOrg = orgs.find((o) => o.id === activeOrgId);
 
   async function switchOrg(organizationId: string) {
     if (organizationId === activeOrgId) return;
     const { error } = await authClient.organization.setActive({ organizationId });
     if (error) {
-      toast.error("Şirket değiştirilemedi.");
+      toast.error(tSettings("switchFailed"));
       return;
     }
     // Everything cached belongs to the previous tenant.
@@ -219,7 +223,7 @@ function AccountMenu({ user, orgs, activeOrgId }: { user: ShellUser; orgs: Shell
             <DropdownMenuSeparator />
             {orgs.length > 1 && (
               <>
-                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Şirket</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("company")}</DropdownMenuLabel>
                 <DropdownMenuRadioGroup value={activeOrgId ?? ""} onValueChange={switchOrg}>
                   {orgs.map((o) => (
                     <DropdownMenuRadioItem key={o.id} value={o.id}>
@@ -234,17 +238,17 @@ function AccountMenu({ user, orgs, activeOrgId }: { user: ShellUser; orgs: Shell
             <DropdownMenuItem asChild>
               <Link href="/app/settings">
                 <Settings className="size-4" aria-hidden />
-                Ayarlar
+                {t("settings")}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
               <Sun className="size-4 dark:hidden" aria-hidden />
               <Moon className="hidden size-4 dark:block" aria-hidden />
-              {resolvedTheme === "dark" ? "Açık tema" : "Koyu tema"}
+              {resolvedTheme === "dark" ? t("lightTheme") : t("darkTheme")}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={signOut}>
               <LogOut className="size-4" aria-hidden />
-              Çıkış yap
+              {t("signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import { Providers } from "@/lib/providers";
 
 const sans = Plus_Jakarta_Sans({ variable: "--font-sans", subsets: ["latin", "latin-ext"], display: "swap" });
@@ -12,11 +14,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale();
   return (
-    <html lang="tr" suppressHydrationWarning className={`${sans.variable} ${mono.variable} antialiased`}>
+    <html lang={locale} suppressHydrationWarning className={`${sans.variable} ${mono.variable} antialiased`}>
       <body suppressHydrationWarning className="min-h-screen bg-background text-foreground">
-        <Providers>{children}</Providers>
+        <NextIntlClientProvider>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

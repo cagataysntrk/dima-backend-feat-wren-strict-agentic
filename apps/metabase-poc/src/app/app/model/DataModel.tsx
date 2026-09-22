@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ChevronRight, Eye, EyeOff, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { gateway, type ModelField, type ModelTable } from "@/lib/gateway";
@@ -86,12 +87,13 @@ function TableRow({ table, open, onToggle }: { table: ModelTable; open: boolean;
  */
 function ForeignKeyPicker({ field }: { field: ModelField }) {
   const queryClient = useQueryClient();
+  const t = useTranslations("model");
   // Shares the /app/schema query key, so opening both pages costs one request.
   const graph = useQuery({ queryKey: ["schema-graph"], queryFn: gateway.schemaGraph, staleTime: 60_000 });
   const save = useMutation({
     mutationFn: (targetFieldId: number | null) => gateway.setForeignKey(field.id, targetFieldId),
     onSuccess: () => {
-      toast.success("İlişki güncellendi.");
+      toast.success(t("relationUpdated"));
       void queryClient.invalidateQueries({ queryKey: ["model"] });
       void queryClient.invalidateQueries({ queryKey: ["schema-graph"] });
     },
@@ -108,11 +110,11 @@ function ForeignKeyPicker({ field }: { field: ModelField }) {
       disabled={save.isPending || graph.isPending}
       onValueChange={(v) => save.mutate(v === NO_FK ? null : Number(v))}
     >
-      <SelectTrigger size="sm" className="w-52" aria-label={`${field.name} ilişkisi`}>
-        <SelectValue placeholder="İlişki yok" />
+      <SelectTrigger size="sm" className="w-52" aria-label={t("relationOf", { name: field.name })}>
+        <SelectValue placeholder={t("noRelation")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={NO_FK}>İlişki yok</SelectItem>
+        <SelectItem value={NO_FK}>{t("noRelation")}</SelectItem>
         {options.map((o) => (
           <SelectItem key={o.id} value={String(o.id)}>
             {o.label}

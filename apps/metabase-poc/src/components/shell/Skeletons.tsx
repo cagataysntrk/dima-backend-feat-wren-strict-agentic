@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 /**
@@ -43,10 +44,11 @@ export function TableSkeleton({ rows = 8 }: { rows?: number }) {
 
 /** Wraps a skeleton so assistive tech hears one "yükleniyor", not the boxes. */
 export function LoadingShell({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("common");
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-6">
       <span className="sr-only" role="status">
-        Yükleniyor…
+        {t("loading")}
       </span>
       <div aria-hidden>{children}</div>
     </div>
