@@ -5602,3 +5602,104 @@ workers=1 focused live architecture set
 ```
 
 Live gate başlamadan current green SHA checkpoint edilir.
+
+---
+
+## 2026-09-22 — METABASE SOURCE REFERENCE CONTRACT + LIVE GATE SIGNAL
+
+### Metabase source authority/protocol
+
+Canonical upstream exact source snapshot doğrulandı:
+
+```text
+repo = metabase/metabase
+sha  = 74216b30981d8310c4cf724d63ca282e2e63529d
+```
+
+Pinned SHA üzerinde mevcut olduğu doğrulanan canonical files:
+
+```text
+src/metabase/metabot/agent/core.clj
+src/metabase/metabot/agent/profiles.clj
+src/metabase/agent_api/reference.md
+src/metabase/agent_api/api.clj
+src/metabase/agent_api/query_guards.clj
+src/metabase/mcp/v2/tools/query.clj
+```
+
+Dima repo Git tree'sinde şu anda `public/metabase/master` yoktur. İleride varsa yalnız read-only convenience checkout; canonical authority değildir.
+
+`DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md §17A` içine zorunlu **Metabase Source Reference Contract** ve **mandatory source-control / analysis / research protocol** eklendi.
+
+Binding rules:
+- source-copy / port / vendor / transliteration yasak,
+- D65-X real integration = separate-service Metabase Agent API,
+- important Metabase decision before coding = source identity + exact source reading + security/API/runtime review + Dima trust-plane cross-check + receipt,
+- bake-off receipt pins source SHA + runtime version + immutable image digest + Dima/adapter SHA + corpus + permission context,
+- product development sequence değişmedi.
+
+Protocol additionally surfaced in `AGENTS.md`, `CLAUDE.md`, `MIMARI.md` and eval manifest so compact/handoff sırasında atlanamaz.
+
+### Workers=1 focused live gate
+
+Run: `35693815578`
+
+Exact code under test:
+`dea7ba673ba64280c3e58037705c31db99c733aa`
+
+Workflow source SHA:
+`612ae77d6cc43f910e9035bd1f73c085fb0d0793`
+
+Model:
+```text
+RESEARCH_MANAGER = openai/gpt-5.6-sol
+SEMANTIC_LINKER  = google/gemini-2.5-flash-lite
+workers          = 1
+```
+
+Selected architecture set:
+`001, 005, 025, 026, 047, 063, 067, 075`.
+
+Measurement:
+```text
+selected/evaluable    8 / 8
+measurement failures  0
+model failures        0
+grounding failures    0
+harness failures      0
+case pass             7 / 8 = 0.875
+unsafe fast           0
+silent ambiguity      0
+invented MUST         0
+handle violation      0
+execution violation   0
+clarification rate    1.0
+```
+
+Only failing case:
+`d65-dev-026` — `net geliri bölgelere göre göster ve geçen ayla karşılaştır`.
+
+Observed pipeline:
+```text
+Manager draft:
+  U1 breakdown(metric=net geliri, dimension=bölgelere)
+  U2 comparison(metric=net geliri, comparison=geçen ayla)
+
+grounding:
+  metric resolved
+  dimension resolved
+  metric resolved
+  comparison surface 'geçen ayla' unresolved
+
+material grounding gap:
+  comparison missing required kind
+
+terminal:
+  CLARIFICATION_REQUIRED
+
+expected:
+  ACCEPTED / STANDARD_LOSSLESS
+```
+
+Classification is **NOT YET PATCHABLE**.
+Infra/provider/harness classes are ruled out. Next step is exact-same-SHA owner/model-floor A/B focused on comparison binding. No semantic code change before classification.
