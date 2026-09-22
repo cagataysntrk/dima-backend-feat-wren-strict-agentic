@@ -10,6 +10,7 @@ name: v2-day7-focused
       - "backend/app/v2/manager_executor.py"
       - "backend/tests/test_v2_day7_research_tool_contract.py"
       - "backend/tests/test_v2_day7_research_wren_vertical.py"
+      - "backend/tests/test_v2_day7_real_adaptive_wren.py"
       - "backend/app/v2/research_state.py"
       - "backend/app/v2/research_tasks.py"
       - "backend/app/v2/manager_runtime.py"
@@ -83,3 +84,7 @@ jobs:
       - name: Real Wren Day7 vertical
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_wren_vertical.py
+
+      - name: Real two-Wren adaptive Research vertical
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_adaptive_wren.py
