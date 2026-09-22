@@ -28,6 +28,7 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_research_task_registry_execution.py"
       - "backend/tests/test_v2_day7_research_principal_binding.py"
       - "backend/tests/test_v2_day7_research_fanout.py"
+      - "backend/tests/test_v2_day7_seed_set.py"
       - "backend/tests/test_v2_day7_same_domain_tools.py"
       - "backend/tests/test_v2_day7_cross_domain_join_gate.py"
       - "backend/tests/test_v2_day7_research_manager_loop.py"
@@ -100,6 +101,10 @@ jobs:
       - name: Cardinality-aware Research fanout
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_fanout.py
+
+      - name: Bounded initial Research seed set
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_seed_set.py
 
       - name: Governed same-domain Research tools
         working-directory: backend
