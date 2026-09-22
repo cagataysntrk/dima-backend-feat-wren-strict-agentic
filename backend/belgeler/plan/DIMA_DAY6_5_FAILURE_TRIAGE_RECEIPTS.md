@@ -339,11 +339,11 @@ files_not_to_touch:
 invariant_being_fixed:
 Tests must consume the same no-legacy-resolver Manager hot-path contract as production.
 
-focused_proof: `PENDING rerun`
+focused_proof: `35696222877 = 59/59 PASS after fixture alignment`
 
-family_regression_proof: `PENDING`
+family_regression_proof: `35696652502 = 102/102 PASS on exact ffbdc224...`
 
-status: `CLASSIFIED — test-fixture-only patch allowed`
+status: `CLOSED — EVAL_ORACLE fixture drift removed; production no-resolver seam retained.`
 
 ---
 
@@ -395,11 +395,11 @@ files_not_to_touch:
 invariant_being_fixed:
 Test code must exercise the physically isolated Manager authority boundary.
 
-focused_proof: `PENDING combined rerun`
+focused_proof: `35696222877 = 59/59 PASS`
 
-family_regression_proof: `PENDING`
+family_regression_proof: `35696652502 = 102/102 PASS`
 
-status: `CLASSIFIED — fixture-only fix already applied in 385bf3b9c762`
+status: `CLOSED — fixture-only fix applied; production no-resolver seam retained.`
 
 ---
 
@@ -456,9 +456,9 @@ All test surfaces must exercise the same physically isolated Manager semantic au
 
 focused_proof: `59/59 PASS on combined focused closure 35696222877`
 
-family_regression_proof: `PENDING exact-SHA rerun after fixture cleanup`
+family_regression_proof: `35696652502 = 102/102 PASS on exact ffbdc224066dc4c85a9e46b510ae3535f83f3416`
 
-status: `CLASSIFIED — test-only family cleanup allowed`
+status: `CLOSED — remaining stale family fixtures removed; no production compatibility shim added.`
 
 ---
 
