@@ -163,7 +163,7 @@ observed_failure:
 
 failure_stage: `FINITE_PRE_ACCEPTANCE → AUTO_GROUND → typed temporal comparison binding`
 
-failure_class: `PENDING: MODEL_CAPABILITY_FLOOR vs CONTRACT/ARCHITECTURE`
+failure_class: `MODEL_CAPABILITY_FLOOR`
 
 classification_evidence:
 - Manager draft correctly produced one comparison obligation.
@@ -173,14 +173,14 @@ classification_evidence:
 - Typed temporal normalizer uses SEMANTIC_LINKER role, currently `google/gemini-2.5-flash-lite`.
 - Infra/provider/harness failures are zero.
 
-single_owner: `PENDING A/B — typed temporal normalizer / SEMANTIC_LINKER model-role boundary`
+single_owner: `SEMANTIC_LINKER model-role capability floor for typed temporal normalization`
 
-root_cause: `PENDING exact-same-SHA semantic-linker model-floor A/B`
+root_cause: `google/gemini-2.5-flash-lite is below the demonstrated capability floor for this explicit-base typed comparison; openai/gpt-5.6-sol passes on the exact same backend SHA.`
 
 failure_family:
 Explicit-base comparison surfaces where base period is already governed but bounded temporal normalization of the reference relation may abstain or mis-normalize.
 
-why_not_model_only: `Not yet proven; same-SHA stronger linker A/B required.`
+why_not_model_only: `It IS model-floor: exact-same-SHA diagnostic run 35695366379 failed with flash-lite linker and passed with Sol linker.`
 
 why_not_oracle:
 Expected comparison semantics are coherent and an explicit base period exists.
@@ -195,17 +195,17 @@ forbidden_patch_alternatives:
 - legacy resolver fallback
 - changing deterministic date arithmetic before owner classification
 
-allowed_files_to_touch: `NONE until A/B classification closes`
+allowed_files_to_touch: `No semantic/product correctness patch. Model-role policy/eval documentation only if a floor is formally changed.`
 
-files_not_to_touch: `all semantic/product files until classification`
+files_not_to_touch: `typed temporal contract, resolver/binding logic, prompts, DEV oracle; no correctness patch justified by this case.`
 
-invariant_being_fixed: `PENDING`
+invariant_being_fixed: `Architecture remains unchanged; the measured model floor is recorded instead of patching code to compensate for a weaker model.`
 
-focused_proof: `PENDING`
+focused_proof: `35695366379 — d65-dev-019: flash-lite linker FAIL, Sol linker PASS on exact f5ca942 SHA.`
 
-family_regression_proof: `PENDING`
+family_regression_proof: `No code change; existing 97/97 provider-free family proof remains applicable to the tested semantic SHA.`
 
-status: `OPEN — NO PRODUCT PATCH ALLOWED`
+status: `CLOSED — MODEL_CAPABILITY_FLOOR; no product correctness patch.`
 
 ---
 
@@ -274,4 +274,13 @@ focused_proof: `PENDING`
 
 family_regression_proof: `PENDING`
 
-status: `CLASSIFIED — patch allowed only at stated owner after current hardening/sequence decision`
+status: `CLASSIFIED — CONTRACT/ARCHITECTURE; patch allowed only at repair/coverage owner after D65-G hardening.`
+
+Additional same-SHA diagnostic evidence:
+- run `35695366379`, exact `f5ca942...`, same Sol Manager: `FAIL / PASS / FAIL` across three repeats.
+- Repeat 1: first draft correct; CoverageVeto demanded preservation of prior-focus rejection, then revision emitted an EXCLUDED obligation.
+- Repeat 2: passed.
+- Repeat 3: first draft itself emitted required `brüt gelir` plus an EXCLUDED obligation sourced only from corrective discourse.
+- Semantic-linker calls were zero in these runs; resolver/linker truth is not the owner.
+
+This stochastic split is itself evidence of a representation/policy ambiguity: current finite pre-acceptance draft has obligations/directives/control requests but no first-class repair/supersession semantic. Corrective conversation state is therefore probabilistically forced into either ordinary replacement or business EXCLUDED obligation.
