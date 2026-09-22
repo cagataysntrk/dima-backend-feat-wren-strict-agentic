@@ -56,6 +56,10 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_tool_contract.py
 
+      - name: Research task lifecycle
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_task_lifecycle.py
+
       - name: Real Wren Day7 vertical
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_wren_vertical.py
