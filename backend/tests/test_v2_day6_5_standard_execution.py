@@ -92,3 +92,25 @@ def test_standard_execution_rejects_foreign_tenant_before_wren():
             authority=authority,
             tenant_binding="tenant-b",
         )
+
+
+def test_resolve_authorized_ir_is_execution_free_branch_point():
+    handles, projection, authority = _sealed()
+    adapter = WrenStandardExecutionAdapter(semantic_handles=handles)
+
+    ir = adapter.resolve_authorized_ir(
+        projection=projection,
+        authority=authority,
+        tenant_binding="tenant-a",
+    )
+
+    assert ir.cube == "Sales"
+    assert tuple(metric.canonical_name for metric in ir.metrics) == (
+        "Sales.net_revenue",
+    )
+    assert ir.dimensions == ()
+    assert ir.filters == ()
+    assert ir.period is None
+    assert ir.comparison is None
+    assert ir.ranking is None
+    assert ir.context_version == "ctx-1"

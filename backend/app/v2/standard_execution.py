@@ -152,19 +152,18 @@ class WrenStandardExecutionAdapter:
                 context_version=authority.context_version,
             )
 
-    def execute(
+    def resolve_authorized_ir(
         self,
         *,
         projection: StandardProjection,
         authority: AcceptedStandardAuthority,
         tenant_binding: str,
-        principal,
-        service,
-        runtime: TenantAnalyticsRuntimeV0,
-        contract_store,
-        session_id: str | None,
-        question: str,
-    ) -> StandardExecutionResult:
+    ) -> AnalyticsIR:
+        """Resolve sealed sem_* authority exactly once into canonical Dima AnalyticsIR.
+
+        This is the substrate-neutral branch point for Day 6.5 bridge preflight.
+        It performs no SQL generation, provider call, Metabase lookup, or execution.
+        """
         self._verify_authority(
             projection=projection,
             authority=authority,
@@ -246,6 +245,26 @@ class WrenStandardExecutionAdapter:
             ranking=ranking,
             comparison=comparison,
             context_version=context_version,
+        )
+        return ir
+
+    def execute(
+        self,
+        *,
+        projection: StandardProjection,
+        authority: AcceptedStandardAuthority,
+        tenant_binding: str,
+        principal,
+        service,
+        runtime: TenantAnalyticsRuntimeV0,
+        contract_store,
+        session_id: str | None,
+        question: str,
+    ) -> StandardExecutionResult:
+        ir = self.resolve_authorized_ir(
+            projection=projection,
+            authority=authority,
+            tenant_binding=tenant_binding,
         )
         ledger = ledger_from_canonical_ir(ir)
 
