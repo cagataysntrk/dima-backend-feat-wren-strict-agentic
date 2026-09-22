@@ -66,6 +66,7 @@ export interface EngineCard {
   query_type: string;
   archived: boolean;
   updated_at: string;
+  visualization_settings?: Record<string, unknown>;
 }
 
 export interface EngineParameter {
@@ -82,7 +83,7 @@ export interface EngineDashcard {
   col: number;
   size_x: number;
   size_y: number;
-  card: { id: number; name: string; display: string } | null;
+  card: { id: number; name: string; display: string; visualization_settings?: Record<string, unknown> } | null;
   parameter_mappings: { parameter_id: string; card_id: number; target: unknown }[];
   visualization_settings?: Record<string, unknown>;
 }

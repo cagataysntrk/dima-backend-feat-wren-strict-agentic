@@ -43,11 +43,23 @@ export async function listItems(ctx: TenantContext): Promise<Item[]> {
   }));
 }
 
+/** Goal of a "progress" card (engine visualization setting), if set. */
+function goalOf(settings: Record<string, unknown> | undefined): number | null {
+  const g = Number(settings?.["progress.goal"]);
+  return Number.isFinite(g) && g > 0 ? g : null;
+}
+
 export async function cardData(ctx: TenantContext, cardId: number) {
   const card = await assertCard(ctx, cardId);
   const ds = await mbPost<EngineDataset>(ctx.tenant, `/api/card/${cardId}/query`);
   return {
-    card: { id: card.id, name: card.name, description: card.description, display: card.display },
+    card: {
+      id: card.id,
+      name: card.name,
+      description: card.description,
+      display: card.display,
+      goal: goalOf(card.visualization_settings),
+    },
     result: toQueryResult(ds),
     drillable: card.query_type === "query" && card.table_id != null,
   };
@@ -76,6 +88,7 @@ export interface Widget {
   width: Width;
   /** False when the dashboard filters don't apply to this widget (e.g. native SQL). */
   filtered: boolean;
+  goal: number | null;
 }
 
 function publicParams(d: EngineDashboard): PublicParameter[] {
@@ -103,6 +116,7 @@ function widgets(d: EngineDashboard): Widget[] {
       sizeY: dc.size_y,
       width: widthOf(dc.size_x, dc.card.display),
       filtered: dc.parameter_mappings.length > 0,
+      goal: goalOf(dc.card.visualization_settings),
     }));
 }
 

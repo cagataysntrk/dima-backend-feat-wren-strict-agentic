@@ -1,8 +1,10 @@
-// POC COPY of apps/web/src/components/PivotTable.tsx — only change: card/tooltip edges use the app surface tokens. Follow-up: extract to packages/ui.
+// POC COPY of apps/web/src/components/PivotTable.tsx — changes: surface tokens, and
+// row/column subtotals + grand total for additive measures. Follow-up: extract to packages/ui.
 "use client";
 
 import { fmtTemporal, fmtValue } from "@dima/domain";
 import type { QueryResult } from "@dima/contracts";
+import { isAdditive } from "@/lib/viz";
 
 // JENERİK çapraz tablo (pivot): VARLIK satır × ZAMAN-KOVA sütun × ÖLÇÜ hücre. "N ürün × ay ×
 // ortalama fiyat" gibi uzun (N×kova satır) sonuçları okunur matrise çevirir. Zaman kovaları
@@ -27,6 +29,14 @@ export function PivotTable({
     cell.set(`${e} ${String(r[timeCol])}`, r[measure]);
   }
   const entities = [...totals.keys()].sort((a, b) => (totals.get(b) ?? 0) - (totals.get(a) ?? 0));
+  // Subtotals only when summing is meaningful (not for %, ratios or averages).
+  const additive = isAdditive(measure);
+  const colTotals = new Map<string, number>();
+  for (const r of result.rows) {
+    const b = String(r[timeCol]);
+    colTotals.set(b, (colTotals.get(b) ?? 0) + (Number(r[measure]) || 0));
+  }
+  const grand = [...totals.values()].reduce((a, b) => a + b, 0);
 
   return (
     <div className="surface-inset overflow-auto">
@@ -44,6 +54,11 @@ export function PivotTable({
                 {fmtTemporal(b, timeCol) ?? b}
               </th>
             ))}
+            {additive && (
+              <th className="whitespace-nowrap border-l border-border px-3 py-2 text-right font-medium text-foreground">
+                Toplam
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -63,9 +78,27 @@ export function PivotTable({
                   </td>
                 );
               })}
+              {additive && (
+                <td className="border-l border-border px-3 py-1.5 text-right font-medium tabular-nums text-foreground">
+                  {fmtValue(totals.get(e) ?? 0, measure)}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
+        {additive && (
+          <tfoot>
+            <tr className="border-t border-border bg-muted/40 font-medium">
+              <td className="sticky left-0 z-10 bg-background px-3 py-2 text-left">Toplam</td>
+              {buckets.map((b) => (
+                <td key={b} className="px-3 py-2 text-right tabular-nums">
+                  {fmtValue(colTotals.get(b) ?? 0, measure)}
+                </td>
+              ))}
+              <td className="border-l border-border px-3 py-2 text-right tabular-nums">{fmtValue(grand, measure)}</td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );

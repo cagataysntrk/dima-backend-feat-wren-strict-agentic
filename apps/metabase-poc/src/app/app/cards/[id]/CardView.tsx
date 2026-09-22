@@ -48,6 +48,8 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
             <ResultView
               result={q.data.result}
               size="wide"
+              display={q.data.card.display}
+              goal={q.data.card.goal}
               meta={
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {q.data.result.row_count.toLocaleString("tr-TR")} satır

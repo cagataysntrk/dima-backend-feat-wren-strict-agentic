@@ -43,7 +43,7 @@ export interface Item {
 }
 
 export interface CardPayload {
-  card: { id: number; name: string; description: string | null; display: string };
+  card: { id: number; name: string; description: string | null; display: string; goal: number | null };
   result: QueryResult;
   drillable: boolean;
 }
@@ -65,6 +65,7 @@ export interface Widget {
   sizeY: number;
   width: WidgetWidth;
   filtered: boolean;
+  goal: number | null;
 }
 
 export type WidgetWidth = "kpi" | "half" | "full";

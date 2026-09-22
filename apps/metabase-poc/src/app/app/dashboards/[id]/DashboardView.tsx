@@ -174,6 +174,8 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
             key={JSON.stringify(filters)}
             result={d.result}
             size={w.width === "full" ? "wide" : "normal"}
+            display={w.display}
+            goal={w.goal}
             onDrill={
               editing ? undefined : (column, value) => setDrill({ cardId: w.cardId, title: w.title, column, value, scope })
             }

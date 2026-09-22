@@ -8,6 +8,7 @@ import { KpiGrid } from "./chart/kpi";
 import { PivotTable } from "./PivotTable";
 import { Facet } from "./chart/Facet";
 import { Heatmap } from "./chart/Heatmap";
+import { Funnel, Meter, TrendNumber, Waterfall } from "./chart/extra";
 import { ResultTable } from "./ResultTable";
 import {
   Select,
@@ -24,6 +25,31 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 // makes bars clickable when the result has exactly one categorical dimension.
 // The chart sits directly on its parent surface (no nested bordered box).
 const EMPTY_LOWER: ReadonlySet<string> = new Set();
+
+// POC feature 3: engine display types beyond the apps/web chart set.
+type ExtraKind = "trend" | "funnel" | "waterfall" | "progress";
+type Kind = ChartKind | ExtraKind;
+const EXTRA_LABEL: Record<ExtraKind, string> = {
+  trend: "Trend sayısı",
+  funnel: "Huni",
+  waterfall: "Şelale",
+  progress: "Hedef",
+};
+const isExtra = (k: Kind): k is ExtraKind => k in EXTRA_LABEL;
+/** Engine card `display` → our initial view. */
+const DISPLAY_KIND: Record<string, Kind> = {
+  smartscalar: "trend",
+  funnel: "funnel",
+  waterfall: "waterfall",
+  progress: "progress",
+  bar: "bar",
+  row: "bar-h",
+  line: "line",
+  area: "area",
+  pie: "pie",
+  scatter: "scatter",
+  combo: "combo",
+};
 
 // Metadata yoksa (eski/serbest ölçüler) ad kalıbından yedek çıkarım.
 const LOWER_IS_BETTER_RE = /fire|durus|duruş|sapma|maliyet|tuketim|tüketim|yogunluk|yoğunluk|hata|iade|gecikme/i;
@@ -92,6 +118,8 @@ export function ResultView({
   size = "normal",
   actions,
   onDrill,
+  display,
+  goal,
 }: {
   result: QueryResult;
   viewHint?: string;
@@ -103,6 +131,10 @@ export function ResultView({
   actions?: React.ReactNode;
   /** POC drill-down: (column, clicked value). Only offered for one categorical dimension. */
   onDrill?: (column: string, value: string) => void;
+  /** Engine card display type (e.g. "smartscalar", "funnel"); picks the initial view. */
+  display?: string;
+  /** Goal for "progress" cards. */
+  goal?: number | null;
 }) {
   const lowerSet = EMPTY_LOWER;
   const hintBase = viewHint?.split(":")[0];
@@ -123,8 +155,8 @@ export function ResultView({
 
   // Yalnız BU veri için anlamlı tipler listelenir — kullanıcıya geçersiz seçenek
   // sunulmaz. Otomatik seçim (analyze().kind) her zaman listenin başındadır.
-  const availableTypes = useMemo<ChartKind[]>(() => {
-    const t: ChartKind[] = [];
+  const availableTypes = useMemo<Kind[]>(() => {
+    const t: Kind[] = [];
     const hasCat = Boolean(a.primaryDim) && a.measures.length >= 1;
     // birden fazla seri = ikinci kırılım ya da çok ölçü
     const multiSeries = a.measures.length > 1 || a.dims.length > 1;
@@ -169,11 +201,20 @@ export function ResultView({
     // çizildiği belirsiz kalır; çok nokta da yoğunluk yaklaşımı gerektirir.
     if (a.measures.length === 2 && result.rows.length >= 3 && a.dims.length <= 1) t.push("scatter");
 
+    // Feature 3 forms, offered only when the data has their shape.
+    const onlyDim = a.dims.length === 1 && a.measures.length >= 1;
+    if (a.timeCol && onlyDim && result.rows.length >= 2) t.push("trend");
+    if (!a.timeCol && onlyDim && result.rows.length >= 2 && result.rows.length <= 10) t.push("funnel");
+    if (onlyDim && result.rows.length >= 2 && result.rows.length <= 24) t.push("waterfall");
+
     const seed = CHARTABLE.includes(a.kind) ? [a.kind] : [];
-    return [...new Set([...seed, ...t])];
+    return [...new Set<Kind>([...seed, ...t])];
   }, [a, result.rows]);
 
-  const hintKind = (CHARTABLE as ChartKind[]).find((k) => k === hintBase);
+  const displayKind = display ? DISPLAY_KIND[display] : undefined;
+  const hintKind: Kind | undefined =
+    (displayKind && (availableTypes.includes(displayKind) || displayKind === "progress") ? displayKind : undefined) ??
+    (CHARTABLE as ChartKind[]).find((k) => k === hintBase);
   const canChart = availableTypes.length > 0;
   const wantsTable = hintBase === "table";
 
@@ -196,13 +237,13 @@ export function ResultView({
     if (a.kind === "none") return "table";
     return "chart";
   });
-  const [type, setType] = useState<ChartKind>(hintKind ?? availableTypes[0] ?? "bar");
+  const [type, setType] = useState<Kind>(hintKind ?? availableTypes[0] ?? "bar");
   const [measure, setMeasure] = useState<string>(
     a.measures.length > 1 ? ALL_MEASURES : (a.measures[0] ?? ""),
   );
 
   const showControls = view === "chart" && canChart;
-  const selectType = (next: ChartKind) => {
+  const selectType = (next: Kind) => {
     setType(next);
     // Kombo ve dağılım iki ölçünün ilişkisidir; tek ölçü seçimi ekseni sessizce
     // kendisiyle karşılaştırmaya indirgerdi. Bu modlar her zaman iki ölçüyle açılır.
@@ -227,14 +268,14 @@ export function ResultView({
         <div className="flex min-w-0 items-center gap-2">{meta}</div>
         <div className="flex min-w-0 shrink items-center gap-1.5">
           {showControls && availableTypes.length > 1 && (
-            <Select value={type} onValueChange={(v) => selectType(v as ChartKind)}>
+            <Select value={type} onValueChange={(v) => selectType(v as Kind)}>
               <SelectTrigger size="sm" className="h-7 w-auto gap-1.5 text-xs" aria-label="Grafik tipi">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {availableTypes.map((t) => (
                   <SelectItem key={t} value={t} className="text-xs">
-                    {TYPE_LABEL[t]}
+                    {isExtra(t) ? EXTRA_LABEL[t] : TYPE_LABEL[t]}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -287,7 +328,9 @@ export function ResultView({
 
       {advisory && <p className="text-xs text-muted-foreground">{advisory}</p>}
 
-      {a.kind === "kpi" ? (
+      {type === "progress" && goal != null && a.measures[0] && result.rows[0] ? (
+        <Meter value={Number(result.rows[0][a.measures[0]]) || 0} goal={goal} measure={a.measures[0]} />
+      ) : a.kind === "kpi" ? (
         <KpiGrid result={result} analysis={a} />
       ) : view === "pivot" && pivotDim && a.timeCol ? (
         <PivotTable
@@ -296,7 +339,15 @@ export function ResultView({
           entityDim={pivotDim}
           measure={!measure || measure === ALL_MEASURES ? a.measures[0] : measure}
         />
-      ) : view === "chart" && canChart ? (
+      ) : view === "chart" && canChart && isExtra(type) && a.primaryDim && a.measures[0] ? (
+        <ExtraChart
+          kind={type}
+          result={result}
+          dim={a.timeCol ?? a.primaryDim}
+          measure={!measure || measure === ALL_MEASURES ? a.measures[0] : measure}
+          box={SIZE_BOX[size]}
+        />
+      ) : view === "chart" && canChart && !isExtra(type) ? (
         <ChartOrTable
           result={result}
           analysis={a}
@@ -365,4 +416,23 @@ function ChartOrTable({
       )}
     </div>
   );
+}
+
+function ExtraChart({
+  kind,
+  result,
+  dim,
+  measure,
+  box,
+}: {
+  kind: ExtraKind;
+  result: QueryResult;
+  dim: string;
+  measure: string;
+  box: React.CSSProperties;
+}) {
+  if (kind === "trend") return <TrendNumber result={result} timeCol={dim} measure={measure} />;
+  if (kind === "funnel") return <Funnel result={result} dim={dim} measure={measure} />;
+  if (kind === "waterfall") return <Waterfall result={result} dim={dim} measure={measure} box={box} />;
+  return null;
 }
