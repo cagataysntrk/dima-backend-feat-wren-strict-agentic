@@ -268,19 +268,23 @@ export function ChatView({
                       <UserAvatar className="mt-0.5 shrink-0" />
                     </Message>
                     <Message from="assistant" className="items-start gap-3 pr-10">
-                      <DimaAvatar className="mt-0.5 shrink-0" thinking={e.status === "pending"} />
+                      {e.status === "pending" ? (
+                        // libraries.dev thinking orb in the avatar's place — it
+                        // stays for the whole turn, including while text streams.
+                        // Theme and reduced motion are handled by the library.
+                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center" aria-hidden>
+                          <ThinkingOrb state="searching" size={32} color="#7e38f8" />
+                        </span>
+                      ) : (
+                        <DimaAvatar className="mt-0.5 shrink-0" />
+                      )}
                       <Bubble from="assistant">
                         {e.status === "pending" ? (
                           <div className="space-y-3">
-                            {e.partial ? (
-                              <Markdown>{e.partial}</Markdown>
-                            ) : (
-                              <div className="flex items-start gap-2.5">
-                                {/* libraries.dev thinking orb — theme and reduced motion handled by the library. */}
-                                <ThinkingOrb state="searching" size={32} color="#7e38f8" aria-hidden />
-                                <LiveSteps steps={e.steps ?? []} />
-                              </div>
-                            )}
+                            {/* Steps stay put once text starts arriving — they are
+                                what was done to get it, not a placeholder for it. */}
+                            <LiveSteps steps={e.steps ?? []} streaming={Boolean(e.partial)} />
+                            {e.partial && <Markdown>{e.partial}</Markdown>}
                           </div>
                         ) : e.status === "error" ? (
                           <p role="alert" className="text-sm text-destructive">

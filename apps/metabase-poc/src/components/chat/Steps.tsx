@@ -23,11 +23,20 @@ function iconFor(text: string): LucideIcon {
  * Live steps while an answer is produced. Unlike apps/web's timed placeholder,
  * every line here is an event the server actually sent.
  */
-export function LiveSteps({ steps, className }: { steps: Step[]; className?: string }) {
+export function LiveSteps({
+  steps,
+  streaming = false,
+  className,
+}: {
+  steps: Step[];
+  /** The answer itself is arriving — the "looking at data" line is over. */
+  streaming?: boolean;
+  className?: string;
+}) {
   if (steps.length === 0) return null;
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5 pt-1", className)} role="status">
-      <Shimmer className="text-sm font-medium">Veriye bakılıyor…</Shimmer>
+      {!streaming && <Shimmer className="text-sm font-medium">Veriye bakılıyor…</Shimmer>}
       <div className="flex flex-col gap-1 border-l border-border pl-3">
         <AnimatePresence initial={false}>
           {steps.map((s) => (
