@@ -8,7 +8,7 @@ It never creates semantic handles, USER_MUST obligations or query truth.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Callable
 
 from pydantic import Field
@@ -199,6 +199,7 @@ class ResearchTaskExecutionLease:
     action_fingerprint: str
     started_at: float
     deadline_at: float | None
+    commit_authorized_at: float | None = None
 
 
 class ResearchTaskRegistry:
@@ -335,14 +336,20 @@ class ResearchTaskRegistry:
             raise ResearchTaskLifecycleError(
                 f"ResearchTask completion identity mismatch: {task_id}"
             )
-        if (
-            inflight.deadline_at is not None
-            and self._clock() >= inflight.deadline_at
-        ):
-            self._inflight.pop(task_id, None)
-            self._tasks[task_id] = current.model_copy(update={"state": "failed"})
-            raise ResearchTaskTimeoutError(
-                f"ResearchTask deadline exceeded before commit: {task_id}"
+        # Deadline is judged exactly once at the accepted-Research commit boundary.
+        # After commit is authorized, later lifecycle finalization must not manufacture a
+        # timeout after Evidence/UOL truth has already been committed.
+        if inflight.commit_authorized_at is None:
+            now = self._clock()
+            if inflight.deadline_at is not None and now >= inflight.deadline_at:
+                self._inflight.pop(task_id, None)
+                self._tasks[task_id] = current.model_copy(update={"state": "failed"})
+                raise ResearchTaskTimeoutError(
+                    f"ResearchTask deadline exceeded before commit: {task_id}"
+                )
+            self._inflight[task_id] = replace(
+                inflight,
+                commit_authorized_at=now,
             )
 
     def complete_execution(
