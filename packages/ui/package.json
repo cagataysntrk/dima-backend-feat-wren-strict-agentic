@@ -1,0 +1,51 @@
+{
+  "name": "@dima/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "//": "JIT paket: ham TSX dışa verir, derlemeyi tüketen uygulama yapar (transpilePackages).",
+  "exports": {
+    "./styles.css": "./src/styles.css",
+    "./*": "./src/*.tsx",
+    "./utils": "./src/utils.ts",
+    "./motion": "./src/motion.ts",
+    "./use-mobile": "./src/use-mobile.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dima/contracts": "workspace:*",
+    "@dima/domain": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  },
+  "peerDependencies": {
+    "cmdk": "*",
+    "input-otp": "*",
+    "lucide-react": "*",
+    "motion": "*",
+    "next-themes": "*",
+    "radix-ui": "*",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-resizable-panels": "*",
+    "recharts": "*",
+    "sonner": "*"
+  },
+  "devDependencies": {
+    "@dima/eslint-config": "workspace:*",
+    "@dima/typescript-config": "workspace:*",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "cmdk": "^1.1.1",
+    "eslint": "^9",
+    "input-otp": "^1.4.2",
+    "react-resizable-panels": "^4.12.2",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  }
+}

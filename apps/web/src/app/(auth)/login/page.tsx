@@ -9,10 +9,10 @@ import { apiErrorMessage, login } from "@dima/api-client";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthDivider, OAuthButtons } from "@/components/auth/OAuthButtons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@dima/ui/primitives/input-otp";
 
 function LoginForm() {
   const t = useTranslations();

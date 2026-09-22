@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "motion/react";
-import { BrandMark } from "@/components/BrandMark";
+import { BrandMark } from "@dima/ui/brand/BrandMark";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { LocaleSwitcher } from "@/components/shell/LocaleSwitcher";
 

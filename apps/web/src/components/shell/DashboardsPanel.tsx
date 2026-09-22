@@ -8,11 +8,11 @@ import type { AskResponse } from "@dima/contracts";
 import { catalogEntries, composeDashboard } from "@dima/genui";
 import { createDashboard, deleteDashboard, listDashboards } from "@dima/api-client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Button } from "@dima/ui/primitives/button";
+import { Card } from "@dima/ui/primitives/card";
+import { Separator } from "@dima/ui/primitives/separator";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 import { CatalogProvider } from "@/components/genui/catalog";
 import { dashboardLibrary } from "@/components/genui/library";
 import { DashboardView } from "@/components/shell/DashboardView";

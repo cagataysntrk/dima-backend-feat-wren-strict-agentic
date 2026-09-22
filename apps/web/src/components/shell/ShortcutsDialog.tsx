@@ -6,8 +6,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
+} from "@dima/ui/primitives/dialog";
+import { Kbd, KbdGroup } from "@dima/ui/primitives/kbd";
 
 /**
  * Klavye kısayolları — Claude'daki modalın karşılığı, ⌘/ ile açılır.

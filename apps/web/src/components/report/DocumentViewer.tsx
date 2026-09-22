@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { AlertTriangle, Download, FileText } from "lucide-react";
 import { formatBytes } from "@/components/ai/attachment";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Button } from "@dima/ui/primitives/button";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Ek önizleyici — sağ panelde açılır.

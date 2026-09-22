@@ -3,13 +3,13 @@
 import { useMemo } from "react";
 import { Boxes, Database, FileCheck2, Layers, RotateCw, Sigma } from "lucide-react";
 import type { AskResponse, CubeQuery } from "@dima/contracts";
-import { SourceBadge } from "@/components/report/SourceBadge";
-import { SqlBlock } from "@/components/report/SqlBlock";
+import { SourceBadge } from "@dima/ui/report/SourceBadge";
+import { SqlBlock } from "@dima/ui/report/SqlBlock";
 import { AiShare } from "@/components/report/AiShare";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@dima/ui/primitives/button";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Card } from "@dima/ui/primitives/card";
+import { Separator } from "@dima/ui/primitives/separator";
 
 /**
  * KAYNAKLAR — "bu sohbetteki cevaplar veriyi nereden aldı?"

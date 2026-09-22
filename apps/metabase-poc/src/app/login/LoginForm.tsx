@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
 
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();

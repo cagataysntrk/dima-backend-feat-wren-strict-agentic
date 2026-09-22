@@ -2,13 +2,13 @@
 
 import { Download } from "lucide-react";
 import { gateway, type DrillScope } from "@/lib/gateway";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@dima/ui/primitives/dropdown-menu";
 
 /** CSV / Excel download of a card, with the dashboard filters applied when scoped. */
 export function ExportMenu({ cardId, scope }: { cardId: number; scope?: DrillScope }) {

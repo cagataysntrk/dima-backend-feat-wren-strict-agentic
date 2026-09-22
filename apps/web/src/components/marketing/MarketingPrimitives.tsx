@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { MarketingEditorialImage, type MarketingAssetKey } from "@/components/marketing/MarketingAssets";
 import { Reveal } from "@/components/marketing/MarketingMotion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import type { CapabilityStatus, MarketingContent, PageContent } from "@/content/marketing";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 export function Container({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={cn("mx-auto max-w-7xl px-5 sm:px-8", className)}>{children}</div>;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FileText, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;

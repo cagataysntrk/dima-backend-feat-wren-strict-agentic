@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MessagesSquare, Search } from "lucide-react";
 import { useConversations } from "@/stores/conversations";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Card } from "@dima/ui/primitives/card";
+import { Badge } from "@dima/ui/primitives/badge";
+import { cn } from "@dima/ui/utils";
 
 /** Tüm sohbetler — sidebar listesinin tam sayfa, aranabilir hâli. */
 export default function ChatsPage() {

@@ -23,7 +23,7 @@ import {
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { useConversations } from "@/stores/conversations";
-import { BrandMark } from "@/components/BrandMark";
+import { BrandMark } from "@dima/ui/brand/BrandMark";
 import {
   Sidebar,
   SidebarContent,
@@ -38,7 +38,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   useSidebar,
-} from "@/components/ui/sidebar";
+} from "@dima/ui/primitives/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,7 +48,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@dima/ui/primitives/dropdown-menu";
 
 export interface ShellUser {
   name: string;

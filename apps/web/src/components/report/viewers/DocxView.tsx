@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 /**
  * DOCX → HTML (mammoth). Mammoth BİÇİMİ değil YAPIYI korur: başlıklar, listeler,

@@ -2,7 +2,7 @@
 
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 // Chat answers are model output rendered as Markdown (GFM: bold, lists,
 // tables). react-markdown never renders raw HTML; images are dropped and links

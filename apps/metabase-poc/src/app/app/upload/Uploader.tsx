@@ -6,8 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileSpreadsheet, Plus, RefreshCw, Trash2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { gateway, type Item } from "@/lib/gateway";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn } from "@dima/ui/utils";
+import { Button } from "@dima/ui/primitives/button";
 
 const ACCEPT = ".csv,.xlsx,.xls";
 

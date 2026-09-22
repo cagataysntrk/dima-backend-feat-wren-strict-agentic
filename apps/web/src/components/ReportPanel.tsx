@@ -7,10 +7,10 @@ import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
 import { NextSteps, Recommendations } from "@/components/report/NextSteps";
 import { ResultCard } from "@/components/report/ResultCard";
-import { SqlBlock } from "@/components/report/SqlBlock";
-import { SourceBadge } from "@/components/report/SourceBadge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SqlBlock } from "@dima/ui/report/SqlBlock";
+import { SourceBadge } from "@dima/ui/report/SourceBadge";
+import { Button } from "@dima/ui/primitives/button";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 /**
  * Salt-okunur rapor görünümü. Yorum çubuğu ve doğru/yanlış/zamanla aksiyonları

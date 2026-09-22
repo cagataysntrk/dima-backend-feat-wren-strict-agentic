@@ -3,7 +3,7 @@
 import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
 import { AnimatePresence, m } from "motion/react";
 import { ArrowRight, BarChart3, Check, CheckCircle2, Database, Layers3, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import type { MarketingLocale } from "@/content/marketing";
 import { trackMarketingEvent } from "@/lib/marketing/analytics";
 

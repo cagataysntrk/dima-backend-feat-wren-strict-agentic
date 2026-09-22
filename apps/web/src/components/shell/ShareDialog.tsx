@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Globe, Link2, Share } from "lucide-react";
 import { selectActive, useConversations } from "@/stores/conversations";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CopyIcon } from "@/components/ai/copy-icon";
+} from "@dima/ui/primitives/dialog";
+import { Input } from "@dima/ui/primitives/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { CopyIcon } from "@dima/ui/ai/copy-icon";
 
 /**
  * Sohbeti paylaş — ChatGPT'deki "Share public link to chat" karşılığı.

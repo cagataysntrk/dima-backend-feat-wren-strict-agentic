@@ -20,6 +20,7 @@
     "@dima/contracts": "workspace:*",
     "@dima/domain": "workspace:*",
     "@dima/genui": "workspace:*",
+    "@dima/ui": "workspace:*",
     "@openuidev/lang-core": "0.2.10",
     "@openuidev/react-lang": "0.2.9",
     "@tanstack/react-query": "^5.101.2",

@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bell, BellRing, FileBarChart, Search } from "lucide-react";
 import { useNotifications } from "@/lib/notifications";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Card } from "@dima/ui/primitives/card";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 /** Bildirimler — sidebar rozetinin tam sayfa, aranabilir hâli (/chats gibi). */
 export default function NotificationsPage() {

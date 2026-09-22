@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { AskResponse, CubeQuery, QueryResult } from "@dima/contracts";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 import {
   contrastRatio,
   gradeContrast,
@@ -11,7 +11,7 @@ import {
   srgbToHex,
   type ContrastGrade,
 } from "@/lib/color";
-import { BrandMark, PILLARS } from "@/components/BrandMark";
+import { BrandMark, PILLARS } from "@dima/ui/brand/BrandMark";
 import { ResultView } from "@/components/ResultView";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InterpretationBar } from "@/components/InterpretationBar";
@@ -19,11 +19,11 @@ import { ChainOfThought, Reasoning } from "@/components/ai/thinking";
 import { ErdView } from "@/components/schema/ErdView";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { LocaleSwitcher } from "@/components/shell/LocaleSwitcher";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Button } from "@dima/ui/primitives/button";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Input } from "@dima/ui/primitives/input";
+import { Textarea } from "@dima/ui/primitives/textarea";
+import { Label } from "@dima/ui/primitives/label";
 import {
   Card,
   CardContent,
@@ -31,18 +31,18 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+} from "@dima/ui/primitives/card";
+import { Separator } from "@dima/ui/primitives/separator";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@dima/ui/primitives/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@dima/ui/primitives/toggle-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@dima/ui/primitives/select";
 import {
   Table,
   TableBody,
@@ -51,7 +51,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@dima/ui/primitives/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,12 +59,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@dima/ui/primitives/dropdown-menu";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@dima/ui/primitives/popover";
 import {
   Dialog,
   DialogContent,
@@ -73,7 +73,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@dima/ui/primitives/dialog";
 import {
   Sheet,
   SheetContent,
@@ -81,12 +81,12 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@dima/ui/primitives/sheet";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@dima/ui/primitives/tooltip";
 import { ArrowUpRight, Layers3, ShieldCheck } from "lucide-react";
 
 /**

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 export type MarketingAssetKey =
   | "homeHero"

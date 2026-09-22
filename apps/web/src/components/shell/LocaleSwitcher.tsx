@@ -4,16 +4,16 @@ import { useTransition } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Check, Languages } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@dima/ui/primitives/dropdown-menu";
 import { setLocale } from "@/i18n/actions";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/config";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Locale picker. A server action writes the locale cookie, then we refresh so

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getStarters } from "@dima/api-client";
-import { BrandMark } from "@/components/BrandMark";
-import { Separator } from "@/components/ui/separator";
+import { BrandMark } from "@dima/ui/brand/BrandMark";
+import { Separator } from "@dima/ui/primitives/separator";
 
 // K1 (rehberli analitik) — asıl liste backend'in `/starters` küratöründen gelir:
 // rol ve sektör paketine göre filtrelenmiş sorular. Buradaki sabit liste YEDEK,

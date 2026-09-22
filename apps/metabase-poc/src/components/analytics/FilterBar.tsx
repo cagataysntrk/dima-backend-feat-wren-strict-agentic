@@ -5,11 +5,11 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CalendarRange, Check, ChevronDown, ListFilter, Search } from "lucide-react";
 import { gateway, type Filters, type Parameter } from "@/lib/gateway";
 import { DATE_PRESETS, describeDateFilter, parseDateFilter } from "@/lib/date-filter";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@dima/ui/utils";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@dima/ui/primitives/popover";
 
 interface Props {
   dashboardId: number;

@@ -5,20 +5,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, Plus, Check } from "lucide-react";
 import type { AskResponse } from "@dima/contracts";
 import { addDashboardWidget, createDashboard, listDashboards } from "@dima/api-client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@dima/ui/primitives/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+} from "@dima/ui/primitives/select";
+import { Separator } from "@dima/ui/primitives/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { cn } from "@dima/ui/utils";
 
 // Karo dönemi GÖRELİ saklanır: pano her açılışta yeniden çözer. Mutlak tarih
 // saklamak panoyu bir kereliğine doğru, sonsuza kadar bayat yapardı.

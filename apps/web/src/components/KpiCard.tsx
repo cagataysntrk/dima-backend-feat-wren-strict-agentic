@@ -15,8 +15,8 @@ import {
   ChartContainer,
   ChartLegendContent,
   type ChartConfig,
-} from "@/components/ui/chart";
-import { Card } from "@/components/ui/card";
+} from "@dima/ui/chart/chart-container";
+import { Card } from "@dima/ui/primitives/card";
 
 const GRAN_TR: Record<string, string> = {
   day: "günlük", week: "haftalık", month: "aylık", quarter: "çeyreklik", year: "yıllık",

@@ -10,12 +10,12 @@ import {
   Loader2,
   Plug,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Card } from "@dima/ui/primitives/card";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Entegrasyon sihirbazı — 4 adım: kaynak → bağlan+test → kapsam → doğrula.

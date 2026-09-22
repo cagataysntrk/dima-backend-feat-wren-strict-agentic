@@ -5,8 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { History, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { gateway } from "@/lib/gateway";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@dima/ui/primitives/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@dima/ui/primitives/popover";
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });

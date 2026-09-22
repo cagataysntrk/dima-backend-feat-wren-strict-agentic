@@ -5,9 +5,9 @@ import { ArrowUpRight, BarChart3, LayoutDashboard } from "lucide-react";
 import type { AskResponse, CubeQuery } from "@dima/contracts";
 import { analyze } from "@dima/domain";
 import { DecisionTools } from "@/components/report/DecisionTools";
-import { SourceBadge } from "@/components/report/SourceBadge";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { SourceBadge } from "@dima/ui/report/SourceBadge";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Card } from "@dima/ui/primitives/card";
 
 /**
  * PANELLER (sohbet kapsamlı) — bu sohbetin ürettiği her sonuç bir paneldir.

@@ -8,9 +8,9 @@ import { useTheme } from "next-themes";
 import { useMe } from "@/lib/access";
 import { setLocale } from "@/i18n/actions";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/config";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@dima/ui/primitives/button";
+import { Separator } from "@dima/ui/primitives/separator";
+import { ToggleGroup, ToggleGroupItem } from "@dima/ui/primitives/toggle-group";
 import { IntegrationWizard, NoIntegrations } from "@/components/settings/IntegrationWizard";
 
 /**

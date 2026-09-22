@@ -2,8 +2,8 @@
 
 import { AlertTriangle, Diamond, Lightbulb, OctagonAlert } from "lucide-react";
 import type { Interpretation, Signal } from "@dima/contracts";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "@dima/ui/primitives/badge";
+import { cn } from "@dima/ui/utils";
 
 // EVRENSEL ÇIKTI YORUMU (feature flag: cikti_yorumlama). Backend her tablo/grafik/rapor/KPI
 // için DETERMİNİSTİK analiz üretir (en yüksek/düşük, % değişim, trend yönü + lower_is_better

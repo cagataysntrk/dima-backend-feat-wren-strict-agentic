@@ -6,14 +6,14 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@dima/ui/primitives/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from "@dima/ui/primitives/dropdown-menu";
+import { cn } from "@dima/ui/utils";
 
 // İlerleme yalnız bir kullanım ipucudur — localStorage yeterli (token DEĞİL,
 // bkz. CLAUDE.md: access token asla localStorage'a yazılmaz).

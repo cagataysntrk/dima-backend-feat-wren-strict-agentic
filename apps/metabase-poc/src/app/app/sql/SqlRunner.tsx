@@ -7,12 +7,12 @@ import { ChevronRight, Play, Save, Table2 } from "lucide-react";
 import { toast } from "sonner";
 import { gateway } from "@/lib/gateway";
 import { parseVariables } from "@/lib/sql-vars";
-import { cn } from "@/lib/utils";
-import { ResultView } from "@/components/ResultView";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@dima/ui/utils";
+import { ResultView } from "@dima/ui/result/ResultView";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
+import { Textarea } from "@dima/ui/primitives/textarea";
 
 const EXAMPLE = `-- Yalnızca SELECT. {{değişken}} yazarsanız altta bir alan açılır;
 -- [[ ... ]] içine alınan koşul, değişken boşsa sorgudan düşer.

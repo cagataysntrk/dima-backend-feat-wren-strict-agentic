@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
+import { cn } from "@dima/ui/utils";
 
 /**
  * XLSX / XLS / CSV → gerçek hesap tablosu ızgarası.

@@ -21,7 +21,7 @@ import { useConversations } from "@/stores/conversations";
 import { useMe } from "@/lib/access";
 import { setLocale } from "@/i18n/actions";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/config";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@dima/ui/primitives/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,10 +35,10 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { Skeleton } from "@/components/ui/skeleton";
-import { SidebarMenuButton } from "@/components/ui/sidebar";
+} from "@dima/ui/primitives/dropdown-menu";
+import { Kbd, KbdGroup } from "@dima/ui/primitives/kbd";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
+import { SidebarMenuButton } from "@dima/ui/primitives/sidebar";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { resetOnboarding, useOnboardingDismissed } from "./Onboarding";
 

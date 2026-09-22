@@ -3,8 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getSchema } from "@dima/api-client";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { cn } from "@dima/ui/utils";
 
 // Veri kaynağı (tenant DB) çevrimiçi/çevrimdışı durum noktası.
 // SchemaPanel ile AYNI ["schema"] query'sini paylaşır (çift-fetch yok); 30sn'de bir

@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
-import { BrandMark } from "@/components/BrandMark";
+import { BrandMark } from "@dima/ui/brand/BrandMark";
 import { LocaleSwitcher } from "@/components/shell/LocaleSwitcher";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import {
   Sheet,
   SheetClose,
@@ -16,9 +16,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@dima/ui/primitives/sheet";
 import type { MarketingContent } from "@/content/marketing";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 const navigation = [
   { key: "product", href: "/product" },

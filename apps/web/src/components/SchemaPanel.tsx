@@ -9,10 +9,10 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@dima/ui/primitives/accordion";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@dima/ui/primitives/tabs";
 
 // Veri modeli (şema) — cube kataloğu: tablolar/kolonlar + ilişkiler. Artifact panelinde açılır.
 export function SchemaPanel() {

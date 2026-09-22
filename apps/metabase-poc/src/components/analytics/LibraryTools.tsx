@@ -7,13 +7,13 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { BarChart3, Copy, LayoutDashboard, MoreHorizontal, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { gateway, type Item } from "@/lib/gateway";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@dima/ui/primitives/dropdown-menu";
 
 const href = (i: Item) => (i.kind === "dashboard" ? `/app/dashboards/${i.id}` : `/app/cards/${i.id}`);
 

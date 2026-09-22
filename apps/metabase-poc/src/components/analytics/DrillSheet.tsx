@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { gateway, type DrillScope } from "@/lib/gateway";
-import { cn } from "@/lib/utils";
-import { ResultView } from "@/components/ResultView";
-import { ResultTable } from "@/components/ResultTable";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@dima/ui/utils";
+import { ResultView } from "@dima/ui/result/ResultView";
+import { ResultTable } from "@dima/ui/result/ResultTable";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@dima/ui/primitives/sheet";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 export interface DrillTarget {
   cardId: number;

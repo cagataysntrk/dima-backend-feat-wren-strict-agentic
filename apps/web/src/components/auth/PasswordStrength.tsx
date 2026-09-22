@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 // Lightweight heuristic (no zxcvbn dep): length + character-class variety → 0–4.
 export function scorePassword(pw: string): number {

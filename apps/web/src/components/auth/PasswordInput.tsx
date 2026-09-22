@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { Input } from "@dima/ui/primitives/input";
+import { cn } from "@dima/ui/utils";
 
 /** Password field with a show/hide toggle and a Caps-Lock warning. */
 export function PasswordInput({

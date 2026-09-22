@@ -1,0 +1,586 @@
+/* dima ortak stil katmanı — @dima/ui.
+ *
+ * Buraya İKİ uygulamanın da kullandığı şeyler girer: tasarım token'ları
+ * (renk, tipografi, yarıçap, gölge), temel katman ve paket bileşenlerinin
+ * dayandığı yüzey/hareket sınıfları. Uygulamaya özel olan (pazarlama
+ * sayfaları, react-flow, sohbet kutusu ışığı) kendi globals.css'inde kalır.
+ *
+ * Kullanım: uygulamanın globals.css'i önce `@import "tailwindcss"`, sonra
+ * bunu import eder ve `@source` ile paketi tarar.
+ */
+
+
+/* dark mode is class-driven (next-themes toggles `.dark` on <html>), overriding OS. */
+@custom-variant dark (&:is(.dark *));
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   dima design tokens — premium editorial. Authored in oklch for perceptual
+   light/dark parity. Monochrome-forward: `--primary` is ink; the dima accent
+   (indigo-violet) lives in `--brand`, used sparingly (provenance, focus, chart-1).
+   Backgrounds are a soft off-white / warm editorial near-black — never #fff/#000.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --background: oklch(0.985 0.003 95);
+  --foreground: oklch(0.22 0.006 65);
+  --card: oklch(0.995 0.002 95);
+  --card-foreground: oklch(0.22 0.006 65);
+  --popover: oklch(0.995 0.002 95);
+  --popover-foreground: oklch(0.22 0.006 65);
+
+  --primary: oklch(0.24 0.006 65);
+  --primary-foreground: oklch(0.985 0.003 95);
+  --secondary: oklch(0.955 0.004 95);
+  --secondary-foreground: oklch(0.28 0.006 65);
+  --muted: oklch(0.965 0.004 95);
+  --muted-foreground: oklch(0.52 0.008 65);
+  --accent: oklch(0.955 0.004 95);
+  --accent-foreground: oklch(0.24 0.006 65);
+
+  /* brand — dima violet (#7e38f8). Provenance / focus / brand mark. */
+  --brand: oklch(0.551 0.260 292.1);
+  --brand-foreground: oklch(0.99 0.003 95);
+
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.915 0.004 95);
+  --input: oklch(0.915 0.004 95);
+  --ring: oklch(0.551 0.260 292.1);
+
+  /* Kategorik rampa — dataviz becerisinin DOKÜMANTE referans paleti (ilk 5 slot),
+     iki modda da doğrulayıcıdan geçti. SIRA güvenlik mekanizmasıdır (mavi →
+     turuncu → aqua → sarı → magenta): kırmızı-yeşil çakışmasını önlemek için
+     enumerate edilip seçilmiştir — yeniden sıralama.
+     Marka moru (--brand) kasıtlı olarak rampanın DIŞINDA: UI vurgusu bir seri
+     kimliğini taklit etmemeli. hex: #2a78d6 #eb6834 #1baf7a #eda100 #e87ba4 */
+  --chart-1: oklch(0.575 0.163 255.5);
+  --chart-2: oklch(0.671 0.175 40.6);
+  --chart-3: oklch(0.669 0.141 162.1);
+  --chart-4: oklch(0.764 0.161 75.1);
+  --chart-5: oklch(0.716 0.141 357.4);
+
+  --sidebar: oklch(0.975 0.003 95);
+  --sidebar-foreground: oklch(0.22 0.006 65);
+  --sidebar-primary: oklch(0.24 0.006 65);
+  --sidebar-primary-foreground: oklch(0.985 0.003 95);
+  --sidebar-accent: oklch(0.955 0.004 95);
+  --sidebar-accent-foreground: oklch(0.24 0.006 65);
+  --sidebar-border: oklch(0.915 0.004 95);
+  --sidebar-ring: oklch(0.551 0.260 292.1);
+
+  --radius: 0.625rem;
+
+  /* Panel/çekmece eğrisi (Ionic'in iOS drawer curve'ü) — sol sidebar ve sağ
+     artifact paneli AYNI hareketi paylaşmalı; shadcn'in varsayılanı `linear`di
+     ve mekanik duruyordu. JS karşılığı: EASE_DRAWER (lib/motion.ts). */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* subtle neutral elevation — surfaces stay flat + hairline; overlays lift. */
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.05);
+  --shadow-md: 0 4px 8px -2px oklch(0 0 0 / 0.08), 0 2px 4px -2px oklch(0 0 0 / 0.05);
+  --shadow-lg: 0 12px 20px -4px oklch(0 0 0 / 0.1), 0 4px 8px -4px oklch(0 0 0 / 0.06);
+  --shadow-xl: 0 20px 32px -8px oklch(0 0 0 / 0.12), 0 8px 12px -6px oklch(0 0 0 / 0.07);
+}
+
+.dark {
+  /* Editorial dark: derin ama SIFIR DEĞİL — 0.115 hâlâ ılık bir mürekkep, #000 değil
+     (OLED'de halation yapar, hairline kenarlar kaybolur). Yüzeyler arasındaki fark
+     korunuyor: background < sidebar < card, böylece katmanlar okunur kalıyor. */
+  --background: oklch(0.115 0.004 65);
+  --foreground: oklch(0.94 0.004 90);
+  --card: oklch(0.155 0.005 65);
+  --card-foreground: oklch(0.94 0.004 90);
+  --popover: oklch(0.165 0.005 65);
+  --popover-foreground: oklch(0.94 0.004 90);
+
+  --primary: oklch(0.94 0.004 90);
+  --primary-foreground: oklch(0.14 0.005 65);
+  --secondary: oklch(0.195 0.005 65);
+  --secondary-foreground: oklch(0.93 0.004 90);
+  --muted: oklch(0.195 0.005 65);
+  /* zemin koyulaştı → kontrastı korumak için gri metin bir tık açıldı */
+  --muted-foreground: oklch(0.66 0.008 65);
+  --accent: oklch(0.225 0.006 65);
+  --accent-foreground: oklch(0.93 0.004 90);
+
+  --brand: oklch(0.615 0.231 292.9);
+  --brand-foreground: oklch(0.99 0 0);
+
+  --destructive: oklch(0.62 0.19 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.235 0.005 65);
+  --input: oklch(0.265 0.006 65);
+  --ring: oklch(0.615 0.231 292.9);
+
+  /* Koyu tema KENDİ adımlarını alır (açık temanın çevrilmişi değil) — aynı
+     referans paletin koyu adımları, ayrıca doğrulandı: ΔE 8.4, kontrast PASS.
+     hex: #3987e5 #d95926 #199e70 #c98500 #d55181 */
+  --chart-1: oklch(0.622 0.161 255.1);
+  --chart-2: oklch(0.622 0.173 40.1);
+  --chart-3: oklch(0.621 0.128 163.1);
+  --chart-4: oklch(0.670 0.143 73.2);
+  --chart-5: oklch(0.622 0.171 0.8);
+
+  --sidebar: oklch(0.135 0.005 65);
+  --sidebar-foreground: oklch(0.94 0.004 90);
+  --sidebar-primary: oklch(0.94 0.004 90);
+  --sidebar-primary-foreground: oklch(0.14 0.005 65);
+  --sidebar-accent: oklch(0.225 0.006 65);
+  --sidebar-accent-foreground: oklch(0.93 0.004 90);
+  --sidebar-border: oklch(0.235 0.005 65);
+  --sidebar-ring: oklch(0.615 0.231 292.9);
+
+  /* daha koyu zeminde gölge daha sert olmalı, yoksa görünmez */
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.45);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.55), 0 1px 2px -1px oklch(0 0 0 / 0.5);
+  --shadow-md: 0 4px 8px -2px oklch(0 0 0 / 0.6), 0 2px 4px -2px oklch(0 0 0 / 0.5);
+  --shadow-lg: 0 12px 20px -4px oklch(0 0 0 / 0.65), 0 4px 8px -4px oklch(0 0 0 / 0.5);
+  --shadow-xl: 0 20px 32px -8px oklch(0 0 0 / 0.7), 0 8px 12px -6px oklch(0 0 0 / 0.55);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* legacy bridge — keep pre-migration components compiling: `border-hairline`
+     / `bg-hairline` → border. (`text-muted` was migrated to text-muted-foreground.) */
+  --color-hairline: var(--border);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Mikro etiket tabanı — okunabilir en küçük boy. YALNIZCA font-mono
+     büyük harf / meta etiketlerde kullanılır (`01`, `hazır`, `doğrulandı`).
+     Cümle, başlık veya isim tamlaması olan her şey en az `text-xs` (12px). */
+  --text-micro: 0.625rem;
+  --text-micro--line-height: 0.875rem;
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  @keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+    }
+  }
+  @keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+    }
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);
+    }
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);
+    }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+  :where(h1, h2, h3, [id]) {
+    scroll-margin-top: 6rem;
+  }
+  :where(h1, h2, h3) {
+    overflow-wrap: anywhere;
+  }
+  /* Gövde metni `break-word` alır, `anywhere` değil: `anywhere` min-content
+     boyutlamayı da çökertir ve ilgisiz grid track'lerinin daralmasına yol açar.
+     Bilinen uzun tokenlar (contact@upcytech.com gibi) `break-anywhere` ile
+     tek tek işaretlenir. `hyphens: auto` kullanılmaz — Chrome'un Türkçe
+     tireleme sözlüğü işletim sistemine bağlı, tutarsız render eder. */
+  :where(h4, p, li, dt, dd, figcaption) {
+    overflow-wrap: break-word;
+  }
+  :where(a, button, input, textarea, select, summary):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 24%, transparent);
+}
+
+/* Bilinen uzun/bölünmez tokenlar için (e-posta adresi, uzun Türkçe bileşikler). */
+@utility break-anywhere {
+  overflow-wrap: anywhere;
+}
+/* ─── retained motifs ───────────────────────────────────────────────────────── */
+
+/* Shimmer text — "düşünüyor" gibi belirsiz süreli beklemeler için. Terminal
+   imlecinin (yanıp sönen caret) yerini alır: metnin üzerinden geçen ışık. */
+@keyframes dima-shimmer {
+  to {
+    background-position: -100% 0;
+  }
+}
+.dima-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted-foreground) 0%,
+    var(--muted-foreground) 35%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 65%,
+    var(--muted-foreground) 100%
+  );
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: dima-shimmer 2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dima-shimmer {
+    animation: none;
+    background: none;
+    color: var(--muted-foreground);
+  }
+}
+
+.dima-line-armed {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--brand) 45%, var(--border)) 50%,
+    transparent
+  );
+}
+
+@keyframes dima-scan {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+.dima-scanline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--brand) 65%, transparent),
+    transparent
+  );
+  animation: dima-scan 1.5s ease-in-out infinite;
+}
+
+.dima-vignette {
+  background: radial-gradient(
+    120% 80% at 50% 42%,
+    transparent 55%,
+    color-mix(in srgb, var(--foreground) 5%, transparent) 100%
+  );
+}
+
+@keyframes dima-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ─── wordmark reveal ───────────────────────────────────────────────────────
+   Harfler sırayla aşağıdan süzülür, ardından i'nin noktası yerine oturur.
+   Tek seferlik, kısa ve yaylı — Emil tarzı: amaçlı, hızlı, yolu kapatmayan. */
+@keyframes brand-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.3em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes brand-dot-drop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -0.5em) scale(0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.brand-rise {
+  opacity: 0;
+  animation: brand-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--brand-delay, 0s);
+}
+.brand-dot-drop {
+  opacity: 0;
+  /* nokta zaten -translate-x-1/2 ile ortalanıyor; keyframe bunu koruyor */
+  animation: brand-dot-drop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: var(--brand-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-rise,
+  .brand-dot-drop {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .brand-dot-drop {
+    transform: translateX(-50%);
+  }
+}
+/* ─── sidebar: uzun sohbet adı hover'da kayar (ChatGPT davranışı) ──────────
+   Metin kapsayıcıdan taşıyorsa sağa doğru kaydırıp geri getir. `--marquee`
+   satırın kendi taşma miktarıdır; JS olmadan sabit bir mesafe kullanıyoruz. */
+@keyframes dima-marquee {
+  0%,
+  12% {
+    transform: translateX(0);
+  }
+  88%,
+  100% {
+    transform: translateX(var(--marquee-shift, -40%));
+  }
+}
+.dima-marquee {
+  display: inline-block;
+  min-width: 100%;
+  white-space: nowrap;
+}
+.group\/row:hover .dima-marquee-run {
+  animation: dima-marquee 4s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .group\/row:hover .dima-marquee-run {
+    animation: none;
+  }
+}
+
+/* ─── düşünürken avatar: dön → dur → dön ────────────────────────────────────
+   Sürekli dönen bir spinner "yükleniyor" der; buradaki iş DÜŞÜNMEK, o yüzden
+   çeyrek tur atıp duraklıyor. Duraklama, hareketin kendisi kadar anlamlı: her
+   çeyrek bir "adım" hissi veriyor. Yumuşak eğri + belirgin bekleme. */
+@keyframes dima-think-spin {
+  0%,
+  18% {
+    transform: rotate(0deg);
+  }
+  32%,
+  50% {
+    transform: rotate(90deg);
+  }
+  64%,
+  82% {
+    transform: rotate(180deg);
+  }
+  96%,
+  100% {
+    transform: rotate(270deg);
+  }
+}
+.dima-think {
+  animation: dima-think-spin 3.2s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dima-think {
+    animation: none;
+  }
+}
+
+/* ─── ikincil sayfa girişi (Ayarlar, Tüm sohbetler) ─────────────────────────
+   Kısa ve tek yönlü: aşağıdan hafif süzülüp netleşir. Sayfa geçişi seyrek bir
+   olay olduğu için animasyon meşru; süre 300ms'in altında tutuluyor. */
+@keyframes dima-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.dima-page-in {
+  animation: dima-page-in 0.28s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dima-page-in {
+    animation: none;
+  }
+}
+
+/* ── Surfaces ────────────────────────────────────────────────────────────────
+   One card language for the whole app (matches the chat composer): a soft,
+   semi-transparent edge + layered shadow (contact + ambient) instead of a flat
+   1px gray border. Light and dark are tuned separately: in dark mode depth
+   comes from a faint top highlight and a deep ambient shadow. */
+:root {
+  --surface-edge: color-mix(in oklch, var(--foreground) 8%, transparent);
+  --surface-edge-strong: color-mix(in oklch, var(--foreground) 15%, transparent);
+  --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.14);
+  --surface-shadow-raised: 0 1px 2px rgb(0 0 0 / 0.05), 0 16px 36px -14px rgb(0 0 0 / 0.2);
+}
+
+.dark {
+  --surface-edge: color-mix(in oklch, var(--foreground) 9%, transparent);
+  --surface-edge-strong: color-mix(in oklch, var(--foreground) 17%, transparent);
+  --surface-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 12px 32px -16px rgb(0 0 0 / 0.7);
+  --surface-shadow-raised: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 18px 44px -16px rgb(0 0 0 / 0.85);
+}
+
+/* Cards and panels. */
+@utility surface {
+  background-color: var(--card);
+  border: 1px solid var(--surface-edge);
+  border-radius: 1.25rem;
+  box-shadow: var(--surface-shadow);
+}
+
+/* Smaller surfaces (list rows, panel items): same edge, tighter radius. */
+@utility surface-sm {
+  background-color: var(--card);
+  border: 1px solid var(--surface-edge);
+  border-radius: 0.875rem;
+  box-shadow: var(--surface-shadow);
+}
+
+/* Clickable surfaces: the edge firms up and the card lifts on hover. */
+@utility surface-interactive {
+  transition:
+    border-color 150ms ease-out,
+    box-shadow 200ms ease-out;
+  &:hover {
+    border-color: var(--surface-edge-strong);
+    box-shadow: var(--surface-shadow-raised);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Nested panels inside a surface (tables, code): tinted, no second shadow. */
+@utility surface-inset {
+  background-color: color-mix(in oklch, var(--muted) 45%, transparent);
+  border: 1px solid var(--surface-edge);
+  border-radius: 0.75rem;
+}
+
+
+
+/* ── Answer reveal ──────────────────────────────────────────────────────────
+   Quick and quiet: each block rises 6px and fades in (220ms, 45ms apart), then
+   table rows (.dima-reveal-rows) fade in 20ms apart (first 12 rows; the rest appear with row 12).
+   CSS only, runs once, and is skipped entirely for reduced motion. */
+@keyframes dima-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes dima-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.dima-reveal > * {
+  animation: dima-rise 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.dima-reveal > :nth-child(2) { animation-delay: 45ms; }
+.dima-reveal > :nth-child(3) { animation-delay: 90ms; }
+.dima-reveal > :nth-child(4) { animation-delay: 135ms; }
+.dima-reveal > :nth-child(5) { animation-delay: 180ms; }
+.dima-reveal > :nth-child(6) { animation-delay: 225ms; }
+.dima-reveal > :nth-child(7) { animation-delay: 270ms; }
+.dima-reveal > :nth-child(8) { animation-delay: 315ms; }
+.dima-reveal > :nth-child(n + 9) { animation-delay: 360ms; }
+
+.dima-reveal-rows tbody tr {
+  animation: dima-fade 200ms ease-out both;
+  animation-delay: 360ms;
+}
+.dima-reveal-rows tbody tr:nth-child(1) { animation-delay: 120ms; }
+.dima-reveal-rows tbody tr:nth-child(2) { animation-delay: 140ms; }
+.dima-reveal-rows tbody tr:nth-child(3) { animation-delay: 160ms; }
+.dima-reveal-rows tbody tr:nth-child(4) { animation-delay: 180ms; }
+.dima-reveal-rows tbody tr:nth-child(5) { animation-delay: 200ms; }
+.dima-reveal-rows tbody tr:nth-child(6) { animation-delay: 220ms; }
+.dima-reveal-rows tbody tr:nth-child(7) { animation-delay: 240ms; }
+.dima-reveal-rows tbody tr:nth-child(8) { animation-delay: 260ms; }
+.dima-reveal-rows tbody tr:nth-child(9) { animation-delay: 280ms; }
+.dima-reveal-rows tbody tr:nth-child(10) { animation-delay: 300ms; }
+.dima-reveal-rows tbody tr:nth-child(11) { animation-delay: 320ms; }
+.dima-reveal-rows tbody tr:nth-child(12) { animation-delay: 340ms; }
+
+/* A whole block that follows the text (chart card, action row). */
+.dima-reveal-late {
+  animation: dima-rise 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: var(--reveal-delay, 180ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dima-reveal > *,
+  .dima-reveal-late,
+  .dima-reveal-rows tbody tr {
+    animation: none;
+  }
+}

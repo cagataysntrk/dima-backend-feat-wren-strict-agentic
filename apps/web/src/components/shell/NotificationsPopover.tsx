@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { getNotifications, type Notification } from "@dima/api-client";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@dima/ui/primitives/popover";
 import { NotificationsPanel } from "@/components/NotificationsBell";
 
 const SEEN_KEY = "dima.notifications.seen";

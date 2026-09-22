@@ -4,9 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { refresh } from "@dima/api-client";
 import { MotionConfig } from "motion/react";
-import { ThemeProvider } from "@/components/theme-provider";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@dima/ui/brand/theme-provider";
+import { TooltipProvider } from "@dima/ui/primitives/tooltip";
+import { Toaster } from "@dima/ui/primitives/sonner";
 
 // Sayfa yenilenince access token memory'den gider; refresh cookie'den (varsa) sessizce
 // geri kur → ilk API çağrısı 401 yemeden token hazır olur. /login'de cookie yoksa no-op.

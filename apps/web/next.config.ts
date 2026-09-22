@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   // paket"). Derlemesini tüketen uygulama yapar; böylece paketleri sıraya
   // dizen ayrı bir build orkestrasyonu gerekmiyor ve pakete yapılan düzenleme
   // dev'de anında yansıyor.
-  transpilePackages: ["@dima/contracts", "@dima/domain", "@dima/api-client", "@dima/genui"],
+  transpilePackages: ["@dima/contracts", "@dima/domain", "@dima/api-client", "@dima/genui", "@dima/ui"],
   // localtld ile dev server'a proxy'lenmiş bir origin'den (ör. frontend.dima.localtld)
   // erişildiğinde Next dev runtime'ının/HMR'ın bu origin'i kabul etmesi için gerekli.
   // Aksi halde client hydrate olmaz (istekler bloklanır). Domain `.localtld`.

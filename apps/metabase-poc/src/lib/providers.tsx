@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MotionConfig } from "motion/react";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@dima/ui/brand/theme-provider";
+import { Toaster } from "@dima/ui/primitives/sonner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(

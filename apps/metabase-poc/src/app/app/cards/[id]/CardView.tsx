@@ -6,16 +6,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Check, Pencil, Target } from "lucide-react";
 import { toast } from "sonner";
 import { gateway } from "@/lib/gateway";
-import { ResultView } from "@/components/ResultView";
+import { ResultView } from "@dima/ui/result/ResultView";
 import { ExportMenu } from "@/components/analytics/ExportMenu";
 import { AddToDashboard } from "@/components/analytics/DashboardActions";
 import { HistoryMenu } from "@/components/analytics/HistoryMenu";
 import { DrillSheet, type DrillTarget } from "@/components/analytics/DrillSheet";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@dima/ui/primitives/popover";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
   const queryClient = useQueryClient();

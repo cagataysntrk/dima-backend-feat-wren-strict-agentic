@@ -6,8 +6,8 @@ import { MarketingEditorialImage } from "@/components/marketing/MarketingAssets"
 import { Reveal } from "@/components/marketing/MarketingMotion";
 import { Container, Eyebrow, FinalCta } from "@/components/marketing/MarketingPrimitives";
 import { ProductProof } from "@/components/marketing/ProductProof";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@dima/ui/primitives/accordion";
+import { Button } from "@dima/ui/primitives/button";
 import { getMarketingContent } from "@/content/marketing";
 
 export async function generateMetadata(): Promise<Metadata> {

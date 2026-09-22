@@ -21,9 +21,9 @@ import {
 } from "@dima/api-client";
 
 import { ResultView } from "@/components/ResultView";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Button } from "@dima/ui/primitives/button";
+import { Card } from "@dima/ui/primitives/card";
 import {
   Dialog,
   DialogContent,
@@ -32,17 +32,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@dima/ui/primitives/dialog";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+} from "@dima/ui/primitives/select";
+import { Separator } from "@dima/ui/primitives/separator";
 import { useFeature } from "@/lib/access";
 import { apiErrorMessage } from "@dima/api-client";
 

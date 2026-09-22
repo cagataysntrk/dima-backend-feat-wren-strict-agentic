@@ -2,8 +2,8 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useConversations } from "@/stores/conversations";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@dima/ui/primitives/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
 
 /**
  * Sohbetler arası gezinme okları — üst barda, kenar çubuğu düğmesinin hemen

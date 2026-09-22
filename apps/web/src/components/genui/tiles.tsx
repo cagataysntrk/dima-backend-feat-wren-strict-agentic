@@ -4,14 +4,14 @@ import { AlertTriangle } from "lucide-react";
 import type { AskResponse } from "@dima/contracts";
 import { analyze, type ChartKind } from "@dima/domain";
 
-import { Chart } from "@/components/chart/Chart";
-import { KpiGrid } from "@/components/chart/kpi";
+import { Chart } from "@dima/ui/chart/Chart";
+import { KpiGrid } from "@dima/ui/chart/kpi";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
-import { ResultTable } from "@/components/ResultTable";
-import { SourceBadge } from "@/components/report/SourceBadge";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { ResultTable } from "@dima/ui/result/ResultTable";
+import { SourceBadge } from "@dima/ui/report/SourceBadge";
+import { Card } from "@dima/ui/primitives/card";
+import { cn } from "@dima/ui/utils";
 
 import { useResult } from "./catalog";
 

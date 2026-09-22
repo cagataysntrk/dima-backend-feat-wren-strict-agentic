@@ -4,18 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Mic, Paperclip, Plus, Square } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Attachment } from "@/components/ai/attachment";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+} from "@dima/ui/primitives/dropdown-menu";
+import { Kbd, KbdGroup } from "@dima/ui/primitives/kbd";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
 import { useSpeech } from "@/hooks/use-speech";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Chat composer, Claude-style: an elevated rounded card with the textarea on top

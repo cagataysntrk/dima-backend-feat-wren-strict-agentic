@@ -4,9 +4,9 @@ import { Suspense, createContext, useContext, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { PanelLeft } from "lucide-react";
-import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SidebarInset, SidebarProvider, useSidebar } from "@dima/ui/primitives/sidebar";
+import { Button } from "@dima/ui/primitives/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
 import { AppSidebar, type ShellOrg, type ShellUser } from "./AppSidebar";
 
 // Two-rail shell, same pattern as apps/web: left = account-wide navigation +

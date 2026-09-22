@@ -4,9 +4,9 @@ import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
 import { Moon, Sun } from "lucide-react";
 import { motion } from "motion/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import { useMounted } from "@/hooks/use-mounted";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Light/dark toggle. `resolvedTheme` is only known on the client, so until

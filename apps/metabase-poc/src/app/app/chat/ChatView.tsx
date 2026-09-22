@@ -8,16 +8,16 @@ import { BarChart3, Code2, Database, PanelRight, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { ThinkingOrb } from "thinking-orbs";
 import { gateway, type ChatAnswer, type ChatTurn } from "@/lib/gateway";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 import { useConversations, type Entry } from "@/stores/conversations";
 import { TopbarActions } from "@/components/shell/AppShell";
 import { Composer } from "@/components/chat/Composer";
 import { Markdown } from "@/components/chat/Markdown";
 import { AddToDashboard } from "@/components/analytics/DashboardActions";
-import { ResultView } from "@/components/ResultView";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ResultView } from "@dima/ui/result/ResultView";
+import { Button } from "@dima/ui/primitives/button";
+import { Sheet, SheetContent, SheetTitle } from "@dima/ui/primitives/sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
 
 // Suggested first questions per company (org slug); generic fallback otherwise.
 const STARTERS: Record<string, string[]> = {

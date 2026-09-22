@@ -3,10 +3,10 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Loader2, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
+import { Textarea } from "@dima/ui/primitives/textarea";
 import type { MarketingLocale } from "@/content/marketing";
 import type { ContactState } from "@/lib/marketing/contact";
 import { submitContact } from "@/app/(marketing)/contact/actions";

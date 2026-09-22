@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BrandLockup, BrandMark } from "@/components/BrandMark";
+import { BrandLockup, BrandMark } from "@dima/ui/brand/BrandMark";
 
 export const metadata: Metadata = {
   title: "dima — marka",

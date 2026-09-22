@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, LayoutDashboard, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { gateway, type Item } from "@/lib/gateway";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@dima/ui/primitives/button";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 /** Archived analyses and dashboards; restoring keeps their ids, so links survive. */
 export function TrashView() {

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@dima/ui/primitives/button";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 // pdf.js worker'ı paketle birlikte gelen dosyadan verilir — CDN'den çekmek hem
 // çevrimdışı çalışmayı bozar hem de CSP'de dış script gerektirirdi.

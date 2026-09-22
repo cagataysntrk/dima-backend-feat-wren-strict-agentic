@@ -10,26 +10,26 @@ import {
   type ThresholdAlarm,
 } from "@dima/api-client";
 import { useFeature, usePermission } from "@/lib/access";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@dima/ui/primitives/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CopyIcon } from "@/components/ai/copy-icon";
+} from "@dima/ui/primitives/select";
+import { Separator } from "@dima/ui/primitives/separator";
+import { Textarea } from "@dima/ui/primitives/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@dima/ui/primitives/toggle-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { CopyIcon } from "@dima/ui/ai/copy-icon";
 import { AddToDashboard } from "@/components/report/AddToDashboard";
 import { fileNameFor, resultToCsv } from "@/lib/export";
 import { downloadDocument, useDocuments } from "@/stores/documents";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 const SCHEDULE_PRESETS = [
   { name: "her sabah 08:00 · dünün verisi", every: "day" as const, at: "08:00", period: "dün" },

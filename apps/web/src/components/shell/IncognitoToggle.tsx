@@ -2,9 +2,9 @@
 
 import { EyeOff } from "lucide-react";
 import { useConversations } from "@/stores/conversations";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Button } from "@dima/ui/primitives/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Gizli sohbet düğmesi. Açıkken konuşma yerel geçmişe HİÇ yazılmaz.

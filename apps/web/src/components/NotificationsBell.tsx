@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getNotifications, type Notification } from "@dima/api-client";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
+import { cn } from "@dima/ui/utils";
 
 // Bildirim listesi (ADR-0011): zamanlanmış rapor/alarm bildirimleri. Açılışta taze
 // liste çeker; okunmamış rozeti çağıran (NotificationsPopover) tarafında yoklanır.

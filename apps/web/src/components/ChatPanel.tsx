@@ -6,23 +6,23 @@ import type { AskResponse, CubeQuery } from "@dima/contracts";
 import { chartDensity } from "@dima/domain";
 import { Composer } from "@/components/shell/Composer";
 import { InterpretationBar } from "@/components/InterpretationBar";
-import { SourceBadge } from "@/components/report/SourceBadge";
+import { SourceBadge } from "@dima/ui/report/SourceBadge";
 import { MessageActions } from "@/components/report/MessageActions";
 import { NextSteps, Recommendations } from "@/components/report/NextSteps";
 import { ResultCard } from "@/components/report/ResultCard";
-import { SqlBlock } from "@/components/report/SqlBlock";
+import { SqlBlock } from "@dima/ui/report/SqlBlock";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
-import { Bubble, DimaAvatar, Message, MessageScroller, UserAvatar } from "@/components/ai/chat";
+import { Bubble, DimaAvatar, Message, MessageScroller, UserAvatar } from "@dima/ui/ai/chat";
 import { ChainOfThought, Reasoning } from "@/components/ai/thinking";
 import { thinkingMs } from "@/lib/thinking";
 import { attachmentsOf } from "@/lib/attachments";
 import { datasetOf } from "@/lib/dataset";
 import { DatasetCard } from "@/components/report/DatasetCard";
 import { Attachment } from "@/components/ai/attachment";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@dima/ui/primitives/badge";
 import { useFeature } from "@/lib/access";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 /** Mesajla gönderilen ekler — balonun altında, yatay kaydırmalı. */
 function MessageAttachments({ files }: { files?: File[] }) {

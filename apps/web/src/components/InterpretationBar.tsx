@@ -14,9 +14,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+} from "@dima/ui/primitives/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { cn } from "@dima/ui/utils";
 
 // Yorum çubuğu: sistemin sorudan çıkardığı YORUM (ölçü/kırılım/filtre/dönem) chip'ler
 // olarak görünür ve OYNANABİLİR. Her düzenleme deterministik /cube ucuna gider (LLM yok).

@@ -18,7 +18,7 @@ import { ChatPanelsPanel } from "@/components/shell/ChatPanelsPanel";
 import { PANEL_TABS, type PanelTab } from "@/components/shell/ArtifactPanel";
 import { SearchDialog } from "@/components/shell/SearchDialog";
 import { ShortcutsDialog } from "@/components/shell/ShortcutsDialog";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@dima/ui/primitives/dialog";
 import { selectActive, useConversations } from "@/stores/conversations";
 import type { AskResponse, UploadResponse } from "@dima/contracts";
 

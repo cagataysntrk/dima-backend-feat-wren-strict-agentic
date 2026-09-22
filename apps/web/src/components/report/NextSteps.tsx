@@ -2,9 +2,9 @@
 
 import { ArrowRight, Clock, Columns3, Sigma } from "lucide-react";
 import type { CubeQuery, NextStep, Recommendation } from "@dima/contracts";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Button } from "@dima/ui/primitives/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
 
 /**
  * K2 — cevabın ALTINDAKİ "sonraki adım" chip'leri (rehberli analitik).

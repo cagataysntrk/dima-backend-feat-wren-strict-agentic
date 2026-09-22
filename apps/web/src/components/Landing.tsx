@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { motion } from "motion/react";
 import { Composer } from "@/components/shell/Composer";
-import { Badge } from "@/components/ui/badge";
-import { enterUp, stagger } from "@/lib/motion";
+import { Badge } from "@dima/ui/primitives/badge";
+import { enterUp, stagger } from "@dima/ui/motion";
 
 const STORY_KEYS = Array.from({ length: 12 }, (_, index) => `s${index + 1}` as const);
 

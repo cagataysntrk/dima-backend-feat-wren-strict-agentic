@@ -5,10 +5,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Eye, EyeOff, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { gateway, type ModelField, type ModelTable } from "@/lib/gateway";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@dima/ui/utils";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 /**
  * Data model: rename columns, mark which are categories, hide the ones nobody

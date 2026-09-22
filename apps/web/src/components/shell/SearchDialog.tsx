@@ -12,7 +12,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command";
+} from "@dima/ui/primitives/command";
 
 /**
  * ⌘K komut paleti — sohbetlerde ara + hızlı aksiyonlar. Ortada açılır (Dialog),

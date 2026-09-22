@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import { startOAuth, type OAuthProvider } from "@dima/api-client";
 
 function GoogleIcon() {

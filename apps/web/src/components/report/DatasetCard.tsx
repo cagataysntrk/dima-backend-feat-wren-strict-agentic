@@ -2,9 +2,9 @@
 
 import { Database, Hash, Table2, Tag, Type } from "lucide-react";
 import type { UploadResponse } from "@dima/contracts";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Card } from "@dima/ui/primitives/card";
+import { cn } from "@dima/ui/utils";
 
 /**
  * BAĞLANAN VERİ (D1/D2/D36) — "kurulum = konuşma".

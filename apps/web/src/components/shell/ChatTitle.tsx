@@ -10,8 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from "@dima/ui/primitives/dropdown-menu";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Üst bardaki sohbet adı — kenar çubuğu düğmesinin yanında (Claude deseni).

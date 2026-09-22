@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Maximize2, Minimize2, Expand, Shrink } from "lucide-react";
 import type { QueryResult } from "@dima/contracts";
 import { ResultView } from "@/components/ResultView";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Button } from "@dima/ui/primitives/button";
+import { Card } from "@dima/ui/primitives/card";
+import { Dialog, DialogContent, DialogTitle } from "@dima/ui/primitives/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Genişlemenin YAN BAŞINA miktarı — iki yana AYNI değer verildiği için simetri

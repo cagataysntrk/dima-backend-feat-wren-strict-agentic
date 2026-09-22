@@ -9,11 +9,11 @@ import {
   type DocumentOrigin,
 } from "@/stores/documents";
 import { DocumentViewer } from "@/components/report/DocumentViewer";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Button } from "@dima/ui/primitives/button";
+import { Card } from "@dima/ui/primitives/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Belge listesi — YÜKLENEN ve ÜRETİLEN dosyalar tek akışta.

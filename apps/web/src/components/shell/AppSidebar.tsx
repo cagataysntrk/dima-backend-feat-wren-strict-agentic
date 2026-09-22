@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useConversations } from "@/stores/conversations";
 import { useNotifications } from "@/lib/notifications";
-import { BrandMark } from "@/components/BrandMark";
+import { BrandMark } from "@dima/ui/brand/BrandMark";
 import {
   Sidebar,
   SidebarContent,
@@ -31,18 +31,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Kbd } from "@/components/ui/kbd";
+} from "@dima/ui/primitives/sidebar";
+import { Button } from "@dima/ui/primitives/button";
+import { cn } from "@dima/ui/utils";
+import { Kbd } from "@dima/ui/primitives/kbd";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+} from "@dima/ui/primitives/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
 import { AccountMenu } from "./AccountMenu";
 import { Onboarding } from "./Onboarding";
 

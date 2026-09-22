@@ -8,11 +8,11 @@ import {
   getDashboardData,
 } from "@dima/api-client";
 import { ResultView } from "@/components/ResultView";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@dima/ui/primitives/button";
+import { Badge } from "@dima/ui/primitives/badge";
+import { Card } from "@dima/ui/primitives/card";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
 
 /**
  * Tek panonun CANLI görünümü.

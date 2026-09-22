@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { BrandMark } from "@/components/BrandMark";
-import { Button } from "@/components/ui/button";
+import { BrandMark } from "@dima/ui/brand/BrandMark";
+import { Button } from "@dima/ui/primitives/button";
 
 // Route-level error boundary: /app içinde çalışan bir şey fırlatırsa boş
 // ekrana düşmek yerine kurtarılabilir bir sayfa göster.

@@ -7,12 +7,12 @@ import {
   SidebarInset,
   SidebarProvider,
   useSidebar,
-} from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { railItem, railReveal } from "@/lib/motion";
-import { cn } from "@/lib/utils";
+} from "@dima/ui/primitives/sidebar";
+import { Button } from "@dima/ui/primitives/button";
+import { Kbd } from "@dima/ui/primitives/kbd";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
+import { railItem, railReveal } from "@dima/ui/motion";
+import { cn } from "@dima/ui/utils";
 import { AppSidebar } from "./AppSidebar";
 import type { PanelTab } from "./ArtifactPanel";
 import { ChatNav } from "./ChatNav";

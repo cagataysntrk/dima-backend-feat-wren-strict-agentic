@@ -6,9 +6,9 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft, MailCheck } from "lucide-react";
 import { apiErrorMessage, requestPasswordReset } from "@dima/api-client";
 import { AuthShell } from "@/components/auth/AuthShell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@dima/ui/primitives/button";
+import { Input } from "@dima/ui/primitives/input";
+import { Label } from "@dima/ui/primitives/label";
 
 function ForgotForm() {
   const t = useTranslations();

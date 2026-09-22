@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { Paperclip } from "lucide-react";
 import { useDocuments, type DocumentOrigin } from "@/stores/documents";
 import { DocumentList } from "@/components/shell/DocumentList";
-import { Input } from "@/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Input } from "@dima/ui/primitives/input";
+import { ToggleGroup, ToggleGroupItem } from "@dima/ui/primitives/toggle-group";
 
 /**
  * Belgeler — HESABIN tüm dosyaları: yüklenenler ve üretilenler bir arada.

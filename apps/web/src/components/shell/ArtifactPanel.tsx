@@ -3,10 +3,10 @@
 import { BarChart3, Database, Maximize2, Minimize2, Paperclip, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { Button } from "@dima/ui/primitives/button";
+import { Sheet, SheetContent, SheetTitle } from "@dima/ui/primitives/sheet";
+import { useIsMobile } from "@dima/ui/use-mobile";
+import { cn } from "@dima/ui/utils";
 
 /**
  * Sağ panel — YALNIZ AÇIK SOHBET hakkında.

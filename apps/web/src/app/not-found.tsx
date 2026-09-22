@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/BrandMark";
-import { Button } from "@/components/ui/button";
+import { BrandMark } from "@dima/ui/brand/BrandMark";
+import { Button } from "@dima/ui/primitives/button";
 
 export default function NotFound() {
   return (

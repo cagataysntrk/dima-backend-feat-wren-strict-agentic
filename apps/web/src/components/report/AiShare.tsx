@@ -1,7 +1,7 @@
 "use client";
 
 import type { AskResponse } from "@dima/contracts";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 /**
  * YOL DAĞILIMI (D60) — "bugün gösterdiklerinin ne kadarında yapay zekâ karar verdi?"

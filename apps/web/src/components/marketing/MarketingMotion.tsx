@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { domAnimation, LazyMotion, m, useReducedMotion } from "motion/react";
-import { cn } from "@/lib/utils";
+import { cn } from "@dima/ui/utils";
 
 const revealTransition = {
   duration: 0.48,

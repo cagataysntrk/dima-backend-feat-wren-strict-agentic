@@ -7,12 +7,12 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { ArrowDown, ArrowLeft, ArrowUp, Columns2, FilterX, Pencil, Square, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { gateway, type Filters, type Widget, type WidgetData, type WidgetWidth } from "@/lib/gateway";
-import { cn } from "@/lib/utils";
-import { ResultView } from "@/components/ResultView";
+import { cn } from "@dima/ui/utils";
+import { ResultView } from "@dima/ui/result/ResultView";
 import { FilterBar } from "@/components/analytics/FilterBar";
 import { ExportMenu } from "@/components/analytics/ExportMenu";
 import { DrillSheet, type DrillTarget } from "@/components/analytics/DrillSheet";
-import { Button } from "@/components/ui/button";
+import { Button } from "@dima/ui/primitives/button";
 import {
   Dialog,
   DialogContent,
@@ -20,9 +20,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@dima/ui/primitives/dialog";
+import { Input } from "@dima/ui/primitives/input";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 function filtersFromParams(sp: URLSearchParams): Filters {
   const f: Filters = {};

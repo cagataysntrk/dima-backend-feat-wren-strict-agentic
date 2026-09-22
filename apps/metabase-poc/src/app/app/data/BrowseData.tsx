@@ -4,11 +4,11 @@ import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Sparkles, Table2 } from "lucide-react";
 import { gateway } from "@/lib/gateway";
-import { ResultView } from "@/components/ResultView";
-import { Button } from "@/components/ui/button";
+import { ResultView } from "@dima/ui/result/ResultView";
+import { Button } from "@dima/ui/primitives/button";
 import { fmtValue } from "@dima/domain";
-import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@dima/ui/utils";
+import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 type Sort = { fieldId: number; dir: "asc" | "desc" } | undefined;
 

@@ -6,15 +6,15 @@ import { ArrowUp, ChevronDown, Table2 } from "lucide-react";
 import { BorderBeam } from "border-beam";
 import { useTheme } from "next-themes";
 import { gateway } from "@/lib/gateway";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn } from "@dima/ui/utils";
+import { Button } from "@dima/ui/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@dima/ui/primitives/dropdown-menu";
 
 interface Props {
   value: string;
