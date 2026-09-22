@@ -403,3 +403,66 @@ full M1 workflow + retained v2 real-Wren sentinels + forbidden-file isolation.
 
 status:
 `CLASSIFIED / ROOT BOUNDARY PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-M1-RED-006 — parity-family fixture stale constructor after receipt-boundary split
+
+receipt_id: `DMP-M1-RED-006`  
+ticket: `M1-P1-001`  
+tested_sha: `cd72dddc1a24774eefc94f20c4f21692ea16a757`  
+run_id: `35730482937`
+
+observed_failure:
+Eight provider-free parity-family cases fail before assertions with:
+`TypeError: WrenSubstrateAdapter.__init__() got an unexpected keyword argument 'contract_store'`.
+
+failure_stage:
+test fixture construction in `test_v3_m1_parity_families.py::_case`.
+
+failure_class:
+`EVAL_ORACLE`
+
+classification_evidence:
+- forbidden-file isolation = PASS;
+- v3 compile including `legacy_contract.py` = PASS;
+- all failures share the identical stale constructor call;
+- these tests call only `adapter._to_ir(intent)` and never execute/persist a query;
+- receipt-boundary patch intentionally replaced substrate-owned `contract_store/session_id`
+  with optional `receipt_writer`.
+
+single_owner:
+`backend/tests/test_v3_m1_parity_families.py` fixture.
+
+root_cause:
+test helper retained constructor arguments removed by the authorized DMP-M1-RED-005 boundary correction.
+
+failure_family:
+provider-free adapter projection tests that instantiate execution adapters only to access deterministic compatibility conversion.
+
+forbidden_patch_alternatives:
+- reintroduce contract_store/session_id into Wren substrate;
+- add compatibility kwargs solely for tests;
+- weaken/skip parity families;
+- modify v2.
+
+allowed_files_to_touch:
+- `backend/tests/test_v3_m1_parity_families.py`
+
+files_not_to_touch:
+- `backend/app/v3/**` for this failure
+- `backend/app/v2/**`
+- source branch
+
+invariant_being_fixed:
+test harness must instantiate the current boundary without reintroducing persistence ownership into the substrate.
+
+focused_proof:
+provider-free v3 M1 contract + parity-family gate.
+
+family_or_live_proof:
+full M1 workflow including real Wren parity and retained v2 sentinels.
+
+status:
+`CLASSIFIED / TEST-ONLY PATCH AUTHORIZED`.
