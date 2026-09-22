@@ -32,7 +32,6 @@ from app.v2.models import (
     ConversationStateV2,
     TenantAnalyticsRuntimeV0,
 )
-from app.v2.resolver import SemanticResolver
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 
@@ -133,7 +132,6 @@ def test_result_aware_agent_derived_branch_is_evidence_grounded_end_to_end():
     )
     handles = SemanticHandleRegistry()
     semantic = ManagerSemanticResolutionAdapter(
-        resolver=SemanticResolver(signing_key=b"a" * 32),
         source_spans=spans,
         semantic_handles=handles,
         semantic_context=context,
