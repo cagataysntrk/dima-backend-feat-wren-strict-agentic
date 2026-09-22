@@ -6953,6 +6953,48 @@ cardinality-aware fanout policy
 Day7 remains ACTIVE. Day8 is NOT opened.
 
 ---
+## 2026-09-22 — DAY7 TIMEOUT / COMMIT ATOMICITY GREEN
+
+```text
+tested code HEAD               08a0a1a9a3a5308f776f5eef6524197eaaf2ecd2
+focused workflow               35779380415 = GREEN
+logical lifecycle deadline     SUPPORTED
+physical DB cancellation       NOT GUARANTEED / NOT CLAIMED
+```
+
+Root boundary:
+- every executable Research task receives a run-scoped execution lease with
+  `started_at + deadline_at`;
+- `ResearchTaskRegistry` owns delivery/cancel/deadline lifecycle;
+- accepted-Evidence commit guard verifies ACTIVE + execution identity + deadline;
+- deadline expiry happens **before** EvidenceStore/UOL truth commit;
+- timeout marks the task terminal failed and same task cannot silently retry;
+- cancel-vs-timeout remains terminal;
+- QueryContract/audit receipt may survive a physically completed late DB query, but it is
+  not promoted into accepted Research Evidence;
+- commit authorization freezes the deadline decision, preventing a post-commit
+  millisecond race from manufacturing a timeout after truth was already accepted.
+
+Focused attacks GREEN:
+```text
+late result after timeout            -> Evidence 0 / VERIFIED 0
+timeout + duplicate/retry            -> second DB side effect 0
+cancel vs timeout                    -> no resurrection
+near-deadline success                -> one accepted Evidence
+commit authorized before deadline    -> finalization remains valid
+```
+
+Metabase reference disposition:
+- lifecycle deadline/cancel non-resurrection = **PATTERN_ONLY / DIMA_CORE_NATIVE**;
+- no Metabase runtime/code adopted.
+
+Next exact block:
+`fanout certificate MDL binding + governed CrossDomainJoinFacts construction`.
+
+RELATIONSHIP execution remains OFF until this provenance boundary is GREEN.
+
+---
+
 ## 2026-09-22 — DAY7 CURRENT-HEAD WREN GRAIN RECERTIFICATION GREEN
 
 ```text
