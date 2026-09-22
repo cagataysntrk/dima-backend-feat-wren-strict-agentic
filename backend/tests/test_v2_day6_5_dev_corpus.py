@@ -35,6 +35,8 @@ def test_day65_dev_corpus_is_complete_and_taxonomy_balanced():
         "expected_deliverables": "expected_deliverables",
         "expected_ambiguities": "expected_ambiguities",
         "expected_representability": "expected_representability",
+        "allowed_work_modes": "allowed_work_modes",
+        "expected_authority_family": "expected_authority_family",
         "expected_terminal_state": "expected_terminal_state",
         "requires_adaptive_branch": "requires_adaptive_branch",
         "adversarial_flags": "adversarial_flags",
@@ -53,6 +55,21 @@ def test_day65_dev_corpus_is_complete_and_taxonomy_balanced():
             "CLARIFICATION_REQUIRED",
             "UNSUPPORTED",
         }
+
+        allowed_work_modes = set(case["allowed_work_modes"])
+        authority_family = case["expected_authority_family"]
+        if case["expected_representability"] == "STANDARD_LOSSLESS":
+            assert allowed_work_modes == {
+                "STANDARD_DIRECT",
+                "STANDARD_BUILDER",
+            }
+            assert authority_family == "AcceptedStandardAuthority"
+        elif case["expected_representability"] == "RESEARCH_REQUIRED":
+            assert allowed_work_modes == {"RESEARCH"}
+            assert authority_family == "AcceptedResearchAuthority"
+        else:
+            assert allowed_work_modes == set()
+            assert authority_family == "NONE"
 
     required_taxonomy = set(manifest["taxonomy"])
     actual_taxonomy = {
