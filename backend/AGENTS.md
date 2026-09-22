@@ -75,6 +75,12 @@
 > gate değildir. Direct yol minimum call hedefler; Builder bounded progress-driven retry yapabilir.
 > Ancak `simple_standard_research_manager_loop = 0`.
 >
+> **FAILURE TRIAGE RECEIPT — ZORUNLU:** live/canary/DEV/Validation/Hidden RED sonrası semantic/product code değişmez.
+> Önce `belgeler/plan/DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md` schema'sı doldurulur.
+> Akış: `RED → NO CODE CHANGE → receipt → same-SHA A/B if needed → failure_class + single_owner + root_cause → allowed files → code → focused proof → family/metamorphic proof`.
+> `ONE FAILURE ≠ ONE NEW RULE`: failure family farklı wording/schema/tenant yüzeyleri için tanımlanamıyorsa yeni mekanizma eklenmez.
+> Case-derived prompt, failed phrase example, keyword/regex patch ve legacy Resolver fallback receipt içinde açıkça forbidden alternatiflerdir.
+>
 > **Failure sınıflandırmadan patch YOK:**
 > `MODEL_COGNITION | CONTRACT/ARCHITECTURE | RESOLVER_TRUTH | EVAL_ORACLE | TRANSPORT/PROVIDER`.
 > Infra/provider failure semantic wrong değildir.
