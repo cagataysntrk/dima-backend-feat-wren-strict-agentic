@@ -11,6 +11,7 @@ name: v2-day7-focused
       - "backend/app/v2/research_tools.py"
       - "backend/app/v2/manager_tools.py"
       - "backend/app/v2/manager_executor.py"
+      - "backend/app/v2/representability.py"
       - "backend/tests/test_v2_day7_research_tool_contract.py"
       - "backend/tests/test_v2_day7_research_wren_vertical.py"
       - "backend/tests/test_v2_day7_wren_schema_grain_metadata.py"
