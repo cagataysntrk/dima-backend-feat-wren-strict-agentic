@@ -6,12 +6,13 @@ compatibility or unit compatibility. Those facts are reconstructed here from acc
 opaque handles + current Wren schema.
 
 Initial executable shape is intentionally narrow:
-    source metric -> target model's governed row-key dimension
+    source metric -> one-hop Wren MANY_TO_ONE target
 
-That shape uses exactly one metric and one target primary-key dimension. Time/unit
-compatibility are NOT_APPLICABLE by construction because the primitive does not compare
-two measures or combine units/time series. Broader analytical grains remain unsupported
-until a governed primitive can prove them.
+The target may be the governed target row key OR a relationship-derived analytical
+attribute whose provenance is explicitly exported by Wren dimension_origin. Row grain,
+join key and analytical output grain are separate facts. Time/unit compatibility are
+NOT_APPLICABLE by construction because this primitive does not compare two measures or
+combine units/time series.
 """
 
 from __future__ import annotations
@@ -49,6 +50,7 @@ class JoinFactCode(StrEnum):
     MODEL_MAPPING_MISSING = "MODEL_MAPPING_MISSING"
     ROW_GRAIN_UNKNOWN = "ROW_GRAIN_UNKNOWN"
     TARGET_GRAIN_NOT_GOVERNED = "TARGET_GRAIN_NOT_GOVERNED"
+    TARGET_ATTRIBUTE_NOT_GOVERNED = "TARGET_ATTRIBUTE_NOT_GOVERNED"
     FANOUT_UNVERIFIED = "FANOUT_UNVERIFIED"
     FANOUT_UNSAFE = "FANOUT_UNSAFE"
     NO_WREN_PATH = "NO_WREN_PATH"
@@ -204,6 +206,15 @@ class CrossDomainJoinFactBuilder:
         )
 
     @staticmethod
+    def _model_has_column(model: dict | None, column_name: str) -> bool:
+        if not isinstance(model, dict):
+            return False
+        return any(
+            isinstance(column, dict) and str(column.get("name") or "") == column_name
+            for column in tuple(model.get("columns") or ())
+        )
+
+    @staticmethod
     def _directed_paths(
         schema: dict,
         *,
@@ -349,20 +360,37 @@ class CrossDomainJoinFactBuilder:
                         JoinFactCode.NO_WREN_PATH,
                         "dimension_origin relationship is absent from current Wren schema",
                     )
+                # Current executable relationship-derived provenance is one-hop.
+                # A single relationship name cannot prove missing intermediate hops.
+                try:
+                    origin_hops = int(origin.get("hops"))
+                except (TypeError, ValueError):
+                    origin_hops = 0
+                if origin_hops != 1:
+                    return self._fail(
+                        JoinFactCode.UNSUPPORTED_HANDLE_SHAPE,
+                        "relationship-derived analytical attribute requires explicit one-hop provenance",
+                    )
+
                 parsed = fanout_module.ayristir(relation)
+                origin_model = str(origin.get("model") or "")
+                origin_column = str(origin.get("column") or "")
                 if (
                     parsed is None
                     or parsed[0] != source_model
-                    or parsed[2] != str(origin.get("model"))
-                    or parsed[3] != str(origin.get("column"))
+                    or parsed[2] != origin_model
                 ):
                     return self._fail(
                         JoinFactCode.NO_WREN_PATH,
-                        "dimension_origin does not match current Wren relationship metadata",
+                        "dimension_origin model/relationship does not match current Wren relationship metadata",
                     )
+
+                # IMPORTANT: parsed[3] is the TARGET JOIN KEY.  origin.column is the
+                # ANALYTICAL TARGET ATTRIBUTE.  They are related by target-model
+                # provenance but are not required to be the same column.
                 _, source_join_key, target_model, target_join_key = parsed
                 target_analysis_grain = target_ref.canonical_name
-                target_analysis_column = str(origin.get("column"))
+                target_analysis_column = origin_column
                 requested_output_grain = target_analysis_grain
                 aggregation = JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
                 path = (relation,)
@@ -445,6 +473,22 @@ class CrossDomainJoinFactBuilder:
                 JoinFactCode.ROW_GRAIN_UNKNOWN,
                 "target model row grain is UNKNOWN; primary_key is not declared",
             )
+
+        if target_analysis_column is not None:
+            if not self._model_has_column(target_meta, target_analysis_column):
+                return self._fail(
+                    JoinFactCode.TARGET_ATTRIBUTE_NOT_GOVERNED,
+                    (
+                        "relationship-derived analytical attribute is absent from "
+                        "the governed target Wren model"
+                    ),
+                )
+            # If the analytical attribute itself is the row key, use the gate's
+            # canonical target-row aggregation instead of pretending it is a broader
+            # attribute grain.
+            if target_analysis_grain == target_pk:
+                aggregation = JoinAggregation.PRE_AGGREGATE_TO_TARGET
+
         if target_join_key != target_pk:
             return self._fail(
                 JoinFactCode.TARGET_GRAIN_NOT_GOVERNED,
