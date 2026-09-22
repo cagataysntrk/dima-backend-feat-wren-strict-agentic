@@ -724,13 +724,61 @@ class BoundedSemanticLinker:
                 )
                 continue
             if len(exact) > 1:
-                outputs[candidate_set.request_id] = BoundedSemanticSelection(
+                context_key = _exact_key(decision_context or "")
+                surface_key = _exact_key(candidate_set.surface)
+                has_additional_context = bool(
+                    context_key and context_key != surface_key
+                )
+
+                if not has_additional_context:
+                    outputs[candidate_set.request_id] = BoundedSemanticSelection(
+                        request_id=candidate_set.request_id,
+                        surface=candidate_set.surface,
+                        status="AMBIGUOUS_EXACT",
+                        mode="NONE",
+                        reason=(
+                            "multiple verified catalog candidates share exact surface "
+                            "and no additional immutable source context is available"
+                        ),
+                    )
+                    continue
+
+                if self._provider is None:
+                    outputs[candidate_set.request_id] = BoundedSemanticSelection(
+                        request_id=candidate_set.request_id,
+                        surface=candidate_set.surface,
+                        status="LINKER_UNAVAILABLE",
+                        mode="NONE",
+                        reason=(
+                            "duplicate exact candidates require bounded contextual "
+                            "semantic decision"
+                        ),
+                    )
+                    continue
+
+                # Exact identity remains the candidate boundary. Immutable source
+                # context may help cognition choose/abstain only among these exact
+                # candidates; it cannot widen discovery or mint authority.
+                exact_set = CandidateSet(
                     request_id=candidate_set.request_id,
                     surface=candidate_set.surface,
-                    status="AMBIGUOUS_EXACT",
-                    mode="NONE",
-                    reason="multiple verified catalog candidates share exact surface",
+                    kind_hint=candidate_set.kind_hint,
+                    bindings=tuple(exact),
+                    too_broad=False,
+                    retrieval_exhaustive=candidate_set.retrieval_exhaustive,
+                    retrieval_backend=candidate_set.retrieval_backend,
+                    retrieval_truncated=candidate_set.retrieval_truncated,
                 )
+                llm_cards.append(
+                    SemanticLinkRequestCard(
+                        request_id=exact_set.request_id,
+                        surface=exact_set.surface,
+                        source_context=decision_context,
+                        kind_hint=exact_set.kind_hint,
+                        candidates=exact_set.cards,
+                    )
+                )
+                llm_sets[exact_set.request_id] = exact_set
                 continue
             if not candidate_set.bindings:
                 exhaustive = candidate_set.retrieval_exhaustive

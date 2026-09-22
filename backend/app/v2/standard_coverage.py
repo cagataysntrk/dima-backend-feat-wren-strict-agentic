@@ -33,7 +33,26 @@ class StandardCoverageIntentItem(FrozenModel):
     obligation_id: str = Field(min_length=1)
     capability_key: ManagerCapabilityKey
     polarity: ObligationPolarity
+    # Provenance anchors for the requested obligation. These are not proof that
+    # every material modifier inside the source text has been semantically represented.
     source_surfaces: tuple[str, ...] = Field(min_length=1)
+    # Exact user spans that actually reached governed semantic handles.
+    semantic_source_surfaces: tuple[str, ...] = ()
+    semantic_target_kinds: tuple[str, ...] = ()
+    ranking_direction: Literal["asc", "desc"] | None = None
+    ranking_limit: int | None = Field(default=None, ge=1, le=1000)
+
+    @model_validator(mode="after")
+    def _semantic_alignment(self):
+        if len(self.semantic_source_surfaces) != len(self.semantic_target_kinds):
+            raise ValueError(
+                "semantic source surfaces and target kinds must align"
+            )
+        if (self.ranking_direction is None) != (self.ranking_limit is None):
+            raise ValueError(
+                "coverage ranking direction + limit must be supplied together"
+            )
+        return self
 
 
 class StandardCoverageIssue(FrozenModel):
@@ -63,11 +82,25 @@ _STANDARD_COVERAGE_SYSTEM = """You are Dima's final veto-only Standard intent co
 
 Compare USER_MESSAGE against STANDARD_INTENT_VIEW only for material coverage loss.
 
+Interpret the view precisely:
+- source_surfaces are provenance anchors for the obligation; they do NOT prove every word
+  inside those anchors was represented.
+- semantic_source_surfaces are exact user spans that actually reached governed semantic handles.
+- capability_key and ranking_direction/ranking_limit are typed operation representation.
+
 You may VETO only when:
 1. a materially requested business result is omitted,
 2. an explicit user exclusion is omitted or represented with wrong polarity,
 3. the user clearly requested an investigation/research task that a Standard analytical
-   projection would silently omit.
+   projection would silently omit,
+4. a material qualifier, modifier, negation, threshold or predicate changes the requested
+   business meaning but is neither represented inside semantic_source_surfaces nor by a typed
+   operation parameter. Such meaning must not silently disappear.
+
+Do NOT veto ordinary grammar/presentation wording, or a qualifier already contained inside a
+bound semantic_source_surface when that whole phrase is the governed business concept.
+If the requested modifier/predicate cannot be represented safely, VETO with its exact source
+substring rather than guessing or repairing it.
 
 You are NOT semantic authority. You MUST NOT:
 - choose, add, remove or suggest a capability,
@@ -129,12 +162,26 @@ class StandardCoverageVeto:
                 ).exact_surface
                 for source_ref in item.source_refs
             )
+            semantic_surfaces: list[str] = []
+            semantic_kinds: list[str] = []
+            for binding in item.semantic_bindings:
+                semantic_span = self._source_spans.validate(
+                    binding.source_ref,
+                    expected_message_hash=source_message_hash,
+                )
+                semantic_surfaces.append(semantic_span.exact_surface)
+                semantic_kinds.append(binding.target_kind)
+
             out.append(
                 StandardCoverageIntentItem(
                     obligation_id=item.obligation_id,
                     capability_key=item.capability_key,
                     polarity=item.polarity,
                     source_surfaces=surfaces,
+                    semantic_source_surfaces=tuple(semantic_surfaces),
+                    semantic_target_kinds=tuple(semantic_kinds),
+                    ranking_direction=item.ranking_direction,
+                    ranking_limit=item.ranking_limit,
                 )
             )
         return tuple(out)
