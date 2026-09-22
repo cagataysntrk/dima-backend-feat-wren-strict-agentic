@@ -27,7 +27,6 @@ from app.v2.models import (
     ContextVersionV0,
     ConversationStateV2,
 )
-from app.v2.resolver import SemanticResolver
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 
@@ -133,7 +132,6 @@ def _loop(scripted: _ScriptedStructured, *, conversation=None):
     context = _context()
     conversation = conversation or ConversationStateV2()
     semantic = ManagerSemanticResolutionAdapter(
-        resolver=SemanticResolver(signing_key=b"s" * 32),
         source_spans=source_spans,
         semantic_handles=handles,
         semantic_context=context,
