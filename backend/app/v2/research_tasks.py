@@ -153,9 +153,15 @@ class ResearchTaskService:
         if max_seed_tasks < 1 or max_seed_tasks > 4:
             raise ValueError("Day7 initial seed bound must be between 1 and 4")
         ledger = runtime.ledger
-        if runtime.accepted_contract is None or ledger is None:
+        contract = runtime.accepted_contract
+        if contract is None or ledger is None:
             raise ResearchTaskMaterializationError(
                 "initial Research seed set requires accepted Research authority"
+            )
+        accepted = runtime.authority_registry.accepted(contract.turn_id)
+        if accepted is None or accepted[0].value != "RESEARCH":
+            raise ResearchTaskMaterializationError(
+                "initial Research seed set requires Research authority family"
             )
 
         executable = set(executable_task_kinds)
