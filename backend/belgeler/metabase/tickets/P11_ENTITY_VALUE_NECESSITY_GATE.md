@@ -66,3 +66,25 @@ whether a product resolver is needed before building one.
 
 The frozen artifact is `backend/lab/metabase/p11/corpus_v1.json`; its canonical SHA-256 is computed
 by the provider-free harness and repeated in the live result receipt.
+
+
+## Baseline measurement — DMP-P11-MEASURE-001
+
+```text
+SHA                         = 977faa99cdf6581ce02c13b55add4077750fe540
+workflow                    = 35789082927 = SUCCESS
+corpus fingerprint          = da7f13e804c643c376d085b0e0fa94e132fdd8877e1945e4c19257160d03e06c
+Luna runtime                = openai/gpt-5.6-luna
+Sol runtime                 = openai/gpt-5.6-sol
+EV-01                       = PASS / PASS
+EV-02                       = PASS / PASS
+EV-03                       = SILENT BIND / SILENT BIND
+EV-04                       = PASS / PASS
+silent-wrong occurrences    = 5
+classification              = MATERIAL_TRUTH_GAP / UNRESOLVED_SEMANTIC_SCOPE_ADOPTION
+resolver framework          = NOT AUTHORIZED
+minimum adoption gate       = AUTHORIZED BY DMP-DEC-0027
+```
+
+The post-guardrail run must reuse the same frozen artifact and preserve raw model decisions alongside
+the official guarded outcome.

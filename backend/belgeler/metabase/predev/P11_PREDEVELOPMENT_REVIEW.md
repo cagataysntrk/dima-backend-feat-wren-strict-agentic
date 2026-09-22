@@ -57,3 +57,14 @@ See:
 `backend/belgeler/metabase/tickets/P11_ENTITY_VALUE_NECESSITY_GATE.md`.
 
 No provider/live model evaluation has been run by this predev seal.
+
+
+## 6. DMP-P11-MEASURE-001 result
+
+The first frozen live run is complete. Both Luna and Sol failed the same EV-03 unresolved-scope case
+with silent direct BIND. EV-01, EV-02 and EV-04 passed on both first attempts.
+
+Per DMP-DEC-0027, one minimum entity-value **adoption gate** is authorized. An entity resolver,
+translation table, fuzzy matcher or broader deterministic cognition framework remains unauthorized.
+
+The corpus/prompt/tool/data/model contract is frozen for the post-guardrail rerun.

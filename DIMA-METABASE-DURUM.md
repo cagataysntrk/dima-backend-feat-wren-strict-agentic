@@ -1279,3 +1279,36 @@ Sol requested model                = openai/gpt-5.6-sol
 primary evaluations                = 8 maximum before failure repeats
 model runs                         = AWAITING CI
 ```
+
+
+---
+
+## P11 V1 baseline Luna/Sol measurement
+
+```text
+measurement SHA                    = 977faa99cdf6581ce02c13b55add4077750fe540
+workflow                           = 35789082927 = SUCCESS
+provider-free freeze               = GREEN
+governance                         = GREEN
+corpus fingerprint                 = da7f13e804c643c376d085b0e0fa94e132fdd8877e1945e4c19257160d03e06c
+Luna exact runtime id              = openai/gpt-5.6-luna
+Sol exact runtime id               = openai/gpt-5.6-sol
+primary evaluations                = 8
+repeat calls                       = 4
+total model calls                  = 12
+EV-01                              = PASS / PASS
+EV-02                              = PASS / PASS
+EV-03                              = SILENT BIND / SILENT BIND
+EV-04                              = PASS / PASS
+raw silent-wrong occurrences       = 5
+Luna total cost                    = USD 0.0015242
+Sol total cost                     = USD 0.0101260
+classification                     = MATERIAL_TRUTH_GAP
+root cause                         = unresolved multi-scope value adoption
+DMP-DEC-0027                       = SEALED
+entity resolver                    = NOT AUTHORIZED
+minimum adoption gate              = AUTHORIZED
+DMP-P5-BLOCK-001                   = OPEN
+```
+
+Next: implement only the DMP-DEC-0027 adoption gate, then rerun the exact same frozen corpus.

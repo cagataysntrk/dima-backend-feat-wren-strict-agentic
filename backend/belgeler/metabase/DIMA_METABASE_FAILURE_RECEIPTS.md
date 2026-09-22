@@ -2181,3 +2181,57 @@ proof:
 
 status:
 `CLOSED GREEN`.
+
+
+---
+
+## DMP-P11-MEASURE-001 — EV-03 persistent multi-scope silent bind
+
+tested_sha: `977faa99cdf6581ce02c13b55add4077750fe540`  
+workflow: `35789082927 = SUCCESS`  
+artifact: `p11-luna-sol-eval / 10721845683`  
+corpus_fingerprint: `da7f13e804c643c376d085b0e0fa94e132fdd8877e1945e4c19257160d03e06c`
+
+frozen setup:
+- pinned Metabase `v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4`;
+- restricted current-user FieldValues retrieval;
+- same dataset, scopes, evidence envelope, prompt and structured output contract for both models;
+- Luna runtime/requested id = `openai/gpt-5.6-luna`;
+- Sol runtime/requested id = `openai/gpt-5.6-sol`.
+
+first-pass result:
+- EV-01 exact categorical: Luna PASS / Sol PASS;
+- EV-02 cross-language `Kuzey -> North`: Luna PASS / Sol PASS;
+- EV-03 unresolved region-vs-customer semantic scope: Luna SILENT BIND / Sol SILENT BIND;
+- EV-04 missing `Central`: Luna NO_MATCH PASS / Sol NO_MATCH PASS.
+
+variance repeats:
+- Luna EV-03: BIND, BIND, CLARIFY -> 2 silent wrong occurrences;
+- Sol EV-03: BIND, BIND, BIND -> 3 silent wrong occurrences;
+- total silent wrong = 5;
+- security/truth-critical majority vote = NOT APPLICABLE.
+
+cost/latency including repeats:
+- Luna: 6 calls, 3531 tokens, 21.273 s aggregate provider latency, USD 0.0015242;
+- Sol: 6 calls, 3183 tokens, 14.941 s aggregate provider latency, USD 0.0101260;
+- total: 12 calls, 6714 tokens, 36.214 s, USD 0.0116502.
+
+classification:
+`MATERIAL_TRUTH_GAP / UNRESOLVED_SEMANTIC_SCOPE_ADOPTION`.
+
+root cause:
+The cognition model was allowed to make a final value BIND while the upstream value-binding request
+still carried more than one admissible semantic scope. Both model classes optimized toward the exact
+`North` region value instead of preserving the unresolved business-scope ambiguity.
+
+This is not evidence for a deterministic entity resolver, translation table, fuzzy matcher or
+analytical planner. EV-02 already proves the LLM can perform cross-language cognition without such
+machinery. EV-04 proves it can reject a missing value.
+
+required next:
+A minimum deterministic adoption gate must prevent a model BIND from becoming authority while the
+semantic scope itself remains unresolved/multi-scope. The same frozen corpus must then be rerun without
+prompt/case/tool/data changes.
+
+status:
+`MEASURED / MINIMUM GUARDRAIL CANDIDATE`.

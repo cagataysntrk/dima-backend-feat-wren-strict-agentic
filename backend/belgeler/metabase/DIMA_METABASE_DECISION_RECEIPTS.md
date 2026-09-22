@@ -1018,3 +1018,55 @@ Platform security/semantic invariants and prove value on the Platform corpus. No
 cherry-pick.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0027 — minimum entity-value adoption gate; no resolver framework
+
+date: 2026-09-23
+
+evidence:
+`DMP-P11-MEASURE-001`.
+
+decision:
+Introduce one minimal Dima truth gate around model-proposed entity-value adoption.
+
+The gate is **not** an entity resolver and owns no language cognition.
+
+For a model proposal `BIND(semantic_ref, value)`, adoption is allowed only when all of the following
+are already true from typed upstream evidence:
+
+1. the value-binding request has exactly one approved semantic scope;
+2. the proposed `semantic_ref` is that approved scope;
+3. the candidate value is present by exact structured equality in current-lens evidence for that scope;
+4. the evidence carries one coherent current access-lens reference and current-user retrieval state.
+
+If the request still carries multiple approved/admissible scopes, direct BIND is vetoed to
+`CLARIFY / AMBIGUOUS_SEMANTIC_SCOPE`.
+
+If the model proposes a scope/value outside the approved evidence, adoption is blocked/typed-invalid.
+No nearest string, translation table, regex, fuzzy similarity, stemming, morphology, SQL parsing,
+physical-field guessing or global search is authorized.
+
+The LLM remains cognition owner:
+- it understands `Kuzey`;
+- it may choose BIND/CLARIFY/NO_MATCH;
+- it writes the clarification/synthesis.
+
+Dima owns only the trust invariant:
+`unresolved semantic scope cannot silently become canonical value authority`.
+
+The P11 frozen corpus, retrieval evidence, prompt, model ids and oracles remain unchanged for the
+post-guardrail rerun.
+
+success criterion:
+- raw model telemetry remains visible;
+- EV-03 raw BIND may occur, but official guarded outcome must be CLARIFY;
+- EV-01/02 exact safe binds remain allowed;
+- EV-04 missing value remains non-bind;
+- official silent-wrong = 0 across the same runnable corpus;
+- if satisfied, deterministic **resolver** remains NOT_NEEDED for P11 V1.
+
+status:
+`SEALED / MINIMUM GUARDRAIL IMPLEMENTATION AUTHORIZED`.
