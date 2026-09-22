@@ -160,6 +160,12 @@ export const gateway = {
     api<{ result: QueryResult }>("/api/sql/run", json({ sql, values })).then((r) => r.result),
   saveSql: (name: string, sql: string, values?: Record<string, string>) =>
     api<{ id: number }>("/api/sql/save", json({ name, sql, values })),
+  amendUpload: (cardId: number, file: File, mode: "append" | "replace") => {
+    const form = new FormData();
+    form.set("file", file);
+    return api<{ ok: true }>(`/api/uploads/${cardId}?mode=${mode}`, { method: "POST", body: form });
+  },
+  removeUpload: (cardId: number) => api<{ ok: true }>(`/api/uploads/${cardId}`, { method: "DELETE" }),
   upload: (file: File) => {
     const form = new FormData();
     form.set("file", file);

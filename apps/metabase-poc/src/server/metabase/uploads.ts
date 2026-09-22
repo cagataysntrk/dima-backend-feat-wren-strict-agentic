@@ -2,7 +2,7 @@ import "server-only";
 import * as XLSX from "xlsx";
 import { mbForm, mbGet, mbPut } from "./client";
 import { GatewayError } from "./errors";
-import { requireAnalyst, type TenantContext } from "./guard";
+import { assertCard, requireAnalyst, type TenantContext } from "./guard";
 import { slugify } from "./api";
 
 // Excel/CSV upload → a new table in the tenant's OWN schema + a model card in the
@@ -54,6 +54,43 @@ async function hideEngineColumns(cardId: number): Promise<void> {
   );
 }
 
+/** Uploads must be pointed at this tenant's schema for the call, then reset. */
+async function withUploadTarget<T>(ctx: TenantContext, fn: () => Promise<T>): Promise<T> {
+  return exclusive(async () => {
+    await mbPut("admin", "/api/setting/uploads-settings", {
+      value: { db_id: ctx.tenant.databaseId, schema_name: ctx.tenant.schema, table_prefix: "yukleme_" },
+    });
+    try {
+      return await fn();
+    } finally {
+      await mbPut("admin", "/api/setting/uploads-settings", {
+        value: { db_id: null, schema_name: null, table_prefix: null },
+      }).catch(() => undefined);
+    }
+  });
+}
+
+/** Add rows to an existing uploaded table, or replace all of its rows. */
+export async function amendUpload(
+  ctx: TenantContext,
+  cardId: number,
+  file: File,
+  mode: "append" | "replace",
+): Promise<{ ok: true }> {
+  requireAnalyst(ctx);
+  const card = await assertCard(ctx, cardId);
+  if (card.table_id == null) throw new GatewayError(400, "Bu analiz yüklenmiş bir tabloya bağlı değil.");
+  if (file.size === 0) throw new GatewayError(400, "Dosya boş.");
+  if (file.size > MAX_BYTES) throw new GatewayError(400, "Dosya 20 MB sınırını aşıyor.");
+  const csv = await toCsv(file);
+  await withUploadTarget(ctx, async () => {
+    const form = new FormData();
+    form.set("file", new Blob([csv], { type: "text/csv" }), "veri.csv");
+    await mbForm(ctx.tenant, `/api/table/${card.table_id}/${mode}-csv`, form);
+  });
+  return { ok: true };
+}
+
 export async function uploadFile(ctx: TenantContext, file: File): Promise<{ id: number }> {
   requireAnalyst(ctx);
   if (file.size === 0) throw new GatewayError(400, "Dosya boş.");
@@ -61,21 +98,12 @@ export async function uploadFile(ctx: TenantContext, file: File): Promise<{ id: 
   const csv = await toCsv(file);
   const base = slugify(file.name.replace(/\.[^.]+$/, "")).replace(/-/g, "_") || "veri";
 
-  return exclusive(async () => {
-    await mbPut("admin", "/api/setting/uploads-settings", {
-      value: { db_id: ctx.tenant.databaseId, schema_name: ctx.tenant.schema, table_prefix: "yukleme_" },
-    });
-    try {
-      const form = new FormData();
-      form.set("collection_id", String(ctx.tenant.collectionId));
-      form.set("file", new Blob([csv], { type: "text/csv" }), `${base}.csv`);
-      const id = await mbForm<number>(ctx.tenant, "/api/upload/csv", form);
-      await hideEngineColumns(id);
-      return { id };
-    } finally {
-      await mbPut("admin", "/api/setting/uploads-settings", {
-        value: { db_id: null, schema_name: null, table_prefix: null },
-      }).catch(() => undefined);
-    }
+  return withUploadTarget(ctx, async () => {
+    const form = new FormData();
+    form.set("collection_id", String(ctx.tenant.collectionId));
+    form.set("file", new Blob([csv], { type: "text/csv" }), `${base}.csv`);
+    const id = await mbForm<number>(ctx.tenant, "/api/upload/csv", form);
+    await hideEngineColumns(id);
+    return { id };
   });
 }
