@@ -263,7 +263,24 @@ class ManagerRuntime:
             raise ManagerStateError("evidence can be attached only during accepted investigation")
         refs = tuple(dict.fromkeys((*self._snapshot.evidence_refs, evidence_ref)))
         self._snapshot = self._snapshot.model_copy(
-            update={"state": ManagerState.INVESTIGATING, "evidence_refs": refs}
+            update={
+                "state": ManagerState.INVESTIGATING,
+                "evidence_refs": refs,
+                "latest_evidence_ref": evidence_ref,
+            }
+        )
+        return self._snapshot
+
+    def mark_evidence_inspected(self, evidence_ref: str) -> ManagerRunSnapshot:
+        if evidence_ref not in self._snapshot.evidence_refs:
+            raise ManagerStateError(
+                "only evidence attached to current Research run can be inspected"
+            )
+        refs = tuple(
+            dict.fromkeys((*self._snapshot.inspected_evidence_refs, evidence_ref))
+        )
+        self._snapshot = self._snapshot.model_copy(
+            update={"inspected_evidence_refs": refs}
         )
         return self._snapshot
 
