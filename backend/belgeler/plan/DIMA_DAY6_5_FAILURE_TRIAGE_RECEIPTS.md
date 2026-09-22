@@ -682,3 +682,47 @@ Frozen J1 provider-free eval family `35709903058 = 9/9 PASS`.
 
 status:
 `CLOSED — generic bounded chat output cap added at 26ac500eb9cef53c50e4cfc2128b18ca2105a0b3; provider-free run 35709903058 = 9/9 PASS; no corpus/prompt/product semantic change.`
+
+
+---
+
+## Receipt — D65-J1B-REALFLOW-001 — silent semantic wrong / temporal instability
+
+run_id: `35713785149`
+
+tested_sha: `09c9128bd385a83c099b18855636b703d73bec48`
+
+failure_class:
+- semantic = `MODEL_COGNITION`
+- temporal = `MODEL_COGNITION / REAL_FLOW_TEMPORAL_INSTABILITY`
+- architecture/security = no breach observed
+- transport/provider = clean
+
+single_owner:
+- Jev bounded semantic decision cognition for semantic RED.
+- Terra typed temporal cognition for the two real-flow unresolved comparisons.
+
+root_cause:
+Jev safely stays inside the candidate set but over-selects on under-specified / multiply-plausible
+surfaces. BindingGate cannot infer intent ambiguity after a valid in-set selection. Terra's
+comparison normalization also failed twice in the real adapter flow despite earlier frozen J1T
+success.
+
+failure_family:
+- ambiguous generic metric surfaces;
+- multiple plausible candidate surfaces;
+- under-specified measure names;
+- temporal previous-period comparison under a separately resolved base period.
+
+forbidden_patch_alternatives:
+- case-specific keyword/regex logic;
+- prompt sentence describing these failed examples;
+- threshold derived from J1/J1B;
+- silent Jev→Gemini/Luna fallback;
+- Terra→Sol fallback;
+- weakening BindingGate/temporal authority;
+- modifying frozen corpora after result.
+
+status:
+`STOP / CONSULTATION REQUIRED`.
+

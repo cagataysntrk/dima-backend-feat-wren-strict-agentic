@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 J1B ENGINEERING ACTIVE — JEV SEMANTIC + TERRA TEMPORAL CANDIDATES; D65-SI NEXT IF GREEN; DEV80 FORBIDDEN**  
-**Kod fazı:** D65-G hardening GREEN; baseline proofs remain 102/102 + 16/16 + 2/2 on exact `8dfde62d...`. J1 corpus blobs remain frozen; challenger metadata corrected pre-result to `d65-j1-freeze-v2` with PRIMARY=`Gemini Flash-Lite + Jev 1.13 + GPT-5.6 Luna`, Sol=`REFERENCE_CEILING`, Terra=`CONSULT-GATED CONDITIONAL`. Corrected provider-free J1 gate `35705204058` = **6/6 PASS**. Old wrong-peer run `35704627396` is INVALID J1 authority. M0 source audit is sufficient for X0 preparation, but **X0 execution is blocked until J1 decision → D65-SI → real Standard Wren sentinel**. Product semantic/temporal/authority code remains NO-TOUCH; production `/ask-v2` OFF.  
+**Durum:** **DAY 6.5 J1B REAL-FLOW RED — CONSULTATION REQUIRED; D65-SI/X0 BLOCKED; DEV80 FORBIDDEN**  
+**Kod fazı:** Terra J1T conditional `35710080143` GREEN ve J1B provider-contract `35711431142=57/57` GREEN idi; ancak fresh family real-flow `35713785149` RED: Jev semantic `12/20`, `silent_wrong=8`, `unsafe_ambiguity_pick=8`; Terra temporal `6/8`, provider failure=0. `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` authority receipt. Product `/ask-v2` OFF; D65-SI, Wren Standard sentinel ve X0 BLOCKED pending consultation. Wren MDL/cube semantic backbone retention is explicitly a separate architecture decision from X0 execution/query-lifecycle feasibility.  
 
 ---
 
@@ -27,7 +27,7 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology ve substrate/reference authority.
 - `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **current J1S/J1T + M0/X0 decision authority**.
 - `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
-- `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.
+- `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.\n- `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` — **current J1B RED/consultation receipt**.
 - `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; J1 decision sonrası, X0 öncesi mandatory Standard integration gate**.
 - `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
 - `DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` — Metabase Cloud/self-host/bundled-service/source-port deployment decision gate.
@@ -118,6 +118,35 @@ D65-J1B narrow provider-contract split
 → small representative canary
 → if GREEN: D65-SI
 ```
+
+---
+
+## 0D. J1B REAL-FLOW RED — CONSULTATION
+
+```text
+run                          35713785149
+tested SHA                   09c9128bd385a83c099b18855636b703d73bec48
+fresh corpus                 d65-j1b-semantic-family-v1-frozen
+semantic provider            typesafe/jev-1.13
+temporal provider            openai/gpt-5.6-terra
+workers                      1
+fallback/cascade/threshold   NONE
+
+Jev semantic                 12/20
+silent semantic wrong        8   STOP
+unsafe ambiguity auto-pick   8   STOP
+candidate escape             0
+cross-tenant leak            0
+provider failure             0
+
+Terra temporal               6/8
+temporal wrong               2
+provider failure             0
+```
+
+Mandatory consultation gate is active.
+D65-SI, real Standard Wren sentinel and X0 execution may not start until the J1B semantic /
+temporal provider decision is explicitly resolved.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE
