@@ -49,6 +49,27 @@
 > **Amaç:** Dima V2'yi mühürlü nihai rapor ve yol haritasına göre hızlı, izlenebilir ve
 > eski semantic-front-door hatalarını tekrar etmeyecek biçimde geliştirmek.
 
+## D65-J1 JEV DECISION-MODEL GATE — PRE-FREEZE OVERRIDE
+
+> Reference-floor canary `35697064833` is GREEN 16/16 on exact `8dfde62d...` with Sol Manager + Sol Semantic/Temporal, workers=1.
+> D65-G provider-free family `35696652502` = 102/102 GREEN.
+> Freeze/DEV80 is BLOCKED until D65-J1 decision resolves.
+>
+> **D65-J1A = LAB/EVAL ONLY.** No product semantic/authority/temporal code changes.
+> Pinned Jev model: `typesafe/jev-1.13`; moving `~typesafe/jev-latest` forbidden.
+> Jev uses native OpenRouter Decisions API (`POST /api/alpha/decisions`), NOT chat/completions and NOT current `structured_json()` adapter.
+>
+> J1A compares frozen candidate-selection decisions only:
+> `google/gemini-2.5-flash-lite` vs `typesafe/jev-1.13` vs `openai/gpt-5.6-sol`.
+> Manager and `TypedTemporalNormalizer` are OUT OF SCOPE.
+> `d65-dev-019` is a typed-temporal model-floor case and MUST NOT be used as Jev justification/patch target.
+>
+> Jev may return only a supplied `cand_*` or `ABSTAIN`; it cannot mint `sem_*`, emit arbitrary canonical IDs, see DB/SQL/numeric truth, perform temporal arithmetic, or become authority.
+> No threshold/cascade is activated in J1A. Raw probabilities/calibration only.
+>
+> If Jev is poor: reject with product code unchanged. If promising: open D65-J1B for `SemanticLinkDecisionProvider` + `SEMANTIC_LINKER` / `TEMPORAL_NORMALIZER` role separation, then full revalidation before freeze.
+>
+> D65-J1 (cognition decision model) and D65-X (Wren vs Metabase execution substrate) are orthogonal and must never be conflated.
 ## DAY 6.5 CURRENT CLOSURE OVERRIDE — 2026-09-22
 
 > Bu bölüm eski Day 6.5 hazırlık/validation maddelerinin üzerinde okunur.
