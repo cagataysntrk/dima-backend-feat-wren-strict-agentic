@@ -255,3 +255,65 @@ status:
 On run `35728504998`, the previously failing real v3-v2 Wren parity assertion passed after
 `source_candidate_id` was preserved in `ResolvedAnalyticsIntent`. Final closure waits for a
 fully GREEN M1 workflow; no further product patch is currently justified.
+
+
+---
+
+## DMP-M1-RED-004 — isolation gate shallow-checkout oracle
+
+receipt_id: `DMP-M1-RED-004`  
+ticket: `M1-P1-001`  
+tested_sha: `7ed76d3de8a8f566466bb4c4816a3bbb074d6941`  
+run_id: `35729019518`
+
+observed_failure:
+M1 stopped at `Enforce M1 forbidden-file isolation` with:
+`fatal: Invalid symmetric difference expression 377448...HEAD`.
+
+failure_stage:
+CI isolation harness before compile/tests.
+
+failure_class:
+`EVAL_ORACLE`
+
+classification_evidence:
+- GitHub compare measured forbidden M1 paths = 0 immediately before this commit family;
+- the workflow uses default shallow `actions/checkout@v4` depth;
+- the certified base commit is therefore absent from local runner history;
+- failure occurs in `git diff BASE...HEAD` before the forbidden-path grep executes;
+- governance for the same HEAD is GREEN.
+
+single_owner:
+`.github/workflows/dima-metabase-m1.yml` checkout/history setup.
+
+root_cause:
+the new ancestry/diff gate requires the immutable certified base object but checkout fetched only the current shallow tip.
+
+failure_family:
+CI gates that compare against an immutable historical SHA while using shallow checkout.
+
+forbidden_patch_alternatives:
+- remove the isolation gate;
+- compare only HEAD^;
+- silently ignore git-diff failure;
+- product/v2 changes.
+
+allowed_files_to_touch:
+- `.github/workflows/dima-metabase-m1.yml`
+
+files_not_to_touch:
+- `backend/app/v3/**`
+- `backend/app/v2/**`
+- source branch
+
+invariant_being_fixed:
+isolation gate must prove the entire platform-branch delta from certified base, not merely the last commit.
+
+focused_proof:
+workflow reaches and passes the forbidden-file isolation step with full history.
+
+family_or_live_proof:
+full M1 workflow.
+
+status:
+`CLASSIFIED / CI-ONLY PATCH AUTHORIZED`.
