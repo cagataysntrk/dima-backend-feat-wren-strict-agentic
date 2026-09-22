@@ -1,0 +1,4 @@
+services:
+  analytics-db:
+    ports:
+      - "127.0.0.1:${P6_ANALYTICS_DB_PORT:-55432}:5432"

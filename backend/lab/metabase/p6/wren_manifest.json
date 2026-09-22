@@ -1,0 +1,78 @@
+{
+  "catalog": "wren",
+  "schema": "public",
+  "models": [
+    {
+      "name": "p6_orders",
+      "tableReference": {
+        "schema": "public",
+        "table": "p6_orders"
+      },
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "customer_id",
+          "type": "integer"
+        },
+        {
+          "name": "order_date",
+          "type": "date"
+        },
+        {
+          "name": "region",
+          "type": "varchar"
+        },
+        {
+          "name": "channel",
+          "type": "varchar"
+        },
+        {
+          "name": "amount",
+          "type": "integer"
+        },
+        {
+          "name": "customer",
+          "type": "p6_customers",
+          "relationship": "p6_orders_customer"
+        }
+      ],
+      "primaryKey": "id"
+    },
+    {
+      "name": "p6_customers",
+      "tableReference": {
+        "schema": "public",
+        "table": "p6_customers"
+      },
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "name",
+          "type": "varchar"
+        },
+        {
+          "name": "segment",
+          "type": "varchar"
+        }
+      ],
+      "primaryKey": "id"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "p6_orders_customer",
+      "models": [
+        "p6_orders",
+        "p6_customers"
+      ],
+      "joinType": "many_to_one",
+      "condition": "\"p6_orders\".customer_id = \"p6_customers\".id"
+    }
+  ]
+}

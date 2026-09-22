@@ -1,0 +1,137 @@
+name: dima-metabase-p6
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/parity/**"
+      - "backend/app/v3/substrate/metabase/execution_adapter.py"
+      - "backend/tests/fixtures/p6/**"
+      - "backend/tests/test_v3_p6_*.py"
+      - "backend/lab/metabase/p6/**"
+      - ".github/workflows/dima-metabase-p6.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p6a-same-snapshot-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      P6_ANALYTICS_DB_PORT: "55432"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce P6 forbidden-file isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="1f4e0a4a23f74df01200665459804338f8c10983"
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|execution_identity)\.py$|backend/app/v3/substrate/wren\.py$|backend/app/v3/substrate/metabase/(compiler|canonical)\.py$|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/lab/metabase/docker-compose\.yml$|backend/lab/metabase/init/|WrenAI-main/)'; then
+            echo "P6 touched a forbidden file"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Provider-free fixture + inherited contract proof
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            lab/metabase/p6/seed.py \
+            tests/test_v3_p6_same_snapshot_canary.py
+          pytest -q \
+            tests/test_v3_p6_same_snapshot_canary.py \
+            tests/test_v3_p5_execution_identity.py \
+            tests/test_v3_p5_receipt.py \
+            tests/test_v3_p4_execution_binding.py \
+            tests/test_v3_p4_metabase_compiler.py
+
+      - name: Prepare isolated P6 lab env
+        working-directory: backend/lab/metabase
+        run: cp .env.example .env
+
+      - name: Start shared PostgreSQL services
+        working-directory: backend/lab/metabase
+        run: |
+          docker compose \
+            --env-file .env \
+            -f docker-compose.yml \
+            -f p6/docker-compose.override.yml \
+            up -d analytics-db metabase-app-db
+          for i in $(seq 1 60); do
+            if docker compose \
+              --env-file .env \
+              -f docker-compose.yml \
+              -f p6/docker-compose.override.yml \
+              exec -T analytics-db \
+              pg_isready -U "${ANALYTICS_DB_USER:-dima_analytics}" -d "${ANALYTICS_DB_NAME:-dima_analytics}"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "analytics-db did not become ready"
+          exit 1
+
+      - name: Seed deterministic P6 snapshot
+        working-directory: backend
+        shell: bash
+        run: |
+          set -a
+          source lab/metabase/.env
+          set +a
+          python lab/metabase/p6/seed.py
+
+      - name: Start and bootstrap pinned Metabase
+        working-directory: backend/lab/metabase
+        run: |
+          docker compose \
+            --env-file .env \
+            -f docker-compose.yml \
+            -f p6/docker-compose.override.yml \
+            up -d metabase
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+
+      - name: Run P6A three-case shared-snapshot canary
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          source lab/metabase/.env
+          set +a
+          export DIMA_METABASE_P6A_LIVE=1
+          pytest -q -s tests/test_v3_p6_same_snapshot_canary.py
+
+      - name: Teardown
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose \
+            --env-file .env \
+            -f docker-compose.yml \
+            -f p6/docker-compose.override.yml \
+            down -v --remove-orphans || true

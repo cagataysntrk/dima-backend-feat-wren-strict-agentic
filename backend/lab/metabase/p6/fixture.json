@@ -1,0 +1,133 @@
+{
+  "fixture_version": "p6-shared-v1",
+  "schema": {
+    "p6_customers": [
+      [
+        "id",
+        "integer"
+      ],
+      [
+        "name",
+        "text"
+      ],
+      [
+        "segment",
+        "text"
+      ]
+    ],
+    "p6_orders": [
+      [
+        "id",
+        "integer"
+      ],
+      [
+        "customer_id",
+        "integer"
+      ],
+      [
+        "order_date",
+        "date"
+      ],
+      [
+        "region",
+        "text"
+      ],
+      [
+        "channel",
+        "text"
+      ],
+      [
+        "amount",
+        "integer"
+      ]
+    ]
+  },
+  "customers": [
+    {
+      "id": 1,
+      "name": "Acme North",
+      "segment": "Enterprise"
+    },
+    {
+      "id": 2,
+      "name": "Bravo South",
+      "segment": "SMB"
+    },
+    {
+      "id": 3,
+      "name": "Cedar East",
+      "segment": "Enterprise"
+    },
+    {
+      "id": 4,
+      "name": "Delta West",
+      "segment": "SMB"
+    }
+  ],
+  "orders": [
+    {
+      "id": 1,
+      "customer_id": 1,
+      "order_date": "2026-01-05",
+      "region": "North",
+      "channel": "Web",
+      "amount": 100
+    },
+    {
+      "id": 2,
+      "customer_id": 2,
+      "order_date": "2026-01-10",
+      "region": "South",
+      "channel": "Store",
+      "amount": 200
+    },
+    {
+      "id": 3,
+      "customer_id": 1,
+      "order_date": "2026-01-15",
+      "region": "North",
+      "channel": "Partner",
+      "amount": 150
+    },
+    {
+      "id": 4,
+      "customer_id": 3,
+      "order_date": "2026-01-20",
+      "region": "East",
+      "channel": "Web",
+      "amount": 300
+    },
+    {
+      "id": 5,
+      "customer_id": 4,
+      "order_date": "2026-02-05",
+      "region": "West",
+      "channel": "Store",
+      "amount": 250
+    },
+    {
+      "id": 6,
+      "customer_id": 1,
+      "order_date": "2026-02-10",
+      "region": "North",
+      "channel": "Web",
+      "amount": 400
+    },
+    {
+      "id": 7,
+      "customer_id": 2,
+      "order_date": "2026-03-01",
+      "region": "South",
+      "channel": "Partner",
+      "amount": 500
+    },
+    {
+      "id": 8,
+      "customer_id": 3,
+      "order_date": "2026-03-15",
+      "region": "East",
+      "channel": "Store",
+      "amount": 100
+    }
+  ]
+}
