@@ -65,3 +65,5 @@ jobs:
 # retry: semantic-contract-attacks
 
 # retry: contextual-exact-and-conservation-fixed
+
+# retry: hardened-semantic-contract-attacks
