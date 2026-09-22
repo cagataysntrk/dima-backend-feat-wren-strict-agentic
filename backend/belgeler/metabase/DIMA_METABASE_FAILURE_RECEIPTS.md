@@ -1905,3 +1905,37 @@ proof:
 
 status:
 `CLOSED GREEN`.
+
+
+---
+
+## DMP-P9B-RED-001 — P9B1 negative-oracle precedence + anti-SQL false positive
+
+receipt_id: `DMP-P9B-RED-001`  
+tested_sha: `606f89aee8f31c4c866669dbc6efb64dfa58d9d9`  
+failed_run: `35780048833`
+
+classification:
+`CONTRACT ERROR PRECEDENCE + TEST ORACLE`
+
+observed:
+- invalid multi-step/breakout/filter/time/ranking projections were correctly rejected, but the builder
+  checked full semantic-id equality before query structural shape, so tests observed the more general
+  `P9B1_PROJECTION_SEMANTIC_ID_MISMATCH` instead of the exact structural owner;
+- anti-SQL source assertion rejected Python `from ... import` syntax because it searched raw source
+  for the substring `"from "`.
+
+root_cause:
+Fail-closed behavior was intact, but diagnostic precedence was less specific than the P9B1 contract,
+and one test oracle used a language-agnostic raw substring.
+
+authorized correction:
+- validate query cardinality/role/shape before semantic-id equality;
+- retain semantic-id equality as a hard gate for structurally admissible queries;
+- remove the ambiguous raw `"from "` substring assertion while keeping AST import bans and explicit
+  SQL/parser/search dependency bans.
+
+No HTTP write, query compiler, semantic expansion or fallback is authorized.
+
+status:
+`CORRECTION APPLIED / AWAITING P9B1 GREEN`.

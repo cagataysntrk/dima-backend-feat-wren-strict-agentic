@@ -252,7 +252,6 @@ def test_p9b1_transport_contract_has_no_http_search_regex_fuzzy_or_sql_builder()
         ".read_resource(",
         "raw sql",
         "select ",
-        "from ",
         "where ",
         "formula parser",
         "construct_query(",

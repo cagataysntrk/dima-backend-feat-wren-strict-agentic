@@ -1018,3 +1018,23 @@ P9B1                            = provider-free CREATE contract
 live writes                     = 0 / NOT AUTHORIZED
 dimension/time/relationship     = typed transport gaps
 ```
+
+
+---
+
+## P9B1 first focused RED — classified
+
+```text
+tested SHA                    = 606f89aee8f31c4c866669dbc6efb64dfa58d9d9
+P9B workflow                  = 35780048833 = FAILURE
+compile/isolation             = PASS
+focused                       = 7 PASS / 6 FAIL
+M1/Wren same SHA              = 35780048770 = SUCCESS
+governance same SHA           = 35780048790 = SUCCESS
+classification                = contract error precedence + test oracle
+HTTP writes                   = 0
+semantic/compiler changes     = 0
+```
+
+DMP-P9B-RED-001 correction is minimal: structural rejection precedes semantic-id equality and the
+anti-SQL test no longer confuses Python import syntax with SQL.

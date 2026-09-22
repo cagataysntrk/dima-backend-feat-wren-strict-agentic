@@ -202,13 +202,12 @@ class MetricCreateContractBuilder:
                 "P9B1_PROJECTION_CONTEXT_MISMATCH",
                 "desired resource and canonical query contexts differ",
             )
+        step = cls._step(projection)
         if projection.manifest.semantic_ids != (desired.canonical_id,):
             raise ResourceTransportError(
                 "P9B1_PROJECTION_SEMANTIC_ID_MISMATCH",
                 "canonical query does not represent exactly the desired metric",
             )
-
-        step = cls._step(projection)
         request = MetricAgentCreateRequest(
             name=semantic["name"],
             query=step.serialized_query,
