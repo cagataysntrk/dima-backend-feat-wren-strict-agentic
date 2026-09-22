@@ -730,7 +730,7 @@ Metabase runtime started = 0
 ### DD-23 — OSI/Ossie interoperability watchlist
 
 - **mechanism:** OSI/Ossie interoperability watchlist
-- **exact upstream source/function/evidence at pinned SHA:**
+- **exact upstream source/function:**
   - `src/metabase/osi/models/osi_ai_context.clj`
   - `src/metabase/osi/schema.clj::osi-ai-context.ai-context`
   - `src/metabase/osi/ai_context/api.clj`
@@ -756,7 +756,7 @@ Metabase runtime started = 0
 - **native implementation cost:** UNKNOWN until a mature target specification/runtime requirement is
   concrete; do not pre-build.
 - **Metabase runtime dependency:** NONE today.
-- **required executable proof before future adoption:** round-trip a representative Wren semantic pack
+- **required executable proof:** round-trip a representative Wren semantic pack
   through the target interoperability format with zero metric formula/relationship/grain/time loss and
   no second editable authority. If not lossless, keep it annotations-only.
 - **timing:** watchlist / post-MVP; not an X0 blocker beyond confirming current source cannot replace Wren.
