@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 D65-E4 STANDARD AUTHORITY GREEN — COVERAGE VETO NEXT**  
+**Durum:** **DAY 6.5 STANDARD FRONT-DOOR PRIMITIVES GREEN — PROVIDER-FREE FAMILY CLOSURE NEXT**  
 **Kod fazı:** Day 6.5 engineering closure — latest semantic code `c9629d9029db...`; cognition/authority boundary uygulanmış durumda. Hedef front door `STANDARD_DIRECT + bounded STANDARD_BUILDER + RESEARCH`, iki accepted-authority ailesiyle kapanacak. StandardBuilder/Retriever seam henüz yazılmadı. İlk iş exact `c9629d...` provider-free recertification; production hybrid route kapalı.
 
 ---
@@ -5302,3 +5302,59 @@ YASAK:
 - obligation eklemek,
 - query/projection repair etmek,
 - clarification truth sahibi olmak.
+
+
+### D65-E5 — GREEN / narrow Standard CoverageVeto
+
+**Product**
+- `13ef659ce6d2` — veto-only Standard intent coverage guard
+- `b49063863b74` — provider-free coverage boundary invariants
+
+**Focused gate**
+- run: `35691288505`
+- result: **16 / 16 PASS**
+- runtime: **7.52s**
+- compile: PASS
+- one-shot cleanup: `f5ce6b217ee2`
+
+**Coverage input surface**
+Only:
+- user message,
+- obligation id,
+- registered capability key,
+- REQUIRED/EXCLUDED polarity,
+- runtime-validated exact source surfaces.
+
+It does NOT receive:
+- semantic handles,
+- canonical semantic IDs,
+- SQL/DB metadata,
+- QueryContract/Evidence.
+
+**Coverage output authority**
+```text
+PASS
+or
+VETO:
+  MATERIAL_REQUEST_OMITTED
+  EXCLUSION_OMITTED_OR_WRONG_POLARITY
+  RESEARCH_NEED_OMITTED
+```
+
+Every veto source must be exact user-message evidence.
+Coverage cannot add/repair obligation, select semantic, create authority, or own clarification.
+
+### D65-E6 — provider-free family closure
+
+Bundle old cognition/authority closure + new standard front-door primitives:
+- semantic retriever/linker,
+- typed temporal,
+- research finite pre-acceptance,
+- capability algebra,
+- authority/completion,
+- adaptive branch/trust plane,
+- StandardBuilder,
+- Standard authority split,
+- Standard CoverageVeto.
+
+No paid/live model.
