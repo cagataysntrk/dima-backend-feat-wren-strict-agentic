@@ -801,3 +801,133 @@ def test_broaden_within_budget_is_research_policy_not_semantic_dimension():
 def test_coverage_cannot_veto_nonrequired_unresolved_semantic_surface():
     schema_text = str(CoverageAudit.model_json_schema())
     assert "UNRESOLVED_REFERENCE" not in schema_text
+
+
+def test_conversation_repair_control_does_not_become_business_exclusion():
+    question = "düzeltme: net geliri kastettim"
+    scripted = _ScriptedStructured(
+        drafts=[
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_PERF",
+                        capability="performance",
+                        source_surfaces=("net geliri kastettim",),
+                        semantic_surfaces=(("net geliri", "metric"),),
+                    )
+                ],
+                "research_directives": [],
+                "control_requests": [
+                    {
+                        "request_id": "C_REPAIR",
+                        "category": "CONVERSATION_REPAIR",
+                        "source_surfaces": ["düzeltme"],
+                    }
+                ],
+            }
+        ],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    conversation = ConversationStateV2(
+        has_prior_analytical_request=True,
+        has_active_result=True,
+        focus_labels=("Üretkenlik",),
+        selected_anchor_label="Üretkenlik",
+    )
+    loop, runtime, executor = _loop(scripted, conversation=conversation)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-repair-control",
+        request_ref="req-repair-control",
+        runtime=runtime,
+        executor=executor,
+        conversation=conversation,
+    )
+
+    assert outcome.accepted is True
+    assert runtime.ledger is not None
+    assert len(runtime.ledger.items) == 1
+    assert runtime.ledger.items[0].polarity == ObligationPolarity.REQUIRED
+    control = next(
+        item for item in outcome.observations
+        if item.get("kind") == "non_authoritative_control_requests"
+    )
+    assert control["requests"][0]["category"] == "CONVERSATION_REPAIR"
+
+
+def test_malformed_excluded_business_obligation_revises_before_grounding():
+    question = "düzeltme: net geliri kastettim"
+    malformed = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_PERF",
+                capability="performance",
+                source_surfaces=("net geliri kastettim",),
+                semantic_surfaces=(("net geliri", "metric"),),
+            ),
+            _obligation(
+                obligation_id="X_PRIOR",
+                capability="performance",
+                source_surfaces=("düzeltme",),
+                semantic_surfaces=(),
+                polarity="EXCLUDED",
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    repaired = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_PERF",
+                capability="performance",
+                source_surfaces=("net geliri kastettim",),
+                semantic_surfaces=(("net geliri", "metric"),),
+            )
+        ],
+        "research_directives": [],
+        "control_requests": [
+            {
+                "request_id": "C_REPAIR",
+                "category": "CONVERSATION_REPAIR",
+                "source_surfaces": ["düzeltme"],
+            }
+        ],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[malformed, repaired],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    conversation = ConversationStateV2(
+        has_prior_analytical_request=True,
+        has_active_result=True,
+        focus_labels=("Üretkenlik",),
+        selected_anchor_label="Üretkenlik",
+    )
+    loop, runtime, executor = _loop(scripted, conversation=conversation)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-repair-shape",
+        request_ref="req-repair-shape",
+        runtime=runtime,
+        executor=executor,
+        conversation=conversation,
+    )
+
+    assert outcome.accepted is True
+    rejected = next(
+        item for item in outcome.observations
+        if item.get("kind") == "excluded_obligation_shape"
+    )
+    assert rejected["attempt"] == 1
+    assert rejected["gaps"][0]["missing_declared_semantic_kinds"] == ["metric"]
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    assert runtime.ledger is not None
+    assert all(
+        item.polarity != ObligationPolarity.EXCLUDED
+        for item in runtime.ledger.items
+    )
