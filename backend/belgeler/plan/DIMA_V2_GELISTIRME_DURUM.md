@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 D65-E3A-R GREEN — WORKERS=1 FOCUSED LIVE NEXT**  
-**Kod fazı:** D65-E3A-R tamamlandı. `BoundedAgentRuntimeKernel` process-control mechanics'i devraldı; existing StandardBuilder semantic behavior, E4 authority ve E5 CoverageVeto korunarak focused gate 22/22 ve runtime-aligned full provider-free family closure 94/94 GREEN oldu. Research Manager untouched; production hybrid `/ask-v2` OFF. Next: workers=1 focused live architecture set.  
+**Durum:** **DAY 6.5 HARDENED CANARY GREEN — REAL WREN + RESEARCH SENTINELS IN PROGRESS**  
+**Kod fazı:** D65-E3A-R + D65-G anti-patch hardening + conversation-repair control boundary provider-free GREEN. Reference-floor workers=1 stratified canary 16/16 GREEN on exact `8dfde62d...`. Current gate: real Wren Standard vertical + existing Research adaptive sentinel. Production hybrid `/ask-v2` remains OFF.  
 
 ---
 
@@ -5792,3 +5792,123 @@ Research behavior = NO-TOUCH
 ```
 
 D65-G sonrasında active canary failures ayrı owner ticket'larıyla ele alınır; `019` için code patch yok, `073` için yalnız repair/coverage contract owner'ı yetkilidir.
+
+---
+
+## 2026-09-22 — D65-G + REPAIR HARDENING + REFERENCE CANARY GREEN
+
+### D65-G anti-patch hardening
+
+Manager semantic hot path artık legacy `SemanticResolver` import/constructor/field/fallback seam'i taşımıyor.
+
+```text
+manager_semantics.py  → no app.v2.resolver import
+ManagerSemanticResolutionAdapter.__init__ → no resolver parameter
+manager_lab.py        → no SemanticResolver construction/injection
+```
+
+Architecture guard:
+`tests/test_v2_day6_5_no_legacy_semantic_fallback.py`.
+
+Scoped forbidden semantic-authority primitives:
+`app.v2.resolver`, `difflib/SequenceMatcher`, `py_rust_stemmers/SnowballStemmer`, `rapidfuzz`, `_FUZZY`, semantic-language `re.*` parser.
+
+Regex repository-wide yasak değildir; yalnız authoritative semantic meaning/authority modülleri guard edilir.
+
+### Mandatory RED triage gate
+
+`DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md` oluşturuldu ve AGENTS/CLAUDE/closure protocol/eval manifestte binding hale getirildi.
+
+```text
+RED
+→ NO PRODUCT/SEMANTIC CODE CHANGE
+→ failure triage receipt
+→ same-SHA A/B if needed
+→ failure_class + single_owner + root_cause + failure_family
+→ allowed files
+→ code
+→ focused proof
+→ family/metamorphic proof
+```
+
+`ONE FAILURE ≠ ONE NEW RULE` artık repo contract'ıdır.
+
+### Conversation-repair root fix
+
+Corrective/superseding discourse business EXCLUDED obligation ile aynı şey değildir.
+Finite pre-acceptance draft artık `CONVERSATION_REPAIR` control state temsil edebilir.
+EXCLUDED business obligation yalnız current message gerekli semantic target'ı source-ground ediyorsa geçerlidir.
+
+Bu çözüm phrase/keyword/regex özel değildir; correction/replacement family abstraction'ıdır.
+
+### Provider-free proofs
+
+Combined focused closure:
+```text
+run 35696222877
+59 / 59 PASS
+```
+
+Full family closure after all stale fixture cleanup:
+```text
+run 35696652502
+exact tested SHA = ffbdc224066dc4c85a9e46b510ae3535f83f3416
+102 / 102 PASS
+5 warnings
+```
+
+Intermediate RED runs were not semantic patched; each was classified as `EVAL_ORACLE` stale test/harness constructor drift and received a formal receipt before test-only cleanup.
+
+### Semantic Linker model-floor finding
+
+`d65-dev-019` exact-same-SHA diagnostic run `35695366379`:
+
+```text
+backend SHA        = f5ca942f...
+Manager            = openai/gpt-5.6-sol
+flash-lite linker  = FAIL
+Sol linker         = PASS
+classification     = MODEL_CAPABILITY_FLOOR
+product code patch = NONE
+```
+
+Reference architecture certification floor for current canary therefore uses Sol Manager + Sol Semantic Linker.
+Bu model-specific business branch değildir; measured evaluation/certification floor'dur.
+
+### Reference-floor stratified canary
+
+Run: `35697064833`
+
+Exact tested SHA:
+`8dfde62d46d1418f05cce3ed44c26a8025b3b20e`
+
+```text
+selected/evaluable          16 / 16
+case pass                   16 / 16 = 1.0
+MUST obligation recall      1.0
+invented MUST               0
+missing/invented exclusion  0 / 0
+handle violations           0
+preacceptance exec violation 0
+blocking ambiguity silent    0
+unsafe fast admission        0
+standard lossless rate       1.0
+clarification canonical      1.0
+measurement/model/grounding/harness failures = 0
+```
+
+Models:
+```text
+RESEARCH_MANAGER = openai/gpt-5.6-sol
+SEMANTIC_LINKER  = openai/gpt-5.6-sol
+workers          = 1
+```
+
+### Current exact next gate
+
+```text
+real Wren Standard vertical
++ existing Research adaptive/evidence sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once for that candidate
+```
