@@ -352,3 +352,177 @@ def test_ephemeral_session_or_handle_is_not_a_sealer_input_or_durable_identity()
     assert "query_handle" not in parameters
     _, _, _, receipts = seal_one()
     assert receipts[0].ephemeral_query_handle is None
+
+
+
+def _seal_exact(
+    *,
+    intent,
+    projection,
+    access,
+    execution_result,
+    execution_id="exec-exact",
+):
+    return DimaQueryReceiptSealer.seal_execution(
+        intent=intent,
+        projection=projection,
+        access_snapshot=access,
+        runtime=runtime(),
+        results=(execution_result,) * len(projection.steps),
+        events=tuple(
+            event(f"{execution_id}-{index}")
+            for index in range(len(projection.steps))
+        ),
+    )
+
+
+def test_resource_entity_fingerprint_pairing_changes_receipt_fingerprint():
+    intent, projection = canonical(7)
+    assert len(projection.manifest.resource_entity_ids) >= 2
+    fingerprints = list(projection.manifest.resource_fingerprints)
+    fingerprints[0], fingerprints[1] = fingerprints[1], fingerprints[0]
+    swapped = projection.model_copy(
+        update={
+            "manifest": projection.manifest.model_copy(
+                update={"resource_fingerprints": tuple(fingerprints)}
+            )
+        }
+    )
+    access = access_for(intent, projection)
+
+    original_receipt = _seal_exact(
+        intent=intent,
+        projection=projection,
+        access=access,
+        execution_result=result(),
+    )[0]
+    swapped_receipt = _seal_exact(
+        intent=intent,
+        projection=swapped,
+        access=access,
+        execution_result=result(),
+    )[0]
+
+    assert original_receipt.receipt_fingerprint != swapped_receipt.receipt_fingerprint
+
+
+@pytest.mark.parametrize("drop_field", ["entity_ids", "fingerprints"])
+def test_partial_resource_identity_cardinality_hard_fails(drop_field):
+    intent, projection = canonical(7)
+    ids = projection.manifest.resource_entity_ids
+    fingerprints = projection.manifest.resource_fingerprints
+    update = (
+        {"resource_entity_ids": ids[:-1]}
+        if drop_field == "entity_ids"
+        else {"resource_fingerprints": fingerprints[:-1]}
+    )
+    broken = projection.model_copy(
+        update={
+            "manifest": projection.manifest.model_copy(update=update)
+        }
+    )
+
+    with pytest.raises(ReceiptSealError) as exc:
+        _seal_exact(
+            intent=intent,
+            projection=broken,
+            access=access_for(intent, projection),
+            execution_result=result(),
+        )
+    assert exc.value.code == "RESOURCE_IDENTITY_CARDINALITY_MISMATCH"
+
+
+def test_warning_mutation_changes_receipt_fingerprint_and_occurrence_id():
+    intent, projection = canonical()
+    access = access_for(intent, projection)
+    first = _seal_exact(
+        intent=intent,
+        projection=projection,
+        access=access,
+        execution_result=ExecutionResultSnapshot(
+            payload={"rows": [[100]]},
+            row_count=1,
+            warnings=("warning-a",),
+        ),
+        execution_id="same-execution",
+    )[0]
+    second = _seal_exact(
+        intent=intent,
+        projection=projection,
+        access=access,
+        execution_result=ExecutionResultSnapshot(
+            payload={"rows": [[100]]},
+            row_count=1,
+            warnings=("warning-b",),
+        ),
+        execution_id="same-execution",
+    )[0]
+
+    assert first.receipt_fingerprint != second.receipt_fingerprint
+    assert first.receipt_id != second.receipt_id
+
+
+def test_limitation_mutation_changes_receipt_fingerprint_and_occurrence_id():
+    intent, projection = canonical()
+    access = access_for(intent, projection)
+    first = _seal_exact(
+        intent=intent,
+        projection=projection,
+        access=access,
+        execution_result=ExecutionResultSnapshot(
+            payload={"rows": [[100]]},
+            row_count=1,
+            limitations=("limit-a",),
+        ),
+        execution_id="same-execution",
+    )[0]
+    second = _seal_exact(
+        intent=intent,
+        projection=projection,
+        access=access,
+        execution_result=ExecutionResultSnapshot(
+            payload={"rows": [[100]]},
+            row_count=1,
+            limitations=("limit-b",),
+        ),
+        execution_id="same-execution",
+    )[0]
+
+    assert first.receipt_fingerprint != second.receipt_fingerprint
+    assert first.receipt_id != second.receipt_id
+
+
+def test_attestation_ref_changes_proof_identity_not_access_lens_identity():
+    intent, projection = canonical()
+    first_access = access_for(
+        intent,
+        projection,
+        attestation_refs=("attestation:a",),
+    )
+    second_access = access_for(
+        intent,
+        projection,
+        attestation_refs=("attestation:b",),
+    )
+    assert (
+        first_access.execution_access_fingerprint
+        == second_access.execution_access_fingerprint
+    )
+
+    first = _seal_exact(
+        intent=intent,
+        projection=projection,
+        access=first_access,
+        execution_result=result(),
+        execution_id="same-execution",
+    )[0]
+    second = _seal_exact(
+        intent=intent,
+        projection=projection,
+        access=second_access,
+        execution_result=result(),
+        execution_id="same-execution",
+    )[0]
+
+    assert first.receipt_fingerprint != second.receipt_fingerprint
+    assert first.receipt_id != second.receipt_id

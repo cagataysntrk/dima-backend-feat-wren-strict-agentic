@@ -1319,3 +1319,47 @@ P5 contract status:
 
 DMP-P5-BLOCK-001 status is unchanged:
 `OPEN / TRANSFERRED TO P10 SECURITY MAPPING GATE`.
+
+
+---
+
+## DMP-P5-RED-001 — receipt resource pairing and durable qualifier binding loss
+
+receipt_id: `DMP-P5-RED-001`  
+milestone: `P5`  
+tested_sha: `8f283ed9da44d7b8a079fe82b37c23af863fed33`  
+detection: post-closure supervisor provenance audit
+
+observed:
+The P5 sealer hashes `resource_entity_ids` and `resource_fingerprints` as independently sorted
+collections. That loses the positional entity↔fingerprint association. It also stores
+`warnings`, `limitations`, and `access_attestation_refs` on the receipt without binding them
+into `receipt_fingerprint`.
+
+classification:
+`PROVENANCE / DURABLE RECEIPT IDENTITY`
+
+root_cause:
+Receipt content identity was modeled as independent resource columns plus core execution fields
+instead of the exact resource association and all durable receipt qualifiers.
+
+authorized_correction:
+- require entity-id/fingerprint cardinality equality;
+- preserve positional pairs from P4 and hash deterministically sorted pairs;
+- hard-fail partial resource identity as `RESOURCE_IDENTITY_CARDINALITY_MISMATCH`;
+- bind sorted attestation refs as proof-set identity;
+- bind warnings/limitations exactly in supplied order;
+- keep `executed_at` outside `receipt_fingerprint`;
+- keep `execution_id` only in execution-occurrence `receipt_id`;
+- add focused negative proofs and run P5/P4 regressions.
+
+forbidden:
+- second receipt hash abstraction;
+- fuzzy/similar resource association;
+- Metabase lookup/search;
+- P4 compiler/canonical changes;
+- Wren adapter changes;
+- P10 access issuer work.
+
+status:
+`OPEN / SURGICAL P5 SEALER CORRECTION AUTHORIZED; P6 PRODUCT IMPLEMENTATION HELD`.

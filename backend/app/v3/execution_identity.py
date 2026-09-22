@@ -216,6 +216,34 @@ class DimaQueryReceiptSealer:
                 )
 
     @staticmethod
+    def _resource_bindings(
+        projection: CanonicalProjection,
+    ) -> tuple[tuple[str, str], ...]:
+        entity_ids = projection.manifest.resource_entity_ids
+        fingerprints = projection.manifest.resource_fingerprints
+
+        if len(entity_ids) != len(fingerprints):
+            raise ReceiptSealError(
+                "RESOURCE_IDENTITY_CARDINALITY_MISMATCH",
+                (
+                    f"entity_ids={len(entity_ids)} "
+                    f"fingerprints={len(fingerprints)}"
+                ),
+            )
+        if not entity_ids:
+            raise ReceiptSealError(
+                "RESOURCE_IDENTITY_MISSING",
+                "canonical projection has no stable resource entity ids",
+            )
+        if len(entity_ids) != len(set(entity_ids)):
+            raise ReceiptSealError(
+                "RESOURCE_IDENTITY_DUPLICATE",
+                "canonical projection has duplicate resource entity ids",
+            )
+
+        return tuple(zip(entity_ids, fingerprints, strict=True))
+
+    @staticmethod
     def _assert_access_matches(
         *,
         intent: ResolvedAnalyticsIntent,
@@ -244,25 +272,19 @@ class DimaQueryReceiptSealer:
                 "access snapshot belongs to a different semantic context",
             )
 
-        entity_ids = projection.manifest.resource_entity_ids
-        if not entity_ids:
-            raise ReceiptSealError(
-                "RESOURCE_IDENTITY_MISSING",
-                "canonical projection has no stable resource entity ids",
-            )
-        if len(entity_ids) != len(set(entity_ids)):
-            raise ReceiptSealError(
-                "RESOURCE_IDENTITY_DUPLICATE",
-                "canonical projection has duplicate resource entity ids",
-            )
+        resource_bindings = DimaQueryReceiptSealer._resource_bindings(
+            projection
+        )
+        entity_ids = tuple(entity_id for entity_id, _ in resource_bindings)
         if tuple(sorted(access.source_object_refs)) != tuple(sorted(entity_ids)):
             raise ReceiptSealError(
                 "SOURCE_RESOURCE_MISMATCH",
                 "access source-object refs do not exactly cover canonical resource ids",
             )
 
-    @staticmethod
+    @classmethod
     def _receipt_fingerprint(
+        cls,
         *,
         intent: ResolvedAnalyticsIntent,
         projection: CanonicalProjection,
@@ -272,15 +294,19 @@ class DimaQueryReceiptSealer:
         runtime: RuntimeIdentity,
         result: ExecutionResultSnapshot,
     ) -> str:
+        resource_bindings = cls._resource_bindings(projection)
         payload = {
             "authority_id": intent.authority_id,
             "projection_hash": intent.projection_hash,
             "resolved_intent_hash": intent.resolved_intent_hash,
             "canonical_query_fingerprint": step_fingerprint,
             "execution_access_fingerprint": access.execution_access_fingerprint,
+            "access_attestation_refs": sorted(access.attestation_refs),
             "semantic_context_version": intent.semantic_context_version,
-            "resource_entity_ids": sorted(projection.manifest.resource_entity_ids),
-            "resource_fingerprints": sorted(projection.manifest.resource_fingerprints),
+            "resource_bindings": sorted(
+                resource_bindings,
+                key=lambda item: (item[0], item[1]),
+            ),
             "substrate": runtime.substrate,
             "substrate_runtime_version": runtime.runtime_version,
             "substrate_image_digest": runtime.image_digest,
@@ -288,6 +314,8 @@ class DimaQueryReceiptSealer:
             "result_hash": result.result_hash,
             "row_count": result.row_count,
             "step_role": step_role,
+            "warnings": result.warnings,
+            "limitations": result.limitations,
         }
         return _sha256_json(
             payload,
