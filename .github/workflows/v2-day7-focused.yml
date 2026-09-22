@@ -26,6 +26,7 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_research_task_lifecycle.py"
       - "backend/tests/test_v2_day7_research_task_registry.py"
       - "backend/tests/test_v2_day7_research_task_registry_execution.py"
+      - "backend/tests/test_v2_day7_research_principal_binding.py"
       - "backend/tests/test_v2_day7_research_fanout.py"
       - "backend/tests/test_v2_day7_same_domain_tools.py"
       - "backend/tests/test_v2_day7_cross_domain_join_gate.py"
@@ -91,6 +92,10 @@ jobs:
       - name: ResearchTaskRegistry execution path
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_task_registry_execution.py
+
+      - name: Research principal binding
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_principal_binding.py
 
       - name: Cardinality-aware Research fanout
         working-directory: backend
