@@ -23,6 +23,8 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_research_task_registry.py"
       - "backend/tests/test_v2_day7_research_task_registry_execution.py"
       - "backend/tests/test_v2_day7_research_fanout.py"
+      - "backend/tests/test_v2_day7_same_domain_tools.py"
+      - "backend/tests/test_v2_day7_cross_domain_join_gate.py"
       - "backend/tests/test_v2_day7_research_manager_loop.py"
       - "backend/tests/test_v2_day7_result_aware_loop.py"
       - ".github/workflows/v2-day7-focused.yml"
