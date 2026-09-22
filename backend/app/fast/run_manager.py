@@ -93,6 +93,46 @@ class FastRunManager:
         except FastRunTransitionError:
             return self._store.internal_snapshot(run_id)
 
+    def _begin_execution(self, run_id: str) -> bool:
+        """Acquire RUNNING authority or close an expected cancel/start race.
+
+        Generic invalid transitions remain errors. The only tolerated race here is a
+        cancellation that wins after the worker pre-check but before RUN_STARTED.
+        """
+        try:
+            _, snapshot = self._store.transition(
+                run_id,
+                state=FastRunState.RUNNING,
+                event_type=FastRunEventType.RUN_STARTED,
+                payload={},
+                dedupe_key="run-started",
+            )
+        except FastRunTransitionError:
+            snapshot = self._store.internal_snapshot(run_id)
+            if snapshot.state == FastRunState.CANCEL_REQUESTED:
+                try:
+                    self._store.transition(
+                        run_id,
+                        state=FastRunState.CANCELLED,
+                        event_type=FastRunEventType.RUN_CANCELLED,
+                        payload={"reason": "cancelled_before_execution"},
+                        dedupe_key="run-cancelled",
+                    )
+                except FastRunTransitionError:
+                    final = self._store.internal_snapshot(run_id)
+                    if final.state not in TERMINAL_RUN_STATES:
+                        raise
+                return False
+            if snapshot.state in TERMINAL_RUN_STATES:
+                return False
+            raise
+
+        if snapshot.state != FastRunState.RUNNING:
+            raise FastRunTransitionError(
+                f"RUNNING transition returned unexpected state {snapshot.state.value}"
+            )
+        return True
+
     def _execute(
         self,
         run_id: str,
@@ -113,13 +153,8 @@ class FastRunManager:
             if snapshot.state in TERMINAL_RUN_STATES:
                 return
 
-            self._safe_transition(
-                run_id,
-                state=FastRunState.RUNNING,
-                event_type=FastRunEventType.RUN_STARTED,
-                payload={},
-                dedupe_key="run-started",
-            )
+            if not self._begin_execution(run_id):
+                return
 
             response = self._service.ask(
                 payload.ask_request(),
