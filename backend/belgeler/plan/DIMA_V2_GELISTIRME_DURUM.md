@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 COGNITION/AUTHORITY BOUNDARY IMPLEMENTED — CURRENT-HEAD RECERTIFICATION PENDING**  
-**Kod fazı:** Day 6.5 / Manager Architecture Validation — finite pre-acceptance + bounded semantic linker + deterministic BindingGate + typed temporal boundary kuruldu; önceki boundary SHA provider-free green, current HEAD yeniden certify edilmemiştir; live DEV/validation/hidden seal henüz tamamlanmadı, production hybrid route kapalı.
+**Durum:** **DAY 6.5 ENGINEERING CLOSURE READY — D65-E1 EXACT RECERTIFICATION NEXT**  
+**Kod fazı:** Day 6.5 engineering closure — latest semantic code `c9629d9029db...`; cognition/authority boundary uygulanmış durumda. Hedef front door `STANDARD_DIRECT + bounded STANDARD_BUILDER + RESEARCH`, iki accepted-authority ailesiyle kapanacak. StandardBuilder/Retriever seam henüz yazılmadı. İlk iş exact `c9629d...` provider-free recertification; production hybrid route kapalı.
 
 ---
 
@@ -23,6 +23,7 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 ### Yaşayan belgeler
 
 - `DIMA_V2_GELISTIRME_DURUM.md` — bu dosya; tek “nerede kaldık?” kaynağı.
+- `DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — current Day 6.5 engineering closure authority.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
 - `../../AGENTS.md` — V2 geliştirici/ajan çalışma sözleşmesi.
 - `../../CLAUDE.md` — repo kuralları; V2 branch override üstte olmalıdır.
