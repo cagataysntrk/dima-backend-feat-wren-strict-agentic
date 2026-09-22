@@ -19,9 +19,11 @@ from pydantic import Field
 
 from app.v2.manager_tools import (
     ManagerAnalyticsObservation,
+    ManagerRelationshipObservation,
     ManagerToolCall,
     ManagerToolName,
     RunAnalyticsArgs,
+    RunRelationshipArgs,
 )
 from app.v2.manager_progress import action_fingerprint
 from app.v2.models import EvidenceArtifact, FrozenModel, ResearchTask, ResearchTaskKind
@@ -150,6 +152,23 @@ class ResearchToolRegistry:
             args_model=RunAnalyticsArgs,
             output_model=ManagerAnalyticsObservation,
         ),
+        "wren.relationship": ResearchToolSpec(
+            contract=ResearchToolContract(
+                tool_id="wren.relationship",
+                accepted_task_kinds=(ResearchTaskKind.RELATIONSHIP,),
+                input_schema="RunRelationshipArgs@v1",
+                output_schema="ManagerRelationshipObservation@v1",
+                authority=ResearchToolAuthority.ACCEPTED_RESEARCH,
+                evidence_kind="relationship_analytics",
+                max_rows=20,
+                timeout_ms=15_000,
+                cost_class=ResearchToolCostClass.MODERATE,
+                required_permissions=("query:run",),
+            ),
+            manager_tool=ManagerToolName.RUN_RELATIONSHIP,
+            args_model=RunRelationshipArgs,
+            output_model=ManagerRelationshipObservation,
+        ),
     }
 
     def spec(self, tool_id: str) -> ResearchToolSpec:
@@ -236,6 +255,29 @@ class ResearchToolRegistry:
             raise ResearchToolContractError(
                 f"Research tool input schema mismatch for {tool_id}: {exc}"
             ) from exc
+
+        if isinstance(validated, RunRelationshipArgs):
+            undeclared_handles = {
+                *validated.focus_handles,
+                *validated.counterpart_handles,
+            } - set(task.input_refs)
+            if undeclared_handles:
+                raise ResearchToolContractError(
+                    "Research relationship task did not declare semantic inputs: "
+                    + ", ".join(sorted(undeclared_handles))
+                )
+            if task_kind != ResearchTaskKind.RELATIONSHIP:
+                raise ResearchToolContractError(
+                    "RunRelationshipArgs requires RELATIONSHIP task kind"
+                )
+            if task.question_id != validated.obligation_id:
+                raise ResearchToolContractError(
+                    "RELATIONSHIP task must bind to its accepted obligation"
+                )
+            if validated.research_task_id is not None:
+                raise ResearchToolContractError(
+                    "Manager cannot self-assign relationship research_task_id"
+                )
 
         if isinstance(validated, RunAnalyticsArgs):
             # The typed task must already carry every opaque semantic input the worker
@@ -404,7 +446,7 @@ class ResearchToolRunner:
         # Inject only execution identity. Semantic/tool inputs remain exactly the
         # contract-validated call supplied above.
         effective_call = call
-        if isinstance(validated, RunAnalyticsArgs):
+        if isinstance(validated, (RunAnalyticsArgs, RunRelationshipArgs)):
             effective_call = call.model_copy(
                 update={
                     "args": {
