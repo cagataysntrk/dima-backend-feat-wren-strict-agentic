@@ -47,6 +47,8 @@ class TemporalNormalizationChoice(FrozenModel):
     period_kind: TemporalIntentKind | None = None
     comparison_kind: ComparisonIntentKind | None = None
     n: int | None = Field(default=None, ge=1, le=10000)
+    implicit_base_period_kind: TemporalIntentKind | None = None
+    implicit_base_n: int | None = Field(default=None, ge=1, le=10000)
     reason: Literal[
         "AMBIGUOUS",
         "UNSUPPORTED",
@@ -58,14 +60,25 @@ class TemporalNormalizationChoice(FrozenModel):
         if self.decision == "ABSTAIN":
             if self.reason is None:
                 raise ValueError("ABSTAIN requires reason")
-            if self.period_kind is not None or self.comparison_kind is not None or self.n is not None:
+            if (
+                self.period_kind is not None
+                or self.comparison_kind is not None
+                or self.n is not None
+                or self.implicit_base_period_kind is not None
+                or self.implicit_base_n is not None
+            ):
                 raise ValueError("ABSTAIN cannot carry normalized temporal fields")
             return self
 
         if self.reason is not None:
             raise ValueError("NORMALIZED cannot carry abstain reason")
         if self.target == "PERIOD":
-            if self.period_kind is None or self.comparison_kind is not None:
+            if (
+                self.period_kind is None
+                or self.comparison_kind is not None
+                or self.implicit_base_period_kind is not None
+                or self.implicit_base_n is not None
+            ):
                 raise ValueError("PERIOD requires period_kind only")
             if self.period_kind in {
                 TemporalIntentKind.LAST_N_DAYS,
@@ -77,8 +90,23 @@ class TemporalNormalizationChoice(FrozenModel):
             elif self.n is not None:
                 raise ValueError("non-LAST_N period cannot carry n")
         else:
-            if self.comparison_kind is None or self.period_kind is not None or self.n is not None:
-                raise ValueError("COMPARISON requires comparison_kind only")
+            if (
+                self.comparison_kind is None
+                or self.period_kind is not None
+                or self.n is not None
+            ):
+                raise ValueError("COMPARISON requires comparison_kind")
+            if self.implicit_base_period_kind in {
+                TemporalIntentKind.LAST_N_DAYS,
+                TemporalIntentKind.LAST_N_WEEKS,
+                TemporalIntentKind.LAST_N_MONTHS,
+            }:
+                if self.implicit_base_n is None:
+                    raise ValueError("implicit LAST_N base period requires implicit_base_n")
+            elif self.implicit_base_n is not None:
+                raise ValueError(
+                    "implicit_base_n requires an implicit LAST_N base period kind"
+                )
         return self
 
 
@@ -93,8 +121,15 @@ ontology encoded by the output schema, or ABSTAIN. Normalize meaning only; never
 dates, never choose database/time dimensions, never emit SQL, and never invent additional
 time constraints.
 
-PERIOD describes the requested analytical period. COMPARISON describes how the reference
-period relates to an already-governed base period. Return only strict schema.
+PERIOD describes the requested analytical period.
+
+COMPARISON describes how the reference period relates to a base period. When the exact
+comparison surface itself semantically determines an unambiguous natural base interval
+even without a separate PERIOD surface, set implicit_base_period_kind (and implicit_base_n
+only for LAST_N kinds). Otherwise leave the implicit base fields null. Do not invent a
+base interval merely to avoid abstaining.
+
+Return only strict schema.
 """
 
 
@@ -262,6 +297,37 @@ class TemporalBindingEngine:
             start=start.isoformat(),
             end=end.isoformat(),
             n=choice.n,
+        )
+
+    @classmethod
+    def implicit_base_period(
+        cls,
+        *,
+        choice: TemporalNormalizationChoice,
+        source_text: str,
+        time_dimension: str,
+        today: date | None = None,
+    ) -> ResolvedPeriod:
+        """Resolve a model-typed implicit comparison base with deterministic calendar math."""
+        if (
+            choice.decision != "NORMALIZED"
+            or choice.target != "COMPARISON"
+            or choice.implicit_base_period_kind is None
+        ):
+            raise ValueError("comparison choice has no implicit base period")
+
+        period_choice = TemporalNormalizationChoice(
+            request_id=f"{choice.request_id}:implicit-base",
+            target="PERIOD",
+            decision="NORMALIZED",
+            period_kind=choice.implicit_base_period_kind,
+            n=choice.implicit_base_n,
+        )
+        return cls.period(
+            choice=period_choice,
+            source_text=source_text,
+            time_dimension=time_dimension,
+            today=today,
         )
 
     @classmethod
