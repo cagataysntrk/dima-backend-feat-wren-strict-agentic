@@ -167,3 +167,135 @@ product code written     = 0
 Metabase runtime started = 0
 ```
 
+
+## Batch 2 — Retrieval/index authority and source-of-truth lifecycle
+
+### DD-04 — retrieval index → current-principal hydration
+
+- **mechanism:** retrieval index → current-principal hydration
+- **exact upstream source/function:**
+  - `src/metabase/metabot/tools/entity_retrieval.clj::build-matches`
+  - `src/metabase/entity_retrieval/mirror.clj::search-unfiltered`
+  - `src/metabase/entity_retrieval/core.clj` namespace contract
+- **observed behavior:** the pgvector/entity index is explicitly user-agnostic. Raw hits are only
+  candidate refs. `build-matches` hydrates the entire deduped candidate set through
+  `tools.search/entity-refs->search-results`, which permission-filters for the **current user**, then
+  post-filters against live `library-entity-keys` so stale/unpublished entities do not surface.
+  Only readable/current entities survive to the agent.
+- **problem solved:** a stale/global index cannot itself authorize entity visibility or semantic use.
+- **Dima equivalent/owner:** Dima SemanticCatalogRetriever / semantic discovery boundary followed by
+  current tenant/principal/context hydration and `SemanticBindingGate`.
+- **Wren equivalent/owner:** Wren MDL/catalog/knowledge is the retained semantic source against which
+  live candidate identity/membership is checked.
+- **disposition:** **DIMA_CORE_NATIVE**
+- **security/authority effect:** P0. `INDEX_HIT != CURRENT_AUTHORITY`. Candidate discovery cannot
+  mint `sem_*` handles or bypass tenant/principal/current-context checks.
+- **semantic duplication risk:** LOW if index stores opaque refs only; HIGH if it becomes an
+  independent business-semantic source.
+- **native implementation cost:** MEDIUM.
+- **Metabase runtime dependency:** NONE for Dima's authority boundary; Metabase search may later be a
+  retrieval provider only.
+- **required executable proof:** index returns a stale/foreign/unreadable entity ID → current
+  hydration drops it before CandidateSet/handle minting; readable current entity survives.
+- **timing:** Day6.5 retrieval invariant / Day12–14 security hardening.
+
+### DD-05 — retrieval UNAVAILABLE != semantic NO_MATCH
+
+- **mechanism:** retrieval UNAVAILABLE != semantic NO_MATCH
+- **exact upstream source/function:**
+  - `src/metabase/metabot/tools/entity_retrieval.clj::retrieve-library-entities-tool`
+  - `enterprise/backend/src/metabase_enterprise/entity_retrieval/core.clj::retrieval-status`
+  - `::entity-retrieval-available?`
+  - `::search-unfiltered`
+- **observed behavior:** the tool distinguishes a successful empty result from subsystem failure.
+  Search/tool exceptions return an explicit “temporarily unavailable; this does not mean the library
+  is empty” output and omit successful structured search payload. Retrieval health separately
+  distinguishes missing/incompatible/empty/populated/unreachable index states. Unexpected SQL/store
+  failures propagate as unavailability; only known index-not-ready states degrade to empty/no result.
+- **problem solved:** infrastructure outage cannot be misinterpreted as semantic absence and cause a
+  false “nothing matches” conclusion.
+- **Dima equivalent/owner:** typed retrieval outcome in Dima semantic-discovery layer:
+  `MATCHES | NO_MATCH | UNAVAILABLE | ERROR`. Only `NO_MATCH` may support semantic absence;
+  `UNAVAILABLE` is transport/infrastructure evidence.
+- **Wren equivalent/owner:** Wren catalog availability can be an input signal, but Dima owns the
+  user-facing/agent-facing typed distinction and fallback policy.
+- **disposition:** **DIMA_CORE_NATIVE**
+- **security/authority effect:** avoids silent fallback to weaker semantic authority during retrieval
+  outage.
+- **semantic duplication risk:** none.
+- **native implementation cost:** LOW.
+- **Metabase runtime dependency:** NONE.
+- **required executable proof:** force retrieval backend unavailable → typed UNAVAILABLE and zero
+  semantic absence claim; empty healthy catalog/search → typed NO_MATCH; no hidden fallback authority.
+- **timing:** semantic retrieval boundary / release hardening.
+
+### DD-06 — indexed high-cardinality candidate → live current-user re-read
+
+- **mechanism:** indexed high-cardinality entity candidate → live current-user re-read
+- **exact upstream source/function:**
+  - `src/metabase/indexed_entities/models/model_index.clj::value-for-pk`
+  - `::values-query`
+- **observed behavior:** the shared `model_index_value` table is explicitly lens-free. For a concrete
+  indexed entity value, `value-for-pk` deliberately does **not** read the shared index row; it runs
+  the model query through the QP under the current user, so data permissions, sandboxing,
+  impersonation and routing apply. Missing permission/no row yields nil.
+- **problem solved:** a shared search index cannot leak sensitive/high-cardinality dimension/entity
+  values or serve stale values as current authorized truth.
+- **Dima equivalent/owner:** entity/filter resolution boundary. Search/index may propose opaque entity
+  IDs; sensitive/high-cardinality display/value confirmation must use a current-principal authoritative
+  read before becoming a governed filter/handle.
+- **Wren equivalent/owner:** Wren/current DB execution is the authoritative live read; Dima owns the
+  candidate-to-filter trust decision.
+- **disposition:** **DIMA_CORE_NATIVE**
+- **security/authority effect:** P0 for sensitive entity values. Index text is discovery evidence only.
+- **semantic duplication risk:** LOW when index stores IDs/text only.
+- **native implementation cost:** MEDIUM.
+- **Metabase runtime dependency:** NONE; if Metabase provides candidate IDs later, Dima/Wren current
+  authority still re-reads as needed.
+- **required executable proof:** index candidate exists for principal A; principal B lacks row/value
+  access → live re-read returns no authorized value and no filter/semantic handle is minted.
+- **timing:** Day7–14 entity/filter hardening; large-catalog retrieval later.
+
+### DD-07 — AI-context source-of-truth → derived index lifecycle
+
+- **mechanism:** AI-context source-of-truth → derived index lifecycle
+- **exact upstream source/function:**
+  - `enterprise/backend/src/metabase_enterprise/entity_retrieval/reconcile.clj` namespace contract
+  - `::library-entity`, `::library-entity-keys`, `::reconcile!`, `::reconcile-entity!`
+  - `src/metabase/entity_retrieval/core.clj::ai-context-instructions`
+  - `src/metabase/osi/ai_context/api.clj`
+- **observed behavior:** Metabase declares appdb library membership + `osi_ai_context` as the
+  authoritative source. The vector index is derived by diff/reconcile and garbage-collects stale docs.
+  Curator `instructions` are intentionally **not** embedded/indexed; they are read live from
+  `osi_ai_context` per request. Targeted reconcile is eventually consistent and a periodic/full diff
+  is the backstop.
+- **problem solved:** retrieval indexes remain disposable projections of authoritative metadata rather
+  than independent semantic truth.
+- **Dima equivalent/owner:** retained Wren MDL/models/relationships/cubes/knowledge/business context
+  is the semantic source of truth. Any future vector/BM25/entity index is derived/rebuildable.
+- **Wren equivalent/owner:** **Wren owns** authoritative semantic/business context.
+- **disposition:** **WREN_OWNS**
+- **security/authority effect:** index drift/staleness can affect recall, never authority. Live Wren
+  membership/context wins over index contents.
+- **semantic duplication risk:** HIGH if Dima/Metabase index stores separately curated metric formulas,
+  relationships, grain, time semantics or business rules.
+- **native implementation cost:** N/A for semantic ownership; MEDIUM-HIGH for optional derived index
+  lifecycle.
+- **Metabase runtime dependency:** NONE. Metabase index implementation may be a future retrieval
+  candidate, not semantic owner.
+- **required executable proof:** remove/alter authoritative Wren semantic object while stale index
+  still contains it → current catalog/hydration rejects it; rebuild may lag without widening authority.
+  Rebuild-from-Wren produces the index state from scratch.
+- **timing:** permanent ownership decision; retrieval/index implementation is later optimization.
+
+### Batch 2 counters
+
+```text
+classified in this batch = 4
+mechanisms closed        = 4,5,6,7
+cumulative classified    = 9 / 25
+remaining                = 16
+product code written     = 0
+Metabase runtime started = 0
+```
+

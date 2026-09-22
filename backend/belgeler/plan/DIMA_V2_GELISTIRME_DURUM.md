@@ -4,7 +4,7 @@
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
 **Durum:** **D65-SI FINAL GREEN / SEALED — M0E-DEEP-DELTA ACTIVE; X0-BRIDGE-PREFLIGHT NEXT AFTER M0E FINAL; X0/DEV80 FORBIDDEN**  
-**Kod fazı:** D65-SI remains FINAL GREEN/SEALED; semantic work stays closed. Current sole main ticket = M0E-DEEP-DELTA. Batch 1 source audit classified mechanisms `1,2,3,9,14` (effective access lens, derived-result reauthorization, permission-sensitive cache safety, unrepresentable security-bound persistence refusal, missing principal fail-closed) from pinned Metabase `74216b...`. Dispositions: `1/2/9/14=DIMA_CORE_NATIVE`, `3=PATTERN_ONLY`. No product code and no Metabase runtime. Remaining delta mechanisms = 20. Next batch = retrieval/index lifecycle `4,5,6,7` plus source-of-truth availability semantics. X0 remains blocked until all 25 classified + bridge preflight.  
+**Kod fazı:** D65-SI remains FINAL GREEN/SEALED. M0E-DEEP-DELTA Batch 1+2 now classifies `9/25` mechanisms. Batch 2 closed `4,5,6,7`: index hits require current-principal/current-catalog hydration (`DIMA_CORE_NATIVE`), retrieval UNAVAILABLE is distinct from semantic NO_MATCH (`DIMA_CORE_NATIVE`), high-cardinality indexed values require live authorized re-read (`DIMA_CORE_NATIVE`), and Wren remains source-of-truth for semantic/business context while any retrieval index is derived (`WREN_OWNS`). No product code/runtime. Remaining = 16. Next batch = Research/agent state + async/idempotency/cardinality/interestingness `8,13,15,16` and missing-principal proof already cross-linked to DD-14.  
 
 ---
 
