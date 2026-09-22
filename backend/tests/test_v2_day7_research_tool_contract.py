@@ -197,7 +197,7 @@ def test_first_research_tool_contract_is_closed_and_declarative():
     spec = registry.spec("wren.query")
     contract = spec.contract
 
-    assert registry.declared_tools == ("wren.query", "wren.breakdown", "wren.compare", "wren.rank")
+    assert registry.declared_tools == ("wren.query", "wren.breakdown", "wren.compare", "wren.rank", "wren.relationship")
     assert contract.accepted_task_kinds == (ResearchTaskKind.QUERY,)
     assert contract.input_schema == "RunAnalyticsArgs@v1"
     assert contract.output_schema == "ManagerAnalyticsObservation@v1"
