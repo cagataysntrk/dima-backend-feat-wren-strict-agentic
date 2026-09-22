@@ -474,3 +474,85 @@ failure_triage_receipt_gate:
   forbidden_failed_phrase_example: true
   forbidden_keyword_or_regex_semantic_patch: true
   forbidden_legacy_resolver_fallback: true
+
+d65_j1_decision_model_challenger:
+  phase: "PRE_ENGINEERING_FREEZE"
+  canonical_roadmap_renumber: false
+  day7_10_unchanged: true
+  d65x_unchanged: true
+  j1a:
+    mode: "ISOLATED_LAB_EVAL_ONLY"
+    product_code_no_touch: true
+    manager_excluded: true
+    temporal_normalizer_excluded: true
+    pinned_models:
+      cheap_structured: "google/gemini-2.5-flash-lite"
+      jev: "typesafe/jev-1.13"
+      reference_structured: "openai/gpt-5.6-sol"
+    forbidden_models:
+      - "~typesafe/jev-latest"
+    jev_transport:
+      api: "OPENROUTER_DECISIONS_ALPHA"
+      endpoint: "https://openrouter.ai/api/alpha/decisions"
+      question_type: "choice"
+    output_contract:
+      allowed:
+        - "SUPPLIED_CANDIDATE_ID"
+        - "ABSTAIN"
+      canonical_id_output: false
+      semantic_authority_mint: false
+    no_touch:
+      - "app/v2/semantic_linker.py"
+      - "app/v2/semantic_handles.py"
+      - "app/v2/manager_semantics.py"
+      - "app/v2/temporal_intent.py"
+      - "app/v2/acceptance.py"
+    required_strata:
+      - exact_alias_control
+      - turkish_non_exact_paraphrase
+      - synonym_surface
+      - multiple_plausible_candidates
+      - true_ambiguity
+      - no_match_abstain
+      - retrieval_miss
+      - bounded_high_cardinality
+      - entity_value
+      - sensitive_value_exact_only
+      - metric_dimension_variation
+      - metamorphic_permuted_schema_labels
+      - cross_tenant_candidate_isolation
+    metrics:
+      - candidate_selection_accuracy
+      - abstain_precision
+      - abstain_recall
+      - ambiguity_unsafe_pick_count
+      - candidate_escape_count
+      - turkish_paraphrase_accuracy
+      - metamorphic_consistency
+      - repeated_run_agreement
+      - p50_latency
+      - p95_latency
+      - cost
+      - provider_failures
+      - jev_choice_probabilities
+      - jev_brier_or_equivalent
+      - jev_ece_or_equivalent
+      - jev_high_confidence_wrong_count
+    p0:
+      candidate_outside_supplied_set: 0
+      silent_ambiguity_auto_pick: 0
+      cross_tenant_semantic_leak: 0
+      high_confidence_wrong_accepted: 0
+      semantic_authority_minted_by_model: 0
+    confidence_threshold_policy:
+      production_threshold_in_j1a: false
+      tune_on_same_eval_set: false
+  decision:
+    reject:
+      product_change: false
+      resume_current_architecture: true
+    promising:
+      next_ticket: "D65-J1B"
+      requires_decision_provider_seam: true
+      requires_semantic_temporal_role_split: true
+      requires_full_revalidation_before_freeze: true
