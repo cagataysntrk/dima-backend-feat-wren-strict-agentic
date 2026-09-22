@@ -109,6 +109,23 @@ class ResearchToolRegistry:
             args_model=RunAnalyticsArgs,
             output_model=ManagerAnalyticsObservation,
         ),
+        "wren.breakdown": ResearchToolSpec(
+            contract=ResearchToolContract(
+                tool_id="wren.breakdown",
+                accepted_task_kinds=(ResearchTaskKind.BREAKDOWN,),
+                input_schema="RunAnalyticsArgs@v1",
+                output_schema="ManagerAnalyticsObservation@v1",
+                authority=ResearchToolAuthority.ACCEPTED_RESEARCH,
+                evidence_kind="standard_analytics",
+                max_rows=20,
+                timeout_ms=15_000,
+                cost_class=ResearchToolCostClass.CHEAP,
+                required_permissions=("query:run",),
+            ),
+            manager_tool=ManagerToolName.RUN_ANALYTICS,
+            args_model=RunAnalyticsArgs,
+            output_model=ManagerAnalyticsObservation,
+        ),
     }
 
     def spec(self, tool_id: str) -> ResearchToolSpec:
