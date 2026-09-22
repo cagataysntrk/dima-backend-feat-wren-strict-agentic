@@ -70,6 +70,7 @@ def projection_handles(projection: StandardProjection) -> tuple[str, ...]:
 
 class ResolvedSemanticRef(FrozenModel):
     semantic_ref: str = Field(min_length=1)
+    source_candidate_id: str = Field(min_length=1)
     kind: Literal["metric", "dimension"]
     canonical_name: str = Field(min_length=1)
     source_scopes: tuple[str, ...] = ()
@@ -77,6 +78,7 @@ class ResolvedSemanticRef(FrozenModel):
 
 class ResolvedFilterRef(FrozenModel):
     semantic_ref: str = Field(min_length=1)
+    source_candidate_id: str = Field(min_length=1)
     dimension_name: str = Field(min_length=1)
     value: str
     source_scopes: tuple[str, ...] = ()
@@ -247,6 +249,7 @@ class ResolvedAnalyticsIntentBuilder:
             metrics.append(
                 ResolvedSemanticRef(
                     semantic_ref=handle_id,
+                    source_candidate_id=target.candidate_id,
                     kind="metric",
                     canonical_name=target.canonical_name,
                     source_scopes=target.cube_names,
@@ -266,6 +269,7 @@ class ResolvedAnalyticsIntentBuilder:
             dimensions.append(
                 ResolvedSemanticRef(
                     semantic_ref=handle_id,
+                    source_candidate_id=target.candidate_id,
                     kind="dimension",
                     canonical_name=target.canonical_name,
                     source_scopes=target.cube_names,
@@ -282,6 +286,7 @@ class ResolvedAnalyticsIntentBuilder:
             filters.append(
                 ResolvedFilterRef(
                     semantic_ref=handle_id,
+                    source_candidate_id=target.candidate_id,
                     dimension_name=target.dimension_name,
                     value=target.value,
                     source_scopes=target.cube_names,

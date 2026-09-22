@@ -133,7 +133,7 @@ class WrenSubstrateAdapter:
     def _to_ir(self, intent: ResolvedAnalyticsIntent) -> AnalyticsIR:
         metric_refs = tuple(
             V2ResolvedSemanticRef(
-                candidate_id=item.semantic_ref,
+                candidate_id=item.source_candidate_id,
                 target_kind=SemanticTargetKind.METRIC,
                 canonical_name=item.canonical_name,
                 cube_names=item.source_scopes,
@@ -142,7 +142,7 @@ class WrenSubstrateAdapter:
         )
         dimension_refs = tuple(
             V2ResolvedSemanticRef(
-                candidate_id=item.semantic_ref,
+                candidate_id=item.source_candidate_id,
                 target_kind=SemanticTargetKind.DIMENSION,
                 canonical_name=item.canonical_name,
                 cube_names=item.source_scopes,
@@ -151,7 +151,7 @@ class WrenSubstrateAdapter:
         )
         filter_refs = tuple(
             V2ResolvedFilterRef(
-                candidate_id=item.semantic_ref,
+                candidate_id=item.source_candidate_id,
                 dimension_name=item.dimension_name,
                 value=item.value,
                 cube_names=item.source_scopes,

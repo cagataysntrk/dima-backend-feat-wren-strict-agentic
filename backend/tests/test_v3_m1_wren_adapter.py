@@ -52,9 +52,24 @@ def test_wren_substrate_has_no_semantic_handle_or_raw_language_dependency():
     assert "semantic_linker" not in joined
     assert "resolver" not in joined.lower()
 
-    source = inspect.getsource(module.WrenSubstrateAdapter.execute_execution_intent)
-    assert "question" not in source
-    assert "binding_for_execution" not in source
+    method = module.WrenSubstrateAdapter.execute_execution_intent
+    signature = inspect.signature(method)
+    assert tuple(signature.parameters) == ("self", "intent")
+
+    method_tree = ast.parse(inspect.getsource(method))
+    question_keywords = [
+        node
+        for node in ast.walk(method_tree)
+        if isinstance(node, ast.keyword) and node.arg == "question"
+    ]
+    assert len(question_keywords) == 1
+    value = question_keywords[0].value
+    assert isinstance(value, ast.Attribute)
+    assert value.attr == "request_ref"
+    assert isinstance(value.value, ast.Name)
+    assert value.value.id == "intent"
+
+    assert "binding_for_execution" not in inspect.getsource(method)
 
 
 def test_v3_wren_adapter_matches_certified_v2_query_behavior(

@@ -223,6 +223,7 @@ def test_resolved_intent_resolves_each_handle_once_before_substrate():
 
     assert counting.calls == [metric.handle_id]
     assert intent.metrics[0].semantic_ref == metric.handle_id
+    assert intent.metrics[0].source_candidate_id == "metric-m1"
     assert intent.metrics[0].canonical_name == "ariza_sayisi"
     assert intent.metrics[0].source_scopes == ("bakim",)
     assert len(intent.resolved_intent_hash) == 64
