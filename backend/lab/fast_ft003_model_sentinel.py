@@ -27,7 +27,7 @@ from app.fast.ask_models import (
 from app.fast.auth_context import FastMetabaseAuthContext, FastMetabaseAuthMode
 from app.fast.metabase_gateway import FastMetabaseGateway
 from app.fast.metabase_models import FastMetabaseRuntimePolicy
-from app.fast.resource_registry import ResourceRegistry
+from app.fast.resource_registry import discover_resource_registry
 from app.llm import build_generator
 
 
@@ -214,13 +214,27 @@ def main() -> int:
                         else True
                     )
 
-                    search = gateway.search(
+                    direct_search = gateway.search(
                         term_queries=draft.search_terms,
                         semantic_queries=(case["question"],),
                     )
-                    registry = ResourceRegistry(search.data)
-                    observed["checks"]["search_terms_useful"] = any(
-                        item.name.lower() == "orders" for item in registry.candidates
+                    direct_registry_names = {
+                        str(item.get("name") or "").lower()
+                        for item in direct_search.data
+                        if str(item.get("type") or "").lower() == "table"
+                    }
+                    observed["measurements"] = {
+                        "direct_search_hit": "orders" in direct_registry_names,
+                    }
+                    registry, discovery_mode = discover_resource_registry(
+                        gateway,
+                        term_queries=draft.search_terms,
+                        semantic_query=case["question"],
+                        max_candidates=8,
+                    )
+                    observed["retrieval_mode"] = discovery_mode
+                    observed["checks"]["resource_candidates_available"] = bool(
+                        registry.candidates
                     )
                     decision = cognition.select_resource(
                         question=case["question"],
@@ -328,16 +342,16 @@ def main() -> int:
             ambiguous_candidates = (
                 ResourceCandidate(
                     handle="fast_res_001",
-                    name="orders",
-                    display_name="Orders",
-                    description="Order facts",
+                    name="dataset_alpha",
+                    display_name="Order Facts",
+                    description="Permitted order facts",
                     resource_type="table",
                 ),
                 ResourceCandidate(
                     handle="fast_res_002",
-                    name="orders_archive",
-                    display_name="Orders Archive",
-                    description="Historical order facts",
+                    name="dataset_beta",
+                    display_name="Order Facts",
+                    description="Permitted order facts",
                     resource_type="table",
                 ),
             )

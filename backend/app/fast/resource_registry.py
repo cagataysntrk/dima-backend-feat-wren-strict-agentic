@@ -242,3 +242,102 @@ class FieldRegistry:
                 FastAskErrorCode.UNKNOWN_HANDLE,
                 "field selection did not reference a provided opaque handle",
             ) from exc
+
+
+
+def _list_items_from_resource(item, *, operation: str) -> tuple[dict[str, Any], ...]:
+    if item.failed or item.content is None:
+        raise FastAskError(
+            FastAskErrorCode.NO_RESOURCE,
+            f"{operation} metadata resource is unavailable",
+        )
+    structured = item.content.structured_output
+    if not isinstance(structured, dict):
+        raise FastAskError(
+            FastAskErrorCode.RESULT_CONTRACT_INVALID,
+            f"{operation} metadata resource has no structured output",
+        )
+    items = structured.get("items")
+    if not isinstance(items, list):
+        raise FastAskError(
+            FastAskErrorCode.RESULT_CONTRACT_INVALID,
+            f"{operation} metadata resource has no items list",
+        )
+    pages = structured.get("pages")
+    if isinstance(pages, int) and pages > 1:
+        raise FastAskError(
+            FastAskErrorCode.AMBIGUOUS_RESOURCE,
+            f"{operation} metadata exceeds the bounded FT-003 discovery window",
+        )
+    return tuple(dict(row) for row in items if isinstance(row, dict))
+
+
+def discover_resource_registry(
+    gateway,
+    *,
+    term_queries: tuple[str, ...],
+    semantic_query: str,
+    max_candidates: int = 8,
+) -> tuple[ResourceRegistry, str]:
+    """Discover bounded table candidates without warehouse-language guessing.
+
+    Primary path uses Metabase search. If search yields no supported tables, a hidden,
+    permission-filtered catalog fallback enumerates accessible databases and tables.
+    The fallback fails closed on pagination or candidate-budget overflow.
+    """
+    search = gateway.search(
+        term_queries=term_queries,
+        semantic_queries=(semantic_query,),
+    )
+    registry = ResourceRegistry(search.data, max_candidates=max_candidates)
+    if registry.candidates:
+        return registry, "SEARCH"
+
+    databases_response = gateway.read_resource(("metabase://databases",))
+    database_rows = _list_items_from_resource(
+        databases_response.resources[0],
+        operation="database catalog",
+    )
+
+    tables: list[dict[str, Any]] = []
+    seen_uris: set[str] = set()
+    for database in database_rows:
+        raw_uri = str(database.get("uri") or "").strip()
+        if not raw_uri:
+            raw_id = database.get("id")
+            try:
+                raw_uri = f"metabase://database/{int(raw_id)}"
+            except (TypeError, ValueError):
+                continue
+        if not raw_uri.startswith("metabase://database/"):
+            continue
+
+        response = gateway.read_resource((raw_uri + "/tables",))
+        for table in _list_items_from_resource(
+            response.resources[0],
+            operation="table catalog",
+        ):
+            if str(table.get("type") or "").lower() != "table":
+                continue
+            table_uri = str(table.get("uri") or "").strip()
+            if not table_uri:
+                raw_id = table.get("id")
+                try:
+                    table_uri = f"metabase://table/{int(raw_id)}"
+                except (TypeError, ValueError):
+                    continue
+                table = {**table, "uri": table_uri}
+            if table_uri in seen_uris:
+                continue
+            seen_uris.add(table_uri)
+            tables.append(table)
+            if len(tables) > max_candidates:
+                raise FastAskError(
+                    FastAskErrorCode.AMBIGUOUS_RESOURCE,
+                    "accessible table catalog exceeds the bounded FT-003 candidate budget",
+                )
+
+    return (
+        ResourceRegistry(tables, max_candidates=max_candidates),
+        "CATALOG_FALLBACK",
+    )

@@ -31,7 +31,7 @@ from app.fast.evidence import (
 from app.fast.metabase_errors import FastMetabaseError
 from app.fast.metabase_gateway import FastMetabaseGateway
 from app.fast.query_builder import build_portable_query
-from app.fast.resource_registry import ResourceRegistry
+from app.fast.resource_registry import discover_resource_registry
 from app.fast.temporal import bind_temporal
 
 
@@ -111,18 +111,16 @@ class FastAskService:
             )
 
             with self._gateway_factory(principal) as gateway:
-                search = gateway.search(
+                registry, _discovery_mode = discover_resource_registry(
+                    gateway,
                     term_queries=draft.search_terms,
-                    semantic_queries=(question,),
-                )
-                registry = ResourceRegistry(
-                    search.data,
+                    semantic_query=question,
                     max_candidates=self._max_resource_candidates,
                 )
                 if not registry.candidates:
                     raise FastAskError(
                         FastAskErrorCode.NO_RESOURCE,
-                        "Metabase metadata search returned no supported table candidate",
+                        "Metabase metadata discovery returned no supported table candidate",
                     )
 
                 resource_decision = self._cognition.select_resource(

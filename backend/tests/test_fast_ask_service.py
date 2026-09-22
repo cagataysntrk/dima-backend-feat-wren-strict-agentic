@@ -473,3 +473,141 @@ def test_multiple_resource_candidates_fail_closed_even_if_model_guesses():
     assert response.error is not None
     assert response.error.code == "AMBIGUOUS_RESOURCE"
     assert gateway.constructed_queries == []
+
+
+
+class CatalogFallbackGateway(FakeGateway):
+    def search(self, *, term_queries=(), semantic_queries=()):
+        assert term_queries == ("orders",)
+        assert semantic_queries
+        return SearchResponse(data=(), total_count=0)
+
+    def read_resource(self, uris):
+        if uris == ("metabase://databases",):
+            return ReadResourceResponse(
+                resources=(
+                    ResourceItem(
+                        uri=uris[0],
+                        content=ResourceContent(
+                            **{
+                                "structured-output": {
+                                    "result-type": "metabot-list",
+                                    "items": [
+                                        {
+                                            "type": "database",
+                                            "id": 1,
+                                            "name": "Dima Lab Analytics",
+                                            "uri": "metabase://database/1",
+                                        }
+                                    ],
+                                    "total": 1,
+                                    "page": 1,
+                                    "pages": 1,
+                                }
+                            }
+                        ),
+                    ),
+                ),
+                output="<resources>db</resources>",
+            )
+        if uris == ("metabase://database/1/tables",):
+            return ReadResourceResponse(
+                resources=(
+                    ResourceItem(
+                        uri=uris[0],
+                        content=ResourceContent(
+                            **{
+                                "structured-output": {
+                                    "result-type": "metabot-list",
+                                    "items": [
+                                        {
+                                            "type": "table",
+                                            "id": 1,
+                                            "uri": "metabase://table/1",
+                                            "name": "orders",
+                                            "display_name": "Orders",
+                                            "database_id": 1,
+                                        }
+                                    ],
+                                    "total": 1,
+                                    "page": 1,
+                                    "pages": 1,
+                                }
+                            }
+                        ),
+                    ),
+                ),
+                output="<resources>tables</resources>",
+            )
+        return super().read_resource(uris)
+
+
+def test_catalog_fallback_recovers_cross_language_metadata_without_phrase_map():
+    gateway = CatalogFallbackGateway(response=_response(QUESTION_COUNT))
+    service = FastAskService(
+        cognition=ScriptedCognition(QUESTION_COUNT),
+        gateway_factory=lambda principal: gateway,
+    )
+    request_cls = __import__("app.fast.ask_models", fromlist=["FastAskRequest"]).FastAskRequest
+
+    response = service.ask(
+        request_cls(question=QUESTION_COUNT, as_of_date=date(2026, 9, 7)),
+        principal=principal(),
+    )
+
+    assert response.status == AskOutcomeStatus.SUCCESS
+    assert response.answer == "Sonuç: 30 kayıt."
+
+
+class WideCatalogFallbackGateway(CatalogFallbackGateway):
+    def read_resource(self, uris):
+        if uris == ("metabase://database/1/tables",):
+            items = [
+                {
+                    "type": "table",
+                    "id": index,
+                    "uri": f"metabase://table/{index}",
+                    "name": f"table_{index}",
+                    "database_id": 1,
+                }
+                for index in range(1, 10)
+            ]
+            return ReadResourceResponse(
+                resources=(
+                    ResourceItem(
+                        uri=uris[0],
+                        content=ResourceContent(
+                            **{
+                                "structured-output": {
+                                    "result-type": "metabot-list",
+                                    "items": items,
+                                    "total": len(items),
+                                    "page": 1,
+                                    "pages": 1,
+                                }
+                            }
+                        ),
+                    ),
+                ),
+                output="<resources>wide</resources>",
+            )
+        return super().read_resource(uris)
+
+
+def test_catalog_fallback_never_silently_takes_first_n_tables():
+    gateway = WideCatalogFallbackGateway(response=_response(QUESTION_COUNT))
+    service = FastAskService(
+        cognition=ScriptedCognition(QUESTION_COUNT),
+        gateway_factory=lambda principal: gateway,
+    )
+    request_cls = __import__("app.fast.ask_models", fromlist=["FastAskRequest"]).FastAskRequest
+
+    response = service.ask(
+        request_cls(question=QUESTION_COUNT, as_of_date=date(2026, 9, 7)),
+        principal=principal(),
+    )
+
+    assert response.status == AskOutcomeStatus.CLARIFICATION_REQUIRED
+    assert response.error is not None
+    assert response.error.code == "AMBIGUOUS_RESOURCE"
+    assert gateway.constructed_queries == []
