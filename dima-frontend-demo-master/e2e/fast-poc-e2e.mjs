@@ -160,6 +160,10 @@ try {
     "FT-003 heading",
   );
 
+  // The heading is server-rendered and can become visible before React has attached
+  // client event handlers. Keep this stabilization test-only; product timing stays real.
+  await sleep(750);
+
   // Browser-only network latency makes the loading state observable without
   // changing product code or backend behavior.
   await cdp.send("Network.emulateNetworkConditions", {
