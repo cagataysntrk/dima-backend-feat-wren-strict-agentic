@@ -24,7 +24,7 @@ Bağlayıcı delta:
 - Kernel business/semantic/authority/research truth bilmeyecektir.
 - Research Manager Day 6.5'te generic kernel'e migrate edilmeyecektir.
 - Wren current incumbent analytics substrate olarak kalacaktır.
-- Metabase production dependency değildir; engineering closure sonrası ve certification seal öncesi isolated challenger'dır.
+- Metabase production dependency değildir. Ancak architecture extraction (D65-M0), thin feasibility (D65-X0) ve gerekirse full substrate bake-off artık **engineering freeze/DEV80 öncesi** çözülür.
 - Kernel kararı gelmeden yazılmış StandardBuilder/E4/E5 focused-green kodu geri alınmaz; fakat kernel realignment bitene kadar architecture-sealed sayılmaz.
 
 ## 1. Mimari arama bitti
@@ -509,22 +509,25 @@ Current repo sequencing, yeni runtime-kernel kararıyla birlikte bağlayıcıdı
 10. Workers=1 small focused live architecture set.
 11. Gerektiğinde exact-same-SHA fast/reference model-floor A/B.
 12. 12–16 stratified canary.
-13. D65-J1A isolated Jev/Gemini/Sol candidate-selection bake-off — lab/eval only.
-14. Jev promising only: D65-J1B DecisionProvider seam + semantic/temporal role separation + focused/family/live/canary revalidation.
-15. Real Wren Standard vertical + existing Research sentinel/revalidation.
-16. Exact SHA = ENGINEERING FREEZE CANDIDATE.
-17. DEV80 exactly once for that freeze candidate.
-18. Fail → family clustering; named-case patch yok; code change = yeni candidate + yeni DEV80.
-19. Phase thresholds + P0 gates green → **DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN**.
-20. Day 7 lab/flag frozen architecture üzerinde ilerleyebilir.
-21. **D65-X analytics substrate challenger:** same Dima/authority/projection ile Wren incumbent vs thin Metabase Agent API adapter.
-22. Wren wins/tie → Wren stays; Metabase clearly wins → certification STOP, new engineering candidate + affected gates/new DEV proof.
-23. Tuning olmadan VALIDATION50.
-24. Validation fail + code change → certification invalid, engineering reopen, fresh validation.
-25. External fresh HIDDEN50.
-26. Hidden fail + architecture/code change → new external sealed corpus.
-27. Green → DAY 6.5 CERTIFICATION SEALED.
-28. Ancak sonra production hybrid `/ask-v2` activation.
+13. D65-J1S semantic candidate-decision bake-off — lab/eval only.
+14. D65-J1T typed temporal-intent bake-off — lab/eval only; date arithmetic remains deterministic.
+15. In parallel: D65-M0 Metabase architecture extraction/adoption audit.
+16. If J1 promising: STOP/consult, then only approved D65-J1B DecisionProvider + semantic/temporal role separation; affected gates re-run.
+17. D65-X0 thin Metabase separate-service Agent API feasibility on 5–10 representative StandardProjection cases.
+18. X0 not promising → Wren remains primary. X0 promising → STOP/consult → full D65-X Wren-vs-Metabase bake-off.
+19. Choose exactly ONE primary execution substrate.
+20. Real Wren/Research sentinel proof revalidated if affected by J1B/substrate changes.
+21. Exact SHA = ENGINEERING FREEZE CANDIDATE.
+22. DEV80 exactly once for that freeze candidate.
+23. Fail → family clustering; named-case patch yok; code change = new candidate + new DEV80.
+24. Phase thresholds + P0 gates green → **DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN**.
+25. Day 7 lab/flag frozen architecture üzerinde ilerleyebilir.
+26. Tuning olmadan VALIDATION50.
+27. Validation fail + code change → certification invalid, engineering reopen, fresh validation.
+28. External fresh HIDDEN50.
+29. Hidden fail + architecture/code change → new external sealed corpus.
+30. Green → DAY 6.5 CERTIFICATION SEALED.
+31. Ancak sonra production hybrid `/ask-v2` activation.
 
 ### 12.1 Current sequencing exception — NO ROLLBACK
 
@@ -613,12 +616,16 @@ all P0 authority/security/silent-wrong counters = 0
 ```
 
 ```text
+PRE-FREEZE DECISIONS COMPLETE
+= D65-J1S/J1T resolved + D65-M0 adoption audit complete + D65-X0 resolved
+  + full D65-X resolved if X0 was promising + exactly one primary substrate selected
+
 ENGINEERING CLOSED
 = runtime-kernel + Standard/Research boundary + provider-free + focused/live
-  + stratified canary + real Wren + DEV80 phase gate green for exact freeze candidate
+  + stratified canary + pre-freeze decisions + applicable sentinels + DEV80 green for exact freeze candidate
 
 SUBSTRATE DECISION COMPLETE
-= D65-X isolated Wren-vs-Metabase substrate experiment resolved to one primary engine
+= X0 rejected Metabase and Wren remained primary, OR full D65-X resolved to exactly one primary engine
 
 CERTIFICATION SEALED
 = same frozen architecture/substrate + fresh unbiased VALIDATION50
@@ -626,3 +633,15 @@ CERTIFICATION SEALED
 ```
 
 Production hybrid route yalnız certification seal sonrasında açılır.
+
+
+### 12.3 Current pre-freeze override
+
+Detailed current authority:
+`DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+
+This override supersedes:
+- J1 candidate-selection-only scope;
+- post-DEV80 timing for Metabase D65-X.
+
+Freeze/DEV80 is STOP-THE-LINE until J1S/J1T + M0/X0 decisions are resolved.
