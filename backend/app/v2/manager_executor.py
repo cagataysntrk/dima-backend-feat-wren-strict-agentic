@@ -357,7 +357,13 @@ class GovernedManagerExecutor:
 
         if call.name == ManagerToolName.INSPECT_EVIDENCE:
             assert isinstance(validated_args, InspectEvidenceArgs)
-            return self._evidence.get(validated_args.evidence_ref)
+            if validated_args.evidence_ref not in runtime.snapshot.evidence_refs:
+                raise ManagerAuthorityViolation(
+                    "inspect_evidence requires evidence attached to current Research run"
+                )
+            artifact = self._evidence.get(validated_args.evidence_ref)
+            runtime.mark_evidence_inspected(validated_args.evidence_ref)
+            return artifact
 
         if call.name == ManagerToolName.REQUEST_CLARIFICATION:
             assert isinstance(validated_args, RequestClarificationArgs)
