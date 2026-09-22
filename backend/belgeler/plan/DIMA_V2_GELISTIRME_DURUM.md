@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 PRE-FREEZE DECISION GATE — J1S/J1T + M0/X0 ACTIVE**  
+**Durum:** **DAY 6.5 DECISION GATE — J1S/J1T + M0/X0 ACTIVE; FINAL DEV80 DEFERRED TO RELEASE END**  
 **Kod fazı:** D65-G hardening GREEN; provider-free 102/102, reference-floor canary 16/16 and Wren+Research sentinels 2/2 GREEN on exact `8dfde62d...`. Freeze/DEV80 BLOCKED pending pre-freeze decisions: D65-J1S/J1T decision-model bake-offs + D65-M0 architecture adoption audit + D65-X0 thin Metabase feasibility. Production hybrid `/ask-v2` OFF.  
 
 ---
@@ -25,7 +25,8 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_V2_GELISTIRME_DURUM.md` — bu dosya; tek “nerede kaldık?” kaynağı.
 - `DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — current Day 6.5 engineering closure authority.
 - `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology ve substrate/reference authority.
-- `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **current pre-freeze J1S/J1T + M0/X0 sequencing authority**.
+- `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **current J1S/J1T + M0/X0 decision authority**.
+- `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
 - `../../AGENTS.md` — V2 geliştirici/ajan çalışma sözleşmesi.
 - `../../CLAUDE.md` — repo kuralları; V2 branch override üstte olmalıdır.
@@ -6142,3 +6143,47 @@ Consultation required before:
 - primary substrate switch,
 - freeze candidate,
 - DEV80.
+
+---
+
+## 2026-09-22 — RELEASE-LEVEL DEV80 TIMING OVERRIDE
+
+New binding economic/release rule:
+```text
+DEV80 = FINAL BROAD ENGINEERING GATE
+DEV80 count for this release = exactly 1
+```
+
+Therefore DEV80 is no longer a Day6.5 closure test.
+
+Current release sequence:
+```text
+J1S + J1T + M0
+→ X0
+→ if needed full X / chosen one primary substrate
+→ any approved Jev/Metabase production integration
+→ Day7 Research loop
+→ Day8 Hypothesis/root-cause
+→ Day9 ReportDocument
+→ Day10 Product MVP
+→ Day11 eval/metamorphic expansion
+→ Day12 QueryContract/evidence/telemetry hardening
+→ Day13 tenant/PII/principal security
+→ Day14 persistence/resume
+→ Day15 pilot flag + rollback CODE complete, flag OFF
+→ all cheap/focused/live/metamorphic/canary/sentinel gates GREEN
+→ 20–25 case final integration rehearsal
+→ FINAL ENGINEERING FREEZE CANDIDATE
+→ DEV80 ONCE
+→ CODE FREEZE
+→ Validation50 NO TUNING
+→ fresh external Hidden50 NO TUNING
+→ certification seal
+→ pilot flag activation
+```
+
+Development still uses focused REAL LLM scenarios continuously. DEV80/Validation50/Hidden50 are not debugging tools.
+
+Consult before final freeze and before DEV80 start.
+
+Detailed authority: `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
