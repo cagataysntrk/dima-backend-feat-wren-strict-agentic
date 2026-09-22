@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 FAMILY CLOSURE GREEN — D65-E3A-R RUNTIME KERNEL REALIGNMENT NEXT**  
-**Kod fazı:** D65-E1/E2 green; StandardBuilder/E4/E5 focused-green but provisional under the new runtime-kernel decision. Next product ticket is `D65-E3A-R`: add a minimal generic process-control kernel and make existing StandardBuilder its first consumer without changing semantic behavior. Research Manager remains untouched; production hybrid `/ask-v2` remains OFF.  
+**Durum:** **DAY 6.5 D65-E3A-R GREEN — WORKERS=1 FOCUSED LIVE NEXT**  
+**Kod fazı:** D65-E3A-R tamamlandı. `BoundedAgentRuntimeKernel` process-control mechanics'i devraldı; existing StandardBuilder semantic behavior, E4 authority ve E5 CoverageVeto korunarak focused gate 22/22 ve runtime-aligned full provider-free family closure 94/94 GREEN oldu. Research Manager untouched; production hybrid `/ask-v2` OFF. Next: workers=1 focused live architecture set.  
 
 ---
 
@@ -5476,3 +5476,129 @@ Day 7–10 numbering unchanged.
 Primary experiment fixes Dima cognition, accepted semantics, `AcceptedStandardAuthority`, `StandardProjection` and benchmark. Only execution substrate changes: `WrenAdapter` vs thin `MetabaseStandardAdapter`.
 
 Metabase native NLQ/Metabot comparison is a separate secondary experiment. Wren + Metabase as equal production truth engines = **STOP-THE-LINE**.
+
+---
+
+## 2026-09-22 — D65-E3A-R GREEN / RUNTIME KERNEL REALIGNMENT
+
+### Yapılan
+
+`AGENTS.md` içindeki tek stale “üç-mode front door” ifadesi `STANDARD | RESEARCH` architecture terminology'sine düzeltildi.
+
+Yeni generic mechanics kernel: `app/v2/agent_runtime.py`.
+
+Primitive'ler:
+```text
+BoundedLoopBudget
+LoopCounters
+LoopTerminalReason
+ActionReservation
+LoopObservation
+ActionStateGuard
+BoundedAgentRuntimeKernel
+```
+
+Kernel yalnız model-turn/tool-call counters, budget enforcement, action fingerprint, domain-supplied state fingerprint, action/state guard, observation receipt, terminal/NO_PROGRESS/BUDGET_EXHAUSTED ve generic telemetry taşır.
+
+Kernel Research/business truth katmanlarını import etmez: `AcceptedTurnContract`, `UserObligationLedger`, `ResearchDirective`, `ManagerRuntime`, Research loop, Evidence verification, CompletionGate semantics, canonical semantic truth, join/query/numeric truth.
+
+`manager_progress.py` değiştirilmedi. Yalnız mevcut generic `action_fingerprint` / `result_fingerprint` primitive'leri reuse edildi; Research-specific `progress_fingerprint(runtime)` kernel'e taşınmadı.
+
+### StandardBuilder realignment
+
+`StandardBuilderSession` generic counters / duplicate guard / budget controller mechanics'ini artık `BoundedAgentRuntimeKernel` üzerinden kullanır.
+
+Standard domain/profile hâlâ state-fingerprint payload'ını, Representability kararını, StandardProjection compile/validation'ı, DIRECT vs BUILDER outcome'ını ve RESEARCH_REQUIRED / CLARIFY / UNSUPPORTED mapping'ini sahiplenir.
+
+Semantic davranış:
+```text
+first lossless attempt       → STANDARD_DIRECT outcome
+repair then seal             → STANDARD_BUILDER outcome
+same action + same state     → NO_PROGRESS
+model-turn budget exhausted  → BUDGET_EXHAUSTED / fail closed
+real research capability     → RESEARCH_REQUIRED
+```
+
+### Commits
+
+```text
+d0ed44b9212a  docs: remove stale three-mode wording
+5cb7a046f4c1  feat: generic bounded runtime kernel
+e1d44f742435  refactor: StandardBuilder consumes kernel
+160f1ac0ffa6  test: kernel boundary invariants
+291409d50145  test: StandardBuilder kernel-consumer proof
+```
+
+### Focused gate
+
+Run: `35693039369`
+
+```text
+compile PASS
+22 / 22 PASS
+8.62s
+```
+
+### Full provider-free family closure
+
+Run: `35693146320`
+
+```text
+compile PASS
+94 / 94 PASS
+5 warnings
+12.39s
+```
+
+### NO-TOUCH kanıtı
+
+D65-E3A-R başlangıç checkpoint'i `fc0472436124d764cb6f4bd0b6bc439ec80e8010` ile implementation sonrası code diff yalnız:
+
+```text
+backend/AGENTS.md
+backend/app/v2/agent_runtime.py
+backend/app/v2/standard_builder.py
+backend/tests/test_v2_day6_5_agent_runtime.py
+backend/tests/test_v2_day6_5_standard_builder.py
+```
+
+Research files NO-TOUCH:
+```text
+manager_loop.py
+manager_runtime.py
+manager_tools.py
+manager_preacceptance.py
+AcceptedTurnContract body
+```
+
+E4/E5 no-rollback korundu.
+
+### D65-E3A-R exit
+
+```text
+StandardBuilder consumes BoundedAgentRuntimeKernel        PASS
+kernel has zero Research-domain imports                   PASS
+DIRECT remains outcome only                               PASS
+existing Standard semantic behavior preserved             PASS
+same action+state duplicate = NO_PROGRESS                 PASS
+budget fail closed                                        PASS
+focused kernel/builder/authority/coverage                 22/22 PASS
+full provider-free family closure                         94/94 PASS
+```
+
+**D65-E3A-R CLOSED GREEN.**
+
+### Sıradaki exact adım
+
+Yeni feature/refactor açmadan:
+
+```text
+workers=1 focused live architecture set
+→ exact-same-SHA model-floor A/B only if needed
+→ 12–16 stratified canary
+→ real Wren Standard vertical + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once-per-candidate
+```
+
+Live gate başlamadan current green SHA checkpoint edilir.
