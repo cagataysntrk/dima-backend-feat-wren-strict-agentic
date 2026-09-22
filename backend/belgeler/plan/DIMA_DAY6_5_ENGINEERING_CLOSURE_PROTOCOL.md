@@ -383,6 +383,30 @@ architecture/code değişirse aynı hidden corpusunu tekrar tekrar kullanmak yas
 evaluator yeni sealed hidden corpus üretir. Hidden prompt/per-case expected output development
 context'e yine girmez.
 
+### 11.2 Failure triage receipt gate
+
+Live/canary/DEV/Validation/Hidden RED sonrasında:
+
+```text
+RED
+→ NO PRODUCT/SEMANTIC CODE CHANGE
+→ DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md receipt
+→ same-SHA A/B when owner/model-floor is not yet proven
+→ failure_class + single_owner + root_cause
+→ failure family statement
+→ allowed_files_to_touch / files_not_to_touch
+→ only then code
+→ focused proof
+→ family/metamorphic proof
+```
+
+Receipt tamamlanmadan semantic/product patch **STOP-THE-LINE**.
+
+`ONE FAILURE ≠ ONE NEW RULE`: yalnız tek wording/testcase açıklanabiliyorsa yeni mechanism/prompt rule eklenmez.
+Failure family aynı kök nedenin farklı wording/schema/tenant yüzeylerindeki genel temsilini açıklamalıdır.
+
+Prompt değişikliği yalnız generic typed contract değişikliğini tarif etmek için yapılabilir. Failed phrase/example, case-ID instruction, keyword/regex teaching veya model micro-patch yasaktır.
+
 ## 12. Exact engineering closure sırası
 
 Current repo sequencing, yeni runtime-kernel kararıyla birlikte bağlayıcıdır.
