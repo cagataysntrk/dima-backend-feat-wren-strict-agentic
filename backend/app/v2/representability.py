@@ -70,6 +70,67 @@ class RepresentabilityGate:
             unresolved=bool(contract.unresolved_ids),
         )
 
+    def decide_execution_slice(
+        self,
+        *,
+        contract: AcceptedTurnContract,
+        ledger: UserObligationLedger,
+        obligation_ids: tuple[str, ...],
+        projection: StandardProjection | None = None,
+    ) -> RepresentabilityResult:
+        """Prove one task-local Standard sub-analysis inside accepted Research authority.
+
+        This does NOT weaken whole-authority Standard losslessness.  It only scopes the
+        proof to obligations explicitly selected for this ResearchTask execution; the
+        full ledger remains CompletionGate truth and unselected USER_MUST obligations
+        remain outstanding.
+        """
+        if contract.lineage_id != ledger.lineage_id or contract.version != ledger.version:
+            return RepresentabilityResult(
+                decision=RepresentabilityDecision.UNSUPPORTED,
+                reasons=("contract/ledger lineage mismatch",),
+            )
+
+        selected_ids = tuple(dict.fromkeys(obligation_ids))
+        if not selected_ids:
+            return RepresentabilityResult(
+                decision=RepresentabilityDecision.UNSUPPORTED,
+                reasons=("Research execution slice has no selected obligations",),
+            )
+
+        accepted_ids = set(contract.obligation_ids)
+        outside = set(selected_ids) - accepted_ids
+        if outside:
+            return RepresentabilityResult(
+                decision=RepresentabilityDecision.UNSUPPORTED,
+                reasons=(
+                    "Research execution slice references obligations outside accepted authority: "
+                    + ", ".join(sorted(outside)),
+                ),
+            )
+
+        item_by_id = {
+            item.obligation_id: item
+            for item in ledger.items
+        }
+        missing = set(selected_ids) - set(item_by_id)
+        if missing:
+            return RepresentabilityResult(
+                decision=RepresentabilityDecision.UNSUPPORTED,
+                reasons=(
+                    "Research execution slice references missing ledger obligations: "
+                    + ", ".join(sorted(missing)),
+                ),
+            )
+
+        selected_items = tuple(item_by_id[item_id] for item_id in selected_ids)
+        return self._decide_items(
+            items=selected_items,
+            authority_ids=selected_ids,
+            projection=projection,
+            unresolved=bool(contract.unresolved_ids),
+        )
+
     def _decide_items(
         self,
         *,
