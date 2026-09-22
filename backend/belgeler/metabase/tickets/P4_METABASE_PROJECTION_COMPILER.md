@@ -3,7 +3,7 @@
 **Milestone:** P4  
 **Predevelopment review:** `backend/belgeler/metabase/predev/P4_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** deterministic Dima semantic intent → canonical Metabase structured query  
-**Status:** AUTHORIZED AFTER PREDEV GOVERNANCE GREEN
+**Status:** IMPLEMENTATION STARTED / BINDING GATE RED — DMP-P4-RED-001 OPEN
 
 ## Goal
 
@@ -51,3 +51,19 @@ production routing changes              0
 ## Exit
 
 P4 closure requires the focused proof matrix and pinned v0.63.18 canonicalization evidence.
+
+
+---
+
+## Binding promotion stop-the-line
+
+Before `compiler.py` or `canonical.py` may be created, DMP-P4-RED-001 must close GREEN.
+
+Required end state:
+```text
+execution_binding.py = only owner of binding primitives
+p3a_models.py        = P3A result/report models + exact production re-exports
+P3A consumers        = production binding types
+CurrentCatalog       = explicit governed observation, never search-derived
+P4 binding workflow  = GREEN
+```

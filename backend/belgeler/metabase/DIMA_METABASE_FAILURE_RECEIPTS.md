@@ -832,3 +832,97 @@ DMP-P3-RED-001  CLOSED GREEN — exact typed read-resource envelope + real hands
 ```
 
 P3A remained blocked throughout the RED and was not implemented before P3 closure.
+
+
+---
+
+## DMP-P4-RED-001 — P4 execution-binding promotion forked instead of unified
+
+receipt_id: `DMP-P4-RED-001`  
+ticket: `P4-001`  
+tested_sha: `af1750dfdfd283bfe824c9c6b40b90dca1a63cb3`  
+detection: post-green architecture audit; no compiler/canonical work authorized
+
+observed_failure:
+P4 introduced production execution bindings in
+`backend/app/v3/substrate/metabase/execution_binding.py`, while P3A continues to define and consume
+independent copies of the same candidate/temporal/snapshot contracts in `p3a_models.py`.
+
+At the tested SHA:
+- `execution_binding.py` defines `CandidateSemanticBinding`,
+  `TemporalSemanticBinding`, `DimaExecutionBindingSnapshot`,
+  `CurrentCatalogObject`, `CurrentCatalogSnapshot`, and `MetabaseCompilationBlocked`;
+- `p3a_models.py` separately defines `CandidateSemanticBinding`,
+  `TemporalSemanticBinding`, `DimaExecutionBindingSnapshot`, and `P3ABridgeBlocked`;
+- `p3a_preflight.py`, `p3a_fixture.py`, and P3A tests still consume the prototype-owned types.
+
+failure_stage:
+P4 execution-binding promotion boundary before production compiler implementation.
+
+failure_class:
+`CONTRACT/ARCHITECTURE`
+
+single_owner:
+P4 execution-binding promotion boundary.
+
+root_cause:
+Promotion was implemented as "copy production contract first, migrate prototype later" instead of
+atomically establishing one authoritative contract. That temporarily creates two independently
+evolvable execution-binding truths and violates DMP-DEC-0009 / P4 predevelopment review.
+
+invariant_being_fixed:
+```text
+authoritative execution-binding module        = execution_binding.py
+parallel candidate→semantic binding models    = 0
+parallel temporal binding models              = 0
+parallel execution snapshot models            = 0
+parallel compilation-blocked semantics         = 0
+P3A/P4 type identity                           = required
+compiler/canonical implementation              = blocked until binding gate GREEN
+```
+
+authorized_correction:
+- make `execution_binding.py` the single owner of production binding primitives;
+- make `p3a_models.py` import/re-export those primitives rather than implement copies;
+- alias `P3ABridgeBlocked` to `MetabaseCompilationBlocked` for compatibility;
+- migrate P3A preflight/fixture/tests to the production binding contract;
+- make the P3A synthetic fixture construct an explicit `CurrentCatalogSnapshot`;
+- ensure P3A compilation validates expected SourceLineage against current catalog before emitting
+  physical portable locators;
+- add focused P4 binding tests, including class identity and drift/fingerprint failure proofs;
+- add a dedicated P4 workflow and run P3A/P3/M1 regressions.
+
+forbidden_patch_alternatives:
+- keep shape-equivalent duplicate P3A classes;
+- introduce adapters that copy between prototype and production snapshots;
+- start `compiler.py` or `canonical.py` before this gate is GREEN;
+- derive current catalog by Metabase label/name search;
+- treat `canonical_name`, `source_scopes`, or candidate ids as physical locators;
+- touch v2, authority, semantic_spec, analytics_contract, Wren, routers, main/config, or source branch;
+- change P3A result semantics merely to force GREEN.
+
+files_allowed:
+- `backend/app/v3/substrate/metabase/execution_binding.py`
+- `backend/app/v3/substrate/metabase/p3a_models.py`
+- `backend/app/v3/substrate/metabase/p3a_preflight.py`
+- `backend/app/v3/substrate/metabase/p3a_fixture.py`
+- `backend/tests/test_v3_p4_execution_binding.py`
+- `backend/tests/test_v3_p3a_bridge_preflight*.py`
+- `.github/workflows/dima-metabase-p4.yml`
+- P4 failure/status/ticket docs
+
+focused_proof:
+- type identity, not only shape equivalence;
+- semantic context/candidate/time integrity;
+- duplicate rejection;
+- current-catalog source_id uniqueness/missing binding;
+- exact DB/schema/table/column drift fail-closed;
+- incomplete lineage and column-required fail-closed;
+- deterministic catalog fingerprint and fingerprint sensitivity;
+- P3A eight-family provider-free regression.
+
+family_or_live_proof:
+P4 workflow plus pinned-live P3A regression, P3 regression, M1 regression and governance.
+
+status:
+`CLASSIFIED / BINDING-UNIFICATION PATCH AUTHORIZED; COMPILER BLOCKED`.

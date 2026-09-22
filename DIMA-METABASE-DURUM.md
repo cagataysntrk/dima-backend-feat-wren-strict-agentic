@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P4 PRE-DEVELOPMENT REVIEW SEALED — GOVERNANCE GATE  
-**Product-code development:** P4 PRODUCT CODE NOT STARTED  
+**Current phase:** P4 IMPLEMENTATION — EXECUTION BINDING PROMOTION AUDIT RED  
+**Product-code development:** P4 STARTED; DMP-P4-RED-001 OPEN; COMPILER BLOCKED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -356,3 +356,39 @@ Key decisions:
 - no cross-table implicit FK;
 - no arbitrary metric-formula translation;
 - no product routing.
+
+
+---
+
+## P4 execution-binding audit RED — DMP-P4-RED-001
+
+```text
+tested HEAD                    = af1750dfdfd283bfe824c9c6b40b90dca1a63cb3
+P3                             = CLOSED GREEN
+P3A                            = CLOSED / PASS_B_SEAM
+P4 predevelopment              = GREEN
+P4 production code             = STARTED
+production execution_binding   = PRESENT
+P3A duplicate binding models   = PRESENT / VIOLATION
+P4 binding gate                = RED
+compiler.py                    = NOT STARTED / BLOCKED
+canonical.py                   = NOT STARTED / BLOCKED
+source branch                  = READ ONLY
+production routing             = UNCHANGED
+```
+
+Required correction:
+one authoritative execution-binding truth in `execution_binding.py`, with P3A importing/re-exporting
+the exact same classes and using an explicit governed current-catalog snapshot.
+
+Historical P3/P3A closure evidence remains valid and is not overwritten. The P3A feasibility result
+is not reopened; this RED concerns P4 production promotion discipline.
+
+Compiler/canonical implementation is forbidden until a dedicated P4 binding workflow proves the
+unified contract GREEN.
+
+### Reminder — access/security debt remains open
+
+The existing principal/access coherence debt is unchanged. Lab-admin P3/P3A/P4 representation proofs
+do not establish tenant isolation, permission parity, RLS/CLS parity, revocation parity, or final
+ExecutionAccessFingerprint correctness. Do not implement identity mapping inside the P4 compiler.
