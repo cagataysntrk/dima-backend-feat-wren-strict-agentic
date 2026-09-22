@@ -391,3 +391,104 @@ def test_source_local_fk_dimension_is_mapped_to_target_pk_only_by_wren_relations
     assert result.facts.requested_output_grain == "makine"
     assert result.facts.relationship_path == ("makine_duruslari_makineler",)
     assert result.gate_decision.allowed is True
+
+
+
+def test_relationship_derived_target_attribute_keeps_row_and_analysis_grain_separate():
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="metric-duration",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-duration",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="toplam_sure_dk",
+            cube_names=("makine_duruslari",),
+        ),
+    )
+    department = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="dim-department",
+        target_kind="dimension",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="dim-department",
+            target_kind=SemanticTargetKind.DIMENSION,
+            canonical_name="bolum",
+            cube_names=("makine_duruslari",),
+        ),
+    )
+    obligation = ObligationLedgerItem(
+        obligation_id="U_REL",
+        capability_key=ManagerCapabilityKey.RELATIONSHIP,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=("src-rel",),
+        semantic_handle_refs=(metric.handle_id, department.handle_id),
+        introduced_in_version=1,
+    )
+    args = RunRelationshipArgs(
+        obligation_id="U_REL",
+        focus_handles=(metric.handle_id,),
+        counterpart_handles=(department.handle_id,),
+    )
+    schema = {
+        "models": [
+            {"name": "makine_duruslari", "primary_key": "id", "columns": []},
+            {"name": "makineler", "primary_key": "makine", "columns": []},
+        ],
+        "cubes": [
+            {
+                "name": "makine_duruslari",
+                "base_object": "makine_duruslari",
+                "dimension_origin": {
+                    "bolum": {
+                        "model": "makineler",
+                        "column": "bolum",
+                        "relationship": "makine_duruslari_makineler",
+                        "hops": 1,
+                    }
+                },
+            }
+        ],
+        "relationships": [
+            {
+                "name": "makine_duruslari_makineler",
+                "models": ["makine_duruslari", "makineler"],
+                "join_type": "MANY_TO_ONE",
+                "condition": 'makine_duruslari."makine" = makineler."makine"',
+                "certified": "olculdu:saglikli",
+                "fanout_proof": _proof("makine_duruslari_makineler"),
+            }
+        ],
+    }
+    builder = CrossDomainJoinFactBuilder(
+        semantic_handles=handles,
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+    result = builder.build(
+        args=args,
+        obligation=obligation,
+        service=_Service(schema),
+    )
+
+    assert result.ready is True
+    facts = result.facts
+    assert facts.source_row_grain == "id"
+    assert facts.target_row_grain == "makine"
+    assert facts.source_join_key == "makine"
+    assert facts.target_join_key == "makine"
+    assert facts.target_analysis_grain == "bolum"
+    assert facts.target_analysis_column == "bolum"
+    assert facts.requested_output_grain == "bolum"
+    assert facts.aggregation == JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
+    assert result.gate_decision.allowed is True
+    assert (
+        result.gate_decision.required_aggregation
+        == JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
+    )
