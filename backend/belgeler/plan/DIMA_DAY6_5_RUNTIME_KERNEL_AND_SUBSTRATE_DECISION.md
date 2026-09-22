@@ -24,7 +24,7 @@ ResearchManager şimdi kernel'e migrate     HAYIR
 Metabase source copy / port                HAYIR
 Metabase production dependency şimdi       HAYIR
 Wren current canonical incumbent           EVET
-Metabase isolated substrate challenger     EVET
+Metabase pre-freeze M0/X0 challenger       EVET
 production'da iki equal truth engine       STOP-THE-LINE
 ```
 
@@ -1480,36 +1480,33 @@ Research generic-runtime migration bu günlerin prerequisite'i değildir.
 
 ---
 
-## 27. Parallelism / sequencing of challenger
+## 27. Parallelism / sequencing of challengers — CURRENT OVERRIDE
 
-Ayrı developer hattı varsa:
+Current pre-freeze sequence is governed by
+`DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
 
 ```text
-Day 7–10 canonical development
+D65-J1S + D65-J1T
 +
-isolated D65-X lab bake-off
+D65-M0
+↓
+D65-X0 thin feasibility
+↓
+if needed full D65-X
+↓
+ONE primary substrate
+↓
+ENGINEERING FREEZE CANDIDATE
+↓
+DEV80
 ```
 
-paralel olabilir.
+J1S/J1T and M0 may run in parallel because they are isolated lab/research work.
+D65-X0 begins only after M0 has enough source/audit evidence to define a bounded spike.
 
-Tek hattı varsa iki kabul edilebilir seçenek:
+> Freeze/DEV80 is blocked until these pre-freeze decisions are resolved.
 
-```text
-A)
-Day6.5 engineering closed
-→ D65-X
-→ Day7
-
-B)
-Day6.5 engineering closed
-→ Day7–10 Product MVP
-→ D65-X
-→ certification
-```
-
-Değişmez:
-
-> Metabase challenger kararı gelmeden production hot-path'e ikinci query engine eklenmez.
+Production hot-path still never runs two equal query truth engines.
 
 ---
 
@@ -1610,42 +1607,40 @@ run 35691982389
 
 ---
 
-## 32. Sıradaki exact çalışma
+## 32. Current exact work — PRE-FREEZE DECISION GATE
 
-D65-E3A-R tamamlandı.
-
-Implementation:
+Current baseline:
 
 ```text
-app/v2/agent_runtime.py
-  BoundedLoopBudget
-  LoopCounters
-  LoopTerminalReason
-  ActionStateGuard
-  BoundedAgentRuntimeKernel
-
-app/v2/standard_builder.py
-  now consumes BoundedAgentRuntimeKernel
+D65-G family                  35696652502 = 102/102 PASS
+reference-floor canary        35697064833 = 16/16 PASS
+Wren + Research sentinel      35697471863 = 2/2 PASS
+tested semantic SHA           8dfde62d46d1418f05cce3ed44c26a8025b3b20e
+production hybrid             OFF
 ```
 
-Research NO-TOUCH doğrulandı.
-
-Focused run `35693039369`: **22/22 PASS**.
-
-Runtime-aligned full provider-free family run `35693146320`: **94/94 PASS**, 5 warnings, 12.39s.
-
-Current next gate:
+Current next work:
 
 ```text
-workers=1 focused live architecture set
-→ exact-same-SHA fast/reference model-floor A/B only if needed
-→ 12–16 stratified canary
-→ real Wren Standard vertical + Research sentinel
-→ ENGINEERING FREEZE CANDIDATE
-→ DEV80 once-per-candidate
+D65-J1S semantic candidate-decision benchmark
++
+D65-J1T typed temporal-intent benchmark
++
+D65-M0 Metabase source/adoption audit
+↓
+separate receipts
+↓
+D65-X0 thin feasibility
+↓
+Wren primary OR consult → full D65-X → ONE primary substrate
+↓
+ENGINEERING FREEZE CANDIDATE
+↓
+DEV80
 ```
 
-Bu noktada yeni preparation/refactor açılmaz. Live gate current green checkpoint üzerinden yürür.
+Product semantic/temporal/authority code is NO-TOUCH during J1 lab benchmarks.
+Freeze is not authorized yet.
 
 ## 33. Kaynak karar provenance
 
@@ -1666,3 +1661,56 @@ replacement decision: only through isolated D65-X bake-off
 ```
 
 Metabase reference'i Dima'ya source import yetkisi vermez. Mimari desen alınır; kod kopyalanmaz.
+
+
+---
+
+## 34. PRE-FREEZE OVERRIDE — J1S/J1T + M0/X0
+
+This section supersedes earlier J1 candidate-only scope and any earlier wording that places
+Metabase challenger only after DEV80/engineering closure.
+
+### J1 scope now has two independent lab tracks
+
+```text
+D65-J1S
+= bounded semantic candidate decision
+Gemini Flash-Lite vs typesafe/jev-1.13 vs Sol
+
+D65-J1T
+= language → closed typed temporal ontology decision
+Gemini Flash-Lite vs typesafe/jev-1.13 vs Sol
+```
+
+J1T tests intent classification, not calendar arithmetic.
+Actual dates remain deterministic in `TemporalBindingEngine`.
+
+If Jev is promising, stop and consult before D65-J1B.
+No DecisionProvider seam, model cascade, role split, threshold policy or production wiring is
+authorized by benchmark success alone.
+
+### Metabase timing moved before freeze
+
+```text
+D65-M0
+= source/adoption audit
+
+D65-X0
+= thin separate-service Agent API feasibility
+
+full D65-X
+= only if X0 is promising and after consultation
+```
+
+Historical pinned source:
+`74216b30981d8310c4cf724d63ca282e2e63529d`.
+
+Current upstream master verified on 2026-09-22:
+`fff70175e0b5f82dc0eb267593c717c4a6130206`.
+
+The current head is one commit ahead; comparison shows no changes in the relevant
+`src/metabase/metabot/agent`, `src/metabase/agent_api` or `src/metabase/mcp/v2`
+source families.
+
+Current detailed authority:
+`DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
