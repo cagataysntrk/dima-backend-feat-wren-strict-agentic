@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 D65-E1 GREEN — RETRIEVER SEAM NEXT**  
+**Durum:** **DAY 6.5 D65-E2 RETRIEVER GREEN — STANDARD BUILDER NEXT**  
 **Kod fazı:** Day 6.5 engineering closure — latest semantic code `c9629d9029db...`; cognition/authority boundary uygulanmış durumda. Hedef front door `STANDARD_DIRECT + bounded STANDARD_BUILDER + RESEARCH`, iki accepted-authority ailesiyle kapanacak. StandardBuilder/Retriever seam henüz yazılmadı. İlk iş exact `c9629d...` provider-free recertification; production hybrid route kapalı.
 
 ---
@@ -5127,3 +5127,82 @@ Canonical authority hâlâ `SemanticBindingGate`.
 **EXIT**
 Current behavior preserved and generator obtains discovery candidates through the explicit
 Retriever seam. No vector/BM25/RRF implementation in Day6.5.
+
+
+### D65-E2 — GREEN / SemanticCatalogRetriever seam
+
+**Product commits**
+- `4b28fc169e71` — add non-authoritative semantic retriever seam
+- `14b117e2eeae` — route candidate discovery through retriever seam
+- `2ff527379047` — lock discovery-only / retrieval-miss invariants
+
+**Focused gate**
+- workflow run: `35689752878`
+- result: **9 / 9 PASS**
+- runtime: **8.26s**
+- compile: PASS
+
+**One-shot cleanup**
+- `5feaf5edc528` — retriever focused workflow removed after pass.
+
+**What changed**
+`SemanticCandidateGenerator` artık candidate discovery'yi explicit
+`SemanticCatalogRetriever` interface üzerinden alıyor.
+
+Current backend:
+`EnumeratingSemanticCatalogRetriever`
+→ mevcut governed catalog slice'ını exhaustive döndürür.
+Bu nedenle mevcut semantic behavior korunur.
+
+Future ranked/indexed backend için result contract:
+```text
+candidates
+exhaustive
+backend
+truncated
+```
+
+**New invariant**
+```text
+non-exhaustive retrieval miss
+!=
+semantic does not exist
+```
+
+Non-exhaustive boş discovery artık `GAP` yerine `RETRIEVAL_MISS` üretir.
+Binding authority değişmedi; `SemanticBindingGate` tek canonical authority sahibidir.
+
+**Deferred**
+- vector/BM25/RRF
+- separate Hydrator framework
+- catalog ranking optimization
+
+Bunlar D65-E2 kapsamı değildir.
+
+### D65-E3 — bounded StandardBuilder
+
+**AMAÇ**
+Research Manager'dan ayrı, tek governed analytical projection kuran bounded StandardBuilder
+state machine'ini eklemek. `STANDARD_DIRECT` ayrı engine olmayacak; aynı builder'ın immediate
+lossless short path'i olacak.
+
+**DESIGN SOURCE**
+`DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md §2–§8`
++ Day6.5 closure report Standard Builder §7–§11.
+
+**FIRST CUT**
+- `standard_projection.py` compiler core'unu heavy `AcceptedTurnContract + UOL`
+  input'una sıkı bağlı olmaktan çıkar; lightweight standard binding source kabul et.
+- existing research wrapper behavior korunur.
+- `standard_builder.py` finite state/progress contract eklenir.
+- no raw SQL / no research tools.
+- same action + same state second execution => `NO_PROGRESS`.
+- compile/validation failure otomatik `RESEARCH` değildir.
+- `RESEARCH_REQUIRED` yalnız gerçek research-only capability olduğunda mümkündür.
+
+**NO-TOUCH**
+- production `/ask-v2` routing
+- Research Manager loop
+- AcceptedTurnContract semantic body
+- DEV corpus/oracle
+- Resolver/BindingGate authority
