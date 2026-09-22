@@ -65,6 +65,10 @@ class EvidenceStore:
         except KeyError as exc:
             raise ManagerSemanticGap(f"unknown evidence artifact: {artifact_id}") from exc
 
+    @property
+    def count(self) -> int:
+        return len(self._items)
+
 
 @dataclass(frozen=True)
 class GovernedManagerExecutionContext:
