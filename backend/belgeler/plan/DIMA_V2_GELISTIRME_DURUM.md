@@ -4953,3 +4953,87 @@ Commit:
 - job sonunda `tested_sha == requested_sha` doğrular.
 
 Bir sonraki geliştirici yeni code yazmadan önce bu workflow'u default SHA ile dispatch eder.
+
+
+### 2026-09-22 — CLOSURE PROTOCOL HARDENING + D65-E1 STARTED
+
+**Protocol hardening commits**
+- `b088b5802919` — measurable closure + freeze/certification invalidation rules
+- `01043d9bfa84` — phase gates + work-mode oracle + freeze-candidate policy
+- `90f813225a52` — AGENTS research-authority/freeze semantics
+- `c6904034dc38` — MIMARI research body + certification invalidation
+
+**Frozen phase gates before broad rerun**
+```text
+DEV80 semantic case pass >= 0.95
+DEV80 MUST recall        >= 0.95
+VALIDATION50 case pass   >= 0.95
+VALIDATION50 MUST recall >= 0.95
+HIDDEN50 case pass       >= 0.95
+HIDDEN50 MUST recall     >= 0.95
+adaptive branch          >= 0.90 where applicable
+P0 authority/security/silent-loss counters = 0
+```
+
+**Three-mode oracle**
+Every eval case must carry:
+- `allowed_work_modes`
+- `expected_authority_family`
+
+Valid modes:
+`STANDARD_DIRECT | STANDARD_BUILDER | RESEARCH`.
+
+Direct/Builder both map to `AcceptedStandardAuthority`.
+Research maps to the **existing `AcceptedTurnContract` body**; `AcceptedResearchAuthority`
+is alias/tagged-view only, never a second semantic contract.
+
+**Progress invariant**
+```text
+max_executions_per_action_state_pair = 1
+duplicate_reexecution_max = 0
+```
+
+**Freeze invalidation**
+- one DEV80 per engineering-freeze candidate SHA,
+- architecture/code change after DEV80 => new candidate + new DEV80,
+- Validation fail + code change => certification freeze invalid; fresh validation set required,
+- Hidden fail + architecture/code change => same hidden may not be reused for certification;
+  external evaluator must provide a fresh sealed hidden corpus.
+
+**Canonical sequence correction**
+```text
+provider-free
+→ workers=1 focused live
+→ same-SHA model-floor A/B when needed
+→ 12–16 stratified canary
+→ real Wren Standard + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once-per-candidate
+→ engineering closed
+→ VALIDATION50
+→ external fresh HIDDEN50
+→ certification sealed
+```
+
+**Terminology**
+Old “current-head recertification” phrasing is superseded.
+Canonical name:
+`EXACT CURRENT SEMANTIC-SHA RECERTIFICATION`.
+
+### D65-E1 — RUNNING
+
+Exact semantic code:
+`c9629d9029db360e86a8592e12da646a2afc0621`
+
+GitHub Actions run:
+`35689470508`
+
+Trigger workflow-source commit:
+`521b1f768e75df1e36c833a57e0b28eeac082892`
+
+Receipt records separately:
+- `workflow_source_sha`
+- `requested_code_sha`
+- `tested_code_sha`
+
+Product semantic code was not modified before recertification.
