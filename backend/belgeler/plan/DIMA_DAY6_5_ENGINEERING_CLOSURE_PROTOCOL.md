@@ -340,7 +340,9 @@ provider-free invariants
 → workers=1 focused stability
 → same-SHA strong reference / fast A/B when needed
 → 12–16 stratified canary
-→ real Wren Standard + Research sentinels
+→ D65-J1A isolated decision-model bake-off
+→ if promising: D65-J1B provider seam + role separation + focused/live/canary revalidation
+→ real Wren Standard + Research sentinels/revalidation
 → ENGINEERING FREEZE CANDIDATE
 → DEV80 exactly once for that freeze candidate
 → engineering freeze
@@ -407,6 +409,90 @@ Failure family aynı kök nedenin farklı wording/schema/tenant yüzeylerindeki 
 
 Prompt değişikliği yalnız generic typed contract değişikliğini tarif etmek için yapılabilir. Failed phrase/example, case-ID instruction, keyword/regex teaching veya model micro-patch yasaktır.
 
+
+### 11.3 D65-J1 decision-model challenger gate
+
+D65-J1 is a pre-freeze **cognition decision-model** gate. It does not renumber the canonical roadmap, change Day7–10, or alter D65-X.
+
+Entry preconditions:
+```text
+D65-G CLOSED GREEN
+provider-free family 102/102 GREEN
+reference-floor canary 35697064833 = 16/16 GREEN
+P0 counters = 0
+```
+
+J1A is LAB/EVAL ONLY. Product semantic/authority/temporal files are NO-TOUCH.
+
+Pinned Jev challenger:
+```text
+typesafe/jev-1.13
+```
+
+Forbidden during J1A:
+```text
+~typesafe/jev-latest
+chat/completions wrapper for Jev
+current structured_json adapter reuse for Jev
+v2_semantic_linker_model=typesafe/jev-1.13
+semantic_linker.py product change
+BindingGate product change
+Manager semantics product change
+TypedTemporalNormalizer Jev routing
+case019-specific tuning
+hidden fallback/cascade
+```
+
+Native Jev surface is OpenRouter Decisions API (`POST /api/alpha/decisions`) using state + typed choice questions.
+
+Benchmark contract:
+```text
+same frozen candidate sets
+same user surfaces
+A = google/gemini-2.5-flash-lite structured decision
+B = typesafe/jev-1.13 native Decisions API
+C = openai/gpt-5.6-sol structured decision
+output = supplied candidate_id | ABSTAIN
+TemporalNormalizer = excluded
+Manager = excluded
+```
+
+Required metrics:
+- selection accuracy, ABSTAIN precision/recall, ambiguity unsafe-pick, candidate escape, Turkish paraphrase accuracy, metamorphic consistency, repeated-run agreement, p50/p95, cost, provider failure;
+- Jev raw probabilities + calibration metric (Brier/ECE or equivalent) + high-confidence-wrong count.
+
+J1A P0:
+```text
+candidate outside supplied set = 0
+silent ambiguity auto-pick = 0
+cross-tenant semantic leak = 0
+high-confidence wrong accepted = 0
+semantic authority minted by model = 0
+```
+
+No production confidence threshold is created in J1A. Threshold calibration/tuning requires a later explicit ticket and a separate set.
+
+Decision:
+```text
+Jev poor / Turkish weak
+  → REJECT
+  → product code unchanged
+  → resume freeze sequence
+
+Jev promising
+  → D65-J1B
+  → SemanticLinkDecisionProvider seam
+  → SEMANTIC_LINKER and TEMPORAL_NORMALIZER physically separate
+  → focused/family/workers1/canary/sentinel revalidation
+  → only then freeze candidate
+```
+
+D65-J1 and D65-X are orthogonal:
+```text
+D65-J1 = cognition / bounded decision model
+D65-X  = analytics execution substrate
+```
+
 ## 12. Exact engineering closure sırası
 
 Current repo sequencing, yeni runtime-kernel kararıyla birlikte bağlayıcıdır.
@@ -423,20 +509,22 @@ Current repo sequencing, yeni runtime-kernel kararıyla birlikte bağlayıcıdı
 10. Workers=1 small focused live architecture set.
 11. Gerektiğinde exact-same-SHA fast/reference model-floor A/B.
 12. 12–16 stratified canary.
-13. Real Wren Standard vertical + existing Research sentinel.
-14. Exact SHA = ENGINEERING FREEZE CANDIDATE.
-15. DEV80 exactly once for that freeze candidate.
-16. Fail → family clustering; named-case patch yok; code change = yeni candidate + yeni DEV80.
-17. Phase thresholds + P0 gates green → **DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN**.
-18. Day 7 lab/flag frozen architecture üzerinde ilerleyebilir.
-19. **D65-X analytics substrate challenger:** same Dima/authority/projection ile Wren incumbent vs thin Metabase Agent API adapter.
-20. Wren wins/tie → Wren stays; Metabase clearly wins → certification STOP, new engineering candidate + affected gates/new DEV proof.
-21. Tuning olmadan VALIDATION50.
-22. Validation fail + code change → certification invalid, engineering reopen, fresh validation.
-23. External fresh HIDDEN50.
-24. Hidden fail + architecture/code change → new external sealed corpus.
-25. Green → DAY 6.5 CERTIFICATION SEALED.
-26. Ancak sonra production hybrid `/ask-v2` activation.
+13. D65-J1A isolated Jev/Gemini/Sol candidate-selection bake-off — lab/eval only.
+14. Jev promising only: D65-J1B DecisionProvider seam + semantic/temporal role separation + focused/family/live/canary revalidation.
+15. Real Wren Standard vertical + existing Research sentinel/revalidation.
+16. Exact SHA = ENGINEERING FREEZE CANDIDATE.
+17. DEV80 exactly once for that freeze candidate.
+18. Fail → family clustering; named-case patch yok; code change = yeni candidate + yeni DEV80.
+19. Phase thresholds + P0 gates green → **DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN**.
+20. Day 7 lab/flag frozen architecture üzerinde ilerleyebilir.
+21. **D65-X analytics substrate challenger:** same Dima/authority/projection ile Wren incumbent vs thin Metabase Agent API adapter.
+22. Wren wins/tie → Wren stays; Metabase clearly wins → certification STOP, new engineering candidate + affected gates/new DEV proof.
+23. Tuning olmadan VALIDATION50.
+24. Validation fail + code change → certification invalid, engineering reopen, fresh validation.
+25. External fresh HIDDEN50.
+26. Hidden fail + architecture/code change → new external sealed corpus.
+27. Green → DAY 6.5 CERTIFICATION SEALED.
+28. Ancak sonra production hybrid `/ask-v2` activation.
 
 ### 12.1 Current sequencing exception — NO ROLLBACK
 
