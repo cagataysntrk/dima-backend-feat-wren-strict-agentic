@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 STANDARD FRONT-DOOR PRIMITIVES GREEN — PROVIDER-FREE FAMILY CLOSURE NEXT**  
-**Kod fazı:** Day 6.5 engineering closure — latest semantic code `c9629d9029db...`; cognition/authority boundary uygulanmış durumda. Hedef front door `STANDARD_DIRECT + bounded STANDARD_BUILDER + RESEARCH`, iki accepted-authority ailesiyle kapanacak. StandardBuilder/Retriever seam henüz yazılmadı. İlk iş exact `c9629d...` provider-free recertification; production hybrid route kapalı.
+**Durum:** **DAY 6.5 RUNTIME-KERNEL REALIGNMENT READY — FAMILY CLOSURE ORACLE RERUN IN PROGRESS**  
+**Kod fazı:** D65-E1/E2 green; StandardBuilder/E4/E5 focused-green but provisional under the new runtime-kernel decision. Next product ticket is `D65-E3A-R`: add a minimal generic process-control kernel and make existing StandardBuilder its first consumer without changing semantic behavior. Research Manager remains untouched; production hybrid `/ask-v2` remains OFF.  
 
 ---
 
@@ -24,6 +24,7 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 
 - `DIMA_V2_GELISTIRME_DURUM.md` — bu dosya; tek “nerede kaldık?” kaynağı.
 - `DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — current Day 6.5 engineering closure authority.
+- `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology, Wren incumbent / Metabase challenger ve exact handoff authority.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
 - `../../AGENTS.md` — V2 geliştirici/ajan çalışma sözleşmesi.
 - `../../CLAUDE.md` — repo kuralları; V2 branch override üstte olmalıdır.
@@ -5358,3 +5359,118 @@ Bundle old cognition/authority closure + new standard front-door primitives:
 - Standard CoverageVeto.
 
 No paid/live model.
+
+---
+
+## 2026-09-22 — RUNTIME KERNEL + SUBSTRATE DECISION INTEGRATED
+
+### Kaynak kararların birleşik sonucu
+
+Yeni iki rapor roadmap reset'i yapmıyor. Current work devam ediyor; ancak D65-E3'ün internal structure'ı artık kesin:
+
+```text
+architecture execution paths = STANDARD | RESEARCH
+STANDARD_DIRECT               = Standard outcome/telemetry only
+STANDARD_BUILDER              = same Standard engine after bounded repair
+generic runtime kernel        = process-control mechanics only
+Research Manager migration    = NOT NOW
+Wren                          = current incumbent substrate
+Metabase                      = isolated post-closure challenger
+```
+
+Yeni active addendum: `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`.
+
+Bu belge generic kernel ownership/forbidden knowledge, profile/domain boundary, manager_progress reuse sınırı, StandardBuilder tool/state sınırı, lightweight compiler, authority split, Standard→Research isolation, CoverageVeto, budgets, Research NO-TOUCH, Wren incumbent, Metabase challenger, D65-X ölçütleri, freeze/certification ve exact handoff sırasını dondurur.
+
+### Gerçek current code state — NO ROLLBACK
+
+```text
+D65-E1 exact semantic SHA recert      70 / 70 GREEN
+D65-E2 SemanticCatalogRetriever        9 / 9 GREEN
+D65-E3 provisional StandardBuilder    20 / 20 GREEN
+D65-E4 Standard authority split       25 / 25 GREEN
+D65-E5 narrow CoverageVeto            16 / 16 GREEN
+```
+
+Bu kod geri alınmaz. Ancak runtime-kernel kararı E3 implementation başladıktan sonra geldiği için `focused GREEN != architecture sealed`.
+
+Current `StandardBuilderSession` kendi counter/budget/action-state mechanics'ini taşıyor. Sıradaki refactor bu mechanics'i `BoundedAgentRuntimeKernel` içine taşır; Standard domain state, semantic binding, projection validation ve authority Standard layer'da kalır.
+
+### Family closure ilk birleşik koşum
+
+Run: `35691397377`.
+
+```text
+compile PASS
+87 PASS
+1 FAIL
+5 warnings
+```
+
+Failure: `test_v2_day6_5_dev_corpus.py::test_day65_dev_corpus_is_complete_and_taxonomy_balanced`.
+
+Classification: **EVAL_ORACLE**.
+
+Sebep: manifest yeni `allowed_work_modes` ve `expected_authority_family` metadata alanlarını bekliyordu; DEV corpus schema-integrity key-map'i eskiydi. Bu semantic/product bug değildir; regex/prompt/Resolver/StandardBuilder patch yapılmadı.
+
+### Eval schema düzeltmesi
+
+```text
+38 STANDARD_LOSSLESS      → [STANDARD_DIRECT, STANDARD_BUILDER] / AcceptedStandardAuthority
+26 RESEARCH_REQUIRED      → [RESEARCH] / AcceptedResearchAuthority
+15 CLARIFICATION_REQUIRED → [] / NONE
+1  UNSUPPORTED            → [] / NONE
+```
+
+Architecture terminology: `execution_path = STANDARD | RESEARCH`; `standard_outcome = DIRECT | BUILDER`.
+
+### Current family closure rerun
+
+Oracle sync sonrası same family bundle yeniden tetiklendi: `run 35691982389`.
+
+Semantic code testcase geçirmek için yamalanmadı.
+
+### Sıradaki product ticket — D65-E3A-R
+
+**NAME:** `RUNTIME KERNEL REALIGNMENT`
+
+**NEW:** `app/v2/agent_runtime.py`
+
+**Kernel owns only:** model/tool counters, budgets, observation lifecycle, action fingerprint, domain/profile-supplied state fingerprint, duplicate action/state guard, terminal/no-progress/budget-exhausted, generic telemetry.
+
+**Kernel must not know/import:** `AcceptedTurnContract`, `UserObligationLedger`, `ResearchDirective`, CompletionGate semantics, Evidence verification semantics, canonical semantic truth, `sem_*` minting, join/query/numeric truth.
+
+**TOUCH:** `app/v2/agent_runtime.py`, `app/v2/standard_builder.py`, focused kernel/builder tests; `manager_progress.py` only if generic fingerprint primitives need a non-semantic export/rename.
+
+**NO-TOUCH:** `manager_loop.py`, `manager_runtime.py`, `manager_tools.py`, `manager_preacceptance.py`, Research `AcceptedTurnContract` body, Resolver canonical rules, production `/ask-v2`, DEV expected semantic labels.
+
+**EXIT:** StandardBuilder consumes `BoundedAgentRuntimeKernel`; kernel has zero Research-domain imports/knowledge; DIRECT remains outcome only; existing Standard semantic behavior is preserved; same action+state second execution = `NO_PROGRESS`; budget fail-closed; focused kernel+builder+authority+coverage and family closure GREEN.
+
+### Bundan sonraki bağlayıcı sıra
+
+```text
+D65-E3A-R generic kernel realignment
+→ focused provider-free kernel/builder gates
+→ provider-free family closure
+→ workers=1 focused live
+→ same-SHA model-floor A/B if needed
+→ 12–16 stratified canary
+→ real Wren Standard vertical + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once-per-candidate
+→ DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN
+→ D65-X Wren incumbent vs Metabase Agent API substrate-only challenger
+→ choose ONE primary substrate
+→ VALIDATION50 no tuning
+→ external fresh HIDDEN50
+→ CERTIFICATION SEALED
+→ production hybrid activation
+```
+
+Day 7–10 numbering unchanged.
+
+### D65-X non-negotiable isolation
+
+Primary experiment fixes Dima cognition, accepted semantics, `AcceptedStandardAuthority`, `StandardProjection` and benchmark. Only execution substrate changes: `WrenAdapter` vs thin `MetabaseStandardAdapter`.
+
+Metabase native NLQ/Metabot comparison is a separate secondary experiment. Wren + Metabase as equal production truth engines = **STOP-THE-LINE**.
