@@ -1,0 +1,75 @@
+name: v2-day6-5-canary-failure-diagnostic-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day6-5-canary-failure-diagnostic-once.yml"
+
+jobs:
+  diagnostic:
+    if: "github.event.head_commit.message == 'test(v2-day6.5): diagnose canary failure families'"
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 20
+    env:
+      TARGET_SHA: "f5ca942f83aaee0806d7119957c543ab17a59a37"
+      DIMA_LLM_PROVIDER: "openrouter"
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: "openrouter"
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend eval dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Verify exact tested SHA
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+      - name: Exact-SHA diagnostic
+        working-directory: backend
+        shell: bash
+        run: |
+          mkdir -p lab/reports/diag
+          set +e
+
+          python lab/v2_day6_5_manager_eval.py \
+            --require-live --workers 1 --model "openai/gpt-5.6-sol" \
+            --case-id d65-dev-019 \
+            --output lab/reports/diag/019_fast_linker.json
+          echo "019_fast_linker_exit=$?" | tee lab/reports/diag/exit_codes.txt
+
+          python lab/v2_day6_5_manager_eval.py \
+            --require-live --workers 1 --model "openai/gpt-5.6-sol" \
+            --linker-model "openai/gpt-5.6-sol" \
+            --case-id d65-dev-019 \
+            --output lab/reports/diag/019_sol_linker.json
+          echo "019_sol_linker_exit=$?" | tee -a lab/reports/diag/exit_codes.txt
+
+          for i in 1 2 3; do
+            python lab/v2_day6_5_manager_eval.py \
+              --require-live --workers 1 --model "openai/gpt-5.6-sol" \
+              --case-id d65-dev-073 \
+              --output "lab/reports/diag/073_repeat_${i}.json"
+            echo "073_repeat_${i}_exit=$?" | tee -a lab/reports/diag/exit_codes.txt
+          done
+
+          exit 0
+
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-canary-failure-diagnostic
+          path: backend/lab/reports/diag
+          retention-days: 30
