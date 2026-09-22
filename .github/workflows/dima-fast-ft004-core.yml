@@ -1,0 +1,60 @@
+name: dima-fast-ft004-core
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft004-core.yml"
+      - "backend/app/fast/run_*.py"
+      - "backend/app/fast/application.py"
+      - "backend/tests/test_fast_run_*.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fast-run-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile FT-004 lifecycle
+        working-directory: backend
+        run: |
+          python -m py_compile             app/fast/run_models.py             app/fast/run_store.py             app/fast/run_manager.py             app/fast/run_router.py             app/fast/application.py
+
+      - name: Fast boundary static gate
+        working-directory: backend
+        run: pytest -q tests/test_fast_boundary_static.py
+
+      - name: FT-004 lifecycle tests
+        working-directory: backend
+        run: pytest -q tests/test_fast_run_lifecycle.py
+
+      - name: FT-004 API and SSE tests
+        working-directory: backend
+        run: pytest -q tests/test_fast_run_api.py
+
+      - name: FT-003 regression
+        working-directory: backend
+        run: |
+          pytest -q tests/test_fast_ask_core.py
+          pytest -q tests/test_fast_ask_service.py
