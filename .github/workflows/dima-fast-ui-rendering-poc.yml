@@ -1,14 +1,8 @@
 name: dima-fast-ui-rendering-poc
 
+# FT-UI-002 is sealed. Manual historical proof only.
+# FT-003 owns the evolving /fast-poc product surface.
 on:
-  push:
-    branches:
-      - feat/dima-metabase-product-fast-track
-    paths:
-      - ".github/workflows/dima-fast-ui-rendering-poc.yml"
-      - "dima-frontend-demo-master/src/app/fast-poc/**"
-      - "dima-frontend-demo-master/src/features/fast-poc/**"
-      - "dima-frontend-demo-master/e2e/fast-poc-e2e.mjs"
   workflow_dispatch:
 
 permissions:
