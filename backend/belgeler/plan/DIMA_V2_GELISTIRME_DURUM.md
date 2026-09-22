@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 D65-E3 STANDARDBUILDER CORE GREEN — STANDARD AUTHORITY NEXT**  
+**Durum:** **DAY 6.5 D65-E4 STANDARD AUTHORITY GREEN — COVERAGE VETO NEXT**  
 **Kod fazı:** Day 6.5 engineering closure — latest semantic code `c9629d9029db...`; cognition/authority boundary uygulanmış durumda. Hedef front door `STANDARD_DIRECT + bounded STANDARD_BUILDER + RESEARCH`, iki accepted-authority ailesiyle kapanacak. StandardBuilder/Retriever seam henüz yazılmadı. İlk iş exact `c9629d...` provider-free recertification; production hybrid route kapalı.
 
 ---
@@ -5247,3 +5247,58 @@ Existing `compile(contract, ledger, ...)` wrapper remains for Research compatibi
 - `AcceptedResearchAuthority` = existing `AcceptedTurnContract` alias/tag only,
 - same turn cannot commit both Standard and Research accepted authority,
 - Standard seal validates every `sem_*` against tenant/context before authority mint.
+
+
+### D65-E4 — GREEN / Standard-Research authority split
+
+**Product**
+- `9974d36b346c` — minimal `AcceptedStandardAuthority` sealer + cross-family registry
+- `3212af70b8ac` — Standard/Research authority invariants
+
+**Focused gate**
+- run: `35691100678`
+- result: **25 / 25 PASS**
+- runtime: **6.31s**
+- compile: PASS
+- one-shot cleanup: `5924a21a8cee`
+
+**Authority shape**
+```text
+AcceptedStandardAuthority
+- authority_id
+- turn_id / request_ref
+- source_message_hash
+- context_version
+- projection_hash
+- semantic_handle_refs
+- accepted_attempt_id
+- model_role
+- work_mode
+- created_at
+```
+
+Semantic body burada tekrar yazılmaz:
+`StandardProjection` body'dir.
+
+Research:
+`AcceptedResearchAuthority = AcceptedTurnContract` **type alias only**.
+İkinci research contract/body yaratılmadı.
+
+Cross-family `AcceptedAuthorityRegistry`:
+same-turn second accepted authority → deterministic reject.
+
+### D65-E5 — narrow Standard CoverageVeto
+
+Seal öncesi yalnız:
+- material user request omission,
+- explicit exclusion omission / wrong polarity,
+- research-only need omitted from routing
+
+için veto olabilir.
+
+YASAK:
+- canonical semantic seçmek,
+- `sem_*` üretmek/istemek,
+- obligation eklemek,
+- query/projection repair etmek,
+- clarification truth sahibi olmak.
