@@ -25,7 +25,10 @@ from app.v2.semantic_linker import (
     SemanticLinkAuthorityError,
     SemanticLinkCandidateCard,
 )
-from app.v2.semantic_retriever import SemanticRetrievalResult
+from app.v2.semantic_retriever import (
+    SemanticRetrievalContractError,
+    SemanticRetrievalResult,
+)
 
 
 def _context() -> BoundedSemanticContextV0:
@@ -339,9 +342,18 @@ def _retrieved_metric_binding():
 
 
 def test_candidate_generator_uses_explicit_non_authoritative_retriever_seam():
+    baseline = SemanticCandidateGenerator(
+        semantic_context=_context(),
+        schema=_schema(),
+    )
+    governed = next(
+        item
+        for item in baseline._governed_candidates("metric")
+        if item.card.label == "Net Gelir"
+    )
     retriever = _StaticRetriever(
         SemanticRetrievalResult(
-            candidates=(_retrieved_metric_binding(),),
+            candidates=(governed,),
             exhaustive=False,
             backend="test_ranked_retriever",
         )
@@ -361,7 +373,7 @@ def test_candidate_generator_uses_explicit_non_authoritative_retriever_seam():
     assert retriever.calls == [("net gelir", "metric", 48)]
     assert candidate_set.retrieval_exhaustive is False
     assert candidate_set.retrieval_backend == "test_ranked_retriever"
-    assert candidate_set.bindings[0].card.candidate_id == "cand_" + "a" * 24
+    assert candidate_set.bindings[0].card.candidate_id == governed.card.candidate_id
 
 
 def test_non_exhaustive_retrieval_miss_is_not_semantic_nonexistence():
@@ -395,3 +407,322 @@ def test_non_exhaustive_retrieval_miss_is_not_semantic_nonexistence():
 
     assert selection.status == "RETRIEVAL_MISS"
     assert "existence unknown" in (selection.reason or "")
+
+
+
+def _large_context(*, noise_count=100, reverse=False):
+    noise = [
+        CompactSemanticFieldV0(
+            canonical_name=f"receivables.noise_{index:03d}",
+            display=f"Noise Metric {index:03d}",
+            synonyms=(f"noise metric {index:03d}",),
+        )
+        for index in range(noise_count)
+    ]
+    target = CompactSemanticFieldV0(
+        canonical_name="receivables.target_balance",
+        display="Target Balance",
+        synonyms=("target balance",),
+    )
+    metrics = [*noise, target]
+    if reverse:
+        metrics = list(reversed(metrics))
+    return BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-large",
+            mdl_version="mdl-large",
+            compact_catalog_builder_version="large-test",
+            business_rules_hash="2" * 64,
+            prompt_context_policy_version="large-test",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="receivables",
+                display="Receivables",
+                synonyms=("receivable accounts",),
+                measures=tuple(metrics),
+            ),
+            CompactCubeContextV0(
+                canonical_name="ledger",
+                display="General Ledger",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="ledger.target_balance",
+                        display="Target Balance",
+                        synonyms=("target balance",),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def _large_generator(*, noise_count=100, reverse=False):
+    return SemanticCandidateGenerator(
+        semantic_context=_large_context(
+            noise_count=noise_count,
+            reverse=reverse,
+        ),
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+        max_candidates=48,
+    )
+
+
+def test_large_catalog_non_exact_discovery_is_bounded_before_linker():
+    generator = _large_generator(noise_count=130)
+    candidate_set = generator.generate(
+        request_id="large-1",
+        surface="show overdue receivables target balance",
+        kind_hint="metric",
+    )
+    canonical = {
+        item.canonical_target.canonical_name
+        for item in candidate_set.bindings
+    }
+
+    assert candidate_set.retrieval_backend == "governed_token_index_v1"
+    assert candidate_set.retrieval_exhaustive is False
+    assert candidate_set.too_broad is False
+    assert len(candidate_set.bindings) <= 48
+    assert "receivables.target_balance" in canonical
+
+
+def test_relevant_candidate_after_enumeration_position_48_is_retrieved():
+    generator = _large_generator(noise_count=100)
+    governed = generator._governed_candidates("metric")
+    target_position = next(
+        index
+        for index, item in enumerate(governed)
+        if item.canonical_target.canonical_name == "receivables.target_balance"
+    )
+    assert target_position > 48
+
+    candidate_set = generator.generate(
+        request_id="large-2",
+        surface="receivables target balance overview",
+        kind_hint="metric",
+    )
+    assert any(
+        item.canonical_target.canonical_name == "receivables.target_balance"
+        for item in candidate_set.bindings
+    )
+
+
+def test_duplicate_exact_aliases_remain_ambiguity_after_indexing():
+    generator = _large_generator(noise_count=100)
+    handles = SemanticHandleRegistry()
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=handles,
+            tenant_binding="tenant-a",
+            context_version="ctx-large",
+        ),
+        provider=None,
+    )
+    (selection,) = linker.resolve(
+        (("large-3", "target balance", "metric"),),
+        provenance_type="USER_SOURCE",
+    )
+    assert selection.status == "AMBIGUOUS_EXACT"
+    assert selection.binding is None
+
+
+def test_ranked_discovery_winner_never_auto_mints_authority():
+    generator = _large_generator(noise_count=100)
+    candidate_set = generator.generate(
+        request_id="large-4",
+        surface="receivables target balance overview",
+        kind_hint="metric",
+    )
+    assert candidate_set.bindings
+    assert candidate_set.bindings[0].canonical_target.canonical_name == (
+        "receivables.target_balance"
+    )
+
+    handles = SemanticHandleRegistry()
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=handles,
+            tenant_binding="tenant-a",
+            context_version="ctx-large",
+        ),
+        provider=None,
+    )
+    (selection,) = linker.resolve(
+        (("large-4", "receivables target balance overview", "metric"),),
+        provenance_type="USER_SOURCE",
+    )
+    assert selection.status == "LINKER_UNAVAILABLE"
+    assert selection.binding is None
+
+
+def test_ranked_non_exhaustive_no_hit_is_retrieval_miss():
+    generator = _large_generator(noise_count=100)
+    handles = SemanticHandleRegistry()
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=handles,
+            tenant_binding="tenant-a",
+            context_version="ctx-large",
+        ),
+        provider=None,
+    )
+    (selection,) = linker.resolve(
+        (("large-5", "quasar nebula unrelated phrase", "metric"),),
+        provenance_type="USER_SOURCE",
+    )
+    assert selection.status == "RETRIEVAL_MISS"
+
+
+def test_retriever_cannot_inject_foreign_or_stale_candidate_body():
+    foreign_context = _large_context(noise_count=0).model_copy(
+        update={
+            "context_version": ContextVersionV0(
+                version="ctx-foreign",
+                mdl_version="mdl-foreign",
+                compact_catalog_builder_version="foreign-test",
+                business_rules_hash="3" * 64,
+                prompt_context_policy_version="foreign-test",
+            )
+        }
+    )
+    foreign_generator = SemanticCandidateGenerator(
+        semantic_context=foreign_context,
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+    )
+    foreign = foreign_generator._governed_candidates("metric")[0]
+    retriever = _StaticRetriever(
+        SemanticRetrievalResult(
+            candidates=(foreign,),
+            exhaustive=False,
+            backend="foreign-index",
+        )
+    )
+    local = SemanticCandidateGenerator(
+        semantic_context=_large_context(noise_count=0),
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+        retriever=retriever,
+    )
+    with pytest.raises(SemanticRetrievalContractError, match="governed catalog"):
+        local.generate(
+            request_id="large-6",
+            surface="target",
+            kind_hint="metric",
+        )
+
+
+class _SelectReceivables:
+    def decide(self, requests):
+        choices = []
+        for request in requests:
+            selected = next(
+                card.candidate_id
+                for card in request.candidates
+                if "Receivables" in card.cube_labels
+            )
+            choices.append(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="SELECT",
+                    candidate_id=selected,
+                )
+            )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
+def _resolve_large(*, noise_count, reverse=False):
+    generator = _large_generator(
+        noise_count=noise_count,
+        reverse=reverse,
+    )
+    handles = SemanticHandleRegistry()
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=handles,
+            tenant_binding="tenant-a",
+            context_version="ctx-large",
+        ),
+        provider=_SelectReceivables(),
+    )
+    (selection,) = linker.resolve(
+        (("meta-1", "receivables target balance overview", "metric"),),
+        provenance_type="USER_SOURCE",
+    )
+    assert selection.status == "BOUND"
+    return selection.binding.canonical_target.canonical_name
+
+
+def test_catalog_growth_and_order_do_not_change_bounded_semantic_outcome():
+    small = _resolve_large(noise_count=5, reverse=False)
+    grown = _resolve_large(noise_count=105, reverse=True)
+    assert small == grown == "receivables.target_balance"
+
+
+def test_sensitive_values_stay_out_of_ranked_token_index():
+    context = BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-sensitive-index",
+            mdl_version="mdl-sensitive-index",
+            compact_catalog_builder_version="sensitive-index-test",
+            business_rules_hash="4" * 64,
+            prompt_context_policy_version="sensitive-index-test",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="people",
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="email",
+                        display="E-posta",
+                    ),
+                ),
+            ),
+        ),
+    )
+    generator = SemanticCandidateGenerator(
+        semantic_context=context,
+        schema={
+            "models": [
+                {
+                    "name": "people",
+                    "columns": [{"name": "email", "type": "VARCHAR"}],
+                }
+            ],
+            "cubes": [
+                {
+                    "name": "people",
+                    "dimension_values": {"email": ["secret.person@example.com"]},
+                }
+            ],
+        },
+    )
+    non_exact = generator.generate(
+        request_id="sensitive-ranked",
+        surface="secret person",
+        kind_hint="filter",
+    )
+    assert non_exact.bindings == ()
+
+
+def test_ranked_retriever_module_has_no_fuzzy_morphology_or_regex_authority():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "app"
+        / "v2"
+        / "semantic_retriever.py"
+    ).read_text(encoding="utf-8")
+    forbidden = (
+        "SequenceMatcher",
+        "SnowballStemmer",
+        "py_rust_stemmers",
+        "import re",
+        "re.search",
+        "re.match",
+        "re.compile",
+    )
+    for marker in forbidden:
+        assert marker not in source

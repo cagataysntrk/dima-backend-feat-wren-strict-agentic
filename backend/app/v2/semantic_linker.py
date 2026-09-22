@@ -30,8 +30,10 @@ from app.v2.models import (
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_retriever import (
-    EnumeratingSemanticCatalogRetriever,
+    IndexedTokenSemanticCatalogRetriever,
     SemanticCatalogRetriever,
+    SemanticDiscoveryDocument,
+    SemanticRetrievalContractError,
 )
 
 
@@ -107,6 +109,7 @@ class CatalogCandidateBinding:
     card: SemanticLinkCandidateCard
     canonical_target: ResolvedSemanticRef | ResolvedFilterRef
     exact_keys: frozenset[str]
+    discovery_context: tuple[str, ...] = ()
     sensitive: bool = False
 
 
@@ -119,6 +122,7 @@ class CandidateSet:
     too_broad: bool = False
     retrieval_exhaustive: bool = True
     retrieval_backend: str = "deterministic_enumeration_v1"
+    retrieval_truncated: bool = False
 
     @property
     def cards(self) -> tuple[SemanticLinkCandidateCard, ...]:
@@ -168,10 +172,47 @@ class SemanticCandidateGenerator:
         self._schema = schema
         self._max_candidates = max(4, int(max_candidates))
         self._company_aliases = self._verified_company_aliases()
-        self._retriever = retriever or EnumeratingSemanticCatalogRetriever(
-            enumerate_candidates=lambda kind_hint: self._semantic_fields(
-                kind_hint=kind_hint
+        self._governed_cache: dict[str, tuple[CatalogCandidateBinding, ...]] = {}
+        self._retriever = retriever or IndexedTokenSemanticCatalogRetriever(
+            enumerate_candidates=self._governed_candidates,
+            document_for=self._discovery_document,
+        )
+
+    def _governed_candidates(
+        self,
+        kind_hint: str,
+    ) -> tuple[CatalogCandidateBinding, ...]:
+        cached = self._governed_cache.get(kind_hint)
+        if cached is None:
+            cached = tuple(self._semantic_fields(kind_hint=kind_hint))
+            self._governed_cache[kind_hint] = cached
+        return cached
+
+    @staticmethod
+    def _discovery_document(
+        item: CatalogCandidateBinding,
+    ) -> SemanticDiscoveryDocument:
+        target = item.canonical_target
+        canonical = getattr(target, "canonical_name", None)
+        if canonical is None:
+            canonical = getattr(target, "dimension_name", None)
+        primary = tuple(
+            dict.fromkeys(
+                value
+                for value in (
+                    canonical,
+                    item.card.label,
+                    *item.card.verified_aliases,
+                )
+                if value
             )
+        )
+        return SemanticDiscoveryDocument(
+            stable_id=item.card.candidate_id,
+            exact_terms=tuple(item.exact_keys),
+            primary_terms=primary,
+            context_terms=item.discovery_context,
+            discoverable=not item.sensitive,
         )
 
     def _verified_company_aliases(self) -> dict[tuple[str, str], tuple[str, ...]]:
@@ -271,6 +312,15 @@ class SemanticCandidateGenerator:
                                 canonical_name=field.canonical_name,
                                 cube_names=(cube.canonical_name,),
                             ),
+                            discovery_context=self._human_aliases(
+                                display=cube.display,
+                                synonyms=cube.synonyms,
+                                extra=(
+                                    cube.canonical_name,
+                                    cube.description or "",
+                                    field.description or "",
+                                ),
+                            ),
                             exact_keys=frozenset(
                                 {
                                     _exact_key(field.canonical_name),
@@ -308,6 +358,9 @@ class SemanticCandidateGenerator:
                             candidate_id=candidate_id,
                             target_kind=SemanticTargetKind.KPI,
                             canonical_name=field.canonical_name,
+                        ),
+                        discovery_context=(
+                            (field.description,) if field.description else ()
                         ),
                         exact_keys=frozenset(
                             {
@@ -352,6 +405,15 @@ class SemanticCandidateGenerator:
                                 target_kind=SemanticTargetKind.DIMENSION,
                                 canonical_name=field.canonical_name,
                                 cube_names=(cube.canonical_name,),
+                            ),
+                            discovery_context=self._human_aliases(
+                                display=cube.display,
+                                synonyms=cube.synonyms,
+                                extra=(
+                                    cube.canonical_name,
+                                    cube.description or "",
+                                    field.description or "",
+                                ),
                             ),
                             exact_keys=frozenset(
                                 {
@@ -440,7 +502,25 @@ class SemanticCandidateGenerator:
             kind_hint=kind_hint,
             limit=self._max_candidates,
         )
-        bindings = list(retrieval.candidates)
+        governed_by_id = {
+            item.card.candidate_id: item
+            for item in self._governed_candidates(kind_hint)
+        }
+        bindings: list[CatalogCandidateBinding] = []
+        seen_ids: set[str] = set()
+        for retrieved in retrieval.candidates:
+            candidate_id = retrieved.card.candidate_id
+            governed = governed_by_id.get(candidate_id)
+            if governed is None:
+                raise SemanticRetrievalContractError(
+                    "semantic retriever returned candidate outside current governed catalog"
+                )
+            if candidate_id in seen_ids:
+                continue
+            # Never trust indexed/stored candidate bodies as authority; refresh the
+            # canonical binding from current tenant/context truth by candidate id.
+            bindings.append(governed)
+            seen_ids.add(candidate_id)
         key = _exact_key(surface)
 
         exact = [item for item in bindings if key and key in item.exact_keys]
@@ -455,6 +535,7 @@ class SemanticCandidateGenerator:
                 too_broad=False,
                 retrieval_exhaustive=retrieval.exhaustive,
                 retrieval_backend=retrieval.backend,
+                retrieval_truncated=retrieval.truncated,
             )
 
         linker_visible = [
@@ -471,6 +552,7 @@ class SemanticCandidateGenerator:
             too_broad=too_broad,
             retrieval_exhaustive=retrieval.exhaustive,
             retrieval_backend=retrieval.backend,
+            retrieval_truncated=retrieval.truncated,
         )
 
 
