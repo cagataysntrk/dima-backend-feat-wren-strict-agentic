@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -150,6 +151,7 @@ def test_j1_harness_transport_isolation_and_failure_semantics():
     spec = importlib.util.spec_from_file_location("dima_j1_harness", path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
 
     assert module.JEV_MODEL == "typesafe/jev-1.13"
