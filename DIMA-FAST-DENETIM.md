@@ -100,7 +100,6 @@ FT-UI-002 Dima-native rendering              GREEN / SEALED
 FT-003     First Real Ask                     GREEN / CLOSED
 FT-004     run lifecycle / streaming / cancel GREEN / CLOSED
 FT-005     conversation + follow-up context       OPEN
-FT-005     conversation + follow-up context
 FT-006     evidence expansion
 FT-007     Analyst
 FT-008     Root Cause
@@ -169,3 +168,27 @@ Explicit non-production debt:
 - [ ] hard cancellation of already-running Metabase query.
 
 These unchecked items are deliberate post-FT-004 debt, not hidden GREEN claims.
+
+
+## J. FT-004 post-seal invariant audit
+
+- [x] deterministic cancel/start barrier test.
+- [x] cancel after worker pre-check but before RUNNING -> Ask calls = 0.
+- [x] RUN_STARTED absent when cancel wins start race.
+- [x] durable owner identity excludes mutable superadmin claim.
+- [x] same user/tenant retains ownership after claim change.
+- [x] foreign user remains non-enumerating denied.
+- [x] retry question identity strict.
+- [x] retry as_of_date identity strict.
+- [x] retry remains distinct from follow-up.
+- [x] core/API/SSE regression.
+- [x] FT-003 regression.
+- [x] real pinned-Metabase lifecycle regression.
+- [x] Gateway regression.
+- [x] browser regression.
+
+Post-seal focused run:
+`35781659952 GREEN`
+
+Final audited SHA:
+`f8018800c773019f0e79907fec3e15edec72dbb0`

@@ -1,6 +1,6 @@
 # FT-004 FAILURE RECEIPT — POST_SEAL_RETRY_IDENTITY_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / STRICT_RETRY_IDENTITY
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -64,3 +64,25 @@ HTTP mapping remains typed 409 through existing run router behavior.
 - reopening terminal run;
 - FT-005 semantics inside FT-004;
 - fuzzy question comparison.
+
+
+## Closure
+
+Store validation commit:
+`6951f62419962209d91c84d186e4eb312dbc2212`
+
+Manager wiring commit:
+`f8018800c773019f0e79907fec3e15edec72dbb0`
+
+Final focused/core proof:
+`35781659952 GREEN`
+
+Verified:
+- same immutable question + as_of_date retry remains allowed;
+- different question retry rejected;
+- different as_of_date retry rejected;
+- original terminal run remains immutable;
+- root lineage and attempt increment remain intact;
+- HTTP path retains typed 409 mapping through existing router contract.
+
+Failure CLOSED.

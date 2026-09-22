@@ -8,8 +8,11 @@ Branch: `feat/dima-metabase-product-fast-track`
 PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
+OBSERVED_BRANCH_HEAD:
+`f8018800c773019f0e79907fec3e15edec72dbb0`
+
 CURRENT_PRODUCT_GATE:
-`FT-005 — CONVERSATION + FOLLOW-UP CONTEXT`
+`FT-005 — CONVERSATION + FOLLOW-UP CONTEXT / PREDEVELOPMENT`
 
 FT-003_FINAL:
 `CLOSED / GREEN`
@@ -22,6 +25,21 @@ FT-005:
 
 OPEN_RED:
 `NONE`
+
+FT-004_POST_SEAL_INVARIANTS:
+`CLOSED / GREEN`
+
+POST_SEAL_CORE:
+`35781659952 GREEN`
+
+POST_SEAL_LIVE:
+`35781660160 GREEN`
+
+POST_SEAL_GATEWAY:
+`35781659866 GREEN`
+
+POST_SEAL_BROWSER:
+`35781660084 GREEN`
 
 TARGET:
 `Dima-native Intelligence Workspace on Metabase Analytics Substrate`
@@ -176,11 +194,30 @@ FT-003 deliberate debt remains:
 - paid Metabase core dependency = 0;
 - browser Metabase service/admin secret = 0.
 
+## POST-SEAL FT-004 INVARIANTS
+
+```text
+cancel-before-RUNNING
+-> Ask call = 0
+
+run owner identity
+= tenant_id + user_id
+
+retry
+= same question + same as_of_date
+```
+
+Closed receipts:
+- `FT_004_POST_SEAL_CANCEL_START_RACE_001`;
+- `FT_004_POST_SEAL_OWNER_IDENTITY_001`;
+- `FT_004_POST_SEAL_RETRY_IDENTITY_001`.
+
 ## NEXT_EXACT_ACTION
 
-1. Open `FT_005_PREDEVELOPMENT_REVIEW.md`.
-2. Define Dima-owned conversation/follow-up context without changing sealed FT-003 analytics authority.
-3. Build conversation identity and turn lineage above run lifecycle.
-4. Resolve follow-up references from explicit prior accepted/evidence context, not hidden heuristic state.
-5. Preserve every analytical execution as a separate run.
-6. Do not begin Analyst or Root Cause inside FT-005.
+1. Audit legacy conversation surfaces READ-ONLY.
+2. Open `FT_005_PREDEVELOPMENT_REVIEW.md`.
+3. Decide Fast conversation store strategy before implementation.
+4. Freeze conversation / turn / accepted-context authority contracts.
+5. Keep every analytical turn as a new immutable run.
+6. Keep retry, follow-up, clarification, new turn, and new run as distinct concepts.
+7. Do not begin Analyst or Root Cause inside FT-005.

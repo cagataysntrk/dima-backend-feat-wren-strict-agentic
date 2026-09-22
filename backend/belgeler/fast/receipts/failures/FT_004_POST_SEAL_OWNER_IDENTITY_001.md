@@ -1,6 +1,6 @@
 # FT-004 FAILURE RECEIPT — POST_SEAL_OWNER_IDENTITY_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / DURABLE_OWNER_IDENTITY
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -70,3 +70,26 @@ Keep current principal authorization behavior outside ownership identity.
 - tenant bypass;
 - changing run IDs;
 - FT-003 changes.
+
+
+## Closure
+
+Corrective owner commit:
+`6951f62419962209d91c84d186e4eb312dbc2212`
+
+Final focused/core proof:
+`35781659952 GREEN`
+
+Tested SHA:
+`f8018800c773019f0e79907fec3e15edec72dbb0`
+
+Final invariant:
+
+```text
+FastRunOwner = tenant_id + user_id
+mutable is_superadmin claim != ownership identity
+```
+
+Foreign user/owner isolation remains fail-closed.
+
+Failure CLOSED.

@@ -421,7 +421,6 @@ FT-005    conversation + follow-up context       OPEN
 Then:
 
 ```text
-FT-004 run lifecycle / streaming / cancel
 FT-005 conversation + follow-up context
 FT-006 evidence expansion
 FT-007 Analyst Mode
@@ -583,7 +582,7 @@ Tested commit:
 Real-result artifact digest:
 `sha256:2ecaec2ad248f5d22d12503fa3dad3dab46539b85f3999b7b404f556a03780b3`
 
-FT-003 is now OPEN.
+FT-003 is CLOSED / GREEN.
 
 
 ## 23. FT-003 sealed — First Real Ask
@@ -753,3 +752,38 @@ FT-004 does NOT add:
 
 Next:
 `FT-005 — conversation + follow-up context`
+
+
+## 25. FT-004 post-seal invariant audit
+
+Status:
+`CLOSED / GREEN`
+
+Focused audit SHA:
+`f8018800c773019f0e79907fec3e15edec72dbb0`
+
+Focused/core run:
+`35781659952 GREEN`
+
+Regression runs on the same final SHA:
+- FT-004 real pinned-Metabase lifecycle: `35781660160 GREEN`
+- FT-002B Gateway: `35781659866 GREEN`
+- FT-003 browser: `35781660084 GREEN`
+
+Sealed invariants:
+
+```text
+cancel before RUNNING authority
+=> Ask call = 0
+=> RUN_STARTED = 0
+
+run ownership identity
+= tenant_id + user_id
+!= mutable is_superadmin claim
+
+retry
+= same immutable question + as_of_date
+!= follow-up
+```
+
+These are prerequisites for FT-005 conversation lineage.

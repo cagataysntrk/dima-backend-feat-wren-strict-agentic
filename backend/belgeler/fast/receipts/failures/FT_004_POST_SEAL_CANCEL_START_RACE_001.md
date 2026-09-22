@@ -1,6 +1,6 @@
 # FT-004 FAILURE RECEIPT — POST_SEAL_CANCEL_START_RACE_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / RUN_START_CANCELLATION_RACE
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -76,3 +76,24 @@ Owner:
 - changing cancel contract;
 - allowing Ask and merely discarding it;
 - weakening the focused test.
+
+
+## Closure
+
+Corrective owner commit:
+`e9f19b122ac5dd1994716bddd27954000641a9c9`
+
+Final focused/core proof:
+`35781659952 GREEN`
+
+Tested SHA:
+`f8018800c773019f0e79907fec3e15edec72dbb0`
+
+Verified:
+- cancel wins after worker pre-check but before RUNNING;
+- FastAskService.calls = 0;
+- RUN_STARTED = 0;
+- events = RUN_CREATED, CANCEL_REQUESTED, RUN_CANCELLED;
+- FT-003 regression GREEN.
+
+Failure CLOSED.
