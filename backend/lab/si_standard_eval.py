@@ -6,6 +6,7 @@ semantics. They never mint authority and never expose sensitive entity values.
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 from app.v2.semantic_linker import (
@@ -64,13 +65,32 @@ def draft_summary(draft) -> dict[str, Any]:
     }
 
 
+def _bound_arguments(callable_obj, instance, args, kwargs) -> dict[str, Any]:
+    """Best-effort observation helper; never owns/duplicates product signatures."""
+    try:
+        bound = inspect.signature(callable_obj).bind_partial(
+            instance,
+            *args,
+            **kwargs,
+        )
+        return dict(bound.arguments)
+    except (TypeError, ValueError):
+        # Observation may lose fields if a future callable is not introspectable,
+        # but forwarding semantics must remain untouched.
+        return dict(kwargs)
+
+
 def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any]) -> None:
-    """Observe one workers=1 harness with a mutable trace_ref['current'] target."""
+    """Observe one workers=1 harness without changing call semantics.
+
+    All product callables are transparent *args/**kwargs proxies. The evaluator may
+    inspect known current fields, but it never re-declares a product method signature.
+    """
 
     original_draft = harness._engine._draft
 
-    def traced_draft(**kwargs):
-        draft = original_draft(**kwargs)
+    def traced_draft(*args, **kwargs):
+        draft = original_draft(*args, **kwargs)
         current = trace_ref.get("current")
         if current is not None:
             current.setdefault("draft_attempts", []).append(draft_summary(draft))
@@ -80,53 +100,54 @@ def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any])
 
     original_generate = SemanticCandidateGenerator.generate
 
-    def traced_generate(self, *, request_id, surface, kind_hint):
+    def traced_generate(self, *args, **kwargs):
         current = trace_ref.get("current")
         captured: dict[str, Any] = {}
         original_retriever = self._retriever
 
         class _CapturingRetriever:
-            def retrieve(
-                inner_self,
-                *,
-                surface,
-                kind_hint,
-                limit,
-                decision_context=None,
-            ):
-                result = original_retriever.retrieve(
-                    surface=surface,
-                    kind_hint=kind_hint,
-                    limit=limit,
-                    decision_context=decision_context,
-                )
+            def retrieve(inner_self, *r_args, **r_kwargs):
+                result = original_retriever.retrieve(*r_args, **r_kwargs)
                 captured["retrieval"] = result
+                captured["retrieval_call"] = _bound_arguments(
+                    original_retriever.retrieve,
+                    original_retriever,
+                    r_args,
+                    r_kwargs,
+                )
                 return result
 
         self._retriever = _CapturingRetriever()
         try:
-            candidate_set = original_generate(
-                self,
-                request_id=request_id,
-                surface=surface,
-                kind_hint=kind_hint,
-            )
+            candidate_set = original_generate(self, *args, **kwargs)
         finally:
             self._retriever = original_retriever
 
         if current is not None:
+            call = _bound_arguments(
+                original_generate,
+                self,
+                args,
+                kwargs,
+            )
+            request_id = call.get("request_id", candidate_set.request_id)
+            surface = call.get("surface", candidate_set.surface)
+            kind_hint = call.get("kind_hint", candidate_set.kind_hint)
+            decision_context = call.get("decision_context")
+
             retrieval = captured.get("retrieval")
             raw = tuple(getattr(retrieval, "candidates", ()) or ())
             exact = [
                 item
                 for item in raw
-                if _exact_key(surface) in item.exact_keys
+                if _exact_key(str(surface or "")) in item.exact_keys
             ]
             current.setdefault("candidate_retrieval", []).append(
                 {
                     "request_id": request_id,
                     "surface": surface,
                     "kind_hint": kind_hint,
+                    "decision_context_present": bool(decision_context),
                     "backend": (
                         retrieval.backend
                         if retrieval is not None
@@ -140,10 +161,14 @@ def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any])
                     "truncated": (
                         bool(retrieval.truncated)
                         if retrieval is not None
-                        else False
+                        else bool(getattr(candidate_set, "retrieval_truncated", False))
                     ),
                     "candidate_count_before_bound": len(raw),
                     "visible_candidate_count": len(candidate_set.bindings),
+                    "visible_candidate_ids": [
+                        item.card.candidate_id
+                        for item in candidate_set.bindings
+                    ],
                     "exact_candidate_count": len(exact),
                     "exact_candidates": [
                         _safe_candidate(item) for item in exact
@@ -157,8 +182,8 @@ def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any])
 
     original_resolve = BoundedSemanticLinker.resolve
 
-    def traced_resolve(self, requests, **kwargs):
-        selections = original_resolve(self, requests, **kwargs)
+    def traced_resolve(self, *args, **kwargs):
+        selections = original_resolve(self, *args, **kwargs)
         current = trace_ref.get("current")
         if current is not None:
             current.setdefault("semantic_selections", []).extend(
@@ -182,7 +207,14 @@ def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any])
 
     original_decide = StructuredSemanticCandidateDecisionProvider.decide
 
-    def traced_decide(self, requests):
+    def traced_decide(self, *args, **kwargs):
+        call = _bound_arguments(
+            original_decide,
+            self,
+            args,
+            kwargs,
+        )
+        requests = tuple(call.get("requests") or ())
         current = trace_ref.get("current")
         if current is not None:
             current["semantic_provider_called"] = True
@@ -192,12 +224,15 @@ def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any])
                     "surface": item.surface,
                     "kind_hint": item.kind_hint,
                     "candidate_count": len(item.candidates),
+                    "candidate_ids": [
+                        candidate.candidate_id for candidate in item.candidates
+                    ],
                     "source_context_present": bool(item.source_context),
                 }
                 for item in requests
             )
         try:
-            decision = original_decide(self, requests)
+            decision = original_decide(self, *args, **kwargs)
         except Exception as exc:
             if current is not None:
                 current["semantic_provider_error"] = (
@@ -215,7 +250,6 @@ def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any])
         "decide",
         traced_decide,
     )
-
 
 def new_case_trace(case: dict[str, Any]) -> dict[str, Any]:
     return {
