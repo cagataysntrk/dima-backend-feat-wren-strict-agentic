@@ -31,9 +31,10 @@ class FastRunTransitionError(RuntimeError):
 
 @dataclass(frozen=True)
 class FastRunOwner:
+    """Durable run ownership identity, separate from mutable authorization claims."""
+
     user_id: str
     tenant_id: str | None
-    is_superadmin: bool
 
     @classmethod
     def from_principal(cls, principal: Any) -> "FastRunOwner":
@@ -44,7 +45,6 @@ class FastRunOwner:
                 if getattr(principal, "tenant_id", None) is None
                 else str(principal.tenant_id)
             ),
-            is_superadmin=bool(getattr(principal, "is_superadmin", False)),
         )
 
 
@@ -195,6 +195,7 @@ class FastRunStore:
         self,
         source_run_id: str,
         owner: FastRunOwner,
+        request: FastRunCreateRequest,
     ) -> tuple[str, int]:
         with self._lock:
             record = self._authorized_locked(source_run_id, owner)
@@ -205,6 +206,13 @@ class FastRunStore:
             }:
                 raise FastRunTransitionError(
                     "retry source must be FAILED, CANCELLED, or INTERRUPTED"
+                )
+            if (
+                request.question != record.request.question
+                or request.as_of_date != record.request.as_of_date
+            ):
+                raise FastRunTransitionError(
+                    "retry request must match source question and as_of_date"
                 )
             return record.root_run_id, record.attempt + 1
 
