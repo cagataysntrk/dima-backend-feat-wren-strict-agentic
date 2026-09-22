@@ -19,6 +19,14 @@ from app.v2.manager_models import (
     ObligationStatus,
 )
 from app.v2.models import FrozenModel, ResearchTask, ResearchTaskKind
+from app.v2.research_fanout import (
+    CardinalityObservation,
+    CardinalitySource,
+    FanoutDecision,
+    FanoutRequest,
+    PriorityProvenance,
+    ResearchFanoutPolicy,
+)
 
 
 class ResearchTaskMaterializationError(RuntimeError):
@@ -33,6 +41,11 @@ class DerivedResearchTaskProposal(FrozenModel):
     trigger_evidence_ref: str = Field(min_length=1)
     input_refs: tuple[str, ...] = Field(min_length=1)
     material_reason: str = Field(min_length=1, max_length=500)
+
+
+class ResearchBranchMaterialization(FrozenModel):
+    decision: FanoutDecision
+    registered_tasks: tuple[ResearchTask, ...] = ()
 
 
 class ResearchTaskService:
@@ -182,6 +195,80 @@ class ResearchTaskService:
             parent_obligation_id=proposal.parent_obligation_id,
             trigger_evidence_ref=evidence_ref,
             branch_depth=depth,
+        )
+
+
+    def materialize_derived_candidates(
+        self,
+        *,
+        runtime,
+        evidence_store,
+        task_registry,
+        parent_task: ResearchTask,
+        proposals: tuple[DerivedResearchTaskProposal, ...],
+        cardinality: CardinalityObservation | None = None,
+        priority_provenance: PriorityProvenance = PriorityProvenance.NONE,
+        fanout_policy: ResearchFanoutPolicy | None = None,
+        max_branch_depth: int = 3,
+        max_children: int = 4,
+        unknown_children: int = 2,
+    ) -> ResearchBranchMaterialization:
+        """Materialize a governed candidate set, then bound it before registration.
+
+        Candidate cognition is not authority: every proposal first passes the same
+        evidence/parent/handle provenance checks as a single derived task.  The
+        deterministic fanout policy then uses ONLY canonical remaining query budget,
+        branch depth and governed/unknown cardinality information.  Registration is
+        the sole lifecycle side effect.
+        """
+        if not proposals:
+            raise ResearchTaskMaterializationError(
+                "derived branch candidate set cannot be empty"
+            )
+
+        materialized = tuple(
+            self.materialize_derived(
+                runtime=runtime,
+                evidence_store=evidence_store,
+                parent_task=parent_task,
+                proposal=proposal,
+                max_branch_depth=max_branch_depth,
+            )
+            for proposal in proposals
+        )
+        by_id: dict[str, ResearchTask] = {}
+        for task in materialized:
+            existing = by_id.get(task.task_id)
+            if existing is not None and existing != task:
+                raise ResearchTaskMaterializationError(
+                    f"conflicting derived candidate task identity: {task.task_id}"
+                )
+            by_id[task.task_id] = task
+
+        observation = cardinality or CardinalityObservation(
+            source=CardinalitySource.UNKNOWN
+        )
+        policy = fanout_policy or ResearchFanoutPolicy()
+        decision = policy.decide(
+            FanoutRequest(
+                candidate_keys=tuple(by_id),
+                cardinality=observation,
+                priority_provenance=priority_provenance,
+                remaining_query_budget=runtime.remaining_data_queries,
+                current_branch_depth=parent_task.branch_depth,
+                max_branch_depth=max_branch_depth,
+                max_children=max_children,
+                unknown_children=unknown_children,
+            )
+        )
+        selected = tuple(
+            by_id[task_id]
+            for task_id in decision.selected_candidate_keys
+        )
+        registered = task_registry.register_many(selected)
+        return ResearchBranchMaterialization(
+            decision=decision,
+            registered_tasks=registered,
         )
 
 
