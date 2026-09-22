@@ -61,7 +61,10 @@ class FastMetabaseAuthContext(BaseModel):
             json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
         return FastAccessFingerprint(
-            **canonical,
+            tenant_id=self.tenant_id,
+            dima_user_id=self.dima_user_id,
+            principal_id=self.principal_id,
             auth_mode=self.mode,
+            role_scope_digest=self.role_scope_digest,
             digest=digest,
         )
