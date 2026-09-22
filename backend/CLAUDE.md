@@ -9,19 +9,19 @@
 > 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
 > 2. `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`
 > 3. `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`
-> 4. `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`
-> 5. `belgeler/plan/DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md`
-> 6. `belgeler/plan/DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md`
-> 3. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
-> 4. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
-> 5. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
-> 6. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
-> 7. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
-> 8. `eval/v2_day6_5_eval_manifest.yaml`
-> 9. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
-> 10. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
-> 11. `AGENTS.md`
-> 12. `MIMARI.md` ve yalnız aktif ticket'ın kodu
+> 4. `belgeler/plan/DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md`
+> 5. `belgeler/plan/DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md`
+> 6. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
+> 7. `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`
+> 8. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+> 9. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+> 10. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+> 11. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+> 12. `eval/v2_day6_5_eval_manifest.yaml`
+> 13. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
+> 14. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
+> 15. `AGENTS.md`
+> 16. `MIMARI.md` ve yalnız aktif ticket'ın kodu
 >
 > Nihai rapor ve roadmap **mühürlü / salt-okunur**. İlerleme, karar sonucu, commit SHA,
 > açık borç ve sonraki adım yalnız `DIMA_V2_GELISTIRME_DURUM.md` dosyasına yazılır.
@@ -89,8 +89,12 @@
 > ve P0 invariant testleri önceliklidir.
 >
 > **Kalıcı operasyon notu:** ayrıntılı tekrar-etme kuralları `AGENTS.md §11`'dedir.
-> OpenRouter varsayılan modeli `deepseek/deepseek-v4-flash`; model override'ı
-> `DIMA_OPENROUTER_MODEL` ile yapılır. Eski always-on `backend-ci.yml` yeniden kurulmaz.
+> **Configuration/current-default notu:** `app/config.py` içinde current generic OpenRouter default
+> `google/gemini-2.5-flash-lite`'tır ve `DIMA_OPENROUTER_MODEL` ile override edilebilir.
+> Bu bir architecture/model-role authority değildir: aktif J1 benchmark'ında Gemini Flash-Lite,
+> pinned `typesafe/jev-1.13` ve Sol farklı bounded roles için ayrı challenger/reference olarak ölçülür.
+> Model adı business architecture truth gibi hard-code/belgeleme yapılmaz. Eski always-on
+> `backend-ci.yml` yeniden kurulmaz.
 >
 > **İlk 10 gün wholesale refactor yasağı:** `routers/ask.py`, `cube_router.py`,
 > `uyum.py`, `plan_tuketici.py`, `plan_semasi.py`.
