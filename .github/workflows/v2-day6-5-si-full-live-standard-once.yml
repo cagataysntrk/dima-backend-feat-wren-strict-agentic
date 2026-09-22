@@ -64,3 +64,5 @@ jobs:
           name: v2-day6-5-si-full-live-standard
           path: backend/lab/reports/v2_day6_5_si_full_live_standard.json
           retention-days: 90
+
+# retry: bounded-retrieval-root-fix
