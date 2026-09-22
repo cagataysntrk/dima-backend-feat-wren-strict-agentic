@@ -232,10 +232,10 @@ def test_stale_fanout_proof_denies_even_when_relationship_label_says_healthy():
         service=_Service(_schema(relationships=[relationship])),
     )
     assert result.ready is False
-    assert result.code == JoinFactCode.GATE_DENIED
-    assert result.gate_decision is not None
-    # Pure gate sees the stale display badge, but the governed fact surface must not.
-    assert result.facts.fanout_proofs[0].status == "MDL_MISMATCH"
+    assert result.code == JoinFactCode.FANOUT_UNVERIFIED
+    assert result.gate_decision is None
+    # Stale display badge cannot launder a stale proof into gate authority.
+    assert result.fanout_proofs[0].status == "MDL_MISMATCH"
 
 
 def test_physical_fk_without_wren_business_relationship_is_never_authority():
@@ -298,5 +298,6 @@ def test_risky_current_certificate_is_denied_by_existing_join_gate():
         service=_Service(_schema(relationships=[relationship])),
     )
     assert result.ready is False
-    assert result.code == JoinFactCode.GATE_DENIED
-    assert result.gate_decision.code == JoinGateCode.FANOUT_UNSAFE
+    assert result.code == JoinFactCode.FANOUT_UNSAFE
+    assert result.gate_decision is None
+    assert result.fanout_proofs[0].status == "RISKY"
