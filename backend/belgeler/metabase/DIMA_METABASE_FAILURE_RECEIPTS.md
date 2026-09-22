@@ -1991,3 +1991,26 @@ authorized correction:
 
 status:
 `CORRECTION APPLIED / AWAITING PROVIDER-FREE P9B1 GREEN`.
+
+
+---
+
+## DMP-P9B-AUDIT-002 closure — PROVIDER-FREE GREEN
+
+final_sha: `33c93fa3cd579e9d2e42eef0335215747183590c`  
+p9b_workflow: `35782035041 = SUCCESS`  
+governance: `35782035058 = SUCCESS`  
+m1_wren: `35782035064 = SUCCESS`
+
+proof:
+- focused P9B1 = 18 PASS;
+- inherited P7/P8/P9 = 62 PASS;
+- target tenant is explicit and must equal desired-resource tenant;
+- transport contract carries tenant, projection hash, resolved-intent hash, catalog fingerprint and
+  canonical-query fingerprint;
+- tenant/projection/catalog provenance changes transport contract fingerprint;
+- no collection search/default, tenant discovery, HTTP write, P10 permission mapping or semantic
+  reinterpretation added.
+
+status:
+`CLOSED GREEN / ONE ISOLATED PINNED-LIVE METRIC LIFECYCLE AUTHORIZED`.

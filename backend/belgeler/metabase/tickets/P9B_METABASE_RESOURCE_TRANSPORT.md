@@ -46,3 +46,13 @@ P9B1 transport contract is tenant-bound and retains the existing P4 projection/c
 
 The explicit target must carry the same tenant as the desired P9 resource. No tenant/collection
 discovery or default target is authorized.
+
+
+## Isolated live proof authorization
+
+After DMP-P9B-AUDIT-002 provider-free GREEN, exactly one pinned v0.63.18 lab lifecycle is authorized:
+fresh P4 projection → P9 CREATE → tenant-bound P9B contract → exact create response id → exact-id
+Card read-back → stable binding → P9 NOOP → archive → exact-id read → restore → exact-id read →
+hard-delete cleanup.
+
+No search/list/name adoption is permitted. This is a lab proof, not production write authorization.

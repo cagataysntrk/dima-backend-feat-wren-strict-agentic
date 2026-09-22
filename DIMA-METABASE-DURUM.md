@@ -1061,3 +1061,20 @@ P10                              = NOT STARTED
 ASK_V2 observed                  = aef1032a514cf27bf41e53294b4e1ce669d45813
 ASK_V2 disposition               = REFERENCE_ONLY
 ```
+
+
+---
+
+## P9B1 tenant/projection provenance — GREEN
+
+```text
+hardening SHA                      = 33c93fa3cd579e9d2e42eef0335215747183590c
+P9B workflow                       = 35782035041 = SUCCESS
+focused P9B1                       = 18 PASS
+P7/P8/P9 inherited                 = 62 PASS
+governance                         = 35782035058 = SUCCESS
+M1/Wren                            = 35782035064 = SUCCESS
+DMP-P9B-AUDIT-002                  = CLOSED GREEN
+production writes                  = BLOCKED
+authorized next                    = ONE ISOLATED PINNED-LIVE METRIC LIFECYCLE
+```
