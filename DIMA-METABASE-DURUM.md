@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** M1 / P1 CLOSED GREEN — M2 / P2 PRE-DEVELOPMENT REVIEW NEXT  
-**Product-code development:** M1 CLOSED GREEN; M2 PRODUCT CODE NOT STARTED  
+**Current phase:** M1 / P1 CLOSED GREEN — M2 / P2 PRE-DEVELOPMENT REVIEW SEALED; RUNTIME PIN RESEARCH NEXT  
+**Product-code development:** M1 CLOSED GREEN; M2 LAB IMPLEMENTATION NOT STARTED  
 **Metabase runtime:** NOT SELECTED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -127,3 +127,20 @@ M1 invariants certified:
 - retained v2 Wren trust-plane sentinels remain GREEN.
 
 **Next:** M2/P2 pre-development review. M2 does not authorize Metabase product routing.
+
+
+---
+
+## M2 / P2 pre-development review
+
+Status: **SEALED / RUNTIME RESEARCH AUTHORIZED AFTER GOVERNANCE GREEN**
+
+Review:
+`backend/belgeler/metabase/predev/M2_P2_PREDEVELOPMENT_REVIEW.md`
+
+Ticket:
+`backend/belgeler/metabase/tickets/M2_P2_METABASE_LAB_BOOTSTRAP.md`
+
+Next action:
+verify an official supported Metabase runtime release and immutable image digest. No lab compose
+implementation is authorized until both pins are recorded.

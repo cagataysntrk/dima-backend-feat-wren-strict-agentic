@@ -112,3 +112,47 @@ revisit_condition:
 A later source delta may be ported only under a new explicit Decision Receipt and branch-local proof.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0004 — M2 lab isolation topology
+
+date: 2026-09-22
+
+question:
+Where should the Metabase P2 lab live without contaminating the existing Dima stack or the existing SQL Server restore lab?
+
+options_considered:
+- modify root `docker-compose.yml`;
+- extend `backend/lab/docker-compose.yml`;
+- create a dedicated `backend/lab/metabase/` stack.
+
+evidence:
+- root compose is active Dima dev infrastructure;
+- backend/lab compose is a separate SQL Server restore environment with its own data/backups lifecycle;
+- P2 requires Metabase + dedicated application Postgres + representative analytics DB and no product routing;
+- isolation reduces accidental dependency and makes teardown/backup tests reproducible.
+
+decision:
+Create a dedicated `backend/lab/metabase/` stack. Do not modify either existing compose file in M2.
+
+scope:
+M2/P2 lab only.
+
+invariants:
+- private lab network;
+- independent persistent app DB;
+- no Dima product import/routing;
+- exact runtime release + immutable digest required before compose implementation.
+
+rejected_shortcuts:
+- use `latest`;
+- reuse Dima control-plane DB as Metabase app DB;
+- attach Metabase directly to production/customer data for bootstrap;
+- treat process health as Agent API capability.
+
+revisit_condition:
+Production packaging is a later decision after P3A/P8 evidence.
+
+status: SEALED.
