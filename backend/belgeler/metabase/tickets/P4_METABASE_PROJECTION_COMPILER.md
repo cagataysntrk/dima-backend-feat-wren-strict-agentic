@@ -117,3 +117,10 @@ outside the current contract.
 Pinned-live output still differs after exact `lib/uuid` removal. Only structured diff diagnostics
 are authorized until the exact non-UUID path is observed. No additional normalization allowlist
 entry may be added speculatively.
+
+
+## Aggregation-reference runtime identity correction
+
+DMP-P4-RED-004 root cause is proven. Apply DMP-DEC-0015 only: same-stage aggregation-reference UUID
+targets may be stabilized to their aggregation index when they exactly resolve through that stage's
+aggregation `lib/uuid` map. No UUID-shape heuristic or broader field removal is permitted.

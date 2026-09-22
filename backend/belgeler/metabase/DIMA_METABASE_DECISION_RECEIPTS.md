@@ -462,3 +462,45 @@ interpretation from string content. P4 must preserve the certified equality payl
 a sentinel/keyword patch table.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0015 — aggregation references stabilize by same-stage aggregation index, not UUID shape
+
+date: 2026-09-22
+
+evidence:
+Pinned Metabase v0.63.18 live output showed the remaining canonical drift at:
+
+`$.stages[0].order-by[0][2][2]`
+
+The portable P4 query expresses ranking as:
+
+`["aggregation", {}, 0]`
+
+Pinned v0.63.18 representations repair converts integer aggregation references into canonical
+aggregation UUID references. Metabase's own `metabase.lib.equality` stage comparison explicitly
+builds `aggregation UUID -> index` maps on each side and compares aggregation references by their
+same-stage index rather than by raw UUID value.
+
+decision:
+Dima durable canonical stabilization may rewrite only an aggregation-reference target that satisfies
+**all** of these conditions:
+1. clause head is exactly `"aggregation"`;
+2. the target is a string;
+3. the target exactly matches a `lib/uuid` belonging to one aggregation clause in the same stage;
+4. that same-stage aggregation UUID mapping is unique.
+
+The stable form rewrites that target to its 0-based same-stage aggregation index, then the existing
+exact-key `lib/uuid` removal runs.
+
+No UUID-format recognition is used. Unknown/unmatched aggregation-reference strings remain unchanged
+and therefore continue to participate in exact equality/fingerprinting.
+
+reason:
+This mirrors the pinned runtime's own aggregation-reference equality semantics and reverses the
+documented index -> runtime UUID representation rewrite without treating arbitrary UUID-looking
+values as volatile.
+
+status: SEALED.

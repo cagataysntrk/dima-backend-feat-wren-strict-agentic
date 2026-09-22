@@ -512,3 +512,22 @@ P5                                 = BLOCKED
 ```
 
 No new volatile field is authorized. Next step is diagnostic-only exact path/value capture.
+
+
+---
+
+## P4 RED-004 root cause proven
+
+```text
+diagnostic SHA                    = 118adca3441a8b08503cda06020679aaf39f057b
+diagnostic workflow               = 35752908054
+exact drift path                  = $.stages[0].order-by[0][2][2]
+portable ref                      = ["aggregation", {}, 0]
+canonical ref                     = ["aggregation", {...}, "<aggregation lib/uuid>"]
+pinned Metabase equality          = aggregation UUID -> same-stage index
+general UUID stripping            = FORBIDDEN
+authorized stabilization          = exact same-stage aggregation ref only
+P5                                = BLOCKED
+```
+
+DMP-DEC-0015 is now the only authorized correction for this drift.

@@ -1137,3 +1137,35 @@ forbidden:
 
 status:
 `OPEN / DIAGNOSTIC-ONLY PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P4-RED-004 classification update — exact drift identified
+
+diagnostic_sha: `118adca3441a8b08503cda06020679aaf39f057b`  
+diagnostic_run: `35752908054`
+
+observed_exact_difference:
+```text
+path   = $.stages[0].order-by[0][2][2]
+first  = 59254553-ad13-4b66-9167-272a273a24b9
+second = 2c05c7b5-d204-4905-b30f-91da325390b1
+```
+
+portable_source_shape:
+`["aggregation", {}, 0]`
+
+root_cause:
+Pinned v0.63.18 repair resolves same-stage integer aggregation references to the target aggregation's
+runtime `lib/uuid`. Because aggregation clause `lib/uuid` is freshly generated per normalization,
+the corresponding aggregation-reference target is also runtime-volatile. Pinned Metabase equality
+itself compares these references by mapping each side's aggregation UUID back to its stage index.
+
+authorized_correction:
+Implement only DMP-DEC-0015's exact same-stage aggregation-ref UUID -> index stabilization, followed
+by existing exact-key `lib/uuid` stripping. Add negative tests proving unmatched UUID-like values
+and similar-looking keys are not normalized.
+
+status:
+`ROOT CAUSE PROVEN / NARROW PATCH AUTHORIZED`.
