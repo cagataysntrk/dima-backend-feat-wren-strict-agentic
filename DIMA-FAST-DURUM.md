@@ -8,6 +8,9 @@ Branch: `feat/dima-metabase-product-fast-track`
 PRE_SEAL_HEAD:
 `9faa65eb8ac830285a55ce93940daf68da13f699`
 
+OBSERVED_BRANCH_HEAD:
+`0e0a948202eac24bbdca05c954764d8a370f3d89`
+
 CURRENT_PRODUCT_GATE:
 `FT-004 — RUN LIFECYCLE / STREAMING / CANCEL`
 
@@ -15,10 +18,22 @@ FT-003_FINAL:
 `CLOSED / GREEN`
 
 FT-004:
-`OPEN / PREDEVELOPMENT NEXT`
+`IMPLEMENTING / CORE RE-PROOF IN PROGRESS`
+
+FT-004_INITIAL_CORE_RED:
+`35778100380`
+
+FT-004_INITIAL_RED_CLASS:
+`WAITING_CLARIFICATION_CANCEL_STATE_MACHINE`
+
+FT-004_CORRECTIVE_SHA:
+`0e0a948202eac24bbdca05c954764d8a370f3d89`
+
+FT-004_CORE_RERUN:
+`35778348082 — QUEUED/IN_PROGRESS`
 
 OPEN_RED:
-`NONE`
+`FT-004 core rerun not yet certified`
 
 TARGET:
 `Dima-native Intelligence Workspace on Metabase Analytics Substrate`
@@ -155,16 +170,40 @@ Pilot-level broader model benchmark is still later roadmap work; the small FT-00
 - Dima owns user-facing analyst UX;
 - Metabase remains hidden OSS analytics substrate.
 
+## FT-004 CURRENT IMPLEMENTATION
+
+Implemented on initial core SHA:
+`c14c60fc2c718212b6a78ab98fe47c34d47e2e40`
+
+Current owners:
+- `app.fast.run_models`;
+- `app.fast.run_store`;
+- `app.fast.run_manager`;
+- `app.fast.run_router`;
+- Fast-only application integration;
+- lifecycle/API/SSE provider-free tests;
+- dedicated FT-004 core workflow.
+
+First core run:
+`35778100380 RED`
+
+Root cause:
+`WAITING_CLARIFICATION -> CANCEL_REQUESTED` did not finalize to `CANCELLED` because cancellation logic checked the post-transition state instead of the pre-cancel state.
+
+Failure receipt:
+`FT_004_WAITING_CLARIFICATION_CANCEL_001.md`
+
+Corrective SHA:
+`0e0a948202eac24bbdca05c954764d8a370f3d89`
+
 ## NEXT_EXACT_ACTION
 
-1. Open `FT_004_PREDEVELOPMENT_REVIEW.md`.
-2. Add Dima-owned run lifecycle without changing FT-003 cognition/query semantics.
-3. Target API:
-   - `POST /fast/runs`
-   - `GET /fast/runs/{id}`
-   - `GET /fast/runs/{id}/events` via SSE
-   - `POST /fast/runs/{id}/cancel`
-4. Preserve `POST /fast/ask` as compatibility / simple quick adapter.
-5. Enforce terminal exactly once.
-6. Add cancellation, interruption, reconnect, retry lineage and duplicate-event handling.
-7. Do not add new semantic logic, aggregation families, joins, Analyst, Root Cause or conversation semantics in FT-004.
+1. Require FT-004 core rerun `35778348082` GREEN.
+2. Verify lifecycle/API/SSE and FT-003 regression steps all execute.
+3. Add FT-004 live pinned-Metabase lifecycle sentinel.
+4. Prove real run creation -> execution -> COMPLETED -> SSE replay.
+5. Prove clarification -> WAITING_CLARIFICATION and cancel lifecycle.
+6. Recheck FT-003 core/live/browser/Gateway regressions.
+7. Seal FT-004 only after live lifecycle receipt is GREEN.
+8. Then open FT-005 conversation predevelopment.
+9. Do not add new semantic logic, aggregation families, joins, Analyst, Root Cause or conversation semantics in FT-004.
