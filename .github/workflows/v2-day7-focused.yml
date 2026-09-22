@@ -14,6 +14,7 @@ name: v2-day7-focused
       - "backend/app/v2/research_state.py"
       - "backend/app/v2/research_tasks.py"
       - "backend/app/v2/research_fanout.py"
+      - "backend/app/v2/cross_domain_join.py"
       - "backend/app/v2/manager_runtime.py"
       - "backend/app/v2/manager_models.py"
       - "backend/app/v2/manager_loop.py"
@@ -82,6 +83,10 @@ jobs:
       - name: Governed same-domain Research tools
         working-directory: backend
         run: pytest -q tests/test_v2_day7_same_domain_tools.py
+
+      - name: CrossDomainJoinGate attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_cross_domain_join_gate.py
 
       - name: Manager loop Research contract mode
         working-directory: backend
