@@ -1,0 +1,106 @@
+{
+  "provenance": {
+    "source": "pinned-metabase-lab-via-fast-gateway",
+    "gateway_tested_commit": "6c845b3dfdde70fa54590cef58a7a26c7b3dc6e5",
+    "metabase_runtime": "v0.63.18",
+    "metabase_image_digest": "sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73",
+    "data_class": "synthetic",
+    "note": "Sanitized rendering fixture. CI regenerates the same rows through the real pinned Metabase Agent API."
+  },
+  "result": {
+    "columns": [
+      "id",
+      "order_date",
+      "region",
+      "channel",
+      "amount"
+    ],
+    "rows": [
+      {
+        "id": 1,
+        "order_date": "2026-01-01",
+        "region": "North",
+        "channel": "Web",
+        "amount": 107
+      },
+      {
+        "id": 2,
+        "order_date": "2026-01-02",
+        "region": "South",
+        "channel": "Store",
+        "amount": 114
+      },
+      {
+        "id": 3,
+        "order_date": "2026-01-03",
+        "region": "East",
+        "channel": "Partner",
+        "amount": 121
+      },
+      {
+        "id": 4,
+        "order_date": "2026-01-04",
+        "region": "West",
+        "channel": "Web",
+        "amount": 128
+      },
+      {
+        "id": 5,
+        "order_date": "2026-01-05",
+        "region": "North",
+        "channel": "Store",
+        "amount": 135
+      },
+      {
+        "id": 6,
+        "order_date": "2026-01-06",
+        "region": "South",
+        "channel": "Partner",
+        "amount": 142
+      },
+      {
+        "id": 7,
+        "order_date": "2026-01-07",
+        "region": "East",
+        "channel": "Web",
+        "amount": 149
+      },
+      {
+        "id": 8,
+        "order_date": "2026-01-08",
+        "region": "West",
+        "channel": "Store",
+        "amount": 156
+      },
+      {
+        "id": 9,
+        "order_date": "2026-01-09",
+        "region": "North",
+        "channel": "Partner",
+        "amount": 163
+      },
+      {
+        "id": 10,
+        "order_date": "2026-01-10",
+        "region": "South",
+        "channel": "Web",
+        "amount": 170
+      },
+      {
+        "id": 11,
+        "order_date": "2026-01-11",
+        "region": "East",
+        "channel": "Store",
+        "amount": 177
+      },
+      {
+        "id": 12,
+        "order_date": "2026-01-12",
+        "region": "West",
+        "channel": "Partner",
+        "amount": 184
+      }
+    ],
+    "row_count": 12
+  }
+}

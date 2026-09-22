@@ -1,0 +1,261 @@
+name: dima-fast-ui-rendering-poc
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ui-rendering-poc.yml"
+      - "dima-frontend-demo-master/src/app/fast-poc/**"
+      - "dima-frontend-demo-master/src/features/fast-poc/**"
+      - "dima-frontend-demo-master/e2e/fast-poc-e2e.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rendering-poc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify isolated Fast UI scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "feat/dima-metabase-product-fast-track"
+          changed="$(git diff --name-only HEAD^ HEAD)"
+          printf '%s\n' "$changed"
+          unexpected="$(
+            printf '%s\n' "$changed" |
+              grep -Ev '^(\.github/workflows/dima-fast-ui-rendering-poc\.yml|dima-frontend-demo-master/src/app/fast-poc/|dima-frontend-demo-master/src/features/fast-poc/|dima-frontend-demo-master/e2e/fast-poc-e2e\.mjs)' || true
+          )"
+          if [ -n "$unexpected" ]; then
+            echo "FT-UI-002 forbidden changed paths:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend for Gateway provenance proof
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Start pinned Metabase OSS lab
+        working-directory: backend/lab/metabase
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env up -d
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+
+      - name: Regenerate and verify real Metabase rendering fixture
+        working-directory: backend
+        env:
+          METABASE_PORT: "3300"
+          MB_ADMIN_EMAIL: "admin@dima-lab.local"
+          MB_ADMIN_PASSWORD: "DimaMetabaseLabAdmin!2026"
+        run: |
+          mkdir -p lab/metabase/artifacts
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          import httpx
+
+          from app.fast.auth_context import FastMetabaseAuthContext, FastMetabaseAuthMode
+          from app.fast.metabase_gateway import FastMetabaseGateway
+          from app.fast.metabase_models import FastMetabaseRuntimePolicy
+
+          base_url = f"http://localhost:{os.environ['METABASE_PORT']}"
+          login = httpx.post(
+              base_url + "/api/session",
+              json={
+                  "username": os.environ["MB_ADMIN_EMAIL"],
+                  "password": os.environ["MB_ADMIN_PASSWORD"],
+              },
+              timeout=30,
+          )
+          login.raise_for_status()
+          token = str(login.json()["id"])
+
+          auth = FastMetabaseAuthContext(
+              tenant_id="fast-ui-poc",
+              dima_user_id="fast-ui-poc",
+              principal_id="metabase-admin-lab",
+              mode=FastMetabaseAuthMode.SESSION,
+              secret=token,
+              role_scope_digest="synthetic-lab",
+          )
+
+          with FastMetabaseGateway(
+              base_url=base_url,
+              auth=auth,
+              policy=FastMetabaseRuntimePolicy(max_page_rows=200, max_total_rows_per_run=1000),
+          ) as gateway:
+              found = gateway.search(term_queries=("orders",))
+              table = next(
+                  item for item in found.data
+                  if item.get("type") == "table" and str(item.get("name", "")).lower() == "orders"
+              )
+              database_id = int(table["database_id"])
+              resource = gateway.read_resource((f"metabase://database/{database_id}",)).resources[0]
+              structured = resource.content.structured_output
+              db_name = str(structured["name"])
+              schema = str(table.get("database_schema") or "public")
+              table_name = str(table["name"])
+
+              portable = {
+                  "lib/type": "mbql/query",
+                  "stages": [{
+                      "lib/type": "mbql.stage/mbql",
+                      "source-table": [db_name, schema, table_name],
+                      "limit": 250,
+                  }],
+              }
+
+              pages = []
+              page = gateway.query(portable)
+              pages.append(page)
+              while page.continuation is not None:
+                  page = gateway.continue_query(page.continuation)
+                  pages.append(page)
+
+          cols = pages[0].data.get("cols") or pages[0].data.get("columns") or []
+          names = []
+          for index, col in enumerate(cols):
+              if isinstance(col, dict):
+                  name = (
+                      col.get("name")
+                      or col.get("display_name")
+                      or col.get("display-name")
+                      or f"col_{index}"
+                  )
+              else:
+                  name = str(col)
+              names.append(str(name).lower())
+
+          raw_rows = []
+          for page in pages:
+              raw_rows.extend(page.data.get("rows") or [])
+
+          normalized = []
+          for raw in raw_rows:
+              if isinstance(raw, dict):
+                  row = {str(k).lower(): v for k, v in raw.items()}
+              else:
+                  row = dict(zip(names, raw))
+              if "id" not in row:
+                  continue
+              normalized.append({
+                  "id": int(row["id"]),
+                  "order_date": str(row["order_date"])[:10],
+                  "region": str(row["region"]),
+                  "channel": str(row["channel"]),
+                  "amount": float(row["amount"]),
+              })
+
+          normalized.sort(key=lambda item: item["id"])
+          actual_rows = normalized[:12]
+          assert len(normalized) == 250, len(normalized)
+
+          fixture_path = Path(
+              "../dima-frontend-demo-master/src/features/fast-poc/metabase-result-fixture.json"
+          )
+          fixture = json.loads(fixture_path.read_text())
+          expected_rows = fixture["result"]["rows"]
+
+          assert actual_rows == expected_rows, {
+              "actual": actual_rows,
+              "expected": expected_rows,
+          }
+
+          receipt = {
+              "status": "GREEN",
+              "metabase_runtime": "v0.63.18",
+              "gateway": "FastMetabaseGateway",
+              "source_rows_seen": len(normalized),
+              "fixture_rows_verified": len(actual_rows),
+              "columns": names,
+              "sample": actual_rows,
+          }
+          out = Path("lab/metabase/artifacts/fast-ui-live-result.json")
+          out.write_text(json.dumps(receipt, indent=2) + "\n")
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - name: Upload real-result provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-fast-ui-real-result-${{ github.sha }}
+          path: backend/lab/metabase/artifacts/fast-ui-live-result.json
+          retention-days: 14
+
+      - name: Teardown Metabase lab
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env down -v --remove-orphans || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: dima-frontend-demo-master/pnpm-lock.yaml
+
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.12.1 --activate
+
+      - name: Install frontend
+        working-directory: dima-frontend-demo-master
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: dima-frontend-demo-master
+        run: pnpm build
+
+      - name: Start isolated frontend
+        working-directory: dima-frontend-demo-master
+        shell: bash
+        run: |
+          pnpm exec next start -H 0.0.0.0 -p 3000 >/tmp/dima-fast-poc-next.log 2>&1 &
+          echo $! >/tmp/dima-fast-poc-next.pid
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3000/fast-poc >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/dima-fast-poc-next.log
+          exit 1
+
+      - name: Browser rendering + responsive proof
+        working-directory: dima-frontend-demo-master
+        env:
+          FRONTEND_URL: "http://127.0.0.1:3000/fast-poc"
+        run: node e2e/fast-poc-e2e.mjs
+
+      - name: Show frontend diagnostics
+        if: always()
+        run: |
+          test ! -f /tmp/dima-fast-poc-next.log || tail -200 /tmp/dima-fast-poc-next.log
+          test ! -f /tmp/dima-fast-poc-next.pid || kill "$(cat /tmp/dima-fast-poc-next.pid)" || true
