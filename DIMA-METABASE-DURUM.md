@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P5 CONTRACT CLOSURE CANDIDATE — PINNED LIVE REGRESSION  
-**Product-code development:** P5 CONTRACT IMPLEMENTED; PRODUCTION ACCESS ISSUER DEFERRED TO P10  
+**Current phase:** P5 CONTRACT GREEN — P6 PRE-DEVELOPMENT REVIEW NEXT  
+**Product-code development:** P5 CONTRACT CLOSED GREEN; PRODUCTION ACCESS ISSUER PENDING P10  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -630,3 +630,46 @@ product routing                 = UNCHANGED
 
 Closure candidate adds one missing runtime-identity negative proof and runs the pinned-live
 P3/P3A/P4 suite exactly once. P6 remains blocked until that closure proof is GREEN.
+
+
+---
+
+## P5 contract closure — GREEN
+
+```text
+P5 product implementation SHA        = c8be6720f8f0f908b3cc6459fb817d760d417c8e
+P5 closure candidate SHA             = 94e9b3da892a80253495324b2a256f128b037d1b
+P5 closure workflow                  = 35759691357 = SUCCESS
+governance @ closure candidate       = 35759691408 = SUCCESS
+focused P5 identity/receipt          = 35 PASS
+provider-free P4 regression          = 44 PASS
+M1 critical regression               = 15 PASS
+full M1/Wren @ implementation SHA    = 35759329091 = SUCCESS
+pinned-live P3/P3A/P4                = 3 PASS
+pinned Metabase health/bootstrap     = PASS
+
+ExecutionAccessSnapshot              = COMPLETE CONTRACT
+role/source order invariance         = PASS
+policy/RLS/CLS/DB/security drift     = fingerprint-changing
+missing access/runtime               = HARD FAIL
+authority/projection/intent mismatch = HARD FAIL
+tenant/principal/roles/context       = HARD FAIL
+source-resource mismatch             = HARD FAIL
+query/result/event cardinality       = HARD FAIL
+receipt_fingerprint                  = durable execution-content identity
+receipt_id                           = execution occurrence identity
+executed_at                          = event metadata only
+ephemeral handle/session identity    = excluded
+regex/fuzzy/morphology resolver      = 0
+production routing change            = 0
+
+DMP-P5-BLOCK-001                     = OPEN / P10 SECURITY MAPPING GATE
+production official receipt issuance = BLOCKED UNTIL P10
+source branch                        = READ ONLY @ 875c446476b6ae4907f5cac5d1c7b512e5157538
+```
+
+P5 is **CONTRACT GREEN**. This certifies the immutable access snapshot contract and strict receipt
+sealer only. It does not certify a production access issuer, tenant isolation, permission parity,
+Metabase primary routing, or Wren retirement.
+
+**Next:** P6 pre-development review + frozen 80-case parity corpus. P10 issuer blocker remains separate.

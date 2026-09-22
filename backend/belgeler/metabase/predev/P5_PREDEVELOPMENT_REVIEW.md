@@ -356,3 +356,27 @@ P5 contract implementation is authorized by the already-GREEN review governance.
 
 Production effective-access issuer/mapping implementation is P10-owned and requires its own
 predevelopment/security gate. No P10 work is authorized inside P5.
+
+
+---
+
+## 15. Closure — P5 CONTRACT GREEN
+
+Certified:
+- immutable `ExecutionAccessSnapshot` with required non-secret security-lens fields;
+- deterministic `role_set_digest` and `execution_access_fingerprint`;
+- strict `DimaQueryReceiptSealer`;
+- separate query/access/content/event identities per DMP-DEC-0018;
+- canonical JSON result hashing with object-key ordering normalized and row/list ordering preserved;
+- one receipt per executed query step, including explicit primary/base/reference role;
+- fail-closed mismatch matrix;
+- backward-compatible M1 receipt shell without promoting M1 compatibility access aliases.
+
+Proof:
+`35759691357 = SUCCESS` with 35 focused P5, 44 provider-free P4, 15 M1 critical and 3 pinned-live
+P3/P3A/P4 tests. Full M1/Wren at the same application-code SHA:
+`35759329091 = SUCCESS`.
+
+Not certified:
+production access issuer, tenant/principal mapping, RLS/CLS live parity, revocation, cache isolation.
+Those remain P10-owned under DMP-P5-BLOCK-001.

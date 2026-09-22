@@ -1280,3 +1280,42 @@ status:
 
 P5 may close **CONTRACT GREEN** without a production issuer, but production official receipt issuance
 remains prohibited until this blocker closes at P10.
+
+
+---
+
+## P5 contract closure matrix
+
+product_implementation_sha: `c8be6720f8f0f908b3cc6459fb817d760d417c8e`  
+closure_candidate_sha: `94e9b3da892a80253495324b2a256f128b037d1b`  
+p5_workflow: `35759691357 = SUCCESS`  
+governance: `35759691408 = SUCCESS`  
+full_m1_wren: `35759329091 = SUCCESS`
+
+```text
+ExecutionAccessSnapshot complete      PASS
+required security fields/defaults     PASS / NO MAGIC DEFAULTS
+role order invariant                  PASS
+source-ref order invariant            PASS
+policy/RLS/CLS/DB/security sensitivity PASS
+missing access snapshot               HARD FAIL
+missing runtime identity              HARD FAIL
+authority/query identity mismatch     HARD FAIL
+tenant/principal/role mismatch        HARD FAIL
+semantic-context mismatch             HARD FAIL
+source-resource mismatch              HARD FAIL
+query/result/event cardinality        HARD FAIL
+stable receipt_fingerprint            PASS
+new execution event -> new receipt_id PASS
+result mutation -> fingerprint change PASS
+comparison step receipts              PASS
+ephemeral identity excluded           PASS
+regex/fuzzy/morphology dependency     0
+pinned-live P3/P3A/P4                 3 PASS
+```
+
+P5 contract status:
+`CLOSED GREEN`.
+
+DMP-P5-BLOCK-001 status is unchanged:
+`OPEN / TRANSFERRED TO P10 SECURITY MAPPING GATE`.

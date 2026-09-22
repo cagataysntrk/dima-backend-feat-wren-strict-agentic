@@ -3,7 +3,7 @@
 **Milestone:** P5  
 **Owner:** Dima durable query/result/access identity  
 **Branch:** `feat/dima-metabase-platform`  
-**Status:** CONTRACT IMPLEMENTED / CLOSURE CANDIDATE LIVE GATE
+**Status:** CLOSED GREEN — CONTRACT; PRODUCTION ISSUER PENDING P10
 
 ## Goal
 
@@ -59,3 +59,25 @@ Implementation SHA `c8be6720f8f0f908b3cc6459fb817d760d417c8e`:
 - governance `35759329034 = SUCCESS`.
 
 One closure-candidate live P3/P3A/P4 regression remains before P5 CONTRACT GREEN.
+
+
+---
+
+## Closure receipt
+
+```text
+implementation SHA              c8be6720f8f0f908b3cc6459fb817d760d417c8e
+closure candidate SHA           94e9b3da892a80253495324b2a256f128b037d1b
+P5 workflow                     35759691357 = SUCCESS
+governance                      35759691408 = SUCCESS
+focused P5                      35 passed
+provider-free P4               44 passed
+M1 critical                     15 passed
+full M1/Wren                    35759329091 = SUCCESS
+pinned-live P3/P3A/P4           3 passed
+```
+
+Exit gate: **P5 CONTRACT GREEN**.
+
+DMP-P5-BLOCK-001 remains OPEN at P10. Production official receipt issuance is still prohibited until
+the production effective-access issuer/mapping is certified.
