@@ -1076,3 +1076,46 @@ forbidden fixes for both families:
 status:
 `OPEN — TWO GENERIC PRODUCT CONTRACT PATCHES AUTHORIZED`.
 
+
+
+---
+
+## Receipt — D65-SI-CONTRACT-ATTACK-002 — stale exact-duplicate test oracle
+
+run_id: `35737623724`
+
+tested_sha: `70c7a92b2d6198e03ecbcfe10681dbb6667dd927`
+
+observed:
+```text
+69 PASS / 1 FAIL
+```
+
+only failure:
+`test_exact_duplicate_alias_stays_ambiguous_even_with_source_context`.
+
+failure_class:
+`EVAL_ORACLE / STALE EXPECTATION`
+
+root_cause:
+The old regression test encoded the former contract:
+`>1 exact always terminates AMBIGUOUS_EXACT even with immutable context`.
+
+The authorized generic architecture patch from receipt `D65-SI-CONTRACT-ATTACK-001` deliberately
+changed only that branch:
+`>1 exact + additional immutable context → bounded provider over exact candidates only`.
+
+New attack tests passed under this run; the old expectation is now contradictory.
+
+single_owner:
+`backend/tests/test_v2_day6_5_semantic_linker.py`
+
+allowed patch:
+test-only removal/update of the stale assertion.
+
+product patch:
+NONE.
+
+status:
+`OPEN — TEST-ONLY PATCH AUTHORIZED`.
+
