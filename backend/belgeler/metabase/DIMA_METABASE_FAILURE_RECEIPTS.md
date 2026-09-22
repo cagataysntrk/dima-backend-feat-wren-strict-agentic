@@ -187,3 +187,71 @@ real Wren v3-v2 AnalyticsIR/query/result parity plus retained v2 sentinels.
 
 status:
 `CLASSIFIED / ROOT CONTRACT PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-M1-RED-003 — AST oracle indentation on method source
+
+receipt_id: `DMP-M1-RED-003`  
+ticket: `M1-P1-001`  
+tested_sha: `a9f20c482d262b95a37fee9d26b8f27002dab67c`  
+run_id: `35728504998`
+
+observed_failure:
+`test_wren_substrate_has_no_semantic_handle_or_raw_language_dependency` raised
+`IndentationError: unexpected indent` while parsing `inspect.getsource(bound_class_method)`.
+
+failure_stage:
+architecture test oracle only.
+
+failure_class:
+`EVAL_ORACLE`
+
+classification_evidence:
+- compile = PASS;
+- provider-free v3 M1 contract gate = PASS;
+- the real v3-v2 Wren parity test passed after the candidate-provenance contract fix;
+- both retained v2 Wren sentinels also passed in the same step;
+- the only remaining failure occurs before the AST assertion because method source retains class indentation.
+
+single_owner:
+`backend/tests/test_v3_m1_wren_adapter.py` AST inspection helper.
+
+root_cause:
+method-level `inspect.getsource` output was not dedented before `ast.parse`.
+
+failure_family:
+architecture/source AST tests on nested/indented definitions.
+
+forbidden_patch_alternatives:
+- product code changes;
+- substrate changes;
+- weakening no-raw-language/no-semantic-resolution invariant;
+- modifying v2.
+
+allowed_files_to_touch:
+- `backend/tests/test_v3_m1_wren_adapter.py`
+
+files_not_to_touch:
+- `backend/app/v3/**` for this failure
+- `backend/app/v2/**`
+- source branch
+
+invariant_being_fixed:
+architecture oracle must parse the inspected source correctly while preserving the same data-flow assertions.
+
+focused_proof:
+rerun architecture test.
+
+family_or_live_proof:
+full M1 workflow.
+
+status:
+`CLASSIFIED / TEST-ONLY PATCH AUTHORIZED`.
+
+### DMP-M1-RED-002 interim proof
+
+On run `35728504998`, the previously failing real v3-v2 Wren parity assertion passed after
+`source_candidate_id` was preserved in `ResolvedAnalyticsIntent`. Final closure waits for a
+fully GREEN M1 workflow; no further product patch is currently justified.
