@@ -78,7 +78,12 @@ class StructuredJsonFastCognition:
             "it as COUNT or SUM. For an UNSUPPORTED draft use a structurally valid neutral COUNT "
             "placeholder because execution will stop before metadata/query work. Supported time "
             "kinds are NONE, LAST_N_DAYS, CURRENT_MONTH, PREVIOUS_MONTH, ABSOLUTE_DATE_RANGE. "
-            "Search terms should describe the relevant business entity for metadata retrieval. "
+            "Search terms are metadata-discovery lookup terms, not a copy of user wording. "
+            "Identify the primary business/data entity and generate concise entity/table concepts. "
+            "Retain useful user-language entity terminology when helpful; when the user's language "
+            "may differ from database/schema metadata, also include likely English metadata equivalents. "
+            "Do not pollute table retrieval with measure or dimension words unless they are needed "
+            "to distinguish the resource. Use at most four search terms. "
             "For supported SUM provide a short measure hint; for supported COUNT measure_hint must "
             "be null. breakdown_hint is null unless the user explicitly asks for grouping."
         )
