@@ -160,6 +160,17 @@ class ManagerCoreAnalyticsAdapter:
             else None
         )
 
+        # ResolvedComparison is already typed temporal authority and always carries
+        # its base period.  Mirror the canonical Core builder: an implicit comparison
+        # base becomes the primary period instead of accidentally querying all-time.
+        if comparison is not None:
+            if period is None:
+                period = comparison.base_period
+            elif period != comparison.base_period:
+                raise ManagerCoreAdapterError(
+                    "comparison base period does not match governed period handle"
+                )
+
         if (args.ranking_direction is None) != (args.limit is None):
             raise ManagerCoreAdapterError("ranking direction ve limit birlikte verilmelidir")
         ranking = None
