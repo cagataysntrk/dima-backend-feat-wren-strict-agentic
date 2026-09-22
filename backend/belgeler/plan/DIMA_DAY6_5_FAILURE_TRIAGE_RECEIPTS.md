@@ -840,3 +840,63 @@ No product temporal architecture patch is justified by this family.
 
 status:
 `CLOSED`.
+
+
+---
+
+## Receipt — D65-SI-FOCUSED-001 — focused provider-free oracle RED
+
+run_id: `35718301249`
+
+tested_sha: `99bd9935b972b8c04336e5ce53fe805ca491f7f1`
+
+observed:
+```text
+compile                 PASS
+focused tests           21 PASS / 4 FAIL
+provider/LLM calls      0
+```
+
+failure_class: `EVAL_ORACLE`
+
+failures:
+1. `test_standard_lane_module_has_no_research_authority_dependencies`
+   - raw `inspect.getsource()` searched forbidden class-name strings;
+   - names occur only in the module docstring explaining the prohibition;
+   - actual imports are clean.
+2. `test_standard_execution_module_has_no_research_authority_dependency`
+   - same raw-source/docstring false positive;
+   - actual imports are clean.
+3. `test_standard_intent_draft_is_closed_and_typed`
+   - fixture supplied enum name `PERFORMANCE`;
+   - Pydantic contract correctly requires enum value `performance`.
+4. `test_research_capability_stops_without_standard_authority`
+   - same stale fixture supplied `RELATIONSHIP` instead of `relationship`;
+   - draft validation failed before the research-routing assertion.
+
+single_owner:
+`backend/tests/test_v2_day6_5_standard_lane.py` and
+`backend/tests/test_v2_day6_5_standard_execution.py`.
+
+root_cause:
+New SI contract is correct; focused tests encoded source-text and enum-name assumptions instead of
+import AST / actual enum values.
+
+product/architecture evidence:
+- all SI modules compiled;
+- no provider/model/DB execution was involved;
+- no evidence of Standard authority, builder, coverage or execution semantic failure.
+
+allowed patch:
+- test-only: inspect Python imports via AST instead of docstring/source substring;
+- test fixtures use canonical enum values.
+
+forbidden patch:
+- editing `standard_lane.py` or `standard_execution.py` to hide words from docstrings;
+- weakening Pydantic enums;
+- changing capability registry;
+- semantic/prompt/Resolver changes.
+
+status:
+`CLASSIFIED / TEST-ONLY PATCH AUTHORIZED`.
+
