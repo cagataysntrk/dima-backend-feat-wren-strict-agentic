@@ -1,4 +1,4 @@
-name: v2-day6-5-workers1-focused-live-once
+name: v2-day6-5-workers1-focused-live-implicit-comparison-once
 
 "on":
   push:
@@ -14,7 +14,7 @@ jobs:
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 15
     env:
-      TARGET_SHA: "dea7ba673ba64280c3e58037705c31db99c733aa"
+      TARGET_SHA: "f5ca942f83aaee0806d7119957c543ab17a59a37"
       DIMA_LLM_PROVIDER: "openrouter"
       DIMA_V2_RESEARCH_MANAGER_PROVIDER: "openrouter"
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
