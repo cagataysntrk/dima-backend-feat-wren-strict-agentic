@@ -190,10 +190,11 @@ export function ChatView({
                       </p>
                     </div>
                     {e.status === "pending" ? (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+                      <div className="flex items-center gap-2.5 text-sm" role="status">
                         {/* libraries.dev thinking orb — follows the .dark class and prefers-reduced-motion on its own. */}
-                        <ThinkingOrb state="searching" size={20} color="#7e38f8" aria-hidden />
-                        Veriye bakılıyor…
+                        <ThinkingOrb state="searching" size={32} color="#7e38f8" aria-hidden />
+                        {/* Same shimmer as apps/web's thinking text (components/ai/thinking.tsx). */}
+                        <span className="dima-shimmer font-medium">Veriye bakılıyor…</span>
                       </div>
                     ) : e.status === "error" ? (
                       <p role="alert" className="text-sm text-destructive">
