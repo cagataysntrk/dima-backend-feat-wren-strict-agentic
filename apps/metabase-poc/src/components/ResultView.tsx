@@ -118,6 +118,7 @@ export function ResultView({
   size = "normal",
   actions,
   onDrill,
+  onZoom,
   display,
   goal,
 }: {
@@ -131,6 +132,8 @@ export function ResultView({
   actions?: React.ReactNode;
   /** POC drill-down: (column, clicked value). Only offered for one categorical dimension. */
   onDrill?: (column: string, value: string) => void;
+  /** POC zoom: called with the raw time bucket (e.g. "2026-03-01") of a clicked point. */
+  onZoom?: (value: string) => void;
   /** Engine card display type (e.g. "smartscalar", "funnel"); picks the initial view. */
   display?: string;
   /** Goal for "progress" cards. */
@@ -358,7 +361,13 @@ export function ResultView({
           onPointClick={
             onDrill && a.primaryDim && a.primaryDim !== a.timeCol && a.dims.length === 1
               ? (x) => onDrill(a.primaryDim!, x)
-              : undefined
+              : onZoom && a.timeCol && a.dims.length === 1
+                ? (_label, index) => {
+                    // Time points are plotted in chronological order; map the index back to the raw bucket.
+                    const raw = [...new Set(result.rows.map((r) => String(r[a.timeCol!])))].sort()[index];
+                    if (raw) onZoom(raw);
+                  }
+                : undefined
           }
         />
       ) : (
@@ -388,7 +397,7 @@ function ChartOrTable({
   lowerSet: ReadonlySet<string>;
   /** Grafik kutusu ölçüsü — satır içi stil (bkz. SIZE_BOX). */
   box: React.CSSProperties;
-  onPointClick?: (x: string) => void;
+  onPointClick?: (x: string, index: number) => void;
 }) {
   // Isı haritası ve panelli görünüm Recharts primitifi değil — kendi bileşenleri
   // var. Geri kalan her tip <Chart> façade'ından geçer (DESIGN.md: tek motor).

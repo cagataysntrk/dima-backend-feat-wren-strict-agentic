@@ -121,6 +121,15 @@ export const gateway = {
     api<{ result: QueryResult }>(`/api/cards/${cardId}/drill`, json({ column, value, scope })).then(
       (r) => r.result,
     ),
+  zoom: (cardId: number, value: string, scope?: DrillScope) =>
+    api<{ result: QueryResult; unit: string; range: [string, string] }>(
+      `/api/cards/${cardId}/zoom`,
+      json({ value, scope }),
+    ),
+  breakouts: (cardId: number) =>
+    api<{ fields: { id: number; name: string; label: string }[] }>(`/api/cards/${cardId}/breakouts`).then((r) => r.fields),
+  breakout: (cardId: number, value: string, fieldId: number, scope?: DrillScope) =>
+    api<{ result: QueryResult; by: string }>(`/api/cards/${cardId}/breakout`, json({ value, fieldId, scope })),
   runSql: (sql: string) => api<{ result: QueryResult }>("/api/sql/run", json({ sql })).then((r) => r.result),
   saveSql: (name: string, sql: string) => api<{ id: number }>("/api/sql/save", json({ name, sql })),
   upload: (file: File) => {

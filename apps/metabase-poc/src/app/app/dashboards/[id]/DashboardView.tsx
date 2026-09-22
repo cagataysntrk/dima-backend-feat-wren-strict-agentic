@@ -179,6 +179,11 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
             onDrill={
               editing ? undefined : (column, value) => setDrill({ cardId: w.cardId, title: w.title, column, value, scope })
             }
+            onZoom={
+              editing
+                ? undefined
+                : (value) => setDrill({ cardId: w.cardId, title: w.title, column: "", value, scope, mode: "time" })
+            }
           />
         ) : null}
       </section>
@@ -280,7 +285,7 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
           )}
           {!editing && widgets.length > 0 && (
             <p className="text-xs text-muted-foreground">
-              Detay satırlarını görmek için bir sütuna tıklayın. Filtreler bağlantıya kaydedilir.
+              Keşfetmek için bir sütuna ya da noktaya tıklayın. Filtreler bağlantıya kaydedilir.
             </p>
           )}
         </>

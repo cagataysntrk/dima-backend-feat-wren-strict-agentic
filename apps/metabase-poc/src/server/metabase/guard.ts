@@ -64,6 +64,8 @@ export interface EngineCard {
   database_id: number;
   table_id: number | null;
   query_type: string;
+  /** MBQL 5 query (v0.58 storage format). */
+  dataset_query?: { database: number; stages?: Record<string, unknown>[] } & Record<string, unknown>;
   archived: boolean;
   updated_at: string;
   visualization_settings?: Record<string, unknown>;

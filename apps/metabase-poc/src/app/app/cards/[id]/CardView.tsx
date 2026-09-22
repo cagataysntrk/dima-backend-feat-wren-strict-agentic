@@ -60,10 +60,15 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
                   ? (column, value) => setDrill({ cardId: id, title: q.data.card.name, column, value })
                   : undefined
               }
+              onZoom={
+                q.data.drillable
+                  ? (value) => setDrill({ cardId: id, title: q.data.card.name, column: "", value, mode: "time" })
+                  : undefined
+              }
             />
           </div>
           {q.data.drillable && (
-            <p className="text-xs text-muted-foreground">Detay satırlarını görmek için bir sütuna tıklayın.</p>
+            <p className="text-xs text-muted-foreground">Keşfetmek için bir sütuna ya da noktaya tıklayın: kategoriler kırılım ve satırları, dönemler günlük/aylık görünümü açar.</p>
           )}
         </>
       )}

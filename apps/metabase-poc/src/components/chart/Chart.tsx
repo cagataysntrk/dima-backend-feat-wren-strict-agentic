@@ -166,8 +166,8 @@ export function Chart({
    *  utility sınıfıyla verilince üretilen CSS'e girmiyor ve kutu 0 yükseklikte
    *  çöküyordu; bu yüzden ölçü sınıf değil stil olarak geçiyor. */
   box?: React.CSSProperties;
-  /** POC: drill-down. Called with the clicked category (x value) of a bar. */
-  onPointClick?: (x: string) => void;
+  /** POC: drill-down / zoom. Called with the clicked x label and its index in the data. */
+  onPointClick?: (x: string, index: number) => void;
 }) {
   const data = useMemo(
     () => buildSeries(result, analysis, kind, measure),
@@ -197,12 +197,19 @@ export function Chart({
   // POC: drill-down hook (not in apps/web). Bars only — the clicked category is
   // read from the bar payload, so it is the raw value, not a formatted label.
   const barClick = onPointClick
-    ? (item: { payload?: Record<string, unknown> }) => {
+    ? (item: { payload?: Record<string, unknown> }, index: number) => {
         const v = item?.payload?.[data.xKey];
-        if (v != null) onPointClick(String(v));
+        if (v != null) onPointClick(String(v), index);
       }
     : undefined;
   const barCursor = onPointClick ? "pointer" : undefined;
+  // Line/area: the whole plot is the hit target (the crosshair's active point).
+  const chartClick = onPointClick
+    ? (state: { activeLabel?: unknown; activeTooltipIndex?: unknown } | null) => {
+        const i = Number(state?.activeTooltipIndex);
+        if (state?.activeLabel != null && Number.isInteger(i)) onPointClick(String(state.activeLabel), i);
+      }
+    : undefined;
 
   const colorIndex = new Map(data.series.map((s, i) => [s.key, i]));
   const colorOf = (key: string) => seriesColor(colorIndex.get(key) ?? 0);
@@ -535,7 +542,7 @@ export function Chart({
   if (kind === "line") {
     return (
       <ChartContainer config={config} {...boxProps}>
-        <LineChart data={data.data} margin={{ left: 4, right: 12, top: 8, bottom: 0 }}>
+        <LineChart data={data.data} margin={{ left: 4, right: 12, top: 8, bottom: 0 }} onClick={chartClick} style={{ cursor: barCursor }}>
           <CartesianGrid vertical={false} stroke={GRID} strokeOpacity={0.6} />
           <XAxis dataKey={data.xKey} tick={axisTick} tickLine={false} axisLine={false} tickMargin={8} />
           <YAxis
@@ -618,7 +625,7 @@ export function Chart({
   // fallback: area (only reached if a caller passes an unexpected kind we can chart)
   return (
     <ChartContainer config={config} {...boxProps}>
-      <AreaChart data={data.data} margin={{ left: 4, right: 12, top: 8, bottom: 0 }}>
+      <AreaChart data={data.data} margin={{ left: 4, right: 12, top: 8, bottom: 0 }} onClick={chartClick} style={{ cursor: barCursor }}>
         <CartesianGrid vertical={false} stroke={GRID} strokeOpacity={0.6} />
         <XAxis dataKey={data.xKey} tick={axisTick} tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis

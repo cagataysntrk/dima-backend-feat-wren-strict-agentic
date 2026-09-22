@@ -197,6 +197,27 @@ function isFieldRef(x: unknown): x is FieldRef {
   return Array.isArray(x) && x[0] === "field";
 }
 
+export type Scope = { dashboardId: number; dashcardId: number; filters: Filters };
+
+/**
+ * The dashboard filters currently applied to one widget, as legacy MBQL filter
+ * clauses on the fields the widget is wired to (drill, zoom, break out).
+ */
+export async function scopeClauses(ctx: TenantContext, cardId: number, scope: Scope): Promise<unknown[][]> {
+  const d = await assertDashboard(ctx, scope.dashboardId);
+  const dc = d.dashcards.find((x) => x.id === scope.dashcardId && x.card_id === cardId);
+  if (!dc) throw new GatewayError(404, "Kayıt bulunamadı.");
+  const out: unknown[][] = [];
+  for (const p of engineParameters(d, scope.filters)) {
+    const m = dc.parameter_mappings.find((x) => x.parameter_id === p.id);
+    const target = Array.isArray(m?.target) ? m.target[1] : null;
+    if (!isFieldRef(target)) continue;
+    const clause = typeof p.value === "string" ? dateClause(target, p.value) : categoryClause(target, p.value);
+    if (clause) out.push(clause);
+  }
+  return out;
+}
+
 /**
  * Detail rows behind one bar: the card's source table, filtered to the clicked
  * category (+ the dashboard filters currently applied to that widget).
@@ -219,18 +240,7 @@ export async function drill(
   }
   const clauses: unknown[] = [["=", ref, value]];
 
-  if (scope) {
-    const d = await assertDashboard(ctx, scope.dashboardId);
-    const dc = d.dashcards.find((x) => x.id === scope.dashcardId && x.card_id === cardId);
-    if (!dc) throw new GatewayError(404, "Kayıt bulunamadı.");
-    for (const p of engineParameters(d, scope.filters)) {
-      const m = dc.parameter_mappings.find((x) => x.parameter_id === p.id);
-      const target = Array.isArray(m?.target) ? m.target[1] : null;
-      if (!isFieldRef(target)) continue;
-      const clause = typeof p.value === "string" ? dateClause(target, p.value) : categoryClause(target, p.value);
-      if (clause) clauses.push(clause);
-    }
-  }
+  if (scope) clauses.push(...(await scopeClauses(ctx, cardId, scope)));
 
   const ds = await mbPost<EngineDataset>(ctx.tenant, "/api/dataset", {
     database: card.database_id,
