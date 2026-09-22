@@ -5,7 +5,7 @@ Whitelabel analytics POC. Metabase OSS is the engine (see the sibling repo
 
 - **Auth:** Better Auth (email + password). Organizations are tenants, and the org slug is the tenant slug. Roles are owner, admin and member.
 - **Gateway:** `src/server/metabase/*` (server-only). It calls the engine REST API with the tenant's API key. `adapter.ts` maps results to the dima-backend `QueryResult` contract, so `ResultView`/`Chart` render unchanged. Errors are reworded and never mention the engine.
-- **Chat:** `/app/chat` for every role. The model (via OpenRouter, `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`, default `anthropic/claude-opus-5`) turns the question into SQL. The SQL can only run through the `run_sql` tool, which uses the same SELECT-only guard and tenant DB role as the SQL runner. The answer comes back with a Dima chart and the SQL used, and owner/admin can save it as an analysis. Code is in `src/server/chat/*`.
+- **Chat:** `/app/chat` for every role. The model (via OpenRouter, `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`, default `openai/gpt-5.6-luna`) turns the question into SQL. The SQL can only run through the `run_sql` tool, which uses the same SELECT-only guard and tenant DB role as the SQL runner. The answer comes back with a Dima chart and the SQL used, and owner/admin can save it as an analysis. Code is in `src/server/chat/*`.
 - **Pages:**
   - `/app`: overview
   - `/app/dashboards/[id]`: filters in the URL, drill-down, export

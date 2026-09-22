@@ -7,7 +7,8 @@ import { GatewayError } from "../metabase/errors";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const TIMEOUT_MS = 120_000;
-export const DEFAULT_MODEL = "anthropic/claude-opus-5";
+// Lightweight, cheap and tool-capable; pinned (not a "~latest" alias) so behaviour is stable.
+export const DEFAULT_MODEL = "openai/gpt-5.6-luna";
 
 export interface ToolCall {
   id: string;
@@ -56,10 +57,9 @@ export async function complete(messages: ChatMessage[], tools: ToolSpec[], toolC
         messages,
         tools,
         tool_choice: toolChoice,
-        max_tokens: 8000,
-        // Unified reasoning control; SQL generation benefits from some thinking,
-        // "medium" keeps chat latency reasonable.
-        reasoning: { effort: "medium" },
+        max_tokens: 4000,
+        // Unified reasoning control: a little thinking helps SQL, "low" keeps it fast and cheap.
+        reasoning: { effort: "low" },
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -68,12 +68,13 @@ export async function complete(messages: ChatMessage[], tools: ToolSpec[], toolC
   }
   const body = (await res.json().catch(() => ({}))) as CompletionResponse;
   if (!res.ok || body.error || !body.choices?.[0]) {
-    const status = res.status === 429 ? 429 : 502;
-    throw new GatewayError(
-      status,
-      status === 429 ? "Çok fazla istek; biraz sonra tekrar deneyin." : "Sohbet servisi şu anda yanıt vermiyor.",
-      `openrouter ${res.status}: ${body.error?.message ?? "no choices"}`,
-    );
+    const detail = `openrouter ${res.status}: ${body.error?.message ?? "no choices"}`;
+    if (res.status === 429) throw new GatewayError(429, "Çok fazla istek; biraz sonra tekrar deneyin.", detail);
+    if (res.status === 402) {
+      throw new GatewayError(503, "Sohbet servisinin kullanım kredisi tükendi; yöneticinize bildirin.", detail);
+    }
+    if (res.status === 401) throw new GatewayError(503, "Sohbet servisi yapılandırması geçersiz.", detail);
+    throw new GatewayError(502, "Sohbet servisi şu anda yanıt vermiyor.", detail);
   }
   return body.choices[0];
 }
