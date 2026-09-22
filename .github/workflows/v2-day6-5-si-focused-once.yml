@@ -33,7 +33,7 @@ jobs:
       - name: Focused provider-free SI gate
         working-directory: backend
         run: |
-          pytest -q             tests/test_v2_day6_5_semantic_linker.py             tests/test_v2_day6_5_model_roles.py             tests/test_v2_day6_5_standard_lane.py             tests/test_v2_day6_5_standard_execution.py             tests/test_v2_day6_5_standard_builder.py             tests/test_v2_day6_5_standard_authority.py             tests/test_v2_day6_5_standard_coverage.py
+          pytest -q             tests/test_v2_day6_5_si_standard_eval_trace.py             tests/test_v2_day6_5_semantic_linker.py             tests/test_v2_day6_5_model_roles.py             tests/test_v2_day6_5_standard_lane.py             tests/test_v2_day6_5_standard_execution.py             tests/test_v2_day6_5_standard_builder.py             tests/test_v2_day6_5_standard_authority.py             tests/test_v2_day6_5_standard_coverage.py
 
 # retry: eval-oracle-fixed
 
@@ -59,3 +59,5 @@ jobs:
 # retry: retrieval-oracle-fixed
 
 # retry: source-context-and-filter-contract
+
+# retry: transparent-trace-parity
