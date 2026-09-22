@@ -244,9 +244,9 @@ class ResearchTaskRegistry:
         action_fingerprint: str,
     ) -> object | None:
         current = self.register(task)
-        if current.state == "cancelled":
+        if current.state in {"cancelled", "failed", "blocked"}:
             raise ResearchTaskLifecycleError(
-                f"cancelled ResearchTask cannot execute: {task.task_id}"
+                f"{current.state} ResearchTask cannot execute: {task.task_id}"
             )
 
         receipt = self._receipts.get(task.task_id)
@@ -300,7 +300,7 @@ class ResearchTaskRegistry:
 
     def cancel(self, task_id: str) -> ResearchTask:
         current = self.get(task_id)
-        if current.state == "complete":
+        if current.state in {"complete", "failed", "blocked", "cancelled"}:
             return current
         cancelled = current.model_copy(update={"state": "cancelled"})
         self._tasks[task_id] = cancelled
