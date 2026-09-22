@@ -16,6 +16,28 @@
 > StandardBuilder/E4/E5 remain NO-ROLLBACK; StandardBuilder now consumes the generic kernel. Next gate is workers=1 focused live architecture validation.
 >
 > Wren is current incumbent analytics substrate. Metabase is architecture reference + post-engineering-closure challenger only.
+> **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
+> Canonical upstream: `metabase/metabase`.
+> Current Day 6.5 reference SHA: `74216b30981d8310c4cf724d63ca282e2e63529d`.
+> Canonical pinned paths:
+> `src/metabase/metabot/agent/core.clj`,
+> `src/metabase/metabot/agent/profiles.clj`,
+> `src/metabase/agent_api/reference.md`,
+> `src/metabase/agent_api/api.clj`,
+> `src/metabase/agent_api/query_guards.clj`,
+> `src/metabase/mcp/v2/tools/query.clj`.
+>
+> `public/metabase/master` varsa yalnız **read-only convenience checkout**; canonical authority değildir. SHA doğrulanmadan kullanılmaz.
+> Source-copy / port / vendor / transliteration YASAK.
+> D65-X gerçek integration yalnız **separate-service Metabase Agent API** üzerinden thin adapter ile yapılır.
+>
+> Metabase'e dayanan her önemli architecture/implementation kararından önce `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md §17A.5` mandatory source-control / analysis / research protocolü uygulanır:
+> source identity → exact pinned source reading → pattern/API/security/runtime classification → Dima trust-plane cross-check → current external verification where changeable → decision receipt.
+> Required source files okunmadan, query guards/permissions doğrulanmadan veya source/runtime kimliği pinlenmeden Metabase işi yapılmaz.
+>
+> Her D65-X execution receipt `source_reference_sha + runtime_version + immutable runtime_image_digest + Dima tested SHA + adapter SHA + corpus/version + permission context` taşır.
+> Bu protokol mevcut product development sequence'ini DEĞİŞTİRMEZ.
+
 > Do NOT add Metabase dependency/code/production query path now. Wren+Metabase equal production truth engines is STOP-THE-LINE.
 >
 > After engineering closure and DEV80: run D65-X isolated Wren-vs-Metabase substrate bake-off before Validation50/Hidden50 certification.
