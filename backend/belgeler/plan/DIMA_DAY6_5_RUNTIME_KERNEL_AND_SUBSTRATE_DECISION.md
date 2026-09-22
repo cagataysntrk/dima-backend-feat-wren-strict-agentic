@@ -665,6 +665,258 @@ Dima-native uygulanır.
 
 ---
 
+
+---
+
+## 17A. Metabase Source Reference Contract
+
+**Canonical upstream authority**
+
+```text
+repository = metabase/metabase
+reference_sha = 74216b30981d8310c4cf724d63ca282e2e63529d
+authority = canonical upstream Git source at the pinned SHA
+```
+
+Bu SHA Day 6.5 runtime/substrate kararı için current source-reference snapshot'ıdır.
+Yeni bir Metabase mimari kararı verilecekse önce upstream güncelliği ayrıca araştırılır;
+fakat geçmiş kararın neye dayanarak verildiği bu SHA ile audit edilir.
+
+**Canonical source paths — pinned SHA üzerinde doğrulandı**
+
+```text
+src/metabase/metabot/agent/core.clj
+src/metabase/metabot/agent/profiles.clj
+src/metabase/agent_api/reference.md
+src/metabase/agent_api/api.clj
+src/metabase/agent_api/query_guards.clj
+src/metabase/mcp/v2/tools/query.clj
+```
+
+Kısa referans adları:
+
+```text
+metabot/agent/core.clj
+metabot/agent/profiles.clj
+agent_api/reference.md
+agent_api/api.clj
+agent_api/query_guards.clj
+mcp/v2/tools/query.clj
+```
+
+### 17A.1 Local checkout contract
+
+Repo veya çalışma ortamında ileride `public/metabase/master` bulunursa:
+
+```text
+role = read-only convenience checkout
+authority = NONE
+write / vendor / patch / import into Dima = FORBIDDEN
+canonical comparison target = metabase/metabase @ pinned/declared SHA
+```
+
+Şu an Dima Git tree'sinde `public/metabase/master` yoktur. Varlığı hiçbir zaman upstream
+authority'nin yerine geçmez; stale olabileceği varsayılır ve SHA doğrulanmadan karar verilmez.
+
+### 17A.2 Source-copy / port / vendor yasağı
+
+Kesin yasak:
+
+```text
+Metabase Clojure source copy into Dima backend
+Metabase agent loop port into Python by transliteration
+vendor directory / subtree import
+copy-paste query guards as Dima implementation
+forked embedded Metabase runtime hidden inside Dima
+local checkout'u canonical source gibi kabul etmek
+```
+
+İzin verilen:
+
+```text
+architecture pattern study
+behavioral contract study
+API contract study
+permission/query-guard study
+independent Dima-native implementation
+separate-service integration through supported Agent API
+```
+
+### 17A.3 D65-X integration boundary
+
+D65-X gerçek Metabase challenger entegrasyonu **separate-service Agent API** üzerinden yapılır.
+
+```text
+Dima
+  StandardProjection / AcceptedStandardAuthority
+        ↓ thin challenger adapter
+Metabase separate service
+  /api/agent ...
+        ↓ Metabase permission/query guards
+database
+```
+
+Metabase process/library Dima backend içine linklenmez veya vendored edilmez.
+Dima adapter Metabase'in public/supported Agent API contract'ına konuşur.
+
+D65-X'te Metabase native agent/NLQ experience ayrıca ölçülecekse bu **secondary experiment**
+olarak tutulur; substrate-only primary bake-off ile karıştırılmaz.
+
+### 17A.4 Required bake-off receipt
+
+Her Metabase D65-X measurement receipt en az şunları pinler:
+
+```text
+canonical_source_repo = metabase/metabase
+source_reference_sha
+runtime_version
+runtime_image_digest
+service/API base identity
+Agent API contract/version evidence
+Dima tested SHA
+adapter SHA
+benchmark/corpus version
+tenant/user permission context
+timestamp
+```
+
+`runtime_image_digest` mümkünse immutable container digest (`sha256:...`) olmalıdır;
+yalnız mutable image tag receipt için yeterli değildir.
+
+Source SHA ile çalışan runtime image aynı artifact olmak zorunda değildir; ikisi ayrı ayrı
+kaydedilir. Uyuşmazlık varsa receipt bunu açıkça belirtir ve benchmark yorumu buna göre yapılır.
+
+### 17A.5 Mandatory Metabase source-control / analysis / research protocol
+
+Metabase ile ilgili hiçbir önemli implementation veya architecture adımı körlemesine yapılmaz.
+Aşağıdaki protokol **D65-X başlamadan önce ve Metabase davranışına dayanan her önemli karar öncesinde** zorunludur.
+
+**A — Source identity**
+
+1. Canonical repo `metabase/metabase` olduğunu doğrula.
+2. Kararın dayandığı exact source SHA'yı yaz.
+3. Local checkout varsa `git rev-parse HEAD` ile SHA'sını doğrula; uyuşmazsa local source'a güvenme.
+4. Gerekirse current upstream'i ayrıca araştır; pinned historical snapshot ile current upstream'i karıştırma.
+
+**B — Required source reading**
+
+En az şu dosyaları exact source SHA üzerinde tekrar oku:
+
+```text
+src/metabase/metabot/agent/core.clj
+src/metabase/metabot/agent/profiles.clj
+src/metabase/agent_api/reference.md
+src/metabase/agent_api/api.clj
+src/metabase/agent_api/query_guards.clj
+src/metabase/mcp/v2/tools/query.clj
+```
+
+İncelenecek başlıklar:
+
+```text
+agent-loop continuation/termination semantics
+profile-specific tool surfaces and iteration budgets
+terminal-tool behavior
+Agent API request/response and authentication surface
+permission/scope enforcement
+query guards / native SQL separation
+query validation-repair-resolution pipeline
+query execution/result envelope
+handle/cursor/replay behavior
+current runtime/version/deployment contract
+```
+
+**C — Distinguish pattern from authority**
+
+Her bulgu şu sınıflardan biriyle not edilir:
+
+```text
+PATTERN_REFERENCE
+API_CONTRACT
+SECURITY_GUARD
+RUNTIME_BEHAVIOR
+DIMA_INFERENCE
+NOT_APPLICABLE_TO_DIMA
+```
+
+Metabase implementation detail'i otomatik Dima requirement'ı sayılmaz.
+
+**D — Dima cross-check**
+
+Metabase bulgusu her zaman Dima'nın şu authority'leriyle çaprazlanır:
+
+```text
+AcceptedStandardAuthority
+StandardProjection
+SemanticBindingGate
+planner validity
+RLS/CLS / tenant identity
+QueryContract
+EvidenceArtifact
+replay permission re-check
+exactly-one primary substrate rule
+```
+
+Metabase bir davranışı desteklemiyorsa Dima invariant'ı sessizce gevşetilmez.
+
+**E — Security and truth-plane review**
+
+Agent API veya query path kullanmadan önce:
+
+```text
+auth identity mapping
+tenant/user permission propagation
+raw SQL/native-query boundary
+query guard fail-closed behavior
+result provenance
+executed-query identity
+permission re-check on replay/handle
+cross-tenant leakage risk
+```
+
+ayrı ayrı doğrulanır.
+
+**F — External/current verification**
+
+Metabase sürümü, Agent API, lisans/edition, deployment veya API behavior'u değişebilecek
+bir konuysa current upstream docs/source/release state ayrıca araştırılır. Eski pinned SHA'dan
+current behavior varsayılmaz.
+
+**G — Decision receipt**
+
+Her önemli Metabase kararı living status'a şu formatta girer:
+
+```text
+question
+canonical repo
+source SHA
+files inspected
+runtime version/image digest if executed
+observed fact
+Dima inference
+risk / limitation
+decision
+next verification
+```
+
+**H — STOP-THE-LINE**
+
+Aşağıdakilerde Metabase integration/decision work durur:
+
+```text
+source SHA unknown
+local checkout SHA unverified
+required source files not inspected
+API contract inferred only from memory
+permission/query guard behavior unverified
+runtime image/version unpinned
+copy/port/vendor proposal
+Metabase behavior used to weaken Dima trust-plane invariant
+second equal production truth engine introduced
+```
+
+Bu protokol product development sequence'ini değiştirmez; yalnız Metabase'e temas edilen
+relevant gate/decision'larda zorunlu preflight ve receipt discipline ekler.
 ## 18. D65-X — analytics substrate challenger gate
 
 Bu gate Day 6.5 engineering closure'dan SONRA, final certification seal'den ÖNCE gelir.
