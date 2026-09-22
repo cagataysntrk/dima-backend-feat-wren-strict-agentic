@@ -1,6 +1,6 @@
 # FT-005 FAILURE RECEIPT — SELF_CONTAINED_CONTEXT_LEAK_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / FOLLOWUP_AUTHORITY_CONTEXT_LEAK
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -97,3 +97,22 @@ Required:
 - all other FT-005 provider-free semantic tests GREEN;
 - FT-004 lifecycle regressions GREEN;
 - FT-003 regressions GREEN.
+
+
+## Closure
+
+Corrective commit:
+`148576f66701ad082f4a99685ef19a482edd156f`
+
+Provider-free proof:
+`35783433696 GREEN`
+
+Verified:
+- SELF_CONTAINED resolution carries no execution accepted_context;
+- SELF_CONTAINED execution source_questions = empty;
+- stored context_source_turn_ids = empty;
+- contextual follow-ups still inherit explicit accepted source context;
+- FT-004 lifecycle regression GREEN;
+- FT-003 regression GREEN.
+
+Failure CLOSED.
