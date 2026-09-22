@@ -7,16 +7,17 @@
 > Her geliştirme oturumunun ilk sırası:
 >
 > 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
-> 2. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
-> 3. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
-> 4. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
-> 5. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
-> 6. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
-> 7. `eval/v2_day6_5_eval_manifest.yaml`
-> 8. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
-> 9. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
-> 10. `AGENTS.md`
-> 11. `MIMARI.md` ve yalnız aktif ticket'ın kodu
+> 2. `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`
+> 3. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
+> 4. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+> 5. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+> 6. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+> 7. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+> 8. `eval/v2_day6_5_eval_manifest.yaml`
+> 9. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
+> 10. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
+> 11. `AGENTS.md`
+> 12. `MIMARI.md` ve yalnız aktif ticket'ın kodu
 >
 > Nihai rapor ve roadmap **mühürlü / salt-okunur**. İlerleme, karar sonucu, commit SHA,
 > açık borç ve sonraki adım yalnız `DIMA_V2_GELISTIRME_DURUM.md` dosyasına yazılır.
@@ -24,7 +25,7 @@
 > Koddan önce roadmap'teki aktif **P** bölümünü ve onun dayanak gösterdiği **R** bölümünü
 > birlikte oku. Rapor gerekçenin, roadmap icra sırasının authority'sidir.
 >
-> **Day 6.5 amacı:** architecture search'i bitirip mevcut Manager/trust-plane mimarisini üç çalışma modu ile tamamlamak: `STANDARD_DIRECT`, bounded `STANDARD_BUILDER`, `RESEARCH`. Standard ve Research ayrı accepted-authority ailesidir; Standard ağır research ledger/completion machinery'sini taşımaz. Production `/ask-v2` certification seal öncesi açılmaz.
+> **Day 6.5 amacı:** iki execution path'i (`STANDARD | RESEARCH`) trust-plane altında kapatmak. Standard'ın `DIRECT | BUILDER` outcome'ları aynı engine ve aynı `AcceptedStandardAuthority` ailesidir. D65-E3A-R'de yalnız process-control bilen minimal `BoundedAgentRuntimeKernel` kurulacak; Research Manager bu kernel'e şimdi migrate edilmeyecek. Production `/ask-v2` certification seal öncesi açılmaz.
 >
 > **Kısa operasyon protokolü:** geliştirme/mimari doğrulama önceliklidir; büyük test kampanyası
 > yerine vertical slice. Normal loop `code → 3–15 sn focused/provider-free → devam`.
@@ -33,9 +34,11 @@
 > Regex/morphology/keyword/case-derived prompt/resolver heuristic yasak. Önemli müdahale
 > öncesi checkpoint SHA; A/B exact same backend SHA. Hidden yalnız final seal blocker'ıdır.
 >
-> **Standard front-door:** retrieval/discovery authority değildir. `STANDARD_DIRECT` tek-pass'a
-> yakın hedef; `STANDARD_BUILDER` bounded progress-driven self-correction yapabilir;
-> `simple_standard_research_manager_loop = 0`.
+> **Standard front-door:** retrieval/discovery authority değildir. DIRECT yalnız ilk-attempt seal outcome'udur; BUILDER aynı Standard engine'in bounded progress-driven repair outcome'udur. Standard loop generic kernel'i kullanır fakat kernel semantic/authority/research truth bilmez. `simple_standard_research_manager_loop = 0`.
+>
+> **Substrate kararı:** Wren current incumbent'tır. Metabase şimdi dependency/production path değildir. Day 6.5 engineering closure + DEV80 sonrasında, Validation/Hidden certification öncesinde isolated `D65-X` substrate-only challenger yapılır. Production'da Wren + Metabase equal truth engines yasaktır.
+>
+> **Family closure:** `35691982389` = **88/88 PASS** after `EVAL_ORACLE` schema sync. Next product ticket: `D65-E3A-R` runtime-kernel realignment.
 >
 > **Day 6.5 cognition/authority kuralı:** doğal dil yorumunu regex/morphology/fuzzy-score ile
 > deterministic semantic truth'a çevirmek yasaktır. Manager yolu:
