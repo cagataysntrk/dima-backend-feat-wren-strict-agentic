@@ -6715,6 +6715,48 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 — DAY7 FANOUT LIVE ENFORCEMENT GREEN
+
+```text
+tested product SHA   ace4d3979f0188fd41138a93cb45cbf63652ba92
+workflow             35786373201
+result               GREEN
+```
+
+Closed:
+- adaptive candidate branches are registered before execution,
+- `propose_branches` is orchestration-only; it never executes DB work,
+- derived `RUN_ANALYTICS` in contract mode requires a pre-registered READY task,
+- `ResearchTaskService.materialize_derived_candidates` validates provenance first,
+  then calls `ResearchFanoutPolicy`,
+- canonical budget source = `ManagerRuntime.remaining_data_queries`,
+- branch depth remains canonical task provenance,
+- selected tasks enter lifecycle only through `ResearchTaskRegistry.register_many()`,
+- unknown cardinality -> conservative bounded subset,
+- high cardinality without governed priority -> `BOUNDED_SUBSET`,
+- `BOUNDED_TOP_K` requires priority provenance
+  `VERIFIED_EVIDENCE | GOVERNED_METADATA`,
+- arbitrary model/caller order is no longer mislabeled Top-K,
+- real two-Wren adaptive path remains GREEN through the fanout policy.
+
+No second scheduler and no second budget truth were introduced.
+
+Current next ticket:
+**D7-SEED-SET — reconcile roadmap seed 2–4 tasks with accepted USER_MUST obligations
+and run-scoped ResearchTaskRegistry without building another scheduler.**
+
+Required proof:
+```text
+2–4 accepted USER_MUST obligations
+→ bounded initial task identities
+→ no USER_MUST silent loss
+→ zero blind execute-all
+→ Manager sees READY tasks and chooses next
+→ evidence may alter later choice
+```
+
+---
+
 ## 2026-09-22 — DAY7 PRINCIPAL-BOUND RESEARCH DELIVERY GREEN
 
 ```text
