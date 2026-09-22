@@ -1,0 +1,38 @@
+name: v2-day6-5-retriever-focused-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day6-5-retriever-focused-once.yml"
+
+jobs:
+  retriever-focused:
+    if: "github.event.head_commit.message == 'test(v2-day6.5): run retriever seam focused gate'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DIMA_LLM_PROVIDER: "rule"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install focused dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Compile Retriever boundary
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v2/semantic_retriever.py \
+            app/v2/semantic_linker.py \
+            tests/test_v2_day6_5_semantic_linker.py
+      - name: Retriever focused provider-free gate
+        working-directory: backend
+        run: pytest -q tests/test_v2_day6_5_semantic_linker.py
