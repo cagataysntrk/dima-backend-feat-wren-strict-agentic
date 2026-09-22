@@ -5,11 +5,13 @@ name: v2-day7-focused
     branches:
       - feat/ask-v2-mvp
     paths:
+      - "backend/app/wren_service.py"
       - "backend/app/v2/research_tools.py"
       - "backend/app/v2/manager_tools.py"
       - "backend/app/v2/manager_executor.py"
       - "backend/tests/test_v2_day7_research_tool_contract.py"
       - "backend/tests/test_v2_day7_research_wren_vertical.py"
+      - "backend/tests/test_v2_day7_wren_schema_grain_metadata.py"
       - "backend/tests/test_v2_day7_real_adaptive_wren.py"
       - "backend/app/v2/research_state.py"
       - "backend/app/v2/research_tasks.py"
@@ -97,6 +99,10 @@ jobs:
       - name: Result-aware adaptive loop
         working-directory: backend
         run: pytest -q tests/test_v2_day7_result_aware_loop.py
+
+      - name: Real Wren schema grain metadata
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_wren_schema_grain_metadata.py
 
       - name: Real Wren Day7 vertical
         working-directory: backend
