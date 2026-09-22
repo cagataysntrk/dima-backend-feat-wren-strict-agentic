@@ -4,7 +4,7 @@
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
 **Durum:** **D65-SI FINAL GREEN / SEALED — M0E-DEEP-DELTA ACTIVE; X0-BRIDGE-PREFLIGHT NEXT AFTER M0E FINAL; X0/DEV80 FORBIDDEN**  
-**Kod fazı:** D65-SI remains FINAL GREEN/SEALED. M0E-DEEP-DELTA Batch 1+2 now classifies `9/25` mechanisms. Batch 2 closed `4,5,6,7`: index hits require current-principal/current-catalog hydration (`DIMA_CORE_NATIVE`), retrieval UNAVAILABLE is distinct from semantic NO_MATCH (`DIMA_CORE_NATIVE`), high-cardinality indexed values require live authorized re-read (`DIMA_CORE_NATIVE`), and Wren remains source-of-truth for semantic/business context while any retrieval index is derived (`WREN_OWNS`). No product code/runtime. Remaining = 16. Next batch = Research/agent state + async/idempotency/cardinality/interestingness `8,13,15,16` and missing-principal proof already cross-linked to DD-14.  
+**Kod fazı:** D65-SI stays SEALED. M0E-DEEP-DELTA Batch 1–3 classifies `13/25`. Batch 3 closed `8,13,15,16`: accumulated memory vs current-turn authority (`PATTERN_ONLY`), async plan/query idempotency+cancel/race invariants (`PATTERN_ONLY`), deterministic cardinality-bounded fanout (`PATTERN_ONLY`), and interestingness as non-authoritative prioritization (`PATTERN_ONLY`). No product code/runtime. Remaining = 12. Next batch = Agent API/transport/persistence/telemetry `10,11,12,20,21` plus REST-vs-MCP handle semantics.  
 
 ---
 

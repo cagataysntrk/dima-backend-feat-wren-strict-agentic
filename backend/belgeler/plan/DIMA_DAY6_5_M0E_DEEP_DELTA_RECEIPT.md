@@ -299,3 +299,138 @@ product code written     = 0
 Metabase runtime started = 0
 ```
 
+
+## Batch 3 — Agent state / async idempotency / bounded fanout / interestingness
+
+### DD-08 — accumulated agent state vs per-turn state delta
+
+- **mechanism:** agent accumulated state vs per-turn state delta
+- **exact upstream source/function:**
+  - `src/metabase/metabot/persistence.clj::conversation-state`
+  - `::finalize-assistant-turn!`
+  - `src/metabase/metabot/agent/core.clj::init-agent`
+  - `::seed-state`, `::seed-chart-configs`, `::client-content-ids`
+- **observed behavior:** Metabot persists a turn's produced state separately on the assistant row and
+  reconstructs accumulated conversation state by merging replayable prior turn states. At a new request,
+  current viewing context is seeded into a fresh agent memory on top of prior state, and IDs coming from
+  the current client turn are tracked separately from prior accumulated IDs.
+- **problem solved:** preserve useful multi-turn working state without losing the distinction between
+  previously accumulated memory and what the current request explicitly supplied.
+- **Dima equivalent/owner:** Dima ConversationState / ResearchState memory plus current-turn
+  `AcceptedTurnContract` authority. Prior memory may guide cognition but cannot silently add/modify
+  current USER_MUST obligations or canonical semantics.
+- **Wren equivalent/owner:** Wren supplies semantic/context facts; conversation memory ownership remains Dima.
+- **disposition:** **PATTERN_ONLY**
+- **security/authority effect:** prior state is non-authoritative unless revalidated/rebound under current
+  context/tenant/principal. Current-turn source refs/authority remain explicit.
+- **semantic duplication risk:** MEDIUM if accumulated memory is allowed to carry stale canonical semantics
+  without context-version checks.
+- **native implementation cost:** MEDIUM; Dima already has ConversationState/ResearchState foundations.
+- **Metabase runtime dependency:** NONE.
+- **required executable proof:** prior state contains metric/filter/query; current turn omits or contradicts
+  it → no silent USER_MUST creation or authority mutation. Context-version/tenant change invalidates stale
+  semantic handles while non-authoritative conversational memory may remain.
+- **timing:** Day7 Research loop / Day10 dispatcher integration.
+
+### DD-13 — async exploration idempotency / cancellation / race handling
+
+- **mechanism:** async exploration idempotency/cancel/race
+- **exact upstream source/function:**
+  - `src/metabase/explorations/query_plan.clj::lock-thread-for-planning!`
+  - `::insert-plan-rows!`
+  - `src/metabase/explorations/runner.clj::plan-thread!`
+  - `::run-query!`, `::canceled-mid-plan-cleanup!`
+  - `src/metabase/explorations/queues.clj::deliver-batch!`, `::publish-pending-queries!`
+- **observed behavior:** queue delivery is treated as at-least-once. Planning takes a DB row lock and
+  re-checks under the lock so concurrent duplicate planners cannot both materialize work. Redelivered
+  terminal query messages do not rerun the query; they only re-run completion checks. Cancellation races
+  are repaired by flipping queries inserted after cancel. Pending rows, rather than "just inserted" rows,
+  drive republish so crash/retry is idempotent.
+- **problem solved:** durable async analysis must tolerate duplicate delivery, crash between write/publish,
+  cancel/plan races and peer completion without duplicate query side effects or resurrected work.
+- **Dima equivalent/owner:** Dima Research async runner/task store. Task identity + accepted authority +
+  principal binding must make plan/query actions idempotent and cancel-safe.
+- **Wren equivalent/owner:** Wren executes a governed query; task delivery/idempotency/cancel lifecycle is
+  Dima-owned.
+- **disposition:** **PATTERN_ONLY**
+- **security/authority effect:** duplicate/redelivered task cannot mint a second authority, rerun after
+  terminal cancel, or execute under a broader/missing principal.
+- **semantic duplication risk:** none.
+- **native implementation cost:** MEDIUM-HIGH.
+- **Metabase runtime dependency:** NONE for Dima Research. Metabase exploration runtime may later inform UX,
+  not own Dima Research execution state.
+- **required executable proof:** duplicate plan delivery → one materialized task set; crash after durable
+  task write before publish → retry publishes pending work without replanning; cancel during plan → late rows
+  become canceled; terminal query redelivery → zero duplicate DB query.
+- **timing:** Day7 Research loop; strengthened Day12–14.
+
+### DD-15 — cardinality-bounded Research fanout
+
+- **mechanism:** cardinality-bounded Research fanout
+- **exact upstream source/function:**
+  - `src/metabase/explorations/query_plan/mechanical.clj::default-eligible?`
+  - `::time-facet-eligible?`
+  - `::top-n-other-eligible?`
+  - `::items-for-pair`
+  - `src/metabase/explorations/query_plan/variants.clj::default-max-rows`
+  - `::cached-discovery`
+  - `::plan-rows` for `per-value-time-series`
+- **observed behavior:** low/known cardinality can use direct/default views; high or unknown categorical
+  cardinality routes to bounded `top-n-other` with fixed K. Unknown cardinality fails safe into a bounded
+  form instead of an unbounded breakout. Variant execution also has row-count safety caps. Discovery Top-K
+  cache keys include current user and scope/filter chain because live warehouse values are lens-dependent.
+- **problem solved:** exploratory breadth must remain bounded even when metadata/cardinality is missing or
+  large, while preserving a useful "head + Other" view instead of exploding queries/rows.
+- **Dima equivalent/owner:** Dima Research planner / derived-task budget. Semantic/metadata cardinality informs
+  deterministic fanout budgets; high-cardinality work becomes Top-K + Other / sampled bounded tasks.
+- **Wren equivalent/owner:** Wren/DB metadata may provide cardinality/source statistics; Dima owns how many
+  research tasks/queries are spawned.
+- **disposition:** **PATTERN_ONLY**
+- **security/authority effect:** bounded fanout is also a cost/DoS guard. Unknown cardinality must not imply
+  unlimited exploration.
+- **semantic duplication risk:** LOW.
+- **native implementation cost:** MEDIUM.
+- **Metabase runtime dependency:** NONE.
+- **required executable proof:** low cardinality → complete bounded family; high/unknown cardinality →
+  deterministic Top-K + Other (or equivalent) with explicit max tasks/query count; same user/filter scope
+  cannot leak cached discovered values across principals.
+- **timing:** Day7 Research planning.
+
+### DD-16 — interestingness is non-authoritative prioritization only
+
+- **mechanism:** interestingness = non-authoritative prioritization only
+- **exact upstream source/function:**
+  - `src/metabase/explorations/runner.clj::safe-score`
+  - `::safe-score+describe`
+  - `src/metabase/contextual_interestingness/llm.clj::llm-call!`
+- **observed behavior:** statistical/contextual interestingness is computed after query execution as a
+  best-effort score/description. Scoring failures are swallowed/logged and **must never flip a successful
+  query to error**. The LLM scorer returns relevance/description metadata; it does not validate numeric
+  truth or query correctness.
+- **problem solved:** rank/prioritize which already-computed findings deserve user attention without making
+  the prioritizer part of the truth path.
+- **Dima equivalent/owner:** Day8 epistemic/prioritization layer may rank verified Evidence/ResearchTasks;
+  Verification/QueryContract/Evidence gates remain truth owners.
+- **Wren equivalent/owner:** Wren/DB provide executed result truth; no interestingness authority.
+- **disposition:** **PATTERN_ONLY**
+- **security/authority effect:** score cannot override permission, verification, evidence provenance or
+  USER_MUST completion.
+- **semantic duplication risk:** none when applied only after verified evidence.
+- **native implementation cost:** LOW-MEDIUM.
+- **Metabase runtime dependency:** NONE.
+- **required executable proof:** scoring/LLM failure leaves verified query/evidence lifecycle intact; high
+  score on unverified/empty/invalid evidence cannot mark obligation VERIFIED, create a causal finding or
+  satisfy CompletionGate.
+- **timing:** Day8 root-cause / evidence prioritization.
+
+### Batch 3 counters
+
+```text
+classified in this batch = 4
+mechanisms closed        = 8,13,15,16
+cumulative classified    = 13 / 25
+remaining                = 12
+product code written     = 0
+Metabase runtime started = 0
+```
+
