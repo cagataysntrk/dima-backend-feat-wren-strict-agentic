@@ -35,6 +35,7 @@ from app.v2.manager_runtime import (
     ManagerRuntime,
     ManagerStateError,
 )
+from app.v2.research_state import ResearchStateView, build_research_state_view
 from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
@@ -440,6 +441,7 @@ class ResearchManagerLoop:
         observations: list[dict[str, Any]],
         conversation: ConversationStateV2 | None = None,
         action_frontier: dict[str, Any] | None = None,
+        research_state: ResearchStateView | None = None,
     ) -> str:
         ledger = runtime.ledger
         ledger_view = []
@@ -478,7 +480,18 @@ class ResearchManagerLoop:
                 else []
             ),
             "ACTION_FRONTIER": action_frontier or {},
-            "RECENT_OBSERVATIONS": observations[-6:],
+            "ACCUMULATED_RESEARCH_STATE": (
+                None
+                if research_state is None
+                else research_state.model_copy(update={"latest_delta": None}).model_dump(mode="json")
+            ),
+            "CURRENT_RESULT_DELTA": (
+                None
+                if research_state is None or research_state.latest_delta is None
+                else research_state.latest_delta.model_dump(mode="json")
+            ),
+            # Diagnostic tail only. It is never the sole Research state authority.
+            "RECENT_OBSERVATIONS": observations[-4:],
         }
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
@@ -495,6 +508,7 @@ class ResearchManagerLoop:
         observations,
         conversation: ConversationStateV2 | None = None,
         action_frontier: dict[str, Any] | None = None,
+        research_state: ResearchStateView | None = None,
     ):
         user = self._prompt(
             question=question,
@@ -502,6 +516,7 @@ class ResearchManagerLoop:
             observations=observations,
             conversation=conversation,
             action_frontier=action_frontier,
+            research_state=research_state,
         )
         schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
         kwargs = {
@@ -767,6 +782,10 @@ class ResearchManagerLoop:
                 break
 
             frontier_view = frontier.view(runtime)
+            research_state = build_research_state_view(
+                runtime=runtime,
+                evidence_store=getattr(executor, "evidence_store", None),
+            )
             try:
                 decision = self._decision(
                     question=question,
@@ -774,6 +793,7 @@ class ResearchManagerLoop:
                     observations=observations,
                     conversation=conversation,
                     action_frontier=frontier_view,
+                    research_state=research_state,
                 )
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
@@ -815,10 +835,8 @@ class ResearchManagerLoop:
             if (
                 decision.action == ManagerActionKind.RESOLVE_SEMANTICS
                 and decision.resolve_provenance == "AGENT_DERIVED"
-                and not _evidence_was_inspected(
-                    observations,
-                    decision.semantic_evidence_ref,
-                )
+                and decision.semantic_evidence_ref
+                not in runtime.snapshot.inspected_evidence_refs
             ):
                 observations.append(
                     {
@@ -841,10 +859,8 @@ class ResearchManagerLoop:
             if (
                 decision.action == ManagerActionKind.RUN_ANALYTICS
                 and decision.derived_task_id is not None
-                and not _evidence_was_inspected(
-                    observations,
-                    decision.derived_evidence_ref,
-                )
+                and decision.derived_evidence_ref
+                not in runtime.snapshot.inspected_evidence_refs
             ):
                 observations.append(
                     {
