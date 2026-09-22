@@ -13,8 +13,7 @@ from app.v2.manager_models import (
     ManagerCapabilityKey,
     ObligationStatus,
 )
-from app.v2.models import FrozenModel, ResearchTask
-from app.v2.research_tools import ResearchTaskKind
+from app.v2.models import FrozenModel, ResearchTask, ResearchTaskKind
 
 
 class ResearchTaskMaterializationError(RuntimeError):
