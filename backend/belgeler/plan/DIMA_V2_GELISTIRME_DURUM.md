@@ -6715,6 +6715,66 @@ not automatic Wren semantic-layer removal.
 
 ---
 
+## 2026-09-22 — DAY7 SUPERVISOR RECONCILIATION @ 5789e729
+
+**Current HEAD:** `5789e729115fe044b689739d5960021aba0aca32`  
+**Latest focused CI:** `35770506794 = GREEN`  
+**Day7 status:** ACTIVE — current GREEN is NOT Day7 closure.
+
+Exact current state:
+
+```text
+ResearchTaskRegistry implementation = PRESENT
+actual execution-path integration   = NOT YET PROVEN
+registry-specific behavioral proof  = NOT YET COMPLETE
+
+generic max_fanout fuse              = PRESENT
+cardinality-aware fanout policy      = OPEN
+
+real Wren single task                = GREEN
+real Wren adaptive two-task chain    = OPEN
+
+CrossDomainJoinGate                  = OPEN
+live Sol Research Manager proof      = OPEN
+
+timeout contract field               = PRESENT
+true deadline/cancel semantics       = OPEN
+```
+
+D7-A2 classification:
+
+```text
+IMPLEMENTED PARTIALLY
+NOT INTEGRATED
+NOT SEALED
+```
+
+Metabase reference for remaining Day7 lifecycle work:
+- mechanism: async task identity/idempotency/cancel non-resurrection + missing-principal fail-closed;
+- disposition: **DIMA_CORE_NATIVE / PATTERN_ONLY as previously classified**;
+- adopted Dima invariant: run-scoped task delivery identity is authoritative for lifecycle only;
+- behavior NOT adopted: no Metabase runtime/code port, no second task authority;
+- proof required before GREEN: duplicate delivery -> one DB side effect; cancel + late return ->
+  no accepted EvidenceArtifact, no obligation verification, no resurrection.
+
+Immediate order from this checkpoint:
+
+```text
+D7-A2 registry focused behavioral proof
+→ integrate ONE run-scoped ResearchTaskRegistry into actual Research execution
+→ duplicate/cancel-late execution proof
+→ REAL TWO-WREN adaptive vertical
+→ cardinality-aware fanout
+→ same-domain tools
+→ CrossDomainJoinGate
+→ deadline lifecycle
+→ focused live Sol
+```
+
+Do not mark D7-A2 CLOSED because code exists. Do not begin Day8.
+
+---
+
 ## 2026-09-22 21:54 — DAY7 BUNDLE A — RESEARCH TOOL CONTRACT + RESULT-AWARE FIRST VERTICAL
 
 **Phase:** P10 / DAY7 RESULT-AWARE RESEARCH LOOP  
