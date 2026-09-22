@@ -339,10 +339,20 @@ class FastConversationService:
             FastFollowupStatus.SELF_CONTAINED,
             FastFollowupStatus.CONTEXTUAL,
         }:
+            execution_context = (
+                accepted_context
+                if resolution.status == FastFollowupStatus.CONTEXTUAL
+                else None
+            )
+            execution_source_questions = (
+                source_questions
+                if resolution.status == FastFollowupStatus.CONTEXTUAL
+                else ()
+            )
             operation = self._operations.build(
                 resolution=resolution,
-                accepted_context=accepted_context,
-                source_questions=source_questions,
+                accepted_context=execution_context,
+                source_questions=execution_source_questions,
                 clarification_question=clarification_question,
             )
         elif resolution.status == FastFollowupStatus.CLARIFICATION_REQUIRED:
