@@ -1119,3 +1119,50 @@ NONE.
 status:
 `CLOSED — stale oracle updated test-only; hardened provider-free run 35738044476 GREEN`.
 
+
+
+---
+
+## Receipt — D65-X0-BRIDGE-001 — canonical-IR extraction regression
+
+run_id: `35760654007`
+
+tested_sha: `0b69d97d6370a90f092baa714845bb67b86a5523`
+
+observed:
+```text
+install backend              PASS
+compile bridge boundary      PASS
+provider-free suite          5 PASS / 1 FAIL
+failing test                 real Standard Wren trust-plane sentinel
+```
+
+failure:
+```text
+NameError: context_version is not defined
+app/v2/standard_execution.py:334
+```
+
+failure_class:
+`CONTRACT/ARCHITECTURE IMPLEMENTATION REGRESSION` introduced by bridge refactor,
+NOT Metabase bridge evidence.
+
+single_owner:
+`WrenStandardExecutionAdapter.execute`.
+
+root_cause:
+`resolve_authorized_ir()` correctly moved authority/handle resolution out of `execute()`,
+but two downstream provenance/binding reads still referenced the removed local
+`context_version` variable. Canonical `AnalyticsIR.context_version` is already the sealed
+value and must be used there.
+
+bridge conclusion from this run:
+NONE. Do not classify A/B/C or start Metabase runtime from this RED.
+
+allowed patch:
+replace the two stale execute-local references with `ir.context_version`; no semantic,
+authority, planner or query behavior change.
+
+status:
+`CLASSIFIED / SINGLE-OWNER ROOT FIX AUTHORIZED`.
+

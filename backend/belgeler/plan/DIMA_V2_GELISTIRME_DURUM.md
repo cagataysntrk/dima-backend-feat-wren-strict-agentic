@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **D65-SI FINAL GREEN/SEALED + M0E-DEEP-DELTA FINAL GREEN/SEALED — X0-BRIDGE-PREFLIGHT ACTIVE; METABASE RUNTIME OFF; DEV80 FORBIDDEN**  
-**Kod fazı:** M0E-DEEP-DELTA is now FINAL GREEN/SEALED: all 25 required Metabase delta mechanisms classified with mandatory row fields; exit counters all zero. Binding outcomes: Dima owns authority/replay-security/provenance; Wren owns semantic/business knowledge and metric layer; Metabase runtime candidates are only bridge/Agent-API operational path/idempotent repair; raw SQL and autonomous implicit-FK semantic authority are rejected. Current sole next ticket = `D65-X0-BRIDGE-PREFLIGHT`. No Metabase container/service may start until preflight proves a thin/lossless bridge using real sealed Standard artifacts. `/ask-v2`, Day7+, DEV80 remain untouched.  
+**Durum:** **D65-SI SEALED + M0E-DEEP-DELTA SEALED — X0-BRIDGE-PREFLIGHT ACTIVE; FIRST RUN RED CLASSIFIED AS LOCAL EXECUTION-REFactor REGRESSION; METABASE RUNTIME OFF; DEV80 FORBIDDEN**  
+**Kod fazı:** Bridge authority/docs activated at `875c4464...`; canonical `StandardProjection → AnalyticsIR` branch point extracted at `1a4d4fde...`; real sealed bridge prototype committed at `6560e576...`. First preflight run `35760654007` is NOT bridge architecture evidence: compile passed, 5 tests passed, but retained real Standard trust-plane failed with `NameError context_version` introduced by the extraction refactor. Receipt `D65-X0-BRIDGE-001` classifies this as single-owner implementation regression. Authorized next action = replace stale execute-local references with sealed `ir.context_version`, then exact provider-free rerun. Metabase runtime remains OFF.  
 
 ---
 
