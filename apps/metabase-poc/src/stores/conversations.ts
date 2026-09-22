@@ -28,6 +28,7 @@ interface State {
   create: (orgId: string) => string;
   addEntry: (convId: string, question: string) => number;
   settle: (convId: string, entryId: number, patch: Extract<Entry, { status: "done" | "error" }>) => void;
+  rename: (convId: string, title: string) => void;
   remove: (convId: string) => void;
 }
 
@@ -95,6 +96,12 @@ export const useConversations = create<State>()(
         set((s) => ({
           conversations: s.conversations.map((c) =>
             c.id === convId ? touch(c, c.entries.map((e) => (e.id === entryId ? patch : e))) : c,
+          ),
+        })),
+      rename: (convId, title) =>
+        set((s) => ({
+          conversations: s.conversations.map((c) =>
+            c.id === convId ? { ...c, title: title.trim().slice(0, 80) || c.title } : c,
           ),
         })),
       remove: (convId) => set((s) => ({ conversations: s.conversations.filter((c) => c.id !== convId) })),

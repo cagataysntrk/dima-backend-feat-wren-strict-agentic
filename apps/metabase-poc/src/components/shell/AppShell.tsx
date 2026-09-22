@@ -14,10 +14,17 @@ import { AppSidebar, type ShellOrg, type ShellUser } from "./AppSidebar";
 // chat page). Pages can put controls in the top bar via <TopbarActions>.
 
 const TopbarSlot = createContext<HTMLElement | null>(null);
+const TopbarLeftSlot = createContext<HTMLElement | null>(null);
 
 /** Render children into the right side of the shell's top bar. */
 export function TopbarActions({ children }: { children: React.ReactNode }) {
   const slot = useContext(TopbarSlot);
+  return slot ? createPortal(children, slot) : null;
+}
+
+/** Render children next to the sidebar toggle (chat arrows, chat title). */
+export function TopbarLead({ children }: { children: React.ReactNode }) {
+  const slot = useContext(TopbarLeftSlot);
   return slot ? createPortal(children, slot) : null;
 }
 
@@ -32,6 +39,7 @@ interface Props {
 export function AppShell({ user, orgs, activeOrgId, canAnalyze, children }: Props) {
   const pathname = usePathname();
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const [leftSlot, setLeftSlot] = useState<HTMLElement | null>(null);
   // The chat owns its full-height layout (message column + right panel);
   // every other page gets the standard padded content column.
   const fullBleed = pathname.startsWith("/app/chat");
@@ -43,8 +51,9 @@ export function AppShell({ user, orgs, activeOrgId, canAnalyze, children }: Prop
         <AppSidebar user={user} orgs={orgs} activeOrgId={activeOrgId} canAnalyze={canAnalyze} />
       </Suspense>
       <SidebarInset className="flex min-h-0 flex-col overflow-hidden">
-        <TopBar setSlot={setSlot} />
+        <TopBar setSlot={setSlot} setLeftSlot={setLeftSlot} />
         <TopbarSlot.Provider value={slot}>
+          <TopbarLeftSlot.Provider value={leftSlot}>
           <div className="min-h-0 flex-1 overflow-hidden">
             {fullBleed ? (
               children
@@ -54,13 +63,20 @@ export function AppShell({ user, orgs, activeOrgId, canAnalyze, children }: Prop
               </div>
             )}
           </div>
+          </TopbarLeftSlot.Provider>
         </TopbarSlot.Provider>
       </SidebarInset>
     </SidebarProvider>
   );
 }
 
-function TopBar({ setSlot }: { setSlot: (el: HTMLElement | null) => void }) {
+function TopBar({
+  setSlot,
+  setLeftSlot,
+}: {
+  setSlot: (el: HTMLElement | null) => void;
+  setLeftSlot: (el: HTMLElement | null) => void;
+}) {
   const { toggleSidebar } = useSidebar();
   return (
     <div className="flex h-12 shrink-0 items-center gap-1 px-2">
@@ -78,6 +94,7 @@ function TopBar({ setSlot }: { setSlot: (el: HTMLElement | null) => void }) {
         </TooltipTrigger>
         <TooltipContent side="bottom">Kenar çubuğu (⌘B)</TooltipContent>
       </Tooltip>
+      <div ref={setLeftSlot} className="flex min-w-0 items-center gap-0.5" />
       <div ref={setSlot} className="ml-auto flex items-center gap-0.5" />
     </div>
   );

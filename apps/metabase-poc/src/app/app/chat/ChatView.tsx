@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
@@ -10,8 +10,11 @@ import { ThinkingOrb } from "thinking-orbs";
 import { gateway, type ChatAnswer, type ChatTurn } from "@/lib/gateway";
 import { cn } from "@dima/ui/utils";
 import { useConversations, type Entry } from "@/stores/conversations";
-import { TopbarActions } from "@/components/shell/AppShell";
+import { TopbarActions, TopbarLead } from "@/components/shell/AppShell";
+import { ChatNav } from "@/components/chat/ChatNav";
+import { ChatTitle } from "@/components/chat/ChatTitle";
 import { Composer } from "@/components/chat/Composer";
+import { Bubble, DimaAvatar, Message, MessageScroller, UserAvatar } from "@dima/ui/ai/chat";
 import { Markdown } from "@/components/chat/Markdown";
 import { AddToDashboard } from "@/components/analytics/DashboardActions";
 import { ResultView } from "@dima/ui/result/ResultView";
@@ -81,7 +84,6 @@ export function ChatView({
   const [draft, setDraft] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [tab, setTab] = useState<PanelTab>("results");
-  const bottom = useRef<HTMLDivElement>(null);
   // Answers requested during this visit get the reveal; restored history renders still.
   const [fresh, setFresh] = useState<ReadonlySet<string>>(() => new Set());
 
@@ -94,10 +96,6 @@ export function ChatView({
   useEffect(() => {
     if (hydrated && convId && !conv) router.replace("/app/chat");
   }, [hydrated, convId, conv, router]);
-
-  useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [entries.length, pending]);
 
   const submit = (text: string) => {
     const question = text.trim();
@@ -131,6 +129,10 @@ export function ChatView({
 
   return (
     <div className="flex h-full min-h-0">
+      <TopbarLead>
+        <ChatNav orgId={orgId} activeId={conv?.id ?? null} />
+        <ChatTitle convId={conv?.id ?? null} />
+      </TopbarLead>
       {started && (
         <TopbarActions>
           <Tooltip>
@@ -153,8 +155,8 @@ export function ChatView({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {!started ? (
-          <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-4 py-6">
-            <div className="my-auto w-full max-w-2xl space-y-6 pb-10">
+          <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto py-6">
+            <div className="my-auto w-full max-w-3xl space-y-6 px-4 pb-10">
               <div className="space-y-2 text-center">
                 <h1 className="text-2xl font-semibold tracking-tight">Verinize sorun</h1>
                 <p className="text-sm text-muted-foreground">
@@ -184,45 +186,63 @@ export function ChatView({
             </div>
           </div>
         ) : (
-          <>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <div className="mx-auto max-w-3xl space-y-8 px-4 pt-2 pb-6">
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            {/* Fade instead of an opaque bar: content passes *behind* the top bar
+                and the floating composer, the way apps/web does it. */}
+            <MessageScroller
+              className="[mask-image:linear-gradient(to_bottom,transparent_0,#000_4rem)]"
+              scrollKey={`${conv?.id ?? ""}::${entries.length}:${pending ? "1" : "0"}`}
+            >
+              <div className="mx-auto w-full max-w-3xl space-y-9 px-4 pt-12 pb-36">
                 {entries.map((e) => (
-                  <article key={e.id} id={`entry-${e.id}`} className="scroll-mt-4 space-y-3">
-                    <div className="flex justify-end">
-                      <p className="max-w-[85%] rounded-2xl rounded-br-md bg-brand px-4 py-2 text-sm text-brand-foreground">
+                  <article key={e.id} id={`entry-${e.id}`} className="scroll-mt-4 space-y-4">
+                    <Message from="user" className="items-start gap-3 pl-10">
+                      <Bubble from="user" className="max-w-[calc(100%-2.5rem)]">
                         {e.question}
-                      </p>
-                    </div>
-                    {e.status === "pending" ? (
-                      <div className="flex items-center gap-2.5 text-sm" role="status">
-                        {/* libraries.dev thinking orb — follows the .dark class and prefers-reduced-motion on its own. */}
-                        <ThinkingOrb state="searching" size={32} color="#7e38f8" aria-hidden />
-                        {/* Same shimmer as apps/web's thinking text (components/ai/thinking.tsx). */}
-                        <span className="dima-shimmer font-medium">Veriye bakılıyor…</span>
-                      </div>
-                    ) : e.status === "error" ? (
-                      <p role="alert" className="text-sm text-destructive">
-                        {e.message}
-                      </p>
-                    ) : (
-                      <Reply reply={e.reply} question={e.question} canSave={canSave} animate={fresh.has(`${conv?.id}:${e.id}`)} />
-                    )}
+                      </Bubble>
+                      <UserAvatar className="mt-0.5 shrink-0" />
+                    </Message>
+                    <Message from="assistant" className="items-start gap-3 pr-10">
+                      <DimaAvatar className="mt-0.5 shrink-0" thinking={e.status === "pending"} />
+                      <Bubble from="assistant">
+                        {e.status === "pending" ? (
+                          <div className="flex items-center gap-2.5 pt-1 text-sm" role="status">
+                            {/* libraries.dev thinking orb — follows the .dark class and prefers-reduced-motion on its own. */}
+                            <ThinkingOrb state="searching" size={32} color="#7e38f8" aria-hidden />
+                            <span className="dima-shimmer font-medium">Veriye bakılıyor…</span>
+                          </div>
+                        ) : e.status === "error" ? (
+                          <p role="alert" className="text-sm text-destructive">
+                            {e.message}
+                          </p>
+                        ) : (
+                          <Reply
+                            reply={e.reply}
+                            question={e.question}
+                            canSave={canSave}
+                            animate={fresh.has(`${conv?.id}:${e.id}`)}
+                          />
+                        )}
+                      </Bubble>
+                    </Message>
                   </article>
                 ))}
-                <div ref={bottom} />
+              </div>
+            </MessageScroller>
+
+            {/* The composer floats over the thread at the thread's own width. */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10">
+              <div className="pointer-events-auto mx-auto w-full max-w-3xl px-4 pb-3">
+                <Composer
+                  value={draft}
+                  onChange={setDraft}
+                  onSubmit={() => submit(draft)}
+                  disabled={!configured}
+                  busy={pending}
+                />
               </div>
             </div>
-            <div className="mx-auto w-full max-w-3xl px-4 pb-4">
-              <Composer
-                value={draft}
-                onChange={setDraft}
-                onSubmit={() => submit(draft)}
-                disabled={!configured}
-                busy={pending}
-              />
-            </div>
-          </>
+          </div>
         )}
       </div>
 
