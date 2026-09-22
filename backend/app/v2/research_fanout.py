@@ -34,6 +34,12 @@ class FanoutStrategy(StrEnum):
     STOP = "STOP"
 
 
+class PriorityProvenance(StrEnum):
+    NONE = "NONE"
+    VERIFIED_EVIDENCE = "VERIFIED_EVIDENCE"
+    GOVERNED_METADATA = "GOVERNED_METADATA"
+
+
 class CardinalityObservation(FrozenModel):
     estimate: int | None = Field(default=None, ge=0)
     source: CardinalitySource
@@ -52,6 +58,7 @@ class CardinalityObservation(FrozenModel):
 class FanoutRequest(FrozenModel):
     candidate_keys: tuple[str, ...]
     cardinality: CardinalityObservation
+    priority_provenance: PriorityProvenance = PriorityProvenance.NONE
     remaining_query_budget: int = Field(ge=0)
     current_branch_depth: int = Field(ge=0)
     max_branch_depth: int = Field(default=3, ge=1)
@@ -143,11 +150,22 @@ class ResearchFanoutPolicy:
                 request.max_children,
                 request.remaining_query_budget,
             )
-            strategy = FanoutStrategy.BOUNDED_TOP_K
-            reason = (
-                "high cardinality; preserve caller-provided governed priority order "
-                "and cap branches; no synthetic Other member is created"
-            )
+            if request.priority_provenance in {
+                PriorityProvenance.VERIFIED_EVIDENCE,
+                PriorityProvenance.GOVERNED_METADATA,
+            }:
+                strategy = FanoutStrategy.BOUNDED_TOP_K
+                reason = (
+                    "high cardinality; bounded candidates already carry governed "
+                    f"priority provenance={request.priority_provenance.value}; "
+                    "no synthetic Other member is created"
+                )
+            else:
+                strategy = FanoutStrategy.BOUNDED_SUBSET
+                reason = (
+                    "high cardinality without governed ranking provenance; preserve "
+                    "bounded candidate subset without mislabeling caller order as Top-K"
+                )
         else:
             allowed = min(
                 len(candidates),
