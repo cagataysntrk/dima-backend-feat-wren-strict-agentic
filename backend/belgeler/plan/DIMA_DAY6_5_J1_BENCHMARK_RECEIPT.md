@@ -199,3 +199,148 @@ product patch = NONE
 
 No architecture/Resolver/product semantic code is changed from smoke evidence. Smoke is not the
 final winner decision; corrected full frozen primary bake-off remains required.
+
+
+---
+
+## Corrected full primary bake-off — decision receipt
+
+Run:
+`35705668833`
+
+Tested SHA:
+`bde3e5a21c159243002ef600ece007256d8482d0`
+
+Freeze:
+`d65-j1-freeze-v2`; J1S/J1T corpus blobs unchanged.
+
+Workflow conclusion:
+`FAILURE`, but the RED is **EVAL_ORACLE**, not provider outage and not an architecture regression.
+See `DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md / D65-J1-FULL-001`.
+
+### J1S — production-relevant semantic decision
+
+| Metric | Gemini Flash-Lite | Jev 1.13 | GPT-5.6 Luna |
+|---|---:|---:|---:|
+| model-needed accuracy | 86.67% (13/15) | **93.33% (14/15)** | 86.67% (13/15) |
+| model-needed Turkish | 84.62% (11/13) | **92.31% (12/13)** | **92.31% (12/13)** |
+| ambiguity abstain | 50% | 75% | **100%** |
+| no-match abstain | 100% | 100% | 100% |
+| metamorphic consistency | 100% | 100% | 100% |
+| repeated-run agreement | 100% | 100% | 100% |
+| p50 latency | 0.537s | **0.266s** | 1.013s |
+| p95 latency | 0.675s | **0.363s** | 1.729s |
+| measured total cost | $0.004084 | **$0.002282** | $0.007678 |
+
+Jev vs current Gemini incumbent:
+- +6.67 percentage points model-needed accuracy;
+- ~49.5% of Gemini p50 latency;
+- ~55.9% of Gemini measured cost;
+- no high-confidence wrongs at the frozen 0.90 diagnostic threshold;
+- Brier ≈ 0.1086; ECE-5bin ≈ 0.0857.
+
+Jev's only **model-needed** miss:
+- `j1s-019` — ambiguous "gelir"; expected ABSTAIN, selected Net Satış.
+  Native confidence = 0.53; top choice probability = 0.65, ABSTAIN = 0.34.
+  This is not a high-confidence silent wrong.
+
+Jev's second all-corpus miss:
+- `j1s-028` sensitive-exact control. This is not part of production model-needed winner scoring;
+  production hides sensitive entity candidates from the ordinary linker unless exact-safe routing
+  permits them.
+
+Gemini model-needed misses:
+- `j1s-019`
+- `j1s-020`
+
+Luna model-needed misses:
+- `j1s-013`
+- `j1s-031`
+
+Frozen high-cardinality NPS cases are exact verified aliases and therefore land in deterministic
+bypass controls; this corpus does **not** provide a model-needed high-cardinality score. Do not
+invent or tune new cases after seeing results; record this as a benchmark limitation.
+
+### J1T-CHOICE
+
+| Metric | Gemini Flash-Lite | Jev 1.13 | GPT-5.6 Luna |
+|---|---:|---:|---:|
+| first-run accuracy | 97.06% | 94.12% | **100%** |
+| ABSTAIN recall | 80% | 60% | **100%** |
+| unsafe ambiguity pick | **1** | 0 | 0 |
+| metamorphic consistency | 100% | 100% | 100% |
+| repeated-run agreement | **100%** | **100%** | 91.67% |
+| p50 latency | 0.488s | **0.286s** | 0.980s |
+| p95 latency | 0.582s | **0.405s** | 1.508s |
+| measured total cost | $0.003041 | **$0.001913** | $0.007108 |
+
+Jev choice misses:
+- `j1t-031` unsupported calendar-specific request;
+- `j1t-032` absolute-quarter request.
+Both should ABSTAIN.
+
+Gemini miss:
+- `j1t-028` ambiguous "son dönem" auto-picked THIS_MONTH — unsafe ambiguity pick.
+
+Luna first-run is 34/34, but repeated-run stability is not perfect:
+- `j1t-028` repeated choices = `ABSTAIN → PREVIOUS_MONTH → ABSTAIN`.
+
+### J1T-CONTRACT-FIDELITY
+
+Jev:
+```text
+status = TEMPORAL_INTEGRATION_LIMITATION
+native primitives = choice | noul | score
+dynamic n = NOT_DYNAMICALLY_REPRESENTABLE
+implicit_base_n = NOT_DYNAMICALLY_REPRESENTABLE
+case-answer enumeration would be required = YES
+temporal production candidate = NO
+```
+
+Gemini:
+- provider/network failures actually observed = 0;
+- 6 responses violate Pydantic cross-field invariants;
+- 3 additional valid typed responses are semantically wrong;
+- exact contract over all frozen cases = **25/34 = 73.53%**.
+
+Luna:
+- provider/network failures actually observed = 0;
+- 2 responses violate Pydantic cross-field invariants;
+- all remaining valid typed responses exact;
+- exact contract over all frozen cases = **32/34 = 94.12%**.
+
+The existing harness incorrectly calls those 8 invalid typed responses
+`TRANSPORT/PROVIDER`; this is the open EVAL_ORACLE receipt, not evidence to exclude them from
+the denominator.
+
+### Decision-gate interpretation
+
+```text
+Jev as universal semantic+temporal provider
+= NO
+
+Jev as bounded semantic CandidateSet decision primitive
+= PROMISING
+
+automatic production topology change
+= FORBIDDEN
+
+D65-J1B
+= CONSULT REQUIRED
+
+Terra conditional stage
+= NOT TRIGGERED AUTOMATICALLY
+
+D65-SI
+= BLOCKED UNTIL J1 topology decision
+```
+
+Why "PROMISING" for J1S:
+- it beats both primary peers on the frozen production model-needed accuracy;
+- it preserves 100% repeated/metamorphic agreement;
+- it is materially lower latency/cost in this run;
+- wrong semantic evidence is low-confidence rather than high-confidence silent error;
+- but it remains below an automatic production acceptance threshold and is weaker than Luna on
+  ambiguity abstention.
+
+Therefore no production model routing/cascade/threshold decision is taken here.
