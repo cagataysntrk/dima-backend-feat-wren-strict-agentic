@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P5 CONTRACT GREEN — P6 PRE-DEVELOPMENT REVIEW NEXT  
-**Product-code development:** P5 CONTRACT CLOSED GREEN; PRODUCTION ACCESS ISSUER PENDING P10  
+**Current phase:** P5 CONTRACT GREEN — P6 PRE-DEVELOPMENT REVIEW SEALED  
+**Product-code development:** P6 NOT STARTED; CORPUS FREEZE NEXT; P10 ISSUER STILL SEPARATE  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -673,3 +673,23 @@ sealer only. It does not certify a production access issuer, tenant isolation, p
 Metabase primary routing, or Wren retirement.
 
 **Next:** P6 pre-development review + frozen 80-case parity corpus. P10 issuer blocker remains separate.
+
+
+---
+
+## P6 pre-development review — SEALED
+
+Review:
+`backend/belgeler/metabase/predev/P6_PREDEVELOPMENT_REVIEW.md`
+
+Ticket:
+`backend/belgeler/metabase/tickets/P6_WREN_METABASE_PARITY.md`
+
+First proven gap:
+`DATA/FIXTURE_GAP` — existing Wren and Metabase live suites use different databases.
+
+Decision DMP-DEC-0019 requires one shared PostgreSQL parity snapshot before any numeric A/B claim.
+
+Next after governance GREEN:
+freeze the exact 80-case post-authority corpus and its fingerprint. No P6 execution patch precedes
+that freeze.

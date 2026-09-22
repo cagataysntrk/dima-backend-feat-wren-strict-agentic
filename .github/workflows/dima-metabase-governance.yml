@@ -84,6 +84,16 @@ jobs:
             grep -q "Status: SEALED / P5 CONTRACT IMPLEMENTATION AUTHORIZED" "$REVIEW"
           fi
 
+      - name: Require sealed P6 review before parity code exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d backend/app/v3/parity ] || [ -f backend/app/v3/substrate/metabase/execution_adapter.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P6_PREDEVELOPMENT_REVIEW.md"
+            test -f "$REVIEW"
+            grep -q "Status: \*\*SEALED / CORPUS FREEZE + PARITY HARNESS AUTHORIZED" "$REVIEW"
+          fi
+
       - name: Guard v3 against legacy semantic resolver authority
         shell: bash
         run: |

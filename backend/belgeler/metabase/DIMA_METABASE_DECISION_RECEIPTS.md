@@ -612,3 +612,27 @@ No secret/session token is durable identity. No default/guessed policy, RLS/CLS,
 principal or admin fallback is authorized.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0019 — P6 parity uses one physical PostgreSQL snapshot
+
+date: 2026-09-22
+
+evidence:
+Current Wren trust-plane tests execute boyahane DuckDB while Metabase P4 executes a separate synthetic
+PostgreSQL orders dataset. Numeric comparison between them would be an invalid oracle.
+
+decision:
+P6 uses the pinned Metabase lab's analytics PostgreSQL as the single physical parity snapshot for both
+arms. Wren reaches that exact database through its native PostgreSQL connector. A P6-only loopback
+Compose override may expose analytics-db to the CI host; base M2 compose and its no-host-port default
+remain unchanged.
+
+P6 seed/manifest are isolated test artifacts. No production datasource routing changes.
+
+result semantics:
+MATCH, TYPED_GAP, or UNEXPLAINED_MISMATCH. Typed gaps remain visible and are not counted as parity.
+
+status: SEALED.
