@@ -34,9 +34,26 @@ class DerivedResearchTaskProposal(FrozenModel):
 class ResearchTaskService:
     """Materialize seed/derived tasks without owning cognition or execution truth."""
 
-    _SEED_KIND_BY_CAPABILITY = {
+    _TASK_KIND_BY_CAPABILITY = {
         ManagerCapabilityKey.PERFORMANCE: ResearchTaskKind.QUERY,
+        ManagerCapabilityKey.COMPARISON: ResearchTaskKind.COMPARE,
+        ManagerCapabilityKey.TREND: ResearchTaskKind.TREND,
+        ManagerCapabilityKey.BREAKDOWN: ResearchTaskKind.BREAKDOWN,
+        ManagerCapabilityKey.RANKING: ResearchTaskKind.RANK,
+        ManagerCapabilityKey.RELATIONSHIP: ResearchTaskKind.RELATIONSHIP,
     }
+
+    @classmethod
+    def task_kind_for_capability(
+        cls,
+        capability_key: ManagerCapabilityKey,
+    ) -> ResearchTaskKind:
+        try:
+            return cls._TASK_KIND_BY_CAPABILITY[capability_key]
+        except KeyError as exc:
+            raise ResearchTaskMaterializationError(
+                f"no Day7 task kind for {capability_key.value}"
+            ) from exc
 
     @staticmethod
     def _ledger_item(runtime, obligation_id: str):
@@ -79,12 +96,7 @@ class ResearchTaskService:
             raise ResearchTaskMaterializationError(
                 "superseded obligation cannot seed Research work"
             )
-        try:
-            task_kind = self._SEED_KIND_BY_CAPABILITY[item.capability_key]
-        except KeyError as exc:
-            raise ResearchTaskMaterializationError(
-                f"no Day7 seed tool family yet for {item.capability_key.value}"
-            ) from exc
+        task_kind = self.task_kind_for_capability(item.capability_key)
 
         if not item.semantic_handle_refs:
             raise ResearchTaskMaterializationError(
