@@ -19,6 +19,7 @@ jobs:
   ft005-openai-matrix:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment: DIMA_OPENAI_API_KEY
     strategy:
       fail-fast: false
       matrix:
