@@ -17,6 +17,7 @@ from app.fast.ask_models import (
 )
 from app.fast.ask_service import FastAskService
 from app.fast.auth_context import FastAccessFingerprint
+from app.fast.resource_registry import ResourceRegistry
 from app.fast.metabase_models import (
     ConstructedQuery,
     ExecutionResponse,
@@ -332,3 +333,54 @@ def test_fast_only_application_does_not_mount_legacy_ask():
     assert "/fast/health" in paths
     assert "/ask" not in paths
     assert "/ask-v2" not in paths
+
+
+
+def test_resource_registry_deduplicates_same_canonical_uri():
+    registry = ResourceRegistry(
+        (
+            {
+                "type": "table",
+                "id": 1,
+                "uri": "metabase://table/1",
+                "name": "orders",
+                "database_id": 1,
+            },
+            {
+                "type": "table",
+                "id": 1,
+                "uri": "metabase://table/1",
+                "name": "orders",
+                "database_id": 1,
+            },
+        )
+    )
+
+    assert len(registry.candidates) == 1
+    only = registry.candidates[0]
+    assert only.handle == "fast_res_001"
+    assert registry.resource_uri(only.handle) == "metabase://table/1"
+
+
+class InventingFieldCognition(ScriptedCognition):
+    def select_field(self, *, question, purpose, hint, candidates):
+        return SelectionDecision(selected_handle="fast_field_999")
+
+
+def test_invented_field_handle_fails_closed_before_construct_or_execute():
+    gateway = FakeGateway(response=_response(QUESTION_SUM))
+    service = FastAskService(
+        cognition=InventingFieldCognition(QUESTION_SUM),
+        gateway_factory=lambda principal: gateway,
+    )
+    request_cls = __import__("app.fast.ask_models", fromlist=["FastAskRequest"]).FastAskRequest
+
+    response = service.ask(
+        request_cls(question=QUESTION_SUM, as_of_date=date(2026, 9, 7)),
+        principal=principal(),
+    )
+
+    assert response.status == AskOutcomeStatus.FAILED
+    assert response.error is not None
+    assert response.error.code == "COGNITION_INVALID"
+    assert gateway.constructed_queries == []
