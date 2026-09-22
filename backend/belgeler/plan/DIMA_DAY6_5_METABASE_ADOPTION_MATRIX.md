@@ -874,3 +874,29 @@ PRE-X0 PATTERN_ONLY/DIMA_CORE_NATIVE items without owner       = 0
 WREN_OWNS items with duplicate Metabase semantic ownership     = 0
 METABASE_RUNTIME_CANDIDATE items without explicit X0 question  = 0
 ```
+
+
+---
+
+## M0E exhaustion closure
+
+Detailed mechanism-by-mechanism authority:
+`DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md`.
+
+```text
+required capability families classified = ALL
+Dima-relevant UNCLASSIFIED               = 0
+PRE-X0 authority/security undisposed     = 0
+WREN_OWNS duplicate Metabase truth       = 0
+runtime candidate without proof question = 0
+```
+
+Primary runtime candidates for X0/full-X:
+- construct/validate/repair/resolve;
+- permission-aware execute/replay;
+- query handle/provenance;
+- metadata sync;
+- driver/JDBC/connector leverage.
+
+Wren owns semantic metric/relationship/cube truth.
+Product/workspace/cache/materialization items are intentionally deferred.

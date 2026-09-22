@@ -327,3 +327,20 @@ STOP before:
 - production Metabase dependency;
 - full D65-X;
 - any runtime choice based only on UI attractiveness or one query result.
+
+
+## 15. Completion receipt
+
+See `DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md`.
+
+```text
+M0E result = GREEN
+Dima-relevant unclassified = 0
+implementation spree = 0
+source copy/port/vendor = 0
+production Metabase dependency = 0
+```
+
+M0E is closed for D65-SI entry.
+A final cross-check is still mandatory after the real Standard Wren sentinel and before X0
+execution, because D65-SI may expose a new overlap/gap.

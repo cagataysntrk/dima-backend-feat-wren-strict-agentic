@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 PROVIDER TOPOLOGY P0 GREEN — M0E COMPLETION ACTIVE; D65-SI NEXT AFTER M0E; X0 BLOCKED; DEV80 FORBIDDEN**  
-**Kod fazı:** Provider control ladder closed. Luna semantic `35716056419=20/20 P0=0`; Luna temporal 6/8. Exact-same-SHA Sol temporal ceiling `35716502261=8/8 P0=0`, invalid/provider failure=0. Temporal RED family classified `MODEL_CAPABILITY_FLOOR / MODEL_COGNITION`, no architecture patch. Chosen engineering topology for D65-SI: `SEMANTIC_LINKER=Luna`, `TEMPORAL_NORMALIZER=Sol`, `RESEARCH_MANAGER=Sol`; BindingGate/TemporalBindingEngine unchanged, no fallback/cascade/threshold, production activation NO. Current blocker before D65-SI = M0E capability exhaustion/build-vs-buy completion. X0 remains after SI + real Wren sentinel + M0E final cross-check.  
+**Durum:** **DAY 6.5 PROVIDER TOPOLOGY P0 GREEN + M0E GREEN — D65-SI ACTIVE NEXT; X0 BLOCKED UNTIL SI/WREN SENTINEL; DEV80 FORBIDDEN**  
+**Kod fazı:** Provider topology closed (`Semantic=Luna`, `Temporal=Sol`, `Research=Sol`) with Luna semantic 20/20 and exact-SHA Sol temporal 8/8 P0=0. M0E capability exhaustion/build-vs-buy is now GREEN: all required Metabase capability families mapped, Dima-relevant UNCLASSIFIED=0, Wren semantic ownership retained, no implementation spree/source copy. Current active ticket = D65-SI Standard Integration Closure. X0 remains blocked until D65-SI + real Standard Wren sentinel + M0E final cross-check. Production `/ask-v2` OFF; DEV80 forbidden.  
 
 ---
 
@@ -31,7 +31,8 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` — J1B real-flow evidence/RED receipt.
 - `DIMA_DAY6_5_PROVIDER_TOPOLOGY_ENGINEERING_RECEIPT.md` — **chosen P0=0 Day6.5 engineering model topology evidence**.
 - `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md` — **current continuation handoff / provider ladder / stop points**.
-- `DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md` — **current Metabase exhaustion/build-vs-buy completion gate**.
+- `DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md` — Metabase exhaustion/build-vs-buy contract.
+- `DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md` — **M0E GREEN mechanism classification receipt**.
 - `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; J1 decision sonrası, X0 öncesi mandatory Standard integration gate**.
 - `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
 - `DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` — Metabase Cloud/self-host/bundled-service/source-port deployment decision gate.
@@ -253,6 +254,24 @@ production activation         NO
 
 Provider topology P0 gate is closed. Current active blocker before D65-SI:
 `D65-M0E capability exhaustion/build-vs-buy completion`.
+
+---
+
+## 0H. M0E GREEN — D65-SI ENTRY OPEN
+
+```text
+provider topology P0       GREEN
+M0E capability exhaustion  GREEN
+Dima-relevant unclassified 0
+Wren semantic default      RETAIN
+Metabase production dep    OFF
+```
+
+Current next ticket:
+`D65-SI STANDARD INTEGRATION CLOSURE`.
+
+X0 remains blocked until:
+`D65-SI GREEN → real Standard Wren sentinel GREEN → M0E final cross-check`.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE

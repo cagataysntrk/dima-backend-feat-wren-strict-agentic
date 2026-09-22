@@ -322,3 +322,23 @@ production activation= NO
 ```
 
 The next blocker is M0E completion. After M0E exit, proceed to D65-SI.
+
+
+## 5A. M0E completion
+
+`DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md` closes the capability map:
+
+```text
+Dima-relevant unclassified              0
+pre-X0 security undisposed              0
+WREN_OWNS duplicate semantic ownership  0
+runtime candidate without proof         0
+```
+
+M0E is GREEN for D65-SI entry.
+
+Primary residual-value candidates preserved for X0:
+construct/validate/repair/resolve, permission-aware execution/replay, handles/provenance,
+technical metadata sync and connector/driver runtime leverage.
+
+Do not implement deferred cache/materialization/dashboard/workspace mechanisms before X0.

@@ -144,3 +144,19 @@ Binding/authority engines remain deterministic and unchanged.
 
 Remaining D65-SI start precondition:
 current M0E completion gate must be sufficiently closed.
+
+
+---
+
+## M0E entry gate — CLOSED GREEN
+
+`DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md`:
+Dima-relevant mechanism classification = complete; unclassified = 0.
+
+D65-SI may now begin.
+
+D65-SI must preserve:
+- Dima core authority/evidence ownership;
+- retained Wren semantic backbone;
+- no Metabase runtime dependency;
+- no duplicate Metabase semantic truth.
