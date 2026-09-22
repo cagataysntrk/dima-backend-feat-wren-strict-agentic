@@ -38,3 +38,5 @@ jobs:
 # retry: eval-oracle-fixed
 
 # retry: semantic-surface-completeness-p0
+
+# retry: shared-cross-family-authority
