@@ -212,7 +212,7 @@ class WrenStandardExecutionAdapter:
             self._binding(
                 projection.comparison_handle,
                 tenant_binding=tenant_binding,
-                context_version=context_version,
+                context_version=ir.context_version,
                 expected_type=ResolvedComparison,
             )
             if projection.comparison_handle is not None
@@ -244,7 +244,7 @@ class WrenStandardExecutionAdapter:
             period=period,
             ranking=ranking,
             comparison=comparison,
-            context_version=context_version,
+            context_version=ir.context_version,
         )
         return ir
 
@@ -331,7 +331,7 @@ class WrenStandardExecutionAdapter:
                 self._handles.binding_for_execution(
                     handle_id,
                     tenant_binding=tenant_binding,
-                    context_version=context_version,
+                    context_version=ir.context_version,
                 ),
             )
             if isinstance(binding.canonical_target, ResolvedSemanticRef)
@@ -369,7 +369,7 @@ class WrenStandardExecutionAdapter:
                         "analytics_ir": ir_snapshot,
                         "planner_id": self._planner.planner_id,
                         "planner_version": self._planner.planner_version,
-                        "context_version": context_version,
+                        "context_version": ir.context_version,
                         "principal_user_id": runtime.principal_user_id,
                         "principal_roles": list(runtime.roles),
                     }
