@@ -194,15 +194,32 @@ class ResearchToolRegistry:
                     + ", ".join(sorted(undeclared_handles))
                 )
 
-            if validated.derived_task_id is None:
+            if task.origin == "USER_SEED":
+                if validated.derived_task_id is not None:
+                    raise ResearchToolContractError(
+                        "USER_SEED task cannot execute as AGENT_DERIVED"
+                    )
                 if task.question_id not in validated.obligation_ids:
                     raise ResearchToolContractError(
                         "Research QUERY task must bind to its accepted obligation"
                     )
-            elif task.question_id != validated.derived_parent_obligation_id:
-                raise ResearchToolContractError(
-                    "derived Research task parent does not match task question_id"
-                )
+            else:
+                if validated.derived_task_id != task.task_id:
+                    raise ResearchToolContractError(
+                        "derived execution task_id does not match ResearchTask"
+                    )
+                if validated.derived_parent_obligation_id != task.parent_obligation_id:
+                    raise ResearchToolContractError(
+                        "derived execution parent obligation does not match ResearchTask"
+                    )
+                if validated.derived_evidence_ref != task.trigger_evidence_ref:
+                    raise ResearchToolContractError(
+                        "derived execution evidence does not match ResearchTask"
+                    )
+                if task.question_id != task.parent_obligation_id:
+                    raise ResearchToolContractError(
+                        "derived ResearchTask question/parent authority mismatch"
+                    )
 
         return spec, validated
 
