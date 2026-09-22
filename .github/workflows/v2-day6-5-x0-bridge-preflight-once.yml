@@ -1,0 +1,45 @@
+name: v2-day6-5-x0-bridge-preflight-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day6-5-x0-bridge-preflight-once.yml"
+
+jobs:
+  bridge-preflight:
+    if: "github.event.head_commit.message == 'test(v2-day6.5): run provider-free X0 bridge preflight'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Compile bridge boundary
+        working-directory: backend
+        run: |
+          python -m py_compile app/v2/standard_execution.py lab/x0_bridge_preflight.py
+      - name: Provider-free real sealed bridge preflight
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day6_5_standard_execution.py \
+            tests/test_v2_day6_5_real_standard_trust_plane.py \
+            tests/test_v2_day6_5_x0_bridge_preflight.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-x0-bridge-preflight
+          path: backend/lab/reports/v2_day6_5_x0_bridge_preflight.json
+          retention-days: 90
