@@ -3,7 +3,7 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 RUNTIME-KERNEL REALIGNMENT READY — FAMILY CLOSURE ORACLE RERUN IN PROGRESS**  
+**Durum:** **DAY 6.5 FAMILY CLOSURE GREEN — D65-E3A-R RUNTIME KERNEL REALIGNMENT NEXT**  
 **Kod fazı:** D65-E1/E2 green; StandardBuilder/E4/E5 focused-green but provisional under the new runtime-kernel decision. Next product ticket is `D65-E3A-R`: add a minimal generic process-control kernel and make existing StandardBuilder its first consumer without changing semantic behavior. Research Manager remains untouched; production hybrid `/ask-v2` remains OFF.  
 
 ---
@@ -5428,7 +5428,9 @@ Architecture terminology: `execution_path = STANDARD | RESEARCH`; `standard_outc
 
 Oracle sync sonrası same family bundle yeniden tetiklendi: `run 35691982389`.
 
-Semantic code testcase geçirmek için yamalanmadı.
+Result: **88 / 88 PASS**, 5 warnings, 12.46s. Compile PASS.
+
+Semantic code testcase geçirmek için yamalanmadı. One-shot workflow green sonrası kaldırıldı (`6e3c81cf19c0`).
 
 ### Sıradaki product ticket — D65-E3A-R
 
