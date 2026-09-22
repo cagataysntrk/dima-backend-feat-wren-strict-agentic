@@ -1,5 +1,30 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-PREFREEZE-J1-M0-X0-OVERRIDE -->
+> ## 🔴 Day 6.5 CURRENT PRE-FREEZE OVERRIDE — 2026-09-22
+>
+> Current detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+> This overlay supersedes older MIMARI wording that placed D65-X only after DEV80/engineering closure or scoped Jev only to candidate selection.
+>
+> Proven baseline: provider-free `35696652502=102/102`, reference canary `35697064833=16/16`, Wren+Research sentinel `35697471863=2/2`, tested code SHA `8dfde62d...`.
+> Freeze candidate and DEV80 are BLOCKED.
+>
+> Pre-freeze decisions:
+> ```text
+> D65-J1S = semantic candidate decision benchmark
+> D65-J1T = typed temporal-intent benchmark
+> D65-M0  = Metabase architecture/adoption audit
+> D65-X0  = thin separate-service Metabase Agent API feasibility
+> ```
+>
+> J1S/J1T are lab/eval only. Product semantic/temporal/authority code stays unchanged until a result is reviewed.
+> Jev is pinned to `typesafe/jev-1.13`, uses the native Decisions API, and never becomes semantic/date/numeric authority.
+>
+> Wren remains incumbent now. Metabase is not production-wired. If X0 is promising, STOP/CONSULT before full D65-X; exactly one primary substrate must be chosen before freeze.
+>
+> Current Metabase source check: historical `74216b...`; current master `fff70175...`; one commit ahead and no relevant agent/API/MCP family delta.
+>
+
 <!-- DIMA-V2-METABASE-SOURCE-REFERENCE-CONTRACT -->
 <!-- DIMA-V2-METABASE-SOURCE-REFERENCE-CONTRACT -->
 > ### Metabase source/reference boundary
