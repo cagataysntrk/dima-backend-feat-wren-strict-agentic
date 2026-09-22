@@ -3,7 +3,7 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P0 / M0 — branch + baseline + source lock + governance bootstrap  
+**Current phase:** P0 CLOSED / M1 READY — engine-independent Dima contracts + Wren adapter  
 **Product-code development:** NOT STARTED  
 **Metabase runtime:** NOT SELECTED  
 **Production routing:** UNCHANGED / NOT CONNECTED
@@ -32,11 +32,9 @@ product code touched        0
 
 ## Open — next gate
 
-P0 bootstrap CI must run green on this branch.
+**M1 / P1 READY:** engine-independent contracts + Wren adapter with zero behavior drift.
 
-After P0:
-M1 / P1 engine-independent contracts + Wren adapter begins.
-No Metabase product routing before P3A bridge preflight.
+Before any M1 product-code change, the engineer/agent must re-read the sealed architecture report and roadmap P1, validate the current source lock/status, inspect the certified-base implementation, and record the ticket scope/owner/invariants. No Metabase product routing before P3A bridge preflight.
 
 ## Known source-only deltas
 
@@ -45,7 +43,7 @@ Any port requires Decision Receipt + branch-local proof.
 
 ## Stop conditions currently active
 
-- no product code until bootstrap governance is green;
+- P0 bootstrap is closed; product code may change only under an authorized M1/P1 ticket after mandatory pre-development source review;
 - no source-branch synchronization;
 - no Metabase primary switch;
 - no Wren removal.
