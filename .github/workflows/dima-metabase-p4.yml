@@ -6,6 +6,8 @@ on:
       - feat/dima-metabase-platform
     paths:
       - "backend/app/v3/substrate/metabase/execution_binding.py"
+      - "backend/app/v3/substrate/metabase/compiler.py"
+      - "backend/app/v3/substrate/metabase/canonical.py"
       - "backend/app/v3/substrate/metabase/p3a_*.py"
       - "backend/tests/test_v3_p4_*.py"
       - "backend/tests/test_v3_p3a_bridge_preflight*.py"
@@ -39,11 +41,6 @@ jobs:
             echo "P4 touched a forbidden file"
             exit 1
           fi
-          if printf '%s\n' "$changed" | grep -E '^backend/app/v3/substrate/metabase/(compiler|canonical)\.py$'; then
-            echo "P4 compiler/canonical is forbidden until execution-binding gate closes"
-            exit 1
-          fi
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -54,14 +51,23 @@ jobs:
         working-directory: backend
         run: pip install -e ".[dev]"
 
-      - name: Compile unified binding boundary
+      - name: Compile P4 production boundary
         working-directory: backend
         run: |
-          python -m py_compile             app/v3/substrate/metabase/execution_binding.py             app/v3/substrate/metabase/p3a_models.py             app/v3/substrate/metabase/p3a_preflight.py             app/v3/substrate/metabase/p3a_fixture.py
+          python -m py_compile \
+            app/v3/substrate/metabase/execution_binding.py \
+            app/v3/substrate/metabase/compiler.py \
+            app/v3/substrate/metabase/canonical.py \
+            app/v3/substrate/metabase/p3a_models.py \
+            app/v3/substrate/metabase/p3a_preflight.py \
+            app/v3/substrate/metabase/p3a_fixture.py
 
-      - name: Focused P4 execution-binding proof
+      - name: Focused P4 execution-binding and compiler proof
         working-directory: backend
-        run: pytest -q tests/test_v3_p4_execution_binding.py
+        run: |
+          pytest -q \
+            tests/test_v3_p4_execution_binding.py \
+            tests/test_v3_p4_metabase_compiler.py
 
       - name: Provider-free P3A P3 M1 regressions
         working-directory: backend
@@ -84,7 +90,7 @@ jobs:
           set +a
           python3 scripts/bootstrap.py
 
-      - name: Pinned-live P3 and P3A regressions
+      - name: Pinned-live P3 P3A and P4 canonical regressions
         working-directory: backend
         shell: bash
         run: |
@@ -94,7 +100,11 @@ jobs:
           set +a
           export DIMA_METABASE_P3_LIVE=1
           export DIMA_METABASE_P3A_LIVE=1
-          pytest -q             tests/test_v3_p3_metabase_client_live.py             tests/test_v3_p3a_bridge_preflight_live.py
+          export DIMA_METABASE_P4_LIVE=1
+          pytest -q \
+            tests/test_v3_p3_metabase_client_live.py \
+            tests/test_v3_p3a_bridge_preflight_live.py \
+            tests/test_v3_p4_metabase_canonical_live.py
 
       - name: Teardown
         if: always()
