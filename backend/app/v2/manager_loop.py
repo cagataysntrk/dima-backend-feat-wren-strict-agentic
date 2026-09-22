@@ -36,6 +36,12 @@ from app.v2.manager_runtime import (
     ManagerStateError,
 )
 from app.v2.research_state import ResearchStateView, build_research_state_view
+from app.v2.research_tasks import (
+    DerivedResearchTaskProposal,
+    ResearchTaskMaterializationError,
+    ResearchTaskService,
+)
+from app.v2.research_tools import ResearchToolRunner
 from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
@@ -143,6 +149,7 @@ class ManagerDecisionTransport(FrozenModel):
     derived_parent_obligation_id: str | None = None
     derived_capability_key: ManagerCapabilityKey | None = None
     derived_evidence_ref: str | None = None
+    derived_reason: str | None = Field(default=None, min_length=1, max_length=500)
 
     relationship_obligation_id: str | None = None
     focus_handles: tuple[str, ...] = ()
@@ -194,13 +201,14 @@ class ManagerDecisionTransport(FrozenModel):
             self.derived_parent_obligation_id,
             self.derived_capability_key,
             self.derived_evidence_ref,
+            self.derived_reason,
         )
         if any(value is not None for value in derived_values):
             if self.action != ManagerActionKind.RUN_ANALYTICS:
                 raise ValueError("derived task fields are valid only for run_analytics")
             if not all(value is not None for value in derived_values):
                 raise ValueError(
-                    "derived task id/parent/capability/evidence_ref birlikte verilmelidir"
+                    "derived task id/parent/capability/evidence_ref/reason birlikte verilmelidir"
                 )
         return self
 
@@ -374,13 +382,22 @@ class ManagerUnderstandingOutcome:
 
 
 class ResearchManagerLoop:
-    def __init__(self, *, llm, source_spans: SourceSpanRegistry) -> None:
+    def __init__(
+        self,
+        *,
+        llm,
+        source_spans: SourceSpanRegistry,
+        research_tool_runner: ResearchToolRunner | None = None,
+        research_task_service: ResearchTaskService | None = None,
+    ) -> None:
         structured = getattr(llm, "structured_json", None)
         if not callable(structured):
             raise ValueError("RESEARCH_MANAGER provider native structured_json desteklemiyor")
         self._structured = structured
         self._source_spans = source_spans
         self._capabilities = ManagerCapabilityRegistry()
+        self._research_tool_runner = research_tool_runner
+        self._research_tasks = research_task_service or ResearchTaskService()
         self._alias_by_handle: dict[str, str] = {}
         self._handle_by_alias: dict[str, str] = {}
 
@@ -768,6 +785,7 @@ class ResearchManagerLoop:
             text=question,
         )
         frontier = DynamicActionFrontier()
+        materialized_tasks = {}
 
         while runtime.snapshot.state not in {
             ManagerState.COMPLETED,
@@ -928,12 +946,98 @@ class ResearchManagerLoop:
                     runtime=runtime,
                 )
                 assert call is not None
-                result = runtime.call_tool(call, executor=executor)
-                manager_result = self._manager_safe(result.tool_result)
+
+                research_execution = None
+                if (
+                    self._research_tool_runner is not None
+                    and decision.action == ManagerActionKind.RUN_ANALYTICS
+                ):
+                    if decision.derived_task_id is None:
+                        if len(decision.obligation_ids) != 1:
+                            raise ResearchTaskMaterializationError(
+                                "Day7 one tool invocation maps to exactly one ResearchTask"
+                            )
+                        obligation_id = decision.obligation_ids[0]
+                        task_id = f"seed:{obligation_id}"
+                        task = materialized_tasks.get(task_id)
+                        if task is None:
+                            task = self._research_tasks.seed_for_obligation(
+                                runtime=runtime,
+                                obligation_id=obligation_id,
+                                task_id=task_id,
+                            )
+                    else:
+                        evidence = executor.evidence_store.get(
+                            decision.derived_evidence_ref
+                        )
+                        parent_task = materialized_tasks.get(evidence.task_id)
+                        if parent_task is None:
+                            raise ResearchTaskMaterializationError(
+                                "derived branch parent ResearchTask is not materialized"
+                            )
+                        handle_inputs = tuple(
+                            dict.fromkeys(
+                                (
+                                    *tuple(call.args.get("metric_handles") or ()),
+                                    *tuple(call.args.get("dimension_handles") or ()),
+                                    *tuple(call.args.get("filter_handles") or ()),
+                                    *(
+                                        ()
+                                        if call.args.get("period_handle") is None
+                                        else (call.args["period_handle"],)
+                                    ),
+                                    *(
+                                        ()
+                                        if call.args.get("comparison_handle") is None
+                                        else (call.args["comparison_handle"],)
+                                    ),
+                                )
+                            )
+                        )
+                        proposal = DerivedResearchTaskProposal(
+                            task_id=decision.derived_task_id,
+                            task_kind=self._research_tasks.task_kind_for_capability(
+                                decision.derived_capability_key
+                            ),
+                            parent_task_id=parent_task.task_id,
+                            parent_obligation_id=decision.derived_parent_obligation_id,
+                            trigger_evidence_ref=decision.derived_evidence_ref,
+                            input_refs=handle_inputs,
+                            material_reason=decision.derived_reason,
+                        )
+                        task = self._research_tasks.materialize_derived(
+                            runtime=runtime,
+                            evidence_store=executor.evidence_store,
+                            parent_task=parent_task,
+                            proposal=proposal,
+                        )
+
+                    tool_id = self._research_tool_runner.tool_id_for_task(task)
+                    research_execution = self._research_tool_runner.execute(
+                        task=task,
+                        tool_id=tool_id,
+                        call=call,
+                        runtime=runtime,
+                        executor=executor,
+                        principal=getattr(executor, "principal", None),
+                    )
+                    materialized_tasks[task.task_id] = research_execution.task
+                    manager_result = self._manager_safe(
+                        research_execution.observation
+                    )
+                else:
+                    result = runtime.call_tool(call, executor=executor)
+                    manager_result = self._manager_safe(result.tool_result)
+
                 observations.append(
                     {
                         "kind": "tool",
                         "tool": call.name.value,
+                        "research_task_id": (
+                            None
+                            if research_execution is None
+                            else research_execution.task.task_id
+                        ),
                         "result": manager_result,
                     }
                 )
