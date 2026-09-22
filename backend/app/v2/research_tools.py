@@ -24,19 +24,8 @@ from app.v2.manager_tools import (
     ManagerToolName,
     RunAnalyticsArgs,
 )
-from app.v2.models import EvidenceArtifact, FrozenModel, ResearchTask
+from app.v2.models import EvidenceArtifact, FrozenModel, ResearchTask, ResearchTaskKind
 from control_plane.authorize import AuthzError, Principal, authorize
-
-
-class ResearchTaskKind(StrEnum):
-    QUERY = "QUERY"
-    COMPARE = "COMPARE"
-    TREND = "TREND"
-    BREAKDOWN = "BREAKDOWN"
-    RANK = "RANK"
-    RELATIONSHIP = "RELATIONSHIP"
-    CONTRIBUTION = "CONTRIBUTION"
-    PEER_COMPARE = "PEER_COMPARE"
 
 
 class ResearchToolAuthority(StrEnum):
