@@ -1,0 +1,86 @@
+name: dima-fast-ft002-gateway
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft002-gateway.yml"
+      - "backend/app/fast/**"
+      - "backend/tests/test_fast_metabase_gateway*.py"
+      - "backend/tests/test_fast_boundary_static.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fast-metabase-gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify expected Fast Track ref
+        shell: bash
+        run: test "$GITHUB_REF_NAME" = "feat/dima-metabase-product-fast-track"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile Fast gateway boundary
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/fast/auth_context.py \
+            app/fast/metabase_errors.py \
+            app/fast/metabase_models.py \
+            app/fast/metabase_telemetry.py \
+            app/fast/metabase_gateway.py
+
+      - name: Static Fast boundary gate
+        working-directory: backend
+        run: pytest -q tests/test_fast_boundary_static.py
+
+      - name: Provider-free Gateway contract
+        working-directory: backend
+        run: pytest -q tests/test_fast_metabase_gateway.py
+
+      - name: Start pinned Metabase lab
+        working-directory: backend/lab/metabase
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env up -d
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+
+      - name: Live Fast Gateway proof
+        working-directory: backend
+        env:
+          DIMA_FAST_METABASE_LIVE: "1"
+          METABASE_PORT: "3300"
+          MB_ADMIN_EMAIL: "admin@dima-lab.local"
+          MB_ADMIN_PASSWORD: "DimaMetabaseLabAdmin!2026"
+        run: pytest -q tests/test_fast_metabase_gateway_live.py
+
+      - name: Teardown
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env down -v --remove-orphans || true
