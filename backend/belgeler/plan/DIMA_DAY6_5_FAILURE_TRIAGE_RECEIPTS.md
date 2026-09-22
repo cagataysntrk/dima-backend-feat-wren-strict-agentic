@@ -675,10 +675,10 @@ invariant_being_fixed:
 Bounded decision JSON transport uses an explicit small output budget independent of model price.
 
 focused_proof:
-PENDING provider-free.
+`35709903058 = 9/9 PASS`; harness compile PASS.
 
 family_regression_proof:
-PENDING provider-free.
+Frozen J1 provider-free eval family `35709903058 = 9/9 PASS`.
 
 status:
-`FIX IMPLEMENTED / PROOF PENDING`.
+`CLOSED — generic bounded chat output cap added at 26ac500eb9cef53c50e4cfc2128b18ca2105a0b3; provider-free run 35709903058 = 9/9 PASS; no corpus/prompt/product semantic change.`

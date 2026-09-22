@@ -450,3 +450,19 @@ product-code touch   = 0
 ```
 
 This run is not Terra model-quality evidence and does not count against the candidate.
+
+
+## Terra transport repair closure
+
+```text
+fix commit          = 26ac500eb9cef53c50e4cfc2128b18ca2105a0b3
+provider-free run   = 35709903058
+result              = 9/9 PASS
+transport change    = generic chat max_tokens=512
+corpus change       = 0
+prompt change       = 0
+product-code touch  = 0
+```
+
+`D65-J1T-TERRA-001` is CLOSED. Retry is allowed because attempt 1 produced no model-quality
+evidence.
