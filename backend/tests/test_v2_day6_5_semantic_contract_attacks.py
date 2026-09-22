@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
@@ -19,6 +21,7 @@ from app.v2.semantic_linker import (
     BoundedSemanticLinker,
     SemanticBindingGate,
     SemanticCandidateGenerator,
+    SemanticLinkAuthorityError,
     SemanticLinkBatchDecision,
     SemanticLinkChoice,
 )
@@ -309,3 +312,110 @@ def test_coverage_contract_explicitly_guards_material_modifier_predicate_loss():
     assert "qualifier" in prompt or "modifier" in prompt
     assert "predicate" in prompt
     assert "silently" in prompt or "silent" in prompt
+
+
+
+def test_duplicate_exact_context_candidate_escape_is_rejected():
+    provider = _ContextAwareProvider(escape=True)
+    linker, _ = _duplicate_linker(provider)
+
+    with pytest.raises(SemanticLinkAuthorityError, match="outside"):
+        linker.resolve(
+            (("dup-escape", "account code", "dimension"),),
+            provenance_type="USER_SOURCE",
+            decision_context="show invoice total by account code",
+        )
+
+    assert provider.calls == 1
+
+
+def _turkish_inflection_context():
+    return BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-tr-inflect",
+            mdl_version="mdl-tr-inflect",
+            compact_catalog_builder_version="tr-inflect-test",
+            business_rules_hash="b" * 64,
+            prompt_context_policy_version="tr-inflect-test",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="cari",
+                display="Cari Hesap",
+                synonyms=("cari",),
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="cari.bakiye",
+                        display="Bakiye",
+                        synonyms=("açık bakiye",),
+                    ),
+                ),
+            ),
+            CompactCubeContextV0(
+                canonical_name="mizan",
+                display="Mizan",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="mizan.bakiye",
+                        display="Bakiye",
+                        synonyms=("hesap bakiyesi",),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def test_turkish_inflected_surface_keeps_relevant_candidate_via_governed_context():
+    generator = SemanticCandidateGenerator(
+        semantic_context=_turkish_inflection_context(),
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+    )
+
+    candidate_set = generator.generate(
+        request_id="tr-inflect",
+        surface="cari bakiyeyi",
+        kind_hint="metric",
+        decision_context="tahsil edilmemiş cari bakiyeyi göster",
+    )
+
+    canonical = {
+        item.canonical_target.canonical_name
+        for item in candidate_set.bindings
+    }
+    assert "cari.bakiye" in canonical
+    assert candidate_set.retrieval_backend == "governed_token_index_v1"
+    assert candidate_set.too_broad is False
+
+
+def test_coverage_veto_can_quote_exact_lost_modifier_without_minting_semantics():
+    question = "yüksek cari bakiyeyi göster"
+    spans, digest, obligation = _coverage_fixture(
+        question,
+        semantic_surfaces=("cari bakiyeyi",),
+    )
+    capture = _CaptureCoverage(
+        {
+            "status": "VETO",
+            "issues": [
+                {
+                    "kind": "MATERIAL_REQUEST_OMITTED",
+                    "source_surfaces": ["yüksek"],
+                    "note": "material threshold/qualifier is not represented",
+                }
+            ],
+        }
+    )
+    coverage = StandardCoverageVeto(
+        structured=capture,
+        source_spans=spans,
+    )
+
+    audit = coverage.audit(
+        question=question,
+        obligations=(obligation,),
+        source_message_hash=digest,
+    )
+
+    assert audit.status == "VETO"
+    assert audit.issues[0].source_surfaces == ("yüksek",)
