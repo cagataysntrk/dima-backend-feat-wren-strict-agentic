@@ -179,3 +179,143 @@ class ResearchTaskService:
             trigger_evidence_ref=evidence_ref,
             branch_depth=depth,
         )
+
+
+class ResearchTaskLifecycleError(RuntimeError):
+    pass
+
+
+class ResearchTaskRegistry:
+    """Run-scoped task identity/lifecycle guard.
+
+    This is not semantic authority and does not execute tools. It only guarantees that
+    one task identity cannot be delivered as two different actions, that in-flight
+    duplicates do not execute twice, that fanout is bounded, and that cancellation is
+    terminal.
+    """
+
+    def __init__(self, *, max_fanout: int = 4) -> None:
+        if max_fanout < 1:
+            raise ValueError("max_fanout must be >= 1")
+        self.max_fanout = max_fanout
+        self._tasks: dict[str, ResearchTask] = {}
+        self._receipts: dict[str, tuple[str, str, object]] = {}
+        self._inflight: dict[str, tuple[str, str]] = {}
+
+    @staticmethod
+    def _identity(task: ResearchTask) -> dict:
+        payload = task.model_dump(mode="json")
+        payload.pop("state", None)
+        return payload
+
+    def get(self, task_id: str) -> ResearchTask:
+        try:
+            return self._tasks[task_id]
+        except KeyError as exc:
+            raise ResearchTaskLifecycleError(f"unknown ResearchTask: {task_id}") from exc
+
+    def register(self, task: ResearchTask) -> ResearchTask:
+        existing = self._tasks.get(task.task_id)
+        if existing is None:
+            self._tasks[task.task_id] = task
+            return task
+        if self._identity(existing) != self._identity(task):
+            raise ResearchTaskLifecycleError(
+                f"ResearchTask identity conflict: {task.task_id}"
+            )
+        return existing
+
+    def register_many(self, tasks: tuple[ResearchTask, ...]) -> tuple[ResearchTask, ...]:
+        unique_new = {
+            task.task_id
+            for task in tasks
+            if task.task_id not in self._tasks
+        }
+        if len(unique_new) > self.max_fanout:
+            raise ResearchTaskLifecycleError(
+                f"Research task fanout {len(unique_new)} exceeds {self.max_fanout}"
+            )
+        return tuple(self.register(task) for task in tasks)
+
+    def begin_execution(
+        self,
+        *,
+        task: ResearchTask,
+        tool_id: str,
+        action_fingerprint: str,
+    ) -> object | None:
+        current = self.register(task)
+        if current.state == "cancelled":
+            raise ResearchTaskLifecycleError(
+                f"cancelled ResearchTask cannot execute: {task.task_id}"
+            )
+
+        receipt = self._receipts.get(task.task_id)
+        if receipt is not None:
+            receipt_tool, receipt_action, result = receipt
+            if receipt_tool != tool_id or receipt_action != action_fingerprint:
+                raise ResearchTaskLifecycleError(
+                    f"ResearchTask completed with different execution identity: {task.task_id}"
+                )
+            return result
+
+        inflight = self._inflight.get(task.task_id)
+        if inflight is not None:
+            if inflight != (tool_id, action_fingerprint):
+                raise ResearchTaskLifecycleError(
+                    f"ResearchTask in-flight identity conflict: {task.task_id}"
+                )
+            raise ResearchTaskLifecycleError(
+                f"duplicate in-flight ResearchTask delivery: {task.task_id}"
+            )
+
+        self._inflight[task.task_id] = (tool_id, action_fingerprint)
+        self._tasks[task.task_id] = current.model_copy(update={"state": "running"})
+        return None
+
+    def complete_execution(
+        self,
+        *,
+        task_id: str,
+        tool_id: str,
+        action_fingerprint: str,
+        result: object,
+    ) -> ResearchTask:
+        current = self.get(task_id)
+        inflight = self._inflight.get(task_id)
+        if current.state == "cancelled":
+            self._inflight.pop(task_id, None)
+            raise ResearchTaskLifecycleError(
+                f"late completion cannot resurrect cancelled ResearchTask: {task_id}"
+            )
+        if inflight != (tool_id, action_fingerprint):
+            raise ResearchTaskLifecycleError(
+                f"ResearchTask completion identity mismatch: {task_id}"
+            )
+
+        self._inflight.pop(task_id, None)
+        completed = current.model_copy(update={"state": "complete"})
+        self._tasks[task_id] = completed
+        self._receipts[task_id] = (tool_id, action_fingerprint, result)
+        return completed
+
+    def cancel(self, task_id: str) -> ResearchTask:
+        current = self.get(task_id)
+        if current.state == "complete":
+            return current
+        cancelled = current.model_copy(update={"state": "cancelled"})
+        self._tasks[task_id] = cancelled
+        return cancelled
+
+    def fail(self, task_id: str) -> ResearchTask:
+        current = self.get(task_id)
+        if current.state == "cancelled":
+            return current
+        failed = current.model_copy(update={"state": "failed"})
+        self._tasks[task_id] = failed
+        self._inflight.pop(task_id, None)
+        return failed
+
+    @property
+    def tasks(self) -> tuple[ResearchTask, ...]:
+        return tuple(self._tasks.values())
