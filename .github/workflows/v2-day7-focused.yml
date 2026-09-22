@@ -10,6 +10,13 @@ name: v2-day7-focused
       - "backend/app/v2/manager_executor.py"
       - "backend/tests/test_v2_day7_research_tool_contract.py"
       - "backend/tests/test_v2_day7_research_wren_vertical.py"
+      - "backend/app/v2/research_state.py"
+      - "backend/app/v2/research_tasks.py"
+      - "backend/app/v2/manager_runtime.py"
+      - "backend/app/v2/manager_models.py"
+      - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/models.py"
+      - "backend/tests/test_v2_day7_research_task_lifecycle.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -37,8 +44,14 @@ jobs:
         run: |
           python -m py_compile \
             app/v2/research_tools.py \
+            app/v2/research_state.py \
+            app/v2/research_tasks.py \
             app/v2/manager_tools.py \
-            app/v2/manager_executor.py
+            app/v2/manager_executor.py \
+            app/v2/manager_runtime.py \
+            app/v2/manager_models.py \
+            app/v2/manager_loop.py \
+            app/v2/models.py
       - name: Focused provider-free Day7 test
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_tool_contract.py
