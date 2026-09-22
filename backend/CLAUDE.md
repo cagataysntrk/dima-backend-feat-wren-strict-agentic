@@ -25,6 +25,15 @@
 > DEV80/Validation50/Hidden50 remain forbidden.
 >
 > Do not reopen Day6.5 without new independent invalidating P0.
+>
+> Day7 correctness portability / orchestration ablation authority:
+> `belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`.
+>
+> **Permanent cross-cutting rule:** before adding deterministic cognition/orchestration,
+> first ask whether it protects authority/security/semantic truth/execution safety/
+> Evidence/completion/hard budget or side-effect correctness. If it does not, mark the
+> mechanism `BENCHMARK_REQUIRED`; comparative evidence must justify permanent complexity.
+> Keep cognition flexible. Do not benchmark away hard trust-plane guardrails.
 
 <!-- SUPERSEDED/HISTORICAL — CURRENT-BRIDGE-ACTIVE -->
 > HEAD `6d65600842731112f2362261a30660217cbde05d`.
