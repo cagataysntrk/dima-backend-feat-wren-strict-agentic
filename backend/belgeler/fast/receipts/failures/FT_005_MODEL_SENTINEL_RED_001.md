@@ -106,3 +106,49 @@ Measure model differential first.
    - gpt-5.6-luna = LUNA_BASELINE;
    - gpt-5.6-sol = SOL_CEILING;
 7. classify model dependency before product patch.
+
+
+## Diagnostic rerun — observability enabled
+
+Run:
+`35788724994`
+
+Tested SHA:
+`18a804b7c4c1775c7740d708116f621b6f1e8b74`
+
+Result:
+`RED`
+
+Transport/parse finding:
+- provider transport success observed;
+- JSON parse success observed;
+- failure is not classified as provider transport failure.
+
+Structured-output findings:
+
+1. `q3_breakdown`
+   - repeated exact input 3 sequential times;
+   - 3/3 structured validation failures;
+   - validation path: `effective_draft.temporal`;
+   - model emitted `PREVIOUS_MONTH` together with absolute `start_date/end_date`;
+   - classification: `SYSTEMATIC_SCHEMA_CONTRACT_MISMATCH`.
+
+2. executable resolutions in several cases carried non-null `reason`;
+   - current `FastFollowupResolution` forbids reason on executable SELF_CONTAINED/CONTEXTUAL outputs;
+   - classification: `EXECUTABLE_REASON_SCHEMA_MISMATCH`.
+
+3. `unsupported_avg`
+   - model attempted a CONTEXTUAL/SUM interpretation for an AVG request;
+   - classification candidate: `UNSUPPORTED_OPERATION_REINTERPRETATION`.
+
+4. retrieval:
+   - Q1/Q2/clarification answer emitted `search_terms=["sipariş tutarı"]`;
+   - frozen synthetic metadata entity is `orders`;
+   - direct entity/table lookup capability therefore fails the focused retrieval oracle;
+   - classification: `RETRIEVAL_CONTRACT_DRIFT`.
+
+5. prior q2 slot-label oracle:
+   - exact inherited/replaced slot labels are now diagnostic only;
+   - effective semantics remain the hard oracle while those labels do not own execution authority.
+
+No prompt patch has been applied.
