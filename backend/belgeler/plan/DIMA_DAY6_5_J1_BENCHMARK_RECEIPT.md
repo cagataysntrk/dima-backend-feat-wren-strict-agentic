@@ -1,6 +1,6 @@
 # DIMA DAY 6.5 — J1S / J1T BENCHMARK RECEIPT
 
-**Status:** PRE-RUN CORRECTED / VALID LIVE RESULTS NOT YET RUN  
+**Status:** **FULL CORRECTED RESULTS RECORDED — J1S JEV PROMISING / J1T JEV REJECTED / CONSULTATION STOP**  
 **Entry checkpoint:** `f2b246a7f186705f8ddd98a61e60d950f606d326`  
 **Current prep HEAD at receipt creation:** `22eacce89f8fef9506c3490f0fe4e32c61fd67a5`
 
@@ -344,3 +344,38 @@ Why "PROMISING" for J1S:
   ambiguity abstention.
 
 Therefore no production model routing/cascade/threshold decision is taken here.
+
+
+## Current consultation decision
+
+Corrected evidence is sufficient to open a consultation, not to change production topology.
+
+```text
+J1S:
+Jev bounded CandidateSet decision primitive = PROMISING
+
+J1T:
+Jev production temporal provider             = NO
+reason                                       = TEMPORAL_INTEGRATION_LIMITATION
+
+Luna typed temporal evidence                 = strongest primary peer
+remaining concerns                           = invalid typed outputs + repeat instability
+
+Gemini cheap universal role                  = materially challenged
+automatic production topology change        = FORBIDDEN
+```
+
+Recommended next experiment if user approves:
+
+```text
+D65-J1B narrow split-topology engineering spike:
+semantic candidate decision → JevDecisionProvider
+temporal normalization      → structured temporal provider, with Luna as measured primary candidate
+authority                   → unchanged deterministic gates
+hidden fallback/cascade     → none
+```
+
+This does not authorize production activation. It only proves the provider seam and cost/quality
+behavior under real Dima flow.
+
+STOP/CONSULT remains active before J1B.
