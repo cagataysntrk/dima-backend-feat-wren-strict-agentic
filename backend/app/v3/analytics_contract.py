@@ -343,3 +343,13 @@ class ResolvedAnalyticsIntentBuilder:
                 roles=principal_roles,
             ),
         )
+
+
+class ResearchTask(FrozenModel):
+    """Engine-independent research work item shell; runtime orchestration remains P17."""
+
+    task_id: str = Field(min_length=1)
+    obligation_id: str = Field(min_length=1)
+    task_kind: str = Field(min_length=1)
+    input_refs: tuple[str, ...] = ()
+    state: Literal["pending", "running", "complete", "failed", "blocked"] = "pending"

@@ -33,6 +33,18 @@ jobs:
         working-directory: backend
         run: pip install -e ".[dev]"
 
+      - name: Enforce M1 forbidden-file isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="3774484167f1056d89da0e0609246fb4a05057ec"
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          echo "$changed"
+          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/routers/ask_v2\.py$|backend/app/main\.py$|backend/app/config\.py$|WrenAI-main/)'; then
+            echo "M1 touched a forbidden source/v2 file"
+            exit 1
+          fi
+
       - name: Compile v3 M1 boundary
         working-directory: backend
         run: |
@@ -40,7 +52,7 @@ jobs:
 
       - name: Provider-free v3 M1 contract gate
         working-directory: backend
-        run: pytest -q tests/test_v3_m1_contracts.py
+        run: pytest -q tests/test_v3_m1_contracts.py tests/test_v3_m1_parity_families.py
 
       - name: Real Wren v3 parity plus retained v2 sentinels
         working-directory: backend
