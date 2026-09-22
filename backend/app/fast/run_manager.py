@@ -247,22 +247,34 @@ class FastRunManager:
         if snapshot.state == FastRunState.CANCEL_REQUESTED:
             return snapshot
 
-        _, snapshot = self._store.transition(
-            run_id,
-            state=FastRunState.CANCEL_REQUESTED,
-            event_type=FastRunEventType.CANCEL_REQUESTED,
-            payload={},
-            dedupe_key="cancel-requested",
-        )
+        pre_cancel_state = snapshot.state
+        try:
+            _, snapshot = self._store.transition(
+                run_id,
+                state=FastRunState.CANCEL_REQUESTED,
+                event_type=FastRunEventType.CANCEL_REQUESTED,
+                payload={},
+                dedupe_key="cancel-requested",
+            )
+        except FastRunTransitionError:
+            # A worker may have reached a terminal state between the read above
+            # and the cancel transition. Terminal authority wins that race.
+            return self._store.snapshot(run_id, owner)
 
         with self._lock:
             future = self._futures.get(run_id)
+
         cancelled_before_start = bool(future is not None and future.cancel())
+        no_active_worker = (
+            future is None
+            or future.done()
+            or future.cancelled()
+        )
 
         if (
-            cancelled_before_start
-            or snapshot.state == FastRunState.WAITING_CLARIFICATION
-            or future is None
+            pre_cancel_state == FastRunState.WAITING_CLARIFICATION
+            or cancelled_before_start
+            or no_active_worker
         ):
             snapshot = self._safe_transition(
                 run_id,
