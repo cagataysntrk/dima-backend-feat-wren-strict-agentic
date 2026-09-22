@@ -2131,3 +2131,34 @@ proven.
 
 status:
 `P10B1 AUTHORIZABLE / P10B2 CAPABILITY GAP OPEN`.
+
+
+---
+
+## DMP-GOV-RED-001 — authorized DMP-DEC-0026 normative amendment invalidated old blob pins
+
+receipt_id: `DMP-GOV-RED-001`  
+tested_sha: `4363a9604483aee5c8029bb6a6447bda34b42eaf`  
+failed_run: `35786752576`
+
+classification:
+`GOVERNANCE / EXPECTED SEALED-BLOB PIN UPDATE`
+
+observed:
+DMP-DEC-0026 explicitly authorized surgical amendments to the current architecture report and roadmap.
+The governance workflow correctly rejected those changed blobs because it still pinned the pre-0026
+hashes.
+
+diff audit:
+- architecture report changes are limited to R2.2, R3.10, R6, R8 and R17;
+- roadmap changes are limited to P11, P15, P17, P19, P39 and P41;
+- sealed historical milestone receipts were not rewritten;
+- product/runtime code changed = 0.
+
+authorized correction:
+advance only the two governance blob pins to the reviewed DMP-DEC-0026 versions:
+- report blob `aa5f3e048dea56ec52110023e7399fc1fe957805`;
+- roadmap blob `01d1893bf85a482f5970d27ec70a60df7b836219`.
+
+status:
+`CORRECTION APPLIED / AWAITING GOVERNANCE GREEN`.

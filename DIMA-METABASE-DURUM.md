@@ -1221,3 +1221,19 @@ DMP-P5-BLOCK-001                 = OPEN / GLOBAL PRODUCTION OFFICIAL ISSUANCE
 **Current phase:** P11 PRE-DEVELOPMENT — entity-value Semantic Necessity Gate.  
 Deterministic entity resolver: **NOT AUTHORIZED**.  
 First proposed Luna/Sol corpus: `P11_ENTITY_VALUE_NECESSITY_GATE.md`.
+
+
+---
+
+## DMP-DEC-0026 governance repin
+
+```text
+docs SHA                         = 4363a9604483aee5c8029bb6a6447bda34b42eaf
+governance run                   = 35786752576 = FAILURE
+classification                   = expected sealed-blob pin drift
+product/runtime owner            = NONE
+architecture report reviewed blob= aa5f3e048dea56ec52110023e7399fc1fe957805
+roadmap reviewed blob            = 01d1893bf85a482f5970d27ec70a60df7b836219
+historical receipt rewrite       = 0
+DMP-GOV-RED-001                  = CORRECTION APPLIED / AWAITING GREEN
+```

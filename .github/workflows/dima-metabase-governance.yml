@@ -29,8 +29,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_FIZIBILITE_VE_MIMARI_RAPORU.md)" = "0ccbfc502a812d098b2c758f41deaa4208d8b180"
-          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_UYGULAMA_YOL_HARITASI.md)" = "e74720455c44b92868d9ffd50b6c745f77405c55"
+          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_FIZIBILITE_VE_MIMARI_RAPORU.md)" = "aa5f3e048dea56ec52110023e7399fc1fe957805"
+          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_UYGULAMA_YOL_HARITASI.md)" = "01d1893bf85a482f5970d27ec70a60df7b836219"
 
       - name: Verify mandatory governance files
         shell: bash
