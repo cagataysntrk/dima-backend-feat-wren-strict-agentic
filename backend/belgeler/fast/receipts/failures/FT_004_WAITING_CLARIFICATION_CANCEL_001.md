@@ -1,6 +1,6 @@
 # FT-004 FAILURE RECEIPT — WAITING_CLARIFICATION_CANCEL_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / RUN_STATE_MACHINE_IMPLEMENTATION
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -96,3 +96,35 @@ Required:
 - terminal cancel idempotent GREEN;
 - API/SSE tests run;
 - FT-003 regressions run.
+
+
+## Closure
+
+Corrective product SHA:
+`0e0a948202eac24bbdca05c954764d8a370f3d89`
+
+Core closure run:
+`35778574189 GREEN`
+
+Final core/live-test SHA run:
+`35778861234 GREEN`
+
+Real pinned-Metabase clarification/cancel proof:
+`35778861380 GREEN`
+
+Observed real sequence:
+```text
+RUN_CREATED
+RUN_STARTED
+RUN_WAITING_CLARIFICATION
+CANCEL_REQUESTED
+RUN_CANCELLED
+```
+
+Final state:
+`CANCELLED`
+
+Terminal event:
+exactly one.
+
+This failure is CLOSED.

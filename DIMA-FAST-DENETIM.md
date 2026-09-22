@@ -98,7 +98,8 @@ F0A       pinned Metabase OSS                GREEN
 FT-002B   Fast-owned Gateway                 GREEN
 FT-UI-002 Dima-native rendering              GREEN / SEALED
 FT-003     First Real Ask                     GREEN / CLOSED
-FT-004     run lifecycle / streaming / cancel OPEN
+FT-004     run lifecycle / streaming / cancel GREEN / CLOSED
+FT-005     conversation + follow-up context       OPEN
 FT-005     conversation + follow-up context
 FT-006     evidence expansion
 FT-007     Analyst
@@ -118,5 +119,53 @@ METABASE_OSS_SUBSTRATE: GREEN
 FAST_GATEWAY: GREEN
 UI_RENDERING_POC: GREEN / SEALED
 FT_003: GREEN / CLOSED
-FT_004: OPEN
+FT_004: GREEN / CLOSED
+FT_005: OPEN
 PRODUCTION: NOT CERTIFIED
+
+
+## I. FT-004 Run Lifecycle / Streaming / Cancel
+
+- [x] typed run models.
+- [x] canonical transition table.
+- [x] Dima-owned FastRunStore.
+- [x] Dima-owned FastRunManager.
+- [x] bounded ThreadPoolExecutor.
+- [x] owner authorization.
+- [x] foreign principal non-enumerating 404.
+- [x] terminal exactly once.
+- [x] terminal immutable.
+- [x] monotonic event IDs.
+- [x] duplicate-event dedupe.
+- [x] CREATED -> RUNNING -> COMPLETED.
+- [x] CLARIFICATION -> WAITING_CLARIFICATION.
+- [x] FAILED mapping.
+- [x] cooperative cancellation.
+- [x] late success cannot overwrite cancellation.
+- [x] WAITING -> CANCEL_REQUESTED -> CANCELLED.
+- [x] retry lineage.
+- [x] INTERRUPTED recovery.
+- [x] POST /fast/runs.
+- [x] GET /fast/runs/{id}.
+- [x] GET /fast/runs/{id}/events.
+- [x] POST /fast/runs/{id}/cancel.
+- [x] SSE framing.
+- [x] Last-Event-ID replay.
+- [x] /fast/ask compatibility retained.
+- [x] provider-free lifecycle tests.
+- [x] provider-free API/SSE tests.
+- [x] FT-003 regressions.
+- [x] real pinned-Metabase lifecycle run.
+- [x] independent DB oracle equality.
+- [x] real clarification/cancel lifecycle.
+- [x] failure receipts closed.
+- [x] live receipt sealed.
+
+Explicit non-production debt:
+- [ ] persistent run/event store.
+- [ ] process-restart durability.
+- [ ] distributed workers.
+- [ ] cross-instance SSE fanout.
+- [ ] hard cancellation of already-running Metabase query.
+
+These unchecked items are deliberate post-FT-004 debt, not hidden GREEN claims.

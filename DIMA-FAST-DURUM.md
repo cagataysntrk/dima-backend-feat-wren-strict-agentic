@@ -5,35 +5,23 @@ Branch: `feat/dima-metabase-product-fast-track`
 
 ## CURRENT_STATE
 
-PRE_SEAL_HEAD:
-`9faa65eb8ac830285a55ce93940daf68da13f699`
-
-OBSERVED_BRANCH_HEAD:
-`0e0a948202eac24bbdca05c954764d8a370f3d89`
+PRE_SEAL_FT004_HEAD:
+`5114372fb78049d95a7b4ba763e73817d7052a55`
 
 CURRENT_PRODUCT_GATE:
-`FT-004 — RUN LIFECYCLE / STREAMING / CANCEL`
+`FT-005 — CONVERSATION + FOLLOW-UP CONTEXT`
 
 FT-003_FINAL:
 `CLOSED / GREEN`
 
-FT-004:
-`IMPLEMENTING / CORE RE-PROOF IN PROGRESS`
+FT-004_FINAL:
+`CLOSED / GREEN`
 
-FT-004_INITIAL_CORE_RED:
-`35778100380`
-
-FT-004_INITIAL_RED_CLASS:
-`WAITING_CLARIFICATION_CANCEL_STATE_MACHINE`
-
-FT-004_CORRECTIVE_SHA:
-`0e0a948202eac24bbdca05c954764d8a370f3d89`
-
-FT-004_CORE_RERUN:
-`35778348082 — QUEUED/IN_PROGRESS`
+FT-005:
+`OPEN / PREDEVELOPMENT NEXT`
 
 OPEN_RED:
-`FT-004 core rerun not yet certified`
+`NONE`
 
 TARGET:
 `Dima-native Intelligence Workspace on Metabase Analytics Substrate`
@@ -41,169 +29,158 @@ TARGET:
 SELECTED_RENDERING:
 `OPTION_A — Dima-native chart/table`
 
-## FT-003 CERTIFIED RUNS
+## FT-004 CERTIFIED RUNS
 
-FT-003_CORE:
+FT-004_CORE_API_SSE:
 `GREEN`
-run: `35776527074`
-tested SHA: `f86475228074530a426542b9f5674ba12cbb7298`
+run: `35778861234`
+tested SHA: `5114372fb78049d95a7b4ba763e73817d7052a55`
 
-FT-003_REAL_METABASE_LIVE:
+FT-004_REAL_METABASE_LIFECYCLE:
 `GREEN`
-run: `35776518129`
-tested SHA: `2635ecc26f8093b67636ba581e705a4ed132be6f`
-
-FT-003_GATEWAY_REGRESSION:
-`GREEN`
-run: `35776518246`
-tested SHA: `2635ecc26f8093b67636ba581e705a4ed132be6f`
-
-FT-003_REAL_MODEL_RETRIEVAL:
-`GREEN`
-run: `35776518107`
-tested SHA: `2635ecc26f8093b67636ba581e705a4ed132be6f`
-
-FT-003_REAL_MODEL_E2E:
-`GREEN`
-run: `35776518184`
-tested SHA: `2635ecc26f8093b67636ba581e705a4ed132be6f`
+run: `35778861380`
+tested SHA: `5114372fb78049d95a7b4ba763e73817d7052a55`
 artifact digest:
-`sha256:14c4ea5e455f15643c46538afaaabad17eef756c93842f9915f523cc94310c5a`
+`sha256:0ef6a463b386b4548128cc3dde2d580c6620ca91d851d9bffea042fbca7cb660`
 
-FT-003_BROWSER_REAL_FAST_ASK:
+FT-003_BROWSER_REGRESSION:
 `GREEN`
-run: `35777010348`
-tested SHA: `9faa65eb8ac830285a55ce93940daf68da13f699`
+run: `35778348522`
+tested SHA: `0e0a948202eac24bbdca05c954764d8a370f3d89`
 
-FT-UI-002:
-`SEALED / HISTORICAL / workflow_dispatch only`
-freeze commit: `96cb65f2b05d8bc56e1dd86ced7b13b5c0f3fb3a`
+FT-002B_GATEWAY_REGRESSION:
+`GREEN`
+run: `35778348296`
+tested SHA: `0e0a948202eac24bbdca05c954764d8a370f3d89`
 
-## FT-003 PROVEN CHAIN
+FT-003_LIVE_REGRESSION:
+`GREEN`
+run: `35778100295`
+tested SHA: `c14c60fc2c718212b6a78ab98fe47c34d47e2e40`
 
-```text
-Turkish question
--> real model bounded cognition
--> real Metabase metadata SEARCH
--> opaque Dima resource/field authority
--> deterministic temporal bounds
--> deterministic portable query
--> real Metabase construct/execute
--> independent DB equality
--> evidence
--> deterministic answer
--> Dima-native browser UI
-```
-
-Certified DB oracle:
+## FT-004 PROVEN CHAIN
 
 ```text
-2026-08-09 <= order_date < 2026-09-08
-
-COUNT = 20
-SUM = 16270
-East = 4085
-North = 4015
-South = 4050
-West = 4120
+POST /fast/runs
+-> opaque run_id
+-> CREATED
+-> bounded worker
+-> RUNNING
+-> sealed FastAskService
+-> real pinned Metabase
+-> real analytics DB
+-> evidence + deterministic answer
+-> COMPLETED
+-> canonical snapshot
+-> replayable SSE events
 ```
 
-Authority safety:
-- ambiguous resources -> clarification before metadata read/query;
-- construct = 0 on ambiguity;
-- execute = 0 on ambiguity;
-- unsupported AVG -> UNSUPPORTED before Gateway creation;
-- invented IDs = 0 in final model diagnostic;
-- raw SQL = 0;
-- join = 0;
-- Wren/V2/V3 runtime dependency = 0.
+Real live COUNT:
+`20`
 
-Browser:
-- real `/fast/ask`;
-- real pinned Metabase;
-- loading PASS;
-- COUNT PASS;
-- SUM PASS;
-- BREAKDOWN PASS;
-- chart PASS;
-- table PASS;
-- clarification PASS;
-- unsupported PASS;
-- failed PASS;
-- desktop 1440x900 PASS;
-- mobile 390x844 PASS;
-- scrollWidth = 390.
+Real answer:
+`Sonuç: 20 kayıt.`
 
-## CLOSED FAILURE FAMILIES
+Successful event sequence:
+```text
+RUN_CREATED
+RUN_STARTED
+RUN_COMPLETED
+```
 
-- FT_003_LIVE_SENTINEL_RED_001 -> EVAL_ORACLE -> CLOSED.
-- FT_003_REAL_MODEL_SENTINEL_RED_001 -> retrieval/unsupported/ambiguity contract -> CLOSED.
-- FT_003_MODEL_RETRIEVAL_RED_002 -> generic metadata retrieval contract -> CLOSED.
-- FT_003_BROWSER_HYDRATION_RACE_001 -> E2E hydration timing oracle -> CLOSED.
-- duplicate canonical resource candidate -> CLOSED by URI dedupe.
-- invented field handle -> fail-closed regression sealed.
+Clarification/cancel live sequence:
+```text
+RUN_CREATED
+RUN_STARTED
+RUN_WAITING_CLARIFICATION
+CANCEL_REQUESTED
+RUN_CANCELLED
+```
 
-## OPEN DEBT / NOT FT-003 BLOCKERS
+## FT-004 LIFECYCLE AUTHORITY
 
-MULTI_CANDIDATE_RESOLUTION:
-`CONSERVATIVE_CLARIFICATION`
+Canonical states:
+- CREATED;
+- RUNNING;
+- WAITING_CLARIFICATION;
+- PARTIAL;
+- COMPLETED;
+- FAILED;
+- CANCEL_REQUESTED;
+- CANCELLED;
+- INTERRUPTED.
 
-CATALOG_FALLBACK:
-`BOUNDED_SAFETY_FALLBACK`
+Terminal states:
+- COMPLETED;
+- FAILED;
+- CANCELLED;
+- INTERRUPTED.
 
-The fallback is permission-filtered and bounded. It is not a translation or semantic dictionary.
+Proven:
+- terminal exactly once;
+- terminal immutable;
+- duplicate-event dedupe;
+- monotonic event IDs;
+- Last-Event-ID replay;
+- foreign principal -> 404;
+- owner -> allowed;
+- retry lineage creates a new run;
+- original terminal run never reopens;
+- root_run_id preserved;
+- attempt increments;
+- nonterminal recovery -> INTERRUPTED;
+- cooperative cancel discards late success.
 
-Pilot-level broader model benchmark is still later roadmap work; the small FT-003 real-model certification is GREEN.
+## CLOSED FT-004 FAILURE FAMILIES
+
+- `FT_004_WAITING_CLARIFICATION_CANCEL_001`
+  - class: RUN_STATE_MACHINE_IMPLEMENTATION;
+  - fixed by preserving pre-cancel state and finalizing quiescent cancellation;
+  - closed by core runs `35778574189` and `35778861234`.
+
+- `FT_004_ASK_COMPATIBILITY_TEST_FIXTURE_001`
+  - class: EVAL_ORACLE_FIXTURE_CONTRACT;
+  - production `FastAskService` type guard retained;
+  - test fixture corrected;
+  - closed by core runs `35778574189` and `35778861234`.
+
+## OPEN DEBT / NOT FT-004 BLOCKERS
+
+```text
+PROCESS_RESTART_DURABILITY = NOT YET CERTIFIED
+PERSISTENT_RUN_EVENT_STORE = NOT YET IMPLEMENTED
+DISTRIBUTED_WORKERS = NOT YET IMPLEMENTED
+CROSS_INSTANCE_SSE_FANOUT = NOT YET IMPLEMENTED
+HARD_CANCEL_RUNNING_METABASE_QUERY = NOT YET IMPLEMENTED
+```
+
+Current run/event store is intentionally in-process behind a Fast-owned store boundary.
+These become mandatory before production/external pilot where applicable.
+
+FT-003 deliberate debt remains:
+`MULTI_CANDIDATE_RESOLUTION = CONSERVATIVE_CLARIFICATION`
 
 ## CURRENT INVARIANTS
 
 - writes only to Fast Track branch;
 - source branches read-only;
 - Wren/V2/V3 modification = forbidden;
-- silent fallback = 0;
+- sealed FT-003 cognition/query/evidence semantics are not duplicated;
+- `/fast/ask` remains compatibility/Quick adapter;
+- lifecycle ownership belongs to Fast run layer;
+- run terminal state exactly once;
+- model does not own run state;
 - raw SQL = 0;
-- joins = 0 for FT-003;
+- joins = 0 in sealed FT-003 family;
 - METABASE_LICENSE_BUDGET = 0;
 - paid Metabase core dependency = 0;
-- Metabase frontend fork = 0;
-- browser Metabase service/admin secret = 0;
-- Dima owns user-facing analyst UX;
-- Metabase remains hidden OSS analytics substrate.
-
-## FT-004 CURRENT IMPLEMENTATION
-
-Implemented on initial core SHA:
-`c14c60fc2c718212b6a78ab98fe47c34d47e2e40`
-
-Current owners:
-- `app.fast.run_models`;
-- `app.fast.run_store`;
-- `app.fast.run_manager`;
-- `app.fast.run_router`;
-- Fast-only application integration;
-- lifecycle/API/SSE provider-free tests;
-- dedicated FT-004 core workflow.
-
-First core run:
-`35778100380 RED`
-
-Root cause:
-`WAITING_CLARIFICATION -> CANCEL_REQUESTED` did not finalize to `CANCELLED` because cancellation logic checked the post-transition state instead of the pre-cancel state.
-
-Failure receipt:
-`FT_004_WAITING_CLARIFICATION_CANCEL_001.md`
-
-Corrective SHA:
-`0e0a948202eac24bbdca05c954764d8a370f3d89`
+- browser Metabase service/admin secret = 0.
 
 ## NEXT_EXACT_ACTION
 
-1. Require FT-004 core rerun `35778348082` GREEN.
-2. Verify lifecycle/API/SSE and FT-003 regression steps all execute.
-3. Add FT-004 live pinned-Metabase lifecycle sentinel.
-4. Prove real run creation -> execution -> COMPLETED -> SSE replay.
-5. Prove clarification -> WAITING_CLARIFICATION and cancel lifecycle.
-6. Recheck FT-003 core/live/browser/Gateway regressions.
-7. Seal FT-004 only after live lifecycle receipt is GREEN.
-8. Then open FT-005 conversation predevelopment.
-9. Do not add new semantic logic, aggregation families, joins, Analyst, Root Cause or conversation semantics in FT-004.
+1. Open `FT_005_PREDEVELOPMENT_REVIEW.md`.
+2. Define Dima-owned conversation/follow-up context without changing sealed FT-003 analytics authority.
+3. Build conversation identity and turn lineage above run lifecycle.
+4. Resolve follow-up references from explicit prior accepted/evidence context, not hidden heuristic state.
+5. Preserve every analytical execution as a separate run.
+6. Do not begin Analyst or Root Cause inside FT-005.

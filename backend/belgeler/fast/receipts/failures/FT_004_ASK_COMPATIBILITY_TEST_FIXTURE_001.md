@@ -1,6 +1,6 @@
 # FT-004 FAILURE RECEIPT — ASK_COMPATIBILITY_TEST_FIXTURE_001
 
-Status: ROOT CAUSE CONFIRMED
+Status: CLOSED / EVAL_ORACLE_FIXTURE_CONTRACT
 Date: 2026-09-22
 
 OBSERVED_RUN:
@@ -72,3 +72,23 @@ Required:
 - API/auth/SSE tests GREEN;
 - /fast/ask compatibility test GREEN;
 - FT-003 regressions execute and GREEN.
+
+
+## Closure
+
+Test-only corrective SHA:
+`f8807c793db239fb23108346a8b615de5da4e00d`
+
+Core closure run:
+`35778574189 GREEN`
+
+Final core run on live-sentinel SHA:
+`35778861234 GREEN`
+
+Production `FastAskService` type guard changed:
+`NO`
+
+`/fast/ask` compatibility:
+`GREEN`
+
+This failure is CLOSED.

@@ -414,7 +414,8 @@ FT-002B  Fast-owned Gateway                 GREEN
 FT-UI-001 architecture reconciliation       GREEN
 FT-UI-002 Dima-native rendering POC         GREEN
 FT-003    first real Ask vertical slice     GREEN
-FT-004    run lifecycle / streaming / cancel OPEN
+FT-004    run lifecycle / streaming / cancel GREEN
+FT-005    conversation + follow-up context       OPEN
 ```
 
 Then:
@@ -672,3 +673,83 @@ FT-003 does NOT add:
 
 Next:
 `FT-004 — run lifecycle / streaming / cancel`
+
+
+## 24. FT-004 sealed — Run lifecycle / streaming / cancel
+
+Status:
+`CLOSED / GREEN`
+
+Certified lifecycle implementation SHA:
+`0e0a948202eac24bbdca05c954764d8a370f3d89`
+
+Final live sentinel SHA:
+`5114372fb78049d95a7b4ba763e73817d7052a55`
+
+Certified runs:
+- provider-free core/API/SSE/FT-003 regression: `35778861234`
+- real pinned-Metabase lifecycle: `35778861380`
+- FT-003 browser regression after lifecycle integration: `35778348522`
+- FT-002B Gateway regression after lifecycle integration: `35778348296`
+- FT-003 live regression after lifecycle integration: `35778100295`
+
+FT-004 now owns:
+
+```text
+POST /fast/runs
+GET  /fast/runs/{run_id}
+GET  /fast/runs/{run_id}/events
+POST /fast/runs/{run_id}/cancel
+```
+
+`POST /fast/ask` remains the sealed compatibility/Quick adapter.
+
+Proven lifecycle semantics:
+- CREATED -> RUNNING -> COMPLETED;
+- CLARIFICATION_REQUIRED -> WAITING_CLARIFICATION;
+- WAITING_CLARIFICATION -> CANCEL_REQUESTED -> CANCELLED;
+- failed Ask -> FAILED;
+- cooperative cancel during bounded work discards late success;
+- terminal state exactly once;
+- event IDs monotonic;
+- duplicate event dedupe;
+- terminal immutability;
+- Last-Event-ID replay;
+- owner-only run access with foreign principal non-enumerating 404;
+- retry creates a new immutable run with root lineage/attempt increment;
+- nonterminal recovery -> INTERRUPTED;
+- bounded worker pool.
+
+Real pinned-Metabase sentinel:
+- independent DB COUNT oracle = 20;
+- real lifecycle run answer = `Sonuç: 20 kayıt.`;
+- SSE replay = RUN_CREATED, RUN_STARTED, RUN_COMPLETED;
+- real metadata clarification run reached WAITING_CLARIFICATION;
+- cancel sequence = CANCEL_REQUESTED, RUN_CANCELLED.
+
+Live artifact digest:
+`sha256:0ef6a463b386b4548128cc3dde2d580c6620ca91d851d9bffea042fbca7cb660`
+
+Explicit post-FT-004 debt:
+
+```text
+PROCESS_RESTART_DURABILITY = NOT YET CERTIFIED
+PERSISTENT_RUN_EVENT_STORE = NOT YET IMPLEMENTED
+DISTRIBUTED_WORKERS = NOT YET IMPLEMENTED
+CROSS_INSTANCE_SSE_FANOUT = NOT YET IMPLEMENTED
+HARD_CANCEL_RUNNING_METABASE_QUERY = NOT YET IMPLEMENTED
+```
+
+These are not hidden. The in-process store is an intentional FT-004 scope boundary.
+
+FT-004 does NOT add:
+- new semantic logic;
+- new aggregations;
+- joins;
+- multi-table analytics;
+- conversation semantics;
+- Analyst;
+- Root Cause.
+
+Next:
+`FT-005 — conversation + follow-up context`
