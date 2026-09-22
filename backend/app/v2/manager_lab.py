@@ -43,6 +43,8 @@ class ManagerLabResponse(FrozenModel):
     model: str
     semantic_linker_provider: str
     semantic_linker_model: str
+    temporal_normalizer_provider: str
+    temporal_normalizer_model: str
     snapshot: ManagerRunSnapshot
     run_finished: bool
     verified_complete: bool
@@ -51,6 +53,33 @@ class ManagerLabResponse(FrozenModel):
     preacceptance_status: str | None = None
     ledger: UserObligationLedger | None = None
     observations: tuple[dict, ...] = ()
+
+
+def _build_role_scoped_manager_models(settings):
+    """Build the three selected cognition contracts from distinct ModelRole scopes."""
+    policy = ModelRolePolicy(settings)
+
+    research_settings, research_profile = policy.scoped_settings(
+        ModelRole.RESEARCH_MANAGER
+    )
+    semantic_settings, semantic_profile = policy.scoped_settings(
+        ModelRole.SEMANTIC_LINKER
+    )
+    temporal_settings, temporal_profile = policy.scoped_settings(
+        ModelRole.TEMPORAL_NORMALIZER
+    )
+
+    research_llm = belki_sar(build_generator(research_settings))
+    semantic_llm = belki_sar(build_generator(semantic_settings))
+    temporal_llm = belki_sar(build_generator(temporal_settings))
+    return (
+        research_llm,
+        research_profile,
+        semantic_llm,
+        semantic_profile,
+        temporal_llm,
+        temporal_profile,
+    )
 
 
 class ManagerLabHarness:
@@ -66,14 +95,14 @@ class ManagerLabHarness:
         principal: Principal,
     ) -> ManagerLabResponse:
         settings = get_settings()
-        scoped_settings, profile = ModelRolePolicy(settings).scoped_settings(
-            ModelRole.RESEARCH_MANAGER
-        )
-        llm = belki_sar(build_generator(scoped_settings))
-        linker_settings, linker_profile = ModelRolePolicy(settings).scoped_settings(
-            ModelRole.SEMANTIC_LINKER
-        )
-        linker_llm = belki_sar(build_generator(linker_settings))
+        (
+            llm,
+            profile,
+            linker_llm,
+            linker_profile,
+            temporal_llm,
+            temporal_profile,
+        ) = _build_role_scoped_manager_models(settings)
 
         service, schema, runtime = bind_runtime(request, principal)
         context = ContextProviderV0().build(service, runtime)
@@ -82,14 +111,15 @@ class ManagerLabHarness:
         source_spans = SourceSpanRegistry()
         semantic_handles = SemanticHandleRegistry()
         semantic_structured = getattr(linker_llm, "structured_json", None)
+        temporal_structured = getattr(temporal_llm, "structured_json", None)
         semantic_provider = (
             StructuredSemanticCandidateDecisionProvider(structured=semantic_structured)
             if semantic_structured is not None
             else None
         )
         temporal_provider = (
-            StructuredTemporalNormalizationProvider(structured=semantic_structured)
-            if semantic_structured is not None
+            StructuredTemporalNormalizationProvider(structured=temporal_structured)
+            if temporal_structured is not None
             else None
         )
 
@@ -148,6 +178,8 @@ class ManagerLabHarness:
             model=profile.model,
             semantic_linker_provider=linker_profile.provider,
             semantic_linker_model=linker_profile.model,
+            temporal_normalizer_provider=temporal_profile.provider,
+            temporal_normalizer_model=temporal_profile.model,
             snapshot=outcome.snapshot,
             run_finished=outcome.run_finished,
             verified_complete=outcome.verified_complete,
