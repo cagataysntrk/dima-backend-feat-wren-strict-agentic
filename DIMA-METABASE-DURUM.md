@@ -473,3 +473,20 @@ production routing                 = UNCHANGED
 
 DMP-DEC-0013 now defines durable canonical identity as exact equality after removing only the
 documented runtime-volatile `lib/uuid` key. Any other canonical difference remains a hard RED.
+
+
+---
+
+## P4 supervisor architecture audit — filter sentinel correction
+
+```text
+DMP-P4-RED-002 canonical UUID fix      = IN PROGRESS
+focused UUID exact-key proof           = GREEN @ 3e063e5fa793a15bee6b42660ce2158c8e21dbad
+DMP-P4-AUDIT-003                       = OPEN / AUTHORIZED
+special string sentinel semantics      = MUST BECOME 0
+typed NULL upstream contract           = NOT PRESENT / NOT INVENTED
+P5                                     = BLOCKED
+```
+
+DMP-DEC-0014 clarifies DMP-DEC-0011: supported textual filter values are literal equality payloads.
+`"NULL"` is not SQL NULL. No token table/fallback is permitted.

@@ -103,3 +103,10 @@ Compiler implementation may now begin in the existing P4 allowlist.
 
 DMP-P4-RED-002 is open. DMP-DEC-0013 narrows durable determinism normalization to the exact
 runtime-volatile `lib/uuid` key. No other canonical field may be ignored.
+
+
+## Filter sentinel heuristic audit
+
+DMP-P4-AUDIT-003 is authorized. Remove the content-based `"null"` special case only.
+Literal string equality remains the certified textual-filter behavior; typed NULL predicates remain
+outside the current contract.

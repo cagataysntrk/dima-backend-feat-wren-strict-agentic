@@ -370,3 +370,21 @@ Safety is established by actual code-path restrictions + negative tests + canoni
 
 Compiler/canonical implementation is now authorized only in the P4 allowlist. Product routing,
 P5 receipt completion, P8 numeric equivalence, security parity and Wren retirement remain out of scope.
+
+
+---
+
+## 15. Filter sentinel clarification
+
+DMP-DEC-0014 clarifies the filter/literal rule:
+
+```text
+text dimension + ResolvedFilterRef.value:str
+→ literal equality payload
+```
+
+The compiler must not infer semantic NULL/operator/type from token spelling. Therefore `"NULL"`
+remains a literal text value. Semantic NULL remains unavailable until an explicit typed upstream
+filter contract is separately authorized.
+
+The existing non-textual untyped-filter fail-closed rule remains unchanged.

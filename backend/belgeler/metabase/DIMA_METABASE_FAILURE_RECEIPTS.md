@@ -1036,3 +1036,48 @@ allowed_files_to_touch:
 
 status:
 `CLASSIFIED / CANONICAL IDENTITY PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P4-AUDIT-003 — remove filter sentinel heuristic before P4 closure
+
+receipt_id: `DMP-P4-AUDIT-003`  
+ticket: `P4-001`  
+detection: supervisor architecture audit; no CI failure required
+
+observed_issue:
+`MetabaseProjectionCompiler` currently contains a content-based rule:
+
+```python
+if ref.value.strip().lower() == "null":
+    raise UNTYPED_NULL_FILTER_UNSUPPORTED
+```
+
+This treats one string token as semantically special even though `ResolvedFilterRef.value` exposes
+only an untyped string equality payload.
+
+failure_class:
+`ARCHITECTURE / SEMANTIC-HEURISTIC`
+
+root_cause:
+A missing typed NULL predicate contract was guarded using input-word recognition rather than by
+respecting the actual upstream contract boundary.
+
+authorized_correction:
+- remove the `"null"` sentinel branch;
+- compile textual dimension values, including `"NULL"`, as literal equality strings;
+- retain fail-closed behavior for non-textual dimensions with untyped string payloads;
+- add regression proving `"NULL"` remains a literal string;
+- add/retain architecture proof that regex/fuzzy semantic matching dependencies are absent;
+- do not add any replacement sentinel table or fallback.
+
+forbidden:
+- recognizing `none`, `empty`, `unknown`, `n/a`, etc.;
+- parsing typed NULL/numeric/operator semantics from strings;
+- regex/fuzzy/embedding matching;
+- Metabase semantic search/name fallback;
+- changing the upstream filter contract inside this audit correction.
+
+status:
+`CLASSIFIED / NARROW HEURISTIC-REMOVAL PATCH AUTHORIZED`.

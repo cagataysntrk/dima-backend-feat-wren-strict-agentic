@@ -429,3 +429,36 @@ query identity. Excluding precisely that documented volatile key preserves stric
 without normalizing away semantic changes.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0014 — P4 filter strings are literal equality payloads, never sentinel semantics
+
+date: 2026-09-22
+
+clarifies:
+`DMP-DEC-0011`.
+
+decision:
+The current certified `ResolvedFilterRef.value: str` contract carries an equality value, not a
+typed predicate AST.
+
+Therefore, for a supported textual dimension:
+- every string payload is compiled as literal string equality;
+- no sentinel token such as `"null"`, `"none"`, `"empty"`, `"unknown"`, `"n/a"`, or similar
+  is interpreted as SQL NULL, missing value, operator, control flow, or any other semantic;
+- the compiler does not special-case string content to infer missing typed semantics.
+
+Semantic `IS NULL`, `IS NOT NULL`, typed numeric comparison, or non-equality semantics remain
+**unrepresentable** in this input contract. Supporting them requires a separately authorized upstream
+typed filter contract carrying explicit predicate/operator/value semantics.
+
+The existing fail-closed rule for non-textual dimensions with untyped string payloads remains.
+
+reason:
+Rejecting the literal token `"NULL"` merely because it resembles SQL NULL is itself semantic
+interpretation from string content. P4 must preserve the certified equality payload rather than build
+a sentinel/keyword patch table.
+
+status: SEALED.
