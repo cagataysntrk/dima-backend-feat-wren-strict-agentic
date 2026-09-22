@@ -797,3 +797,27 @@ corpus                            = NOT FROZEN
 Next harness run must measure cases independently:
 CANARY-01 and CANARY-02 execute through both real substrate seams; CANARY-03 is expected to remain a
 typed Wren compatibility gap unless a later milestone explicitly owns that feature.
+
+
+---
+
+## P6A1 second typed gap — Wren PostgreSQL runtime contract
+
+```text
+tested SHA                       = d317ea9370270e2381fde1d06a54c90aa4cbb339
+P6 run                           = 35768689486 = FAILURE (instrument stopped on typed runtime gap)
+P6A0                             = PASS
+provider-free P6A1               = PASS
+Metabase bootstrap               = PASS
+CANARY-01 Wren execution         = SUBSTRATE_RUNTIME_GAP
+exact field                      = kwargs.connect_timeout
+produced value/type              = 15 / int
+installed Wren expected type     = string
+CANARY-03 known gap              = WREN_COMPATIBILITY_GAP / absolute period
+wren.py                          = UNCHANGED
+wren_service.py                  = UNCHANGED
+corpus                           = NOT FROZEN
+```
+
+P6A1 is now **TYPED GAP FOUND**, not GREEN. Measurement harness may continue and report the exact
+gaps; it may not repair WrenService inside P6.

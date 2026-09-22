@@ -1642,3 +1642,52 @@ The harness must execute supported cases and report this unsupported semantic sh
 
 status:
 `OPEN GAP / MEASUREMENT MUST REPORT; NO P6 PRODUCT PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P6-GAP-006 — WrenService PostgreSQL timeout kwargs violate installed Wren typed contract
+
+receipt_id: `DMP-P6-GAP-006`  
+tested_sha: `d317ea9370270e2381fde1d06a54c90aa4cbb339`  
+failed_run: `35768689486`
+
+observed:
+P6A0 remains GREEN and provider-free P6A1 remains GREEN. CANARY-01 reaches the existing
+`WrenSubstrateAdapter -> CubePlanner -> WrenService.dry_plan -> WrenEngine` production path and
+fails constructing the engine.
+
+exact_failure:
+```text
+PostgresConnectionInfo
+kwargs.connect_timeout
+Input should be a valid string
+input_value=15
+input_type=int
+```
+
+source_owner:
+`WrenService._zaman_asimli_baglanti()` injects PostgreSQL
+`kwargs["connect_timeout"] = min(timeout, 15)` as an integer.
+
+existing_test_gap:
+`backend/tests/test_sorgu_zaman_asimi.py::test_POSTGRES_baglanti_zaman_asimi_kisaltilir`
+asserts the intermediate dictionary contains integer `15`, but does not prove that the produced
+dictionary is accepted by `DataSource.postgres / PostgresConnectionInfo / WrenEngine`.
+
+classification:
+`TYPED_GAP / SUBSTRATE_RUNTIME_GAP`
+
+why_not_patched_in_P6:
+P6 is a measurement milestone. Fixing WrenService or its timeout test merely to improve parity would
+change the measured Wren substrate. The defect needs a separately owned runtime correction outside
+the P6 measurement patch set.
+
+P6 measurement rule:
+- CANARY-01/02 may report `SUBSTRATE_RUNTIME_GAP` when this exact typed engine-construction failure occurs;
+- CANARY-03 remains `WREN_COMPATIBILITY_GAP` because absolute period fails earlier at intent validation;
+- Metabase still must execute each supported canary and match the independent golden anchor;
+- any different Wren exception remains unexplained and RED.
+
+status:
+`OPEN GAP / OWNER = WREN RUNTIME CONTRACT; NO P6 PRODUCT PATCH AUTHORIZED`.

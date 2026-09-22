@@ -80,3 +80,14 @@ objects to manufacture receipt parity.
 P6 must report this as `TYPED_GAP / WREN_COMPATIBILITY_GAP`; `wren.py` remains forbidden.
 The P6A1 harness is authorized to continue measuring CANARY-01/02 and record CANARY-03 as the exact
 typed gap rather than aborting the entire instrument.
+
+
+## Additional P6A1 runtime gap
+
+`DMP-P6-GAP-006`: existing WrenService PostgreSQL timeout injection emits integer
+`kwargs.connect_timeout`, while installed Wren `PostgresConnectionInfo` requires string.
+
+Classification: `TYPED_GAP / SUBSTRATE_RUNTIME_GAP`.
+
+P6 harness may recognize only this exact typed failure as a known gap. Any other Wren execution
+exception remains `UNEXPLAINED_MISMATCH`/RED. Production WrenService is not patched in P6.
