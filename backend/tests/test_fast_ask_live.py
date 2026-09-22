@@ -99,6 +99,14 @@ def _number(value) -> Decimal:
     return Decimal(str(value))
 
 
+def _answer_number(answer: str) -> Decimal:
+    prefix = "Sonuç: "
+    assert answer.startswith(prefix), answer
+    payload = answer[len(prefix):].strip()
+    assert payload.endswith("."), answer
+    return Decimal(payload[:-1])
+
+
 def test_ft003_real_count_sum_breakdown_match_independent_db_oracle():
     base_url = f"http://localhost:{os.environ.get('METABASE_PORT', '3300')}"
     metabase_session = _metabase_login(base_url)
@@ -183,7 +191,7 @@ def test_ft003_real_count_sum_breakdown_match_independent_db_oracle():
 
     sum_body = responses["sum"]
     assert _number(sum_body["result"]["rows"][0]["sum"]) == expected_sum
-    assert sum_body["answer"] == f"Sonuç: {expected_sum.normalize()}."
+    assert _answer_number(sum_body["answer"]) == expected_sum
 
     breakdown_body = responses["breakdown"]
     observed_breakdown = {
