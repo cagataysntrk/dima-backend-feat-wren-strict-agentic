@@ -344,3 +344,59 @@ focused_proof: `PENDING rerun`
 family_regression_proof: `PENDING`
 
 status: `CLASSIFIED — test-fixture-only patch allowed`
+
+---
+
+## Receipt — D65-G-FOCUSED-STALE-FIXTURE
+
+run_id: `35695990688`
+
+workflow head: `63b84ad47b76d5326a365318ccdb03d01e76e690`
+
+observed_failure:
+`13 failed, 36 passed`; all 13 failures are the same removed-constructor TypeError from `tests/test_v2_day6_5_preacceptance_protocol.py`.
+
+failure_stage: `TEST HARNESS fixture construction`
+
+failure_class: `EVAL_ORACLE`
+
+classification_evidence:
+- D65-G compile passed.
+- Anti-legacy architecture test was reached; failures listed only preacceptance fixture tests.
+- Every failed test stops at `resolver=SemanticResolver(...)` before semantic assertions.
+- Same stale fixture family already classified by `D65-REPAIR-FOCUSED-STALE-FIXTURE`.
+
+single_owner: `tests/test_v2_day6_5_preacceptance_protocol.py shared _loop fixture`
+
+root_cause:
+Provider-free test fixture encoded the intentionally removed legacy resolver constructor seam.
+
+failure_family:
+All tests instantiating ManagerSemanticResolutionAdapter with the superseded `resolver=` dependency.
+
+why_not_model_only: `No model call owns constructor TypeError.`
+
+why_not_oracle: `It IS EVAL_ORACLE/test fixture drift.`
+
+why_not_transport: `Provider path is not reached.`
+
+forbidden_patch_alternatives:
+- restore production resolver parameter
+- accept-and-ignore compatibility shim
+- fallback to legacy resolver
+
+allowed_files_to_touch: `provider-free fixture/import cleanup only`
+
+files_not_to_touch:
+- `manager_semantics.py` no-resolver production contract
+- `manager_preacceptance.py` semantics
+- semantic linker/resolver truth
+
+invariant_being_fixed:
+Test code must exercise the physically isolated Manager authority boundary.
+
+focused_proof: `PENDING combined rerun`
+
+family_regression_proof: `PENDING`
+
+status: `CLASSIFIED — fixture-only fix already applied in 385bf3b9c762`
