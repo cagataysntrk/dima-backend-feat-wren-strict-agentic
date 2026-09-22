@@ -15,11 +15,14 @@ from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
     ObligationOrigin,
+    RepresentabilityDecision,
+    StandardProjection,
     UserIntentEnvelope,
 )
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_tools import ManagerToolCall, ManagerToolName
 from app.v2.models import ResolvedSemanticRef, SemanticTargetKind, TenantAnalyticsRuntimeV0
+from app.v2.representability import RepresentabilityGate
 from app.v2.research_tasks import ResearchTaskRegistry, ResearchTaskService
 from app.v2.research_tools import ResearchToolRunner
 from app.v2.semantic_handles import SemanticHandleRegistry
@@ -246,6 +249,76 @@ def test_initial_seed_set_projects_all_three_user_must_without_execution():
     assert all(task.state == "pending" for task in registry.tasks)
     assert service.query_calls == []
     assert runtime.snapshot.data_queries == 0
+
+
+def test_research_execution_slice_is_lossless_without_weakening_whole_contract_proof():
+    _, runtime, _, _, _, _, _ = _accepted_three_obligation_runtime()
+    u1 = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
+    projection = StandardProjection(
+        obligation_ids=("U1",),
+        metric_handles=u1.semantic_handle_refs,
+    )
+    gate = RepresentabilityGate()
+
+    whole = gate.decide(
+        contract=runtime.accepted_contract,
+        ledger=runtime.ledger,
+        projection=projection,
+    )
+    assert whole.decision != RepresentabilityDecision.STANDARD_LOSSLESS
+    assert any(
+        "projection drops executable obligations: U2, U3" in reason
+        for reason in whole.reasons
+    )
+
+    scoped = gate.decide_execution_slice(
+        contract=runtime.accepted_contract,
+        ledger=runtime.ledger,
+        obligation_ids=("U1",),
+        projection=projection,
+    )
+    assert scoped.decision == RepresentabilityDecision.STANDARD_LOSSLESS
+
+
+def test_research_execution_slice_cannot_launder_another_obligations_semantic_binding():
+    _, runtime, _, _, _, _, _ = _accepted_three_obligation_runtime()
+    u2 = next(item for item in runtime.ledger.items if item.obligation_id == "U2")
+    forged = StandardProjection(
+        obligation_ids=("U1",),
+        metric_handles=u2.semantic_handle_refs,
+    )
+
+    result = RepresentabilityGate().decide_execution_slice(
+        contract=runtime.accepted_contract,
+        ledger=runtime.ledger,
+        obligation_ids=("U1",),
+        projection=forged,
+    )
+
+    assert result.decision != RepresentabilityDecision.STANDARD_LOSSLESS
+    assert any(
+        "U1: projection misses accepted semantic bindings" in reason
+        for reason in result.reasons
+    )
+
+
+def test_research_execution_slice_rejects_obligation_outside_accepted_authority():
+    _, runtime, _, _, _, _, _ = _accepted_three_obligation_runtime()
+    u1 = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
+    projection = StandardProjection(
+        obligation_ids=("U999",),
+        metric_handles=u1.semantic_handle_refs,
+    )
+
+    result = RepresentabilityGate().decide_execution_slice(
+        contract=runtime.accepted_contract,
+        ledger=runtime.ledger,
+        obligation_ids=("U999",),
+        projection=projection,
+    )
+
+    assert result.decision == RepresentabilityDecision.UNSUPPORTED
+    assert any("outside accepted authority" in reason for reason in result.reasons)
 
 
 def test_multi_obligation_loop_uses_seed_set_but_evidence_changes_next_ready_choice():
