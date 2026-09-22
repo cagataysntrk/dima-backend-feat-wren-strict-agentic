@@ -1232,3 +1232,48 @@ P8 Wren/Metabase numeric equivalence, Metabase primary routing, or Wren retireme
 
 status:
 `P4 CLOSED GREEN`.
+
+
+---
+
+## DMP-P5-BLOCK-001 — effective access snapshot issuer not yet proven
+
+receipt_id: `DMP-P5-BLOCK-001`  
+milestone: `P5`
+
+observed:
+P4 proves query construction/canonicalization/execution in the pinned lab, but the current branch
+does not yet have a Dima-owned mechanism that proves the complete effective access lens required by
+R10.1 for each official execution.
+
+Known partial contexts:
+- `ResolvedAnalyticsIntent.principal`: tenant/principal/roles;
+- control-plane `Principal`: tenant/user/roles/branches;
+- `TenantAnalyticsRuntimeV0`: tenant/user/roles/catalog/schema;
+- P3 client: authenticated Metabase session transport;
+- P4 current catalog: governed physical resource identity.
+
+Missing proven composition:
+```text
+Dima execution principal
+↔ authenticated substrate principal/access lens
+↔ database route/effective security context
+↔ policy/RLS/CLS versions
+↔ security parameter digest
+```
+
+classification:
+`SECURITY / ACCESS-IDENTITY PRECONDITION`
+
+authorized:
+P5A contract/sealer implementation that **requires** an externally proven access snapshot.
+
+not_authorized:
+inventing or defaulting the missing access data, or declaring P5 GREEN from lab-admin execution.
+
+closure_condition:
+P5B produces a reviewed and tested effective-access snapshot issuer/attestor with fail-closed
+principal mapping.
+
+status:
+`OPEN / P5A MAY PROCEED; P5 CLOSURE BLOCKED`.

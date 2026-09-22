@@ -533,3 +533,53 @@ No new aggregation aliases, typed filter inference, NULL predicates, cross-table
 compiler, fuzzy matching, Metabase semantic lookup, product routing, or Wren retirement are implied.
 
 status: SEALED / P4 CLOSED GREEN.
+
+
+---
+
+## DMP-DEC-0017 — P5 access fingerprint is a separate proven identity, never an alias of principal fingerprint
+
+date: 2026-09-22
+
+question:
+Can P5 satisfy `execution_access_fingerprint` by reusing the existing
+`PrincipalContextRef.fingerprint`?
+
+evidence:
+- `PrincipalContextRef.fingerprint` contains tenant binding, principal subject and roles only;
+- R10.1 additionally requires attribute-policy identity, policy version, RLS/CLS versions,
+  database route/destination, impersonation, semantic context, source object refs and security
+  parameters;
+- current `LegacyV2QueryReceiptWriter` aliases the two fingerprints only as an M1 compatibility
+  artifact;
+- P4 lab execution used an admin session and does not prove tenant/user/access-lens parity.
+
+decision:
+No. P5 introduces an explicit immutable `ExecutionAccessSnapshot` and derives the official
+`execution_access_fingerprint` from that complete snapshot. The P5 receipt sealer requires the
+snapshot and fail-closes when it is absent or inconsistent with the resolved intent/canonical
+resource identity.
+
+The existing legacy alias is classified `M1_COMPAT_ONLY` and is not P5 certification evidence.
+
+scope:
+P5 execution/receipt identity.
+
+invariants:
+- principal fingerprint and access fingerprint are distinct concepts;
+- no guessed access-policy fields;
+- no missing-principal service/admin fallback;
+- official receipt access snapshot required;
+- P4 canonical query fingerprint remains query identity owner;
+- source branch/read path unchanged.
+
+rejected_shortcuts:
+- hash only tenant/user/roles and call it access identity;
+- set missing policy fields to empty/zero without an attested meaning;
+- use Metabase admin session as a tenant-user access proof;
+- defer the issue while marking P5 GREEN.
+
+revisit_condition:
+Only if the normative R10.1 security contract changes under a new explicit decision.
+
+status: SEALED.

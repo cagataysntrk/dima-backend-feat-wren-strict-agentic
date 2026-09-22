@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P4 CLOSED GREEN — P5 PRE-DEVELOPMENT REVIEW NEXT  
-**Product-code development:** P4 CLOSED GREEN; P5 PRODUCT CODE NOT STARTED  
+**Current phase:** P5 PRE-DEVELOPMENT REVIEW SEALED — P5A GOVERNANCE GATE  
+**Product-code development:** P5A NOT STARTED; P5B ACCESS ISSUER BLOCKER OPEN  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -570,3 +570,24 @@ P4 is **CLOSED GREEN**.
 Next authorized activity is **P5 pre-development review only**. P5 implementation is not authorized
 until that review is sealed and governance is GREEN. The open principal/access coherence debt must be
 handled explicitly there; it must not be hidden behind the current lab-admin execution proof.
+
+
+---
+
+## P5 pre-development review
+
+Review:
+`backend/belgeler/metabase/predev/P5_PREDEVELOPMENT_REVIEW.md`
+
+Key classification:
+```text
+P4 query identity                         = GREEN / authoritative
+M1 DimaQueryReceipt                       = foundational shell only
+principal_fingerprint                     = tenant/principal/roles identity
+legacy execution_access_fingerprint alias = M1_COMPAT_ONLY
+P5 official access fingerprint            = complete ExecutionAccessSnapshot required
+DMP-P5-BLOCK-001                          = OPEN
+P5A                                       = authorized after governance GREEN
+P5 closure                                = BLOCKED until P5B access attestation proof
+production routing                        = unchanged
+```

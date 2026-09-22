@@ -73,6 +73,17 @@ jobs:
             grep -q "Status: SEALED / P4 IMPLEMENTATION AUTHORIZED" "$REVIEW"
           fi
 
+
+      - name: Require sealed P5 review before P5 execution identity code exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/execution_identity.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P5_PREDEVELOPMENT_REVIEW.md"
+            test -f "$REVIEW"
+            grep -q "Status: SEALED / P5 CONTRACT IMPLEMENTATION AUTHORIZED" "$REVIEW"
+          fi
+
       - name: Guard v3 against legacy semantic resolver authority
         shell: bash
         run: |
