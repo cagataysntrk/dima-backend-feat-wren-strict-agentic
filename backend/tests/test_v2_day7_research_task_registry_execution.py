@@ -22,7 +22,11 @@ from app.v2.manager_models import (
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_tools import ManagerToolCall, ManagerToolName
 from app.v2.models import ResolvedSemanticRef, SemanticTargetKind, ResearchTask, TenantAnalyticsRuntimeV0
-from app.v2.research_tasks import ResearchTaskLifecycleError, ResearchTaskRegistry
+from app.v2.research_tasks import (
+    ResearchTaskLifecycleError,
+    ResearchTaskRegistry,
+    ResearchTaskTimeoutError,
+)
 from app.v2.research_tools import ResearchTaskKind, ResearchToolRunner
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
@@ -216,3 +220,138 @@ def test_cancel_during_query_discards_late_result_before_evidence_or_verificatio
     obligation = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
     assert obligation.status != ObligationStatus.VERIFIED
     assert obligation.evidence_refs == ()
+
+
+
+class _FakeClock:
+    def __init__(self, value: float = 100.0) -> None:
+        self.value = value
+
+    def __call__(self) -> float:
+        return self.value
+
+    def advance(self, seconds: float) -> None:
+        self.value += seconds
+
+
+def test_deadline_rejects_late_result_before_accepted_evidence_or_uol_verification():
+    principal, service, store, runtime, executor, task, call = _vertical()
+    clock = _FakeClock()
+    registry = ResearchTaskRegistry(clock=clock)
+    runner = ResearchToolRunner()
+    service.on_query = lambda: clock.advance(15.001)
+
+    with pytest.raises(ResearchTaskTimeoutError, match="deadline exceeded"):
+        runner.execute(
+            task=task,
+            tool_id="wren.query",
+            call=call,
+            runtime=runtime,
+            executor=executor,
+            principal=principal,
+            task_registry=registry,
+        )
+
+    # Low-level query/QueryContract may finish for audit, but Research truth must not.
+    assert service.query_calls == 1
+    assert store.n == 1
+    assert executor.evidence_store.count == 0
+    assert runtime.snapshot.evidence_refs == ()
+    assert registry.get(task.task_id).state == "failed"
+
+    obligation = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
+    assert obligation.status != ObligationStatus.VERIFIED
+    assert obligation.evidence_refs == ()
+
+
+def test_timeout_is_terminal_for_duplicate_delivery_and_retry_without_second_query():
+    principal, service, _, runtime, executor, task, call = _vertical()
+    clock = _FakeClock()
+    registry = ResearchTaskRegistry(clock=clock)
+    runner = ResearchToolRunner()
+    service.on_query = lambda: clock.advance(16.0)
+
+    with pytest.raises(ResearchTaskTimeoutError):
+        runner.execute(
+            task=task,
+            tool_id="wren.query",
+            call=call,
+            runtime=runtime,
+            executor=executor,
+            principal=principal,
+            task_registry=registry,
+        )
+    assert service.query_calls == 1
+
+    service.on_query = None
+    with pytest.raises(ResearchTaskLifecycleError, match="failed ResearchTask"):
+        runner.execute(
+            task=task,
+            tool_id="wren.query",
+            call=call,
+            runtime=runtime,
+            executor=executor,
+            principal=principal,
+            task_registry=registry,
+        )
+
+    assert service.query_calls == 1
+    assert executor.evidence_store.count == 0
+
+
+def test_cancel_vs_timeout_race_remains_terminal_and_discards_result():
+    principal, service, _, runtime, executor, task, call = _vertical()
+    clock = _FakeClock()
+    registry = ResearchTaskRegistry(clock=clock)
+    runner = ResearchToolRunner()
+
+    def _cancel_and_expire():
+        registry.cancel(task.task_id)
+        clock.advance(16.0)
+
+    service.on_query = _cancel_and_expire
+
+    with pytest.raises(ResearchTaskLifecycleError, match="cancelled|late completion"):
+        runner.execute(
+            task=task,
+            tool_id="wren.query",
+            call=call,
+            runtime=runtime,
+            executor=executor,
+            principal=principal,
+            task_registry=registry,
+        )
+
+    assert registry.get(task.task_id).state == "cancelled"
+    assert executor.evidence_store.count == 0
+    assert runtime.snapshot.evidence_refs == ()
+    obligation = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
+    assert obligation.status != ObligationStatus.VERIFIED
+
+
+def test_success_just_before_deadline_commits_once_and_completes():
+    principal, service, store, runtime, executor, task, call = _vertical()
+    clock = _FakeClock()
+    registry = ResearchTaskRegistry(clock=clock)
+    runner = ResearchToolRunner()
+    service.on_query = lambda: clock.advance(14.999)
+
+    result = runner.execute(
+        task=task,
+        tool_id="wren.query",
+        call=call,
+        runtime=runtime,
+        executor=executor,
+        principal=principal,
+        task_registry=registry,
+    )
+
+    assert service.query_calls == 1
+    assert store.n == 1
+    assert executor.evidence_store.count == 1
+    assert result.evidence.artifact_id in runtime.snapshot.evidence_refs
+    assert registry.get(task.task_id).state == "complete"
+    assert result.elapsed_ms == pytest.approx(14_999.0)
+
+    obligation = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
+    assert obligation.status == ObligationStatus.VERIFIED
