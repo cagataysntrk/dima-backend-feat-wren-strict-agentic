@@ -10,7 +10,8 @@
 > 2. `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`
 > 3. `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`
 > 4. `belgeler/plan/DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md`
-> 5. `belgeler/plan/DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md`
+> 5. `belgeler/plan/DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md`
+> 6. `belgeler/plan/DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md`
 > 6. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
 > 7. `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`
 > 8. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
@@ -29,7 +30,7 @@
 > Koddan önce roadmap'teki aktif **P** bölümünü ve onun dayanak gösterdiği **R** bölümünü
 > birlikte oku. Rapor gerekçenin, roadmap icra sırasının authority'sidir.
 >
-> **Day 6.5 current state:** iki execution path (`STANDARD | RESEARCH`) trust-plane altında korunuyor. `DIRECT | BUILDER` aynı Standard engine/outcome ailesidir. D65-E3A-R minimal `BoundedAgentRuntimeKernel` realignment **COMPLETED/GREEN**; Research Manager wholesale kernel migration yapılmadı. Current work J1S/J1T lab benchmark preparation + parallel M0 source audit → X0. Production `/ask-v2` certification seal öncesi açılmaz.
+> **Day 6.5 current state:** iki execution path (`STANDARD | RESEARCH`) trust-plane altında korunuyor. `DIRECT | BUILDER` aynı Standard engine/outcome ailesidir. D65-E3A-R minimal `BoundedAgentRuntimeKernel` realignment **COMPLETED/GREEN**. Corrected J1 freeze-v2 PRIMARY peers = Gemini Flash-Lite + Jev 1.13 + GPT-5.6 Luna; Sol reference ceiling, Terra consult-gated conditional. Corrected provider-free `35705204058=6/6`. M0 source audit X0 prep için yeterli; fakat execution sırası **J1 decision → D65-SI → real Standard Wren sentinel → X0**. Product `/ask-v2` OFF.
 >
 > **FAILURE TRIAGE RECEIPT:** RED live/canary/DEV/Validation/Hidden run sonrası semantic/product code'a dokunmadan önce `belgeler/plan/DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md` zorunlu schema'sı doldurulur.
 > `failure_class + single_owner + root_cause` kapanmadan ve gerekli same-SHA A/B bitmeden product patch yasaktır. `ONE FAILURE ≠ ONE NEW RULE`.
@@ -49,8 +50,8 @@
 > STOP/CONSULT before final freeze, DEV80, post-DEV80 behavior change and pilot activation.
 >> **Current pre-freeze gate:** J1S + J1T + M0/X0. Freeze/DEV80 is blocked.
 > Baseline proofs: provider-free `35696652502=102/102`, reference canary `35697064833=16/16`, Wren+Research sentinel `35697471863=2/2`, exact SHA `8dfde62d...`.
-> J1S = semantic candidate decision; J1T = typed temporal intent classification. Both compare Gemini Flash-Lite vs pinned `typesafe/jev-1.13` vs Sol in lab/eval only. Jev uses OpenRouter Decisions API, not chat/completions. Product semantic/temporal/authority code stays NO-TOUCH during benchmark.
-> M0 = Metabase source/adoption audit; X0 = thin separate-service Agent API feasibility before freeze. Promising J1 or X0 result is a consultation gate, not automatic product integration.
+> J1S = semantic candidate decision; J1T evidence = `J1T-CHOICE + J1T-CONTRACT-FIDELITY`. PRIMARY peers Gemini Flash-Lite vs pinned `typesafe/jev-1.13` vs GPT-5.6 Luna. Sol is REFERENCE_CEILING only; Terra is consult-gated conditional. Jev uses OpenRouter Decisions API, not chat/completions. Product semantic/temporal/authority code stays NO-TOUCH during benchmark.
+> M0 = Metabase source/adoption audit. D65-SI closes the actual pure Standard authority/execution chain after J1. X0 = thin separate-service Agent API feasibility only after D65-SI GREEN. Promising J1 or X0 result is a consultation gate, not automatic product integration.
 > Detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
 >> **Substrate kararı:** Wren current incumbent'tır. M0/X0/full-X (if needed) and one-primary-substrate selection happen before Day7–15 final integration and before the release final freeze/DEV80. Production'da Wren + Metabase equal truth engines yasaktır.
 > **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
