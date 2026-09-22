@@ -4444,7 +4444,72 @@ Security boundary oracle uğruna gevşetilmeyecek.
 
 ---
 
-### 2026-09-22 — DAY 6.5 / COGNITION ↔ SEMANTIC AUTHORITY BOUNDARY CORRECTION
+### 2026-09-23 00:50 — D7-SEED-SET RED ROOT CAUSE
+
+```text
+baseline_sha       07c2c2b14c19825958f601d7a20074c5fb28f4aa
+diagnostic_sha     4bd987d3753831c3782c78d981ae3e7b693d6226
+baseline_run       35787021294
+diagnostic_run     35788651729
+
+failure_class      CONTRACT / INTERFACE
+sub_family         REPRESENTABILITY_SCOPE
+first_bad_turn     1
+single_owner       Representability proof invocation at governed RUN_ANALYTICS boundary
+```
+
+Exact trace:
+
+```text
+READY tasks        seed:U1, seed:U2, seed:U3
+Manager decision   run_analytics(U1, h1)        ← correct
+first rejection    projection drops executable obligations: U2, U3
+U1 task state      failed
+Evidence           none
+U1 VERIFIED        no
+later symptom      repeated U1 → no-progress block → manager turn budget exhausted
+```
+
+Root cause:
+- full Standard representability correctly requires one lossless projection to cover every
+  executable obligation of that Standard authority;
+- a Research run intentionally executes one typed ResearchTask at a time;
+- the same whole-contract completeness proof was incorrectly reused for that task-local
+  Standard sub-analysis;
+- therefore sequential multi-obligation Research was impossible even though CompletionGate
+  still retained all USER_MUST obligations.
+
+Invariant-preserving fix:
+```text
+Standard authority execution:
+  whole accepted authority must remain lossless
+
+Research task execution:
+  selected task obligation slice must be lossless against accepted authority
+  AND selected obligation semantic bindings must be preserved
+  AND no obligation outside accepted/ledger authority may execute
+  AND CompletionGate remains whole-ledger completion truth
+```
+
+Not the owner:
+- model cognition,
+- seed scheduling,
+- manager budget,
+- no-progress frontier,
+- semantic alias reconstruction.
+
+Forbidden:
+- raising max_manager_turns,
+- special-casing U1/U2/U3,
+- weakening full Standard representability,
+- marking unexecuted USER_MUST as complete.
+
+Proof plan:
+`scoped representability unit → seed-set focused → full v2-day7-focused same SHA`.
+
+---
+
+## 2026-09-22 — DAY 6.5 / COGNITION ↔ SEMANTIC AUTHORITY BOUNDARY CORRECTION
 
 **Karar kaynağı**
 - canonical addendum: `DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
