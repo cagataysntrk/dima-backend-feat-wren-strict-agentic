@@ -8,7 +8,7 @@
 **Metabase runtime:** `v0.63.18` immutable digest pinned  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY
 
-Status: **SEALED / CORPUS FREEZE + PARITY HARNESS AUTHORIZED AFTER GOVERNANCE GREEN**
+Status: **SEALED / P6A SAME-SNAPSHOT CANARY NEXT**
 
 ## 1. Normative boundary re-read
 
@@ -112,6 +112,7 @@ COMPILER_GAP
 RELATIONSHIP_GAP
 TEMPORAL_CONTRACT_GAP
 ACCESS/PERMISSION_GAP
+RECEIPT/PROVENANCE_GAP
 SUBSTRATE_RUNTIME_GAP
 DATA/FIXTURE_GAP
 ORACLE_GAP
@@ -141,8 +142,9 @@ P6 measurement closes only when:
 - `UNEXPLAINED_MISMATCH = 0`;
 - no prompt-specific patch exists.
 
-Typed relationship/security gaps are carried forward visibly to P8/P10; P6 does not fabricate
-support to make the matrix green.
+Typed relationship/security/receipt gaps are carried forward visibly to their owning milestones;
+P6 does not fabricate support to make the matrix green. In particular, Wren legacy receipt behavior
+must be reported as `RECEIPT/PROVENANCE_GAP` where strict P5 receipt parity is not actually proven.
 
 ## 8. Access boundary
 
@@ -204,12 +206,31 @@ feat/ask-v2-mvp
 
 ## 12. First implementation order
 
-1. freeze 80-case corpus + corpus fingerprint;
-2. build same-PostgreSQL P6 fixture and minimal structured Wren manifest;
-3. prove both engines see identical snapshot identity/count/checksum;
-4. add MetabaseSubstrateAdapter;
-5. execute supported corpus families A/B;
-6. classify every mismatch;
-7. close only with zero unexplained mismatch.
+### P6A — same-snapshot canary first
+
+1. build deterministic shared PostgreSQL fixture with `p6_orders` and `p6_customers`;
+2. derive stable snapshot identity from schema/version, row counts, fixture manifest fingerprint and
+   deterministic content checksum;
+3. prove Wren and Metabase both reach that exact physical snapshot using legitimate structured paths;
+4. run only three post-authority canaries: metric aggregation, metric+breakdown, metric+period;
+5. if either arm cannot reach the same governed dataset, stop as `DATA/FIXTURE_GAP`.
+
+No raw prompt, Metabase raw-SQL bypass, semantic search or parity conclusion is authorized in P6A.
+
+### P6B — corpus freeze
+
+Only after P6A is GREEN:
+- deterministically generate exactly 80 engine-neutral structural cases;
+- freeze stable case ids and normalized corpus fingerprint;
+- no engine-specific expectation branches.
+
+### P6C — full parity run
+
+Then:
+1. add the thin Metabase execution adapter;
+2. execute supported corpus cases against both arms on the shared snapshot;
+3. compare typed outputs and independent golden anchors;
+4. classify every non-match, including `RECEIPT/PROVENANCE_GAP`;
+5. close only with `UNEXPLAINED_MISMATCH = 0`.
 
 No P7 code before the P6 parity report is sealed.

@@ -1363,3 +1363,32 @@ forbidden:
 
 status:
 `OPEN / SURGICAL P5 SEALER CORRECTION AUTHORIZED; P6 PRODUCT IMPLEMENTATION HELD`.
+
+
+---
+
+## DMP-P5-RED-001 closure
+
+fix_sha: `e9eb74b7edf00406187fa250ceb911dc0de9e4d7`  
+P5 workflow: `35763693146 = SUCCESS`  
+M1/Wren workflow: `35763692416 = SUCCESS`  
+governance: `35763692629 = SUCCESS`
+
+```text
+focused P5 receipt/access proofs      41 PASS
+provider-free P4 critical regression  44 PASS
+M1 critical regression                15 PASS
+resource entity↔fingerprint pairing   bound as exact pairs
+partial resource identity             HARD FAIL
+attestation proof refs                bound in receipt_fingerprint
+warnings/limitations                  bound exactly in supplied order
+executed_at                           remains event metadata only
+execution_id                          remains receipt occurrence identity
+second receipt hash abstraction       0
+P4 compiler/canonical changes         0
+Wren adapter changes                  0
+P10 issuer work                       0
+```
+
+status:
+`CLOSED GREEN`.

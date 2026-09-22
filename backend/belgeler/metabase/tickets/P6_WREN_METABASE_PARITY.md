@@ -49,3 +49,22 @@ Wren retirement                              out of scope
 A typed P6 parity report with per-case:
 case id, family, frozen-input hashes, Wren outcome, Metabase outcome, parity dimensions,
 latency, receipt completeness, status and optional typed gap classification.
+
+
+## Execution order correction
+
+```text
+P6A  same-snapshot canary
+  ↓
+P6B  deterministic 80-case corpus freeze
+  ↓
+P6C  full parity harness
+```
+
+The shared-data assumption is proven before spending effort on the 80-case corpus.
+
+Mismatch taxonomy additionally includes:
+`RECEIPT/PROVENANCE_GAP`.
+
+Wren legacy receipt behavior must be measured, not rewritten or wrapped in fake Metabase projection
+objects to manufacture receipt parity.

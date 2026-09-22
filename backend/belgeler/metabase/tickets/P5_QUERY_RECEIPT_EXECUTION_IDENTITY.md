@@ -81,3 +81,14 @@ Exit gate: **P5 CONTRACT GREEN**.
 
 DMP-P5-BLOCK-001 remains OPEN at P10. Production official receipt issuance is still prohibited until
 the production effective-access issuer/mapping is certified.
+
+
+---
+
+## Post-closure provenance audit correction
+
+DMP-P5-RED-001 was closed at `e9eb74b7edf00406187fa250ceb911dc0de9e4d7`.
+
+The strict sealer now binds resource entity↔fingerprint pairs without losing association and includes
+attestation refs, warnings and limitations in durable receipt content identity. Partial resource
+identity hard-fails. P10 production issuer ownership is unchanged.

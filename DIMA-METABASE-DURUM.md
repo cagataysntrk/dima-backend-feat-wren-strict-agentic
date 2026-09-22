@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P5 CONTRACT GREEN — P6 PRE-DEVELOPMENT REVIEW SEALED  
-**Product-code development:** P6 NOT STARTED; CORPUS FREEZE NEXT; P10 ISSUER STILL SEPARATE  
+**Current phase:** P5 CONTRACT GREEN — P6A SAME-SNAPSHOT CANARY NEXT  
+**Product-code development:** P6A NOT STARTED; SHARED-SNAPSHOT CANARY NEXT; P10 ISSUER STILL SEPARATE  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -693,3 +693,29 @@ Decision DMP-DEC-0019 requires one shared PostgreSQL parity snapshot before any 
 Next after governance GREEN:
 freeze the exact 80-case post-authority corpus and its fingerprint. No P6 execution patch precedes
 that freeze.
+
+
+---
+
+## P5 provenance audit correction — GREEN
+
+```text
+fix SHA                           = e9eb74b7edf00406187fa250ceb911dc0de9e4d7
+DMP-P5-RED-001                    = CLOSED GREEN
+P5 workflow                       = 35763693146 = SUCCESS
+focused P5                        = 41 PASS
+provider-free P4 critical         = 44 PASS
+M1 critical                       = 15 PASS
+M1/Wren workflow                  = 35763692416 = SUCCESS
+governance                        = 35763692629 = SUCCESS
+resource pairing loss             = FIXED
+partial resource identity         = HARD FAIL
+warnings/limitations/attestations = DURABLY BOUND
+P10 production issuer             = STILL BLOCKED / SEPARATE
+```
+
+P6 review is minimally amended:
+- `RECEIPT/PROVENANCE_GAP` is a first-class mismatch owner;
+- implementation order is now P6A same-snapshot canary → P6B corpus freeze → P6C full parity.
+
+**Next:** P6A shared PostgreSQL same-snapshot canary.
