@@ -27,11 +27,12 @@ export interface ChatAnswer {
   result: QueryResult | null;
 }
 
-const schemaCache = new Map<string, { at: number; text: string }>();
+const schemaCache = new Map<string, { at: number; tables: TableSchema[] }>();
 
-async function tenantSchema(ctx: TenantContext): Promise<string> {
+/** The tenant's tables and visible columns (engine metadata, cached briefly). */
+export async function tenantTables(ctx: TenantContext): Promise<TableSchema[]> {
   const hit = schemaCache.get(ctx.tenant.slug);
-  if (hit && Date.now() - hit.at < SCHEMA_TTL_MS) return hit.text;
+  if (hit && Date.now() - hit.at < SCHEMA_TTL_MS) return hit.tables;
   const meta = await mbGet<{
     tables: {
       schema: string;
@@ -48,10 +49,10 @@ async function tenantSchema(ctx: TenantContext): Promise<string> {
       columns: t.fields
         .filter((f) => f.visibility_type === "normal" && !/^_mb_/i.test(f.name))
         .map((f) => ({ name: f.name, type: f.database_type })),
-    }));
-  const text = describeSchema(tables);
-  schemaCache.set(ctx.tenant.slug, { at: Date.now(), text });
-  return text;
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  schemaCache.set(ctx.tenant.slug, { at: Date.now(), tables });
+  return tables;
 }
 
 /** The database's own error line (e.g. 'column "x" does not exist'), without transport noise. */
@@ -65,7 +66,7 @@ const RunSqlArgs = z.object({ sql: z.string().min(1).max(20_000), final: z.boole
 
 export async function answer(ctx: TenantContext, history: Turn[]): Promise<ChatAnswer> {
   const messages: ChatMessage[] = [
-    { role: "system", content: systemPrompt(ctx.tenant.name, await tenantSchema(ctx)) },
+    { role: "system", content: systemPrompt(ctx.tenant.name, describeSchema(await tenantTables(ctx))) },
     ...history,
   ];
   let shown: { sql: string; result: QueryResult } | null = null;

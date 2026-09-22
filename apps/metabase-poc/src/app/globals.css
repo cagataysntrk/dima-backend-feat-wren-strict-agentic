@@ -502,3 +502,53 @@
     animation: none;
   }
 }
+
+/* Composer glow (chat start screen). Aurora variant of the beam: three brand
+   hues travelling around the edge, plus a blurred halo of the same gradient
+   behind the box. Both rotate together; both stop for reduced motion. */
+.dima-border-beam--aurora::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 55%,
+    color-mix(in oklch, var(--chart-3) 70%, transparent) 64%,
+    var(--brand) 74%,
+    color-mix(in oklch, var(--chart-1) 85%, transparent) 84%,
+    transparent 94%
+  );
+  animation-duration: var(--beam-duration, 9s);
+}
+
+.dima-composer-halo {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  overflow: hidden;
+  filter: blur(22px);
+  opacity: 0.32;
+}
+
+.dark .dima-composer-halo {
+  opacity: 0.4;
+}
+
+.dima-composer-halo::before {
+  content: "";
+  position: absolute;
+  inset: -150%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 55%,
+    var(--chart-3) 64%,
+    var(--brand) 74%,
+    var(--chart-1) 84%,
+    transparent 94%
+  );
+  animation: dima-beam-spin var(--beam-duration, 9s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dima-composer-halo::before {
+    animation: none;
+  }
+}

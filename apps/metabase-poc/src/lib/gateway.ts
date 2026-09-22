@@ -97,6 +97,7 @@ export interface ChatAnswer {
 }
 
 export const gateway = {
+  tables: () => api<{ tables: { name: string; columns: string[] }[] }>("/api/tables").then((r) => r.tables),
   chat: (messages: ChatTurn[]) => api<ChatAnswer>("/api/chat", json({ messages })),
   items: () => api<{ items: Item[] }>("/api/items").then((r) => r.items),
   card: (id: number) => api<CardPayload>(`/api/cards/${id}/data`),

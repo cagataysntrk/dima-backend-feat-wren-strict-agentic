@@ -4,17 +4,17 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowUp, BarChart3, Code2, Database, PanelRight, Save, X } from "lucide-react";
+import { BarChart3, Code2, Database, PanelRight, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { ThinkingOrb } from "thinking-orbs";
 import { gateway, type ChatAnswer, type ChatTurn } from "@/lib/gateway";
 import { cn } from "@/lib/utils";
 import { useConversations, type Entry } from "@/stores/conversations";
 import { TopbarActions } from "@/components/shell/AppShell";
+import { Composer } from "@/components/chat/Composer";
 import { ResultView } from "@/components/ResultView";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Suggested first questions per company (org slug); generic fallback otherwise.
@@ -162,7 +162,7 @@ export function ChatView({
                   Sohbet servisi henüz yapılandırılmadı. Yöneticinizden anahtar tanımlamasını isteyin.
                 </p>
               )}
-              <Composer value={draft} onChange={setDraft} onSubmit={() => submit(draft)} disabled={!configured} beam autoFocus />
+              <Composer value={draft} onChange={setDraft} onSubmit={() => submit(draft)} disabled={!configured} hero autoFocus />
               <div className="grid gap-2 sm:grid-cols-2">
                 {starters.map((s) => (
                   <button
@@ -229,72 +229,6 @@ export function ChatView({
         onPick={scrollTo}
       />
     </div>
-  );
-}
-
-function Composer({
-  value,
-  onChange,
-  onSubmit,
-  disabled,
-  busy,
-  beam,
-  autoFocus,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  onSubmit: () => void;
-  disabled?: boolean;
-  busy?: boolean;
-  /** Border beam around the box — used on the empty (start) screen only. */
-  beam?: boolean;
-  autoFocus?: boolean;
-}) {
-  return (
-    <form
-      onSubmit={(ev) => {
-        ev.preventDefault();
-        onSubmit();
-      }}
-      className="relative rounded-2xl"
-    >
-      <div
-        className={cn(
-          "flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-sm focus-within:border-brand/50",
-          beam && "border-border/60",
-        )}
-      >
-        <label htmlFor="question" className="sr-only">
-          Soru
-        </label>
-        <Textarea
-          id="question"
-          value={value}
-          autoFocus={autoFocus}
-          onChange={(ev) => onChange(ev.target.value)}
-          onKeyDown={(ev) => {
-            if (ev.key === "Enter" && !ev.shiftKey) {
-              ev.preventDefault();
-              onSubmit();
-            }
-          }}
-          placeholder={disabled ? "Sohbet servisi yapılandırılmadı" : "Bir soru sorun…"}
-          disabled={disabled}
-          rows={beam ? 2 : 1}
-          className="max-h-40 min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
-        />
-        <Button
-          type="submit"
-          variant="brand"
-          size="icon"
-          aria-label="Gönder"
-          disabled={disabled || busy || !value.trim()}
-        >
-          <ArrowUp className="size-4" aria-hidden />
-        </Button>
-      </div>
-      {beam && <span className="dima-border-beam" aria-hidden />}
-    </form>
   );
 }
 
