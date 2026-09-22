@@ -1,7 +1,7 @@
 # DIMA DAY 6.5 — D65-SI STANDARD INTEGRATION CLOSURE
 
-**Status:** PARTIAL GREEN / STRUCTURAL FINALIZATION + FULL-LIVE COMPOSITION OPEN  
-**Order:** structural SI closure → focused proofs → full-live Standard composition → M0E delta final → bridge preflight → X0  
+**Status:** **FINAL GREEN / SEALED**  
+**Order:** **D65-SI SEALED → M0E-DEEP-DELTA FINAL → X0-BRIDGE-PREFLIGHT → X0 only if bridge GREEN**  
 **Product code before J1 decision:** NO-TOUCH
 
 ## Purpose
@@ -283,3 +283,36 @@ No frozen wording or provider topology changed.
 
 Next and only next live SI proof:
 exact frozen six-case full-live composition once.
+
+
+---
+
+## FINAL SEAL — GREEN
+
+Seal authority:
+`DIMA_DAY6_5_SI_FINAL_SEAL.md`.
+
+Final evidence:
+```text
+35738044476 = 73/73 provider-free PASS
+35738400321 = focused live 001+005 GREEN
+35738912690 = frozen six-case full-live GREEN
+
+final tested HEAD = c72eb9133556bd892041cc0ef543f62dcfe5dbab
+last product code = fb2f2432fd31058f3fe3369375bc37d961cfa399
+```
+
+Final artifact:
+```text
+completed_cases = 6
+failed_case_ids = []
+accepted = 5
+clarified = 1
+```
+
+D65-SI = FINAL GREEN.
+
+Semantic-discovery optimization is CLOSED unless new invalidating P0 evidence appears.
+
+Next work is not another SI loop:
+`M0E-DEEP-DELTA → X0-BRIDGE-PREFLIGHT`.

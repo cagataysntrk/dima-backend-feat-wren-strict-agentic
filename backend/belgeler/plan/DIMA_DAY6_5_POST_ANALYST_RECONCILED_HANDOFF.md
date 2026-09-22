@@ -3,7 +3,7 @@
 **Date:** 2026-09-22  
 **Branch:** `feat/ask-v2-mvp`  
 **Verified checkpoint HEAD:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Status:** SI PARTIAL GREEN / FINAL COMPOSITION OPEN / M0E-DEEP-DELTA OPEN / X0 BLOCKED  
+**Status:** **D65-SI FINAL GREEN / M0E-DEEP-DELTA ACTIVE / X0 BRIDGE BLOCKED**  
 **Production /ask-v2:** OFF  
 **DEV80 / Validation50 / Hidden50 / FINAL FREEZE:** FORBIDDEN NOW
 
@@ -544,3 +544,29 @@ failed_case_ids   []
 
 This authorizes exactly one full frozen six-case closure run.
 No new corpus/case/prompt tuning is authorized.
+
+
+## 4E. D65-SI FINAL GREEN — semantic work closed
+
+Final seal:
+`DIMA_DAY6_5_SI_FINAL_SEAL.md`.
+
+```text
+35738044476 = 73/73 provider-free PASS
+35738400321 = focused live 001/005 GREEN
+35738912690 = frozen six-case full-live GREEN
+HEAD          c72eb9133556bd892041cc0ef543f62dcfe5dbab
+product last  fb2f2432fd31058f3fe3369375bc37d961cfa399
+```
+
+The Standard semantic/discovery closure is complete.
+Do not reopen morphology/fuzzy/regex/synonym/threshold/cascade work without new invalidating P0 evidence.
+
+Current continuation order:
+```text
+M0E-DEEP-DELTA FINAL
+→ X0-BRIDGE-PREFLIGHT
+→ if bridge heavy: reject Metabase structured execution, retain Wren, Day7
+→ if bridge thin/lossless: bounded X0-REST
+→ if X0 materially promising: STOP / CONSULT before full D65-X
+```

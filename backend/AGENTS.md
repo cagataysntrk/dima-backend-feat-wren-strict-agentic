@@ -2,6 +2,12 @@
 
 ## POST-ANALYST CURRENT OVERRIDE
 
+> **D65-SI FINAL GREEN at c72eb913...**
+> Evidence: 35738044476 73/73; 35738400321 focused 001/005 GREEN; 35738912690 frozen six GREEN.
+> Semantic-discovery tuning is CLOSED without new P0 evidence.
+> Current work = M0E-DEEP-DELTA → X0-BRIDGE-PREFLIGHT. No Metabase runtime before bridge GREEN.
+
+
 > Current continuation authority:
 > `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
 >

@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 SI STRUCTURAL GREEN / FULL-LIVE PRODUCT EVIDENCE 001+005 OPEN; LATEST RED = EVAL HARNESS ONLY; M0E-DEEP-DELTA OPEN; X0/DEV80 FORBIDDEN**  
-**Kod fazı:** Cheap semantic contract family is GREEN (`35738044476 = 73 PASS + 2 skipped`). Focused paid frozen 001+005 run `35738400321` is GREEN on the exact frozen wording/providers: 001 ACCEPT → `cari.bakiye`, query_count=1; 005 ACCEPT → `ticaret.cari_kodu + ticaret.toplam_tutar`, ranking desc/5, query_count=1; failed_case_ids=0. No full-six result yet. Authorized next = exact same frozen six-case workers=1 full-live closure ONCE. If GREEN → anti-patch audit + D65-SI FINAL docs seal. If RED → classify from complete report; no case patch chain. M0E-DEEP-DELTA remains parallel; X0/DEV80 blocked.  
+**Durum:** **D65-SI FINAL GREEN / SEALED — M0E-DEEP-DELTA ACTIVE; X0-BRIDGE-PREFLIGHT NEXT AFTER M0E FINAL; X0/DEV80 FORBIDDEN**  
+**Kod fazı:** D65-SI is sealed FINAL GREEN at tested HEAD `c72eb913...`. Evidence: provider-free/family `35738044476 = 73/73 PASS`; focused real-live frozen 001+005 `35738400321 = GREEN`; exact frozen six-case full-live `35738912690 = GREEN`, artifact `completed_cases=6`, `failed_case_ids=[]`, `accepted=5`, `clarified=1`. Last product-code change before seal = `fb2f243...`; final seal commits thereafter are docs/workflow only. Semantic-discovery optimization cycle is CLOSED absent new P0 evidence. Current primary work = `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md` source/classification to `UNCLASSIFIED=0`; then `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md`. No Metabase runtime yet. `/ask-v2` migration remains Day10 release blocker. DEV80/Validation50/Hidden50 forbidden.  
 
 ---
 
@@ -33,7 +33,8 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md` — **current continuation handoff / provider ladder / stop points**.
 - `DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md` — Metabase exhaustion/build-vs-buy contract.
 - `DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md` — **M0E GREEN mechanism classification receipt**.
-- `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; J1 decision sonrası, X0 öncesi mandatory Standard integration gate**.
+- `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; FINAL GREEN / SEALED**.
+- `DIMA_DAY6_5_SI_FINAL_SEAL.md` — **final SI evidence + causal chain + anti-patch seal**.
 - `DIMA_FRONTDOOR_OWNERSHIP_CLOSURE.md` — **Day10 release blocker for authoritative /ask-v2 ownership**.
 - `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` — **mandatory bridge gate before Metabase runtime X0**.
 - `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md` — **reopened final Metabase exhaustion delta**.

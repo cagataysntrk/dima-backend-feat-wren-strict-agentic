@@ -1,15 +1,16 @@
-name: v2-day6-5-si-full-live-standard-once
+name: v2-day6-5-si-full-live-standard-ARCHIVED
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/workflows/v2-day6-5-si-full-live-standard-once.yml"
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Archived paid SI proof. Type ARCHIVED_SI_RERUN to override intentionally."
+        required: true
+        type: string
 
 jobs:
   full-live-standard:
-    if: "github.event.head_commit.message == 'test(v2-day6.5): run frozen full-live Standard composition'"
+    if: "inputs.confirm == 'ARCHIVED_SI_RERUN'"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 50
@@ -70,3 +71,4 @@ jobs:
 # retry: source-context-filter-contract
 
 # retry: final-six-after-focused-green
+

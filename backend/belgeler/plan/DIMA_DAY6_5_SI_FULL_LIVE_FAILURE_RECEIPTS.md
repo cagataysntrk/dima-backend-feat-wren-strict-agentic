@@ -200,3 +200,30 @@ Root owner remains:
 Authorized next product change:
 implement the smallest generic bounded ranked retrieval backend over governed catalog metadata.
 Retrieval rank remains discovery-only and may never mint semantic authority.
+
+
+---
+
+## D65-SI-FINAL-CAUSAL-CLOSURE
+
+Final evidence:
+- `35738044476 = 73/73 PASS`;
+- `35738400321 = focused live 001+005 GREEN`;
+- `35738912690 = frozen six-case full-live GREEN`;
+- final HEAD `c72eb9133556bd892041cc0ef543f62dcfe5dbab`;
+- final artifact `failed_case_ids=[]`, `accepted=5`, `clarified=1`.
+
+The failure chain is CLOSED as a sequence of distinct owners, not one repeated bug:
+
+1. exhaustive catalog breadth exposed pre-linker bounded discovery failure;
+2. governed token-index discovery fixed scalability without minting authority;
+3. later live evidence exposed draft/filter material-meaning and contextual dimension seams;
+4. stale eval tracing caused an independent EVAL_ORACLE incident;
+5. cheap attacks exposed exact-duplicate contextual bypass + coverage visibility gaps;
+6. generic contracts were repaired;
+7. family, focused-live and frozen-full-live proofs all went GREEN.
+
+No more semantic-discovery tuning is authorized from this history alone.
+
+Current state:
+`D65-SI FINAL GREEN / receipts preserved for audit`.

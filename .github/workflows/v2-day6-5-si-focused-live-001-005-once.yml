@@ -1,15 +1,16 @@
-name: v2-day6-5-si-focused-live-001-005-once
+name: v2-day6-5-si-focused-live-001-005-ARCHIVED
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/workflows/v2-day6-5-si-focused-live-001-005-once.yml"
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Archived paid SI proof. Type ARCHIVED_SI_RERUN to override intentionally."
+        required: true
+        type: string
 
 jobs:
   focused-live:
-    if: "github.event.head_commit.message == 'test(v2-day6.5): run focused live frozen 001 005'"
+    if: "inputs.confirm == 'ARCHIVED_SI_RERUN'"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 45
@@ -54,3 +55,4 @@ jobs:
           path: backend/lab/reports/v2_day6_5_si_focused_live_001_005.json
           retention-days: 90
           if-no-files-found: error
+

@@ -1,5 +1,11 @@
 <!-- DIMA-V2-ACTIVE-OPERATION -->
 <!-- POST-ANALYST CURRENT AUTHORITY -->
+> D65-SI FINAL GREEN at `c72eb913...`.
+> Current authority: `belgeler/plan/DIMA_DAY6_5_SI_FINAL_SEAL.md` then
+> `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`.
+> No semantic-discovery optimization without new P0 evidence.
+> X0 runtime remains blocked by M0E final + bridge preflight.
+
 > Read first: `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
 >
 > Current: HEAD `3774484167...`; SI focused 25/25; Wren sentinels 2/2.

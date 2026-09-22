@@ -1,6 +1,13 @@
 # Dima — Mimari Referansı
 
 <!-- DIMA-V2-POST-ANALYST-RECONCILIATION -->
+> **D65-SI FINAL GREEN / SEALED**
+>
+> Tested HEAD `c72eb913...`; 73/73 provider-free, focused 001/005 GREEN, frozen six full-live GREEN.
+> Standard semantic/discovery architecture is closed absent new P0 evidence.
+> Current Day6.5 question is now substrate/build-vs-buy:
+> M0E-DEEP-DELTA → X0-BRIDGE-PREFLIGHT → X0 only if thin/lossless.
+
 > ## 🔴 CURRENT ARCHITECTURE AUTHORITY — POST ANALYST
 >
 > Continuation: `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
