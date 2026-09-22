@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/dima-fast-ft003-browser.yml"
       - "backend/lab/fast_ft003_browser_server.py"
+      - "backend/app/fast/**"
       - "dima-frontend-demo-master/src/app/fast-poc/**"
       - "dima-frontend-demo-master/src/features/fast-poc/**"
       - "dima-frontend-demo-master/e2e/fast-poc-e2e.mjs"
