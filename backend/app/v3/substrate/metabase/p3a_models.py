@@ -8,7 +8,7 @@ There is exactly one binding contract and one blocked-execution exception semant
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -60,7 +60,7 @@ class BridgeSafetyCounters(FrozenModel):
 
 
 class PortableQueryStep(FrozenModel):
-    role: str
+    role: Literal["primary", "base", "reference"]
     query: dict[str, Any]
 
 
