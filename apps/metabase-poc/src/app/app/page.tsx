@@ -47,12 +47,12 @@ export default async function Overview() {
                   <li key={`${i.kind}-${i.id}`}>
                     <Link
                       href={i.kind === "dashboard" ? `/app/dashboards/${i.id}` : `/app/cards/${i.id}`}
-                      className="group flex h-full items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-brand/40 hover:bg-accent/40"
+                      className="group flex h-full min-h-32 flex-col items-center justify-center gap-3 rounded-xl border bg-card p-4 text-center transition-colors hover:border-brand/40 hover:bg-accent/40"
                     >
                       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand/10 text-brand">
                         <Icon className="size-4" aria-hidden />
                       </span>
-                      <span className="min-w-0">
+                      <span className="min-w-0 max-w-full">
                         <span className="block font-medium group-hover:text-foreground">{i.name}</span>
                         {i.description && (
                           <span className="mt-0.5 line-clamp-2 block text-sm text-muted-foreground">

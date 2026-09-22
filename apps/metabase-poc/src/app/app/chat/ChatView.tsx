@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowUp, Code2, Save, Sparkles } from "lucide-react";
+import { ArrowUp, Code2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { ThinkingOrb } from "thinking-orbs";
 import { gateway, type ChatAnswer, type ChatTurn } from "@/lib/gateway";
 import { cn } from "@/lib/utils";
 import { ResultView } from "@/components/ResultView";
@@ -127,7 +128,8 @@ export function ChatView({
             </div>
             {e.status === "pending" ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-                <Sparkles className="size-4 animate-pulse text-brand" aria-hidden />
+                {/* libraries.dev thinking orb — follows the .dark class and prefers-reduced-motion on its own. */}
+                <ThinkingOrb state="searching" size={20} color="#7e38f8" aria-hidden />
                 Veriye bakılıyor…
               </div>
             ) : e.status === "error" ? (
