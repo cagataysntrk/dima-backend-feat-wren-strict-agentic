@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 HARDENED CANARY GREEN — REAL WREN + RESEARCH SENTINELS IN PROGRESS**  
-**Kod fazı:** D65-E3A-R + D65-G anti-patch hardening + conversation-repair control boundary provider-free GREEN. Reference-floor workers=1 stratified canary 16/16 GREEN on exact `8dfde62d...`. Current gate: real Wren Standard vertical + existing Research adaptive sentinel. Production hybrid `/ask-v2` remains OFF.  
+**Durum:** **DAY 6.5 PRE-FREEZE DECISION GATE — J1S/J1T + M0/X0 ACTIVE**  
+**Kod fazı:** D65-G hardening GREEN; provider-free 102/102, reference-floor canary 16/16 and Wren+Research sentinels 2/2 GREEN on exact `8dfde62d...`. Freeze/DEV80 BLOCKED pending pre-freeze decisions: D65-J1S/J1T decision-model bake-offs + D65-M0 architecture adoption audit + D65-X0 thin Metabase feasibility. Production hybrid `/ask-v2` OFF.  
 
 ---
 
@@ -24,7 +24,8 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 
 - `DIMA_V2_GELISTIRME_DURUM.md` — bu dosya; tek “nerede kaldık?” kaynağı.
 - `DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — current Day 6.5 engineering closure authority.
-- `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology, Wren incumbent / Metabase challenger ve exact handoff authority.
+- `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology ve substrate/reference authority.
+- `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **current pre-freeze J1S/J1T + M0/X0 sequencing authority**.
 - `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
 - `../../AGENTS.md` — V2 geliştirici/ajan çalışma sözleşmesi.
 - `../../CLAUDE.md` — repo kuralları; V2 branch override üstte olmalıdır.
@@ -5906,22 +5907,29 @@ workers          = 1
 
 ### Current exact next gate
 
-Reference-floor canary GREEN sonrasında yeni architecture decision gate açıldı:
+Current pre-freeze sequence:
 
 ```text
-D65-J1A isolated Jev candidate-selection bake-off
-→ Jev REJECTED: product code unchanged, existing Wren/Research sentinel proof remains historical-valid
-→ Jev PROMISING: D65-J1B DecisionProvider seam + semantic/temporal role separation
-→ focused provider-free
-→ family closure
-→ workers=1 live
-→ new stratified canary
-→ real Wren Standard + Research sentinel/revalidation
-→ ENGINEERING FREEZE CANDIDATE
-→ DEV80 once for that candidate
+D65-J1S semantic candidate-decision bake-off
++
+D65-J1T typed temporal-intent bake-off
++
+D65-M0 Metabase architecture extraction/adoption audit
+↓
+decision receipts
+↓
+D65-X0 thin Metabase feasibility
+↓
+Wren primary OR consult → full D65-X → ONE primary substrate
+↓
+ENGINEERING FREEZE CANDIDATE
+↓
+DEV80 once for that candidate
 ```
 
-Branch'te `35697471863` sentinel'i J1 kararı repo authority'ye işlenmeden önce opportunistically çalışmış ve exact `8dfde62d...` üzerinde 2/2 PASS olmuştur. Bu proof saklanır; fakat J1 engineering kararı çözülmeden freeze yetkisi vermez.
+`35697471863` Wren/Research sentinel = 2/2 PASS on exact `8dfde62d...`; proof is preserved but does not authorize freeze until J1 + M0/X0 are resolved.
+
+Current detailed authority: `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
 
 ---
 
@@ -6090,3 +6098,47 @@ Wren/Metabase D65-X = analytics execution-substrate experiment.
 They are independent and MUST NOT be conflated.
 
 Canonical roadmap numbering and Day7–10 remain unchanged.
+
+
+---
+
+## 2026-09-22 — PRE-FREEZE PLAN REVISION: J1S/J1T + M0/X0
+
+This section supersedes the earlier candidate-only J1 scope and the earlier post-DEV80 D65-X timing.
+
+Verified baseline:
+```text
+D65-G                         GREEN
+provider-free family          35696652502 = 102/102 PASS
+reference-floor canary        35697064833 = 16/16 PASS
+Wren + Research sentinels     35697471863 = 2/2 PASS
+production hybrid             OFF
+freeze candidate              NOT CREATED
+DEV80                         NOT STARTED
+```
+
+Metabase source identity:
+```text
+historical pinned reference = 74216b30981d8310c4cf724d63ca282e2e63529d
+current upstream master      = fff70175e0b5f82dc0eb267593c717c4a6130206
+ahead                         = 1 commit
+relevant agent/API/MCP source changes between SHAs = NONE
+```
+
+Active pre-freeze work:
+```text
+D65-J1S = Gemini Flash-Lite vs Jev 1.13 vs Sol on bounded semantic candidate selection
+D65-J1T = Gemini Flash-Lite vs Jev 1.13 vs Sol on typed temporal intent classification
+D65-M0  = Metabase source/adoption matrix audit
+D65-X0  = thin separate-service Agent API feasibility
+```
+
+J1S/J1T and M0 are isolated lab/research gates; product semantic/temporal/authority code remains NO-TOUCH until a decision gate is reached.
+
+Consultation required before:
+- D65-J1B integration,
+- production model/cascade/threshold selection,
+- full D65-X,
+- primary substrate switch,
+- freeze candidate,
+- DEV80.
