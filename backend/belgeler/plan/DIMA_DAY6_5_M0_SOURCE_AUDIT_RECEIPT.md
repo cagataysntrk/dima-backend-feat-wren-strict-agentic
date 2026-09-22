@@ -159,3 +159,40 @@ Only these mechanisms enter X0:
 - latency/integration complexity.
 
 Everything else stays out of the substrate winner test.
+
+
+## Post-audit exact-source reinforcement — 2026-09-22
+
+Additional pinned-source verification at
+`metabase/metabase@74216b30981d8310c4cf724d63ca282e2e63529d`:
+
+- `src/metabase/mcp/v2/queries.clj::execute-representations-query` is the shared
+  validate → repair → resolve entry point for agent-authored structured queries and attaches
+  bounded recovery hints to agent-input failures.
+- `queries.clj::resolve-query-handle!` resolves a handle for the current user and then re-runs
+  native rejection, serialized-shape validation and current permission checks. A handle is
+  execution identity/provenance, not durable authorization.
+- `queries.clj::resolve-query-handle-for-save!` deliberately re-checks shape + permissions on
+  save and fails closed when bound runtime parameters would be silently lost by persistence.
+- `src/metabase/mcp/v2/resolve.clj::resolve-and-read-with` collapses non-existence and unreadable
+  existence into the same not-found surface, preventing an ID/resource existence oracle.
+- Agent API continuation-token execution revalidates query permissions before later pages; a
+  pagination token does not confer persistent authority.
+
+Dima implication:
+
+```text
+Metabase query_handle / continuation token
+= replay/provenance mechanism
+≠ Dima semantic authority
+≠ permanent permission grant
+```
+
+These findings strengthen the existing X0 P0s:
+`permission bypass = 0`, `cross-user handle access = 0`,
+`unprovable executed query = 0`.
+
+**Sequencing correction:** M0 remains sufficient for X0 *preparation*, but X0 execution is now
+blocked by `D65-SI STANDARD INTEGRATION CLOSURE`. The substrate comparison must consume the
+real `AcceptedStandardAuthority → StandardProjection` chain, never the historical Research
+surrogate.
