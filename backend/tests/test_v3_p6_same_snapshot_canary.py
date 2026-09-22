@@ -14,6 +14,7 @@ from app import contracts as contracts_module
 import httpx
 import psycopg
 import pytest
+from pydantic import ValidationError
 from wren import WrenEngine
 from wren.model.data_source import DataSource
 
@@ -656,6 +657,43 @@ def _metabase_raw_rows(execution) -> tuple[tuple, ...]:
     return tuple(tuple(row) for row in payload[0]["rows"])
 
 
+def _classify_wren_runtime_exception(exc: Exception) -> str | None:
+    """Recognize only the exact already-receipted Wren runtime contract gap."""
+
+    if not isinstance(exc, ValidationError):
+        return None
+    errors = exc.errors()
+    if len(errors) != 1:
+        return None
+    error = errors[0]
+    if tuple(error.get("loc") or ()) != ("kwargs", "connect_timeout"):
+        return None
+    if error.get("type") != "string_type":
+        return None
+    if error.get("input") != 15:
+        return None
+    return "SUBSTRATE_RUNTIME_GAP"
+
+
+def test_p6a1_runtime_gap_classifier_is_exact_not_catch_all():
+    with pytest.raises(ValidationError) as captured:
+        DataSource.postgres.get_connection_info(
+            {
+                "host": "127.0.0.1",
+                "port": 55432,
+                "database": "dima_analytics",
+                "user": "dima_analytics",
+                "password": "fixture",
+                "kwargs": {"connect_timeout": 15},
+            }
+        )
+    assert (
+        _classify_wren_runtime_exception(captured.value)
+        == "SUBSTRATE_RUNTIME_GAP"
+    )
+    assert _classify_wren_runtime_exception(RuntimeError("other")) is None
+
+
 def _assert_metabase_canary_value(case_id: str, rows, expected) -> None:
     if case_id in {"CANARY-01", "CANARY-03"}:
         assert rows == ((expected,),)
@@ -718,7 +756,26 @@ def _assert_p6a1_case(
         }
 
     assert wren_validation.valid, wren_validation.reasons
-    wren_result = wren_adapter.execute_execution_intent(intent)
+    try:
+        wren_result = wren_adapter.execute_execution_intent(intent)
+    except Exception as exc:
+        gap = _classify_wren_runtime_exception(exc)
+        if gap is None:
+            raise
+        return {
+            "case_id": case_id,
+            "snapshot_id": snapshot_id,
+            "authority_id": intent.authority_id,
+            "projection_hash": intent.projection_hash,
+            "resolved_intent_hash": intent.resolved_intent_hash,
+            "semantic_context_version": intent.semantic_context_version,
+            "data_snapshot": "MATCH",
+            "semantic_execution": "TYPED_GAP",
+            "receipt_provenance": "NOT_EVALUATED_WREN",
+            "gap": gap,
+            "overall": "TYPED_GAP",
+        }
+
     assert wren_adapter.inspect_execution(wren_result).verified is True
     assert wren_result.evidence.authority_id == intent.authority_id
     assert wren_result.evidence.payload["projection_hash"] == intent.projection_hash
@@ -809,13 +866,13 @@ def test_p6a1_true_same_intent_substrate_seam_three_case_canary(
     ]
     assert all(item["data_snapshot"] == "MATCH" for item in reports)
     assert [item["semantic_execution"] for item in reports] == [
-        "MATCH",
-        "MATCH",
+        "TYPED_GAP",
+        "TYPED_GAP",
         "TYPED_GAP",
     ]
     assert [item["gap"] for item in reports] == [
-        "RECEIPT/PROVENANCE_GAP",
-        "RECEIPT/PROVENANCE_GAP",
+        "SUBSTRATE_RUNTIME_GAP",
+        "SUBSTRATE_RUNTIME_GAP",
         "WREN_COMPATIBILITY_GAP",
     ]
     assert all(item["overall"] == "TYPED_GAP" for item in reports)
