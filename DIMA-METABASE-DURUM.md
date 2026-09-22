@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P3 TRANSPORT IMPLEMENTED / LIVE GATE RED — P3A BLOCKED  
-**Product-code development:** P3 TRANSPORT IMPLEMENTED; RED-001 CORRECTION IN PROGRESS  
+**Current phase:** P3 CLOSED GREEN — P3A PREFLIGHT READY  
+**Product-code development:** P3 CLOSED GREEN; P3A PROTOTYPE NOT STARTED  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -256,3 +256,38 @@ not the final P5/P10 access-lens contract.
 
 This debt must be discharged fail-closed before the first security-sensitive Dima→Metabase
 execution/cutover. It is not a reason to add identity logic to P3 transport.
+
+
+---
+
+## P3 closure — GREEN
+
+```text
+final P3 implementation SHA    = 7a4d1d12e59b52edf8493c0aa0b147947ff4ecf9
+P3 workflow                    = 35736253380 = SUCCESS
+governance                     = 35736253664 = SUCCESS
+provider-free P3               = 16 PASS
+pinned live P3                 = 1 PASS
+M1 regression                  = 35736253552 = SUCCESS
+M1 provider-free               = 15 PASS
+M1 real Wren + sentinels       = 5 PASS
+exact read-resource envelope   = PASS
+resource content/error XOR     = PASS
+resource-level HTTP-200 error  = typed/preserved
+malformed resource envelope    = fail-closed
+resource URI/count integrity   = fail-closed
+handshake read-resource proof  = real probe
+serialized query/continuation  = distinct
+raw SQL client method          = 0
+admin/content mutation method  = 0
+semantic handle resolution     = 0
+raw user language dependency   = 0
+M2                             = CLOSED GREEN / unchanged
+source branch writes/sync      = 0
+```
+
+Historical RED `DMP-P3-RED-001` remains in the failure ledger and is now CLOSED GREEN.
+
+**Next:** P3A eight-family semantic-duplication preflight. P4 remains forbidden until P3A records
+one of: `PASS_B_SEAM`, `BLOCKED_DIMA_CONTRACT_GAP`, or
+`REJECT_METABASE_STRUCTURED_EXECUTION`.

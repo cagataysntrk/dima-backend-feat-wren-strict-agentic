@@ -816,3 +816,19 @@ full P3 pinned-runtime workflow + M1 regression + governance.
 
 status:
 `CLASSIFIED / CONTRACT PATCH AUTHORIZED`.
+
+
+---
+
+## P3 closure matrix
+
+final_sha: `7a4d1d12e59b52edf8493c0aa0b147947ff4ecf9`  
+workflow: `35736253380 = SUCCESS`  
+governance: `35736253664 = SUCCESS`  
+M1 regression: `35736253552 = SUCCESS`
+
+```text
+DMP-P3-RED-001  CLOSED GREEN — exact typed read-resource envelope + real handshake resource probe
+```
+
+P3A remained blocked throughout the RED and was not implemented before P3 closure.
