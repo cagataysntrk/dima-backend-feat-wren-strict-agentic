@@ -257,7 +257,10 @@ class GovernedManagerExecutor:
             try:
                 result = self._core.run(
                     effective_args,
-                    task_id=f"task:{runtime.snapshot.tool_calls}",
+                    task_id=(
+                        effective_args.research_task_id
+                        or f"task:{runtime.snapshot.tool_calls}"
+                    ),
                     accepted_contract=contract,
                     tenant_binding=self._context.tenant_binding,
                     principal=self._context.principal,
