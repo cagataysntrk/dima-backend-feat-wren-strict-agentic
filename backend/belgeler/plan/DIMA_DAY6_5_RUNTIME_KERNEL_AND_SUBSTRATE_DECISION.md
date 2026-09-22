@@ -1151,6 +1151,8 @@ D65-E2 Retriever seam                  9/9 GREEN
 D65-E3 provisional StandardBuilder     20/20 GREEN
 D65-E4 Standard authority split        25/25 GREEN
 D65-E5 narrow CoverageVeto             16/16 GREEN
+D65-E3A-R runtime kernel focused       22/22 GREEN
+runtime-aligned provider-free family   94/94 GREEN
 ```
 
 Front-door family closure history:
@@ -1171,49 +1173,40 @@ run 35691982389
 
 ## 32. Sıradaki exact çalışma
 
-Readiness tamamlandı:
+D65-E3A-R tamamlandı.
 
-1. eval manifest + DEV corpus metadata + integrity oracle aynı schema'ya hizalandı.
-2. family closure tekrar koştu.
-3. `35691982389` = **88/88 PASS**.
-4. living status / AGENTS / CLAUDE / MIMARI / PR çalışma yüzeyi güncellendi.
-
-Sıradaki product code:
-
-### D65-E3A-R — runtime-kernel realignment
+Implementation:
 
 ```text
-NEW:
 app/v2/agent_runtime.py
+  BoundedLoopBudget
+  LoopCounters
+  LoopTerminalReason
+  ActionStateGuard
+  BoundedAgentRuntimeKernel
 
-TOUCH:
 app/v2/standard_builder.py
-tests for kernel/builder
-manager_progress.py only if generic primitives need export/rename without Research semantic change
-
-NO-TOUCH:
-manager_loop.py
-manager_runtime.py
-manager_tools.py
-manager_preacceptance.py
-acceptance.py Research body
-production /ask-v2 route
-DEV expected semantic oracle
-Resolver canonical rules
+  now consumes BoundedAgentRuntimeKernel
 ```
 
-Exit:
+Research NO-TOUCH doğrulandı.
+
+Focused run `35693039369`: **22/22 PASS**.
+
+Runtime-aligned full provider-free family run `35693146320`: **94/94 PASS**, 5 warnings, 12.39s.
+
+Current next gate:
 
 ```text
-StandardBuilder uses BoundedAgentRuntimeKernel for counters/budget/action-state guard/telemetry.
-Kernel imports no Research-domain authority/ledger/evidence classes.
-Direct remains telemetry outcome.
-Existing Standard semantic behavior unchanged.
-Focused provider-free kernel + StandardBuilder + authority/coverage gates GREEN.
-Provider-free family closure GREEN.
+workers=1 focused live architecture set
+→ exact-same-SHA fast/reference model-floor A/B only if needed
+→ 12–16 stratified canary
+→ real Wren Standard vertical + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once-per-candidate
 ```
 
-Bu exit olmadan workers=1 live/canary/freeze hattına ilerlenmez.
+Bu noktada yeni preparation/refactor açılmaz. Live gate current green checkpoint üzerinden yürür.
 
 ## 33. Kaynak karar provenance
 
