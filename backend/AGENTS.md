@@ -49,27 +49,39 @@
 > **Amaç:** Dima V2'yi mühürlü nihai rapor ve yol haritasına göre hızlı, izlenebilir ve
 > eski semantic-front-door hatalarını tekrar etmeyecek biçimde geliştirmek.
 
-## D65-J1 JEV DECISION-MODEL GATE — PRE-FREEZE OVERRIDE
+## D65 PRE-FREEZE DECISION GATE — J1S/J1T + M0/X0
 
-> Reference-floor canary `35697064833` is GREEN 16/16 on exact `8dfde62d...` with Sol Manager + Sol Semantic/Temporal, workers=1.
-> D65-G provider-free family `35696652502` = 102/102 GREEN.
-> Freeze/DEV80 is BLOCKED until D65-J1 decision resolves.
+> Current proven baseline:
+> `35696652502 = 102/102 provider-free`,
+> `35697064833 = 16/16 reference-floor canary`,
+> `35697471863 = 2/2 Wren+Research sentinels`,
+> exact tested code SHA `8dfde62d46d1418f05cce3ed44c26a8025b3b20e`.
 >
-> **D65-J1A = LAB/EVAL ONLY.** No product semantic/authority/temporal code changes.
-> Pinned Jev model: `typesafe/jev-1.13`; moving `~typesafe/jev-latest` forbidden.
-> Jev uses native OpenRouter Decisions API (`POST /api/alpha/decisions`), NOT chat/completions and NOT current `structured_json()` adapter.
+> **FREEZE/DEV80 BLOCKED** until the current pre-freeze decisions are resolved.
+> Detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
 >
-> J1A compares frozen candidate-selection decisions only:
-> `google/gemini-2.5-flash-lite` vs `typesafe/jev-1.13` vs `openai/gpt-5.6-sol`.
-> Manager and `TypedTemporalNormalizer` are OUT OF SCOPE.
-> `d65-dev-019` is a typed-temporal model-floor case and MUST NOT be used as Jev justification/patch target.
+> **D65-J1S — LAB/EVAL ONLY:** bounded semantic candidate decision.
+> Compare `google/gemini-2.5-flash-lite` vs `typesafe/jev-1.13` vs `openai/gpt-5.6-sol` on frozen CandidateSets.
+> Output is supplied `candidate_id | ABSTAIN`; `SemanticBindingGate` remains authority.
 >
-> Jev may return only a supplied `cand_*` or `ABSTAIN`; it cannot mint `sem_*`, emit arbitrary canonical IDs, see DB/SQL/numeric truth, perform temporal arithmetic, or become authority.
-> No threshold/cascade is activated in J1A. Raw probabilities/calibration only.
+> **D65-J1T — LAB/EVAL ONLY:** typed temporal intent classification.
+> Same three challengers classify language into the existing closed temporal ontology.
+> Jev/LLM does NOT calculate dates; `TemporalBindingEngine` remains deterministic date owner.
 >
-> If Jev is poor: reject with product code unchanged. If promising: open D65-J1B for `SemanticLinkDecisionProvider` + `SEMANTIC_LINKER` / `TEMPORAL_NORMALIZER` role separation, then full revalidation before freeze.
+> Pinned Jev = `typesafe/jev-1.13`; `~typesafe/jev-latest` forbidden.
+> Jev native transport = OpenRouter Decisions API; do NOT route it through chat/completions or current generic `structured_json()`.
+> During J1 lab stage product `semantic_linker.py`, BindingGate, Manager semantics and temporal product path are NO-TOUCH.
 >
-> D65-J1 (cognition decision model) and D65-X (Wren vs Metabase execution substrate) are orthogonal and must never be conflated.
+> **D65-M0 — READ/RESEARCH:** Metabase architecture extraction/adoption audit.
+> Historical pinned source `74216b...`; current upstream master verified `fff70175...`, exactly one commit ahead with no relevant agent/API/MCP source-family delta.
+> Maintain `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md`; source copy/port/vendor remains forbidden.
+>
+> **D65-X0 — THIN FEASIBILITY:** after sufficient M0 evidence, separate Metabase service + same DB/principal + 5–10 representative StandardProjection cases.
+> X0 not promising → Wren remains primary. X0 promising → STOP/CONSULT before full D65-X.
+>
+> STOP/CONSULT before: D65-J1B, any production model cascade/threshold, full D65-X, primary substrate switch, authority/security boundary adoption, freeze candidate, DEV80.
+>
+> D65-J1 = cognition decision-model axis. D65-X = analytics execution-substrate axis. Never conflate them.
 ## DAY 6.5 CURRENT CLOSURE OVERRIDE — 2026-09-22
 
 > Bu bölüm eski Day 6.5 hazırlık/validation maddelerinin üzerinde okunur.
@@ -112,10 +124,7 @@
 > `one DEV80 per engineering-freeze candidate`; code değişirse yeni candidate ve yeni DEV80 gerekir.
 > Validation/Hidden fail sonrası code değişikliği certification freeze'i bozar; fresh set gerekir.
 >
-> **Operasyon sırası:** workers=1 focused live → same-SHA reference A/B if needed
-> → stratified canary → real Wren Standard + Research sentinel → freeze candidate → DEV80
-> → engineering closure → D65-X Wren-vs-Metabase substrate challenger → Validation50
-> → fresh Hidden50 → certification seal.
+> **Operasyon sırası:** current green proofs → J1S + J1T lab bake-offs + M0 audit → X0 thin feasibility → if needed consult/full D65-X → ONE primary substrate → freeze candidate → DEV80 → engineering closure → Validation50 → fresh Hidden50 → certification seal.
 >
 > **Tek cümlelik kural:** Vaka geçirerek sistem yapmıyoruz; doğru abstraction'ı kurup
 > vakaların onun doğal sonucu olarak geçmesini istiyoruz.
