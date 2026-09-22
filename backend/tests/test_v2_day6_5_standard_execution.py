@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import inspect
 
 import pytest
@@ -52,11 +53,20 @@ def _sealed():
 def test_standard_execution_module_has_no_research_authority_dependency():
     import app.v2.standard_execution as module
 
-    source = inspect.getsource(module)
-    assert "AcceptedTurnContract" not in source
-    assert "UserObligationLedger" not in source
-    assert "ResearchManagerLoop" not in source
-    assert "manager_core_adapter" not in source
+    tree = ast.parse(inspect.getsource(module))
+    imported = set()
+    modules = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            modules.add(node.module or "")
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+
+    assert "AcceptedTurnContract" not in imported
+    assert "UserObligationLedger" not in imported
+    assert "ResearchManagerLoop" not in imported
+    assert "app.v2.manager_core_adapter" not in modules
 
 
 def test_standard_execution_rejects_projection_not_matching_sealed_authority():

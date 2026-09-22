@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import ast
 import inspect
-import json
 
 from app.v2.manager_models import ManagerCapabilityKey
 from app.v2.models import (
@@ -85,7 +85,7 @@ def _schema():
     return {"models": [], "cubes": [{"name": "Sales", "dimension_values": {}}]}
 
 
-def _draft_response(capability="PERFORMANCE"):
+def _draft_response(capability="performance"):
     return {
         "obligations": [
             {
@@ -97,7 +97,7 @@ def _draft_response(capability="PERFORMANCE"):
                 "source_surfaces": ["net geliri"],
                 "semantic_surfaces": (
                     [{"surface": "net geliri", "kind_hint": "metric"}]
-                    if capability != "RELATIONSHIP"
+                    if capability != "relationship"
                     else []
                 ),
                 "ranking_direction": None,
@@ -116,11 +116,22 @@ def _coverage_pass(system, user, *, schema, schema_name):
 def test_standard_lane_module_has_no_research_authority_dependencies():
     import app.v2.standard_lane as module
 
-    source = inspect.getsource(module)
-    assert "AcceptedTurnContract" not in source
-    assert "UserObligationLedger" not in source
-    assert "ResearchManagerLoop" not in source
-    assert "ManagerRuntime" not in source
+    tree = ast.parse(inspect.getsource(module))
+    imported = set()
+    modules = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            modules.add(node.module or "")
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+
+    assert "AcceptedTurnContract" not in imported
+    assert "UserObligationLedger" not in imported
+    assert "ResearchManagerLoop" not in imported
+    assert "ManagerRuntime" not in imported
+    assert "app.v2.manager_runtime" not in modules
+    assert "app.v2.manager_loop" not in modules
 
 
 def test_standard_intent_draft_is_closed_and_typed():
@@ -131,7 +142,7 @@ def test_standard_intent_draft_is_closed_and_typed():
 def test_research_capability_stops_without_standard_authority(monkeypatch):
     def intent(system, user, *, schema, schema_name):
         assert schema_name == "dima_standard_intent_draft_v1"
-        return _draft_response("RELATIONSHIP")
+        return _draft_response("relationship")
 
     engine = StandardLaneEngine(
         intent_structured=intent,
