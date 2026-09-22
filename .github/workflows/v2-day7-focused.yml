@@ -79,6 +79,10 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_fanout.py
 
+      - name: Governed same-domain Research tools
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_same_domain_tools.py
+
       - name: Manager loop Research contract mode
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_manager_loop.py
