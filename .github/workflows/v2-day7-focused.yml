@@ -18,6 +18,7 @@ name: v2-day7-focused
       - "backend/app/v2/models.py"
       - "backend/tests/test_v2_day7_research_task_lifecycle.py"
       - "backend/tests/test_v2_day7_research_task_registry.py"
+      - "backend/tests/test_v2_day7_research_task_registry_execution.py"
       - "backend/tests/test_v2_day7_research_manager_loop.py"
       - "backend/tests/test_v2_day7_result_aware_loop.py"
       - ".github/workflows/v2-day7-focused.yml"
@@ -66,6 +67,10 @@ jobs:
       - name: ResearchTaskRegistry lifecycle
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_task_registry.py
+
+      - name: ResearchTaskRegistry execution path
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_task_registry_execution.py
 
       - name: Manager loop Research contract mode
         working-directory: backend
