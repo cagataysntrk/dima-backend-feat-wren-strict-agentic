@@ -3,50 +3,46 @@
 Status: NORMATIVE
 Branch: `feat/dima-metabase-product-fast-track`
 
-## 1. Mutlak branch izolasyonu
-
-Bu geliştirme yalnız bu branch'te yapılır.
+## 1. Absolute branch isolation
 
 READ/WRITE:
-- feat/dima-metabase-product-fast-track
+- `feat/dima-metabase-product-fast-track`
 
 READ-ONLY REFERENCES:
-- feat/dima-metabase-platform@352205f112fe735d8f80065c7d255d78905398b9
-- feat/ask-v2-mvp@6d65600842731112f2362261a30660217cbde05d
+- `feat/dima-metabase-platform@352205f112fe735d8f80065c7d255d78905398b9`
+- `feat/ask-v2-mvp@6d65600842731112f2362261a30660217cbde05d`
 
-YASAK:
-- source branch'e commit
-- source branch'e update_ref / force push
-- source branch'e merge / rebase / cherry-pick
-- moving source HEAD'i Fast Track'e otomatik almak
-- source branch'ten receipt olmadan kod kopyalamak
+Forbidden:
+- commits/writes to source branches;
+- update_ref / force push to source branches;
+- merge/rebase/cherry-pick from source branches;
+- moving-HEAD synchronization;
+- source-port without receipt.
 
-Kaynak branch'te yararlı bir fikir görülürse yalnız:
-1. read-only incele,
-2. Fast Track abstraction'ında yeniden türet,
-3. gerekirse PORT RECEIPT yaz,
-4. Fast Track'te yeniden test et.
+Allowed:
+1. read-only inspection;
+2. re-derive inside Fast Track abstraction;
+3. explicit port receipt when necessary;
+4. Fast Track-owned re-test.
 
-## 2. Normatif okuma sırası
+## 2. Normative reading order
 
-Yeni geliştirici önce:
-1. backend/belgeler/fast/DIMA_FAST_TRACK_ROADMAP.md
-2. backend/belgeler/fast/DIMA_FAST_SOURCE_LOCK.md
-3. DIMA-FAST-DURUM.md
-4. DIMA-FAST-OPERASYON.md
-5. DIMA-FAST-DENETIM.md
-6. aktif PRE-DEVELOPMENT REVIEW
-7. açık failure / decision receipts
-8. ancak gerekirse read-only source branch
+1. `backend/belgeler/fast/DIMA_FAST_TRACK_ROADMAP.md`
+2. `backend/belgeler/fast/DIMA_FAST_SOURCE_LOCK.md`
+3. `DIMA-FAST-DURUM.md`
+4. `DIMA-FAST-OPERASYON.md`
+5. `DIMA-FAST-DENETIM.md`
+6. active pre-development review
+7. open failure/decision/live receipts
+8. read-only source branches only when needed
 
-okur.
+Before frontend/product work also read:
+- `predev/FT_UI_METABASE_WORKSPACE_RECONCILIATION.md`
+- `receipts/decisions/FT_UI_001_WORKSPACE_RECONCILIATION_RECEIPT.md`
 
-## 3. Ticket protokolü
+## 3. Ticket protocol
 
-Her ticket implementation'dan önce:
-`backend/belgeler/fast/predev/<TICKET>_PREDEVELOPMENT_REVIEW.md`
-
-Minimum alanlar:
+Every implementation ticket requires a predev review with:
 - CURRENT_HEAD
 - USER_SCENARIO
 - CURRENT_OWNER
@@ -61,13 +57,25 @@ Minimum alanlar:
 - EXIT_GATE
 - ROLLBACK
 
-Predev review commit edilmeden product implementation commit'i açılmaz.
+No implementation before its predev commit.
 
-## 4. Failure protokolü
+## 4. Current sequencing rule
 
-RED sonrası phrase-specific patch yok.
+Backend:
+`FT-001 -> FT-002/F0A -> FT-002B Gateway`
 
-Önce receipt:
+Product/UI blocker before FT-003:
+`FT-UI-001 -> FT-UI-002 -> FT-003`
+
+FT-002B backend work may proceed while FT-UI-002 is pending.
+
+FT-003 and product frontend implementation may not start before FT-UI-002 is GREEN.
+
+## 5. Failure protocol
+
+After RED, no phrase-specific patch.
+
+Receipt first:
 - FAILURE_ID
 - OBSERVED_SHA
 - TEST/RUN
@@ -79,7 +87,7 @@ RED sonrası phrase-specific patch yok.
 - FOCUSED_PROOF
 - FAMILY_PROOF
 
-Failure classes:
+Failure classes include:
 - MODEL_COGNITION
 - RESOURCE_RESOLUTION
 - TEMPORAL_BINDING
@@ -92,54 +100,88 @@ Failure classes:
 - ASSET_PERSISTENCE
 - TRANSPORT_RUNTIME
 - EVAL_ORACLE
+- EMBED_CAPABILITY
+- EMBED_AUTH
+- CONTEXT_BRIDGE
+- SDK_RUNTIME_COMPAT
+- WORKSPACE_NAVIGATION
+- RESPONSIVE_COMPOSITION
 
-## 5. Commit disiplini
+## 6. Commit discipline
 
-Tercih:
-- one ticket
-- one owner
-- one coherent change
+Prefer:
+- one ticket;
+- one owner;
+- one coherent change.
 
-Aynı commit'te prompt + backend + UI + unrelated refactor + dependency upgrade yapılmaz.
+Do not mix:
+- prompt;
+- backend;
+- UI;
+- unrelated refactor;
+- dependency upgrade;
+- substrate upgrade.
 
-## 6. Runtime sınırları
+UI architecture reconciliation and UI POC are separate commits/tickets.
+
+## 7. Backend runtime boundary
 
 Fast hot path:
 `backend/app/fast/**`
 
-Runtime import YASAK:
-- app.wren_*
-- app.v2.semantic_*
-- app.v2.manager_*
-- app.v3.semantic_spec
-- app.v3.substrate.metabase.compiler
+Runtime imports forbidden:
+- `app.wren_*`
+- `app.v2.semantic_*`
+- `app.v2.manager_*`
+- `app.v3.semantic_spec`
+- V3 semantic/compiler owners as runtime dependency
 
-Metabase transport pattern'i read-only reference'tan öğrenilebilir; Fast Track owner'ı yine `app.fast` olmalıdır.
+Read-only design study is allowed. Fast Track owns its own implementation.
 
-## 7. Silent fallback yasağı
+## 8. UI runtime boundary
 
-Metabase failure:
-- Wren'e düşmez.
-- V2'ye düşmez.
-- V3 semantic owner'a düşmez.
+Forbidden:
+- Metabase frontend source fork;
+- Metabase internal React patches;
+- copying Metabase frontend source into Dima;
+- raw DOM scraping from Metabase;
+- service/admin secret in browser;
+- Metabase AI as Dima cognition owner.
 
-Typed failure döner.
+Required:
+- supported embedding/integration surface;
+- typed resource identity;
+- Metabase permissions remain authoritative for Metabase assets;
+- Dima evidence/decision state remains Dima-owned;
+- Dima backend functions independently of embed surface.
 
-## 8. Native SQL
+## 9. Silent fallback prohibition
+
+Metabase failure does not fall back to:
+- Wren;
+- V2;
+- V3 semantic owner;
+- hidden native SQL;
+- custom Dima BI UI merely to hide an embed failure.
+
+Return/classify the typed failure.
+
+## 10. Native SQL
 
 Default:
 `DIMA_FAST_ALLOW_NATIVE_SQL=0`
 
-Native SQL bir gizli repair/fallback yolu olamaz.
+Native SQL may not become a hidden repair path.
 
-## 9. Oturum sonu handoff
+## 11. Session handoff
 
-DIMA-FAST-DURUM.md mutlaka güncellenir:
-- CURRENT_HEAD
-- CURRENT_GATE
-- LAST_GREEN
-- OPEN_RED
-- OPEN_DEBT
-- NEXT_EXACT_ACTION
-- FILES_NEXT_ALLOWED
-- FILES_NEXT_FORBIDDEN
+Always update `DIMA-FAST-DURUM.md` with:
+- CURRENT_HEAD;
+- CURRENT_BACKEND_GATE;
+- CURRENT_PRODUCT_GATE;
+- LAST_GREEN;
+- OPEN_RED;
+- OPEN_DEBT;
+- NEXT_EXACT_ACTION;
+- FILES_NEXT_ALLOWED;
+- FILES_NEXT_FORBIDDEN.
