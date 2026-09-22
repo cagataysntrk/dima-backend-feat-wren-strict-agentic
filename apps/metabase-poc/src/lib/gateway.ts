@@ -85,7 +85,19 @@ export interface DrillScope {
   filters: Filters;
 }
 
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatAnswer {
+  answer: string;
+  sql: string | null;
+  result: QueryResult | null;
+}
+
 export const gateway = {
+  chat: (messages: ChatTurn[]) => api<ChatAnswer>("/api/chat", json({ messages })),
   items: () => api<{ items: Item[] }>("/api/items").then((r) => r.items),
   card: (id: number) => api<CardPayload>(`/api/cards/${id}/data`),
   dashboard: (id: number) => api<DashboardMeta>(`/api/dashboards/${id}`),

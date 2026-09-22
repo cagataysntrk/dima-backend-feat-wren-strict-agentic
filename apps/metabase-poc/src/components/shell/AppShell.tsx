@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-import { Building2, Database, LayoutGrid, LogOut, Moon, Sun, Upload } from "lucide-react";
+import { Building2, Database, LayoutGrid, LogOut, MessageSquare, Moon, Sun, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,7 @@ export function AppShell({ user, orgs, activeOrgId, canAnalyze, children }: Prop
   const { resolvedTheme, setTheme } = useTheme();
 
   const nav = [
+    { href: "/app/chat", label: "Sohbet", icon: MessageSquare, show: true },
     { href: "/app", label: "Genel bakış", icon: LayoutGrid, show: true },
     { href: "/app/sql", label: "SQL", icon: Database, show: canAnalyze },
     { href: "/app/upload", label: "Veri yükle", icon: Upload, show: canAnalyze },

@@ -276,6 +276,15 @@ function nativeQuery(ctx: TenantContext, sql: string) {
 
 export async function runSql(ctx: TenantContext, sql: string): Promise<QueryResult> {
   requireAnalyst(ctx);
+  return queryReadOnly(ctx, sql);
+}
+
+/**
+ * SELECT-only query on the tenant's own database, no role check. Used by the SQL
+ * runner (after requireAnalyst) and by the chat agent, whose SQL is model output:
+ * the same guard + tenant DB role apply to both.
+ */
+export async function queryReadOnly(ctx: TenantContext, sql: string): Promise<QueryResult> {
   const ds = await mbPost<EngineDataset>(ctx.tenant, "/api/dataset", {
     ...nativeQuery(ctx, sql),
     constraints: { "max-results": SQL_MAX_ROWS, "max-results-bare-rows": SQL_MAX_ROWS },
