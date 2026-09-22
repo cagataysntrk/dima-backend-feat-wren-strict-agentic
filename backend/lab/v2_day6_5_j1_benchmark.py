@@ -224,15 +224,22 @@ def _chat_decide(
 
 def _jev_decide(*, track: str, case: dict[str, Any], timeout_s: float) -> DecisionResult:
     options = _options(track, case)
+    record = json.dumps(_state(track, case), ensure_ascii=False, sort_keys=True)
     payload = {
         "model": JEV_MODEL,
-        "state": _state(track, case),
+        "state": {
+            "description": (
+                "One frozen Dima decision benchmark record. The record contains only "
+                "the bounded user surface/context and supplied decision options."
+            ),
+            "records": [{"id": case["id"], "record": record}],
+        },
         "questions": {
             "decision": {
                 "type": "choice",
                 "instructions": (
-                    "Choose exactly one supplied option for this record. "
-                    "Use ABSTAIN when no supplied option is safely justified."
+                    f'For the record with id "{case["id"]}", choose exactly one supplied '
+                    "option. Use ABSTAIN when no supplied option is safely justified."
                 ),
                 "criteria": options,
             }
