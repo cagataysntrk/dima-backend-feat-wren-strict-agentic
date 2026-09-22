@@ -13,6 +13,7 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_real_adaptive_wren.py"
       - "backend/app/v2/research_state.py"
       - "backend/app/v2/research_tasks.py"
+      - "backend/app/v2/research_fanout.py"
       - "backend/app/v2/manager_runtime.py"
       - "backend/app/v2/manager_models.py"
       - "backend/app/v2/manager_loop.py"
@@ -20,6 +21,7 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_research_task_lifecycle.py"
       - "backend/tests/test_v2_day7_research_task_registry.py"
       - "backend/tests/test_v2_day7_research_task_registry_execution.py"
+      - "backend/tests/test_v2_day7_research_fanout.py"
       - "backend/tests/test_v2_day7_research_manager_loop.py"
       - "backend/tests/test_v2_day7_result_aware_loop.py"
       - ".github/workflows/v2-day7-focused.yml"
@@ -72,6 +74,10 @@ jobs:
       - name: ResearchTaskRegistry execution path
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_task_registry_execution.py
+
+      - name: Cardinality-aware Research fanout
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_fanout.py
 
       - name: Manager loop Research contract mode
         working-directory: backend
