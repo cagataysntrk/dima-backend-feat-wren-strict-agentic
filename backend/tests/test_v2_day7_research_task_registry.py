@@ -214,3 +214,45 @@ def test_register_many_above_generic_fanout_bound_is_rejected_without_partial_re
         registry.register_many(tasks)
 
     assert registry.tasks == ()
+
+
+
+class _Clock:
+    def __init__(self, value: float = 0.0) -> None:
+        self.value = value
+
+    def __call__(self) -> float:
+        return self.value
+
+    def advance(self, seconds: float) -> None:
+        self.value += seconds
+
+
+def test_deadline_is_frozen_once_commit_is_authorized():
+    clock = _Clock(10.0)
+    registry = ResearchTaskRegistry(clock=clock)
+    task = _task()
+
+    registry.begin_execution(
+        task=task,
+        tool_id="wren.query",
+        action_fingerprint="act-deadline",
+        timeout_ms=1_000,
+    )
+    clock.advance(0.999)
+    registry.assert_execution_active(
+        task_id=task.task_id,
+        tool_id="wren.query",
+        action_fingerprint="act-deadline",
+    )
+
+    # Accepted-commit authorization happened before the deadline.  Final lifecycle
+    # bookkeeping may occur later without retroactively invalidating committed truth.
+    clock.advance(10.0)
+    completed = registry.complete_execution(
+        task_id=task.task_id,
+        tool_id="wren.query",
+        action_fingerprint="act-deadline",
+        result={"evidence_ref": "E1"},
+    )
+    assert completed.state == "complete"
