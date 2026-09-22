@@ -3,8 +3,8 @@
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
-**Current phase:** P4 EXECUTION BINDING GREEN — COMPILER IMPLEMENTATION AUTHORIZED  
-**Product-code development:** P4 COMPILER AUTHORIZED; COMPILER CODE NOT STARTED  
+**Current phase:** P4 COMPILER IMPLEMENTED / LIVE CANONICAL GATE RED  
+**Product-code development:** P4 COMPILER STARTED; DMP-P4-RED-002 OPEN  
 **Metabase runtime:** v0.63.18 / immutable image digest PINNED  
 **Production routing:** UNCHANGED / NOT CONNECTED
 
@@ -448,3 +448,28 @@ backend/tests/test_v3_p4_metabase_canonical_live.py
 ```
 
 No front-door/product routing is authorized.
+
+
+---
+
+## P4 live canonical RED — DMP-P4-RED-002
+
+```text
+tested SHA                         = 3db99a6b6827d0abaefce06b12d27ab981143da2
+P4 workflow                        = 35743999330 = FAILURE
+forbidden-file isolation           = PASS
+compile P4 production boundary     = PASS
+focused P4 binding+compiler        = PASS
+provider-free regressions          = PASS
+real Wren M1 regression            = PASS
+pinned M2 lab startup              = PASS
+pinned-live P3/P3A                 = reached
+P4 canonical double construct      = FAIL
+failure                            = NON_DETERMINISTIC_CANONICAL_SERIALIZATION
+root cause                         = runtime-generated lib/uuid volatility
+P5                                 = NOT STARTED / FORBIDDEN
+production routing                 = UNCHANGED
+```
+
+DMP-DEC-0013 now defines durable canonical identity as exact equality after removing only the
+documented runtime-volatile `lib/uuid` key. Any other canonical difference remains a hard RED.

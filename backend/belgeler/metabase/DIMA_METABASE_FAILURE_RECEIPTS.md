@@ -956,3 +956,83 @@ status:
 
 The historical RED remains recorded. Compiler implementation is a subsequent gate and receives its
 own pre-implementation review before code.
+
+
+---
+
+## DMP-P4-RED-002 — byte-level canonical determinism conflicts with pinned Metabase lib/uuid semantics
+
+receipt_id: `DMP-P4-RED-002`  
+ticket: `P4-001`  
+tested_sha: `3db99a6b6827d0abaefce06b12d27ab981143da2`  
+run_id: `35743999330`
+
+observed_failure:
+All static/provider-free/compiler/regression gates pass, pinned M2 lab starts, and the live P4
+canonical proof fails on the first family with:
+
+`NON_DETERMINISTIC_CANONICAL_SERIALIZATION: construct-query changed for primary step`
+
+failure_stage:
+pinned v0.63.18 canonicalization determinism oracle.
+
+failure_class:
+`CONTRACT/ARCHITECTURE`
+
+classification_evidence:
+- compile = PASS;
+- focused P4 binding+compiler = PASS;
+- provider-free P3A/P3/M1 regressions = PASS;
+- real Wren M1 regression = PASS;
+- pinned lab startup = PASS;
+- only live canonical double-construct equality fails;
+- exact v0.63.18 `representations.resolve` documents that normalize adds `:lib/uuid` to every clause;
+- exact v0.63.18 `lib.schema.common/normalize-options-map` adds
+  `(str (random-uuid))` when `:lib/uuid` is missing;
+- `/api/agent/v2/construct-query` serializes the normalized query to JSON/base64.
+
+single_owner:
+P4 canonical durable-identity normalization and determinism proof.
+
+root_cause:
+DMP-DEC-0012 equated byte-identical runtime serialization with semantic/canonical determinism.
+The pinned runtime intentionally injects volatile per-normalization `lib/uuid` identity, so the raw
+base64 payload is an executable serialization but is not a stable durable fingerprint input.
+
+invariant_being_fixed:
+```text
+raw serialized query may contain runtime-volatile lib/uuid
+durable canonical identity must ignore only explicitly proven volatile lib/uuid
+all non-volatile canonical fields must match exactly across repeated construct-query calls
+structural semantic-slot manifest must remain identical
+explicit/implicit join introduction remains forbidden
+execution still uses the actual returned serialized query
+```
+
+authorized_correction:
+- recursively remove only map key `lib/uuid` from decoded canonical queries for durable comparison;
+- compare the two stripped decoded canonical queries exactly;
+- fail if any other field differs;
+- fingerprint the stripped stable canonical representation;
+- retain one real serialized query for execution;
+- add provider-free proof that UUID-only drift passes and any other drift fails;
+- rerun the full P4 gate on pinned v0.63.18.
+
+forbidden_patch_alternatives:
+- accept arbitrary differences;
+- regex/remove every field containing `uuid`;
+- skip the second construct-query call;
+- hash portable input instead of canonical runtime output;
+- suppress live determinism proof;
+- change Metabase runtime/source;
+- weaken join/silent-drop checks;
+- touch semantic/authority/Wren/v2 contracts.
+
+allowed_files_to_touch:
+- `backend/app/v3/substrate/metabase/canonical.py`
+- `backend/tests/test_v3_p4_metabase_compiler.py`
+- `backend/tests/test_v3_p4_metabase_canonical_live.py` only if proof output needs explicit stable assertions
+- P4 failure/status/ticket/decision docs
+
+status:
+`CLASSIFIED / CANONICAL IDENTITY PATCH AUTHORIZED`.

@@ -393,3 +393,39 @@ limits:
 This is structural/canonical proof, not P8 numeric equivalence or security parity.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0013 — durable canonical identity excludes only runtime-volatile lib/uuid
+
+date: 2026-09-22
+
+supersedes:
+Only the **byte-for-byte serialized equality** requirement of DMP-DEC-0012.
+All structural-manifest, double-construction, implicit-join and fail-closed requirements remain.
+
+evidence:
+Pinned Metabase v0.63.18 normalization explicitly generates random `lib/uuid` values for MBQL
+clauses that do not already have one. Live P4 proof confirms repeated construction of the same
+portable query can therefore produce different serialized bytes.
+
+decision:
+For P4 durable canonical proof:
+1. call `construct-query` twice;
+2. decode both base64 JSON queries;
+3. recursively remove **only** map key `lib/uuid`;
+4. require the resulting complete JSON objects to be exactly equal;
+5. derive durable canonical fingerprint from that stable representation;
+6. separately compare the semantic-slot manifest and reject explicit/implicit join insertion;
+7. execute the real serialized payload, not the stripped representation.
+
+A difference outside `lib/uuid` is
+`NON_DETERMINISTIC_CANONICAL_SEMANTICS`.
+
+reason:
+Runtime-local clause UUID is execution/editor identity, not Dima business meaning or a durable
+query identity. Excluding precisely that documented volatile key preserves strict determinism
+without normalizing away semantic changes.
+
+status: SEALED.

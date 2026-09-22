@@ -3,7 +3,7 @@
 **Milestone:** P4  
 **Predevelopment review:** `backend/belgeler/metabase/predev/P4_PREDEVELOPMENT_REVIEW.md`  
 **Owner:** deterministic Dima semantic intent → canonical Metabase structured query  
-**Status:** EXECUTION BINDING GREEN / COMPILER IMPLEMENTATION AUTHORIZED
+**Status:** COMPILER IMPLEMENTED / LIVE CANONICAL RED — DMP-P4-RED-002 OPEN
 
 ## Goal
 
@@ -97,3 +97,9 @@ P4 predevelopment review §14 is SEALED.
 Decision `DMP-DEC-0012` fixes the canonicalization proof contract.
 
 Compiler implementation may now begin in the existing P4 allowlist.
+
+
+## Live canonical determinism correction
+
+DMP-P4-RED-002 is open. DMP-DEC-0013 narrows durable determinism normalization to the exact
+runtime-volatile `lib/uuid` key. No other canonical field may be ignored.
