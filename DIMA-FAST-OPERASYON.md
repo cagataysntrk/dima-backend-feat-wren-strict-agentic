@@ -65,11 +65,11 @@ Backend:
 `FT-001 -> FT-002/F0A -> FT-002B Gateway`
 
 Product/UI blocker before FT-003:
-`FT-UI-001 -> FT-UI-002 -> FT-003`
+`FT-UI-001 -> FT-UI-002 Dima-native rendering POC -> FT-003`
 
-FT-002B backend work may proceed while FT-UI-002 is pending.
+FT-003 may not start before FT-UI-002 is GREEN.
 
-FT-003 and product frontend implementation may not start before FT-UI-002 is GREEN.
+Metabase Collections/Questions/Query Builder/Search/native workspace are not Fast Track product goals.
 
 ## 5. Failure protocol
 
@@ -138,22 +138,27 @@ Runtime imports forbidden:
 
 Read-only design study is allowed. Fast Track owns its own implementation.
 
-## 8. UI runtime boundary
+## 8. UI/product boundary
 
-Forbidden:
-- Metabase frontend source fork;
-- Metabase internal React patches;
-- copying Metabase frontend source into Dima;
-- raw DOM scraping from Metabase;
-- service/admin secret in browser;
-- Metabase AI as Dima cognition owner.
+Normative:
+- Dima owns the complete user-facing analyst experience.
+- Metabase remains hidden analytics/query/optional-rendering substrate.
+
+Forbidden core dependencies:
+- Metabase Collections UI;
+- Questions browser;
+- Query Builder;
+- Metabase Search;
+- generic BI navigation/workspace;
+- native Metabase drill workspace;
+- paid Metabase features;
+- Metabase frontend source fork/patch;
+- service/admin secret in browser.
 
 Required:
-- supported embedding/integration surface;
-- typed resource identity;
-- Metabase permissions remain authoritative for Metabase assets;
-- Dima evidence/decision state remains Dima-owned;
-- Dima backend functions independently of embed surface.
+- Dima product runs on Metabase OSS.
+- charts/tables support the analysis; they are not the product destination.
+- guest visualization, if used, is optional and server-signed.
 
 ## 9. Silent fallback prohibition
 

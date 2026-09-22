@@ -1,394 +1,228 @@
-# FT-UI-002 — MODULAR WORKSPACE POC PRE-DEVELOPMENT REVIEW
+# FT-UI-002 — DIMA-NATIVE RENDERING / COMPOSITION POC PRE-DEVELOPMENT REVIEW
 
-Status: APPROVED FOR POC-A ONLY
+Status: APPROVED
 Branch: `feat/dima-metabase-product-fast-track`
-Observed HEAD: `32b19feb8265c501c1a4547ce21c6729a74829f3`
+Supersedes: prior modular-workspace POC scope
 Date: 2026-09-22
 
-## 1. Goal
+## 1. Supervisor correction
 
-Prove Model C first:
+No functional FT-UI-002 implementation existed when this scope changed.
+
+Classification:
 
 ```text
-Thin Dima Frame
-+
-Metabase Modular Surfaces
-+
-Dima Intelligence Sidecar
+NE YAZILDI?
+- docs/predev/capability-lock only
+
+SADECE POC MU?
+- yes, planning only
+
+PRODUCT DEPENDENCY MI?
+- no
+
+REUSE EDILEBILIR MI?
+- backend F0/F0A/FT-002B remains fully reusable
+- modular/full-app research remains reference-only
 ```
 
-This ticket is a product-composition proof, not FT-003 Ask implementation.
+No product code deletion is required.
 
-## 2. Capability split
+## 2. Goal
 
-### POC-A / UI-P0 — local modular evaluation
+Answer only:
 
-May open FT-003 when GREEN.
+> How can Dima render real Metabase analytical results inside a Dima-native analyst experience with minimal frontend cost?
 
-Purpose:
-- composition;
-- modular surface viability;
-- real browser event payloads;
-- typed AnalyticsContext;
-- responsive sidecar;
-- local evaluation auth only.
+This ticket is NOT:
+- Ask implementation;
+- Analyst loop;
+- Root Cause;
+- generic BI workspace;
+- Metabase navigation integration.
 
-### POC-B / UI-P1 — production authenticated embedding qualification
+## 3. Product thesis
 
-Required before external pilot / F9.
+```text
+DIMA = entire user-facing experience
+METABASE = hidden analytics/query/optional-rendering substrate
+```
 
-Purpose:
-- production JWT SSO;
-- individual principal;
-- permission/group mapping;
-- production origin/session behavior;
-- denial/revocation qualification.
+The user works with an analyst, not a BI tool.
 
-POC-A GREEN does not certify POC-B.
+## 4. OSS-only invariant
 
-## 3. Immutable prerequisites
+```text
+METABASE_LICENSE_BUDGET = 0
+PAID_METABASE_FEATURE_REQUIRED_FOR_CORE_PRODUCT = 0
+METABASE_FULL_APP_EMBED_REQUIRED = 0
+METABASE_MODULAR_SDK_REQUIRED_IN_PRODUCTION = 0
+METABASE_NATIVE_WORKSPACE_REQUIRED_FOR_USER = 0
+DIMA_PRODUCT_MUST_RUN_ON_METABASE_OSS = required
+```
 
-Sealed backend remains unchanged:
-- F0 GREEN;
-- F0A GREEN;
-- FT-002B Gateway GREEN.
+## 5. Options under test
 
-F0A Metabase pin remains:
-- major: 63;
-- runtime: v0.63.18;
-- image: `sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73`.
+### A — Dima-native result rendering
 
-Do NOT mutate the F0A runtime pin for UI convenience.
+Metabase result rows/schema -> Dima table/chart.
 
-## 4. SDK package policy
+Reuse only generic safe primitives:
+- `EChart`;
+- `ResultTable`.
 
-Official major-match rule:
-- use `@metabase/embedding-sdk-react@63-stable` for Metabase major 63.
+Do not reuse legacy BI navigation/dashboard ownership.
 
-Resolved package at review time:
-- exact version: `0.63.1`.
+### B — OSS guest visualization
 
-Implementation MUST:
-- write exact `0.63.1` to package manifest/lock;
-- record resolved package integrity from the generated lockfile;
-- never leave `63-stable` or `latest` as the shipped dependency.
+Evaluate, not require:
+- guest embedded question/dashboard;
+- server-signed JWT;
+- embedding secret server-side only;
+- view-only semantics;
+- synthetic/non-sensitive data.
 
-## 5. Current owner
+### C — Hybrid
 
-Existing main Dima frontend is NOT migrated in this ticket.
-
-POC owner:
-- `dima-frontend-demo-master/src/app/fast-poc/page.tsx`
-- `dima-frontend-demo-master/src/features/fast-poc/**`
+Default native Dima renderer.
+Guest visualization only where a complex view-only visualization materially saves effort.
 
 ## 6. Files allowed
 
-Functional POC commit may touch only:
-- `dima-frontend-demo-master/package.json`
-- existing package lock file, or one package lock consistent with the repo package manager;
 - `dima-frontend-demo-master/src/app/fast-poc/**`
 - `dima-frontend-demo-master/src/features/fast-poc/**`
-- focused POC tests/e2e files explicitly named for fast-poc;
+- focused Fast POC fixture/tests/workflow
 - `backend/belgeler/fast/**`
-- Fast UI-specific workflow if needed.
+
+Existing generic components may be imported without modification.
 
 ## 7. Files forbidden
 
-Do NOT modify:
-- `dima-frontend-demo-master/src/app/page.tsx`;
-- DashboardView;
-- DashboardsPanel;
-- ReportPanel;
-- AnalysisCanvas;
-- legacy product navigation;
-- backend Fast Gateway;
-- backend V2/V3;
-- Wren;
-- Metabase source tree;
-- read-only branches.
+- `src/app/page.tsx`
+- DashboardView
+- DashboardsPanel
+- ReportPanel
+- AnalysisCanvas
+- Metabase source/frontend
+- V2/V3/Wren
+- source branches
+- production navigation
+- generic Collections/Questions/Search/Query Builder UI
 
-## 8. POC composition
+## 8. Real-data proof
 
-Write no commodity BI replacement.
+POC uses a sanitized fixture generated from the real pinned Metabase lab/Gateway path.
 
-Use supported Metabase surfaces:
-- MetabaseProvider;
-- Collection Browser;
-- Interactive Dashboard;
-- Interactive Question/query surface.
+Required provenance:
+- exact Fast Gateway tested commit;
+- exact Metabase runtime;
+- query/result receipt;
+- synthetic lab data only.
 
-Dima-only POC UI:
-- thin frame;
-- collapsible sidecar;
-- AnalyticsContext inspector;
-- visible loading/error state.
+FT-003 will be the first live user-question -> Gateway -> evidence -> answer end-to-end product path.
 
-No:
-- custom dashboard;
-- custom query builder;
-- custom collection browser;
-- new charting engine.
+## 9. Dima analyst-shell POC
 
-## 9. Local evaluation auth
+Minimal composition:
 
-POC-A status:
-`LOCAL_EVALUATION_AUTH`
+```text
+DIMA
 
-Rules:
-- admin/service credential in browser = forbidden;
-- real customer data = forbidden;
-- committed API key = forbidden;
-- synthetic/non-sensitive dev DB only;
-- localhost only;
-- env/gitignore;
-- logs/screenshots redact secrets;
-- any dedicated evaluation key must be minimum-scope and revoked/rotated after POC.
+Question / investigation intent
 
-If current OSS runtime cannot expose modular SDK capability:
-- classify `EMBED_CAPABILITY_UNAVAILABLE`;
-- do not mutate F0A;
-- do not fake the POC;
-- evaluate supported fallback according to decision rule.
+Result / finding area
+  -> chart or table
+Evidence/provenance summary
 
-## 10. AnalyticsContext host contract
-
-Initial normalized contract:
-
-```ts
-type AnalyticsContext = {
-  source: "metabase";
-  resourceType:
-    | "collection"
-    | "dashboard"
-    | "question"
-    | "model"
-    | "table"
-    | "unknown";
-  entityId?: string;
-  collectionId?: string;
-  dashboardId?: string;
-  questionId?: string;
-  modelId?: string;
-  tableId?: string;
-  filters?: unknown;
-  dateRange?: unknown;
-  visualization?: unknown;
-  sourceEvent:
-    | "collection_click"
-    | "dashboard_load"
-    | "dashboard_parameters"
-    | "dashboard_visualization"
-    | "question_run"
-    | "question_save"
-    | "navigation"
-    | "unknown";
-  completeness: "FULL" | "PARTIAL" | "RESOURCE_ONLY";
-  updatedAt: string;
-};
+[Derinleştir] [Karar Kaydet] [Raporla]
 ```
 
-Contract may evolve only from measured callback payloads.
+No fake AI response.
+No fake finding.
+POC fixture content must be clearly labeled as rendering proof.
 
-Never authoritative:
-- raw DOM text;
-- visible title scraping;
-- CSS selector;
-- iframe DOM;
-- label -> guessed ID.
+## 10. Rendering behavior
 
-## 11. Event families to measure live
+- tabular result always has table fallback;
+- chart shown only when shape is safely chartable;
+- chart is evidence visualization, not product destination;
+- empty result != zero;
+- unsupported shapes fall back to table;
+- no dashboard/navigation shell.
 
-At least three real families:
+## 11. Guest embed evaluation
 
-Collection Browser:
-- item click;
-- actual payload;
-- normalized context;
-- missing fields.
+Document only unless clearly useful.
 
-Dashboard:
-- load;
-- parameter change;
-- visualization/card interaction when supported;
-- actual payload;
-- normalized context;
-- missing fields.
+Facts:
+- guest embedding is available on OSS;
+- charts/dashboards are view-only;
+- server signs JWT;
+- signing secret never reaches browser;
+- no Query Builder/drill-through;
+- no Metabase user identity;
+- locked parameters are the restriction mechanism.
 
-Question:
-- open/run/save where supported;
-- actual payload;
-- normalized context;
-- missing fields.
+Guest embed is never required for FT-003.
 
-Documentation claim alone does not satisfy the gate.
-
-## 12. Native Metabase baseline
-
-Before or in parallel with modular POC inspect:
-- Home;
-- Collections;
-- Dashboard;
-- Question;
-- Query Builder;
-- Filters;
-- Drill;
-- Search.
-
-Receipt fields:
-- surface;
-- works?;
-- useful?;
-- must Dima duplicate?;
-- context relevance?.
-
-Keep this concise; it is a commodity-BI benchmark, not a redesign exercise.
-
-## 13. Layout target
+## 12. Responsive target
 
 Desktop:
-- Metabase workspace ~72–76%;
-- Dima sidecar ~24–28%;
-- sidecar collapsible.
+- single-column analyst narrative;
+- chart/table within result/evidence card.
 
 Narrow:
-- Metabase primary full-width;
-- Dima sidecar becomes drawer/bottom sheet;
-- no two cramped columns.
+- same vertical analyst flow;
+- responsive chart/table;
+- no two-column BI workspace.
 
-POC should be clean enough to judge product composition, not pixel-perfect.
+## 13. Hard GREEN gate
 
-## 14. Sidecar scope
+- [ ] Dima-native analyst shell POC
+- [ ] real Metabase result fixture rendered inside Dima
+- [ ] simple table path
+- [ ] simple chart path
+- [ ] safe table fallback
+- [ ] optional guest visualization evaluated
+- [ ] no Metabase workspace dependency
+- [ ] no Collections UI dependency
+- [ ] no Query Builder dependency
+- [ ] no native Metabase Search dependency
+- [ ] no paid Metabase feature dependency
+- [ ] no Metabase frontend fork
+- [ ] no browser service/admin secret
+- [ ] responsive analyst UX acceptable
+- [ ] selected rendering strategy documented
+- [ ] build/type gate green
 
-POC may show:
-- current context;
-- selected resource;
-- filter/date state;
-- visual Ask input;
-- “Analyze current context” affordance.
+## 14. Selection rule
 
-POC must NOT fabricate:
-- Ask response;
-- AI answer;
-- root cause;
-- finding.
+SELECT A when native Dima renderer handles common shapes cleanly with trivial maintenance.
 
-Real Ask belongs to FT-003.
+SELECT C when A is sufficient by default but guest visualization is clearly valuable for rare complex view-only views.
 
-## 15. Browser sizes
+SELECT B only if guest rendering is materially simpler for common product output without weakening Dima UX.
 
-Desktop:
-- 1440x900;
-- 1280x800.
+Current hypothesis:
+A or C.
 
-Narrow:
-- 390x844.
+## 15. Exit
 
-## 16. Required flows
+When GREEN:
+1. seal FT-UI-002 receipt;
+2. update status/audit;
+3. immediately open FT-003 predev;
+4. do not wait for modular/full-app work.
 
-1. open collection;
-2. open dashboard;
-3. alter dashboard filter;
-4. open question;
-5. run/change question where supported;
-6. Dima sidecar reflects context;
-7. navigate elsewhere;
-8. context updates;
-9. collapse sidecar;
-10. narrow viewport.
+FT-003 target:
 
-## 17. Negative flows
-
-- SDK load failure;
-- Metabase unavailable;
-- auth denied;
-- resource permission denied;
-- context callback missing;
-- stale context.
-
-## 18. Automatic architecture decision
-
-CASE A -> MODEL C:
-all core modular surfaces + typed context GREEN, navigation/responsive acceptable.
-
-CASE B -> HYBRID:
-typed modular context strong, but broad workspace navigation would require excessive host work.
-
-CASE C -> MODEL B V1:
-modular materially blocked and full-app is stronger; context completeness explicit and never guessed.
-
-CASE D -> STOP:
-both supported integration models fail critical requirements; do not auto-return to legacy Dima BI.
-
-Full-app is NOT required to open FT-003 when Model C POC-A is GREEN.
-
-Supported full-app `postMessage`/location tracking may be tested as fallback; iframe DOM scraping remains forbidden.
-
-## 19. Hard GREEN gate
-
-POC-A GREEN requires:
-
-- [ ] F0A substrate unchanged;
-- [ ] SDK major 63;
-- [ ] exact SDK version locked;
-- [ ] package integrity/lock committed;
-- [ ] isolated /fast-poc;
-- [ ] no Metabase fork/source patch;
-- [ ] Collection Browser works;
-- [ ] Dashboard works;
-- [ ] Question/query surface works;
-- [ ] Dima sidecar coexists;
-- [ ] >=3 real typed event families;
-- [ ] AnalyticsContext normalization demonstrated;
-- [ ] DOM scraping = 0;
-- [ ] guessed resource identity = 0;
-- [ ] admin/service credential in browser = 0;
-- [ ] desktop responsive acceptable;
-- [ ] narrow drawer strategy acceptable;
-- [ ] navigation usable;
-- [ ] error/loading state visible;
-- [ ] live/browser receipt;
-- [ ] architecture model selected.
-
-## 20. Commit protocol
-
-Commit 1:
-`docs(fast-ui): open FT-UI-002 modular workspace POC`
-
-Only:
-- this predev;
-- UI capability-lock skeleton;
-- roadmap/status/audit nuance.
-
-Commit 2:
-`feat(fast-ui): prove modular Metabase workspace context bridge`
-
-Only:
-- isolated /fast-poc;
-- exact SDK lock;
-- modular components;
-- context bridge;
-- sidecar;
-- focused tests.
-
-Commit 3:
-`docs(fast-ui): seal FT-UI-002 workspace decision`
-
-Only:
-- live/browser receipt;
-- selected model;
-- status/audit;
-- next action.
-
-## 21. Exit
-
-If POC-A GREEN:
-- FT-003 becomes OPEN;
-- immediately create FT-003 predev;
-- do not wait for POC-B.
-
-If POC-A RED:
-- write failure receipt;
-- apply CASE B/C/D decision rule;
-- no silent fallback.
-
-POC-B remains a production/external-pilot gate before F9.
+```text
+question
+-> resource candidates
+-> temporal binding
+-> construct
+-> execute
+-> Evidence
+-> Dima answer
+-> appropriate chart/table
+```

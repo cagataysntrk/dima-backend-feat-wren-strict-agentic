@@ -45,13 +45,13 @@ FT-002B:
 ## C. UI/product architecture
 
 Required:
-- Metabase BI workspace owner.
-- Dima intelligence owner.
+- Dima owns the complete user-facing product.
+- Metabase is a hidden analytics/query/optional-rendering substrate.
 - no Metabase frontend fork.
 - no Metabase source patch.
 - no raw DOM context scraping.
 - no service/admin secret in browser.
-- typed current-resource identity.
+- Metabase result/resource identity remains typed in backend/evidence.
 - Dima backend works without embed.
 - Dima evidence/decision state is not Metabase-only.
 
@@ -62,32 +62,21 @@ FT-UI-001:
 - [x] full-app classified as accelerator, not permanent architecture.
 - [x] modular composition classified as strategic context target.
 
-FT-UI-002 / POC-A — local modular product gate:
-- [ ] pre-development review.
-- [x] existing F0A major/runtime/image preserved.
-- [x] SDK dist-tag identified: 63-stable.
-- [x] exact SDK version resolved: 0.63.1.
-- [ ] SDK package integrity + package lock sealed.
-- [ ] isolated /fast-poc route.
-- [ ] native Metabase UX baseline.
-- [ ] Collection Browser.
-- [ ] Dashboard.
-- [ ] Question/query surface.
-- [ ] Dima sidecar coexistence.
-- [ ] at least 3 real typed context event families.
-- [ ] AnalyticsContext normalization.
-- [ ] DOM scraping = 0.
-- [ ] guessed identity = 0.
-- [ ] browser admin/service credential = 0.
-- [ ] desktop + narrow responsive proof.
-- [ ] architecture model selected by decision rule.
-
-FT-UI-002 / POC-B — production embedding qualification before F9:
-- [ ] production JWT SSO.
-- [ ] individual Metabase principal.
-- [ ] group/permission mapping.
-- [ ] production origin/session qualification.
-- [ ] denial/revocation proof.
+FT-UI-002 — Dima-native rendering/composition:
+- [x] pre-development review corrected.
+- [x] F0A OSS runtime remains unchanged.
+- [x] zero-license core invariant documented.
+- [ ] isolated /fast-poc analyst shell.
+- [ ] real Metabase result rendered.
+- [ ] simple table path.
+- [ ] simple chart path.
+- [ ] safe fallback.
+- [ ] optional guest visualization evaluated.
+- [ ] no workspace/Collections/Query Builder/Search dependency.
+- [ ] no paid Metabase dependency.
+- [ ] no browser service/admin secret.
+- [ ] responsive analyst UX.
+- [ ] rendering strategy selected.
 
 ## D. Stop-the-line
 
@@ -178,8 +167,8 @@ F0       governance                         GREEN
 F0A      pinned Metabase capability         GREEN
 FT-002B  Fast-owned Gateway                 GREEN
 FT-UI-001 architecture reconciliation       GREEN
-FT-UI-002/POC-A local modular/context POC  NEXT
-F1       Ask vertical slice                 BLOCKED until POC-A GREEN
+FT-UI-002 Dima-native rendering POC       NEXT
+F1       Ask vertical slice                 BLOCKED until FT-UI-002 GREEN
 F1A      temporal/resource safety
 F2       conversation
 F3       evidence
@@ -200,8 +189,7 @@ BRANCH_ISOLATION: GREEN
 METABASE_SUBSTRATE_F0A: GREEN
 FAST_GATEWAY: GREEN
 UI_ARCHITECTURE_RECONCILIATION: GREEN
-UI_WORKSPACE_POC_A: OPEN / PREDEV
-UI_PRODUCTION_EMBED_POC_B: DEFERRED TO BEFORE F9
+UI_RENDERING_POC: OPEN / PREDEV
 FRONTEND_PRODUCT_IMPLEMENTATION: PAUSED
 SECURITY_MODEL: GATED
 PRODUCTION: NOT CERTIFIED
