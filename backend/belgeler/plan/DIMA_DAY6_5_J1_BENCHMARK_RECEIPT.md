@@ -1,6 +1,6 @@
 # DIMA DAY 6.5 — J1S / J1T BENCHMARK RECEIPT
 
-**Status:** PREPARED / LIVE RESULTS NOT YET RUN  
+**Status:** PRE-RUN CORRECTED / VALID LIVE RESULTS NOT YET RUN  
 **Entry checkpoint:** `f2b246a7f186705f8ddd98a61e60d950f606d326`  
 **Current prep HEAD at receipt creation:** `22eacce89f8fef9506c3490f0fe4e32c61fd67a5`
 
@@ -32,7 +32,10 @@ first result.
 ```text
 A = google/gemini-2.5-flash-lite
 B = typesafe/jev-1.13
-C = openai/gpt-5.6-sol
+C = openai/gpt-5.6-luna
+
+REFERENCE_CEILING = openai/gpt-5.6-sol (frozen small subset only)
+CONDITIONAL = openai/gpt-5.6-terra (consult-gated)
 ```
 
 Jev transport:
@@ -85,10 +88,10 @@ Fill only from manual-only workflow artifacts.
 |---|---|---:|---:|---:|---|---:|---:|---:|---|---:|---|
 | J1S | Gemini Flash-Lite | NOT RUN | — | — | — | — | — | — | — | — | — |
 | J1S | Jev 1.13 | NOT RUN | — | — | — | — | — | — | — | — | — |
-| J1S | Sol | NOT RUN | — | — | — | — | — | — | — | — | — |
+| J1S | Luna | NOT RUN | — | — | — | — | — | — | — | — | — |
 | J1T | Gemini Flash-Lite | NOT RUN | — | — | — | — | — | — | — | — | — |
 | J1T | Jev 1.13 | NOT RUN | — | — | — | — | — | — | — | — | — |
-| J1T | Sol | NOT RUN | — | — | — | — | — | — | — | — | — |
+| J1T | Luna | NOT RUN | — | — | — | — | — | — | — | — | — |
 
 Jev-only calibration fields:
 - Brier;
@@ -113,3 +116,25 @@ Jev promising
 ```
 
 No production model topology/cascade/threshold is authorized by this receipt.
+
+
+## Pre-result challenger-role correction
+
+Before any corrected decision-authority benchmark result:
+
+```text
+freeze = d65-j1-freeze-v2
+reason = PRE_RESULT_CHALLENGER_ROLE_CORRECTION
+corpus blobs = UNCHANGED
+```
+
+Run `35704627396` was started by a superseded one-shot workflow using
+`Gemini / Jev / Sol` as equal peers. It is **INVALID J1 DECISION AUTHORITY** even if it
+finishes successfully. It must not populate the table above or influence prompt/corpus/product
+changes.
+
+Corrected evidence also splits:
+- J1S production model-needed score from deterministic/sensitive/retrieval controls;
+- J1T-CHOICE from J1T-CONTRACT-FIDELITY;
+- Sol reference ceiling from primary peer latency/cost ranking;
+- Terra conditional second stage from all automatic runs.

@@ -594,3 +594,23 @@ close Day6.5 architecture decisions
 ```
 
 Day6.5 may record an architecture checkpoint SHA, but that is not the release FINAL ENGINEERING FREEZE CANDIDATE.
+
+
+## D65-SI STANDARD INTEGRATION CLOSURE — inserted gate
+
+Current required order is now:
+
+```text
+J1 decision
+→ chosen semantic/temporal topology known
+→ D65-SI Standard Integration Closure
+→ real Standard Wren vertical sentinel
+→ D65-X0
+```
+
+Authority:
+`DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md`.
+
+X0 must compare the real
+`AcceptedStandardAuthority → StandardProjection → execution substrate` chain, never a surrogate
+Research `AcceptedTurnContract` path.

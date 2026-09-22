@@ -29,8 +29,13 @@ def test_j1_freeze_manifest_matches_frozen_corpora():
     assert manifest["challengers"] == [
         "google/gemini-2.5-flash-lite",
         "typesafe/jev-1.13",
-        "openai/gpt-5.6-sol",
+        "openai/gpt-5.6-luna",
     ]
+    assert manifest["version"] == "d65-j1-freeze-v2"
+    assert manifest["amendment"]["reason"] == "PRE_RESULT_CHALLENGER_ROLE_CORRECTION"
+    assert manifest["amendment"]["corpus_changed"] is False
+    assert manifest["model_roles"]["reference_ceiling"] == "openai/gpt-5.6-sol"
+    assert manifest["model_roles"]["conditional_second_stage"] == "openai/gpt-5.6-terra"
     assert manifest["jev_transport"]["endpoint"] == "https://openrouter.ai/api/alpha/decisions"
     assert manifest["jev_transport"]["pinned_model"] == "typesafe/jev-1.13"
     assert manifest["jev_transport"]["generic_chat_or_structured_json_forbidden"] is True
@@ -154,8 +159,51 @@ def test_j1_harness_transport_isolation_and_failure_semantics():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
 
+    assert module.PRIMARY_MODELS == (
+        "google/gemini-2.5-flash-lite",
+        "typesafe/jev-1.13",
+        "openai/gpt-5.6-luna",
+    )
     assert module.JEV_MODEL == "typesafe/jev-1.13"
+    assert module.REFERENCE_MODEL == "openai/gpt-5.6-sol"
+    assert module.CONDITIONAL_MODEL == "openai/gpt-5.6-terra"
+    assert module._reasoning_policy("google/gemini-2.5-flash-lite") == "BOUNDED_DECISION_REASONING_DISABLED"
+    assert module._reasoning_policy("openai/gpt-5.6-luna") == "BOUNDED_DECISION_REASONING_DISABLED"
+    assert module._reasoning_policy("openai/gpt-5.6-sol") == "REFERENCE_CEILING_REASONING_ENABLED"
     assert module.DECISIONS_URL == "https://openrouter.ai/api/alpha/decisions"
     assert module.CHAT_URL == "https://openrouter.ai/api/v1/chat/completions"
     assert "~typesafe/jev-latest" not in path.read_text(encoding="utf-8")
     assert "TRANSPORT/PROVIDER" in path.read_text(encoding="utf-8")
+
+
+def test_j1s_scoring_separates_product_bypass_from_model_needed():
+    path = LAB / "v2_day6_5_j1_benchmark.py"
+    spec = importlib.util.spec_from_file_location("dima_j1_routing", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    doc = _load("v2_day6_5_j1s_frozen.json")
+    by_id = {case["id"]: case for case in doc["cases"]}
+    assert module._j1s_route_bucket(by_id["j1s-001"]) == "DETERMINISTIC_BYPASS"
+    assert module._j1s_route_bucket(by_id["j1s-006"]) == "MODEL_NEEDED"
+    assert module._j1s_route_bucket(by_id["j1s-023"]) == "RETRIEVAL_MISS"
+    assert module._j1s_route_bucket(by_id["j1s-025"]) == "SENSITIVE_EXACT_ONLY"
+
+
+def test_jev_temporal_contract_fidelity_fails_closed_without_answer_enumeration():
+    path = LAB / "v2_day6_5_j1_benchmark.py"
+    spec = importlib.util.spec_from_file_location("dima_j1_fidelity", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    evidence = module._jev_temporal_contract_capability()
+    assert evidence["status"] == "TEMPORAL_INTEGRATION_LIMITATION"
+    assert evidence["native_primitives"] == ["choice", "noul", "score"]
+    assert evidence["field_support"]["n"] == "NOT_DYNAMICALLY_REPRESENTABLE"
+    assert evidence["field_support"]["implicit_base_n"] == "NOT_DYNAMICALLY_REPRESENTABLE"
+    assert evidence["case_answer_pre_enumeration_required_for_n"] is True
+    assert evidence["temporal_production_candidate"] is False

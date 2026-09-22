@@ -1,22 +1,27 @@
 """Day 6.5 J1S/J1T isolated decision-model benchmark.
 
-LAB/EVAL ONLY. Gemini/Sol use OpenRouter chat structured output. Jev uses the
-native OpenRouter Decisions API directly and never Dima structured_json().
+LAB/EVAL ONLY. Primary peers are Gemini Flash-Lite, Jev 1.13 and GPT-5.6 Luna.
+Jev uses OpenRouter Decisions directly; chat models use strict structured output.
+Sol is reference-ceiling only; Terra is a conditional second stage.
 """
 
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import os
 import statistics
 import time
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import httpx
+
+from app.v2.temporal_intent import TemporalNormalizationChoice
 
 ROOT = Path(__file__).resolve().parents[1]
 EVAL = ROOT / "eval"
@@ -27,12 +32,22 @@ FREEZE = EVAL / "v2_day6_5_j1_freeze_manifest.json"
 
 CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
 DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
-MODELS = (
+PRIMARY_MODELS = (
     "google/gemini-2.5-flash-lite",
     "typesafe/jev-1.13",
-    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-luna",
 )
 JEV_MODEL = "typesafe/jev-1.13"
+REFERENCE_MODEL = "openai/gpt-5.6-sol"
+CONDITIONAL_MODEL = "openai/gpt-5.6-terra"
+MODELS = (*PRIMARY_MODELS, REFERENCE_MODEL, CONDITIONAL_MODEL)
+
+PERIOD_ONTOLOGY = (
+    "THIS_WEEK", "THIS_MONTH", "THIS_QUARTER", "THIS_YEAR",
+    "PREVIOUS_WEEK", "PREVIOUS_MONTH", "PREVIOUS_QUARTER", "PREVIOUS_YEAR",
+    "LAST_N_DAYS", "LAST_N_WEEKS", "LAST_N_MONTHS",
+)
+COMPARISON_ONTOLOGY = ("PREVIOUS_PERIOD", "PREVIOUS_YEAR_ALIGNED")
 
 
 @dataclass(frozen=True)
@@ -65,6 +80,40 @@ def _api_key() -> str:
     if not key:
         raise RuntimeError("OpenRouter API key is not configured")
     return key
+
+
+def _reasoning_policy(model: str) -> str:
+    if model == JEV_MODEL:
+        return "NATIVE_DECISIONS_NO_CHAT_REASONING"
+    if model == REFERENCE_MODEL:
+        return "REFERENCE_CEILING_REASONING_ENABLED"
+    return "BOUNDED_DECISION_REASONING_DISABLED"
+
+
+def _strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    out = copy.deepcopy(schema)
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            node.pop("default", None)
+            if node.get("type") == "object" or "properties" in node:
+                props = node.get("properties") or {}
+                node["required"] = list(props.keys())
+                node["additionalProperties"] = False
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(out)
+    return out
+
+
+def _exact_key(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", str(value or "").strip().casefold())
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    return " ".join(normalized.split())
 
 
 def _usage(payload: dict[str, Any]) -> tuple[float | None, int | None, int | None]:
@@ -184,7 +233,7 @@ def _chat_decide(
             },
         },
         "provider": {"allow_fallbacks": False},
-        "reasoning": {"enabled": model == "openai/gpt-5.6-sol"},
+        "reasoning": {"enabled": model == REFERENCE_MODEL},
     }
     started = time.perf_counter()
     try:
@@ -292,6 +341,257 @@ def decide(*, model: str, track: str, case: dict[str, Any], timeout_s: float) ->
     return _chat_decide(model=model, track=track, case=case, timeout_s=timeout_s)
 
 
+def _j1s_route_bucket(case: dict[str, Any]) -> str:
+    taxonomy = set(case.get("taxonomy") or [])
+    if "sensitive_exact" in taxonomy:
+        return "SENSITIVE_EXACT_ONLY"
+    if "retrieval_miss" in taxonomy:
+        return "RETRIEVAL_MISS"
+    surface = _exact_key(case["surface"])
+    exact_ids = [
+        card["candidate_id"]
+        for card in case["candidates"]
+        if surface and surface in {_exact_key(v) for v in card.get("verified_aliases") or []}
+    ]
+    if len(exact_ids) == 1:
+        return "DETERMINISTIC_BYPASS"
+    if len(exact_ids) > 1:
+        return "DETERMINISTIC_AMBIGUOUS_EXACT"
+    return "MODEL_NEEDED"
+
+
+def _expected_temporal_contract(case: dict[str, Any]) -> dict[str, Any]:
+    if case["expected"] == "ABSTAIN":
+        return {
+            "request_id": case["id"],
+            "target": case["target"],
+            "decision": "ABSTAIN",
+            "period_kind": None,
+            "comparison_kind": None,
+            "n": None,
+            "implicit_base_period_kind": None,
+            "implicit_base_n": None,
+            "reason": case["abstain_reason"] or "INSUFFICIENT_CONTEXT",
+        }
+    option = next(
+        item for item in case["options"] if item["option_id"] == case["expected"]
+    )
+    return {
+        "request_id": case["id"],
+        "target": option["target"],
+        "decision": "NORMALIZED",
+        "period_kind": option.get("period_kind"),
+        "comparison_kind": option.get("comparison_kind"),
+        "n": option.get("n"),
+        "implicit_base_period_kind": option.get("implicit_base_period_kind"),
+        "implicit_base_n": option.get("implicit_base_n"),
+        "reason": None,
+    }
+
+
+def _chat_temporal_contract(
+    *, model: str, case: dict[str, Any], timeout_s: float
+) -> dict[str, Any]:
+    payload = {
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Normalize one exact temporal surface into Dima's supplied strict typed "
+                    "contract. Use only the closed ontology. Infer dynamic N from the surface "
+                    "when LAST_N applies. Do not calculate calendar dates. If ambiguous or "
+                    "unsupported, ABSTAIN with the matching reason. Return only strict schema."
+                ),
+            },
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "request_id": case["id"],
+                        "target": case["target"],
+                        "exact_temporal_surface": case["surface"],
+                        "period_ontology": PERIOD_ONTOLOGY,
+                        "comparison_ontology": COMPARISON_ONTOLOGY,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+            },
+        ],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "dima_temporal_normalization_choice",
+                "strict": True,
+                "schema": _strict_schema(
+                    TemporalNormalizationChoice.model_json_schema()
+                ),
+            },
+        },
+        "provider": {"allow_fallbacks": False},
+        "reasoning": {"enabled": model == REFERENCE_MODEL},
+    }
+    started = time.perf_counter()
+    try:
+        with httpx.Client(timeout=timeout_s) as client:
+            response = client.post(
+                CHAT_URL,
+                headers={
+                    "Authorization": f"Bearer {_api_key()}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+        latency = time.perf_counter() - started
+        if response.status_code != 200:
+            return {
+                "status": "PROVIDER_FAILURE",
+                "failure_class": "TRANSPORT/PROVIDER",
+                "error": f"HTTP {response.status_code}: {response.text[:500]}",
+                "latency_s": latency,
+            }
+        raw = response.json()
+        content = raw["choices"][0]["message"]["content"]
+        parsed = content if isinstance(content, dict) else json.loads(content)
+        choice = TemporalNormalizationChoice.model_validate(parsed)
+        cost, inp, out = _usage(raw)
+        return {
+            "status": "OK",
+            "choice": choice.model_dump(mode="json"),
+            "latency_s": latency,
+            "cost": cost,
+            "input_tokens": inp,
+            "output_tokens": out,
+            "response_model": raw.get("model"),
+            "response_id": raw.get("id"),
+        }
+    except Exception as exc:
+        return {
+            "status": "HARNESS_OR_TRANSPORT_FAILURE",
+            "failure_class": "TRANSPORT/PROVIDER",
+            "error": f"{type(exc).__name__}: {exc}",
+            "latency_s": time.perf_counter() - started,
+        }
+
+
+def _jev_temporal_contract_capability() -> dict[str, Any]:
+    return {
+        "status": "TEMPORAL_INTEGRATION_LIMITATION",
+        "transport": "openrouter_decisions",
+        "native_primitives": ["choice", "noul", "score"],
+        "field_support": {
+            "decision": "REPRESENTABLE_AS_CHOICE_OR_NOUL",
+            "period_kind": "REPRESENTABLE_AS_CHOICE",
+            "comparison_kind": "REPRESENTABLE_AS_CHOICE",
+            "n": "NOT_DYNAMICALLY_REPRESENTABLE",
+            "implicit_base_period_kind": "REPRESENTABLE_AS_CHOICE",
+            "implicit_base_n": "NOT_DYNAMICALLY_REPRESENTABLE",
+            "reason": "REPRESENTABLE_AS_CHOICE",
+        },
+        "dynamic_integer_supported": False,
+        "case_answer_pre_enumeration_required_for_n": True,
+        "temporal_production_candidate": False,
+        "reason": (
+            "Jev native Decisions exposes choice/noul/score decisions; a dynamic positive "
+            "integer N cannot be emitted faithfully without pre-enumerating candidate values."
+        ),
+    }
+
+
+def run_temporal_contract_fidelity(
+    *, model: str, cases: list[dict[str, Any]], timeout_s: float
+) -> dict[str, Any]:
+    if model == JEV_MODEL:
+        return {
+            "kind": "dima_v2_day6_5_j1t_contract_fidelity",
+            "track": "J1T",
+            "mode": "contract-fidelity",
+            "model": model,
+            "model_role": "PRIMARY_PEER",
+            "reasoning_policy": _reasoning_policy(model),
+            "capability": _jev_temporal_contract_capability(),
+            "metrics": {
+                "provider_failure_count": 0,
+                "contract_valid_rate": None,
+                "exact_contract_accuracy": None,
+                "temporal_production_candidate": False,
+            },
+            "records": [],
+        }
+
+    records: list[dict[str, Any]] = []
+    for case in cases:
+        expected = _expected_temporal_contract(case)
+        result = _chat_temporal_contract(model=model, case=case, timeout_s=timeout_s)
+        actual = result.get("choice")
+        records.append(
+            {
+                "case_id": case["id"],
+                "surface": case["surface"],
+                "expected": expected,
+                "actual": actual,
+                "status": result["status"],
+                "failure_class": result.get("failure_class"),
+                "error": result.get("error"),
+                "contract_exact": result["status"] == "OK" and actual == expected,
+                "latency_s": round(float(result.get("latency_s") or 0.0), 6),
+                "cost": result.get("cost"),
+                "input_tokens": result.get("input_tokens"),
+                "output_tokens": result.get("output_tokens"),
+                "response_model": result.get("response_model"),
+                "response_id": result.get("response_id"),
+            }
+        )
+
+    ok = [r for r in records if r["status"] == "OK"]
+    provider_failures = len(records) - len(ok)
+    exact = sum(bool(r["contract_exact"]) for r in ok)
+    dynamic = [r for r in ok if r["expected"].get("n") is not None]
+    implicit_n = [r for r in ok if r["expected"].get("implicit_base_n") is not None]
+    comparisons = [r for r in ok if r["expected"].get("comparison_kind") is not None]
+    abstains = [r for r in ok if r["expected"]["decision"] == "ABSTAIN"]
+
+    def field_rate(rows: list[dict[str, Any]], field: str) -> float | None:
+        if not rows:
+            return None
+        return sum(
+            r["actual"] is not None
+            and r["actual"].get(field) == r["expected"].get(field)
+            for r in rows
+        ) / len(rows)
+
+    return {
+        "kind": "dima_v2_day6_5_j1t_contract_fidelity",
+        "track": "J1T",
+        "mode": "contract-fidelity",
+        "model": model,
+        "model_role": (
+            "REFERENCE_CEILING" if model == REFERENCE_MODEL
+            else "CONDITIONAL_SECOND_STAGE" if model == CONDITIONAL_MODEL
+            else "PRIMARY_PEER"
+        ),
+        "reasoning_policy": _reasoning_policy(model),
+        "metrics": {
+            "case_count": len(cases),
+            "evaluable_case_count": len(ok),
+            "provider_failure_count": provider_failures,
+            "contract_valid_rate": len(ok) / len(cases) if cases else None,
+            "exact_contract_accuracy": exact / len(ok) if ok else None,
+            "dynamic_n_accuracy": field_rate(dynamic, "n"),
+            "comparison_kind_accuracy": field_rate(comparisons, "comparison_kind"),
+            "implicit_base_kind_accuracy": field_rate(
+                [r for r in ok if r["expected"].get("implicit_base_period_kind") is not None],
+                "implicit_base_period_kind",
+            ),
+            "implicit_base_n_accuracy": field_rate(implicit_n, "implicit_base_n"),
+            "abstain_reason_accuracy": field_rate(abstains, "reason"),
+            "temporal_production_candidate": provider_failures == 0 and exact == len(ok),
+        },
+        "records": records,
+    }
+
+
 def _percentile(values: list[float], q: float) -> float | None:
     if not values:
         return None
@@ -384,6 +684,40 @@ def _metrics(
             repeat_ok.append(len(set(preds)) == 1)
 
     tr = [r for r in evaluable if "tr" in case_by_id[r["case_id"]].get("taxonomy", [])]
+    model_needed = [
+        r for r in evaluable
+        if track != "J1S" or _j1s_route_bucket(case_by_id[r["case_id"]]) == "MODEL_NEEDED"
+    ]
+    model_needed_tr = [
+        r for r in model_needed
+        if "tr" in case_by_id[r["case_id"]].get("taxonomy", [])
+    ]
+    deterministic_controls = [
+        r for r in evaluable
+        if track == "J1S" and _j1s_route_bucket(case_by_id[r["case_id"]]) == "DETERMINISTIC_BYPASS"
+    ]
+    sensitive_controls = [
+        r for r in evaluable
+        if track == "J1S" and _j1s_route_bucket(case_by_id[r["case_id"]]) == "SENSITIVE_EXACT_ONLY"
+    ]
+    retrieval_miss = [
+        r for r in evaluable
+        if track == "J1S" and _j1s_route_bucket(case_by_id[r["case_id"]]) == "RETRIEVAL_MISS"
+    ]
+    ambiguity_cases = [
+        r for r in model_needed
+        if {"true_ambiguity", "multiple_plausible"}.intersection(
+            set(case_by_id[r["case_id"]].get("taxonomy", []))
+        )
+    ]
+    no_match_cases = [
+        r for r in model_needed
+        if "no_match" in case_by_id[r["case_id"]].get("taxonomy", [])
+    ]
+    high_cardinality = [
+        r for r in model_needed
+        if "high_cardinality" in case_by_id[r["case_id"]].get("taxonomy", [])
+    ]
     latencies = [float(r["latency_s"]) for r in records if r["status"] == "OK"]
     costs = [float(r["cost"]) for r in records if r.get("cost") is not None]
 
@@ -391,9 +725,50 @@ def _metrics(
         "case_count": len(cases),
         "evaluable_case_count": len(evaluable),
         "provider_failure_count": len(failures),
-        "accuracy": (
+        "all_cases_accuracy": (
             sum(bool(r["correct"]) for r in evaluable) / len(evaluable)
             if evaluable else None
+        ),
+        "model_needed_accuracy": (
+            sum(bool(r["correct"]) for r in model_needed) / len(model_needed)
+            if model_needed else None
+        ),
+        "model_needed_turkish_accuracy": (
+            sum(bool(r["correct"]) for r in model_needed_tr) / len(model_needed_tr)
+            if model_needed_tr else None
+        ),
+        "deterministic_bypass_controls": {
+            "count": len(deterministic_controls),
+            "accuracy": (
+                sum(bool(r["correct"]) for r in deterministic_controls) / len(deterministic_controls)
+                if deterministic_controls else None
+            ),
+        },
+        "sensitive_exact_only_controls": {
+            "count": len(sensitive_controls),
+            "accuracy": (
+                sum(bool(r["correct"]) for r in sensitive_controls) / len(sensitive_controls)
+                if sensitive_controls else None
+            ),
+        },
+        "retrieval_miss_behavior": {
+            "count": len(retrieval_miss),
+            "abstain_rate": (
+                sum(r["choice"] == "ABSTAIN" for r in retrieval_miss) / len(retrieval_miss)
+                if retrieval_miss else None
+            ),
+        },
+        "ambiguity_abstain_accuracy": (
+            sum(r["choice"] == "ABSTAIN" for r in ambiguity_cases) / len(ambiguity_cases)
+            if ambiguity_cases else None
+        ),
+        "no_match_abstain_accuracy": (
+            sum(r["choice"] == "ABSTAIN" for r in no_match_cases) / len(no_match_cases)
+            if no_match_cases else None
+        ),
+        "high_cardinality_accuracy": (
+            sum(bool(r["correct"]) for r in high_cardinality) / len(high_cardinality)
+            if high_cardinality else None
         ),
         "abstain_precision": (
             abstain_tp / len(predicted_abstain) if predicted_abstain else 1.0
@@ -408,7 +783,7 @@ def _metrics(
             for r in evaluable
         ),
         "choice_escape": sum(bool(r.get("choice_escape")) for r in records),
-        "turkish_accuracy": (
+        "turkish_accuracy_all_cases_diagnostic": (
             sum(bool(r["correct"]) for r in tr) / len(tr) if tr else 1.0
         ),
         "metamorphic_consistency": (
@@ -446,6 +821,10 @@ def run(
     freeze = _load(FREEZE)
     document = _load(J1S if track == "J1S" else J1T)
     cases = list(document["cases"])
+    if model == CONDITIONAL_MODEL and os.getenv("DIMA_J1_ALLOW_CONDITIONAL_TERRA") != "1":
+        raise SystemExit(
+            "Conditional Terra stage is closed; explicit consultation/authorization is required"
+        )
     if case_ids:
         selected = set(case_ids)
         cases = [case for case in cases if case["id"] in selected]
@@ -453,6 +832,9 @@ def run(
         selected_id = next(c["id"] for c in cases if c["expected"] != "ABSTAIN")
         abstain_id = next(c["id"] for c in cases if c["expected"] == "ABSTAIN")
         cases = [c for c in cases if c["id"] in {selected_id, abstain_id}]
+    elif model == REFERENCE_MODEL:
+        subset = set(freeze["reference_ceiling_subset"][f"{track.lower()}_ids"])
+        cases = [c for c in cases if c["id"] in subset]
     if not cases:
         raise SystemExit("No J1 cases selected")
 
@@ -502,6 +884,12 @@ def run(
         "kind": "dima_v2_day6_5_j1_benchmark",
         "track": track,
         "model": model,
+        "model_role": (
+            "REFERENCE_CEILING" if model == REFERENCE_MODEL
+            else "CONDITIONAL_SECOND_STAGE" if model == CONDITIONAL_MODEL
+            else "PRIMARY_PEER"
+        ),
+        "reasoning_policy": _reasoning_policy(model),
         "corpus_version": document["version"],
         "freeze_version": freeze["version"],
         "frozen_before_any_benchmark_result": freeze["frozen_before_any_benchmark_result"],
@@ -522,6 +910,7 @@ def run(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--track", choices=["J1S", "J1T"], required=True)
+    parser.add_argument("--mode", choices=["choice", "contract-fidelity"], default="choice")
     parser.add_argument("--model", choices=MODELS, required=True)
     parser.add_argument("--case-id", action="append", default=[])
     parser.add_argument("--smoke", action="store_true")
@@ -529,16 +918,44 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
-    payload = run(
-        track=args.track,
-        model=args.model,
-        case_ids=args.case_id,
-        smoke=args.smoke,
-        timeout_s=args.timeout,
-    )
+    if args.mode == "contract-fidelity":
+        if args.track != "J1T":
+            raise SystemExit("contract-fidelity mode is J1T-only")
+        freeze = _load(FREEZE)
+        document = _load(J1T)
+        cases = list(document["cases"])
+        if args.case_id:
+            selected = set(args.case_id)
+            cases = [case for case in cases if case["id"] in selected]
+        elif args.smoke:
+            cases = [
+                next(c for c in cases if c["expected"] != "ABSTAIN"),
+                next(c for c in cases if c["expected"] == "ABSTAIN"),
+            ]
+        elif args.model == REFERENCE_MODEL:
+            subset = set(freeze["reference_ceiling_subset"]["j1t_ids"])
+            cases = [case for case in cases if case["id"] in subset]
+        if args.model == CONDITIONAL_MODEL and os.getenv("DIMA_J1_ALLOW_CONDITIONAL_TERRA") != "1":
+            raise SystemExit(
+                "Conditional Terra stage is closed; explicit consultation/authorization is required"
+            )
+        payload = run_temporal_contract_fidelity(
+            model=args.model, cases=cases, timeout_s=args.timeout
+        )
+    else:
+        payload = run(
+            track=args.track,
+            model=args.model,
+            case_ids=args.case_id,
+            smoke=args.smoke,
+            timeout_s=args.timeout,
+        )
     output = args.output or (
         REPORTS
-        / f"v2_day6_5_{args.track.lower()}_{args.model.replace('/', '__').replace('.', '_')}.json"
+        / (
+            f"v2_day6_5_{args.track.lower()}_{args.mode.replace('-', '_')}_"
+            f"{args.model.replace('/', '__').replace('.', '_')}.json"
+        )
     )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(

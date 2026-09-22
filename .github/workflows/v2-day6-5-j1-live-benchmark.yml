@@ -3,25 +3,20 @@ name: v2-day6-5-j1-live-benchmark
 "on":
   workflow_dispatch:
     inputs:
-      track:
-        description: "J1S or J1T"
+      model_set:
+        description: "PRIMARY peer set or one explicitly scoped model"
         required: true
         type: choice
+        default: PRIMARY
         options:
-          - BOTH
-          - J1S
-          - J1T
-      model:
-        description: "Pinned benchmark challenger"
-        required: true
-        type: choice
-        options:
-          - ALL
+          - PRIMARY
           - google/gemini-2.5-flash-lite
           - typesafe/jev-1.13
-          - openai/gpt-5.6-sol
+          - openai/gpt-5.6-luna
+          - REFERENCE_CEILING_SOL
+          - CONDITIONAL_TERRA
       smoke:
-        description: "2-case transport smoke instead of frozen full track"
+        description: "2-case transport smoke instead of frozen full scope"
         required: true
         type: boolean
         default: true
@@ -30,7 +25,7 @@ jobs:
   live-benchmark:
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       DIMA_VQR_EMBEDDER: "off"
@@ -46,41 +41,53 @@ jobs:
       - name: Install backend eval dependencies
         working-directory: backend
         run: pip install -e ".[dev]"
-      - name: Verify frozen J1 contract first
+      - name: Verify corrected frozen J1 contract first
         working-directory: backend
         run: pytest -q tests/test_v2_day6_5_j1_benchmark.py
-      - name: Run selected live benchmark
+      - name: Run corrected J1 benchmark
         working-directory: backend
         shell: bash
         run: |
-          if [[ "${{ inputs.track }}" == "BOTH" ]]; then
-            tracks=(J1S J1T)
-          else
-            tracks=("${{ inputs.track }}")
-          fi
+          set -euo pipefail
 
-          if [[ "${{ inputs.model }}" == "ALL" ]]; then
-            models=(
-              "google/gemini-2.5-flash-lite"
-              "typesafe/jev-1.13"
-              "openai/gpt-5.6-sol"
-            )
-          else
-            models=("${{ inputs.model }}")
-          fi
+          case "${{ inputs.model_set }}" in
+            PRIMARY)
+              models=(
+                "google/gemini-2.5-flash-lite"
+                "typesafe/jev-1.13"
+                "openai/gpt-5.6-luna"
+              )
+              ;;
+            REFERENCE_CEILING_SOL)
+              models=("openai/gpt-5.6-sol")
+              ;;
+            CONDITIONAL_TERRA)
+              echo "::error::Terra is a consult-gated second stage. Do not dispatch this option before user approval."
+              exit 3
+              ;;
+            *)
+              models=("${{ inputs.model_set }}")
+              ;;
+          esac
 
-          for track in "${tracks[@]}"; do
-            for model in "${models[@]}"; do
-              args=(--track "$track" --model "$model")
+          for model in "${models[@]}"; do
+            for track in J1S J1T; do
+              args=(--track "$track" --mode choice --model "$model")
               if [[ "${{ inputs.smoke }}" == "true" ]]; then
                 args+=(--smoke)
               fi
               python lab/v2_day6_5_j1_benchmark.py "${args[@]}"
             done
+
+            fidelity=(--track J1T --mode contract-fidelity --model "$model")
+            if [[ "${{ inputs.smoke }}" == "true" ]]; then
+              fidelity+=(--smoke)
+            fi
+            python lab/v2_day6_5_j1_benchmark.py "${fidelity[@]}"
           done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: j1-${{ inputs.track }}-${{ inputs.model }}-${{ github.run_id }}
+          name: j1-corrected-${{ inputs.model_set }}-${{ github.run_id }}
           path: backend/lab/reports/v2_day6_5_j1*.json
           retention-days: 90

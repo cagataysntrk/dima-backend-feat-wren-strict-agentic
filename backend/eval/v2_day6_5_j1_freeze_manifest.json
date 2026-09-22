@@ -1,5 +1,5 @@
 {
-  "version": "d65-j1-freeze-v1",
+  "version": "d65-j1-freeze-v2",
   "frozen_before_any_benchmark_result": true,
   "checkpoint_sha": "f2b246a7f186705f8ddd98a61e60d950f606d326",
   "corpus_commits": {
@@ -17,7 +17,7 @@
   "challengers": [
     "google/gemini-2.5-flash-lite",
     "typesafe/jev-1.13",
-    "openai/gpt-5.6-sol"
+    "openai/gpt-5.6-luna"
   ],
   "jev_transport": {
     "endpoint": "https://openrouter.ai/api/alpha/decisions",
@@ -134,5 +134,84 @@
     "legacy SemanticResolver fallback",
     "product semantic/temporal/authority code change",
     "Validation50/Hidden50 material"
-  ]
+  ],
+  "amendment": {
+    "reason": "PRE_RESULT_CHALLENGER_ROLE_CORRECTION",
+    "amended_before_corrected_benchmark_results": true,
+    "supersedes": "d65-j1-freeze-v1",
+    "invalid_authority_runs": [
+      {
+        "run_id": 35704627396,
+        "reason": "started with superseded peer topology Gemini/Jev/Sol; results must never enter J1 decision authority"
+      }
+    ],
+    "corpus_changed": false
+  },
+  "model_roles": {
+    "primary_peer_set": [
+      "google/gemini-2.5-flash-lite",
+      "typesafe/jev-1.13",
+      "openai/gpt-5.6-luna"
+    ],
+    "reference_ceiling": "openai/gpt-5.6-sol",
+    "conditional_second_stage": "openai/gpt-5.6-terra"
+  },
+  "reference_ceiling_subset": {
+    "j1s_ids": [
+      "j1s-006",
+      "j1s-013",
+      "j1s-017",
+      "j1s-019",
+      "j1s-021",
+      "j1s-031",
+      "j1s-033",
+      "j1s-035"
+    ],
+    "j1t_ids": [
+      "j1t-001",
+      "j1t-013",
+      "j1t-020",
+      "j1t-022",
+      "j1t-024",
+      "j1t-027",
+      "j1t-028",
+      "j1t-030"
+    ]
+  },
+  "reasoning_fairness": {
+    "google/gemini-2.5-flash-lite": "reasoning.enabled=false",
+    "typesafe/jev-1.13": "native Decisions API; no chat reasoning parameter",
+    "openai/gpt-5.6-luna": "reasoning.enabled=false",
+    "openai/gpt-5.6-sol": "REFERENCE_CEILING only; reasoning.enabled=true; excluded from peer latency/cost ranking",
+    "openai/gpt-5.6-terra": "CONDITIONAL only after consultation; reasoning.enabled=false"
+  },
+  "j1t_contract_fidelity": {
+    "required_fields": [
+      "decision",
+      "period_kind",
+      "comparison_kind",
+      "n",
+      "implicit_base_period_kind",
+      "implicit_base_n",
+      "reason"
+    ],
+    "jev_native_primitives": [
+      "choice",
+      "noul",
+      "score"
+    ],
+    "dynamic_integer_native_output": false,
+    "status_if_dynamic_n_required": "TEMPORAL_INTEGRATION_LIMITATION",
+    "production_threshold_activated": false
+  },
+  "valid_result_policy": {
+    "required_freeze_version": "d65-j1-freeze-v2",
+    "primary_full_ranking_only": [
+      "google/gemini-2.5-flash-lite",
+      "typesafe/jev-1.13",
+      "openai/gpt-5.6-luna"
+    ],
+    "sol_not_peer": true,
+    "terra_requires_explicit_consultation": true
+  }
 }

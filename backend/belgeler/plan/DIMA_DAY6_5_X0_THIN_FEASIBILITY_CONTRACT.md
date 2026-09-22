@@ -1,10 +1,25 @@
 # DIMA DAY 6.5 — X0 THIN METABASE FEASIBILITY CONTRACT
 
 **Date:** 2026-09-22  
-**Status:** PREPARED / NOT EXECUTED  
+**Status:** PREPARED / BLOCKED BY D65-SI / NOT EXECUTED  
 **Entry authority:** D65-M0 receipt + pre-freeze decision gate  
 **Product integration:** FORBIDDEN  
 **Primary-substrate decision:** NOT AUTHORIZED
+
+## Precondition — D65-SI
+
+X0 may not execute until `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` is GREEN and the real
+Standard Wren sentinel proves:
+
+```text
+AcceptedStandardAuthority
+→ StandardProjection
+→ Wren
+→ QueryContract
+→ Evidence
+```
+
+A Research `AcceptedTurnContract` surrogate is not valid X0 input.
 
 ## Purpose
 
