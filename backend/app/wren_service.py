@@ -709,6 +709,9 @@ class WrenService:
         models = [
             {
                 "name": m.get("name"),
+                # Day7 CrossDomainJoinGate: row grain is existing Wren model truth.
+                # Expose it; do not infer grain from the model name or physical FK.
+                "primary_key": m.get("primaryKey") or m.get("primary_key"),
                 "columns": [
                     # `sensitivity` MANİFESTTEN TAŞINIR (Faz A1). Bu sözlük eskiden yalnız
                     # name+type kuruyordu; YAML'daki `sensitivity: person` beyanı burada
@@ -720,6 +723,8 @@ class WrenService:
                     # sorgusuna giremezler — `SELECT personel FROM partiler` binder hatası
                     # verir. Bayraklar düşürüldüğü için tüketiciler bunu ayırt edemiyordu.
                     {"name": c.get("name"), "type": c.get("type", ""),
+                     **({"is_primary_key": True}
+                        if (c.get("isPrimaryKey") or c.get("is_primary_key")) else {}),
                      **({"sensitivity": c["sensitivity"]} if c.get("sensitivity") else {}),
                      **({"is_calculated": True}
                         if (c.get("isCalculated") or c.get("is_calculated")) else {}),
