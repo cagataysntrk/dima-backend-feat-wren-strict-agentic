@@ -1,5 +1,32 @@
 # DIMA V2 — GELİŞTİRİCİ / AJAN ÇALIŞMA SÖZLEŞMESİ
 
+## POST-J1B CURRENT OVERRIDE — LUNA + M0E
+
+> Current continuation authority:
+> `belgeler/plan/DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`.
+>
+> J1B real-flow `35713785149` is accepted RED. Jev AS-IS semantic provider is rejected from the
+> current release critical path; Jev calibration/verifier work is POST-MVP.
+>
+> Next provider control is **Luna on the unchanged frozen J1B corpus**:
+> 20 semantic + 8 temporal real-flow scenarios, workers=1, no prompt/case/schema edits,
+> no fallback/cascade/threshold. Only a failed Luna role may use Sol REFERENCE_CEILING on the
+> exact same frozen cases. If Sol also has P0, STOP/CONSULT.
+>
+> Parallel docs/research gate = `D65-M0E`:
+> `belgeler/plan/DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md`.
+> This is capability exhaustion/classification, not an implementation spree.
+>
+> Wren semantic backbone = RETAIN DEFAULT. X0 tests execution/query-lifecycle residual value,
+> not MDL/cube removal. Wren semantic removal is separate consultation.
+>
+> Sequence:
+> `Luna controls → optional failed-role Sol → provider P0=0 + M0E → D65-SI → real Standard Wren
+> sentinel → M0E final cross-check → X0 → consult if full D65-X is warranted`.
+>
+> Production /ask-v2 OFF. DEV80 end-only and forbidden now.
+
+
 > **CURRENT TIMING PRECEDENCE:**
 > `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` controls current J1/M0/X0 work.
 > `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` controls Day7–15 → final rehearsal → final freeze → DEV80/Validation/Hidden.

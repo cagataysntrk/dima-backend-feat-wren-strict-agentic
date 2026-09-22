@@ -236,3 +236,84 @@ During X0:
 
 Therefore a promising X0 can justify a **full execution-substrate/query-lifecycle comparison**,
 not automatic Wren semantic-layer removal.
+
+
+---
+
+## Residual-value / runtime-necessity override
+
+X0's main question is now:
+
+> Does Metabase runtime provide enough residual engineering value on top of Dima + retained Wren
+> semantics to justify a permanent runtime dependency?
+
+Primary arms:
+
+```text
+ARM A:
+Dima + SAME retained Wren semantics
++ Wren execution/query lifecycle
++ accepted Dima-native Metabase-derived invariants
+
+ARM B:
+Dima + SAME retained Wren semantics
++ thin Metabase Agent API construct/validate/execute lifecycle
++ SAME Dima authority/evidence
+```
+
+### First-class semantic-duplication metrics
+
+```text
+manual_dual_semantic_definitions
+semantic_sync_mechanisms_required
+semantic_drift_risk
+duplicate metric definitions
+duplicate relationship definitions
+duplicate grain/additivity definitions
+duplicate time semantics
+```
+
+Target:
+`manual dual semantic maintenance = 0`.
+
+### Residual engineering-value metrics
+
+Existing correctness/security metrics remain. Add:
+
+```text
+custom_code_avoided
+custom_components_avoided
+maintenance_surface_delta
+adapter_LOC / conceptual complexity
+metadata_sync_burden
+
+new_deployable_services
+new_persistent_state_DB
+steady_RAM
+cold_start
+CPU_basic
+network_overhead
+upgrade_migration_surface
+failure_blast_radius
+
+new_DB_onboarding_burden
+driver_connector_leverage
+time_to_add_query_lifecycle_capability
+```
+
+### METABASE_RUNTIME_NECESSITY_GATE
+
+X0 returns one of:
+
+```text
+METABASE_RUNTIME_NECESSARY = NO | FULL_X_REQUIRED
+```
+
+`NO`:
+production Metabase runtime/Agent API rejected; Metabase remains reference/oracle/pattern source.
+
+`FULL_X_REQUIRED`:
+P0=0 plus material correctness/repair/permission/provenance/custom-code/product-runtime leverage;
+STOP/CONSULT before full D65-X.
+
+No single percentage/latency threshold determines this decision.

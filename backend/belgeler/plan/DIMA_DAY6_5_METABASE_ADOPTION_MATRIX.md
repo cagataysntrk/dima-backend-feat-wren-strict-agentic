@@ -833,3 +833,44 @@ During X0:
 
 Therefore a promising X0 can justify a **full execution-substrate/query-lifecycle comparison**,
 not automatic Wren semantic-layer removal.
+
+
+---
+
+## D65-M0E CAPABILITY EXHAUSTION / BUILD-vs-BUY OVERRIDE
+
+Current M0 is not closed merely because agent/API/MCP mechanisms were audited.
+M0 closes through:
+`DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md`.
+
+Source identity:
+
+```text
+pinned reference = 74216b30981d8310c4cf724d63ca282e2e63529d
+current master   = fff70175e0b5f82dc0eb267593c717c4a6130206
+delta            = 1 locale-only commit
+relevant drift   = none
+```
+
+Additional capability families to classify at subsystem level:
+`agent_lib`, `query_processor`, `lib`, `lib_be`, `lib_metric`,
+`query_permissions`, `permissions`, `api_scope`, `api_keys`, `search`,
+`metrics`, `models`, `model_persistence`, `cache`, `sync`, `driver`,
+`dashboards`, `collections`, `activity_feed`, `audit_app`, `embedding`.
+
+Allowed final dispositions:
+`DIMA_CORE_NATIVE | WREN_OWNS | METABASE_RUNTIME_CANDIDATE | PATTERN_ONLY |
+DEFER_PRODUCT | NOT_APPLICABLE | REJECT`.
+
+Every row additionally records native implementation cost, runtime dependency,
+authority/security impact, semantic duplication risk, operational dependency, license/API
+implication, required behavioral proof and timing.
+
+Exit:
+```text
+Dima-relevant unclassified mechanisms                         = 0
+PRE-X0 authority/security items without disposition            = 0
+PRE-X0 PATTERN_ONLY/DIMA_CORE_NATIVE items without owner       = 0
+WREN_OWNS items with duplicate Metabase semantic ownership     = 0
+METABASE_RUNTIME_CANDIDATE items without explicit X0 question  = 0
+```

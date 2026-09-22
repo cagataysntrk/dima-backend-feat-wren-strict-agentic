@@ -679,3 +679,79 @@ During X0:
 
 Therefore a promising X0 can justify a **full execution-substrate/query-lifecycle comparison**,
 not automatic Wren semantic-layer removal.
+
+
+---
+
+## POST-J1B CONSULTATION OVERRIDE — 2026-09-22
+
+This section overrides earlier J1B "promising/open/consult pending" status text.
+
+### Provider decision
+
+```text
+Jev AS-IS semantic provider = REJECT
+Jev temporal provider       = REJECT
+Jev verifier/calibration    = POST-MVP / DEFER
+
+Luna same-frozen semantic control = AUTHORIZED
+Luna same-frozen temporal control = AUTHORIZED
+
+If one Luna role fails:
+→ Sol REFERENCE_CEILING on that failed role only
+→ same frozen corpus
+→ no model shopping
+```
+
+No J1/J1B-derived confidence threshold.
+No hidden cascade/fallback.
+
+### M0 → M0E
+
+Current M0 completes through:
+`DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md`.
+
+M0E is classification/exhaustion, not implementation.
+Unclassified Dima-relevant Metabase mechanisms must reach zero before X0.
+
+### Wren semantic ownership
+
+```text
+Wren semantic backbone = RETAIN DEFAULT
+X0 Wren MDL/cube removal experiment = NO
+```
+
+Metabase can only challenge overlapping execution/query-lifecycle mechanisms in X0 while semantic
+meaning remains the same.
+
+### Current binding sequence
+
+```text
+Luna frozen controls
+↓
+if needed role-specific Sol ceiling
+↓
+chosen provider topology P0=0
+
++
+
+M0E exhaustion/build-vs-buy
+↓
+D65-SI
+↓
+real Standard Wren sentinel
+↓
+M0E final cross-check
+↓
+X0 residual-value/runtime-necessity experiment
+↓
+not promising → Wren execution stays → Day7–15
+promising     → STOP / CONSULT → full D65-X only after approval
+```
+
+### X0 decision question
+
+> Does Metabase runtime provide enough residual engineering value on top of Dima + retained Wren
+> semantics to justify a permanent runtime dependency?
+
+The decision is multi-dimensional; no single accuracy/latency percentage selects the winner.

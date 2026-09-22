@@ -1,4 +1,30 @@
 <!-- DIMA-V2-ACTIVE-OPERATION -->
+<!-- POST-J1B CURRENT CONTINUATION -->
+> ## CURRENT CONTINUATION — POST-J1B
+>
+> Read first:
+> 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
+> 2. `belgeler/plan/DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`
+> 3. `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`
+> 4. `belgeler/plan/DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md`
+> 5. `belgeler/plan/DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md`
+> 6. `belgeler/plan/DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md`
+> 7. `belgeler/plan/DIMA_DAY6_5_X0_THIN_FEASIBILITY_CONTRACT.md`
+>
+> Binding decision: Jev AS-IS semantic = REJECT; verifier/calibration = POST-MVP.
+> Run Luna on unchanged frozen J1B semantic+temporal cases. Failed role only → Sol ceiling.
+> No threshold/fallback/cascade/model shopping.
+>
+> In parallel finish M0 as D65-M0E classification/exhaustion. Do not rebuild generic Metabase
+> mechanisms merely to be native. Wren MDL/models/relationships/views/cubes/knowledge semantic
+> backbone is default-retained.
+>
+> D65-SI only after provider P0=0. X0 only after SI + real Wren Standard sentinel + M0E exit.
+> X0 asks residual runtime value above Dima + retained Wren semantics; it is not Wren-semantic removal.
+>
+> STOP/CONSULT on Sol P0, new verifier/calibration architecture, threshold/cascade, authority redesign,
+> full D65-X, Wren semantic removal, Metabase production dependency, FINAL FREEZE, DEV80, pilot.
+
 # 🔴🔴 AKTİF OPERASYON — DIMA V2 DAY 6.5 ENGINEERING CLOSURE
 
 > **Bu branch'te eski “aktif operasyon” bloklarının üstünde BU BLOK okunur.**

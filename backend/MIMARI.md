@@ -1,5 +1,47 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-POST-J1B-LUNA-M0E-OVERRIDE -->
+> ## 🔴 POST-J1B CURRENT ARCHITECTURE OVERRIDE — 2026-09-22
+>
+> Current handoff:
+> `belgeler/plan/DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`.
+>
+> J1B real-flow evidence rejects Jev AS-IS from the current semantic critical path:
+> `silent_semantic_wrong=8/20`, including high-confidence wrongs.
+> Do not derive a confidence threshold from J1/J1B.
+>
+> Current provider-control ladder:
+> ```text
+> Luna semantic → same frozen 20
+> Luna temporal → same frozen 8
+> failed role only → Sol REFERENCE_CEILING same frozen cases
+> Sol P0 → STOP / architecture consultation
+> ```
+>
+> Parallel M0 completion gate = D65-M0E capability exhaustion/build-vs-buy.
+>
+> Ownership default before X0:
+> ```text
+> DIMA = cognition / accepted authority / uncertainty / research / evidence /
+>        root-cause / recommendation / QueryContract trust
+>
+> WREN = retained semantic backbone:
+>        MDL / models / relationships / views / cubes / knowledge / semantic compilation
+>
+> METABASE = candidate mature runtime for overlapping generic BI/query lifecycle
+>            + architecture/reference source + future workspace/product candidate
+> ```
+>
+> X0 is NOT a Wren semantic-removal experiment.
+> It compares residual execution/query-lifecycle value under the SAME retained Wren semantic meaning
+> and SAME Dima authority/evidence.
+>
+> Current sequence:
+> `provider P0=0 + M0E → D65-SI → real Standard Wren sentinel → M0E final cross-check → X0`.
+>
+> Production /ask-v2 remains OFF. DEV80 remains final/end-only.
+
+
 <!-- DIMA-V2-FINAL-INTEGRATED-RELEASE-GATE -->
 > ## 🔴 FINAL INTEGRATED RELEASE GATE — 2026-09-22
 >

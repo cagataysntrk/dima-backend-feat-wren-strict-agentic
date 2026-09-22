@@ -102,3 +102,23 @@ D65-SI closes only when:
 - production `/ask-v2` remains OFF.
 
 Only then may D65-X0 execute.
+
+
+---
+
+## Post-J1B entry precondition
+
+D65-SI does not start from the Jev/Terra RED topology.
+
+Entry requires:
+```text
+chosen semantic provider P0=0
+chosen temporal provider P0=0
+fallback/cascade/threshold = 0
+```
+
+Current authorized path:
+Luna on the unchanged frozen J1B real-flow corpus; failed role only may use Sol reference ceiling.
+
+M0E capability classification runs in parallel and must be completed before X0.
+D65-SI closure should not introduce duplicate ownership that contradicts M0E/WREN_OWNS decisions.

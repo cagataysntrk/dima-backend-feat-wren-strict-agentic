@@ -1,3 +1,9 @@
+> **SUPERSEDED FOR CURRENT CONTINUATION — 2026-09-22**
+>
+> This file is preserved as historical pre-J1 handoff. For current continuation read:
+> `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`.
+> Current state: Jev AS-IS rejected; Luna same-frozen controls + D65-M0E active; D65-SI/X0 blocked until current gates pass.
+
 # DIMA DAY 6.5 — HANDOFF: J1S / J1T + M0 / X0 READY
 
 **Date:** 2026-09-22  

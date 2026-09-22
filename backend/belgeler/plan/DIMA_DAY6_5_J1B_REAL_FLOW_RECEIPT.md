@@ -156,3 +156,30 @@ Next action requires consultation because the predefined gate was reached:
   corpus (not J1/J1B data) if Jev is still worth pursuing.
 
 Any confidence threshold derived from this J1/J1B set is forbidden.
+
+
+## Consultation resolution
+
+The RED receipt is accepted without any named-case patch.
+
+Binding release-path decision:
+
+```text
+Jev universal provider         = REJECT
+Jev temporal provider          = REJECT
+Jev semantic provider AS-IS    = REJECT
+Jev calibration/verifier       = DEFER / POST-MVP optimization candidate
+```
+
+No confidence threshold is derived from this corpus.
+
+Authorized control ladder:
+
+```text
+1. Luna semantic → same frozen 20
+2. Luna temporal → same frozen 8
+3. only failed Luna role may run Sol REFERENCE_CEILING on same frozen cases
+4. if Sol also has P0 → STOP / CONSULT architecture/uncertainty
+```
+
+D65-SI remains blocked until the selected engineering provider topology has P0=0.

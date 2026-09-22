@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **DAY 6.5 J1B REAL-FLOW RED — CONSULTATION REQUIRED; D65-SI/X0 BLOCKED; DEV80 FORBIDDEN**  
-**Kod fazı:** Terra J1T conditional `35710080143` GREEN ve J1B provider-contract `35711431142=57/57` GREEN idi; ancak fresh family real-flow `35713785149` RED: Jev semantic `12/20`, `silent_wrong=8`, `unsafe_ambiguity_pick=8`; Terra temporal `6/8`, provider failure=0. `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` authority receipt. Product `/ask-v2` OFF; D65-SI, Wren Standard sentinel ve X0 BLOCKED pending consultation. Wren MDL/cube semantic backbone retention is explicitly a separate architecture decision from X0 execution/query-lifecycle feasibility.  
+**Durum:** **DAY 6.5 POST-J1B CONSULTATION RESOLVED — LUNA FROZEN CONTROLS + M0E ACTIVE; D65-SI/X0 BLOCKED; DEV80 FORBIDDEN**  
+**Kod fazı:** J1B fresh real-flow `35713785149` RED accepted: Jev AS-IS semantic role REJECT; Jev calibration/verifier DEFER/POST-MVP. Authorized next control is Luna on the unchanged frozen J1B 20 semantic + 8 temporal real-flow corpus; only a failed role may escalate to Sol reference ceiling. M0 is extended to D65-M0E capability-exhaustion/build-vs-buy classification. Wren MDL/cube semantic backbone default RETAIN. D65-SI starts only after provider topology P0=0; X0 only after SI + real Standard Wren sentinel + M0E exit. Production `/ask-v2` OFF.  
 
 ---
 
@@ -27,7 +27,10 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — runtime-kernel, Standard terminology ve substrate/reference authority.
 - `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **current J1S/J1T + M0/X0 decision authority**.
 - `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
-- `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.\n- `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` — **current J1B RED/consultation receipt**.
+- `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.
+- `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` — J1B real-flow evidence/RED receipt.
+- `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md` — **current continuation handoff / provider ladder / stop points**.
+- `DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md` — **current Metabase exhaustion/build-vs-buy completion gate**.
 - `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; J1 decision sonrası, X0 öncesi mandatory Standard integration gate**.
 - `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
 - `DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` — Metabase Cloud/self-host/bundled-service/source-port deployment decision gate.
@@ -147,6 +150,57 @@ provider failure             0
 Mandatory consultation gate is active.
 D65-SI, real Standard Wren sentinel and X0 execution may not start until the J1B semantic /
 temporal provider decision is explicitly resolved.
+
+---
+
+## 0E. POST-J1B CONSULTATION RESOLVED — LUNA + M0E
+
+Binding decision:
+
+```text
+Jev universal provider         = REJECT
+Jev temporal provider          = REJECT
+Jev semantic provider AS-IS    = REJECT
+Jev calibration/verifier       = DEFER / POST-MVP
+
+next semantic control          = Luna / same frozen 20
+next temporal control          = Luna / same frozen 8
+role-specific fallback         = Sol REFERENCE_CEILING only if Luna role fails
+Gemini automatic rerun         = NO
+Terra retuning                 = NO
+threshold/fallback/cascade     = NONE
+```
+
+Acceptance for chosen engineering provider topology:
+
+```text
+silent_semantic_wrong       = 0
+unsafe_ambiguity_auto_pick  = 0
+candidate_escape            = 0
+cross_tenant_leak           = 0
+provider_failure            = 0
+real_flow_temporal_wrong    = 0
+invalid_typed_contract      = 0
+```
+
+Parallel work:
+`D65-M0E capability exhaustion + build-vs-buy classification`.
+
+Sequence:
+```text
+Luna frozen controls
+→ if needed failed-role Sol ceiling
+→ provider topology P0=0
++
+M0E
+→ D65-SI
+→ real Standard Wren sentinel
+→ M0E final cross-check
+→ X0 residual-value/runtime-necessity
+```
+
+Wren semantic backbone:
+`RETAIN by default`; removal is a separate consultation.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE
