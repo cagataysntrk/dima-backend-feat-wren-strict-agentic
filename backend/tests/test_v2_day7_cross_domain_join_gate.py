@@ -35,6 +35,7 @@ def _request(
     source_grain="order_id",
     target_grain="customer_id",
     output_grain="order_id",
+    target_analysis_grain=None,
     path=(),
     aggregation=JoinAggregation.PRESERVE_SOURCE_GRAIN,
     time=CompatibilityState.COMPATIBLE,
@@ -45,6 +46,7 @@ def _request(
         target_model=target,
         source_grain=source_grain,
         target_grain=target_grain,
+        target_analysis_grain=target_analysis_grain,
         requested_output_grain=output_grain,
         relationship_path=tuple(path),
         aggregation=aggregation,
@@ -229,3 +231,49 @@ def test_reverse_one_to_many_direction_is_not_silently_inverted():
     )
     assert decision.allowed is False
     assert decision.code == JoinGateCode.INVALID_WREN_PATH
+
+
+
+def test_governed_target_attribute_grain_is_allowed_only_with_explicit_aggregation():
+    schema = {"relationships": [_rel("orders_customer", "orders", "customers")]}
+    decision = CrossDomainJoinGate().decide(
+        schema=schema,
+        request=_request(
+            output_grain="segment",
+            target_analysis_grain="segment",
+            aggregation=JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE,
+            time=CompatibilityState.NOT_APPLICABLE,
+            unit=CompatibilityState.NOT_APPLICABLE,
+        ),
+    )
+    assert decision.allowed is True
+    assert decision.code == JoinGateCode.ALLOW
+    assert decision.required_aggregation == JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
+
+
+def test_arbitrary_target_attribute_without_governed_analysis_grain_is_denied():
+    schema = {"relationships": [_rel("orders_customer", "orders", "customers")]}
+    decision = CrossDomainJoinGate().decide(
+        schema=schema,
+        request=_request(
+            output_grain="segment",
+            aggregation=JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE,
+        ),
+    )
+    assert decision.allowed is False
+    assert decision.code == JoinGateCode.GRAIN_MISMATCH
+
+
+def test_governed_target_attribute_requires_exact_grouping_aggregation():
+    schema = {"relationships": [_rel("orders_customer", "orders", "customers")]}
+    decision = CrossDomainJoinGate().decide(
+        schema=schema,
+        request=_request(
+            output_grain="segment",
+            target_analysis_grain="segment",
+            aggregation=JoinAggregation.PRE_AGGREGATE_TO_TARGET,
+        ),
+    )
+    assert decision.allowed is False
+    assert decision.code == JoinGateCode.AGGREGATION_REQUIRED
+    assert decision.required_aggregation == JoinAggregation.GROUP_BY_TARGET_ATTRIBUTE
