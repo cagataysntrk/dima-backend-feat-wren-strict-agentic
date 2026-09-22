@@ -1,3 +1,10 @@
+> **CURRENT RELEASE DISPOSITION — X0 NOT RUN / NOT REQUIRED**
+>
+> Bridge preflight terminal = `HEAVY_SEMANTIC_DUPLICATION`.
+> Metabase structured analytical execution is rejected for the current release before X0 runtime.
+> Wren semantics + analytical execution remain primary. This is a scoped architecture decision, not
+> a permanent rejection of Metabase. See `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` and the final Day6.5 handoff.
+
 # DIMA DAY 6.5 — X0 THIN METABASE FEASIBILITY CONTRACT
 
 **Date:** 2026-09-22  

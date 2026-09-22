@@ -3,8 +3,8 @@
 **Branch:** `feat/ask-v2-mvp`  
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
-**Durum:** **D65-SI SEALED + M0E-DEEP-DELTA SEALED — X0-BRIDGE-PREFLIGHT ACTIVE; FIRST RUN RED CLASSIFIED AS LOCAL EXECUTION-REFactor REGRESSION; METABASE RUNTIME OFF; DEV80 FORBIDDEN**  
-**Kod fazı:** Bridge authority/docs activated at `875c4464...`; canonical `StandardProjection → AnalyticsIR` branch point extracted at `1a4d4fde...`; real sealed bridge prototype committed at `6560e576...`. First preflight run `35760654007` is NOT bridge architecture evidence: compile passed, 5 tests passed, but retained real Standard trust-plane failed with `NameError context_version` introduced by the extraction refactor. Receipt `D65-X0-BRIDGE-001` classifies this as single-owner implementation regression. Authorized next action = replace stale execute-local references with sealed `ir.context_version`, then exact provider-free rerun. Metabase runtime remains OFF.  
+**Durum:** **DAY 6.5 CLOSED — D65-SI SEALED; PROVIDER TOPOLOGY SEALED; M0E-DEEP-DELTA SEALED; X0-BRIDGE SUCCESSFUL NEGATIVE; WREN PRIMARY; NEXT=P10/DAY7; DEV80/50/50 FORBIDDEN**  
+**Kod fazı:** Final Day6.5 product checkpoint `dd5c16bbe444b6d9183faea9e9937be11260f394`. D65-SI FINAL GREEN/SEALED; engineering provider topology `Semantic=Luna / Temporal=Sol / Research=Sol`; M0E-DEEP-DELTA FINAL GREEN/SEALED. Bridge preflight CI `35761526816=SUCCESS` produced terminal `HEAVY_SEMANTIC_DUPLICATION`: 7/8 representative families thin/lossless, but computed semi-additive `cari.bakiye = SUM(borc - alacak)` requires metric-formula + grain/additivity reconstruction. Therefore `Metabase structured execution = REJECTED CURRENT RELEASE`, `X0-REST = NOT RUN / NOT REQUIRED`, `Wren semantics + analytical execution = PRIMARY`, Metabase production runtime dependency OFF. Day6.5 is CLOSED. Next canonical ticket = P10 / DAY7 Result-Aware Research Loop. `/ask-v2` remains OFF; front-door ownership stays Day10. DEV80/Validation50/Hidden50 remain end-only and forbidden now.  
 
 ---
 
@@ -36,7 +36,8 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; FINAL GREEN / SEALED**.
 - `DIMA_DAY6_5_SI_FINAL_SEAL.md` — **final SI evidence + causal chain + anti-patch seal**.
 - `DIMA_FRONTDOOR_OWNERSHIP_CLOSURE.md` — **Day10 release blocker for authoritative /ask-v2 ownership**.
-- `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` — **mandatory bridge gate before Metabase runtime X0**.
+- `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` — **FINAL successful-negative bridge decision; X0 runtime not required**.
+- `DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md` — **CURRENT single authority for Day6.5 closure → Day7 handoff**.
 - `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`
 - `DIMA_DAY6_5_M0E_DEEP_DELTA_RECEIPT.md` — **append-only current deep-delta source/disposition receipt** — **reopened final Metabase exhaustion delta**.
 - `DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md` — **CURRENT continuation authority after analyst audit**.
@@ -359,6 +360,44 @@ Candidate seams:
 `A StandardProjection+handles | B resolved AnalyticsIR | C Wren-specific planned representation`.
 
 Do not start X0-REST until bridge preflight is GREEN.
+
+---
+
+## 0K. DAY6.5 FINAL CLOSURE — CURRENT AUTHORITY
+
+Single continuation authority:
+`DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+
+```text
+DAY 6.5                         CLOSED
+
+D65-SI                         FINAL GREEN / SEALED
+provider topology              SEALED ENGINEERING TOPOLOGY
+  Semantic                     Luna
+  Temporal                     Sol
+  Research                     Sol
+
+M0E-DEEP-DELTA                 FINAL GREEN / SEALED
+
+X0-BRIDGE-PREFLIGHT            FINAL / SUCCESSFUL NEGATIVE DECISION
+terminal                       HEAVY_SEMANTIC_DUPLICATION
+
+Metabase structured execution  REJECTED CURRENT RELEASE
+X0-REST                        NOT RUN / NOT REQUIRED
+Metabase production runtime    OFF
+
+Wren semantic backbone         PRIMARY / RETAINED
+Wren analytical execution      PRIMARY
+
+production /ask-v2             OFF
+next canonical ticket          P10 / DAY7 RESULT-AWARE RESEARCH LOOP
+
+DEV80 / Validation50 / Hidden50 FORBIDDEN
+```
+
+The Metabase rejection is scoped to:
+`retained Wren semantic truth → thin Metabase structured execution`
+for the current release. Workspace/product/reference tracks remain open.
 
 ---
 ## 1. NORTH STAR — TEK CÜMLE

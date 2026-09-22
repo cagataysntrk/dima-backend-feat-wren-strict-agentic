@@ -1,7 +1,41 @@
 # Dima — Mimari Referansı
 
-<!-- DIMA-V2-CURRENT-BRIDGE-ACTIVE -->
-> ## 🔴 CURRENT DAY6.5 AUTHORITY — BRIDGE PREFLIGHT
+<!-- DIMA-V2-DAY6_5-CLOSED-DAY7-CURRENT -->
+> ## 🔴 CURRENT ARCHITECTURE AUTHORITY — DAY6.5 CLOSED / DAY7 NEXT
+>
+> Single handoff:
+> `belgeler/plan/DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+>
+> ```text
+> DAY6.5                         CLOSED
+> D65-SI                        FINAL GREEN / SEALED
+> provider topology             Semantic Luna / Temporal Sol / Research Sol
+> M0E-DEEP-DELTA                FINAL GREEN / SEALED
+> bridge terminal               HEAVY_SEMANTIC_DUPLICATION
+> Metabase structured execution REJECTED CURRENT RELEASE
+> X0-REST                       NOT RUN / NOT REQUIRED
+> Wren semantics                RETAINED / PRIMARY
+> Wren analytical execution     PRIMARY
+> Metabase production runtime   OFF
+> next ticket                   P10 / DAY7 RESULT-AWARE RESEARCH LOOP
+> production /ask-v2            OFF
+> ```
+>
+> Ownership:
+> Dima = cognition/authority/Research/Evidence/trust/decision intelligence.
+> Wren = MDL/metrics/formulas/cubes/relationships/grain-additivity/business knowledge/execution.
+> Metabase = reference/security/query-lifecycle/async-pattern source + separate product/workspace candidate.
+>
+> The Metabase execution REJECT is scoped to the current release architecture
+> `retained Wren semantic truth → thin Metabase structured execution`.
+> It is not a universal/permanent rejection of Metabase.
+>
+> Do not reopen semantic discovery/SI/substrate work without new independent invalidating P0 evidence.
+> Day7 owns Research loop work. Front-door ownership remains Day10 release debt.
+
+
+<!-- DIMA-V2-CURRENT-BRIDGE-ACTIVE — SUPERSEDED/HISTORICAL -->
+> ## HISTORICAL — DAY6.5 BRIDGE PREFLIGHT
 >
 > HEAD `6d65600842731112f2362261a30660217cbde05d`.
 > D65-SI and M0E-DEEP-DELTA are FINAL GREEN/SEALED.

@@ -1,3 +1,9 @@
+> **SUPERSEDED / HISTORICAL — DAY6.5 FINAL CLOSURE COMPLETE**
+>
+> Current continuation authority is now:
+> `DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+> Do not treat the open SI/M0E/bridge states below as current.
+
 # DIMA DAY 6.5 — POST-ANALYST RECONCILED CURRENT HANDOFF
 
 **Date:** 2026-09-22  

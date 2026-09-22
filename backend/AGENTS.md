@@ -1,6 +1,35 @@
 # DIMA V2 — GELİŞTİRİCİ / AJAN ÇALIŞMA SÖZLEŞMESİ
 
-## CURRENT BRIDGE ACTIVE OVERRIDE
+## 🔴 CURRENT OPERATION — DAY7 / P10 RESULT-AWARE RESEARCH LOOP
+
+> **DAY6.5 CLOSED.**
+> Current single authority:
+> `belgeler/plan/DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+>
+> Final Day6.5 product checkpoint:
+> `dd5c16bbe444b6d9183faea9e9937be11260f394`.
+>
+> Closed:
+> `D65-SI=FINAL GREEN`,
+> provider topology `Semantic Luna / Temporal Sol / Research Sol`,
+> `M0E-DEEP-DELTA=FINAL GREEN`,
+> bridge terminal `HEAVY_SEMANTIC_DUPLICATION`.
+>
+> Current release execution decision:
+> `Wren semantics+analytical execution=PRIMARY`;
+> `Metabase structured execution=REJECTED CURRENT RELEASE`;
+> `X0-REST=NOT RUN/NOT REQUIRED`;
+> Metabase production runtime dependency OFF.
+>
+> **CURRENT TICKET = P10 / DAY7 RESULT-AWARE RESEARCH LOOP.**
+> Do not start Day8/9/10 work early.
+> Do not reopen Day6.5 semantic/substrate work without new independent invalidating P0.
+> Do not run DEV80/Validation50/Hidden50.
+>
+> Before Day7 code, read the final handoff and its Day7 carry-forward matrix.
+
+
+## SUPERSEDED / HISTORICAL — CURRENT BRIDGE ACTIVE OVERRIDE
 
 > HEAD: `6d65600842731112f2362261a30660217cbde05d`.
 > `D65-SI = FINAL GREEN/SEALED`.
@@ -20,7 +49,7 @@
 > ARCHITECTURE_CHANGE_REQUIRED → STOP/CONSULT.
 
 
-## POST-ANALYST CURRENT OVERRIDE
+## SUPERSEDED / HISTORICAL — POST-ANALYST CURRENT OVERRIDE
 
 > **M0E-DEEP-DELTA: FINAL GREEN / SEALED (25/25, exit counters zero).**
 > Current sole ticket = `D65-X0-BRIDGE-PREFLIGHT`.
@@ -55,7 +84,7 @@
 > DEV80/Validation50/Hidden50/FINAL FREEZE/pilot remain forbidden.
 
 
-## POST-J1B CURRENT OVERRIDE — LUNA + M0E
+## SUPERSEDED / HISTORICAL — POST-J1B CURRENT OVERRIDE — LUNA + M0E
 
 > **Provider topology gate: GREEN.**
 > Luna semantic `35716056419=20/20 P0=0`; Sol temporal exact-SHA `35716502261=8/8 P0=0`.
@@ -97,7 +126,7 @@
 > `belgeler/plan/DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` controls Cloud vs self-host/bundled-service/source-port decisions.
 > Historical run/sequence text below is audit history and cannot override these current authorities.
 >
-## DAY 6.5 RUNTIME-KERNEL / SUBSTRATE OVERRIDE — 2026-09-22
+## SUPERSEDED / HISTORICAL — DAY 6.5 RUNTIME-KERNEL / SUBSTRATE OVERRIDE — 2026-09-22
 
 > Active phase-local authority: `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`.
 >

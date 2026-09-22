@@ -1,10 +1,102 @@
 # DIMA DAY 6.5 — X0 BRIDGE PREFLIGHT
 
-**Status:** ACTIVE / CURRENT SOLE DAY6.5 TICKET / BLOCKS X0 RUNTIME  
+**Status:** **FINAL / SUCCESSFUL NEGATIVE DECISION — HEAVY_SEMANTIC_DUPLICATION**  
 **Date:** 2026-09-22  
-**Metabase runtime spin-up:** FORBIDDEN UNTIL PREFLIGHT GREEN  
-**Wren semantic backbone:** RETAIN  
+**Metabase runtime spin-up:** **NOT RUN / NOT REQUIRED FOR CURRENT RELEASE**  
+**Wren semantic backbone:** **RETAINED / PRIMARY**  
 **Dima accepted authority/evidence:** UNCHANGED
+
+## FINAL DECISION — SUCCESSFUL NEGATIVE PREFLIGHT
+
+Verified checkpoint / CI:
+
+```text
+tested product checkpoint
+= dd5c16bbe444b6d9183faea9e9937be11260f394
+
+bridge CI
+= 35761526816 SUCCESS
+
+runtime_started
+= false
+
+metabase_api_called
+= false
+
+real_wren_plans_compiled
+= true
+```
+
+Eight representative Standard families were evaluated from real sealed Dima/Wren artifacts.
+
+```text
+7 / 8 families
+= thin / lossless
+
+computed + semi-additive family
+= cari.bakiye
+= SUM(borc - alacak)
+
+bridge_lossless              = false
+metric_formula_duplication   = true
+grain_additivity_duplication = true
+unsupported semantic shape   = computed_metric_expression:bakiye
+
+terminal
+= HEAVY_SEMANTIC_DUPLICATION
+```
+
+Aggregate preflight safety result:
+
+```text
+manual semantic mappings          = 0
+unapproved implicit FK joins      = 0
+second semantic authority         = 0
+semantic handle remint            = 0
+raw-language reinterpretation     = 0
+Metabase label/name guessing      = 0
+
+duplicated semantic definitions   = 2
+unsupported semantic shapes       = 1
+```
+
+Architecture decision for this release:
+
+```text
+Wren semantic backbone            = RETAINED
+Wren analytical execution         = PRIMARY
+
+Metabase structured execution     = REJECTED CURRENT RELEASE
+Metabase Agent API prod dependency= NO
+X0-REST                            = NOT RUN / NOT REQUIRED
+```
+
+Scope of REJECT:
+
+> The architecture **retained Wren semantic truth → thin Metabase structured execution** is rejected
+> for this release because full fidelity for computed/semi-additive semantics requires formula/grain
+> reconstruction, which turns the bridge into a second semantic compiler/sync layer.
+
+This does **not** mean:
+- Metabase is bad;
+- Metabase cannot compute metrics;
+- Metabase is permanently rejected.
+
+Future independent evidence may reopen the execution question if the semantic boundary changes
+materially (for example, a lossless shared structured semantic representation becomes available).
+
+Forbidden response to this negative preflight:
+- copy Wren formulas into MBQL;
+- shadow Metabase metric definitions;
+- manual relationship mirrors;
+- metric-specific bridge branches;
+- Wren→MBQL semantic compiler;
+- raw SQL shortcut;
+- Metabase business-semantic inference.
+
+The purpose of this gate was to veto exactly that semantic duplication before runtime integration cost.
+
+---
 
 ## Current sealed authority
 

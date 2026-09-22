@@ -7,6 +7,45 @@
 
 This document is the release-level timing authority for expensive broad evaluation.
 
+## 0. CURRENT RELEASE STATE — DAY6.5 CLOSED
+
+```text
+J1 / provider topology          RESOLVED
+D65-SI                         FINAL GREEN / SEALED
+M0E-DEEP-DELTA                 FINAL GREEN / SEALED
+Metabase bridge                RESOLVED NEGATIVE
+primary analytics substrate    WREN
+Metabase execution runtime     REJECTED CURRENT RELEASE
+Day6.5                         CLOSED
+current phase                  DAY7 / P10 RESULT-AWARE RESEARCH LOOP
+production /ask-v2             OFF
+DEV80                          NOT STARTED / FORBIDDEN NOW
+```
+
+The bridge decision is scoped, not universal:
+`retained Wren semantics → thin Metabase structured execution` is rejected for this release.
+Metabase workspace/product/reference work remains available later.
+
+Current release sequence:
+
+```text
+Day7
+→ Day8
+→ Day9
+→ Day10
+→ Day11–15
+→ all cheap/focused/live gates GREEN
+→ final 20–25 integrated rehearsal
+→ final candidate
+→ DEV80 EXACTLY ONCE
+→ code freeze
+→ Validation50 no tuning
+→ fresh Hidden50 no tuning
+→ certification
+→ pilot activation
+```
+
+
 It supersedes any older phase-local wording that schedules DEV80:
 - at the end of Day 6.5,
 - before Day 7–15 backend work,
@@ -36,19 +75,28 @@ this release is complete and the final integrated candidate is frozen.
 ## 2. Current proven baseline
 
 ```text
-D65-G anti-patch hardening         GREEN
-provider-free family               35696652502 = 102/102 PASS
-reference-floor canary             35697064833 = 16/16 PASS
-Wren + Research sentinels          35697471863 = 2/2 PASS
-production hybrid /ask-v2          OFF
-final release freeze               NOT CREATED
-DEV80                              NOT STARTED
+Day6.5 product checkpoint             dd5c16bbe444b6d9183faea9e9937be11260f394
+D65-SI provider-free final            73/73 GREEN
+D65-SI focused live 001/005           GREEN
+D65-SI frozen six-case full-live      GREEN
+real Wren sentinel                    GREEN
+
+provider topology                     Semantic Luna / Temporal Sol / Research Sol
+M0E-DEEP-DELTA                        FINAL GREEN / SEALED
+X0 bridge CI                          35761526816 SUCCESS
+X0 bridge terminal                    HEAVY_SEMANTIC_DUPLICATION
+
+Wren semantic backbone                RETAINED / PRIMARY
+Wren analytical execution             PRIMARY
+Metabase production runtime           OFF
+Metabase structured execution         REJECTED CURRENT RELEASE
+
+production hybrid /ask-v2             OFF
+final release freeze                  NOT CREATED
+DEV80                                 NOT STARTED
 ```
 
-Exact reference-tested semantic SHA:
-`8dfde62d46d1418f05cce3ed44c26a8025b3b20e`.
-
-These proofs are preserved as development evidence. They do not authorize final freeze.
+These are preserved development/architecture proofs. They do not authorize final freeze.
 
 ## 3. Development testing vs final broad evaluation
 
@@ -107,100 +155,80 @@ DEV80 / Validation50 / Hidden50 are not debugging loops.
 
 ## 4. Updated binding release sequence
 
+Day6.5 architecture selection is complete. The active sequence is now:
+
 ```text
-CURRENT GREEN BASELINE
-│
-├─ D65-J1S
-│    Gemini vs Jev vs Sol
-│    semantic candidate decision
-│
-├─ D65-J1T
-│    Gemini vs Jev vs Sol
-│    typed temporal intent decision
-│
-└─ D65-M0
-     Metabase adoption/source audit
-         ↓
-D65-X0 thin Metabase Agent API feasibility
-         ↓
-if promising: consult → full D65-X
-         ↓
-choose exactly ONE primary analytics substrate
-         ↓
-complete any explicitly-approved Jev / Metabase production integration
-         ↓
-────────────────────────────
 DAY 7
 Result-Aware Research Loop
 + ToolContract
 + CrossDomainJoinGate
-────────────────────────────
+↓
 DAY 8
 HypothesisLedger / root-cause
-────────────────────────────
+↓
 DAY 9
 ReportDocument + evidence linkage
-────────────────────────────
+↓
 DAY 10
 Product MVP end-to-end integration
-────────────────────────────
++ /ask-v2 STANDARD|RESEARCH front-door ownership closure
+↓
 DAY 11
 real-language / metamorphic eval expansion
-────────────────────────────
+↓
 DAY 12
 QueryContract / evidence / telemetry hardening
-────────────────────────────
+↓
 DAY 13
 tenant / PII / principal security hardening
-────────────────────────────
+↓
 DAY 14
 persistence / resume contracts
-────────────────────────────
+↓
 DAY 15 CODE
 pilot feature flag + rollback mechanism IMPLEMENTED
 BUT FLAG REMAINS OFF
-────────────────────────────
+↓
 all cheap/provider-free/focused/live/metamorphic/canary/sentinel gates GREEN
-         ↓
+↓
 FINAL INTEGRATION REHEARSAL
 20–25 hardest representative REAL LLM scenarios
-+ real chosen analytics substrate execution
++ real Wren execution
 + Research complex scenarios
-         ↓
+↓
 GREEN?
-  NO  → do not start DEV80; return to normal triage/development loop
-  YES ↓
-FINAL ENGINEERING FREEZE CANDIDATE
-         ↓
-DEV80
-EXACTLY ONCE
-         ↓
+  NO  → normal triage/development loop
+  YES → FINAL ENGINEERING FREEZE CANDIDATE
+↓
+DEV80 EXACTLY ONCE
+↓
 CODE FREEZE
-         ↓
-VALIDATION50
-NO TUNING
-         ↓
-external fresh HIDDEN50
-NO TUNING
-         ↓
+↓
+VALIDATION50 NO TUNING
+↓
+fresh HIDDEN50 NO TUNING
+↓
 CERTIFICATION SEALED
-         ↓
+↓
 pilot flag ACTIVATE
 ```
 
 ## 5. Decisions that must be closed before final freeze
 
-Before DEV80, all of the following must be final for this release:
+### Day6.5 resolved items
 
 ```text
-production cognition/model roles
-Jev use/reject decision
-semantic decision provider topology
-temporal normalization provider topology
+production cognition/model engineering topology  RESOLVED
+Jev current-release use/reject decision          RESOLVED
+semantic decision provider topology              RESOLVED
+temporal normalization provider topology         RESOLVED
+Wren vs Metabase execution substrate             RESOLVED → Wren primary
+Metabase production adapter                      NOT REQUIRED CURRENT RELEASE
+```
 
-Wren vs Metabase substrate decision
-Metabase production adapter if selected
+Before DEV80, the following Day7–15 items must still be final for this release:
 
+```text
 Standard / Research authority boundary
 Research runtime and ToolContracts
 CrossDomainJoinGate

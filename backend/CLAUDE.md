@@ -1,5 +1,32 @@
 <!-- DIMA-V2-ACTIVE-OPERATION -->
-<!-- CURRENT-BRIDGE-ACTIVE -->
+<!-- DIMA-V2-DAY7-CURRENT-OPERATION -->
+> ## 🔴 CURRENT OPERATION — DAY7 / P10 RESULT-AWARE RESEARCH LOOP
+>
+> **DAY6.5 CLOSED.**
+> Read first:
+> `belgeler/plan/DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+>
+> Final Day6.5 product checkpoint:
+> `dd5c16bbe444b6d9183faea9e9937be11260f394`.
+>
+> Closed architecture:
+> `D65-SI=FINAL GREEN`;
+> `Semantic=Luna / Temporal=Sol / Research=Sol`;
+> `M0E-DEEP-DELTA=FINAL GREEN`;
+> bridge terminal `HEAVY_SEMANTIC_DUPLICATION`.
+>
+> Wren semantic backbone + analytical execution = PRIMARY.
+> Metabase structured execution = REJECTED CURRENT RELEASE.
+> X0-REST = NOT RUN / NOT REQUIRED.
+> Metabase production runtime = OFF.
+>
+> Next canonical ticket = `P10 / DAY7 RESULT-AWARE RESEARCH LOOP`.
+> Production `/ask-v2` stays OFF; front-door closure is Day10.
+> DEV80/Validation50/Hidden50 remain forbidden.
+>
+> Do not reopen Day6.5 without new independent invalidating P0.
+
+<!-- SUPERSEDED/HISTORICAL — CURRENT-BRIDGE-ACTIVE -->
 > HEAD `6d65600842731112f2362261a30660217cbde05d`.
 > SI and M0E-DEEP-DELTA are SEALED.
 > Current ticket = `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md`.
@@ -7,7 +34,7 @@
 > Compare A/B/C, real sealed Standard artifacts, no fourth framework.
 > Thin/lossless → X0-REST; heavy semantic duplication → reject execution arm; authority change → STOP.
 
-<!-- POST-ANALYST CURRENT AUTHORITY -->
+<!-- SUPERSEDED/HISTORICAL — POST-ANALYST CURRENT AUTHORITY -->
 > D65-SI FINAL GREEN at `c72eb913...`.
 > Current authority: `belgeler/plan/DIMA_DAY6_5_SI_FINAL_SEAL.md` then
 > `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`.
@@ -26,7 +53,7 @@
 > Front-door ownership closure is a Day10 release blocker. Production /ask-v2 OFF.
 > Broad final gates forbidden.
 
-<!-- POST-J1B CURRENT CONTINUATION -->
+<!-- SUPERSEDED/HISTORICAL — POST-J1B CURRENT CONTINUATION -->
 > ## CURRENT CONTINUATION — POST-J1B
 >
 > **M0E-DEEP-DELTA FINAL GREEN / SEALED:** 25/25, all exit counters zero.
@@ -61,7 +88,7 @@
 > STOP/CONSULT on Sol P0, new verifier/calibration architecture, threshold/cascade, authority redesign,
 > full D65-X, Wren semantic removal, Metabase production dependency, FINAL FREEZE, DEV80, pilot.
 
-# 🔴🔴 AKTİF OPERASYON — DIMA V2 DAY 6.5 ENGINEERING CLOSURE
+# HISTORICAL — DIMA V2 DAY 6.5 ENGINEERING CLOSURE
 
 > **Bu branch'te eski “aktif operasyon” bloklarının üstünde BU BLOK okunur.**
 > Branch: `feat/ask-v2-mvp`.
