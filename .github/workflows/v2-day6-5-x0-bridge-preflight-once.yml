@@ -43,3 +43,5 @@ jobs:
           name: v2-day6-5-x0-bridge-preflight
           path: backend/lab/reports/v2_day6_5_x0_bridge_preflight.json
           retention-days: 90
+
+# trigger: bridge-preflight-v1
