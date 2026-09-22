@@ -12,14 +12,19 @@ from app.v2.models import (
     CompactCubeContextV0,
     CompactSemanticFieldV0,
     ContextVersionV0,
+    ResolvedSemanticRef,
+    SemanticTargetKind,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
+    CatalogCandidateBinding,
     SemanticBindingGate,
     SemanticCandidateGenerator,
     SemanticLinkAuthorityError,
+    SemanticLinkCandidateCard,
 )
+from app.v2.semantic_retriever import SemanticRetrievalResult
 
 
 def _context() -> BoundedSemanticContextV0:
@@ -296,3 +301,92 @@ def test_semantic_linker_production_module_has_no_language_matching_heuristics()
     )
     for marker in forbidden:
         assert marker not in source
+
+
+class _StaticRetriever:
+    def __init__(self, result):
+        self.result = result
+        self.calls = []
+
+    def retrieve(self, *, surface, kind_hint, limit):
+        self.calls.append((surface, kind_hint, limit))
+        return self.result
+
+
+def _retrieved_metric_binding():
+    candidate_id = "cand_" + "a" * 24
+    return CatalogCandidateBinding(
+        card=SemanticLinkCandidateCard(
+            candidate_id=candidate_id,
+            target_kind="metric",
+            label="Net Gelir",
+            verified_aliases=("net gelir",),
+            cube_labels=("Satış",),
+        ),
+        canonical_target=ResolvedSemanticRef(
+            candidate_id=candidate_id,
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="sales.net_revenue",
+            cube_names=("sales",),
+        ),
+        exact_keys=frozenset({"net gelir"}),
+    )
+
+
+def test_candidate_generator_uses_explicit_non_authoritative_retriever_seam():
+    retriever = _StaticRetriever(
+        SemanticRetrievalResult(
+            candidates=(_retrieved_metric_binding(),),
+            exhaustive=False,
+            backend="test_ranked_retriever",
+        )
+    )
+    generator = SemanticCandidateGenerator(
+        semantic_context=_context(),
+        schema=_schema(),
+        retriever=retriever,
+    )
+
+    candidate_set = generator.generate(
+        request_id="r1",
+        surface="net gelir",
+        kind_hint="metric",
+    )
+
+    assert retriever.calls == [("net gelir", "metric", 48)]
+    assert candidate_set.retrieval_exhaustive is False
+    assert candidate_set.retrieval_backend == "test_ranked_retriever"
+    assert candidate_set.bindings[0].card.candidate_id == "cand_" + "a" * 24
+
+
+def test_non_exhaustive_retrieval_miss_is_not_semantic_nonexistence():
+    retriever = _StaticRetriever(
+        SemanticRetrievalResult(
+            candidates=(),
+            exhaustive=False,
+            backend="test_ranked_retriever",
+        )
+    )
+    generator = SemanticCandidateGenerator(
+        semantic_context=_context(),
+        schema=_schema(),
+        retriever=retriever,
+    )
+    handles = SemanticHandleRegistry()
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=handles,
+            tenant_binding="tenant-a",
+            context_version="ctx-linker-v1",
+        ),
+        structured=None,
+    )
+
+    (selection,) = linker.resolve(
+        (("r1", "unknown surface", "metric"),),
+        provenance_type="USER_SOURCE",
+    )
+
+    assert selection.status == "RETRIEVAL_MISS"
+    assert "existence unknown" in (selection.reason or "")
