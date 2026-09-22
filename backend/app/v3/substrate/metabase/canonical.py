@@ -30,6 +30,7 @@ class CanonicalProjectionStep(FrozenModel):
     serialized_query: str = Field(min_length=1)
     decoded_query: dict[str, Any]
     canonical_query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    volatile_lib_uuid_count: int = Field(ge=0)
     manifest: QueryStructuralManifest
 
 
@@ -64,6 +65,33 @@ class MetabaseCanonicalizer:
                 "decoded canonical query is not an object",
             )
         return decoded
+
+    @classmethod
+    def _strip_runtime_volatility(cls, value: Any) -> tuple[Any, int]:
+        """Remove only Metabase's documented runtime-volatile JSON map key: lib/uuid."""
+
+        if isinstance(value, dict):
+            stable: dict[str, Any] = {}
+            removed = 0
+            for key, item in value.items():
+                if key == "lib/uuid":
+                    removed += 1
+                    continue
+                stable_item, item_removed = cls._strip_runtime_volatility(item)
+                stable[key] = stable_item
+                removed += item_removed
+            return stable, removed
+
+        if isinstance(value, list):
+            stable_items: list[Any] = []
+            removed = 0
+            for item in value:
+                stable_item, item_removed = cls._strip_runtime_volatility(item)
+                stable_items.append(stable_item)
+                removed += item_removed
+            return stable_items, removed
+
+        return value, 0
 
     @staticmethod
     def _fingerprint(decoded: dict[str, Any]) -> str:
@@ -115,14 +143,26 @@ class MetabaseCanonicalizer:
         for step in plan.steps:
             first: ConstructedQuery = self._client.construct_query(step.portable_query)
             second: ConstructedQuery = self._client.construct_query(step.portable_query)
-            if first.serialized_query != second.serialized_query:
+
+            first_decoded = self._decode(first.serialized_query)
+            second_decoded = self._decode(second.serialized_query)
+
+            first_stable, first_uuid_count = self._strip_runtime_volatility(
+                first_decoded
+            )
+            second_stable, second_uuid_count = self._strip_runtime_volatility(
+                second_decoded
+            )
+            if not isinstance(first_stable, dict) or not isinstance(second_stable, dict):
+                raise AssertionError("stable canonical query lost object shape")
+
+            if first_stable != second_stable:
                 raise MetabaseCompilationBlocked(
-                    "NON_DETERMINISTIC_CANONICAL_SERIALIZATION",
-                    f"construct-query changed for {step.role} step",
+                    "NON_DETERMINISTIC_CANONICAL_SEMANTICS",
+                    f"non-volatile construct-query output changed for {step.role} step",
                 )
 
-            decoded = self._decode(first.serialized_query)
-            actual_manifest = query_structural_manifest(decoded)
+            actual_manifest = query_structural_manifest(first_stable)
             expected_manifest = query_structural_manifest(step.portable_query)
             self._assert_structure_preserved(
                 expected=expected_manifest,
@@ -132,8 +172,12 @@ class MetabaseCanonicalizer:
                 CanonicalProjectionStep(
                     role=step.role,
                     serialized_query=first.serialized_query,
-                    decoded_query=decoded,
-                    canonical_query_fingerprint=self._fingerprint(decoded),
+                    decoded_query=first_stable,
+                    canonical_query_fingerprint=self._fingerprint(first_stable),
+                    volatile_lib_uuid_count=max(
+                        first_uuid_count,
+                        second_uuid_count,
+                    ),
                     manifest=actual_manifest,
                 )
             )
