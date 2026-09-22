@@ -107,6 +107,53 @@ def _answer_number(answer: str) -> Decimal:
     return Decimal(payload[:-1])
 
 
+def _portable_fk_probe(base_url: str, metabase_session: str) -> dict:
+    with FastMetabaseGateway(
+        base_url=base_url,
+        auth=FastMetabaseAuthContext(
+            tenant_id="ft003-probe",
+            dima_user_id="ft003-probe",
+            principal_id="metabase-lab-admin",
+            mode=FastMetabaseAuthMode.SESSION,
+            secret=metabase_session,
+            role_scope_digest="ft003-synthetic-lab",
+        ),
+        policy=FastMetabaseRuntimePolicy(
+            max_page_rows=200,
+            max_total_rows_per_run=1000,
+        ),
+    ) as gateway:
+        search = gateway.search(term_queries=("orders",))
+        table = next(
+            item
+            for item in search.data
+            if str(item.get("type") or "").lower() == "table"
+            and str(item.get("name") or "").lower() == "orders"
+        )
+        uri = str(table.get("uri") or f"metabase://table/{int(table['id'])}")
+        resource = gateway.read_resource((uri + "/fields",)).resources[0]
+        assert resource.content is not None and not resource.failed
+        details = resource.content.structured_output
+        assert isinstance(details, dict)
+        raw_fields = details.get("fields")
+        assert isinstance(raw_fields, list)
+
+    observed = {}
+    for name in ("amount", "order_date", "region"):
+        raw = next(
+            field
+            for field in raw_fields
+            if isinstance(field, dict) and str(field.get("name") or "").lower() == name
+        )
+        portable = raw.get("portable_fk") or raw.get("portable-fk")
+        direct = isinstance(portable, (list, tuple)) and len(portable) >= 4
+        observed[name] = {
+            "metabase_field_portable_fk_directly_supplied": "YES" if direct else "NO",
+            "field_registry_fallback_used": not direct,
+        }
+    return {"table_uri": uri, "fields": observed}
+
+
 def test_ft003_real_count_sum_breakdown_match_independent_db_oracle():
     base_url = f"http://localhost:{os.environ.get('METABASE_PORT', '3300')}"
     metabase_session = _metabase_login(base_url)
@@ -178,6 +225,8 @@ def test_ft003_real_count_sum_breakdown_match_independent_db_oracle():
         assert "join" not in query_text
         responses[name] = body
 
+    portable_fk_probe = _portable_fk_probe(base_url, metabase_session)
+
     expected_count = int(os.environ["FT003_EXPECTED_COUNT"])
     expected_sum = Decimal(os.environ["FT003_EXPECTED_SUM"])
     expected_breakdown = {
@@ -215,6 +264,18 @@ def test_ft003_real_count_sum_breakdown_match_independent_db_oracle():
                         "breakdown": {
                             key: str(value)
                             for key, value in expected_breakdown.items()
+                        },
+                    },
+                    "field_portable_fk_probe": {
+                        "table_uri": portable_fk_probe["table_uri"],
+                        "fields": {
+                            name: {
+                                **info,
+                                "construct_query_accepted": True,
+                                "execute_accepted": True,
+                                "independent_db_oracle_matched": True,
+                            }
+                            for name, info in portable_fk_probe["fields"].items()
                         },
                     },
                     "responses": responses,
