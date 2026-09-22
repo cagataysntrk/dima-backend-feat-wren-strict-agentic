@@ -10,6 +10,7 @@ import time
 from typing import Any, Iterable
 
 import httpx
+from pydantic import ValidationError
 
 from app.v3.substrate.metabase.errors import MetabaseClientError, MetabaseErrorCode
 from app.v3.substrate.metabase.models import (
@@ -286,9 +287,28 @@ class MetabaseAgentClient:
                 message="read-resource response is not an object",
                 body=body,
             )
-        return ReadResourceResponse(
-            resources=tuple(dict(item) for item in (body.get("resources") or ())),
-        )
+        try:
+            parsed = ReadResourceResponse.model_validate(body)
+        except ValidationError as exc:
+            raise MetabaseClientError(
+                code=MetabaseErrorCode.INTERNAL,
+                operation="read_resource",
+                message="malformed Metabase read-resource envelope",
+                body=body,
+            ) from exc
+
+        observed_uris = tuple(item.uri for item in parsed.resources)
+        if len(parsed.resources) != len(uris) or observed_uris != uris:
+            raise MetabaseClientError(
+                code=MetabaseErrorCode.INTERNAL,
+                operation="read_resource",
+                message="read-resource response URI/count mismatch",
+                body={
+                    "requested_uris": uris,
+                    "observed_uris": observed_uris,
+                },
+            )
+        return parsed
 
     def construct_query(self, portable_query: dict[str, Any]) -> ConstructedQuery:
         body = self._request(
@@ -349,23 +369,40 @@ class MetabaseAgentClient:
         self,
         *,
         portable_probe_query: dict[str, Any],
+        resource_probe_uri: str,
     ) -> MetabaseCapabilityHandshake:
+        if not resource_probe_uri.strip():
+            raise ValueError("resource_probe_uri is required")
+
         healthy = self.health()
         agent = self.ping()
+        resource = self.read_resource((resource_probe_uri,))
+        resource_ok = (
+            len(resource.resources) == 1
+            and resource.resources[0].uri == resource_probe_uri
+            and not resource.resources[0].failed
+        )
         constructed = self.construct_query(portable_probe_query)
         executed = self.execute_serialized(constructed)
         page = self.query(portable_probe_query)
 
-        verified = (
+        verified = [
             "health",
             "agent_ping",
-            "construct_query",
-            "execute",
-            "combined_query",
+        ]
+        if resource_ok:
+            verified.append("read_resource")
+        verified.extend(
+            [
+                "construct_query",
+                "execute",
+                "combined_query",
+            ]
         )
         ready = (
             healthy
             and agent
+            and resource_ok
             and executed.status == ExecutionStatus.COMPLETED
             and page.status == ExecutionStatus.COMPLETED
             and self._policy.raw_sql_policy in ("disabled", "unused")
@@ -377,11 +414,11 @@ class MetabaseAgentClient:
             construct_query=True,
             execute_query=True,
             combined_query=True,
-            read_resource=True,
+            read_resource=resource_ok,
             raw_sql_policy=self._policy.raw_sql_policy,
             observed_page_size=self._policy.observed_page_size,
             observed_total_row_cap=self._policy.observed_total_row_cap,
             runtime_version=self._policy.runtime_version,
             runtime_image_digest=self._policy.runtime_image_digest,
-            verified_operations=verified,
+            verified_operations=tuple(verified),
         )

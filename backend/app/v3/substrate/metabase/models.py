@@ -62,8 +62,45 @@ class SearchResponse(FrozenModel):
     total_count: int = Field(default=0, ge=0)
 
 
+class MetabaseResourceContent(BaseModel):
+    """Resource-specific payload from Agent API read-resource.
+
+    The outer contract is stable, while inner resource shapes vary by URI. Preserve those
+    fields without guessing business meaning; expose the documented structured-output envelope.
+    """
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra="allow",
+        populate_by_name=True,
+    )
+
+    structured_output: dict[str, Any] | None = Field(
+        default=None,
+        alias="structured-output",
+    )
+    formatted: str | None = None
+
+
+class MetabaseResourceItem(FrozenModel):
+    uri: str = Field(min_length=1)
+    content: MetabaseResourceContent | None = None
+    error: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def _content_xor_error(self):
+        if (self.content is None) == (self.error is None):
+            raise ValueError("Metabase resource must contain exactly one of content or error")
+        return self
+
+    @property
+    def failed(self) -> bool:
+        return self.error is not None
+
+
 class ReadResourceResponse(FrozenModel):
-    resources: tuple[dict[str, Any], ...] = ()
+    resources: tuple[MetabaseResourceItem, ...] = Field(min_length=1)
+    output: str = Field(min_length=1)
 
 
 class MetabaseCapabilityHandshake(FrozenModel):

@@ -20,7 +20,9 @@ class MetabaseRuntimeAdapter:
         self,
         *,
         portable_probe_query: dict[str, Any],
+        resource_probe_uri: str,
     ) -> MetabaseCapabilityHandshake:
         return self._client.startup_handshake(
             portable_probe_query=portable_probe_query,
+            resource_probe_uri=resource_probe_uri,
         )

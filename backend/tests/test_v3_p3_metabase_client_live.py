@@ -57,11 +57,17 @@ def test_p3_client_crosses_pinned_agent_api_and_keeps_continuation_separate():
             and str(item.get("name", "")).lower() == "orders"
         )
         database_id = int(table["database_id"])
-        database = client.read_resource(
-            (f"metabase://database/{database_id}",)
-        )
-        content = database.resources[0]["content"]
-        database_name = str(content["name"])
+        database_uri = f"metabase://database/{database_id}"
+        database = client.read_resource((database_uri,))
+        resource = database.resources[0]
+        assert resource.uri == database_uri
+        assert resource.failed is False
+        assert resource.error is None
+        assert resource.content is not None
+        structured = resource.content.structured_output
+        assert structured is not None
+        database_name = str(structured["name"])
+        assert database_name.strip()
         schema = str(table.get("database_schema") or "public")
         table_name = str(table["name"])
 
@@ -75,11 +81,13 @@ def test_p3_client_crosses_pinned_agent_api_and_keeps_continuation_separate():
         }
         handshake = MetabaseRuntimeAdapter(client=client).inspect_runtime(
             portable_probe_query=probe,
+            resource_probe_uri=database_uri,
         )
         assert handshake.ready is True
         assert handshake.verified_operations == (
             "health",
             "agent_ping",
+            "read_resource",
             "construct_query",
             "execute",
             "combined_query",
