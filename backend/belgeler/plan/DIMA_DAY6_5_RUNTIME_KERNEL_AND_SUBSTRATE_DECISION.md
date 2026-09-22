@@ -1153,29 +1153,32 @@ D65-E4 Standard authority split        25/25 GREEN
 D65-E5 narrow CoverageVeto             16/16 GREEN
 ```
 
-Ancak front-door family closure'ın ilk birleşik koşumu:
+Front-door family closure history:
 ```text
+run 35691397377
 87 PASS / 1 FAIL
 failure class = EVAL_ORACLE
+
+run 35691982389
+88 / 88 PASS
+5 warnings
+12.46s
 ```
 
-Sebep:
-manifest yeni three-mode telemetry metadata'sını beklerken DEV corpus schema integrity testinin key-map'i
-`allowed_work_modes` ve `expected_authority_family` alanlarını henüz tanımıyordu.
-
-Bu semantic/product failure değildir.
+İlk fail'in sebebi manifest ile DEV corpus schema-integrity oracle arasındaki metadata uyumsuzluğuydu (`allowed_work_modes`, `expected_authority_family`). Corpus/oracle hizalandı; semantic/product patch yapılmadı. Bu nedenle family closure şu anda GREEN kabul edilir.
 
 ---
 
 ## 32. Sıradaki exact çalışma
 
-Önce readiness:
+Readiness tamamlandı:
 
-1. eval manifest + DEV corpus metadata + integrity oracle aynı schema'ya hizalanır.
-2. family closure tekrar koşturulur; semantic patch yok.
-3. living status sonuçla güncellenir.
+1. eval manifest + DEV corpus metadata + integrity oracle aynı schema'ya hizalandı.
+2. family closure tekrar koştu.
+3. `35691982389` = **88/88 PASS**.
+4. living status / AGENTS / CLAUDE / MIMARI / PR çalışma yüzeyi güncellendi.
 
-Sonra product code:
+Sıradaki product code:
 
 ### D65-E3A-R — runtime-kernel realignment
 
@@ -1207,6 +1210,27 @@ Kernel imports no Research-domain authority/ledger/evidence classes.
 Direct remains telemetry outcome.
 Existing Standard semantic behavior unchanged.
 Focused provider-free kernel + StandardBuilder + authority/coverage gates GREEN.
+Provider-free family closure GREEN.
 ```
 
 Bu exit olmadan workers=1 live/canary/freeze hattına ilerlenmez.
+
+## 33. Kaynak karar provenance
+
+Yeni karar iki ayrı rapordan birleştirilmiştir:
+
+1. **Nihai Mimari Karar ve Güncellenmiş Yol Haritası** — genel architecture/roadmap kararı.
+2. **Current Implementation Handoff** — D65-E3'ün repo üzerinde bugün nasıl uygulanacağı.
+
+Raporların kritik dış referans snapshot'ı:
+
+```text
+Metabase pinned master in report: 74216b30981d8310c4cf724d63ca282e2e63529d
+pattern taken: generic loop mechanics + domain-specific profiles
+source-copy/port: forbidden
+
+Wren: current incumbent governed semantic/query substrate
+replacement decision: only through isolated D65-X bake-off
+```
+
+Metabase reference'i Dima'ya source import yetkisi vermez. Mimari desen alınır; kod kopyalanmaz.
