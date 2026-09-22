@@ -355,8 +355,11 @@ def test_fast_cognition_prompt_defines_generic_metadata_retrieval_contract():
     assert observed.status == DraftStatus.SUPPORTED
     system = generator.system.lower()
     assert "primary business/data entity" in system
-    assert "likely english metadata equivalents" in system
-    assert "measure or dimension words" in system
+    assert "every search term must independently help retrieve" in system
+    assert "at least one likely english entity/table lookup term" in system
+    assert "aggregation or operation words" in system
+    assert "measure names, breakdown dimensions" in system
+    assert "prefer standalone entity/table nouns" in system
     assert "at most four search terms" in system
     assert "orders" not in system
     assert "sipariş" not in system
