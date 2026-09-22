@@ -13,6 +13,7 @@ C = Wren PlannedExecution / CubeQuery
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -85,6 +86,7 @@ class BridgeFamilyReceipt:
     time_semantics_duplication: bool
     manual_metadata_mapping: int
     mechanical_identity_mapping_count: int
+    adapter_loc: int
     implicit_join_required: bool
     unsupported_wren_construct: tuple[str, ...]
     adapter_conceptual_complexity: str
@@ -156,6 +158,24 @@ def _base_query(table: str) -> dict[str, Any]:
             }
         ],
     }
+
+
+def bridge_adapter_loc() -> int:
+    """Executable LOC of the B-seam prototype, excluding fixtures/receipt models."""
+    functions = (
+        _field_ref,
+        _base_query,
+        _period_filters,
+        _combine_filters,
+        prototype_from_ir,
+    )
+    total = 0
+    for function in functions:
+        for line in inspect.getsource(function).splitlines():
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                total += 1
+    return total
 
 
 def _period_filters(field: IdentityRequirement, period: ResolvedPeriod) -> list[list[Any]]:
@@ -324,6 +344,7 @@ def prototype_from_ir(ir: AnalyticsIR, metadata: dict[str, Any]) -> BridgeFamily
         time_semantics_duplication=False,
         manual_metadata_mapping=0,
         mechanical_identity_mapping_count=len(identity_rows),
+        adapter_loc=bridge_adapter_loc(),
         implicit_join_required=False,
         unsupported_wren_construct=tuple(unsupported),
         adapter_conceptual_complexity="LOW" if bridge_lossless else "SEMANTIC_TRANSLATION_REQUIRED",
@@ -339,24 +360,45 @@ def seam_assessment(artifact: FamilyArtifact) -> dict[str, dict[str, Any]]:
             "additional_resolution_needed": True,
             "handle_resolution_duplicated": True,
             "semantic_meaning_duplicated": False,
+            "relationship_truth_duplicated": False,
+            "grain_additivity_duplicated": False,
+            "time_semantics_duplicated": False,
             "wren_internals_leak": False,
             "metabase_ids_leak_upstream": False,
+            "manual_mapping_count": 0,
+            "adapter_loc": None,
+            "conceptual_complexity": "MEDIUM",
+            "sync_lifecycle": "semantic handle registry access per substrate arm",
             "verdict": "COLLAPSES_TO_B_IF_RESOLVED_ONCE",
         },
         "B_RESOLVED_ANALYTICS_IR": {
             "additional_resolution_needed": False,
             "handle_resolution_duplicated": False,
             "semantic_meaning_duplicated": False,
+            "relationship_truth_duplicated": False,
+            "grain_additivity_duplicated": False,
+            "time_semantics_duplicated": False,
             "wren_internals_leak": False,
             "metabase_ids_leak_upstream": False,
+            "manual_mapping_count": 0,
+            "adapter_loc": bridge_adapter_loc(),
+            "conceptual_complexity": "LOW_UNTIL_COMPUTED_SEMANTICS",
+            "sync_lifecycle": "runtime physical identity resolution only",
             "verdict": "THIN_CANDIDATE",
         },
         "C_WREN_PLANNED_REPRESENTATION": {
             "additional_resolution_needed": False,
             "handle_resolution_duplicated": False,
             "semantic_meaning_duplicated": True,
+            "relationship_truth_duplicated": False,
+            "grain_additivity_duplicated": True,
+            "time_semantics_duplicated": False,
             "wren_internals_leak": True,
             "metabase_ids_leak_upstream": False,
+            "manual_mapping_count": 0,
+            "adapter_loc": None,
+            "conceptual_complexity": "HIGH",
+            "sync_lifecycle": "Wren plan plus semantic metadata re-hydration",
             "raw_sql_option_forbidden": True,
             "cube_query_metric_formula_absent": True,
             "verdict": "REJECT_AS_PRIMARY_BRIDGE_SEAM",

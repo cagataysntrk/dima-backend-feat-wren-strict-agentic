@@ -25,6 +25,7 @@ from lab.x0_bridge_preflight import (
     prototype_from_ir,
     seam_assessment,
     terminal,
+    bridge_adapter_loc,
 )
 
 REPORT = Path(__file__).resolve().parents[1] / "lab" / "reports" / "v2_day6_5_x0_bridge_preflight.json"
@@ -251,6 +252,8 @@ def test_x0_bridge_preflight_real_sealed_families(wren):
     outcome = terminal(receipts)
 
     assert len(receipts) == 8
+    assert bridge_adapter_loc() > 0
+    assert all(item.adapter_loc == bridge_adapter_loc() for item in receipts)
     assert seam_matrix["A_STANDARD_PROJECTION_HANDLES"]["verdict"] == "COLLAPSES_TO_B_IF_RESOLVED_ONCE"
     assert seam_matrix["B_RESOLVED_ANALYTICS_IR"]["verdict"] == "THIN_CANDIDATE"
     assert seam_matrix["C_WREN_PLANNED_REPRESENTATION"]["verdict"] == "REJECT_AS_PRIMARY_BRIDGE_SEAM"
@@ -299,6 +302,7 @@ def test_x0_bridge_preflight_real_sealed_families(wren):
         ],
         "summary": {
             "terminal": outcome,
+            "total_bridge_loc": bridge_adapter_loc(),
             "total_identity_mapping_count": sum(item.mechanical_identity_mapping_count for item in receipts),
             "total_manual_semantic_mapping_count": sum(item.manual_metadata_mapping for item in receipts),
             "total_duplicated_semantic_definitions": sum(
