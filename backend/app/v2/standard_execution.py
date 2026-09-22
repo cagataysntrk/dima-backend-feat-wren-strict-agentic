@@ -212,7 +212,7 @@ class WrenStandardExecutionAdapter:
             self._binding(
                 projection.comparison_handle,
                 tenant_binding=tenant_binding,
-                context_version=ir.context_version,
+                context_version=context_version,
                 expected_type=ResolvedComparison,
             )
             if projection.comparison_handle is not None
@@ -244,7 +244,7 @@ class WrenStandardExecutionAdapter:
             period=period,
             ranking=ranking,
             comparison=comparison,
-            context_version=ir.context_version,
+            context_version=context_version,
         )
         return ir
 
