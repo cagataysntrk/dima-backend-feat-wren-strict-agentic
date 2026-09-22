@@ -108,6 +108,10 @@ export const gateway = {
     api<{ values: string[] }>(`/api/dashboards/${id}/params/${encodeURIComponent(slug)}/values`).then(
       (r) => r.values,
     ),
+  parameterSearch: (id: number, slug: string, q: string) =>
+    api<{ values: string[] }>(
+      `/api/dashboards/${id}/params/${encodeURIComponent(slug)}/search?q=${encodeURIComponent(q)}`,
+    ).then((r) => r.values),
   drill: (cardId: number, column: string, value: string, scope?: DrillScope) =>
     api<{ result: QueryResult }>(`/api/cards/${cardId}/drill`, json({ column, value, scope })).then(
       (r) => r.result,

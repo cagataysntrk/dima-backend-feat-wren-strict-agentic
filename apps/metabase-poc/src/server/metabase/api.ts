@@ -12,6 +12,8 @@ import {
   type TenantContext,
 } from "./guard";
 import { checkSelectOnly } from "./sql-guard";
+import { categoryClause, dateClause } from "./filters";
+import { isDateFilter } from "@/lib/date-filter";
 
 // High-level gateway operations. Every function takes a resolved TenantContext
 // and calls the engine with THAT tenant's API key, so the engine's own
@@ -72,8 +74,6 @@ export interface Widget {
   sizeY: number;
 }
 
-const DATE_RANGE = /^\d{4}-\d{2}-\d{2}~\d{4}-\d{2}-\d{2}$/;
-
 function publicParams(d: EngineDashboard): PublicParameter[] {
   return d.parameters.map((p) => ({
     slug: p.slug,
@@ -107,7 +107,7 @@ function engineParameters(d: EngineDashboard, filters: Filters) {
     const vals = (filters[p.slug] ?? []).filter(Boolean);
     if (!vals.length) continue;
     if (p.type.startsWith("date")) {
-      if (!DATE_RANGE.test(vals[0])) throw new GatewayError(400, "Geçersiz tarih aralığı.");
+      if (!isDateFilter(vals[0])) throw new GatewayError(400, "Geçersiz tarih filtresi.");
       out.push({ id: p.id, type: p.type, value: vals[0] });
     } else {
       out.push({ id: p.id, type: p.type, value: vals.slice(0, 50) });
@@ -153,6 +153,20 @@ export async function parameterValues(ctx: TenantContext, dashboardId: number, s
   return res.values.map((v) => String(v[0]));
 }
 
+/** Values of a category filter matching a search text (engine-side search, tenant key). */
+export async function parameterSearch(ctx: TenantContext, dashboardId: number, slug: string, q: string) {
+  const d = await assertDashboard(ctx, dashboardId);
+  const p = d.parameters.find((x) => x.slug === slug);
+  if (!p || p.type.startsWith("date")) throw new GatewayError(404, "Filtre bulunamadı.");
+  const text = q.trim().slice(0, 100);
+  if (!text) return parameterValues(ctx, dashboardId, slug);
+  const res = await mbGet<{ values: unknown[][] }>(
+    ctx.tenant,
+    `/api/dashboard/${d.id}/params/${encodeURIComponent(p.id)}/search/${encodeURIComponent(text)}`,
+  );
+  return res.values.map((v) => String(v[0]));
+}
+
 // ── Drill-down ───────────────────────────────────────────────────────────────
 
 const DRILL_LIMIT = 500;
@@ -193,12 +207,8 @@ export async function drill(
       const m = dc.parameter_mappings.find((x) => x.parameter_id === p.id);
       const target = Array.isArray(m?.target) ? m.target[1] : null;
       if (!isFieldRef(target)) continue;
-      if (typeof p.value === "string") {
-        const [from, to] = p.value.split("~");
-        clauses.push(["between", target, from, to]);
-      } else {
-        clauses.push(["=", target, ...p.value]);
-      }
+      const clause = typeof p.value === "string" ? dateClause(target, p.value) : categoryClause(target, p.value);
+      if (clause) clauses.push(clause);
     }
   }
 
