@@ -12,13 +12,16 @@ CURRENT_BACKEND_GATE:
 `FT-002B CLOSED / GREEN`
 
 CURRENT_PRODUCT_GATE:
-`FT-UI-002 — Metabase/Dima Workspace POC`
+`FT-UI-002 / POC-A — Local Modular Workspace + Context Bridge POC`
 
 FRONTEND_PRODUCT_IMPLEMENTATION:
 PAUSED
 
 FT-003:
-BLOCKED until FT-UI-002 GREEN
+BLOCKED until FT-UI-002 / POC-A GREEN
+
+PRODUCTION EMBEDDING:
+`FT-UI-002 / POC-B` required before external pilot / F9
 
 TARGET:
 `Metabase-first Analytics Workspace + Dima Intelligence Experience`
@@ -104,29 +107,28 @@ strategic typed-context composition target.
 
 ## OPEN DEBT / RISKS
 
-1. FT-UI-002 needs an embedding-capable exact runtime.
-2. Matching exact Metabase SDK package/version must be pinned.
-3. Current F0A OSS image proves Agent API, not authenticated embedding entitlement.
-4. Full-app iframe does not provide the same typed host callback surface as modular SDK.
-5. SameSite/cross-domain session behavior must be tested.
-6. Metabase workspace + Dima sidecar responsive composition must be tested.
-7. Modular SDK is client-side; Next.js SSR must not own SDK components.
-8. Typed analytics context schema must be proven against supported callbacks before FT-003.
+1. POC-A must empirically determine whether the existing pinned major-63 runtime exposes enough modular capability for local evaluation.
+2. SDK `63-stable` resolves to exact package `0.63.1`; lockfile integrity still must be sealed in functional POC commit.
+3. Current F0A runtime remains immutable even if modular capability is absent.
+4. Production authenticated embedding remains UNQUALIFIED and belongs to POC-B before F9.
+5. Full-app postMessage/location may be tested as fallback; iframe DOM scraping remains forbidden.
+6. SameSite/cross-domain production session behavior belongs to POC-B.
+7. Metabase workspace + Dima sidecar responsive composition must be tested in POC-A.
+8. Modular SDK is client-side; Next.js SSR must not own SDK components.
+9. Typed analytics context schema must be proven against real callbacks before FT-003.
 
 ## NEXT_EXACT_ACTION
 
-1. Create `backend/belgeler/fast/predev/FT_UI_002_WORKSPACE_POC_PREDEVELOPMENT_REVIEW.md`.
-2. Record a separate UI POC source/capability lock:
-   - exact embedding-capable Metabase runtime;
-   - exact image digest;
-   - exact matching SDK version;
-   - auth mode;
-   - origin/SameSite assumptions.
-3. Execute UX-0 native Metabase baseline.
-4. Execute workspace/frame + Dima sidecar POC.
-5. Prove typed current-resource context.
-6. Seal FT-UI-002 only if its hard gate is GREEN.
-7. Only then open FT-003.
+1. Commit FT-UI-002 POC-A predev + capability-lock skeleton + roadmap nuance.
+2. Keep F0A runtime/image pin unchanged.
+3. Pin SDK exact version `0.63.1` and capture lockfile integrity in the functional POC commit.
+4. Build only isolated `/fast-poc` + `src/features/fast-poc/**`.
+5. Execute UX-0 native Metabase baseline.
+6. Prove Collection Browser + Dashboard + Question/query surface.
+7. Capture at least three real typed context event families and normalize `AnalyticsContext`.
+8. Select Model C / Hybrid / B by the automatic decision rule.
+9. If POC-A GREEN, immediately open FT-003 predev.
+10. Complete POC-B production embedding qualification before F9.
 
 ## FILES_NEXT_ALLOWED
 

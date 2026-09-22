@@ -62,16 +62,32 @@ FT-UI-001:
 - [x] full-app classified as accelerator, not permanent architecture.
 - [x] modular composition classified as strategic context target.
 
-FT-UI-002:
+FT-UI-002 / POC-A — local modular product gate:
 - [ ] pre-development review.
-- [ ] exact embedding-capable runtime pin.
-- [ ] exact matching SDK pin.
+- [x] existing F0A major/runtime/image preserved.
+- [x] SDK dist-tag identified: 63-stable.
+- [x] exact SDK version resolved: 0.63.1.
+- [ ] SDK package integrity + package lock sealed.
+- [ ] isolated /fast-poc route.
 - [ ] native Metabase UX baseline.
-- [ ] Dima parent frame POC.
+- [ ] Collection Browser.
+- [ ] Dashboard.
+- [ ] Question/query surface.
 - [ ] Dima sidecar coexistence.
-- [ ] typed context bridge.
-- [ ] auth/permission proof.
-- [ ] responsive proof.
+- [ ] at least 3 real typed context event families.
+- [ ] AnalyticsContext normalization.
+- [ ] DOM scraping = 0.
+- [ ] guessed identity = 0.
+- [ ] browser admin/service credential = 0.
+- [ ] desktop + narrow responsive proof.
+- [ ] architecture model selected by decision rule.
+
+FT-UI-002 / POC-B — production embedding qualification before F9:
+- [ ] production JWT SSO.
+- [ ] individual Metabase principal.
+- [ ] group/permission mapping.
+- [ ] production origin/session qualification.
+- [ ] denial/revocation proof.
 
 ## D. Stop-the-line
 
@@ -162,8 +178,8 @@ F0       governance                         GREEN
 F0A      pinned Metabase capability         GREEN
 FT-002B  Fast-owned Gateway                 GREEN
 FT-UI-001 architecture reconciliation       GREEN
-FT-UI-002 workspace/context POC             NEXT
-F1       Ask vertical slice                 BLOCKED
+FT-UI-002/POC-A local modular/context POC  NEXT
+F1       Ask vertical slice                 BLOCKED until POC-A GREEN
 F1A      temporal/resource safety
 F2       conversation
 F3       evidence
@@ -184,7 +200,8 @@ BRANCH_ISOLATION: GREEN
 METABASE_SUBSTRATE_F0A: GREEN
 FAST_GATEWAY: GREEN
 UI_ARCHITECTURE_RECONCILIATION: GREEN
-UI_WORKSPACE_POC: NOT STARTED
+UI_WORKSPACE_POC_A: OPEN / PREDEV
+UI_PRODUCTION_EMBED_POC_B: DEFERRED TO BEFORE F9
 FRONTEND_PRODUCT_IMPLEMENTATION: PAUSED
 SECURITY_MODEL: GATED
 PRODUCTION: NOT CERTIFIED

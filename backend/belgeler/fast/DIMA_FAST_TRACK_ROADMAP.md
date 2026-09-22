@@ -272,7 +272,7 @@ Constraint:
 
 Dima frame + modular Metabase browser/dashboard/question/query-builder + Dima-native intelligence.
 
-Status: STRATEGIC TARGET.
+Status: STRATEGIC TARGET AND FIRST POC TARGET.
 
 Strength:
 - supported React SDK callbacks for dashboard parameters, visualization/question lifecycle, question run/save, and collection item clicks;
@@ -281,24 +281,45 @@ Strength:
 - current Dima frontend is React 19 and technically compatible with the SDK's React 18/19 requirement.
 
 Constraint:
-- authenticated interactive modular surfaces are a Metabase capability/entitlement dependency;
+- production authenticated embedding is a separate capability/security qualification;
+- local/evaluation modular POC is attempted first against the existing pinned Metabase major 63 substrate;
+- if the current OSS runtime does not expose the required modular capability, classify that as a POC capability result; do NOT mutate the F0A substrate merely to make the UI test pass;
 - the SDK is client-side and does not support SSR;
-- exact SDK/runtime version must be pinned before POC.
+- exact SDK package resolution must be pinned before functional POC code.
 
 ### Normative path
 
+FT-UI-002 has two distinct capability levels:
+
 ```text
-UX-0 native Metabase baseline
--> UX-1 Metabase-first workspace/frame POC
--> UX-2 Dima Intelligence Sidecar
--> UX-3 typed Context Bridge
--> UX-4 Dima-native Research/Decision surfaces
--> UX-5 selective modularization / modular-first convergence
+POC-A / UI-P0
+Local Modular Workspace + Context Bridge POC
+-> may open FT-003 when GREEN
+
+POC-B / UI-P1
+Authenticated Production Embedding Qualification
+-> required before external pilot / F9
 ```
 
-The implementation strategy may use full-app early for acceleration, but the architecture converges toward modular Metabase surfaces where Dima requires typed context and richer composition.
+POC-A is NOT production authentication certification.
+POC-B is NOT required to begin the product vertical slice.
 
-`full-app = acceleration strategy`
+Implementation order:
+
+```text
+UX-0 native Metabase baseline
+-> prove Model C first: modular workspace/frame
+-> Dima Intelligence Sidecar
+-> typed Context Bridge
+-> architecture decision rule
+-> FT-003 if POC-A GREEN
+-> production embedding qualification before F9
+```
+
+Full-app remains an acceleration/fallback option, not a mandatory prerequisite to FT-003.
+If Model C is GREEN, full-app may leave the critical path.
+
+`full-app = optional acceleration/fallback strategy`
 
 `full-app != permanent architecture`
 
@@ -418,7 +439,7 @@ Analyst / Evidence / Root Cause .......... Dima-native
 
 ## 15. UI POC hard gate
 
-Before FT-003 product UI implementation, FT-UI-002 must prove:
+Before FT-003 product UI implementation, FT-UI-002 / POC-A must prove:
 
 1. Metabase workspace is usable inside Dima parent experience.
 2. Dima sidecar can coexist on the same screen.
@@ -443,6 +464,31 @@ If RED:
 - do not immediately fall back to custom Dima BI;
 - compare full-app vs modular remediation separately.
 
+POC-A minimum hard gate additionally requires:
+- existing F0A substrate unchanged;
+- SDK major 63;
+- exact SDK version pinned in lockfile;
+- isolated `/fast-poc` route;
+- Collection Browser;
+- Dashboard;
+- Question/query surface;
+- Dima sidecar coexistence;
+- at least three real typed context event families;
+- normalized `AnalyticsContext`;
+- DOM scraping = 0;
+- guessed resource identity = 0;
+- admin/service credential in browser = 0;
+- desktop + narrow responsive proof;
+- visible loading/error states;
+- architecture model selected by rule.
+
+POC-B remains required before external pilot / F9:
+- production JWT SSO;
+- individual Metabase principal;
+- group/permission mapping;
+- revocation/denial proof;
+- production origin/session qualification.
+
 ## 16. Gate sequence
 
 Backend gates are preserved:
@@ -456,9 +502,15 @@ FT-002B Fast-owned Metabase Gateway
 Before FT-003:
 
 ```text
-FT-UI-001 Metabase Workspace Feasibility + UI Architecture Reconciliation
-FT-UI-002 Metabase/Dima Workspace POC
-FT-003    Fast Ask vertical slice
+FT-UI-001       Metabase Workspace Feasibility + UI Architecture Reconciliation
+FT-UI-002/POC-A Local Modular Workspace + Context Bridge POC
+FT-003          Fast Ask vertical slice
+```
+
+Before external pilot / F9:
+
+```text
+FT-UI-002/POC-B Authenticated Production Embedding Qualification
 ```
 
 Then:
@@ -492,7 +544,8 @@ It means:
 - FT-001 — branch/governance
 - FT-002 — capability + Fast-owned Metabase Gateway
 - FT-UI-001 — workspace feasibility + architecture reconciliation
-- FT-UI-002 — Metabase/Dima workspace POC
+- FT-UI-002 / POC-A — local modular workspace + typed context POC
+- FT-UI-002 / POC-B — authenticated production embedding qualification
 - FT-003 — real Ask vertical slice in selected Metabase-first workspace
 - FT-004 — streaming/run-state/cancel
 - FT-005 — conversation
@@ -606,3 +659,56 @@ A user can:
 12. return to history;
 
 without silent fallback, hidden semantic substitution, Metabase frontend fork, or duplicated commodity BI ownership.
+
+
+## 22. FT-UI-002 automatic architecture decision rule
+
+CASE A — SELECT MODEL C when:
+- Collection browsing GREEN;
+- Dashboard GREEN;
+- Question/query workflow GREEN;
+- Typed context GREEN;
+- Navigation ACCEPTABLE;
+- Responsive ACCEPTABLE;
+- Local evaluation auth GREEN.
+
+CASE B — SELECT HYBRID when:
+- modular typed context is strong;
+- broad workspace/navigation would otherwise require excessive custom host UI;
+- full-app/native workspace provides the broad BI exploration surface;
+- modular surfaces are used where Dima needs deep typed context.
+
+CASE C — SELECT MODEL B FOR PRODUCT V1 when:
+- modular has a material blocker;
+- full-app is stronger for the V1 workspace;
+- context completeness is explicitly FULL / PARTIAL / RESOURCE_ONLY;
+- unknown filter/card state is never guessed.
+
+CASE D — STOP when:
+- both supported Metabase integration models fail critical POC requirements.
+
+Do not automatically return to the legacy Dima BI shell.
+
+## 23. FT-UI-002 isolated implementation boundary
+
+POC route:
+`dima-frontend-demo-master/src/app/fast-poc/page.tsx`
+
+Preferred feature root:
+`dima-frontend-demo-master/src/features/fast-poc/**`
+
+Do NOT migrate or modify as part of POC:
+- main `src/app/page.tsx`;
+- DashboardView;
+- DashboardsPanel;
+- ReportPanel;
+- AnalysisCanvas;
+- existing production navigation.
+
+POC composition only:
+- thin Dima frame;
+- modular Metabase surfaces;
+- Dima sidecar;
+- context inspector.
+
+No fake Ask answer, fake AI result, fake root cause, or hardcoded finding.
