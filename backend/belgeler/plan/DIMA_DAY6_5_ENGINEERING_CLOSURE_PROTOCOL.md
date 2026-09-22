@@ -424,6 +424,42 @@ Runtime-kernel kararı geldiğinde E3/E4/E5'in bazı vertical'ları zaten yazıl
 
 Bunlar geri alınmaz. Ancak kernel öncesi loop mechanics architecture-sealed sayılmaz. Sıradaki product ticket: `D65-E3A-R — runtime-kernel realignment`.
 
+
+### 12.2 D65-X mandatory Metabase source preflight
+
+Bu madde sequence'e yeni faz eklemez; mevcut **D65-X** adımının giriş kapısıdır.
+
+D65-X veya Metabase'e dayanan herhangi bir önemli karar başlamadan önce
+`DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md §17A` eksiksiz uygulanır.
+
+Minimum preflight:
+
+```text
+canonical repo = metabase/metabase
+declared source SHA verified
+required six canonical source files inspected
+local checkout (if any) SHA verified and treated read-only/non-authoritative
+Agent API contract inspected
+permission/query guards inspected
+current version/runtime/deployment behavior externally re-verified where changeable
+Dima trust-plane cross-check recorded
+source-copy/port/vendor = 0
+```
+
+Execution measurement yapılacaksa receipt başlamadan önce şunların nasıl pinleneceği belli olmalıdır:
+
+```text
+source_reference_sha
+runtime_version
+runtime_image_digest
+Dima tested SHA
+adapter SHA
+benchmark/corpus version
+tenant/user permission context
+```
+
+Bu preflight PASS olmadan Metabase adapter/bake-off implementation'ı veya sonucu authority sayılmaz.
+
 ## 13. STOP-THE-LINE
 
 Aşağıdakilerden biri olursa feature geliştirme durur ve abstraction düzeltilir:
