@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
 from threading import RLock
-from typing import Any
+from typing import Any, Protocol
 
 from app.fast.ask_models import AskOutcomeStatus
 from app.fast.ask_service import FastAskService
@@ -16,6 +16,11 @@ from app.fast.run_models import (
     FastRunState,
     TERMINAL_RUN_STATES,
 )
+class FastRunOperation(Protocol):
+    def ask(self, request, *, principal: Any):
+        ...
+
+
 from app.fast.run_store import (
     FastRunNotFound,
     FastRunOwner,
@@ -60,6 +65,37 @@ class FastRunManager:
         *,
         principal: Any,
     ) -> FastRunSnapshot:
+        return self._create_run(
+            payload,
+            principal=principal,
+            operation=self._service,
+        )
+
+    def create_run_with_operation(
+        self,
+        payload: FastRunCreateRequest,
+        *,
+        principal: Any,
+        operation: FastRunOperation,
+    ) -> FastRunSnapshot:
+        """Internal composition seam for higher Fast layers.
+
+        HTTP /fast/runs never accepts or selects an operation. Conversation may submit
+        a context-bound analytical operation while reusing this exact lifecycle/store.
+        """
+        return self._create_run(
+            payload,
+            principal=principal,
+            operation=operation,
+        )
+
+    def _create_run(
+        self,
+        payload: FastRunCreateRequest,
+        *,
+        principal: Any,
+        operation: FastRunOperation,
+    ) -> FastRunSnapshot:
         owner = FastRunOwner.from_principal(principal)
         root_run_id = None
         attempt = 1
@@ -82,6 +118,7 @@ class FastRunManager:
             snapshot.run_id,
             payload,
             principal,
+            operation,
         )
         with self._lock:
             self._futures[snapshot.run_id] = future
@@ -139,6 +176,7 @@ class FastRunManager:
         run_id: str,
         payload: FastRunCreateRequest,
         principal: Any,
+        operation: FastRunOperation,
     ) -> None:
         try:
             snapshot = self._store.internal_snapshot(run_id)
@@ -157,7 +195,7 @@ class FastRunManager:
             if not self._begin_execution(run_id):
                 return
 
-            response = self._service.ask(
+            response = operation.ask(
                 payload.ask_request(),
                 principal=principal,
             )
