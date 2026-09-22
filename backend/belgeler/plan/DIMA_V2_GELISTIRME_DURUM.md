@@ -4,7 +4,7 @@
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
 **Durum:** **DAY 6.5 PROVIDER TOPOLOGY P0 GREEN + M0E GREEN — D65-SI ACTIVE NEXT; X0 BLOCKED UNTIL SI/WREN SENTINEL; DEV80 FORBIDDEN**  
-**Kod fazı:** Provider topology closed (`Semantic=Luna`, `Temporal=Sol`, `Research=Sol`) with Luna semantic 20/20 and exact-SHA Sol temporal 8/8 P0=0. M0E capability exhaustion/build-vs-buy is now GREEN: all required Metabase capability families mapped, Dima-relevant UNCLASSIFIED=0, Wren semantic ownership retained, no implementation spree/source copy. Current active ticket = D65-SI Standard Integration Closure. X0 remains blocked until D65-SI + real Standard Wren sentinel + M0E final cross-check. Production `/ask-v2` OFF; DEV80 forbidden.  
+**Kod fazı:** Provider topology P0 GREEN + M0E GREEN. D65-SI implementation active: distinct `TEMPORAL_NORMALIZER` role, pure `StandardLaneEngine`, and pure `WrenStandardExecutionAdapter` added without Research AcceptedTurnContract/UOL dependency. Focused SI first run `35718301249` had 4 EVAL_ORACLE test failures; receipt opened before patch. Test-only repair then rerun `35718675540 = 25/25 PASS`, compile PASS. Current next gate = pure Standard real Wren sentinel + retained Research sentinel. `/ask-v2` still OFF; X0 blocked; DEV80 forbidden.  
 
 ---
 

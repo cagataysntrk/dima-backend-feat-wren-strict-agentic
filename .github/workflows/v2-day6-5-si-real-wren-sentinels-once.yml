@@ -1,0 +1,41 @@
+name: v2-day6-5-si-real-wren-sentinels-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day6-5-si-real-wren-sentinels-once.yml"
+
+jobs:
+  real-wren-sentinels:
+    if: "github.event.head_commit.message == 'test(v2-day6.5): run real Standard Wren sentinel'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Compile Standard Wren execution boundary
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v2/standard_execution.py \
+            app/v2/standard_authority.py \
+            app/v2/standard_builder.py
+      - name: Pure Standard plus retained Research real Wren sentinels
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day6_5_real_standard_trust_plane.py \
+            tests/test_v2_day6_5_real_trust_plane.py

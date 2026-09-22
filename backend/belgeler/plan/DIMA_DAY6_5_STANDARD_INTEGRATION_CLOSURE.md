@@ -160,3 +160,33 @@ D65-SI must preserve:
 - retained Wren semantic backbone;
 - no Metabase runtime dependency;
 - no duplicate Metabase semantic truth.
+
+
+---
+
+## SI focused provider-free integration gate — GREEN
+
+Initial run:
+`35718301249 = 21 PASS / 4 FAIL`, compile PASS.
+
+Receipt:
+`D65-SI-FOCUSED-001` classified all four failures as **EVAL_ORACLE**:
+- raw source-string dependency checks mistook docstring prohibition text for imports;
+- stale fixtures used enum names instead of canonical enum values.
+
+Only test files were repaired.
+
+Rerun:
+```text
+run       = 35718675540
+compile   = PASS
+focused   = 25/25 PASS
+```
+
+Product integration built before this gate:
+- distinct `TEMPORAL_NORMALIZER` model role;
+- pure `StandardLaneEngine` without Research contract/UOL;
+- pure `WrenStandardExecutionAdapter` from sealed Standard authority.
+
+Next mandatory proof:
+pure Standard REAL Wren sentinel + retained Research Wren sentinel.

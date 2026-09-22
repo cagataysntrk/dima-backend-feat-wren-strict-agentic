@@ -898,5 +898,5 @@ forbidden patch:
 - semantic/prompt/Resolver changes.
 
 status:
-`CLASSIFIED / TEST-ONLY PATCH AUTHORIZED`.
+`CLOSED — test-only oracle patch; rerun 35718675540 = 25/25 PASS, compile PASS; product SI code unchanged by the repair`.
 
