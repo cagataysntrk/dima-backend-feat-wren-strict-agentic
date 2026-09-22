@@ -2162,3 +2162,22 @@ advance only the two governance blob pins to the reviewed DMP-DEC-0026 versions:
 
 status:
 `CORRECTION APPLIED / AWAITING GOVERNANCE GREEN`.
+
+
+---
+
+## DMP-GOV-RED-001 closure — GREEN
+
+final_sha: `e6b8d98190369b010cf8dcd743fdc3d4ece645c0`  
+governance: `35786915071 = SUCCESS`  
+p10a_provider_free_on_docs_sha: `35786752567 = SUCCESS`
+
+proof:
+- reviewed DMP-DEC-0026 report and roadmap blobs are pinned by governance;
+- certified-base ancestry remains intact;
+- mandatory governance files and prior sealed milestone guards remain GREEN;
+- product/runtime code changed by the normative amendment = 0;
+- historical sealed P6-P10 receipts rewritten = 0.
+
+status:
+`CLOSED GREEN`.
