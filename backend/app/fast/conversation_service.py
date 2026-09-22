@@ -359,7 +359,10 @@ class FastConversationService:
 
         context_source_turn_ids: tuple[str, ...] = ()
         if (
-            resolution.status == FastFollowupStatus.CONTEXTUAL
+            resolution.status in {
+                FastFollowupStatus.CONTEXTUAL,
+                FastFollowupStatus.CLARIFICATION_REQUIRED,
+            }
             and source_turn is not None
             and source_turn.accepted_context is not None
         ):
