@@ -772,3 +772,138 @@ product code written     = 0
 Metabase runtime started = 0
 ```
 
+
+## Batch 6 — Wren→Metabase bridge / implicit-FK authority / repair fixed-point
+
+### DD-19 — Wren→Metabase semantic bridge
+
+- **mechanism:** Wren→Metabase semantic bridge
+- **exact upstream source/function:**
+  - `src/metabase/agent_api/api.clj::evaluate-external-query-to-live-query`
+  - `::evaluate-external-query-for-execution`
+  - `POST /v2/construct-query`
+  - `src/metabase/metabot/tools/construct.clj::execute-representations-query`
+  - `src/metabase/agent_lib/representations/repair.clj::repair`
+  - `src/metabase/agent_lib/representations/resolve.clj::resolve-query`
+- **observed behavior:** Metabase's supported agent-facing structured path accepts an external portable
+  MBQL representation, validates/converts/repairs it, resolves portable references through Metabase
+  metadata, then produces canonical numeric-ID MBQL for execution. This is a **query lifecycle
+  boundary**, not evidence that Dima/Wren semantics can be mapped losslessly without a translation
+  layer. Metabase's representation still expects Metabase tables/fields/metadata identities.
+- **problem solved:** give an external agent a structured, repairable query contract without requiring
+  raw SQL.
+- **Dima equivalent/owner:** accepted Standard authority + `StandardProjection` + once-resolved
+  canonical Dima `AnalyticsIR`. Dima owns the bridge adapter; raw user language and semantic
+  discovery stay upstream and never enter Metabase.
+- **Wren equivalent/owner:** Wren retains canonical metric/dimension/filter/time/relationship meaning
+  and remains the incumbent planner/execution path. Bridge translation must consume already-accepted
+  meaning, never recreate it.
+- **disposition:** **METABASE_RUNTIME_CANDIDATE**
+- **security/authority effect:** P0:
+  `RAW_LANGUAGE_REINTERPRETATION=0`,
+  `SECOND_SEMANTIC_AUTHORITY=0`,
+  `LABEL_GUESSING=0`.
+- **semantic duplication risk:** potentially CRITICAL. A bridge that needs parallel metric formulas,
+  relationship definitions, grain/additivity rules, time semantics, or large hand-maintained metadata
+  mapping is rejected before runtime X0.
+- **native implementation cost:** UNKNOWN until bridge preflight; target must remain THIN. A generic
+  second semantic compiler is explicitly forbidden.
+- **Metabase runtime dependency:** NONE for preflight; only if bridge is thin/lossless may X0-REST
+  start a separate Metabase service.
+- **required executable proof/question:** compare seams A/B/C using **real artifacts from the sealed
+  Standard pipeline**:
+  A=`StandardProjection + sem_* handles`,
+  B=resolved canonical `AnalyticsIR`,
+  C=later Wren-specific planned representation.
+  For eight representative Standard families measure metric/dimension/filter/time/comparison/ranking
+  fidelity, manual metadata mapping, semantic duplication, unsupported constructs, bridge LOC/
+  conceptual complexity/sync surface. No fake easy IR as primary evidence.
+- **timing:** **immediately after M0E FINAL GREEN** as
+  `D65-X0-BRIDGE-PREFLIGHT`; runtime still OFF.
+
+### DD-24 — implicit-FK join repair vs Wren relationship authority
+
+- **mechanism:** implicit-FK join repair
+- **exact upstream source/function:**
+  - `src/metabase/agent_lib/representations/repair.clj::maybe-fill-source-field`
+  - `::resolve-implicit-joins-in-stage`
+  - `::resolve-implicit-joins*`
+  - Pass 3.5 `resolve-source-field-join-alias*`
+  - `test/metabase/agent_lib/representations/repair_test.clj`
+    implicit-join happy/no-path/ambiguous/idempotency families
+- **observed behavior:** when a field belongs to a table other than the stage source, Metabase can
+  inspect physical metadata and, if exactly one outbound FK reaches that target table, automatically
+  add `source-field` so QP performs an implicit join. Zero FK produces a typed `:no-fk-path`
+  error; multiple FKs produce `:ambiguous-fk`; explicit/disambiguated join options are preserved.
+  Pass 3.5 can similarly infer a unique FK through an explicit joined table.
+- **problem solved:** repair an agent-authored query that names a reachable foreign-table column but
+  omitted the MBQL join disambiguator.
+- **Dima equivalent/owner:** relationship validity is already governed by retained Wren semantic
+  relationships/cubes and Dima cross-domain/join gates. Physical FK metadata alone is insufficient
+  semantic authority.
+- **Wren equivalent/owner:** **WREN_OWNS** which relationships/paths are semantically approved for
+  Dima.
+- **disposition:** **REJECT** as an autonomous semantic/join-authority mechanism.
+- **security/authority effect:** permanent P0:
+  `UNAPPROVED_METABASE_IMPLICIT_JOIN=0`.
+  A physical FK discovered by Metabase may not widen an accepted Dima/Wren query.
+- **semantic duplication risk:** CRITICAL if Metabase physical-FK inference is allowed to create paths
+  absent from or conflicting with Wren MDL.
+- **native implementation cost:** none; do not reimplement physical-FK guessing as Dima authority.
+- **Metabase runtime dependency:** if X0 uses Agent API repair, the adapter must compare any repaired
+  relationship/join semantics with the Wren-approved accepted intent and reject divergence. Prefer an
+  explicit bridge representation that does not rely on autonomous join invention.
+- **required executable proof:** feed a bridge artifact whose target field is physically FK-reachable
+  but whose relationship is not approved by Wren → zero execution. Approved Wren relationship may
+  translate explicitly; a Metabase repair diff introducing an unapproved `source-field` or join is
+  a P0 failure. Ambiguous/no-path remains fail-closed.
+- **timing:** X0-BRIDGE-PREFLIGHT hard gate and X0 runtime P0 if runtime is reached.
+
+### DD-25 — representation-repair idempotency / semantic-preserving repair
+
+- **mechanism:** representation-repair idempotency
+- **exact upstream source/function:**
+  - `src/metabase/agent_lib/representations/repair.clj` namespace invariant
+  - `::repair`
+  - `test/metabase/agent_lib/representations/repair_test.clj::idempotency-property-test`
+  - `::realistic-query-idempotency-property-test`
+  - per-pass idempotency tests including implicit joins and cross-stage repair
+- **observed behavior:** Metabase declares repair a fixed point:
+  `repair(q) == repair(repair(q))`. The pipeline consists of bounded canonicalization/shape repair,
+  metadata-aware field typing and join-disambiguation passes; property tests exercise generic and
+  realistic query trees repeatedly. Existing canonical/disambiguated values are generally preserved
+  rather than rewritten on subsequent passes.
+- **problem solved:** make LLM-authored structured queries recoverable without oscillating across
+  retries or accumulating new mutations each time repair runs.
+- **Dima equivalent/owner:** Dima does **not** need to rebuild this generic BI repair engine if
+  Metabase runtime proves useful. Dima only owns the invariant that repair cannot create new semantic
+  authority or change accepted business meaning.
+- **Wren equivalent/owner:** Wren dry-plan/compiler currently validates incumbent queries; it does not
+  provide this same portable-MBQL repair breadth.
+- **disposition:** **METABASE_RUNTIME_CANDIDATE**
+- **security/authority effect:** repaired query remains subordinate to Dima accepted authority,
+  current Principal and Wren-approved relationship semantics. Fixed-point behavior reduces retry-loop
+  risk but is not proof of correctness.
+- **semantic duplication risk:** LOW for pure shape canonicalization; HIGH for metadata-aware repairs
+  that infer semantic joins/references. DD-24 veto applies.
+- **native implementation cost:** HIGH to reproduce robustly; **do not port/transliterate**.
+- **Metabase runtime dependency:** YES only if X0 bridge reaches runtime and repair value is material.
+- **required executable proof:** for representative bridge artifacts:
+  (a) first repair either safely fixes or typed-rejects;
+  (b) second repair produces byte/structurally equivalent canonical query;
+  (c) accepted Dima metric/dimension/filter/time/ranking meaning is unchanged;
+  (d) any join-semantic diff is Wren-approved or rejected;
+  (e) quantify how many failures repair fixes vs how much runtime/service complexity it adds.
+- **timing:** X0-REST value measurement; potential full-X benefit only after consultation.
+
+### Batch 6 counters
+
+```text
+classified in this batch = 3
+mechanisms closed        = 19,24,25
+cumulative classified    = 25 / 25
+remaining                = 0
+product code written     = 0
+Metabase runtime started = 0
+```
+

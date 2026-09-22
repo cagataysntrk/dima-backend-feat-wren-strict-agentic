@@ -4,7 +4,7 @@
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
 **Durum:** **D65-SI FINAL GREEN / SEALED — M0E-DEEP-DELTA ACTIVE; X0-BRIDGE-PREFLIGHT NEXT AFTER M0E FINAL; X0/DEV80 FORBIDDEN**  
-**Kod fazı:** D65-SI remains SEALED. M0E-DEEP-DELTA Batch 1–5 classifies `22/25`. Batch 5 closed `17,18,22,23`: verified/official content = non-authoritative curation metadata (`PATTERN_ONLY`); business glossary semantic ownership stays Wren (`WREN_OWNS`); Metabase `lib_metric` is a competing multi-source/multi-database metric semantic layer and therefore not adopted as second truth (`WREN_OWNS`); current pinned OSI evidence is bounded AI-context annotations, broader OSI/Ossie semantic interchange stays `DEFER_PRODUCT`. No product code/runtime. Remaining only `19,24,25`: Wren→Metabase bridge, implicit-FK join authority, representation-repair idempotency. Final batch will also run exit-counter audit before declaring M0E FINAL.  
+**Kod fazı:** D65-SI SEALED. M0E-DEEP-DELTA mechanism classification now reaches `25/25` after Batch 6: bridge = `METABASE_RUNTIME_CANDIDATE` pending mandatory thin/lossless preflight; autonomous physical-FK implicit-join repair = `REJECT` as semantic authority with permanent `UNAPPROVED_METABASE_IMPLICIT_JOIN=0`; generic fixed-point representation repair = `METABASE_RUNTIME_CANDIDATE`, not to be reimplemented. No product code/runtime. Classification is complete, but M0E FINAL GREEN is not declared until a separate exit-counter audit confirms all contract counters = 0.  
 
 ---
 
