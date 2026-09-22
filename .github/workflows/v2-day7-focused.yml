@@ -65,6 +65,11 @@ jobs:
             app/v2/research_tools.py \
             app/v2/research_state.py \
             app/v2/research_tasks.py \
+            app/v2/research_fanout.py \
+            app/v2/cross_domain_join.py \
+            app/v2/cross_domain_facts.py \
+            app/v2/relationship_adapter.py \
+            app/v2/manager_core_adapter.py \
             app/v2/manager_tools.py \
             app/v2/manager_executor.py \
             app/v2/manager_runtime.py \
