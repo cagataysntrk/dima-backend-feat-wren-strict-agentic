@@ -284,3 +284,63 @@ Additional same-SHA diagnostic evidence:
 - Semantic-linker calls were zero in these runs; resolver/linker truth is not the owner.
 
 This stochastic split is itself evidence of a representation/policy ambiguity: current finite pre-acceptance draft has obligations/directives/control requests but no first-class repair/supersession semantic. Corrective conversation state is therefore probabilistically forced into either ordinary replacement or business EXCLUDED obligation.
+
+---
+
+## Receipt — D65-REPAIR-FOCUSED-STALE-FIXTURE
+
+run_id: `35695921829`
+
+tested_sha/workflow head: `8ec2b86bb01e159eb80a272afb591612a36ff48b`
+
+observed_failure:
+`13 failed, 34 passed`; every failure raised `TypeError: ManagerSemanticResolutionAdapter.__init__() got an unexpected keyword argument 'resolver'` from the shared preacceptance test fixture.
+
+failure_stage: `TEST HARNESS / provider-free fixture construction before semantic assertions`
+
+failure_class: `EVAL_ORACLE`
+
+classification_evidence:
+- D65-G intentionally removed the inert `resolver` constructor seam from Manager semantics.
+- All 13 failed tests stop at the same fixture constructor call.
+- No tested repair/coverage assertion is reached.
+- Compile passed.
+- 34 sibling tests passed.
+
+single_owner: `tests/test_v2_day6_5_preacceptance_protocol.py shared fixture`
+
+root_cause:
+Test fixture still encoded the superseded ManagerSemanticResolutionAdapter constructor contract after D65-G physically removed the legacy resolver dependency.
+
+failure_family:
+Provider-free tests/fixtures that construct the Manager semantic adapter using the removed legacy resolver injection seam.
+
+why_not_model_only: `No model call owns this TypeError.`
+
+why_not_oracle: `It IS EVAL_ORACLE/test-harness drift; product contract deliberately changed.`
+
+why_not_transport: `No provider/transport path is reached.`
+
+forbidden_patch_alternatives:
+- re-add resolver parameter to production for test compatibility
+- optional ignored resolver shim
+- legacy fallback restoration
+
+allowed_files_to_touch:
+- `tests/test_v2_day6_5_preacceptance_protocol.py` fixture/import cleanup
+- other provider-free fixtures only if they pass the removed constructor argument
+
+files_not_to_touch:
+- `manager_preacceptance.py` behavior
+- `manager_semantics.py` production constructor
+- resolver/linker truth
+- eval expected semantic labels
+
+invariant_being_fixed:
+Tests must consume the same no-legacy-resolver Manager hot-path contract as production.
+
+focused_proof: `PENDING rerun`
+
+family_regression_proof: `PENDING`
+
+status: `CLASSIFIED — test-fixture-only patch allowed`
