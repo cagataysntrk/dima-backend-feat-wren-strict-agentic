@@ -46,7 +46,6 @@ from app.v2.models import (
     ConversationStateV2,
 )
 from app.v2.representability import RepresentabilityGate
-from app.v2.resolver import SemanticResolver
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.standard_projection import StandardProjectionCompiler
@@ -333,7 +332,6 @@ def _run_case(
     source_spans = SourceSpanRegistry()
     handles = SemanticHandleRegistry()
     semantic = ManagerSemanticResolutionAdapter(
-        resolver=SemanticResolver(signing_key=b"day65-manager-eval-signing-key"),
         source_spans=source_spans,
         semantic_handles=handles,
         semantic_context=context,
