@@ -3,7 +3,8 @@
 > **CURRENT TIMING PRECEDENCE:**
 > `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` controls current J1/M0/X0 work.
 > `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` controls Day7–15 → final rehearsal → final freeze → DEV80/Validation/Hidden.
-> `belgeler/plan/DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` freezes J1S/J1T lab scope.
+> `belgeler/plan/DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` freezes corrected J1S/J1T lab scope.
+> `belgeler/plan/DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` is mandatory after J1 decision and before X0.
 > `belgeler/plan/DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` is the M0 research matrix.
 > Historical run/sequence text below is audit history and cannot override these current authorities.
 >
@@ -80,11 +81,11 @@
 > Detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
 >
 > **D65-J1S — LAB/EVAL ONLY:** bounded semantic candidate decision.
-> Compare `google/gemini-2.5-flash-lite` vs `typesafe/jev-1.13` vs `openai/gpt-5.6-sol` on frozen CandidateSets.
+> PRIMARY peer set = `google/gemini-2.5-flash-lite` vs `typesafe/jev-1.13` vs `openai/gpt-5.6-luna` on frozen CandidateSets. `openai/gpt-5.6-sol` is REFERENCE_CEILING only; `openai/gpt-5.6-terra` is consult-gated conditional second stage.
 > Output is supplied `candidate_id | ABSTAIN`; `SemanticBindingGate` remains authority.
 >
 > **D65-J1T — LAB/EVAL ONLY:** typed temporal intent classification.
-> Same three challengers classify language into the existing closed temporal ontology.
+> Same PRIMARY peers run J1T-CHOICE. Separately, J1T-CONTRACT-FIDELITY must prove the real typed temporal contract without case-answer enumeration; Jev dynamic integer fields may fail as `TEMPORAL_INTEGRATION_LIMITATION`.
 > Jev/LLM does NOT calculate dates; `TemporalBindingEngine` remains deterministic date owner.
 >
 > Pinned Jev = `typesafe/jev-1.13`; `~typesafe/jev-latest` forbidden.
@@ -95,7 +96,9 @@
 > Historical pinned source `74216b...`; current upstream master verified `fff70175...`, exactly one commit ahead with no relevant agent/API/MCP source-family delta.
 > Maintain `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md`; source copy/port/vendor remains forbidden.
 >
-> **D65-X0 — THIN FEASIBILITY:** after sufficient M0 evidence, separate Metabase service + same DB/principal + 5–10 representative StandardProjection cases.
+> **D65-SI — MANDATORY BEFORE X0:** after J1 decision, close the pure Standard path end-to-end (`Standard cognition → kernel → binding → StandardProjection → CoverageVeto → AcceptedStandardAuthority → registry → Wren → QueryContract/Evidence`) with ResearchManagerLoop/UOL dependency = 0 and a real Wren Standard sentinel.
+>
+> **D65-X0 — THIN FEASIBILITY:** only after D65-SI GREEN, separate Metabase service + same DB/principal + 5–10 representative StandardProjection cases.
 > X0 not promising → Wren remains primary. X0 promising → STOP/CONSULT before full D65-X.
 >
 > STOP/CONSULT before: D65-J1B, any production model cascade/threshold, full D65-X, primary substrate switch, authority/security boundary adoption, freeze candidate, DEV80.
@@ -143,7 +146,7 @@
 > Release-level authority `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`: DEV80 this release = EXACTLY ONE RUN and only after Day15 code + final rehearsal. DEV80 sonrası behavior-changing code/config release STOP condition'dır.
 > Validation50/Hidden50 final no-tuning gates; development corpusuna çevrilmez.
 >
-> **Operasyon sırası:** current green proofs → J1S + J1T + M0 → X0 → if needed consult/full D65-X → ONE primary substrate → Day7–15 release work → all cheap/focused/live/metamorphic/canary/sentinel gates GREEN → 20–25 final rehearsal → FINAL FREEZE → DEV80 ONCE → Validation50 → Hidden50 → certification → pilot activation.
+> **Operasyon sırası:** current green proofs → corrected J1S/J1T + M0 → J1 decision → D65-SI → real Standard sentinel → X0 → if needed consult/full D65-X → ONE primary substrate → Day7–15 release work → all cheap/focused/live/metamorphic/canary/sentinel gates GREEN → 20–25 final rehearsal → FINAL FREEZE → DEV80 ONCE → Validation50 → Hidden50 → certification → pilot activation.
 >
 > **Tek cümlelik kural:** Vaka geçirerek sistem yapmıyoruz; doğru abstraction'ı kurup
 > vakaların onun doğal sonucu olarak geçmesini istiyoruz.
