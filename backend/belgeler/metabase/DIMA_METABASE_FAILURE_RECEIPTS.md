@@ -1883,3 +1883,25 @@ No Metabase write transport is authorized by this receipt.
 
 status:
 `CORRECTION APPLIED / AWAITING P9A GREEN`.
+
+
+---
+
+## DMP-P9-AUDIT-002 closure — GREEN
+
+final_sha: `7820ac77207f4245da150a5c80043d22708b87f0`  
+p9_workflow: `35778418835 = SUCCESS`  
+m1_wren: `35778418797 = SUCCESS`  
+governance: `35778418759 = SUCCESS`
+
+proof:
+- removed semantic -> RETIRE_STALE with previous-binding rollback;
+- semantic still present but no longer provisionable -> REJECT_DRIFT;
+- ownership transfer / removed management policy -> explicit REJECT_DRIFT;
+- matching payload does not NOOP across context/applied-version drift;
+- every mutating ProvisionAction requires a rollback descriptor by model validation;
+- external locator coherence remains exact; no name fallback or same-name adoption;
+- real composed P7→P8→explicit Dima managed policy→P9 produces one deterministic CREATE with rollback.
+
+status:
+`CLOSED GREEN`.

@@ -759,3 +759,35 @@ A `WREN_ONLY_GAP` may be removed only by a separately proven canonical/compiler/
 not by relabeling, regex parsing or Metabase name discovery.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0022 — P9A lifecycle closure and P9B transport is resource-kind specific
+
+date: 2026-09-22
+
+P9A closure evidence:
+- implementation/hardening SHA `7820ac77207f4245da150a5c80043d22708b87f0`;
+- P9 workflow `35778418835 = SUCCESS`;
+- focused P9A = 23 PASS;
+- inherited P7/P8 = 39 PASS;
+- M1/Wren `35778418797 = SUCCESS`;
+- governance `35778418759 = SUCCESS`.
+
+decision:
+P9A desired-state planning is GREEN, including stale lifecycle, binding context/version coherence,
+rollback-required mutation planning, exact locator behavior and one real composed P7→P8→explicit
+policy→P9 proof.
+
+P9B must not implement a generic resource CRUD client. Exact pinned Metabase v0.63.18 source shows
+different lifecycle surfaces by resource kind:
+- metrics are Card-backed content (`type="metric"`);
+- dimensions are metadata attached to existing synced Fields;
+- time semantics have no independent createable resource surface;
+- relationship/FK metadata is attached to existing Fields and is not an arbitrary Dima relationship object.
+
+Therefore every P9B transport kind requires its own proven representation contract. Unsupported
+mutation surfaces are typed transport gaps, not workarounds.
+
+status: SEALED.

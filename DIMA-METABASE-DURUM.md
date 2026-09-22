@@ -967,3 +967,38 @@ mutating rollback contract      = enforced
 real P7→P8→policy→P9 proof      = added
 P9B                             = HELD UNTIL GREEN
 ```
+
+
+---
+
+## P9A HARDENING — CLOSED GREEN
+
+```text
+hardening SHA                     = 7820ac77207f4245da150a5c80043d22708b87f0
+P9 workflow                       = 35778418835 = SUCCESS
+P9 focused                        = 23 PASS
+P7+P8 inherited                   = 39 PASS
+M1/Wren                           = 35778418797 = SUCCESS
+governance                        = 35778418759 = SUCCESS
+DMP-P9-AUDIT-002                  = CLOSED GREEN
+stale lifecycle                   = GREEN
+binding metadata coherence        = GREEN
+mutating rollback enforcement     = GREEN
+real P7→P8→policy→P9 chain        = GREEN
+```
+
+## P9B pinned-source review
+
+```text
+Metabase pin                      = v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+metric persistence                = Card(type=metric) / api/card
+api/metric                        = read/query, not CRUD
+dimension persistence             = existing Field metadata / attached Dimension
+time standalone CRUD              = NOT PROVEN
+relationship standalone CRUD      = NOT PROVEN
+metric Card projection contract   = NOT PROVEN
+live writes                       = 0
+```
+
+**Current phase:** P9B1 PROVIDER-FREE METRIC CARD CONTRACT PRE-DEVELOPMENT.  
+P10: **NOT STARTED**.
