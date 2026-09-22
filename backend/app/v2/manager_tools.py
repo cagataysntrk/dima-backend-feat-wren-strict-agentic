@@ -126,6 +126,7 @@ class RunAnalyticsArgs(FrozenModel):
 
 
 class RunRelationshipArgs(FrozenModel):
+    research_task_id: str | None = Field(default=None, min_length=1)
     obligation_id: str
     focus_handles: tuple[str, ...] = Field(min_length=1)
     counterpart_handles: tuple[str, ...] = Field(min_length=1)
