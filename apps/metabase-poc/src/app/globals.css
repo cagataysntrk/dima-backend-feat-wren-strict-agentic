@@ -4,3 +4,29 @@
 
 /* Paket içindeki sınıfların üretilen CSS'e girmesi için taranması gerekir. */
 @source "../../../../packages/ui/src";
+
+/* React Flow (schema diagram) — strip default node chrome (our TableNode
+   supplies its own) and theme controls via tokens. The functional base CSS
+   comes from the imported @xyflow/react/dist/style.css. */
+.react-flow__node-table {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  width: auto;
+  font-family: inherit;
+}
+.react-flow__controls {
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.react-flow__controls-button {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+.react-flow__controls-button:hover {
+  background: var(--accent);
+}

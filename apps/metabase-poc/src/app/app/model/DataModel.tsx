@@ -9,6 +9,13 @@ import { cn } from "@dima/ui/utils";
 import { Button } from "@dima/ui/primitives/button";
 import { Input } from "@dima/ui/primitives/input";
 import { Skeleton } from "@dima/ui/primitives/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@dima/ui/primitives/select";
 
 /**
  * Data model: rename columns, mark which are categories, hide the ones nobody
@@ -72,6 +79,53 @@ function TableRow({ table, open, onToggle }: { table: ModelTable; open: boolean;
   );
 }
 
+/**
+ * Point a column at another table's column. CSV-loaded tables carry no
+ * database-level foreign keys, so this is how the schema diagram gets its
+ * edges — and how the engine learns to join.
+ */
+function ForeignKeyPicker({ field }: { field: ModelField }) {
+  const queryClient = useQueryClient();
+  // Shares the /app/schema query key, so opening both pages costs one request.
+  const graph = useQuery({ queryKey: ["schema-graph"], queryFn: gateway.schemaGraph, staleTime: 60_000 });
+  const save = useMutation({
+    mutationFn: (targetFieldId: number | null) => gateway.setForeignKey(field.id, targetFieldId),
+    onSuccess: () => {
+      toast.success("İlişki güncellendi.");
+      void queryClient.invalidateQueries({ queryKey: ["model"] });
+      void queryClient.invalidateQueries({ queryKey: ["schema-graph"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const options = (graph.data?.tables ?? []).flatMap((t) =>
+    t.columns.filter((c) => c.id !== field.id).map((c) => ({ id: c.id, label: `${t.name}.${c.name}` })),
+  );
+
+  return (
+    <Select
+      value={field.fkTargetFieldId === null ? NO_FK : String(field.fkTargetFieldId)}
+      disabled={save.isPending || graph.isPending}
+      onValueChange={(v) => save.mutate(v === NO_FK ? null : Number(v))}
+    >
+      <SelectTrigger size="sm" className="w-52" aria-label={`${field.name} ilişkisi`}>
+        <SelectValue placeholder="İlişki yok" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NO_FK}>İlişki yok</SelectItem>
+        {options.map((o) => (
+          <SelectItem key={o.id} value={String(o.id)}>
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** Radix Select forbids an empty value, so "no relationship" needs a token. */
+const NO_FK = "none";
+
 function FieldRow({ field }: { field: ModelField }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(field.displayName);
@@ -116,6 +170,7 @@ function FieldRow({ field }: { field: ModelField }) {
         className="h-8 max-w-56 flex-1"
       />
       <span className="w-20 shrink-0 text-xs text-muted-foreground">{field.type}</span>
+      <ForeignKeyPicker field={field} />
       <div className="ml-auto flex items-center gap-1">
         <Button
           variant="ghost"

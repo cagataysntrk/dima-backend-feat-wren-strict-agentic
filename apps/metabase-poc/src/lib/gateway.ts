@@ -63,6 +63,7 @@ export interface ModelField {
   type: string;
   category: boolean;
   hidden: boolean;
+  fkTargetFieldId: number | null;
 }
 
 export interface ModelTable {
@@ -70,6 +71,33 @@ export interface ModelTable {
   name: string;
   displayName: string;
   fields: ModelField[];
+}
+
+export interface SchemaColumn {
+  id: number;
+  name: string;
+  type: string;
+  fkTargetFieldId: number | null;
+}
+
+export interface SchemaTable {
+  id: number;
+  name: string;
+  displayName: string;
+  columns: SchemaColumn[];
+}
+
+export interface SchemaEdge {
+  id: string;
+  from: string;
+  fromColumn: string;
+  to: string;
+  toColumn: string;
+}
+
+export interface SchemaGraph {
+  tables: SchemaTable[];
+  edges: SchemaEdge[];
 }
 
 export interface Item {
@@ -180,6 +208,12 @@ export const gateway = {
   updateField: (fieldId: number, patch: { displayName?: string; category?: boolean; hidden?: boolean }) =>
     api<{ field: ModelField }>(`/api/model/fields/${fieldId}`, { ...json(patch), method: "PATCH" }).then((r) => r.field),
   tables: () => api<{ tables: { name: string; columns: string[] }[] }>("/api/tables").then((r) => r.tables),
+  schemaGraph: () => api<SchemaGraph>("/api/schema"),
+  setForeignKey: (fieldId: number, targetFieldId: number | null) =>
+    api<{ field: ModelField }>(`/api/model/fields/${fieldId}/fk`, {
+      ...json({ targetFieldId }),
+      method: "PUT",
+    }).then((r) => r.field),
   /**
    * Streamed chat: yields each event as it arrives. Abort the signal to stop —
    * the server sees the disconnect and stops generating too.

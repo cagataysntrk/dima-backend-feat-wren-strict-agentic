@@ -17,6 +17,7 @@
     "@dima/domain": "workspace:*",
     "@dima/ui": "workspace:*",
     "@tanstack/react-query": "^5.101.2",
+    "@xyflow/react": "^12.11.6",
     "better-auth": "1.7.5",
     "border-beam": "1.4.0",
     "class-variance-authority": "^0.7.1",

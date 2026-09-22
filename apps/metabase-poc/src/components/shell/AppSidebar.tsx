@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-import { Boxes, Building2, ChevronsUpDown, Database, LayoutGrid, LogOut, MessageSquarePlus, MessagesSquare, Moon, Settings, Sun, Table2, Trash2, Upload } from "lucide-react";
+import { Boxes, Building2, ChevronsUpDown, Database, LayoutGrid, LogOut, MessageSquarePlus, MessagesSquare, Moon, Settings, Share2, Sun, Table2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { useConversations } from "@/stores/conversations";
@@ -84,6 +84,7 @@ export function AppSidebar({
     { href: "/app/data", label: "Veriler", icon: Table2, show: true },
     { href: "/app/sql", label: "SQL", icon: Database, show: canAnalyze },
     { href: "/app/model", label: "Veri modeli", icon: Boxes, show: canAnalyze },
+    { href: "/app/schema", label: "Şema", icon: Share2, show: true },
     { href: "/app/upload", label: "Veri yükle", icon: Upload, show: canAnalyze },
     { href: "/app/settings", label: "Ayarlar", icon: Settings, show: true },
   ].filter((n) => n.show);
