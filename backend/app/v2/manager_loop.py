@@ -39,6 +39,7 @@ from app.v2.research_state import ResearchStateView, build_research_state_view
 from app.v2.research_tasks import (
     DerivedResearchTaskProposal,
     ResearchTaskMaterializationError,
+    ResearchTaskRegistry,
     ResearchTaskService,
 )
 from app.v2.research_tools import ResearchToolRunner
@@ -785,7 +786,7 @@ class ResearchManagerLoop:
             text=question,
         )
         frontier = DynamicActionFrontier()
-        materialized_tasks = {}
+        task_registry = ResearchTaskRegistry()
 
         while runtime.snapshot.state not in {
             ManagerState.COMPLETED,
@@ -959,8 +960,11 @@ class ResearchManagerLoop:
                             )
                         obligation_id = decision.obligation_ids[0]
                         task_id = f"seed:{obligation_id}"
-                        task = materialized_tasks.get(task_id)
-                        if task is None:
+                        try:
+                            task = task_registry.get(task_id)
+                        except ResearchTaskMaterializationError:
+                            raise
+                        except Exception:
                             task = self._research_tasks.seed_for_obligation(
                                 runtime=runtime,
                                 obligation_id=obligation_id,
@@ -970,11 +974,12 @@ class ResearchManagerLoop:
                         evidence = executor.evidence_store.get(
                             decision.derived_evidence_ref
                         )
-                        parent_task = materialized_tasks.get(evidence.task_id)
-                        if parent_task is None:
+                        try:
+                            parent_task = task_registry.get(evidence.task_id)
+                        except Exception as exc:
                             raise ResearchTaskMaterializationError(
                                 "derived branch parent ResearchTask is not materialized"
-                            )
+                            ) from exc
                         handle_inputs = tuple(
                             dict.fromkeys(
                                 (
@@ -1020,8 +1025,8 @@ class ResearchManagerLoop:
                         runtime=runtime,
                         executor=executor,
                         principal=getattr(executor, "principal", None),
+                        task_registry=task_registry,
                     )
-                    materialized_tasks[task.task_id] = research_execution.task
                     manager_result = self._manager_safe(
                         research_execution.observation
                     )
