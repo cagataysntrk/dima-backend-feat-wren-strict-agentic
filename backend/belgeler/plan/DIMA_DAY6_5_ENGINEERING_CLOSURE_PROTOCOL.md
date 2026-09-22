@@ -11,6 +11,22 @@
 > engineering closure sırasını tanımlar. Living progress yine yalnız
 > `DIMA_V2_GELISTIRME_DURUM.md` dosyasına yazılır.
 
+## 0. 2026-09-22 runtime-kernel/substrate override
+
+Bu protokol artık `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` ile birlikte okunur.
+
+Bağlayıcı delta:
+
+- architecture execution path yalnız `STANDARD | RESEARCH`.
+- `STANDARD_DIRECT` ayrı path/engine/router/authority değildir; Standard outcome/telemetry'dir.
+- `STANDARD_BUILDER` aynı Standard engine'in bounded repair outcome'udur.
+- `app/v2/agent_runtime.py` altında minimal generic bounded process-control kernel kurulacaktır.
+- Kernel business/semantic/authority/research truth bilmeyecektir.
+- Research Manager Day 6.5'te generic kernel'e migrate edilmeyecektir.
+- Wren current incumbent analytics substrate olarak kalacaktır.
+- Metabase production dependency değildir; engineering closure sonrası ve certification seal öncesi isolated challenger'dır.
+- Kernel kararı gelmeden yazılmış StandardBuilder/E4/E5 focused-green kodu geri alınmaz; fakat kernel realignment bitene kadar architecture-sealed sayılmaz.
+
 ## 1. Mimari arama bitti
 
 Day 6 one-shot complex semantic compiler'a geri dönülmez. Üçüncü bir genel cognition
@@ -30,15 +46,19 @@ Ledger/CompletionGate   = research completion truth
 
 Yeni işler mevcut sınırları tamamlar; yeni genel cognition stack açmaz.
 
-## 2. Üç çalışma modu, iki accepted-authority ailesi
+## 2. İki execution path, iki accepted-authority ailesi
 
 ```text
-STANDARD_DIRECT
-STANDARD_BUILDER
-RESEARCH
+execution_path:
+  STANDARD
+  RESEARCH
+
+standard_outcome:
+  DIRECT
+  BUILDER
 ```
 
-Bunlar üç semantic authority ailesi değildir.
+Transition eval telemetry'sinde `STANDARD_DIRECT` / `STANDARD_BUILDER` label'ları tutulabilir; fakat bunlar ayrı engine/router/authority değildir.
 
 ```text
 AcceptedAuthority
@@ -46,13 +66,27 @@ AcceptedAuthority
 └── AcceptedResearchAuthority
 ```
 
-- `STANDARD_DIRECT`: standard builder'ın lossless projection'ı hemen kurabildiği kısa yol.
-- `STANDARD_BUILDER`: tek analytical request için bounded discovery/repair micro-loop.
+- `STANDARD / DIRECT`: aynı Standard engine ilk turda lossless projection'ı seal eder.
+- `STANDARD / BUILDER`: aynı Standard engine bounded discovery/repair ile seal eder.
 - `RESEARCH`: multi-obligation / relationship / root-cause / adaptive evidence problemi.
 
-`STANDARD_DIRECT` ve `STANDARD_BUILDER` aynı Standard authority'yi üretir.
+DIRECT ve BUILDER aynı `AcceptedStandardAuthority` ailesini üretir.
 
 `AcceptedResearchAuthority` yeni ikinci bir research semantic body DEĞİLDİR. Uygulamada mevcut `AcceptedTurnContract` research authority gövdesi olarak korunur; gerekiyorsa yalnız type alias / tagged-union etiketiyle `AcceptedResearchAuthority` adı verilir. Aynı research semantic gerçeği ikinci kez modellenmez.
+
+## 2A. Generic bounded runtime kernel
+
+Day 6.5 StandardBuilder ikinci bespoke loop olmayacaktır.
+
+Yeni küçük process-control kernel: `app/v2/agent_runtime.py`.
+
+Kernel yalnız model/tool counters, budget enforcement, observation append, generic dispatch lifecycle, action fingerprint, domain/profile-supplied state fingerprint, duplicate action/state detection, terminal detection, `NO_PROGRESS`, budget exhaustion ve telemetry bilir.
+
+Kernel `AcceptedTurnContract`, `UserObligationLedger`, `ResearchDirective`, Evidence verification, semantic truth, `sem_*` minting, query/join/numeric truth veya completion truth bilmez.
+
+`manager_progress.py` içindeki generic digest/action/result fingerprint primitive'leri reuse edilebilir; Research-specific `progress_fingerprint(runtime)` generic kernel'e taşınmaz.
+
+`manager_loop.py`, `manager_runtime.py`, `manager_tools.py`, `manager_preacceptance.py` Day 6.5'te kernel'e migrate edilmez.
 
 ## 3. Standard ile Research correctness problemi ayrıdır
 
@@ -351,40 +385,51 @@ context'e yine girmez.
 
 ## 12. Exact engineering closure sırası
 
-Current semantic code `c9629d9029db...` henüz önceki 70/70 run ile certify edilmedi.
+Current repo sequencing, yeni runtime-kernel kararıyla birlikte bağlayıcıdır.
 
-Sıra bağlayıcıdır:
+1. D65-E1 exact semantic-SHA recertification — **DONE GREEN 70/70**.
+2. D65-E2 `SemanticCatalogRetriever` seam — **DONE GREEN 9/9**.
+3. D65-E3A minimal `BoundedAgentRuntimeKernel`.
+4. Current `standard_builder.py` loop mechanics'i kernel consumer olacak şekilde re-home et; semantic behavior değiştirme.
+5. D65-E3B Standard profile/tool surface; DIRECT yalnız outcome/telemetry.
+6. D65-E3C lightweight StandardProjection compiler — mevcut implementation korunur/uyarlanır.
+7. D65-E4 minimal `AcceptedStandardAuthority`; Research body mevcut `AcceptedTurnContract`.
+8. D65-E5 narrow final Standard CoverageVeto.
+9. Provider-free failure-family closure.
+10. Workers=1 small focused live architecture set.
+11. Gerektiğinde exact-same-SHA fast/reference model-floor A/B.
+12. 12–16 stratified canary.
+13. Real Wren Standard vertical + existing Research sentinel.
+14. Exact SHA = ENGINEERING FREEZE CANDIDATE.
+15. DEV80 exactly once for that freeze candidate.
+16. Fail → family clustering; named-case patch yok; code change = yeni candidate + yeni DEV80.
+17. Phase thresholds + P0 gates green → **DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN**.
+18. Day 7 lab/flag frozen architecture üzerinde ilerleyebilir.
+19. **D65-X analytics substrate challenger:** same Dima/authority/projection ile Wren incumbent vs thin Metabase Agent API adapter.
+20. Wren wins/tie → Wren stays; Metabase clearly wins → certification STOP, new engineering candidate + affected gates/new DEV proof.
+21. Tuning olmadan VALIDATION50.
+22. Validation fail + code change → certification invalid, engineering reopen, fresh validation.
+23. External fresh HIDDEN50.
+24. Hidden fail + architecture/code change → new external sealed corpus.
+25. Green → DAY 6.5 CERTIFICATION SEALED.
+26. Ancak sonra production hybrid `/ask-v2` activation.
 
-1. **EXACT CURRENT SEMANTIC-SHA RECERTIFICATION**: `c9629d...` focused provider-free cognition/authority closure,
-2. green → checkpoint SHA,
-3. `SemanticCatalogRetriever` seam; ilk backend current deterministic enumeration olabilir,
-4. safe candidate card/internal binding ayrımını koru,
-5. `StandardBuilder` bounded state machine; Direct = onun kısa yolu,
-6. minimal `AcceptedStandardAuthority`; Research tarafında mevcut `AcceptedTurnContract` body korunur,
-7. Standard/Research accepted-authority tagged union / owner split,
-8. narrow final Standard CoverageVeto,
-9. provider-free failure-family tests,
-10. workers=1 small focused live architecture set,
-11. gerektiğinde exact-same-SHA fast/reference model-floor A/B,
-12. 12–16 stratified canary,
-13. real Wren Standard vertical + existing Research sentinel,
-14. exact SHA = ENGINEERING FREEZE CANDIDATE,
-15. DEV80 **exactly once for that freeze candidate**,
-16. fail → family clustering; named-case patch yok; code change olursa yeni freeze candidate ve yeni DEV80 gerekir,
-17. phase thresholds + P0 hard gates green → DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN,
-18. Day 7 lab/flag altında frozen architecture üzerinde açılabilir,
-19. tuning olmadan VALIDATION50,
-20. Validation fail + code change → certification invalid, engineering reopen, fresh validation gerekir,
-21. external **fresh** HIDDEN50,
-22. Hidden fail + architecture/code change → new external sealed corpus gerekir,
-23. green → DAY 6.5 CERTIFICATION SEALED,
-24. ancak sonra production hybrid `/ask-v2` activation.
+### 12.1 Current sequencing exception — NO ROLLBACK
+
+Runtime-kernel kararı geldiğinde E3/E4/E5'in bazı vertical'ları zaten yazılmış ve focused green idi:
+
+- StandardBuilder core: 20/20 focused GREEN.
+- Standard authority split: 25/25 focused GREEN.
+- narrow CoverageVeto: 16/16 focused GREEN.
+
+Bunlar geri alınmaz. Ancak kernel öncesi loop mechanics architecture-sealed sayılmaz. Sıradaki product ticket: `D65-E3A-R — runtime-kernel realignment`.
 
 ## 13. STOP-THE-LINE
 
 Aşağıdakilerden biri olursa feature geliştirme durur ve abstraction düzeltilir:
 
 - second semantic authority,
+- Standard kernel'in Research semantics öğrenmesi,
 - silent USER requirement loss,
 - unsafe standard admission,
 - blocking ambiguity auto-pick,
@@ -396,7 +441,8 @@ Aşağıdakilerden biri olursa feature geliştirme durur ve abstraction düzelti
 - unverified numeric truth,
 - evidence'siz VERIFIED completion,
 - model-specific production branch,
-- silent fallback.
+- silent fallback,
+- Wren + Metabase equal production truth engines.
 
 Tek benchmark failure yeni architecture icat etme gerekçesi değildir.
 
@@ -420,11 +466,14 @@ all P0 authority/security/silent-wrong counters = 0
 
 ```text
 ENGINEERING CLOSED
-= abstraction + provider-free + focused/live + stratified canary + real Wren
-  + DEV80 phase gate green for the exact freeze candidate
+= runtime-kernel + Standard/Research boundary + provider-free + focused/live
+  + stratified canary + real Wren + DEV80 phase gate green for exact freeze candidate
+
+SUBSTRATE DECISION COMPLETE
+= D65-X isolated Wren-vs-Metabase substrate experiment resolved to one primary engine
 
 CERTIFICATION SEALED
-= same frozen architecture + fresh unbiased VALIDATION50
+= same frozen architecture/substrate + fresh unbiased VALIDATION50
   + external fresh HIDDEN50 green
 ```
 
