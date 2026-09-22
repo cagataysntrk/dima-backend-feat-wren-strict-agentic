@@ -4,7 +4,7 @@
 **Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
 **Başlangıç tarihi:** 20 Eylül 2026  
 **Durum:** **D65-SI FINAL GREEN / SEALED — M0E-DEEP-DELTA ACTIVE; X0-BRIDGE-PREFLIGHT NEXT AFTER M0E FINAL; X0/DEV80 FORBIDDEN**  
-**Kod fazı:** D65-SI is sealed FINAL GREEN at tested HEAD `c72eb913...`. Evidence: provider-free/family `35738044476 = 73/73 PASS`; focused real-live frozen 001+005 `35738400321 = GREEN`; exact frozen six-case full-live `35738912690 = GREEN`, artifact `completed_cases=6`, `failed_case_ids=[]`, `accepted=5`, `clarified=1`. Last product-code change before seal = `fb2f243...`; final seal commits thereafter are docs/workflow only. Semantic-discovery optimization cycle is CLOSED absent new P0 evidence. Current primary work = `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md` source/classification to `UNCLASSIFIED=0`; then `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md`. No Metabase runtime yet. `/ask-v2` migration remains Day10 release blocker. DEV80/Validation50/Hidden50 forbidden.  
+**Kod fazı:** D65-SI remains FINAL GREEN/SEALED; semantic work stays closed. Current sole main ticket = M0E-DEEP-DELTA. Batch 1 source audit classified mechanisms `1,2,3,9,14` (effective access lens, derived-result reauthorization, permission-sensitive cache safety, unrepresentable security-bound persistence refusal, missing principal fail-closed) from pinned Metabase `74216b...`. Dispositions: `1/2/9/14=DIMA_CORE_NATIVE`, `3=PATTERN_ONLY`. No product code and no Metabase runtime. Remaining delta mechanisms = 20. Next batch = retrieval/index lifecycle `4,5,6,7` plus source-of-truth availability semantics. X0 remains blocked until all 25 classified + bridge preflight.  
 
 ---
 
@@ -37,7 +37,8 @@ Geliştirme ilerlemesi bu dosyalara işlenmez.
 - `DIMA_DAY6_5_SI_FINAL_SEAL.md` — **final SI evidence + causal chain + anti-patch seal**.
 - `DIMA_FRONTDOOR_OWNERSHIP_CLOSURE.md` — **Day10 release blocker for authoritative /ask-v2 ownership**.
 - `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` — **mandatory bridge gate before Metabase runtime X0**.
-- `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md` — **reopened final Metabase exhaustion delta**.
+- `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`
+- `DIMA_DAY6_5_M0E_DEEP_DELTA_RECEIPT.md` — **append-only current deep-delta source/disposition receipt** — **reopened final Metabase exhaustion delta**.
 - `DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md` — **CURRENT continuation authority after analyst audit**.
 - `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
 - `DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` — Metabase Cloud/self-host/bundled-service/source-port deployment decision gate.
