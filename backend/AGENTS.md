@@ -1,5 +1,12 @@
 # DIMA V2 — GELİŞTİRİCİ / AJAN ÇALIŞMA SÖZLEŞMESİ
 
+> **CURRENT TIMING PRECEDENCE:**
+> `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` controls current J1/M0/X0 work.
+> `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` controls Day7–15 → final rehearsal → final freeze → DEV80/Validation/Hidden.
+> `belgeler/plan/DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` freezes J1S/J1T lab scope.
+> `belgeler/plan/DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` is the M0 research matrix.
+> Historical run/sequence text below is audit history and cannot override these current authorities.
+>
 ## DAY 6.5 RUNTIME-KERNEL / SUBSTRATE OVERRIDE — 2026-09-22
 
 > Active phase-local authority: `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`.
