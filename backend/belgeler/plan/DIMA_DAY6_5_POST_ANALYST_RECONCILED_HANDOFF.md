@@ -462,3 +462,27 @@ transparent observer fix
 ```
 
 Wrong GREEN from silent semantic loss is a P0.
+
+
+## 4C. Pre-paid contract attacks exposed two narrow gaps
+
+Run `35737022854 = 64 PASS / 6 FAIL`.
+
+This is product contract evidence, not provider/live noise.
+
+```text
+A. EXACT_DUPLICATE_CONTEXT_BYPASS
+   >1 exact currently terminates before contextual linker.
+
+B. MATERIAL_MEANING_CONSERVATION_VISIBILITY
+   coverage sees obligation source anchors but not exact semantic spans actually bound.
+```
+
+Authorized fixes are generic only:
+- duplicate exact + immutable context → linker over exact set only, SELECT/ABSTAIN;
+- coverage intent view gains bound semantic source spans and explicit material
+  qualifier/modifier/predicate loss veto language.
+
+After patch:
+focused provider-free + attack families + metamorphics must be GREEN.
+Then focused paid frozen 001+005 only.

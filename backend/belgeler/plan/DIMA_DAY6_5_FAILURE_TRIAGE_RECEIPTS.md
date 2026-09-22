@@ -980,5 +980,99 @@ transparent trace fix
 ```
 
 status:
-`OPEN — TEST/EVAL-ONLY PATCH AUTHORIZED`.
+`CLOSED — transparent observer patch 52a25011...; provider-free trace parity/focused run 35736630552 = 63 PASS + 2 skipped; product semantics untouched`.
+
+
+
+---
+
+## Receipt — D65-SI-CONTRACT-ATTACK-001 — two generic interface contracts exposed
+
+run_id: `35737022854`
+
+tested_sha: `555f801273f10e624257278fed27bc4b559b8a80`
+
+observed:
+```text
+focused provider-free = 64 PASS / 6 FAIL
+provider calls         = mocked/provider-free
+paid/live calls        = 0
+```
+
+This run intentionally introduced pre-paid architecture attack tests before any product patch.
+
+### Family A — EXACT_DUPLICATE_CONTEXT_BYPASS
+
+failures:
+- duplicate exact + immutable context never called provider;
+- duplicate exact + still-ambiguous context could not reach provider abstain;
+- catalog-order invariant contextual duplicate selection could not be exercised.
+
+current behavior:
+```text
+len(exact) > 1
+→ AMBIGUOUS_EXACT
+→ terminal
+→ decision_context ignored
+```
+
+failure_class:
+`CONTRACT/ARCHITECTURE`
+
+single_owner:
+`BoundedSemanticLinker exact-duplicate branch`
+
+root_fix contract:
+```text
+1 exact → deterministic exact bind
+>1 exact + no extra immutable context → AMBIGUOUS_EXACT
+>1 exact + immutable surrounding context
+    → provider sees ONLY those exact candidates
+    → SELECT | ABSTAIN
+    → BindingGate remains sole authority minter
+```
+
+P0:
+candidate escape=0; context-created candidate=0; silent ambiguity pick=0; cross-tenant=0.
+
+### Family B — MATERIAL_MEANING_CONSERVATION_VISIBILITY
+
+failures:
+- `STANDARD_INTENT_VIEW` does not expose the semantic source spans actually bound;
+- coverage cannot distinguish whole-request provenance from represented semantic meaning;
+- coverage contract does not explicitly guard material qualifier/modifier/predicate loss.
+
+current risk:
+```text
+source_surface = whole request
+semantic binding = only base metric
+material qualifier/predicate omitted
+coverage sees whole source_surface but not represented semantic spans
+→ possible false PASS / wrong GREEN
+```
+
+failure_class:
+`CONTRACT/ARCHITECTURE`
+
+single_owner:
+`StandardCoverageVeto intent-view contract`
+
+root_fix contract:
+- expose exact `semantic_source_surfaces` from runtime `semantic_bindings`;
+- expose typed ranking parameters where present;
+- clarify that `source_surfaces` are provenance anchors, not proof every modifier is represented;
+- veto-only auditor explicitly checks material qualifier/negation/threshold/predicate loss;
+- it may only VETO with exact user source evidence; it still cannot choose semantics or repair.
+
+forbidden fixes for both families:
+- business literal branches;
+- regex/stemming/fuzzy semantic authority;
+- case-derived aliases;
+- automatic duplicate pick;
+- candidate-set widening outside governed catalog;
+- turning CoverageVeto into semantic authority;
+- modifying frozen live corpus.
+
+status:
+`OPEN — TWO GENERIC PRODUCT CONTRACT PATCHES AUTHORIZED`.
 
