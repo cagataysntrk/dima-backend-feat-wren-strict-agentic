@@ -86,11 +86,19 @@ def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any])
         original_retriever = self._retriever
 
         class _CapturingRetriever:
-            def retrieve(inner_self, *, surface, kind_hint, limit):
+            def retrieve(
+                inner_self,
+                *,
+                surface,
+                kind_hint,
+                limit,
+                decision_context=None,
+            ):
                 result = original_retriever.retrieve(
                     surface=surface,
                     kind_hint=kind_hint,
                     limit=limit,
+                    decision_context=decision_context,
                 )
                 captured["retrieval"] = result
                 return result
@@ -184,6 +192,7 @@ def install_standard_eval_trace(monkeypatch, harness, trace_ref: dict[str, Any])
                     "surface": item.surface,
                     "kind_hint": item.kind_hint,
                     "candidate_count": len(item.candidates),
+                    "source_context_present": bool(item.source_context),
                 }
                 for item in requests
             )

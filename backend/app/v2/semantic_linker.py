@@ -75,6 +75,14 @@ class SemanticLinkCandidateCard(FrozenModel):
 class SemanticLinkRequestCard(FrozenModel):
     request_id: str = Field(min_length=1)
     surface: str = Field(min_length=1, max_length=240)
+    source_context: str | None = Field(
+        default=None,
+        max_length=4000,
+        description=(
+            "Immutable current-message evidence supplied by runtime. It may disambiguate "
+            "only among supplied candidates; it is not semantic authority."
+        ),
+    )
     kind_hint: Literal["metric", "dimension", "filter", "unknown"]
     candidates: tuple[SemanticLinkCandidateCard, ...] = Field(min_length=1)
 
@@ -496,11 +504,13 @@ class SemanticCandidateGenerator:
         request_id: str,
         surface: str,
         kind_hint: str,
+        decision_context: str | None = None,
     ) -> CandidateSet:
         retrieval = self._retriever.retrieve(
             surface=surface,
             kind_hint=kind_hint,
             limit=self._max_candidates,
+            decision_context=decision_context,
         )
         governed_by_id = {
             item.card.candidate_id: item
@@ -558,12 +568,15 @@ class SemanticCandidateGenerator:
 
 _LINKER_SYSTEM = """You are Dima's bounded semantic linker.
 
-For each request, interpret only the USER_SURFACE against the supplied CANDIDATES.
-Choose SELECT(candidate_id) only when one supplied candidate is clearly the intended
-business concept. Otherwise ABSTAIN.
+For each request, interpret USER_SURFACE against the supplied CANDIDATES.
+SOURCE_CONTEXT, when present, is immutable exact current-message evidence from runtime.
+Use it only to disambiguate among the supplied candidates. The local USER_SURFACE remains
+the semantic span being bound. Choose SELECT(candidate_id) only when one supplied candidate
+is clearly the intended business concept. Otherwise ABSTAIN.
 
 You have no authority to invent concepts, canonical identifiers, SQL, handles, aliases,
-or new candidates. candidate_id must be copied exactly from that request's candidate set.
+or new candidates. SOURCE_CONTEXT is not authority and cannot create a candidate.
+candidate_id must be copied exactly from that request's candidate set.
 Do not infer database structure. Do not repair the catalog. Return only strict schema.
 """
 
@@ -677,6 +690,7 @@ class BoundedSemanticLinker:
         requests: tuple[tuple[str, str, str], ...],
         *,
         provenance_type: str,
+        decision_context: str | None = None,
         parent_obligation_id: str | None = None,
         trigger_evidence_ref: str | None = None,
     ) -> tuple[BoundedSemanticSelection, ...]:
@@ -685,6 +699,7 @@ class BoundedSemanticLinker:
                 request_id=request_id,
                 surface=surface,
                 kind_hint=kind_hint,
+                decision_context=decision_context,
             )
             for request_id, surface, kind_hint in requests
         ]
@@ -753,6 +768,7 @@ class BoundedSemanticLinker:
                 SemanticLinkRequestCard(
                     request_id=candidate_set.request_id,
                     surface=candidate_set.surface,
+                    source_context=decision_context,
                     kind_hint=candidate_set.kind_hint,
                     candidates=candidate_set.cards,
                 )

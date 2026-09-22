@@ -318,8 +318,15 @@ class _StaticRetriever:
         self.result = result
         self.calls = []
 
-    def retrieve(self, *, surface, kind_hint, limit):
-        self.calls.append((surface, kind_hint, limit))
+    def retrieve(
+        self,
+        *,
+        surface,
+        kind_hint,
+        limit,
+        decision_context=None,
+    ):
+        self.calls.append((surface, kind_hint, limit, decision_context))
         return self.result
 
 
@@ -372,7 +379,7 @@ def test_candidate_generator_uses_explicit_non_authoritative_retriever_seam():
         kind_hint="metric",
     )
 
-    assert retriever.calls == [("net gelir", "metric", 48)]
+    assert retriever.calls == [("net gelir", "metric", 48, None)]
     assert candidate_set.retrieval_exhaustive is False
     assert candidate_set.retrieval_backend == "test_ranked_retriever"
     assert candidate_set.bindings[0].card.candidate_id == governed.card.candidate_id
@@ -728,3 +735,189 @@ def test_ranked_retriever_module_has_no_fuzzy_morphology_or_regex_authority():
     )
     for marker in forbidden:
         assert marker not in source
+
+
+
+def _two_cube_same_dimension_context():
+    return BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-contextual",
+            mdl_version="mdl-contextual",
+            compact_catalog_builder_version="contextual-test",
+            business_rules_hash="5" * 64,
+            prompt_context_policy_version="contextual-test",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="orders",
+                display="Orders",
+                synonyms=("invoices",),
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="orders.amount",
+                        display="Invoice Total",
+                        synonyms=("invoice total",),
+                    ),
+                ),
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="orders.account_code",
+                        display="Account Code",
+                        synonyms=("account code",),
+                    ),
+                ),
+            ),
+            CompactCubeContextV0(
+                canonical_name="ledger",
+                display="Ledger",
+                synonyms=("accounting ledger",),
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="ledger.balance",
+                        display="Balance",
+                        synonyms=("balance",),
+                    ),
+                ),
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="ledger.account_code",
+                        display="Account Code",
+                        synonyms=("account code",),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+class _SelectOrdersFromContext:
+    def __init__(self):
+        self.requests = ()
+
+    def decide(self, requests):
+        self.requests = requests
+        choices = []
+        for request in requests:
+            assert request.source_context is not None
+            target = next(
+                card.candidate_id
+                for card in request.candidates
+                if "Orders" in card.cube_labels
+            )
+            choices.append(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="SELECT",
+                    candidate_id=target,
+                )
+            )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
+def test_source_context_disambiguates_only_inside_bounded_candidate_set():
+    provider = _SelectOrdersFromContext()
+    handles = SemanticHandleRegistry()
+    generator = SemanticCandidateGenerator(
+        semantic_context=_two_cube_same_dimension_context(),
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+    )
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=handles,
+            tenant_binding="tenant-a",
+            context_version="ctx-contextual",
+        ),
+        provider=provider,
+    )
+
+    (selection,) = linker.resolve(
+        (("ctx-1", "account code field", "dimension"),),
+        provenance_type="USER_SOURCE",
+        decision_context="show top accounts by invoice total and account code",
+    )
+
+    assert selection.status == "BOUND"
+    assert selection.binding is not None
+    assert selection.binding.canonical_target.canonical_name == (
+        "orders.account_code"
+    )
+    assert provider.requests[0].source_context == (
+        "show top accounts by invoice total and account code"
+    )
+    supplied = {
+        card.candidate_id for card in provider.requests[0].candidates
+    }
+    assert selection.binding.card.candidate_id in supplied
+
+
+def test_source_context_does_not_auto_bind_without_linker_authority():
+    generator = SemanticCandidateGenerator(
+        semantic_context=_two_cube_same_dimension_context(),
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+    )
+    handles = SemanticHandleRegistry()
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=handles,
+            tenant_binding="tenant-a",
+            context_version="ctx-contextual",
+        ),
+        provider=None,
+    )
+
+    (selection,) = linker.resolve(
+        (("ctx-2", "account code field", "dimension"),),
+        provenance_type="USER_SOURCE",
+        decision_context="invoice total account code",
+    )
+    assert selection.status == "LINKER_UNAVAILABLE"
+    assert selection.binding is None
+
+
+def test_exact_duplicate_alias_stays_ambiguous_even_with_source_context():
+    generator = SemanticCandidateGenerator(
+        semantic_context=_two_cube_same_dimension_context(),
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+    )
+    handles = SemanticHandleRegistry()
+    provider = _SelectOrdersFromContext()
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=handles,
+            tenant_binding="tenant-a",
+            context_version="ctx-contextual",
+        ),
+        provider=provider,
+    )
+
+    (selection,) = linker.resolve(
+        (("ctx-3", "account code", "dimension"),),
+        provenance_type="USER_SOURCE",
+        decision_context="invoice total account code",
+    )
+    assert selection.status == "AMBIGUOUS_EXACT"
+    assert selection.binding is None
+    assert provider.requests == ()
+
+
+def test_decision_context_cannot_retrieve_candidate_outside_governed_catalog():
+    generator = SemanticCandidateGenerator(
+        semantic_context=_two_cube_same_dimension_context(),
+        schema={"models": [], "cubes": [], "company_vocabulary": []},
+    )
+    candidate_set = generator.generate(
+        request_id="ctx-4",
+        surface="account code field",
+        kind_hint="dimension",
+        decision_context="invented nonexistent warehouse concept",
+    )
+    governed = {
+        item.card.candidate_id
+        for item in generator._governed_candidates("dimension")
+    }
+    assert {
+        item.card.candidate_id for item in candidate_set.bindings
+    } <= governed

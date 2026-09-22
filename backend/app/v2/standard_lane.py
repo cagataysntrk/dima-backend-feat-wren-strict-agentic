@@ -75,7 +75,13 @@ class StandardDraftSemanticSurface(FrozenModel):
     surface: str = Field(min_length=1)
     kind_hint: Literal[
         "metric", "dimension", "filter", "time", "comparison", "unknown"
-    ]
+    ] = Field(
+        description=(
+            "filter means an explicit concrete governed category/entity value used to "
+            "restrict rows. A descriptive qualifier or implied/computed predicate is not "
+            "a standalone filter unless the user states a concrete governed value."
+        )
+    )
 
 
 class StandardDraftObligation(FrozenModel):
@@ -162,6 +168,11 @@ Rules:
 - Every source_surface and semantic surface MUST be an exact substring of USER_MESSAGE.
 - semantic_surfaces contain only tenant semantic concepts that need governed binding:
   metric, dimension, filter, time, comparison.
+- FILTER CONTRACT: emit kind=filter only for an explicit concrete category/entity VALUE
+  stated by the user that can restrict rows through the governed value catalog. Do NOT split
+  descriptive qualifiers, negation, qualitative modifiers, implied/computed predicates, or
+  business adjectives into standalone filters. Keep such wording inside the exact metric/dimension
+  surface it qualifies when that wording is part of the requested business concept.
 - EVERY item placed in semantic_surfaces is MATERIAL and binding-required. A contextual/non-material
   phrase must not be placed there. A declared semantic surface may never be silently dropped merely
   because another surface of the same semantic kind resolved.

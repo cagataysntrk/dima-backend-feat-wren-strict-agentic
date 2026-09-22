@@ -82,6 +82,14 @@ class SourceSpanRegistry:
         except KeyError as exc:
             raise KeyError("unknown/fabricated source span ref") from exc
 
+    def message_text_for(self, source_ref: str) -> str:
+        """Return the immutable registered current-message text for a valid source ref."""
+        span = self.validate(source_ref)
+        message = self._messages.get(span.message_id)
+        if message is None:
+            raise ValueError("source span message registry binding missing")
+        return message.text
+
     def contains(self, container_ref: str, inner_ref: str) -> bool:
         """True when both refs share one message and container fully covers inner."""
         container = self.validate(container_ref)

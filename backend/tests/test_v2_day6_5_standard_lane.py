@@ -488,3 +488,55 @@ def test_all_declared_semantic_surfaces_are_accounted_when_bound(monkeypatch):
     assert len(declared_refs) == 2
     assert len(outcome.authority.semantic_handle_refs) == 2
     assert engine.authority_registry.accepted("turn-all-bound") is not None
+
+
+
+def test_standard_filter_contract_is_concrete_value_only_and_case_agnostic():
+    import app.v2.standard_lane as module
+
+    prompt = module._STANDARD_DRAFT_SYSTEM
+    schema = module.StandardDraftSemanticSurface.model_json_schema()
+    hint = schema["properties"]["kind_hint"]["description"]
+
+    assert "explicit concrete" in prompt
+    assert "governed value catalog" in prompt
+    assert "descriptive qualifiers" in prompt
+    assert "explicit concrete governed category/entity value" in hint
+
+    forbidden_literals = (
+        "cari",
+        "bakiye",
+        "mizan",
+        "tahsil edilmemiş",
+        "fatura",
+    )
+    lowered = prompt.casefold()
+    assert not any(value in lowered for value in forbidden_literals)
+
+
+def test_unresolved_declared_filter_still_fails_closed_after_contract_clarification(
+    monkeypatch,
+):
+    question = "net gelir özel durum"
+    draft_payload = _draft(
+        [
+            _obligation(
+                obligation_id="U1",
+                capability="performance",
+                source_surfaces=(question,),
+                semantic_surfaces=(
+                    ("net gelir", "metric"),
+                    ("özel durum", "filter"),
+                ),
+            )
+        ]
+    )
+    engine, outcome, calls = _run_surface_case(
+        monkeypatch,
+        question=question,
+        draft_payload=draft_payload,
+    )
+    assert outcome.status == StandardLaneStatus.CLARIFICATION_REQUIRED
+    assert any("özel durum" in reason for reason in outcome.reasons)
+    assert outcome.authority is None
+    assert calls == []

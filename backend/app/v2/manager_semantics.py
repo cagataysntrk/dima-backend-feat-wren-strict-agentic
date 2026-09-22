@@ -233,9 +233,19 @@ class ManagerSemanticResolutionAdapter:
             )
             for index, (source_ref, text, hint) in enumerate(entries)
         )
+        decision_context: str | None = None
+        source_contexts = {
+            self._source_spans.message_text_for(source_ref)
+            for source_ref, _, _ in entries
+            if source_ref is not None
+        }
+        if len(source_contexts) == 1:
+            decision_context = next(iter(source_contexts))
+
         selections = self._semantic_linker.resolve(
             requests,
             provenance_type=args.provenance,
+            decision_context=decision_context,
             parent_obligation_id=args.parent_obligation_id,
             trigger_evidence_ref=args.evidence_ref,
         )

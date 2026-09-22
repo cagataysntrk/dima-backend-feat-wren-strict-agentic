@@ -37,6 +37,7 @@ class SemanticCatalogRetriever(Protocol[T]):
         surface: str,
         kind_hint: str,
         limit: int,
+        decision_context: str | None = None,
     ) -> SemanticRetrievalResult[T]:
         ...
 
@@ -203,6 +204,7 @@ class IndexedTokenSemanticCatalogRetriever(Generic[T]):
         surface: str,
         kind_hint: str,
         limit: int,
+        decision_context: str | None = None,
     ) -> SemanticRetrievalResult[T]:
         index = self._build(kind_hint)
         surface_norm = _normalized_text(surface)
@@ -226,26 +228,48 @@ class IndexedTokenSemanticCatalogRetriever(Generic[T]):
             )
 
         query_tokens = frozenset(_tokens(surface_norm))
+        decision_norm = _normalized_text(decision_context or "")
+        decision_tokens = frozenset(_tokens(decision_norm))
+
         candidate_ids: set[int] = set()
-        for token in query_tokens:
+        for token in query_tokens | decision_tokens:
             candidate_ids.update(index.postings.get(token, ()))
 
         scored: list[tuple[tuple[int, ...], str, T]] = []
         for idx in candidate_ids:
             entry = index.entries[idx]
-            primary = self._term_score(
+            local_primary = self._term_score(
                 surface_norm=surface_norm,
                 query_tokens=query_tokens,
                 terms=entry.primary_norm,
                 tokens=entry.primary_tokens,
             )
-            context = self._term_score(
+            decision_primary = self._term_score(
+                surface_norm=decision_norm,
+                query_tokens=decision_tokens,
+                terms=entry.primary_norm,
+                tokens=entry.primary_tokens,
+            )
+            decision_catalog_context = self._term_score(
+                surface_norm=decision_norm,
+                query_tokens=decision_tokens,
+                terms=entry.context_norm,
+                tokens=entry.context_tokens,
+            )
+            local_catalog_context = self._term_score(
                 surface_norm=surface_norm,
                 query_tokens=query_tokens,
                 terms=entry.context_norm,
                 tokens=entry.context_tokens,
             )
-            score = (*primary, *context)
+            # Local semantic surface is always primary evidence. Full source context
+            # breaks ties and improves discovery only; it cannot create or bind candidates.
+            score = (
+                *local_primary,
+                *decision_primary,
+                *decision_catalog_context,
+                *local_catalog_context,
+            )
             if not any(score):
                 continue
             scored.append((score, entry.document.stable_id, entry.item))
@@ -278,7 +302,7 @@ class EnumeratingSemanticCatalogRetriever(Generic[T]):
         kind_hint: str,
         limit: int,
     ) -> SemanticRetrievalResult[T]:
-        del surface, limit
+        del surface, limit, decision_context
         return SemanticRetrievalResult(
             candidates=tuple(self.enumerate_candidates(kind_hint)),
             exhaustive=True,
