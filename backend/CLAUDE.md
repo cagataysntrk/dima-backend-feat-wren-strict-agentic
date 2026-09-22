@@ -39,7 +39,11 @@
 >
 > **Standard front-door:** retrieval/discovery authority değildir. DIRECT yalnız ilk-attempt seal outcome'udur; BUILDER aynı Standard engine'in bounded progress-driven repair outcome'udur. Standard loop generic kernel'i kullanır fakat kernel semantic/authority/research truth bilmez. `simple_standard_research_manager_loop = 0`.
 >
-> **Substrate kararı:** Wren current incumbent'tır. Metabase şimdi dependency/production path değildir. Day 6.5 engineering closure + DEV80 sonrasında, Validation/Hidden certification öncesinde isolated `D65-X` substrate-only challenger yapılır. Production'da Wren + Metabase equal truth engines yasaktır.
+> **D65-J1 pre-freeze:** reference canary 35697064833 GREEN; freeze/DEV80'dan önce isolated decision-model challenger çözülür.
+> J1A product code'a dokunmaz. `typesafe/jev-1.13` yalnız OpenRouter Decisions API üzerinden frozen CandidateSet seçiminde Gemini Flash-Lite ve Sol ile kıyaslanır; Manager/TemporalNormalizer kapsam dışıdır.
+> Jev promising çıkarsa ancak D65-J1B ile explicit DecisionProvider seam + SemanticLinker/TemporalNormalizer role split yapılabilir ve tüm focused/family/live/canary/sentinel gates yeniden geçilir.
+> J1 cognition experiment ≠ D65-X substrate experiment.
+>> **Substrate kararı:** Wren current incumbent'tır. Metabase şimdi dependency/production path değildir. Day 6.5 engineering closure + DEV80 sonrasında, Validation/Hidden certification öncesinde isolated `D65-X` substrate-only challenger yapılır. Production'da Wren + Metabase equal truth engines yasaktır.
 > **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
 > Canonical upstream: `metabase/metabase`.
 > Current Day 6.5 reference SHA: `74216b30981d8310c4cf724d63ca282e2e63529d`.
