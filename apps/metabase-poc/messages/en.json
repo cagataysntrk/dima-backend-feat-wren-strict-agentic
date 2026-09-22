@@ -110,5 +110,23 @@
   },
   "common": {
     "loading": "Loading…"
+  },
+  "palette": {
+    "title": "Command palette",
+    "description": "Search analyses, dashboards, chats and pages.",
+    "placeholder": "Search or jump to a page…",
+    "searching": "Searching…",
+    "empty": "No results.",
+    "library": "Analyses and dashboards",
+    "pages": "Pages",
+    "short": "Search"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "palette": "Command palette",
+    "sidebar": "Toggle the sidebar",
+    "runSql": "Run the query",
+    "shortcuts": "This dialog",
+    "close": "Close"
   }
 }

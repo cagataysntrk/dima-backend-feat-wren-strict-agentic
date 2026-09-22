@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUp, ChevronDown, Square, Table2 } from "lucide-react";
 import { BorderBeam } from "border-beam";
@@ -27,13 +27,15 @@ interface Props {
   /** Start-screen variant: taller box wrapped in the libraries.dev border beam. */
   hero?: boolean;
   autoFocus?: boolean;
+  /** Focus the box whenever this changes (conversation switch, answer done). */
+  focusKey?: string;
 }
 
 /**
  * Chat input: text on top, a toolbar row below (data-scope chip left, round
  * send button right). Enter sends, Shift+Enter adds a line.
  */
-export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, hero, autoFocus }: Props) {
+export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, hero, autoFocus, focusKey }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const { resolvedTheme } = useTheme();
   // The beam builds its stylesheet in the browser and follows the theme, which
@@ -45,6 +47,14 @@ export function Composer({ value, onChange, onSubmit, disabled, busy, onStop, he
     () => false,
   );
   const canSend = !disabled && !busy && value.trim().length > 0;
+
+  useEffect(() => {
+    if (focusKey === undefined || disabled) return;
+    // Only on pointer devices: focusing on a phone throws the keyboard up over
+    // the answer the person just asked for.
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    ref.current?.focus();
+  }, [focusKey, disabled]);
 
   /** Insert a table name at the cursor, then give focus back to the text. */
   const insert = (text: string) => {

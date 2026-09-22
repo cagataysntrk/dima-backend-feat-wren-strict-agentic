@@ -318,6 +318,9 @@ export function ChatView({
                   disabled={!configured}
                   busy={pending}
                   onStop={stop}
+                  // Back to the box when the conversation changes or an answer
+                  // lands, so the next question can just be typed.
+                  focusKey={`${conv?.id ?? ""}:${pending ? "busy" : "idle"}`}
                 />
               </div>
             </div>

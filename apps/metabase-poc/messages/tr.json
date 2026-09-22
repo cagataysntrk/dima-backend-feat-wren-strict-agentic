@@ -110,5 +110,23 @@
   },
   "common": {
     "loading": "Yükleniyor…"
+  },
+  "palette": {
+    "title": "Komut paleti",
+    "description": "Analiz, pano, sohbet ve sayfalarda arayın.",
+    "placeholder": "Ara ya da bir sayfaya gidin…",
+    "searching": "Aranıyor…",
+    "empty": "Sonuç yok.",
+    "library": "Analiz ve panolar",
+    "pages": "Sayfalar",
+    "short": "Ara"
+  },
+  "shortcuts": {
+    "title": "Klavye kısayolları",
+    "palette": "Komut paleti",
+    "sidebar": "Kenar çubuğunu aç/kapat",
+    "runSql": "Sorguyu çalıştır",
+    "shortcuts": "Bu pencere",
+    "close": "Kapat"
   }
 }

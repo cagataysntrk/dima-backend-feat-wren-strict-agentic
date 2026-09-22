@@ -3,8 +3,11 @@
 import { Suspense, createContext, useContext, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
-import { PanelLeft } from "lucide-react";
+import { PanelLeft, Search } from "lucide-react";
 import { SidebarInset, SidebarProvider, useSidebar } from "@dima/ui/primitives/sidebar";
+import { useTranslations } from "next-intl";
+import { CommandPalette, OPEN_PALETTE } from "./CommandPalette";
+import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Button } from "@dima/ui/primitives/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
 import { AppSidebar, type ShellOrg, type ShellUser } from "./AppSidebar";
@@ -50,6 +53,8 @@ export function AppShell({ user, orgs, activeOrgId, canAnalyze, children }: Prop
       <Suspense>
         <AppSidebar user={user} orgs={orgs} activeOrgId={activeOrgId} canAnalyze={canAnalyze} />
       </Suspense>
+      {activeOrgId && <CommandPalette orgId={activeOrgId} canAnalyze={canAnalyze} />}
+      <ShortcutsDialog />
       <SidebarInset className="flex min-h-0 flex-col overflow-hidden">
         <TopBar setSlot={setSlot} setLeftSlot={setLeftSlot} />
         <TopbarSlot.Provider value={slot}>
@@ -70,6 +75,26 @@ export function AppShell({ user, orgs, activeOrgId, canAnalyze, children }: Prop
   );
 }
 
+/** Discoverability: the palette is a keystroke, but not everyone guesses it. */
+function PaletteButton() {
+  const t = useTranslations("palette");
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE))}
+          className="ml-1 inline-flex h-7 items-center gap-1.5 rounded-full border border-[var(--surface-edge)] px-2.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <Search className="size-3.5" aria-hidden />
+          <span className="hidden sm:inline">{t("short")}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{t("title")}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 function TopBar({
   setSlot,
   setLeftSlot,
@@ -78,6 +103,7 @@ function TopBar({
   setLeftSlot: (el: HTMLElement | null) => void;
 }) {
   const { toggleSidebar } = useSidebar();
+  const t = useTranslations("nav");
   return (
     <div className="flex h-12 shrink-0 items-center gap-1 px-2">
       <Tooltip>
@@ -85,17 +111,18 @@ function TopBar({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Kenar çubuğunu aç/kapat"
+            aria-label={t("toggleSidebar")}
             onClick={toggleSidebar}
             className="text-muted-foreground hover:text-foreground"
           >
             <PanelLeft className="size-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Kenar çubuğu (⌘B)</TooltipContent>
+        <TooltipContent side="bottom">{t("toggleSidebar")}</TooltipContent>
       </Tooltip>
       <div ref={setLeftSlot} className="flex min-w-0 items-center gap-0.5" />
       <div ref={setSlot} className="ml-auto flex items-center gap-0.5" />
+      <PaletteButton />
     </div>
   );
 }
