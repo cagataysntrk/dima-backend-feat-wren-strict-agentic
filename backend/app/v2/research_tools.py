@@ -78,8 +78,8 @@ class ResearchToolContractError(RuntimeError):
 class ResearchToolRegistry:
     """Closed Day 7 tool registry.
 
-    The first vertical intentionally exposes ONE analytical family only. More families
-    are added after this one proves the full governed evidence loop.
+    Families are declared only after an existing governed Dima/Wren primitive is
+    proven to produce verified Evidence/QueryContract output.
     """
 
     _SPECS = {
@@ -104,6 +104,40 @@ class ResearchToolRegistry:
             contract=ResearchToolContract(
                 tool_id="wren.breakdown",
                 accepted_task_kinds=(ResearchTaskKind.BREAKDOWN,),
+                input_schema="RunAnalyticsArgs@v1",
+                output_schema="ManagerAnalyticsObservation@v1",
+                authority=ResearchToolAuthority.ACCEPTED_RESEARCH,
+                evidence_kind="standard_analytics",
+                max_rows=20,
+                timeout_ms=15_000,
+                cost_class=ResearchToolCostClass.CHEAP,
+                required_permissions=("query:run",),
+            ),
+            manager_tool=ManagerToolName.RUN_ANALYTICS,
+            args_model=RunAnalyticsArgs,
+            output_model=ManagerAnalyticsObservation,
+        ),
+        "wren.compare": ResearchToolSpec(
+            contract=ResearchToolContract(
+                tool_id="wren.compare",
+                accepted_task_kinds=(ResearchTaskKind.COMPARE,),
+                input_schema="RunAnalyticsArgs@v1",
+                output_schema="ManagerAnalyticsObservation@v1",
+                authority=ResearchToolAuthority.ACCEPTED_RESEARCH,
+                evidence_kind="standard_analytics",
+                max_rows=20,
+                timeout_ms=15_000,
+                cost_class=ResearchToolCostClass.MODERATE,
+                required_permissions=("query:run",),
+            ),
+            manager_tool=ManagerToolName.RUN_ANALYTICS,
+            args_model=RunAnalyticsArgs,
+            output_model=ManagerAnalyticsObservation,
+        ),
+        "wren.rank": ResearchToolSpec(
+            contract=ResearchToolContract(
+                tool_id="wren.rank",
+                accepted_task_kinds=(ResearchTaskKind.RANK,),
                 input_schema="RunAnalyticsArgs@v1",
                 output_schema="ManagerAnalyticsObservation@v1",
                 authority=ResearchToolAuthority.ACCEPTED_RESEARCH,
@@ -213,6 +247,45 @@ class ResearchToolRegistry:
                     "Research task did not declare semantic inputs: "
                     + ", ".join(sorted(undeclared_handles))
                 )
+
+            # Tool-family shape is deterministic contract truth.  A tool name alone
+            # never upgrades a generic query into a comparison/ranking/breakdown.
+            if task_kind == ResearchTaskKind.QUERY:
+                if validated.dimension_handles or validated.comparison_handle is not None or validated.ranking_direction is not None:
+                    raise ResearchToolContractError(
+                        "QUERY task cannot carry breakdown/comparison/ranking semantics"
+                    )
+            elif task_kind == ResearchTaskKind.BREAKDOWN:
+                if not validated.dimension_handles:
+                    raise ResearchToolContractError(
+                        "BREAKDOWN task requires governed dimension handles"
+                    )
+                if validated.comparison_handle is not None or validated.ranking_direction is not None:
+                    raise ResearchToolContractError(
+                        "BREAKDOWN task cannot smuggle comparison/ranking semantics"
+                    )
+            elif task_kind == ResearchTaskKind.COMPARE:
+                if validated.comparison_handle is None:
+                    raise ResearchToolContractError(
+                        "COMPARE task requires governed comparison handle"
+                    )
+                if validated.ranking_direction is not None:
+                    raise ResearchToolContractError(
+                        "COMPARE task does not implicitly become ranked comparison"
+                    )
+            elif task_kind == ResearchTaskKind.RANK:
+                if (
+                    not validated.dimension_handles
+                    or validated.ranking_direction is None
+                    or validated.limit is None
+                ):
+                    raise ResearchToolContractError(
+                        "RANK task requires dimension + ranking direction + limit"
+                    )
+                if validated.comparison_handle is not None:
+                    raise ResearchToolContractError(
+                        "RANK task does not implicitly become ranked comparison"
+                    )
 
             if task.origin == "USER_SEED":
                 if validated.derived_task_id is not None:
