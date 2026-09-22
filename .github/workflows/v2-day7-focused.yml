@@ -100,13 +100,13 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v2_day7_same_domain_tools.py
 
-      - name: CrossDomainJoinGate attacks
-        working-directory: backend
-        run: pytest -q tests/test_v2_day7_cross_domain_join_gate.py
-
       - name: Governed cross-domain fact construction
         working-directory: backend
         run: pytest -q tests/test_v2_day7_cross_domain_facts.py
+
+      - name: CrossDomainJoinGate attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_cross_domain_join_gate.py
 
       - name: Fanout certificate MDL freshness
         working-directory: backend
