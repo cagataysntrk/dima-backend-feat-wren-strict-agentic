@@ -1741,3 +1741,32 @@ P13                               = PAUSED
 C1 must use immutable stock and fork image digests, the frozen Boyahane snapshot, the same restricted
 principal and Luna provider/model. Closure still requires 100% retention of stock-PASS tasks, zero new
 silent wrong, zero permission regression and zero dataset-scope drift.
+
+
+---
+
+## Engine workspace integration — fork is now inside Platform as an exact gitlink
+
+```text
+Platform path       = engine/metabase
+dependency type     = Git submodule / gitlink
+engine repository   = UpcyTech/dima-metabase-engine
+engine parent       = metabase/metabase
+pinned engine SHA   = 6bb6924452e5b9dc42b3745bb88c3125a468b297
+source vendoring    = 0
+subtree copy        = 0
+moving-ref runtime  = forbidden
+```
+
+Development ownership is now explicit:
+
+```text
+ENGINE CHANGE
+→ commit/test in UpcyTech/dima-metabase-engine
+→ exact engine SHA
+→ update Platform engine/metabase gitlink
+→ Platform integration/governance proof
+```
+
+This preserves upstream history and syncability while making the engine a first-class component of the
+Dima Platform workspace.
