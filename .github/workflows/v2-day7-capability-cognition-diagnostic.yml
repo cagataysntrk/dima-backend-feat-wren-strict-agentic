@@ -40,7 +40,7 @@ jobs:
       - name: Workers=1 capability cognition diagnostic
         working-directory: backend
         run: |
-          python lab/v2_day7_manager_live_sol.py \
+          python lab/v2_day7_capability_cognition_diagnostic.py \
             --cases eval/v2_day7_capability_cognition_diagnostic.yaml \
             --output lab/reports/v2_day7_capability_cognition_diagnostic.json
 
