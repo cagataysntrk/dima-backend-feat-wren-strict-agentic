@@ -9,7 +9,10 @@ from types import SimpleNamespace
 import yaml
 
 import lab.v2_day7_manager_live_sol as live
+import lab.v2_day7_capability_cognition_diagnostic as cognition
 from lab.v2_day7_manager_live_sol import MDL_VERSION, semantic_schema
+from app.v2.manager_policy import ManagerCapabilityRegistry
+from app.v2.manager_preacceptance import IntentDraft
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -422,3 +425,71 @@ def test_capability_cognition_diagnostic_is_balanced_and_cognition_only():
     assert all("max_queries" not in case for case in cases)
     assert all("expected_preacceptance_state" not in case for case in cases)
 
+
+
+def test_capability_contract_requires_material_causal_intent_for_root_cause():
+    rows = {
+        row["capability"]: row
+        for row in ManagerCapabilityRegistry().manager_contract()
+    }
+    performance = rows["performance"]["intent_description"]
+    root_cause = rows["root_cause"]["intent_description"]
+
+    assert "descriptive rather than causal" in performance
+    assert "unless the user materially requests why it happened" in performance
+    assert "Causal explanatory investigation" in root_cause
+    assert "Require material causal intent" in root_cause
+    assert "merely descriptive metric investigation" in root_cause
+
+
+def test_cognition_diagnostic_scores_analytical_lane_not_presentation_extras():
+    draft = IntentDraft.model_validate(
+        {
+            "obligations": [
+                {
+                    "obligation_id": "U1",
+                    "capability_key": "performance",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["inspect metric"],
+                    "semantic_surfaces": [
+                        {"surface": "metric", "kind_hint": "metric"}
+                    ],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+                {
+                    "obligation_id": "P1",
+                    "capability_key": "report",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["report result"],
+                    "semantic_surfaces": [],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+                {
+                    "obligation_id": "X1",
+                    "capability_key": "root_cause",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "EXCLUDED",
+                    "source_surfaces": ["do not infer causes"],
+                    "semantic_surfaces": [
+                        {"surface": "metric", "kind_hint": "metric"}
+                    ],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+            ],
+            "research_directives": [],
+            "control_requests": [],
+        }
+    )
+
+    assert cognition._analytical_required_capabilities(draft) == ["performance"]
