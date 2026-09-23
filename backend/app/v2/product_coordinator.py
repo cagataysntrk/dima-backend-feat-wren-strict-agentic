@@ -16,15 +16,18 @@ from app.config import get_settings
 from app.llm import build_generator
 from app.v2.context_provider import ContextProviderV0
 from app.v2.model_policy import ModelRole, ModelRolePolicy
-from app.v2.models import AskV2Request, EvidenceArtifact
+from app.v2.models import EvidenceArtifact
 from app.v2.product_models import (
+    ProductAskRequest,
     ProductEvidenceRef,
     ProductEventKind,
     ProductLane,
     ProductRequestContext,
     ProductResponse,
+    ProductSectionContinuation,
     ProductStatus,
     ProductTerminalReceipt,
+    VersionedReport,
 )
 from app.v2.product_events import ProductEventSink
 from app.v2.research_lane import ResearchLaneResult, ResearchLaneService
@@ -38,6 +41,11 @@ from app.v2.report_builder import (
     ReportSourceProvenance,
 )
 from app.v2.report_narration import ReportNarrator
+from app.v2.report_continuation import (
+    ReportContextRegistry,
+    ReportSectionContinuationSigner,
+    StaleReportContinuationError,
+)
 from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
 from app.v2.semantic_linker import StructuredSemanticCandidateDecisionProvider
 from app.v2.standard_lane import (
@@ -46,6 +54,7 @@ from app.v2.standard_lane import (
     StandardLaneStatus,
 )
 from app.v2.temporal_intent import StructuredTemporalNormalizationProvider
+from control_plane.security import derive_hmac_key
 
 
 def _product_evidence(item: EvidenceArtifact) -> ProductEvidenceRef:
@@ -117,11 +126,17 @@ class ProductCoordinator:
         standard_model_role: str | None = None,
         research_lane: ResearchLaneService | None = None,
         report_narrator: ReportNarrator | None = None,
+        report_contexts: ReportContextRegistry | None = None,
+        continuation_signer: ReportSectionContinuationSigner | None = None,
     ) -> None:
         self._standard_lane = standard_lane
         self._standard_model_role = standard_model_role
         self._research_lane = research_lane
         self._report_narrator = report_narrator
+        self._report_contexts = report_contexts or ReportContextRegistry()
+        self._continuation_signer = continuation_signer or ReportSectionContinuationSigner(
+            signing_key=derive_hmac_key("v2-report-section-continuation-v1")
+        )
 
     def _ensure_standard_lane(self) -> None:
         if self._standard_lane is None:
@@ -141,7 +156,7 @@ class ProductCoordinator:
     def _bind_context(
         *,
         request,
-        body: AskV2Request,
+        body: ProductAskRequest,
         principal,
     ) -> ProductRequestContext:
         service, schema, runtime = bind_runtime(request, principal)
@@ -164,7 +179,7 @@ class ProductCoordinator:
         self,
         *,
         request,
-        body: AskV2Request,
+        body: ProductAskRequest,
         principal,
         event_sink: ProductEventSink | None = None,
         cancel_check: Callable[[], bool] | None = None,
@@ -183,6 +198,31 @@ class ProductCoordinator:
             refs=(context.request_ref,),
             transition_ref="frontdoor:bound",
         )
+
+        if body.report_section_token is not None:
+            payload = self._continuation_signer.verify(
+                body.report_section_token,
+                tenant_binding=context.tenant_binding,
+                context_version=context.semantic_context.context_version.version,
+                session_id=body.session_id,
+                thread_id=body.thread_id,
+            )
+            principal_subject = str(getattr(context.principal, "user_id", "") or "")
+            self._report_contexts.resolve(
+                payload,
+                principal_subject=principal_subject,
+                tenant_binding=context.tenant_binding,
+                context_version=context.semantic_context.context_version.version,
+                session_id=body.session_id,
+                thread_id=body.thread_id,
+            )
+            # Security/locator admission is complete, but the current Research
+            # pre-acceptance schema cannot yet bind inherited section metric handles to
+            # a new USER_MUST follow-up obligation without changing semantic authority.
+            raise StaleReportContinuationError(
+                "section continuation is valid but semantic follow-up binding is not yet admissible"
+            )
+
         standard = self._standard_lane.run(
             question=body.question,
             turn_id=f"turn:{context.request_ref}",
@@ -497,6 +537,40 @@ class ProductCoordinator:
             refs=(status.value,),
             transition_ref=f"terminal:{status.value}",
         )
+
+        report_version = 1
+        principal_subject = str(getattr(context.principal, "user_id", "") or "")
+        self._report_contexts.register(
+            report=build.report,
+            research_result=result,
+            principal_subject=principal_subject,
+            tenant_binding=context.tenant_binding,
+            context_version=context.semantic_context.context_version.version,
+            session_id=context.session_id,
+            thread_id=context.thread_id,
+            source_run_ref=snapshot.run_id,
+            lineage_ref=result.accepted_contract.lineage_id,
+            report_version=report_version,
+        )
+        continuations = tuple(
+            ProductSectionContinuation(
+                section_ref=section.section_id,
+                followup_context_ref=section.followup_context_ref,
+                token=self._continuation_signer.mint(
+                    tenant_binding=context.tenant_binding,
+                    context_version=context.semantic_context.context_version.version,
+                    session_id=context.session_id,
+                    thread_id=context.thread_id,
+                    report_id=build.report.report_id,
+                    section_id=section.section_id,
+                    followup_context_ref=section.followup_context_ref,
+                    source_run_ref=snapshot.run_id,
+                    lineage_ref=result.accepted_contract.lineage_id,
+                ),
+            )
+            for section in build.report.sections
+        )
+
         return ProductResponse(
             request_ref=context.request_ref,
             lane=ProductLane.RESEARCH,
@@ -506,7 +580,11 @@ class ProductCoordinator:
             artifact_refs=tuple(
                 item.artifact_id for item in projection.artifacts
             ),
-            report=build.report,
+            report=VersionedReport(
+                version=report_version,
+                report=build.report,
+                source_run_ref=snapshot.run_id,
+            ),
             narration=overlay,
             limitations=tuple(
                 dict.fromkeys(
@@ -526,6 +604,7 @@ class ProductCoordinator:
                 tool_calls=snapshot.tool_calls,
                 data_queries=snapshot.data_queries,
             ),
+            section_continuations=continuations,
         )
 
     @staticmethod
