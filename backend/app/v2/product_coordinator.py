@@ -43,6 +43,7 @@ from app.v2.report_builder import (
 from app.v2.report_narration import ReportNarrator
 from app.v2.report_continuation import (
     ReportContextRegistry,
+    ReportContinuationNotAdmissibleError,
     ReportSectionContinuationSigner,
     StaleReportContinuationError,
 )
@@ -219,7 +220,7 @@ class ProductCoordinator:
             # Security/locator admission is complete, but the current Research
             # pre-acceptance schema cannot yet bind inherited section metric handles to
             # a new USER_MUST follow-up obligation without changing semantic authority.
-            raise StaleReportContinuationError(
+            raise ReportContinuationNotAdmissibleError(
                 "section continuation is valid but semantic follow-up binding is not yet admissible"
             )
 
