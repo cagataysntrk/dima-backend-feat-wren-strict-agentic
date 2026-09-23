@@ -1218,6 +1218,36 @@ class EvidenceArtifact(FrozenModel):
     payload: dict[str, Any] = Field(default_factory=dict)
     limitations: tuple[str, ...] = ()
 
+    # Day7 derived analytics lineage. Existing execution Evidence remains compatible
+    # because these fields default to the original execution shape.
+    source_kind: Literal["EXECUTION", "DERIVED_ANALYTICAL"] = "EXECUTION"
+    parent_evidence_refs: tuple[str, ...] = ()
+    parent_query_contract_refs: tuple[str, ...] = ()
+    transformation: Literal["TREND", "CONTRIBUTION", "PEER_COMPARE"] | None = None
+
+    @model_validator(mode="after")
+    def _derived_lineage_contract(self):
+        if self.source_kind == "DERIVED_ANALYTICAL":
+            if not self.parent_evidence_refs:
+                raise ValueError("derived Evidence requires parent_evidence_refs")
+            if not self.parent_query_contract_refs:
+                raise ValueError("derived Evidence requires parent_query_contract_refs")
+            if self.transformation is None:
+                raise ValueError("derived Evidence requires transformation")
+            if set(self.parent_query_contract_refs) - set(self.query_contract_refs):
+                raise ValueError(
+                    "derived Evidence query_contract_refs must preserve every parent QueryContract"
+                )
+        elif (
+            self.parent_evidence_refs
+            or self.parent_query_contract_refs
+            or self.transformation is not None
+        ):
+            raise ValueError(
+                "execution Evidence cannot carry derived analytical lineage fields"
+            )
+        return self
+
 
 class Finding(FrozenModel):
     finding_id: str
