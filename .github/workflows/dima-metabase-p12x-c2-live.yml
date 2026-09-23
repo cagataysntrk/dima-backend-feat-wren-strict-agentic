@@ -145,7 +145,8 @@ jobs:
             --base-url http://127.0.0.1:3312 \
             --email "$MB_RESTRICTED_EMAIL" --password "$MB_RESTRICTED_PASSWORD" \
             --oracle lab/metabase/p12x/c2-artifacts/oracle_v1.json \
-            --engine-sha "$ENGINE_SHA" --upstream-base-sha "$UPSTREAM_BASE_SHA" \
+            --engine-sha "$runtime_source" --workspace-gitlink-sha "$ENGINE_SHA" \
+            --runtime-image-ref "$FORK_IMAGE" --upstream-base-sha "$UPSTREAM_BASE_SHA" \
             --output lab/metabase/p12x/c2-artifacts/C2_LIVE_REPORT.json
 
       - name: Upload evidence
