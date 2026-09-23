@@ -9991,3 +9991,86 @@ DAY9 / P12                NOT STARTED
 ```
 
 STOP for supervisor review.
+
+
+---
+
+## 2026-09-23 — DAY9 / P12-A AUTHORIZED
+
+Current authoritative state:
+
+```text
+DAY8 deterministic engineering = GREEN
+DAY8 real-Wren                  = GREEN
+DAY8 live Sol                   = OPEN / NOT GREEN
+DAY8 final seal                 = DEFERRED TO INTEGRATED LIVE GATE
+
+latest valid live result         35898027005 = RED
+latest generic Day8 product fix  810fa70ded3bca53542316d32a5497302b4eb9c7
+latest focused + real-Wren       35898621489 = GREEN
+affected full Day7 regression    35898591894 = GREEN
+
+standalone paid Day8 tests       CLOSED
+cumulative Day8 Sol calls        9
+```
+
+Supervisor accepted the latest opaque-handle contract fix as the frozen Day8 behavior.
+
+Permanent opaque-handle split:
+
+```text
+opaque semantic VALUE
+= registry-private
+
+opaque semantic ID
+= server-owned
+
+governed non-secret TYPE / PROVENANCE metadata
+= may be projected to bounded cognition
+```
+
+`SEMANTIC_HANDLE_CATALOG` may expose only governed metadata such as handle alias,
+target kind and provenance. It may not expose canonical semantic value, raw `sem_*` identity,
+formula, join truth or tenant-crossing identity.
+
+No more Day8 tuning or standalone live root-cause sentinel is authorized.
+
+Forward release obligation:
+
+```text
+DAY10 integrated Product-MVP live gate
+MUST re-exercise:
+hypothesis
+→ governed next test
+→ VERIFIED result
+→ explicit SUPPORTS/CONTRADICTS
+→ maximum claim <= CANDIDATE_CAUSE
+```
+
+Until that integrated proof passes, Day8 is not FINAL LIVE SEALED.
+
+### Current active ticket
+
+```text
+DAY9 / P12-A
+deterministic ReportDocument authority
+```
+
+Canonical Day9-A flow:
+
+```text
+VERIFIED Evidence
++ EvidenceLinkedFinding
++ existing governed semantic scope
++ presentation artifact refs
+→ deterministic immutable ReportDocument
+```
+
+Day9-A report composition is a pure projection. It must not query DB, call Wren, call an LLM,
+re-resolve semantics, mint Evidence, or become a second analytical truth store.
+
+Day9-A is provider-free only. Do not run real-Wren, live Sol, frozen13, DEV80, Validation50,
+Hidden50, or broad Day9/Day8 corpora.
+
+Historical Day8 live RED receipts above remain authoritative history and are intentionally not
+rewritten.
