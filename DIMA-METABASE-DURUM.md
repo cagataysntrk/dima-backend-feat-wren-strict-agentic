@@ -1770,3 +1770,29 @@ ENGINE CHANGE
 
 This preserves upstream history and syncability while making the engine a first-class component of the
 Dima Platform workspace.
+
+
+---
+
+## P12X-C1 initial run GREEN but divergence repeat required before seal
+
+```text
+initial canonical workflow         = 35828372103 = SUCCESS
+artifact                           = 10736593524
+artifact digest                    = sha256:57c0e3c07ceb69480b3b0f27c7480b495dff3a949e0a50851a8437ab04e31d3a
+initial stock PASS                 = 4 / 6
+fork retained stock-PASS           = 4 / 4 = 100%
+new silent wrong                   = 0
+permission regression              = 0
+dataset-scope drift                = 0
+material divergence                = PX-13, PX-16 (stock wrong / fork correct)
+C1 seal                            = HELD
+reason                             = supervisor protocol requires 2 extra repeats per divergent case
+engine Platform gitlink            = 6bb6924452e5b9dc42b3745bb88c3125a468b297
+runtime-source delta vs C0 SHA     = no Metabase runtime source changes
+```
+
+The canonical C1 scorer/workflow is upgraded to discover material divergence and rerun only those cases
+twice on both stock and fork with prompt/data/model/principal unchanged. C1 is sealed only after the
+bounded repeat stage proves no stock-PASS/fork-FAIL regression, no new silent wrong, no permission
+regression and no dataset-scope drift.
