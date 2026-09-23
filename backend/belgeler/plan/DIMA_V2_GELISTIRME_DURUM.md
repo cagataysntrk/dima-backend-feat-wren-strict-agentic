@@ -9075,3 +9075,47 @@ Only after that measurement is GREEN:
 1. run `v2-day7-live-sol` with `case_ids=insufficient-evidence,duplicate-side-effect`,
 2. if affected LIVE is green, run frozen full13 once,
 3. then behavioral closure / shadow ablation.
+
+
+## 2026-09-23 — POST-FIX COGNITION DIAGNOSTIC GREEN
+
+```text
+workflow    v2-day7-capability-cognition-diagnostic
+run         35850683005
+head_sha    8e423f810517b402fa339d0abed214d829397423
+validity    VALID
+evaluable   8 / 8
+behavior    8 / 8 PASS
+mismatches  []
+```
+
+The generic capability-owner correction is therefore confirmed on the balanced
+neutral-vs-causal family:
+
+```text
+neutral descriptive investigation -> PERFORMANCE
+explicit causal investigation      -> ROOT_CAUSE
+```
+
+The prior frozen13 `insufficient-evidence` first bad transition is closed as
+`MODEL_COGNITION`, with the correction localized to `manager_policy.py`.
+
+Do not broaden the patch. No further cognition edit is authorized from this result.
+
+### Next gate — affected LIVE only
+
+Run manual `v2-day7-live-sol` with:
+
+```text
+manager_model  = openai/gpt-5.6-sol
+linker_model   = openai/gpt-5.6-luna
+temporal_model = openai/gpt-5.6-sol
+case_ids       = insufficient-evidence,duplicate-side-effect
+```
+
+Reason:
+- `insufficient-evidence` directly exercises the corrected capability boundary end-to-end.
+- `duplicate-side-effect` is the closest non-causal research control already proven in
+  the same frozen family and guards against over-broad PERFORMANCE promotion.
+
+Do not run full frozen13 until this affected LIVE pair is classified.
