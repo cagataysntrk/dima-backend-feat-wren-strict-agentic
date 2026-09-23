@@ -3250,3 +3250,35 @@ forbidden:
 
 status:
 `CLASSIFIED / SCORER-ONLY CORRECTION AUTHORIZED`.
+
+
+---
+
+## P12X-C1 closure — STOCK VS FORK NATIVE PARITY GREEN
+
+closed_at: 2026-09-23
+
+evidence:
+```text
+frozen source run           = 35831869602
+frozen source artifact      = 10738108477
+corrected rescore run       = 35834874194 = SUCCESS
+corrected rescore artifact  = 10738990943
+corpus fingerprint          = fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0
+selected cases              = PX-01, PX-03, PX-06, PX-07, PX-13, PX-16
+divergent cases repeated    = PX-01, PX-03, PX-06, PX-16
+repeat count                = 2 per runtime / divergent case
+reproducible fork regression= 0
+reproducible new silent wrong=0
+reproducible permission reg = 0
+reproducible scope drift    = 0
+stochastic variance         = PX-01, PX-03, PX-06, PX-16
+C1 final status             = GREEN
+```
+
+interpretation:
+Initial pass-state differences were not reproducible directionally across the sealed bounded repeats.
+They are native-model stochastic variance, not fork capability regression.
+
+status:
+`CLOSED GREEN / P12X-C2 AUTHORIZED`.
