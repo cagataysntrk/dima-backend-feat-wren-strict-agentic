@@ -779,7 +779,15 @@ def _case_checks(
 
     checks: dict[str, bool] = {
         "http_200": response.status_code == 200,
-        "manager_turn_cap": int(snapshot.get("manager_turns") or 0) <= 6,
+        "manager_turn_cap": int(
+            snapshot.get("research_manager_turns")
+            if snapshot.get("research_manager_turns") is not None
+            else snapshot.get("manager_turns") or 0
+        ) <= 6,
+        "preacceptance_turn_cap": int(
+            snapshot.get("preacceptance_turns") or 0
+        ) <= 2,
+        "total_manager_turn_cap": int(snapshot.get("manager_turns") or 0) <= 8,
         "tool_call_cap": int(snapshot.get("tool_calls") or 0) <= 12,
         "data_query_cap": int(snapshot.get("data_queries") or 0) <= 8,
         "service_query_cap": query_delta <= int(case.get("max_queries", 8)),
