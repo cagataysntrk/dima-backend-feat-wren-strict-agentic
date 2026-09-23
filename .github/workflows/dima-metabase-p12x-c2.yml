@@ -27,5 +27,5 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          pytest -q tests/test_v3_p12x_c2_native_engine_bridge.py
+          pytest --noconftest -q tests/test_v3_p12x_c2_native_engine_bridge.py
           python -m py_compile app/v3/substrate/metabase/native_models.py app/v3/substrate/metabase/native_engine.py
