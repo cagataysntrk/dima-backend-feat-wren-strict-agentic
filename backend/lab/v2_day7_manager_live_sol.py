@@ -838,6 +838,57 @@ def main() -> int:
         raise SystemExit("No Day7 live cases selected")
 
     settings = get_settings()
+    selected_count = len(cases)
+    preflight = _provider_preflight(settings)
+
+    if not preflight.get("ok"):
+        payload = {
+            "kind": "dima_v2_day7_live_sol",
+            "corpus_version": document.get("version"),
+            "source_policy": (
+                "real_provider_current_day7_manager_trust_plane_"
+                "deterministic_synthetic_semantic_data_engine"
+            ),
+            "workers": 1,
+            "profiles": {
+                "research_manager": LIVE_MANAGER_MODEL,
+                "semantic_linker": LIVE_LINKER_MODEL,
+                "temporal_normalizer": LIVE_TEMPORAL_MODEL,
+            },
+            "provider_preflight": preflight,
+            "measurement_valid": False,
+            "measurement_validity": preflight["measurement_validity"],
+            "selected_cases": selected_count,
+            "evaluable_cases": 0,
+            "provider_failure_cases": (
+                selected_count
+                if preflight["measurement_validity"]
+                in {
+                    MeasurementValidity.PROVIDER_UNAVAILABLE.value,
+                    MeasurementValidity.PROVIDER_AUTH_FAILURE.value,
+                    MeasurementValidity.PROVIDER_QUOTA_FAILURE.value,
+                }
+                else 0
+            ),
+            "harness_failure_cases": (
+                selected_count
+                if preflight["measurement_validity"]
+                == MeasurementValidity.HARNESS_FAILURE.value
+                else 0
+            ),
+            "grounding_fixture_failure_cases": 0,
+            "behavior_pass_count": 0,
+            "behavior_pass_rate": None,
+            "hard_safety_failures": [],
+            "model_failure_cases": [],
+            "total_service_queries": 0,
+            "total_latency_s": 0.0,
+            "records": [],
+            "status": "invalid_measurement",
+        }
+        _write_report(args.output, payload)
+        return 2
+
     service = Day7LiveSyntheticService()
     runtime_boundary.wren_for_request = lambda request: service
 
@@ -857,121 +908,111 @@ def main() -> int:
         for index, case in enumerate(cases, start=1):
             before = service.query_calls
             started = time.perf_counter()
-            response = client.post(
-                "/ask-v2-manager-lab",
-                json={
-                    "question": case["question"],
-                    "session_id": f"day7-live-session-{index}",
-                    "thread_id": f"day7-live-thread-{index}",
-                    "conversation": {},
-                },
-            )
-            latency = time.perf_counter() - started
             try:
-                body = response.json()
-            except Exception:
-                body = {}
+                response = client.post(
+                    "/ask-v2-manager-lab",
+                    json={
+                        "question": case["question"],
+                        "session_id": f"day7-live-session-{index}",
+                        "thread_id": f"day7-live-thread-{index}",
+                        "conversation": {},
+                    },
+                )
+                latency = time.perf_counter() - started
+                json_ok = True
+                try:
+                    body = response.json()
+                except Exception:
+                    json_ok = False
+                    body = {}
+                status_code = int(response.status_code)
+            except Exception as exc:
+                latency = time.perf_counter() - started
+                records.append(
+                    {
+                        "case_id": case["id"],
+                        "kind": case["kind"],
+                        "question": case["question"],
+                        "latency_s": round(latency, 4),
+                        "status_code": None,
+                        "terminal_status": None,
+                        "snapshot": None,
+                        "query_delta": service.query_calls - before,
+                        "checks": {},
+                        "behavior_evaluable": False,
+                        "measurement_validity": MeasurementValidity.HARNESS_FAILURE.value,
+                        "behavior_pass": None,
+                        "model_errors": [],
+                        "observations": [],
+                        "ledger": None,
+                        "harness_error": str(exc)[:1200],
+                    }
+                )
+                continue
+
             query_delta = service.query_calls - before
-            checks = _case_checks(
-                case,
-                response=response,
+            measurement_validity = _case_measurement_validity(
+                status_code=status_code,
                 body=body,
-                query_delta=query_delta,
+                json_ok=json_ok,
+            )
+            behavior_evaluable = measurement_validity == MeasurementValidity.VALID
+
+            checks = (
+                _case_checks(
+                    case,
+                    response=response,
+                    body=body,
+                    query_delta=query_delta,
+                )
+                if behavior_evaluable
+                else {}
             )
             observations = list(body.get("observations") or [])
-            model_errors = [
-                item for item in observations
-                if item.get("kind") == "model_error"
-            ]
+            model_errors = (
+                [
+                    item
+                    for item in observations
+                    if item.get("kind") == "model_error"
+                ]
+                if behavior_evaluable
+                else []
+            )
             records.append(
                 {
                     "case_id": case["id"],
                     "kind": case["kind"],
                     "question": case["question"],
                     "latency_s": round(latency, 4),
-                    "status_code": response.status_code,
+                    "status_code": status_code,
                     "terminal_status": body.get("terminal_status"),
                     "snapshot": body.get("snapshot"),
                     "query_delta": query_delta,
                     "checks": checks,
-                    "behavior_pass": all(checks.values()),
+                    "behavior_evaluable": behavior_evaluable,
+                    "measurement_validity": measurement_validity.value,
+                    "behavior_pass": (
+                        all(checks.values()) if behavior_evaluable else None
+                    ),
                     "model_errors": model_errors,
                     "observations": observations,
                     "ledger": body.get("ledger"),
                 }
             )
 
-    hard_keys = {
-        "http_200",
-        "accepted_contract",
-        "manager_turn_cap",
-        "tool_call_cap",
-        "data_query_cap",
-        "service_query_cap",
-        "no_failed_runtime",
-        "typed_block",
-        "unsafe_relationship_not_verified",
-        "unique_task_side_effects",
-        "budget_disclosed_if_exhausted",
-    }
-    hard_failures = [
-        {
-            "case_id": record["case_id"],
-            "failed": [
-                key
-                for key, passed in record["checks"].items()
-                if key in hard_keys and not passed
-            ],
-        }
-        for record in records
-        if any(
-            key in hard_keys and not passed
-            for key, passed in record["checks"].items()
-        )
-    ]
-    model_failure_cases = [
-        record["case_id"] for record in records if record["model_errors"]
-    ]
-    behavior_passes = sum(int(record["behavior_pass"]) for record in records)
-    payload = {
-        "kind": "dima_v2_day7_live_sol",
-        "corpus_version": document.get("version"),
-        "source_policy": (
-            "real_provider_current_day7_manager_trust_plane_"
-            "deterministic_synthetic_semantic_data_engine"
-        ),
-        "workers": 1,
-        "profiles": {
-            "research_manager": LIVE_MANAGER_MODEL,
-            "semantic_linker": LIVE_LINKER_MODEL,
-            "temporal_normalizer": LIVE_TEMPORAL_MODEL,
-        },
-        "case_count": len(records),
-        "behavior_pass_count": behavior_passes,
-        "behavior_pass_rate": round(behavior_passes / len(records), 4),
-        "hard_safety_failures": hard_failures,
-        "model_failure_cases": model_failure_cases,
-        "total_service_queries": service.query_calls,
-        "total_latency_s": round(
-            sum(float(record["latency_s"]) for record in records),
-            4,
-        ),
-        "records": records,
-        "status": (
-            "pass"
-            if behavior_passes == len(records)
-            and not hard_failures
-            and not model_failure_cases
-            else "fail"
-        ),
-    }
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2),
-        encoding="utf-8",
+    payload = _aggregate_live_records(
+        document=document,
+        records=records,
+        selected_cases=selected_count,
+        service_query_count=service.query_calls,
+        preflight=preflight,
     )
-    print(json.dumps(payload, ensure_ascii=False))
-    return 0 if payload["status"] == "pass" else 1
+    _write_report(args.output, payload)
+    if payload["status"] == "pass":
+        return 0
+    if payload["status"] == "invalid_measurement":
+        return 2
+    return 1
 
 
 if __name__ == "__main__":
