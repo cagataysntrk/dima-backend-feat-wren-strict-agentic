@@ -358,6 +358,52 @@ def test_next_test_requires_inspected_verified_evidence():
         boundary.materialize(_breakdown_proposal(hypothesis, metric, dimension))
 
 
+def test_next_test_rejects_foreign_evidence_before_materialization():
+    boundary, _, runtime, registry, metric, dimension, hypothesis, store = _next_test_fixture()
+    foreign = _evidence(
+        "E_FOREIGN",
+        "rt_parent",
+        obligation_ids=("U_OTHER",),
+    )
+    store.put(foreign)
+    runtime.attach_evidence(foreign.artifact_id)
+    runtime.mark_evidence_inspected(foreign.artifact_id)
+    before = registry.tasks
+
+    with pytest.raises(RootCauseOrchestrationError, match="unrelated obligation"):
+        boundary.materialize(
+            HypothesisNextTestProposal(
+                hypothesis_ref=hypothesis.hypothesis_id,
+                task_kind=ResearchTaskKind.BREAKDOWN,
+                input_refs=(metric.handle_id, dimension.handle_id),
+                trigger_evidence_ref=foreign.artifact_id,
+                material_reason="test",
+            )
+        )
+    assert registry.tasks == before
+
+
+def test_next_test_rejects_unverified_evidence_before_materialization():
+    boundary, _, runtime, registry, metric, dimension, hypothesis, store = _next_test_fixture()
+    bad = _evidence("E_BAD", "rt_parent", verified=False)
+    store.put(bad)
+    runtime.attach_evidence(bad.artifact_id)
+    runtime.mark_evidence_inspected(bad.artifact_id)
+    before = registry.tasks
+
+    with pytest.raises(RootCauseOrchestrationError, match="VERIFIED"):
+        boundary.materialize(
+            HypothesisNextTestProposal(
+                hypothesis_ref=hypothesis.hypothesis_id,
+                task_kind=ResearchTaskKind.BREAKDOWN,
+                input_refs=(metric.handle_id, dimension.handle_id),
+                trigger_evidence_ref=bad.artifact_id,
+                material_reason="test",
+            )
+        )
+    assert registry.tasks == before
+
+
 def test_next_test_rejects_fake_semantic_handle_before_materialization():
     boundary, _, _, registry, metric, _, hypothesis, _ = _next_test_fixture()
     proposal = HypothesisNextTestProposal(

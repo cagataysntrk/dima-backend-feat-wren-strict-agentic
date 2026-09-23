@@ -370,9 +370,14 @@ class HypothesisNextTestBoundary:
         self._obligations = UserObligationLedgerService()
 
     def _validated_hypothesis_and_evidence(self, proposal: HypothesisNextTestProposal):
-        self._ledger.assert_active_root_authority()
-        hypothesis = self._ledger.get(proposal.hypothesis_ref)
-        evidence = self._ledger.validated_evidence(proposal.trigger_evidence_ref)
+        try:
+            self._ledger.assert_active_root_authority()
+            hypothesis = self._ledger.get(proposal.hypothesis_ref)
+            evidence = self._ledger.validated_evidence(
+                proposal.trigger_evidence_ref
+            )
+        except HypothesisLedgerError as exc:
+            raise RootCauseOrchestrationError(str(exc)) from exc
         if not self._ledger.evidence_view.contains_inspected(
             proposal.trigger_evidence_ref
         ):
