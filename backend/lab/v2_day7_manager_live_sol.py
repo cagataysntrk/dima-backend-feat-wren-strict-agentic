@@ -14,6 +14,7 @@ import json
 import os
 import tempfile
 import time
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +26,7 @@ DEFAULT_OUTPUT = ROOT / "lab" / "reports" / "v2_day7_live_sol.json"
 
 LIVE_MANAGER_MODEL = os.getenv("DIMA_DAY7_LIVE_MANAGER_MODEL", "openai/gpt-5.6-sol")
 LIVE_LINKER_MODEL = os.getenv("DIMA_DAY7_LIVE_LINKER_MODEL", "openai/gpt-5.6-luna")
-LIVE_TEMPORAL_MODEL = os.getenv("DIMA_DAY7_LIVE_TEMPORAL_MODEL", "openai/gpt-5.6-luna")
+LIVE_TEMPORAL_MODEL = os.getenv("DIMA_DAY7_LIVE_TEMPORAL_MODEL", "openai/gpt-5.6-sol")
 
 os.environ.setdefault(
     "DIMA_DATABASE_URL",
@@ -58,11 +59,315 @@ from app.auth.dependencies import get_current_principal
 from app.config import get_settings
 from app.contracts import result_hash
 from app.routers.manager_lab import router as manager_lab_router
+from app.v2.manager_lab import _build_role_scoped_manager_models
 import app.v2.runtime_boundary as runtime_boundary
 from control_plane.authorize import Principal
 
 
 MDL_VERSION = "mdl-day7-live-v1"
+
+
+class MeasurementValidity(StrEnum):
+    VALID = "VALID"
+    PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
+    PROVIDER_AUTH_FAILURE = "PROVIDER_AUTH_FAILURE"
+    PROVIDER_QUOTA_FAILURE = "PROVIDER_QUOTA_FAILURE"
+    HARNESS_FAILURE = "HARNESS_FAILURE"
+    GROUNDING_FIXTURE_FAILURE = "GROUNDING_FIXTURE_FAILURE"
+
+
+def _classify_provider_failure(message: str) -> MeasurementValidity | None:
+    """Classify transport/provider failures only; never classify semantic quality here."""
+    text = str(message or "").lower()
+
+    quota_markers = (
+        "key limit exceeded",
+        "quota",
+        "rate limit",
+        "rate_limit",
+        "insufficient credits",
+        "insufficient credit",
+        "payment required",
+    )
+    if any(marker in text for marker in quota_markers):
+        return MeasurementValidity.PROVIDER_QUOTA_FAILURE
+    if "http 402" in text or "402 client error" in text or "http 429" in text or "429 client error" in text:
+        return MeasurementValidity.PROVIDER_QUOTA_FAILURE
+    if "http 401" in text or "401 client error" in text:
+        return MeasurementValidity.PROVIDER_AUTH_FAILURE
+    if "http 403" in text or "403 client error" in text:
+        return MeasurementValidity.PROVIDER_AUTH_FAILURE
+
+    unavailable_markers = (
+        "timed out",
+        "timeout",
+        "connection error",
+        "connectionerror",
+        "connection refused",
+        "temporary failure",
+        "service unavailable",
+        "bad gateway",
+        "gateway timeout",
+        "remote end closed",
+        "llm sağlayıcısı yok",
+        "native schema destekli llm sağlayıcısı yok",
+    )
+    if any(marker in text for marker in unavailable_markers):
+        return MeasurementValidity.PROVIDER_UNAVAILABLE
+    for status in ("500", "502", "503", "504"):
+        if f"http {status}" in text or f"{status} server error" in text:
+            return MeasurementValidity.PROVIDER_UNAVAILABLE
+    return None
+
+
+def _provider_preflight(settings) -> dict[str, Any]:
+    """One role-scoped strict-schema call before the paid frozen corpus."""
+    started = time.perf_counter()
+    try:
+        (
+            manager_llm,
+            manager_profile,
+            _linker_llm,
+            _linker_profile,
+            _temporal_llm,
+            _temporal_profile,
+        ) = _build_role_scoped_manager_models(settings)
+        structured = getattr(manager_llm, "structured_json", None)
+        if not callable(structured):
+            return {
+                "measurement_validity": MeasurementValidity.HARNESS_FAILURE.value,
+                "ok": False,
+                "provider": getattr(manager_profile, "provider", "unknown"),
+                "model": getattr(manager_profile, "model", LIVE_MANAGER_MODEL),
+                "message": "RESEARCH_MANAGER structured_json transport is unavailable",
+                "latency_s": round(time.perf_counter() - started, 4),
+            }
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "status": {"type": "string", "enum": ["ok"]},
+            },
+            "required": ["status"],
+            "additionalProperties": False,
+        }
+        raw = structured(
+            "Dima Day7 provider preflight. Return only the required schema.",
+            '{"probe":"research_manager_structured_transport"}',
+            schema=schema,
+            schema_name="dima_day7_provider_preflight_v1",
+        )
+        data = json.loads(raw) if isinstance(raw, str) else raw
+        if not isinstance(data, dict) or data.get("status") != "ok":
+            return {
+                "measurement_validity": MeasurementValidity.PROVIDER_UNAVAILABLE.value,
+                "ok": False,
+                "provider": manager_profile.provider,
+                "model": manager_profile.model,
+                "message": "configured RESEARCH_MANAGER did not return required strict schema",
+                "latency_s": round(time.perf_counter() - started, 4),
+            }
+        return {
+            "measurement_validity": MeasurementValidity.VALID.value,
+            "ok": True,
+            "provider": manager_profile.provider,
+            "model": manager_profile.model,
+            "message": None,
+            "latency_s": round(time.perf_counter() - started, 4),
+        }
+    except Exception as exc:
+        classification = (
+            _classify_provider_failure(str(exc))
+            or MeasurementValidity.PROVIDER_UNAVAILABLE
+        )
+        return {
+            "measurement_validity": classification.value,
+            "ok": False,
+            "provider": "openrouter",
+            "model": LIVE_MANAGER_MODEL,
+            "message": str(exc)[:1200],
+            "latency_s": round(time.perf_counter() - started, 4),
+        }
+
+
+def _case_measurement_validity(
+    *,
+    status_code: int,
+    body: dict[str, Any],
+    json_ok: bool,
+) -> MeasurementValidity:
+    if not json_ok or status_code >= 500:
+        return MeasurementValidity.HARNESS_FAILURE
+
+    for item in tuple(body.get("observations") or ()):
+        if item.get("kind") not in {
+            "draft_error",
+            "coverage_error",
+            "grounding_error",
+            "model_error",
+        }:
+            continue
+        classified = _classify_provider_failure(str(item.get("message") or ""))
+        if classified is not None:
+            return classified
+
+    return MeasurementValidity.VALID
+
+
+def _aggregate_live_records(
+    *,
+    document: dict[str, Any],
+    records: list[dict[str, Any]],
+    selected_cases: int,
+    service_query_count: int,
+    preflight: dict[str, Any],
+) -> dict[str, Any]:
+    evaluable = [record for record in records if record["behavior_evaluable"]]
+    non_evaluable = [record for record in records if not record["behavior_evaluable"]]
+
+    hard_keys = {
+        "http_200",
+        "accepted_contract",
+        "manager_turn_cap",
+        "tool_call_cap",
+        "data_query_cap",
+        "service_query_cap",
+        "no_failed_runtime",
+        "typed_block",
+        "unsafe_relationship_not_verified",
+        "unique_task_side_effects",
+        "budget_disclosed_if_exhausted",
+    }
+    hard_failures = [
+        {
+            "case_id": record["case_id"],
+            "failed": [
+                key
+                for key, passed in record["checks"].items()
+                if key in hard_keys and not passed
+            ],
+        }
+        for record in evaluable
+        if any(
+            key in hard_keys and not passed
+            for key, passed in record["checks"].items()
+        )
+    ]
+
+    provider_categories = {
+        MeasurementValidity.PROVIDER_UNAVAILABLE.value,
+        MeasurementValidity.PROVIDER_AUTH_FAILURE.value,
+        MeasurementValidity.PROVIDER_QUOTA_FAILURE.value,
+    }
+    provider_failure_records = [
+        record for record in non_evaluable
+        if record["measurement_validity"] in provider_categories
+    ]
+    harness_failure_records = [
+        record for record in non_evaluable
+        if record["measurement_validity"] == MeasurementValidity.HARNESS_FAILURE.value
+    ]
+    grounding_fixture_records = [
+        record for record in non_evaluable
+        if record["measurement_validity"] == MeasurementValidity.GROUNDING_FIXTURE_FAILURE.value
+    ]
+
+    behavior_passes = sum(
+        int(bool(record["behavior_pass"])) for record in evaluable
+    )
+    evaluable_count = len(evaluable)
+    all_cases_evaluable = evaluable_count == selected_cases
+    measurement_valid = (
+        preflight.get("measurement_validity") == MeasurementValidity.VALID.value
+        and all_cases_evaluable
+    )
+
+    if measurement_valid:
+        aggregate_validity = MeasurementValidity.VALID.value
+    elif provider_failure_records:
+        aggregate_validity = provider_failure_records[0]["measurement_validity"]
+    elif harness_failure_records:
+        aggregate_validity = MeasurementValidity.HARNESS_FAILURE.value
+    elif grounding_fixture_records:
+        aggregate_validity = MeasurementValidity.GROUNDING_FIXTURE_FAILURE.value
+    else:
+        aggregate_validity = str(
+            preflight.get("measurement_validity")
+            or MeasurementValidity.HARNESS_FAILURE.value
+        )
+
+    model_failure_cases = [
+        record["case_id"]
+        for record in evaluable
+        if record["model_errors"]
+    ]
+    behavior_rate = (
+        round(behavior_passes / evaluable_count, 4)
+        if evaluable_count
+        else None
+    )
+    behavior_green = (
+        measurement_valid
+        and behavior_passes == selected_cases
+        and not hard_failures
+        and not model_failure_cases
+    )
+
+    return {
+        "kind": "dima_v2_day7_live_sol",
+        "corpus_version": document.get("version"),
+        "source_policy": (
+            "real_provider_current_day7_manager_trust_plane_"
+            "deterministic_synthetic_semantic_data_engine"
+        ),
+        "workers": 1,
+        "profiles": {
+            "research_manager": LIVE_MANAGER_MODEL,
+            "semantic_linker": LIVE_LINKER_MODEL,
+            "temporal_normalizer": LIVE_TEMPORAL_MODEL,
+        },
+        "provider_preflight": preflight,
+        "measurement_valid": measurement_valid,
+        "measurement_validity": aggregate_validity,
+        "selected_cases": selected_cases,
+        "evaluable_cases": evaluable_count,
+        "provider_failure_cases": (
+            selected_cases
+            if not preflight.get("ok")
+            and str(preflight.get("measurement_validity")) in provider_categories
+            else len(provider_failure_records)
+        ),
+        "harness_failure_cases": len(harness_failure_records),
+        "grounding_fixture_failure_cases": len(grounding_fixture_records),
+        "behavior_pass_count": behavior_passes,
+        "behavior_pass_rate": behavior_rate,
+        "hard_safety_failures": hard_failures,
+        "model_failure_cases": model_failure_cases,
+        "total_service_queries": service_query_count,
+        "total_latency_s": round(
+            sum(float(record["latency_s"]) for record in records),
+            4,
+        ),
+        "records": records,
+        "status": (
+            "pass"
+            if behavior_green
+            else "invalid_measurement"
+            if not measurement_valid
+            else "fail"
+        ),
+    }
+
+
+def _write_report(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(json.dumps(payload, ensure_ascii=False))
+
+
 
 SALES_METRICS = {
     "net_value_x": {
