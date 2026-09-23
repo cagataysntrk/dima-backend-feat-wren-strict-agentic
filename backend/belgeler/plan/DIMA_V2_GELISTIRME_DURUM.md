@@ -1,3 +1,41 @@
+## 2026-09-23 — DAY7 DETERMINISTIC CAPABILITY CHECKPOINT GREEN
+
+```text
+product_sha        3f36dc4fbad20e59c345a4558e4624e09fe4cf64
+focused_workflow   35816418192
+result             GREEN
+```
+
+Deterministic Day7 capability state is now closed for the currently governed surface.
+
+Executable/governed and GREEN:
+- QUERY
+- BREAKDOWN
+- COMPARE
+- RANK
+- RELATIONSHIP
+- multi-obligation seed set
+- adaptive two-Wren loop
+- fanout/idempotency/cancel/deadline/principal/grain/relationship safety
+
+Primitive-only, provider-free GREEN but **not Manager-executable yet**:
+- TREND transform (`stats.trend`) — ordered-series query representation remains PRIMITIVE_GAP
+- CONTRIBUTION transform — accepted capability/materialization seam remains open
+- PEER_COMPARE transform — governed peer-universe contract remains PRIMITIVE_GAP
+
+Next order:
+```text
+workers=1 focused LIVE SOL
+→ 10–15 high-information cases
+→ only declared executable families in product-quality scoring
+→ derived primitive cases may be adapter-only diagnostics, not fake Manager coverage
+→ then FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation
+```
+
+No DEV80. No Day8.
+
+---
+
 ## 2026-09-23 — DAY7 TOOL-FAMILY PRIMITIVE AUDIT
 
 Reference product checkpoint before this block:
@@ -56,8 +94,27 @@ Current code commits in this block:
 - `84ab9d75...` provider-free family proof,
 - `3f36dc4f...` focused CI gate wiring.
 
-Status is **PENDING FOCUSED CI**. Do not mark these families executable in the Manager loop
-until a governed upstream input/materialization contract exists.
+Status is **PROVIDER-FREE PRIMITIVES GREEN / EXECUTION GAPS EXPLICIT**.
+
+Focused proof:
+
+```text
+product SHA      3f36dc4fbad20e59c345a4558e4624e09fe4cf64
+workflow run     35816418192
+v2-day7-focused  GREEN
+derived primitive proof GREEN
+all prior Day7 regression gates GREEN
+```
+
+This GREEN proves:
+- backward-compatible derived Evidence lineage is valid,
+- TREND/CONTRIBUTION/PEER_COMPARE pure transforms fail closed on missing invariants,
+- zero-query transforms preserve parent QueryContract lineage,
+- no existing Day7 execution/trust-plane regression was introduced.
+
+It does **NOT** prove Manager-loop executability for the three derived families.
+Those remain gated by the explicit upstream gaps recorded above. Do not mark them
+executable until a governed input/materialization contract exists.
 
 ---
 
