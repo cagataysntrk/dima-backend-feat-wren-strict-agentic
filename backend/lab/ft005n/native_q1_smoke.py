@@ -17,6 +17,12 @@ EMAIL = os.getenv("FT005N_ADMIN_EMAIL", "admin@dima-native.local")
 PASSWORD = os.getenv("FT005N_ADMIN_PASSWORD", "DimaNativeControl!2026")
 OUT = Path(os.getenv("FT005N_NATIVE_SMOKE_RECEIPT", "artifacts/ft005n-native-smoke.json"))
 QUESTION = "1-22 Haziran 2026 arasında satış siparişlerinin toplam tutarı ne kadar?"
+RUNTIME_VERSION = os.getenv("FT005N_RUNTIME_VERSION", "v0.63.18")
+RUNTIME_IMAGE_DIGEST = os.getenv(
+    "FT005N_RUNTIME_IMAGE_DIGEST",
+    "sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73",
+)
+RUNTIME_ARM = os.getenv("FT005N_RUNTIME_ARM", "B_DIRECT_NATIVE_METABOT")
 
 
 def login() -> str:
@@ -53,9 +59,9 @@ def main() -> int:
     receipt = {
         "status": status,
         "outcome": outcome,
-        "arm": "B_DIRECT_NATIVE_METABOT",
-        "metabase_runtime": "v0.63.18",
-        "image_digest": "sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73",
+        "arm": RUNTIME_ARM,
+        "metabase_runtime": RUNTIME_VERSION,
+        "image_digest": RUNTIME_IMAGE_DIGEST,
         "profile_id": "nlq",
         "requested_model_provider": "openrouter",
         "requested_model": os.getenv("FT005N_NATIVE_MODEL", "openai/gpt-5.6-luna"),
