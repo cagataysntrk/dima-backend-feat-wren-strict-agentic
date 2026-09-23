@@ -19,6 +19,10 @@ from app.v2.manager_models import (
     UserObligationLedger,
 )
 from app.v2.models import (
+    EpistemicGateCode,
+    EpistemicLabel,
+    EpistemicLabelDecision,
+    EvidenceLinkedFinding,
     HypothesisEntry,
     HypothesisEvidenceLink,
     HypothesisEvidenceRelation,
@@ -103,6 +107,10 @@ class HypothesisLedger:
             raise HypothesisLedgerError(
                 f"unknown hypothesis: {hypothesis_id}"
             ) from exc
+
+    def validated_evidence(self, evidence_ref: str):
+        """Return current-run governed Evidence after structural validation."""
+        return self._validate_evidence(evidence_ref)
 
     def register(
         self,
@@ -360,7 +368,10 @@ class HypothesisLedger:
 
         if not evidence.verified:
             raise HypothesisLedgerError("hypothesis Evidence must be VERIFIED")
-        if self._state.parent_obligation_id not in evidence.obligation_ids:
+        if not any(
+            self._obligation_belongs_to_root(obligation_id)
+            for obligation_id in evidence.obligation_ids
+        ):
             raise HypothesisLedgerError(
                 "Evidence belongs to an unrelated obligation"
             )
@@ -376,13 +387,15 @@ class HypothesisLedger:
                 "Evidence task is not registered in the current ResearchTask registry"
             ) from exc
 
-        if (
-            task.origin == "AGENT_DERIVED"
-            and task.parent_obligation_id != self._state.parent_obligation_id
-        ):
-            raise HypothesisLedgerError(
-                "derived Evidence task belongs to another obligation"
-            )
+        if task.origin == "AGENT_DERIVED":
+            parent_id = task.parent_obligation_id
+            if (
+                parent_id is None
+                or not self._obligation_belongs_to_root(parent_id)
+            ):
+                raise HypothesisLedgerError(
+                    "derived Evidence task belongs to another obligation"
+                )
 
         if evidence.source_kind == "DERIVED_ANALYTICAL":
             if not evidence.parent_evidence_refs:
@@ -411,6 +424,22 @@ class HypothesisLedger:
                     "derived Evidence lost parent QueryContract lineage"
                 )
         return evidence
+
+    def _obligation_belongs_to_root(self, obligation_id: str) -> bool:
+        current_id = obligation_id
+        seen: set[str] = set()
+        while current_id not in seen:
+            if current_id == self._state.parent_obligation_id:
+                return True
+            seen.add(current_id)
+            try:
+                item = self._obligations.get(self._obligation_ledger, current_id)
+            except Exception:
+                return False
+            if item.parent_obligation_id is None:
+                return False
+            current_id = item.parent_obligation_id
+        return False
 
     def _replace(self, entry: HypothesisEntry) -> None:
         items = tuple(
@@ -444,3 +473,298 @@ class HypothesisLedger:
             separators=(",", ":"),
         )
         return "hyp_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+
+
+class EpistemicFindingError(RuntimeError):
+    """A requested finding label exceeds the structurally admissible Evidence class."""
+
+
+class EpistemicLabelGate:
+    """Validate claim-class ceilings without pretending to infer causal truth."""
+
+    _PRIORITY_MARKERS = (
+        "interestingness",
+        "outlier",
+        "anomaly",
+        "priority",
+        "salience",
+    )
+
+    @classmethod
+    def _is_priority_only(cls, evidence) -> bool:
+        kind = str(evidence.evidence_kind or "").lower()
+        payload = evidence.payload or {}
+        role = str(payload.get("epistemic_role") or "").upper()
+        return (
+            role == "PRIORITIZATION_ONLY"
+            or any(marker in kind for marker in cls._PRIORITY_MARKERS)
+        )
+
+    @staticmethod
+    def _has_comparison_contract(evidence) -> bool:
+        if (
+            evidence.source_kind == "DERIVED_ANALYTICAL"
+            and evidence.transformation == "PEER_COMPARE"
+        ):
+            return True
+        if "comparison" in str(evidence.evidence_kind or "").lower():
+            return True
+        roles = {
+            str(item.get("role") or "")
+            for item in tuple((evidence.payload or {}).get("executions") or ())
+        }
+        return "comparison_reference" in roles
+
+    def decide(
+        self,
+        *,
+        requested_label: EpistemicLabel,
+        evidence: tuple,
+        hypothesis: HypothesisEntry | None = None,
+        root_cause_authority: bool = False,
+    ) -> EpistemicLabelDecision:
+        if requested_label == EpistemicLabel.CONFIRMED_CAUSE:
+            return EpistemicLabelDecision(
+                allowed=False,
+                requested_label=requested_label,
+                code=EpistemicGateCode.CAUSAL_NOT_IDENTIFIED,
+                reason=(
+                    "current Day8 has no proven mechanistic/interventional causal "
+                    "identification contract"
+                ),
+            )
+
+        if not evidence:
+            return EpistemicLabelDecision(
+                allowed=False,
+                requested_label=requested_label,
+                code=EpistemicGateCode.EVIDENCE_REQUIRED,
+                reason="epistemic finding requires governed Evidence",
+            )
+
+        if requested_label == EpistemicLabel.OBSERVATION:
+            return EpistemicLabelDecision(
+                allowed=True,
+                requested_label=requested_label,
+                code=EpistemicGateCode.ALLOW,
+                reason="verified governed Evidence permits an observational claim",
+            )
+
+        if requested_label == EpistemicLabel.COMPARISON:
+            if any(self._has_comparison_contract(item) for item in evidence):
+                return EpistemicLabelDecision(
+                    allowed=True,
+                    requested_label=requested_label,
+                    code=EpistemicGateCode.ALLOW,
+                    reason="governed comparison/peer Evidence with baseline is present",
+                )
+            return EpistemicLabelDecision(
+                allowed=False,
+                requested_label=requested_label,
+                code=EpistemicGateCode.EVIDENCE_CLASS_MISMATCH,
+                reason="COMPARISON requires governed comparison or peer Evidence",
+            )
+
+        if requested_label == EpistemicLabel.ASSOCIATION:
+            if any(
+                str(item.evidence_kind) == "relationship_analytics"
+                for item in evidence
+            ):
+                return EpistemicLabelDecision(
+                    allowed=True,
+                    requested_label=requested_label,
+                    code=EpistemicGateCode.ALLOW,
+                    reason="governed relationship Evidence permits ASSOCIATION only",
+                )
+            return EpistemicLabelDecision(
+                allowed=False,
+                requested_label=requested_label,
+                code=EpistemicGateCode.EVIDENCE_CLASS_MISMATCH,
+                reason="ASSOCIATION requires governed relationship Evidence",
+            )
+
+        if requested_label == EpistemicLabel.CONTRIBUTION:
+            if any(
+                item.source_kind == "DERIVED_ANALYTICAL"
+                and item.transformation == "CONTRIBUTION"
+                for item in evidence
+            ):
+                return EpistemicLabelDecision(
+                    allowed=True,
+                    requested_label=requested_label,
+                    code=EpistemicGateCode.ALLOW,
+                    reason="governed contribution decomposition Evidence is present",
+                )
+            return EpistemicLabelDecision(
+                allowed=False,
+                requested_label=requested_label,
+                code=EpistemicGateCode.EVIDENCE_CLASS_MISMATCH,
+                reason="CONTRIBUTION requires governed contribution Evidence",
+            )
+
+        if requested_label == EpistemicLabel.CANDIDATE_CAUSE:
+            if not root_cause_authority:
+                return EpistemicLabelDecision(
+                    allowed=False,
+                    requested_label=requested_label,
+                    code=EpistemicGateCode.ROOT_CAUSE_REQUIRED,
+                    reason="CANDIDATE_CAUSE requires accepted ROOT_CAUSE authority",
+                )
+            if hypothesis is None:
+                return EpistemicLabelDecision(
+                    allowed=False,
+                    requested_label=requested_label,
+                    code=EpistemicGateCode.HYPOTHESIS_REQUIRED,
+                    reason="CANDIDATE_CAUSE requires a typed hypothesis",
+                )
+            support_refs = {
+                link.evidence_ref
+                for link in hypothesis.evidence_links
+                if link.relation == HypothesisEvidenceRelation.SUPPORTS
+            }
+            supplied = {item.artifact_id: item for item in evidence}
+            usable_support = [
+                supplied[ref]
+                for ref in support_refs
+                if ref in supplied and not self._is_priority_only(supplied[ref])
+            ]
+            if not usable_support:
+                if support_refs and any(
+                    ref in supplied and self._is_priority_only(supplied[ref])
+                    for ref in support_refs
+                ):
+                    return EpistemicLabelDecision(
+                        allowed=False,
+                        requested_label=requested_label,
+                        code=EpistemicGateCode.PRIORITIZATION_NOT_TRUTH,
+                        reason=(
+                            "interestingness/outlier/anomaly/priority signals may "
+                            "schedule tests but cannot establish candidate-cause support"
+                        ),
+                    )
+                return EpistemicLabelDecision(
+                    allowed=False,
+                    requested_label=requested_label,
+                    code=EpistemicGateCode.HYPOTHESIS_SUPPORT_REQUIRED,
+                    reason="CANDIDATE_CAUSE requires valid supporting Evidence",
+                )
+            if not hypothesis.limitations:
+                return EpistemicLabelDecision(
+                    allowed=False,
+                    requested_label=requested_label,
+                    code=EpistemicGateCode.LIMITATION_REQUIRED,
+                    reason="CANDIDATE_CAUSE requires explicit limitations",
+                )
+            if not hypothesis.semantic_handle_refs:
+                return EpistemicLabelDecision(
+                    allowed=False,
+                    requested_label=requested_label,
+                    code=EpistemicGateCode.HYPOTHESIS_REQUIRED,
+                    reason="candidate hypothesis lacks governed semantic authority",
+                )
+            return EpistemicLabelDecision(
+                allowed=True,
+                requested_label=requested_label,
+                code=EpistemicGateCode.ALLOW,
+                reason=(
+                    "supported typed hypothesis with governed Evidence and explicit "
+                    "limitations permits CANDIDATE_CAUSE, not confirmation"
+                ),
+            )
+
+        return EpistemicLabelDecision(
+            allowed=False,
+            requested_label=requested_label,
+            code=EpistemicGateCode.EVIDENCE_CLASS_MISMATCH,
+            reason="unsupported epistemic label contract",
+        )
+
+
+class EvidenceLinkedFindingBuilder:
+    """Build official Day8 findings only after Evidence + label admissibility proof."""
+
+    def __init__(
+        self,
+        *,
+        ledger: HypothesisLedger,
+        gate: EpistemicLabelGate | None = None,
+    ) -> None:
+        self._ledger = ledger
+        self._gate = gate or EpistemicLabelGate()
+
+    def build(
+        self,
+        *,
+        statement: str,
+        epistemic_label: EpistemicLabel,
+        evidence_refs: tuple[str, ...],
+        hypothesis_ref: str | None = None,
+        limitations: tuple[str, ...] = (),
+    ) -> EvidenceLinkedFinding:
+        clean_statement = statement.strip()
+        if not clean_statement:
+            raise EpistemicFindingError("finding statement cannot be empty")
+        if not evidence_refs:
+            raise EpistemicFindingError(
+                f"{EpistemicGateCode.EVIDENCE_REQUIRED.value}: finding requires Evidence"
+            )
+
+        evidence = tuple(
+            self._ledger.validated_evidence(ref)
+            for ref in tuple(dict.fromkeys(evidence_refs))
+        )
+        hypothesis = (
+            None
+            if hypothesis_ref is None
+            else self._ledger.get(hypothesis_ref)
+        )
+        decision = self._gate.decide(
+            requested_label=epistemic_label,
+            evidence=evidence,
+            hypothesis=hypothesis,
+            root_cause_authority=True,
+        )
+        if not decision.allowed:
+            raise EpistemicFindingError(
+                f"{decision.code.value}: {decision.reason}"
+            )
+
+        finding_limitations = list(limitations)
+        if hypothesis is not None:
+            finding_limitations.extend(hypothesis.limitations)
+        finding_limitations = list(
+            dict.fromkeys(x.strip() for x in finding_limitations if x.strip())
+        )
+
+        payload = {
+            "parent_obligation_id": self._ledger.state.parent_obligation_id,
+            "statement": clean_statement,
+            "epistemic_label": epistemic_label.value,
+            "evidence_refs": [item.artifact_id for item in evidence],
+            "hypothesis_ref": hypothesis_ref,
+            "provenance": {
+                "accepted_contract_id": self._ledger.state.accepted_contract_id,
+                "lineage_id": self._ledger.state.lineage_id,
+                "run_id": self._ledger.state.run_id,
+            },
+        }
+        raw = json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return EvidenceLinkedFinding(
+            finding_id="find_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24],
+            parent_obligation_id=self._ledger.state.parent_obligation_id,
+            statement=clean_statement,
+            epistemic_label=epistemic_label,
+            evidence_refs=tuple(item.artifact_id for item in evidence),
+            hypothesis_ref=hypothesis_ref,
+            limitations=tuple(finding_limitations),
+            provenance=HypothesisProvenance(
+                accepted_contract_id=self._ledger.state.accepted_contract_id,
+                lineage_id=self._ledger.state.lineage_id,
+                run_id=self._ledger.state.run_id,
+            ),
+        )
