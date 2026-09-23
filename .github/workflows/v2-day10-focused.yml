@@ -10,6 +10,7 @@ name: v2-day10-focused
       - "backend/app/v2/product_coordinator.py"
       - "backend/app/v2/research_lane.py"
       - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/research_tools.py"
       - "backend/app/v2/research_report_projector.py"
       - "backend/app/v2/product_events.py"
       - "backend/app/v2/report_continuation.py"
@@ -46,9 +47,9 @@ jobs:
       - name: Compile Day10 product surface
         working-directory: backend
         run: |
-          python -m compileall -q             app/routers/ask_v2.py             app/v2/product_models.py             app/v2/product_coordinator.py             app/v2/research_lane.py             app/v2/manager_loop.py
+          python -m compileall -q             app/routers/ask_v2.py             app/v2/product_models.py             app/v2/product_coordinator.py             app/v2/research_lane.py             app/v2/manager_loop.py             app/v2/research_tools.py             app/v2/research_report_projector.py             app/v2/product_events.py             app/v2/report_continuation.py
 
       - name: Day10 focused provider-free
         working-directory: backend
         run: |
-          pytest -q             tests/test_v2_day10_frontdoor.py             tests/test_v2_day10_report_projection.py             tests/test_v2_day10_product_events.py
+          pytest -q             tests/test_v2_day10_frontdoor.py             tests/test_v2_day10_report_projection.py             tests/test_v2_day10_product_events.py             tests/test_v2_day10_continuation.py
