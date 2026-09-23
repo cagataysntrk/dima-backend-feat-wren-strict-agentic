@@ -1,0 +1,53 @@
+name: v2-day7-live-relationship-diagnostic-b70f
+
+"on":
+  push:
+    branches:
+      - ops/day7-relationship-diagnostic-b70f
+    paths:
+      - ".github/workflows/v2-day7-live-relationship-diagnostic-b70f.yml"
+
+jobs:
+  relationship-diagnostic-live:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 25
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_DAY7_LIVE_MANAGER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_DAY7_LIVE_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_DAY7_LIVE_TEMPORAL_MODEL: "openai/gpt-5.6-sol"
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - name: Checkout diagnostic checkpoint
+        uses: actions/checkout@v4
+        with:
+          ref: 54a5808b10473e91639b7f6984069752997ab29d
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend live-eval dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Run provider preflight plus relationship structured-action diagnostic
+        working-directory: backend
+        run: python lab/v2_day7_relationship_action_diagnostic.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day7-relationship-diagnostic-b70f-${{ github.run_id }}
+          path: backend/lab/reports/v2_day7_relationship_action_diagnostic.json
+          retention-days: 90
