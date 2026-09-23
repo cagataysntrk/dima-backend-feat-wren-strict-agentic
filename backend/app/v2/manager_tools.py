@@ -34,6 +34,14 @@ class ManagerToolName(StrEnum):
 class ResolveSemanticsArgs(FrozenModel):
     provenance: Literal["USER_SOURCE", "AGENT_DERIVED"] = "USER_SOURCE"
     source_refs: tuple[str, ...] = ()
+    source_obligation_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "System-owned pre-acceptance grouping metadata aligned with source_refs. "
+            "It scopes retrieval-miss recovery to the same draft obligation; it is not "
+            "semantic authority and is forbidden for AGENT_DERIVED proposals."
+        ),
+    )
     target_kind_hints: tuple[
         Literal["metric", "dimension", "filter", "time", "comparison", "unknown"], ...
     ] = Field(
@@ -59,9 +67,17 @@ class ResolveSemanticsArgs(FrozenModel):
                 raise ValueError("USER_SOURCE derived provenance alanları taşıyamaz")
             if self.target_kind_hints and len(self.target_kind_hints) != len(self.source_refs):
                 raise ValueError("target_kind_hints boş olmalı veya source_refs ile aynı uzunlukta olmalı")
+            if self.source_obligation_ids and len(self.source_obligation_ids) != len(self.source_refs):
+                raise ValueError(
+                    "source_obligation_ids boş olmalı veya source_refs ile aynı uzunlukta olmalı"
+                )
+            if any(not str(value).strip() for value in self.source_obligation_ids):
+                raise ValueError("source_obligation_ids boş owner taşıyamaz")
         else:
-            if self.source_refs:
-                raise ValueError("AGENT_DERIVED exact USER source ref kullanmaz")
+            if self.source_refs or self.source_obligation_ids:
+                raise ValueError(
+                    "AGENT_DERIVED exact USER source ref/obligation grouping kullanmaz"
+                )
             if not self.parent_obligation_id or not self.evidence_ref or not self.natural_language_proposal:
                 raise ValueError("AGENT_DERIVED parent + evidence + proposal gerektirir")
             if len(self.target_kind_hints) != 1:
