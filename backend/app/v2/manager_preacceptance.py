@@ -33,7 +33,7 @@ from app.v2.manager_models import (
     SemanticBindingRef,
     UserIntentEnvelope,
 )
-from app.v2.manager_policy import ManagerCapabilityRegistry
+from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
 from app.v2.manager_runtime import ManagerBudgetError, ManagerRuntime
 from app.v2.manager_tools import ManagerToolCall, ManagerToolName
 from app.v2.models import ConversationStateV2, FrozenModel
@@ -173,6 +173,7 @@ class DraftSurfaceViolation(FrozenModel):
 class FiniteAcceptanceStatus(StrEnum):
     ACCEPTED = "ACCEPTED"
     CLARIFICATION_REQUIRED = "CLARIFICATION_REQUIRED"
+    UNSUPPORTED_CAPABILITY = "UNSUPPORTED_CAPABILITY"
     COGNITION_REJECTED = "COGNITION_REJECTED"
     CONTRACT_REJECTED = "CONTRACT_REJECTED"
     MODEL_FAILURE = "MODEL_FAILURE"
@@ -689,6 +690,32 @@ class PreAcceptanceController:
     def _normalized_hint_kind(kind: str) -> str:
         return "period" if kind == "time" else kind
 
+    def _unsupported_execution_gaps(
+        self,
+        *,
+        draft: IntentDraft,
+    ) -> tuple[dict[str, Any], ...]:
+        """Recognized analytical intent is not the same as a Day7 executable surface."""
+        gaps: list[dict[str, Any]] = []
+        for obligation in draft.obligations:
+            spec = self._capabilities.get(obligation.capability_key)
+            if (
+                obligation.polarity == ObligationPolarity.REQUIRED
+                and spec.lane in {
+                    ManagerCapabilityLane.STANDARD,
+                    ManagerCapabilityLane.RESEARCH,
+                }
+                and not spec.executable
+            ):
+                gaps.append(
+                    {
+                        "obligation_id": obligation.obligation_id,
+                        "capability": obligation.capability_key.value,
+                        "disposition": "DEFERRED_CURRENT_CAPABILITY_SURFACE",
+                    }
+                )
+        return tuple(gaps)
+
     def _excluded_draft_shape_gaps(
         self,
         *,
@@ -905,6 +932,26 @@ class PreAcceptanceController:
                     continue
                 return FiniteAcceptanceOutcome(
                     status=FiniteAcceptanceStatus.COGNITION_REJECTED,
+                    observations=tuple(observations),
+                )
+
+            unsupported_execution_gaps = self._unsupported_execution_gaps(
+                draft=draft,
+            )
+            if unsupported_execution_gaps:
+                runtime.block_unsupported(
+                    "recognized analytical capability is deferred from current execution surface"
+                )
+                observations.append(
+                    {
+                        "kind": "unsupported_capability",
+                        "attempt": attempt,
+                        "status": "DEFERRED",
+                        "gaps": list(unsupported_execution_gaps),
+                    }
+                )
+                return FiniteAcceptanceOutcome(
+                    status=FiniteAcceptanceStatus.UNSUPPORTED_CAPABILITY,
                     observations=tuple(observations),
                 )
 
