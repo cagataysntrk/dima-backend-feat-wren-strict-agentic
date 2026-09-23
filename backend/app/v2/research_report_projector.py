@@ -332,6 +332,17 @@ class ResearchReportProjector:
                 issues=tuple(issues),
             )
 
+        report_limitations = [
+            limitation
+            for item in verified
+            for limitation in item.limitations
+        ]
+        if allow_partial:
+            report_limitations.append(
+                "Kısmi yanıt: yalnız mevcut VERIFIED Evidence raporlandı; "
+                "CAVEAT bölümleri tamamlanmamış USER_MUST çalışmalarını gösterir."
+            )
+
         return ResearchReportProjection(
             status=ResearchReportProjectionStatus.COMPLETE,
             request=ReportBuildRequest(
@@ -341,23 +352,7 @@ class ResearchReportProjector:
                     else "Araştırma Raporu"
                 ),
                 sections=tuple(sections),
-                limitations=_unique(
-                    (
-                        *(
-                            limitation
-                            for item in verified
-                            for limitation in item.limitations
-                        ),
-                        *(
-                            (
-                                "Kısmi yanıt: yalnız mevcut VERIFIED Evidence raporlandı; "
-                                "CAVEAT bölümleri tamamlanmamış USER_MUST çalışmalarını gösterir."
-                            ),
-                            if allow_partial
-                            else (),
-                        ),
-                    )
-                ),
+                limitations=_unique(report_limitations),
             ),
             artifacts=artifacts,
             accounted_evidence_refs=tuple(sorted(accounted)),
