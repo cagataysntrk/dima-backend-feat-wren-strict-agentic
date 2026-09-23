@@ -23,6 +23,7 @@ from app.v2.models import (
 )
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
+    GovernedSiblingScopeCandidateGenerator,
     SemanticBindingGate,
     SemanticCandidateDecisionProvider,
     SemanticCandidateGenerator,
@@ -40,6 +41,7 @@ from app.v2.temporal_intent import (
 class ManagerResolvedSemantic(FrozenModel):
     source_ref: str | None = None
     proposal_text: str | None = None
+    owner_id: str | None = None
     provenance: str
     handle: SemanticHandle
 
@@ -86,17 +88,20 @@ class ManagerSemanticResolutionAdapter:
             provider=temporal_normalization_provider,
         )
         self._temporal_engine = TemporalBindingEngine()
+        self._candidate_generator = SemanticCandidateGenerator(
+            semantic_context=semantic_context,
+            schema=schema,
+        )
+        self._binding_gate = SemanticBindingGate(
+            semantic_handles=semantic_handles,
+            tenant_binding=tenant_binding,
+            context_version=semantic_context.context_version.version,
+        )
+        self._semantic_decision_provider = semantic_decision_provider
         self._semantic_linker = BoundedSemanticLinker(
-            generator=SemanticCandidateGenerator(
-                semantic_context=semantic_context,
-                schema=schema,
-            ),
-            binding_gate=SemanticBindingGate(
-                semantic_handles=semantic_handles,
-                tenant_binding=tenant_binding,
-                context_version=semantic_context.context_version.version,
-            ),
-            provider=semantic_decision_provider,
+            generator=self._candidate_generator,
+            binding_gate=self._binding_gate,
+            provider=self._semantic_decision_provider,
         )
 
     def _time_dimension(self, anchor_handle: str | None) -> str:
