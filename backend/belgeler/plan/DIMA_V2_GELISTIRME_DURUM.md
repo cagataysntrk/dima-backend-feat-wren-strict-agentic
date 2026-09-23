@@ -10501,3 +10501,153 @@ DAY9 engineering is a GREEN candidate.
 
 Do not begin Day10, factual LLM polishing, export/frontend integration or broader test gates until
 supervisor review.
+
+
+---
+
+## 2026-09-23 — DAY10 D10-A..F GREEN / PAID GATE BUDGET BLOCKED
+
+```text
+Day10 product behavior SHA        f4299a3bcfb48ab351db20f555483fe483e5e3e8
+latest harness/test HEAD          031056398535f325ea9ce34701cc711861eeec33
+
+focused + real-Wren               35921618398 = GREEN
+provider-free                     29 passed
+real-Wren Product vertical        1 passed
+
+paid Product-MVP                  NOT RUN
+Day10 paid calls                  0
+Day8 live debt                    OPEN
+Day10 FINAL                       BLOCKED
+```
+
+### D10-A — front-door closure
+
+Authoritative `/ask-v2` now has exactly two analytical lanes:
+
+```text
+STANDARD
+RESEARCH
+```
+
+Only `StandardLaneStatus.RESEARCH_REQUIRED` enters Research. Standard rejected/clarification/
+unsupported semantic state is not reused as Research authority.
+
+Production Research construction lives in `app/v2/research_lane.py`; `manager_lab.py` is not a
+production dependency.
+
+### D10-B — deterministic Product report projection
+
+`ResearchReportProjector` projects only canonical:
+- accepted USER_MUST ledger,
+- VERIFIED Evidence,
+- canonical EvidenceLinkedFinding,
+- governed semantic handles,
+- server-owned presentation artifacts.
+
+No observation text is parsed into Findings. No report worker executes Wren/DB or invents numeric or
+causal claims.
+
+### D10-C — progress / stream / controls
+
+Product progress is server-authored `ProductEvent` state transition output. Events carry typed refs,
+not chain-of-thought/raw SQL/tool payload/provider text.
+
+The stream route is a thin NDJSON adapter over the same `ProductCoordinator`.
+Cancel/Answer-Now are typed control signals. Research cancellation remains owned by the existing
+`ResearchTaskRegistry` lifecycle; late Evidence commit cannot resurrect a cancelled task.
+
+### D10-D — section continuation
+
+Signed section tokens contain locator/integrity state only. Current principal, tenant, context,
+session/thread, report, section, source-run and lineage are revalidated.
+
+Only the selected section's governed semantic scope is projected into typed conversation/context
+state. Follow-up acceptance keeps the same Research run/lineage but commits a new immutable
+AcceptedTurnContract version and a versioned report that supersedes the prior report.
+
+### D10-E — deterministic partial
+
+Answer-Now pauses through existing completion/lifecycle authority. It cannot manufacture
+`VERIFIED_COMPLETE`; Product returns only current verified Evidence/report material.
+
+### D10-F — deterministic real-Wren Product gate
+
+Run `35921618398`:
+
+```text
+29 focused provider-free tests = GREEN
+1 real-Wren Product vertical   = GREEN
+```
+
+The vertical crosses:
+`ProductCoordinator → ResearchLane → semantic binding → governed relationship execution →
+real Wren/DuckDB → QueryContract → VERIFIED Evidence → deterministic report`.
+
+The earlier D10-F RED was fixture cognition: the bare `bölüm` alias is correctly ambiguous across
+multiple governed cubes when no semantic decision provider exists. The test helper was changed to
+select only from production-supplied bounded candidate cards inside the fixture-owned governed
+`makine_duruslari` cube. Production semantic code was not widened.
+
+### Paid gate STOP — global turn-budget authority conflict
+
+The canonical paid Product-MVP scenario is not currently executable as a valid certification under
+all sealed constraints.
+
+Current canonical Manager budget:
+
+```text
+max_total_manager_turns     = 6
+max_preacceptance_turns     = 2
+max_manager_turns           = 6  # phase sublimit
+```
+
+Commit `a32ed3560002ac46ed5173d8ff152852878b455d` intentionally restored the global total
+ceiling. This is not an accidental stale default.
+
+Product Research finite pre-acceptance consumes:
+```text
+DRAFT     = 1 Manager turn
+COVERAGE  = 1 Manager turn
+```
+
+Thus at most four post-acceptance Manager actions remain.
+
+Day8's already-favourable provider-free live state machine requires five post-acceptance cognition
+actions even when inspected trigger Evidence already exists:
+
+```text
+propose_hypothesis
+propose_hypothesis_next_test
+run_analytics
+inspect_evidence
+propose_hypothesis_evidence_relation
+```
+
+The actual integrated Product path additionally needs bootstrap Evidence execution/inspection.
+
+Cross-obligation compression is forbidden: HypothesisLedger admits Evidence only from the
+ROOT_CAUSE obligation/derived ancestry. BREAKDOWN/RELATIONSHIP Evidence cannot silently become
+ROOT_CAUSE trigger/support Evidence.
+
+Supervisor constraints prohibit increasing budget simply to make the case pass. Day8 live debt also
+MUST be exercised inside the integrated Day10 gate before Day10 FINAL GREEN.
+
+Therefore no paid Product-MVP call was made.
+
+### STOP / supervisor decision required
+
+Do not infer a solution. A supervisor must explicitly change either:
+- the global Manager-turn authority/policy; or
+- the causal orchestration architecture while preserving Day8 inspection/support invariants; or
+- the integrated certification contract.
+
+Until an explicit decision:
+```text
+Day10 deterministic engineering = GREEN
+Day10 real-Wren                = GREEN
+Day10 paid integrated gate     = BLOCKED / NOT RUN
+Day8 live certification       = OPEN
+Day10 FINAL GREEN             = NO
+Day11                        = NOT STARTED
+```
