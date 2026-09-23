@@ -4,6 +4,15 @@ This directory contains durable product, engineering, and planning references fo
 the dima frontend. Keep each document in the domain it describes; avoid adding
 ad-hoc files to this root.
 
+## Current architecture handoff
+
+Before changing the official product chat or engine integration, read:
+
+- [Native Engine Refactor Handoff](./NATIVE_ENGINE_REFACTOR_HANDOFF.md)
+- [Native Engine Workspace](./NATIVE_ENGINE_WORKSPACE.md)
+
+The native-engine compatibility refactor is complete; normal UI/UX development is unblocked.
+
 ## Directory map
 
 | Directory | Purpose | Start here |

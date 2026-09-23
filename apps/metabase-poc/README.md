@@ -1,6 +1,6 @@
 # @dima/metabase-poc
 
-The official Dima product UI for the native-first analytics architecture. End users see Dima only; the canonical analytics runtime is `UpcyTech/dima-metabase-engine`.
+This directory is the current official Dima product UI for the native-first analytics architecture.
 
 ## Runtime boundary
 
@@ -13,15 +13,17 @@ Browser
 → customer database
 ```
 
-- **Engine release:** `0.63.18-dima.0`
-- **Runtime image:** `ghcr.io/upcytech/dima-metabase-engine:0.63.18-dima.0`
-- **Runtime digest:** `sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b`
-- **Engine source:** repository submodule at `../../engine/dima-metabase-engine`
+Canonical engine:
 
+- release: `0.63.18-dima.0`
+- repository: `UpcyTech/dima-metabase-engine`
+- source pin: `6bb6924452e5b9dc42b3745bb88c3125a468b297`
+- published runtime digest:
+  `sha256:0e6819e36c3bd347238159ae483bbaa8db3f0f36bf23cc5d2d8a23012fe111d9`
 
-## Product surfaces
+The source pin is exposed through `../../engine/dima-metabase-engine`.
 
-The existing Dima UI remains authoritative:
+## Preserved product surfaces
 
 - Better Auth login and organizations/tenants
 - chat UX and streaming
@@ -33,20 +35,20 @@ The existing Dima UI remains authoritative:
 - uploads
 - settings and i18n
 
-Existing non-chat analytics APIs continue through `src/server/metabase/*` with each tenant's engine API key.
+Existing non-chat analytics REST surfaces continue through `src/server/metabase/*` with the current tenant mapping.
 
 ## Chat
 
-`/api/chat` no longer owns an LLM provider or a custom SQL agent. It calls:
+`/api/chat` no longer owns an LLM provider or custom analytics agent.
+
+Current path:
 
 ```text
-POST /api/metabot/agent-streaming
-profile_id = nlq
+/api/chat
+→ src/server/engine/native-chat.ts
+→ POST /api/metabot/agent-streaming
+→ profile_id = nlq
 ```
-
-through `src/server/engine/*`.
-
-Native `conversation_id`, `history`, and `state` are preserved between turns inside an authenticated opaque context token bound to the Dima tenant and product conversation. The browser does not interpret native state.
 
 Native events are adapted to the existing Dima UI contract:
 
@@ -55,11 +57,17 @@ native tool activity → step
 native text delta    → token
 native completion    → done
 native failure       → error
+browser abort        → stop
 ```
+
+Native `conversation_id + history + state` are carried between turns through an authenticated opaque context token bound to the tenant and product conversation.
 
 There is no silent fallback to the legacy custom OpenRouter agent.
 
-LLM provider/model configuration is engine-owned. The frontend does not require `OPENROUTER_API_KEY` or `OPENROUTER_MODEL`.
+Deleted legacy owners:
+- `src/server/chat/agent.ts`
+- `src/server/chat/openrouter.ts`
+- `src/server/chat/prompt.ts`
 
 ## Environment
 
@@ -74,15 +82,15 @@ BETTER_AUTH_SECRET
 BETTER_AUTH_URL
 ```
 
-`DIMA_ENGINE_TENANTS` keeps the current tenant mapping shape so existing cards, dashboards, permissions and collections remain compatible during this refactor.
+Do not add frontend `OPENROUTER_API_KEY` or `OPENROUTER_MODEL`. Model/provider selection is engine-owned.
 
 ## Development
 
-From the repository root:
+From repository root:
 
 ```bash
 git submodule update --init --recursive
-bun install
+bun install --frozen-lockfile
 cd apps/metabase-poc
 bun run auth:migrate
 bun run seed:users
@@ -98,4 +106,18 @@ bun run test
 bun run build
 ```
 
-The engine itself remains independently releasable; the submodule pins the source revision while deployments pin the immutable image digest.
+Or from repository root:
+
+```bash
+bun run turbo run lint typecheck test build --filter @dima/metabase-poc
+```
+
+## Live-E2E test infrastructure
+
+`e2e/native-engine`, `scripts/native-engine-bootstrap.py` and `scripts/native-ui-e2e.py` are integration-test infrastructure.
+
+Their temporary databases exist to prove login + product + engine + customer-data integration in CI. They are not a new production DB architecture and are not a reason to redesign auth, tenants or data storage.
+
+The manual live diagnostic currently reaches the native engine successfully but exposes an engine-owned analytical correctness issue on the frozen Q1 oracle. See:
+
+`../../docs/NATIVE_ENGINE_REFACTOR_HANDOFF.md`
