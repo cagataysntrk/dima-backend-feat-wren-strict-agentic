@@ -10,7 +10,7 @@ import copy
 import json
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 from pydantic import Field, model_validator
 
@@ -674,6 +674,7 @@ class ResearchManagerLoop:
         research_tool_runner: ResearchToolRunner | None = None,
         research_task_service: ResearchTaskService | None = None,
         root_cause_context: RootCauseLoopContext | None = None,
+        progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
     ) -> None:
         structured = getattr(llm, "structured_json", None)
         if not callable(structured):
@@ -684,8 +685,13 @@ class ResearchManagerLoop:
         self._research_tool_runner = research_tool_runner
         self._research_tasks = research_task_service or ResearchTaskService()
         self._root_cause_context = root_cause_context
+        self._progress_callback = progress_callback
         self._alias_by_handle: dict[str, str] = {}
         self._handle_by_alias: dict[str, str] = {}
+
+    def _emit_progress(self, kind: str, refs: tuple[str, ...] = ()) -> None:
+        if self._progress_callback is not None:
+            self._progress_callback(kind, refs)
 
     def _handle_alias(self, handle_id: str) -> str:
         if not str(handle_id).startswith("sem_"):
@@ -1640,6 +1646,11 @@ class ResearchManagerLoop:
                             "result": result_view,
                         }
                     )
+                    if materialized.registered_tasks:
+                        self._emit_progress(
+                            "adaptive_branch_opened",
+                            tuple(task.task_id for task in materialized.registered_tasks),
+                        )
                     frontier.observe(
                         progress_before=progress_before,
                         action=decision,
@@ -1760,6 +1771,15 @@ class ResearchManagerLoop:
                     manager_result = self._manager_safe(
                         research_execution.observation
                     )
+                    self._emit_progress(
+                        "evidence_verified",
+                        (research_execution.evidence.artifact_id,),
+                    )
+                    if research_execution.evidence.evidence_kind == "relationship_analytics":
+                        self._emit_progress(
+                            "relationship_checked",
+                            (research_execution.evidence.artifact_id,),
+                        )
                 else:
                     result = runtime.call_tool(call, executor=executor)
                     manager_result = self._manager_safe(result.tool_result)
@@ -1844,13 +1864,16 @@ class ResearchManagerLoop:
                 if not support_refs:
                     continue
                 try:
-                    canonical_findings.append(
-                        builder.build(
-                            statement=hypothesis.statement,
-                            epistemic_label=EpistemicLabel.CANDIDATE_CAUSE,
-                            evidence_refs=support_refs,
-                            hypothesis_ref=hypothesis.hypothesis_id,
-                        )
+                    finding = builder.build(
+                        statement=hypothesis.statement,
+                        epistemic_label=EpistemicLabel.CANDIDATE_CAUSE,
+                        evidence_refs=support_refs,
+                        hypothesis_ref=hypothesis.hypothesis_id,
+                    )
+                    canonical_findings.append(finding)
+                    self._emit_progress(
+                        "root_cause_candidate",
+                        (finding.finding_id,),
                     )
                 except EpistemicFindingError as exc:
                     observations.append(
