@@ -15,7 +15,11 @@ from app.v2.manager_models import (
     ObligationLedgerItem,
     ObligationPolarity,
 )
-from app.v2.manager_policy import ManagerCapabilityRegistry, ManagerCapabilitySpec
+from app.v2.manager_policy import (
+    ManagerCapabilityLane,
+    ManagerCapabilityRegistry,
+    ManagerCapabilitySpec,
+)
 from app.v2.semantic_handles import SemanticHandleRegistry
 
 
@@ -169,6 +173,21 @@ class CapabilityBindingValidator:
             spec = self._capabilities.get(item.capability_key)
         except KeyError as exc:
             return CapabilityBindingResult(binding=None, reasons=(str(exc),))
+
+        if (
+            not spec.executable
+            and spec.lane in {
+                ManagerCapabilityLane.STANDARD,
+                ManagerCapabilityLane.RESEARCH,
+            }
+        ):
+            return CapabilityBindingResult(
+                binding=None,
+                reasons=(
+                    f"{item.obligation_id}: {item.capability_key.value} is recognized "
+                    "but direct execution is unavailable in the current capability surface",
+                ),
+            )
 
         by_kind: dict[str, list[str]] = {}
         for handle_id in item.semantic_handle_refs:
