@@ -226,3 +226,111 @@ Core rule:
 
 > Cognition stays flexible. Determinism exists where it protects truth/safety, or where
 > comparative evidence proves material product value.
+
+
+---
+
+## 7. DAY7 TOOL-FAMILY PRIMITIVE AUDIT
+
+**Audit checkpoint:** `a7303dec8a83bbb11a1d40c992da75f88444858c`  
+**Scope:** `app/stats.py`, `app/yoy.py`, `app/contribution.py`, `app/ilkeller.py`, `app/drill.py`
+
+No implementation is authorized by enum presence alone. The table separates pure
+analytical primitives from legacy query/orchestration paths.
+
+| Primitive | Input requirements | Output | Pure / deterministic | Executes DB | Creates SQL | Creates CubeQuery | Semantic assumptions | Causality assumptions | Can consume verified Evidence | Can preserve QueryContract lineage | Safe disposition |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `stats.trend(values)` | ordered numeric series; >=5 samples; governed time-axis/order must be proven by caller | slope, r2, direction, n | yes | no | no | no | function itself knows neither time axis nor metric identity | none; r2 is not significance/confidence | yes, through typed adapter | yes, derived artifact can inherit parent refs | **ADOPT_AS_DERIVED_EVIDENCE** |
+| `yoy._merge(...)` | already-aligned current/previous rows plus declared dims/measures | merged rows + percentage deltas | deterministic but legacy temporal shape | no | no | no | infers time columns from row shape/date parsing | none | technically yes | only if wrapper supplies lineage | **UTILITY_ONLY**; never TREND authority |
+| `yoy.compute(...)` | CubeQuery + service + temporal mode/time dimension | executes current/previous queries and merges | deterministic orchestration | **yes** | via service | **yes / mutates CQ** | owns legacy period shifting/YTD behavior | none | no; it creates its own execution path | not through current V2 boundary | **REJECT_LEGACY_PATH** |
+| `contribution.contributions(rows, dim, measure)` | verified aligned comparison rows containing dim, measure, `measure_gecen`; additivity must be governed externally | per-segment delta/net share/gross share/surprise metrics | yes | no | no | no | assumes row alignment and missing-value policy; caller must validate required columns | **none**; contribution != cause | yes | yes | **ADOPT_AS_DERIVED_EVIDENCE** behind typed preconditions |
+| `contribution.toplanabilirlik/ayristirilabilir_mi` | cube metadata + measure | additivity classification / eligibility | deterministic | no | no | no | current implementation includes legacy name-pattern fallback when metadata is silent | none | n/a | n/a | **UTILITY_ONLY**; V2 authority must require explicit governed metadata, not naming heuristics |
+| `contribution.decompose(...)` | contribution rows + CubeQuery | formatted report + per-segment clickable CubeQueries | deterministic transform plus query-shape mutation | no | no | **yes** | inherits legacy CQ semantics | wording risks explanatory framing but no formal causal proof | parent rows can be verified | parent refs are not first-class | **REJECT_LEGACY_PATH** as V2 authority; reuse only pure math below it |
+| `contribution.pvm_pairs(...)` | explicit cube `pvm` metadata | declared value/volume pairs | yes | no | no | no | safe only when metadata explicitly declares pair | none | n/a | n/a | **UTILITY_ONLY** metadata reader |
+| `contribution.pvm(rows,...)` | verified aligned comparison rows + explicitly governed value/volume pair | price/volume/mixed decomposition | yes | no | no | no | requires explicit pair declaration and required columns | decomposition, not causal truth | yes | yes | **ADOPT_AS_DERIVED_EVIDENCE** if/when CONTRIBUTION subtype needs PVM |
+| `contribution.pvm_report(...)` | PVM rows + CubeQuery | report + clickable CubeQueries | deterministic transform plus query mutation | no | no | **yes** | legacy CQ semantics | no causal authority | parent rows can be verified | not first-class | **REJECT_LEGACY_PATH** |
+| `contribution.rank_dimensions(...)` | multiple decomposition reports | ranking/prioritization | yes | no | no | no | “interesting/explanatory first” scheduling choice | may be misread as explanation/importance | yes | yes | **UTILITY_ONLY**; prioritization value belongs Day8/ablation, not truth |
+| `contribution._akran_kiyasi(...)` | CubeQuery/cube metadata/service | peer result + extra driver scans | deterministic orchestration | **yes, repeatedly** | via service | **yes / rewrites CQ** | peer target/direction and extra-measure scan coupled to legacy cube metadata | “driver” language risks causal overreach | no; it manufactures new execution | not through current V2 boundary | **REJECT_LEGACY_PATH** |
+| `contribution.arastir(...)` | schema + CubeQuery + service | multi-dimension contribution research | deterministic legacy orchestrator | **yes** | via `yoy.compute` | **yes** | chooses dimensions/modes and executes legacy follow-ups | explanation/prioritization mixed with execution | no | legacy receipts only | **REJECT_LEGACY_PATH** |
+| `ilkeller.hesapla(rows,boyut,olcu,hedef)` | governed target entity, governed peer grouping, governed dimension+metric, >=2 peers | target vs peer mean/fark/% | yes | no | no | no | does **not** define peers; caller must prove peer universe + target | none | yes | yes | **ADOPT_AS_DERIVED_EVIDENCE** |
+| `ilkeller.bagla(...)` | rows + governed direction policy | picks one entity/value | yes | no | no | no | selecting target is a cognition/policy act, not peer math | none | yes | yes | **UTILITY_ONLY**; do not silently replace accepted target |
+| `drill.available_dimensions(...)` | cube metadata + current CubeQuery | candidate dimensions ordered by hop/certification cost | yes | no | no | no | scheduling/candidate semantics from legacy cube metadata | none | n/a | n/a | **UTILITY_ONLY**; scheduling value is benchmark territory |
+| `drill.expand_cube_query/select_cube_query/jump_to_related_cube` | CubeQuery + dimension/entity/cube metadata | mutated/new CubeQuery | yes | no | no | **yes** | legacy query-shape authority; related-cube path is not current V2 relationship authority | none | no | no | **REJECT_LEGACY_PATH** as V2 authority |
+| `drill.build_raw_row_sql(...)` | physical base object + filters | raw SQL | deterministic | no | **yes** | no | physical schema authority | none | no | no | **REJECT_LEGACY_PATH** for Research Manager |
+
+### Audit verdict by Day7 family
+
+```text
+TREND
+  SAFE_PRIMITIVE_FOUND:
+    stats.trend
+  QUERY SIDE:
+    existing V2 AnalyticsIR must already be able to yield a governed ordered series;
+    yoy.compute is NOT adopted.
+  if no governed ordered series exists:
+    TREND query primitive remains PRIMITIVE_GAP.
+
+CONTRIBUTION
+  SAFE_PRIMITIVE_FOUND:
+    contribution.contributions
+    optional explicit-metadata PVM: contribution.pvm
+  PRECONDITIONS:
+    verified aligned comparison Evidence
+    governed metric + dimension
+    explicit additive/decomposable metadata
+    required columns present
+  REJECT:
+    decompose/pvm_report CubeQuery mutation
+    arastir/yoy query execution
+  SEMANTICS:
+    contribution is observed decomposition, NEVER causal truth.
+
+PEER_COMPARE
+  SAFE_PRIMITIVE_FOUND:
+    ilkeller.hesapla
+  PRECONDITIONS:
+    accepted/governed target
+    accepted/governed peer universe/grouping
+    governed dimension + metric
+    verified parent Evidence
+  REJECT:
+    automatic peer discovery
+    contribution._akran_kiyasi query scan
+    bagla selecting a new target in place of accepted target.
+```
+
+### Derived-Evidence architecture decision
+
+No new Evidence model.
+
+Minimum backward-compatible V2 extension may add explicit lineage fields to
+`EvidenceArtifact` (or equivalently a typed lineage payload if schema compatibility
+requires it), but the invariant is fixed:
+
+```text
+source_kind = DERIVED_ANALYTICAL
+parent_evidence_refs = explicit
+parent_query_contract_refs = explicit
+transformation = TREND | CONTRIBUTION | PEER_COMPARE
+verified = true only when:
+  every parent is verified
+  + typed transform succeeds
+  + family invariants pass
+```
+
+A derived transform performs zero DB queries and must not mint semantic handles,
+relationships, peer sets, time axes or causal claims.
+
+### Harvest classification additions
+
+| ID | Mechanism / invariant | Current owner / implementation | Class | Engine dependency | Failure class prevented / value | Current proof | Future owner |
+|---|---|---|---|---|---|---|---|
+| H-035 | Pure trend computation over governed ordered series | `stats.trend` | SHOULD_PORT | none | deterministic trend math without model arithmetic | primitive audit @ a7303dec | Day7 derived adapter |
+| H-036 | Legacy YoY query/time-shift execution is not V2 trend authority | `yoy.compute` | DO_NOT_PORT | legacy CubeQuery/Wren service | bypass of canonical temporal/query trust plane | primitive audit @ a7303dec | permanent prohibition unless redesigned through V2 |
+| H-037 | Contribution decomposition is derived Evidence over verified comparison rows | `contribution.contributions` math | SHOULD_PORT | none | preserves additive decomposition without new query authority | primitive audit @ a7303dec | Day7 derived adapter |
+| H-038 | Legacy contribution CubeQuery/drill orchestration | `decompose/arastir/_akran_kiyasi` plumbing | WREN_SPECIFIC | legacy CubeQuery/Wren service | avoids hidden follow-up execution path | primitive audit @ a7303dec | do not port as V2 authority |
+| H-039 | Peer comparison math does not define peer semantics | `ilkeller.hesapla` | SHOULD_PORT | none | target-vs-peer math without semantic invention | primitive audit @ a7303dec | Day7 derived adapter |
+| H-040 | Automatic peer-set discovery is absent | no V2 governed peer-definition contract | BENCHMARK_REQUIRED | future semantic contract | prevents invented peer universe | primitive audit @ a7303dec | future explicit contract / clarify |
+| H-041 | Derived analytics preserve parent Evidence + QueryContract lineage | backward-compatible EvidenceArtifact extension required | MUST_PORT | none | provenance loss / derived-result laundering | audit invariant; provider-free proof pending | Day7 |
+| H-042 | Interestingness/prioritization is not truth | legacy `rank_dimensions` / future scheduling | BENCHMARK_REQUIRED | none | prevents “interesting” from becoming “true/causal” | DD-16 + audit | Day8/ablation |
+
