@@ -32,6 +32,13 @@ class NativeAggregationFact(FrozenModel):
     distinct: bool
 
 
+class NativeMetricReferenceFact(FrozenModel):
+    stage_number: int = Field(ge=0)
+    aggregation_index: int = Field(ge=0)
+    metabase_metric_id: int = Field(gt=0)
+    metabase_metric_entity_id: str = Field(min_length=1)
+
+
 class NativeTemporalPredicate(FrozenModel):
     time_field_id: int = Field(gt=0)
     operator: str = Field(min_length=1)
@@ -69,6 +76,7 @@ class NativeExecutionManifest(FrozenModel):
     referenced_source_table_ids: tuple[int, ...]
     aggregation_count: int = Field(ge=0)
     aggregations: tuple[NativeAggregationFact, ...]
+    native_metric_references: tuple[NativeMetricReferenceFact, ...] = ()
     breakout_count: int = Field(ge=0)
     material_filter_count: int = Field(ge=0)
     non_temporal_filter_count: int = Field(ge=0)
@@ -89,6 +97,14 @@ class NativeExecutionManifest(FrozenModel):
     def _internal_consistency(self):
         if self.aggregation_count != len(self.aggregations):
             raise ValueError("aggregation_count does not match aggregations")
+        metric_ref_locations = [
+            (item.stage_number, item.aggregation_index)
+            for item in self.native_metric_references
+        ]
+        if len(metric_ref_locations) != len(set(metric_ref_locations)):
+            raise ValueError("duplicate native metric reference location")
+        if len(self.native_metric_references) > self.aggregation_count:
+            raise ValueError("native metric references exceed aggregation count")
         if self.material_filter_count != (
             self.non_temporal_filter_count + len(self.temporal_predicates)
         ):

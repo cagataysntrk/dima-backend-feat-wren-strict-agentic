@@ -27,6 +27,7 @@ from app.v3.native_execution import (
     NativeQueryCandidate,
     period_scope_fingerprint,
 )
+from app.v3.resource_provisioning import ManagedResourceBinding, ResourceKind
 from app.v3.security_identity import (
     ExecutionAccessSnapshotIssuer,
     SecurityIdentityError,
@@ -260,14 +261,8 @@ class NativeStandardTrustOrchestrator:
             table_id=table_id,
         )
 
-    @classmethod
-    def _observed_metric(
-        cls,
-        *,
-        manifest: NativeExecutionManifest,
-        snapshot: DimaExecutionBindingSnapshot,
-        observed_table: CurrentCatalogObject,
-    ) -> MetricSpec:
+    @staticmethod
+    def _assert_exact_count_star(manifest: NativeExecutionManifest) -> None:
         if manifest.aggregation_count != 1 or len(manifest.aggregations) != 1:
             raise NativeStandardTrustError(
                 "NATIVE_AGGREGATION_SCOPE_VIOLATION",
@@ -285,11 +280,122 @@ class NativeStandardTrustOrchestrator:
                 "PX-01 requires exact COUNT(*)",
             )
 
+    @staticmethod
+    def _native_metric_binding(
+        *,
+        manifest: NativeExecutionManifest,
+        expected_metric: MetricSpec,
+        tenant_binding: str,
+        semantic_context_version: str,
+        managed_resource_bindings: tuple[ManagedResourceBinding, ...],
+    ) -> ManagedResourceBinding | None:
+        refs = manifest.native_metric_references
+        if not refs:
+            return None
+        if len(refs) != 1:
+            raise NativeStandardTrustError(
+                "NATIVE_METRIC_REFERENCE_SCOPE_VIOLATION",
+                "P13B-v1 certifies exactly one native metric reference",
+            )
+        ref = refs[0]
+        if ref.stage_number != 0 or ref.aggregation_index != 0:
+            raise NativeStandardTrustError(
+                "NATIVE_METRIC_REFERENCE_SCOPE_VIOLATION",
+                "P13B-v1 native metric must be the sole first-stage aggregation",
+            )
+
+        matches = [
+            binding
+            for binding in managed_resource_bindings
+            if (
+                binding.tenant_binding == tenant_binding
+                and binding.resource_kind == ResourceKind.METRIC
+                and binding.canonical_id == expected_metric.metric_id
+            )
+        ]
+        if len(matches) != 1:
+            raise NativeStandardTrustError(
+                "NATIVE_METRIC_BINDING_MISSING"
+                if not matches
+                else "NATIVE_METRIC_BINDING_AMBIGUOUS",
+                (
+                    f"expected one Dima-managed binding for {expected_metric.metric_id}, "
+                    f"observed {len(matches)}"
+                ),
+            )
+        binding = matches[0]
+        if binding.ownership != "DIMA_MANAGED":
+            raise NativeStandardTrustError(
+                "NATIVE_METRIC_BINDING_OWNERSHIP_INVALID",
+                "native metric binding is not DIMA_MANAGED",
+            )
+        if (
+            binding.semantic_context_version != semantic_context_version
+            or binding.applied_version != expected_metric.semantic_version
+        ):
+            raise NativeStandardTrustError(
+                "NATIVE_METRIC_BINDING_STALE",
+                "native metric binding semantic context/version is stale",
+            )
+        if (
+            binding.metabase_local_id != ref.metabase_metric_id
+            or binding.metabase_entity_id != ref.metabase_metric_entity_id
+        ):
+            raise NativeStandardTrustError(
+                "NATIVE_METRIC_BINDING_IDENTITY_MISMATCH",
+                "engine-attested native metric identity differs from the P9 binding",
+            )
+        return binding
+
+    @classmethod
+    def _observed_metric(
+        cls,
+        *,
+        manifest: NativeExecutionManifest,
+        snapshot: DimaExecutionBindingSnapshot,
+        observed_table: CurrentCatalogObject,
+        expected_metric: MetricSpec,
+        tenant_binding: str,
+        managed_resource_bindings: tuple[ManagedResourceBinding, ...],
+    ) -> tuple[MetricSpec, ManagedResourceBinding | None]:
+        cls._assert_exact_count_star(manifest)
+
+        metric_binding = cls._native_metric_binding(
+            manifest=manifest,
+            expected_metric=expected_metric,
+            tenant_binding=tenant_binding,
+            semantic_context_version=snapshot.semantic_context_version,
+            managed_resource_bindings=managed_resource_bindings,
+        )
+        if metric_binding is not None:
+            if (
+                expected_metric.aggregation.strip().lower() not in {"count", "count(*)"}
+                or expected_metric.formula is not None
+            ):
+                raise NativeStandardTrustError(
+                    "NATIVE_EXPECTED_METRIC_DEFINITION_MISMATCH",
+                    "bound Dima metric is not the canonical COUNT(*) metric",
+                )
+            expected_table = snapshot.current_lineage(_single_lineage(expected_metric))
+            if (
+                expected_table.database_ref != observed_table.database_ref
+                or expected_table.schema_name != observed_table.schema_name
+                or expected_table.table_name != observed_table.table_name
+                or expected_table.column_name is not None
+                or expected_table.metabase_database_id != manifest.database_id
+                or expected_table.metabase_table_id != manifest.primary_source_table_id
+            ):
+                raise NativeStandardTrustError(
+                    "NATIVE_METRIC_SOURCE_BINDING_MISMATCH",
+                    "bound native metric expanded against a different physical source",
+                )
+            return expected_metric, metric_binding
+
         matches: list[MetricSpec] = []
         for metric in snapshot.semantic_spec.metrics:
             if metric.aggregation.strip().lower() not in {"count", "count(*)"}:
                 continue
-            if len(metric.source_lineage) != 1:
+            if metric.formula is not None or len(metric.source_lineage) != 1:
                 continue
             try:
                 current = snapshot.current_lineage(metric.source_lineage[0])
@@ -309,7 +415,7 @@ class NativeStandardTrustOrchestrator:
                 "NATIVE_OBSERVED_METRIC_UNMAPPED",
                 f"observed COUNT(*) maps to {len(matches)} Dima metrics",
             )
-        return matches[0]
+        return matches[0], None
 
     @classmethod
     def _observed_time(
@@ -393,6 +499,7 @@ class NativeStandardTrustOrchestrator:
         expected_engine: NativeEngineIdentity,
         dima_request_id: str,
         dima_trace_id: str,
+        managed_resource_bindings: tuple[ManagedResourceBinding, ...],
     ) -> tuple[NativeQueryCandidate, tuple[ExecutionResourceBinding, ...]]:
         manifest = attestation.manifest
         cls._assert_engine_pin(manifest, expected_engine)
@@ -403,10 +510,13 @@ class NativeStandardTrustOrchestrator:
         )
 
         observed_table = cls._observed_table(manifest, snapshot)
-        observed_metric = cls._observed_metric(
+        observed_metric, metric_binding = cls._observed_metric(
             manifest=manifest,
             snapshot=snapshot,
             observed_table=observed_table,
+            expected_metric=expected_metric,
+            tenant_binding=intent.principal.tenant_binding,
+            managed_resource_bindings=managed_resource_bindings,
         )
         if observed_metric.metric_id != expected_metric.metric_id:
             raise NativeStandardTrustError(
@@ -439,6 +549,24 @@ class NativeStandardTrustOrchestrator:
             )
 
         runtime = manifest.runtime_identity
+        native_validation_refs = [
+            manifest.attestation_id,
+            f"native-producer:{manifest.producer_tool}",
+            f"native-permission:{manifest.permission_provenance.permission_check}",
+            f"metabase-user:{manifest.authenticated_metabase_subject}",
+        ]
+        if metric_binding is not None:
+            native_validation_refs.extend(
+                [
+                    f"native-metric:{metric_binding.metabase_entity_id}",
+                    (
+                        "dima-managed-metric:"
+                        f"{metric_binding.canonical_id}:"
+                        f"{metric_binding.semantic_context_version}:"
+                        f"{metric_binding.applied_version}"
+                    ),
+                ]
+            )
         candidate = NativeQueryCandidate.build(
             engine_identity=NativeEngineIdentity(
                 repository=runtime.repository,
@@ -457,12 +585,7 @@ class NativeStandardTrustOrchestrator:
             portable_query=None,
             semantic_refs=(intent.metrics[0].semantic_ref,),
             resource_bindings=_unique_resources(observed_resources),
-            native_validation_refs=(
-                manifest.attestation_id,
-                f"native-producer:{manifest.producer_tool}",
-                f"native-permission:{manifest.permission_provenance.permission_check}",
-                f"metabase-user:{manifest.authenticated_metabase_subject}",
-            ),
+            native_validation_refs=tuple(native_validation_refs),
             time_scope_fingerprint=period_scope_fingerprint(intent.period),
             material_filter_count=manifest.non_temporal_filter_count,
             material_join_count=(
@@ -489,6 +612,7 @@ class NativeStandardTrustOrchestrator:
         verified_security_facts: VerifiedExecutionSecurityFacts,
         dima_request_id: str,
         dima_trace_id: str,
+        managed_resource_bindings: tuple[ManagedResourceBinding, ...] = (),
     ) -> NativeStandardAuthorizationResult:
         try:
             candidate, expected_resources = cls._candidate(
@@ -498,6 +622,7 @@ class NativeStandardTrustOrchestrator:
                 expected_engine=expected_engine,
                 dima_request_id=dima_request_id,
                 dima_trace_id=dima_trace_id,
+                managed_resource_bindings=managed_resource_bindings,
             )
         except (NativeStandardTrustError, MetabaseCompilationBlocked) as exc:
             return NativeStandardAuthorizationResult(

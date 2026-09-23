@@ -21,6 +21,7 @@ from app.v3.execution_identity import (
 from app.v3.native_execution import NativeCandidateOutcome
 from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.native_standard.trust import NativeStandardTrustOrchestrator
+from app.v3.resource_provisioning import ManagedResourceBinding, ResourceKind
 from app.v3.security_identity import VerifiedExecutionSecurityFacts
 from app.v3.semantic_spec import (
     DimensionSpec,
@@ -295,6 +296,7 @@ def _manifest(**updates) -> dict:
                 "distinct": False,
             },
         ),
+        "native_metric_references": (),
         "breakout_count": 0,
         "material_filter_count": 2,
         "non_temporal_filter_count": 0,
@@ -390,7 +392,76 @@ def _security(attestation: NativeAttestationEnvelope) -> VerifiedExecutionSecuri
     )
 
 
-def _authorize(attestation: NativeAttestationEnvelope | None = None):
+def _managed_metric_binding(
+    *,
+    canonical_id: str = "metric.sales_order_count",
+    entity_id: str = "p13bmetricentity00000001",
+    local_id: int = 501,
+    context_version: str = "ctx-px01-v1",
+    applied_version: str = "1",
+) -> ManagedResourceBinding:
+    return ManagedResourceBinding(
+        tenant_binding="tenant-boyahane",
+        canonical_id=canonical_id,
+        resource_kind=ResourceKind.METRIC,
+        semantic_context_version=context_version,
+        metabase_entity_id=entity_id,
+        metabase_local_id=local_id,
+        applied_version=applied_version,
+        applied_fingerprint="b" * 64,
+        ownership="DIMA_MANAGED",
+    )
+
+
+def _metric_query(metric_id: int = 501) -> dict:
+    query = json.loads(json.dumps(_query()))
+    query["stages"][0]["aggregation"] = [
+        [
+            "metric",
+            {"lib/uuid": "00000000-0000-4000-8000-000000000011"},
+            metric_id,
+        ]
+    ]
+    return query
+
+
+def _metric_attestation(
+    *,
+    metric_id: int = 501,
+    entity_id: str = "p13bmetricentity00000001",
+    aggregation: dict | None = None,
+) -> NativeAttestationEnvelope:
+    query = _metric_query(metric_id)
+    return NativeAttestationEnvelope(
+        exact_serialized_pmbql=query,
+        manifest=_manifest(
+            exact_pmbql_fingerprint=_hash(query),
+            aggregations=(
+                aggregation
+                or {
+                    "operator": "count",
+                    "argument_kind": "all_rows",
+                    "referenced_field_ids": (),
+                    "distinct": False,
+                },
+            ),
+            native_metric_references=(
+                {
+                    "stage_number": 0,
+                    "aggregation_index": 0,
+                    "metabase_metric_id": metric_id,
+                    "metabase_metric_entity_id": entity_id,
+                },
+            ),
+        ),
+    )
+
+
+def _authorize(
+    attestation: NativeAttestationEnvelope | None = None,
+    *,
+    managed_resource_bindings: tuple[ManagedResourceBinding, ...] = (),
+):
     attestation = attestation or _attestation()
     return NativeStandardTrustOrchestrator.authorize(
         intent=_intent(),
@@ -401,6 +472,7 @@ def _authorize(attestation: NativeAttestationEnvelope | None = None):
         verified_security_facts=_security(attestation),
         dima_request_id="dima-req-px01",
         dima_trace_id="dima-trace-px01",
+        managed_resource_bindings=managed_resource_bindings,
     )
 
 
@@ -594,3 +666,77 @@ def test_engine_pin_mismatch_blocks_before_candidate_authorization():
     assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
     assert result.authorization.code == "NATIVE_ENGINE_PIN_MISMATCH"
     assert result.candidate is None
+
+
+def test_native_metric_ref_authorizes_only_through_exact_p9_binding():
+    attestation = _metric_attestation()
+    binding = _managed_metric_binding()
+    result = _authorize(attestation, managed_resource_bindings=(binding,))
+    assert result.authorization.outcome == NativeCandidateOutcome.ALLOW
+    assert result.candidate is not None
+    assert (
+        "native-metric:p13bmetricentity00000001"
+        in result.candidate.native_validation_refs
+    )
+    request = NativeStandardTrustOrchestrator.execution_request(
+        result=result,
+        attestation=attestation,
+    )
+    assert request.exact_serialized_pmbql == _metric_query()
+    assert request.artifact_fingerprint == _hash(_metric_query())
+    assert request.artifact_fingerprint == attestation.manifest.exact_pmbql_fingerprint
+
+
+def test_native_metric_ref_missing_binding_fails_closed():
+    result = _authorize(_metric_attestation())
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "NATIVE_METRIC_BINDING_MISSING"
+
+
+@pytest.mark.parametrize(
+    "binding",
+    [
+        _managed_metric_binding(entity_id="wrongmetricentity00000001"),
+        _managed_metric_binding(local_id=777),
+        _managed_metric_binding(context_version="ctx-stale"),
+        _managed_metric_binding(applied_version="0"),
+        _managed_metric_binding(canonical_id="metric.other"),
+    ],
+)
+def test_native_metric_ref_wrong_or_stale_binding_fails_closed(binding):
+    result = _authorize(
+        _metric_attestation(),
+        managed_resource_bindings=(binding,),
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code in {
+        "NATIVE_METRIC_BINDING_MISSING",
+        "NATIVE_METRIC_BINDING_IDENTITY_MISMATCH",
+        "NATIVE_METRIC_BINDING_STALE",
+    }
+
+
+@pytest.mark.parametrize(
+    "aggregation",
+    [
+        {
+            "operator": "count",
+            "argument_kind": "field",
+            "referenced_field_ids": (11,),
+            "distinct": False,
+        },
+        {
+            "operator": "distinct",
+            "argument_kind": "field",
+            "referenced_field_ids": (11,),
+            "distinct": True,
+        },
+    ],
+)
+def test_native_metric_ref_non_count_star_definition_does_not_certify(aggregation):
+    result = _authorize(
+        _metric_attestation(aggregation=aggregation),
+        managed_resource_bindings=(_managed_metric_binding(),),
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "NATIVE_AGGREGATION_MISMATCH"
