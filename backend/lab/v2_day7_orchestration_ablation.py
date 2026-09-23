@@ -102,13 +102,38 @@ from lab.v2_day7_manager_live_sol import (
 )
 
 
+class EvalBudgetExhausted(RuntimeError):
+    pass
+
+
+class PaidCallGuard:
+    """Ablation-wide hard stop checked before every paid model request."""
+
+    def __init__(self, max_calls: int) -> None:
+        if max_calls < 1:
+            raise ValueError("max_model_calls must be >= 1")
+        self.max_calls = max_calls
+        self.used = 0
+        self.exhausted = False
+
+    def reserve(self) -> None:
+        if self.used >= self.max_calls:
+            self.exhausted = True
+            raise EvalBudgetExhausted(
+                f"ablation model-call budget exhausted ({self.used}/{self.max_calls})"
+            )
+        self.used += 1
+
+
 class CountingLLM:
-    def __init__(self, inner) -> None:
+    def __init__(self, inner, *, call_guard: PaidCallGuard) -> None:
         self.inner = inner
+        self.call_guard = call_guard
         self.calls = 0
         self.latency_s = 0.0
 
     def structured_json(self, system, user, **kwargs):
+        self.call_guard.reserve()
         started = time.perf_counter()
         self.calls += 1
         try:
@@ -450,8 +475,14 @@ def _build_case_runtime(*, case: dict[str, Any], arm: str, llm):
     }
 
 
-def _record_case(*, case: dict[str, Any], arm: str, manager_llm) -> dict[str, Any]:
-    counting = CountingLLM(manager_llm)
+def _record_case(
+    *,
+    case: dict[str, Any],
+    arm: str,
+    manager_llm,
+    call_guard: PaidCallGuard,
+) -> dict[str, Any]:
+    counting = CountingLLM(manager_llm, call_guard=call_guard)
     fixture = _build_case_runtime(case=case, arm=arm, llm=counting)
     runtime = fixture["runtime"]
     service = fixture["service"]
@@ -601,16 +632,90 @@ def _aggregate(records: list[dict[str, Any]]) -> dict[str, Any]:
     return {"arms": arms, "by_case": by_case}
 
 
+def _parse_case_ids(values: list[str]) -> list[str]:
+    selected: list[str] = []
+    for raw in values:
+        for item in str(raw).split(","):
+            clean = item.strip()
+            if clean and clean not in selected:
+                selected.append(clean)
+    return selected
+
+
+def _select_cases(
+    document: dict[str, Any],
+    requested_values: list[str],
+) -> list[dict[str, Any]]:
+    requested = _parse_case_ids(requested_values)
+    if not requested:
+        raise ValueError(
+            "explicit --case-id is required; broad Day7 ablation is forbidden by default"
+        )
+    by_id = {str(case["id"]): case for case in document.get("cases") or ()}
+    unknown = [case_id for case_id in requested if case_id not in by_id]
+    if unknown:
+        raise ValueError(f"unknown ablation case ids: {unknown}")
+    return [by_id[case_id] for case_id in requested]
+
+
+def _dry_run_receipt(
+    *,
+    cases: list[dict[str, Any]],
+    max_model_calls: int,
+) -> dict[str, Any]:
+    from app.v2.manager_models import ManagerBudget
+
+    return {
+        "kind": "dima_v2_day7_orchestration_shadow_ablation_dry_run",
+        "selected_case_ids": [str(case["id"]) for case in cases],
+        "selected_cases": len(cases),
+        "arms": ["FREE_COGNITION", "GOVERNED_ORCHESTRATION"],
+        "maximum_loop_records": len(cases) * 2,
+        "configured_manager_hard_turn_cap": ManagerBudget().max_total_manager_turns,
+        "model_calls_budget": max_model_calls,
+        "provider_requests_made": 0,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--case-id",
+        action="append",
+        default=[],
+        help="Explicit case id; repeat or pass comma-separated ids.",
+    )
+    parser.add_argument(
+        "--max-model-calls",
+        type=int,
+        required=True,
+        help="Ablation-wide hard paid-call ceiling checked before provider requests.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print selected scope/cost receipt without constructing provider clients.",
+    )
     args = parser.parse_args()
 
+    if args.max_model_calls < 1:
+        raise SystemExit("--max-model-calls must be >= 1")
+
     document = yaml.safe_load(args.cases.read_text(encoding="utf-8"))
-    cases = list(document.get("cases") or [])
-    if len(cases) < 8 or len(cases) > 12:
-        raise SystemExit("Day7 ablation requires 8-12 high-information cases")
+    try:
+        cases = _select_cases(document, list(args.case_id or ()))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    dry_receipt = _dry_run_receipt(
+        cases=cases,
+        max_model_calls=args.max_model_calls,
+    )
+    if args.dry_run:
+        print(json.dumps(dry_receipt, ensure_ascii=False))
+        return 0
 
     settings = get_settings()
     (
@@ -622,8 +727,10 @@ def main() -> int:
         _temporal_profile,
     ) = _build_role_scoped_manager_models(settings)
 
+    call_guard = PaidCallGuard(args.max_model_calls)
     records: list[dict[str, Any]] = []
     measurement_valid = True
+    measurement_validity = "VALID"
     error = None
     try:
         for case in cases:
@@ -633,28 +740,45 @@ def main() -> int:
                         case=case,
                         arm=arm,
                         manager_llm=manager_llm,
+                        call_guard=call_guard,
                     )
                 )
+    except EvalBudgetExhausted as exc:
+        measurement_valid = False
+        measurement_validity = "EVAL_BUDGET_EXHAUSTED"
+        error = f"{type(exc).__name__}: {exc}"
     except Exception as exc:
         measurement_valid = False
+        measurement_validity = "HARNESS_FAILURE"
         error = f"{type(exc).__name__}: {exc}"
 
     aggregate = _aggregate(records) if records else {"arms": {}, "by_case": []}
+    service_queries = sum(int(row.get("service_queries") or 0) for row in records)
+    evaluable_cases = len(aggregate.get("by_case") or ())
     payload = {
         "kind": "dima_v2_day7_orchestration_shadow_ablation",
         "version": document.get("version"),
         "measurement_valid": measurement_valid and len(records) == len(cases) * 2,
+        "measurement_validity": measurement_validity,
         "manager_model": manager_profile.model,
         "provider": manager_profile.provider,
         "workers": 1,
+        "selected_case_ids": [str(case["id"]) for case in cases],
         "selected_cases": len(cases),
+        "evaluable_cases": evaluable_cases,
         "completed_records": len(records),
+        "maximum_loop_records": len(cases) * 2,
         "shared_accepted_authority_verified": (
             bool(aggregate["by_case"])
             and len(aggregate["by_case"]) == len(cases)
         ),
+        "manager_model_calls": call_guard.used,
         "semantic_linker_calls": 0,
         "temporal_model_calls": 0,
+        "total_model_calls": call_guard.used,
+        "service_queries": service_queries,
+        "model_calls_budget": call_guard.max_calls,
+        "budget_exhausted": call_guard.exhausted,
         **aggregate,
         "error": error,
         "records": records,
@@ -667,7 +791,7 @@ def main() -> int:
     )
     print(json.dumps(payload, ensure_ascii=False))
 
-    # Ablation quality differences are measurements, not harness failures.
+    # Quality differences are measurements. Invalid evaluator/provider budget is not.
     return 0 if payload["measurement_valid"] else 2
 
 
