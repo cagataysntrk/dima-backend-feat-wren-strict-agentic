@@ -3311,3 +3311,30 @@ bridge proof.
 
 status:
 `CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C2-CI-002 — live bridge job omitted the model-secret environment
+
+opened_at: 2026-09-23  
+workflow: `35835676185`
+
+classification:
+`CI/GOVERNANCE / CREDENTIAL_ENVIRONMENT_SCOPE`
+
+observed:
+- job failed before oracle freeze, runtime startup or bridge invocation;
+- C1's proven live workflow obtains the model credential through GitHub Environment
+  `DIMA_OPENROUTER_API_KEY`;
+- C2 live declared the secret expression but did not attach that Environment.
+
+single_owner:
+`.github/workflows/dima-metabase-p12x-c2-live.yml`.
+
+authorized_correction:
+Attach `environment: DIMA_OPENROUTER_API_KEY` to the live job and keep all runtime/model/security
+inputs otherwise unchanged.
+
+status:
+`CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
