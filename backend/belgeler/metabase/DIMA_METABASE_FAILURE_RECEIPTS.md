@@ -3070,3 +3070,29 @@ forbidden:
 
 status:
 `CLASSIFIED / EXECUTION OWNER MOVED TO PLATFORM P12X LAB`.
+
+
+---
+
+## DMP-P12X-C1-CI-002 — workflow YAML serialization defect
+
+opened_at: 2026-09-23  
+platform_sha: `ca9a4bbbfca28565f950ae35a6a6f6de64b45742`  
+workflow_run: `35830027113`
+
+classification:
+`CI/GOVERNANCE / YAML_SERIALIZATION`
+
+root_cause:
+The C1 workflow update serialized the new `C0_RUNTIME_SOURCE_SHA` env line as a literal backslash-n
+inside the preceding `ENGINE_SHA` scalar. GitHub rejected the workflow before creating jobs.
+
+single_owner:
+`.github/workflows/dima-metabase-p12x-c1.yml` env serialization only.
+
+authorized_correction:
+Replace the literal escape with a real YAML line break. No benchmark, engine, scorer or product
+semantics change.
+
+status:
+`CLASSIFIED / CI-ONLY PATCH AUTHORIZED`.

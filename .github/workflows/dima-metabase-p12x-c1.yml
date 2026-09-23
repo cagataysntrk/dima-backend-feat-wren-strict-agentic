@@ -23,7 +23,8 @@ jobs:
       P12X_METABOT_PROVIDER: openrouter/openai/gpt-5.6-luna
       STOCK_IMAGE: metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
       FORK_IMAGE: ghcr.io/upcytech/dima-metabase-engine@sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b
-      ENGINE_SHA: 6bb6924452e5b9dc42b3745bb88c3125a468b297\n      C0_RUNTIME_SOURCE_SHA: 9fb21da0177935aff5882472577c8e14a67ebd65
+      ENGINE_SHA: 6bb6924452e5b9dc42b3745bb88c3125a468b297
+      C0_RUNTIME_SOURCE_SHA: 9fb21da0177935aff5882472577c8e14a67ebd65
       P12X_WAREHOUSE_OWNER_PASSWORD: boyahane-owner-c1
       BOYAHANE_READONLY_PASSWORD: boyahane-readonly-c1
       MB_APP_PASSWORD: metabase-app-c1
