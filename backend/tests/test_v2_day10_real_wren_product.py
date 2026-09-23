@@ -16,6 +16,10 @@ from app.wren_service import WrenService
 from app.v2.context_provider import ContextProviderV0
 from app.v2.model_policy import ModelProfile, ModelRole
 from app.v2.models import TenantAnalyticsRuntimeV0
+from app.v2.semantic_linker import (
+    SemanticLinkBatchDecision,
+    SemanticLinkChoice,
+)
 from app.v2.product_coordinator import ProductCoordinator
 from app.v2.product_models import (
     ProductAskRequest,
@@ -161,6 +165,64 @@ class _RelationshipResearchLLM:
         return {"action": "finish"}
 
 
+class _SharedCubeSemanticProvider:
+    """Provider-free bounded cognition: choose only from the unique shared cube scope.
+
+    This is test cognition, not production semantic authority. Candidate IDs are copied
+    from the bounded cards supplied by the real semantic linker.
+    """
+
+    def decide(self, requests):
+        cube_sets = [
+            {
+                cube
+                for candidate in request.candidates
+                for cube in candidate.cube_labels
+            }
+            for request in requests
+        ]
+        shared = set.intersection(*cube_sets) if cube_sets else set()
+        assert len(shared) == 1, {
+            "shared_cube_labels": sorted(shared),
+            "requests": [
+                {
+                    "surface": request.surface,
+                    "candidates": [
+                        {
+                            "candidate_id": candidate.candidate_id,
+                            "label": candidate.label,
+                            "cube_labels": candidate.cube_labels,
+                        }
+                        for candidate in request.candidates
+                    ],
+                }
+                for request in requests
+            ],
+        }
+        target_cube = next(iter(shared))
+
+        choices = []
+        for request in requests:
+            matches = [
+                candidate
+                for candidate in request.candidates
+                if target_cube in candidate.cube_labels
+            ]
+            assert len(matches) == 1, {
+                "surface": request.surface,
+                "target_cube": target_cube,
+                "matches": [item.candidate_id for item in matches],
+            }
+            choices.append(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="SELECT",
+                    candidate_id=matches[0].candidate_id,
+                )
+            )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
 class _NarrationProviderFailure:
     def structured_json(self, *_args, **_kwargs):
         raise RuntimeError("provider-free test uses deterministic narration fallback")
@@ -222,7 +284,7 @@ def test_product_research_relationship_crosses_real_wren_and_builds_report(
     cognition = ResearchCognition(
         manager_llm=manager,
         manager_profile=profile,
-        semantic_provider=None,
+        semantic_provider=_SharedCubeSemanticProvider(),
         semantic_profile=ModelProfile(
             role=ModelRole.SEMANTIC_LINKER,
             provider="provider-free",
