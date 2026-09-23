@@ -935,3 +935,32 @@ After context reset read:
 6. `UPSTREAM_ENGINE_HARVEST_MAP.md`.
 
 P12X must stop after the first V0+A+B classification and return to supervisor.
+
+
+---
+
+## DMP-DEC-0031 — CURRENT HANDOFF OVERRIDE
+
+The engine direction is now accepted:
+```text
+DIMA CONTROL PLANE
+→ DIMA ENGINE BRIDGE
+→ THIN DIMA METABASE ENGINE
+→ NATIVE METABOT / MBQL / QUERY PROCESSOR / DRIVERS
+```
+
+Current-corpus native sanity is executable GREEN at `e35b68e4b7f60fc46c677317e7a001a1d66e88ac`:
+workflow `35824464298`, job `107063206949`, PX-01 `126 == 126`, exact Boyahane resource, zero provider/tool errors.
+
+The full V0+A+B Agent-API bake-off remains useful evidence but is no longer fork-blocking.
+
+Next developer order:
+1. read DMP-DEC-0031;
+2. confirm engine repo/bootstrap state;
+3. execute C0 from exact upstream history `v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4`;
+4. C1 stock-vs-fork parity on frozen cases;
+5. only after C1 GREEN add C2 stable bridge and native parity;
+6. establish C3 sync/patch-surface discipline;
+7. stop before P13 hooks.
+
+Do not implement `standard_execution.py`, `execute_prepared()` or Agent-API production Standard while this override is active.
