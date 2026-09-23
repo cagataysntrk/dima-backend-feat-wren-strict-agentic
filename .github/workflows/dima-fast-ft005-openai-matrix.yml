@@ -1,6 +1,14 @@
 name: dima-fast-ft005-model-matrix
 
 on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft005-openai-matrix.yml"
+      - "backend/lab/fast_model_eval.py"
+      - "backend/lab/fast_ft005_model_sentinel.py"
+      - "backend/tests/test_fast_model_eval.py"
   workflow_dispatch:
 
 permissions:
@@ -21,12 +29,18 @@ jobs:
             canonical_model: gpt-5.6-luna
             measurement_mode: MODEL_COMPARABLE
             reasoning_effort: disabled
-          - label: sol
+          - label: sol-comparable
             model: openai/gpt-5.6-sol
             role: SOL_CEILING
             canonical_model: gpt-5.6-sol
             measurement_mode: MODEL_COMPARABLE
             reasoning_effort: disabled
+          - label: sol-ceiling
+            model: openai/gpt-5.6-sol
+            role: SOL_CEILING
+            canonical_model: gpt-5.6-sol
+            measurement_mode: MODEL_CEILING
+            reasoning_effort: ceiling_enabled
 
     env:
       DIMA_VQR_EMBEDDER: "off"
@@ -54,6 +68,10 @@ jobs:
       - name: Install backend
         working-directory: backend
         run: pip install -e ".[dev]"
+
+      - name: Lock provider-free benchmark transport contract
+        working-directory: backend
+        run: pytest -q tests/test_fast_model_eval.py
 
       - name: Check OpenRouter benchmark credential
         id: credential
