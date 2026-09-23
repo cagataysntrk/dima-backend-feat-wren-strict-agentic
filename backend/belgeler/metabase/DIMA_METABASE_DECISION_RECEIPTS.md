@@ -1374,3 +1374,78 @@ After the V0+A+B checkpoint:
 
 status:
 `SEALED / P12X V0+A+B MEASUREMENT AUTHORIZED / C+D NOT AUTHORIZED`.
+
+
+---
+
+## DMP-DEC-0031 — thin Metabase fork as primary production-engine candidate
+
+date: 2026-09-23
+
+supersedes:
+Only DMP-DEC-0030's prerequisite that Seam C/fork bootstrap must wait for completion of the full V0+A+B Agent-API bake-off. DMP-DEC-0030 history and source/runtime findings remain intact.
+
+evidence:
+- current-corpus native sanity is executable GREEN: workflow `35824464298`, job `107063206949`;
+- corpus fingerprint `fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0`;
+- pinned native Metabot `v0.63.18 / 2ba2485` selected exact Boyahane `public.satis_siparisleri`, generated the query, executed scalar `126`, and matched independent oracle `126` with provider/tool errors `0`;
+- native Metabot retains profiles, skills, engine-local memory/state, iterative tool-result feedback, MBQL/query construction and permission-aware orchestration that Dima must not reimplement.
+
+decision:
+A thin upstream-derived Metabase fork is the principal production-engine candidate.
+
+```text
+DIMA PRODUCT
+→ DIMA CONVERSATION / DECISION INTELLIGENCE
+→ DIMA SEMANTIC + SECURITY + EVIDENCE CONTROL PLANE
+→ DIMA ENGINE BRIDGE
+→ DIMA METABASE ENGINE
+→ native Metabot + profiles + skills + memory/state + MBQL + Query Processor + drivers
+→ CUSTOMER DB
+```
+
+Fork identity:
+```text
+target repo          = UpcyTech/dima-metabase-engine
+upstream             = metabase/metabase
+initial tag           = v0.63.18
+initial upstream SHA  = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+initial engine rev    = 0.63.18-dima.0
+```
+
+The repository must preserve upstream Git history. Blank-repo/source-copy bootstrap is forbidden. Existing `UpcyTech/dima-metabase` remains untouched.
+
+ordered stages:
+```text
+P12X-C0 = exact fork bootstrap + source build; modified existing upstream source files = 0
+P12X-C1 = stock-vs-fork native capability parity on 4–6 frozen high-information cases
+P12X-C2 = stable Dima engine bridge + bridge/native parity
+P12X-C3 = upstream-sync + DIMA_PATCH_SURFACE certification
+P13     = Production Standard over Dima Metabase Engine
+```
+
+C1 closure requires `FORK_CAPABILITY_RETENTION = 100%` of stock-PASS tasks, new silent wrong = 0, permission regression = 0, dataset-scope drift = 0. Material stochastic divergence is repeated only on the divergent case twice with prompt/data/model unchanged.
+
+C2 bridge is deliberately thin: stable engine identity, correlation/trace identity, native request delegation and native stream/result observation. It must reuse the closest native Metabot orchestration boundary and must not reimplement `run-agent-loop`, profiles, skills, memory, tool registry or query construction.
+
+DIMA_PATCH_SURFACE is mandatory from C0: upstream base SHA, engine HEAD, modified pre-existing upstream files, Dima-specific files, deleted upstream files, upstream-owned line delta, Dima integration LOC, sync conflicts/manual interventions, upstream-test failures and Dima-test failures.
+
+ownership direction:
+```text
+USE_NATIVE      = run-agent-loop, profiles, skills, engine-local state, tool registry, MBQL, query construction/repair, Query Processor, drivers, native BI primitives
+WRAP/HOOK_NATIVE= permission-aware execution and later proven material trust transitions
+DIMA_OWNS       = DimaSemanticSpec, business relationships/grain/additivity, tenant/principal product truth, ExecutionAccessSnapshot, QueryReceipt, Evidence lifecycle, durable conversation/research/decision lineage, Decision Skills/Sector Packs
+```
+
+P13 is reframed as `P13 — PRODUCTION STANDARD OVER DIMA METABASE ENGINE` and remains `PAUSED UNTIL FORK CAPABILITY PARITY + STABLE ENGINE BRIDGE`. Do not implement Agent-API production Standard, `standard_execution.py`, `execute_prepared()` or P13 governance hooks yet.
+
+DMP-DEC-0029 remains valid at trust level: the material execution artifact Dima authorizes must be the artifact actually executed and receipted. `CanonicalProjection` is retained; its native-engine role is decided later in P13.
+
+full bake-off disposition:
+The 16-case P12X corpus is retained, but full V0+A+B Agent-API bake-off is `DEFERRED / NOT FORK-BLOCKING` and becomes a later native capability regression/stabilization asset.
+
+distribution:
+One Dima Metabase Engine artifact serves SaaS and self-host. Customer/sector-specific engine source forks are forbidden.
+
+status:
+`SEALED / THIN FORK PRIMARY CANDIDATE / C0→C1→C2→C3 AUTHORIZED IN ORDER / P13 GOVERNANCE NOT AUTHORIZED`.
