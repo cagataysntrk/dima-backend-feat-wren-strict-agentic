@@ -117,7 +117,15 @@ export function ChatView({
       let text = "";
       let flushedAt = 0;
       try {
-        for await (const ev of gateway.chatStream([...history, { role: "user", content: question }], controller.signal)) {
+        const previousContext = [...entries]
+          .reverse()
+          .find((e): e is Done => e.status === "done" && Boolean(e.reply.engineContext))
+          ?.reply.engineContext;
+        for await (const ev of gateway.chatStream(
+          [...history, { role: "user", content: question }],
+          controller.signal,
+          { conversationId: id, engineContext: previousContext },
+        )) {
           if (ev.type === "step") {
             const at = steps.findIndex((s) => s.id === ev.id);
             if (at >= 0) steps[at] = { id: ev.id, text: ev.text, done: ev.done };
@@ -136,7 +144,12 @@ export function ChatView({
               id: entryId,
               question,
               status: "done",
-              reply: { answer: ev.answer, sql: ev.sql, result: ev.result },
+              reply: {
+                answer: ev.answer,
+                sql: ev.sql,
+                result: ev.result,
+                engineContext: ev.engineContext,
+              },
               steps: ev.steps,
               durationMs: ev.durationMs,
             });

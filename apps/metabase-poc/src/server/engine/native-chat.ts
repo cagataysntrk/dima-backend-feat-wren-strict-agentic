@@ -93,6 +93,7 @@ function initialContext(
   ctx: TenantContext,
   productConversationId: string,
   token: string | null | undefined,
+  legacyHistory: NativeHistoryEntry[] = [],
 ): NativeEngineContext {
   return (
     openEngineContext(token, {
@@ -103,7 +104,7 @@ function initialContext(
       tenantSlug: ctx.tenant.slug,
       productConversationId,
       engineConversationId: randomUUID(),
-      history: [],
+      history: legacyHistory,
       state: {},
     }
   );
@@ -115,11 +116,17 @@ export async function* nativeAnswerStream(
     productConversationId: string;
     message: string;
     engineContext?: string | null;
+    legacyHistory?: NativeHistoryEntry[];
   },
   signal?: AbortSignal,
 ): AsyncGenerator<NativeChatEvent> {
   const startedAt = Date.now();
-  const native = initialContext(ctx, input.productConversationId, input.engineContext);
+  const native = initialContext(
+    ctx,
+    input.productConversationId,
+    input.engineContext,
+    input.engineContext ? [] : input.legacyHistory ?? [],
+  );
   const request = {
     profile_id: "nlq",
     message: input.message,

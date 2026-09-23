@@ -165,6 +165,8 @@ export interface ChatAnswer {
   answer: string;
   sql: string | null;
   result: QueryResult | null;
+  /** Opaque, authenticated native Metabot history/state. Never interpreted by the browser. */
+  engineContext?: string;
 }
 
 export type Role = "owner" | "admin" | "member";
@@ -193,6 +195,7 @@ export type ChatStreamEvent =
       result: QueryResult | null;
       steps: string[];
       durationMs: number;
+      engineContext: string;
     }
   | { type: "error"; message: string };
 
@@ -218,8 +221,16 @@ export const gateway = {
    * Streamed chat: yields each event as it arrives. Abort the signal to stop —
    * the server sees the disconnect and stops generating too.
    */
-  chatStream: async function* (messages: ChatTurn[], signal: AbortSignal): AsyncGenerator<ChatStreamEvent> {
-    const res = await fetch("/api/chat", { ...json({ messages }), signal, credentials: "same-origin" });
+  chatStream: async function* (
+    messages: ChatTurn[],
+    signal: AbortSignal,
+    native: { conversationId: string; engineContext?: string | null },
+  ): AsyncGenerator<ChatStreamEvent> {
+    const res = await fetch("/api/chat", {
+      ...json({ messages, conversationId: native.conversationId, engineContext: native.engineContext ?? null }),
+      signal,
+      credentials: "same-origin",
+    });
     if (!res.ok || !res.body) {
       const body = await res.json().catch(() => ({}) as { error?: string });
       throw new ApiError(res.status, body.error ?? "Beklenmeyen bir hata oluştu.");

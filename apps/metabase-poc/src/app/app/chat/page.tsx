@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { chatConfigured } from "@/server/chat/openrouter";
+import { engineConfigured } from "@/server/engine/client";
 import { canAnalyze, shellContext } from "@/server/session";
 import { ChatView } from "./ChatView";
 
@@ -15,7 +15,7 @@ export default async function ChatPage() {
         company={org?.name ?? ""}
         orgId={org?.id ?? ""}
         slug={org?.slug ?? ""}
-        configured={chatConfigured()}
+        configured={engineConfigured()}
         canSave={canAnalyze(ctx.role)}
       />
     </Suspense>

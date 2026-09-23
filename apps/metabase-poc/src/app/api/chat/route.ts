@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { answerStream } from "@/server/chat/agent";
-import { chatPrefs } from "@/server/prefs";
+import { nativeAnswerStream } from "@/server/engine/native-chat";
 import { GatewayError } from "@/server/metabase/errors";
 import { requireTenant } from "@/server/metabase/guard";
 import { localizeError } from "@/server/http";
@@ -12,6 +11,8 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const Body = z.object({
+  conversationId: z.string().uuid(),
+  engineContext: z.string().max(700_000).nullable().optional(),
   messages: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(24_000) }))
     .min(1)
@@ -25,9 +26,19 @@ export async function POST(req: Request) {
     const ctx = await requireTenant();
     const body = Body.safeParse(await req.json().catch(() => null));
     if (!body.success) throw new GatewayError(400, "Geçersiz istek.");
-    // Keep the conversation short: the last few turns carry the context that matters.
-    const prefs = await chatPrefs();
-    events = answerStream(ctx, body.data.messages.slice(-10), req.signal, prefs);
+    const messages = body.data.messages.slice(-10);
+    const current = messages[messages.length - 1];
+    events = nativeAnswerStream(
+      ctx,
+      {
+        productConversationId: body.data.conversationId,
+        message: current.content,
+        engineContext: body.data.engineContext,
+        // Migration bridge only: once a native context token exists, the adapter ignores this.
+        legacyHistory: messages.slice(0, -1),
+      },
+      req.signal,
+    );
   } catch (e) {
     const err = e instanceof GatewayError ? e : null;
     if (err?.detail) console.warn(`[gateway] ${err.status} ${err.detail}`);

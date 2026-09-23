@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 
-// Tenant registry. Written by dima-metabase/bootstrap/setup.py into .env.local.
+// Tenant registry for the canonical Dima Metabase Engine.
 // Keys and ids stay server-side; the browser only ever sees the org (tenant) slug.
 const Tenant = z.object({
   name: z.string(),
@@ -17,8 +17,8 @@ let cache: Map<string, Tenant> | null = null;
 
 function load(): Map<string, Tenant> {
   if (cache) return cache;
-  const raw = process.env.METABASE_TENANTS;
-  if (!raw) throw new Error("METABASE_TENANTS is not configured");
+  const raw = process.env.DIMA_ENGINE_TENANTS;
+  if (!raw) throw new Error("DIMA_ENGINE_TENANTS is not configured");
   const parsed = z.record(z.string(), Tenant).parse(JSON.parse(raw));
   cache = new Map(Object.entries(parsed).map(([slug, t]) => [slug, { ...t, slug }]));
   return cache;
@@ -30,13 +30,13 @@ export function tenantBySlug(slug: string): Tenant | null {
 }
 
 export function metabaseUrl(): string {
-  const url = process.env.METABASE_URL;
-  if (!url) throw new Error("METABASE_URL is not configured");
+  const url = process.env.DIMA_ENGINE_URL;
+  if (!url) throw new Error("DIMA_ENGINE_URL is not configured");
   return url.replace(/\/$/, "");
 }
 
 export function adminApiKey(): string {
-  const key = process.env.METABASE_ADMIN_API_KEY;
-  if (!key) throw new Error("METABASE_ADMIN_API_KEY is not configured");
+  const key = process.env.DIMA_ENGINE_ADMIN_API_KEY;
+  if (!key) throw new Error("DIMA_ENGINE_ADMIN_API_KEY is not configured");
   return key;
 }
