@@ -200,25 +200,47 @@ Current product behavior SHA after the generic fix:
 Paid Day8 total is now 9 Sol calls:
 2 + 5 + 2.
 
-## STOP POINT
+## CURRENT SUPERVISOR AUTHORITY — DAY9/P12-A OPEN
 
-Per the supervisor valid-RED rule:
-- no further paid Day8 rerun automatically,
-- no Day9,
-- deterministic/provider-free + real-Wren remain GREEN,
-- live certification remains OPEN.
+The prior "no Day9" stop is superseded.
 
-Do NOT automatically:
-- rerun the live Sol sentinel,
-- broaden to corpus/ablation/negative contrast,
-- run frozen13 / DEV80 / Validation50 / Hidden50,
-- enable ROOT_CAUSE direct execution,
-- add ResearchTaskKind.ROOT_CAUSE,
-- create ROOT_CAUSE → QUERY alias,
-- enable CONFIRMED_CAUSE,
-- start Day9.
+Current authority:
 
-Return to supervisor with the valid-RED receipt and the deterministic generic fix.
+```text
+DAY8 deterministic engineering = GREEN
+DAY8 real-Wren                  = GREEN
+DAY8 live Sol                   = OPEN / NOT GREEN
+DAY8 final seal                 = DEFERRED TO INTEGRATED LIVE GATE
+
+CURRENT ACTIVE TICKET
+= DAY9 / P12-A
+  deterministic ReportDocument authority
+```
+
+Day8 behavior is frozen at:
+
+`810fa70ded3bca53542316d32a5497302b4eb9c7`.
+
+No more standalone paid Day8 root-cause tests are authorized. The remaining live cognition debt
+must be re-exercised later inside the canonical Day10 integrated Product-MVP live gate.
+
+Day9-A is provider-free only. It may add a deterministic immutable report projection over existing
+governed Evidence/Findings/semantic scope and presentation artifact refs. It may NOT add:
+- an LLM report writer,
+- DB/Wren execution,
+- semantic resolution,
+- a new Evidence store,
+- PDF/HTML export,
+- frontend/report routing,
+- Day10 behavior.
+
+Expected file boundary:
+- `backend/app/v2/report_builder.py`,
+- `backend/app/v2/models.py` only if canonical report models belong there,
+- focused Day9 tests,
+- living docs / Harvest.
+
+Do not touch Day8 execution/cognition owners unless an independent P0 proves necessity.
 
 ---
 
