@@ -90,7 +90,7 @@ class ManagerCapabilityRegistry:
             # metric + counterpart dimension.  Broader semantic-concept relationships
             # are not accepted until a governed runtime primitive exists for them.
             required_kinds=frozenset({"metric", "dimension"}),
-            allowed_kinds=frozenset({"metric", "dimension", "filter", "period"}),
+            allowed_kinds=frozenset({"metric", "dimension"}),
             effect_family="relationship",
             intent_description=(
                 "Investigate a governed metric against a requested counterpart dimension "
