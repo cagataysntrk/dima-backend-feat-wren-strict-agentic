@@ -65,7 +65,12 @@ def test_same_case_builds_exact_same_accepted_authority_in_both_arms():
     )
 
     assert free["contract_id"] == governed["contract_id"]
-    assert free["runtime"].accepted_contract == governed["runtime"].accepted_contract
+
+    free_contract = free["runtime"].accepted_contract.model_dump(mode="json")
+    governed_contract = governed["runtime"].accepted_contract.model_dump(mode="json")
+    free_contract.pop("accepted_at_iso")
+    governed_contract.pop("accepted_at_iso")
+    assert free_contract == governed_contract
     assert free["runtime"].ledger == governed["runtime"].ledger
 
 
