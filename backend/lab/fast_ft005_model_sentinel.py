@@ -56,6 +56,10 @@ PROMPT_VARIANT = os.getenv(
     "DIMA_FAST_FT005_PROMPT_VARIANT",
     "baseline",
 ).strip().lower()
+REPEATABILITY_ENABLED = os.getenv(
+    "DIMA_FAST_FT005_REPEATABILITY",
+    "1",
+).strip() != "0"
 CASE_FILTER = tuple(
     item.strip()
     for item in os.getenv("DIMA_FAST_FT005_CASES", "").split(",")
@@ -215,6 +219,7 @@ def main() -> int:
         "canonical_model": CANONICAL_MODEL,
         "reasoning_effort": REASONING_EFFORT,
         "prompt_variant": PROMPT_VARIANT,
+        "repeatability_enabled": REPEATABILITY_ENABLED,
         "assistant_prose_authority": 0,
         "invented_handle_count": 0,
         "cases": [],
@@ -423,7 +428,9 @@ def main() -> int:
 
     # Repeatability classification only: same exact Q3 input/schema/model three times,
     # sequential workers=1. This does not majority-vote or repair product behavior.
-    repeat_q3 = not CASE_FILTER or "q3_breakdown" in set(CASE_FILTER)
+    repeat_q3 = REPEATABILITY_ENABLED and (
+        not CASE_FILTER or "q3_breakdown" in set(CASE_FILTER)
+    )
     for index in range(1, 4) if repeat_q3 else ():
         case_id = f"repeat_q3_{index}"
         recorder.set_case(case_id)
