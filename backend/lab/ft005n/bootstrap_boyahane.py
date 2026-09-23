@@ -121,6 +121,63 @@ def set_setting(session: str, key: str, value) -> None:
     call("PUT", f"/api/setting/{encoded}", {"value": value}, session=session)
 
 
+def list_payload(body):
+    if isinstance(body, list):
+        return body
+    if isinstance(body, dict):
+        for key in ("data", "items"):
+            if isinstance(body.get(key), list):
+                return body[key]
+    return []
+
+
+def ensure_database(session: str) -> int:
+    _, body = call("GET", "/api/database", session=session)
+    for item in list_payload(body):
+        if item.get("name") == "Boyahane":
+            return int(item["id"])
+
+    _, created = call(
+        "POST",
+        "/api/database",
+        {
+            "name": "Boyahane",
+            "engine": "postgres",
+            "details": {
+                "host": "postgres",
+                "port": 5432,
+                "dbname": "boyahane",
+                "user": "metabase_boyahane",
+                "password": READONLY_PASSWORD,
+            },
+        },
+        session=session,
+    )
+    return int(created["id"])
+
+
+def wait_database_metadata(session: str, database_id: int) -> int:
+    deadline = time.time() + 180
+    last_count = 0
+    while time.time() < deadline:
+        status, body = call(
+            "GET",
+            f"/api/database/{database_id}/metadata",
+            session=session,
+            allowed=(400, 404, 503),
+        )
+        if status == 200 and isinstance(body, dict):
+            tables = body.get("tables")
+            if isinstance(tables, list):
+                last_count = len(tables)
+                if last_count >= 80:
+                    return last_count
+        time.sleep(2)
+    raise RuntimeError(
+        f"A1_DATABASE_METADATA_NOT_READY: tables={last_count}"
+    )
+
+
 def main() -> None:
     wait_health()
     session = ensure_setup()
@@ -128,6 +185,9 @@ def main() -> None:
     set_setting(session, "ai-features-enabled?", True)
     set_setting(session, "agent-api-enabled?", True)
     set_setting(session, "metabot-enabled?", True)
+
+    database_id = ensure_database(session)
+    table_count = wait_database_metadata(session, database_id)
 
     # Stock supported API: configure OpenRouter provider/model. Never print the key.
     status, settings = call(
@@ -143,11 +203,7 @@ def main() -> None:
     )
 
     _, databases = call("GET", "/api/database", session=session)
-    database_rows = (
-        databases.get("data", [])
-        if isinstance(databases, dict)
-        else databases
-    )
+    database_rows = list_payload(databases)
     database_names = sorted(
         str(item.get("name") or "")
         for item in (database_rows or [])
@@ -175,7 +231,9 @@ def main() -> None:
         "provider_configuration_error": (
             settings if status != 200 else None
         ),
+        "database_id": database_id,
         "database_names": database_names,
+        "database_table_count": table_count,
         "sample_database_present": False,
         "secret_recorded": False,
     }
