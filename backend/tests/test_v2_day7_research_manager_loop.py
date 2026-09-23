@@ -15,6 +15,7 @@ from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
     ObligationOrigin,
+    ResearchRunTerminal,
     UserIntentEnvelope,
 )
 from app.v2.manager_runtime import ManagerRuntime
@@ -299,3 +300,33 @@ def test_postacceptance_schema_does_not_advertise_propose_acceptance():
         "finish",
     ):
         assert f'"{action}"' in encoded
+
+
+def test_answer_now_after_verified_evidence_pauses_partial_without_completion_laundering():
+    spans, runtime, executor, question, message_id = _accepted_runtime()
+    llm = _ResultAwareFakeLLM()
+    loop = ResearchManagerLoop(
+        llm=llm,
+        source_spans=spans,
+        research_tool_runner=ResearchToolRunner(),
+        answer_now_check=lambda: bool(runtime.snapshot.evidence_refs),
+    )
+
+    outcome = loop.run(
+        question=question,
+        message_id=message_id,
+        request_ref="day7-loop-request",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.answer_now_requested is True
+    assert outcome.run_finished is False
+    assert outcome.verified_complete is False
+    assert outcome.terminal_status == ResearchRunTerminal.PARTIAL
+    assert runtime.snapshot.terminal_status == ResearchRunTerminal.PARTIAL
+    assert runtime.snapshot.evidence_refs
+    assert runtime.snapshot.inspected_evidence_refs == ()
+    assert runtime.ledger.active_user_must[0].status.value != "VERIFIED"
+    assert len(llm.prompts) == 1
+    assert any(item.get("kind") == "answer_now" for item in outcome.observations)
