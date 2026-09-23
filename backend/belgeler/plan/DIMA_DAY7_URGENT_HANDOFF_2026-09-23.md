@@ -786,3 +786,27 @@ Next and only next paid gate:
 Manager Sol / Linker Luna / Temporal Sol / workers=1.
 
 No full frozen13 before the affected pair is classified.
+
+
+## 17. DAY7 DETERMINISTIC CAPABILITY CLOSURE
+
+Frozen13 ONCE:
+`35855765109 = VALID, 13/13 evaluable, 11/13 PASS, hard safety 0`.
+
+Classified remaining RED:
+- breakdown-region = FUTURE-DAY DEBT / Day9 PRESENTATION (TABLE); analytical execution itself was correct. No Day7 presentation engine added.
+- adaptive-material = CONTRACT/ARCHITECTURE dead action surface. Post-acceptance schema advertised propose_acceptance; generic phase-scoped action-surface fix applied.
+
+Proof:
+- focused `35856719878 = GREEN`
+- affected LIVE `35857076622 = VALID / 1/1 PASS`
+
+No second frozen13 run is authorized.
+
+NEXT:
+shadow ablation
+FREE_COGNITION vs GOVERNED_ORCHESTRATION
+→ small confirmation
+→ Harvest reconciliation
+→ Day7 closure receipt
+→ STOP.
