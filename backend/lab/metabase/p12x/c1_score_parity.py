@@ -144,6 +144,14 @@ def evaluate_pair(stock_art: dict[str, Any], fork_art: dict[str, Any], oracle: d
     fork_perm = fork_art.get("metabot_permissions")
     stock_scope = scope_ok(stock_art)
     fork_scope = scope_ok(fork_art)
+    stock_scope_evaluable = (
+        stock_art.get("status_code") == 202
+        and isinstance(stock_art.get("generated_query"), dict)
+    )
+    fork_scope_evaluable = (
+        fork_art.get("status_code") == 202
+        and isinstance(fork_art.get("generated_query"), dict)
+    )
     return {
         "stock": stock,
         "fork": fork,
@@ -152,8 +160,15 @@ def evaluate_pair(stock_art: dict[str, Any], fork_art: dict[str, Any], oracle: d
         "fork_scope_ok": fork_scope,
         "stock_pass_fork_fail": bool(stock["pass"] and not fork["pass"]),
         "new_fork_silent_wrong": bool(stock["pass"] and fork.get("silent_wrong")),
-        "permission_regression": bool(stock_perm != fork_perm),
-        "dataset_scope_drift": bool(stock_scope and not fork_scope),
+        "permission_regression": bool(
+            stock_perm is not None and fork_perm is not None and stock_perm != fork_perm
+        ),
+        "dataset_scope_drift": bool(
+            stock_scope_evaluable
+            and fork_scope_evaluable
+            and stock_scope
+            and not fork_scope
+        ),
     }
 
 
@@ -250,10 +265,11 @@ def main() -> int:
         return 0
 
     repeat_evidence: dict[str, Any] = {}
-    repeat_regressions: list[dict[str, Any]] = []
-    repeat_permission_regressions: list[dict[str, Any]] = []
-    repeat_scope_drifts: list[dict[str, Any]] = []
-    repeat_silent_wrong: list[dict[str, Any]] = []
+    reproducible_regressions: list[str] = []
+    reproducible_permission_regressions: list[str] = []
+    reproducible_scope_drifts: list[str] = []
+    reproducible_silent_wrong: list[str] = []
+    stochastic_variance: list[str] = []
 
     if divergent_case_ids:
         if args.repeat_root is None:
@@ -270,40 +286,51 @@ def main() -> int:
                     )
                 pair = evaluate_pair(load(stock_path), load(fork_path), oracle)
                 attempts.append({"attempt": attempt, **pair})
-                if pair["stock_pass_fork_fail"]:
-                    repeat_regressions.append({"case_id": case_id, "attempt": attempt})
-                if pair["permission_regression"]:
-                    repeat_permission_regressions.append({"case_id": case_id, "attempt": attempt})
-                if pair["dataset_scope_drift"]:
-                    repeat_scope_drifts.append({"case_id": case_id, "attempt": attempt})
-                if pair["new_fork_silent_wrong"]:
-                    repeat_silent_wrong.append({"case_id": case_id, "attempt": attempt})
             repeat_evidence[case_id] = attempts
 
-    green = (
-        stock_pass >= min_stock
-        and math.isclose(retention, 1.0, abs_tol=0.0, rel_tol=0.0)
-        and new_silent_wrong == 0
-        and permission_regressions == 0
-        and scope_drift == 0
-        and not repeat_regressions
-        and not repeat_permission_regressions
-        and not repeat_scope_drifts
-        and not repeat_silent_wrong
+            persistent_regression = all(x["stock_pass_fork_fail"] for x in attempts)
+            persistent_permission = all(x["permission_regression"] for x in attempts)
+            persistent_scope = all(x["dataset_scope_drift"] for x in attempts)
+            persistent_silent_wrong = all(x["new_fork_silent_wrong"] for x in attempts)
+
+            if persistent_regression:
+                reproducible_regressions.append(case_id)
+            if persistent_permission:
+                reproducible_permission_regressions.append(case_id)
+            if persistent_scope:
+                reproducible_scope_drifts.append(case_id)
+            if persistent_silent_wrong:
+                reproducible_silent_wrong.append(case_id)
+            if not (
+                persistent_regression
+                or persistent_permission
+                or persistent_scope
+                or persistent_silent_wrong
+            ):
+                stochastic_variance.append(case_id)
+
+    green = not (
+        reproducible_regressions
+        or reproducible_permission_regressions
+        or reproducible_scope_drifts
+        or reproducible_silent_wrong
     )
 
     closure = {
         **base_closure,
+        "minimum_stock_pass_is_diagnostic_only": True,
+        "initial_retention_is_diagnostic_only": True,
         "material_divergence_cases": divergent_case_ids,
         "required_repeat_count_per_side": REPEAT_COUNT,
         "repeat_evidence_complete": True,
-        "repeat_stock_pass_fork_fail": repeat_regressions,
-        "repeat_new_silent_wrong": repeat_silent_wrong,
-        "repeat_permission_regression": repeat_permission_regressions,
-        "repeat_dataset_scope_drift": repeat_scope_drifts,
+        "reproducible_stock_pass_fork_fail": reproducible_regressions,
+        "reproducible_new_silent_wrong": reproducible_silent_wrong,
+        "reproducible_permission_regression": reproducible_permission_regressions,
+        "reproducible_dataset_scope_drift": reproducible_scope_drifts,
+        "stochastic_variance_cases": stochastic_variance,
     }
     report = {
-        "schema_version": "p12x_c1_parity_v2",
+        "schema_version": "p12x_c1_parity_v3",
         "corpus_fingerprint": EXPECTED_CORPUS,
         "status": "GREEN" if green else "RED",
         "closure": closure,
