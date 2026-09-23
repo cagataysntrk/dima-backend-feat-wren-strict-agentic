@@ -87,6 +87,7 @@ from app.v2.root_cause_orchestration import (
     HypothesisNextTestBoundary,
     RootCauseBootstrapPolicy,
     RootCauseBootstrapStatus,
+    RootCauseOrchestrationError,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
@@ -146,8 +147,10 @@ class CountingManagerLLM:
 class ScriptedSentinelLLM:
     """Provider-free harness oracle for the exact live state machine."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, reject_next_test_once: bool = False) -> None:
         self.calls = 0
+        self.reject_next_test_once = reject_next_test_once
+        self._rejected_next_test_sent = False
 
     def structured_json(self, _system, user, **_kwargs):
         self.calls += 1
@@ -174,10 +177,24 @@ class ScriptedSentinelLLM:
 
         hypothesis = entries[0]
         if not hypothesis.get("next_test_task_refs"):
+            rejected = any(
+                item.get("kind") == "tool_rejected"
+                and item.get("action") == "propose_hypothesis_next_test"
+                for item in (payload.get("RECENT_OBSERVATIONS") or [])
+            )
+            if (
+                self.reject_next_test_once
+                and not self._rejected_next_test_sent
+                and not rejected
+            ):
+                self._rejected_next_test_sent = True
+                task_kind = "TREND"
+            else:
+                task_kind = "QUERY"
             return {
                 "action": "propose_hypothesis_next_test",
                 "hypothesis_ref": hypothesis["hypothesis_id"],
-                "next_test_task_kind": "QUERY",
+                "next_test_task_kind": task_kind,
                 "next_test_input_handles": ["h1"],
                 "next_test_trigger_evidence_ref": hypothesis["trigger_evidence_refs"][-1],
                 "next_test_material_reason": (
@@ -542,13 +559,10 @@ def run_scenario(manager_llm) -> dict[str, Any]:
     )
 
     # 2) Hypothesis -> governed next-test proposal; server mints task identity.
-    d2 = _decide(loop=loop, fixture=fixture, observations=observations)
-    action_sequence.append(d2.action.value)
-    if d2.action != ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST:
-        raise LiveBehaviorFailure(
-            f"expected propose_hypothesis_next_test second, got {d2.action.value}"
-        )
-    next_task = HypothesisNextTestBoundary(
+    # The production Manager loop treats proposal rejection as bounded feedback, not as
+    # a process crash. The live harness must exercise that same transition: proposal
+    # != authority, so an inadmissible task kind is rejected and may be replanned.
+    next_boundary = HypothesisNextTestBoundary(
         ledger=fixture.ledger,
         runtime=fixture.runtime,
         evidence_store=fixture.executor.evidence_store,
@@ -556,17 +570,45 @@ def run_scenario(manager_llm) -> dict[str, Any]:
         task_registry=fixture.registry,
         tenant_binding=fixture.tenant,
         context_version=fixture.context_version,
-    ).materialize(
-        HypothesisNextTestProposal(
-            hypothesis_ref=d2.hypothesis_ref,
-            task_kind=d2.next_test_task_kind,
-            input_refs=loop._decode_handles(d2.next_test_input_handles),
-            trigger_evidence_ref=d2.next_test_trigger_evidence_ref,
-            material_reason=d2.next_test_material_reason,
-            ranking_direction=d2.next_test_ranking_direction,
-            ranking_limit=d2.next_test_ranking_limit,
-        )
     )
+    next_task = None
+    next_test_rejections: list[str] = []
+    max_next_test_attempts = 3
+    for _attempt in range(max_next_test_attempts):
+        d2 = _decide(loop=loop, fixture=fixture, observations=observations)
+        action_sequence.append(d2.action.value)
+        if d2.action != ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST:
+            raise LiveBehaviorFailure(
+                "expected propose_hypothesis_next_test while no governed next test exists, "
+                f"got {d2.action.value}"
+            )
+        try:
+            next_task = next_boundary.materialize(
+                HypothesisNextTestProposal(
+                    hypothesis_ref=d2.hypothesis_ref,
+                    task_kind=d2.next_test_task_kind,
+                    input_refs=loop._decode_handles(d2.next_test_input_handles),
+                    trigger_evidence_ref=d2.next_test_trigger_evidence_ref,
+                    material_reason=d2.next_test_material_reason,
+                    ranking_direction=d2.next_test_ranking_direction,
+                    ranking_limit=d2.next_test_ranking_limit,
+                )
+            )
+            break
+        except RootCauseOrchestrationError as exc:
+            next_test_rejections.append(str(exc))
+            observations.append(
+                {
+                    "kind": "tool_rejected",
+                    "action": d2.action.value,
+                    "message": str(exc),
+                }
+            )
+    if next_task is None:
+        raise LiveBehaviorFailure(
+            "no admissible governed hypothesis next test after bounded replanning: "
+            + " | ".join(next_test_rejections)
+        )
     if not next_task.task_id.startswith("rt_"):
         raise LiveBehaviorFailure("server-owned next-test identity is not canonical rt_*")
     observations.append(
@@ -693,6 +735,8 @@ def run_scenario(manager_llm) -> dict[str, Any]:
         "workers": 1,
         "manager_model": LIVE_MANAGER_MODEL,
         "action_sequence": action_sequence,
+        "next_test_rejections": next_test_rejections,
+        "next_test_rejection_count": len(next_test_rejections),
         "initial_evidence_ref": fixture.initial_evidence_ref,
         "followup_evidence_ref": second.evidence.artifact_id,
         "followup_verified": second.evidence.verified,
