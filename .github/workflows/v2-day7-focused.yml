@@ -23,6 +23,7 @@ name: v2-day7-focused
       - "backend/app/v2/manager_runtime.py"
       - "backend/app/v2/manager_models.py"
       - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/manager_lab.py"
       - "backend/app/v2/models.py"
       - "backend/tests/test_v2_day7_research_task_lifecycle.py"
       - "backend/tests/test_v2_day7_research_task_registry.py"
@@ -81,6 +82,7 @@ jobs:
             app/v2/manager_runtime.py \
             app/v2/manager_models.py \
             app/v2/manager_loop.py \
+            app/v2/manager_lab.py \
             app/v2/models.py
       - name: Focused provider-free Day7 test
         working-directory: backend
