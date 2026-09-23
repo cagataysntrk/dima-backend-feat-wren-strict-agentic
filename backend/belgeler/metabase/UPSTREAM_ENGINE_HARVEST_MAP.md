@@ -31,3 +31,39 @@ Allowed dispositions:
 
 Current upstream-master Explorations research is reference-only and not the P12X runtime baseline.
 No native implementation is ported into Python during P12X.
+
+
+---
+
+## DMP-DEC-0031 authoritative initial direction
+
+Allowed dispositions remain exactly `USE_NATIVE | WRAP_NATIVE | HOOK_NATIVE | DIMA_OWNS | IGNORE`.
+
+```text
+native run-agent-loop               = USE_NATIVE
+profiles                            = USE_NATIVE
+skills                              = USE_NATIVE
+engine-local query/chart/tool state = USE_NATIVE
+native tool registry                = USE_NATIVE
+MBQL                                = USE_NATIVE
+query construction / repair         = USE_NATIVE
+Query Processor                     = USE_NATIVE
+drivers                             = USE_NATIVE
+native BI primitives                = USE_NATIVE
+permission-aware execution          = WRAP_NATIVE / HOOK_NATIVE
+Explorations mechanical variants    = USE_NATIVE candidate
+StoredResult lifecycle              = USE_NATIVE / HOOK_NATIVE candidate
+native interestingness              = USE_NATIVE AS SIGNAL / NEVER EVIDENCE TRUTH
+
+DimaSemanticSpec                    = DIMA_OWNS
+ExecutionAccessSnapshot             = DIMA_OWNS
+QueryReceipt                        = DIMA_OWNS
+Evidence lifecycle                  = DIMA_OWNS
+durable conversation/research/
+decision lineage                    = DIMA_OWNS
+Decision Skills / Sector Packs      = DIMA_OWNS
+```
+
+Default decision order: `USE_NATIVE → WRAP_NATIVE → HOOK_NATIVE → DIMA_OWNS`. Burden of proof increases downward.
+
+Upstream master `6ec07f75184dd7f06d84c551d57c58687cf4b859` is research-only. Initial engine base remains v0.63.18. Do not manually port newer Explorations algorithms into Dima Python.
