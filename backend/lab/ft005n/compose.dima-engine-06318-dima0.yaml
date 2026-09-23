@@ -1,0 +1,9 @@
+services:
+  metabase:
+    image: ghcr.io/upcytech/dima-metabase-engine@sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b
+    environment:
+      MB_AI_FEATURES_ENABLED: "true"
+      MB_METABOT_ENABLED: "true"
+      MB_AGENT_API_ENABLED: "true"
+      MB_ANON_TRACKING_ENABLED: "false"
+      MB_LOAD_SAMPLE_CONTENT: "false"
