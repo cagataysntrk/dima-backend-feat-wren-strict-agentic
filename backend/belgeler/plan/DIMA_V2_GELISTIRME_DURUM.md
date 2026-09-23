@@ -1,3 +1,35 @@
+## 2026-09-23 — DAY7 LIVE SOL INVALID MEASUREMENT RECEIPT
+
+```text
+tested_sha                    d430680a02256f4b9612730bd79b2e938a134132
+workflow                      35817638030
+failure_class                 TRANSPORT / PROVIDER
+provider                      OpenRouter
+provider_status               HTTP 403
+provider_message              Key limit exceeded (total limit)
+
+selected_cases                13
+behavior_evaluable_cases      0
+cases_reaching_AcceptedContract 0
+data_queries                  0
+
+product_semantic_observations NONE
+manager_cognition_observations NONE
+measurement_valid             false
+```
+
+Interpretation:
+- this run is **INVALID MEASUREMENT**, not 13 behavior failures;
+- provider unavailability must not become `accepted_contract=false` product safety failure;
+- no Manager/product patch is authorized from this run;
+- repair scope is limited to live evaluator/workflow/contract tests + documentation;
+- same frozen 13-case corpus must be reused after provider preflight is GREEN.
+
+Immediate order:
+`measurement validity → one-call provider preflight → sealed Sol/Luna/Sol topology → provider-free harness contract → wait for usable provider quota → rerun same corpus`.
+
+---
+
 ## 2026-09-23 — DAY7 DETERMINISTIC CAPABILITY CHECKPOINT GREEN
 
 ```text
