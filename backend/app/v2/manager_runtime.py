@@ -149,14 +149,42 @@ class ManagerRuntime:
         self._snapshot = self._snapshot.model_copy(update={"state": ManagerState.UNDERSTANDING})
         return self._snapshot
 
-    def note_manager_turn(self) -> ManagerRunSnapshot:
-        turns = self._snapshot.manager_turns + 1
-        if turns > self._budget.max_manager_turns:
+    def note_manager_turn(
+        self,
+        *,
+        phase: str = "research",
+    ) -> ManagerRunSnapshot:
+        if phase not in {"preacceptance", "research"}:
+            raise ValueError("manager turn phase must be preacceptance or research")
+
+        total_turns = self._snapshot.manager_turns + 1
+        if phase == "preacceptance":
+            phase_turns = self._snapshot.preacceptance_turns + 1
+            if phase_turns > self._budget.max_preacceptance_turns:
+                self._snapshot = self._snapshot.model_copy(
+                    update={"state": ManagerState.BUDGET_EXHAUSTED}
+                )
+                raise ManagerBudgetError("preacceptance Manager turn budget exhausted")
+            self._snapshot = self._snapshot.model_copy(
+                update={
+                    "manager_turns": total_turns,
+                    "preacceptance_turns": phase_turns,
+                }
+            )
+            return self._snapshot
+
+        phase_turns = self._snapshot.research_manager_turns + 1
+        if phase_turns > self._budget.max_manager_turns:
             self._snapshot = self._snapshot.model_copy(
                 update={"state": ManagerState.BUDGET_EXHAUSTED}
             )
-            raise ManagerBudgetError("manager turn budget exhausted")
-        self._snapshot = self._snapshot.model_copy(update={"manager_turns": turns})
+            raise ManagerBudgetError("research Manager turn budget exhausted")
+        self._snapshot = self._snapshot.model_copy(
+            update={
+                "manager_turns": total_turns,
+                "research_manager_turns": phase_turns,
+            }
+        )
         return self._snapshot
 
     def call_tool(self, call: ManagerToolCall, *, executor: ManagerToolExecutor) -> ManagerStepResult:
