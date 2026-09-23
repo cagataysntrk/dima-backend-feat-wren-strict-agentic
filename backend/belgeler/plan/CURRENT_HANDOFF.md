@@ -61,3 +61,26 @@ Manual workflow:
 `v2-day7-capability-cognition-diagnostic`
 
 Do not patch production cognition before this measurement.
+
+
+## Current exact gate — post-fix cognition remeasurement
+
+```text
+D7-OPEN-3 owner         MODEL_COGNITION
+diagnostic proof        35848438878 = VALID, neutral investigate -> ROOT_CAUSE
+generic owner fix       70543ffd576ddabfa059a78c12506cae4f856ebc
+provider-free proof     35849168189 = GREEN
+tested fix SHA          6de7862b848b0e3cc43b5114da847e6e45573da7
+```
+
+Only production `backend/app/v2/` file changed from prior tested product checkpoint:
+`manager_policy.py`.
+
+NEXT:
+run manual `v2-day7-capability-cognition-diagnostic` once on current branch.
+
+If green:
+`v2-day7-live-sol` with
+`case_ids=insufficient-evidence,duplicate-side-effect`.
+
+Do not jump directly to frozen13 or Day8.
