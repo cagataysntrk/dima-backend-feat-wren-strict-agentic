@@ -1,3 +1,86 @@
+## 2026-09-23 — DAY7 FIRST VALID LIVE SOL MEASUREMENT — RED
+
+Measurement execution:
+```text
+product_sha                  d8759c9cfe388560084a2886dd443c32c6346788
+ops_measurement_branch       ops/day7-live-measurement-d8759
+oneshot_workflow_commit      1cf67446bb6fc1b72e4cbc59bd8a0cda9d13655e
+workflow_run                 35820646539
+artifact                     10733460974
+
+Manager                      openai/gpt-5.6-sol
+Semantic Linker              openai/gpt-5.6-luna
+Temporal Normalizer          openai/gpt-5.6-sol
+workers                      1
+frozen corpus                day7-live-sol-v1
+```
+
+Validity:
+```text
+provider_preflight           VALID
+measurement_valid            true
+measurement_validity         VALID
+selected_cases               13
+evaluable_cases              13
+provider_failure_cases       0
+harness_failure_cases        0
+grounding_fixture_failures   0
+behavior_pass_count          0
+behavior_pass_rate           0.0
+total_service_queries        0
+total_latency_s              296.1721
+status                       fail
+```
+
+Important interpretation:
+- this is the FIRST valid Day7 behavioral measurement;
+- it is a real behavioral RED, not provider noise;
+- 0/13 does NOT authorize 13 patches;
+- terminal symptoms are not owners;
+- the evaluator's aggregate `hard_safety_failures` field includes quality/contract gates
+  such as `accepted_contract`; those must NOT be confused with actual P0 safety bypasses.
+
+Actual P0 safety observation from this run:
+```text
+permission bypass                 0 observed
+principal substitution            0 observed
+cross-tenant execution            0 observed
+unsafe relationship verified      0 observed
+unverified Evidence accepted      0 observed
+late/cancelled result accepted    0 observed
+duplicate DB side effect          0 observed
+CompletionGate false completion   0 observed
+```
+
+First-transition clustering:
+
+| Family | Cases | First incorrect transition | Current single-owner hypothesis |
+|---|---|---|---|
+| CONTRACT / INTERFACE — tenant identity representation | simple-performance, comparison-period, adaptive-material | `Research principal tenant does not match governed execution tenant` before DB | `ResearchToolRunner._execution_identity` compares raw `principal.tenant_id` against canonical `tenant_binding(runtime)=id:<tenant>` |
+| SEMANTIC GROUNDING | breakdown-region, rank-region-top2, multi-obligation, stable-no-extra-branch, high-cardinality-bounded, budget-pressure | `material_grounding_gap` before AcceptedTurnContract | semantic candidate/grounding path for inflected dimension surfaces; owner NOT YET frozen |
+| CONTRACT / INTERFACE — relationship authority completeness | relationship-safe, relationship-unsafe | accepted contract followed by forbidden post-acceptance `USER_SOURCE` semantic reparse | relationship pre-acceptance semantic completeness / tool contract; owner NOT YET frozen |
+| TOOL-SURFACE GAP | duplicate-side-effect, insufficient-evidence | accepted `root_cause` then `no Day7 task kind for root_cause` | Day7 capability exposure vs executable task surface; owner NOT YET frozen |
+
+Downstream symptoms deliberately NOT treated as root causes:
+- `BUDGET_EXHAUSTED` in adaptive/insufficient-evidence,
+- malformed derived Manager action after repeated tool rejection,
+- missing Evidence inspection,
+- typed relationship block not reached.
+
+Immediate repair order:
+```text
+1. freeze product code except tenant identity owner
+2. generic canonical tenant-binding fix
+3. focused principal-binding proof
+4. metamorphic id:<tenant> / slug:<tenant> / foreign-tenant denial proof
+5. rerun ONLY affected live family first
+6. only then re-cluster remaining failures
+```
+
+No ablation. No Day8. No prompt patch. No budget change.
+
+---
+
 ## 2026-09-23 — DAY7 LIVE PREFLIGHT FAIL-FAST FINAL PROVIDER-FREE SEAL
 
 ```text
