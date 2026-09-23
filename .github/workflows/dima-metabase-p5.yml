@@ -36,106 +36,25 @@ jobs:
             BASE="a6e272dda1218e449332da358c986a22ea534cbf"
             changed="$(git diff --name-only "$BASE"...HEAD)"
             printf '%s\n' "$changed"
-            forbidden="$(printf '%s\n' "$changed" | grep -Ev '^(backend/app/v3/(native_execution|security_identity|execution_identity)\.py|backend/tests/test_v3_p13_native_trust\.py|\.github/workflows/dima-metabase-(p13a|p10|p5|governance)\.yml|backend/belgeler/metabase/DIMA_METABASE_FAILURE_RECEIPTS\.md|DIMA-METABASE-DURUM\.md)
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: backend/pyproject.toml
-
-      - name: Install backend
-        working-directory: backend
-        run: pip install -e ".[dev]"
-
-      - name: Compile P5 contract
-        working-directory: backend
-        run: |
-          python -m py_compile \
-            app/v3/evidence.py \
-            app/v3/execution_identity.py
-
-      - name: Focused P5 identity and receipt proof
-        working-directory: backend
-        run: |
-          pytest -q \
-            tests/test_v3_p5_execution_identity.py \
-            tests/test_v3_p5_receipt.py
-
-      - name: Provider-free P4 regression
-        working-directory: backend
-        run: |
-          pytest -q \
-            tests/test_v3_p4_execution_binding.py \
-            tests/test_v3_p4_metabase_compiler.py
-
-      - name: M1 critical contract regression
-        working-directory: backend
-        run: |
-          pytest -q \
-            tests/test_v3_m1_contracts.py \
-            tests/test_v3_m1_parity_families.py
-
-
-  p5-closure-live:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[p5-closure]')
-    needs: p5-contract
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    env:
-      DIMA_VQR_EMBEDDER: "off"
-      DIMA_SCHEDULER_ENABLED: "false"
-      DIMA_INTERACTION_LOG: "false"
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: backend/pyproject.toml
-
-      - name: Install backend
-        working-directory: backend
-        run: pip install -e ".[dev]"
-
-      - name: Start pinned M2 lab
-        working-directory: backend/lab/metabase
-        run: |
-          cp .env.example .env
-          docker compose --env-file .env up -d
-          ./scripts/health.sh
-          set -a
-          source .env
-          set +a
-          python3 scripts/bootstrap.py
-
-      - name: Pinned-live P3 P3A P4 closure regression
-        working-directory: backend
-        shell: bash
-        run: |
-          set -euo pipefail
-          set -a
-          source lab/metabase/.env
-          set +a
-          export DIMA_METABASE_P3_LIVE=1
-          export DIMA_METABASE_P3A_LIVE=1
-          export DIMA_METABASE_P4_LIVE=1
-          pytest -q \
-            tests/test_v3_p3_metabase_client_live.py \
-            tests/test_v3_p3a_bridge_preflight_live.py \
-            tests/test_v3_p4_metabase_canonical_live.py
-
-      - name: Teardown
-        if: always()
-        working-directory: backend/lab/metabase
-        run: |
-          test -f .env || cp .env.example .env
-          docker compose --env-file .env down -v --remove-orphans || true
- || true)"
-            if [ -n "$forbidden" ]; then
-              printf 'P13A cross-owner P5 regression contains unapproved files:\n%s\n' "$forbidden"
-              exit 1
-            fi
+            while IFS= read -r path; do
+              [ -z "$path" ] && continue
+              case "$path" in
+                backend/app/v3/native_execution.py) ;;
+                backend/app/v3/security_identity.py) ;;
+                backend/app/v3/execution_identity.py) ;;
+                backend/tests/test_v3_p13_native_trust.py) ;;
+                .github/workflows/dima-metabase-p13a.yml) ;;
+                .github/workflows/dima-metabase-p10.yml) ;;
+                .github/workflows/dima-metabase-p5.yml) ;;
+                .github/workflows/dima-metabase-governance.yml) ;;
+                backend/belgeler/metabase/DIMA_METABASE_FAILURE_RECEIPTS.md) ;;
+                DIMA-METABASE-DURUM.md) ;;
+                *)
+                  echo "P13A cross-owner regression contains unapproved file: $path"
+                  exit 1
+                  ;;
+              esac
+            done <<< "$changed"
           else
             BASE="fad2863867c2c21defdeb624db15d471603cd79f"
             changed="$(git diff --name-only "$BASE"...HEAD)"

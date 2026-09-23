@@ -3481,3 +3481,30 @@ historical P5 isolation behavior outside P13A.
 
 status:
 `CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
+
+
+---
+
+## DMP-P13A-CI-003 — P13 cross-owner guard text was truncated in both P5/P10 workflows
+
+opened_at: 2026-09-23  
+tested_sha: `98706133109c5053c1bbc987865e26ddabc81bfb`  
+workflows: `35846668312`, `35846669443`
+
+classification:
+`CI_GOVERNANCE / WORKFLOW_SERIALIZATION`
+
+observed:
+Both runs created zero jobs. Repository inspection showed the long grep-based P13 allowlist command
+was truncated at the regex line in both workflow files. No P5/P10 test executed on these runs.
+
+single_owner:
+P5/P10 workflow serialization only.
+
+authorized_correction:
+Restore both workflow files from pre-P13A known-good commit `a6e272d...` and express the P13A
+cross-owner allowlist as an explicit shell `case` statement against exact baseline
+`a6e272dda1218e449332da358c986a22ea534cbf`. Do not alter product contracts.
+
+status:
+`CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
