@@ -121,16 +121,19 @@ class ProductCoordinator:
         self._research_lane = research_lane
         self._report_narrator = report_narrator
 
-    def _ensure_lanes(self) -> None:
-        settings = get_settings()
+    def _ensure_standard_lane(self) -> None:
         if self._standard_lane is None:
-            lane, role = build_standard_lane(settings)
+            lane, role = build_standard_lane(get_settings())
             self._standard_lane = lane
             self._standard_model_role = role
+
+    def _ensure_research_lane(self) -> None:
         if self._research_lane is None:
-            self._research_lane = ResearchLaneService.from_settings(settings)
+            self._research_lane = ResearchLaneService.from_settings(get_settings())
+
+    def _ensure_report_narrator(self) -> None:
         if self._report_narrator is None:
-            self._report_narrator = build_report_narrator(settings)
+            self._report_narrator = build_report_narrator(get_settings())
 
     @staticmethod
     def _bind_context(
@@ -162,9 +165,8 @@ class ProductCoordinator:
         body: AskV2Request,
         principal,
     ) -> ProductResponse:
-        self._ensure_lanes()
+        self._ensure_standard_lane()
         assert self._standard_lane is not None
-        assert self._research_lane is not None
 
         context = self._bind_context(
             request=request,
@@ -193,6 +195,8 @@ class ProductCoordinator:
         if standard.status == StandardLaneStatus.RESEARCH_REQUIRED:
             # Isolation invariant: no StandardProjection, Standard semantic handles,
             # obligations or accepted Standard authority cross this call boundary.
+            self._ensure_research_lane()
+            assert self._research_lane is not None
             research = self._research_lane.run(
                 context=context,
                 body=body,
@@ -368,6 +372,7 @@ class ProductCoordinator:
                 ),
             )
 
+        self._ensure_report_narrator()
         assert self._report_narrator is not None
         overlay = self._report_narrator.compose(build.report)
         status = (
