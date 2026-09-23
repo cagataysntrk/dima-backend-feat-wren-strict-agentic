@@ -29,10 +29,23 @@ from app.fast.metabase_models import FastMetabaseRuntimePolicy
 from app.fast.run_manager import FastRunManager
 from app.fast.run_models import FastRunState
 from app.llm import build_generator
-from fast_model_eval import RecordingStructuredGenerator
+from fast_model_eval import (
+    OpenRouterStructuredBenchmarkGenerator,
+    RecordingStructuredGenerator,
+)
 
 
-MODEL = os.getenv("DIMA_OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
+MODEL = os.getenv(
+    "DIMA_FAST_FT005_MODEL",
+    os.getenv("DIMA_OPENROUTER_MODEL", "google/gemini-2.5-flash-lite"),
+)
+TRANSPORT = os.getenv("DIMA_FAST_FT005_TRANSPORT", "product").strip().lower()
+CANONICAL_MODEL = os.getenv(
+    "DIMA_FAST_FT005_CANONICAL_MODEL",
+    MODEL.removeprefix("openai/"),
+)
+MODEL_ROLE = os.getenv("DIMA_FAST_FT005_MODEL_ROLE", "THIRD_MODEL_DIAGNOSTIC")
+REASONING_EFFORT = os.getenv("DIMA_FAST_FT005_REASONING_EFFORT", "disabled")
 OUT = Path(
     os.getenv(
         "DIMA_FAST_FT005_E2E_RECEIPT",
@@ -59,6 +72,30 @@ def _settings() -> Settings:
         v2_structured_reasoning_enabled=False,
         v2_structured_max_tokens=4096,
     )
+
+
+def _build_generator():
+    if TRANSPORT == "openrouter_strict_benchmark":
+        key = (
+            os.getenv("DIMA_OPENROUTER_API_KEY")
+            or os.getenv("OPENROUTER_API_KEY")
+            or ""
+        ).strip()
+        return OpenRouterStructuredBenchmarkGenerator(
+            api_key=key,
+            request_model_id=MODEL,
+            canonical_model=CANONICAL_MODEL,
+            model_role=MODEL_ROLE,
+            reasoning_policy=(
+                "ceiling_enabled"
+                if REASONING_EFFORT == "ceiling_enabled"
+                else "disabled"
+            ),
+            max_tokens=4096,
+        )
+    if TRANSPORT == "product":
+        return build_generator(_settings())
+    raise RuntimeError(f"unsupported FT-005 E2E transport: {TRANSPORT}")
 
 
 def _metabase_login(base_url: str) -> str:
@@ -189,6 +226,10 @@ def main() -> int:
     receipt: dict = {
         "status": "RED",
         "model": MODEL,
+        "canonical_model": CANONICAL_MODEL,
+        "model_role": MODEL_ROLE,
+        "transport": TRANSPORT,
+        "reasoning_effort": REASONING_EFFORT,
         "anchor": "2026-09-07",
         "turns": [],
         "followup_calls": [],
@@ -205,14 +246,14 @@ def main() -> int:
             for key, value in json.loads(os.environ["FT005_EXPECTED_Q3_BREAKDOWN"]).items()
         }
 
-        base_generator = build_generator(_settings())
+        base_generator = _build_generator()
         followup_recorder = RecordingStructuredGenerator(
             base_generator,
-            model_role="THIRD_MODEL_DIAGNOSTIC",
+            model_role=MODEL_ROLE,
             exact_model_id=MODEL,
             provider="openrouter",
             validator_model=FastFollowupResolution,
-            reasoning_effort="disabled",
+            reasoning_effort=REASONING_EFFORT,
         )
         selector = StructuredJsonFastCognition(base_generator)
         followup = RecordingFollowup(
