@@ -26,6 +26,8 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
       - "backend/app/v2/manager_preacceptance.py"
       - "backend/app/v2/manager_policy.py"
+      - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
+      - "backend/app/v2/capability_bindings.py"
       - "backend/app/v2/manager_lab.py"
       - "backend/app/v2/models.py"
       - "backend/tests/test_v2_day7_research_task_lifecycle.py"
@@ -103,6 +105,9 @@ jobs:
             app/v2/manager_tools.py \
             app/v2/manager_executor.py \
             app/v2/manager_runtime.py \
+            app/v2/manager_preacceptance.py \
+            app/v2/manager_policy.py \
+            app/v2/capability_bindings.py \
             app/v2/manager_models.py \
             app/v2/manager_loop.py \
             app/v2/manager_lab.py \
@@ -145,7 +150,9 @@ jobs:
         working-directory: backend
         run: |
           python lab/v2_day7_capability_surface_receipt.py
-          pytest -q tests/test_v2_day7_capability_surface_receipt.py
+          pytest -q \
+            tests/test_v2_day7_capability_surface_receipt.py \
+            tests/test_v2_day7_deferred_capability_boundary.py
 
       - name: Day7 semantic surface diagnostic receipt
         working-directory: backend
