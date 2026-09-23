@@ -3422,3 +3422,62 @@ forbidden:
 
 status:
 `CLASSIFIED / GOVERNANCE-ONLY REPIN AUTHORIZED`.
+
+
+---
+
+## DMP-P13A-CI-001 — P10 workflow serialization corrupted during cross-owner guard edit
+
+opened_at: 2026-09-23  
+tested_sha: `17dea824dddf8af185d9596abc5bfdbedd11e04a`  
+workflow: `35846501637`
+
+classification:
+`CI_GOVERNANCE / WORKFLOW_SERIALIZATION`
+
+observed:
+- GitHub created the workflow run but no jobs;
+- inspection showed the P13-aware isolation replacement truncated a shell regex and duplicated the
+  remainder of the P10 workflow;
+- no P10/P13 test body executed;
+- no evidence of product-contract failure.
+
+single_owner:
+`.github/workflows/dima-metabase-p10.yml`.
+
+authorized_correction:
+Restore the last known-good P10 workflow from `a6e272d...`, then add one bounded P13A-aware isolation
+branch using the exact P13 preimplementation baseline.
+
+status:
+`CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
+
+---
+
+## DMP-P13A-CI-002 — legacy P5 isolation baseline sees unrelated post-P5 history
+
+opened_at: 2026-09-23  
+tested_sha: `17dea824dddf8af185d9596abc5bfdbedd11e04a`  
+workflow: `35846503079`  
+job: `107133839674`
+
+classification:
+`CI_GOVERNANCE / STALE_MILESTONE_ISOLATION_BASELINE`
+
+observed:
+- checkout passed;
+- test/install/compile did not run;
+- isolation diff still used historical P5 base `fad2863...`;
+- therefore later certified P9/P10/P11/P12X files appeared as if touched by current P5 work;
+- this is a stale historical guard, not a receipt regression.
+
+single_owner:
+`.github/workflows/dima-metabase-p5.yml` isolation logic.
+
+authorized_correction:
+When the sealed P13A native-trust review is active, diff from exact pre-P13A baseline
+`a6e272dda1218e449332da358c986a22ea534cbf` and permit only the explicitly approved P13A cross-owner file set. Preserve the
+historical P5 isolation behavior outside P13A.
+
+status:
+`CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.

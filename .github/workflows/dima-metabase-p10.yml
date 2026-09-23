@@ -41,14 +41,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BASE="50a4a6dea5b0d24840e7d3772973350619460cab"
-          changed="$(git diff --name-only "$BASE"...HEAD)"
-          printf '%s\n' "$changed"
-          violations="$(printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|semantic_import|semantic_equivalence|resource_provisioning|resource_transport|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)' || true)"
-          if [ -n "$violations" ]; then
-            REVIEW="backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
-            if [ -f backend/app/v3/native_execution.py ] && [ -f "$REVIEW" ] && grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$REVIEW"; then
-              violations="$(printf '%s\n' "$violations" | grep -v '^backend/app/v3/execution_identity\.py
+          P13_REVIEW="backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
+          if [ -f backend/app/v3/native_execution.py ] && [ -f "$P13_REVIEW" ] && grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$P13_REVIEW"; then
+            BASE="a6e272dda1218e449332da358c986a22ea534cbf"
+            changed="$(git diff --name-only "$BASE"...HEAD)"
+            printf '%s\n' "$changed"
+            forbidden="$(printf '%s\n' "$changed" | grep -Ev '^(backend/app/v3/(native_execution|security_identity|execution_identity)\.py|backend/tests/test_v3_p13_native_trust\.py|\.github/workflows/dima-metabase-(p13a|p10|p5|governance)\.yml|backend/belgeler/metabase/DIMA_METABASE_FAILURE_RECEIPTS\.md|DIMA-METABASE-DURUM\.md)
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -137,11 +135,18 @@ jobs:
           test -f .env || cp .env.example .env
           docker compose --env-file .env down -v --remove-orphans || true
  || true)"
+            if [ -n "$forbidden" ]; then
+              printf 'P13A cross-owner P10 regression contains unapproved files:\n%s\n' "$forbidden"
+              exit 1
             fi
-          fi
-          if [ -n "$violations" ]; then
-            printf 'P10A touched forbidden files:\n%s\n' "$violations"
-            exit 1
+          else
+            BASE="50a4a6dea5b0d24840e7d3772973350619460cab"
+            changed="$(git diff --name-only "$BASE"...HEAD)"
+            printf '%s\n' "$changed"
+            if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|semantic_import|semantic_equivalence|resource_provisioning|resource_transport|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)'; then
+              echo "P10A touched a forbidden file"
+              exit 1
+            fi
           fi
 
       - uses: actions/setup-python@v5
