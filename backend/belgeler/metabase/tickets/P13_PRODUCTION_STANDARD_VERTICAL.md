@@ -164,3 +164,18 @@ until supervisor reviews the sealed boundary.
 ## P12X pause
 
 DMP-DEC-0030 pauses P13 implementation until the V0+A+B Metabase seam benchmark is classified. Do not create `standard_execution.py` or `execute_prepared()` during P12X.
+
+
+---
+
+## DMP-DEC-0031 P13 pause
+
+This ticket is reframed as `P13 — PRODUCTION STANDARD OVER DIMA METABASE ENGINE`.
+
+Implementation remains STOPPED until:
+1. C0 fork-source build exists from exact upstream history;
+2. C1 stock-vs-fork capability retention is 100% on the selected stock-PASS sentinel;
+3. C2 stable bridge retains fork-native capability with no weaker permission behavior;
+4. engine runtime provenance and patch-surface discipline are established.
+
+Old Agent-API production implementation is not authorized.
