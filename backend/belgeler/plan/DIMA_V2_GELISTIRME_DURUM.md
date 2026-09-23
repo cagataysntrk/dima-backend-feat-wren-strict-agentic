@@ -8748,3 +8748,148 @@ Research task identity / idempotent delivery / cancel-race non-resurrection
 ```
 
 Day7 remains ACTIVE. Day8/Day9/Day10 are not opened.
+
+
+## 2026-09-23 — DAY7 ORACLE RECONCILIATION + COGNITION DIAGNOSTIC PREP
+
+### Product freeze
+
+```text
+tested product checkpoint = d22fb3626db0fe44ea543eee6531e5544cdf0b56
+product code changed       = NO
+evaluator/docs commits     = YES
+```
+
+Supervisor protocol followed: RED -> freeze product -> first bad transition -> owner classification
+before any semantic/trust-plane patch.
+
+### D7-OPEN-1 multi-obligation PREVIOUS_PERIOD — classified EVAL_ORACLE
+
+Observed exact live receipt:
+
+```text
+"geçen dönemle"
+→ TemporalNormalizer/Sol = NORMALIZED
+→ comparison_kind = PREVIOUS_PERIOD
+→ implicit_base_period_kind = null
+
+U2 owner-local metric = resolved
+U2 owner-local period = absent
+cross-obligation period borrowing = correctly forbidden
+→ comparison unresolved
+→ NEEDS_CLARIFICATION
+→ no AcceptedTurnContract
+→ zero DB query
+```
+
+Contract decision:
+`PREVIOUS_PERIOD` requires a governed/typed base period. If the same USER_MUST does not
+supply one and the normalized comparison surface does not uniquely imply one, Dima does
+not invent a current-month/current-year/default base. Existing owner isolation remains
+correct. Therefore the old frozen expectation that this turn must accept+execute is stale.
+
+No product temporal code changed.
+
+### D7-OPEN-2 relationship-unsafe — classified EVAL_ORACLE
+
+Sealed current behavior remains:
+
+```text
+required counterpart dimension unresolved
+→ material_grounding_gap
+→ NEEDS_CLARIFICATION
+→ no AcceptedTurnContract
+→ no ledger
+→ zero DB query
+```
+
+Old frozen expectation `run_relationship + downstream typed block` represented the prior
+architecture and has been reconciled at evaluator level only. Relationship/Wren/fanout code
+was not touched.
+
+### Evaluator abstraction correction
+
+Generic preacceptance oracle support added to `lab/v2_day7_manager_live_sol.py`:
+
+```text
+expected_preacceptance_state
+expected_observation_kind
+expect_no_ledger
+```
+
+A valid fail-closed preacceptance outcome is no longer falsely scored as:
+"accepted_contract=false / must_tools=false".
+
+Commits:
+- `6736ea76ba22...` evaluator generic preacceptance outcome
+- `dfdf672c6a84...` stale multi-obligation/relationship expectations reconciled
+- `921860d1acc9...` provider-free evaluator contract proof
+
+No case-specific branch was added to product code or evaluator logic.
+
+### D7-OPEN-3 insufficient-evidence — owner not patched yet
+
+Frozen13 first bad transition:
+
+```text
+"Seyrek sinyali araştır..."
+→ Manager draft capability = ROOT_CAUSE
+→ ROOT_CAUSE is Day7 deferred
+→ typed UNSUPPORTED/BLOCKED
+→ no AcceptedTurnContract
+→ zero DB
+```
+
+Current registry semantics:
+
+```text
+PERFORMANCE
+= read/show/measure level/value/state of a metric
+= NOT why/causes/drivers/anomaly/decline investigation
+
+ROOT_CAUSE
+= explicitly investigate why an outcome/change/decline/increase/anomaly happened
+= causes/drivers research
+```
+
+Provisional owner hypothesis: `MODEL_COGNITION`, because the frozen wording asks to inspect
+a metric and avoid invention/branching but does not explicitly ask why/cause/driver/change.
+
+NO prompt or product change is authorized from one case.
+
+A separate 8-case TR+EN neutral-vs-causal diagnostic was added:
+- `eval/v2_day7_capability_cognition_diagnostic.yaml`
+- `.github/workflows/v2-day7-capability-cognition-diagnostic.yml`
+
+Commits:
+- `3cdc0e149177...` diagnostic corpus
+- `ec4167226659...` manual-only workflow
+
+Workflow is `workflow_dispatch` only; paid LLM is not push-triggered.
+
+Decision rule after diagnostic:
+
+```text
+neutral inspection family consistently -> PERFORMANCE
+causal controls consistently -> ROOT_CAUSE
+but frozen exact prompt -> ROOT_CAUSE
+=> MODEL_COGNITION tail; generic ontology/prompt capability boundary may be considered
+
+neutral family itself frequently -> ROOT_CAUSE
+=> broader cognition boundary defect; generic correction only
+
+neutral "araştır" is intentionally defined causal by agreed ontology
+=> EVAL_ORACLE, no product patch
+```
+
+### Current test order
+
+1. provider-free `v2-day7-focused` for evaluator-only changes,
+2. manual cognition diagnostic,
+3. classify D7-OPEN-3,
+4. only then touch product cognition owner if generic defect is proven,
+5. affected LIVE only,
+6. frozen13 once justified,
+7. shadow ablation only after behavioral closure.
+
+Do NOT start Day8.
