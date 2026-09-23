@@ -21,6 +21,7 @@ from app.fast.conversation_models import (
 from app.fast.followup_cognition import StructuredJsonFastFollowupCognition
 from app.llm import build_generator
 from fast_model_eval import (
+    ContractProbeFastFollowupCognition,
     OpenRouterStructuredBenchmarkGenerator,
     RecordingStructuredGenerator,
 )
@@ -51,6 +52,10 @@ CANONICAL_MODEL = os.getenv(
     "DIMA_FAST_FT005_CANONICAL_MODEL",
     MODEL.removeprefix("openai/"),
 )
+PROMPT_VARIANT = os.getenv(
+    "DIMA_FAST_FT005_PROMPT_VARIANT",
+    "baseline",
+).strip().lower()
 CASE_FILTER = tuple(
     item.strip()
     for item in os.getenv("DIMA_FAST_FT005_CASES", "").split(",")
@@ -193,7 +198,12 @@ def main() -> int:
         validator_model=FastFollowupResolution,
         reasoning_effort=REASONING_EFFORT,
     )
-    cognition = StructuredJsonFastFollowupCognition(recorder)
+    if PROMPT_VARIANT == "baseline":
+        cognition = StructuredJsonFastFollowupCognition(recorder)
+    elif PROMPT_VARIANT == "contract_probe":
+        cognition = ContractProbeFastFollowupCognition(recorder)
+    else:
+        raise RuntimeError(f"unsupported FT-005 prompt variant: {PROMPT_VARIANT}")
 
     receipt: dict = {
         "status": "RED",
@@ -204,6 +214,7 @@ def main() -> int:
         "transport": TRANSPORT,
         "canonical_model": CANONICAL_MODEL,
         "reasoning_effort": REASONING_EFFORT,
+        "prompt_variant": PROMPT_VARIANT,
         "assistant_prose_authority": 0,
         "invented_handle_count": 0,
         "cases": [],
