@@ -483,13 +483,22 @@ class PreAcceptanceController:
         message_id: str,
         runtime: ManagerRuntime,
         executor,
-    ) -> tuple[dict[tuple[str, str], SemanticBindingRef], Any | None]:
-        requests: list[tuple[str, str]] = []
+    ) -> tuple[
+        dict[tuple[str, str, str], SemanticBindingRef],
+        Any | None,
+    ]:
+        requests: list[tuple[str, str, str]] = []
+        seen: set[tuple[str, str, str]] = set()
         for obligation in draft.obligations:
             for item in obligation.semantic_surfaces:
-                pair = (item.surface, item.kind_hint)
-                if pair not in requests:
-                    requests.append(pair)
+                owned = (
+                    obligation.obligation_id,
+                    item.surface,
+                    item.kind_hint,
+                )
+                if owned not in seen:
+                    seen.add(owned)
+                    requests.append(owned)
 
         if not requests:
             return {}, None
@@ -499,15 +508,17 @@ class PreAcceptanceController:
                 message_id=message_id,
                 surface=surface,
             ).source_ref
-            for surface, _ in requests
+            for _, surface, _ in requests
         )
-        hints = tuple(kind for _, kind in requests)
+        owners = tuple(owner_id for owner_id, _, _ in requests)
+        hints = tuple(kind for _, _, kind in requests)
         step = runtime.call_tool(
             ManagerToolCall(
                 name=ManagerToolName.RESOLVE_SEMANTICS,
                 args={
                     "provenance": "USER_SOURCE",
                     "source_refs": refs,
+                    "source_obligation_ids": owners,
                     "target_kind_hints": hints,
                     "temporal_anchor_handle": None,
                     "base_period_handle": None,
@@ -516,16 +527,20 @@ class PreAcceptanceController:
             executor=executor,
         )
         result = step.tool_result
-        by_source_ref = {
-            item.source_ref: item
+        by_owner_source = {
+            (item.owner_id, item.source_ref): item
             for item in tuple(getattr(result, "resolved", ()) or ())
             if item.source_ref is not None
         }
-        grounded: dict[tuple[str, str], SemanticBindingRef] = {}
-        for (surface, kind), source_ref in zip(requests, refs, strict=True):
-            resolved = by_source_ref.get(source_ref)
+        grounded: dict[tuple[str, str, str], SemanticBindingRef] = {}
+        for (owner_id, surface, kind), source_ref in zip(
+            requests,
+            refs,
+            strict=True,
+        ):
+            resolved = by_owner_source.get((owner_id, source_ref))
             if resolved is not None:
-                grounded[(surface, kind)] = SemanticBindingRef(
+                grounded[(owner_id, surface, kind)] = SemanticBindingRef(
                     source_ref=source_ref,
                     handle_id=resolved.handle.handle_id,
                     target_kind=resolved.handle.target_kind,
@@ -536,7 +551,7 @@ class PreAcceptanceController:
         self,
         *,
         draft: IntentDraft,
-        grounded: dict[tuple[str, str], SemanticBindingRef],
+        grounded: dict[tuple[str, str, str], SemanticBindingRef],
         message_id: str,
         source_hash: str,
         request_ref: str,
@@ -550,9 +565,19 @@ class PreAcceptanceController:
             )
             semantic_bindings = tuple(
                 dict.fromkeys(
-                    grounded[(surface.surface, surface.kind_hint)]
+                    grounded[
+                        (
+                            item.obligation_id,
+                            surface.surface,
+                            surface.kind_hint,
+                        )
+                    ]
                     for surface in item.semantic_surfaces
-                    if (surface.surface, surface.kind_hint) in grounded
+                    if (
+                        item.obligation_id,
+                        surface.surface,
+                        surface.kind_hint,
+                    ) in grounded
                 )
             )
             semantic_handle_refs = tuple(
@@ -616,7 +641,13 @@ class PreAcceptanceController:
                 else spec.exclusion_required_kinds
             )
             for item in obligation.semantic_surfaces:
-                binding = grounded.get((item.surface, item.kind_hint))
+                binding = grounded.get(
+                    (
+                        obligation.obligation_id,
+                        item.surface,
+                        item.kind_hint,
+                    )
+                )
                 bound_kind = (
                     self._normalized_hint_kind(binding.target_kind)
                     if binding is not None
@@ -731,7 +762,11 @@ class PreAcceptanceController:
                 for surface in obligation.semantic_surfaces
                 if (
                     binding := grounded.get(
-                        (surface.surface, surface.kind_hint)
+                        (
+                            obligation.obligation_id,
+                            surface.surface,
+                            surface.kind_hint,
+                        )
                     )
                 ) is not None
             }
