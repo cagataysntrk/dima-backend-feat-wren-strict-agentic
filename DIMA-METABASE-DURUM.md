@@ -2152,3 +2152,30 @@ Certified closure wording:
 P13B NATIVE ATTESTATION DESIGN = SEALED
 P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
 ```
+
+
+---
+
+## NEW DEVELOPER HANDOFF CHECKPOINT
+
+Consolidated onboarding file:
+
+DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+
+State verified immediately before this handoff commit:
+
+    Platform HEAD        = b9bcc110e4d352a3bada7587e7a812abf7b68ed3
+    governance           = 35852421592 SUCCESS
+    engine gitlink/main  = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+    ask-v2 observation   = 1cdddb024fd0d8f4e5548cd7ca862afc3b3ee404
+    Fast Track           = 8b9397b4f883f9c188a5fdadafa3db0dc418ec34
+
+No product or engine code is changed by this handoff.
+
+Current authoritative stop:
+
+    P13A NATIVE TRUST CONTRACT = GREEN
+    P13B NATIVE ATTESTATION DESIGN = SEALED
+    P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
+
+Next developer must read the consolidated handoff before any write.

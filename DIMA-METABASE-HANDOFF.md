@@ -1291,3 +1291,43 @@ Current supervisor stop remains:
 P13B NATIVE ATTESTATION DESIGN = SEALED
 P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
 ```
+
+
+---
+
+# NEW DEVELOPER AUTHORITATIVE HANDOFF — 2026-09-23
+
+A consolidated onboarding document now exists:
+
+DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+
+For a new developer with no prior context, read that file first.
+
+It consolidates:
+- project history and architecture transitions;
+- exact repo/branch/engine state;
+- P12X/P13A/P13B-0 certification;
+- DMP-DEC-0037;
+- code/file ownership;
+- source-audit conclusions;
+- proposed engine patch surface;
+- exact next sequence;
+- open debt;
+- failure protocol;
+- absolute stop conditions.
+
+Verified immediately before this handoff commit:
+
+    Platform HEAD before handoff commit = b9bcc110e4d352a3bada7587e7a812abf7b68ed3
+    engine gitlink/main                 = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+    current-head governance             = 35852421592 SUCCESS
+
+    ask-v2 read-only observation        = 1cdddb024fd0d8f4e5548cd7ca862afc3b3ee404
+    Fast Track read-only observation    = 8b9397b4f883f9c188a5fdadafa3db0dc418ec34
+
+Current stop remains:
+
+    P13B NATIVE ATTESTATION DESIGN = SEALED
+    P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
+
+Do not begin an engine patch or live P13B orchestration without a new supervisor authorization.
