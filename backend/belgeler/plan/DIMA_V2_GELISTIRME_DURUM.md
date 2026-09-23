@@ -9521,3 +9521,84 @@ typed epistemic models → HypothesisLedger service → evidence-ref validation 
 EpistemicLabelGate → default-deny CONFIRMED_CAUSE → provider-free attacks.
 
 STOP before product implementation pending architecture review.
+
+
+---
+
+## 2026-09-23 — DAY8 D8-B PROVIDER-FREE GREEN / SUPERVISOR STOP
+
+```text
+Day7 / P10                        CLOSED / SEALED
+Day8 product behavior SHA         e6e46c04ebabdac804545855d7fbbcf90c1b1b90
+D8-A1                             GREEN
+D8-A2                             GREEN
+structural seams                  GREEN
+D8-B proposal boundary            GREEN
+focused run                       35884577376 = GREEN
+paid calls                        0
+DB queries                        0
+ROOT_CAUSE executable             false
+D8-C                              NOT STARTED
+```
+
+### Structural seams closed
+
+1. ROOT_CAUSE hypothesis authority accepts only:
+   `ACCEPTED | READY | IN_PROGRESS`.
+   Proposed/clarification/blocked/limited/unsupported/superseded/verified terminal
+   authority cannot mint mutable epistemic state.
+
+2. HypothesisLedger no longer freezes `current_evidence_refs` at construction.
+   `CurrentRunEvidenceView` reads the same Day7 ManagerRuntime snapshot live.
+   It exposes no membership mutator and creates no second EvidenceStore/run registry.
+
+3. Cognition proposal admission requires:
+   `current-run + VERIFIED + inspected Evidence`.
+
+### D8-B delivered
+
+`HypothesisProposalBoundary` is a provider-free cognition admission layer only.
+
+It admits:
+- typed statement,
+- governed SemanticHandle refs,
+- inspected trigger Evidence refs,
+- limitations,
+- explicit SUPPORTS / CONTRADICTS proposal against existing server-owned IDs.
+
+It does not:
+- execute SQL/DB,
+- call Wren,
+- create ResearchTasks,
+- change capability execution mapping,
+- perform causal inference,
+- auto-convert trigger Evidence into support,
+- mint model-owned IDs.
+
+The ledger remains the only hypothesis-ID owner.
+
+### Focused proof
+
+Run `35884577376` passed:
+- Day8 compile,
+- 29 HypothesisLedger attacks,
+- EpistemicLabelGate attacks,
+- D8-B hypothesis proposal attacks,
+- Day7 DerivedEvidence regression,
+- Day7 ResearchTask lifecycle/registry regressions.
+
+A prior focused RED `35884376351` was classified
+`EVAL/CONTRACT REGRESSION`: one stale private helper call remained after exposing the
+priority-only classifier publicly. Generic one-line owner fix only; no product semantics,
+budget or test-case rule changed.
+
+### STOP
+
+Per supervisor:
+```text
+STOP after D8-B GREEN.
+No D8-C automatically.
+No paid test.
+No live Sol.
+No ROOT_CAUSE executable=true.
+```
