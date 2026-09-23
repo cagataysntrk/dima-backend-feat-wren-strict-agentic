@@ -19,8 +19,11 @@ jobs:
       DIMA_DAY7_LIVE_TEMPORAL_MODEL: "openai/gpt-5.6-sol"
       DIMA_LLM_PROVIDER: openrouter
       DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_MODEL: "openai/gpt-5.6-sol"
       DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_MODEL: "openai/gpt-5.6-luna"
       DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_MODEL: "openai/gpt-5.6-sol"
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
