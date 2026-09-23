@@ -1350,6 +1350,49 @@ class HypothesisLedgerState(FrozenModel):
         return self
 
 
+class EpistemicGateCode(StrEnum):
+    ALLOW = "ALLOW"
+    EVIDENCE_REQUIRED = "EVIDENCE_REQUIRED"
+    EVIDENCE_CLASS_MISMATCH = "EVIDENCE_CLASS_MISMATCH"
+    ROOT_CAUSE_REQUIRED = "ROOT_CAUSE_REQUIRED"
+    HYPOTHESIS_REQUIRED = "HYPOTHESIS_REQUIRED"
+    HYPOTHESIS_SUPPORT_REQUIRED = "HYPOTHESIS_SUPPORT_REQUIRED"
+    LIMITATION_REQUIRED = "LIMITATION_REQUIRED"
+    PRIORITIZATION_NOT_TRUTH = "PRIORITIZATION_NOT_TRUTH"
+    CAUSAL_NOT_IDENTIFIED = "CAUSAL_NOT_IDENTIFIED"
+
+
+class EpistemicLabelDecision(FrozenModel):
+    allowed: bool
+    requested_label: EpistemicLabel
+    code: EpistemicGateCode
+    reason: str
+
+
+class EvidenceLinkedFinding(FrozenModel):
+    """Canonical Day8 finding; every analytical claim carries governed Evidence refs."""
+
+    finding_id: str = Field(min_length=1)
+    parent_obligation_id: str = Field(min_length=1)
+    statement: str = Field(min_length=1)
+    epistemic_label: EpistemicLabel
+    evidence_refs: tuple[str, ...] = Field(min_length=1)
+    hypothesis_ref: str | None = None
+    limitations: tuple[str, ...] = ()
+    provenance: HypothesisProvenance
+
+    @model_validator(mode="after")
+    def _finding_contract(self):
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("finding evidence refs must be unique")
+        if self.epistemic_label in {
+            EpistemicLabel.CANDIDATE_CAUSE,
+            EpistemicLabel.CONFIRMED_CAUSE,
+        } and self.hypothesis_ref is None:
+            raise ValueError("causal finding labels require hypothesis_ref")
+        return self
+
+
 # ---------------------------------------------------------------------------
 # Day 4 conversation / dialogue-policy surface
 # ---------------------------------------------------------------------------
