@@ -914,7 +914,7 @@ class ResearchManagerLoop:
             ManagerState.NEEDS_CLARIFICATION,
         }:
             try:
-                runtime.note_manager_turn()
+                runtime.note_manager_turn(phase="research")
             except ManagerBudgetError as exc:
                 observations.append({"kind": "budget", "message": str(exc)})
                 break
