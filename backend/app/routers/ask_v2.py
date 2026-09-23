@@ -1,4 +1,4 @@
-"""Feature-flagged HTTP entrypoint for the greenfield Dima V2 island."""
+"""Authoritative feature-flagged Dima V2 product front door."""
 
 from __future__ import annotations
 
@@ -6,46 +6,55 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth.dependencies import get_current_principal, require, require_company
 from app.config import get_settings
-from app.v2.finalizer import ConversationFinalizerV0
-from app.v2.interpreter import TurnInterpreterError
-from app.v2.models import AskV2CoreResponse, AskV2Request
-from app.v2.orchestrator import V2Orchestrator
-from app.v2.resolver import ClarificationTokenError
+from app.v2.models import AskV2Request
+from app.v2.product_coordinator import ProductCoordinator
+from app.v2.product_models import ProductResponse
 from control_plane.authorize import Principal
 
+
 router = APIRouter(tags=["ask-v2"])
-_orchestrator = V2Orchestrator()
-_finalizer = ConversationFinalizerV0()
+_coordinator = ProductCoordinator()
 
 
 @router.post(
     "/ask-v2",
-    response_model=AskV2CoreResponse,
+    response_model=ProductResponse,
     dependencies=[Depends(require("query:run")), Depends(require_company)],
 )
 def ask_v2(
     request: Request,
     body: AskV2Request,
     principal: Principal = Depends(get_current_principal),
-) -> AskV2CoreResponse:
+) -> ProductResponse:
     if not get_settings().ask_v2_enabled:
         raise HTTPException(status_code=404, detail="ask-v2 kapalı")
 
-    try:
-        core = _orchestrator.handle(request, body, principal)
-        return _finalizer.finalize(core)
-    except TurnInterpreterError as exc:
-        status = 503 if exc.failure.code == "llm_unavailable" else 502
-        raise HTTPException(
-            status_code=status,
-            detail=exc.failure.model_dump(mode="json"),
-        ) from exc
-    except ClarificationTokenError as exc:
-        # Stale/tampered continuation state never falls back to a different meaning.
+    if body.clarification_token is not None:
+        # Historical Day2 SemanticResolver tokens are intentionally not authoritative on
+        # the Day10 product graph. A future product clarification continuation must have
+        # its own typed/current-context contract rather than silently falling back.
         raise HTTPException(
             status_code=409,
             detail={
-                "code": "clarification_token_invalid",
-                "message": str(exc),
+                "code": "legacy_clarification_continuation_not_authoritative",
+                "message": "Bu continuation yeni /ask-v2 product authority ile yeniden bağlanmalı.",
+            },
+        )
+
+    try:
+        return _coordinator.handle(
+            request=request,
+            body=body,
+            principal=principal,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # No stack/provider payload crosses the product HTTP boundary.
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "product_unavailable",
+                "message": f"Product coordinator unavailable ({type(exc).__name__}).",
             },
         ) from exc
