@@ -146,6 +146,37 @@ class ManagerSemanticResolutionAdapter:
             trigger_evidence_ref=args.evidence_ref,
         )
 
+    def _coherent_temporal_anchor(
+        self,
+        *,
+        resolved: tuple[ManagerResolvedSemantic, ...],
+        owner_id: str,
+    ) -> str | None:
+        """Choose an owner-local anchor only when its governed time dimension is coherent.
+
+        The handle itself remains semantic authority. This helper only prevents one
+        USER_MUST obligation from borrowing another obligation's semantic/time scope.
+        """
+        by_time_dimension: dict[str, list[str]] = {}
+        for item in resolved:
+            if item.owner_id != owner_id:
+                continue
+            if item.handle.target_kind not in {"metric", "kpi", "dimension"}:
+                continue
+            try:
+                time_dimension = self._time_dimension(item.handle.handle_id)
+            except (TemporalResolutionError, KeyError, ValueError):
+                continue
+            by_time_dimension.setdefault(time_dimension, []).append(
+                item.handle.handle_id
+            )
+
+        if len(by_time_dimension) != 1:
+            return None
+        handles = next(iter(by_time_dimension.values()))
+        return handles[0] if handles else None
+
+
     def _resolve_temporal(
         self,
         *,
@@ -477,11 +508,18 @@ class ManagerSemanticResolutionAdapter:
                 regular_result.unresolved_source_refs
             )
 
-            # Temporal normalization remains its own typed family. Existing behavior is
-            # preserved here; multi-obligation temporal semantics are classified
-            # separately and are not repaired by sibling-scope discovery.
-            effective_anchor = args.temporal_anchor_handle
-            if effective_anchor is None:
+            # Temporal normalization is typed cognition, but temporal authority must
+            # remain obligation-local. Grouped USER_SOURCE batches may never borrow a
+            # semantic anchor or explicit base period from another USER_MUST.
+            grouped_temporal_owners = {
+                owner_id
+                for _, _, owner_id in (*time_entries, *comparison_entries)
+                if owner_id is not None
+            }
+            grouped = bool(args.source_obligation_ids)
+
+            global_anchor = args.temporal_anchor_handle
+            if not grouped and global_anchor is None:
                 anchored = [
                     item.handle.handle_id
                     for item in regular_result.resolved
@@ -489,21 +527,37 @@ class ManagerSemanticResolutionAdapter:
                     in {"metric", "kpi", "dimension"}
                 ]
                 if anchored:
-                    effective_anchor = anchored[0]
+                    global_anchor = anchored[0]
 
-            temporal_args = args.model_copy(
-                update={"temporal_anchor_handle": effective_anchor}
-            )
+            def anchor_for(owner_id: str | None) -> str | None:
+                if not grouped or owner_id is None:
+                    return global_anchor
+                local = self._coherent_temporal_anchor(
+                    resolved=regular_result.resolved,
+                    owner_id=owner_id,
+                )
+                if local is not None:
+                    return local
+                # Preserve an explicit caller-supplied anchor only when the batch has a
+                # single owner; it cannot be safely attributed in a multi-owner batch.
+                if len(grouped_temporal_owners) == 1:
+                    return args.temporal_anchor_handle
+                return None
 
-            period_handles: list[str] = []
+            period_handles_by_owner: dict[str | None, list[str]] = {}
             for source_ref, text, owner_id in time_entries:
+                temporal_args = args.model_copy(
+                    update={"temporal_anchor_handle": anchor_for(owner_id)}
+                )
                 try:
                     handle = self._resolve_temporal(
                         text=text,
                         hint="time",
                         args=temporal_args,
                     )
-                    period_handles.append(handle.handle_id)
+                    period_handles_by_owner.setdefault(owner_id, []).append(
+                        handle.handle_id
+                    )
                     resolved.append(
                         ManagerResolvedSemantic(
                             source_ref=source_ref,
@@ -515,13 +569,29 @@ class ManagerSemanticResolutionAdapter:
                 except (TemporalResolutionError, KeyError, ValueError):
                     unresolved_refs.append(source_ref)
 
-            effective_base = args.base_period_handle
-            if effective_base is None and len(period_handles) == 1:
-                effective_base = period_handles[0]
-            comparison_args = temporal_args.model_copy(
-                update={"base_period_handle": effective_base}
-            )
             for source_ref, text, owner_id in comparison_entries:
+                local_periods = period_handles_by_owner.get(owner_id, [])
+                effective_base = args.base_period_handle
+                if grouped and owner_id is not None:
+                    if len(local_periods) == 1:
+                        effective_base = local_periods[0]
+                    elif len(grouped_temporal_owners) != 1:
+                        effective_base = None
+                elif effective_base is None:
+                    all_periods = [
+                        handle_id
+                        for values in period_handles_by_owner.values()
+                        for handle_id in values
+                    ]
+                    if len(all_periods) == 1:
+                        effective_base = all_periods[0]
+
+                comparison_args = args.model_copy(
+                    update={
+                        "temporal_anchor_handle": anchor_for(owner_id),
+                        "base_period_handle": effective_base,
+                    }
+                )
                 try:
                     handle = self._resolve_temporal(
                         text=text,
