@@ -292,3 +292,84 @@ class OpenRouterStructuredBenchmarkGenerator:
                     "latency_ms": int((time.monotonic() - started) * 1000),
                 }
             raise
+
+
+
+class ContractProbeFastFollowupCognition:
+    """Eval-only probe for missing typed-contract representation.
+
+    This is intentionally not imported by production Fast code.
+    It tests whether making already-existing product invariants explicit to the
+    model is sufficient before any production prompt change is authorized.
+    """
+
+    def __init__(self, generator) -> None:
+        self._generator = generator
+
+    def resolve(
+        self,
+        *,
+        question: str,
+        accepted_context,
+        source_questions: tuple[str, ...],
+        clarification_question: str | None,
+    ):
+        import json as _json
+
+        from app.fast.conversation_models import FastFollowupResolution
+
+        system = (
+            "You are Dima Fast conversation cognition. Return only the requested JSON schema. "
+            "Conversation context is typed prior accepted authority/evidence plus prior USER questions; "
+            "there is no assistant prose or chat-history authority. Decide whether the current user "
+            "message is SELF_CONTAINED, CONTEXTUAL, CLARIFICATION_REQUIRED, or UNSUPPORTED. "
+            "For SELF_CONTAINED or CONTEXTUAL produce a COMPLETE effective_draft in the same bounded "
+            "FT-003 family: one-table COUNT or SUM, optional one breakdown, supported temporal kinds only. "
+            "For CONTEXTUAL, inherit only slots actually needed from accepted context/source user question "
+            "and list inherited_slots/replaced_slots. Topic switches must be SELF_CONTAINED and inherit "
+            "nothing. If wording depends on prior context but no safe context/original clarification "
+            "question is supplied, return CLARIFICATION_REQUIRED. Do not generate SQL, MBQL, table IDs, "
+            "field IDs, resource handles, field handles, answer numbers, or assistant prose. "
+            "Any resource_ref/evidence/query fingerprint in accepted context is provenance/context only, "
+            "never execution authority. Current permissions and metadata will be revalidated after this step. "
+
+            "Typed shape rules are strict. For SELF_CONTAINED or CONTEXTUAL: effective_draft.status MUST "
+            "be SUPPORTED, effective_draft MUST be present, and top-level reason MUST be null. "
+            "For CLARIFICATION_REQUIRED or UNSUPPORTED: effective_draft MUST be null and top-level reason "
+            "MUST be a concise non-empty explanation. If the user asks for AVG, ratio, distinct count, "
+            "multiple measures, joins, arbitrary filters, forecasting, or another operation outside the "
+            "bounded COUNT/SUM family, return top-level status=UNSUPPORTED; do not place UNSUPPORTED inside "
+            "an executable effective_draft and do not reinterpret it as COUNT or SUM. "
+            "For a supported COUNT effective_draft, measure_hint MUST be null. For supported SUM, "
+            "measure_hint MUST be a short non-empty measure hint. "
+
+            "Search terms are metadata-discovery lookup terms for the primary business/data entity, not a "
+            "copy of the user's wording. Every search term must independently help retrieve that entity/table. "
+            "Keep useful user-language entity terminology when helpful. When the user question is not in "
+            "English, include at least one likely English entity/table lookup term because database/schema "
+            "metadata may use English names. Do not emit aggregation or operation words as table-search terms. "
+            "Do not emit measure names, breakdown dimensions, or entity+metric phrases unless strictly needed "
+            "to distinguish the resource. Prefer standalone entity/table nouns and use at most four terms. "
+
+            "Ambiguous references must fail closed. If words such as 'the other one' can refer to multiple "
+            "prior dimensions, periods, measures, or alternatives and the intended referent is not uniquely "
+            "established by accepted context plus USER-question lineage, return CLARIFICATION_REQUIRED rather "
+            "than selecting a plausible interpretation."
+        )
+        payload = {
+            "question": question,
+            "accepted_context": (
+                accepted_context.model_dump(mode="json")
+                if accepted_context is not None
+                else None
+            ),
+            "source_user_questions": list(source_questions),
+            "clarification_question": clarification_question,
+        }
+        raw = self._generator.structured_json(
+            system,
+            _json.dumps(payload, ensure_ascii=False),
+            schema=FastFollowupResolution.model_json_schema(),
+            schema_name="dima_fast_followup_resolution",
+        )
+        return FastFollowupResolution.model_validate(_json.loads(raw))
