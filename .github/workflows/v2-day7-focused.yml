@@ -40,6 +40,8 @@ name: v2-day7-focused
       - "backend/app/v2/manager_core_adapter.py"
       - "backend/app/v2/relationship_adapter.py"
       - "backend/tests/test_v2_day7_real_relationship_vertical.py"
+      - "backend/app/v2/derived_evidence.py"
+      - "backend/tests/test_v2_day7_derived_evidence.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -107,6 +109,10 @@ jobs:
       - name: Bounded initial Research seed set
         working-directory: backend
         run: pytest -q tests/test_v2_day7_seed_set.py
+
+      - name: Derived analytical Evidence primitives
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_derived_evidence.py
 
       - name: Governed same-domain Research tools
         working-directory: backend
