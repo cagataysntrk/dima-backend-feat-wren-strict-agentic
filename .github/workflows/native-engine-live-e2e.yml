@@ -54,14 +54,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for name in BOYAHANE_OWNER_PASSWORD BOYAHANE_READONLY_PASSWORD ENGINE_APP_DB_PASSWORD DIMA_AUTH_DB_PASSWORD FT005N_ENGINE_ADMIN_PASSWORD BETTER_AUTH_SECRET DIMA_E2E_USER_PASSWORD; do
-            value="$(openssl rand -hex 24)"
+          owner="$(openssl rand -hex 24)"
+          readonly="$(openssl rand -hex 24)"
+          engine_db="$(openssl rand -hex 24)"
+          auth_db="$(openssl rand -hex 24)"
+          engine_admin="$(openssl rand -hex 24)"
+          auth_secret="$(openssl rand -hex 24)"
+          user_password="$(openssl rand -hex 24)"
+          for value in "$owner" "$readonly" "$engine_db" "$auth_db" "$engine_admin" "$auth_secret" "$user_password"; do
             echo "::add-mask::$value"
-            echo "$name=$value" >> "$GITHUB_ENV"
           done
-          echo "FT005N_ENGINE_ADMIN_EMAIL=admin@dima-native-e2e.local" >> "$GITHUB_ENV"
-          echo "DATABASE_URL=postgresql://dima:$DIMA_AUTH_DB_PASSWORD@127.0.0.1:55443/dima_auth" >> "$GITHUB_ENV"
-          echo "SEED_PASSWORD=$DIMA_E2E_USER_PASSWORD" >> "$GITHUB_ENV"
+          {
+            echo "BOYAHANE_OWNER_PASSWORD=$owner"
+            echo "BOYAHANE_READONLY_PASSWORD=$readonly"
+            echo "ENGINE_APP_DB_PASSWORD=$engine_db"
+            echo "DIMA_AUTH_DB_PASSWORD=$auth_db"
+            echo "FT005N_ENGINE_ADMIN_PASSWORD=$engine_admin"
+            echo "BETTER_AUTH_SECRET=$auth_secret"
+            echo "DIMA_E2E_USER_PASSWORD=$user_password"
+            echo "FT005N_ENGINE_ADMIN_EMAIL=admin@dima-native-e2e.local"
+            echo "DATABASE_URL=postgresql://dima:$auth_db@127.0.0.1:55443/dima_auth"
+            echo "SEED_PASSWORD=$user_password"
+          } >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: |
