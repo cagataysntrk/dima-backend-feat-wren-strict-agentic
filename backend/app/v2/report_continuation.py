@@ -15,7 +15,17 @@ from typing import Any
 
 from pydantic import Field
 
-from app.v2.models import FrozenModel
+from app.v2.models import (
+    ConversationStateV2,
+    FocusStateV0,
+    FrozenModel,
+    ResolvedComparison,
+    ResolvedFilterRef,
+    ResolvedPeriod,
+    ResolvedSemanticRef,
+    SemanticTargetKind,
+    TopicFrameV0,
+)
 from app.v2.report_builder import ReportDocument, ReportSection
 
 
@@ -69,6 +79,112 @@ def _b64e(value: bytes) -> str:
 def _b64d(value: str) -> bytes:
     padding = "=" * (-len(value) % 4)
     return base64.urlsafe_b64decode((value + padding).encode("ascii"))
+
+
+def _normalized_scope_kind(target_kind: str) -> str | None:
+    return {
+        "metric": "metric",
+        "kpi": "metric",
+        "dimension": "dimension",
+        "entity_value": "filter",
+        "filter": "filter",
+        "period": "period",
+        "time": "period",
+        "comparison": "comparison",
+    }.get(str(target_kind))
+
+
+def continuation_scope_by_kind(
+    entry: ReportContextEntry,
+) -> dict[str, tuple[str, ...]]:
+    """Revalidate the signed section's opaque semantic scope against its original registry."""
+
+    registry = entry.research_result.semantic_handles
+    out: dict[str, list[str]] = {}
+    for handle_ref in entry.section.semantic_scope:
+        handle = registry.validate(
+            handle_ref,
+            tenant_binding=entry.tenant_binding,
+            context_version=entry.context_version,
+        )
+        kind = _normalized_scope_kind(handle.target_kind)
+        if kind is not None:
+            out.setdefault(kind, []).append(handle_ref)
+    return {
+        kind: tuple(dict.fromkeys(refs))
+        for kind, refs in out.items()
+    }
+
+
+def continuation_conversation(entry: ReportContextEntry) -> ConversationStateV2:
+    """Project only the selected report section into typed conversation focus."""
+
+    registry = entry.research_result.semantic_handles
+    metrics: list[ResolvedSemanticRef] = []
+    dimensions: list[ResolvedSemanticRef] = []
+    filters: list[ResolvedFilterRef] = []
+    periods: list[ResolvedPeriod] = []
+    labels: list[str] = []
+    cubes: set[str] = set()
+
+    for handle_ref in entry.section.semantic_scope:
+        binding = registry.binding_for_execution(
+            handle_ref,
+            tenant_binding=entry.tenant_binding,
+            context_version=entry.context_version,
+        )
+        target = binding.canonical_target
+        if isinstance(target, ResolvedSemanticRef):
+            cubes.update(target.cube_names)
+            labels.append(target.canonical_name)
+            if target.target_kind in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}:
+                metrics.append(target)
+            elif target.target_kind == SemanticTargetKind.DIMENSION:
+                dimensions.append(target)
+        elif isinstance(target, ResolvedFilterRef):
+            cubes.update(target.cube_names)
+            labels.append(f"{target.dimension_name}={target.value}")
+            filters.append(target)
+        elif isinstance(target, ResolvedPeriod):
+            labels.append(target.source_text)
+            periods.append(target)
+        elif isinstance(target, ResolvedComparison):
+            labels.append(target.source_text)
+            periods.append(target.base_period)
+
+    unique_metrics = tuple(dict.fromkeys(metrics))
+    unique_dimensions = tuple(dict.fromkeys(dimensions))
+    unique_filters = tuple(dict.fromkeys(filters))
+    unique_periods = tuple(dict.fromkeys(periods))
+    topic = None
+    if len(cubes) == 1:
+        cube = next(iter(cubes))
+        topic = TopicFrameV0(
+            topic_id=f"report-section:{entry.section.section_id}",
+            cube=cube,
+            context_version=entry.context_version,
+        )
+
+    return ConversationStateV2(
+        has_prior_analytical_request=True,
+        has_active_result=True,
+        topic_labels=tuple(sorted(cubes)),
+        focus_labels=tuple(dict.fromkeys(labels)),
+        topic=topic,
+        focus=FocusStateV0(
+            metrics=unique_metrics,
+            dimensions=unique_dimensions,
+            filters=unique_filters,
+            period=unique_periods[0] if len(unique_periods) == 1 else None,
+            last_contract_refs=tuple(
+                dict.fromkeys(
+                    ref
+                    for evidence in entry.section.evidence_refs
+                    for ref in evidence.query_contract_refs
+                )
+            ),
+        ),
+    )
 
 
 def _flow_binding(session_id: str | None, thread_id: str | None) -> str:
