@@ -4,11 +4,13 @@
 
 Read in this order:
 
-1. `backend/belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`
-2. `backend/belgeler/plan/DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`
-3. `backend/belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
-4. `backend/belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`
-5. Roadmap P11 + architecture report R13
+1. `backend/belgeler/plan/CURRENT_HANDOFF.md`
+2. `backend/belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`
+3. `backend/belgeler/plan/DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`
+4. `backend/belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
+5. `backend/belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`
+6. Roadmap P11
+7. Architecture report R13
 
 ## SEALED DAY7
 
@@ -27,25 +29,44 @@ Validation50                   NOT RUN
 Hidden50                       NOT RUN
 ```
 
-No more paid Day7 evaluation.
+Do not reopen Day7.
 
-## CURRENT TICKET
+## CURRENT DAY8 STATE
 
 ```text
 P11 — DAY8 ROOT-CAUSE BRANCH
-CURRENT SUBPHASE = DESIGN RECEIPT COMPLETE / REVIEW REQUIRED
-PRODUCT IMPLEMENTATION = NOT STARTED
+
+D8-A1 HypothesisLedger       GREEN
+D8-A2 EpistemicLabelGate     GREEN
+latest focused              35880777420 = GREEN
+
+paid calls                   0
+ROOT_CAUSE executable        false
+D8-B                         NOT STARTED
+D8-C                         NOT STARTED
 ```
 
-Provider-free Day8 design conclusion:
-- reuse Day7 Evidence/ResearchTask/ResearchState/CrossDomain trust plane,
-- add an epistemic authority layer, not a new query/agent engine,
-- target `HypothesisLedger + evidence_for/evidence_against + EpistemicLabelGate`,
+Latest Day8 product behavior:
+`b326c8390ff73f70a85f11f4c68c4b4e4a2d95b1`.
+
+Current supervisor-authorized sequence:
+1. harden active ROOT_CAUSE authority,
+2. replace frozen Evidence membership snapshot with run-owned live read-only view,
+3. add inspected-Evidence admission boundary,
+4. focused provider-free GREEN,
+5. implement D8-B typed hypothesis proposal boundary,
+6. implement explicit Evidence relation proposal boundary,
+7. focused provider-free GREEN,
+8. update living status + Harvest,
+9. STOP for supervisor review.
+
+Hard Day8 invariants:
 - `ASSOCIATION != CAUSATION`,
-- `CONFIRMED_CAUSE` default-deny until a mechanistic/interventional confirmation gate exists,
-- legacy pure transforms may be wrapped over VERIFIED Evidence,
-- legacy query/orchestration paths remain rejected as authority.
+- `CONTRIBUTION != CAUSATION`,
+- `INTERESTINGNESS != TRUTH`,
+- `CANDIDATE_CAUSE != CONFIRMED_CAUSE`,
+- `CONFIRMED_CAUSE -> CAUSAL_NOT_IDENTIFIED`,
+- trigger Evidence is not automatically SUPPORTS Evidence,
+- ROOT_CAUSE remains an orchestration umbrella, not a ResearchTaskKind/QUERY alias.
 
-Proposed first implementation slice `D8-A` is documented but **not yet authorized**.
-
-STOP here for architecture review before Day8 product code.
+No paid test, no DB query, no D8-C, no ROOT_CAUSE execution in this burst.
