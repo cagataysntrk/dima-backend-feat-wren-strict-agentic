@@ -1634,3 +1634,55 @@ Developer bağlamı sıfırlansa bile başlangıç sırası:
 ```
 
 Bu beş adım bitmeden Metabase’i production request path’ine koyma.
+
+
+---
+
+# ROADMAP EK — P12X-C / DIMA METABASE ENGINE
+
+DMP-DEC-0031 ile tam V0+A+B Agent-API bake-off fork bootstrap için prerequisite olmaktan çıkarılmıştır. Frozen 16-case corpus korunur ve daha sonra native capability regression/stabilization gate'i olarak kullanılır. Sealed tarihsel milestone'lar yeniden numaralandırılmaz.
+
+## P12X-C0 — FORK BOOTSTRAP
+
+```text
+metabase/metabase v0.63.18 / 2ba2485...
+→ UpcyTech/dima-metabase-engine
+→ upstream history preserved
+→ fork-source build 0.63.18-dima.0
+→ modified existing upstream source files = 0
+→ initial DIMA_PATCH_SURFACE
+```
+
+## P12X-C1 — STOCK-VS-FORK CAPABILITY PARITY
+
+Aynı Boyahane snapshot, bootstrap, restricted user, permissions ve Luna ile frozen corpus'tan 4–6 yüksek-bilgi vakası. Exit:
+```text
+FORK_CAPABILITY_RETENTION = 100% of stock-PASS tasks
+new silent wrong = 0
+permission regression = 0
+dataset-scope drift = 0
+```
+
+## P12X-C2 — STABLE DIMA BRIDGE + NATIVE PARITY
+
+İzole Dima engine namespace/route; yalnız engine identity, correlation/trace identity, native request delegation ve native stream/result observation. Native Metabot preflight/orchestration tekrar yazılmaz. Exit: bridge capability retention = 100% of fork-native PASS tasks; permission behavior no weaker.
+
+## P12X-C3 — UPSTREAM SYNC / PATCH-SURFACE CERTIFICATION
+
+```text
+detect stable upstream
+→ sync candidate
+→ conflict report
+→ compile/upstream tests
+→ Dima tests
+→ native capability sentinel
+→ candidate image
+→ DIMA_PATCH_SURFACE
+→ manual promotion only
+```
+
+## P13 — PRODUCTION STANDARD OVER DIMA METABASE ENGINE
+
+P13 yalnız C1 capability parity ve C2 stable bridge parity sonrasında başlar. `ResolvedAnalyticsIntent`, `ExecutionAccessSnapshot`, `CanonicalProjection`, `QueryReceipt`, `EvidenceArtifact`, `DimaSemanticSpec`, `EntityValueAdoptionGate` korunur; native Metabot/query execution içinde hangi trust transition'a bağlanacakları P13'te yeniden değerlendirilir.
+
+C0/C1/C2 sırasında P13 governance hook'ları başlatılmaz.

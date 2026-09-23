@@ -1476,3 +1476,42 @@ Bu belge “nihai” kabul edilmeden önce yapılan çapraz kontrolün bağlayı
 ```
 
 Bu rapor bundan sonra gerekçesiz biçimde yeniden yazılmaz. Yeni source bulgusu çıkarsa living audit/decision receipt açılır; normatif mimari ancak kanıtlı architecture decision ile nokta atışı revize edilir.
+
+
+---
+
+# NORMATİF MİMARİ EK — DMP-DEC-0031 / DIMA METABASE ENGINE
+
+Bu ek önceki karar geçmişini silmez; Agent API'nin birincil production-engine seam olduğu varsayımını nokta atışı revize eder.
+
+```text
+DIMA EXPERIENCE
+→ DIMA COGNITION / DECISION
+→ DIMA SEMANTIC + SECURITY + EVIDENCE CONTROL PLANE
+→ DIMA ENGINE BRIDGE
+→ DIMA METABASE ENGINE
+→ METABASE NATIVE ANALYTICS / AGENT ENGINE
+→ DATABASE
+```
+
+`Dima Metabase Engine`, upstream `metabase/metabase` geçmişini koruyan ince fork'tur. İlk base `v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4` olur. Native Metabot loop, profiles, skills, memory/state, MBQL, Query Processor ve drivers yeniden yazılmaz. Agent API bir utility surface olabilir; birincil engine boundary olarak varsayılmaz.
+
+Authority ayrımı değişmez:
+```text
+Metabase native engine = analytical orchestration/execution substrate
+Dima = business semantic truth + tenant/principal control truth + ExecutionAccessSnapshot + QueryReceipt + Evidence + durable research/decision intelligence
+```
+
+Native Metabase permissions aktif kalır fakat Dima access truth'ünün yerine geçmez. P13 trust boundary reimplementation yerine material trust transition hook'larıyla kurulacaktır. `CanonicalProjection` silinmez; native-engine içindeki rolü P13'te kanıtla belirlenir.
+
+Fork/release disiplini:
+- tek engine artifact SaaS + self-host;
+- customer/sector source fork yasak;
+- build fork source'dan ve upstream-supported build yoluyla;
+- C0'da modified existing upstream source files = 0;
+- `DIMA_PATCH_SURFACE` her engine build/release'te zorunlu;
+- upstream sync candidate-only + manual promotion;
+- production `metabase:latest` takip etmez;
+- published engine history otomatik rebase edilmez.
+
+Bağlayıcı karar kaydı: `DMP-DEC-0031`.
