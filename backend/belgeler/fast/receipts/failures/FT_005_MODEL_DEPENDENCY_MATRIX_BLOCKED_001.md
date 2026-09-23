@@ -205,3 +205,39 @@ Both matrix jobs:
 This prevents GitHub Actions green status from being confused with model-quality GREEN.
 
 No product code changed.
+
+
+## Transport-wiring root-cause correction
+
+Root cause:
+`BENCHMARK_TRANSPORT_CREDENTIAL_MISMATCH`
+
+Fast attempted a new direct-OpenAI credential path.
+
+Existing repository canonical evaluation evidence already uses OpenRouter credentials for Luna and Sol benchmark traffic.
+
+Correct benchmark credential path:
+
+```text
+DIMA_OPENROUTER_API_KEY
+||
+OPENROUTER_API_KEY
+```
+
+Correct request model IDs:
+
+```text
+Luna = openai/gpt-5.6-luna
+Sol  = openai/gpt-5.6-sol
+```
+
+Product impact:
+`NONE`
+
+Model-quality evidence from blocked Luna/Sol jobs:
+`NONE`
+
+The old BLOCKED_NO_CREDENTIAL artifacts remain historical evidence that the wrong transport wiring did not silently substitute another model.
+
+Closure condition:
+a real OpenRouter transport smoke must record the exact requested model identity, strict structured output, fallback disabled, and provider success before this receipt can be marked CLOSED.

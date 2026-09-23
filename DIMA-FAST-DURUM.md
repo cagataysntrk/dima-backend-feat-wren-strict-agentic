@@ -9,7 +9,7 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`f677493c2722cc2117e1795cd0aa94e283cc81d4`
+`82b88e4ba9f58550cd5c2a969cd62012bce983fc`
 
 CURRENT_PRODUCT_GATE:
 `FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
@@ -406,3 +406,40 @@ Sol job:
 
 This replaces the misleading dashboard interpretation of the earlier successful blocker-emission run.
 The actual model matrix remains unexecuted.
+
+
+## FT-005 MODEL MATRIX TRANSPORT TRIAGE
+
+Observed blocked matrix:
+`35789696098`
+
+Observed matrix state:
+- LUNA_BASELINE = BLOCKED_NO_CREDENTIAL / corpus NOT RUN;
+- SOL_CEILING = BLOCKED_NO_CREDENTIAL / corpus NOT RUN.
+
+This is NOT Luna/Sol model-quality evidence.
+
+Root cause:
+`BENCHMARK_TRANSPORT_CREDENTIAL_MISMATCH`
+
+The Fast matrix attempted a new direct-OpenAI credential path:
+`DIMA_OPENAI_API_KEY || OPENAI_API_KEY`
+
+Repository reference evidence shows the established Luna/Sol benchmark path already uses:
+`OpenRouter + DIMA_OPENROUTER_API_KEY || OPENROUTER_API_KEY`
+
+Current exact correction:
+- transport provider = OPENROUTER;
+- Luna request model = `openai/gpt-5.6-luna`;
+- Sol request model = `openai/gpt-5.6-sol`;
+- strict json_schema;
+- provider.allow_fallbacks = false;
+- explicit reasoning policy;
+- bounded max_tokens;
+- production provider/runtime code untouched.
+
+MODEL_MATRIX:
+`BLOCKED_BY_WRONG_TRANSPORT_CREDENTIAL_WIRING`
+
+Product capability blocker:
+`NO`
