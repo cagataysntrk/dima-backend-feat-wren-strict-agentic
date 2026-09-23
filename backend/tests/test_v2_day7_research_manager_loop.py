@@ -327,6 +327,9 @@ def test_answer_now_after_verified_evidence_pauses_partial_without_completion_la
     assert runtime.snapshot.terminal_status == ResearchRunTerminal.PARTIAL
     assert runtime.snapshot.evidence_refs
     assert runtime.snapshot.inspected_evidence_refs == ()
-    assert runtime.ledger.active_user_must[0].status.value != "VERIFIED"
+    # The governed analytics adapter legitimately VERIFIED U1 from real Evidence before
+    # the user control fired. ANSWER_NOW itself must not run CompletionGate/finish.
+    assert runtime.ledger.active_user_must[0].status.value == "VERIFIED"
     assert len(llm.prompts) == 1
     assert any(item.get("kind") == "answer_now" for item in outcome.observations)
+    assert not any(item.get("kind") == "finish" for item in outcome.observations)
