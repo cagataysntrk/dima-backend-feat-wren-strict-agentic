@@ -259,3 +259,32 @@ Return:
   `VERSION/CONTEXT_CONFOUNDER`.
 
 No Seam C/fork before supervisor authorization.
+
+
+---
+
+## DMP-DEC-0031 override — fork bootstrap authorized
+
+The original measurement thesis remains valid, but the full V0+A+B Agent-API bake-off is no longer a prerequisite for fork bootstrap.
+
+Executable current-corpus sanity:
+```text
+fingerprint = fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0
+workflow    = 35824464298 = SUCCESS
+job         = 107063206949 = SUCCESS
+runtime     = v0.63.18 / 2ba2485
+resource    = Dima Analytics Lab / public / satis_siparisleri
+PX-01       = 126 == oracle 126
+errors      = 0
+scorer      = GREEN
+```
+
+New ordered authorization:
+```text
+P12X-C0 = exact upstream-history fork bootstrap + fork-source build
+P12X-C1 = stock-vs-fork native capability parity
+P12X-C2 = stable Dima bridge + bridge/native parity
+P12X-C3 = upstream-sync + DIMA_PATCH_SURFACE certification
+```
+
+The frozen 16-case corpus is retained for later native capability regression/stabilization. P13 remains paused until C1/C2 are GREEN.
