@@ -33,6 +33,11 @@ name: v2-day7-live-sol
         required: false
         default: ""
         type: string
+      max_model_calls:
+        description: "Explicit hard paid-call ceiling; 0 is rejected before provider use"
+        required: true
+        default: 0
+        type: number
 
 jobs:
   day7-live-sol:
@@ -100,7 +105,9 @@ jobs:
             done
           fi
 
-          python lab/v2_day7_manager_live_sol.py "${args[@]}"
+          python lab/v2_day7_manager_live_sol.py \
+            --max-model-calls "${{ inputs.max_model_calls }}" \
+            "${args[@]}"
 
       - uses: actions/upload-artifact@v4
         if: always()
