@@ -5,3 +5,4 @@ services:
       MB_AI_FEATURES_ENABLED: "true"
       MB_AGENT_API_ENABLED: "true"
       MB_ANON_TRACKING_ENABLED: "false"
+      MB_LOAD_SAMPLE_CONTENT: "false"
