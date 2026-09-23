@@ -15,18 +15,10 @@ Read in this order:
 ## SEALED DAY7
 
 ```text
-branch                         feat/ask-v2-mvp
-Day7 product behavior SHA      ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
-provider-free seal             35872766887 = GREEN
-historical frozen13            35855765109 = VALID / 11 of 13 / hard safety 0
-adaptive affected LIVE         35857076622 = PASS
-final micro                    35873755069 = INCONCLUSIVE / DAY11 DEFER
-
-DAY7 / P10                     CLOSED / SEALED
-production /ask-v2             OFF
-DEV80                          NOT RUN
-Validation50                   NOT RUN
-Hidden50                       NOT RUN
+DAY7 / P10                  CLOSED / SEALED
+Day7 product behavior SHA   ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+provider-free seal          35872766887 = GREEN
+production /ask-v2          OFF
 ```
 
 Do not reopen Day7.
@@ -36,37 +28,54 @@ Do not reopen Day7.
 ```text
 P11 — DAY8 ROOT-CAUSE BRANCH
 
-D8-A1 HypothesisLedger       GREEN
-D8-A2 EpistemicLabelGate     GREEN
-latest focused              35880777420 = GREEN
+D8-A1 HypothesisLedger                 GREEN
+D8-A2 EpistemicLabelGate               GREEN
+D8 structural seams                    GREEN
+D8-B hypothesis proposal boundary      GREEN
 
-paid calls                   0
-ROOT_CAUSE executable        false
-D8-B                         NOT STARTED
-D8-C                         NOT STARTED
+latest Day8 product behavior SHA
+e6e46c04ebabdac804545855d7fbbcf90c1b1b90
+
+latest focused
+35884577376 = GREEN
+
+paid calls = 0
+DB queries = 0
+ROOT_CAUSE executable = false
+D8-C = NOT STARTED
 ```
 
-Latest Day8 product behavior:
-`b326c8390ff73f70a85f11f4c68c4b4e4a2d95b1`.
+Changed Day8 product files in this burst:
+- `backend/app/v2/models.py`
+- `backend/app/v2/epistemics.py`
+- `backend/app/v2/hypothesis_proposals.py`
 
-Current supervisor-authorized sequence:
-1. harden active ROOT_CAUSE authority,
-2. replace frozen Evidence membership snapshot with run-owned live read-only view,
-3. add inspected-Evidence admission boundary,
-4. focused provider-free GREEN,
-5. implement D8-B typed hypothesis proposal boundary,
-6. implement explicit Evidence relation proposal boundary,
-7. focused provider-free GREEN,
-8. update living status + Harvest,
-9. STOP for supervisor review.
-
-Hard Day8 invariants:
-- `ASSOCIATION != CAUSATION`,
-- `CONTRIBUTION != CAUSATION`,
-- `INTERESTINGNESS != TRUTH`,
-- `CANDIDATE_CAUSE != CONFIRMED_CAUSE`,
-- `CONFIRMED_CAUSE -> CAUSAL_NOT_IDENTIFIED`,
+New sealed Day8 boundaries:
+- mutable hypothesis state requires active ROOT_CAUSE USER_MUST:
+  `ACCEPTED | READY | IN_PROGRESS`,
+- current Evidence membership is a live read-only view of Day7 ManagerRuntime,
+- newly committed same-run Evidence becomes visible without reconstructing HypothesisLedger,
+- foreign-run/unverified Evidence remains inadmissible,
+- cognition proposal Evidence must be current + VERIFIED + inspected,
 - trigger Evidence is not automatically SUPPORTS Evidence,
-- ROOT_CAUSE remains an orchestration umbrella, not a ResearchTaskKind/QUERY alias.
+- model cannot mint SemanticHandle, Evidence, ResearchTask or Hypothesis IDs,
+- explicit SUPPORTS/CONTRADICTS relation proposal is structurally gated,
+- priority/interestingness Evidence cannot become causal SUPPORTS truth,
+- `CONFIRMED_CAUSE -> CAUSAL_NOT_IDENTIFIED`,
+- ROOT_CAUSE remains orchestration umbrella; no `ResearchTaskKind.ROOT_CAUSE`, no QUERY alias.
 
-No paid test, no DB query, no D8-C, no ROOT_CAUSE execution in this burst.
+## STOP POINT
+
+Supervisor-authorized burst is complete through D8-B.
+
+Do NOT automatically begin:
+- D8-C,
+- capability execution-mode changes,
+- ROOT_CAUSE executable flag,
+- Manager loop wiring,
+- real-Wren root-cause sentinel,
+- live Sol,
+- paid evaluation,
+- Day9.
+
+Next work requires supervisor review.
