@@ -556,3 +556,50 @@ none of these
 
 Trigger Evidence remains distinct from SUPPORTS Evidence.
 Status remains distinct from epistemic label.
+
+
+---
+
+## DAY8 D8-C ORCHESTRATION HARVEST — 2026-09-23
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-067 | Proposal != applicable task != materialized task != VERIFIED Evidence. | MUST_PORT | proposal/plan being laundered into result or proof | D8-C orchestration boundaries + focused `35895808495` GREEN |
+| H-068 | Day8 cognition may select governed identifiers; server owns ResearchTask identity. | MUST_PORT | model-minted task IDs becoming execution authority | `HypothesisNextTestProposal` has no task identity; server `rt_*` mint + registry idempotency |
+| H-069 | Execution Evidence and priority/interestingness metadata have independent failure domains. | MUST_PORT | scoring/scheduling failure invalidating a successful governed result | Epistemic gate + Metabase reference pattern + Day8 Evidence boundary |
+| H-070 | ROOT_CAUSE cannot create hypotheses from empty epistemic state: inspected Evidence or governed observational bootstrap is required. | MUST_PORT | causal hypothesis from no governed observation | `RootCauseBootstrapPolicy` + current VERIFIED inspected Evidence gate |
+| H-071 | An orchestration capability may be semantically bindable without being a directly executable task. | MUST_PORT | bool-executable conflating semantic acceptance with task execution | `ManagerCapabilityExecutionMode.ORCHESTRATED`; ROOT_CAUSE direct executable remains false |
+| H-072 | ROOT_CAUSE observational bootstrap is a governed subtask under causal authority, not ROOT_CAUSE→QUERY capability aliasing. | MUST_PORT | hidden direct causal-query path / fake ResearchTaskKind | server-owned observational seed reuses existing DIRECT task families; no `ResearchTaskKind.ROOT_CAUSE` |
+
+D8-C additionally exposed a provider-contract invariant:
+
+```text
+advertised cognition surface
+=
+runtime-admissible governed task families
+```
+
+A valid live Sol measurement selected a task/action path that the deterministic trust plane
+could not admit. Root cause was not a reason to weaken admission: the provider-facing next-test
+surface exposed broader `ResearchTaskKind` vocabulary than the Day8 boundary could honestly
+materialize, and the task-kind vocabulary was not mapped back to the existing capability algebra.
+
+Generic owner fix:
+- one shared next-test task-kind → existing capability/tool projection,
+- the same projection drives provider schema and runtime admission,
+- `ROOT_CAUSE_NEXT_TEST_CONTRACT` exposes only existing DIRECT governed families and semantic
+  shape requirements,
+- runtime gates remain authoritative,
+- no keyword/business-case/provider-specific rule was added.
+
+Post-fix deterministic closure:
+`35895808495 = GREEN`, including Day8 orchestration, Manager-loop, affected Day7 regressions,
+provider-free live-harness contract, and the one real-Wren root-cause sentinel.
+
+Paid receipt:
+- `35894577133`: INVALID MEASUREMENT / harness stopped on a correctly rejected proposal;
+  2 Sol calls, no semantic/temporal calls.
+- `35895279649`: VALID behavior measurement, RED before full end-to-end cognition closure;
+  5 Sol calls, no semantic/temporal calls.
+- combined paid model calls = 7.
+- no third paid case/run was executed.
