@@ -1216,3 +1216,59 @@ P5                   35846797938 SUCCESS
 governance            35846797967 SUCCESS
 engine gitlink        c56b71ab23bf2a2d266bac2fba8d165ac059d613
 ```
+
+
+---
+
+# P13B-0 HANDOFF — ATTESTATION DESIGN SEALED
+
+Read next:
+1. DMP-DEC-0037;
+2. `P13B_NATIVE_CANDIDATE_ATTESTATION_AND_LIVE_STANDARD_REVIEW.md`;
+3. latest `DIMA-METABASE-DURUM.md` tail;
+4. P13 ticket P13B-0 section;
+5. only then consider a supervisor-authorized engine feature branch.
+
+Binding design:
+
+```text
+native server-side query occurrence
+→ engine Lib/QP observation
+→ NativeExecutionManifest
+→ Dima physical→business mapping
+→ NativeQueryCandidate authorization
+→ exact same pMBQL /api/dataset execution
+→ one P10 access identity
+→ one P5 receipt
+→ Evidence later
+```
+
+Important:
+- no Python MBQL parser;
+- no Agent API analytical fallback;
+- no Wren fallback;
+- no query reconstruction;
+- no engine core patch;
+- no engine gitlink bump in P13B-0.
+
+Future engine patch is expected to be minimal and isolated:
+```text
+metabase.dima native attestation
++
+metabase.dima engine identity
++
+minimal route registration/build identity
+```
+
+First vertical:
+```text
+PX-01
+June 2026 sales-order count
+oracle = 126
+```
+
+Stop:
+```text
+P13B NATIVE ATTESTATION DESIGN = SEALED
+P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
+```

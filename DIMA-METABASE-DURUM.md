@@ -2081,3 +2081,46 @@ STOP:
 ```text
 P13B = NOT AUTHORIZED
 ```
+
+
+---
+
+## P13B-0 SOURCE AUDIT + PREDEVELOPMENT — SEALED
+
+```text
+audit Platform HEAD             = 86faaa339b75d261e31da1dd0dec8939f58620e6
+engine gitlink/main             = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+upstream exact source audited   = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+Fast Track observation          = 8b9397b4f883f9c188a5fdadafa3db0dc418ec34
+ask-v2 observation              = b069b1cdce097f7ce02c055a2614d8f990b1eb3f
+source-branch writes            = 0
+engine changes                  = 0
+gitlink bump                    = 0
+```
+
+DMP-DEC-0037 is the P13B predevelopment authority.
+
+Closed design decisions:
+- exact native query provenance comes from server-side native conversation/query state;
+- query facts are observed inside Metabase using Lib/QP, not parsed recursively in Python;
+- a bounded `NativeExecutionManifest` is required;
+- existing public surfaces are insufficient for that typed manifest;
+- future engine patch is therefore required, but is **not authorized in P13B-0**;
+- runtime identity chooses a minimal isolated Dima identity seam rather than relying on the current
+  P12X lab pin alone;
+- exact same-artifact execution seam is `POST /api/dataset`;
+- first vertical is PX-01, June 2026 sales-order count, independent oracle = 126;
+- future live Platform orchestration owner is `backend/app/v3/native_standard/`;
+- governance now quarantines that future owner from historical Agent-API analytical dependencies.
+
+Current blockers:
+```text
+DMP-P13B-BLOCK-001 = DESIGN SEALED / IMPLEMENTATION OPEN
+DMP-P13B-BLOCK-002 = DESIGN SEALED / IMPLEMENTATION OPEN
+```
+
+Current stop:
+```text
+P13B NATIVE ATTESTATION DESIGN = SEALED
+P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
+```

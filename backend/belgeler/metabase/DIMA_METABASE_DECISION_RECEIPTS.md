@@ -1899,3 +1899,173 @@ Remain explicitly open:
 
 status:
 `SEALED / CURRENT NORMATIVE P13 ARCHITECTURE / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN`.
+
+
+---
+
+## DMP-DEC-0037 — P13B native candidate attestation and runtime identity boundary
+
+date: 2026-09-23
+
+question:
+How can P13B prove that the facts used to authorize a native Metabot query came from the query
+Metabase actually built, and that the exact authorized artifact is executed on the exact certified
+runtime, without making Dima a Python MBQL parser or reopening Agent API as the analytical hot path?
+
+audited_state:
+```text
+Platform branch      = feat/dima-metabase-platform
+Platform HEAD        = 86faaa339b75d261e31da1dd0dec8939f58620e6
+engine repo           = UpcyTech/dima-metabase-engine
+engine gitlink/main   = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+upstream source audit = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+runtime tag           = v0.63.18-dima.0
+P13A                  = GREEN
+P13B                  = NOT AUTHORIZED at audit start
+```
+
+source_findings:
+1. `construct_notebook_query` already emits the exact resolved pMBQL and query-id after native
+   repair, validation, permission-aware source checking and resolution.
+2. Native agent memory stores `query-id → exact query`, and final conversation state persists it.
+3. Metabase Lib already exposes bounded query-inspection APIs for source, aggregations, breakouts,
+   filters, joins, order, referenced columns and stage count.
+4. QP preprocessing materializes implicit joins and tags them `:qp/is-implicit-join true`.
+5. QP permission code can expose the full table-id set used by current-user permission checks.
+6. `POST /api/dataset` accepts MBQL5 and executes it through current-user Query Processor
+   middleware without Agent API query reconstruction.
+7. current runtime properties expose only tag + seven-character git hash; P12X CI pinning is strong
+   lab evidence but not a request-relevant production source/image/instance attestation surface.
+
+decision:
+
+### Candidate fact provenance
+
+A live P13B candidate may not be built from caller-supplied semantic refs, resource bindings,
+filter/join counts, time fingerprints or validation strings.
+
+The native engine must expose a bounded attestation envelope keyed by:
+
+```text
+conversation_id + native_query_id
+```
+
+and derive the exact query from server-side native state.
+
+It returns:
+- exact serialized pMBQL;
+- exact query fingerprint;
+- bounded `NativeExecutionManifest` physical/query facts;
+- typed native validation/permission provenance;
+- current authenticated Metabase subject;
+- runtime identity.
+
+Dima maps physical ids to business truth via
+`CurrentCatalogSnapshot + SourceLineage + DimaSemanticSpec` and compares them with accepted
+authority. Metabase never invents Dima semantic ids.
+
+### Query-inspection ownership
+
+```text
+Metabase Lib/QP = understands/observes MBQL
+Dima             = maps observed facts to business semantics and authorizes/rejects
+```
+
+No Python recursive MBQL parser/normalizer/repair layer is permitted.
+
+### Engine patch decision
+
+Existing native state is sufficient to retrieve the exact query but no current stable endpoint
+provides the required typed attestation manifest. Therefore:
+
+```text
+ENGINE PATCH REQUIRED = YES
+```
+
+only after supervisor authorization, and only in an isolated Dima namespace.
+
+Proposed minimum patch:
+```text
+src/metabase/dima/native_attestation.clj
+src/metabase/dima/api.clj
+test/metabase/dima/native_attestation_test.clj
+test/metabase/dima/api_test.clj
+src/metabase/api_routes/routes.clj          # minimal route registration
+.dima/docker/Dockerfile.c0                  # immutable build identity only
+```
+
+No changes to cognition, profiles, skills, query construction/repair, QP semantics or drivers.
+
+### Runtime identity
+
+Deployment-only evidence is rejected as the sole production scheme because the current Platform has
+no durable request-relevant control-plane attestation that binds the exact live instance to source
+SHA + immutable image.
+
+Chosen design:
+
+```text
+MINIMAL ENGINE IDENTITY SEAM
+GET /api/dima/engine/v1/identity
+```
+
+Full source SHA/upstream/release/build facts are baked into the Dima build. Immutable image digest is
+the exact launched image identity supplied by certified deployment. Runtime instance id is
+process-scoped. Missing identity is a hard fail.
+
+Required equality:
+```text
+candidate engine/runtime
+==
+attested running engine/runtime
+==
+runtime that executes /api/dataset
+==
+runtime sealed into receipt
+```
+
+### Exact same-artifact execution
+
+```text
+POST /api/dataset = selected execution seam
+```
+
+The exact serialized pMBQL returned by native attestation is the body Dima authorizes and submits.
+QP may add its own security/preprocess/default-constraint machinery; no analytical query is
+re-authored by Agent API, SQL conversion or Wren.
+
+### First vertical
+
+```text
+PX-01
+Haziran 2026'da kaç satış siparişi açıldı?
+source      = satis_siparisleri
+aggregation = COUNT(*)
+period      = [2026-06-01, 2026-07-01)
+oracle      = 126
+```
+
+Independent oracle remains the frozen Boyahane DuckDB oracle built by
+`backend/lab/metabase/p12x/build_oracle.py`.
+
+### Legacy quarantine
+
+Future live Platform orchestration is reserved under `backend/app/v3/native_standard/`.
+Governance must forbid that future hot path from importing the historical compiler/canonical/
+execution-adapter analytical seam or `MetabaseAgentClient`.
+
+The existing `native_execution.py` compatibility adapter is not moved merely to satisfy this rule.
+
+open:
+- DMP-P13B-BLOCK-001 remains implementation-open;
+- DMP-P13B-BLOCK-002 remains implementation-open;
+- DMP-P5-BLOCK-001;
+- DMP-P11-INTEGRATION-005;
+- EV-05/06/07;
+- P10B2 advanced security;
+- P9 dimension/time/relationship transport;
+- P7/P8 calculated/relationship/view semantics;
+- historical Wren typed gaps.
+
+status:
+`SEALED / P13B NATIVE ATTESTATION DESIGN / IMPLEMENTATION PENDING SUPERVISOR AUTHORIZATION`.

@@ -162,3 +162,51 @@ STOP:
 ```text
 P13B = NOT AUTHORIZED
 ```
+
+
+---
+
+## P13B-0 — NATIVE ATTESTATION PREDEVELOPMENT
+
+Decision:
+`DMP-DEC-0037`
+
+Review:
+`backend/belgeler/metabase/predev/P13B_NATIVE_CANDIDATE_ATTESTATION_AND_LIVE_STANDARD_REVIEW.md`
+
+Status:
+```text
+P13B NATIVE ATTESTATION DESIGN = SEALED
+P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
+```
+
+The next live implementation is not authorized by this ticket update.
+
+Designed production chain:
+
+```text
+AcceptedStandardAuthority
+→ ResolvedAnalyticsIntent
+→ Native Metabot
+→ construct_notebook_query
+→ exact native pMBQL stored by query-id
+→ native attestation envelope / NativeExecutionManifest
+→ Dima exact physical→semantic mapping
+→ NativeQueryCandidate
+→ Dima ALLOW | CLARIFY_REPLAN | BLOCK
+→ AuthorizedExecutionArtifact
+→ ExecutionAccessSnapshot
+→ POST exact same serialized pMBQL to /api/dataset
+→ result
+→ DimaQueryReceipt
+→ independent oracle/correctness gate
+→ VERIFIED EvidenceArtifact
+```
+
+Engine work is a future supervisor-gated prerequisite:
+- isolated Dima query-attestation seam;
+- minimal engine identity seam;
+- no native cognition/query/QP semantic changes;
+- no Platform gitlink bump before engine-native proof.
+
+First vertical remains PX-01 with frozen independent oracle 126.
