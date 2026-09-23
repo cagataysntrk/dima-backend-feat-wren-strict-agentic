@@ -158,6 +158,12 @@ class ManagerRuntime:
             raise ValueError("manager turn phase must be preacceptance or research")
 
         total_turns = self._snapshot.manager_turns + 1
+        if total_turns > self._budget.max_total_manager_turns:
+            self._snapshot = self._snapshot.model_copy(
+                update={"state": ManagerState.BUDGET_EXHAUSTED}
+            )
+            raise ManagerBudgetError("total Manager turn budget exhausted")
+
         if phase == "preacceptance":
             phase_turns = self._snapshot.preacceptance_turns + 1
             if phase_turns > self._budget.max_preacceptance_turns:
@@ -347,6 +353,10 @@ class ManagerRuntime:
         self._ledger = ledger
 
     def finish(self, gate: CompletionGate | None = None) -> ManagerRunSnapshot:
+        if self._snapshot.state == ManagerState.BUDGET_EXHAUSTED:
+            raise ManagerStateError(
+                "budget-exhausted Manager run cannot transition to COMPLETED"
+            )
         if self._ledger is None:
             raise ManagerStateError("cannot finish without accepted obligation ledger")
         outcome = (gate or CompletionGate()).evaluate(self._ledger)
