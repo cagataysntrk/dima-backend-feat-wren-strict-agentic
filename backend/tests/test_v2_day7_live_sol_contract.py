@@ -389,7 +389,7 @@ def test_main_preflight_failure_stops_before_corpus_or_service(tmp_path, monkeyp
     assert payload["records"] == []
 
 
-def test_capability_cognition_diagnostic_is_balanced_and_does_not_change_product_contract():
+def test_capability_cognition_diagnostic_is_balanced_and_cognition_only():
     doc = yaml.safe_load(
         COGNITION_DIAGNOSTIC_CASES.read_text(encoding="utf-8")
     )
@@ -405,22 +405,20 @@ def test_capability_cognition_diagnostic_is_balanced_and_does_not_change_product
     )
     assert doc["policy"]["patching_from_cases_forbidden"] is True
 
-    direct = [
+    performance = [
         case for case in cases
-        if not case.get("expected_preacceptance_state")
+        if case.get("expected_capability") == "performance"
     ]
-    causal = [
+    root_cause = [
         case for case in cases
-        if case.get("expected_preacceptance_state") == "BLOCKED"
+        if case.get("expected_capability") == "root_cause"
     ]
 
-    assert len(direct) == 4
-    assert len(causal) == 4
-    assert all(case.get("must_tools") == ["run_analytics"] for case in direct)
-    assert all(case.get("max_queries") == 1 for case in direct)
-    assert all(
-        case.get("expected_observation_kind") == "unsupported_capability"
-        and case.get("max_queries") == 0
-        and case.get("expect_no_ledger") is True
-        for case in causal
-    )
+    assert len(performance) == 4
+    assert len(root_cause) == 4
+    assert len(cases) == 8
+    assert all("must_tools" not in case for case in cases)
+    assert all("expected_terminal" not in case for case in cases)
+    assert all("max_queries" not in case for case in cases)
+    assert all("expected_preacceptance_state" not in case for case in cases)
+
