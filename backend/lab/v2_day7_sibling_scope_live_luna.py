@@ -17,13 +17,13 @@ from app.v2.manager_lab import _build_role_scoped_manager_models
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
+    GovernedSiblingScopeCandidateGenerator,
     SemanticBindingGate,
     SemanticCandidateGenerator,
     StructuredSemanticCandidateDecisionProvider,
 )
 from lab.v2_day7_governed_sibling_scope_discovery import (
     DEFAULT_MAX_CANDIDATES,
-    GovernedSiblingScopeCandidateGenerator,
     _bind_exact_sibling,
     _canonical_name,
     _context,
