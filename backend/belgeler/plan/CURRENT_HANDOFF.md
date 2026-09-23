@@ -30,68 +30,121 @@ P11 — DAY8 ROOT-CAUSE BRANCH
 
 D8-A1 HypothesisLedger                 GREEN
 D8-A2 EpistemicLabelGate               GREEN
-D8 structural seams                    GREEN
 D8-B hypothesis proposal boundary      GREEN
+D8-C execution-mode                    GREEN
+D8-C bootstrap/applicability           GREEN
+D8-C server-owned next-test identity   GREEN
+D8-C Manager-loop wiring               GREEN
+D8-C real-Wren sentinel                GREEN
 
-latest Day8 product behavior SHA
-e6e46c04ebabdac804545855d7fbbcf90c1b1b90
+latest Day8 PRODUCT behavior SHA
+3091651aea93e42e00521654af8d5dc2c51dc9c3
 
-latest focused
-35884577376 = GREEN
+latest post-fix focused
+35895808495 = GREEN
 
-paid calls = 0
-DB queries = 0
-ROOT_CAUSE direct executable = false
-ResearchTaskKind.ROOT_CAUSE = DOES NOT EXIST
-ROOT_CAUSE → QUERY alias = DOES NOT EXIST
-D8-C = AUTHORIZED / STARTING
+paid Sol calls total                   7
+live certification                     STOP / NOT GREEN
+ROOT_CAUSE direct executable           false
+ResearchTaskKind.ROOT_CAUSE            DOES NOT EXIST
+ROOT_CAUSE → QUERY alias               DOES NOT EXIST
+CONFIRMED_CAUSE                        ALWAYS DENY
 ```
 
-Changed Day8 product files in this burst:
+Current Day8 product surface now includes:
 - `backend/app/v2/models.py`
 - `backend/app/v2/epistemics.py`
 - `backend/app/v2/hypothesis_proposals.py`
+- `backend/app/v2/manager_policy.py`
+- `backend/app/v2/capability_bindings.py`
+- `backend/app/v2/acceptance.py`
+- `backend/app/v2/manager_preacceptance.py`
+- `backend/app/v2/representability.py`
+- `backend/app/v2/research_tasks.py`
+- `backend/app/v2/root_cause_orchestration.py`
+- `backend/app/v2/manager_loop.py`
 
-New sealed Day8 boundaries:
-- mutable hypothesis state requires active ROOT_CAUSE USER_MUST:
-  `ACCEPTED | READY | IN_PROGRESS`,
-- current Evidence membership is a live read-only view of Day7 ManagerRuntime,
-- newly committed same-run Evidence becomes visible without reconstructing HypothesisLedger,
-- foreign-run/unverified Evidence remains inadmissible,
-- cognition proposal Evidence must be current + VERIFIED + inspected,
-- trigger Evidence is not automatically SUPPORTS Evidence,
-- model cannot mint SemanticHandle, Evidence, ResearchTask or Hypothesis IDs,
-- explicit SUPPORTS/CONTRADICTS relation proposal is structurally gated,
-- priority/interestingness Evidence cannot become causal SUPPORTS truth,
-- `CONFIRMED_CAUSE -> CAUSAL_NOT_IDENTIFIED`,
-- ROOT_CAUSE remains orchestration umbrella; no `ResearchTaskKind.ROOT_CAUSE`, no QUERY alias.
+### D8-C architecture now implemented
 
-## SUPERVISOR OVERRIDE — D8-C AUTHORIZED
+```text
+ROOT_CAUSE = ORCHESTRATED
+spec.executable = derived compatibility view (DIRECT only)
 
-The prior "STOP after D8-B / D8-C unauthorized" instruction is superseded.
+accepted ROOT_CAUSE
+→ current inspected VERIFIED Evidence, if present
+  OR deterministic unique lossless observational bootstrap
+→ bounded hypothesis proposal
+→ server-owned next-test identity
+→ existing Day7 task/fanout/registry/tool machinery
+→ VERIFIED Evidence
+→ inspection
+→ explicit SUPPORTS / CONTRADICTS
+→ CANDIDATE_CAUSE ceiling
+```
 
-D8-C is now authorized under the following unchanged hard boundaries:
-- ROOT_CAUSE must remain an orchestration umbrella, never a direct query capability;
-- no ResearchTaskKind.ROOT_CAUSE;
-- no ROOT_CAUSE → QUERY alias;
-- no new semantic owner, Evidence registry, scheduler, budget truth, SQL engine, or generic agent kernel;
-- CONFIRMED_CAUSE remains hard-denied;
-- provider-free orchestration proof precedes one deterministic real-Wren sentinel;
-- Manager-loop wiring happens only after those lower seams are GREEN;
-- only then one live Sol sentinel is permitted under the paid-call ceiling.
+Permanent distinctions remain:
+- trigger Evidence is not SUPPORTS Evidence,
+- proposal is not task,
+- task is not Evidence,
+- completed-but-unverified result is not epistemic Evidence,
+- priority/interestingness is not truth,
+- association/contribution is not causation,
+- model cannot mint SemanticHandle/Evidence/ResearchTask/Hypothesis identity,
+- `CONFIRMED_CAUSE -> CAUSAL_NOT_IDENTIFIED`.
 
-Authorized implementation order:
-1. characterize capability execution consumers;
-2. introduce one execution-mode truth;
-3. add deterministic ROOT_CAUSE bootstrap/applicability ownership;
-4. add server-owned hypothesis next-test proposal admission;
-5. reuse the sealed Day7 ResearchTask/fanout/registry/tool machinery;
-6. provider-free GREEN;
-7. one deterministic real-Wren sentinel;
-8. then Manager-loop wiring;
-9. then one live Sol sentinel;
-10. update living status/Harvest and STOP for supervisor receipt.
+### Metabase reference used
 
+Upstream Metabase was used only as an architecture/pattern reference:
+candidate → applicability → materialization → execution → stored result → optional
+interestingness. Metabase runtime is NOT an analytical substrate in this release.
+
+### Live Sol receipt
+
+`35894577133`:
+- INVALID measurement,
+- class = EVAL/HARNESS/FIXTURE,
+- 2 Sol calls,
+- trust plane correctly rejected an inadmissible TREND next-test proposal,
+- harness was fixed generically to feed rejection back into bounded replanning.
+
+`35895279649`:
+- VALID measurement,
+- RED before full root-cause cognition closure,
+- 5 Sol calls,
+- first actionable gap exposed provider/task contract mismatch; the model did not remain on an
+  admissible governed next-test path.
+
+Generic root fix after the valid RED:
+- one task-kind → existing capability/tool mapping now drives both advertisement and runtime admission,
+- provider schema no longer advertises next-test task kinds that Day8 cannot materialize,
+- `ROOT_CAUSE_NEXT_TEST_CONTRACT` exposes admissible DIRECT task families and required semantic shapes,
+- no test sentence, keyword, business literal, causal threshold or provider-specific branch was added.
+
+Post-fix deterministic proof:
+`35895808495 = GREEN`, including affected Day7 regressions, Day8 contracts, Manager-loop,
+provider-free live harness, and the one real-Wren root-cause sentinel.
+
+Combined paid model calls = 7.
+No third paid run was executed.
+
+## STOP POINT
+
+D8-C deterministic engineering is GREEN, but live Sol certification is NOT claimed GREEN after
+the post-RED contract fix because the supervisor instruction forbids a third paid case/run.
+
+Do NOT automatically:
+- run another live/paid Day8 test,
+- broaden to a corpus/ablation,
+- run frozen13 / DEV80 / Validation50 / Hidden50,
+- enable `ROOT_CAUSE` direct execution,
+- add `ResearchTaskKind.ROOT_CAUSE`,
+- create ROOT_CAUSE → QUERY alias,
+- enable `CONFIRMED_CAUSE`,
+- start Day9.
+
+Next action requires supervisor review of this receipt. If a post-fix live re-measurement is
+explicitly authorized, it must remain the same narrow one-scenario question and preserve the paid
+test economy; otherwise continue only with newly authorized next-phase work.
 
 ---
 
@@ -156,10 +209,10 @@ Key Day7 invariants that Day8 inherits:
 ### Where Day8 actually is
 
 Latest Day8 product behavior:
-`e6e46c04ebabdac804545855d7fbbcf90c1b1b90`.
+`3091651aea93e42e00521654af8d5dc2c51dc9c3`.
 
-Latest focused provider-free proof:
-`35884577376 = GREEN`.
+Latest post-fix focused/provider-free proof:
+`35895808495 = GREEN`.
 
 Implemented and green:
 
@@ -183,6 +236,15 @@ D8-B
 HypothesisProposal
 + HypothesisEvidenceRelationProposal
 + HypothesisProposalBoundary
+
+D8-C
+execution-mode authority
++ deterministic ROOT_CAUSE bootstrap
++ server-owned HypothesisNextTestProposal admission
++ Day7 ResearchTask/fanout/tool reuse
++ bounded Manager-loop cognition wiring
++ real-Wren root-cause sentinel
++ provider-facing next-test contract aligned with runtime admission
 ```
 
 Current Day8 product files:
@@ -365,55 +427,34 @@ Stop development and repair abstraction if any appears:
 
 ### Current authorization boundary
 
-D8-C is authorized. The implementation may add orchestration semantics and the narrow
-adapters needed to reuse Day7 governed tasks.
+D8-C implementation authority has been consumed through the supervised live gate.
 
-Still forbidden:
-- `ROOT_CAUSE executable=true` as a direct-execution bool flip,
-- `ResearchTaskKind.ROOT_CAUSE`,
-- ROOT_CAUSE → QUERY alias,
-- new semantic or Evidence authority,
-- new scheduler/budget/execution engine,
-- raw-language downstream reparsing,
-- CONFIRMED_CAUSE enablement,
-- Day9.
+Current state is STOP:
+- deterministic/provider-free and real-Wren D8-C engineering is GREEN,
+- live Sol certification is not GREEN,
+- no third paid run is authorized,
+- Day9 is not authorized.
 
-Manager-loop wiring, real-Wren sentinel and one live Sol sentinel are authorized only in the
-ordered gates above, not as shortcuts around provider-free lower-layer proof.
+All original architecture prohibitions remain active.
 
 ### Expected next phase after supervisor review
 
-The current design direction for D8-C is documented, but is NOT authorization.
+No automatic next phase is authorized.
 
-Likely sequence after review:
+Supervisor must choose explicitly between:
+- a single post-fix live Sol re-measurement of the same narrow D8-C behavior, or
+- accepting deterministic D8-C closure while leaving live certification open and authorizing the
+  next roadmap phase.
 
-```text
-capability-mode design receipt
-(DIRECT / ORCHESTRATED / DEFERRED / PRESENTATION or smaller equivalent)
-        ↓
-ROOT_CAUSE = ORCHESTRATED
-        ↓
-reuse DerivedResearchTaskProposal
-+ ResearchTaskService.materialize_derived
-+ ResearchFanoutPolicy
-        ↓
-governed QUERY / BREAKDOWN / COMPARE /
-RELATIONSHIP / CONTRIBUTION / PEER_COMPARE next tests
-        ↓
-one provider-free real-Wren sentinel
-        ↓
-only then one live Sol sentinel <= 8 total paid calls
-```
-
-D8-C is now explicitly open; implement it only through the ordered gates and STOP conditions above.
+Do not infer either authorization.
 
 ### New developer first actions
 
 1. Read the seven authority sources at the top of this document in order.
 2. Verify branch is `feat/ask-v2-mvp`.
 3. Re-fetch exact HEAD before editing; documentation may be ahead of product behavior.
-4. Verify latest product behavior SHA remains `e6e46c04...` unless supervisor explicitly
-   authorized later product work.
+4. Verify latest product behavior SHA remains `3091651aea93e42e00521654af8d5dc2c51dc9c3`
+   unless supervisor explicitly authorizes later product work.
 5. Do NOT rerun paid tests merely to “check things”.
-6. Apply the current supervisor override: D8-C is authorized.
-7. Preserve the file boundary and ordered proof gates; do not reopen sealed Day7.
+6. Treat D8-C as deterministic GREEN but live-certification STOP.
+7. Preserve the authority boundaries; do not reopen sealed Day7 or start Day9 without new authority.
