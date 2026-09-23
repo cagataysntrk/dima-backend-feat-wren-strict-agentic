@@ -2977,3 +2977,53 @@ closed by this proof. No Metabase business/runtime source file was changed.
 
 status:
 `CLOSED GREEN / P12X-C0 COMPLETE / P12X-C1 AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C0 closure — THIN ENGINE SOURCE BUILD GREEN
+
+closed_at: 2026-09-23
+
+engine:
+```text
+repository          = UpcyTech/dima-metabase-engine
+engine HEAD         = 9fb21da0177935aff5882472577c8e14a67ebd65
+upstream base       = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+engine version      = 0.63.18-dima.0
+workflow            = 35827292630 = SUCCESS
+artifact            = 10736021635
+artifact digest     = sha256:c1cc65e7d4b9778309330f2e9b034617114b1af8965f7c2aca9c16b4eade1304
+image id            = sha256:0ec05e85628b35084e3dfb8437ffef6dad82118d9027f8a8d2e98f53ae2e80cf
+image repo digest   = ghcr.io/upcytech/dima-metabase-engine@sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b
+```
+
+C0 patch surface:
+```text
+modified pre-existing upstream files = 0
+deleted upstream files               = 0
+upstream-owned line delta            = +0 / -0
+added Dima-specific files            = 7
+Dima integration line delta          = +517 / -0
+sync conflicts                       = 0
+manual conflict interventions        = 0
+upstream test failures               = 0
+Dima test failures                   = 0
+```
+
+build proof:
+- exact upstream ancestry PASS;
+- Dima-owned C0 build wrapper used only to isolate the build from stale Bullseye package mirrors;
+- upstream Metabase source remained unchanged;
+- canonical upstream `bin/build.sh` compiled the fork source;
+- fork-built image booted and `/api/health` passed;
+- GHCR push succeeded.
+
+prior REDs:
+- Bullseye package mirror 404 = build-environment issue;
+- shallow history depth = CI/governance issue;
+- version token = Dima build-wrapper invocation issue.
+None were Metabase engine capability failures.
+
+status:
+`CLOSED GREEN / P12X-C0 COMPLETE / P12X-C1 AUTHORIZED`.
