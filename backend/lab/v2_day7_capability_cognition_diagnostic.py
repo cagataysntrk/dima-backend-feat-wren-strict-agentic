@@ -46,6 +46,27 @@ from app.v2.manager_preacceptance import PreAcceptanceController
 from app.v2.source_spans import SourceSpanRegistry
 
 
+class EvalBudgetExhausted(RuntimeError):
+    pass
+
+
+class PaidCallGuard:
+    def __init__(self, max_calls: int) -> None:
+        if max_calls < 1:
+            raise ValueError("max_model_calls must be >= 1")
+        self.max_calls = max_calls
+        self.used = 0
+        self.exhausted = False
+
+    def reserve(self) -> None:
+        if self.used >= self.max_calls:
+            self.exhausted = True
+            raise EvalBudgetExhausted(
+                f"cognition diagnostic model-call budget exhausted ({self.used}/{self.max_calls})"
+            )
+        self.used += 1
+
+
 def _provider_failure(message: str) -> str | None:
     text = str(message or "").lower()
     if any(x in text for x in (
@@ -77,15 +98,19 @@ def _analytical_required_capabilities(draft) -> list[str]:
     ]
 
 
-def _controller():
+def _controller(call_guard: PaidCallGuard):
     settings = get_settings()
     research_llm, research_profile, *_ = _build_role_scoped_manager_models(settings)
     structured = getattr(research_llm, "structured_json", None)
     if not callable(structured):
         raise RuntimeError("RESEARCH_MANAGER structured_json is unavailable")
+    def budgeted_structured(*args, **kwargs):
+        call_guard.reserve()
+        return structured(*args, **kwargs)
+
     return (
         PreAcceptanceController(
-            structured=structured,
+            structured=budgeted_structured,
             source_spans=SourceSpanRegistry(),
             capabilities=ManagerCapabilityRegistry(),
             max_draft_attempts=1,
@@ -94,21 +119,49 @@ def _controller():
     )
 
 
+def _parse_case_ids(values: list[str]) -> list[str]:
+    selected: list[str] = []
+    for raw in values:
+        for item in str(raw).split(","):
+            clean = item.strip()
+            if clean and clean not in selected:
+                selected.append(clean)
+    return selected
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--case-id", action="append", required=True)
+    parser.add_argument("--max-model-calls", type=int, required=True)
     args = parser.parse_args()
 
+    if args.max_model_calls < 1:
+        raise SystemExit("--max-model-calls must be >= 1")
+
     document = yaml.safe_load(args.cases.read_text(encoding="utf-8"))
-    cases = list(document.get("cases") or [])
+    all_cases = list(document.get("cases") or [])
+    selected_ids = _parse_case_ids(list(args.case_id or ()))
+    by_id = {str(case["id"]): case for case in all_cases}
+    unknown = [case_id for case_id in selected_ids if case_id not in by_id]
+    if unknown:
+        raise SystemExit(f"unknown cognition diagnostic case ids: {unknown}")
+    cases = [by_id[case_id] for case_id in selected_ids]
+    if not cases:
+        raise SystemExit("explicit cognition diagnostic --case-id is required")
     output = args.output
     output.parent.mkdir(parents=True, exist_ok=True)
 
+    call_guard = PaidCallGuard(args.max_model_calls)
     try:
-        controller, profile = _controller()
+        controller, profile = _controller(call_guard)
     except Exception as exc:
-        validity = _provider_failure(str(exc)) or "HARNESS_FAILURE"
+        validity = (
+            "EVAL_BUDGET_EXHAUSTED"
+            if isinstance(exc, EvalBudgetExhausted)
+            else _provider_failure(str(exc)) or "HARNESS_FAILURE"
+        )
         output.write_text(json.dumps({
             "kind": "day7_capability_cognition_diagnostic",
             "measurement_validity": validity,
@@ -143,7 +196,11 @@ def main() -> int:
                 "draft": draft.model_dump(mode="json"),
             })
         except Exception as exc:
-            validity = _provider_failure(str(exc))
+            validity = (
+                "EVAL_BUDGET_EXHAUSTED"
+                if isinstance(exc, EvalBudgetExhausted)
+                else _provider_failure(str(exc))
+            )
             if validity:
                 provider_failures += 1
             records.append({
@@ -177,6 +234,13 @@ def main() -> int:
         "selected_cases": len(cases),
         "evaluable_cases": len(evaluable),
         "behavior_pass_count": len(passed),
+        "manager_model_calls": call_guard.used,
+        "semantic_linker_calls": 0,
+        "temporal_model_calls": 0,
+        "total_model_calls": call_guard.used,
+        "service_queries": 0,
+        "model_calls_budget": call_guard.max_calls,
+        "budget_exhausted": call_guard.exhausted,
         "behavior_pass_rate": (
             round(len(passed) / len(evaluable), 4) if evaluable else None
         ),
