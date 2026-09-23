@@ -3282,3 +3282,32 @@ They are native-model stochastic variance, not fork capability regression.
 
 status:
 `CLOSED GREEN / P12X-C2 AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C2-CI-001 — unrelated global Wren conftest leaks into isolated bridge proof
+
+opened_at: 2026-09-23  
+tested_sha: `f588c829e385d3abe5677e5f7d6c7458d26ef0f9`  
+workflow: `35835332032`
+
+classification:
+`CI/GOVERNANCE / TEST_FIXTURE_SCOPE`
+
+observed:
+- minimal C2 dependency install completed;
+- pytest failed before C2 test bodies ran;
+- repo-global `tests/conftest.py` autouse fixture imported `app.compose`;
+- that unrelated Wren compose fixture requires PyYAML and Wren build context;
+- the original full-dependency C2 run `35835233505` already passed the C2 test file.
+
+single_owner:
+C2 provider-free workflow test-fixture scope.
+
+authorized_correction:
+Run the isolated C2 unit file with `pytest --noconftest`. Do not add Wren dependencies to the C2
+bridge proof.
+
+status:
+`CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
