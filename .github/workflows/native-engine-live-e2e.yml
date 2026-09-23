@@ -1,0 +1,176 @@
+name: native-engine-live-e2e
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/native-engine-official-ui
+    paths:
+      - ".github/workflows/native-engine-live-e2e.yml"
+      - "apps/metabase-poc/e2e/native-engine/**"
+      - "apps/metabase-poc/scripts/native-engine-bootstrap.py"
+      - "apps/metabase-poc/scripts/native-ui-e2e.py"
+      - "apps/metabase-poc/src/server/engine/**"
+      - "apps/metabase-poc/src/app/api/chat/route.ts"
+      - "apps/metabase-poc/src/lib/gateway.ts"
+      - "apps/metabase-poc/src/app/app/chat/ChatView.tsx"
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  live-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: DIMA_OPENROUTER_API_KEY
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_ENGINE_URL: http://127.0.0.1:3312
+      BETTER_AUTH_URL: http://127.0.0.1:3002
+      DIMA_E2E_USER_EMAIL: ayse@boyahane.demo
+      NATIVE_UI_E2E_RECEIPT: apps/metabase-poc/e2e/native-engine/artifacts/native-ui-e2e.json
+
+    steps:
+      - name: Checkout official UI branch
+        uses: actions/checkout@v5
+
+      - name: Checkout frozen Boyahane fixture
+        uses: actions/checkout@v5
+        with:
+          repository: cagataysntrk/metabase-boyahane
+          ref: f0c4a6b053ead52ca2eac80002c448323dc34a35
+          path: boyahane
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate ephemeral test credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in BOYAHANE_OWNER_PASSWORD BOYAHANE_READONLY_PASSWORD ENGINE_APP_DB_PASSWORD DIMA_AUTH_DB_PASSWORD FT005N_ENGINE_ADMIN_PASSWORD BETTER_AUTH_SECRET DIMA_E2E_USER_PASSWORD; do
+            value="$(openssl rand -hex 24)"
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+          done
+          echo "FT005N_ENGINE_ADMIN_EMAIL=admin@dima-native-e2e.local" >> "$GITHUB_ENV"
+          echo "DATABASE_URL=postgresql://dima:$DIMA_AUTH_DB_PASSWORD@127.0.0.1:55443/dima_auth" >> "$GITHUB_ENV"
+          echo "SEED_PASSWORD=$DIMA_E2E_USER_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: |
+          bun install --frozen-lockfile
+          pip install "duckdb==1.4.3" "psycopg[binary]==3.3.3" "httpx>=0.27,<1"
+
+      - name: Require engine-owned model credential
+        run: test -n "$DIMA_OPENROUTER_API_KEY"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start exact canonical engine and databases
+        working-directory: apps/metabase-poc/e2e/native-engine
+        run: |
+          docker compose up -d analytics-db engine-app-db auth-db engine
+          for i in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3312/api/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:3312/api/health
+
+      - name: Verify exact engine image
+        working-directory: apps/metabase-poc/e2e/native-engine
+        run: |
+          cid="$(docker compose ps -q engine)"
+          test -n "$cid"
+          image="$(docker inspect "$cid" --format '{{.Config.Image}}')"
+          echo "engine_image=$image"
+          test "$image" = "ghcr.io/upcytech/dima-metabase-engine@sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b"
+
+      - name: Import exact Boyahane snapshot
+        env:
+          SOURCE_DATABASE: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          PGHOST: 127.0.0.1
+          PGPORT: "55442"
+          PGDATABASE: boyahane
+          PGUSER: boyahane_owner
+          PGPASSWORD: ${{ env.BOYAHANE_OWNER_PASSWORD }}
+          BOYAHANE_READONLY_PASSWORD: ${{ env.BOYAHANE_READONLY_PASSWORD }}
+        run: python boyahane/importer/import_boyahane.py
+
+      - name: Bootstrap canonical engine tenant and native Metabot
+        run: python apps/metabase-poc/scripts/native-engine-bootstrap.py
+
+      - name: Prepare Dima auth database
+        working-directory: apps/metabase-poc
+        shell: bash
+        run: |
+          cat > .env.local <<EOF
+          DIMA_ENGINE_URL='$DIMA_ENGINE_URL'
+          DIMA_ENGINE_ADMIN_API_KEY='$DIMA_ENGINE_ADMIN_API_KEY'
+          DIMA_ENGINE_TENANTS='$DIMA_ENGINE_TENANTS'
+          DATABASE_URL='$DATABASE_URL'
+          BETTER_AUTH_SECRET='$BETTER_AUTH_SECRET'
+          BETTER_AUTH_URL='$BETTER_AUTH_URL'
+          SEED_PASSWORD='$SEED_PASSWORD'
+          EOF
+          bun run auth:migrate
+          bun run seed:users
+
+      - name: Build official UI
+        run: bun run turbo run build --filter @dima/metabase-poc
+
+      - name: Start official UI
+        working-directory: apps/metabase-poc
+        run: |
+          nohup bun run start > /tmp/dima-native-ui.log 2>&1 &
+          echo $! > /tmp/dima-native-ui.pid
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3002/login >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/dima-native-ui.log
+          exit 1
+
+      - name: Certify login, product surfaces and Q1-Q2-Q3 native chat
+        run: python apps/metabase-poc/scripts/native-ui-e2e.py
+
+      - name: Static no-fallback assertions
+        shell: bash
+        run: |
+          ! grep -q 'server/chat/agent' apps/metabase-poc/src/app/api/chat/route.ts
+          ! grep -q 'server/chat/openrouter' apps/metabase-poc/src/app/api/chat/route.ts
+          ! grep -R 'OPENROUTER_API_KEY\|OPENROUTER_MODEL' apps/metabase-poc/src --exclude-dir=node_modules
+          grep -q '/api/metabot/agent-streaming' apps/metabase-poc/src/server/engine/native-chat.ts
+          grep -q 'DIMA_ENGINE_URL' apps/metabase-poc/.env.local.example
+
+      - name: Upload native refactor evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-engine-official-ui-${{ github.sha }}
+          path: |
+            apps/metabase-poc/e2e/native-engine/artifacts/native-ui-e2e.json
+            /tmp/dima-native-ui.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Dump engine logs on failure
+        if: failure()
+        working-directory: apps/metabase-poc/e2e/native-engine
+        run: docker compose logs --no-color --tail=600 engine analytics-db || true
+
+      - name: Teardown
+        if: always()
+        working-directory: apps/metabase-poc/e2e/native-engine
+        run: docker compose down -v --remove-orphans || true
