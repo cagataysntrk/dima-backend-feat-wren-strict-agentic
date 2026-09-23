@@ -72,8 +72,19 @@ class _ContractStore:
         return {"id": f"principal-qc-{self.n}", "sealed": True}
 
 
-def _fixture():
+def _fixture(*, canonical_binding: bool = False, use_slug: bool = False):
     tenant = "tenant-principal"
+    tenant_slug = "principal"
+    runtime_tenant_id = None if use_slug else tenant
+    tenant_binding = (
+        f"slug:{tenant_slug}"
+        if use_slug and canonical_binding
+        else f"id:{tenant}"
+        if canonical_binding
+        else tenant_slug
+        if use_slug
+        else tenant
+    )
     context_version = "ctx-principal-v1"
     message_id = "turn-principal"
     question = "net geliri incele"
@@ -84,7 +95,7 @@ def _fixture():
 
     handles = SemanticHandleRegistry()
     metric = handles.mint_from_resolver(
-        tenant_binding=tenant,
+        tenant_binding=tenant_binding,
         context_version=context_version,
         resolver_provenance_id="principal:metric",
         target_kind="metric",
@@ -99,12 +110,22 @@ def _fixture():
     service = _Service()
     store = _ContractStore()
 
-    def principal(user_id: str, *, tenant_id: str | None = tenant):
+    _default = object()
+
+    def principal(
+        user_id: str,
+        *,
+        tenant_id=_default,
+        tenant_slug_override: str | None = None,
+    ):
+        effective_tenant_id = (
+            runtime_tenant_id if tenant_id is _default else tenant_id
+        )
         return Principal(
             user_id=user_id,
-            tenant_id=tenant_id,
+            tenant_id=effective_tenant_id,
             roles=["owner"],
-            tenant_slug="principal",
+            tenant_slug=tenant_slug_override or tenant_slug,
         )
 
     def executor(bound_principal: Principal):
@@ -117,13 +138,13 @@ def _fixture():
                 semantic_handles=handles,
             ),
             context=GovernedManagerExecutionContext(
-                tenant_binding=tenant,
+                tenant_binding=tenant_binding,
                 context_version=context_version,
                 principal=bound_principal,
                 service=service,
                 tenant_runtime=TenantAnalyticsRuntimeV0(
-                    tenant_id=tenant,
-                    tenant_slug="principal",
+                    tenant_id=runtime_tenant_id,
+                    tenant_slug=tenant_slug,
                     principal_user_id=bound_principal.user_id,
                     roles=tuple(bound_principal.roles),
                     mdl_version=service.mdl_version,
@@ -181,6 +202,8 @@ def _fixture():
     )
     return {
         "tenant": tenant,
+        "tenant_slug": tenant_slug,
+        "tenant_binding": tenant_binding,
         "principal": principal,
         "executor": executor,
         "principal_a": principal_a,
@@ -220,6 +243,69 @@ def test_same_runner_and_executor_principal_executes_and_reuses_receipt():
     assert first == second
     assert fx["service"].query_calls == 1
     assert fx["store"].n == 1
+
+
+def test_runtime_boundary_canonical_id_binding_executes_against_typed_runtime_tenant():
+    fx = _fixture(canonical_binding=True)
+
+    result = ResearchToolRunner().execute(
+        task=fx["task"],
+        tool_id="wren.query",
+        call=fx["call"],
+        runtime=fx["runtime"],
+        executor=fx["executor_a"],
+        principal=fx["principal_a"],
+        task_registry=ResearchTaskRegistry(),
+    )
+
+    assert result.evidence.verified is True
+    assert fx["tenant_binding"] == f"id:{fx['tenant']}"
+    assert fx["service"].query_calls == 1
+
+
+def test_runtime_boundary_canonical_slug_binding_executes_when_tenant_id_absent():
+    fx = _fixture(canonical_binding=True, use_slug=True)
+
+    result = ResearchToolRunner().execute(
+        task=fx["task"],
+        tool_id="wren.query",
+        call=fx["call"],
+        runtime=fx["runtime"],
+        executor=fx["executor_a"],
+        principal=fx["principal_a"],
+        task_registry=ResearchTaskRegistry(),
+    )
+
+    assert result.evidence.verified is True
+    assert fx["principal_a"].tenant_id is None
+    assert fx["tenant_binding"] == f"slug:{fx['tenant_slug']}"
+    assert fx["service"].query_calls == 1
+
+
+def test_foreign_slug_principal_denies_against_governed_slug_runtime():
+    fx = _fixture(canonical_binding=True, use_slug=True)
+    foreign = fx["principal"](
+        "user-foreign",
+        tenant_id=None,
+        tenant_slug_override="foreign-slug",
+    )
+    foreign_executor = fx["executor"](foreign)
+
+    with pytest.raises(
+        ResearchToolContractError,
+        match="tenant does not match governed execution tenant",
+    ):
+        ResearchToolRunner().execute(
+            task=fx["task"],
+            tool_id="wren.query",
+            call=fx["call"],
+            runtime=fx["runtime"],
+            executor=foreign_executor,
+            principal=foreign,
+            task_registry=ResearchTaskRegistry(),
+        )
+
+    assert fx["service"].query_calls == 0
 
 
 def test_runner_principal_subject_mismatch_executor_denies_before_db():
