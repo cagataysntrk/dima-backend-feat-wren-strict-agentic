@@ -113,6 +113,17 @@ jobs:
           esac
           test ! -f engine/metabase/src/metabase/metabot/api.clj
 
+      - name: Require sealed P13 native trust review before native execution authority exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/native_execution.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
+            test -f "$REVIEW"
+            grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$REVIEW"
+            grep -q "DMP-DEC-0036" backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
+          fi
+
       - name: Guard v3 against legacy semantic resolver authority
         shell: bash
         run: |

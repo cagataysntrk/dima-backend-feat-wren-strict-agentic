@@ -17,6 +17,11 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.v3.analytics_contract import ResolvedAnalyticsIntent
 from app.v3.evidence import DimaQueryReceipt
 from app.v3.substrate.metabase.canonical import CanonicalProjection
+from app.v3.native_execution import (
+    AuthorizedExecutionArtifact,
+    NativeExecutionTrustError,
+    authorized_artifact_from_canonical_projection,
+)
 
 
 class FrozenModel(BaseModel):
@@ -187,16 +192,8 @@ class DimaQueryReceiptSealer:
         projection: CanonicalProjection,
     ) -> None:
         checks = (
-            (
-                "AUTHORITY_MISMATCH",
-                intent.authority_id,
-                projection.authority_id,
-            ),
-            (
-                "PROJECTION_MISMATCH",
-                intent.projection_hash,
-                projection.projection_hash,
-            ),
+            ("AUTHORITY_MISMATCH", intent.authority_id, projection.authority_id),
+            ("PROJECTION_MISMATCH", intent.projection_hash, projection.projection_hash),
             (
                 "RESOLVED_INTENT_MISMATCH",
                 intent.resolved_intent_hash,
@@ -216,19 +213,15 @@ class DimaQueryReceiptSealer:
                 )
 
     @staticmethod
-    def _resource_bindings(
+    def _resource_bindings_from_projection(
         projection: CanonicalProjection,
     ) -> tuple[tuple[str, str], ...]:
         entity_ids = projection.manifest.resource_entity_ids
         fingerprints = projection.manifest.resource_fingerprints
-
         if len(entity_ids) != len(fingerprints):
             raise ReceiptSealError(
                 "RESOURCE_IDENTITY_CARDINALITY_MISMATCH",
-                (
-                    f"entity_ids={len(entity_ids)} "
-                    f"fingerprints={len(fingerprints)}"
-                ),
+                f"entity_ids={len(entity_ids)} fingerprints={len(fingerprints)}",
             )
         if not entity_ids:
             raise ReceiptSealError(
@@ -240,14 +233,85 @@ class DimaQueryReceiptSealer:
                 "RESOURCE_IDENTITY_DUPLICATE",
                 "canonical projection has duplicate resource entity ids",
             )
-
         return tuple(zip(entity_ids, fingerprints, strict=True))
+
+    @staticmethod
+    def _assert_artifact_matches(
+        *,
+        intent: ResolvedAnalyticsIntent,
+        artifact: AuthorizedExecutionArtifact,
+    ) -> None:
+        try:
+            artifact.assert_intact()
+        except NativeExecutionTrustError as exc:
+            raise ReceiptSealError(exc.code, exc.detail) from exc
+
+        checks = (
+            ("AUTHORITY_MISMATCH", intent.authority_id, artifact.authority_id),
+            ("PROJECTION_MISMATCH", intent.projection_hash, artifact.projection_hash),
+            (
+                "RESOLVED_INTENT_MISMATCH",
+                intent.resolved_intent_hash,
+                artifact.resolved_intent_hash,
+            ),
+            (
+                "SEMANTIC_CONTEXT_MISMATCH",
+                intent.semantic_context_version,
+                artifact.semantic_context_version,
+            ),
+        )
+        for code, expected, actual in checks:
+            if expected != actual:
+                raise ReceiptSealError(
+                    code,
+                    f"intent={expected!r} artifact={actual!r}",
+                )
+
+    @classmethod
+    def _execution_artifact(
+        cls,
+        *,
+        intent: ResolvedAnalyticsIntent,
+        projection: CanonicalProjection | None,
+        execution_artifact: AuthorizedExecutionArtifact | None,
+    ) -> AuthorizedExecutionArtifact:
+        if projection is not None and execution_artifact is not None:
+            raise ReceiptSealError(
+                "EXECUTION_ARTIFACT_AMBIGUOUS",
+                "supply projection or execution_artifact, not both",
+            )
+        if projection is None and execution_artifact is None:
+            raise ReceiptSealError(
+                "EXECUTION_ARTIFACT_REQUIRED",
+                "official receipt requires the exact authorized execution artifact",
+            )
+        if projection is not None:
+            cls._assert_projection_matches(intent=intent, projection=projection)
+            cls._resource_bindings_from_projection(projection)
+            try:
+                artifact = authorized_artifact_from_canonical_projection(projection)
+            except NativeExecutionTrustError as exc:
+                raise ReceiptSealError(exc.code, exc.detail) from exc
+        else:
+            artifact = execution_artifact
+            assert artifact is not None
+        cls._assert_artifact_matches(intent=intent, artifact=artifact)
+        return artifact
+
+    @staticmethod
+    def _resource_bindings(
+        artifact: AuthorizedExecutionArtifact,
+    ) -> tuple[tuple[str, str], ...]:
+        return tuple(
+            (item.resource_id, item.resource_fingerprint)
+            for item in artifact.resource_bindings
+        )
 
     @staticmethod
     def _assert_access_matches(
         *,
         intent: ResolvedAnalyticsIntent,
-        projection: CanonicalProjection,
+        artifact: AuthorizedExecutionArtifact,
         access: ExecutionAccessSnapshot,
     ) -> None:
         principal = intent.principal
@@ -271,15 +335,11 @@ class DimaQueryReceiptSealer:
                 "ACCESS_SEMANTIC_CONTEXT_MISMATCH",
                 "access snapshot belongs to a different semantic context",
             )
-
-        resource_bindings = DimaQueryReceiptSealer._resource_bindings(
-            projection
-        )
-        entity_ids = tuple(entity_id for entity_id, _ in resource_bindings)
+        entity_ids = artifact.resource_entity_ids
         if tuple(sorted(access.source_object_refs)) != tuple(sorted(entity_ids)):
             raise ReceiptSealError(
                 "SOURCE_RESOURCE_MISMATCH",
-                "access source-object refs do not exactly cover canonical resource ids",
+                "access source-object refs do not exactly cover authorized resource ids",
             )
 
     @classmethod
@@ -287,14 +347,14 @@ class DimaQueryReceiptSealer:
         cls,
         *,
         intent: ResolvedAnalyticsIntent,
-        projection: CanonicalProjection,
+        artifact: AuthorizedExecutionArtifact,
         step_fingerprint: str,
         step_role: str,
         access: ExecutionAccessSnapshot,
         runtime: RuntimeIdentity,
         result: ExecutionResultSnapshot,
     ) -> str:
-        resource_bindings = cls._resource_bindings(projection)
+        resource_bindings = cls._resource_bindings(artifact)
         payload = {
             "authority_id": intent.authority_id,
             "projection_hash": intent.projection_hash,
@@ -336,7 +396,8 @@ class DimaQueryReceiptSealer:
         cls,
         *,
         intent: ResolvedAnalyticsIntent,
-        projection: CanonicalProjection,
+        projection: CanonicalProjection | None = None,
+        execution_artifact: AuthorizedExecutionArtifact | None = None,
         access_snapshot: ExecutionAccessSnapshot | None,
         runtime: RuntimeIdentity | None,
         results: tuple[ExecutionResultSnapshot, ...],
@@ -353,24 +414,22 @@ class DimaQueryReceiptSealer:
                 "official P5 receipt requires exact runtime identity",
             )
 
-        cls._assert_projection_matches(
+        artifact = cls._execution_artifact(
             intent=intent,
             projection=projection,
+            execution_artifact=execution_artifact,
         )
         cls._assert_access_matches(
             intent=intent,
-            projection=projection,
+            artifact=artifact,
             access=access_snapshot,
         )
 
-        query_count = len(projection.steps)
+        query_count = artifact.query_count
         if len(results) != query_count or len(events) != query_count:
             raise ReceiptSealError(
                 "QUERY_RESULT_CARDINALITY_MISMATCH",
-                (
-                    f"queries={query_count} results={len(results)} "
-                    f"events={len(events)}"
-                ),
+                f"queries={query_count} results={len(results)} events={len(events)}",
             )
         execution_ids = tuple(event.execution_id for event in events)
         if len(execution_ids) != len(set(execution_ids)):
@@ -381,21 +440,22 @@ class DimaQueryReceiptSealer:
 
         principal_fingerprint = intent.principal.fingerprint
         access_fingerprint = access_snapshot.execution_access_fingerprint
-        semantic_refs = projection.manifest.semantic_ids
-        resource_entity_ids = projection.manifest.resource_entity_ids
-        resource_fingerprints = projection.manifest.resource_fingerprints
+        semantic_refs = artifact.semantic_refs
+        resource_entity_ids = artifact.resource_entity_ids
+        resource_fingerprints = artifact.resource_fingerprints
 
         receipts: list[DimaQueryReceipt] = []
         for step, result, event in zip(
-            projection.steps,
+            artifact.steps,
             results,
             events,
             strict=True,
         ):
+            step.assert_intact()
             receipt_fingerprint = cls._receipt_fingerprint(
                 intent=intent,
-                projection=projection,
-                step_fingerprint=step.canonical_query_fingerprint,
+                artifact=artifact,
+                step_fingerprint=step.artifact_fingerprint,
                 step_role=step.role,
                 access=access_snapshot,
                 runtime=runtime,
@@ -417,8 +477,8 @@ class DimaQueryReceiptSealer:
                     semantic_refs=semantic_refs,
                     projection_hash=intent.projection_hash,
                     resolved_intent_hash=intent.resolved_intent_hash,
-                    canonical_query_fingerprint=step.canonical_query_fingerprint,
-                    canonical_query_representation=step.decoded_query,
+                    canonical_query_fingerprint=step.artifact_fingerprint,
+                    canonical_query_representation=step.artifact_representation,
                     ephemeral_query_handle=None,
                     principal_fingerprint=principal_fingerprint,
                     execution_access_fingerprint=access_fingerprint,
@@ -437,5 +497,4 @@ class DimaQueryReceiptSealer:
                     limitations=result.limitations,
                 )
             )
-
         return tuple(receipts)

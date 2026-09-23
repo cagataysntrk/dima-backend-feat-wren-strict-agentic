@@ -1,0 +1,75 @@
+name: dima-metabase-p13a
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/native_execution.py"
+      - "backend/app/v3/security_identity.py"
+      - "backend/app/v3/execution_identity.py"
+      - "backend/tests/test_v3_p13_native_trust.py"
+      - "backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
+      - ".github/workflows/dima-metabase-p13a.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p13a-native-trust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require sealed P13A predevelopment boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVIEW="backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
+          grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$REVIEW"
+          grep -q "DMP-DEC-0036" backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile P13A trust contracts
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v3/native_execution.py \
+            app/v3/security_identity.py \
+            app/v3/execution_identity.py \
+            tests/test_v3_p13_native_trust.py
+
+      - name: Focused P13A native trust proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_p13_native_trust.py
+
+      - name: P5 and P10 critical regression
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_p5_execution_identity.py \
+            tests/test_v3_p5_receipt.py \
+            tests/test_v3_p10_security_identity.py
+
+      - name: P12X C2 provider-free bridge regression
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: pytest --noconftest -q tests/test_v3_p12x_c2_native_engine_bridge.py

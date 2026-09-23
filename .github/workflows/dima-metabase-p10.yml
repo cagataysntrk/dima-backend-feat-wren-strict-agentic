@@ -44,8 +44,103 @@ jobs:
           BASE="50a4a6dea5b0d24840e7d3772973350619460cab"
           changed="$(git diff --name-only "$BASE"...HEAD)"
           printf '%s\n' "$changed"
-          if printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|semantic_import|semantic_equivalence|resource_provisioning|resource_transport|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)'; then
-            echo "P10A touched a forbidden file"
+          violations="$(printf '%s\n' "$changed" | grep -E '^(backend/app/v2/|backend/app/v3/(authority|analytics_contract|semantic_spec|semantic_import|semantic_equivalence|resource_provisioning|resource_transport|execution_identity)\.py$|backend/app/v3/substrate/|backend/control_plane/|backend/app/routers/|backend/app/main\.py$|backend/app/config\.py$|backend/demo/|WrenAI-main/)' || true)"
+          if [ -n "$violations" ]; then
+            REVIEW="backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
+            if [ -f backend/app/v3/native_execution.py ] && [ -f "$REVIEW" ] && grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$REVIEW"; then
+              violations="$(printf '%s\n' "$violations" | grep -v '^backend/app/v3/execution_identity\.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile P10A
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v3/security_identity.py \
+            tests/test_v3_p10_security_identity.py
+
+      - name: Focused P10A security identity proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_p10_security_identity.py
+
+      - name: P5 identity plus P9B transport regressions
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_p5_execution_identity.py \
+            tests/test_v3_p5_receipt.py \
+            tests/test_v3_p9b_resource_transport.py
+
+
+  p10b1-basic-security-live:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[p10b1-live]')
+    needs: p10a-security-issuer-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require sealed P10B1 predevelopment review
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVIEW="backend/belgeler/metabase/predev/P10B1_PREDEVELOPMENT_REVIEW.md"
+          grep -q "Status: \*\*SEALED / ONE ISOLATED P10B1 BASIC SECURITY CANARY AUTHORIZED / P10B2 NOT AUTHORIZED\*\*" "$REVIEW"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Start pinned isolated Metabase lab
+        working-directory: backend/lab/metabase
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env up -d
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+
+      - name: Run exactly one P10B1 permission-revocation canary
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          source lab/metabase/.env
+          set +a
+          export DIMA_METABASE_P10B1_LIVE=1
+          pytest -q -s tests/test_v3_p10b_basic_security_live.py
+
+      - name: Teardown isolated lab
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env down -v --remove-orphans || true
+ || true)"
+            fi
+          fi
+          if [ -n "$violations" ]; then
+            printf 'P10A touched forbidden files:\n%s\n' "$violations"
             exit 1
           fi
 
