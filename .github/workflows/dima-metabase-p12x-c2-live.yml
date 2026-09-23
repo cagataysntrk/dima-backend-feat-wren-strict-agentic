@@ -14,7 +14,7 @@ permissions:
   packages: read
 
 env:
-  ENGINE_SHA: c56b71ab23bf2a2d266bac2fba8d165ac059d613
+  ENGINE_SHA: 05fccf3595623a41886cb2a7a89192636580324e
   RUNTIME_SOURCE_SHA: 9fb21da0177935aff5882472577c8e14a67ebd65
   UPSTREAM_BASE_SHA: 2ba2485c78d7e00a9a25f82c00fc201da71590c4
   BOYAHANE_SHA: f0c4a6b053ead52ca2eac80002c448323dc34a35
@@ -182,15 +182,16 @@ jobs:
           docker network rm dima-c2 2>/dev/null || true
 
   p13b-px01-live:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[p13b-live]')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: DIMA_OPENROUTER_API_KEY
     env:
-      ENGINE_SHA: 3ac50a0ad1c2fb53d538c9fccf621db816c305e1
+      ENGINE_SHA: 05fccf3595623a41886cb2a7a89192636580324e
       UPSTREAM_BASE_SHA: 2ba2485c78d7e00a9a25f82c00fc201da71590c4
-      RUNTIME_TAG: v0.63.18-dima.1
+      RUNTIME_TAG: v0.63.18-dima.2
       MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
+      LIVE_ATTEMPT_ID: PENDING_PROVIDER_FREE_CERTIFICATION
       MB_ADMIN_EMAIL: admin@p13b.local
       MB_ADMIN_PASSWORD: DimaP13BAdmin2026!
       MB_RESTRICTED_EMAIL: restricted@p13b.local
@@ -330,7 +331,9 @@ jobs:
             --runtime-image-digest "$RUNTIME_IMAGE_DIGEST" \
             --build-identity "$BUILD_IDENTITY" \
             --image-identity "$RUNTIME_IMAGE_DIGEST" \
-            --model-identifier "$MODEL_IDENTIFIER"
+            --model-identifier "$MODEL_IDENTIFIER" \
+            --platform-sha "$GITHUB_SHA" \
+            --live-attempt-id "$LIVE_ATTEMPT_ID"
 
       - name: Upload P13B-3 evidence
         if: always()

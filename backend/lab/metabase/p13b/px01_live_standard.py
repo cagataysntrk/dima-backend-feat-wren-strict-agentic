@@ -370,6 +370,61 @@ def assert_identity(
             )
 
 
+
+def _diagnostic_usage(observation: Any | None) -> dict[str, Any]:
+    if observation is None:
+        return {}
+    finish_parts = getattr(observation, "finish_parts", ()) or ()
+    finish = finish_parts[-1] if finish_parts else {}
+    usage = finish.get("usage") if isinstance(finish, dict) else {}
+    return usage if isinstance(usage, dict) else {}
+
+
+def _diagnostic_error_code(exc: Exception) -> str:
+    message = str(exc)
+    marker = ": {"
+    if marker in message:
+        candidate = "{" + message.split(marker, 1)[1]
+        try:
+            body = json.loads(candidate)
+            via = body.get("via") if isinstance(body, dict) else None
+            if isinstance(via, list) and via and isinstance(via[0], dict):
+                data = via[0].get("data")
+                if isinstance(data, dict):
+                    code = data.get("dima/error-code")
+                    if code:
+                        return str(code)
+        except Exception:
+            pass
+    return type(exc).__name__
+
+
+def _write_failure_receipt(
+    output: Path,
+    state: dict[str, Any],
+    exc: Exception,
+    started: float,
+) -> None:
+    receipt = dict(state)
+    receipt.update(
+        {
+            "status": "RED",
+            "error_type": type(exc).__name__,
+            "error_code": _diagnostic_error_code(exc),
+            "error_message": str(exc)[:2000],
+            "elapsed_ms": max(0, int((time.monotonic() - started) * 1000)),
+        }
+    )
+    if receipt.get("exact_serialized_pmbql") is None:
+        receipt.pop("exact_serialized_pmbql", None)
+    path = output.with_name("P13B_PX01_LIVE_FAILURE.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base-url", required=True)
@@ -384,249 +439,293 @@ def main() -> int:
     ap.add_argument("--build-identity", required=True)
     ap.add_argument("--image-identity", required=True)
     ap.add_argument("--model-identifier", required=True)
+    ap.add_argument("--platform-sha", required=True)
+    ap.add_argument("--live-attempt-id", required=True)
     args = ap.parse_args()
 
-    token = login(args.base_url, args.email, args.password)
-    database_id, table_id, field_id, schema_name, mb_user_id = discover_catalog(
-        args.base_url, token
-    )
-    snapshot = binding_snapshot(database_id, table_id, field_id, schema_name)
-    authority, intent = authority_and_intent()
-    principal = Principal(
-        user_id=PRINCIPAL,
-        tenant_id=TENANT,
-        tenant_slug=TENANT,
-        roles=["analyst"],
-    )
-    expected_bootstrap = NativeEngineIdentity(
-        repository="UpcyTech/dima-metabase-engine",
-        engine_sha=args.engine_sha,
-        upstream_base_sha=args.upstream_sha,
-        runtime_tag=args.runtime_tag,
-    )
-    conversation_id = uuid4()
-    request_id = "p13b-px01-" + conversation_id.hex[:12]
-    started = time.monotonic()
+    failure_started = time.monotonic()
+    failure_state: dict[str, Any] = {
+        "schema_version": "p13b_px01_live_failure_v1",
+        "case_id": CASE_ID,
+        "question": QUESTION,
+        "platform_sha": args.platform_sha,
+        "engine_sha": args.engine_sha,
+        "runtime_tag": args.runtime_tag,
+        "model_identifier": args.model_identifier,
+        "live_attempt_id": args.live_attempt_id,
+        "conversation_id": None,
+        "native_query_id": None,
+        "failure_owner": "bootstrap",
+        "runtime_identity": None,
+        "native_tool_call_count": 0,
+        "native_agent_latency_ms": None,
+        "provider_usage": {},
+        "exact_serialized_pmbql": None,
+    }
 
-    with NativeEngineBridge(
-        base_url=args.base_url,
-        session_token=token,
-        expected_identity=expected_bootstrap,
-        timeout_seconds=300,
-    ) as client:
-        identity = NativeAttestedRuntimeIdentity.model_validate(client.engine_identity())
-        assert_identity(
-            identity,
-            engine_sha=args.engine_sha,
-            upstream_sha=args.upstream_sha,
-            runtime_tag=args.runtime_tag,
-            build_identity=args.build_identity,
-            image_identity=args.image_identity,
+    try:
+        token = login(args.base_url, args.email, args.password)
+        failure_state["failure_owner"] = "catalog-bootstrap"
+        database_id, table_id, field_id, schema_name, mb_user_id = discover_catalog(
+            args.base_url, token
         )
-        observation = client.invoke(
-            NativeEngineRequest(
-                message=QUESTION,
-                conversation_id=conversation_id,
+        snapshot = binding_snapshot(database_id, table_id, field_id, schema_name)
+        authority, intent = authority_and_intent()
+        principal = Principal(
+            user_id=PRINCIPAL,
+            tenant_id=TENANT,
+            tenant_slug=TENANT,
+            roles=["analyst"],
+        )
+        expected_bootstrap = NativeEngineIdentity(
+            repository="UpcyTech/dima-metabase-engine",
+            engine_sha=args.engine_sha,
+            upstream_base_sha=args.upstream_sha,
+            runtime_tag=args.runtime_tag,
+        )
+        conversation_id = uuid4()
+        failure_state["conversation_id"] = str(conversation_id)
+        request_id = "p13b-px01-" + conversation_id.hex[:12]
+        started = time.monotonic()
+
+        with NativeEngineBridge(
+            base_url=args.base_url,
+            session_token=token,
+            expected_identity=expected_bootstrap,
+            timeout_seconds=300,
+        ) as client:
+            failure_state["failure_owner"] = "engine-identity"
+            identity = NativeAttestedRuntimeIdentity.model_validate(client.engine_identity())
+            failure_state["runtime_identity"] = identity.model_dump(mode="json")
+            assert_identity(
+                identity,
+                engine_sha=args.engine_sha,
+                upstream_sha=args.upstream_sha,
+                runtime_tag=args.runtime_tag,
+                build_identity=args.build_identity,
+                image_identity=args.image_identity,
+            )
+            failure_state["failure_owner"] = "native-metabot-invoke"
+            observation = client.invoke(
+                NativeEngineRequest(
+                    message=QUESTION,
+                    conversation_id=conversation_id,
+                    dima_request_id=request_id,
+                    dima_trace_id=request_id + "-trace",
+                )
+            )
+            failure_state["native_tool_call_count"] = len(observation.tool_calls)
+            failure_state["native_agent_latency_ms"] = observation.latency_ms
+            failure_state["provider_usage"] = _diagnostic_usage(observation)
+            failure_state["failure_owner"] = "native-query-id"
+            native_query_id = query_id_from_stream(observation.data_parts)
+            failure_state["native_query_id"] = native_query_id
+            failure_state["failure_owner"] = "native-query-attestation"
+            attestation = NativeAttestationEnvelope.model_validate(
+                client.attest_native_query(
+                    conversation_id=conversation_id,
+                    native_query_id=native_query_id,
+                )
+            )
+            failure_state["exact_serialized_pmbql"] = attestation.exact_serialized_pmbql
+            if attestation.manifest.runtime_identity != identity:
+                raise RuntimeError("attestation runtime identity differs from live identity")
+
+            engine = NativeEngineIdentity(
+                repository=identity.repository,
+                engine_sha=identity.revision_sha,
+                upstream_base_sha=identity.upstream_base_sha,
+                runtime_tag=identity.runtime_tag,
+                build_identity=identity.build_identity,
+                runtime_image_identity=identity.image_identity,
+                runtime_instance_id=identity.runtime_instance_id,
+            )
+            security = VerifiedExecutionSecurityFacts(
+                tenant_binding=TENANT,
+                principal_subject=PRINCIPAL,
+                roles=("analyst",),
+                attribute_policy_digest=h({"subject": mb_user_id, "policy": "px01-live"}),
+                policy_version="p13b-px01-v1",
+                rls_versions=(),
+                cls_versions=(),
+                database_route="analytics-primary",
+                database_destination="boyahane",
+                impersonation_role=None,
+                semantic_context_version=CONTEXT_VERSION,
+                source_object_refs=(TABLE_RESOURCE, TIME_RESOURCE),
+                security_parameter_digest=h(
+                    {
+                        "metabase_subject": mb_user_id,
+                        "database_id": database_id,
+                        "table_id": table_id,
+                        "field_id": field_id,
+                    }
+                ),
+                metabase_subject_ref=f"metabase-user:{mb_user_id}",
+                attestation_refs=(attestation.manifest.attestation_id,),
+                evidence_refs=("evidence:metabase-restricted-session:px01",),
+            )
+            failure_state["failure_owner"] = "dima-trust-authorization"
+            authz = NativeStandardTrustOrchestrator.authorize(
+                intent=intent,
+                snapshot=snapshot,
+                attestation=attestation,
+                expected_engine=engine,
+                current_principal=principal,
+                verified_security_facts=security,
                 dima_request_id=request_id,
                 dima_trace_id=request_id + "-trace",
             )
-        )
-        native_query_id = query_id_from_stream(observation.data_parts)
-        attestation = NativeAttestationEnvelope.model_validate(
-            client.attest_native_query(
-                conversation_id=conversation_id,
-                native_query_id=native_query_id,
+            if authz.authorization.outcome != NativeCandidateOutcome.ALLOW:
+                raise RuntimeError(
+                    f"PX-01 blocked: {authz.authorization.code}: {authz.authorization.detail}"
+                )
+            artifact = authz.authorization.authorized_artifact
+            if artifact is None or authz.access_snapshot is None:
+                raise RuntimeError("ALLOW missing artifact/access snapshot")
+            execution_request = NativeStandardTrustOrchestrator.execution_request(
+                result=authz, attestation=attestation
             )
-        )
-        if attestation.manifest.runtime_identity != identity:
-            raise RuntimeError("attestation runtime identity differs from live identity")
+            fingerprints = {
+                "attested": attestation.manifest.exact_pmbql_fingerprint,
+                "authorized": artifact.steps[0].artifact_fingerprint,
+                "submitted": h(execution_request.exact_serialized_pmbql),
+            }
+            if len(set(fingerprints.values())) != 1:
+                raise RuntimeError(f"pre-execution fingerprint mismatch: {fingerprints}")
 
-        engine = NativeEngineIdentity(
-            repository=identity.repository,
-            engine_sha=identity.revision_sha,
-            upstream_base_sha=identity.upstream_base_sha,
-            runtime_tag=identity.runtime_tag,
-            build_identity=identity.build_identity,
-            runtime_image_identity=identity.image_identity,
-            runtime_instance_id=identity.runtime_instance_id,
-        )
-        security = VerifiedExecutionSecurityFacts(
-            tenant_binding=TENANT,
-            principal_subject=PRINCIPAL,
-            roles=("analyst",),
-            attribute_policy_digest=h({"subject": mb_user_id, "policy": "px01-live"}),
-            policy_version="p13b-px01-v1",
-            rls_versions=(),
-            cls_versions=(),
-            database_route="analytics-primary",
-            database_destination="boyahane",
-            impersonation_role=None,
-            semantic_context_version=CONTEXT_VERSION,
-            source_object_refs=(TABLE_RESOURCE, TIME_RESOURCE),
-            security_parameter_digest=h(
-                {
-                    "metabase_subject": mb_user_id,
-                    "database_id": database_id,
-                    "table_id": table_id,
-                    "field_id": field_id,
-                }
-            ),
-            metabase_subject_ref=f"metabase-user:{mb_user_id}",
-            attestation_refs=(attestation.manifest.attestation_id,),
-            evidence_refs=("evidence:metabase-restricted-session:px01",),
-        )
-        authz = NativeStandardTrustOrchestrator.authorize(
+            before = NativeAttestedRuntimeIdentity.model_validate(client.engine_identity())
+            if before != identity:
+                raise RuntimeError("runtime changed before /api/dataset")
+            failure_state["failure_owner"] = "dataset-execution"
+            execution = client.execute_dataset(execution_request.exact_serialized_pmbql)
+            observed, rows = scalar(execution.payload)
+            after = NativeAttestedRuntimeIdentity.model_validate(client.engine_identity())
+            if after != identity:
+                raise RuntimeError("runtime changed across /api/dataset")
+
+        failure_state["failure_owner"] = "receipt-sealing"
+        receipt = NativeStandardTrustOrchestrator.seal_receipt(
             intent=intent,
-            snapshot=snapshot,
-            attestation=attestation,
-            expected_engine=engine,
-            current_principal=principal,
-            verified_security_facts=security,
-            dima_request_id=request_id,
-            dima_trace_id=request_id + "-trace",
+            result=authz,
+            execution_request=execution_request,
+            runtime=RuntimeIdentity(
+                substrate="metabase-native",
+                runtime_version=identity.runtime_tag,
+                image_digest=args.runtime_image_digest,
+                database_id=f"metabase:{database_id}",
+                repository=identity.repository,
+                revision_sha=identity.revision_sha,
+                upstream_base_sha=identity.upstream_base_sha,
+                runtime_tag=identity.runtime_tag,
+                build_identity=identity.build_identity,
+                image_identity=identity.image_identity,
+                runtime_instance_id=identity.runtime_instance_id,
+            ),
+            execution_result=ExecutionResultSnapshot(payload={"rows": rows}, row_count=1),
+            execution_event=ExecutionEventIdentity(
+                execution_id="exec-px01-" + conversation_id.hex[:16],
+                executed_at=datetime.now(timezone.utc),
+            ),
         )
-        if authz.authorization.outcome != NativeCandidateOutcome.ALLOW:
-            raise RuntimeError(
-                f"PX-01 blocked: {authz.authorization.code}: {authz.authorization.detail}"
-            )
-        artifact = authz.authorization.authorized_artifact
-        if artifact is None or authz.access_snapshot is None:
-            raise RuntimeError("ALLOW missing artifact/access snapshot")
-        execution_request = NativeStandardTrustOrchestrator.execution_request(
-            result=authz, attestation=attestation
-        )
-        fingerprints = {
-            "attested": attestation.manifest.exact_pmbql_fingerprint,
-            "authorized": artifact.steps[0].artifact_fingerprint,
-            "submitted": h(execution_request.exact_serialized_pmbql),
-        }
+        fingerprints["receipt"] = receipt.canonical_query_fingerprint
         if len(set(fingerprints.values())) != 1:
-            raise RuntimeError(f"pre-execution fingerprint mismatch: {fingerprints}")
+            raise RuntimeError(f"receipt fingerprint mismatch: {fingerprints}")
 
-        before = NativeAttestedRuntimeIdentity.model_validate(client.engine_identity())
-        if before != identity:
-            raise RuntimeError("runtime changed before /api/dataset")
-        execution = client.execute_dataset(execution_request.exact_serialized_pmbql)
-        observed, rows = scalar(execution.payload)
-        after = NativeAttestedRuntimeIdentity.model_validate(client.engine_identity())
-        if after != identity:
-            raise RuntimeError("runtime changed across /api/dataset")
+        engine_shas = {
+            args.engine_sha,
+            identity.revision_sha,
+            attestation.manifest.runtime_identity.revision_sha,
+            receipt.engine_revision_sha,
+        }
+        instances = {
+            str(identity.runtime_instance_id),
+            str(attestation.manifest.runtime_identity.runtime_instance_id),
+            str(receipt.engine_runtime_instance_id),
+        }
+        if len(engine_shas) != 1 or len(instances) != 1:
+            raise RuntimeError("runtime identity chain mismatch")
 
-    receipt = NativeStandardTrustOrchestrator.seal_receipt(
-        intent=intent,
-        result=authz,
-        execution_request=execution_request,
-        runtime=RuntimeIdentity(
-            substrate="metabase-native",
-            runtime_version=identity.runtime_tag,
-            image_digest=args.runtime_image_digest,
-            database_id=f"metabase:{database_id}",
-            repository=identity.repository,
-            revision_sha=identity.revision_sha,
-            upstream_base_sha=identity.upstream_base_sha,
-            runtime_tag=identity.runtime_tag,
-            build_identity=identity.build_identity,
-            image_identity=identity.image_identity,
-            runtime_instance_id=identity.runtime_instance_id,
-        ),
-        execution_result=ExecutionResultSnapshot(payload={"rows": rows}, row_count=1),
-        execution_event=ExecutionEventIdentity(
-            execution_id="exec-px01-" + conversation_id.hex[:16],
-            executed_at=datetime.now(timezone.utc),
-        ),
-    )
-    fingerprints["receipt"] = receipt.canonical_query_fingerprint
-    if len(set(fingerprints.values())) != 1:
-        raise RuntimeError(f"receipt fingerprint mismatch: {fingerprints}")
+        failure_state["failure_owner"] = "independent-oracle"
+        expected = oracle(args.oracle)
+        if observed != expected:
+            raise RuntimeError(f"receipted result {observed!r} != oracle {expected!r}")
 
-    engine_shas = {
-        args.engine_sha,
-        identity.revision_sha,
-        attestation.manifest.runtime_identity.revision_sha,
-        receipt.engine_revision_sha,
-    }
-    instances = {
-        str(identity.runtime_instance_id),
-        str(attestation.manifest.runtime_identity.runtime_instance_id),
-        str(receipt.engine_runtime_instance_id),
-    }
-    if len(engine_shas) != 1 or len(instances) != 1:
-        raise RuntimeError("runtime identity chain mismatch")
+        failure_state["failure_owner"] = "evidence-promotion"
+        evidence = EvidenceArtifact(
+            artifact_id="evi_" + h(
+                {"receipt": receipt.receipt_id, "observed": observed, "oracle": expected}
+            )[:24],
+            authority_id=authority.authority_id,
+            obligation_ids=intent.obligation_ids,
+            query_receipt_refs=(receipt.receipt_id,),
+            evidence_kind="p13b_px01_standard_scalar",
+            state=EvidenceState.VERIFIED,
+            payload={"case_id": CASE_ID, "official_answer": observed, "oracle": expected},
+        )
+        if not evidence.verified:
+            raise RuntimeError("Evidence is not VERIFIED")
 
-    expected = oracle(args.oracle)
-    if observed != expected:
-        raise RuntimeError(f"receipted result {observed!r} != oracle {expected!r}")
+        finish = observation.finish_parts[-1] if observation.finish_parts else {}
+        usage = finish.get("usage") if isinstance(finish, dict) else {}
+        usage = usage if isinstance(usage, dict) else {}
+        report = {
+            "schema_version": "p13b_px01_live_standard_v1",
+            "status": "GREEN",
+            "case_id": CASE_ID,
+            "question": QUESTION,
+            "official_answer": observed,
+            "oracle": expected,
+            "counts": {
+                "authority": 1,
+                "native_material_query": attestation.manifest.material_query_count,
+                "attestation": 1,
+                "authorized_artifact": 1,
+                "execution_access_snapshot": 1,
+                "db_execution": 1,
+                "dima_query_receipt": 1,
+                "verified_evidence": 1,
+            },
+            "fingerprint_chain": fingerprints,
+            "runtime_identity": identity.model_dump(mode="json"),
+            "receipt": receipt.model_dump(mode="json"),
+            "evidence": evidence.model_dump(mode="json"),
+            "economics": {
+                "provider_model_identifier": args.model_identifier,
+                "agent_iterations": None,
+                "agent_iterations_measurement": "NOT_EXPOSED_BY_NATIVE_STREAM",
+                "provider_model_call_count": None,
+                "provider_model_call_count_measurement": "NOT_EXPOSED_BY_NATIVE_STREAM",
+                "native_tool_call_count": len(observation.tool_calls),
+                "analytical_query_count": attestation.manifest.material_query_count,
+                "native_agent_latency_ms": observation.latency_ms,
+                "dataset_latency_ms": execution.latency_ms,
+                "end_to_end_ms": max(0, int((time.monotonic() - started) * 1000)),
+                "prompt_tokens": usage.get("promptTokens"),
+                "completion_tokens": usage.get("completionTokens"),
+                "provider_cost": usage.get("cost"),
+                "raw_usage": usage,
+            },
+            "silent_wrong": 0,
+            "agent_api_analytical_fallback": 0,
+            "wren_fallback": 0,
+            "raw_sql_fallback": 0,
+            "admin_analytical_fallback": 0,
+        }
+        if tuple(report["counts"].values()) != (1, 1, 1, 1, 1, 1, 1, 1):
+            raise RuntimeError(f"P13B-3 cardinality failure: {report['counts']}")
 
-    evidence = EvidenceArtifact(
-        artifact_id="evi_" + h(
-            {"receipt": receipt.receipt_id, "observed": observed, "oracle": expected}
-        )[:24],
-        authority_id=authority.authority_id,
-        obligation_ids=intent.obligation_ids,
-        query_receipt_refs=(receipt.receipt_id,),
-        evidence_kind="p13b_px01_standard_scalar",
-        state=EvidenceState.VERIFIED,
-        payload={"case_id": CASE_ID, "official_answer": observed, "oracle": expected},
-    )
-    if not evidence.verified:
-        raise RuntimeError("Evidence is not VERIFIED")
-
-    finish = observation.finish_parts[-1] if observation.finish_parts else {}
-    usage = finish.get("usage") if isinstance(finish, dict) else {}
-    usage = usage if isinstance(usage, dict) else {}
-    report = {
-        "schema_version": "p13b_px01_live_standard_v1",
-        "status": "GREEN",
-        "case_id": CASE_ID,
-        "question": QUESTION,
-        "official_answer": observed,
-        "oracle": expected,
-        "counts": {
-            "authority": 1,
-            "native_material_query": attestation.manifest.material_query_count,
-            "attestation": 1,
-            "authorized_artifact": 1,
-            "execution_access_snapshot": 1,
-            "db_execution": 1,
-            "dima_query_receipt": 1,
-            "verified_evidence": 1,
-        },
-        "fingerprint_chain": fingerprints,
-        "runtime_identity": identity.model_dump(mode="json"),
-        "receipt": receipt.model_dump(mode="json"),
-        "evidence": evidence.model_dump(mode="json"),
-        "economics": {
-            "provider_model_identifier": args.model_identifier,
-            "agent_iterations": None,
-            "agent_iterations_measurement": "NOT_EXPOSED_BY_NATIVE_STREAM",
-            "provider_model_call_count": None,
-            "provider_model_call_count_measurement": "NOT_EXPOSED_BY_NATIVE_STREAM",
-            "native_tool_call_count": len(observation.tool_calls),
-            "analytical_query_count": attestation.manifest.material_query_count,
-            "native_agent_latency_ms": observation.latency_ms,
-            "dataset_latency_ms": execution.latency_ms,
-            "end_to_end_ms": max(0, int((time.monotonic() - started) * 1000)),
-            "prompt_tokens": usage.get("promptTokens"),
-            "completion_tokens": usage.get("completionTokens"),
-            "provider_cost": usage.get("cost"),
-            "raw_usage": usage,
-        },
-        "silent_wrong": 0,
-        "agent_api_analytical_fallback": 0,
-        "wren_fallback": 0,
-        "raw_sql_fallback": 0,
-        "admin_analytical_fallback": 0,
-    }
-    if tuple(report["counts"].values()) != (1, 1, 1, 1, 1, 1, 1, 1):
-        raise RuntimeError(f"P13B-3 cardinality failure: {report['counts']}")
-
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
-    return 0
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+        failure_state["failure_owner"] = "complete"
+        return 0
+    except Exception as exc:
+        _write_failure_receipt(args.output, failure_state, exc, failure_started)
+        raise
 
 
 if __name__ == "__main__":
