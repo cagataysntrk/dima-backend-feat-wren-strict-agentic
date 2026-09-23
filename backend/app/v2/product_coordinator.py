@@ -26,6 +26,16 @@ from app.v2.product_models import (
     ProductTerminalReceipt,
 )
 from app.v2.research_lane import ResearchLaneResult, ResearchLaneService
+from app.v2.research_report_projector import (
+    ResearchReportProjectionStatus,
+    ResearchReportProjector,
+)
+from app.v2.report_builder import (
+    ReportBuildStatus,
+    ReportBuilder,
+    ReportSourceProvenance,
+)
+from app.v2.report_narration import ReportNarrator
 from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
 from app.v2.semantic_linker import StructuredSemanticCandidateDecisionProvider
 from app.v2.standard_lane import (
@@ -82,6 +92,19 @@ def build_standard_lane(settings) -> tuple[StandardLaneEngine, str]:
     )
 
 
+def build_report_narrator(settings) -> ReportNarrator:
+    """Reuse the approved Research/Reference-capable structured provider for presentation."""
+
+    policy = ModelRolePolicy(settings)
+    scoped, profile = policy.scoped_settings(ModelRole.RESEARCH_MANAGER)
+    llm = build_generator(scoped)
+    return ReportNarrator(
+        llm=llm,
+        provider=profile.provider,
+        model=profile.model,
+    )
+
+
 class ProductCoordinator:
     """Single product core used by sync and future stream adapters."""
 
@@ -91,10 +114,12 @@ class ProductCoordinator:
         standard_lane: StandardLaneEngine | None = None,
         standard_model_role: str | None = None,
         research_lane: ResearchLaneService | None = None,
+        report_narrator: ReportNarrator | None = None,
     ) -> None:
         self._standard_lane = standard_lane
         self._standard_model_role = standard_model_role
         self._research_lane = research_lane
+        self._report_narrator = report_narrator
 
     def _ensure_lanes(self) -> None:
         settings = get_settings()
@@ -104,6 +129,8 @@ class ProductCoordinator:
             self._standard_model_role = role
         if self._research_lane is None:
             self._research_lane = ResearchLaneService.from_settings(settings)
+        if self._report_narrator is None:
+            self._report_narrator = build_report_narrator(settings)
 
     @staticmethod
     def _bind_context(
@@ -238,15 +265,15 @@ class ProductCoordinator:
             ),
         )
 
-    @staticmethod
     def _research_response(
+        self,
         *,
         context: ProductRequestContext,
         result: ResearchLaneResult,
     ) -> ProductResponse:
         snapshot = result.runtime.snapshot
         evidence = tuple(_product_evidence(item) for item in result.evidence)
-        limitations = tuple(
+        base_limitations = tuple(
             dict.fromkeys(
                 limitation
                 for item in result.evidence
@@ -255,27 +282,151 @@ class ProductCoordinator:
         )
 
         if result.outcome.clarification_required:
-            status = ProductStatus.CLARIFY
-        elif result.verified_complete:
-            # D10-B upgrades a completed Research lane to REPORT after deterministic
-            # artifact/report projection. Until then this is explicitly partial product
-            # integration, never a fake report.
-            status = ProductStatus.PARTIAL
-        elif result.outcome.terminal_status is not None:
-            status = ProductStatus.PARTIAL
-        else:
-            status = ProductStatus.FAILED
+            return self._research_terminal(
+                context=context,
+                result=result,
+                status=ProductStatus.CLARIFY,
+                evidence=evidence,
+                limitations=base_limitations,
+            )
+        if result.accepted_contract is None or result.ledger is None:
+            return self._research_terminal(
+                context=context,
+                result=result,
+                status=ProductStatus.FAILED,
+                evidence=evidence,
+                limitations=(
+                    *base_limitations,
+                    "accepted Research authority unavailable",
+                ),
+            )
 
+        projection = ResearchReportProjector(
+            semantic_handles=result.semantic_handles,
+            tenant_binding=context.tenant_binding,
+            context_version=context.semantic_context.context_version.version,
+        ).project(
+            ledger=result.ledger,
+            evidence=result.evidence,
+            findings=result.findings,
+        )
+        if (
+            projection.status != ResearchReportProjectionStatus.COMPLETE
+            or projection.request is None
+        ):
+            return self._research_terminal(
+                context=context,
+                result=result,
+                status=ProductStatus.PARTIAL,
+                evidence=evidence,
+                artifact_refs=tuple(
+                    item.artifact_id for item in projection.artifacts
+                ),
+                limitations=tuple(
+                    dict.fromkeys((*base_limitations, *projection.issues))
+                ),
+            )
+
+        provenance = ReportSourceProvenance(
+            accepted_contract_id=result.accepted_contract.contract_id,
+            lineage_id=result.accepted_contract.lineage_id,
+            run_id=snapshot.run_id,
+            tenant_binding=context.tenant_binding,
+            context_version=context.semantic_context.context_version.version,
+        )
+        build = ReportBuilder(
+            evidence_store=result.evidence_store,
+            current_evidence_refs=snapshot.evidence_refs,
+            findings=result.findings,
+            semantic_handles=result.semantic_handles,
+            known_artifacts={
+                item.artifact_id: item.artifact_kind
+                for item in projection.artifacts
+            },
+            provenance=provenance,
+        ).build(projection.request)
+
+        if build.status != ReportBuildStatus.COMPLETE or build.report is None:
+            return self._research_terminal(
+                context=context,
+                result=result,
+                status=ProductStatus.PARTIAL,
+                evidence=evidence,
+                artifact_refs=tuple(
+                    item.artifact_id for item in projection.artifacts
+                ),
+                limitations=tuple(
+                    dict.fromkeys(
+                        (
+                            *base_limitations,
+                            *(
+                                f"{issue.code.value}: {issue.reason}"
+                                for issue in build.issues
+                            ),
+                        )
+                    )
+                ),
+            )
+
+        assert self._report_narrator is not None
+        overlay = self._report_narrator.compose(build.report)
+        status = (
+            ProductStatus.REPORT
+            if result.verified_complete
+            else ProductStatus.PARTIAL
+        )
         return ProductResponse(
             request_ref=context.request_ref,
             lane=ProductLane.RESEARCH,
             status=status,
             evidence_refs=evidence,
-            limitations=limitations,
+            artifact_refs=tuple(
+                item.artifact_id for item in projection.artifacts
+            ),
+            report=build.report,
+            narration=overlay,
+            limitations=tuple(
+                dict.fromkeys(
+                    (*base_limitations, *build.report.limitations)
+                )
+            ),
             terminal_receipt=ProductTerminalReceipt(
                 lane=ProductLane.RESEARCH,
                 status=status,
                 verified_complete=result.verified_complete,
+                terminal_status=(
+                    result.outcome.terminal_status.value
+                    if result.outcome.terminal_status is not None
+                    else None
+                ),
+                manager_turns=snapshot.manager_turns,
+                tool_calls=snapshot.tool_calls,
+                data_queries=snapshot.data_queries,
+            ),
+        )
+
+    @staticmethod
+    def _research_terminal(
+        *,
+        context: ProductRequestContext,
+        result: ResearchLaneResult,
+        status: ProductStatus,
+        evidence: tuple[ProductEvidenceRef, ...],
+        limitations: tuple[str, ...],
+        artifact_refs: tuple[str, ...] = (),
+    ) -> ProductResponse:
+        snapshot = result.runtime.snapshot
+        return ProductResponse(
+            request_ref=context.request_ref,
+            lane=ProductLane.RESEARCH,
+            status=status,
+            evidence_refs=evidence,
+            artifact_refs=artifact_refs,
+            limitations=limitations,
+            terminal_receipt=ProductTerminalReceipt(
+                lane=ProductLane.RESEARCH,
+                status=status,
+                verified_complete=False,
                 terminal_status=(
                     result.outcome.terminal_status.value
                     if result.outcome.terminal_status is not None
