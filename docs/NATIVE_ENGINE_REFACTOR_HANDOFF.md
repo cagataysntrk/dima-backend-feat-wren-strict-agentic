@@ -73,20 +73,26 @@ The frontend is engine-URL based. Model/provider configuration belongs to the en
 
 ## Quality certification
 
-Public working branch quality gate:
+Final public working code SHA:
+`e1bc872278e37668fac19dce6375bd49ec5ef6a4`
 
-Run:
-`35835138638`
+Public quality run:
+`35836313520 GREEN`
 
-Result:
-`GREEN`
+Private developer mirror code SHA:
+`61e0f4dafdd0b1c022135d799603ecd8368f7990`
 
-Scope:
+Private quality run:
+`35836639281 GREEN`
+
+Both gates cover:
 - lint;
 - typecheck;
 - tests;
 - production build;
 - architecture invariants.
+
+The private mirror was reconciled on top of its existing developer-only documentation/conversation changes; those changes were preserved rather than overwritten.
 
 ## Native live diagnostic
 
