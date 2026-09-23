@@ -355,37 +355,138 @@ class ManagerSemanticResolutionAdapter:
         del runtime  # provenance authority is validated by GovernedManagerExecutor.
 
         if args.provenance == "USER_SOURCE":
-            spans = [self._source_spans.validate(source_ref) for source_ref in args.source_refs]
-            hints = args.target_kind_hints or tuple("unknown" for _ in args.source_refs)
-
-            regular: list[tuple[str | None, str, str]] = []
-            time_entries: list[tuple[str, str]] = []
-            comparison_entries: list[tuple[str, str]] = []
-            for source_ref, hint, span in zip(args.source_refs, hints, spans, strict=True):
-                if hint == "time":
-                    time_entries.append((source_ref, span.exact_surface))
-                elif hint == "comparison":
-                    comparison_entries.append((source_ref, span.exact_surface))
-                else:
-                    regular.append((source_ref, span.exact_surface, hint))
-
-            # Resolve tenant semantics first. A metric/dimension handle from this SAME
-            # governed call may safely anchor temporal normalization, avoiding an
-            # unnecessary extra Manager round-trip.
-            regular_result = (
-                self._resolve_regular(entries=regular, args=args)
-                if regular
-                else ManagerSemanticResolutionResult()
+            spans = [
+                self._source_spans.validate(source_ref)
+                for source_ref in args.source_refs
+            ]
+            hints = (
+                args.target_kind_hints
+                or tuple("unknown" for _ in args.source_refs)
             )
-            resolved: list[ManagerResolvedSemantic] = list(regular_result.resolved)
-            unresolved_refs: list[str] = list(regular_result.unresolved_source_refs)
+            owners: tuple[str | None, ...] = (
+                tuple(args.source_obligation_ids)
+                if args.source_obligation_ids
+                else tuple(None for _ in args.source_refs)
+            )
 
+            regular: list[tuple[str | None, str, str, str | None]] = []
+            time_entries: list[tuple[str, str, str | None]] = []
+            comparison_entries: list[tuple[str, str, str | None]] = []
+            for source_ref, hint, owner_id, span in zip(
+                args.source_refs,
+                hints,
+                owners,
+                spans,
+                strict=True,
+            ):
+                if hint == "time":
+                    time_entries.append(
+                        (source_ref, span.exact_surface, owner_id)
+                    )
+                elif hint == "comparison":
+                    comparison_entries.append(
+                        (source_ref, span.exact_surface, owner_id)
+                    )
+                else:
+                    regular.append(
+                        (source_ref, span.exact_surface, hint, owner_id)
+                    )
+
+            # Pass 1 is the existing bounded semantic path. It remains the owner whenever
+            # it has candidates, ambiguity, linker abstention/unavailability, or a
+            # globally exhaustive gap. Sibling-scope recovery is RETRIEVAL_MISS only.
+            if regular:
+                pass1_result, pass1_selections = self._resolve_regular_once(
+                    entries=regular,
+                    args=args,
+                )
+                recovered: list[ManagerResolvedSemantic] = list(
+                    pass1_result.resolved
+                )
+
+                if args.source_obligation_ids:
+                    misses_by_owner: dict[
+                        str,
+                        list[tuple[str | None, str, str, str | None]],
+                    ] = {}
+                    for entry, selection in zip(
+                        regular,
+                        pass1_selections,
+                        strict=True,
+                    ):
+                        owner_id = entry[3]
+                        if (
+                            owner_id is not None
+                            and selection.status == "RETRIEVAL_MISS"
+                        ):
+                            misses_by_owner.setdefault(owner_id, []).append(
+                                entry
+                            )
+
+                    for owner_id, missed_entries in misses_by_owner.items():
+                        scope = self._coherent_sibling_scope(
+                            resolved=pass1_result.resolved,
+                            owner_id=owner_id,
+                        )
+                        if not scope:
+                            continue
+
+                        scoped_linker = BoundedSemanticLinker(
+                            generator=GovernedSiblingScopeCandidateGenerator(
+                                base=self._candidate_generator,
+                                sibling_cube_names=scope,
+                            ),
+                            binding_gate=self._binding_gate,
+                            provider=self._semantic_decision_provider,
+                        )
+                        fallback_result, _ = self._resolve_regular_once(
+                            entries=missed_entries,
+                            args=args,
+                            linker=scoped_linker,
+                        )
+                        recovered.extend(fallback_result.resolved)
+
+                resolved_keys = {
+                    (item.owner_id, item.source_ref)
+                    for item in recovered
+                    if item.source_ref is not None
+                }
+                unresolved_regular_refs = tuple(
+                    dict.fromkeys(
+                        source_ref
+                        for source_ref, _, _, owner_id in regular
+                        if (
+                            source_ref is not None
+                            and (owner_id, source_ref) not in resolved_keys
+                        )
+                    )
+                )
+                regular_result = ManagerSemanticResolutionResult(
+                    resolved=tuple(recovered),
+                    unresolved_source_refs=unresolved_regular_refs,
+                    unresolved_proposals=pass1_result.unresolved_proposals,
+                    clarification=pass1_result.clarification,
+                )
+            else:
+                regular_result = ManagerSemanticResolutionResult()
+
+            resolved: list[ManagerResolvedSemantic] = list(
+                regular_result.resolved
+            )
+            unresolved_refs: list[str] = list(
+                regular_result.unresolved_source_refs
+            )
+
+            # Temporal normalization remains its own typed family. Existing behavior is
+            # preserved here; multi-obligation temporal semantics are classified
+            # separately and are not repaired by sibling-scope discovery.
             effective_anchor = args.temporal_anchor_handle
             if effective_anchor is None:
                 anchored = [
                     item.handle.handle_id
                     for item in regular_result.resolved
-                    if item.handle.target_kind in {"metric", "kpi", "dimension"}
+                    if item.handle.target_kind
+                    in {"metric", "kpi", "dimension"}
                 ]
                 if anchored:
                     effective_anchor = anchored[0]
@@ -395,7 +496,7 @@ class ManagerSemanticResolutionAdapter:
             )
 
             period_handles: list[str] = []
-            for source_ref, text in time_entries:
+            for source_ref, text, owner_id in time_entries:
                 try:
                     handle = self._resolve_temporal(
                         text=text,
@@ -406,6 +507,7 @@ class ManagerSemanticResolutionAdapter:
                     resolved.append(
                         ManagerResolvedSemantic(
                             source_ref=source_ref,
+                            owner_id=owner_id,
                             provenance="USER_SOURCE",
                             handle=handle,
                         )
@@ -419,7 +521,7 @@ class ManagerSemanticResolutionAdapter:
             comparison_args = temporal_args.model_copy(
                 update={"base_period_handle": effective_base}
             )
-            for source_ref, text in comparison_entries:
+            for source_ref, text, owner_id in comparison_entries:
                 try:
                     handle = self._resolve_temporal(
                         text=text,
@@ -429,6 +531,7 @@ class ManagerSemanticResolutionAdapter:
                     resolved.append(
                         ManagerResolvedSemantic(
                             source_ref=source_ref,
+                            owner_id=owner_id,
                             provenance="USER_SOURCE",
                             handle=handle,
                         )
@@ -438,7 +541,9 @@ class ManagerSemanticResolutionAdapter:
 
             return ManagerSemanticResolutionResult(
                 resolved=tuple(resolved),
-                unresolved_source_refs=tuple(dict.fromkeys(unresolved_refs)),
+                unresolved_source_refs=tuple(
+                    dict.fromkeys(unresolved_refs)
+                ),
                 unresolved_proposals=regular_result.unresolved_proposals,
                 clarification=regular_result.clarification,
             )
@@ -467,6 +572,6 @@ class ManagerSemanticResolutionAdapter:
                 )
 
         return self._resolve_regular(
-            entries=[(None, args.natural_language_proposal, hint)],
+            entries=[(None, args.natural_language_proposal, hint, None)],
             args=args,
         )
