@@ -1476,3 +1476,72 @@ The documentation handoff commit is not a new product-code baseline.
 
 **Current phase:** P12 BI WORKSPACE FEASIBILITY / CLASSIFICATION.  
 **Next real integration owner:** P13 Production Standard seam after deliberate P12 closure.
+
+
+---
+
+## NEW DEVELOPER TAKEOVER — P12 CLOSURE / P13 PREDEVELOPMENT BOUNDARY
+
+```text
+takeover read HEAD                  = 56799687d2a8018dd60b0b909fb8b0be5d4a79c7
+audited functional baseline         = 4b60bc3f1e6ab9526cd590a0989c1b227c5c43be
+baseline P11 workflow               = 35816646368 = SUCCESS
+baseline governance                 = 35816646416 = SUCCESS
+handoff governance                  = 35817394598 = SUCCESS
+ask-v2 moving observation           = d430680a02256f4b9612730bd79b2e938a134132
+Fast Track moving observation       = 5280dd37451ded59ce181b93b015bc9dfafe0696
+source writes/merge/cherry-pick     = 0
+product code changed by takeover    = 0
+```
+
+### P12
+
+Decision receipt:
+`DMP-DEC-0028`.
+
+Certified wording:
+```text
+P12 BI WORKSPACE FEASIBILITY = CLOSED / CLASSIFICATION GREEN
+```
+
+Composition:
+```text
+DIMA_SHELL + HEADLESS_API
+LINK_OUT = mature workspace escape hatch
+EMBED    = deferred / measured escalation only
+```
+
+P12 workspace/frontend integration remains unimplemented by design.
+
+### P13
+
+Predevelopment review:
+`backend/belgeler/metabase/predev/P13_PREDEVELOPMENT_REVIEW.md`.
+
+Ticket:
+`backend/belgeler/metabase/tickets/P13_PRODUCTION_STANDARD_VERTICAL.md`.
+
+Sequencing decision:
+`DMP-DEC-0029`.
+
+Current phase:
+```text
+P13 PRODUCTION STANDARD — PREDEVELOPMENT SEALED
+P13 PRODUCT CODE — NOT AUTHORIZED PENDING SUPERVISOR REVIEW
+```
+
+Binding design:
+```text
+ResolvedAnalyticsIntent
+→ PREPARE ONCE
+→ exact frozen CanonicalProjection
+→ P10 authorize exact prepared artifact
+→ ExecutionAccessSnapshot
+→ EXECUTE SAME PREPARED ARTIFACT
+→ strict QueryReceipt
+→ VERIFIED Evidence
+```
+
+P13C owns `DMP-P11-INTEGRATION-005`; it remains OPEN.
+`DMP-P5-BLOCK-001`, EV-05/06/07, P10B2 advanced gaps, P9 transport gaps and P7/P8 semantic gaps all
+remain OPEN/typed exactly as before.

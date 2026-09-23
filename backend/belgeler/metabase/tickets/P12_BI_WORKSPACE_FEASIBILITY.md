@@ -1,7 +1,7 @@
 # P12-001 — BI workspace feasibility
 
 **Milestone:** P12  
-**Status:** FEASIBILITY CLASSIFICATION / NO INTEGRATION IMPLEMENTATION
+**Status:** CLOSED / CLASSIFICATION GREEN / NO INTEGRATION IMPLEMENTATION
 
 ## Decision
 
@@ -34,3 +34,16 @@ P13 owns production Standard integration, including P11 integration requirement
 `DMP-P11-INTEGRATION-005`.
 
 No Fast Track harvest is authorized by this feasibility ticket alone.
+
+
+## Closure
+
+Decision receipt: `DMP-DEC-0028`.
+
+Certified wording:
+```text
+P12 BI WORKSPACE FEASIBILITY = CLOSED / CLASSIFICATION GREEN
+```
+
+Closure changed no frontend/product integration code and authorized no Fast Track harvest.
+Next real integration owner: P13 Production Standard.

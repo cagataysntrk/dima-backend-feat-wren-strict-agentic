@@ -1070,3 +1070,206 @@ success criterion:
 
 status:
 `SEALED / MINIMUM GUARDRAIL IMPLEMENTATION AUTHORIZED`.
+
+
+---
+
+## DMP-DEC-0028 — P12 BI workspace composition closure
+
+date: 2026-09-23
+
+question:
+Which BI/workspace composition should the Platform use initially without transferring Dima semantic
+authority to Metabase or prematurely implementing frontend/workspace integration?
+
+options_considered:
+- `DIMA_SHELL`;
+- `HEADLESS_API`;
+- `LINK_OUT`;
+- `EMBED`;
+- combinations of the above.
+
+evidence:
+- `P12_PREDEVELOPMENT_REVIEW.md` classifies P12 as product/workspace feasibility, not semantic cognition.
+- `P12_UX_MODE_EVIDENCE_MATRIX.md` classifies all four modes and records the initial composition.
+- `P12_BI_WORKSPACE_FEASIBILITY.md` selects the same composition and assigns P13 as the next integration owner.
+- pinned Metabase v0.63.18 already provides mature dashboard/question/collection/query-builder workspace
+  capability, but availability is not equivalent to Dima semantic authority or production security
+  certification.
+- audited functional baseline `4b60bc3f1e6ab9526cd590a0989c1b227c5c43be` remains the last
+  product baseline; `56799687d2a8018dd60b0b909fb8b0be5d4a79c7` differs only by handoff/status
+  documentation.
+- baseline P11 workflow `35816646368 = SUCCESS`, baseline governance
+  `35816646416 = SUCCESS`, handoff governance `35817394598 = SUCCESS`.
+- takeover moving-reference observation: ask-v2 `d430680a02256f4b9612730bd79b2e938a134132`,
+  Fast Track `5280dd37451ded59ce181b93b015bc9dfafe0696`; both remain reference-only and provide
+  no new evidence requiring P12 harvest or reclassification.
+
+decision:
+```text
+initial product shell          = DIMA_SHELL
+analytics integration          = HEADLESS_API
+mature workspace escape hatch  = LINK_OUT
+EMBED                           = DEFERRED / MEASURED ESCALATION ONLY
+```
+
+P12 is closed as a feasibility/classification milestone only.
+
+scope:
+Product/workspace composition classification. No frontend/workspace integration implementation is
+authorized by this decision.
+
+invariants:
+- Metabase Card/Dashboard/Question/Collection/UI navigation are not Dima semantic authority.
+- Dima UX remains the primary product shell.
+- Metabase remains analytics/workspace substrate.
+- P10B2 advanced security gaps remain typed/open.
+- `DMP-P5-BLOCK-001` remains OPEN.
+- no Fast Track or ask-v2 harvest occurs during P12 closure.
+
+rejected_shortcuts:
+- frontend rewrite;
+- Metabase frontend fork;
+- collection/dashboard sync;
+- embed implementation without measured need;
+- bulk Fast Track import;
+- treating Metabase UI/content names as business truth.
+
+revisit_condition:
+Revisit EMBED only after a measured continuity/context requirement plus explicit auth/session/
+entitlement/security evidence. LINK_OUT context handoff and mobile/responsive behavior remain later
+product implementation questions.
+
+status:
+`SEALED / P12 BI WORKSPACE FEASIBILITY = CLOSED / CLASSIFICATION GREEN`.
+
+---
+
+## DMP-DEC-0029 — P13 single-preparation Standard integration boundary
+
+date: 2026-09-23
+
+question:
+What exact sequencing may P13 use to wire the already-certified semantic, security, query,
+receipt and evidence contracts into the first real Metabase Standard vertical without introducing a
+second semantic/access owner or authorizing a different query than the one executed?
+
+evidence:
+- `StandardProjection.filter_handles` are resolved by `ResolvedAnalyticsIntentBuilder` through
+  `SemanticHandleRegistry` to `V2ResolvedFilterRef`, whose canonical target already contains both
+  the dimension and the string value. Therefore a sealed filter handle already carries material
+  filter meaning.
+- `EntityValueAdoptionGate` is a minimum truth gate and does not own scope discovery, retrieval,
+  translation, search or analytical planning.
+- `ExecutionAccessSnapshotIssuer.issue` requires the accepted `ResolvedAnalyticsIntent`, the exact
+  `CanonicalProjection`, the current principal and `VerifiedExecutionSecurityFacts`.
+- current `MetabaseSubstrateAdapter` requires an `ExecutionAccessSnapshot` at construction while
+  `execute_execution_intent` performs compile + canonicalize internally. Naively preparing once for
+  authorization and again inside the adapter would create two prepared query instances across the
+  trust boundary.
+- `CanonicalProjection` is frozen and carries authority/projection/resolved-intent/catalog/query
+  identity; `DimaQueryReceiptSealer` verifies these exact identities plus the P5/P10 access snapshot.
+
+decision:
+
+### P13A/B metric-only sequencing
+```text
+AcceptedStandardAuthority
+→ ResolvedAnalyticsIntent
+→ PREPARE ONCE
+   MetabaseProjectionCompiler
+   → MetabaseCanonicalizer
+   → exact frozen CanonicalProjection
+→ P10 ExecutionAccessSnapshotIssuer
+   using current principal + truthful VerifiedExecutionSecurityFacts
+→ EXECUTE THAT SAME CanonicalProjection
+→ DimaQueryReceiptSealer using that same projection
+→ VERIFIED EvidenceArtifact
+```
+
+No second compile, no second canonicalization and no query reconstruction are allowed on the P13
+production vertical.
+
+A narrow new P13 orchestration owner is planned at
+`backend/app/v3/standard_execution.py`.
+It coordinates existing owners; it is not a generic workflow/planner framework.
+
+The minimum expected prior-owner change, only if provider-free implementation proves it necessary, is
+a prepared-execution entry point in
+`backend/app/v3/substrate/metabase/execution_adapter.py` that executes an already-created
+`CanonicalProjection` without recompiling/recanonicalizing it. Existing certified P4/P5/P10
+semantics are reused, not redefined.
+
+### P13C filter-value ordering
+For production use of P11 value evidence, value adoption occurs before final filter semantic-handle
+minting and before `AcceptedStandardAuthority` sealing:
+
+```text
+LLM cognition
+→ Dima-governed semantic scope candidates/bindings
+→ Dima scope admissibility
+→ authenticated current-principal Metabase value retrieval
+→ narrow retrieval attestation/reference
+→ LLM structured value proposal
+→ EntityValueAdoptionGate
+→ final governed textual filter binding / semantic handle
+→ SemanticSurfaceCoverage complete
+→ AcceptedStandardAuthority sealed
+→ ResolvedAnalyticsIntent
+```
+
+An accepted Standard authority is never mutated after sealing.
+
+Initial P13 filter capability is **exact string-valued equality only**. Non-string approved values,
+typed comparison, NULL/IS NOT NULL and range remain typed capability gaps; no coercion or
+`str(value)` fallback is allowed.
+
+### Access timing / DMP-P11-INTEGRATION-005
+Candidate-value retrieval may precede the final P10 snapshot. It therefore receives a narrow retrieval
+attestation/reference, not a second durable access fingerprint. The attestation must preserve the
+authenticated Metabase subject, tenant/principal, semantic-context and source-resource identity.
+Before the bind/execution becomes official, P10 issuance must prove coherence and include the
+retrieval proof in the facts/attestation chain. The sole durable access identity remains
+`ExecutionAccessSnapshot.execution_access_fingerprint`, which is carried into the strict receipt.
+
+`DMP-P11-INTEGRATION-005` remains OPEN during P13A/B and is owned for closure by P13C.
+
+### Security profile
+P13B may certify only an isolated **BASIC AUTHENTICATED LAB PROFILE** whose facts can be truthfully
+established from the current authenticated Metabase user, exact basic query permission state and one
+known DB route, following the existing P10B1 proof shape. `VerifiedExecutionSecurityFacts` remains a
+P10-owned attested input; P13 does not discover or invent security facts.
+
+`DMP-P5-BLOCK-001` remains OPEN. No global production-security claim follows from the P13B canary.
+
+scope:
+P13 predevelopment sequencing only. This decision does not authorize P13 product code yet.
+
+invariants:
+- LLM = cognition; Dima = semantic/security/provenance/evidence truth; Metabase = execution.
+- AcceptedStandardAuthority XOR AcceptedTurnContract.
+- no hidden third Metabase semantic authority.
+- no second durable access fingerprint.
+- no front-door changes in P13A/B.
+- no Wren fallback on accepted Metabase Standard execution failure.
+- no Wren deletion.
+- no raw SQL, label guessing, implicit FK authority or display-name execution identity.
+- P4 compiler/canonical semantics, P5 receipt semantics, P10 fingerprint definition and P11 adoption
+  semantics remain frozen unless a classified RED proves their owner defective.
+
+rejected_shortcuts:
+- seal Standard authority and then mutate filter meaning;
+- compile/canonicalize twice around authorization;
+- invent value-access fingerprints;
+- stringify non-string P11 values;
+- fake `VerifiedExecutionSecurityFacts`;
+- use admin analytical fallback;
+- re-enter legacy V2 `SemanticResolver → CubePlanner`;
+- merge/cherry-pick/rebase ask-v2 or Fast Track.
+
+revisit_condition:
+Only a classified P13 RED may reopen one of the existing certified owner contracts. Any new cognition
+mechanism requires the semantic-necessity protocol.
+
+status:
+`SEALED PREDEVELOPMENT DECISION / P13 IMPLEMENTATION NOT AUTHORIZED PENDING SUPERVISOR REVIEW`.

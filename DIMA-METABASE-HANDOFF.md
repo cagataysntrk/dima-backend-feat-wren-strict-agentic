@@ -871,3 +871,39 @@ For P13:
 semantic migration/equivalence contracts, isolated resource/security proofs, and a necessity-tested
 LLM-first entity-value path; the project is currently closing the BI workspace composition before P13
 wires the proven pieces into the first production Standard path.**
+
+
+---
+
+## TAKEOVER UPDATE — 2026-09-23
+
+A new developer completed the required re-verification at HEAD
+`56799687d2a8018dd60b0b909fb8b0be5d4a79c7`.
+
+No product code was changed.
+
+New read-only moving observations:
+```text
+ask-v2    = d430680a02256f4b9612730bd79b2e938a134132
+Fast Track= 5280dd37451ded59ce181b93b015bc9dfafe0696
+```
+
+No merge/cherry-pick/rebase/write occurred.
+
+P12 is now explicitly closed by `DMP-DEC-0028` with the certified wording:
+```text
+P12 BI WORKSPACE FEASIBILITY = CLOSED / CLASSIFICATION GREEN
+```
+
+P13 predevelopment is sealed by:
+- `DMP-DEC-0029`;
+- `backend/belgeler/metabase/predev/P13_PREDEVELOPMENT_REVIEW.md`;
+- `backend/belgeler/metabase/tickets/P13_PRODUCTION_STANDARD_VERTICAL.md`.
+
+The required next state is:
+```text
+P13 PRODUCT CODE = NOT AUTHORIZED PENDING SUPERVISOR REVIEW
+```
+
+Do not repeat P12 classification. On the next context reset, read the P13 predevelopment review and
+ticket after this handoff/status/receipts.
