@@ -394,3 +394,89 @@ Current Day7 ablation policy:
 - hard total model-call ceiling = 20,
 - if decisive, STOP; if ambiguous, add only `simple-performance`,
 - broad ablation deferred to Day11 Eval Expansion.
+
+
+---
+
+## DAY7 FINAL MICRO-ABLATION RECEIPT — 2026-09-23
+
+### Scope / cost receipt
+
+Provider-free dry-run:
+
+```text
+run                         35871834654 = SUCCESS
+selected_cases              2
+arms                        2
+maximum_loop_records        4
+configured Manager hard cap 6
+provider_requests_made      0
+model_calls_budget          16
+```
+
+Authorized one-time paid run:
+
+```text
+run                  35873755069 = SUCCESS
+measurement_valid    true
+selected/evaluable   2 / 2
+completed records    4
+shared authority     verified
+Manager model        openai/gpt-5.6-sol
+semantic linker      0 calls
+temporal normalizer  0 calls
+total model calls    16 / 16
+service queries      3
+budget_exhausted     true
+hard safety failures 0
+```
+
+Per-case receipt:
+
+```text
+adaptive-material
+  FREE_COGNITION          quality=true   calls=10 queries=1
+  GOVERNED_ORCHESTRATION  quality=true   calls=4  queries=1
+
+stable-no-extra-branch
+  FREE_COGNITION          quality=true   calls=2  queries=1
+  GOVERNED_ORCHESTRATION  NOT EVALUATED TO COMPLETION:
+                          0 model calls; global eval budget already exhausted
+```
+
+### Interpretation
+
+This experiment is **INCONCLUSIVE / DAY11 DEFER**.
+
+The final governed stable case did not receive a cognition call because the shared
+sequential evaluation budget reached 16/16. Therefore its `quality=false` field is not
+a product-quality observation and MUST NOT be interpreted as FREE_COGNITION winning.
+
+There is useful directional signal:
+- on `adaptive-material`, both arms were safe/complete and governed used fewer Manager
+  calls (4 vs 10);
+- FREE_COGNITION consumed 12 calls across its two records and included one no-progress
+  action;
+- no arm produced a hard-safety violation.
+
+But the pair is not complete under symmetric measurement, so Day7 makes **no product
+refactor/retention decision from this micro experiment**.
+
+Per supervisor rule:
+```text
+NO RETRY
+NO 20/30/50/80 call rerun
+NO 8-case Day7 ablation
+broader FREE vs GOVERNED measurement -> Day11
+```
+
+### New evaluation invariant
+
+| ID | Mechanism / invariant | Class | Failure prevented / value |
+|---|---|---|---|
+| H-056 | Comparative A/B evaluator budgets must be symmetric enough that execution order cannot censor one arm and masquerade as a quality result. Budget exhaustion is an evaluation outcome, not an arm failure. | MUST_PORT | order-biased A/B conclusions, false product regression, cost-driven censoring |
+
+Day11 should use a predeclared symmetric per-arm/per-record allocation or an equivalent
+order-independent budget design before drawing comparative architecture conclusions.
+
+No Day7 product code was changed as a result of this ablation.
