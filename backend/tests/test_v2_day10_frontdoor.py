@@ -125,6 +125,7 @@ def _research_result():
         clarification_required=True,
         verified_complete=False,
         terminal_status=None,
+        cancelled=False,
     )
     runtime = SimpleNamespace(snapshot=snapshot)
     return SimpleNamespace(
