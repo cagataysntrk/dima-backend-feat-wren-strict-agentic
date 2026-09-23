@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-23  
 **Ticket:** `P11 — DAY8 ROOT-CAUSE BRANCH`  
-**Phase:** **REVIEW-RECONCILED / D8-A PROVIDER-FREE CORE AUTHORIZED**  
-**Product implementation:** **D8-A1 + D8-A2 ONLY; ROOT_CAUSE EXECUTION REMAINS DISABLED**
+**Phase:** **D8-A GREEN / D8-B PRECONDITIONS AUTHORIZED**  
+**Product implementation:** **D8-A1 + D8-A2 GREEN; ROOT_CAUSE EXECUTION REMAINS DISABLED**
 
 Authority:
 1. `DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md` — P11
@@ -667,3 +667,30 @@ Not authorized:
 - ROOT_CAUSE executable=true,
 - live Sol / paid tests,
 - Day9.
+
+
+---
+
+## 15. CURRENT SUPERVISOR OVERRIDE — D8-B PRECONDITIONS
+
+Current proof:
+
+```text
+D8-A1 HypothesisLedger       GREEN
+D8-A2 EpistemicLabelGate     GREEN
+focused run                  35880777420 = GREEN
+paid calls                   0
+ROOT_CAUSE executable        false
+```
+
+Before D8-B cognition wiring, close these provider-free seams:
+
+1. a mutable hypothesis ledger may exist only while its ROOT_CAUSE USER_MUST is
+   `ACCEPTED | READY | IN_PROGRESS`; every proposed/clarification/blocked/limited/
+   unsupported/superseded/verified terminal state rejects new epistemic state,
+2. current Evidence membership is a live read-only view of the same Day7 governed run;
+   do not freeze refs at ledger construction and do not create another EvidenceStore,
+3. D8-B cognition proposals may reference only current + VERIFIED + inspected Evidence.
+
+After those are GREEN, D8-B may add one focused proposal-boundary owner. D8-C remains
+unauthorized in this development burst.
