@@ -1,0 +1,59 @@
+name: v2-day8-focused
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/v2/models.py"
+      - "backend/app/v2/epistemics.py"
+      - "backend/tests/test_v2_day8_hypothesis_ledger.py"
+      - "backend/tests/test_v2_day8_epistemic_label_gate.py"
+      - ".github/workflows/v2-day8-focused.yml"
+  workflow_dispatch:
+
+jobs:
+  provider-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DIMA_LLM_PROVIDER: rule
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile Day8 epistemic slice
+        working-directory: backend
+        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py
+
+      - name: Day8 hypothesis ledger attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_hypothesis_ledger.py
+
+      - name: Day8 epistemic label attacks
+        if: ${{ hashFiles('backend/tests/test_v2_day8_epistemic_label_gate.py') != '' }}
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_epistemic_label_gate.py
+
+      - name: Relevant Day7 Evidence regression
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_derived_evidence.py
+
+      - name: Relevant Day7 ResearchTask regressions
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_research_task_lifecycle.py \
+            tests/test_v2_day7_research_task_registry.py \
+            tests/test_v2_day7_research_task_registry_execution.py
