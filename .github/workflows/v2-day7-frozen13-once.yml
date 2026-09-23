@@ -1,15 +1,17 @@
 name: v2-day7-frozen13-once
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/workflows/v2-day7-frozen13-once.yml"
+  workflow_dispatch:
+    inputs:
+      confirm_expensive_run:
+        description: "Type FROZEN13 to authorize this broad paid run"
+        required: true
+        default: ""
+        type: string
 
 jobs:
   frozen13:
-    if: "github.event.head_commit.message == 'test(v2-day7): run frozen13 once'"
+    if: "${{ inputs.confirm_expensive_run == 'FROZEN13' }}"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 45
