@@ -60,6 +60,8 @@ name: v2-day7-focused
       - "backend/app/v2/semantic_linker.py"
       - "backend/app/v2/semantic_retriever.py"
       - "backend/app/v2/manager_semantics.py"
+      - "backend/tests/test_v2_day6_5_typed_temporal.py"
+      - "backend/tests/test_v2_day7_temporal_owner_isolation.py"
       - "backend/lab/v2_day7_sibling_scope_live_luna.py"
       - "backend/lab/v2_day7_governed_sibling_scope_discovery.py"
       - "backend/tests/test_v2_day7_governed_sibling_scope_discovery.py"
@@ -156,6 +158,13 @@ jobs:
         run: |
           python lab/v2_day7_governed_sibling_scope_discovery.py
           pytest -q tests/test_v2_day7_governed_sibling_scope_discovery.py
+
+      - name: Temporal USER_MUST owner isolation
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_temporal_owner_isolation.py \
+            tests/test_v2_day6_5_typed_temporal.py
 
       - name: Obligation-local semantic retrieval recovery attacks
         working-directory: backend
