@@ -32,7 +32,10 @@ jobs:
         run: |
           set -euo pipefail
           P13_REVIEW="backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
-          if [ -f backend/app/v3/native_execution.py ] && [ -f "$P13_REVIEW" ] && grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$P13_REVIEW"; then
+          P13_DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+          if [ -d backend/app/v3/native_standard ] && grep -q "DMP-DEC-0038" "$P13_DECISIONS"; then
+            echo "P13B owns the active cross-owner change; P5 workflow is regression-only in this phase."
+          elif [ -f backend/app/v3/native_execution.py ] && [ -f "$P13_REVIEW" ] && grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$P13_REVIEW"; then
             BASE="a6e272dda1218e449332da358c986a22ea534cbf"
             changed="$(git diff --name-only "$BASE"...HEAD)"
             printf '%s\n' "$changed"

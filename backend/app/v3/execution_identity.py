@@ -356,14 +356,14 @@ class DimaQueryReceiptSealer:
         artifact: AuthorizedExecutionArtifact,
         runtime: RuntimeIdentity,
     ) -> None:
+        if runtime.substrate != "metabase-native":
+            return
         engine = artifact.engine_identity
         if engine.substrate != runtime.substrate:
             raise ReceiptSealError(
                 "NATIVE_RUNTIME_SUBSTRATE_MISMATCH",
                 "authorized artifact and executing runtime use different substrates",
             )
-        if runtime.substrate != "metabase-native":
-            return
         required = {
             "artifact.repository": engine.repository,
             "artifact.revision_sha": engine.revision_sha,

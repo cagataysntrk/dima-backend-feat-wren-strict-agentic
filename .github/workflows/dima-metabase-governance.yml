@@ -144,8 +144,10 @@ jobs:
           if [ -d "$HOT" ]; then
             REVIEW="backend/belgeler/metabase/predev/P13B_NATIVE_CANDIDATE_ATTESTATION_AND_LIVE_STANDARD_REVIEW.md"
             test -f "$REVIEW"
-            grep -q "Status: \*\*SEALED / P13B NATIVE ATTESTATION DESIGN / IMPLEMENTATION PENDING SUPERVISOR AUTHORIZATION\*\*" "$REVIEW"
+            grep -q "\*\*Status:\*\* \*\*SEALED / P13B NATIVE ATTESTATION DESIGN / IMPLEMENTATION PENDING SUPERVISOR AUTHORIZATION\*\*" "$REVIEW"
             grep -q "DMP-DEC-0037" backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
+            grep -q "DMP-DEC-0038" backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
+            grep -q "SEALED / P13B-1 GREEN / P13B-2 PROVIDER-FREE IMPLEMENTATION AUTHORIZED" backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
 
             if grep -R --include='*.py' -nE               'app\.v3\.substrate\.metabase\.(compiler|canonical|execution_adapter)|MetabaseAgentClient'               "$HOT"; then
               echo "Legacy Agent-API analytical dependency detected in future P13 native Standard hot path"
