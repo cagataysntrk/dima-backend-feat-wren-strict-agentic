@@ -7,9 +7,14 @@ name: v2-day10-focused
     paths:
       - "backend/app/routers/ask_v2.py"
       - "backend/app/v2/product_models.py"
+      - "backend/app/v2/product_control.py"
       - "backend/app/v2/product_coordinator.py"
       - "backend/app/v2/research_lane.py"
       - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/manager_runtime.py"
+      - "backend/app/v2/manager_models.py"
+      - "backend/app/v2/manager_preacceptance.py"
+      - "backend/app/v2/acceptance.py"
       - "backend/app/v2/research_tools.py"
       - "backend/app/v2/research_report_projector.py"
       - "backend/app/v2/product_events.py"
@@ -47,9 +52,9 @@ jobs:
       - name: Compile Day10 product surface
         working-directory: backend
         run: |
-          python -m compileall -q             app/routers/ask_v2.py             app/v2/product_models.py             app/v2/product_coordinator.py             app/v2/research_lane.py             app/v2/manager_loop.py             app/v2/research_tools.py             app/v2/research_report_projector.py             app/v2/product_events.py             app/v2/report_continuation.py
+          python -m compileall -q             app/routers/ask_v2.py             app/v2/product_models.py             app/v2/product_control.py             app/v2/product_coordinator.py             app/v2/research_lane.py             app/v2/manager_loop.py             app/v2/manager_runtime.py             app/v2/manager_models.py             app/v2/manager_preacceptance.py             app/v2/acceptance.py             app/v2/research_tools.py             app/v2/research_report_projector.py             app/v2/product_events.py             app/v2/report_continuation.py
 
       - name: Day10 focused provider-free
         working-directory: backend
         run: |
-          pytest -q             tests/test_v2_day10_frontdoor.py             tests/test_v2_day10_report_projection.py             tests/test_v2_day10_product_events.py             tests/test_v2_day10_continuation.py
+          pytest -q             tests/test_v2_day10_frontdoor.py             tests/test_v2_day10_report_projection.py             tests/test_v2_day10_product_events.py             tests/test_v2_day10_product_control.py             tests/test_v2_day10_continuation.py
