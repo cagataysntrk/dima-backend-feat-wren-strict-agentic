@@ -112,8 +112,16 @@ class ResearchReportProjector:
         ledger: UserObligationLedger,
         evidence: tuple[EvidenceArtifact, ...],
         findings: tuple[EvidenceLinkedFinding, ...],
+        allow_partial: bool = False,
     ) -> ResearchReportProjection:
         verified = tuple(item for item in evidence if item.verified)
+        if allow_partial and not verified:
+            return ResearchReportProjection(
+                status=ResearchReportProjectionStatus.INCOMPLETE,
+                issues=(
+                    "answer-now partial requires at least one VERIFIED EvidenceArtifact",
+                ),
+            )
         evidence_by_id = {item.artifact_id: item for item in verified}
         active = ledger.active_user_must
         active_by_id = {item.obligation_id: item for item in active}
@@ -181,7 +189,18 @@ class ResearchReportProjector:
                 ObligationStatus.UNSUPPORTED,
             } or bool(obligation.blocker)
 
-            if not all_support and not owned_findings and not explicit_gap:
+            pending_partial = (
+                allow_partial
+                and not all_support
+                and not owned_findings
+                and not explicit_gap
+            )
+            if (
+                not all_support
+                and not owned_findings
+                and not explicit_gap
+                and not pending_partial
+            ):
                 issues.append(
                     f"{obligation.obligation_id}: USER_MUST has no Evidence/Finding/data-gap"
                 )
@@ -222,6 +241,21 @@ class ResearchReportProjector:
                     obligation.blocker
                     or obligation.verdict
                     or f"{obligation.capability_key.value}: {obligation.status.value}"
+                )
+                blocks.append(
+                    ReportBlockSpec(
+                        block_kind=ReportBlockKind.CAVEAT,
+                        claim_kind=ReportClaimKind.LIMITATION,
+                        content=limitation,
+                        limitations=(limitation,),
+                    )
+                )
+                limitations.append(limitation)
+
+            if not blocks and pending_partial:
+                limitation = (
+                    f"{obligation.capability_key.value}: "
+                    "bu USER_MUST için henüz VERIFIED Evidence yok; araştırma tamamlanmadı."
                 )
                 blocks.append(
                     ReportBlockSpec(
@@ -301,12 +335,28 @@ class ResearchReportProjector:
         return ResearchReportProjection(
             status=ResearchReportProjectionStatus.COMPLETE,
             request=ReportBuildRequest(
-                title="Araştırma Raporu",
+                title=(
+                    "Araştırma Raporu — Kısmi"
+                    if allow_partial
+                    else "Araştırma Raporu"
+                ),
                 sections=tuple(sections),
                 limitations=_unique(
-                    limitation
-                    for item in verified
-                    for limitation in item.limitations
+                    (
+                        *(
+                            limitation
+                            for item in verified
+                            for limitation in item.limitations
+                        ),
+                        *(
+                            (
+                                "Kısmi yanıt: yalnız mevcut VERIFIED Evidence raporlandı; "
+                                "CAVEAT bölümleri tamamlanmamış USER_MUST çalışmalarını gösterir."
+                            ),
+                            if allow_partial
+                            else (),
+                        ),
+                    )
                 ),
             ),
             artifacts=artifacts,
