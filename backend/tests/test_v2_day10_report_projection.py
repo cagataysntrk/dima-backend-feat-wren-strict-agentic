@@ -379,3 +379,117 @@ def test_projector_api_has_no_observation_or_freeform_manager_truth_input():
     signature_text = str(names)
     assert "observations" not in signature_text
     assert "manager_prompt" not in signature_text
+
+
+def test_answer_now_partial_keeps_verified_evidence_and_marks_pending_must_as_caveat():
+    registry, metric, dimension = _handles()
+    evidence = _execution_evidence("E_PARTIAL", "U_DONE", metric, value=88.0)
+    ledger = UserObligationLedger(
+        lineage_id=LINEAGE,
+        version=1,
+        items=(
+            _item("U_DONE", ManagerCapabilityKey.PERFORMANCE, (metric,)),
+            _item(
+                "U_PENDING",
+                ManagerCapabilityKey.RELATIONSHIP,
+                (metric, dimension),
+                status=ObligationStatus.IN_PROGRESS,
+            ),
+        ),
+    )
+
+    projection = ResearchReportProjector(
+        semantic_handles=registry,
+        tenant_binding=TENANT,
+        context_version=CTX,
+    ).project(
+        ledger=ledger,
+        evidence=(evidence,),
+        findings=(),
+        allow_partial=True,
+    )
+
+    assert projection.status == ResearchReportProjectionStatus.COMPLETE
+    assert projection.request is not None
+    assert projection.request.title.endswith("Kısmi")
+    assert projection.omitted_evidence_refs == ()
+    assert "E_PARTIAL" in projection.accounted_evidence_refs
+
+    pending = next(
+        section
+        for section in projection.request.sections
+        if section.title == "İlişki Analizi"
+    )
+    assert len(pending.blocks) == 1
+    block = pending.blocks[0]
+    assert block.block_kind == ReportBlockKind.CAVEAT
+    assert block.claim_kind == ReportClaimKind.LIMITATION
+    assert block.evidence_refs == ()
+    assert "henüz VERIFIED Evidence yok" in block.content
+    assert any("Kısmi yanıt" in item for item in projection.request.limitations)
+
+
+def test_answer_now_partial_without_verified_evidence_fails_closed():
+    registry, metric, _ = _handles()
+    ledger = UserObligationLedger(
+        lineage_id=LINEAGE,
+        version=1,
+        items=(
+            _item(
+                "U_PENDING",
+                ManagerCapabilityKey.PERFORMANCE,
+                (metric,),
+                status=ObligationStatus.IN_PROGRESS,
+            ),
+        ),
+    )
+
+    projection = ResearchReportProjector(
+        semantic_handles=registry,
+        tenant_binding=TENANT,
+        context_version=CTX,
+    ).project(
+        ledger=ledger,
+        evidence=(),
+        findings=(),
+        allow_partial=True,
+    )
+
+    assert projection.status == ResearchReportProjectionStatus.INCOMPLETE
+    assert projection.request is None
+    assert projection.artifacts == ()
+    assert projection.issues == (
+        "answer-now partial requires at least one VERIFIED EvidenceArtifact",
+    )
+
+
+def test_full_report_mode_still_rejects_uncovered_pending_must():
+    registry, metric, dimension = _handles()
+    evidence = _execution_evidence("E_DONE", "U_DONE", metric, value=10.0)
+    ledger = UserObligationLedger(
+        lineage_id=LINEAGE,
+        version=1,
+        items=(
+            _item("U_DONE", ManagerCapabilityKey.PERFORMANCE, (metric,)),
+            _item(
+                "U_PENDING",
+                ManagerCapabilityKey.RELATIONSHIP,
+                (metric, dimension),
+                status=ObligationStatus.IN_PROGRESS,
+            ),
+        ),
+    )
+
+    projection = ResearchReportProjector(
+        semantic_handles=registry,
+        tenant_binding=TENANT,
+        context_version=CTX,
+    ).project(
+        ledger=ledger,
+        evidence=(evidence,),
+        findings=(),
+    )
+
+    assert projection.status == ResearchReportProjectionStatus.INCOMPLETE
+    assert projection.request is None
+    assert any("U_PENDING" in issue for issue in projection.issues)
