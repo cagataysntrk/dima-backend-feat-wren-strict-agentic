@@ -1,0 +1,50 @@
+name: dima-metabase-p12x-c1-rescore
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/lab/metabase/p12x/c1_score_parity.py"
+      - ".github/workflows/dima-metabase-p12x-c1-rescore.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  rescore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download frozen C1 evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: p12x-c1-parity-564e1d36542f962bad355978c82789d5a34cc248
+          path: /tmp/c1
+          repository: cagataysntrk/dima-backend-feat-wren-strict-agentic
+          run-id: 35831869602
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Re-score without new model calls
+        working-directory: backend
+        run: |
+          python lab/metabase/p12x/c1_score_parity.py \
+            --phase final \
+            --cases lab/metabase/p12x/c1_cases.json \
+            --oracle /tmp/c1/oracle_v1.json \
+            --stock-dir /tmp/c1/stock \
+            --fork-dir /tmp/c1/fork \
+            --repeat-root /tmp/c1/repeats \
+            --output /tmp/c1/C1_RESCORE_REPORT.json
+      - name: Upload corrected C1 closure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p12x-c1-rescore-${{ github.sha }}
+          path: /tmp/c1/C1_RESCORE_REPORT.json
+          if-no-files-found: error
+          retention-days: 30
