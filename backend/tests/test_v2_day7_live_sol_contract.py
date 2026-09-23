@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import yaml
 
+import lab.v2_day7_manager_live_sol as live
 from lab.v2_day7_manager_live_sol import MDL_VERSION, semantic_schema
 
 
@@ -95,3 +98,141 @@ def test_live_oracles_include_safety_specific_checks_not_only_answer_success():
     assert cases["insufficient_evidence"]["require_zero_row_observation"] is True
     assert cases["high_cardinality"]["max_fanout_selected"] == 2
     assert cases["no_unnecessary_branch"]["max_derived_executions"] == 0
+
+
+WORKFLOW = ROOT.parent / ".github" / "workflows" / "v2-day7-live-sol.yml"
+
+
+def test_live_sol_sealed_model_topology_and_workers_one():
+    assert live.LIVE_MANAGER_MODEL == "openai/gpt-5.6-sol"
+    assert live.LIVE_LINKER_MODEL == "openai/gpt-5.6-luna"
+    assert live.LIVE_TEMPORAL_MODEL == "openai/gpt-5.6-sol"
+
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    dispatch = workflow["on"]["workflow_dispatch"]["inputs"]
+    assert dispatch["manager_model"]["default"] == "openai/gpt-5.6-sol"
+    assert dispatch["linker_model"]["default"] == "openai/gpt-5.6-luna"
+    assert dispatch["temporal_model"]["default"] == "openai/gpt-5.6-sol"
+
+
+def test_provider_failure_classifier_keeps_transport_out_of_product_semantics():
+    assert (
+        live._classify_provider_failure(
+            '403 Client Error | body={"error":{"message":"Key limit exceeded (total limit)"}}'
+        )
+        == live.MeasurementValidity.PROVIDER_QUOTA_FAILURE
+    )
+    assert (
+        live._classify_provider_failure("401 Client Error: Unauthorized")
+        == live.MeasurementValidity.PROVIDER_AUTH_FAILURE
+    )
+    assert (
+        live._classify_provider_failure("429 Client Error: Too Many Requests")
+        == live.MeasurementValidity.PROVIDER_QUOTA_FAILURE
+    )
+    assert (
+        live._classify_provider_failure("503 Server Error: Service Unavailable")
+        == live.MeasurementValidity.PROVIDER_UNAVAILABLE
+    )
+    assert live._classify_provider_failure("schema output omitted an obligation") is None
+
+
+def test_provider_preflight_uses_one_role_scoped_strict_schema_call(monkeypatch):
+    calls = []
+
+    class FakeManager:
+        def structured_json(self, system, user, *, schema, schema_name):
+            calls.append(
+                {
+                    "system": system,
+                    "user": user,
+                    "schema": schema,
+                    "schema_name": schema_name,
+                }
+            )
+            return json.dumps({"status": "ok"})
+
+    profile = SimpleNamespace(
+        provider="openrouter",
+        model="openai/gpt-5.6-sol",
+    )
+    monkeypatch.setattr(
+        live,
+        "_build_role_scoped_manager_models",
+        lambda settings: (
+            FakeManager(),
+            profile,
+            object(),
+            SimpleNamespace(provider="openrouter", model="openai/gpt-5.6-luna"),
+            object(),
+            SimpleNamespace(provider="openrouter", model="openai/gpt-5.6-sol"),
+        ),
+    )
+
+    result = live._provider_preflight(object())
+
+    assert result["ok"] is True
+    assert result["measurement_validity"] == "VALID"
+    assert result["model"] == "openai/gpt-5.6-sol"
+    assert len(calls) == 1
+    assert calls[0]["schema_name"] == "dima_day7_provider_preflight_v1"
+    assert calls[0]["schema"]["properties"]["status"]["enum"] == ["ok"]
+
+
+def test_invalid_provider_case_is_not_scored_as_behavior_or_hard_safety_failure():
+    preflight = {
+        "ok": True,
+        "measurement_validity": live.MeasurementValidity.VALID.value,
+    }
+    record = {
+        "case_id": "C1",
+        "kind": "standard",
+        "question": "q",
+        "latency_s": 0.1,
+        "status_code": 200,
+        "terminal_status": None,
+        "snapshot": {},
+        "query_delta": 0,
+        "checks": {"accepted_contract": False},
+        "behavior_evaluable": False,
+        "measurement_validity": live.MeasurementValidity.PROVIDER_QUOTA_FAILURE.value,
+        "behavior_pass": None,
+        "model_errors": [],
+        "observations": [],
+        "ledger": None,
+    }
+    payload = live._aggregate_live_records(
+        document={"version": "test"},
+        records=[record],
+        selected_cases=1,
+        service_query_count=0,
+        preflight=preflight,
+    )
+
+    assert payload["measurement_valid"] is False
+    assert payload["measurement_validity"] == "PROVIDER_QUOTA_FAILURE"
+    assert payload["selected_cases"] == 1
+    assert payload["evaluable_cases"] == 0
+    assert payload["provider_failure_cases"] == 1
+    assert payload["behavior_pass_rate"] is None
+    assert payload["hard_safety_failures"] == []
+    assert payload["status"] == "invalid_measurement"
+
+
+def test_valid_model_cognition_failure_remains_behavior_evaluable():
+    body = {
+        "observations": [
+            {
+                "kind": "model_error",
+                "message": "structured action invalid after one format retry",
+            }
+        ]
+    }
+    assert (
+        live._case_measurement_validity(
+            status_code=200,
+            body=body,
+            json_ok=True,
+        )
+        == live.MeasurementValidity.VALID
+    )
