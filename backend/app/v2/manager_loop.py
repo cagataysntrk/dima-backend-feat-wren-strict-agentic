@@ -34,6 +34,10 @@ from app.v2.hypothesis_proposals import (
     HypothesisProposalBoundary,
     HypothesisProposalError,
 )
+from app.v2.epistemics import (
+    EvidenceLinkedFindingBuilder,
+    EpistemicFindingError,
+)
 from app.v2.root_cause_orchestration import (
     HypothesisNextTestBoundary,
     RootCauseBootstrapPolicy,
@@ -62,6 +66,8 @@ from app.v2.manager_tools import (
 )
 from app.v2.models import (
     ConversationStateV2,
+    EvidenceLinkedFinding,
+    EpistemicLabel,
     FrozenModel,
     HypothesisEvidenceRelation,
     HypothesisEvidenceRelationProposal,
@@ -390,6 +396,7 @@ class ManagerLoopOutcome:
     clarification_required: bool
     observations: tuple[dict[str, Any], ...]
     preacceptance_status: FiniteAcceptanceStatus | None = None
+    findings: tuple[EvidenceLinkedFinding, ...] = ()
 
 
 def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
@@ -1825,6 +1832,35 @@ class ResearchManagerLoop:
                     break
                 continue
 
+        canonical_findings: list[EvidenceLinkedFinding] = []
+        for ledger in root_cause_ledgers.values():
+            builder = EvidenceLinkedFindingBuilder(ledger=ledger)
+            for hypothesis in ledger.state.entries:
+                support_refs = tuple(
+                    link.evidence_ref
+                    for link in hypothesis.evidence_links
+                    if link.relation == HypothesisEvidenceRelation.SUPPORTS
+                )
+                if not support_refs:
+                    continue
+                try:
+                    canonical_findings.append(
+                        builder.build(
+                            statement=hypothesis.statement,
+                            epistemic_label=EpistemicLabel.CANDIDATE_CAUSE,
+                            evidence_refs=support_refs,
+                            hypothesis_ref=hypothesis.hypothesis_id,
+                        )
+                    )
+                except EpistemicFindingError as exc:
+                    observations.append(
+                        {
+                            "kind": "finding_projection_rejected",
+                            "hypothesis_id": hypothesis.hypothesis_id,
+                            "message": str(exc),
+                        }
+                    )
+
         return ManagerLoopOutcome(
             snapshot=runtime.snapshot,
             run_finished=runtime.snapshot.state == ManagerState.COMPLETED,
@@ -1837,4 +1873,5 @@ class ResearchManagerLoop:
             ),
             observations=tuple(observations),
             preacceptance_status=FiniteAcceptanceStatus.ACCEPTED,
+            findings=tuple(canonical_findings),
         )
