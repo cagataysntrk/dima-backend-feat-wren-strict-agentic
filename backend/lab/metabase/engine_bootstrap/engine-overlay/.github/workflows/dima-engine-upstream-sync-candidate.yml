@@ -46,6 +46,7 @@ jobs:
         id: merge
         shell: bash
         env:
+          UPSTREAM_REF: ${{ inputs.upstream_ref }}
           CANDIDATE_SHA: ${{ steps.resolve.outputs.candidate_sha }}
         run: |
           set +e
@@ -80,10 +81,6 @@ jobs:
             "manual_promotion":True,
           },indent=2)+"\n")
           PY
-        env:
-          UPSTREAM_REF: ${{ inputs.upstream_ref }}
-          CANDIDATE_SHA: ${{ steps.resolve.outputs.candidate_sha }}
-
       - name: Generate patch-surface candidate report
         if: success()
         shell: bash
