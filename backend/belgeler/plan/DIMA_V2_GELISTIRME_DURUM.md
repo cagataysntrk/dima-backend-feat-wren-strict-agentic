@@ -9119,3 +9119,82 @@ Reason:
   the same frozen family and guards against over-broad PERFORMANCE promotion.
 
 Do not run full frozen13 until this affected LIVE pair is classified.
+
+
+## 2026-09-23 — DAY7 DETERMINISTIC CAPABILITY CLOSURE
+
+### Frozen13 once
+
+```text
+run                  35855765109
+measurement_valid    true
+measurement_validity VALID
+selected/evaluable   13 / 13
+behavior PASS        11 / 13
+hard safety failures 0
+provider failures    0
+model transport fail 0
+```
+
+Per protocol, frozen13 was run ONCE after the affected cognition/zero-row repairs.
+It will not be rerun to chase a score.
+
+Remaining RED classifications:
+
+#### breakdown-region -> FUTURE-DAY DEBT (Day9 presentation)
+
+Analytical path was correct:
+- BREAKDOWN USER_MUST grounded,
+- one governed query,
+- verified Evidence.
+
+Sol additionally emitted a TABLE presentation USER_MUST from "sonucu göster".
+TABLE is registered as PRESENTATION and intentionally non-executable in Day7.
+Completion therefore remained blocked on that presentation obligation.
+
+No Day7 table/report engine will be invented. Presentation composition is Day9-owned.
+This failure is explicitly classified FUTURE-DAY DEBT, not a Day7 analytical/trust-plane defect.
+
+#### adaptive-material -> CONTRACT/ARCHITECTURE defect, fixed
+
+First bad transition after valid accepted authority + inspected Evidence:
+the post-acceptance Manager selected propose_acceptance.
+
+That action is owned by finite pre-acceptance and is deterministically invalid after an
+AcceptedTurnContract exists. The post-acceptance provider schema was still advertising it.
+
+Generic invariant:
+```text
+advertised cognition action surface
+= actions actually legal in the current Manager phase
+```
+
+Fix:
+- manager_loop.py post-acceptance native schema removes propose_acceptance,
+- runtime rejection remains defense-in-depth,
+- no testcase literal/keyword/budget inflation/provider fallback added.
+
+Proof:
+```text
+provider-free focused 35856719878 = GREEN
+affected LIVE          35857076622 = VALID / 1 of 1 PASS
+adaptive terminal      VERIFIED_COMPLETE
+hard safety failures   0
+```
+
+### Deterministic Day7 capability closure verdict
+
+```text
+known hard invariant holes              0
+advertised executable dead ends         0 for current Day7 post-acceptance action surface
+known cross-obligation authority leaks  0
+unsafe semantic bindings                0
+silent USER_MUST loss                   0
+remaining frozen RED                    classified FUTURE-DAY DEBT only
+focused provider-free                   GREEN
+required affected LIVE                  VALID
+```
+
+Next exact gate:
+FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation.
+Do not start Day8.
