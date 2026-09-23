@@ -1,0 +1,4 @@
+[submodule "engine/dima-metabase-engine"]
+	path = engine/dima-metabase-engine
+	url = https://github.com/UpcyTech/dima-metabase-engine.git
+	branch = main
