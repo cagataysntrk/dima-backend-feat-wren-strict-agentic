@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+import threading
 from collections.abc import Callable
 
 from app.v2.product_models import ProductEvent, ProductEventKind
@@ -68,10 +69,12 @@ class ProductEventSink:
         self._on_event = on_event
         self._events: list[ProductEvent] = []
         self._by_id: dict[str, ProductEvent] = {}
+        self._lock = threading.Lock()
 
     @property
     def events(self) -> tuple[ProductEvent, ...]:
-        return tuple(self._events)
+        with self._lock:
+            return tuple(self._events)
 
     def emit(
         self,
@@ -87,20 +90,21 @@ class ProductEventSink:
             refs=canonical_refs,
             transition_ref=transition_ref,
         )
-        prior = self._by_id.get(event_id)
-        if prior is not None:
-            return prior
+        with self._lock:
+            prior = self._by_id.get(event_id)
+            if prior is not None:
+                return prior
 
-        event = ProductEvent(
-            event_id=event_id,
-            sequence=len(self._events) + 1,
-            kind=kind,
-            elapsed_ms=max(0, int((self._clock() - self._started) * 1000)),
-            refs=canonical_refs,
-            display_text=_DISPLAY[kind],
-        )
-        self._events.append(event)
-        self._by_id[event_id] = event
+            event = ProductEvent(
+                event_id=event_id,
+                sequence=len(self._events) + 1,
+                kind=kind,
+                elapsed_ms=max(0, int((self._clock() - self._started) * 1000)),
+                refs=canonical_refs,
+                display_text=_DISPLAY[kind],
+            )
+            self._events.append(event)
+            self._by_id[event_id] = event
         if self._on_event is not None:
             self._on_event(event)
         return event
