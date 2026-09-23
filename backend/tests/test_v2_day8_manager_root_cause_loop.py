@@ -248,13 +248,17 @@ def test_day8_actions_are_not_advertised_without_root_cause_context():
     assert '"propose_hypothesis_evidence_relation"' not in old_schema
     assert '"propose_hypothesis_next_test"' not in old_schema
 
-    d8_schema = json.dumps(
-        _post_acceptance_native_schema(root_cause_enabled=True),
-        ensure_ascii=False,
-    )
+    d8_native = _post_acceptance_native_schema(root_cause_enabled=True)
+    d8_schema = json.dumps(d8_native, ensure_ascii=False)
     assert '"propose_hypothesis"' in d8_schema
     assert '"propose_hypothesis_evidence_relation"' in d8_schema
     assert '"propose_hypothesis_next_test"' in d8_schema
+    assert d8_native["$defs"]["ResearchTaskKind"]["enum"] == [
+        "QUERY",
+        "COMPARE",
+        "BREAKDOWN",
+        "RANK",
+    ]
 
 
 def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_completion():
@@ -327,6 +331,15 @@ def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_co
     assert root.status == ObligationStatus.IN_PROGRESS
     assert runtime.snapshot.evidence_refs
     assert runtime.snapshot.inspected_evidence_refs == runtime.snapshot.evidence_refs
+
+    first_prompt = llm.prompts[0]
+    next_test_contract = {
+        row["task_kind"]: row
+        for row in first_prompt["ROOT_CAUSE_NEXT_TEST_CONTRACT"]
+    }
+    assert set(next_test_contract) == {"QUERY", "COMPARE", "BREAKDOWN", "RANK"}
+    assert next_test_contract["QUERY"]["capability"] == "performance"
+    assert next_test_contract["QUERY"]["execution_mode"] == "DIRECT"
 
     final_prompt = llm.prompts[-1]
     assert final_prompt["HYPOTHESIS_LEDGERS"][0]["entries"][0][
