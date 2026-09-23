@@ -2905,3 +2905,43 @@ forbidden:
 
 status:
 `CLASSIFIED / CI-ONLY POLICY PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C0-BUILD-002 — build version passed as non-EDN token
+
+opened_at: 2026-09-23  
+engine_sha: `fd4bb62f4d39bbbb06d71dda4ab2a7620cfdc6db`  
+workflow: `35826990245`  
+job: `107070797064`
+
+classification:
+`CONTRACT / C0 BUILD WRAPPER INVOCATION`
+
+observed:
+- exact ancestry = PASS;
+- C0 patch-surface = PASS;
+- Bookworm Dima-owned builder completed package/JDK/Clojure/Bun setup;
+- upstream `bin/build.sh` started and resolved dependencies;
+- it exited with `Unreadable arg: "0.63.18-dima.0"`;
+- upstream `bin/build.sh` forwards CLI args to Clojure `-X`, whose values are EDN.
+
+root_cause:
+The Dima-owned Docker wrapper passed `:version 0.63.18-dima.0` as a raw token instead of an EDN string.
+
+single_owner:
+`.dima/docker/Dockerfile.c0` invocation only.
+
+authorized_correction:
+Pass the same version value as an EDN string:
+`:version "\"0.63.18-dima.0\""` after shell expansion.
+
+forbidden:
+- changing upstream `bin/build.sh`;
+- changing Metabase source;
+- changing engine semantic behavior;
+- changing the C0 patch-surface contract.
+
+status:
+`CLASSIFIED / ONE-LINE DIMA BUILD-WRAPPER PATCH AUTHORIZED`.
