@@ -677,6 +677,7 @@ class ResearchManagerLoop:
         root_cause_context: RootCauseLoopContext | None = None,
         progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
         cancel_check: Callable[[], bool] | None = None,
+        context_scope_by_kind: dict[str, tuple[str, ...]] | None = None,
     ) -> None:
         structured = getattr(llm, "structured_json", None)
         if not callable(structured):
@@ -689,6 +690,11 @@ class ResearchManagerLoop:
         self._root_cause_context = root_cause_context
         self._progress_callback = progress_callback
         self._cancel_check = cancel_check
+        self._context_scope_by_kind = {
+            str(kind): tuple(dict.fromkeys(refs))
+            for kind, refs in (context_scope_by_kind or {}).items()
+            if refs
+        }
         self._alias_by_handle: dict[str, str] = {}
         self._handle_by_alias: dict[str, str] = {}
 
@@ -1151,6 +1157,7 @@ class ResearchManagerLoop:
             structured=self._structured,
             source_spans=self._source_spans,
             capabilities=self._capabilities,
+            context_scope_by_kind=self._context_scope_by_kind,
         )
         try:
             outcome = controller.run(
@@ -1191,7 +1198,10 @@ class ResearchManagerLoop:
     ) -> ManagerLoopOutcome:
         observations: list[dict[str, Any]] = []
 
-        if runtime.accepted_contract is None:
+        if (
+            runtime.accepted_contract is None
+            or runtime.snapshot.state == ManagerState.UNDERSTANDING
+        ):
             understanding = self.understand(
                 question=question,
                 message_id=message_id,
