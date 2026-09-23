@@ -11,6 +11,7 @@ from app.v2.models import (
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
+    GovernedSiblingScopeCandidateGenerator,
     SemanticBindingGate,
     SemanticCandidateGenerator,
     SemanticLinkBatchDecision,
@@ -18,7 +19,6 @@ from app.v2.semantic_linker import (
 )
 from lab.v2_day7_governed_sibling_scope_discovery import (
     DEFAULT_MAX_CANDIDATES,
-    GovernedSiblingScopeCandidateGenerator,
     _bind_exact_sibling,
     _canonical_name,
     _context,
@@ -242,7 +242,7 @@ def test_same_cube_scope_does_not_invent_cross_domain_candidate():
         decision_context="Net gelirin bölümlerle ilişkisini incele.",
     )
 
-    assert candidate_set.retrieval_backend == "lab_governed_sibling_scope_v1"
+    assert candidate_set.retrieval_backend == "governed_sibling_scope_v1"
     assert "department_axis_d" not in {
         _canonical_name(item) for item in candidate_set.bindings
     }
