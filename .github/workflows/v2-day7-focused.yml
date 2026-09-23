@@ -40,6 +40,7 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_real_same_domain_wren.py"
       - "backend/tests/test_v2_day7_cross_domain_join_gate.py"
       - "backend/tests/test_v2_day7_research_manager_loop.py"
+      - "backend/tests/test_v2_day7_total_manager_budget.py"
       - "backend/tests/test_v2_day7_result_aware_loop.py"
       - "backend/app/v2/cross_domain_facts.py"
       - "backend/tests/test_v2_day7_cross_domain_facts.py"
@@ -227,6 +228,10 @@ jobs:
       - name: Manager loop Research contract mode
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_manager_loop.py
+
+      - name: Global Manager total-turn budget
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_total_manager_budget.py
 
       - name: Result-aware adaptive loop
         working-directory: backend
