@@ -9,7 +9,7 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`946cb933441381078941767e8ac6205349ff81e3`
+`f7c74d7a7b2127e14c3fd1680e70588a68352a75`
 
 CURRENT_PRODUCT_GATE:
 `FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
@@ -513,3 +513,32 @@ Current conclusion:
 
 Next exact action:
 real pinned-Metabase metadata SEARCH proof for observed retrieval terms before any retrieval prompt change.
+
+
+## FT-005 RETRIEVAL LANGUAGE PROBE — GREEN
+
+Run:
+`35817396762`
+
+Tested SHA:
+`f7c74d7a7b2127e14c3fd1680e70588a68352a75`
+
+Artifact:
+`sha256:39b584620675917648ce8f43e7d73b4f1c95a97620b4fa97920d7535094d0b41`
+
+Confirmed:
+- Turkish-only order lookup terms -> SEARCH miss -> CATALOG_FALLBACK;
+- English entity/table term -> direct SEARCH;
+- mixed user-language + English entity term -> direct SEARCH;
+- metric phrase -> SEARCH miss.
+
+`RETRIEVAL_DRIFT_PRODUCT_IMPACT = CONFIRMED`
+
+Authorized next:
+eval-only generic follow-up contract repair experiment covering:
+1. executable reason representation;
+2. outer UNSUPPORTED representation;
+3. FT-003-equivalent entity-centric cross-language retrieval wording;
+4. ambiguity must remain fail-closed.
+
+Product code remains unchanged until that experiment isolates the minimal repair.

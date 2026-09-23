@@ -199,7 +199,7 @@ Therefore:
 
 `SHARED_TYPED_CONTRACT_REPRESENTATION_DEBT = PROVEN`
 
-`RETRIEVAL_DRIFT_PRODUCT_IMPACT = PENDING REAL METABASE SEARCH PROOF`
+`RETRIEVAL_DRIFT_PRODUCT_IMPACT = CONFIRMED BY RUN 35817396762`
 
 ## Patch authorization
 
@@ -217,3 +217,25 @@ Authorized next:
 4. only then authorize smallest generic repair.
 
 FT-005 remains OPEN.
+
+
+## Retrieval family closure evidence
+
+Pinned-Metabase retrieval probe:
+`35817396762 GREEN`
+
+Artifact:
+`sha256:39b584620675917648ce8f43e7d73b4f1c95a97620b4fa97920d7535094d0b41`
+
+Observed:
+- Turkish-only `sipariş/siparişler` -> no direct/combined SEARCH hit;
+- `sipariş tutarı` -> no direct/combined SEARCH hit;
+- `order/orders` -> direct SEARCH hit;
+- `["sipariş","order"]` -> direct SEARCH hit;
+- Turkish-only cases recover only via bounded CATALOG_FALLBACK.
+
+Family B classification is now:
+`REAL RETRIEVAL CONTRACT DRIFT`
+
+Minimal generic prompt-level repair may now be evaluated.
+No dictionary/phrase patch is authorized.
