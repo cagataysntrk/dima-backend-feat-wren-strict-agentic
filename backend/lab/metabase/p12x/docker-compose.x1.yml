@@ -57,6 +57,7 @@ services:
       MB_AI_FEATURES_ENABLED: "true"
       MB_METABOT_ENABLED: "true"
       MB_AGENT_API_ENABLED: "true"
+      MB_LOAD_SAMPLE_CONTENT: "false"
       MB_MCP_EXECUTE_SQL_ENABLED: "false"
       MB_LLM_OPENROUTER_API_KEY: ${DIMA_OPENROUTER_API_KEY}
       MB_LLM_METABOT_PROVIDER: ${P12X_METABOT_PROVIDER:-openrouter/openai/gpt-5.6-luna}
@@ -81,6 +82,7 @@ services:
       MB_AI_FEATURES_ENABLED: "true"
       MB_METABOT_ENABLED: "true"
       MB_AGENT_API_ENABLED: "true"
+      MB_LOAD_SAMPLE_CONTENT: "false"
       MB_MCP_EXECUTE_SQL_ENABLED: "false"
       MB_LLM_OPENROUTER_API_KEY: ${DIMA_OPENROUTER_API_KEY}
       MB_LLM_METABOT_PROVIDER: ${P12X_METABOT_PROVIDER:-openrouter/openai/gpt-5.6-luna}
