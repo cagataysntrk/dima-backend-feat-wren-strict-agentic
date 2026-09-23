@@ -1629,3 +1629,38 @@ product patch     = 0
 ```
 
 Only the 202-success capture contract is authorized for correction.
+
+
+---
+
+## P12X NATIVE SANITY GATE GREEN / THIN ENGINE FORK PATH OPEN
+
+```text
+native proof SHA                   = e35b68e4b7f60fc46c677317e7a001a1d66e88ac
+workflow                           = 35824464298 = SUCCESS
+native canary job                  = 107063206949 = SUCCESS
+artifact                           = 10734247411
+current corpus fingerprint         = fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0
+PX-01 resource                     = Dima Analytics Lab / public / satis_siparisleri
+PX-01 observed                     = 126
+PX-01 oracle                       = 126
+provider/tool errors               = 0
+DMP-P12X-AUDIT-002                 = CLOSED GREEN
+DMP-DEC-0031                       = SEALED
+full V0+A+B bake-off               = DEFERRED / NOT FORK-BLOCKING
+P13                                = PAUSED UNTIL FORK CAPABILITY PARITY + STABLE ENGINE BRIDGE
+Fast moving observation            = ac05a20452027314a8b092cf128a4e09c23a2a40
+ask-v2 moving observation          = 11b59a0928af1104ea1552352dac2184ba4e5af0
+source branch writes/merge/rebase  = 0
+```
+
+Authorized next sequence:
+```text
+P12X-C0 exact upstream-history fork bootstrap/source build
+→ P12X-C1 stock-vs-fork native capability parity
+→ P12X-C2 stable Dima bridge + bridge/native parity
+→ P12X-C3 upstream-sync / DIMA_PATCH_SURFACE certification
+→ STOP / supervisor checkpoint
+```
+
+P13 governance hooks remain unauthorized.
