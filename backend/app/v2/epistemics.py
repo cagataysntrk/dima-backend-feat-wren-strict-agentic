@@ -39,6 +39,38 @@ class HypothesisLedgerError(RuntimeError):
     """Day8 structural epistemic-boundary violation."""
 
 
+class CurrentRunEvidenceView:
+    """Read-only live view over Day7 ManagerRuntime Evidence membership.
+
+    Membership is owned by the existing ManagerRuntime snapshot. This object exposes no
+    mutator and therefore cannot add arbitrary Evidence IDs or create a second run
+    registry.
+    """
+
+    def __init__(self, runtime) -> None:
+        if not hasattr(runtime, "snapshot"):
+            raise TypeError("CurrentRunEvidenceView requires a ManagerRuntime-like owner")
+        self._runtime = runtime
+
+    @property
+    def run_id(self) -> str:
+        return self._runtime.snapshot.run_id
+
+    @property
+    def current_refs(self) -> tuple[str, ...]:
+        return tuple(self._runtime.snapshot.evidence_refs)
+
+    @property
+    def inspected_refs(self) -> tuple[str, ...]:
+        return tuple(self._runtime.snapshot.inspected_evidence_refs)
+
+    def contains_current(self, evidence_ref: str) -> bool:
+        return evidence_ref in self.current_refs
+
+    def contains_inspected(self, evidence_ref: str) -> bool:
+        return evidence_ref in self.inspected_refs
+
+
 class HypothesisLedger:
     """Run-scoped owner for one accepted ROOT_CAUSE obligation.
 
@@ -57,7 +89,7 @@ class HypothesisLedger:
         run_id: str,
         obligation_ledger: UserObligationLedger,
         evidence_store,
-        current_evidence_refs: tuple[str, ...],
+        evidence_view: CurrentRunEvidenceView,
         semantic_handles: SemanticHandleRegistry,
         research_tasks: ResearchTaskRegistry,
         tenant_binding: str,
@@ -66,7 +98,7 @@ class HypothesisLedger:
         self._obligations = UserObligationLedgerService()
         self._obligation_ledger = obligation_ledger
         self._evidence = evidence_store
-        self._current_evidence_refs = frozenset(current_evidence_refs)
+        self._evidence_view = evidence_view
         self._handles = semantic_handles
         self._tasks = research_tasks
         self._tenant_binding = tenant_binding
@@ -77,6 +109,10 @@ class HypothesisLedger:
             lineage_id=lineage_id,
             run_id=run_id,
         )
+        if self._evidence_view.run_id != run_id:
+            raise HypothesisLedgerError(
+                "current Evidence view belongs to another Manager run"
+            )
         self._validate_root_authority()
 
     @property
@@ -120,6 +156,7 @@ class HypothesisLedger:
         trigger_evidence_refs: tuple[str, ...],
         limitations: tuple[str, ...] = (),
     ) -> HypothesisEntry:
+        self._validate_root_authority()
         clean_statement = statement.strip()
         if not clean_statement:
             raise HypothesisLedgerError("hypothesis statement cannot be empty")
@@ -176,6 +213,7 @@ class HypothesisLedger:
         evidence_ref: str,
         relation: HypothesisEvidenceRelation,
     ) -> HypothesisEntry:
+        self._validate_root_authority()
         entry = self.get(hypothesis_id)
         self._validate_evidence(evidence_ref)
 
@@ -210,6 +248,7 @@ class HypothesisLedger:
         *,
         task_ref: str,
     ) -> HypothesisEntry:
+        self._validate_root_authority()
         entry = self.get(hypothesis_id)
         try:
             task = self._tasks.get(task_ref)
@@ -251,6 +290,7 @@ class HypothesisLedger:
         status: HypothesisStatus,
         limitation: str | None = None,
     ) -> HypothesisEntry:
+        self._validate_root_authority()
         entry = self.get(hypothesis_id)
         if status == HypothesisStatus.OPEN:
             if entry.status == HypothesisStatus.OPEN:
@@ -329,9 +369,15 @@ class HypothesisLedger:
             raise HypothesisLedgerError(
                 "excluded ROOT_CAUSE obligation cannot own hypotheses"
             )
-        if parent.status == ObligationStatus.SUPERSEDED:
+        active_statuses = {
+            ObligationStatus.ACCEPTED,
+            ObligationStatus.READY,
+            ObligationStatus.IN_PROGRESS,
+        }
+        if parent.status not in active_statuses:
             raise HypothesisLedgerError(
-                "superseded ROOT_CAUSE obligation cannot own hypotheses"
+                "ROOT_CAUSE obligation must be active "
+                "(ACCEPTED, READY or IN_PROGRESS) to own mutable hypothesis state"
             )
 
     def _validate_semantic_handles(self, refs: tuple[str, ...]) -> None:
@@ -355,7 +401,7 @@ class HypothesisLedger:
                 )
 
     def _validate_evidence(self, evidence_ref: str):
-        if evidence_ref not in self._current_evidence_refs:
+        if not self._evidence_view.contains_current(evidence_ref):
             raise HypothesisLedgerError(
                 "Evidence is not attached to the current governed run"
             )
@@ -403,7 +449,7 @@ class HypothesisLedger:
                     "derived Evidence lacks parent Evidence lineage"
                 )
             for parent_ref in evidence.parent_evidence_refs:
-                if parent_ref not in self._current_evidence_refs:
+                if not self._evidence_view.contains_current(parent_ref):
                     raise HypothesisLedgerError(
                         "derived Evidence parent is outside current governed run"
                     )
