@@ -1,0 +1,53 @@
+name: v2-day10-focused
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/routers/ask_v2.py"
+      - "backend/app/v2/product_models.py"
+      - "backend/app/v2/product_coordinator.py"
+      - "backend/app/v2/research_lane.py"
+      - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/research_report_projector.py"
+      - "backend/app/v2/product_events.py"
+      - "backend/app/v2/report_continuation.py"
+      - "backend/tests/test_v2_day10_*.py"
+      - ".github/workflows/v2-day10-focused.yml"
+  workflow_dispatch:
+
+jobs:
+  day10-product:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DIMA_LLM_PROVIDER: rule
+      DIMA_V2_FAST_LANGUAGE_PROVIDER: rule
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: rule
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: rule
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: rule
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile Day10 product surface
+        working-directory: backend
+        run: |
+          python -m compileall -q             app/routers/ask_v2.py             app/v2/product_models.py             app/v2/product_coordinator.py             app/v2/research_lane.py             app/v2/manager_loop.py
+
+      - name: Day10 focused provider-free
+        working-directory: backend
+        run: pytest -q tests/test_v2_day10_frontdoor.py
