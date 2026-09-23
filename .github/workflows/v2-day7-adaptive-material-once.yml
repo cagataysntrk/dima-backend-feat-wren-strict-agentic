@@ -1,15 +1,10 @@
 name: v2-day7-adaptive-material-once
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/workflows/v2-day7-adaptive-material-once.yml"
+  workflow_dispatch:
 
 jobs:
   live-single-case:
-    if: "github.event.head_commit.message == 'test(v2-day7): run adaptive-material live once'"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 20
