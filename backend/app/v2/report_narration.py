@@ -8,6 +8,7 @@ Evidence/Finding authorities.
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from enum import StrEnum
@@ -184,6 +185,28 @@ class RenderedReportNarration(FrozenModel):
     executive_summary: tuple[RenderedNarrationBlock, ...] = ()
     sections: tuple[RenderedNarrationSection, ...] = Field(min_length=1)
     limitations: tuple[str, ...] = ()
+
+
+def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """Normalize Pydantic JSON Schema to the existing strict provider contract."""
+
+    out = copy.deepcopy(schema)
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            node.pop("default", None)
+            if node.get("type") == "object" or "properties" in node:
+                properties = node.get("properties") or {}
+                node["required"] = list(properties.keys())
+                node["additionalProperties"] = False
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(out)
+    return out
 
 
 def _stable_id(prefix: str, payload: object) -> str:
@@ -408,7 +431,9 @@ class ReportNarrator:
                     sort_keys=True,
                     separators=(",", ":"),
                 ),
-                schema=NarrationPlanProposal.model_json_schema(),
+                schema=_strict_native_schema(
+                    NarrationPlanProposal.model_json_schema()
+                ),
                 schema_name=NARRATION_SCHEMA_NAME,
             )
         except Exception:
