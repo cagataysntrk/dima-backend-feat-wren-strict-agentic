@@ -3,10 +3,10 @@
 **Milestone:** P12X-C2  
 **Branch:** `feat/dima-metabase-platform`  
 **Engine submodule:** `engine/metabase`  
-**Current pinned engine:** `6bb6924452e5b9dc42b3745bb88c3125a468b297`  
+**Current pinned engine:** `c56b71ab23bf2a2d266bac2fba8d165ac059d613`  
 **Upstream native base:** `v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4`
 
-Status: **SEALED / IMPLEMENTATION AUTHORIZED AFTER P12X-C1 GREEN**
+Status: **CLOSED GREEN / C2 CERTIFIED / DMP-DEC-0034**
 
 ## 1. Goal
 
@@ -217,3 +217,20 @@ P12X-C1 = SEALED GREEN
 ```
 
 After C1 closure, re-read current HEAD, engine gitlink and this document before implementation.
+
+
+## C2 closure evidence
+
+```text
+workflow                         = 35839639339 = SUCCESS
+artifact                         = 10742000058
+artifact digest                  = sha256:c799261cd36499c7579bdf1d6f97ecc07ce0cfaab782afe861deef169d877d94
+four-case final parity           = GREEN
+reproducible bridge regression   = 0
+new reproducible silent wrong    = 0
+permission regression            = 0
+dataset-scope drift              = 0
+transport contract failures      = 0
+```
+
+No engine runtime-source hook was required for C2.

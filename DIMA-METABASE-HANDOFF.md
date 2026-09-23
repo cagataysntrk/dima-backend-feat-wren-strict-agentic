@@ -964,3 +964,44 @@ Next developer order:
 7. stop before P13 hooks.
 
 Do not implement `standard_execution.py`, `execute_prepared()` or Agent-API production Standard while this override is active.
+
+
+---
+
+## CURRENT HANDOFF — P12X C0→C3 COMPLETE
+
+This section supersedes earlier P12X progress snapshots.
+
+```text
+Platform proof SHA                 = 094b5f6e0f1be939172b95fde66cab055c66ae54
+engine gitlink                     = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+upstream base                      = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+
+P12X-C0 fork/source build          = GREEN
+P12X-C1 stock-vs-fork parity       = GREEN
+P12X-C2 stable bridge parity       = GREEN
+P12X-C3 upstream-sync              = GREEN
+P13                                = STOP / NOT AUTHORIZED
+```
+
+C2 final proof:
+`35839639339 = SUCCESS`, artifact `10742000058`,
+digest `sha256:c799261cd36499c7579bdf1d6f97ecc07ce0cfaab782afe861deef169d877d94`.
+
+The bridge is deliberately thin:
+```text
+Dima request/trace identity
+→ restricted current-user session
+→ /api/metabot/agent-streaming
+→ native run-agent-loop
+→ lossless-enough ordered stream observation
+```
+
+It does not implement planning, semantic resolution, skills, memory, tool selection, query
+construction, Agent-API fallback, Wren fallback or raw SQL.
+
+The next developer must **not** start the old P13 ticket verbatim. First perform a new P13
+predevelopment reconciliation against DMP-DEC-0031..0034 and the certified engine bridge, while
+preserving DMP-DEC-0029's authorize-exactly-what-executes trust invariant.
+
+Supervisor-requested stop point has been reached.

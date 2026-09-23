@@ -1880,3 +1880,57 @@ P12X-C3                            = CLOSED GREEN
 ```
 
 C2 remains the only open P12X closure gate.
+
+
+---
+
+## P12X-C2 CLOSED GREEN / SUPERVISOR CHECKPOINT REACHED
+
+```text
+C2 proof SHA                         = 094b5f6e0f1be939172b95fde66cab055c66ae54
+C2 workflow                          = 35839639339 = SUCCESS
+C2 artifact                          = 10742000058
+artifact digest                      = sha256:c799261cd36499c7579bdf1d6f97ecc07ce0cfaab782afe861deef169d877d94
+engine gitlink                       = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+restricted-user canary               = GREEN
+PX-01                                = 126 == 126
+selected parity cases                = PX-01 / PX-07 / PX-13 / PX-16
+divergence repeated                  = PX-07 / PX-13 / PX-16
+repeat count                         = 2 per side
+reproducible bridge regression       = 0
+reproducible bridge silent wrong     = 0
+reproducible permission regression   = 0
+reproducible dataset-scope drift     = 0
+bridge transport contract failures   = 0
+Agent API analytical fallback        = 0
+Wren fallback                        = 0
+raw SQL fallback                     = 0
+P12X-C2                              = CLOSED GREEN
+```
+
+### P12X sequence
+
+```text
+C0 exact fork/source build            = CLOSED GREEN
+C1 stock-vs-fork native parity         = CLOSED GREEN
+C2 stable bridge/direct-native parity  = CLOSED GREEN
+C3 upstream-sync/patch-surface         = CLOSED GREEN
+```
+
+Current architecture:
+```text
+Dima control plane
+→ typed native engine bridge
+→ pinned UpcyTech/dima-metabase-engine submodule
+→ native Metabot stack
+→ customer DB
+```
+
+Current stop:
+```text
+SUPERVISOR CHECKPOINT = REACHED
+P13 PRODUCT CODE      = NOT AUTHORIZED
+```
+
+Before any P13 implementation, the P13 predevelopment/ticket must be re-read and revised for the
+certified native-engine bridge. Do not mechanically continue the old Agent-API execution seam.

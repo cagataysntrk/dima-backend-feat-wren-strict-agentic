@@ -1551,3 +1551,87 @@ The delta contains sync-workflow/governance files only; Metabase runtime source 
 
 status:
 `SEALED / P12X-C3 UPSTREAM-SYNC CERTIFICATION = GREEN`.
+
+
+---
+
+## DMP-DEC-0034 — P12X C2 stable native-engine bridge certified; C0→C3 sequence complete
+
+date: 2026-09-23
+
+evidence:
+```text
+Platform proof SHA                 = 094b5f6e0f1be939172b95fde66cab055c66ae54
+governance                         = 35839639348 = SUCCESS
+C2 live/parity workflow            = 35839639339 = SUCCESS
+C2 artifact                        = 10742000058
+artifact digest                    = sha256:c799261cd36499c7579bdf1d6f97ecc07ce0cfaab782afe861deef169d877d94
+corpus fingerprint                 = fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0
+engine workspace gitlink           = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+upstream base                      = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+runtime tag                        = v0.63.18-dima.0
+restricted-user live canary        = GREEN
+PX-01 observed/oracle              = 126 / 126
+native stream errors               = 0
+Agent API analytical fallback      = 0
+Wren fallback                      = 0
+raw SQL fallback                   = 0
+```
+
+C2 bounded direct-native vs typed-bridge parity:
+```text
+selected cases                     = PX-01, PX-07, PX-13, PX-16
+initial material divergence        = PX-07, PX-13, PX-16
+required repeats                   = 2 per side / divergent case
+reproducible direct-PASS/bridge-FAIL = 0
+reproducible new bridge silent wrong = 0
+reproducible permission regression   = 0
+reproducible dataset-scope drift     = 0
+bridge transport contract failures   = 0
+stochastic variance                  = PX-07, PX-13, PX-16
+final C2 status                      = GREEN
+```
+
+interpretation:
+The typed Dima bridge does not create a second analytical planner. It delegates one request to the
+native Metabot `/api/metabot/agent-streaming` boundary, preserves the ordered native stream and Dima
+correlation identity, and retains current-user permissions. The first C2 seam required no Metabase
+runtime-source hook.
+
+decision:
+```text
+P12X-C0 = CLOSED GREEN
+P12X-C1 = CLOSED GREEN
+P12X-C2 = CLOSED GREEN
+P12X-C3 = CLOSED GREEN
+P12X fork/bridge/sync sequence = COMPLETE
+```
+
+The certified architecture entering the supervisor checkpoint is:
+
+```text
+DIMA PRODUCT
+→ DIMA CONVERSATION / DECISION INTELLIGENCE
+→ DIMA SEMANTIC + SECURITY + EVIDENCE CONTROL PLANE
+→ typed DIMA ENGINE BRIDGE
+→ pinned DIMA METABASE ENGINE submodule
+→ native Metabot / profiles / skills / engine-local state / MBQL / Query Processor / drivers
+→ CUSTOMER DB
+```
+
+ownership:
+- native Metabot retains analytical cognition/orchestration/query construction;
+- Dima retains canonical business semantic, security, provenance, evidence and durable decision truth;
+- bridge owns transport/correlation/engine identity only;
+- no Agent API analytical fallback, Wren fallback or raw-SQL escape is introduced by C2.
+
+P13 disposition:
+`P13 — PRODUCTION STANDARD OVER DIMA METABASE ENGINE` remains **PAUSED / NOT AUTHORIZED** at this
+checkpoint. DMP-DEC-0029's trust invariant remains binding — the material execution artifact Dima
+authorizes must be the artifact actually executed and receipted — but its execution seam must be
+re-read/reconciled against the now-certified native-engine bridge before P13 implementation.
+
+The earlier P13 draft must not be resumed mechanically.
+
+status:
+`SEALED / P12X C0→C3 COMPLETE / SUPERVISOR CHECKPOINT REACHED / P13 STOP`.

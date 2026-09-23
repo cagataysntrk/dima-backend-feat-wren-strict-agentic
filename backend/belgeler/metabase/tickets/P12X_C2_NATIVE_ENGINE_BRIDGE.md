@@ -1,6 +1,6 @@
 # P12X-C2-001 — Stable native engine bridge + direct-native parity
 
-**Status:** ACTIVE / C1 GREEN / IMPLEMENTATION AUTHORIZED  
+**Status:** CLOSED GREEN / DMP-DEC-0034  
 **Milestone:** P12X-C2
 
 ## Goal
@@ -61,3 +61,10 @@ After provider-free GREEN:
 proven.
 
 Implementation remains blocked until P12X-C1 is formally sealed.
+
+
+## Closure
+
+C2 direct-native vs typed-bridge final parity is GREEN at workflow `35839639339`.
+The material divergences PX-07/PX-13/PX-16 were repeated exactly twice per side and did not reproduce
+a directional bridge regression. C2 is complete. Do not expand this ticket into P13.
