@@ -40,6 +40,8 @@ from app.v2.root_cause_orchestration import (
     RootCauseBootstrapStatus,
     RootCauseLoopContext,
     RootCauseOrchestrationError,
+    root_cause_next_test_contract,
+    root_cause_next_test_task_kinds,
 )
 from app.v2.manager_runtime import (
     ManagerBudgetError,
@@ -450,6 +452,28 @@ def _post_acceptance_native_schema(*, root_cause_enabled: bool = False) -> dict[
                 remove_value(value)
 
     remove_value(schema)
+
+    if root_cause_enabled:
+        allowed_next_tests = {
+            item.value for item in root_cause_next_test_task_kinds()
+        }
+        task_kind_schema = (schema.get("$defs") or {}).get("ResearchTaskKind")
+        if not isinstance(task_kind_schema, dict) or not isinstance(
+            task_kind_schema.get("enum"), list
+        ):
+            raise RuntimeError(
+                "strict Manager schema missing ResearchTaskKind enum for Day8"
+            )
+        task_kind_schema["enum"] = [
+            value
+            for value in task_kind_schema["enum"]
+            if value in allowed_next_tests
+        ]
+        if not task_kind_schema["enum"]:
+            raise RuntimeError(
+                "Day8 provider schema has no admissible ROOT_CAUSE next-test task kind"
+            )
+
     return schema
 
 
@@ -484,7 +508,8 @@ DAY8 ROOT_CAUSE RULES:
 - propose_hypothesis may use only runtime-issued h* aliases and current VERIFIED inspected Evidence.
 - Trigger Evidence does NOT become SUPPORTS automatically.
 - SUPPORTS/CONTRADICTS requires propose_hypothesis_evidence_relation explicitly.
-- propose_hypothesis_next_test selects an existing governed task kind and h* inputs only.
+- propose_hypothesis_next_test selects a task_kind ONLY from ROOT_CAUSE_NEXT_TEST_CONTRACT and uses existing h* inputs only.
+- ROOT_CAUSE_NEXT_TEST_CONTRACT maps each advertised task kind to its existing DIRECT capability and required semantic shape; do not invent a missing shape.
 - Never invent or provide ResearchTask IDs for hypothesis next tests; the server owns identity.
 - A planned/running/completed-but-unverified task is not epistemic Evidence.
 - ASSOCIATION/CONTRIBUTION/priority/interestingness are not causation.
@@ -742,6 +767,11 @@ class ResearchManagerLoop:
             "EVIDENCE_REFS": list(runtime.snapshot.evidence_refs),
             "CONVERSATION_SURFACE": _conversation_surface_view(conversation),
             "CAPABILITY_BINDING_CONTRACT": self._capabilities.manager_contract(),
+            "ROOT_CAUSE_NEXT_TEST_CONTRACT": (
+                list(root_cause_next_test_contract(capabilities=self._capabilities))
+                if hypothesis_ledgers
+                else []
+            ),
             "ACCEPTED_RESEARCH_DIRECTIVES": (
                 [
                     item.model_dump(mode="json")
