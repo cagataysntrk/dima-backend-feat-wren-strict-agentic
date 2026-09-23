@@ -176,8 +176,17 @@ def _provider_preflight(settings) -> dict[str, Any]:
             "latency_s": round(time.perf_counter() - started, 4),
         }
     except Exception as exc:
+        response_body = ""
+        try:
+            response = getattr(exc, "response", None)
+            response_body = str(getattr(response, "text", "") or "")
+        except Exception:
+            response_body = ""
+        diagnostic = str(exc)
+        if response_body:
+            diagnostic = f"{diagnostic} | body={response_body[:800]}"
         classification = (
-            _classify_provider_failure(str(exc))
+            _classify_provider_failure(diagnostic)
             or MeasurementValidity.PROVIDER_UNAVAILABLE
         )
         return {
@@ -185,7 +194,7 @@ def _provider_preflight(settings) -> dict[str, Any]:
             "ok": False,
             "provider": "openrouter",
             "model": LIVE_MANAGER_MODEL,
-            "message": str(exc)[:1200],
+            "message": diagnostic[:1200],
             "latency_s": round(time.perf_counter() - started, 4),
         }
 
