@@ -269,7 +269,12 @@
     "columnNameEmpty": "Sütun adı boş olamaz.",
     "tableNotFound": "Tablo bulunamadı.",
     "badFileType": "Yalnızca .csv, .xlsx veya .xls dosyaları yüklenebilir.",
-    "unexpected": "Beklenmeyen bir hata oluştu."
+    "unexpected": "Beklenmeyen bir hata oluştu.",
+    "engineEmpty": "Analiz servisi boş yanıt döndürdü.",
+    "engineNoAnswer": "Analiz servisi yanıt üretemedi.",
+    "engineStreamInterrupted": "Analiz akışı kesildi.",
+    "chatContextInvalid": "Sohbet bağlamı geçersiz.",
+    "chatContextVersionUnsupported": "Sohbet bağlamı sürümü desteklenmiyor."
   },
   "sql": {
     "subtitle": "Şirketinizin verisi üzerinde salt-okunur sorgular çalıştırın; sonucu analiz olarak kaydedin.",

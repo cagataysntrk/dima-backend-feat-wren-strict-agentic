@@ -269,7 +269,12 @@
     "columnNameEmpty": "A column name cannot be empty.",
     "tableNotFound": "Table not found.",
     "badFileType": "Only .csv, .xlsx or .xls files can be uploaded.",
-    "unexpected": "Something went wrong."
+    "unexpected": "Something went wrong.",
+    "engineEmpty": "The analytics service returned an empty response.",
+    "engineNoAnswer": "The analytics service could not produce an answer.",
+    "engineStreamInterrupted": "The analytics stream was interrupted.",
+    "chatContextInvalid": "The chat context is invalid.",
+    "chatContextVersionUnsupported": "This chat context version is not supported."
   },
   "sql": {
     "subtitle": "Run read-only queries against your company's data and save the result as an analysis.",

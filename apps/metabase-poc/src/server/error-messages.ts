@@ -7,6 +7,9 @@
 export const ERROR_KEYS: Record<string, string> = {
   "Ad en az 2 karakter olmalı.": "nameTooShort",
   "Analiz servisi şu anda yanıt vermiyor.": "engineSilent",
+  "Analiz servisi boş yanıt döndürdü.": "engineEmpty",
+  "Analiz servisi yanıt üretemedi.": "engineNoAnswer",
+  "Analiz akışı kesildi.": "engineStreamInterrupted",
   "Analiz servisine bağlanılamadı.": "engineUnreachable",
   "Bilinmeyen model.": "unknownModel",
   "Bir sütun kendisine bağlanamaz.": "selfReference",
@@ -43,6 +46,8 @@ export const ERROR_KEYS: Record<string, string> = {
   "Pano adı gerekli.": "dashboardNameRequired",
   "Şirket sahibi bu ekrandan eklenemez.": "ownerNotAddable",
   "Sohbet ayarlarını yalnızca yöneticiler değiştirebilir.": "chatPrefsAdminsOnly",
+  "Sohbet bağlamı geçersiz.": "chatContextInvalid",
+  "Sohbet bağlamı sürümü desteklenmiyor.": "chatContextVersionUnsupported",
   "Sohbet servisi henüz yapılandırılmadı.": "chatNotConfigured",
   "Sohbet servisi şu anda yanıt vermiyor.": "chatSilent",
   "Sohbet servisi yanıt vermedi, tekrar deneyin.": "chatNoAnswer",
