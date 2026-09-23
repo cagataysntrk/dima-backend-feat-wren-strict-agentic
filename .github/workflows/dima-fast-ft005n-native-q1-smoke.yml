@@ -1,0 +1,170 @@
+name: dima-fast-ft005n-native-q1-smoke
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft005n-native-q1-smoke.yml"
+      - "backend/lab/ft005n/compose.benchmark-v06318.yaml"
+      - "backend/lab/ft005n/bootstrap_boyahane.py"
+      - "backend/lab/ft005n/native_stream.py"
+      - "backend/lab/ft005n/native_q1_smoke.py"
+      - "backend/tests/test_ft005n_native_stream.py"
+      - "backend/eval/ft005n_seam_corpus_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Lock native stream parser
+        working-directory: backend
+        run: pytest -q tests/test_ft005n_native_stream.py
+      - name: Assert frozen corpus exists
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path("eval/ft005n_seam_corpus_v1.json")
+          data=json.loads(path.read_text())
+          assert data["corpus_id"] == "FT005N_SEAM_CORPUS_V1"
+          assert data["status"] == "FROZEN_BEFORE_NATIVE_BEHAVIOR_RESULTS"
+          assert data["source_control"]["boyahane_sha"] == "f0c4a6b053ead52ca2eac80002c448323dc34a35"
+          PY
+
+  live-native-q1:
+    runs-on: ubuntu-latest
+    needs: provider-free
+    timeout-minutes: 45
+    environment: DIMA_OPENROUTER_API_KEY
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      METABASE_URL: http://localhost:3301
+      METABASE_BIND_PORT: "3301"
+      POSTGRES_BIND_PORT: "55436"
+      BOYAHANE_OWNER_PASSWORD: "ft005n-owner-password"
+      BOYAHANE_READONLY_PASSWORD: "ft005n-readonly-password"
+      METABASE_DB_PASSWORD: "ft005n-metabase-app-password"
+      FT005N_ADMIN_EMAIL: "admin@dima-native.local"
+      FT005N_ADMIN_PASSWORD: "DimaNativeControl!2026"
+      FT005N_NATIVE_MODEL: "openai/gpt-5.6-luna"
+      FT005N_NATIVE_SMOKE_RECEIPT: "backend/lab/ft005n/artifacts/native-q1-smoke.json"
+
+    steps:
+      - name: Checkout Fast
+        uses: actions/checkout@v4
+
+      - name: Checkout frozen Boyahane control
+        uses: actions/checkout@v4
+        with:
+          repository: cagataysntrk/metabase-boyahane
+          ref: f0c4a6b053ead52ca2eac80002c448323dc34a35
+          path: boyahane-control
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install Fast lab dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Require OpenRouter credential
+        run: test -n "$DIMA_OPENROUTER_API_KEY"
+
+      - name: Prepare isolated Boyahane environment
+        shell: bash
+        run: |
+          cat > boyahane-control/.env <<EOF
+          BOYAHANE_OWNER_PASSWORD=$BOYAHANE_OWNER_PASSWORD
+          BOYAHANE_READONLY_PASSWORD=$BOYAHANE_READONLY_PASSWORD
+          METABASE_DB_PASSWORD=$METABASE_DB_PASSWORD
+          POSTGRES_BIND_PORT=$POSTGRES_BIND_PORT
+          METABASE_BIND_PORT=$METABASE_BIND_PORT
+          EOF
+
+      - name: Verify exact pinned Metabase compose
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose             --project-directory boyahane-control             --env-file boyahane-control/.env             -f boyahane-control/compose.yaml             -f "$GITHUB_WORKSPACE/backend/lab/ft005n/compose.benchmark-v06318.yaml"             config > /tmp/ft005n-compose.yml
+          grep -F "metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73" /tmp/ft005n-compose.yml
+
+      - name: Start pinned Boyahane A1 control
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose             --project-directory boyahane-control             --env-file boyahane-control/.env             -f boyahane-control/compose.yaml             -f "$GITHUB_WORKSPACE/backend/lab/ft005n/compose.benchmark-v06318.yaml"             up -d --build
+
+          for i in $(seq 1 150); do
+            if curl -fsS http://localhost:3301/api/health >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Metabase health timeout"
+          exit 1
+
+      - name: Verify running image identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          cid="$(
+            docker compose               --project-directory boyahane-control               --env-file boyahane-control/.env               -f boyahane-control/compose.yaml               -f "$GITHUB_WORKSPACE/backend/lab/ft005n/compose.benchmark-v06318.yaml"               ps -q metabase
+          )"
+          test -n "$cid"
+          configured="$(docker inspect "$cid" --format '{{.Config.Image}}')"
+          echo "configured_image=$configured"
+          test "$configured" = "metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73"
+
+      - name: Configure stock native Metabot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backend/lab/ft005n/artifacts
+          python backend/lab/ft005n/bootstrap_boyahane.py             | tee backend/lab/ft005n/artifacts/native-bootstrap.jsonl
+
+      - name: Run stock native Q1 smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python backend/lab/ft005n/native_q1_smoke.py
+
+      - name: Upload FT-005N native smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-fast-ft005n-native-q1-${{ github.sha }}
+          path: |
+            backend/lab/ft005n/artifacts/native-bootstrap.jsonl
+            backend/lab/ft005n/artifacts/native-q1-smoke.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show safe native smoke receipt
+        if: always()
+        run: |
+          test ! -f backend/lab/ft005n/artifacts/native-q1-smoke.json || cat backend/lab/ft005n/artifacts/native-q1-smoke.json
+
+      - name: Teardown isolated A1
+        if: always()
+        shell: bash
+        run: |
+          docker compose             --project-directory boyahane-control             --env-file boyahane-control/.env             -f boyahane-control/compose.yaml             -f "$GITHUB_WORKSPACE/backend/lab/ft005n/compose.benchmark-v06318.yaml"             down -v --remove-orphans || true
