@@ -210,14 +210,20 @@ class CandidateObligation(FrozenModel):
             self.ranking_direction is not None or self.ranking_limit is not None
         ):
             raise ValueError("ranking parameters yalnız ranking obligation için geçerlidir")
+        declared_handles = tuple(dict.fromkeys(self.semantic_handle_refs))
+        scope_refs = tuple(dict.fromkeys(self.scope_refs))
+        if any(ref not in declared_handles for ref in scope_refs):
+            raise ValueError("scope_refs must be a subset of semantic_handle_refs")
         if self.semantic_bindings:
             bound_handles = tuple(
                 dict.fromkeys(binding.handle_id for binding in self.semantic_bindings)
             )
-            declared_handles = tuple(dict.fromkeys(self.semantic_handle_refs))
-            if bound_handles != declared_handles:
+            source_bound = tuple(
+                ref for ref in declared_handles if ref not in set(scope_refs)
+            )
+            if bound_handles != source_bound:
                 raise ValueError(
-                    "semantic_bindings handle set must exactly match semantic_handle_refs"
+                    "semantic_bindings must exactly match source-bound semantic_handle_refs"
                 )
         return self
 
@@ -260,6 +266,7 @@ class ObligationLedgerItem(FrozenModel):
     source_refs: tuple[str, ...]
     semantic_handle_refs: tuple[str, ...] = ()
     semantic_bindings: tuple[SemanticBindingRef, ...] = ()
+    scope_refs: tuple[str, ...] = ()
     ranking_direction: Literal["asc", "desc"] | None = None
     ranking_limit: int | None = Field(default=None, ge=1, le=1000)
     evidence_refs: tuple[str, ...] = ()
