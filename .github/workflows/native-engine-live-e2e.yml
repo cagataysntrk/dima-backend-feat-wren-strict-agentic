@@ -1,4 +1,5 @@
 name: native-engine-live-e2e
+# Canonical native-first compatibility certification.
 
 on:
   workflow_dispatch:
