@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections import deque
 
+import pytest
+
 from app.v2.acceptance import IntentAcceptanceGate
 from app.v2.manager_executor import (
     GovernedManagerExecutionContext,
@@ -11,6 +13,7 @@ from app.v2.manager_executor import (
 )
 from app.v2.manager_loop import ResearchManagerLoop
 from app.v2.manager_models import (
+    ManagerBudget,
     ManagerCapabilityKey,
     ManagerState,
     ObligationOrigin,
@@ -18,7 +21,7 @@ from app.v2.manager_models import (
 )
 from app.v2.manager_preacceptance import CoverageAudit, FiniteAcceptanceStatus
 from app.v2.manager_progress import DynamicActionFrontier
-from app.v2.manager_runtime import ManagerRuntime
+from app.v2.manager_runtime import ManagerBudgetError, ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
 from app.v2.research_tasks import ResearchTaskService
 from app.v2.research_tools import ResearchTaskKind
@@ -1049,3 +1052,54 @@ def test_malformed_excluded_business_obligation_revises_before_grounding():
         item.polarity != ObligationPolarity.EXCLUDED
         for item in runtime.ledger.items
     )
+
+
+
+def test_preacceptance_and_research_turn_budgets_are_separate():
+    runtime = ManagerRuntime(
+        request_ref="phase-budget-separation",
+        budget=ManagerBudget(
+            max_preacceptance_turns=2,
+            max_manager_turns=3,
+        ),
+    )
+    runtime.begin_understanding()
+
+    runtime.note_manager_turn(phase="preacceptance")
+    runtime.note_manager_turn(phase="preacceptance")
+    runtime.note_manager_turn(phase="research")
+    runtime.note_manager_turn(phase="research")
+    runtime.note_manager_turn(phase="research")
+
+    assert runtime.snapshot.manager_turns == 5
+    assert runtime.snapshot.preacceptance_turns == 2
+    assert runtime.snapshot.research_manager_turns == 3
+    assert runtime.snapshot.state != ManagerState.BUDGET_EXHAUSTED
+
+    with pytest.raises(ManagerBudgetError, match="research Manager turn budget exhausted"):
+        runtime.note_manager_turn(phase="research")
+    assert runtime.snapshot.state == ManagerState.BUDGET_EXHAUSTED
+
+
+def test_preacceptance_turn_budget_is_independently_bounded():
+    runtime = ManagerRuntime(
+        request_ref="preacceptance-budget-bound",
+        budget=ManagerBudget(
+            max_preacceptance_turns=2,
+            max_manager_turns=6,
+        ),
+    )
+    runtime.begin_understanding()
+
+    runtime.note_manager_turn(phase="preacceptance")
+    runtime.note_manager_turn(phase="preacceptance")
+
+    with pytest.raises(
+        ManagerBudgetError,
+        match="preacceptance Manager turn budget exhausted",
+    ):
+        runtime.note_manager_turn(phase="preacceptance")
+
+    assert runtime.snapshot.preacceptance_turns == 2
+    assert runtime.snapshot.research_manager_turns == 0
+    assert runtime.snapshot.state == ManagerState.BUDGET_EXHAUSTED
