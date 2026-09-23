@@ -1,6 +1,6 @@
 # FT-005 — MODEL DEPENDENCY MATRIX RECEIPT
 
-Status: BLOCKED_NO_CREDENTIAL
+Status: CLOSED / BENCHMARK_TRANSPORT_CREDENTIAL_MISMATCH
 Date: 2026-09-23
 Branch: `feat/dima-metabase-product-fast-track`
 
@@ -241,3 +241,36 @@ The old BLOCKED_NO_CREDENTIAL artifacts remain historical evidence that the wron
 
 Closure condition:
 a real OpenRouter transport smoke must record the exact requested model identity, strict structured output, fallback disabled, and provider success before this receipt can be marked CLOSED.
+
+
+## Closure
+
+Corrective Fast-owned eval transport:
+- `OpenRouterStructuredBenchmarkGenerator`;
+- strict schema normalization;
+- `provider.allow_fallbacks=false`;
+- explicit reasoning policy;
+- exact request/canonical model identities.
+
+Provider-free + live transport proof:
+`35816680632 GREEN`
+
+Tested SHA:
+`57943518e9c4ca85710795423f1cd0ee2090f809`
+
+Luna artifact:
+`sha256:19f90afab4bc728896183a23ba732088a63eb99357d6e858cda0d1f4e43751bb`
+
+Sol artifact:
+`sha256:feb9bab21a5e763e96b9ed975041ad4d1b271fbb63e70e8f8820a3a349d8e3de`
+
+ROOT_CAUSE:
+`BENCHMARK_TRANSPORT_CREDENTIAL_MISMATCH`
+
+PRODUCT IMPACT:
+`NONE`
+
+MODEL QUALITY EVIDENCE FROM OLD BLOCKED RUN:
+`NONE`
+
+Receipt CLOSED.

@@ -1,6 +1,6 @@
 # FT-005 FAILURE RECEIPT — MODEL_TRANSPORT_SMOKE_ORACLE_001
 
-Status: ROOT CAUSE CONFIRMED / EVAL_ORACLE_STAGE_MIX
+Status: CLOSED / EVAL_ORACLE_STAGE_MIX
 Date: 2026-09-23
 Branch: `feat/dima-metabase-product-fast-track`
 
@@ -120,3 +120,25 @@ Workflow-only:
 ## Closure condition
 
 Re-run both Luna and Sol transport lanes with the corrected stage-specific oracle.
+
+
+## Closure
+
+Workflow-only corrective SHA:
+`57943518e9c4ca85710795423f1cd0ee2090f809`
+
+Canonical rerun:
+`35816680632 GREEN`
+
+Luna transport:
+`PASS`
+
+Sol transport:
+`PASS`
+
+The full semantic/retrieval oracle was not weakened; it remains reserved for the frozen focused matrix.
+
+Product prompt/schema/algorithm touch:
+`0`
+
+Receipt CLOSED.

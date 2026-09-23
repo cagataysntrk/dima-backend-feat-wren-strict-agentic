@@ -9,7 +9,7 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`82b88e4ba9f58550cd5c2a969cd62012bce983fc`
+`57943518e9c4ca85710795423f1cd0ee2090f809`
 
 CURRENT_PRODUCT_GATE:
 `FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
@@ -443,3 +443,36 @@ MODEL_MATRIX:
 
 Product capability blocker:
 `NO`
+
+
+## FT-005 OPENROUTER TRANSPORT SMOKE — CLOSED / GREEN
+
+Run:
+`35816680632`
+
+Tested SHA:
+`57943518e9c4ca85710795423f1cd0ee2090f809`
+
+Provider-free contract:
+`GREEN`
+
+LUNA_BASELINE transport:
+`GREEN`
+request model: `openai/gpt-5.6-luna`
+artifact: `sha256:19f90afab4bc728896183a23ba732088a63eb99357d6e858cda0d1f4e43751bb`
+
+SOL_CEILING comparable transport:
+`GREEN`
+request model: `openai/gpt-5.6-sol`
+artifact: `sha256:feb9bab21a5e763e96b9ed975041ad4d1b271fbb63e70e8f8820a3a349d8e3de`
+
+Proven:
+- canonical OpenRouter credential path works;
+- exact request/response model identity recorded;
+- strict JSON-schema accepted;
+- provider fallback disabled;
+- typed output valid;
+- product runtime/provider code untouched.
+
+MODEL_MATRIX:
+`TRANSPORT_READY / FULL_FROZEN_CORPUS_NEXT`
