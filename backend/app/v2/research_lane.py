@@ -130,6 +130,7 @@ class ResearchLaneService:
         context: ProductRequestContext,
         body: AskV2Request,
         progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
+        cancel_check: Callable[[], bool] | None = None,
     ) -> ResearchLaneResult:
         # Lane-local semantic authority. Nothing from a rejected Standard candidate is
         # accepted as an input to this construction seam.
@@ -202,6 +203,7 @@ class ResearchLaneService:
                 context_version=context.semantic_context.context_version.version,
             ),
             progress_callback=progress_callback,
+            cancel_check=cancel_check,
         )
         outcome = loop.run(
             question=body.question,
