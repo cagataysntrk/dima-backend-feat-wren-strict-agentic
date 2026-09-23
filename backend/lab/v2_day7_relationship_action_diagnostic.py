@@ -11,6 +11,7 @@ Diagnostic only:
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
@@ -30,6 +31,7 @@ from lab.v2_day7_manager_live_sol import (
 )
 
 PRODUCT_BEHAVIOR_BASE_SHA = "b70f0aab209b2353b854463ace582c40bcc2bd98"
+DEFAULT_OUTPUT = Path(__file__).resolve().parent / "reports" / "v2_day7_relationship_action_diagnostic.json"
 
 CASES = (
     {
@@ -276,6 +278,11 @@ def main() -> int:
         "records": records,
         "status": "diagnostic_complete",
     }
+    DEFAULT_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    DEFAULT_OUTPUT.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     print(json.dumps(payload, ensure_ascii=False))
     return 0
 
