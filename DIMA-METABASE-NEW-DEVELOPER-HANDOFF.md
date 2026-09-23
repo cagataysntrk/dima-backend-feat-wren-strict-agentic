@@ -10,9 +10,9 @@ are superseded by the exact state below.
 
 Dima now uses a pinned native Metabase engine for analytical cognition/query-candidate authoring,
 while Dima remains the authority for business semantics, execution authorization, security,
-provenance, receipts and Evidence. P13B provider-free trust + semantic availability are GREEN on the
-current dima.3 engine; the **only next model-bearing action is one Luna PX-01 live canary, then STOP
-for supervisor audit**.
+provenance, receipts and Evidence. P13B provider-free trust + semantic availability are GREEN and the
+single authorized dima.3 Luna PX-01 live canary is also GREEN. The current legal state is **STOP FOR
+SUPERVISOR AUDIT**: no retry, no P13C, no Research and no generalization.
 
 ## 1. Exact authoritative repository state
 
@@ -21,7 +21,8 @@ Platform:
 ```text
 repo    = cagataysntrk/dima-backend-feat-wren-strict-agentic
 branch  = feat/dima-metabase-platform
-HEAD    = 2ea02530fbaa2999d1dac1d6166064e49bd8f51c
+audited live occurrence SHA = 8993009b14f9a3f443b23ef681e181cfee210b6d
+note    = this handoff closure is a documentation-only successor of that live occurrence
 ```
 
 Certified engine:
@@ -49,8 +50,18 @@ Platform governance
 provider-free native semantic availability
 35911051644 = SUCCESS
 
-P13B provider-free trust/regression on current Platform HEAD
+P13B provider-free trust/regression baseline
 35914038368 = SUCCESS
+
+P13B-3 first pinned-live Standard
+35915780089 = SUCCESS
+
+P13B-3 governance
+35915780178 = SUCCESS
+
+P13B-3 artifact
+id = 10774804897
+digest = sha256:744d1c0913bb20267e544b896d65c50da54196bacd33fbdc2d98d829496940a0
 ```
 
 The P13B provider-free job includes:
@@ -59,7 +70,9 @@ The P13B provider-free job includes:
 - P13A + P5 + P10 regressions;
 - P12X C2 provider-free native bridge regression.
 
-Do not describe P13B-3 as GREEN yet. The new dima.3 live Luna canary has **not** been spent.
+P13B-3 is GREEN only for the bounded PX-01 vertical proven by run `35915780089`. Do not infer
+generalized P13 Standard closure, P13C readiness, advanced-security closure or Research readiness
+from this one canary.
 
 ## 2. Product architecture in plain terms
 
@@ -439,93 +452,66 @@ P13B provider-free semantic availability  = GREEN
 P13B current-head regressions             = GREEN
 governance                                = GREEN
 
-P13B-3 one Luna live semantic canary       = NOT YET RUN ON dima.3
+P13B-3 one Luna live semantic canary       = GREEN — run 35915780089
 P13 Standard final closure                 = NOT CLAIMED
 production multi-instance security closure = NOT CLAIMED
 ```
 
 ## 13. The exact next legal action
 
-Before any write:
-1. re-query Platform branch HEAD;
-2. re-query engine main and Platform gitlink;
-3. confirm they still match this handoff or read newer receipts;
-4. confirm governance/provider-free proofs remain GREEN;
-5. inspect the current live workflow and P13B artifacts.
-
-Then:
+The one authorized Luna PX-01 canary has been spent exactly once and is GREEN.
 
 ```text
-ONE Luna PX-01 canary only
-model    = openrouter/openai/gpt-5.6-luna
-question = Haziran 2026'da kaç satış siparişi açıldı?
-oracle   = 126
-primary user turns = 1
+run           = 35915780089 SUCCESS
+attempt       = p13b-px01-native-metric-dima3-1
+official      = 126
+oracle        = 126
+Evidence      = VERIFIED
+next action   = STOP FOR SUPERVISOR AUDIT
 ```
 
-No Sol.
-No C1.
-No six-case corpus.
-No automatic retry.
+No second Luna run, Sol run, C1 run, six-case corpus, retry, P13C work, metric-family
+generalization or Research work is authorized by this handoff.
 
-The existing live job is in:
+## 14. P13B-3 live closure evidence and current stop
+
+Exact immutable query fingerprint across attested / authorized / submitted / receipted:
+
+`acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787`.
+
+Exact P5/Evidence identities:
 
 ```text
-.github/workflows/dima-metabase-p12x-c2-live.yml
-job = p13b-px01-live
+QueryReceipt = dqr_d096c10ab01354391bae0c62
+Evidence     = evi_17fc5054faf60aec1d1e3e6a / VERIFIED
 ```
 
-It already:
-- builds exact dima.3;
-- boots one exact engine instance;
-- provisions/verifies the Dima-managed metric in that same live runtime;
-- passes the resulting semantic-availability receipt to `px01_live_standard.py`;
-- asks one Luna turn;
-- attests the exact query;
-- authorizes against Dima truth;
-- executes exact same pMBQL via `/api/dataset`;
-- seals P5 receipt;
-- checks independent oracle;
-- promotes Evidence only after correctness.
-
-Current trigger is a push whose commit message contains `[p13b-live]`.
-
-**Do not make a fake product change merely to spend the canary.**
-If no legitimate code change exists, the clean solution is CI-only trigger plumbing that explicitly
-permits this already-authorized one P13B live job to be manually dispatched, without altering product,
-semantic, model or trust behavior.
-
-## 14. What to do after the one canary
-
-If GREEN:
+Exact runtime image and occurrence identity:
 
 ```text
-record exact run/artifact/fingerprints
-update living status + receipts
-do not generalize
-STOP for supervisor audit
+engine SHA       = 10960f7c36bb84425b1794b557b78211c14d7f5f
+image identity   = sha256:0520e0b02a94e0d39b645443731e3d9436ee370624b61aa721ff914c9a293849
+runtime instance = c88856ed-6f82-4709-ab6f-0c86113edb92
 ```
 
-If RED:
+The artifact is `10774804897`, digest
+`sha256:744d1c0913bb20267e544b896d65c50da54196bacd33fbdc2d98d829496940a0`.
+
+CI economy remains an explicit open operational debt: this canary rebuilt the exact engine from
+source inside the Platform job. The full run was about 10m44s while the model-backed proof itself
+reported 16.278s end-to-end. A future supervisor-reviewed CI milestone may source-build once during
+engine certification, publish a digest-pinned immutable certified image, then let Platform live
+proofs pull that exact digest and re-attest the same runtime identity. This is **not implemented or
+authorized here**, and source-build certification must remain.
+
+Current stop:
 
 ```text
-STOP
-preserve failure artifact
-classify failure owner
-do not retry automatically
-do not prompt-patch
-do not regex/fuzzy/morph-patch
-do not weaken trust
-return to supervisor with the exact evidence
-```
-
-The latest supervisor instruction is explicit:
-
-```text
-provider-free semantic availability
-→ native metric attestation
-→ one Luna PX-01 canary
-→ STOP for supervisor audit
+P13B-3 BOUNDED LIVE PX-01 = GREEN
+P13 STANDARD FINAL        = NOT CLAIMED
+P13C                       = NOT STARTED
+P14 RESEARCH               = NOT STARTED
+STOP FOR SUPERVISOR AUDIT
 ```
 
 ## 15. Forbidden shortcuts

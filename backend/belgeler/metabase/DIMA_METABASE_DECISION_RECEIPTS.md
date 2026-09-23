@@ -2211,3 +2211,102 @@ query reconstruction, Python MBQL parser, or stochastic retry is authorized.
 status:
 `SEALED / P13B-2 PROVIDER-FREE GREEN / P13B-3 FIRST PINNED-LIVE PX-01 AUTHORIZED`.
 
+---
+
+## DMP-DEC-0040 — P13B-3 dima.3 first pinned-live Standard GREEN and supervisor stop
+
+date: 2026-09-23
+
+question:
+Did the single authorized Luna PX-01 live occurrence on the certified dima.3 engine preserve the
+sealed Dima-owned truth chain from managed semantic resource through native Metabot, exact native
+attestation, authorization, exact execution, P5 receipt, independent oracle and VERIFIED Evidence?
+
+decision:
+
+```text
+YES — for the bounded PX-01 P13B-3 vertical only.
+```
+
+Authoritative occurrence:
+
+```text
+Platform live SHA      = 8993009b14f9a3f443b23ef681e181cfee210b6d
+live attempt id        = p13b-px01-native-metric-dima3-1
+governance             = 35915780178 SUCCESS
+live workflow          = 35915780089 SUCCESS
+artifact id            = 10774804897
+artifact digest        = sha256:744d1c0913bb20267e544b896d65c50da54196bacd33fbdc2d98d829496940a0
+engine SHA             = 10960f7c36bb84425b1794b557b78211c14d7f5f
+engine release         = 0.63.18-dima.3
+model                  = openrouter/openai/gpt-5.6-luna
+question               = Haziran 2026'da kaç satış siparişi açıldı?
+oracle                 = 126
+official answer        = 126
+primary user turns     = 1
+```
+
+The same live runtime first provisioned and verified the P9/P9B DIMA_MANAGED resource
+`metric.sales_order_count` with Metabase local id `1`, portable entity id
+`VEzPLLv1IBWZfl7mJ9Xnb`, and persisted `COUNT(*)` definition. Semantic availability used zero
+model calls.
+
+The one native Metabot occurrence then produced one material native query. Dima accepted it only
+after engine attestation and exact P9 binding proved the persistent metric identity.
+
+Mandatory immutable query chain:
+
+```text
+attested   = acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787
+authorized = acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787
+submitted  = acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787
+receipted  = acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787
+```
+
+Runtime chain:
+
+```text
+repository          = UpcyTech/dima-metabase-engine
+revision SHA        = 10960f7c36bb84425b1794b557b78211c14d7f5f
+upstream base       = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+runtime tag         = v0.63.18-dima.3
+build identity      = github-actions:35915780089:10960f7c36bb84425b1794b557b78211c14d7f5f
+image identity      = sha256:0520e0b02a94e0d39b645443731e3d9436ee370624b61aa721ff914c9a293849
+runtime instance id = c88856ed-6f82-4709-ab6f-0c86113edb92
+```
+
+Existing identity systems remained singular:
+
+```text
+P5 QueryReceipt id              = dqr_d096c10ab01354391bae0c62
+P5 receipt fingerprint          = 5526cfc9c201fae9f65876675b7992e00a3dbd8effba0d81472e7e3c094e2df1
+ExecutionAccess fingerprint     = 3b5aca37a6ed684aa68cfdfe6b276dfcc2ea8b794351732bfeb545ca8e329571
+Evidence id                     = evi_17fc5054faf60aec1d1e3e6a
+Evidence state                  = VERIFIED
+```
+
+The proof cardinality is exactly one authority, one material native query, one attestation, one
+authorized artifact, one ExecutionAccessSnapshot, one database execution, one Dima QueryReceipt and
+one VERIFIED Evidence. `silent_wrong = 0`; Agent API analytical fallback, Wren fallback, raw SQL
+fallback and admin analytical fallback are all `0`.
+
+This decision does not certify:
+- P13 Standard as a generalized/final production closure;
+- P13C entity-value integration;
+- EV-05/06/07;
+- P10B2 advanced security;
+- P9 dimension/time/relationship transport;
+- calculated/relationship/view semantics;
+- multi-instance production runtime identity;
+- Research/P14.
+
+CI economy disposition:
+the live workflow currently recompiles the engine from source. That is safe but expensive. A future
+separately reviewed CI milestone may publish the already source-certified engine as an immutable
+digest-pinned image and make Platform live jobs pull that digest while preserving all current
+runtime-identity equality checks. This optimization is not implemented by this decision and must not
+remove source-build certification.
+
+status:
+`SEALED / P13B-3 BOUNDED LIVE GREEN / STOP FOR SUPERVISOR AUDIT`.
+

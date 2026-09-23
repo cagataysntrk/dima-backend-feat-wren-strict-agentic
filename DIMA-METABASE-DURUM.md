@@ -2329,3 +2329,157 @@ one Luna PX-01 canary
 
 Canonical onboarding:
 `DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md`.
+
+---
+
+## 2026-09-23 — P13B-3 FIRST PINNED-LIVE STANDARD — GREEN / SUPERVISOR STOP
+
+Authorized live occurrence:
+
+```text
+Platform live SHA                  = 8993009b14f9a3f443b23ef681e181cfee210b6d
+authorization                      = p13b-px01-native-metric-dima3-1
+model                              = openrouter/openai/gpt-5.6-luna
+question                           = Haziran 2026'da kaç satış siparişi açıldı?
+oracle                             = 126
+primary user turns                 = 1
+governance                         = 35915780178 SUCCESS
+P13B live run                      = 35915780089 SUCCESS
+artifact id                        = 10774804897
+artifact digest                    = sha256:744d1c0913bb20267e544b896d65c50da54196bacd33fbdc2d98d829496940a0
+```
+
+Certified engine/runtime:
+
+```text
+engine repo                        = UpcyTech/dima-metabase-engine
+engine SHA                         = 10960f7c36bb84425b1794b557b78211c14d7f5f
+release                            = 0.63.18-dima.3
+upstream base                      = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+build identity                     = github-actions:35915780089:10960f7c36bb84425b1794b557b78211c14d7f5f
+runtime image identity             = sha256:0520e0b02a94e0d39b645443731e3d9436ee370624b61aa721ff914c9a293849
+runtime instance id                = c88856ed-6f82-4709-ab6f-0c86113edb92
+```
+
+Semantic-resource proof in the same live runtime:
+
+```text
+canonical metric                   = metric.sales_order_count
+ownership                          = DIMA_MANAGED
+Metabase metric local id           = 1
+Metabase metric portable entity id = VEzPLLv1IBWZfl7mJ9Xnb
+persisted definition               = COUNT(*)
+semantic availability              = GREEN
+semantic availability model calls  = 0
+```
+
+Live Standard proof:
+
+```text
+official answer                    = 126
+independent oracle                 = 126
+authority                          = 1
+native material query              = 1
+attestation                        = 1
+authorized artifact                = 1
+ExecutionAccessSnapshot            = 1
+database execution                 = 1
+Dima QueryReceipt                  = 1
+VERIFIED Evidence                  = 1
+silent wrong                       = 0
+Agent API analytical fallback      = 0
+Wren fallback                      = 0
+raw SQL fallback                   = 0
+admin analytical fallback          = 0
+```
+
+Exact execution identity remained immutable across the full chain:
+
+```text
+attested   = acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787
+authorized = acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787
+submitted  = acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787
+receipted  = acef568a9051f27e90c3743afefcb9f01b4f5ff77d8ba2117c405f29a56dd787
+```
+
+Receipt/Evidence:
+
+```text
+QueryReceipt id                    = dqr_d096c10ab01354391bae0c62
+QueryReceipt fingerprint           = 5526cfc9c201fae9f65876675b7992e00a3dbd8effba0d81472e7e3c094e2df1
+ExecutionAccess fingerprint        = 3b5aca37a6ed684aa68cfdfe6b276dfcc2ea8b794351732bfeb545ca8e329571
+Evidence id                        = evi_17fc5054faf60aec1d1e3e6a
+Evidence state                     = VERIFIED
+```
+
+Measured live economics:
+
+```text
+native agent latency               = 15948 ms
+dataset latency                    = 94 ms
+live proof end-to-end              = 16278 ms
+native tool calls                  = 6
+analytical queries                 = 1
+provider token/cost counters       = NOT EXPOSED BY NATIVE STREAM
+```
+
+Interpretation:
+- the prior dima.2 semantic failure was corrected at its real owner by making the canonical
+  Dima-managed metric available to native Metabot;
+- native Metabot selected the persistent native metric identity rather than authoring the prior
+  DISTINCT(field) physical aggregation;
+- engine attestation observed that metric identity while original pMBQL remained the immutable
+  execution artifact;
+- Dima bound that identity to the exact P9 ManagedResourceBinding, authorized the exact artifact,
+  executed the same pMBQL, sealed the existing P5 receipt, checked the independent oracle, and only
+  then promoted VERIFIED Evidence;
+- no prompt patch, regex/fuzzy/morphology semantic authority, Python MBQL repair, hard-coded PX-01
+  query, raw SQL, Wren, Agent API analytical hot-path, admin fallback, second access identity or
+  second receipt system was introduced.
+
+Current certification wording:
+
+```text
+P13B-1 ENGINE ATTESTATION + IDENTITY            = GREEN
+P13B-2 PLATFORM TRUST                           = PROVIDER-FREE GREEN
+P13B NATIVE SEMANTIC AVAILABILITY              = GREEN
+P13B NATIVE METRIC ATTESTATION                 = GREEN
+P13B-3 ONE LUNA PINNED-LIVE PX-01 ON DIMA.3    = GREEN
+
+P13 STANDARD FINAL CLOSURE                      = NOT CLAIMED
+P13C ENTITY-VALUE INTEGRATION                   = NOT STARTED
+P14 RESEARCH                                    = NOT STARTED
+PRODUCTION MULTI-INSTANCE SECURITY CLOSURE      = NOT CLAIMED
+```
+
+Open debt remains open exactly as before:
+- DMP-P5-BLOCK-001;
+- DMP-P11-INTEGRATION-005;
+- EV-05 / EV-06 / EV-07;
+- P10B2 RLS / CLS / impersonation / advanced routing / cache-result reauthorization;
+- P9 dimension / time / relationship transport;
+- P7/P8 calculated / relationship / view semantics;
+- historical Wren typed gaps;
+- multi-instance runtime/deployment closure.
+
+CI economy note — OPEN / NOT IMPLEMENTED:
+the successful live run still rebuilt the exact engine from source inside the Platform canary. The
+run itself lasted about 10m44s, while the model-backed Standard proof reported only 16.278s
+end-to-end. A future supervisor-reviewed CI milestone may move the expensive source build to engine
+certification, publish a digest-pinned immutable certified image once, and make Platform live proofs
+pull that exact digest and re-attest the same repository/SHA/upstream/release/build/image/runtime
+identity. Source-build certification must remain; it must not be silently deleted or replaced by a
+moving tag. No such CI optimization is authorized or implemented by this closure.
+
+Current stop:
+
+```text
+P13B-3 FIRST PINNED-LIVE STANDARD = GREEN
+NO RETRY
+NO SECOND MODEL RUN
+NO P13C
+NO RESEARCH
+NO GENERALIZATION
+STOP FOR SUPERVISOR AUDIT
+```
+
