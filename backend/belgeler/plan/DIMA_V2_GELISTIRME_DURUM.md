@@ -8966,3 +8966,112 @@ manual capability cognition diagnostic
 → Day7 closure receipt
 → STOP; do not auto-start Day8
 ```
+
+
+## 2026-09-23 — D7-OPEN-3 MODEL_COGNITION CLASSIFIED + GENERIC OWNER FIX
+
+Manual cognition diagnostic:
+
+```text
+workflow   v2-day7-capability-cognition-diagnostic
+run        35848438878
+SHA        f571264a510437b64a8903eb8d742110aecd6fc8
+validity   VALID
+cases      8 / 8 evaluable
+raw score  6 / 8
+```
+
+Observed mismatches:
+
+1. `neutral-investigate-tr`
+   ```text
+   "Seyrek sinyali araştır. Kanıt yoksa yeni sonuç uydurma ve gereksiz dallanma açma."
+   expected analytical capability = PERFORMANCE
+   actual                       = ROOT_CAUSE
+   ```
+   This exactly reproduces the frozen13 `insufficient-evidence` first bad transition
+   at the cognition boundary and is classified `MODEL_COGNITION`.
+
+2. `neutral-inspect-en`
+   ```text
+   expected analytical capability = PERFORMANCE
+   actual obligations              = PERFORMANCE + REPORT
+   ```
+   PERFORMANCE itself was correct. REPORT is a PRESENTATION-lane obligation produced
+   from "report only its observed state". The cognition diagnostic was incorrectly
+   scoring presentation obligations as analytical mismatches. This is `EVAL_ORACLE`,
+   not a product semantic failure.
+
+Control family:
+- neutral state/show TR -> PERFORMANCE
+- neutral evaluate/show TR -> PERFORMANCE
+- explicit causal why TR -> ROOT_CAUSE
+- explicit root-cause TR -> ROOT_CAUSE
+- anomaly-causes TR -> ROOT_CAUSE
+- explicit causal why EN -> ROOT_CAUSE
+
+Therefore the defect is not `"araştır" == ROOT_CAUSE` globally. Frozen13 already had
+`"Net geliri araştır"` -> PERFORMANCE. The defect is a probabilistic boundary tail:
+a descriptive metric investigation can be promoted to ROOT_CAUSE when surrounding
+research/evidence-control language is present.
+
+### Generic correction
+
+Product owner changed only in:
+
+`backend/app/v2/manager_policy.py`
+
+Commit:
+`70543ffd576ddabfa059a78c12506cae4f856ebc`
+
+No case-specific branch, regex, Turkish keyword rule, frozen case ID, semantic linker
+change, Temporal change, Wren change, or trust-plane bypass was added.
+
+The capability ontology now states generically:
+
+```text
+PERFORMANCE
+= descriptive observation / inspection / evaluation / measurement of metric state
+= generic investigate/research remains PERFORMANCE unless material causal intent exists
+
+ROOT_CAUSE
+= causal explanatory investigation
+= requires material intent to determine why / causes / drivers / mechanisms
+= descriptive investigation, evidence caution, or adaptive/no-branch directives
+  do not by themselves promote the obligation into ROOT_CAUSE
+```
+
+Diagnostic evaluator was also corrected to score only STANDARD + RESEARCH analytical
+lanes, not PRESENTATION extras.
+
+### Provider-free proof after fix
+
+```text
+HEAD/test SHA   6de7862b848b0e3cc43b5114da847e6e45573da7
+focused run     35849168189
+result          GREEN
+```
+
+The complete current Day7 focused chain passed, including preacceptance completeness,
+semantic/temporal owner isolation, capability receipts, fanout, Evidence, Manager loop,
+cross-domain gates, and real Wren/adaptive/relationship verticals.
+
+Diff audit from `d22fb362...`:
+under `backend/app/v2/`, the only changed production file is
+`manager_policy.py`.
+
+### Next exact paid measurement
+
+Re-run manual:
+`v2-day7-capability-cognition-diagnostic`
+
+Expected after correction:
+- all 4 neutral analytical cases -> PERFORMANCE,
+- all 4 causal analytical cases -> ROOT_CAUSE,
+- presentation extras do not affect analytical score,
+- measurement VALID.
+
+Only after that measurement is GREEN:
+1. run `v2-day7-live-sol` with `case_ids=insufficient-evidence,duplicate-side-effect`,
+2. if affected LIVE is green, run frozen full13 once,
+3. then behavioral closure / shadow ablation.
