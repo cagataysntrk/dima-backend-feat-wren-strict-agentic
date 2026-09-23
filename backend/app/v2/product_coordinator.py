@@ -19,12 +19,14 @@ from app.v2.model_policy import ModelRole, ModelRolePolicy
 from app.v2.models import AskV2Request, EvidenceArtifact
 from app.v2.product_models import (
     ProductEvidenceRef,
+    ProductEventKind,
     ProductLane,
     ProductRequestContext,
     ProductResponse,
     ProductStatus,
     ProductTerminalReceipt,
 )
+from app.v2.product_events import ProductEventSink
 from app.v2.research_lane import ResearchLaneResult, ResearchLaneService
 from app.v2.research_report_projector import (
     ResearchReportProjectionStatus,
@@ -164,6 +166,7 @@ class ProductCoordinator:
         request,
         body: AskV2Request,
         principal,
+        event_sink: ProductEventSink | None = None,
     ) -> ProductResponse:
         self._ensure_standard_lane()
         assert self._standard_lane is not None
@@ -172,6 +175,12 @@ class ProductCoordinator:
             request=request,
             body=body,
             principal=principal,
+        )
+        sink = event_sink or ProductEventSink(request_ref=context.request_ref)
+        sink.emit(
+            ProductEventKind.REQUEST_ACCEPTED,
+            refs=(context.request_ref,),
+            transition_ref="frontdoor:bound",
         )
         standard = self._standard_lane.run(
             question=body.question,
@@ -190,39 +199,96 @@ class ProductCoordinator:
         )
 
         if standard.status == StandardLaneStatus.ACCEPTED:
-            return self._standard_response(context=context, outcome=standard)
+            sink.emit(
+                ProductEventKind.LANE_SELECTED,
+                refs=(ProductLane.STANDARD.value,),
+                transition_ref="lane:STANDARD",
+            )
+            return self._standard_response(
+                context=context,
+                outcome=standard,
+                sink=sink,
+            )
 
         if standard.status == StandardLaneStatus.RESEARCH_REQUIRED:
             # Isolation invariant: no StandardProjection, Standard semantic handles,
             # obligations or accepted Standard authority cross this call boundary.
+            sink.emit(
+                ProductEventKind.LANE_SELECTED,
+                refs=(ProductLane.RESEARCH.value,),
+                transition_ref="lane:RESEARCH",
+            )
+            sink.emit(
+                ProductEventKind.RESEARCH_STARTED,
+                refs=(context.request_ref,),
+                transition_ref="research:started",
+            )
             self._ensure_research_lane()
             assert self._research_lane is not None
+
+            transition_map = {
+                "evidence_verified": ProductEventKind.EVIDENCE_VERIFIED,
+                "adaptive_branch_opened": ProductEventKind.ADAPTIVE_BRANCH_OPENED,
+                "relationship_checked": ProductEventKind.RELATIONSHIP_CHECKED,
+                "root_cause_candidate": ProductEventKind.ROOT_CAUSE_CANDIDATE,
+            }
+
+            def on_progress(kind: str, refs: tuple[str, ...]) -> None:
+                event_kind = transition_map.get(kind)
+                if event_kind is None:
+                    return
+                sink.emit(
+                    event_kind,
+                    refs=refs,
+                    transition_ref=f"{kind}:" + "|".join(refs),
+                )
+
             research = self._research_lane.run(
                 context=context,
                 body=body,
+                progress_callback=on_progress,
             )
             return self._research_response(
                 context=context,
                 result=research,
+                sink=sink,
             )
 
         if standard.status == StandardLaneStatus.CLARIFICATION_REQUIRED:
+            sink.emit(
+                ProductEventKind.LANE_SELECTED,
+                refs=(ProductLane.STANDARD.value,),
+                transition_ref="lane:STANDARD",
+            )
             return self._terminal_standard(
                 context=context,
                 status=ProductStatus.CLARIFY,
                 reasons=standard.reasons,
+                sink=sink,
             )
         if standard.status == StandardLaneStatus.UNSUPPORTED:
+            sink.emit(
+                ProductEventKind.LANE_SELECTED,
+                refs=(ProductLane.STANDARD.value,),
+                transition_ref="lane:STANDARD",
+            )
             return self._terminal_standard(
                 context=context,
                 status=ProductStatus.UNSUPPORTED,
                 reasons=standard.reasons,
+                sink=sink,
             )
+        sink.emit(
+            ProductEventKind.LANE_SELECTED,
+            refs=(ProductLane.STANDARD.value,),
+            transition_ref="lane:STANDARD",
+        )
         return self._terminal_standard(
             context=context,
             status=ProductStatus.FAILED,
             reasons=standard.reasons
             or (f"standard lane terminal={standard.status.value}",),
+            sink=sink,
         )
 
     @staticmethod
@@ -230,13 +296,25 @@ class ProductCoordinator:
         *,
         context: ProductRequestContext,
         outcome: StandardLaneOutcome,
+        sink: ProductEventSink,
     ) -> ProductResponse:
         assert outcome.execution is not None
         evidence = outcome.execution.evidence
+        sink.emit(
+            ProductEventKind.EVIDENCE_VERIFIED,
+            refs=(evidence.artifact_id,),
+            transition_ref=f"standard-evidence:{evidence.artifact_id}",
+        )
+        sink.emit(
+            ProductEventKind.TERMINAL,
+            refs=("STANDARD_ACCEPTED",),
+            transition_ref="terminal:STANDARD_ACCEPTED",
+        )
         return ProductResponse(
             request_ref=context.request_ref,
             lane=ProductLane.STANDARD,
             status=ProductStatus.ANSWER,
+            events=sink.events,
             evidence_refs=(_product_evidence(evidence),),
             limitations=evidence.limitations,
             terminal_receipt=ProductTerminalReceipt(
@@ -254,11 +332,18 @@ class ProductCoordinator:
         context: ProductRequestContext,
         status: ProductStatus,
         reasons: tuple[str, ...],
+        sink: ProductEventSink,
     ) -> ProductResponse:
+        sink.emit(
+            ProductEventKind.TERMINAL,
+            refs=(status.value,),
+            transition_ref=f"terminal:{status.value}",
+        )
         return ProductResponse(
             request_ref=context.request_ref,
             lane=ProductLane.STANDARD,
             status=status,
+            events=sink.events,
             limitations=reasons,
             terminal_receipt=ProductTerminalReceipt(
                 lane=ProductLane.STANDARD,
@@ -274,6 +359,7 @@ class ProductCoordinator:
         *,
         context: ProductRequestContext,
         result: ResearchLaneResult,
+        sink: ProductEventSink,
     ) -> ProductResponse:
         snapshot = result.runtime.snapshot
         evidence = tuple(_product_evidence(item) for item in result.evidence)
@@ -292,6 +378,7 @@ class ProductCoordinator:
                 status=ProductStatus.CLARIFY,
                 evidence=evidence,
                 limitations=base_limitations,
+                sink=sink,
             )
         if result.accepted_contract is None or result.ledger is None:
             return self._research_terminal(
@@ -303,6 +390,7 @@ class ProductCoordinator:
                     *base_limitations,
                     "accepted Research authority unavailable",
                 ),
+                sink=sink,
             )
 
         projection = ResearchReportProjector(
@@ -329,6 +417,7 @@ class ProductCoordinator:
                 limitations=tuple(
                     dict.fromkeys((*base_limitations, *projection.issues))
                 ),
+                sink=sink,
             )
 
         provenance = ReportSourceProvenance(
@@ -370,8 +459,20 @@ class ProductCoordinator:
                         )
                     )
                 ),
+                sink=sink,
             )
 
+        for artifact in projection.artifacts:
+            sink.emit(
+                ProductEventKind.ARTIFACT_READY,
+                refs=(artifact.artifact_id,),
+                transition_ref=f"artifact:{artifact.artifact_id}",
+            )
+        sink.emit(
+            ProductEventKind.REPORT_READY,
+            refs=(build.report.report_id,),
+            transition_ref=f"report:{build.report.report_id}",
+        )
         self._ensure_report_narrator()
         assert self._report_narrator is not None
         overlay = self._report_narrator.compose(build.report)
@@ -380,10 +481,16 @@ class ProductCoordinator:
             if result.verified_complete
             else ProductStatus.PARTIAL
         )
+        sink.emit(
+            ProductEventKind.TERMINAL,
+            refs=(status.value,),
+            transition_ref=f"terminal:{status.value}",
+        )
         return ProductResponse(
             request_ref=context.request_ref,
             lane=ProductLane.RESEARCH,
             status=status,
+            events=sink.events,
             evidence_refs=evidence,
             artifact_refs=tuple(
                 item.artifact_id for item in projection.artifacts
@@ -418,13 +525,26 @@ class ProductCoordinator:
         status: ProductStatus,
         evidence: tuple[ProductEvidenceRef, ...],
         limitations: tuple[str, ...],
+        sink: ProductEventSink,
         artifact_refs: tuple[str, ...] = (),
     ) -> ProductResponse:
         snapshot = result.runtime.snapshot
+        if status == ProductStatus.PARTIAL:
+            sink.emit(
+                ProductEventKind.PARTIAL_READY,
+                refs=tuple(item.evidence_ref for item in evidence),
+                transition_ref="partial:verified-evidence",
+            )
+        sink.emit(
+            ProductEventKind.TERMINAL,
+            refs=(status.value,),
+            transition_ref=f"terminal:{status.value}",
+        )
         return ProductResponse(
             request_ref=context.request_ref,
             lane=ProductLane.RESEARCH,
             status=status,
+            events=sink.events,
             evidence_refs=evidence,
             artifact_refs=artifact_refs,
             limitations=limitations,
