@@ -28,6 +28,21 @@ class ProductAskRequest(AskV2Request):
     report_section_token: str | None = None
 
 
+class ProductControlAction(StrEnum):
+    ANSWER_NOW = "ANSWER_NOW"
+    CANCEL = "CANCEL"
+
+
+class ProductControlRequest(FrozenModel):
+    action: ProductControlAction
+
+
+class ProductControlReceipt(FrozenModel):
+    control_ref: str = Field(pattern=r"^prun_[a-f0-9]{24}$")
+    action: ProductControlAction
+    accepted: bool = True
+
+
 class ProductLane(StrEnum):
     STANDARD = "STANDARD"
     RESEARCH = "RESEARCH"
