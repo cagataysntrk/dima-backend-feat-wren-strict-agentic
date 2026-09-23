@@ -1,0 +1,296 @@
+{
+  "corpus_id": "FT005N_SEAM_CORPUS_V1",
+  "status": "FROZEN_BEFORE_NATIVE_BEHAVIOR_RESULTS",
+  "frozen_date": "2026-09-23",
+  "source_control": {
+    "boyahane_repo": "cagataysntrk/metabase-boyahane",
+    "boyahane_sha": "f0c4a6b053ead52ca2eac80002c448323dc34a35",
+    "table_count": 80,
+    "row_count": 462962,
+    "primary_table": "satis_siparisleri",
+    "primary_date_field": "acilis_tarihi",
+    "primary_date_range": {
+      "min": "2023-11-28",
+      "max": "2026-06-22"
+    }
+  },
+  "rules": {
+    "results_seen_before_freeze": false,
+    "model_outputs_used_to_design_cases": false,
+    "safe_unsupported_is_valid_when_capability_is_naturally_absent": true,
+    "private_reasoning_capture": false
+  },
+  "suites": [
+    {
+      "suite_id": "synthetic_reference_chain",
+      "purpose": "Preserve the original FT-005 Q1->Q2->Q3 reference lane unchanged.",
+      "database": "Dima synthetic FT-003/005 lab",
+      "cases": [
+        {
+          "case_id": "syn-q1",
+          "turn": 1,
+          "question": "Son 30 günde sipariş tutarı ne kadar?",
+          "family": [
+            "retrieval",
+            "temporal",
+            "sum"
+          ],
+          "expected_capability": "SUPPORTED"
+        },
+        {
+          "case_id": "syn-q2",
+          "turn": 2,
+          "question": "Peki geçen ay?",
+          "family": [
+            "follow-up",
+            "temporal",
+            "sum"
+          ],
+          "expected_capability": "SUPPORTED",
+          "depends_on": "syn-q1"
+        },
+        {
+          "case_id": "syn-q3",
+          "turn": 3,
+          "question": "Bölgelere göre?",
+          "family": [
+            "follow-up",
+            "breakdown",
+            "sum"
+          ],
+          "expected_capability": "SUPPORTED",
+          "depends_on": "syn-q2"
+        }
+      ]
+    },
+    {
+      "suite_id": "boyahane_core_chain",
+      "purpose": "Same follow-up capability on Boyahane with explicit dates to avoid wall-clock/data-range confounding.",
+      "database": "Boyahane",
+      "conversation_key": "boyahane-core-v1",
+      "cases": [
+        {
+          "case_id": "b-core-01",
+          "turn": 1,
+          "question": "1-22 Haziran 2026 arasında satış siparişlerinin toplam tutarı ne kadar?",
+          "family": [
+            "retrieval",
+            "absolute-time",
+            "sum"
+          ],
+          "expected_capability": "SUPPORTED",
+          "hidden_oracle": {
+            "table": "satis_siparisleri",
+            "measure": "toplam_tutar",
+            "date_field": "acilis_tarihi",
+            "start": "2026-06-01",
+            "end_exclusive": "2026-06-23",
+            "aggregation": "SUM"
+          }
+        },
+        {
+          "case_id": "b-core-02",
+          "turn": 2,
+          "question": "Peki Mayıs 2026?",
+          "family": [
+            "follow-up",
+            "temporal-replacement",
+            "sum"
+          ],
+          "expected_capability": "SUPPORTED",
+          "depends_on": "b-core-01",
+          "hidden_oracle": {
+            "table": "satis_siparisleri",
+            "measure": "toplam_tutar",
+            "date_field": "acilis_tarihi",
+            "start": "2026-05-01",
+            "end_exclusive": "2026-06-01",
+            "aggregation": "SUM"
+          }
+        },
+        {
+          "case_id": "b-core-03",
+          "turn": 3,
+          "question": "Kanallara göre?",
+          "family": [
+            "follow-up",
+            "breakdown",
+            "sum"
+          ],
+          "expected_capability": "SUPPORTED",
+          "depends_on": "b-core-02",
+          "hidden_oracle": {
+            "table": "satis_siparisleri",
+            "measure": "toplam_tutar",
+            "breakdown": "kanal",
+            "date_field": "acilis_tarihi",
+            "start": "2026-05-01",
+            "end_exclusive": "2026-06-01",
+            "aggregation": "SUM"
+          }
+        }
+      ]
+    },
+    {
+      "suite_id": "boyahane_extended_seam",
+      "purpose": "Freeze orchestration-seam stress families before A/B/C outcomes.",
+      "database": "Boyahane",
+      "cases": [
+        {
+          "case_id": "b-ext-01",
+          "question": "What was the total sales order value in May 2026?",
+          "family": [
+            "cross-language-retrieval",
+            "absolute-time",
+            "sum"
+          ],
+          "expected_capability": "SUPPORTED",
+          "hidden_oracle": {
+            "table": "satis_siparisleri",
+            "measure": "toplam_tutar",
+            "date_field": "acilis_tarihi",
+            "start": "2026-05-01",
+            "end_exclusive": "2026-06-01",
+            "aggregation": "SUM"
+          }
+        },
+        {
+          "case_id": "b-ext-02",
+          "question": "Mayıs 2026'da sipariş tutarı ne kadardı?",
+          "family": [
+            "ambiguous-entity"
+          ],
+          "expected_capability": "SAFE_CLARIFICATION",
+          "ambiguity": [
+            "satis_siparisleri",
+            "satinalma_siparisleri"
+          ]
+        },
+        {
+          "case_id": "b-ext-03",
+          "conversation_seed": [
+            "1-22 Haziran 2026 arasında satış siparişlerinin toplam tutarı ne kadar?"
+          ],
+          "question": "Bir önceki ay?",
+          "family": [
+            "follow-up",
+            "previous-period",
+            "temporal"
+          ],
+          "expected_capability": "SUPPORTED",
+          "hidden_oracle": {
+            "table": "satis_siparisleri",
+            "measure": "toplam_tutar",
+            "date_field": "acilis_tarihi",
+            "start": "2026-05-01",
+            "end_exclusive": "2026-06-01",
+            "aggregation": "SUM"
+          }
+        },
+        {
+          "case_id": "b-ext-04",
+          "conversation_seed": [
+            "Mayıs 2026'da satış siparişlerinin toplam tutarı ne kadar?"
+          ],
+          "question": "Aynı analizi kanala göre yap.",
+          "family": [
+            "follow-up",
+            "breakdown"
+          ],
+          "expected_capability": "SUPPORTED",
+          "hidden_oracle": {
+            "table": "satis_siparisleri",
+            "measure": "toplam_tutar",
+            "breakdown": "kanal",
+            "date_field": "acilis_tarihi",
+            "start": "2026-05-01",
+            "end_exclusive": "2026-06-01",
+            "aggregation": "SUM"
+          }
+        },
+        {
+          "case_id": "b-ext-05",
+          "conversation_seed": [
+            "Mayıs 2026'da satış siparişlerinin toplam tutarı ne kadar?"
+          ],
+          "question": "Başka ne dikkat çekiyor?",
+          "family": [
+            "broad-analysis",
+            "research-like"
+          ],
+          "initial_profile": "internal",
+          "expected_capability": "SUPPORTED_OR_SAFE_UNSUPPORTED"
+        },
+        {
+          "case_id": "b-ext-06",
+          "conversation_seed": [
+            "Mayıs 2026'da satış siparişlerinin toplam tutarı ne kadar?"
+          ],
+          "question": "Kaç müşteri var?",
+          "family": [
+            "self-contained-topic-switch",
+            "count"
+          ],
+          "expected_capability": "SUPPORTED",
+          "hidden_oracle": {
+            "table": "musteriler",
+            "aggregation": "COUNT"
+          }
+        },
+        {
+          "case_id": "b-ext-07",
+          "family": [
+            "existing-chart-analysis"
+          ],
+          "requires_fixture": "existing_chart",
+          "question": "Bu grafikte dikkat çeken değişim ne?",
+          "initial_profile": "internal",
+          "expected_capability": "SUPPORTED_OR_SAFE_UNSUPPORTED"
+        },
+        {
+          "case_id": "b-ext-08",
+          "family": [
+            "saved-question-or-metric-reuse"
+          ],
+          "requires_fixture": "saved_question_or_metric",
+          "question": "Kayıtlı satış metriğini Mayıs 2026 için kullan.",
+          "expected_capability": "SUPPORTED_OR_SAFE_UNSUPPORTED"
+        },
+        {
+          "case_id": "b-ext-09",
+          "family": [
+            "query-error-repair"
+          ],
+          "requires_fixture": "controlled_query_error",
+          "question": "Sorguyu düzeltip sonucu tekrar getir.",
+          "initial_profile": "internal",
+          "expected_capability": "SUPPORTED_OR_SAFE_UNSUPPORTED"
+        },
+        {
+          "case_id": "b-ext-10",
+          "conversation_seed": [
+            "Mayıs 2026'da satış siparişlerinin toplam tutarı ne kadar?"
+          ],
+          "question": "Mayıs değil Haziran 2026; ama önceki ayı da koru.",
+          "family": [
+            "contradictory-follow-up"
+          ],
+          "expected_capability": "SAFE_CLARIFICATION"
+        },
+        {
+          "case_id": "b-ext-11",
+          "conversation_seed": [
+            "Mayıs 2026'da satış siparişlerinin toplam tutarı ne kadar?"
+          ],
+          "question": "Bu toplam doğru mu? Veriden tekrar kontrol et.",
+          "family": [
+            "previous-result-challenge",
+            "revalidation"
+          ],
+          "expected_capability": "SUPPORTED",
+          "invariant": "must_revalidate_data_not_trust_assistant_prose"
+        }
+      ]
+    }
+  ]
+}
