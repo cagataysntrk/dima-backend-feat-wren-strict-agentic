@@ -236,3 +236,110 @@ def test_valid_model_cognition_failure_remains_behavior_evaluable():
         )
         == live.MeasurementValidity.VALID
     )
+
+
+
+def test_provider_preflight_reads_http_error_response_body_for_quota(monkeypatch):
+    class FakeResponse:
+        text = '{"error":{"message":"Key limit exceeded (total limit)"}}'
+
+    class FakeHttpError(RuntimeError):
+        def __init__(self):
+            super().__init__("403 Client Error: Forbidden")
+            self.response = FakeResponse()
+
+    class FailingManager:
+        def structured_json(self, system, user, *, schema, schema_name):
+            raise FakeHttpError()
+
+    profile = SimpleNamespace(
+        provider="openrouter",
+        model="openai/gpt-5.6-sol",
+    )
+    monkeypatch.setattr(
+        live,
+        "_build_role_scoped_manager_models",
+        lambda settings: (
+            FailingManager(),
+            profile,
+            object(),
+            SimpleNamespace(provider="openrouter", model="openai/gpt-5.6-luna"),
+            object(),
+            SimpleNamespace(provider="openrouter", model="openai/gpt-5.6-sol"),
+        ),
+    )
+
+    result = live._provider_preflight(object())
+
+    assert result["ok"] is False
+    assert result["measurement_validity"] == "PROVIDER_QUOTA_FAILURE"
+    assert "Key limit exceeded" in result["message"]
+
+
+def test_main_preflight_failure_stops_before_corpus_or_service(tmp_path, monkeypatch):
+    cases = tmp_path / "cases.yaml"
+    cases.write_text(
+        yaml.safe_dump(
+            {
+                "version": "test",
+                "cases": [
+                    {
+                        "id": "C1",
+                        "kind": "standard",
+                        "question": "net geliri göster",
+                    },
+                    {
+                        "id": "C2",
+                        "kind": "rank",
+                        "question": "ürünleri sırala",
+                    },
+                ],
+            },
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "report.json"
+
+    monkeypatch.setattr(
+        live,
+        "_provider_preflight",
+        lambda settings: {
+            "measurement_validity": "PROVIDER_QUOTA_FAILURE",
+            "ok": False,
+            "provider": "openrouter",
+            "model": "openai/gpt-5.6-sol",
+            "message": "403 Key limit exceeded",
+            "latency_s": 0.01,
+        },
+    )
+
+    def forbidden_service():
+        raise AssertionError("corpus infrastructure must not start after failed preflight")
+
+    monkeypatch.setattr(live, "Day7LiveSyntheticService", forbidden_service)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "v2_day7_manager_live_sol.py",
+            "--cases",
+            str(cases),
+            "--output",
+            str(output),
+        ],
+    )
+
+    code = live.main()
+    payload = json.loads(output.read_text(encoding="utf-8"))
+
+    assert code == 2
+    assert payload["status"] == "invalid_measurement"
+    assert payload["measurement_valid"] is False
+    assert payload["measurement_validity"] == "PROVIDER_QUOTA_FAILURE"
+    assert payload["selected_cases"] == 2
+    assert payload["evaluable_cases"] == 0
+    assert payload["provider_failure_cases"] == 2
+    assert payload["behavior_pass_rate"] is None
+    assert payload["hard_safety_failures"] == []
+    assert payload["total_service_queries"] == 0
+    assert payload["records"] == []
