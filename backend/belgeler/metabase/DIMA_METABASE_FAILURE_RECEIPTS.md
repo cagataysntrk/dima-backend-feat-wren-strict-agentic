@@ -3528,3 +3528,66 @@ governance 35846797967 = SUCCESS
 ```
 
 No product-contract patch was made in response to these CI failures.
+
+
+---
+
+## DMP-P13B-LIVE-SEMANTIC-001 — PX-01 native query used DISTINCT(field) instead of canonical COUNT(*)
+
+opened_at: 2026-09-23  
+live_workflow: `35895585715`  
+platform_sha: `14b4761990a3cd3e4d3b5dfe927b63291f83ce24`  
+engine_sha: `05fccf3595623a41886cb2a7a89192636580324e`  
+engine_release: `0.63.18-dima.2`
+
+classification:
+`SEMANTIC_RESOURCE_AVAILABILITY / CORRECT TRUST BLOCK`
+
+observed:
+- restricted-principal native Metabot completed one PX-01 turn;
+- exact native query occurrence and engine attestation were available;
+- Dima authorization blocked before official execution/evidence;
+- exact pMBQL aggregation was `DISTINCT(field)`;
+- PX-01 canonical metric requires `COUNT(*)`;
+- failure receipt reported:
+  `NATIVE_AGGREGATION_MISMATCH: PX-01 requires exact COUNT(*)`.
+
+root_cause:
+Native Metabot had the physical schema but not the canonical Dima-managed business metric required for
+PX-01. The engine/model therefore authored a semantically wrong physical aggregation. Dima trust was
+correct to reject it.
+
+forbidden_corrections:
+- accept DISTINCT(field) as COUNT(*);
+- weaken P13B aggregation checks;
+- teach the exact answer/query through prompt text;
+- regex/fuzzy/morph semantic patches;
+- hard-code the PX-01 query;
+- raw SQL, Wren or Agent-API analytical fallback.
+
+root_solution:
+Reuse the existing semantic-resource architecture:
+
+```text
+DimaSemanticSpec
+→ ManagedResourcePolicy
+→ P9/P9B
+→ native Metabase metric
+→ ManagedResourceBinding
+→ native Metabot discovery/query authoring
+```
+
+Then make native attestation understand the persistent native metric identity and use Metabase-owned
+QP expansion only as an observation view.
+
+closure evidence:
+```text
+engine dima.3 SHA                = 10960f7c36bb84425b1794b557b78211c14d7f5f
+engine P13B certification        = 35909836120 SUCCESS
+provider-free semantic proof     = 35911051644 SUCCESS
+P13B provider-free current HEAD  = 35914038368 SUCCESS
+governance                       = 35911051608 SUCCESS
+```
+
+status:
+`ROOT CAUSE CLOSED PROVIDER-FREE / ONE DIMA.3 LUNA LIVE CANARY STILL REQUIRED`.

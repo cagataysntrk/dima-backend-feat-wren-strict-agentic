@@ -1,861 +1,611 @@
 # DIMA METABASE PLATFORM — NEW DEVELOPER HANDOFF
 
-AUTHORITATIVE ONBOARDING DOCUMENT
+**Authoritative onboarding snapshot — 2026-09-23**
 
-This file is written so a developer with no prior chat context can understand what the project is,
-why the architecture changed, what has already been certified, what is still open, and exactly what
-may happen next.
+This document is the current handoff for a developer with **zero prior chat context**. Read it before
+touching code. Historical handoffs and older P13/P13B stop-points remain useful as evidence, but they
+are superseded by the exact state below.
 
-Read this file first. Then follow the exact read order in section 13.
+## 0. One-sentence state
 
-## 0. One-sentence project state
+Dima now uses a pinned native Metabase engine for analytical cognition/query-candidate authoring,
+while Dima remains the authority for business semantics, execution authorization, security,
+provenance, receipts and Evidence. P13B provider-free trust + semantic availability are GREEN on the
+current dima.3 engine; the **only next model-bearing action is one Luna PX-01 live canary, then STOP
+for supervisor audit**.
 
-Dima has moved from a Wren/Agent-API-centered analytics architecture to a pinned native Metabase
-engine fork in which native Metabot owns analytical cognition/query-candidate authoring, while Dima
-owns business semantic truth, execution authority, security, provenance, receipts and evidence.
-
-Current stop:
-
-    P13A NATIVE TRUST CONTRACT = GREEN
-    P13B NATIVE ATTESTATION DESIGN = SEALED
-    P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
-
-No live P13B Standard orchestration is currently authorized.
-
-## 1. Exact repository state
+## 1. Exact authoritative repository state
 
 Platform:
 
-    repo:
-    cagataysntrk/dima-backend-feat-wren-strict-agentic
+```text
+repo    = cagataysntrk/dima-backend-feat-wren-strict-agentic
+branch  = feat/dima-metabase-platform
+HEAD    = 2ea02530fbaa2999d1dac1d6166064e49bd8f51c
+```
 
-    branch:
-    feat/dima-metabase-platform
+Certified engine:
 
-    handoff source HEAD:
-    b9bcc110e4d352a3bada7587e7a812abf7b68ed3
+```text
+repo           = UpcyTech/dima-metabase-engine
+main           = 10960f7c36bb84425b1794b557b78211c14d7f5f
+Platform gitlink engine/metabase
+               = 10960f7c36bb84425b1794b557b78211c14d7f5f
+release        = 0.63.18-dima.3
+revision       = 3
+upstream base  = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+semantic behavior changes = 0
+```
 
-    P13B-0 predevelopment/governance commit:
-    90c6da7d5bf50c305f4d91c02263660bf8b9232a
+Current exact-head proofs:
 
-    P13B-0 closure commit:
-    b9bcc110e4d352a3bada7587e7a812abf7b68ed3
+```text
+engine P13B certification
+35909836120 = SUCCESS
 
-    P13B-0 governance:
-    35852118661 = SUCCESS
+Platform governance
+35911051608 = SUCCESS
 
-    current-head governance:
-    35852421592 = SUCCESS
+provider-free native semantic availability
+35911051644 = SUCCESS
 
-Pinned Dima Metabase Engine:
+P13B provider-free trust/regression on current Platform HEAD
+35914038368 = SUCCESS
+```
 
-    repo:
-    UpcyTech/dima-metabase-engine
+The P13B provider-free job includes:
+- semantic-availability contract tests;
+- observed-vs-expected P13B trust tests;
+- P13A + P5 + P10 regressions;
+- P12X C2 provider-free native bridge regression.
 
-    Platform submodule path:
-    engine/metabase
+Do not describe P13B-3 as GREEN yet. The new dima.3 live Luna canary has **not** been spent.
 
-    gitlink / engine main:
-    c56b71ab23bf2a2d266bac2fba8d165ac059d613
-
-    upstream Metabase base:
-    v0.63.18
-    2ba2485c78d7e00a9a25f82c00fc201da71590c4
-
-    runtime tag:
-    v0.63.18-dima.0
-
-The engine gitlink is deliberate and immutable until an explicit engine change is separately
-implemented, tested, certified and approved for a Platform gitlink bump.
-
-Other active branches — READ ONLY:
-
-    ask-v2:
-    1cdddb024fd0d8f4e5548cd7ca862afc3b3ee404
-
-    Fast Track:
-    8b9397b4f883f9c188a5fdadafa3db0dc418ec34
-
-These are moving references, not source pins.
-
-Absolute rule:
-
-    NO MERGE
-    NO CHERRY-PICK
-    NO REBASE
-    NO WRITE
-
-If a useful primitive is ever needed from another branch, use controlled harvest only:
-identify the owning milestone, inspect the exact primitive, re-derive or minimally port the
-architecture-independent contract into Platform, and re-certify it here.
-
-## 2. Why the architecture changed
-
-The project has gone through three materially different execution eras.
-
-### Era A — Wren-centered Dima
-
-Early Dima used:
-
-    Dima cognition
-    → Dima semantic authority
-    → Wren semantics/execution
-    → DB
-
-What survived:
-- semantic authority;
-- Standard/Research separation;
-- fail-closed behavior;
-- typed temporal semantics;
-- requirement completeness;
-- evidence and provenance discipline;
-- bounded research runtime;
-- authority/query identity checks.
-
-What did not survive as current production architecture:
-- Wren as the universal semantic/execution owner.
-
-### Era B — Metabase Agent API substrate
-
-The first Metabase architecture moved analytics execution toward Agent API and introduced:
-- Metabase transport/client boundary;
-- compiler/canonical projection;
-- one P5 receipt identity;
-- one P10 access identity;
-- resource lifecycle and parity infrastructure.
-
-Historical modules still exist:
-- MetabaseAgentClient;
-- MetabaseProjectionCompiler;
-- MetabaseCanonicalizer;
-- MetabaseSubstrateAdapter;
-- CanonicalProjection.
-
-Do not delete them. They still matter for regression, migration and resource-management contracts.
-
-They are no longer the primary Standard analytical hot path.
-
-### Era C — current architecture: pinned native Metabase Engine
-
-P12X proved that Dima can operate against a pinned fork of Metabase's native Metabot stack.
-
-Current architecture:
-
-    DIMA PRODUCT
-    → DIMA CONVERSATION / DECISION INTELLIGENCE
-    → DIMA SEMANTIC + SECURITY + PROVENANCE + EVIDENCE CONTROL PLANE
-    → TYPED NATIVE ENGINE BRIDGE
-    → PINNED DIMA METABASE ENGINE
-    → native Metabot / profiles / skills / state / memory
-    → native query construction + repair
-    → MBQL / Query Processor / drivers
-    → CUSTOMER DB
+## 2. Product architecture in plain terms
 
 Current ownership:
 
-    Native Metabot
-    = analytical cognition
-    = orchestration
-    = query-candidate author
+```text
+Native Metabot
+= analytical cognition
+= tool orchestration
+= native query-candidate author
 
-    Dima
-    = business semantic truth
-    = execution authority
-    = security authority
-    = provenance authority
-    = receipt/evidence authority
-    = durable conversation/research/decision truth
+Dima
+= canonical business semantic truth
+= execution authority
+= security/access authority
+= provenance authority
+= receipt authority
+= Evidence authority
+= durable conversation / decision intelligence truth
 
-    Metabase Query Processor
-    = execution engine
+Metabase Query Processor
+= MBQL execution engine
 
-    Database
-    = numeric result truth
+Database
+= numerical/data truth
+```
 
 Binding doctrine:
 
-    LLM_FIRST_COGNITION + DIMA_OWNED_TRUTH
-
-Model/native Metabot may think freely. Dima stops material trust violations.
-
-## 3. P12X — fork and bridge certification
-
-P12X established the engine/submodule model.
-
-Certified sequence:
-
-    C0 exact fork/source build                 = GREEN
-    C1 stock-vs-fork native capability parity  = GREEN
-    C2 stable Dima native bridge parity         = GREEN
-    C3 upstream-sync discipline                 = GREEN
-
-Important proof:
-- C2 final parity workflow: 35839639339 = SUCCESS;
-- engine gitlink: c56b71ab23bf2a2d266bac2fba8d165ac059d613;
-- no Agent API analytical fallback;
-- no Wren fallback;
-- no raw SQL fallback.
-
-P12X solved:
-
-    Can Dima call a pinned native Metabot engine reliably?
-    YES
-
-It did not prove that every query produced by native Metabot is correct business truth.
-
-That distinction is why P13 exists.
-
-## 4. P13A — native trust contract
-
-P13A is CLOSED GREEN.
-
-Certified wording:
-
-    P13A NATIVE TRUST CONTRACT = GREEN
-
-Core implementation:
-backend/app/v3/native_execution.py
-
-P13A introduced NativeQueryCandidate, NativeCandidateAuthorizationGate and
-AuthorizedExecutionArtifact.
-
-NativeQueryCandidate represents one exact native query occurrence.
-
-NativeCandidateAuthorizationGate has bounded outcomes:
-
-    ALLOW
-    CLARIFY_REPLAN
-    BLOCK
-
-Dima verifies. Dima does not rewrite MBQL.
-
-AuthorizedExecutionArtifact is the engine-independent trust identity shared by P10/P5.
-
-P10 remains the single access authority:
-ExecutionAccessSnapshotIssuer.
-
-P5 remains the single receipt authority:
-DimaQueryReceiptSealer.
-
-Historical CanonicalProjection remains supported through a compatibility adapter.
-
-P13A proof:
-
-    P13A workflow             35846503106 = SUCCESS
-    focused P13A              12 PASS
-    P5 + P10 critical         61 PASS
-    P12X C2 bridge             7 PASS
-
-    P10 regression            35846797870 = SUCCESS
-    P5 regression             35846797938 = SUCCESS
-    governance                35846797967 = SUCCESS
-
-P13A did NOT prove:
-
-    P13 Standard GREEN                         NO
-    production security GREEN                  NO
-    native analytical correctness GREEN        NO
-    live P13B vertical GREEN                   NO
-
-## 5. Why P13B-0 was necessary
-
-Provider-free P13A could safely use caller-constructed candidate facts in tests.
-
-A live production path cannot.
-
-The following fields must not be trusted merely because Platform copied expected facts into a
-candidate:
-
-    semantic_refs
-    resource_bindings
-    native_validation_refs
-    time_scope_fingerprint
-    material_filter_count
-    material_join_count
-    query_count
-
-Forbidden live authorization pattern:
-
-    AcceptedIntent
-    → copy expected facts into candidate
-    → compare candidate back to AcceptedIntent
-    → ALLOW
-
-That is tautological authorization.
-
-Correct principle:
-
-    Metabase tells us what query it actually built.
-
-    Dima decides whether that actual query
-    is allowed to become business truth.
-
-Two forward blockers:
-
-    DMP-P13B-BLOCK-001
-    NATIVE CANDIDATE FACT PROVENANCE
-
-    DMP-P13B-BLOCK-002
-    AUTHORIZED ARTIFACT ↔ RUNNING RUNTIME IDENTITY BINDING
-
-They do not make P13A RED.
-
-## 6. P13B-0 — source audit and sealed design
-
-P13B-0 is complete as design/predevelopment only.
-
-Decision:
-DMP-DEC-0037 — P13B native candidate attestation and runtime identity boundary.
-
-Review:
-backend/belgeler/metabase/predev/P13B_NATIVE_CANDIDATE_ATTESTATION_AND_LIVE_STANDARD_REVIEW.md
-
-Certified wording:
-
-    P13B NATIVE ATTESTATION DESIGN = SEALED
-    P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
-
-All Metabase implementation claims were audited against exact upstream:
-
-    metabase/metabase@
-    2ba2485c78d7e00a9a25f82c00fc201da71590c4
-
-Not documentation, not latest master.
-
-Pinned source proves:
-- construct_notebook_query repairs, permission-checks sources, validates and resolves to pMBQL;
-- it emits exact resolved pMBQL plus query-id;
-- native agent memory stores query-id to exact query;
-- final state persists it;
-- persistence retains query-id/query structured output.
-
-Therefore live query occurrence can be bound server-side by:
-
-    conversation_id + native_query_id
-
-Caller-provided query facts are not proof.
-
-## 7. Metabase owns MBQL understanding
-
-Strictly forbidden:
-
-    Python recursive MBQL parser
-    Python aggregation parser
-    Python filter parser
-    Python join parser
-    Python query repair
-    Python MBQL normalizer
-    recreation of Metabase Lib
-
-Metabase Lib/QP owns observation of:
-- database id;
-- primary source;
-- referenced sources;
-- aggregation;
-- breakouts;
-- filters;
-- joins;
-- implicit joined sources;
-- order/limit/stage facts;
-- permission-relevant table use.
-
-Dima maps physical/query facts to business truth through:
-- DimaSemanticSpec;
-- CurrentCatalogSnapshot;
-- SourceLineage;
-- governed resource bindings.
-
-Metabase must not invent Dima semantic IDs.
-
-## 8. NativeExecutionManifest design
-
-P13B requires a bounded native attestation envelope. It is not a universal query AST.
-
-For the first vertical, the engine-side manifest is expected to attest:
-
-    native_query_id
-    conversation_id
-
-    exact serialized pMBQL
-    exact pMBQL fingerprint
-
-    database_id
-    primary_source_table_id
-    referenced source/table ids
-
-    aggregation count
-    aggregation operator/identity
-    referenced field identities where materially required
-
-    breakout count
-    material filter count
-    observed temporal predicate facts
-
-    explicit join count
-    implicit joined source ids
-
-    order-by presence
-    limit
-    stage/query count
-
-    typed native validation provenance
-    typed permission provenance
-
-    authenticated Metabase subject
-
-    runtime identity
-
-Portable query may remain audit/debug material.
-Portable query is not trust authority.
-Exact resolved pMBQL is the execution trust object.
-
-## 9. Engine patch decision
-
-P13B-0 concluded:
-
-    ENGINE PATCH REQUIRED = YES
-
-But:
-
-    ENGINE PATCH AUTHORIZED NOW = NO
-
-Reason:
-- native server-side state already contains the exact query;
-- existing public surfaces do not expose the required bounded typed attestation manifest;
-- runtime tag/short git hash is not enough for production-grade exact runtime identity.
-
-Future patch must be isolated and observational.
-
-Proposed minimum engine files:
-
-    src/metabase/dima/native_attestation.clj
-    src/metabase/dima/api.clj
-
-    test/metabase/dima/native_attestation_test.clj
-    test/metabase/dima/api_test.clj
-
-    src/metabase/api_routes/routes.clj
-      minimal route registration only
-
-    .dima/docker/Dockerfile.c0
-      immutable build identity only
-
-Forbidden engine modifications unless a future classified gap proves necessity:
-
-    run-agent-loop cognition
-    profiles
-    skills
-    tool selection
-    construct_notebook_query semantics
-    query repair semantics
-    Query Processor semantics
-    drivers
-
-If implementation discovers that the manifest cannot be produced without changing those owners:
-
-    STOP-THE-LINE
-
-## 10. Runtime identity design
-
-Current runtime tag v0.63.18-dima.0 is not sufficient as exact source identity.
-
-The upstream build surface exposes only a short git hash at runtime.
-
-P12X was safe because CI externally pinned source/image.
-
-P13B requires request-relevant identity:
-
-    engine repository
-    exact 40-char engine SHA
-    upstream base SHA
-    Dima engine release
-    immutable build/image identity
-    running instance identity
-    candidate/request identity
-    receipt runtime identity
-
-Chosen P13B-0 design:
-
-    minimal isolated Dima engine identity seam
-    GET /api/dima/engine/v1/identity
-
-It may expose immutable build/runtime identity facts only.
-No business logic.
-
-Required hard equality:
-
-    candidate engine identity
-    ==
-    attested running engine
-    ==
-    runtime executing the query
-    ==
-    runtime sealed in receipt
-
-Mismatch must fail closed.
-
-## 11. Exact same-artifact execution decision
-
-Selected future execution seam:
-
-    POST /api/dataset
-
-Pinned Metabase source proves:
-- endpoint accepts MBQL5 through backend normalization;
-- execution uses native Query Processor/userland middleware;
-- current-user execution context/permission machinery remains active;
-- no Agent API analytical reconstruction is required.
-
-Future invariant:
-
-    native exact pMBQL A
-    → attest A
-    → authorize A
-    → execute A through /api/dataset
-    → receipt A
+```text
+LLM_FIRST_COGNITION + DIMA_OWNED_TRUTH
+```
+
+The hot path is **not**:
+- Dima deterministic NL-to-query planning;
+- Agent API analytical execution;
+- Wren fallback;
+- raw SQL fallback;
+- a Python MBQL parser;
+- fuzzy/regex/morphological semantic matching.
+
+## 3. Why P13 exists
+
+P12X proved that Dima can use a pinned native Metabot engine. It did **not** prove that any query
+Metabot produces is acceptable business truth.
+
+P13 adds the trust boundary:
+
+```text
+Accepted Dima authority
+→ native Metabot authors candidate
+→ engine attests what was actually built
+→ Dima maps observed facts to canonical semantics
+→ ALLOW | CLARIFY_REPLAN | BLOCK
+→ exact same artifact executes
+→ P10 access identity
+→ P5 QueryReceipt
+→ independent correctness gate
+→ VERIFIED Evidence
+```
+
+Dima verifies. It does not rewrite the native query.
+
+## 4. P13A — already closed
+
+P13A introduced:
+- `NativeQueryCandidate`;
+- `NativeCandidateAuthorizationGate`;
+- `AuthorizedExecutionArtifact`;
+- exact artifact fingerprint/mutation protection;
+- use of the existing P10 access identity;
+- use of the existing P5 receipt system.
+
+P13A is historical prerequisite and remains GREEN.
+
+Do not create:
+- a second access fingerprint;
+- a second receipt type;
+- a parallel native receipt system.
+
+## 5. P13B-1 — engine attestation and identity
+
+P13B engine work is isolated under Dima-owned engine namespaces.
+
+Core engine files:
+
+```text
+src/metabase/dima/native_attestation.clj
+src/metabase/dima/api.clj
+test/metabase/dima/native_attestation_test.clj
+test/metabase/dima/api_test.clj
+```
+
+Minimal upstream registration/build surface only:
+- route registration;
+- Dima build/runtime identity wrapper.
+
+The engine exposes:
+- exact native query occurrence keyed by conversation/query id;
+- exact serialized original pMBQL;
+- exact pMBQL fingerprint;
+- bounded query facts;
+- current-user permission provenance;
+- authenticated Metabase subject;
+- exact engine/build/image/instance identity.
+
+Hard invariant:
+
+```text
+ORIGINAL pMBQL
+= immutable execution identity
+
+QP-expanded / normalized semantic view
+= observation only
+```
+
+Never execute the observation view.
+
+Required identity chain:
+
+```text
+fingerprint(attested original A)
+==
+fingerprint(authorized original A)
+==
+fingerprint(submitted original A)
+==
+fingerprint(receipted original A)
+```
+
+## 6. The decisive live RED and its real root cause
+
+The latest meaningful live dima.2 canary was:
+
+```text
+workflow = 35895585715
+model    = openrouter/openai/gpt-5.6-luna
+case     = PX-01
+question = Haziran 2026'da kaç satış siparişi açıldı?
+oracle   = 126
+status   = RED
+owner    = dima-trust-authorization
+error    = NATIVE_AGGREGATION_MISMATCH: PX-01 requires exact COUNT(*)
+```
+
+The exact native query used:
+
+```text
+DISTINCT(field)
+```
+
+rather than canonical `COUNT(*)`.
+
+This was **not** permission to weaken Dima trust. Dima correctly blocked a semantically wrong native
+query.
+
+Root cause:
+
+```text
+Metabot had physical schema
+but did not have the canonical Dima-managed business metric
+needed for PX-01.
+```
+
+Therefore the root solution is **semantic resource availability**, not:
+- prompt teaching;
+- regex;
+- fuzzy matching;
+- morphology/stemming;
+- query repair patches;
+- hard-coded PX-01 query construction;
+- accepting DISTINCT as equivalent to COUNT(*).
+
+## 7. Canonical semantic metric path — P9/P9B reused
+
+PX-01 metric truth must originate from the same canonical Dima semantic truth used by authorization:
+
+```text
+DimaSemanticSpec
+→ ManagedResourcePolicy
+→ P9 desired resource
+→ P9/P9B transport
+→ native Metabase Metric
+→ ManagedResourceBinding
+```
+
+Canonical metric:
+
+```text
+metric.sales_order_count
+name        = Sales Order Count
+base source = satis_siparisleri
+aggregation = COUNT(*)
+ownership   = DIMA_MANAGED
+```
+
+Important distinction:
+
+P9B may use a Metabase Agent/resource-management endpoint to provision the metric **out of band**.
+
+Allowed:
+
+```text
+DimaSemanticSpec
+→ provision managed native Metabase semantic resource
+```
 
 Forbidden:
 
-    authorize A → Agent API constructs B → execute B
-    authorize pMBQL → convert to SQL → execute SQL
-    native fail → Agent API analytical fallback
-    native fail → Wren fallback
+```text
+user question
+→ Dima analytical planner
+→ Agent API analytical execution
+```
 
-QP may add its normal middleware/security/preprocessing.
-Dima may not analytically re-author the query between authorization and execution.
+Agent API is not the Standard analytical hot path.
 
-## 12. First future live Standard vertical
+## 8. Provider-free semantic availability — now GREEN
 
-Selected case:
+Current exact-head provider-free native proof:
 
-    PX-01
+```text
+workflow 35911051644 = SUCCESS
+engine   10960f7c36bb84425b1794b557b78211c14d7f5f
+runtime  v0.63.18-dima.3
+```
 
-    question:
-    Haziran 2026'da kaç satış siparişi açıldı?
+The proof runs with **no model credentials** and under the same restricted analytical principal class
+used by PX-01.
 
-    source:
-    satis_siparisleri
+It proves:
+- P9/P9B can provision the Dima-managed COUNT(*) metric;
+- native search discovers the metric;
+- native `read_resource` can read the metric resource/identity;
+- the same restricted principal can read the persisted metric card;
+- the exact persisted definition matches the P9B canonical projection after stripping only
+  runtime-volatility such as `lib/uuid`;
+- stable Metabase local id + portable entity id are bound back to `ManagedResourceBinding`;
+- semantic context/version/ownership are exact.
 
-    aggregation:
-    COUNT(*)
+Do **not** hard-code the ephemeral local metric id from any prior run. The authoritative identity is
+the current run's typed `ManagedResourceBinding`.
 
-    time field:
-    acilis_tarihi
+## 9. Native metric attestation — dima.3 root fix
 
-    period:
-    [2026-06-01, 2026-07-01)
+Native Metabot can represent a metric aggregation as a persistent metric reference. Therefore
+attestation must understand the native metric identity without pretending the metric never existed.
 
-    independent expected scalar:
-    126
+Engine dima.3:
+- preserves the original native pMBQL;
+- records native metric reference location;
+- records Metabase metric local id;
+- records stable Metabase metric entity id;
+- uses Metabase's own QP preprocessing / metric expansion for **observation**;
+- derives expanded aggregation facts from the native Metabase-owned definition;
+- currently certifies the bounded one-metric aggregation case only;
+- keeps COUNT(field) distinct from COUNT(*);
+- keeps DISTINCT(field) distinct from COUNT(*).
 
-Frozen oracle source:
-backend/lab/metabase/p12x/corpus_v1.json
+Platform contract:
 
-Oracle runner:
-backend/lab/metabase/p12x/build_oracle.py
+```text
+NativeMetricReferenceFact
+stage_number
+aggregation_index
+metabase_metric_id
+metabase_metric_entity_id
+```
 
-The independent oracle runs against Boyahane DuckDB independently of Metabot/query-under-test.
+Platform trust then requires exact managed-resource binding:
 
-Do not remove the period to simplify the implementation.
+```text
+tenant
+resource_kind == METRIC
+canonical_id == metric.sales_order_count
+ownership == DIMA_MANAGED
+semantic_context_version
+applied_version
+metabase_local_id
+metabase_entity_id
+```
 
-## 13. Exact read order for the new developer
+Wrong, missing, ambiguous, stale or identity-mismatched bindings fail closed.
 
-Read before any write:
+This is the intended chain:
 
-1. DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
-2. tail of DIMA-METABASE-DURUM.md
-3. final sections of DIMA-METABASE-HANDOFF.md
-4. backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
-   especially DMP-DEC-0031 through DMP-DEC-0037
-5. backend/belgeler/metabase/DIMA_METABASE_FAILURE_RECEIPTS.md latest receipts
-6. backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md
-7. backend/belgeler/metabase/predev/P13B_NATIVE_CANDIDATE_ATTESTATION_AND_LIVE_STANDARD_REVIEW.md
-8. backend/belgeler/metabase/tickets/P13_NATIVE_ENGINE_STANDARD_VERTICAL.md
-9. backend/app/v3/native_execution.py
-10. backend/app/v3/security_identity.py
-11. backend/app/v3/execution_identity.py
-12. backend/app/v3/substrate/metabase/native_engine.py
-13. backend/app/v3/substrate/metabase/native_models.py
-14. P12X corpus/oracle/bridge files
-15. only then exact pinned engine source
+```text
+native metric ref identity
++
+Metabase-owned expanded definition facts
++
+P9 ManagedResourceBinding
++
+DimaSemanticSpec
+→ trusted semantic verification
+```
 
-Do not start from old Agent-API P13 documents without reading DMP-DEC-0036 and DMP-DEC-0037 first.
+## 10. Current P13B-v1 capability — intentionally narrow
 
-## 14. Current code/file ownership map
+Supported current certification target:
 
-Dima truth plane:
+```text
+one metric
+one source
+COUNT(*)
+optional exact absolute period
+one material query
+no arbitrary non-temporal filter
+no join
+no relationship
+no arbitrary calculated metric
+```
 
-backend/app/v3/authority.py
-- accepted Standard/Research authority contracts.
+This narrowness is not a bug.
 
-backend/app/v3/analytics_contract.py
-- engine-independent accepted analytics intent.
+Not authorized now:
+- arbitrary calculated metrics;
+- nested metric algebra;
+- cross-source metrics;
+- arbitrary formulas;
+- generic semantic graph;
+- P13C entity-value integration;
+- breakdown/ranking generalization;
+- relationship reasoning;
+- P14 Research.
 
+## 11. Current key Platform code map
+
+Semantic/resource truth:
+
+```text
+backend/app/v3/semantic_spec.py
+backend/app/v3/resource_provisioning.py
+backend/app/v3/resource_transport.py
+backend/app/v3/substrate/metabase/execution_binding.py
+```
+
+Native Standard trust:
+
+```text
+backend/app/v3/native_standard/contracts.py
+backend/app/v3/native_standard/trust.py
 backend/app/v3/native_execution.py
-- P13A native candidate trust contract;
-- NativeQueryCandidate;
-- AuthorizedExecutionArtifact;
-- bounded authorization gate;
-- exact-artifact integrity.
-
 backend/app/v3/security_identity.py
-- single P10 access snapshot issuer.
-
 backend/app/v3/execution_identity.py
-- single P5 query receipt sealer.
-
 backend/app/v3/evidence.py
-- evidence promotion owner.
+```
 
-Native engine transport:
+Native bridge:
 
-backend/app/v3/substrate/metabase/native_engine.py
-- thin current-user native engine bridge;
-- not analytical planner.
-
+```text
 backend/app/v3/substrate/metabase/native_models.py
-- native bridge request/observation/identity models.
+backend/app/v3/substrate/metabase/native_engine.py
+```
 
-Future live P13B owner is reserved as:
+P13B lab/proof:
 
-    backend/app/v3/native_standard/
+```text
+backend/lab/metabase/p13b/px01_semantic_availability.py
+backend/lab/metabase/p13b/px01_live_standard.py
+backend/tests/test_v3_p13b_semantic_availability.py
+backend/tests/test_v3_p13b_native_standard.py
+.github/workflows/dima-metabase-p13b.yml
+.github/workflows/dima-metabase-p13b-semantic-availability.yml
+.github/workflows/dima-metabase-p12x-c2-live.yml
+```
 
-This path is not live implementation yet.
+## 12. What is GREEN now
 
-Governance forbids it from depending on old analytical seams:
-- compiler;
-- canonicalizer for analytical construction/introspection;
-- execution adapter;
-- MetabaseAgentClient.
+```text
+P12X engine fork/bridge                   = GREEN
+P13A native trust contract                = GREEN
+P13B engine attestation/runtime identity  = GREEN
+P13B native metric attestation dima.3     = GREEN
+P13B provider-free Platform trust         = GREEN
+P13B provider-free semantic availability  = GREEN
+P13B current-head regressions             = GREEN
+governance                                = GREEN
 
-engine/metabase is a submodule/gitlink.
-Do not edit engine source inside Platform.
+P13B-3 one Luna live semantic canary       = NOT YET RUN ON dima.3
+P13 Standard final closure                 = NOT CLAIMED
+production multi-instance security closure = NOT CLAIMED
+```
 
-## 15. Engine development protocol
+## 13. The exact next legal action
 
-If supervisor authorizes the P13B engine patch:
+Before any write:
+1. re-query Platform branch HEAD;
+2. re-query engine main and Platform gitlink;
+3. confirm they still match this handoff or read newer receipts;
+4. confirm governance/provider-free proofs remain GREEN;
+5. inspect the current live workflow and P13B artifacts.
 
-    exact P13B design
-    → isolated feature branch in UpcyTech/dima-metabase-engine
-    → implement only isolated Dima attestation/identity seam
-    → native unit/API tests
-    → full source build
-    → P12X native capability regression
-    → DIMA_PATCH_SURFACE report
-    → exact engine commit SHA
-    → STOP
-    → supervisor review
-    → explicit Platform gitlink bump
-    → Platform integration proof
+Then:
 
-Never:
-- edit the submodule working tree as ordinary Platform source;
-- consume moving engine main implicitly;
-- bump gitlink before engine certification;
-- mix engine patch and Platform integration into one uncontrolled change.
+```text
+ONE Luna PX-01 canary only
+model    = openrouter/openai/gpt-5.6-luna
+question = Haziran 2026'da kaç satış siparişi açıldı?
+oracle   = 126
+primary user turns = 1
+```
 
-## 16. Required future P13B tests
+No Sol.
+No C1.
+No six-case corpus.
+No automatic retry.
 
-At minimum:
+The existing live job is in:
 
-    caller copies expected semantic_ref without native evidence → cannot authorize
-    caller copies expected source binding without native evidence → cannot authorize
-    fake time_scope_fingerprint → cannot authorize
-    hidden filter while caller claims zero → manifest sees filter → BLOCK
-    implicit join while caller claims zero → manifest sees joined source → BLOCK
-    native query fingerprint != manifest fingerprint → HARD FAIL
-    manifest fingerprint != Platform candidate fingerprint → HARD FAIL
-    candidate engine SHA != runtime attestation SHA → HARD FAIL
-    authorized image digest != runtime image digest → HARD FAIL
-    artifact runtime != receipt runtime → HARD FAIL
-    authenticated Metabase subject mismatch → HARD FAIL
-    authorized pMBQL mutated before execution → HARD FAIL
-    second material analytical query → BLOCK
-    SQL query producer in first vertical → BLOCK
-    explicit join → BLOCK
-    implicit joined source → BLOCK
-    non-temporal arbitrary filter → BLOCK
-    observed time bounds != accepted period → BLOCK
-    result != independent oracle → no VERIFIED Evidence
-    native prose before receipt/evidence → never official numeric truth
+```text
+.github/workflows/dima-metabase-p12x-c2-live.yml
+job = p13b-px01-live
+```
 
-Every RED must be classified before patching.
+It already:
+- builds exact dima.3;
+- boots one exact engine instance;
+- provisions/verifies the Dima-managed metric in that same live runtime;
+- passes the resulting semantic-availability receipt to `px01_live_standard.py`;
+- asks one Luna turn;
+- attests the exact query;
+- authorizes against Dima truth;
+- executes exact same pMBQL via `/api/dataset`;
+- seals P5 receipt;
+- checks independent oracle;
+- promotes Evidence only after correctness.
 
-## 17. Open debt — do not accidentally close
+Current trigger is a push whose commit message contains `[p13b-live]`.
 
-Still open:
+**Do not make a fake product change merely to spend the canary.**
+If no legitimate code change exists, the clean solution is CI-only trigger plumbing that explicitly
+permits this already-authorized one P13B live job to be manually dispatched, without altering product,
+semantic, model or trust behavior.
 
-    DMP-P13B-BLOCK-001
-    native candidate fact provenance
-    = DESIGN SEALED / IMPLEMENTATION OPEN
+## 14. What to do after the one canary
 
-    DMP-P13B-BLOCK-002
-    artifact ↔ running runtime identity
-    = DESIGN SEALED / IMPLEMENTATION OPEN
+If GREEN:
 
-    DMP-P5-BLOCK-001
-    global production issuance blocker
+```text
+record exact run/artifact/fingerprints
+update living status + receipts
+do not generalize
+STOP for supervisor audit
+```
 
-    DMP-P11-INTEGRATION-005
-    P13C owner
+If RED:
 
-    EV-05 / EV-06 / EV-07
-    UNCERTIFIED
+```text
+STOP
+preserve failure artifact
+classify failure owner
+do not retry automatically
+do not prompt-patch
+do not regex/fuzzy/morph-patch
+do not weaken trust
+return to supervisor with the exact evidence
+```
 
-    P10B2
-    RLS / CLS / impersonation / advanced routing / cache-result reauthorization
+The latest supervisor instruction is explicit:
 
-    P9
-    dimension / time / relationship transport gaps
+```text
+provider-free semantic availability
+→ native metric attestation
+→ one Luna PX-01 canary
+→ STOP for supervisor audit
+```
 
-    P7/P8
-    relationship / calculated / view semantic gaps
+## 15. Forbidden shortcuts
 
-    historical Wren typed gaps
+Do not introduce or revive:
 
-P13B must not solve P13C:
-- no textual/entity-value integration;
-- no high-cardinality resolver;
-- no fuzzy matching;
-- no str(value) fallback.
+```text
+regex semantic authority
+fuzzy semantic authority
+stemming/morphology as truth
+translation dictionary as truth
+display-name guessing
+physical-schema guessing
+manual Python MBQL parser
+Python query normalizer/repairer
+hard-coded PX-01 query
+raw SQL analytical fallback
+Wren analytical fallback
+Agent API analytical hot path
+admin analytical fallback
+silent requirement loss
+silent field drop
+automatic ambiguity choice
+second access identity
+second receipt system
+Metabase UI object as Dima business truth
+prompt injection that teaches the answer
+```
 
-P13B must not solve relationships.
-Explicit or implicit relationship use in first vertical = BLOCK.
+A RED is evidence, not permission to patch.
 
-P13B must not start Research/P14.
+## 16. Open debt that remains outside this bounded handoff
 
-## 18. Failure protocol
+Still open globally:
+- `DMP-P5-BLOCK-001`;
+- `DMP-P11-INTEGRATION-005` — P13C owner, not now;
+- EV-05 / EV-06 / EV-07;
+- P10B2 RLS / CLS / impersonation / advanced routing / cache-result reauthorization;
+- P9 dimension / time / relationship transport gaps;
+- P7/P8 calculated / relationship / view semantic gaps;
+- historical Wren typed gaps;
+- multi-instance production runtime-identity/deployment closure.
 
-Never patch immediately because a test is RED.
+Do not silently mark these GREEN because PX-01 passes.
 
-First classify the owner.
+## 17. Mandatory read order after context loss
 
-Typical classes:
+Read in this order:
 
-    NATIVE_CANDIDATE_EXTRACTION
-    NATIVE_ATTESTATION
-    SEMANTIC_MAPPING
-    AUTHORITY_MISMATCH
-    TIME_SCOPE_VIOLATION
-    RELATIONSHIP_GRAIN_VIOLATION
-    EXECUTION_ARTIFACT_MISMATCH
-    ACCESS_IDENTITY_MISMATCH
-    RESOURCE_PROVENANCE_MISMATCH
-    ENGINE_IDENTITY
-    RECEIPT_PROVENANCE
-    EVAL_ORACLE
-    TRANSPORT_RUNTIME
-    CI_GOVERNANCE
-    FIXTURE
+1. `DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md` — this file.
+2. tail of `DIMA-METABASE-DURUM.md`.
+3. `backend/belgeler/metabase/predev/P13B_NATIVE_CANDIDATE_ATTESTATION_AND_LIVE_STANDARD_REVIEW.md`.
+4. `backend/belgeler/metabase/tickets/P13_NATIVE_ENGINE_STANDARD_VERTICAL.md` for historical milestone contract.
+5. latest P13B sections in decision/failure receipts.
+6. current `backend/app/v3/native_standard/**`.
+7. current P13B lab scripts/tests/workflows.
+8. engine `src/metabase/dima/**` and its exact current tests.
 
-Then record:
-- tested SHA;
-- failing run/test;
-- root cause;
-- single owner;
-- files allowed to change;
-- files forbidden to change;
-- focused proof;
-- regression proof.
+When documents conflict with current certified evidence, the latest exact SHA + CI artifact wins, and
+the discrepancy must be recorded rather than silently guessed.
 
-Fast green is not the goal. Correct ownership is the goal.
+## 18. Final architectural invariant
 
-## 19. Absolute stop conditions
+The target is:
 
-Stop immediately if any implementation would require:
-- Python to become the MBQL parser;
-- Dima to rewrite/fix native pMBQL after native construction;
-- Agent API analytical fallback;
-- Wren analytical fallback;
-- raw SQL escape;
-- a second receipt system;
-- a second durable access fingerprint;
-- native prose as Evidence;
-- implicit source/metric guessing;
-- engine cognition/query construction/QP semantics changes merely to expose attestation;
-- merge/cherry-pick/rebase from ask-v2 or Fast Track;
-- moving engine main consumption without explicit SHA.
+```text
+DimaSemanticSpec
+→ Dima-managed semantic resource
+→ native Metabot reasoning
+→ exact native query
+→ engine observation/attestation
+→ Dima authorization
+→ exact same execution
+→ P10 access identity
+→ P5 receipt
+→ independent oracle
+→ VERIFIED Evidence
+```
 
-## 20. What the next developer should do next
+Do not teach Metabot the answer.
 
-Current state is a supervisor stop.
-
-Before implementation:
-1. verify Platform HEAD, engine gitlink and governance;
-2. re-read DMP-DEC-0037 and P13B predev;
-3. obtain explicit supervisor authorization for P13B implementation.
-
-If authorized, the next milestone is not Platform live orchestration first.
-
-It is:
-
-    P13B-1 ENGINE NATIVE ATTESTATION + IDENTITY SEAM
-
-in the engine repo, on an isolated engine branch.
-
-Expected narrow goal:
-
-    conversation_id + native_query_id
-    → retrieve server-side exact native query
-    → Metabase Lib/QP bounded observation
-    → NativeExecutionManifest
-    → exact query fingerprint
-    → authenticated Metabase subject
-    → typed validation/permission provenance
-    → exact engine/build identity
-
-No analytical behavior change.
-
-After that:
-- native engine tests;
-- source build;
-- P12X regression;
-- patch-surface audit;
-- exact engine SHA;
-- supervisor approval;
-- Platform gitlink bump;
-- only then first live PX-01 Standard vertical.
-
-## 21. Final truth table
-
-    P12X fork/build/bridge/sync              GREEN
-    P13A native trust contract               GREEN
-    P13B-0 source audit/design               SEALED
-    P13B engine attestation implementation   NOT STARTED
-    P13B Platform live Standard              NOT STARTED
-    P13 Standard                             NOT GREEN
-    global production security               NOT GREEN
-    native absolute correctness              NOT GREEN
-    P13C entity-value integration            NOT STARTED
-    P14 Research                              NOT STARTED
-
-The project is not stuck.
-
-The next problem is precisely defined:
-
-    Can Metabase attest what its native agent actually built,
-    can Dima map that observed physical execution meaning
-    to accepted business truth,
-    and can Dima prove that the exact authorized artifact
-    ran on the exact certified runtime before promoting Evidence?
-
-That is the next implementation phase once explicitly authorized.
-
-
----
-
-## NEW-DEVELOPER HANDOFF PUBLISH PROOF
-
-    onboarding/handoff commit = e40cdbf8eebf0aad393a292ec1b10ce03ff5a9c2
-    governance                = 35853381889 SUCCESS
-    product-code changes      = 0
-    engine-source changes     = 0
-    engine gitlink bump       = 0
-    source-branch writes      = 0
-
-The handoff package is therefore governance-certified.
-
-Current stop remains unchanged:
-
-    P13B NATIVE ATTESTATION DESIGN = SEALED
-    P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
+Give Metabot the canonical business semantic resource the architecture says it should have, then let
+native Metabot reason. Dima remains the truth boundary.

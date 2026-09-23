@@ -2261,3 +2261,71 @@ P13B-2 is provider-free. Its owner is:
 It may orchestrate trust only. It may not plan analytics, parse general MBQL, repair/rewrite queries,
 generate SQL, or reopen Agent API/Wren analytical fallback.
 
+
+
+---
+
+## 2026-09-23 — P13B DIMA.3 SEMANTIC-METRIC HANDOFF CHECKPOINT
+
+This section supersedes the earlier P13B-1/P13B-2-open checkpoint above.
+
+Exact current state at handoff preparation:
+
+```text
+Platform HEAD                    = 2ea02530fbaa2999d1dac1d6166064e49bd8f51c
+engine main                      = 10960f7c36bb84425b1794b557b78211c14d7f5f
+Platform engine gitlink          = 10960f7c36bb84425b1794b557b78211c14d7f5f
+engine release                   = 0.63.18-dima.3
+upstream base                    = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+
+engine P13B certification        = 35909836120 SUCCESS
+governance                       = 35911051608 SUCCESS
+provider-free semantic availability = 35911051644 SUCCESS
+P13B provider-free current HEAD  = 35914038368 SUCCESS
+```
+
+Decisive prior live RED:
+
+```text
+run      = 35895585715
+engine   = 0.63.18-dima.2 / 05fccf3595623a41886cb2a7a89192636580324e
+model    = openrouter/openai/gpt-5.6-luna
+owner    = dima-trust-authorization
+error    = NATIVE_AGGREGATION_MISMATCH
+observed = DISTINCT(field)
+required = COUNT(*)
+```
+
+Interpretation:
+- Dima trust behaved correctly and blocked the wrong query;
+- root cause was missing canonical Dima metric availability to native Metabot, not a need to weaken
+  authorization;
+- P9/P9B is now reused to provision `metric.sales_order_count` as a DIMA_MANAGED native Metabase
+  metric;
+- provider-free proof now verifies restricted discoverability/readability, exact persisted metric
+  definition, stable native identity and `ManagedResourceBinding`;
+- engine dima.3 now attests native metric identity and uses Metabase QP metric expansion as an
+  observation view while preserving original pMBQL as execution identity;
+- Platform trust binds that native identity back to the exact P9 Dima metric binding.
+
+Current certification wording:
+
+```text
+P13B-1 ENGINE ATTESTATION + IDENTITY            = GREEN
+P13B-2 PLATFORM TRUST                           = PROVIDER-FREE GREEN
+P13B NATIVE SEMANTIC AVAILABILITY              = GREEN
+P13B NATIVE METRIC ATTESTATION                 = GREEN
+P13B-3 ONE LUNA PINNED-LIVE PX-01 ON DIMA.3    = NEXT / NOT YET SPENT
+```
+
+Next legal action:
+
+```text
+one Luna PX-01 canary
+→ no automatic retry
+→ GREEN or RED evidence
+→ STOP for supervisor audit
+```
+
+Canonical onboarding:
+`DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md`.
