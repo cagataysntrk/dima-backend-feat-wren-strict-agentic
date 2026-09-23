@@ -1717,3 +1717,27 @@ P12X-C0                     = CLOSED GREEN
 next                        = P12X-C1 stock-vs-fork native capability parity
 P13                         = PAUSED
 ```
+
+
+---
+
+## P12X-C0 COMPLETE / C1 ACTIVE
+
+```text
+C0 engine HEAD                    = 9fb21da0177935aff5882472577c8e14a67ebd65
+C0 workflow                       = 35827292630 = SUCCESS
+C0 artifact                       = 10736021635
+fork image digest                 = sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b
+modified upstream files           = 0
+upstream line delta               = +0 / -0
+source build                      = GREEN
+smoke /api/health                 = GREEN
+GHCR push                         = GREEN
+P12X-C0                           = CLOSED GREEN
+P12X-C1                           = ACTIVE / stock-vs-fork native parity
+P13                               = PAUSED
+```
+
+C1 must use immutable stock and fork image digests, the frozen Boyahane snapshot, the same restricted
+principal and Luna provider/model. Closure still requires 100% retention of stock-PASS tasks, zero new
+silent wrong, zero permission regression and zero dataset-scope drift.
