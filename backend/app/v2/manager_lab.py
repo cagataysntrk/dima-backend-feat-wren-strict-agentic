@@ -13,6 +13,7 @@ from app.kaset import belki_sar
 from app.llm import build_generator
 from app.v2.acceptance import AcceptedContractRegistry, IntentAcceptanceGate
 from app.v2.context_provider import ContextProviderV0
+from app.v2.cross_domain_facts import CrossDomainJoinFactBuilder
 from app.v2.manager_core_adapter import ManagerCoreAnalyticsAdapter
 from app.v2.manager_executor import (
     GovernedManagerExecutionContext,
@@ -25,6 +26,11 @@ from app.v2.manager_models import (
     UserObligationLedger,
 )
 from app.v2.manager_runtime import ManagerRuntime
+from app.v2.relationship_adapter import (
+    GovernedRelationshipAdapter,
+    GovernedRelationshipExecutionContext,
+)
+from app.v2.research_tools import ResearchToolRunner
 from app.v2.model_policy import ModelRole, ModelRolePolicy
 from app.v2.models import AskV2Request, FrozenModel
 from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
@@ -151,11 +157,28 @@ class ManagerLabHarness:
             contract_store=getattr(request.app.state, "contracts", None),
             session_id=body.session_id,
         )
+        relationship_adapter = GovernedRelationshipAdapter(
+            fact_builder=CrossDomainJoinFactBuilder(
+                semantic_handles=semantic_handles,
+                tenant_binding=binding,
+                context_version=context.context_version.version,
+            ),
+            core_analytics=core_adapter,
+            context=GovernedRelationshipExecutionContext(
+                tenant_binding=binding,
+                principal=principal,
+                service=service,
+                tenant_runtime=runtime,
+                contract_store=getattr(request.app.state, "contracts", None),
+                session_id=body.session_id,
+            ),
+        )
         executor = GovernedManagerExecutor(
             acceptance=acceptance,
             core_analytics=core_adapter,
             context=execution_context,
             semantic_resolution=semantic_adapter,
+            relationship=relationship_adapter,
         )
         ref = request_ref(body)
         manager_runtime = ManagerRuntime(
@@ -163,7 +186,11 @@ class ManagerLabHarness:
             contract_registry=self._accepted_contracts,
             authority_registry=self._accepted_authorities,
         )
-        loop = ResearchManagerLoop(llm=llm, source_spans=source_spans)
+        loop = ResearchManagerLoop(
+            llm=llm,
+            source_spans=source_spans,
+            research_tool_runner=ResearchToolRunner(),
+        )
         outcome = loop.run(
             question=body.question,
             message_id=f"turn:{ref}",
