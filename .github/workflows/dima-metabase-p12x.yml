@@ -48,6 +48,13 @@ jobs:
           P12X_OUT: lab/metabase/p12x/artifacts
         run: python lab/metabase/p12x/freeze_dataset.py
 
+      - name: Freeze 16-case corpus and independent oracle
+        working-directory: platform/backend
+        env:
+          BOYAHANE_DUCKDB: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          P12X_OUT: lab/metabase/p12x/artifacts
+        run: python lab/metabase/p12x/build_oracle.py
+
       - name: Freeze Docker image identities
         working-directory: platform/backend
         shell: bash
