@@ -147,13 +147,15 @@ def main():
         if query is not None:
             rr=client.post("/api/dataset",json=query,timeout=120)
             dataset_result={"status":rr.status_code}
-            if rr.status_code==200:
+            if rr.status_code in (200, 202):
                 body=rr.json()
                 data=body.get("data") or {}
                 dataset_result.update({
                     "rows":data.get("rows"),
                     "cols":data.get("cols"),
                     "row_count":len(data.get("rows") or []),
+                    "database_id":body.get("database_id"),
+                    "native_form":data.get("native_form"),
                 })
             else:
                 dataset_result["body"]=rr.text[:2000]
