@@ -1,0 +1,6 @@
+{
+  "schema_version": "p12x_c2_bridge_parity_v1",
+  "corpus_fingerprint": "fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0",
+  "case_ids": ["PX-01", "PX-07", "PX-13", "PX-16"],
+  "required_repeat_count_per_side": 2
+}
