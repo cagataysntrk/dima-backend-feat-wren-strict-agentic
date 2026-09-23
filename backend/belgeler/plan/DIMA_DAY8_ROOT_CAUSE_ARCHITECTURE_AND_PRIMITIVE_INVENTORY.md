@@ -694,3 +694,39 @@ Before D8-B cognition wiring, close these provider-free seams:
 
 After those are GREEN, D8-B may add one focused proposal-boundary owner. D8-C remains
 unauthorized in this development burst.
+
+
+---
+
+## 16. D8-B GREEN — SUPERVISOR STOP
+
+Current implementation receipt:
+
+```text
+Day8 product behavior SHA    e6e46c04ebabdac804545855d7fbbcf90c1b1b90
+D8-A1                        GREEN
+D8-A2                        GREEN
+structural seams             GREEN
+D8-B                         GREEN
+focused run                  35884577376 = GREEN
+paid calls                   0
+DB queries                   0
+ROOT_CAUSE executable        false
+D8-C                         NOT STARTED
+```
+
+Delivered before D8-B:
+- active ROOT_CAUSE status gate,
+- live read-only current-run Evidence view,
+- inspected-Evidence admission.
+
+D8-B adds only:
+- `HypothesisProposal`,
+- `HypothesisEvidenceRelationProposal`,
+- `HypothesisProposalBoundary`.
+
+No Manager loop, ResearchTask execution mapping, semantic linker, cross-domain, temporal,
+WrenService or /api/ask-v2 integration was opened.
+
+This document now stops at the supervisor review boundary.
+D8-C capability-mode design and next-test orchestration are explicitly deferred.
