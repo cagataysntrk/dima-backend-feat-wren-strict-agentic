@@ -1,0 +1,36 @@
+name: v2-day7-orchestration-micro-dry-run-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day7-orchestration-micro-dry-run-once.yml"
+
+jobs:
+  dry-run:
+    if: "github.event.head_commit.message == 'test(v2-day7): run micro ablation dry-run once'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Provider-free dry-run receipt
+        working-directory: backend
+        run: |
+          python lab/v2_day7_orchestration_ablation.py \
+            --case-id adaptive-material \
+            --case-id stable-no-extra-branch \
+            --max-model-calls 16 \
+            --dry-run
