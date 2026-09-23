@@ -9861,3 +9861,133 @@ Metabase runtime/substrate adopted?  NO
 
 STOP here for supervisor receipt. Do not start Day9 and do not run another paid model test without
 new supervisor authority.
+
+
+---
+
+## 2026-09-23 — DAY8 POST-FIX LIVE RE-MEASUREMENT VALID RED / GENERIC FIX GREEN
+
+Supervisor-authorized same-scenario re-measurement:
+
+```text
+run                         35898027005
+measurement_valid           true
+measurement_validity        VALID
+result                       RED
+Manager model                openai/gpt-5.6-sol
+Manager calls                2 / hard ceiling 5
+semantic-linker calls        0
+temporal-model calls         0
+scenario_count               1
+workers                      1
+
+product_behavior_sha         3091651aea93e42e00521654af8d5dc2c51dc9c3
+run head                     d5ac338ac5b242e86c77469075e6c3e8b405a72c
+scenario_hash                8379daa7fc70a678514b7f87dcb41fcdfec4d317d8ded4cc2712ee7cfb4c8d6a
+harness_version              4ae479eb171eccb709eb326309734779533079ab
+```
+
+Preflight proved:
+- no `backend/app/v2` behavior drift after `3091651...`,
+- the live harness blob was byte-identical to the harness used by `35895279649`,
+- the scenario hash was unchanged,
+- the stricter paid ceiling was 5.
+
+### First incorrect transition
+
+```text
+initial governed Evidence / bootstrap
+→ inspected Evidence
+→ bounded hypothesis proposal
+→ server-owned hypothesis identity
+→ resolve_semantics
+```
+
+The first four transitions were valid.
+The first incorrect transition was selecting `resolve_semantics` instead of moving to a
+governed next-test proposal over already-governed handles.
+
+### Failure classification
+
+Initial symptom was model action selection. Contract cross-check showed the provider-facing
+post-acceptance state did not expose the non-secret semantic type of opaque `h*` aliases even
+though next-test applicability is expressed in semantic kinds.
+
+Final class:
+
+```text
+CONTRACT/ARCHITECTURE
+```
+
+Single owner:
+post-acceptance Manager-safe semantic-handle projection.
+
+Broken invariant:
+
+```text
+opaque identity
+!=
+opaque type
+
+canonical semantic value may remain hidden,
+but governed target_kind/provenance required for deterministic action selection
+must be available without semantic re-resolution.
+```
+
+### Generic post-RED fix
+
+Product behavior SHA after fix:
+
+`810fa70ded3bca53542316d32a5497302b4eb9c7`.
+
+Implemented:
+- `HypothesisLedger.semantic_handle_metadata()` projects only validated non-secret handle metadata,
+- `SEMANTIC_HANDLE_CATALOG` exposes alias → target_kind/provenance to Manager cognition,
+- canonical target remains exclusively inside `SemanticHandleRegistry`,
+- ROOT_CAUSE cognition policy tells Manager to use the existing handle catalog against
+  `ROOT_CAUSE_NEXT_TEST_CONTRACT` before evidence-grounded semantic expansion,
+- no phrase/regex/business-case/model-specific patch,
+- no new semantic owner,
+- no budget increase.
+
+Deterministic proof:
+
+```text
+35898621489 = GREEN   Day8 focused
+35898591894 = GREEN   full affected Day7 regression
+```
+
+The Day8 focused run also includes:
+- execution-mode attacks,
+- root-cause orchestration attacks,
+- Manager-loop root-cause wiring,
+- HypothesisLedger and EpistemicLabelGate,
+- D8-B proposal boundary,
+- affected Day7 Evidence/ResearchTask regressions,
+- provider-free live-harness contract,
+- one real-Wren root-cause sentinel.
+
+### Paid receipt / hard stop
+
+```text
+35894577133   2 Sol calls   INVALID measurement
+35895279649   5 Sol calls   VALID RED
+35898027005   2 Sol calls   VALID RED
+-----------------------------------------------
+cumulative       9 Sol calls
+```
+
+No additional paid run is authorized automatically.
+
+Current state:
+
+```text
+D8-C deterministic        GREEN
+D8-C real-Wren            GREEN
+D8-C live Sol             OPEN / NOT GREEN
+
+DAY8 / P11                NOT SEALED
+DAY9 / P12                NOT STARTED
+```
+
+STOP for supervisor review.
