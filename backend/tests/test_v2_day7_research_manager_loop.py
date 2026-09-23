@@ -10,7 +10,7 @@ from app.v2.manager_executor import (
     GovernedManagerExecutionContext,
     GovernedManagerExecutor,
 )
-from app.v2.manager_loop import ResearchManagerLoop
+from app.v2.manager_loop import ResearchManagerLoop, _post_acceptance_native_schema
 from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
@@ -282,3 +282,20 @@ def test_zero_row_inspected_evidence_finishes_without_spending_another_manager_t
         if item.get("kind") == "finish"
     ]
     assert finish[-1]["reason"] == "inspected_zero_row_no_material_branch"
+
+
+def test_postacceptance_schema_does_not_advertise_propose_acceptance():
+    schema = _post_acceptance_native_schema()
+    encoded = json.dumps(schema, ensure_ascii=False)
+
+    assert '"propose_acceptance"' not in encoded
+    for action in (
+        "resolve_semantics",
+        "propose_branches",
+        "run_analytics",
+        "run_relationship",
+        "inspect_evidence",
+        "request_clarification",
+        "finish",
+    ):
+        assert f'"{action}"' in encoded
