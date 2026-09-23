@@ -20,6 +20,8 @@ from app.v2.manager_preacceptance import CoverageAudit, FiniteAcceptanceStatus
 from app.v2.manager_progress import DynamicActionFrontier
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
+from app.v2.research_tasks import ResearchTaskService
+from app.v2.research_tools import ResearchTaskKind
 from app.v2.models import (
     BoundedSemanticContextV0,
     CompactCubeContextV0,
@@ -741,7 +743,7 @@ def test_material_grounding_gap_clarifies_before_coverage_audit():
 
 
 def test_broaden_within_budget_is_research_policy_not_semantic_dimension():
-    question = "net gelir ile üretkenlik ilişkisini geniş kapsamda araştır"
+    question = "net gelir ile bölge ilişkisini geniş kapsamda araştır"
     scripted = _ScriptedStructured(
         drafts=[
             {
@@ -750,11 +752,11 @@ def test_broaden_within_budget_is_research_policy_not_semantic_dimension():
                         obligation_id="U_REL",
                         capability="relationship",
                         source_surfaces=(
-                            "net gelir ile üretkenlik ilişkisini",
+                            "net gelir ile bölge ilişkisini",
                         ),
                         semantic_surfaces=(
                             ("net gelir", "metric"),
-                            ("üretkenlik", "metric"),
+                            ("bölge", "dimension"),
                         ),
                     )
                 ],
@@ -794,6 +796,109 @@ def test_broaden_within_budget_is_research_policy_not_semantic_dimension():
         item["surface"] for item in grounding["summary"]["requested"]
     }
     assert "geniş kapsamda araştır" not in grounded_surfaces
+
+
+def test_relationship_incomplete_metric_only_authority_stops_before_acceptance():
+    question = "net gelir ilişkisini araştır"
+    scripted = _ScriptedStructured(
+        drafts=[
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_REL",
+                        capability="relationship",
+                        source_surfaces=("net gelir ilişkisini",),
+                        semantic_surfaces=(("net gelir", "metric"),),
+                    )
+                ],
+                "research_directives": [],
+                "control_requests": [],
+            }
+        ],
+        audits=[],
+    )
+    loop, runtime, executor = _loop(scripted)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-rel-incomplete",
+        request_ref="req-rel-incomplete",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is False
+    assert outcome.clarification_required is True
+    assert runtime.accepted_contract is None
+    assert runtime.ledger is None
+    assert runtime.snapshot.accepted_contract_id is None
+    assert runtime.snapshot.data_queries == 0
+    assert runtime.snapshot.evidence_refs == ()
+    assert scripted.calls == ["dima_intent_draft_v1"]
+
+    gap = next(
+        item for item in outcome.observations
+        if item.get("kind") == "material_grounding_gap"
+    )
+    assert gap["gaps"] == [
+        {
+            "obligation_id": "U_REL",
+            "capability": "relationship",
+            "polarity": "REQUIRED",
+            "missing_required_kinds": ["dimension"],
+        }
+    ]
+    assert not any(
+        item.get("kind") == "contract_validity"
+        for item in outcome.observations
+    )
+
+
+def test_relationship_complete_metric_dimension_authority_accepts_and_seeds_relationship():
+    question = "net gelir ile bölge ilişkisini araştır"
+    scripted = _ScriptedStructured(
+        drafts=[
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_REL",
+                        capability="relationship",
+                        source_surfaces=("net gelir ile bölge ilişkisini",),
+                        semantic_surfaces=(
+                            ("net gelir", "metric"),
+                            ("bölge", "dimension"),
+                        ),
+                    )
+                ],
+                "research_directives": [],
+                "control_requests": [],
+            }
+        ],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    loop, runtime, executor = _loop(scripted)
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-rel-complete",
+        request_ref="req-rel-complete",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is True
+    assert runtime.accepted_contract is not None
+    assert runtime.ledger is not None
+    assert runtime.snapshot.data_queries == 0
+
+    item = runtime.ledger.items[0]
+    assert item.capability_key == ManagerCapabilityKey.RELATIONSHIP
+    task = ResearchTaskService().seed_for_obligation(
+        runtime=runtime,
+        obligation_id=item.obligation_id,
+        task_id="seed:U_REL",
+    )
+    assert task.task_kind == ResearchTaskKind.RELATIONSHIP.value
+    assert task.question_id == "U_REL"
+    assert len(task.input_refs) == 2
 
 
 def test_coverage_cannot_veto_nonrequired_unresolved_semantic_surface():
