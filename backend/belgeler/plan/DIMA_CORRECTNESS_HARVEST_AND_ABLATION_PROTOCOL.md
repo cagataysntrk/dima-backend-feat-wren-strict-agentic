@@ -712,3 +712,96 @@ tests             16 passed
 paid calls        0
 DB/Wren/LLM       0
 ```
+
+
+---
+
+## DAY9-B BOUNDED NARRATION HARVEST — 2026-09-23
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-079 | Probabilistic narration selects/orders canonical report references; it does not generate analytical truth. | MUST_PORT | valid Evidence paired with hallucinated factual narration | `NarrationPlanProposal` has reference-only schema; focused `35908601251` + live `35908863544` GREEN |
+| H-080 | Executive summary is a projection of selected canonical blocks, not a new ungrounded summary claim. | MUST_PORT | summary hallucination / unsupported numbers or causal statements | deterministic renderer emits selected canonical `ReportBlock.content` verbatim |
+| H-081 | Narration receives a minimum presentation-safe context; raw Evidence/query/semantic internals are not narration context. | MUST_PORT | narrator becoming a second analytics/semantic authority or leaking unnecessary governed internals | `NarrationPacket` excludes Evidence/Finding/QueryContract payloads, semantic scope, raw rows/SQL and conversation scratch |
+| H-082 | Narration failure is a presentation failure domain; it cannot invalidate a valid ReportDocument. | MUST_PORT | provider/schema/plan failure being misreported as analytical failure or triggering query repair | exactly one structured call; invalid narration → deterministic fallback; no retry/repair/analytics |
+| H-083 | Canonical report authority remains immutable under all presentation/narration variants. | MUST_PORT | presentation ordering mutating report Evidence, Findings, anchors or epistemic truth | frozen `ReportDocument` + presentation-only `ReportNarrationOverlay`; metamorphic tests + live equality proof |
+
+D9-B permanent split:
+
+```text
+ReportDocument
+= analytical/report authority
+
+NarrationPlanProposal
+= probabilistic reference ordering/selection only
+
+NarrationPlanGate
+= deterministic admissibility
+
+ReportNarrationOverlay
+= presentation-only server object
+
+ReportNarrationRenderer
+= canonical-text projection
+```
+
+Provider output cannot contain:
+- factual summary prose,
+- rewritten analytical/numeric claim,
+- causal statement,
+- EvidenceRef / FindingRef / ArtifactRef,
+- semantic identity,
+- overlay identity.
+
+Material block omission is structurally forbidden:
+
+```text
+ordered_block_refs
+= exact permutation of canonical section block IDs
+```
+
+Invalid narration never triggers a second model call.
+
+Strict transport invariant:
+
+```text
+Pydantic domain schema
+→ strict-native transport normalization
+→ every object property required
+→ additionalProperties=false
+→ defaults removed from provider contract
+```
+
+This normalization is transport-only and does not change D9-A truth or D9-B plan semantics.
+
+Provider-free receipt:
+
+```text
+run        35908601251
+result     GREEN
+tests      15 / 15
+paid calls 0
+```
+
+Live receipt:
+
+```text
+run                    35908863544
+result                 GREEN
+model                  openai/gpt-5.6-sol
+model calls            1
+tool calls             0
+semantic calls         0
+Wren calls             0
+DB calls               0
+Research calls         0
+invented IDs           0
+new factual claims     0
+candidate cause kept   yes
+limitations kept       yes
+ReportDocument changed no
+```
+
+No second live reassurance case was run.
+
+Day8 live root-cause debt remains OPEN and is not superseded by this Day9 narration proof.
