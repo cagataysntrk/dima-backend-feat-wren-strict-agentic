@@ -698,3 +698,24 @@ references
 ~~~
 
 This is the exact continuation point.
+
+
+## 13. CONTINUATION UPDATE — ORACLE RECONCILIATION
+
+The active state advanced without product-code changes.
+
+- `multi-obligation`: EVAL_ORACLE; owner-local PREVIOUS_PERIOD has no unique base period,
+  clarification/zero-query is the correct fail-closed behavior.
+- `relationship-unsafe`: EVAL_ORACLE; sealed preacceptance clarification remains correct.
+- Evaluator now supports generic expected preacceptance outcomes instead of assuming every
+  valid turn must produce an AcceptedTurnContract.
+- `insufficient-evidence`: still open; provisional MODEL_COGNITION hypothesis only.
+  No product patch authorized before the separate neutral-vs-causal cognition diagnostic.
+
+Evaluator/docs commits after tested product `d22fb362...` do not change product behavior.
+Manual diagnostic:
+`.github/workflows/v2-day7-capability-cognition-diagnostic.yml`.
+
+Exact next:
+provider-free evaluator proof -> manual cognition diagnostic -> classify owner -> generic
+fix only if proven -> affected LIVE -> justified frozen13 rerun -> shadow ablation -> Day7 close.
