@@ -1,45 +1,38 @@
 # DIMA V2 — GELİŞTİRİCİ / AJAN ÇALIŞMA SÖZLEŞMESİ
 
-## 🔴 CURRENT OPERATION — DAY7 / P10 RESULT-AWARE RESEARCH LOOP
+## 🔴 CURRENT OPERATION — P11 / DAY8 ROOT-CAUSE DESIGN
 
-> **DAY6.5 CLOSED.**
-> Current single authority:
-> `belgeler/plan/DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+> **DAY7 / P10 CLOSED / SEALED.**
+> Read first:
+> `belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`.
 >
-> Final Day6.5 product checkpoint:
-> `dd5c16bbe444b6d9183faea9e9937be11260f394`.
+> Day7 product behavior checkpoint:
+> `ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6`.
 >
-> Closed:
-> `D65-SI=FINAL GREEN`,
-> provider topology `Semantic Luna / Temporal Sol / Research Sol`,
-> `M0E-DEEP-DELTA=FINAL GREEN`,
-> bridge terminal `HEAVY_SEMANTIC_DUPLICATION`.
+> Final Day7 provider-free seal:
+> `35872766887 = GREEN`.
 >
-> Current release execution decision:
-> `Wren semantics+analytical execution=PRIMARY`;
-> `Metabase structured execution=REJECTED CURRENT RELEASE`;
-> `X0-REST=NOT RUN/NOT REQUIRED`;
-> Metabase production runtime dependency OFF.
+> Historical frozen13:
+> `35855765109 = VALID / 11 of 13 / hard safety 0`; DO NOT rerun.
 >
-> **CURRENT TICKET = P10 / DAY7 RESULT-AWARE RESEARCH LOOP.**
-> Do not start Day8/9/10 work early.
-> Do not reopen Day6.5 semantic/substrate work without new independent invalidating P0.
-> Do not run DEV80/Validation50/Hidden50.
+> Final one-time micro-ablation:
+> `35873755069 = INCONCLUSIVE / DAY11 DEFER`; DO NOT retry or expand.
 >
-> Before Day7 code, read the final handoff and its Day7 carry-forward matrix.
+> Production `/ask-v2` remains OFF.
+> DEV80 / Validation50 / Hidden50 were NOT run.
 >
-> Day7 portability/ablation authority:
+> **CURRENT TICKET = P11 / DAY8 ROOT-CAUSE BRANCH.**
+> Current subphase is PROVIDER-FREE ARCHITECTURE + LEGACY PRIMITIVE INVENTORY ONLY.
+> No Day8 product implementation until the design/inventory receipt is reviewed.
+>
+> Day8 hard invariant:
+> `ASSOCIATION != CAUSATION`.
+>
+> Do not start paid Day8 evaluation in this design block.
+> Do not reopen Day7 absent a new independent P0.
+>
+> Permanent test-economy authority remains:
 > `belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`.
->
-> **Cross-cutting rule — invariant first, orchestration by evidence:**
-> Before introducing a new deterministic cognition/orchestration mechanism, classify
-> whether it protects authority, security, semantic truth, execution safety, Evidence,
-> completion truth, hard budgets/fanout or side-effect correctness.
-> If YES, focused deterministic enforcement is allowed.
-> If NO, classify it `BENCHMARK_REQUIRED` and require comparative evidence before making
-> it permanent. Flexible LLM cognition is not itself a correctness defect.
-> Never weaken the hard trust plane because a model performs well on average.
-
 
 ## SUPERSEDED / HISTORICAL — CURRENT BRIDGE ACTIVE OVERRIDE
 
