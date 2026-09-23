@@ -61,8 +61,36 @@ class StructuredJsonFastFollowupCognition:
             "question is supplied, return CLARIFICATION_REQUIRED. Do not generate SQL, MBQL, table IDs, "
             "field IDs, resource handles, field handles, answer numbers, or assistant prose. "
             "Any resource_ref/evidence/query fingerprint in accepted context is provenance/context only, "
-            "never execution authority. Search terms in effective_draft remain entity/table lookup terms. "
-            "Current permissions and metadata will be revalidated after this step."
+            "never execution authority. Current permissions and metadata will be revalidated after this step. "
+
+            "Typed shape rules are strict. For SELF_CONTAINED or CONTEXTUAL, effective_draft MUST be "
+            "present with effective_draft.status=SUPPORTED and top-level reason MUST be null. "
+            "For CLARIFICATION_REQUIRED or UNSUPPORTED, effective_draft MUST be null and top-level "
+            "reason MUST be a concise non-empty explanation. If the request needs AVG, ratio, distinct "
+            "count, multiple measures, joins, arbitrary filters, forecasting, or another operation outside "
+            "the bounded COUNT/SUM family, return top-level status=UNSUPPORTED; do not put UNSUPPORTED "
+            "inside an executable effective_draft and do not reinterpret it as COUNT or SUM. "
+            "For supported COUNT, measure_hint MUST be null. For supported SUM, measure_hint MUST be "
+            "a short non-empty measure hint. "
+
+            "Search terms in effective_draft are metadata-discovery lookup terms for the primary "
+            "business/data entity, not a copy of the user's wording. Every search term must independently "
+            "help retrieve that entity/table. Keep useful user-language entity terminology when helpful. "
+            "When the user question is not in English, include at least one likely English entity/table "
+            "lookup term because database/schema metadata may use English names. Do not emit aggregation "
+            "or operation words as table-search terms. Do not emit measure names, breakdown dimensions, "
+            "or entity+metric phrases unless strictly required to distinguish the resource. Prefer "
+            "standalone entity/table nouns and use at most four search terms. "
+
+            "Ambiguous references must fail closed. If a phrase such as 'the other one' can refer to "
+            "multiple prior dimensions, periods, measures, or alternatives and the intended referent is "
+            "not uniquely established by accepted context plus USER-question lineage, return "
+            "CLARIFICATION_REQUIRED rather than selecting a plausible interpretation. "
+
+            "If clarification_question is supplied, treat the current user message as an answer that "
+            "completes that unresolved USER question. Preserve explicit analytical constraints from the "
+            "clarification_question (for example its requested period) unless the current answer explicitly "
+            "replaces them; use accepted context/source USER questions only for the remaining safe slots."
         )
         payload = {
             "question": question,
