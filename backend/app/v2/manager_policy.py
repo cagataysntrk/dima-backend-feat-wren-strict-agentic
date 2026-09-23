@@ -19,6 +19,15 @@ class ManagerCapabilityLane(StrEnum):
     PRESENTATION = "PRESENTATION"
 
 
+class ManagerCapabilityExecutionMode(StrEnum):
+    """How accepted capability authority may participate in execution."""
+
+    DIRECT = "DIRECT"
+    ORCHESTRATED = "ORCHESTRATED"
+    DEFERRED = "DEFERRED"
+    PRESENTATION = "PRESENTATION"
+
+
 _STANDARD_KINDS = frozenset({"metric", "dimension", "filter", "period", "comparison"})
 _RESEARCH_KINDS = _STANDARD_KINDS
 
@@ -27,7 +36,7 @@ _RESEARCH_KINDS = _STANDARD_KINDS
 class ManagerCapabilitySpec:
     key: ManagerCapabilityKey
     lane: ManagerCapabilityLane
-    executable: bool = True
+    execution_mode: ManagerCapabilityExecutionMode = ManagerCapabilityExecutionMode.DIRECT
     required_kinds: frozenset[str] = field(default_factory=frozenset)
     exclusion_required_kinds: frozenset[str] = field(default_factory=frozenset)
     allowed_kinds: frozenset[str] = field(default_factory=frozenset)
@@ -35,6 +44,18 @@ class ManagerCapabilitySpec:
     allowed_params: frozenset[str] = field(default_factory=frozenset)
     effect_family: str | None = None
     intent_description: str = ""
+
+    @property
+    def executable(self) -> bool:
+        """Compatibility view: only DIRECT capability authority is directly executable."""
+        return self.execution_mode == ManagerCapabilityExecutionMode.DIRECT
+
+    @property
+    def bindable(self) -> bool:
+        return self.execution_mode in {
+            ManagerCapabilityExecutionMode.DIRECT,
+            ManagerCapabilityExecutionMode.ORCHESTRATED,
+        }
 
 
 class ManagerCapabilityRegistry:
@@ -103,7 +124,7 @@ class ManagerCapabilityRegistry:
         ManagerCapabilityKey.ROOT_CAUSE: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.ROOT_CAUSE,
             lane=ManagerCapabilityLane.RESEARCH,
-            executable=False,
+            execution_mode=ManagerCapabilityExecutionMode.ORCHESTRATED,
             required_kinds=frozenset({"metric"}),
             exclusion_required_kinds=frozenset({"metric"}),
             allowed_kinds=_RESEARCH_KINDS,
@@ -119,7 +140,7 @@ class ManagerCapabilityRegistry:
         ManagerCapabilityKey.TREND: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.TREND,
             lane=ManagerCapabilityLane.RESEARCH,
-            executable=False,
+            execution_mode=ManagerCapabilityExecutionMode.DEFERRED,
             allowed_kinds=_RESEARCH_KINDS,
             effect_family="trend",
             intent_description="Investigate how a metric changes over time as a trend.",
@@ -127,28 +148,28 @@ class ManagerCapabilityRegistry:
         ManagerCapabilityKey.REPORT: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.REPORT,
             lane=ManagerCapabilityLane.PRESENTATION,
-            executable=False,
+            execution_mode=ManagerCapabilityExecutionMode.PRESENTATION,
             effect_family="report",
             intent_description="Produce a report deliverable; presentation only.",
         ),
         ManagerCapabilityKey.TABLE: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.TABLE,
             lane=ManagerCapabilityLane.PRESENTATION,
-            executable=False,
+            execution_mode=ManagerCapabilityExecutionMode.PRESENTATION,
             effect_family="table",
             intent_description="Produce a table deliverable; presentation only.",
         ),
         ManagerCapabilityKey.CHART: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.CHART,
             lane=ManagerCapabilityLane.PRESENTATION,
-            executable=False,
+            execution_mode=ManagerCapabilityExecutionMode.PRESENTATION,
             effect_family="chart",
             intent_description="Produce a chart deliverable; presentation only.",
         ),
         ManagerCapabilityKey.EXPLAIN: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.EXPLAIN,
             lane=ManagerCapabilityLane.PRESENTATION,
-            executable=False,
+            execution_mode=ManagerCapabilityExecutionMode.PRESENTATION,
             effect_family="explain",
             intent_description="Explain an already established result/evidence; presentation only.",
         ),
@@ -175,6 +196,7 @@ class ManagerCapabilityRegistry:
                 {
                     "capability": key.value,
                     "lane": spec.lane.value,
+                    "execution_mode": spec.execution_mode.value,
                     "executable": spec.executable,
                     "required_semantic_kinds": sorted(spec.required_kinds),
                     "excluded_required_semantic_kinds": sorted(

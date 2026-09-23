@@ -16,6 +16,7 @@ from app.v2.manager_models import (
     ObligationPolarity,
 )
 from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
     ManagerCapabilityLane,
     ManagerCapabilityRegistry,
     ManagerCapabilitySpec,
@@ -174,18 +175,20 @@ class CapabilityBindingValidator:
         except KeyError as exc:
             return CapabilityBindingResult(binding=None, reasons=(str(exc),))
 
-        if (
-            not spec.executable
-            and spec.lane in {
-                ManagerCapabilityLane.STANDARD,
-                ManagerCapabilityLane.RESEARCH,
-            }
-        ):
+        if spec.execution_mode == ManagerCapabilityExecutionMode.DEFERRED:
             return CapabilityBindingResult(
                 binding=None,
                 reasons=(
                     f"{item.obligation_id}: {item.capability_key.value} is recognized "
-                    "but direct execution is unavailable in the current capability surface",
+                    "but deferred in the current capability surface",
+                ),
+            )
+        if spec.execution_mode == ManagerCapabilityExecutionMode.PRESENTATION:
+            return CapabilityBindingResult(
+                binding=None,
+                reasons=(
+                    f"{item.obligation_id}: {item.capability_key.value} is presentation-only "
+                    "and has no analytical semantic binding",
                 ),
             )
 

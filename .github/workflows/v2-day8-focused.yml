@@ -8,9 +8,19 @@ name: v2-day8-focused
       - "backend/app/v2/models.py"
       - "backend/app/v2/epistemics.py"
       - "backend/app/v2/hypothesis_proposals.py"
+      - "backend/app/v2/manager_policy.py"
+      - "backend/app/v2/capability_bindings.py"
+      - "backend/app/v2/acceptance.py"
+      - "backend/app/v2/manager_preacceptance.py"
+      - "backend/app/v2/representability.py"
+      - "backend/app/v2/root_cause_orchestration.py"
+      - "backend/app/v2/research_tasks.py"
       - "backend/tests/test_v2_day8_hypothesis_ledger.py"
       - "backend/tests/test_v2_day8_epistemic_label_gate.py"
       - "backend/tests/test_v2_day8_hypothesis_proposals.py"
+      - "backend/tests/test_v2_day8_capability_execution_mode.py"
+      - "backend/tests/test_v2_day8_root_cause_orchestration.py"
+      - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
       - ".github/workflows/v2-day8-focused.yml"
   workflow_dispatch:
 
@@ -38,6 +48,13 @@ jobs:
       - name: Compile Day8 epistemic slice
         working-directory: backend
         run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py
+
+      - name: Day8 capability execution-mode attacks
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day8_capability_execution_mode.py \
+            tests/test_v2_day7_deferred_capability_boundary.py
 
       - name: Day8 hypothesis ledger attacks
         working-directory: backend

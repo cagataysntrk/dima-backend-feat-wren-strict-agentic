@@ -58,7 +58,6 @@ def _draft_payload(capability: str, source_surface: str, semantic_surface: str):
 @pytest.mark.parametrize(
     ("capability", "question", "source_surface"),
     [
-        ("root_cause", "Net gelir nedenini araştır.", "Net gelir nedenini araştır"),
         ("trend", "Net gelir trendini incele.", "Net gelir trendini incele"),
     ],
 )
@@ -111,7 +110,7 @@ def test_deferred_analytical_capability_stops_before_grounding_and_acceptance(
 
 @pytest.mark.parametrize(
     "capability",
-    [ManagerCapabilityKey.ROOT_CAUSE, ManagerCapabilityKey.TREND],
+    [ManagerCapabilityKey.TREND],
 )
 def test_direct_acceptance_bypass_rejects_deferred_analytical_capability(capability):
     spans = SourceSpanRegistry()

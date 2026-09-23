@@ -33,7 +33,11 @@ from app.v2.manager_models import (
     SemanticBindingRef,
     UserIntentEnvelope,
 )
-from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
+from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
+    ManagerCapabilityLane,
+    ManagerCapabilityRegistry,
+)
 from app.v2.manager_runtime import ManagerBudgetError, ManagerRuntime
 from app.v2.manager_tools import ManagerToolCall, ManagerToolName
 from app.v2.models import ConversationStateV2, FrozenModel
@@ -705,7 +709,7 @@ class PreAcceptanceController:
                     ManagerCapabilityLane.STANDARD,
                     ManagerCapabilityLane.RESEARCH,
                 }
-                and not spec.executable
+                and spec.execution_mode == ManagerCapabilityExecutionMode.DEFERRED
             ):
                 gaps.append(
                     {

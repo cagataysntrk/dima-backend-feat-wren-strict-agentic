@@ -19,7 +19,11 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
     UserObligationLedger,
 )
-from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
+from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
+    ManagerCapabilityLane,
+    ManagerCapabilityRegistry,
+)
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.standard_authority import AcceptedAuthorityConflict
@@ -264,7 +268,11 @@ class IntentAcceptanceGate:
                     "research directive parent capability is not registered"
                 )
             elif (
-                not parent_spec.executable
+                parent_spec.execution_mode
+                not in {
+                    ManagerCapabilityExecutionMode.DIRECT,
+                    ManagerCapabilityExecutionMode.ORCHESTRATED,
+                }
                 or parent_spec.lane
                 not in {
                     ManagerCapabilityLane.STANDARD,
@@ -272,7 +280,7 @@ class IntentAcceptanceGate:
                 }
             ):
                 reject.append(
-                    "research directive parent must be executable analytical obligation"
+                    "research directive parent must be active analytical authority"
                 )
             for source_ref in directive.source_refs:
                 try:

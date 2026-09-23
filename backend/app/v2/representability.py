@@ -22,7 +22,11 @@ from app.v2.manager_models import (
     StandardProjection,
     UserObligationLedger,
 )
-from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
+from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
+    ManagerCapabilityLane,
+    ManagerCapabilityRegistry,
+)
 
 
 class RepresentabilityGate:
@@ -176,7 +180,13 @@ class RepresentabilityGate:
         research: list[ManagerCapabilityKey] = []
         for item in active:
             spec = self._registry.get(item.capability_key)
-            if not spec.executable:
+            if spec.execution_mode in {
+                ManagerCapabilityExecutionMode.DEFERRED,
+                ManagerCapabilityExecutionMode.PRESENTATION,
+            }:
+                continue
+            if spec.execution_mode == ManagerCapabilityExecutionMode.ORCHESTRATED:
+                research.append(item.capability_key)
                 continue
             executable.append(item)
             if spec.lane == ManagerCapabilityLane.RESEARCH:
