@@ -1,23 +1,7 @@
 name: dima-fast-ft005-model-e2e
 
 on:
-  push:
-    branches:
-      - feat/dima-metabase-product-fast-track
-    paths:
-      - ".github/workflows/dima-fast-ft005-model-e2e.yml"
-      - "backend/lab/fast_ft005_model_e2e.py"
-      - "backend/app/fast/conversation_*.py"
-      - "backend/app/fast/followup_cognition.py"
-      - "backend/app/fast/run_*.py"
-      - "backend/app/fast/ask_*.py"
-      - "backend/app/fast/resource_registry.py"
-      - "backend/app/fast/temporal.py"
-      - "backend/app/fast/query_builder.py"
-      - "backend/app/fast/evidence.py"
-      - "backend/app/fast/metabase_gateway.py"
   workflow_dispatch:
-
 permissions:
   contents: read
 
