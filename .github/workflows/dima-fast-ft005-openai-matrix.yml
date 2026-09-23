@@ -1,37 +1,30 @@
-name: dima-fast-ft005-openai-matrix
+name: dima-fast-ft005-model-matrix
 
 on:
-  push:
-    branches:
-      - feat/dima-metabase-product-fast-track
-    paths:
-      - ".github/workflows/dima-fast-ft005-openai-matrix.yml"
-      - "backend/lab/fast_ft005_model_sentinel.py"
-      - "backend/lab/fast_model_eval.py"
-      - "backend/app/fast/followup_cognition.py"
-      - "backend/app/fast/conversation_models.py"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  ft005-openai-matrix:
+  ft005-model-matrix:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: DIMA_OPENAI_API_KEY
+    environment: DIMA_OPENROUTER_API_KEY
     strategy:
       fail-fast: false
       matrix:
         include:
           - label: luna
-            model: gpt-5.6-luna
+            model: openai/gpt-5.6-luna
             role: LUNA_BASELINE
+            canonical_model: gpt-5.6-luna
             measurement_mode: MODEL_COMPARABLE
             reasoning_effort: disabled
           - label: sol
-            model: gpt-5.6-sol
+            model: openai/gpt-5.6-sol
             role: SOL_CEILING
+            canonical_model: gpt-5.6-sol
             measurement_mode: MODEL_COMPARABLE
             reasoning_effort: disabled
 
@@ -39,9 +32,11 @@ jobs:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
-      DIMA_OPENAI_API_KEY: ${{ secrets.DIMA_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
-      DIMA_FAST_FT005_PROVIDER: "openai"
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_FAST_FT005_PROVIDER: "openrouter"
+      DIMA_FAST_FT005_TRANSPORT: "openrouter_strict_benchmark"
       DIMA_FAST_FT005_MODEL: ${{ matrix.model }}
+      DIMA_FAST_FT005_CANONICAL_MODEL: ${{ matrix.canonical_model }}
       DIMA_FAST_FT005_MODEL_ROLE: ${{ matrix.role }}
       DIMA_FAST_FT005_MEASUREMENT_MODE: ${{ matrix.measurement_mode }}
       DIMA_FAST_FT005_REASONING_EFFORT: ${{ matrix.reasoning_effort }}
@@ -60,11 +55,11 @@ jobs:
         working-directory: backend
         run: pip install -e ".[dev]"
 
-      - name: Check OpenAI benchmark credential
+      - name: Check OpenRouter benchmark credential
         id: credential
         shell: bash
         run: |
-          if [[ -n "$DIMA_OPENAI_API_KEY" ]]; then
+          if [[ -n "$DIMA_OPENROUTER_API_KEY" ]]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
@@ -72,9 +67,10 @@ jobs:
             cat > "backend/$DIMA_FAST_FT005_MODEL_RECEIPT" <<JSON
           {
             "status": "BLOCKED_NO_CREDENTIAL",
-            "provider": "openai",
+            "provider": "openrouter",
             "model_role": "${{ matrix.role }}",
-            "exact_model_id": "${{ matrix.model }}",
+            "request_model_id": "${{ matrix.model }}",
+            "canonical_model": "${{ matrix.canonical_model }}",
             "measurement_mode": "${{ matrix.measurement_mode }}",
             "reasoning_effort": "${{ matrix.reasoning_effort }}"
           }
@@ -88,16 +84,16 @@ jobs:
           mkdir -p lab/metabase/artifacts
           python lab/fast_ft005_model_sentinel.py
 
-      - name: Upload FT-005 OpenAI matrix receipt
+      - name: Upload FT-005 model matrix receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dima-fast-ft005-openai-${{ matrix.label }}-${{ github.sha }}
+          name: dima-fast-ft005-model-${{ matrix.label }}-${{ github.sha }}
           path: backend/lab/metabase/artifacts/ft005-model-${{ matrix.label }}.json
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Show FT-005 OpenAI matrix receipt
+      - name: Show FT-005 model matrix receipt
         if: always()
         working-directory: backend
         run: |
@@ -107,5 +103,5 @@ jobs:
       - name: Fail closed when benchmark credential is unavailable
         if: steps.credential.outputs.available != 'true'
         run: |
-          echo "BLOCKED_NO_CREDENTIAL: DIMA_OPENAI_API_KEY / OPENAI_API_KEY"
+          echo "BLOCKED_NO_CREDENTIAL: DIMA_OPENROUTER_API_KEY / OPENROUTER_API_KEY"
           exit 1

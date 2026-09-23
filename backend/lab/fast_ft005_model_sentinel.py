@@ -19,8 +19,11 @@ from app.fast.conversation_models import (
     FastFollowupStatus,
 )
 from app.fast.followup_cognition import StructuredJsonFastFollowupCognition
-from app.llm import OpenAICompatibleSqlGenerator, build_generator
-from fast_model_eval import RecordingStructuredGenerator
+from app.llm import build_generator
+from fast_model_eval import (
+    OpenRouterStructuredBenchmarkGenerator,
+    RecordingStructuredGenerator,
+)
 
 
 PROVIDER = os.getenv("DIMA_FAST_FT005_PROVIDER", "openrouter").strip().lower()
@@ -39,6 +42,19 @@ MEASUREMENT_MODE = os.getenv(
 REASONING_EFFORT = os.getenv(
     "DIMA_FAST_FT005_REASONING_EFFORT",
     "disabled",
+)
+TRANSPORT = os.getenv(
+    "DIMA_FAST_FT005_TRANSPORT",
+    "product",
+).strip().lower()
+CANONICAL_MODEL = os.getenv(
+    "DIMA_FAST_FT005_CANONICAL_MODEL",
+    MODEL.removeprefix("openai/"),
+)
+CASE_FILTER = tuple(
+    item.strip()
+    for item in os.getenv("DIMA_FAST_FT005_CASES", "").split(",")
+    if item.strip()
 )
 OUT = Path(
     os.getenv(
@@ -72,22 +88,30 @@ def _settings() -> Settings:
 
 
 def _build_generator():
+    if TRANSPORT == "openrouter_strict_benchmark":
+        key = (
+            os.getenv("DIMA_OPENROUTER_API_KEY")
+            or os.getenv("OPENROUTER_API_KEY")
+            or ""
+        ).strip()
+        reasoning_policy = (
+            "ceiling_enabled"
+            if REASONING_EFFORT == "ceiling_enabled"
+            else "disabled"
+        )
+        return OpenRouterStructuredBenchmarkGenerator(
+            api_key=key,
+            request_model_id=MODEL,
+            canonical_model=CANONICAL_MODEL,
+            model_role=MODEL_ROLE,
+            reasoning_policy=reasoning_policy,
+            max_tokens=4096,
+        )
     if PROVIDER == "openrouter":
         return build_generator(_settings())
-    if PROVIDER == "openai":
-        key = os.getenv("DIMA_OPENAI_API_KEY", "").strip()
-        if not key:
-            raise RuntimeError("BLOCKED_NO_CREDENTIAL:DIMA_OPENAI_API_KEY")
-        return OpenAICompatibleSqlGenerator(
-            "https://api.openai.com/v1",
-            key,
-            MODEL,
-            provider="openai",
-            select_model=MODEL,
-            structured_reasoning_enabled=False,
-            structured_max_tokens=4096,
-        )
-    raise RuntimeError(f"unsupported benchmark provider: {PROVIDER}")
+    raise RuntimeError(
+        f"unsupported benchmark transport/provider: {TRANSPORT}/{PROVIDER}"
+    )
 
 
 def _ctx(
@@ -177,6 +201,8 @@ def main() -> int:
         "model_role": MODEL_ROLE,
         "measurement_mode": MEASUREMENT_MODE,
         "provider": PROVIDER,
+        "transport": TRANSPORT,
+        "canonical_model": CANONICAL_MODEL,
         "reasoning_effort": REASONING_EFFORT,
         "assistant_prose_authority": 0,
         "invented_handle_count": 0,
@@ -262,6 +288,15 @@ def main() -> int:
             "expected_entity": "orders",
         },
     ]
+
+    if CASE_FILTER:
+        allowed = set(CASE_FILTER)
+        cases = [case for case in cases if case["name"] in allowed]
+        missing = allowed - {case["name"] for case in cases}
+        if missing:
+            raise RuntimeError(
+                f"unknown FT-005 frozen case ids: {sorted(missing)}"
+            )
 
     for case in cases:
         observed = {
@@ -377,7 +412,8 @@ def main() -> int:
 
     # Repeatability classification only: same exact Q3 input/schema/model three times,
     # sequential workers=1. This does not majority-vote or repair product behavior.
-    for index in range(1, 4):
+    repeat_q3 = not CASE_FILTER or "q3_breakdown" in set(CASE_FILTER)
+    for index in range(1, 4) if repeat_q3 else ():
         case_id = f"repeat_q3_{index}"
         recorder.set_case(case_id)
         try:
@@ -405,8 +441,11 @@ def main() -> int:
             )
 
     receipt["structured_calls"] = recorder.records
-    q2 = next(item for item in receipt["cases"] if item["name"] == "q2_previous_month")
-    if q2.get("diagnostic_slots"):
+    q2 = next(
+        (item for item in receipt["cases"] if item["name"] == "q2_previous_month"),
+        None,
+    )
+    if q2 and q2.get("diagnostic_slots"):
         receipt["diagnostic_observations"].append(
             {
                 "case_id": "q2_previous_month",
