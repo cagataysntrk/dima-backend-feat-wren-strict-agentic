@@ -3,6 +3,7 @@ import { answerStream } from "@/server/chat/agent";
 import { chatPrefs } from "@/server/prefs";
 import { GatewayError } from "@/server/metabase/errors";
 import { requireTenant } from "@/server/metabase/guard";
+import { localizeError } from "@/server/http";
 import { sseFrame } from "@/lib/sse";
 
 // Streaming chat: the browser gets each real step as it happens, then the
@@ -31,7 +32,10 @@ export async function POST(req: Request) {
     const err = e instanceof GatewayError ? e : null;
     if (err?.detail) console.warn(`[gateway] ${err.status} ${err.detail}`);
     if (!err) console.error("[gateway] unexpected", e);
-    return Response.json({ error: err?.publicMessage ?? "Beklenmeyen bir hata oluştu." }, { status: err?.status ?? 500 });
+    return Response.json(
+      { error: await localizeError(err?.publicMessage ?? "Beklenmeyen bir hata oluştu.") },
+      { status: err?.status ?? 500 },
+    );
   }
 
   const stream = new ReadableStream<Uint8Array>({
@@ -49,7 +53,7 @@ export async function POST(req: Request) {
           const err = e instanceof GatewayError ? e : null;
           if (err?.detail) console.warn(`[gateway] ${err.status} ${err.detail}`);
           if (!err) console.error("[gateway] unexpected", e);
-          send({ type: "error", message: err?.publicMessage ?? "Beklenmeyen bir hata oluştu." });
+          send({ type: "error", message: await localizeError(err?.publicMessage ?? "Beklenmeyen bir hata oluştu.") });
         }
       } finally {
         await events.return?.(undefined);

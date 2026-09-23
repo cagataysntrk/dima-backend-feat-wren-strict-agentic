@@ -1,6 +1,13 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
+import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from "@/i18n/config";
 import { ZodError } from "zod";
+import { ERROR_KEYS } from "./error-messages";
+
+const UNEXPECTED = "Beklenmeyen bir hata oluştu.";
+const INVALID = "Geçersiz istek.";
 import { GatewayError } from "./metabase/errors";
 import { requireTenant, type TenantContext } from "./metabase/guard";
 
@@ -9,6 +16,30 @@ import { requireTenant, type TenantContext } from "./metabase/guard";
  * and converts every failure into a Dima-worded JSON error. Engine details are
  * logged server-side only.
  */
+/**
+ * Gateway errors are thrown as Turkish strings (those are the identifiers in
+ * the code); here they become the caller's language. An unmapped message is
+ * passed through rather than swallowed — a missing translation should still
+ * tell the person what happened.
+ */
+export async function localizeError(message: string): Promise<string> {
+  const key = ERROR_KEYS[message];
+  if (!key) return message;
+  // The locale is read from the cookie here rather than left to next-intl's
+  // request scope: in a Route Handler that scope is not always established,
+  // and a silent fallback would ship Turkish to an English reader.
+  const store = await cookies();
+  const cookieLocale = store.get(LOCALE_COOKIE)?.value;
+  const locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  try {
+    const t = await getTranslations({ locale, namespace: "gateway" });
+    return t(key);
+  } catch (e) {
+    console.warn("[gateway] could not translate error", e);
+    return message;
+  }
+}
+
 export function withTenant<P>(
   handler: (ctx: TenantContext, req: Request, params: P) => Promise<Response | unknown>,
 ) {
@@ -20,10 +51,10 @@ export function withTenant<P>(
     } catch (e) {
       if (e instanceof GatewayError) {
         if (e.detail) console.warn(`[gateway] ${e.status} ${e.detail}`);
-        return NextResponse.json({ error: e.publicMessage }, { status: e.status });
+        return NextResponse.json({ error: await localizeError(e.publicMessage) }, { status: e.status });
       }
       console.error("[gateway] unexpected", e);
-      return NextResponse.json({ error: "Beklenmeyen bir hata oluştu." }, { status: 500 });
+      return NextResponse.json({ error: await localizeError(UNEXPECTED) }, { status: 500 });
     }
   };
 }
@@ -41,11 +72,11 @@ export function withSession(handler: (req: Request) => Promise<unknown>) {
     } catch (e) {
       if (e instanceof GatewayError) {
         if (e.detail) console.warn(`[gateway] ${e.status} ${e.detail}`);
-        return NextResponse.json({ error: e.publicMessage }, { status: e.status });
+        return NextResponse.json({ error: await localizeError(e.publicMessage) }, { status: e.status });
       }
-      if (e instanceof ZodError) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+      if (e instanceof ZodError) return NextResponse.json({ error: await localizeError(INVALID) }, { status: 400 });
       console.error("[gateway] unexpected", e);
-      return NextResponse.json({ error: "Beklenmeyen bir hata oluştu." }, { status: 500 });
+      return NextResponse.json({ error: await localizeError(UNEXPECTED) }, { status: 500 });
     }
   };
 }
