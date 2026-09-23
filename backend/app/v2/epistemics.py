@@ -181,6 +181,38 @@ class HypothesisLedger:
         """Return current-run governed Evidence after structural validation."""
         return self._validate_evidence(evidence_ref)
 
+    def semantic_handle_metadata(self, handle_id: str) -> dict[str, str | None]:
+        """Project non-secret governed handle metadata for bounded cognition.
+
+        Canonical semantic values remain inside SemanticHandleRegistry. This exposes
+        only the type/provenance information needed to use an already-governed opaque
+        handle without forcing the Manager to re-resolve its semantics.
+        """
+        try:
+            handle = self._handles.validate(
+                handle_id,
+                tenant_binding=self._tenant_binding,
+                context_version=self._context_version,
+            )
+        except (KeyError, ValueError) as exc:
+            raise HypothesisLedgerError(
+                f"invalid/non-governed semantic handle: {handle_id}"
+            ) from exc
+        root_id = self._state.parent_obligation_id
+        if (
+            handle.parent_obligation_id is not None
+            and handle.parent_obligation_id != root_id
+        ):
+            raise HypothesisLedgerError(
+                "semantic handle metadata belongs to another obligation"
+            )
+        return {
+            "target_kind": handle.target_kind,
+            "provenance_type": handle.provenance_type,
+            "parent_obligation_id": handle.parent_obligation_id,
+            "trigger_evidence_ref": handle.trigger_evidence_ref,
+        }
+
     def assert_active_root_authority(self) -> None:
         """Public orchestration guard for Day8 adapters before they create side effects."""
         self._validate_root_authority()
