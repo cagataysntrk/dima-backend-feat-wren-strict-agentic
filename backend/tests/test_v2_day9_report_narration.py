@@ -197,11 +197,29 @@ def test_narration_packet_is_minimum_presentation_safe_projection():
 
 
 def test_output_schema_has_no_free_form_factual_prose_or_authority_fields():
+    strict_schema = narration_module._strict_native_schema(
+        NarrationPlanProposal.model_json_schema()
+    )
     schema = json.dumps(
-        NarrationPlanProposal.model_json_schema(),
+        strict_schema,
         ensure_ascii=False,
         sort_keys=True,
     )
+
+    def assert_strict(node):
+        if isinstance(node, dict):
+            if node.get("type") == "object" or "properties" in node:
+                props = node.get("properties") or {}
+                assert node.get("additionalProperties") is False
+                assert node.get("required") == list(props.keys())
+            assert "default" not in node
+            for value in node.values():
+                assert_strict(value)
+        elif isinstance(node, list):
+            for value in node:
+                assert_strict(value)
+
+    assert_strict(strict_schema)
     for forbidden in (
         "summary_text",
         "analysis",
