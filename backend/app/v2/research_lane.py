@@ -23,7 +23,7 @@ from app.v2.manager_loop import ManagerLoopOutcome, ResearchManagerLoop
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
 from app.v2.model_policy import ModelProfile, ModelRole, ModelRolePolicy
-from app.v2.models import AskV2Request, EvidenceArtifact, EvidenceLinkedFinding
+from app.v2.models import AskV2Request, ConversationStateV2, EvidenceArtifact, EvidenceLinkedFinding
 from app.v2.product_models import ProductRequestContext
 from app.v2.relationship_adapter import (
     GovernedRelationshipAdapter,
@@ -224,6 +224,122 @@ class ResearchLaneService:
             outcome=outcome,
             evidence=tuple(evidence),
             findings=outcome.findings,
+            runtime=manager_runtime,
+            evidence_store=executor.evidence_store,
+            semantic_handles=semantic_handles,
+            accepted_contract=manager_runtime.accepted_contract,
+            ledger=manager_runtime.ledger,
+        )
+
+
+    def continue_run(
+        self,
+        *,
+        context: ProductRequestContext,
+        body: AskV2Request,
+        prior: ResearchLaneResult,
+        conversation: ConversationStateV2,
+        section_scope_refs: tuple[str, ...],
+        context_scope_by_kind: dict[str, tuple[str, ...]],
+        progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
+        cancel_check: Callable[[], bool] | None = None,
+    ) -> ResearchLaneResult:
+        """Continue one signed report section on the same immutable Research lineage."""
+
+        semantic_handles = prior.semantic_handles
+        source_spans = SourceSpanRegistry()
+        semantic_adapter = ManagerSemanticResolutionAdapter(
+            source_spans=source_spans,
+            semantic_handles=semantic_handles,
+            semantic_context=context.semantic_context,
+            conversation=conversation,
+            schema=context.schema,
+            tenant_binding=context.tenant_binding,
+            session_id=body.session_id,
+            thread_id=body.thread_id,
+            semantic_decision_provider=self._cognition.semantic_provider,
+            temporal_normalization_provider=self._cognition.temporal_provider,
+        )
+        acceptance = IntentAcceptanceGate(
+            source_spans=source_spans,
+            semantic_handles=semantic_handles,
+            allowed_context_scope_refs=section_scope_refs,
+        )
+        core_adapter = ManagerCoreAnalyticsAdapter(
+            semantic_handles=semantic_handles,
+        )
+        execution_context = GovernedManagerExecutionContext(
+            tenant_binding=context.tenant_binding,
+            context_version=context.semantic_context.context_version.version,
+            principal=context.principal,
+            service=context.service,
+            tenant_runtime=context.tenant_runtime,
+            contract_store=context.contract_store,
+            session_id=body.session_id,
+        )
+        relationship_adapter = GovernedRelationshipAdapter(
+            fact_builder=CrossDomainJoinFactBuilder(
+                semantic_handles=semantic_handles,
+                tenant_binding=context.tenant_binding,
+                context_version=context.semantic_context.context_version.version,
+            ),
+            core_analytics=core_adapter,
+            context=GovernedRelationshipExecutionContext(
+                tenant_binding=context.tenant_binding,
+                principal=context.principal,
+                service=context.service,
+                tenant_runtime=context.tenant_runtime,
+                contract_store=context.contract_store,
+                session_id=body.session_id,
+            ),
+        )
+        executor = GovernedManagerExecutor(
+            acceptance=acceptance,
+            core_analytics=core_adapter,
+            context=execution_context,
+            evidence=prior.evidence_store,
+            semantic_resolution=semantic_adapter,
+            relationship=relationship_adapter,
+        )
+
+        manager_runtime = prior.runtime
+        manager_runtime.begin_followup_turn()
+        loop = ResearchManagerLoop(
+            llm=self._cognition.manager_llm,
+            source_spans=source_spans,
+            research_tool_runner=ResearchToolRunner(),
+            root_cause_context=RootCauseLoopContext(
+                semantic_handles=semantic_handles,
+                tenant_binding=context.tenant_binding,
+                context_version=context.semantic_context.context_version.version,
+            ),
+            progress_callback=progress_callback,
+            cancel_check=cancel_check,
+            context_scope_by_kind=context_scope_by_kind,
+        )
+        outcome = loop.run(
+            question=body.question,
+            message_id=f"turn:{context.request_ref}",
+            request_ref=context.request_ref,
+            runtime=manager_runtime,
+            executor=executor,
+            conversation=conversation,
+        )
+
+        evidence: list[EvidenceArtifact] = []
+        for evidence_ref in manager_runtime.snapshot.evidence_refs:
+            item = executor.evidence_store.get(evidence_ref)
+            if item.verified:
+                evidence.append(item)
+
+        findings_by_id = {
+            item.finding_id: item
+            for item in (*prior.findings, *outcome.findings)
+        }
+        return ResearchLaneResult(
+            outcome=outcome,
+            evidence=tuple(evidence),
+            findings=tuple(findings_by_id.values()),
             runtime=manager_runtime,
             evidence_store=executor.evidence_store,
             semantic_handles=semantic_handles,
