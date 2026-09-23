@@ -1367,3 +1367,23 @@ value-adoption truth gate is sufficient for the initial low-cardinality profile.
 full entity-value resolution certification.
 
 DMP-P11-CI-RED-001 is a separate stale M2 cross-trigger correction.
+
+
+---
+
+## P11 final correctness hardening candidate
+
+```text
+audited base HEAD                 = 91333d39e63c245b637a4d2be2e49a5a227271c7
+DMP-P11-AUDIT-003                = CORRECTION APPLIED
+DMP-P11-AUDIT-004                = CORRECTION APPLIED
+P11 focused CI                    = necessity contract + product gate
+scalar equality                   = SAME TYPE + SAME VALUE
+model-visible contract changed    = NO
+Luna/Sol rerun                    = NOT REQUIRED
+DMP-P11-INTEGRATION-005           = OPEN / P13 OWNER
+EV-05/06/07                       = UNCERTIFIED / UNCHANGED
+resolver framework                = 0
+```
+
+P11 V1 is not reopened architecturally; this candidate closes two proof/correctness gaps only.

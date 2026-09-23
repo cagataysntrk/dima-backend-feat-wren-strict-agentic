@@ -68,3 +68,17 @@ Per DMP-DEC-0027, one minimum entity-value **adoption gate** is authorized. An e
 translation table, fuzzy matcher or broader deterministic cognition framework remains unauthorized.
 
 The corpus/prompt/tool/data/model contract is frozen for the post-guardrail rerun.
+
+
+## 7. P11 closure hardening
+
+Before final V1 closure:
+- P11 CI must directly execute both the frozen necessity contract and focused adoption-gate tests;
+- exact scalar adoption is type-strict; Python cross-type numeric/bool equality is not authority;
+- no Luna/Sol rerun is required because the model-visible contract is unchanged.
+
+Production integration is explicitly deferred to `DMP-P11-INTEGRATION-005`: P13 must bind
+allowed semantic scopes to accepted semantic authority and value evidence to the existing P5/P10
+`execution_access_fingerprint`.
+
+This does not reopen EV-05/06/07 and does not authorize an EntityResolver.

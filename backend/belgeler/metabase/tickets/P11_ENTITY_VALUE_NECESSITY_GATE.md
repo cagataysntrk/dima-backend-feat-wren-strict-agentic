@@ -105,3 +105,18 @@ resolver decision             = NOT_NEEDED
 ```
 
 P11 initial native path may close GREEN while EV-05/06/07 remain explicitly uncertified.
+
+
+## Final V1 correctness hardening
+
+P11 provider-free proof must include both:
+`tests/test_v3_p11_necessity_contract.py` and
+`tests/test_v3_p11_entity_value_gate.py`.
+
+Entity-value adoption uses exact typed-scalar identity, not Python cross-type equality.
+
+Forward production seam:
+`DMP-P11-INTEGRATION-005` is P13-owned. Accepted semantic authority supplies allowed scopes and the
+P5/P10 execution-access fingerprint remains the durable access-identity owner.
+
+No model rerun is required for this hardening.

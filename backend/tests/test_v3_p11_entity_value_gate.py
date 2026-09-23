@@ -125,3 +125,48 @@ def test_p11_gate_preserves_safe_non_bind_cognition():
             expected_access_lens_ref=LENS,
         )
         assert result.decision == expected
+
+
+
+def test_p11_gate_blocks_bool_true_against_int_one():
+    result = EntityValueAdoptionGate.adjudicate(
+        proposal=_bind("dimension.flag", True),
+        allowed_semantic_scopes=("dimension.flag",),
+        evidence=(_evidence("dimension.flag", 1),),
+        expected_access_lens_ref=LENS,
+    )
+    assert result.decision == EntityValueDecision.BLOCKED
+    assert result.reason_code == "VALUE_NOT_IN_CURRENT_EVIDENCE"
+
+
+def test_p11_gate_blocks_int_one_against_bool_true():
+    result = EntityValueAdoptionGate.adjudicate(
+        proposal=_bind("dimension.count", 1),
+        allowed_semantic_scopes=("dimension.count",),
+        evidence=(_evidence("dimension.count", True),),
+        expected_access_lens_ref=LENS,
+    )
+    assert result.decision == EntityValueDecision.BLOCKED
+    assert result.reason_code == "VALUE_NOT_IN_CURRENT_EVIDENCE"
+
+
+def test_p11_gate_blocks_int_one_against_float_one():
+    result = EntityValueAdoptionGate.adjudicate(
+        proposal=_bind("dimension.count", 1),
+        allowed_semantic_scopes=("dimension.count",),
+        evidence=(_evidence("dimension.count", 1.0),),
+        expected_access_lens_ref=LENS,
+    )
+    assert result.decision == EntityValueDecision.BLOCKED
+    assert result.reason_code == "VALUE_NOT_IN_CURRENT_EVIDENCE"
+
+
+def test_p11_gate_blocks_float_one_against_int_one():
+    result = EntityValueAdoptionGate.adjudicate(
+        proposal=_bind("dimension.ratio", 1.0),
+        allowed_semantic_scopes=("dimension.ratio",),
+        evidence=(_evidence("dimension.ratio", 1),),
+        expected_access_lens_ref=LENS,
+    )
+    assert result.decision == EntityValueDecision.BLOCKED
+    assert result.reason_code == "VALUE_NOT_IN_CURRENT_EVIDENCE"

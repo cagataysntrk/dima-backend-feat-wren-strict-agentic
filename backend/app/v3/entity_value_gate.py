@@ -135,7 +135,10 @@ class EntityValueAdoptionGate:
             return cls._blocked(proposal, "UNAPPROVED_SEMANTIC_SCOPE")
 
         scoped_evidence = evidence_by_scope[sole_scope]
-        if not any(proposal.value == candidate for candidate in scoped_evidence.values):
+        if not any(
+            cls._exact_scalar_identity(proposal.value, candidate)
+            for candidate in scoped_evidence.values
+        ):
             return cls._blocked(proposal, "VALUE_NOT_IN_CURRENT_EVIDENCE")
 
         return EntityValueGateResult(
@@ -145,6 +148,15 @@ class EntityValueAdoptionGate:
             reason_code="EXACT_CURRENT_LENS_EVIDENCE",
             model_proposal=proposal,
         )
+
+    @staticmethod
+    def _exact_scalar_identity(
+        proposed: ScalarValue,
+        candidate: ScalarValue,
+    ) -> bool:
+        """Exact typed-scalar identity; no coercion or normalization."""
+
+        return type(proposed) is type(candidate) and proposed == candidate
 
     @staticmethod
     def _blocked(

@@ -2320,3 +2320,90 @@ security owners.
 
 status:
 `P11 INITIAL NATIVE PATH GREEN`.
+
+
+---
+
+## DMP-P11-AUDIT-003 — P11 product-gate focused test family absent from P11 CI proof
+
+receipt_id: `DMP-P11-AUDIT-003`  
+tested_sha: `91333d39e63c245b637a4d2be2e49a5a227271c7`
+
+classification:
+`CI / PROOF COMPLETENESS`
+
+observed:
+The P11 provider-free job compiled and executed only the frozen necessity-contract family. The
+product mechanism authorized by DMP-DEC-0027, `EntityValueAdoptionGate`, had its own focused unit
+tests but that family was not executed by the P11 workflow.
+
+authorized correction:
+- compile `app/v3/entity_value_gate.py`;
+- compile both P11 test files;
+- execute `test_v3_p11_necessity_contract.py` and `test_v3_p11_entity_value_gate.py` together;
+- no model rerun;
+- no new product behavior except the separately classified AUDIT-004 comparator correction.
+
+status:
+`CORRECTION APPLIED / AWAITING PROVIDER-FREE GREEN`.
+
+---
+
+## DMP-P11-AUDIT-004 — scalar type-crossing equality in exact value adoption
+
+receipt_id: `DMP-P11-AUDIT-004`  
+tested_sha: `91333d39e63c245b637a4d2be2e49a5a227271c7`
+
+classification:
+`TRUTH GATE / EXACT SCALAR IDENTITY`
+
+observed:
+The gate used Python value equality directly. In the declared scalar domain,
+`True == 1`, `False == 0`, and `1 == 1.0`, so "EXACT_CURRENT_LENS_EVIDENCE" was not
+type-strict.
+
+authorized correction:
+Exact adoption requires both:
+`type(proposed) is type(candidate)` and `proposed == candidate`.
+
+Forbidden:
+- stringify;
+- numeric coercion;
+- casefold/lower;
+- fuzzy/similarity;
+- model rerun;
+- corpus/prompt/tool changes.
+
+required negatives:
+- evidence int 1 / proposal bool True -> BLOCK;
+- evidence bool True / proposal int 1 -> BLOCK;
+- evidence float 1.0 / proposal int 1 -> BLOCK;
+- evidence int 1 / proposal float 1.0 -> BLOCK;
+- existing `North` vs `north` exactness remains.
+
+status:
+`CORRECTION APPLIED / AWAITING PROVIDER-FREE GREEN`.
+
+---
+
+## DMP-P11-INTEGRATION-005 — production entity-value evidence access binding
+
+owner:
+`P13 Production Standard integration`
+
+requirement:
+Before `EntityValueAdoptionGate` is wired into the production Standard path:
+- `allowed_semantic_scopes` must originate from accepted Dima semantic authority / governed binding,
+  not from the same cognition model's unsupported assertion;
+- current-lens value evidence must originate from the governed P11 retrieval path;
+- evidence access identity must bind to the owning P5/P10
+  `ExecutionAccessSnapshot.execution_access_fingerprint`;
+- no new parallel access fingerprint may be invented;
+- semantic context / source resource / retrieval receipt may be bound when the P13 seam requires them;
+- the literal freshness state `CURRENT_USER_RETRIEVAL` is a claim and does not itself confer authority.
+
+This is a forward integration requirement. It does not reopen P11 V1 or authorize a large provenance
+framework inside P11.
+
+status:
+`OPEN / P13 OWNER`.
