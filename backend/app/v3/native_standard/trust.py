@@ -1,4 +1,4 @@
-"""P13B provider-free native Standard trust orchestration.
+"""P13B/P13C provider-free native Standard trust orchestration.
 
 Metabase owns query cognition and MBQL observation. This module maps already-attested
 physical facts to Dima-owned semantics, delegates authorization to P13A, effective
@@ -25,7 +25,14 @@ from app.v3.native_execution import (
     NativeCandidateAuthorizationGate,
     NativeCandidateOutcome,
     NativeQueryCandidate,
+    filter_scope_fingerprint,
     period_scope_fingerprint,
+)
+from app.v3.entity_value_gate import (
+    CurrentLensValueEvidence,
+    EntityValueAdoptionGate,
+    EntityValueDecision,
+    EntityValueProposal,
 )
 from app.v3.resource_provisioning import ManagedResourceBinding, ResourceKind
 from app.v3.security_identity import (
@@ -146,19 +153,24 @@ class NativeStandardTrustOrchestrator:
         *,
         intent: ResolvedAnalyticsIntent,
         snapshot: DimaExecutionBindingSnapshot,
-    ) -> tuple[MetricSpec, DimensionSpec | None, tuple[ExecutionResourceBinding, ...]]:
+    ) -> tuple[
+        MetricSpec,
+        DimensionSpec | None,
+        DimensionSpec | None,
+        tuple[ExecutionResourceBinding, ...],
+    ]:
         if (
             len(intent.metrics) != 1
             or intent.dimensions
-            or intent.filters
+            or len(intent.filters) > 1
             or intent.comparison is not None
             or intent.ranking is not None
             or intent.approved_relationship_paths
             or intent.grain_constraints
         ):
             raise NativeStandardTrustError(
-                "P13B_CAPABILITY_UNSUPPORTED",
-                "P13B-v1 certifies one metric/source with optional period only",
+                "P13_STANDARD_CAPABILITY_UNSUPPORTED",
+                "certified native Standard surface is one metric/source, optional period, and at most one filter",
             )
         metric_ref = intent.metrics[0]
         metric = cls._metric(
@@ -177,7 +189,32 @@ class NativeStandardTrustOrchestrator:
             resources.append(
                 _resource(snapshot.current_lineage(_single_lineage(time_dimension)))
             )
-        return metric, time_dimension, _unique_resources(resources)
+
+        filter_dimension = None
+        if intent.filters:
+            accepted_filter = intent.filters[0]
+            filter_dimension = cls._dimension(
+                snapshot,
+                snapshot.candidate(
+                    accepted_filter.source_candidate_id,
+                    kind="filter",
+                ),
+            )
+            if filter_dimension.name != accepted_filter.dimension_name:
+                raise NativeStandardTrustError(
+                    "FILTER_SCOPE_VIOLATION",
+                    "accepted filter dimension name differs from its Dima semantic binding",
+                )
+            resources.append(
+                _resource(snapshot.current_lineage(_single_lineage(filter_dimension)))
+            )
+
+        return (
+            metric,
+            time_dimension,
+            filter_dimension,
+            _unique_resources(resources),
+        )
 
     @staticmethod
     def _assert_engine_pin(
@@ -233,11 +270,6 @@ class NativeStandardTrustOrchestrator:
             raise NativeStandardTrustError(
                 "RELATIONSHIP_GRAIN_VIOLATION",
                 "P13B-v1 blocks explicit and implicit relationships",
-            )
-        if manifest.non_temporal_filter_count:
-            raise NativeStandardTrustError(
-                "SEMANTIC_SCOPE_VIOLATION",
-                "P13B-v1 blocks non-temporal filters",
             )
 
     @staticmethod
@@ -490,6 +522,67 @@ class NativeStandardTrustOrchestrator:
         return matches[0]
 
     @classmethod
+    def _observed_filter(
+        cls,
+        *,
+        intent: ResolvedAnalyticsIntent,
+        manifest: NativeExecutionManifest,
+        snapshot: DimaExecutionBindingSnapshot,
+        expected_filter_dimension: DimensionSpec | None,
+    ) -> DimensionSpec | None:
+        if not intent.filters:
+            if manifest.non_temporal_filter_count or manifest.textual_equality_predicates:
+                raise NativeStandardTrustError(
+                    "SEMANTIC_SCOPE_VIOLATION",
+                    "native query introduced a non-temporal filter without accepted filter authority",
+                )
+            return None
+
+        if manifest.non_temporal_filter_count != 1:
+            raise NativeStandardTrustError(
+                "P13C_FILTER_SCOPE_VIOLATION",
+                "P13C-v1 requires exactly one material non-temporal filter",
+            )
+        if len(manifest.textual_equality_predicates) != 1:
+            raise NativeStandardTrustError(
+                "NATIVE_TEXTUAL_FILTER_ATTESTATION_GAP",
+                "the one material non-temporal filter is not exactly covered by one typed textual equality predicate",
+            )
+
+        predicate = manifest.textual_equality_predicates[0]
+        if predicate.stage_number != 0 or predicate.operator != "=":
+            raise NativeStandardTrustError(
+                "NATIVE_TEXTUAL_FILTER_SHAPE_UNSUPPORTED",
+                "P13C-v1 certifies stage-0 exact textual equality only",
+            )
+
+        accepted_filter = intent.filters[0]
+        if predicate.literal_value != accepted_filter.value:
+            raise NativeStandardTrustError(
+                "NATIVE_TEXTUAL_FILTER_VALUE_MISMATCH",
+                "engine-observed native literal differs from accepted Dima filter value",
+            )
+
+        observed_field = snapshot.current_catalog.object_for_metabase_field(
+            database_id=manifest.database_id,
+            field_id=predicate.field_id,
+        )
+        if expected_filter_dimension is None:
+            raise NativeStandardTrustError(
+                "FILTER_SCOPE_VIOLATION",
+                "accepted filter has no Dima dimension binding",
+            )
+        expected_field = snapshot.current_lineage(
+            _single_lineage(expected_filter_dimension)
+        )
+        if observed_field != expected_field:
+            raise NativeStandardTrustError(
+                "NATIVE_TEXTUAL_FILTER_FIELD_MISMATCH",
+                "engine-observed filter field differs from accepted Dima filter dimension",
+            )
+        return expected_filter_dimension
+
+    @classmethod
     def _candidate(
         cls,
         *,
@@ -504,7 +597,12 @@ class NativeStandardTrustOrchestrator:
         manifest = attestation.manifest
         cls._assert_engine_pin(manifest, expected_engine)
         cls._assert_shape(manifest)
-        expected_metric, expected_time, expected_resources = cls._expected(
+        (
+            expected_metric,
+            expected_time,
+            expected_filter,
+            expected_resources,
+        ) = cls._expected(
             intent=intent,
             snapshot=snapshot,
         )
@@ -542,10 +640,33 @@ class NativeStandardTrustOrchestrator:
                 "observed physical time field maps to a different Dima time dimension",
             )
 
+        observed_filter = cls._observed_filter(
+            intent=intent,
+            manifest=manifest,
+            snapshot=snapshot,
+            expected_filter_dimension=expected_filter,
+        )
+        if (
+            (expected_filter is None) != (observed_filter is None)
+            or (
+                expected_filter is not None
+                and observed_filter is not None
+                and expected_filter.dimension_id != observed_filter.dimension_id
+            )
+        ):
+            raise NativeStandardTrustError(
+                "FILTER_SCOPE_VIOLATION",
+                "observed physical filter field maps to a different Dima filter dimension",
+            )
+
         observed_resources = [_resource(observed_table)]
         if observed_time is not None:
             observed_resources.append(
                 _resource(snapshot.current_lineage(_single_lineage(observed_time)))
+            )
+        if observed_filter is not None:
+            observed_resources.append(
+                _resource(snapshot.current_lineage(_single_lineage(observed_filter)))
             )
 
         runtime = manifest.runtime_identity
@@ -583,10 +704,14 @@ class NativeStandardTrustOrchestrator:
             native_query_id=manifest.native_query_id,
             resolved_pmbql=copy.deepcopy(attestation.exact_serialized_pmbql),
             portable_query=None,
-            semantic_refs=(intent.metrics[0].semantic_ref,),
+            semantic_refs=(
+                intent.metrics[0].semantic_ref,
+                *(item.semantic_ref for item in intent.filters),
+            ),
             resource_bindings=_unique_resources(observed_resources),
             native_validation_refs=tuple(native_validation_refs),
             time_scope_fingerprint=period_scope_fingerprint(intent.period),
+            filter_scope_fingerprint=filter_scope_fingerprint(intent.filters),
             material_filter_count=manifest.non_temporal_filter_count,
             material_join_count=(
                 manifest.explicit_join_count + manifest.implicit_join_count
@@ -613,6 +738,7 @@ class NativeStandardTrustOrchestrator:
         dima_request_id: str,
         dima_trace_id: str,
         managed_resource_bindings: tuple[ManagedResourceBinding, ...] = (),
+        current_lens_value_evidence: tuple[CurrentLensValueEvidence, ...] = (),
     ) -> NativeStandardAuthorizationResult:
         try:
             candidate, expected_resources = cls._candidate(
@@ -628,6 +754,36 @@ class NativeStandardTrustOrchestrator:
             return NativeStandardAuthorizationResult(
                 authorization=_block(exc.code, exc.detail)
             )
+
+        p13c_access = None
+        if intent.filters:
+            p13c_access = ExecutionAccessSnapshotIssuer.issue_for_expected_resources(
+                current_principal=current_principal,
+                accepted_intent=intent,
+                verified_security_facts=verified_security_facts,
+                expected_source_object_refs=tuple(
+                    item.resource_id for item in expected_resources
+                ),
+            )
+            accepted_filter = intent.filters[0]
+            value_result = EntityValueAdoptionGate.adjudicate(
+                proposal=EntityValueProposal(
+                    decision="BIND",
+                    semantic_ref=accepted_filter.semantic_ref,
+                    value=accepted_filter.value,
+                ),
+                allowed_semantic_scopes=(accepted_filter.semantic_ref,),
+                evidence=current_lens_value_evidence,
+                expected_access_lens_ref=p13c_access.execution_access_fingerprint,
+            )
+            if value_result.decision != EntityValueDecision.BIND:
+                return NativeStandardAuthorizationResult(
+                    authorization=_block(
+                        f"P13C_{value_result.reason_code}",
+                        "accepted filter value is not bound by exact current-lens P11 evidence",
+                    ),
+                    candidate=candidate,
+                )
 
         decision = NativeCandidateAuthorizationGate.authorize(
             intent=intent,
@@ -655,12 +811,22 @@ class NativeStandardTrustOrchestrator:
 
         artifact = decision.authorized_artifact
         assert artifact is not None
-        access = ExecutionAccessSnapshotIssuer.issue(
-            current_principal=current_principal,
-            accepted_intent=intent,
-            execution_artifact=artifact,
-            verified_security_facts=verified_security_facts,
-        )
+        if p13c_access is None:
+            access = ExecutionAccessSnapshotIssuer.issue(
+                current_principal=current_principal,
+                accepted_intent=intent,
+                execution_artifact=artifact,
+                verified_security_facts=verified_security_facts,
+            )
+        else:
+            if tuple(sorted(artifact.resource_entity_ids)) != tuple(
+                sorted(p13c_access.source_object_refs)
+            ):
+                raise SecurityIdentityError(
+                    "P13C_ACCESS_ARTIFACT_RESOURCE_MISMATCH",
+                    "P13A artifact resources differ from the P10 lens used for P11 evidence",
+                )
+            access = p13c_access
         return NativeStandardAuthorizationResult(
             authorization=decision,
             candidate=candidate,

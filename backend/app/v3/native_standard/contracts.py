@@ -1,4 +1,4 @@
-"""P13B native Standard attestation contracts.
+"""P13B/P13C native Standard attestation contracts.
 
 These models mirror bounded facts emitted by the certified Dima Metabase engine seam.
 They carry observed execution/provenance only; Dima semantic authority lives elsewhere.
@@ -50,6 +50,16 @@ class NativeTemporalPredicate(FrozenModel):
     temporal_unit: str | None = None
 
 
+class NativeTextualEqualityPredicate(FrozenModel):
+    """One engine-observed scalar textual equality predicate; no Dima semantics."""
+
+    stage_number: int = Field(ge=0)
+    field_id: int = Field(gt=0)
+    operator: Literal["="]
+    literal_value: str
+    field_type: str = Field(min_length=1)
+
+
 class NativeValidationProvenance(FrozenModel):
     producer_structured_output: Literal["PASSED"]
     pmbql_schema: Literal["PASSED"]
@@ -81,6 +91,7 @@ class NativeExecutionManifest(FrozenModel):
     material_filter_count: int = Field(ge=0)
     non_temporal_filter_count: int = Field(ge=0)
     temporal_predicates: tuple[NativeTemporalPredicate, ...]
+    textual_equality_predicates: tuple[NativeTextualEqualityPredicate, ...] = ()
     explicit_join_count: int = Field(ge=0)
     implicit_join_count: int = Field(ge=0)
     implicit_joined_table_ids: tuple[int, ...]
@@ -110,6 +121,10 @@ class NativeExecutionManifest(FrozenModel):
         ):
             raise ValueError(
                 "material_filter_count must equal non-temporal filters plus temporal predicates"
+            )
+        if len(self.textual_equality_predicates) > self.non_temporal_filter_count:
+            raise ValueError(
+                "typed textual predicates cannot exceed non-temporal filter count"
             )
         if (
             self.permission_provenance.current_metabase_user_id

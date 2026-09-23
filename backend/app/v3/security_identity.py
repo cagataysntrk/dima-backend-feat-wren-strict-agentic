@@ -307,7 +307,7 @@ class ExecutionAccessSnapshotIssuer:
     def _assert_security_scope(
         *,
         intent: ResolvedAnalyticsIntent,
-        artifact: AuthorizedExecutionArtifact,
+        resource_ids: tuple[str, ...],
         facts: VerifiedExecutionSecurityFacts,
     ) -> None:
         if facts.semantic_context_version != intent.semantic_context_version:
@@ -316,21 +316,25 @@ class ExecutionAccessSnapshotIssuer:
                 "verified security facts belong to a different semantic context",
             )
 
-        resource_ids = artifact.resource_entity_ids
         if not resource_ids:
             raise SecurityIdentityError(
                 "P10_PROJECTION_RESOURCE_IDENTITY_REQUIRED",
-                "authorized execution artifact has no stable source-resource ids",
+                "execution scope has no stable source-resource ids",
+            )
+        if any(not item.strip() for item in resource_ids):
+            raise SecurityIdentityError(
+                "P10_PROJECTION_RESOURCE_IDENTITY_REQUIRED",
+                "execution scope contains an empty source-resource id",
             )
         if len(resource_ids) != len(set(resource_ids)):
             raise SecurityIdentityError(
                 "P10_PROJECTION_RESOURCE_IDENTITY_DUPLICATE",
-                "authorized execution artifact has duplicate source-resource ids",
+                "execution scope has duplicate source-resource ids",
             )
         if tuple(sorted(facts.source_object_refs)) != tuple(sorted(resource_ids)):
             raise SecurityIdentityError(
                 "P10_SOURCE_OBJECT_MISMATCH",
-                "verified security facts do not exactly cover authorized execution resources",
+                "verified security facts do not exactly cover Dima-authorized execution resources",
             )
 
         if not facts.metabase_subject_ref.strip():
@@ -338,6 +342,70 @@ class ExecutionAccessSnapshotIssuer:
                 "P10_METABASE_SUBJECT_REQUIRED",
                 "verified Metabase authenticated subject is required",
             )
+
+    @staticmethod
+    def _snapshot(
+        *,
+        accepted_intent: ResolvedAnalyticsIntent,
+        verified_security_facts: VerifiedExecutionSecurityFacts,
+    ) -> ExecutionAccessSnapshot:
+        proof_refs = tuple(
+            sorted(
+                {
+                    *verified_security_facts.attestation_refs,
+                    *verified_security_facts.evidence_refs,
+                    verified_security_facts.metabase_subject_ref,
+                }
+            )
+        )
+        return ExecutionAccessSnapshot(
+            tenant_binding=accepted_intent.principal.tenant_binding,
+            principal_subject=accepted_intent.principal.principal_subject,
+            roles=tuple(sorted(accepted_intent.principal.roles)),
+            attribute_policy_digest=verified_security_facts.attribute_policy_digest,
+            policy_version=verified_security_facts.policy_version,
+            rls_versions=tuple(sorted(verified_security_facts.rls_versions)),
+            cls_versions=tuple(sorted(verified_security_facts.cls_versions)),
+            database_route=verified_security_facts.database_route,
+            database_destination=verified_security_facts.database_destination,
+            impersonation_role=verified_security_facts.impersonation_role,
+            semantic_context_version=accepted_intent.semantic_context_version,
+            source_object_refs=tuple(sorted(verified_security_facts.source_object_refs)),
+            security_parameter_digest=verified_security_facts.security_parameter_digest,
+            attestation_refs=proof_refs,
+        )
+
+    @classmethod
+    def issue_for_expected_resources(
+        cls,
+        *,
+        current_principal: Principal | None,
+        accepted_intent: ResolvedAnalyticsIntent,
+        verified_security_facts: VerifiedExecutionSecurityFacts,
+        expected_source_object_refs: tuple[str, ...],
+    ) -> ExecutionAccessSnapshot:
+        """Issue the same P5 access identity from accepted Dima resource truth.
+
+        P13C uses this before native candidate authorization only to bind current-user
+        value evidence to the durable P5/P10 execution_access_fingerprint. It creates
+        no second fingerprint or access model.
+        """
+
+        principal = cls._current_principal(current_principal)
+        cls._assert_principal(
+            principal=principal,
+            intent=accepted_intent,
+            facts=verified_security_facts,
+        )
+        cls._assert_security_scope(
+            intent=accepted_intent,
+            resource_ids=expected_source_object_refs,
+            facts=verified_security_facts,
+        )
+        return cls._snapshot(
+            accepted_intent=accepted_intent,
+            verified_security_facts=verified_security_facts,
+        )
 
     @classmethod
     def issue(
@@ -362,37 +430,10 @@ class ExecutionAccessSnapshotIssuer:
         )
         cls._assert_security_scope(
             intent=accepted_intent,
-            artifact=artifact,
+            resource_ids=artifact.resource_entity_ids,
             facts=verified_security_facts,
         )
-
-        proof_refs = tuple(
-            sorted(
-                {
-                    *verified_security_facts.attestation_refs,
-                    *verified_security_facts.evidence_refs,
-                    verified_security_facts.metabase_subject_ref,
-                }
-            )
-        )
-
-        return ExecutionAccessSnapshot(
-            tenant_binding=accepted_intent.principal.tenant_binding,
-            principal_subject=accepted_intent.principal.principal_subject,
-            roles=tuple(sorted(accepted_intent.principal.roles)),
-            attribute_policy_digest=verified_security_facts.attribute_policy_digest,
-            policy_version=verified_security_facts.policy_version,
-            rls_versions=tuple(sorted(verified_security_facts.rls_versions)),
-            cls_versions=tuple(sorted(verified_security_facts.cls_versions)),
-            database_route=verified_security_facts.database_route,
-            database_destination=verified_security_facts.database_destination,
-            impersonation_role=verified_security_facts.impersonation_role,
-            semantic_context_version=accepted_intent.semantic_context_version,
-            source_object_refs=tuple(
-                sorted(verified_security_facts.source_object_refs)
-            ),
-            security_parameter_digest=(
-                verified_security_facts.security_parameter_digest
-            ),
-            attestation_refs=proof_refs,
+        return cls._snapshot(
+            accepted_intent=accepted_intent,
+            verified_security_facts=verified_security_facts,
         )

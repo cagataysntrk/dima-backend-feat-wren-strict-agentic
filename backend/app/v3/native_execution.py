@@ -16,7 +16,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.v3.analytics_contract import ResolvedAnalyticsIntent, ResolvedPeriod
+from app.v3.analytics_contract import ResolvedAnalyticsIntent, ResolvedFilterRef, ResolvedPeriod
 from app.v3.substrate.metabase.canonical import CanonicalProjection
 from app.v3.substrate.metabase.native_models import NativeEngineIdentity
 
@@ -226,6 +226,19 @@ def period_scope_fingerprint(period: ResolvedPeriod | None) -> str | None:
     )
 
 
+def filter_scope_fingerprint(
+    filters: tuple[ResolvedFilterRef, ...],
+) -> str | None:
+    """Dima-owned exact accepted filter identity; no query parsing or normalization."""
+
+    if not filters:
+        return None
+    return _sha256_json(
+        [item.model_dump(mode="json") for item in filters],
+        code="FILTER_SCOPE_NOT_SERIALIZABLE",
+    )
+
+
 class NativeQueryCandidate(FrozenModel):
     """One exact native Metabot query occurrence plus Dima-inspection facts."""
 
@@ -240,6 +253,10 @@ class NativeQueryCandidate(FrozenModel):
     resource_bindings: tuple[ExecutionResourceBinding, ...] = Field(min_length=1)
     native_validation_refs: tuple[str, ...] = Field(min_length=1)
     time_scope_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    filter_scope_fingerprint: str | None = Field(
         default=None,
         pattern=r"^[a-f0-9]{64}$",
     )
@@ -282,6 +299,7 @@ class NativeQueryCandidate(FrozenModel):
         resource_bindings: tuple[ExecutionResourceBinding, ...],
         native_validation_refs: tuple[str, ...],
         time_scope_fingerprint: str | None = None,
+        filter_scope_fingerprint: str | None = None,
         material_filter_count: int = 0,
         material_join_count: int = 0,
         query_count: int = 1,
@@ -299,6 +317,7 @@ class NativeQueryCandidate(FrozenModel):
             resource_bindings=resource_bindings,
             native_validation_refs=native_validation_refs,
             time_scope_fingerprint=time_scope_fingerprint,
+            filter_scope_fingerprint=filter_scope_fingerprint,
             material_filter_count=material_filter_count,
             material_join_count=material_join_count,
             query_count=query_count,
@@ -391,7 +410,7 @@ class NativeCandidateAuthorizationGate:
         if (
             len(intent.metrics) != 1
             or intent.dimensions
-            or intent.filters
+            or len(intent.filters) > 1
             or intent.comparison is not None
             or intent.ranking is not None
             or intent.approved_relationship_paths
@@ -400,11 +419,12 @@ class NativeCandidateAuthorizationGate:
             return cls._decision(
                 NativeCandidateOutcome.CLARIFY_REPLAN,
                 "P13A_CAPABILITY_UNSUPPORTED",
-                "P13A certifies one metric/source with optional period only",
+                "P13A certifies one metric/source, optional period, and at most one accepted filter",
             )
 
-        expected_semantic_refs = tuple(
-            item.semantic_ref for item in intent.metrics
+        expected_semantic_refs = (
+            *(item.semantic_ref for item in intent.metrics),
+            *(item.semantic_ref for item in intent.filters),
         )
         if tuple(candidate.semantic_refs) != expected_semantic_refs:
             return cls._decision(
@@ -429,11 +449,19 @@ class NativeCandidateAuthorizationGate:
                 "P13A authorizes exactly one material query",
             )
 
-        if candidate.material_filter_count:
+        if candidate.material_filter_count != len(intent.filters):
             return cls._decision(
                 NativeCandidateOutcome.BLOCK,
                 "SEMANTIC_SCOPE_VIOLATION",
-                "P13A candidate introduced an unaccepted material filter",
+                "native candidate material filter count differs from accepted filter authority",
+            )
+
+        expected_filter_scope = filter_scope_fingerprint(intent.filters)
+        if candidate.filter_scope_fingerprint != expected_filter_scope:
+            return cls._decision(
+                NativeCandidateOutcome.BLOCK,
+                "FILTER_SCOPE_VIOLATION",
+                "native candidate filter scope differs from accepted Dima filter authority",
             )
 
         if candidate.material_join_count:
