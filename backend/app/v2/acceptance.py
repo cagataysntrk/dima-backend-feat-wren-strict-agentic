@@ -81,10 +81,12 @@ class IntentAcceptanceGate:
         source_spans: SourceSpanRegistry,
         semantic_handles: SemanticHandleRegistry,
         capabilities: ManagerCapabilityRegistry | None = None,
+        allowed_context_scope_refs: tuple[str, ...] = (),
     ) -> None:
         self._source_spans = source_spans
         self._semantic_handles = semantic_handles
         self._capabilities = capabilities or ManagerCapabilityRegistry()
+        self._allowed_context_scope_refs = frozenset(allowed_context_scope_refs)
         self._bindings = CapabilityBindingValidator(
             semantic_handles=semantic_handles,
             capabilities=self._capabilities,
@@ -297,6 +299,28 @@ class IntentAcceptanceGate:
                     )
 
         for item in envelope.obligations:
+            for scope_ref in item.scope_refs:
+                if scope_ref not in self._allowed_context_scope_refs:
+                    reject.append(
+                        f"{item.obligation_id}: context scope ref is not admitted by current continuation"
+                    )
+                    continue
+                if scope_ref not in item.semantic_handle_refs:
+                    reject.append(
+                        f"{item.obligation_id}: context scope ref omitted from semantic handles"
+                    )
+                    continue
+                try:
+                    self._semantic_handles.validate(
+                        scope_ref,
+                        tenant_binding=tenant_binding,
+                        context_version=context_version,
+                    )
+                except (KeyError, ValueError) as exc:
+                    reject.append(
+                        f"{item.obligation_id}: invalid context scope handle {scope_ref}: {exc}"
+                    )
+
             if item.origin == ObligationOrigin.USER_MUST:
                 if item.priority != ObligationPriority.MUST:
                     reject.append(
@@ -439,6 +463,7 @@ class IntentAcceptanceGate:
                 source_refs=item.source_refs,
                 semantic_handle_refs=item.semantic_handle_refs,
                 semantic_bindings=item.semantic_bindings,
+                scope_refs=item.scope_refs,
                 ranking_direction=item.ranking_direction,
                 ranking_limit=item.ranking_limit,
                 introduced_in_version=version,
