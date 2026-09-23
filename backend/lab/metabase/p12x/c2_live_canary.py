@@ -110,6 +110,8 @@ def main() -> int:
         "schema_version": "p12x_c2_live_v1",
         "status": "GREEN",
         "engine_identity": identity.model_dump(),
+        "workspace_gitlink_sha": args.workspace_gitlink_sha,
+        "runtime_image_ref": args.runtime_image_ref,
         "runtime_version": observation.runtime_version,
         "http_status": observation.status_code,
         "event_count": len(observation.events),
