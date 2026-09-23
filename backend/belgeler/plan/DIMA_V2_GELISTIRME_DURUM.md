@@ -1,3 +1,66 @@
+## 2026-09-23 — DAY7 TOOL-FAMILY PRIMITIVE AUDIT
+
+Reference product checkpoint before this block:
+
+```text
+a7303dec8a83bbb11a1d40c992da75f88444858c
+v2-day7-focused 35789901494 = GREEN
+```
+
+Audit authority:
+`DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md §7`.
+
+Disposition:
+
+```text
+TREND
+  pure primitive          SAFE_PRIMITIVE_FOUND  -> app.stats.trend
+  V2 ordered-series query PRIMITIVE_GAP
+  reason                  AnalyticsIR has period/comparison authority but no governed
+                          time-granularity / ordered time-series representation
+  legacy yoy.compute      REJECT_LEGACY_PATH
+
+CONTRIBUTION
+  pure primitive          SAFE_PRIMITIVE_FOUND  -> contribution.contributions
+  optional PVM math       SAFE_PRIMITIVE_FOUND  -> contribution.pvm with explicit metadata
+  V2 legacy research      REJECT_LEGACY_PATH    -> arastir/decompose/pvm_report query plumbing
+  semantic execution      NOT DECLARED YET
+  reason                  no separate accepted CONTRIBUTION capability/task materialization
+                          contract exists; enum presence is not authority
+
+PEER_COMPARE
+  pure primitive          SAFE_PRIMITIVE_FOUND  -> ilkeller.hesapla
+  automatic peer set      PRIMITIVE_GAP
+  legacy peer query scan  REJECT_LEGACY_PATH    -> contribution._akran_kiyasi
+  semantic execution      NOT DECLARED YET
+  reason                  peer universe/target must be governed upstream; no accepted
+                          peer-definition contract exists
+```
+
+Implementation allowed by the audit:
+- backward-compatible derived Evidence lineage,
+- zero-query deterministic transform adapter,
+- provider-free transform proofs.
+
+Implementation explicitly NOT authorized:
+- new AnalyticsIR time-granularity contract merely to enable TREND,
+- new CONTRIBUTION/PEER_COMPARE ManagerCapabilityKey merely to tick enum coverage,
+- legacy `yoy.compute` / `contribution.arastir` / drill CubeQuery execution as V2 authority,
+- automatic peer discovery,
+- causal wording from contribution.
+
+Current code commits in this block:
+- `1c803671...` primitive audit + harvest register,
+- `4726237c...` derived Evidence lineage shell,
+- `363fae8a...` zero-query derived transform service,
+- `84ab9d75...` provider-free family proof,
+- `3f36dc4f...` focused CI gate wiring.
+
+Status is **PENDING FOCUSED CI**. Do not mark these families executable in the Manager loop
+until a governed upstream input/materialization contract exists.
+
+---
+
 # DIMA V2 — GELİŞTİRME DURUMU
 
 **Branch:** `feat/ask-v2-mvp`  
