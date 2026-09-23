@@ -1,0 +1,73 @@
+version: day7-capability-cognition-diagnostic-v1
+policy:
+  purpose: "Classify neutral metric inspection vs explicit causal investigation without changing production ontology."
+  workers: 1
+  manager_role: RESEARCH_MANAGER
+  manager_model: openai/gpt-5.6-sol
+  linker_model: openai/gpt-5.6-luna
+  temporal_model: openai/gpt-5.6-sol
+  frozen_product_base: d22fb3626db0fe44ea543eee6531e5544cdf0b56
+  patching_from_cases_forbidden: true
+
+cases:
+  - id: neutral-state-tr
+    question: "Seyrek sinyalin mevcut durumunu göster."
+    kind: cognition_diagnostic
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_analytics]
+    max_queries: 1
+
+  - id: neutral-review-tr
+    question: "Seyrek sinyali değerlendir ve yalnız gözlenen durumu göster."
+    kind: cognition_diagnostic
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_analytics]
+    max_queries: 1
+
+  - id: neutral-investigate-tr
+    question: "Seyrek sinyali araştır. Kanıt yoksa yeni sonuç uydurma ve gereksiz dallanma açma."
+    kind: cognition_diagnostic
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_analytics]
+    require_zero_row_observation: true
+    max_derived_executions: 0
+    max_queries: 1
+
+  - id: neutral-inspect-en
+    question: "Inspect the sparse signal and report only its observed state; do not infer causes."
+    kind: cognition_diagnostic
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_analytics]
+    max_queries: 1
+
+  - id: causal-why-tr
+    question: "Seyrek sinyal neden düştü, nedenini araştır."
+    kind: cognition_diagnostic
+    expected_preacceptance_state: BLOCKED
+    expected_observation_kind: unsupported_capability
+    expect_no_ledger: true
+    max_queries: 0
+
+  - id: causal-root-tr
+    question: "Seyrek sinyaldeki düşüşün kök nedenini araştır."
+    kind: cognition_diagnostic
+    expected_preacceptance_state: BLOCKED
+    expected_observation_kind: unsupported_capability
+    expect_no_ledger: true
+    max_queries: 0
+
+  - id: causal-anomaly-tr
+    question: "Seyrek sinyaldeki anomalinin hangi etkenlerden kaynaklandığını araştır."
+    kind: cognition_diagnostic
+    expected_preacceptance_state: BLOCKED
+    expected_observation_kind: unsupported_capability
+    expect_no_ledger: true
+    max_queries: 0
+
+  - id: causal-why-en
+    question: "Investigate why the sparse signal declined and identify the causes."
+    kind: cognition_diagnostic
+    expected_preacceptance_state: BLOCKED
+    expected_observation_kind: unsupported_capability
+    expect_no_ledger: true
+    max_queries: 0
