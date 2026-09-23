@@ -1,0 +1,212 @@
+name: dima-metabase-engine-c1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - ".github/workflows/dima-metabase-engine-c1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  c1-parity:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 80
+    env:
+      ENGINE_SHA: 6bb6924452e5b9dc42b3745bb88c3125a468b297
+      C0_ENGINE_SHA: 9fb21da0177935aff5882472577c8e14a67ebd65
+      C0_FORK_IMAGE: ghcr.io/upcytech/dima-metabase-engine@sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b
+      PLATFORM_LAB_SHA: e35b68e4b7f60fc46c677317e7a001a1d66e88ac
+      BOYAHANE_SHA: f0c4a6b053ead52ca2eac80002c448323dc34a35
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      P12X_METABOT_PROVIDER: openrouter/openai/gpt-5.6-luna
+      P12X_WAREHOUSE_OWNER_PASSWORD: boyahane-owner-lab
+      BOYAHANE_READONLY_PASSWORD: boyahane-readonly-lab
+      P12X_MB_APP_PASSWORD: metabase-app-lab
+      MB_ADMIN_EMAIL: admin@c1.local
+      MB_ADMIN_PASSWORD: DimaC1Admin2026!
+      MB_RESTRICTED_EMAIL: restricted@c1.local
+      MB_RESTRICTED_PASSWORD: DimaC1Restricted2026!
+      MB_RESTRICTED_GROUP: Dima C1 Restricted
+    steps:
+      - name: Checkout exact engine candidate
+        uses: actions/checkout@v4
+        with:
+          repository: UpcyTech/dima-metabase-engine
+          ref: ${{ env.ENGINE_SHA }}
+          path: engine
+          fetch-depth: 1
+
+      - name: Checkout frozen Platform P12X lab
+        uses: actions/checkout@v4
+        with:
+          repository: cagataysntrk/dima-backend-feat-wren-strict-agentic
+          ref: ${{ env.PLATFORM_LAB_SHA }}
+          path: platform
+          fetch-depth: 1
+
+      - name: Checkout exact Boyahane fixture
+        uses: actions/checkout@v4
+        with:
+          repository: cagataysntrk/metabase-boyahane
+          ref: ${{ env.BOYAHANE_SHA }}
+          path: boyahane
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require proven Platform Luna credential
+        shell: bash
+        run: |
+          test -n "$DIMA_OPENROUTER_API_KEY" || {
+            echo "Platform P12X OpenRouter credential is unavailable" >&2
+            exit 2
+          }
+
+      - name: Install C1 dependencies
+        run: pip install "duckdb==1.4.3" "psycopg[binary]==3.3.3" "httpx>=0.27,<1"
+
+      - name: Validate C1 harness and compose before live work
+        working-directory: engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile .dima/parity/run_c1_parity.py
+          DIMA_FORK_IMAGE="$C0_FORK_IMAGE" docker compose -f .dima/parity/docker-compose.c1.yml config >/tmp/c1-compose.yml
+          grep -q "openrouter/openai/gpt-5.6-luna" /tmp/c1-compose.yml
+
+      - name: Resolve exact fork runtime image
+        working-directory: engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker pull "$C0_FORK_IMAGE"; then
+            echo "DIMA_FORK_IMAGE=$C0_FORK_IMAGE" >> "$GITHUB_ENV"
+            echo "DIMA_FORK_IMAGE_SOURCE=C0_GHCR_DIGEST" >> "$GITHUB_ENV"
+          else
+            echo "C0 GHCR digest is not anonymously readable from Platform; building exact engine source locally."
+            docker build \
+              -f .dima/docker/Dockerfile.c0 \
+              --build-arg MB_EDITION=oss \
+              --build-arg VERSION=0.63.18-dima.0 \
+              -t dima-engine-c1-local:0.63.18-dima.0 \
+              .
+            echo "DIMA_FORK_IMAGE=dima-engine-c1-local:0.63.18-dima.0" >> "$GITHUB_ENV"
+            echo "DIMA_FORK_IMAGE_SOURCE=LOCAL_BUILD_EXACT_ENGINE_SHA" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start exact C1 databases
+        working-directory: engine
+        run: |
+          docker compose -f .dima/parity/docker-compose.c1.yml up -d analytics-db stock-app-db fork-app-db
+          for i in $(seq 1 90); do
+            if pg_isready -h 127.0.0.1 -p 55442 -U boyahane_owner -d boyahane >/dev/null 2>&1; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Import exact Boyahane snapshot once
+        env:
+          SOURCE_DATABASE: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          PGHOST: 127.0.0.1
+          PGPORT: "55442"
+          PGDATABASE: boyahane
+          PGUSER: boyahane_owner
+          PGPASSWORD: boyahane-owner-lab
+          BOYAHANE_READONLY_PASSWORD: boyahane-readonly-lab
+        run: python boyahane/importer/import_boyahane.py
+
+      - name: Start stock and fork native runtimes
+        working-directory: engine
+        run: docker compose -f .dima/parity/docker-compose.c1.yml up -d stock fork
+
+      - name: Bootstrap stock native runtime
+        working-directory: platform/backend
+        env:
+          METABASE_URL: http://127.0.0.1:3311
+          MB_SITE_NAME: Dima C1 Stock
+          ANALYTICS_DB_NAME: boyahane
+          ANALYTICS_DB_USER: metabase_boyahane
+          ANALYTICS_DB_PASSWORD: boyahane-readonly-lab
+        run: python lab/metabase/scripts/bootstrap.py
+
+      - name: Bootstrap fork native runtime
+        working-directory: platform/backend
+        env:
+          METABASE_URL: http://127.0.0.1:3312
+          MB_SITE_NAME: Dima C1 Fork
+          ANALYTICS_DB_NAME: boyahane
+          ANALYTICS_DB_USER: metabase_boyahane
+          ANALYTICS_DB_PASSWORD: boyahane-readonly-lab
+        run: python lab/metabase/scripts/bootstrap.py
+
+      - name: Rebuild frozen independent oracle
+        working-directory: platform/backend
+        env:
+          BOYAHANE_DUCKDB: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          P12X_OUT: lab/metabase/p12x/artifacts
+        run: python lab/metabase/p12x/build_oracle.py
+
+      - name: Run six-case native capability parity
+        working-directory: engine
+        run: |
+          mkdir -p .dima/reports/c1
+          python .dima/parity/run_c1_parity.py \
+            --stock-url http://127.0.0.1:3311 \
+            --fork-url http://127.0.0.1:3312 \
+            --email "$MB_RESTRICTED_EMAIL" \
+            --password "$MB_RESTRICTED_PASSWORD" \
+            --corpus ../platform/backend/lab/metabase/p12x/corpus_v1.json \
+            --oracle ../platform/backend/lab/metabase/p12x/artifacts/oracle_v1.json \
+            --selection .dima/parity/c1_cases.json \
+            --output .dima/reports/c1/C1_PARITY_REPORT.json
+
+      - name: Record immutable runtime identities
+        if: always()
+        working-directory: engine
+        shell: bash
+        run: |
+          mkdir -p .dima/reports/c1
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          def inspect(ref):
+              try:
+                  return json.loads(subprocess.check_output(["docker","image","inspect",ref],text=True))[0]
+              except Exception as exc:
+                  return {"error":repr(exc),"ref":ref}
+          payload={
+              "engine_sha":os.environ["ENGINE_SHA"],
+              "c0_engine_sha":os.environ["C0_ENGINE_SHA"],
+              "stock_image":"metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73",
+              "fork_image":os.environ.get("DIMA_FORK_IMAGE"),
+              "fork_image_source":os.environ.get("DIMA_FORK_IMAGE_SOURCE"),
+              "fork_inspect":inspect(os.environ.get("DIMA_FORK_IMAGE","")),
+          }
+          Path(".dima/reports/c1/C1_RUNTIME_IDENTITY.json").write_text(json.dumps(payload,indent=2,default=str)+"\n")
+          PY
+
+      - name: Upload C1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-metabase-engine-c1-${{ github.sha }}
+          path: engine/.dima/reports/c1/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Dump C1 runtime logs on failure
+        if: failure()
+        working-directory: engine
+        run: docker compose -f .dima/parity/docker-compose.c1.yml logs --no-color --tail=700 stock fork analytics-db || true
+
+      - name: Teardown
+        if: always()
+        working-directory: engine
+        run: docker compose -f .dima/parity/docker-compose.c1.yml down -v --remove-orphans || true
