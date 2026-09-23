@@ -334,6 +334,7 @@ class PreAcceptanceController:
         source_spans: SourceSpanRegistry,
         capabilities: ManagerCapabilityRegistry | None = None,
         max_draft_attempts: int = 2,
+        context_scope_by_kind: dict[str, tuple[str, ...]] | None = None,
     ) -> None:
         if not callable(structured):
             raise ValueError("structured_json callable required")
@@ -341,6 +342,11 @@ class PreAcceptanceController:
         self._source_spans = source_spans
         self._capabilities = capabilities or ManagerCapabilityRegistry()
         self._max_draft_attempts = max(1, int(max_draft_attempts))
+        self._context_scope_by_kind = {
+            str(kind): tuple(dict.fromkeys(refs))
+            for kind, refs in (context_scope_by_kind or {}).items()
+            if refs
+        }
 
     def _structured_call(self, *, system: str, payload: dict, model, schema_name: str):
         schema = _strict_native_schema(model.model_json_schema())
@@ -585,8 +591,33 @@ class PreAcceptanceController:
                     ) in grounded
                 )
             )
-            semantic_handle_refs = tuple(
+            source_handle_refs = tuple(
                 dict.fromkeys(binding.handle_id for binding in semantic_bindings)
+            )
+            source_kinds = {
+                self._normalized_hint_kind(binding.target_kind)
+                for binding in semantic_bindings
+            }
+            scope_refs: list[str] = []
+            if item.polarity == ObligationPolarity.REQUIRED:
+                spec = self._capabilities.get(item.capability_key)
+                for kind in sorted(spec.allowed_kinds):
+                    if kind in source_kinds:
+                        continue
+                    candidates = self._context_scope_by_kind.get(kind, ())
+                    if not candidates:
+                        continue
+                    if kind in spec.required_kinds:
+                        if len(candidates) == 1:
+                            scope_refs.append(candidates[0])
+                        continue
+                    if kind == "filter":
+                        scope_refs.extend(candidates)
+                    elif kind in {"period", "comparison"} and len(candidates) == 1:
+                        scope_refs.append(candidates[0])
+
+            semantic_handle_refs = tuple(
+                dict.fromkeys((*source_handle_refs, *scope_refs))
             )
             obligations.append(
                 CandidateObligation(
@@ -598,6 +629,7 @@ class PreAcceptanceController:
                     source_refs=source_refs,
                     semantic_handle_refs=semantic_handle_refs,
                     semantic_bindings=semantic_bindings,
+                    scope_refs=tuple(dict.fromkeys(scope_refs)),
                     open_questions=item.open_questions,
                     ranking_direction=item.ranking_direction,
                     ranking_limit=item.ranking_limit,
@@ -692,7 +724,11 @@ class PreAcceptanceController:
 
     @staticmethod
     def _normalized_hint_kind(kind: str) -> str:
-        return "period" if kind == "time" else kind
+        return {
+            "time": "period",
+            "kpi": "metric",
+            "entity_value": "filter",
+        }.get(kind, kind)
 
     def _unsupported_execution_gaps(
         self,
@@ -801,7 +837,12 @@ class PreAcceptanceController:
                     )
                 ) is not None
             }
-            missing = sorted(required - resolved_kinds)
+            inherited_kinds = {
+                kind
+                for kind in required
+                if len(self._context_scope_by_kind.get(kind, ())) == 1
+            }
+            missing = sorted(required - resolved_kinds - inherited_kinds)
             if missing:
                 gaps.append(
                     {
