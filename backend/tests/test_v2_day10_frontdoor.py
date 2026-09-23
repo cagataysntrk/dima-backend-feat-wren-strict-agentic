@@ -122,14 +122,14 @@ def _research_result():
         payload={},
     )
     outcome = SimpleNamespace(
-        clarification_required=False,
-        verified_complete=True,
-        terminal_status=SimpleNamespace(value="VERIFIED_COMPLETE"),
+        clarification_required=True,
+        verified_complete=False,
+        terminal_status=None,
     )
     runtime = SimpleNamespace(snapshot=snapshot)
     return SimpleNamespace(
         outcome=outcome,
-        verified_complete=True,
+        verified_complete=False,
         runtime=runtime,
         evidence=(evidence,),
     )
@@ -221,7 +221,7 @@ def test_only_research_required_enters_research_with_raw_request_and_context(mon
     )
 
     assert response.lane == ProductLane.RESEARCH
-    assert response.status == ProductStatus.PARTIAL
+    assert response.status == ProductStatus.CLARIFY
     assert len(research.calls) == 1
     call = research.calls[0]
     assert set(call) == {"context", "body"}
