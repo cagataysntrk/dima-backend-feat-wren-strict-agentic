@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@dima/ui/primitives/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@dima/ui/primitives/tooltip";
@@ -12,6 +13,7 @@ import { useConversations } from "@/stores/conversations";
  * position never depends on which chat is open. Hidden below two chats.
  */
 export function ChatNav({ orgId, activeId }: { orgId: string; activeId: string | null }) {
+  const t = useTranslations("chatNav");
   const router = useRouter();
   // Selector must return a stable reference: filtering inside it hands zustand
   // a new array every render and the component re-renders forever (React #185).
@@ -34,7 +36,7 @@ export function ChatNav({ orgId, activeId }: { orgId: string; activeId: string |
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Önceki sohbet"
+            aria-label={t("previous")}
             disabled={idx <= 0}
             onClick={() => go(-1)}
             className="text-muted-foreground transition-transform hover:-translate-x-0.5 hover:text-foreground disabled:translate-x-0"
@@ -42,14 +44,14 @@ export function ChatNav({ orgId, activeId }: { orgId: string; activeId: string |
             <ChevronLeft className="size-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Önceki sohbet</TooltipContent>
+        <TooltipContent side="bottom">{t("previous")}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Sonraki sohbet"
+            aria-label={t("next")}
             disabled={idx < 0 || idx >= ordered.length - 1}
             onClick={() => go(1)}
             className="text-muted-foreground transition-transform hover:translate-x-0.5 hover:text-foreground disabled:translate-x-0"
@@ -57,7 +59,7 @@ export function ChatNav({ orgId, activeId }: { orgId: string; activeId: string |
             <ChevronRight className="size-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Sonraki sohbet</TooltipContent>
+        <TooltipContent side="bottom">{t("next")}</TooltipContent>
       </Tooltip>
     </div>
   );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowLeft, ArrowUp, Columns2, FilterX, Pencil, Square, Trash2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { gateway, type Filters, type Widget, type WidgetData, type WidgetWidth } from "@/lib/gateway";
 import { cn } from "@dima/ui/utils";
@@ -33,6 +34,8 @@ function filtersFromParams(sp: URLSearchParams): Filters {
 type Draft = { name: string; widgets: Widget[] };
 
 export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean }) {
+  const t = useTranslations("dashboards");
+  const tNav = useTranslations("nav");
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -126,13 +129,13 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
           </h2>
           {editing ? (
             <div className="flex shrink-0 items-center gap-0.5">
-              <Button variant="ghost" size="icon-xs" aria-label="Yukarı taşı" disabled={index === 0} onClick={() => move(index, -1)}>
+              <Button variant="ghost" size="icon-xs" aria-label={t("moveUp")} disabled={index === 0} onClick={() => move(index, -1)}>
                 <ArrowUp />
               </Button>
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label="Aşağı taşı"
+                aria-label={t("moveDown")}
                 disabled={index === widgets.length - 1}
                 onClick={() => move(index, 1)}
               >
@@ -142,14 +145,14 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  aria-label={w.width === "full" ? "Yarım genişlik" : "Tam genişlik"}
-                  title={w.width === "full" ? "Yarım genişlik" : "Tam genişlik"}
+                  aria-label={w.width === "full" ? t("halfWidth") : t("fullWidth")}
+                  title={w.width === "full" ? t("halfWidth") : t("fullWidth")}
                   onClick={() => setWidth(w.id, w.width === "full" ? "half" : "full")}
                 >
                   {w.width === "full" ? <Columns2 /> : <Square />}
                 </Button>
               )}
-              <Button variant="ghost" size="icon-xs" aria-label="Panodan kaldır" onClick={() => drop(w.id)}>
+              <Button variant="ghost" size="icon-xs" aria-label={t("removeWidget")} onClick={() => drop(w.id)}>
                 <X />
               </Button>
             </div>
@@ -160,7 +163,7 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
         {!w.filtered && filtersActive && (
           <p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
             <FilterX className="size-3.5" aria-hidden />
-            Filtreler bu grafiğe uygulanmaz.
+            {t("notFiltered")}
           </p>
         )}
         {!d ? (
@@ -197,7 +200,7 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
     <div className="space-y-6">
       <Link href="/app" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden />
-        Genel bakış
+        {tNav("overview")}
       </Link>
       {meta.isPending ? (
         <Skeleton className="h-8 w-64" />
@@ -211,7 +214,7 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
             {editing ? (
               <div className="min-w-0 flex-1">
                 <label htmlFor="dashboard-title" className="sr-only">
-                  Pano adı
+                  {t("name")}
                 </label>
                 <Input
                   id="dashboard-title"
@@ -236,7 +239,7 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
                       Panoyu sil
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setDraft(null)} disabled={save.isPending}>
-                      Vazgeç
+                      {t("cancel")}
                     </Button>
                     <Button
                       variant="brand"
@@ -254,7 +257,7 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
                     onClick={() => setDraft({ name: meta.data.name, widgets: [...meta.data.widgets] })}
                   >
                     <Pencil className="size-4" aria-hidden />
-                    Düzenle
+                    {t("edit")}
                   </Button>
                 )}
               </div>
@@ -270,9 +273,9 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
           )}
           {widgets.length === 0 ? (
             <div className="rounded-[1.25rem] border-2 border-dashed border-[var(--surface-edge-strong)] p-10 text-center">
-              <p className="font-medium">Bu pano henüz boş</p>
+              <p className="font-medium">{t("emptyTitle")}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Bir analizi ya da sohbet yanıtını “Panoya ekle” ile buraya ekleyin.
+                {t("emptyHint")}
               </p>
             </div>
           ) : (
@@ -285,7 +288,7 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
           )}
           {!editing && widgets.length > 0 && (
             <p className="text-xs text-muted-foreground">
-              Keşfetmek için bir sütuna ya da noktaya tıklayın. Filtreler bağlantıya kaydedilir.
+              {t("drillHint")}
             </p>
           )}
         </>
@@ -294,17 +297,17 @@ export function DashboardView({ id, canEdit }: { id: number; canEdit: boolean })
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Pano silinsin mi?</DialogTitle>
+            <DialogTitle>{t("deleteTitle")}</DialogTitle>
             <DialogDescription>
-              “{meta.data?.name}” çöp kutusuna taşınır; içindeki analizler silinmez.
+              {t("deleteBody", { name: meta.data?.name ?? "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
-              Vazgeç
+              {t("cancel")}
             </Button>
             <Button variant="destructive" onClick={() => remove.mutate()} disabled={remove.isPending}>
-              {remove.isPending ? "Siliniyor…" : "Panoyu sil"}
+              {remove.isPending ? t("deleting") : t("delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

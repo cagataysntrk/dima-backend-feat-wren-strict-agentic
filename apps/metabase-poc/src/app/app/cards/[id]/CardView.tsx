@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Check, Pencil, Target } from "lucide-react";
 import { toast } from "sonner";
 import { gateway } from "@/lib/gateway";
@@ -18,6 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@dima/ui/primitives/pop
 import { Skeleton } from "@dima/ui/primitives/skeleton";
 
 export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
+  const t = useTranslations("card");
+  const tNav = useTranslations("nav");
+  const tChat = useTranslations("chat");
   const queryClient = useQueryClient();
   const q = useQuery({ queryKey: ["card", id], queryFn: () => gateway.card(id) });
   const [drill, setDrill] = useState<DrillTarget | null>(null);
@@ -33,7 +37,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
       setRenaming(false);
       void queryClient.invalidateQueries({ queryKey: ["card", id] });
       void queryClient.invalidateQueries({ queryKey: ["items"] });
-      toast.success(patch.name ? "Analiz adı güncellendi." : "Görünüm kaydedildi.");
+      toast.success(patch.name ? t("nameUpdated") : t("viewSaved"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -43,7 +47,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
     <div className="space-y-6">
       <Link href="/app" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden />
-        Genel bakış
+        {tNav("overview")}
       </Link>
       {q.isPending ? (
         <div className="space-y-4">
@@ -67,7 +71,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
                   }}
                 >
                   <Label htmlFor="card-title" className="sr-only">
-                    Analiz adı
+                    {t("analysisName")}
                   </Label>
                   <Input
                     id="card-title"
@@ -82,7 +86,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
                     Kaydet
                   </Button>
                   <Button type="button" size="sm" variant="ghost" onClick={() => setRenaming(false)}>
-                    Vazgeç
+                    {t("cancel")}
                   </Button>
                 </form>
               ) : (
@@ -92,7 +96,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="Analizi yeniden adlandır"
+                      aria-label={t("rename")}
                       onClick={() => {
                         setName(q.data.card.name);
                         setRenaming(true);
@@ -111,7 +115,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
               {canEdit && unsaved && (
                 <Button variant="outline" size="sm" onClick={() => save.mutate({ display: display! })} disabled={save.isPending}>
                   <Check className="size-4" aria-hidden />
-                  Görünümü kaydet
+                  {t("saveView")}
                 </Button>
               )}
               {canEdit && (display ?? q.data.card.display) === "progress" && (
@@ -135,7 +139,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
               onTypeChange={canEdit ? setDisplay : undefined}
               meta={
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {q.data.result.row_count.toLocaleString("tr-TR")} satır
+                  {tChat("rows", { count: q.data.result.row_count })}
                 </span>
               }
               onDrill={
@@ -151,7 +155,7 @@ export function CardView({ id, canEdit }: { id: number; canEdit: boolean }) {
             />
           </div>
           {q.data.drillable && (
-            <p className="text-xs text-muted-foreground">Keşfetmek için bir sütuna ya da noktaya tıklayın: kategoriler kırılım ve satırları, dönemler günlük/aylık görünümü açar.</p>
+            <p className="text-xs text-muted-foreground">{t("drillHint")}</p>
           )}
         </>
       )}
@@ -170,6 +174,7 @@ function GoalSetter({
   onSave: (goal: number | null) => void;
   saving: boolean;
 }) {
+  const t = useTranslations("card");
   const [value, setValue] = useState(goal?.toString() ?? "");
   return (
     <Popover>
@@ -182,7 +187,7 @@ function GoalSetter({
       <PopoverContent align="end" className="w-64 space-y-3">
         <div className="space-y-1.5">
           <Label htmlFor="goal" className="text-xs text-muted-foreground">
-            Hedef değer
+            {t("goal")}
           </Label>
           <Input
             id="goal"
@@ -202,7 +207,7 @@ function GoalSetter({
               onSave(null);
             }}
           >
-            Kaldır
+            {t("remove")}
           </button>
           <Button
             size="sm"

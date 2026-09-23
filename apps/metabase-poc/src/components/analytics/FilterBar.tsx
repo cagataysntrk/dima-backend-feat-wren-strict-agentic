@@ -5,6 +5,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CalendarRange, Check, ChevronDown, ListFilter, Search } from "lucide-react";
 import { gateway, type Filters, type Parameter } from "@/lib/gateway";
 import { DATE_PRESETS, describeDateFilter, parseDateFilter } from "@/lib/date-filter";
+import { useTranslations } from "next-intl";
 import { cn } from "@dima/ui/utils";
 import { Button } from "@dima/ui/primitives/button";
 import { Input } from "@dima/ui/primitives/input";
@@ -108,6 +109,7 @@ function DateFilter({
   value?: string;
   onChange: (v: string | null) => void;
 }) {
+  const t = useTranslations("filters");
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -158,11 +160,11 @@ function DateFilter({
             if (customValid) pick(`${from}~${to}`);
           }}
         >
-          <p className="text-xs font-medium text-muted-foreground">Özel aralık</p>
+          <p className="text-xs font-medium text-muted-foreground">{t("customRange")}</p>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label htmlFor={`${param.slug}-from`} className="text-xs text-muted-foreground">
-                Başlangıç
+                {t("from")}
               </Label>
               <Input
                 id={`${param.slug}-from`}
@@ -174,7 +176,7 @@ function DateFilter({
             </div>
             <div className="space-y-1">
               <Label htmlFor={`${param.slug}-to`} className="text-xs text-muted-foreground">
-                Bitiş
+                {t("to")}
               </Label>
               <Input
                 id={`${param.slug}-to`}
@@ -187,7 +189,7 @@ function DateFilter({
           </div>
           {from && to && from > to && (
             <p role="alert" className="text-xs text-destructive">
-              Bitiş tarihi başlangıçtan önce olamaz.
+              {t("badRange")}
             </p>
           )}
           <div className="flex items-center justify-between pt-1">
@@ -201,7 +203,7 @@ function DateFilter({
               }}
               className="text-sm text-muted-foreground hover:text-foreground disabled:opacity-40"
             >
-              Temizle
+              {t("clear")}
             </button>
             <Button type="submit" size="sm" variant="brand" disabled={!customValid}>
               Uygula
@@ -226,6 +228,8 @@ function CategoryFilter({
   values: string[];
   onChange: (vs: string[]) => void;
 }) {
+  const t = useTranslations("filters");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const query = useDeferredValue(q.trim());
@@ -270,10 +274,10 @@ function CategoryFilter({
           />
         </div>
         <div role="listbox" aria-multiselectable aria-label={param.name} className="max-h-64 overflow-y-auto p-1">
-          {options.isPending && <p className="px-2 py-1.5 text-sm text-muted-foreground">Yükleniyor…</p>}
-          {options.isError && <p className="px-2 py-1.5 text-sm text-destructive">Değerler yüklenemedi.</p>}
+          {options.isPending && <p className="px-2 py-1.5 text-sm text-muted-foreground">{tCommon("loading")}</p>}
+          {options.isError && <p className="px-2 py-1.5 text-sm text-destructive">{t("valuesFailed")}</p>}
           {options.isSuccess && list.length === 0 && (
-            <p className="px-2 py-1.5 text-sm text-muted-foreground">Eşleşen değer yok.</p>
+            <p className="px-2 py-1.5 text-sm text-muted-foreground">{t("noMatch")}</p>
           )}
           {list.map((v) => {
             const on = selected.has(v);
@@ -302,7 +306,7 @@ function CategoryFilter({
         </div>
         {values.length > 0 && (
           <div className="flex items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground">
-            <span className="tabular-nums">{values.length} seçili</span>
+            <span className="tabular-nums">{t("selectedCount", { count: values.length })}</span>
             <button type="button" onClick={() => onChange([])} className="hover:text-foreground">
               Temizle
             </button>

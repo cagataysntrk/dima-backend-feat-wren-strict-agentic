@@ -24,16 +24,16 @@ import {
  * break-out list and the chat's schema.
  */
 export function DataModel() {
+  const t = useTranslations("model");
   const tables = useQuery({ queryKey: ["model"], queryFn: gateway.dataModel });
   const [open, setOpen] = useState<number | null>(null);
 
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Veri modeli</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Sütunlara anlaşılır adlar verin, kategori olanları işaretleyin, gerekmeyenleri gizleyin. Bu ayarlar kırılım
-          seçeneklerinde ve sohbetin veri şemasında da kullanılır.
+          {t("subtitle")}
         </p>
       </header>
 
@@ -54,6 +54,7 @@ export function DataModel() {
 }
 
 function TableRow({ table, open, onToggle }: { table: ModelTable; open: boolean; onToggle: () => void }) {
+  const t = useTranslations("model");
   const visible = table.fields.filter((f) => !f.hidden).length;
   return (
     <section className="surface overflow-hidden">
@@ -66,7 +67,7 @@ function TableRow({ table, open, onToggle }: { table: ModelTable; open: boolean;
         <ChevronRight className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-90")} aria-hidden />
         <span className="font-medium">{table.name}</span>
         <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-          {visible}/{table.fields.length} sütun görünür
+          {t("columnsVisible", { visible, total: table.fields.length })}
         </span>
       </button>
       {open && (
@@ -129,6 +130,7 @@ function ForeignKeyPicker({ field }: { field: ModelField }) {
 const NO_FK = "none";
 
 function FieldRow({ field }: { field: ModelField }) {
+  const t = useTranslations("model");
   const queryClient = useQueryClient();
   const [name, setName] = useState(field.displayName);
   const patch = useMutation({
@@ -168,7 +170,7 @@ function FieldRow({ field }: { field: ModelField }) {
           if (e.key === "Enter") e.currentTarget.blur();
           if (e.key === "Escape") setName(field.displayName);
         }}
-        aria-label={`${field.name} görünen adı`}
+        aria-label={t("displayNameOf", { name: field.name })}
         className="h-8 max-w-56 flex-1"
       />
       <span className="w-20 shrink-0 text-xs text-muted-foreground">{field.type}</span>
@@ -178,20 +180,20 @@ function FieldRow({ field }: { field: ModelField }) {
           variant="ghost"
           size="sm"
           aria-pressed={field.category}
-          title="Kategori: kırılım seçeneklerinde çıkar"
+          title={t("categoryHint")}
           onClick={() => patch.mutate({ category: !field.category })}
           disabled={patch.isPending}
           className={cn("gap-1.5", field.category && "bg-brand/10 text-foreground")}
         >
           <Tag className={cn("size-3.5", field.category && "text-brand")} aria-hidden />
-          Kategori
+          {t("category")}
         </Button>
         <Button
           variant="ghost"
           size="icon-sm"
           aria-pressed={field.hidden}
-          aria-label={field.hidden ? "Sütunu göster" : "Sütunu gizle"}
-          title={field.hidden ? "Sütunu göster" : "Sütunu gizle"}
+          aria-label={field.hidden ? t("showColumn") : t("hideColumn")}
+          title={field.hidden ? t("showColumn") : t("hideColumn")}
           onClick={() => patch.mutate({ hidden: !field.hidden })}
           disabled={patch.isPending}
         >

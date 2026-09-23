@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { useTranslations } from "next-intl";
 import { Button } from "@dima/ui/primitives/button";
 import { Input } from "@dima/ui/primitives/input";
 import { Label } from "@dima/ui/primitives/label";
 
 export function LoginForm({ next }: { next: string }) {
+  const t = useTranslations("login");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -23,7 +25,7 @@ export function LoginForm({ next }: { next: string }) {
     });
     setPending(false);
     if (error) {
-      setError(error.status === 401 ? "E-posta veya parola hatalı." : "Giriş yapılamadı, tekrar deneyin.");
+      setError(error.status === 401 ? t("wrong") : t("failed"));
       return;
     }
     router.replace(next);
@@ -33,11 +35,11 @@ export function LoginForm({ next }: { next: string }) {
   return (
     <form onSubmit={onSubmit} className="surface space-y-4 p-6">
       <div className="space-y-2">
-        <Label htmlFor="email">E-posta</Label>
+        <Label htmlFor="email">{t("email")}</Label>
         <Input id="email" name="email" type="email" autoComplete="email" required autoFocus />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Parola</Label>
+        <Label htmlFor="password">{t("password")}</Label>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
       {error && (
@@ -46,7 +48,7 @@ export function LoginForm({ next }: { next: string }) {
         </p>
       )}
       <Button type="submit" variant="brand" className="w-full" disabled={pending}>
-        {pending ? "Giriş yapılıyor…" : "Giriş yap"}
+        {pending ? t("signingIn") : t("signIn")}
       </Button>
     </form>
   );

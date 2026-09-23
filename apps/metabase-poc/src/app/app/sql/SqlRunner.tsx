@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ChevronRight, Play, Save, Table2, WrapText } from "lucide-react";
 import { toast } from "sonner";
 import { formatSql } from "@dima/domain";
@@ -33,6 +34,8 @@ function wordAt(text: string, caret: number): { word: string; start: number } {
 }
 
 export function SqlRunner() {
+  const t = useTranslations("sql");
+  const tChat = useTranslations("chat");
   const queryClient = useQueryClient();
   const editor = useRef<HTMLTextAreaElement>(null);
   const [sql, setSql] = useState(EXAMPLE);
@@ -47,8 +50,8 @@ export function SqlRunner() {
     mutationFn: () => gateway.saveSql(name.trim(), sql, values),
     onSuccess: ({ id }) => {
       void queryClient.invalidateQueries({ queryKey: ["items"] });
-      toast.success("Analiz kaydedildi.", {
-        action: { label: "Aç", onClick: () => window.location.assign(`/app/cards/${id}`) },
+      toast.success(t("savedToast"), {
+        action: { label: t("open"), onClick: () => window.location.assign(`/app/cards/${id}`) },
       });
       setName("");
     },
@@ -92,14 +95,14 @@ export function SqlRunner() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">SQL</h1>
         <p className="text-sm text-muted-foreground">
-          Şirketinizin verisi üzerinde salt-okunur sorgular çalıştırın; sonucu analiz olarak kaydedin.
+          {t("subtitle")}
         </p>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_16rem]">
         <div className="space-y-3">
           <Label htmlFor="sql" className="sr-only">
-            SQL sorgusu
+            {t("queryLabel")}
           </Label>
           <SqlEditor
             id="sql"
@@ -138,7 +141,7 @@ export function SqlRunner() {
 
           {vars.length > 0 && (
             <div className="surface space-y-3 p-4">
-              <p className="text-xs font-medium text-muted-foreground">Değişkenler</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("variables")}</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {vars.map((v) => (
                   <div key={v.name} className="space-y-1.5">
@@ -157,7 +160,7 @@ export function SqlRunner() {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                Boş bırakılan değişkenin [[ … ]] koşulu sorgudan düşer. Kaydederken mevcut değerler varsayılan olur.
+                {t("variablesHint")}
               </p>
             </div>
           )}
@@ -165,13 +168,13 @@ export function SqlRunner() {
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="brand" onClick={submit} disabled={run.isPending}>
               <Play className="size-4" aria-hidden />
-              {run.isPending ? "Çalışıyor…" : "Çalıştır"}
+              {run.isPending ? t("running") : t("run")}
             </Button>
             <Button variant="ghost" onClick={() => setSql(formatSql(sql))} disabled={!sql.trim()}>
               <WrapText className="size-4" aria-hidden />
-              Biçimlendir
+              {t("format")}
             </Button>
-            <span className="text-xs text-muted-foreground">⌘/Ctrl + Enter · en fazla 2.000 satır</span>
+            <span className="text-xs text-muted-foreground">{t("runHint")}</span>
           </div>
         </div>
 
@@ -188,13 +191,13 @@ export function SqlRunner() {
       )}
 
       {run.data && (
-        <section className="surface space-y-4 p-5" aria-label="Sonuç">
+        <section className="surface space-y-4 p-5" aria-label={t("result")}>
           <ResultView
             key={run.submittedAt}
             result={run.data}
             meta={
               <span className="text-xs text-muted-foreground tabular-nums">
-                {run.data.row_count.toLocaleString("tr-TR")} satır
+                {tChat("rows", { count: run.data.row_count })}
               </span>
             }
           />
@@ -207,17 +210,17 @@ export function SqlRunner() {
           >
             <div className="w-full min-w-0 flex-1 space-y-1.5 sm:w-auto sm:min-w-64">
               <Label htmlFor="card-name" className="text-xs text-muted-foreground">
-                Analiz adı
+                {t("analysisName")}
               </Label>
               <Input id="card-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
             </div>
             <Button type="submit" variant="outline" disabled={!name.trim() || save.isPending}>
               <Save className="size-4" aria-hidden />
-              Kaydet
+              {t("save")}
             </Button>
             {save.data && (
               <Link href={`/app/cards/${save.data.id}`} className="pb-2 text-sm text-brand hover:underline">
-                Kaydedilen analizi aç
+                {t("openSaved")}
               </Link>
             )}
           </form>
@@ -237,11 +240,13 @@ function SchemaBrowser({
   loading: boolean;
   onPick: (text: string) => void;
 }) {
+  const t = useTranslations("sql");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState<string | null>(null);
   return (
-    <aside className="surface h-fit max-h-[32rem] overflow-y-auto p-2 lg:sticky lg:top-2" aria-label="Tablolar">
-      <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Tablolar</p>
-      {loading && <p className="px-2 py-1.5 text-sm text-muted-foreground">Yükleniyor…</p>}
+    <aside className="surface h-fit max-h-[32rem] overflow-y-auto p-2 lg:sticky lg:top-2" aria-label={t("tables")}>
+      <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{t("tables")}</p>
+      {loading && <p className="px-2 py-1.5 text-sm text-muted-foreground">{tCommon("loading")}</p>}
       <ul className="space-y-0.5">
         {tables?.map((t) => (
           <li key={t.name}>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Copy, LayoutDashboard, MoreHorizontal, Search, Trash2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { gateway, type Item } from "@/lib/gateway";
 import { Button } from "@dima/ui/primitives/button";
@@ -19,6 +20,7 @@ const href = (i: Item) => (i.kind === "dashboard" ? `/app/dashboards/${i.id}` : 
 
 /** Search across the company's analyses and dashboards; results replace the overview lists. */
 export function LibrarySearch({ canEdit }: { canEdit: boolean }) {
+  const t = useTranslations("library");
   const [q, setQ] = useState("");
   const term = useDeferredValue(q.trim());
   const results = useQuery({
@@ -39,25 +41,25 @@ export function LibrarySearch({ canEdit }: { canEdit: boolean }) {
           id="library-search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Analiz ve pano ara…"
+          placeholder={t("searchPlaceholder")}
           className="h-11 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm"
         />
         {q && (
-          <Button variant="ghost" size="icon-sm" aria-label="Aramayı temizle" onClick={() => setQ("")}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("clearSearch")} onClick={() => setQ("")}>
             <X className="size-4" aria-hidden />
           </Button>
         )}
       </div>
 
       {term.length >= 2 && (
-        <section aria-label="Arama sonuçları" className="space-y-2">
-          {results.isPending && <p className="text-sm text-muted-foreground">Aranıyor…</p>}
+        <section aria-label={t("results")} className="space-y-2">
+          {results.isPending && <p className="text-sm text-muted-foreground">{t("searching")}</p>}
           {results.isError && (
             <p role="alert" className="text-sm text-destructive">
               {results.error.message}
             </p>
           )}
-          {results.data?.length === 0 && <p className="text-sm text-muted-foreground">“{term}” için sonuç yok.</p>}
+          {results.data?.length === 0 && <p className="text-sm text-muted-foreground">{t("noResults", { term })}</p>}
           <ul className="space-y-2">
             {results.data?.map((i) => (
               <li key={`${i.kind}-${i.id}`} className="surface-sm surface-interactive flex items-center gap-3 px-3 py-2.5">
@@ -83,6 +85,7 @@ export function LibrarySearch({ canEdit }: { canEdit: boolean }) {
 
 /** Per-analysis actions: duplicate, move to trash. */
 export function ItemMenu({ item }: { item: Item }) {
+  const t = useTranslations("library");
   const queryClient = useQueryClient();
   const router = useRouter();
   const invalidate = () => {
@@ -95,7 +98,9 @@ export function ItemMenu({ item }: { item: Item }) {
     mutationFn: () => gateway.copyCard(item.id),
     onSuccess: ({ id, name }) => {
       invalidate();
-      toast.success(`“${name}” oluşturuldu.`, { action: { label: "Aç", onClick: () => router.push(`/app/cards/${id}`) } });
+      toast.success(t("created", { name }), {
+        action: { label: t("open"), onClick: () => router.push(`/app/cards/${id}`) },
+      });
     },
     onError: (e) => toast.error(e.message),
   });
@@ -103,10 +108,10 @@ export function ItemMenu({ item }: { item: Item }) {
     mutationFn: () => gateway.archiveCard(item.id),
     onSuccess: () => {
       invalidate();
-      toast.success("Çöp kutusuna taşındı.", {
+      toast.success(t("trashed"), {
         action: {
-          label: "Geri al",
-          onClick: () => gateway.restore("card", item.id).then(invalidate).catch(() => toast.error("Geri alınamadı.")),
+          label: t("undo"),
+          onClick: () => gateway.restore("card", item.id).then(invalidate).catch(() => toast.error(t("undoFailed"))),
         },
       });
     },
@@ -116,14 +121,14 @@ export function ItemMenu({ item }: { item: Item }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={`${item.name} işlemleri`}>
+        <Button variant="ghost" size="icon-sm" aria-label={t("actionsFor", { name: item.name })}>
           <MoreHorizontal className="size-4" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onSelect={() => copy.mutate()} disabled={copy.isPending}>
           <Copy className="size-4" aria-hidden />
-          Kopyasını oluştur
+          {t("duplicate")}
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => archive.mutate()}
@@ -131,7 +136,7 @@ export function ItemMenu({ item }: { item: Item }) {
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="size-4" aria-hidden />
-          Çöp kutusuna taşı
+          {t("toTrash")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

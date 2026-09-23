@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, LayoutGrid, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { gateway } from "@/lib/gateway";
 import { Button } from "@dima/ui/primitives/button";
@@ -36,6 +37,7 @@ export function NewDashboardDialog({
   onOpenChange: (o: boolean) => void;
   onCreated: (id: number) => void;
 }) {
+  const t = useTranslations("dashboards");
   const [name, setName] = useState("");
   const queryClient = useQueryClient();
   const create = useMutation({
@@ -59,26 +61,26 @@ export function NewDashboardDialog({
           className="grid gap-4"
         >
           <DialogHeader>
-            <DialogTitle>Yeni pano</DialogTitle>
-            <DialogDescription>Pano bir tarih filtresiyle başlar; eklediğiniz grafikler filtreye bağlanır.</DialogDescription>
+            <DialogTitle>{t("new")}</DialogTitle>
+            <DialogDescription>{t("newHint")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
-            <Label htmlFor="dashboard-name">Pano adı</Label>
+            <Label htmlFor="dashboard-name">{t("name")}</Label>
             <Input
               id="dashboard-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={120}
               autoFocus
-              placeholder="ör. Haftalık üretim"
+              placeholder={t("namePlaceholder")}
             />
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Vazgeç
+              {t("cancel")}
             </Button>
             <Button type="submit" variant="brand" disabled={!name.trim() || create.isPending}>
-              {create.isPending ? "Oluşturuluyor…" : "Panoyu oluştur"}
+              {create.isPending ? t("creating") : t("create")}
             </Button>
           </DialogFooter>
         </form>
@@ -89,13 +91,14 @@ export function NewDashboardDialog({
 
 /** Overview button: create a dashboard, then open it. */
 export function NewDashboardButton() {
+  const t = useTranslations("dashboards");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   return (
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         <Plus className="size-4" aria-hidden />
-        Yeni pano
+        {t("new")}
       </Button>
       <NewDashboardDialog open={open} onOpenChange={setOpen} onCreated={(id) => router.push(`/app/dashboards/${id}`)} />
     </>
@@ -113,6 +116,8 @@ export function AddToDashboard({
   resolveCardId: () => Promise<number>;
   size?: "sm" | "xs";
 }) {
+  const t = useTranslations("dashboards");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
@@ -130,8 +135,8 @@ export function AddToDashboard({
     onSuccess: ({ dashboardId, wired }) => {
       void queryClient.invalidateQueries({ queryKey: ["dashboard", dashboardId] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard-data", dashboardId] });
-      toast.success(wired ? "Panoya eklendi." : "Panoya eklendi. Pano filtreleri bu grafiğe uygulanmaz.", {
-        action: { label: "Panoyu aç", onClick: () => router.push(`/app/dashboards/${dashboardId}`) },
+      toast.success(wired ? t("added") : t("addedUnwired"), {
+        action: { label: t("openDashboard"), onClick: () => router.push(`/app/dashboards/${dashboardId}`) },
       });
     },
     onError: (e) => toast.error(e.message),
@@ -143,13 +148,13 @@ export function AddToDashboard({
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={size} disabled={add.isPending}>
             <LayoutDashboard className={size === "xs" ? "size-3.5" : "size-4"} aria-hidden />
-            {add.isPending ? "Ekleniyor…" : "Panoya ekle"}
+            {add.isPending ? t("adding") : t("addTo")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Pano seçin</DropdownMenuLabel>
-          {dashboards.isPending && <p className="px-2 py-1.5 text-sm text-muted-foreground">Yükleniyor…</p>}
-          {dashboards.data?.length === 0 && <p className="px-2 py-1.5 text-sm text-muted-foreground">Henüz pano yok.</p>}
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("pick")}</DropdownMenuLabel>
+          {dashboards.isPending && <p className="px-2 py-1.5 text-sm text-muted-foreground">{tCommon("loading")}</p>}
+          {dashboards.data?.length === 0 && <p className="px-2 py-1.5 text-sm text-muted-foreground">{t("empty")}</p>}
           {dashboards.data?.map((d) => (
             <DropdownMenuItem key={d.id} onSelect={() => add.mutate(d.id)}>
               <LayoutGrid className="size-4 text-muted-foreground" aria-hidden />
@@ -159,7 +164,7 @@ export function AddToDashboard({
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setCreating(true)}>
             <Plus className="size-4" aria-hidden />
-            Yeni pano…
+            {t("newEllipsis")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

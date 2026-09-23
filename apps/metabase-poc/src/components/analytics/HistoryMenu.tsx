@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { History, Undo2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { gateway } from "@/lib/gateway";
 import { Button } from "@dima/ui/primitives/button";
@@ -13,6 +14,8 @@ const when = (iso: string) =>
 
 /** Change history of one analysis, with restore for owner/admin. */
 export function HistoryMenu({ cardId, canEdit }: { cardId: number; canEdit: boolean }) {
+  const t = useTranslations("history");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const history = useQuery({
@@ -25,7 +28,7 @@ export function HistoryMenu({ cardId, canEdit }: { cardId: number; canEdit: bool
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["card", cardId] });
       void queryClient.invalidateQueries({ queryKey: ["history", cardId] });
-      toast.success("Önceki sürüme dönüldü.");
+      toast.success(t("reverted"));
       setOpen(false);
     },
     onError: (e) => toast.error(e.message),
@@ -36,22 +39,22 @@ export function HistoryMenu({ cardId, canEdit }: { cardId: number; canEdit: bool
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm">
           <History className="size-4" aria-hidden />
-          Geçmiş
+          {t("title")}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <p className="border-b px-3 py-2 text-xs text-muted-foreground">
-          Değişiklikler şirket hesabı altında kaydedilir; kişi bazında ayrım tutulmaz.
+          {t("scope")}
         </p>
         <ul className="max-h-72 overflow-y-auto p-1">
-          {history.isPending && <li className="px-2 py-1.5 text-sm text-muted-foreground">Yükleniyor…</li>}
+          {history.isPending && <li className="px-2 py-1.5 text-sm text-muted-foreground">{tCommon("loading")}</li>}
           {history.isError && (
             <li role="alert" className="px-2 py-1.5 text-sm text-destructive">
               {history.error.message}
             </li>
           )}
           {history.data?.length === 0 && (
-            <li className="px-2 py-1.5 text-sm text-muted-foreground">Henüz değişiklik yok.</li>
+            <li className="px-2 py-1.5 text-sm text-muted-foreground">{t("empty")}</li>
           )}
           {history.data?.map((r) => (
             <li key={r.id} className="flex items-start gap-2 rounded-md px-2 py-1.5 hover:bg-accent/50">
@@ -59,7 +62,7 @@ export function HistoryMenu({ cardId, canEdit }: { cardId: number; canEdit: bool
                 <p className="text-sm">{r.what}</p>
                 <p className="text-xs text-muted-foreground tabular-nums">
                   {when(r.at)}
-                  {r.current && " · geçerli sürüm"}
+                  {r.current && t("current")}
                 </p>
               </div>
               {canEdit && !r.current && (
@@ -68,10 +71,10 @@ export function HistoryMenu({ cardId, canEdit }: { cardId: number; canEdit: bool
                   size="xs"
                   onClick={() => revert.mutate(r.id)}
                   disabled={revert.isPending}
-                  aria-label="Bu sürüme dön"
+                  aria-label={t("revertTo")}
                 >
                   <Undo2 className="size-3.5" aria-hidden />
-                  Dön
+                  {t("revert")}
                 </Button>
               )}
             </li>

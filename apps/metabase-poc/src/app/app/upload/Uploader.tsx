@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileSpreadsheet, Plus, RefreshCw, Trash2, UploadCloud } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { gateway, type Item } from "@/lib/gateway";
 import { cn } from "@dima/ui/utils";
@@ -12,6 +13,7 @@ import { Button } from "@dima/ui/primitives/button";
 const ACCEPT = ".csv,.xlsx,.xls";
 
 export function Uploader() {
+  const t = useTranslations("upload");
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [over, setOver] = useState(false);
@@ -24,7 +26,7 @@ export function Uploader() {
   const upload = useMutation({
     mutationFn: (f: File) => gateway.upload(f),
     onSuccess: () => {
-      toast.success("Veri yüklendi.");
+      toast.success(t("uploaded"));
       setFile(null);
       void queryClient.invalidateQueries({ queryKey: ["items"] });
     },
@@ -41,10 +43,9 @@ export function Uploader() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Veri yükle</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Excel veya CSV dosyası yükleyin; ilk sayfa şirketinizin veri alanına tablo olarak eklenir ve analizlerde
-          kullanılabilir.
+          {t("subtitle")}
         </p>
       </header>
 
@@ -67,7 +68,7 @@ export function Uploader() {
         )}
       >
         <UploadCloud className="size-7 text-muted-foreground" aria-hidden />
-        <span className="font-medium">Dosyayı sürükleyin ya da seçin</span>
+        <span className="font-medium">{t("dropzone")}</span>
         <span className="text-xs text-muted-foreground">.xlsx · .xls · .csv — en fazla 20 MB</span>
       </button>
       <input
@@ -75,7 +76,7 @@ export function Uploader() {
         type="file"
         accept={ACCEPT}
         className="sr-only"
-        aria-label="Dosya seç"
+        aria-label={t("pickFile")}
         onChange={(e) => pick(e.target.files?.[0])}
       />
 
@@ -89,31 +90,30 @@ export function Uploader() {
             </div>
           </div>
           <Button variant="brand" onClick={() => upload.mutate(file)} disabled={upload.isPending}>
-            {upload.isPending ? "Yükleniyor…" : "Yükle"}
+            {upload.isPending ? t("uploading") : t("upload")}
           </Button>
         </div>
       )}
 
       {(uploads.data?.length ?? 0) > 0 && (
-        <section className="space-y-2" aria-label="Yüklenen veriler">
-          <h2 className="text-sm font-medium text-muted-foreground">Yüklenen veriler</h2>
+        <section className="space-y-2" aria-label={t("uploadedList")}>
+          <h2 className="text-sm font-medium text-muted-foreground">{t("uploadedList")}</h2>
           <ul className="space-y-2">
             {uploads.data?.map((u) => (
               <UploadRow key={u.id} item={u} />
             ))}
           </ul>
           <p className="text-xs text-muted-foreground">
-            “Ekle” satırları mevcut tabloya ekler, “Değiştir” tablodaki satırların yerine yenilerini koyar. Sütunlar
-            eşleşmelidir.
+            {t("amendHint")}
           </p>
         </section>
       )}
 
       {upload.data && (
         <p className="text-sm">
-          Yüklendi.{" "}
+          {t("done")}{" "}
           <Link href={`/app/cards/${upload.data.id}`} className="text-brand hover:underline">
-            Tabloyu aç
+            {t("openTable")}
           </Link>
         </p>
       )}
@@ -123,6 +123,7 @@ export function Uploader() {
 
 /** One uploaded table: append rows, replace all rows, or move its analysis to the trash. */
 function UploadRow({ item }: { item: Item }) {
+  const t = useTranslations("upload");
   const queryClient = useQueryClient();
   const append = useRef<HTMLInputElement>(null);
   const replace = useRef<HTMLInputElement>(null);
@@ -135,7 +136,7 @@ function UploadRow({ item }: { item: Item }) {
       gateway.amendUpload(item.id, file, mode),
     onSuccess: (_r, { mode }) => {
       done();
-      toast.success(mode === "append" ? "Satırlar eklendi." : "Tablo değiştirildi.");
+      toast.success(mode === "append" ? t("rowsAppended") : t("tableReplaced"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -143,7 +144,7 @@ function UploadRow({ item }: { item: Item }) {
     mutationFn: () => gateway.removeUpload(item.id),
     onSuccess: () => {
       done();
-      toast.success("Çöp kutusuna taşındı.");
+      toast.success(t("trashed"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -157,16 +158,16 @@ function UploadRow({ item }: { item: Item }) {
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="xs" onClick={() => append.current?.click()} disabled={amend.isPending}>
           <Plus className="size-3.5" aria-hidden />
-          Ekle
+          {t("append")}
         </Button>
         <Button variant="ghost" size="xs" onClick={() => replace.current?.click()} disabled={amend.isPending}>
           <RefreshCw className="size-3.5" aria-hidden />
-          Değiştir
+          {t("replace")}
         </Button>
         <Button
           variant="ghost"
           size="icon-xs"
-          aria-label={`${item.name} kaldır`}
+          aria-label={t("removeItem", { name: item.name })}
           onClick={() => remove.mutate()}
           disabled={remove.isPending}
         >
@@ -178,7 +179,7 @@ function UploadRow({ item }: { item: Item }) {
         type="file"
         accept={ACCEPT}
         className="sr-only"
-        aria-label={`${item.name} tablosuna satır ekle`}
+        aria-label={t("appendTo", { name: item.name })}
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) amend.mutate({ file: f, mode: "append" });
@@ -190,7 +191,7 @@ function UploadRow({ item }: { item: Item }) {
         type="file"
         accept={ACCEPT}
         className="sr-only"
-        aria-label={`${item.name} tablosunu değiştir`}
+        aria-label={t("replaceTable", { name: item.name })}
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) amend.mutate({ file: f, mode: "replace" });

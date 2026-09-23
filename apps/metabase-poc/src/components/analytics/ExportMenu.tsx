@@ -2,6 +2,7 @@
 
 import { Download } from "lucide-react";
 import { gateway, type DrillScope } from "@/lib/gateway";
+import { useTranslations } from "next-intl";
 import { Button } from "@dima/ui/primitives/button";
 import {
   DropdownMenu,
@@ -12,10 +13,11 @@ import {
 
 /** CSV / Excel download of a card, with the dashboard filters applied when scoped. */
 export function ExportMenu({ cardId, scope }: { cardId: number; scope?: DrillScope }) {
+  const t = useTranslations("card");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label="Dışa aktar">
+        <Button variant="ghost" size="icon-sm" aria-label={t("export")}>
           <Download className="size-4" aria-hidden />
         </Button>
       </DropdownMenuTrigger>

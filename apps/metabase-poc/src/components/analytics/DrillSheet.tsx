@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { gateway, type DrillScope } from "@/lib/gateway";
 import { cn } from "@dima/ui/utils";
 import { ResultView } from "@dima/ui/result/ResultView";
@@ -20,7 +21,8 @@ export interface DrillTarget {
   mode?: "category" | "time";
 }
 
-const UNIT_TR: Record<string, string> = { day: "günlük", week: "haftalık", month: "aylık", quarter: "çeyreklik", year: "yıllık" };
+/** Engine unit → message key; the wording lives in messages/*.json. */
+const UNIT_KEYS = ["day", "week", "month", "quarter", "year"] as const;
 
 function periodLabel(value: string) {
   const d = new Date(`${value.slice(0, 10)}T00:00:00Z`);
@@ -70,6 +72,7 @@ function Failed({ message }: { message: string }) {
 }
 
 function Zoom({ target }: { target: DrillTarget }) {
+  const t = useTranslations("drill");
   const q = useQuery({
     queryKey: ["zoom", target],
     queryFn: () => gateway.zoom(target.cardId, target.value, target.scope),
@@ -79,7 +82,10 @@ function Zoom({ target }: { target: DrillTarget }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        {UNIT_TR[q.data.unit] ?? q.data.unit} görünüm · {q.data.result.row_count.toLocaleString("tr-TR")} dönem
+        {t("periodView", {
+          unit: (UNIT_KEYS as readonly string[]).includes(q.data.unit) ? t(q.data.unit) : q.data.unit,
+          count: q.data.result.row_count,
+        })}
       </p>
       <div className="surface p-4">
         <ResultView result={q.data.result} size="wide" />
@@ -89,6 +95,7 @@ function Zoom({ target }: { target: DrillTarget }) {
 }
 
 function Category({ target }: { target: DrillTarget }) {
+  const t = useTranslations("drill");
   const [tab, setTab] = useState<"breakout" | "rows">("breakout");
   const fields = useQuery({ queryKey: ["breakouts", target.cardId], queryFn: () => gateway.breakouts(target.cardId) });
   const [picked, setPicked] = useState<number | null>(null);
@@ -110,11 +117,11 @@ function Category({ target }: { target: DrillTarget }) {
   return (
     <div className="space-y-4">
       {canSplit && (
-        <div role="tablist" aria-label="Keşif" className="inline-flex rounded-lg bg-muted p-0.5">
+        <div role="tablist" aria-label={t("explore")} className="inline-flex rounded-lg bg-muted p-0.5">
           {(
             [
-              ["breakout", "Kırılım"],
-              ["rows", "Satırlar"],
+              ["breakout", t("breakout")],
+              ["rows", t("rows")],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -136,7 +143,7 @@ function Category({ target }: { target: DrillTarget }) {
 
       {active === "breakout" ? (
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Kırılım sütunu">
+          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t("breakoutColumn")}>
             {fields.data?.map((f) => (
               <button
                 key={f.id}
@@ -172,7 +179,7 @@ function Category({ target }: { target: DrillTarget }) {
       ) : rows.data ? (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            {target.column} = {target.value} · {rows.data.row_count.toLocaleString("tr-TR")} satır (en fazla 500)
+            {target.column} = {target.value} · {t("rowsCapped", { count: rows.data.row_count })}
           </p>
           <ResultTable result={rows.data} />
         </div>
