@@ -35,3 +35,29 @@ Only unresolved frozen13 owner:
   `.github/workflows/v2-day7-capability-cognition-diagnostic.yml`
 
 Do not patch product before that classification.
+
+
+## Current exact gate — provider-free sealed
+
+```text
+PRODUCT BASE
+d22fb3626db0fe44ea543eee6531e5544cdf0b56
+
+EVALUATOR/DIAGNOSTIC CHECKPOINT
+e038c3d3403bfc2caddccac19e2da54cfa0fe751
+
+FOCUSED
+35847415718 = GREEN
+```
+
+Closed as EVAL_ORACLE:
+- multi-obligation PREVIOUS_PERIOD
+- relationship-unsafe
+
+Only open owner:
+- insufficient-evidence cognition classification
+
+Manual workflow:
+`v2-day7-capability-cognition-diagnostic`
+
+Do not patch production cognition before this measurement.
