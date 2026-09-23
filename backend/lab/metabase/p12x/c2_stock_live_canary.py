@@ -58,7 +58,7 @@ def main() -> int:
     )
     req = NativeEngineRequest(
         message=QUESTION,
-        conversation_id="p12x-c2-stock-live",
+        conversation_id="00000000-0000-4000-8000-000000000202",
         dima_request_id="p12x-c2-stock-live",
         dima_trace_id="p12x-c2-stock-live",
     )
