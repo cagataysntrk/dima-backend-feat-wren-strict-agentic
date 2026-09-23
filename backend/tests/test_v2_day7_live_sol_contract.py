@@ -493,3 +493,30 @@ def test_cognition_diagnostic_scores_analytical_lane_not_presentation_extras():
     )
 
     assert cognition._analytical_required_capabilities(draft) == ["performance"]
+
+
+def test_live_model_call_budget_is_role_scoped_and_hard():
+    budget = live.LiveModelCallBudget(3)
+
+    budget.reserve("research_manager")
+    budget.reserve("semantic_linker")
+    budget.reserve("temporal_normalizer")
+
+    assert budget.receipt() == {
+        "manager_model_calls": 1,
+        "semantic_linker_calls": 1,
+        "temporal_model_calls": 1,
+        "total_model_calls": 3,
+        "model_calls_budget": 3,
+        "budget_exhausted": False,
+    }
+
+    try:
+        budget.reserve("research_manager")
+    except live.LiveEvalBudgetExhausted:
+        pass
+    else:
+        raise AssertionError("provider call must be blocked before exceeding live budget")
+
+    assert budget.total_calls == 3
+    assert budget.exhausted is True
