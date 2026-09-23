@@ -44,6 +44,25 @@ def test_provider_free_scripted_sentinel_proves_the_live_state_machine():
     assert result["confirmed_cause_code"] == "CAUSAL_NOT_IDENTIFIED"
     assert result["synthetic_governed_query_calls"] == 2
     assert result["query_contract_count"] == 2
+    assert result["next_test_rejection_count"] == 0
+
+
+def test_live_harness_rejects_inapplicable_proposal_and_allows_bounded_replan():
+    llm = ScriptedSentinelLLM(reject_next_test_once=True)
+    result = run_scenario(llm)
+
+    assert result["status"] == "pass"
+    assert llm.calls == 6
+    assert result["next_test_rejection_count"] == 1
+    assert "TREND" in result["next_test_rejections"][0]
+    assert result["action_sequence"][:3] == [
+        "propose_hypothesis",
+        "propose_hypothesis_next_test",
+        "propose_hypothesis_next_test",
+    ]
+    assert result["followup_verified"] is True
+    assert result["followup_inspected"] is True
+    assert result["confirmed_cause_allowed"] is False
 
 
 def test_live_sentinel_preserves_root_cause_authority_invariants():
