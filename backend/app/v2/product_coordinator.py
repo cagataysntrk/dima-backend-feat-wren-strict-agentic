@@ -185,6 +185,7 @@ class ProductCoordinator:
         principal,
         event_sink: ProductEventSink | None = None,
         cancel_check: Callable[[], bool] | None = None,
+        answer_now_check: Callable[[], bool] | None = None,
     ) -> ProductResponse:
         context = self._bind_context(
             request=request,
@@ -255,6 +256,7 @@ class ProductCoordinator:
                 context_scope_by_kind=continuation_scope_by_kind(entry),
                 progress_callback=on_continuation_progress,
                 cancel_check=cancel_check,
+                answer_now_check=answer_now_check,
             )
             return self._research_response(
                 context=context,
@@ -332,6 +334,7 @@ class ProductCoordinator:
                 body=body,
                 progress_callback=on_progress,
                 cancel_check=cancel_check,
+                answer_now_check=answer_now_check,
             )
             return self._research_response(
                 context=context,
@@ -499,6 +502,7 @@ class ProductCoordinator:
             ledger=result.ledger,
             evidence=result.evidence,
             findings=result.findings,
+            allow_partial=result.outcome.answer_now_requested,
         )
         if (
             projection.status != ResearchReportProjectionStatus.COMPLETE
@@ -566,17 +570,24 @@ class ProductCoordinator:
                 refs=(artifact.artifact_id,),
                 transition_ref=f"artifact:{artifact.artifact_id}",
             )
-        sink.emit(
-            ProductEventKind.REPORT_READY,
-            refs=(build.report.report_id,),
-            transition_ref=f"report:{build.report.report_id}",
-        )
+        if result.outcome.answer_now_requested:
+            sink.emit(
+                ProductEventKind.PARTIAL_READY,
+                refs=(build.report.report_id,),
+                transition_ref=f"partial-report:{build.report.report_id}",
+            )
+        else:
+            sink.emit(
+                ProductEventKind.REPORT_READY,
+                refs=(build.report.report_id,),
+                transition_ref=f"report:{build.report.report_id}",
+            )
         self._ensure_report_narrator()
         assert self._report_narrator is not None
         overlay = self._report_narrator.compose(build.report)
         status = (
             ProductStatus.REPORT
-            if result.verified_complete
+            if result.verified_complete and not result.outcome.answer_now_requested
             else ProductStatus.PARTIAL
         )
         sink.emit(
@@ -643,9 +654,13 @@ class ProductCoordinator:
                 status=status,
                 verified_complete=result.verified_complete,
                 terminal_status=(
-                    result.outcome.terminal_status.value
-                    if result.outcome.terminal_status is not None
-                    else None
+                    "ANSWER_NOW_PARTIAL"
+                    if result.outcome.answer_now_requested
+                    else (
+                        result.outcome.terminal_status.value
+                        if result.outcome.terminal_status is not None
+                        else None
+                    )
                 ),
                 manager_turns=snapshot.manager_turns,
                 tool_calls=snapshot.tool_calls,
