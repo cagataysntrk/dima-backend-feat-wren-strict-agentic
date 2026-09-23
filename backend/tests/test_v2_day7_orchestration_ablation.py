@@ -93,3 +93,82 @@ def test_ablation_keeps_governed_execution_substrate_in_both_arms():
     assert type(free["executor"]) is type(governed["executor"])
     assert type(free["service"]) is type(governed["service"])
     assert free["runtime"].budget == governed["runtime"].budget
+
+
+class _OneCallLLM:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def structured_json(self, *args, **kwargs):
+        self.calls += 1
+        return "{}"
+
+
+def test_micro_ablation_requires_explicit_case_selection_and_preserves_requested_order():
+    doc = yaml.safe_load(CASES.read_text(encoding="utf-8"))
+
+    selected = ablation._select_cases(
+        doc,
+        ["adaptive-material,stable-no-extra-branch"],
+    )
+
+    assert [case["id"] for case in selected] == [
+        "adaptive-material",
+        "stable-no-extra-branch",
+    ]
+
+    try:
+        ablation._select_cases(doc, [])
+    except ValueError as exc:
+        assert "explicit --case-id is required" in str(exc)
+    else:
+        raise AssertionError("broad default ablation must be rejected")
+
+
+def test_ablation_paid_call_guard_stops_before_next_provider_request():
+    inner = _OneCallLLM()
+    guard = ablation.PaidCallGuard(1)
+    counting = ablation.CountingLLM(inner, call_guard=guard)
+
+    counting.structured_json("system", "user")
+
+    assert inner.calls == 1
+    assert counting.calls == 1
+    assert guard.used == 1
+    assert guard.exhausted is False
+
+    try:
+        counting.structured_json("system", "user")
+    except ablation.EvalBudgetExhausted:
+        pass
+    else:
+        raise AssertionError("second provider call must be blocked before execution")
+
+    assert inner.calls == 1
+    assert counting.calls == 1
+    assert guard.used == 1
+    assert guard.exhausted is True
+
+
+def test_ablation_dry_run_receipt_declares_scope_and_cost_before_provider_use():
+    doc = yaml.safe_load(CASES.read_text(encoding="utf-8"))
+    cases = ablation._select_cases(
+        doc,
+        ["adaptive-material", "stable-no-extra-branch"],
+    )
+
+    receipt = ablation._dry_run_receipt(
+        cases=cases,
+        max_model_calls=20,
+    )
+
+    assert receipt == {
+        "kind": "dima_v2_day7_orchestration_shadow_ablation_dry_run",
+        "selected_case_ids": ["adaptive-material", "stable-no-extra-branch"],
+        "selected_cases": 2,
+        "arms": ["FREE_COGNITION", "GOVERNED_ORCHESTRATION"],
+        "maximum_loop_records": 4,
+        "configured_manager_hard_turn_cap": 6,
+        "model_calls_budget": 20,
+        "provider_requests_made": 0,
+    }
