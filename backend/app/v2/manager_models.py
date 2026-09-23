@@ -334,11 +334,17 @@ class ManagerState(StrEnum):
 
 
 class ManagerBudget(FrozenModel):
-    # Day7 canonical Research budget truth. Tool calls include non-query observation
-    # tools; data queries are independently capped and may never exceed the hard 12.
+    # One budget authority, separate finite phases. Pre-acceptance draft/revise is
+    # bounded independently from post-acceptance Research cognition; a clarification
+    # repair must not silently consume the adaptive Research allowance.
+    max_preacceptance_turns: int = Field(default=2, ge=1)
     max_tool_calls: int = Field(default=12, ge=1)
     max_data_queries: int = Field(default=8, ge=0, le=12)
-    max_manager_turns: int = Field(default=6, ge=1)
+    max_manager_turns: int = Field(
+        default=6,
+        ge=1,
+        description="Post-acceptance Research Manager turns.",
+    )
 
 
 class ManagerRunSnapshot(FrozenModel):
@@ -350,6 +356,8 @@ class ManagerRunSnapshot(FrozenModel):
     tool_calls: int = 0
     data_queries: int = 0
     manager_turns: int = 0
+    preacceptance_turns: int = 0
+    research_manager_turns: int = 0
     evidence_refs: tuple[str, ...] = ()
     inspected_evidence_refs: tuple[str, ...] = ()
     latest_evidence_ref: str | None = None
