@@ -1,3 +1,75 @@
+## 2026-09-23 — OBLIGATION-LOCAL RETRIEVAL-MISS RECOVERY — LIVE VERIFIED
+
+```text
+product_sha                  c0c9121da04fd21412009d2e6ccfecfe82b74068
+live_affected_family_run     35836926079
+artifact                     10739737713
+measurement_validity         VALID
+selected/evaluable           5 / 5
+provider_failures            0
+harness_failures             0
+grounding_fixture_failures   0
+behavior_pass                4 / 5
+hard_safety_failures         0
+service_queries              7
+```
+
+Owner-gate result:
+
+```text
+breakdown-region             old RETRIEVAL_MISS owner GONE → PASS
+rank-region-top2             old RETRIEVAL_MISS owner GONE → PASS
+high-cardinality-bounded     old RETRIEVAL_MISS owner GONE → PASS
+budget-pressure              old RETRIEVAL_MISS owner GONE → owner-gate PASS
+stable-no-extra-branch       old RETRIEVAL_MISS owner GONE → NEW downstream RED
+```
+
+The semantic retrieval family is therefore **LIVE VERIFIED and SEALED for Day7**.
+
+The previous first bad transition:
+
+```text
+concept exists
+→ baseline candidate_count = 0
+→ Luna never called
+→ material_grounding_gap
+→ no AcceptedTurnContract
+```
+
+did not recur in any affected case.
+
+The one whole-case RED is NOT a semantic retrieval regression:
+
+```text
+stable-no-extra-branch
+→ AcceptedTurnContract
+→ seed task
+→ governed DB query
+→ QueryContract
+→ VERIFIED Evidence
+→ inspect Evidence
+→ USER_MUST VERIFIED
+→ Manager did not finish before manager-turn budget
+→ BUDGET_EXHAUSTED
+```
+
+New owner classification:
+`BUDGET / NO-PROGRESS / orchestration quality`.
+Do not reopen semantic discovery for it. Do not inflate budgets from this one case.
+
+Day7 semantic product freeze now applies:
+- no more stemming/morphology/regex/fuzzy aliases,
+- no vector/BM25/RRF addition,
+- no broader sibling scope,
+- no global fallback,
+- no cross-obligation semantic reuse.
+
+Next exact block:
+**provider-free temporal owner-isolation diagnostic**.
+No full frozen13 yet.
+
+---
+
 ## 2026-09-23 — SEMANTIC RECOVERY PRODUCT INTEGRATION — LIVE SOL PENDING
 
 ```text
