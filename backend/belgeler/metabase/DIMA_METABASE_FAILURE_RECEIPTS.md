@@ -2945,3 +2945,35 @@ forbidden:
 
 status:
 `CLASSIFIED / ONE-LINE DIMA BUILD-WRAPPER PATCH AUTHORIZED`.
+
+
+---
+
+## P12X-C0 closure — exact-history thin engine source build GREEN
+
+engine_sha: `9fb21da0177935aff5882472577c8e14a67ebd65`  
+workflow: `35827292630 = SUCCESS`  
+artifact: `10736021635`
+
+proof:
+```text
+fork repo                         = UpcyTech/dima-metabase-engine
+upstream base                     = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+exact ancestry                    = PASS
+modified pre-existing upstream    = 0
+deleted upstream                  = 0
+upstream-owned line delta         = +0 / -0
+Dima-specific files               = 7
+Dima integration line delta       = +517 / -0
+source build via upstream script  = PASS
+fork-built image smoke /health    = PASS
+GHCR push                         = PASS
+image tag                         = ghcr.io/upcytech/dima-metabase-engine:0.63.18-dima.0
+image digest                      = sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b
+```
+
+The Bullseye-mirror and EDN-version failures were C0 build-wrapper/infrastructure failures and are
+closed by this proof. No Metabase business/runtime source file was changed.
+
+status:
+`CLOSED GREEN / P12X-C0 COMPLETE / P12X-C1 AUTHORIZED`.

@@ -1698,3 +1698,22 @@ engine/source regression       = NO EVIDENCE
 manual unchanged retry         = 35826362027 / IN PROGRESS
 P13                            = PAUSED
 ```
+
+
+---
+
+## P12X-C0 GREEN
+
+```text
+engine SHA                  = 9fb21da0177935aff5882472577c8e14a67ebd65
+workflow                    = 35827292630 = SUCCESS
+source build                = PASS
+smoke health                = PASS
+upstream source files mod   = 0
+upstream line delta         = +0 / -0
+image                       = ghcr.io/upcytech/dima-metabase-engine:0.63.18-dima.0
+digest                      = sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b
+P12X-C0                     = CLOSED GREEN
+next                        = P12X-C1 stock-vs-fork native capability parity
+P13                         = PAUSED
+```
