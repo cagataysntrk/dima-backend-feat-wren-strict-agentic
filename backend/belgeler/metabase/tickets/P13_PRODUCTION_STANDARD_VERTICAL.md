@@ -1,5 +1,14 @@
 # P13-001 — Production Standard vertical
 
+
+> **FINAL P12X HANDOFF OVERRIDE — DMP-DEC-0035**
+>
+> This ticket is **STALE FOR IMPLEMENTATION** after certification of the native Dima Metabase Engine
+> bridge. Preserve it as historical input only. The next legal P13 action is a replacement
+> predevelopment/ticket reconciliation; no product code is authorized directly from this ticket.
+>
+
+
 **Milestone:** P13  
 **Status:** PREDEVELOPMENT SEALED / P13 PAUSED FOR METABASE SEAM DECISION / IMPLEMENTATION STOPPED  
 **Decision dependencies:** `DMP-DEC-0029`  

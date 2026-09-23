@@ -1,5 +1,16 @@
 # P13 — PRE-DEVELOPMENT REVIEW
 
+
+> **FINAL P12X HANDOFF OVERRIDE — DMP-DEC-0035**
+>
+> C0-C3 are now CLOSED GREEN and the certified execution substrate is the pinned native-engine bridge.
+> This document is retained as historical trust-design input, but **is not current implementation
+> authority**. Before P13 product code, create a fresh P13 predevelopment reconciliation against
+> DMP-DEC-0029 and DMP-DEC-0031..0035. Do not mechanically implement the Agent-API-oriented
+> `standard_execution.py / execute_prepared()` design below.
+>
+
+
 **Milestone:** P13 — Production Standard  
 **Branch:** `feat/dima-metabase-platform`  
 **Read baseline:** `56799687d2a8018dd60b0b909fb8b0be5d4a79c7`  

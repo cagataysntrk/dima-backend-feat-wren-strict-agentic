@@ -1005,3 +1005,167 @@ predevelopment reconciliation against DMP-DEC-0031..0034 and the certified engin
 preserving DMP-DEC-0029's authorize-exactly-what-executes trust invariant.
 
 Supervisor-requested stop point has been reached.
+
+
+---
+
+# FINAL PRE-P13 HANDOFF — AUTHORITATIVE CURRENT ENTRY POINT
+
+This section supersedes every earlier progress snapshot in this file.
+
+## A. Exact repository state
+
+```text
+Platform branch                    = feat/dima-metabase-platform
+Platform handoff HEAD              = 9179ad880ff0376fed0bb83971c9d61fe87e735c
+final functional P12X proof SHA    = 094b5f6e0f1be939172b95fde66cab055c66ae54
+current governance                 = 35841686789 = SUCCESS
+current P12X regression            = 35841687850 = SUCCESS
+
+engine repo                        = UpcyTech/dima-metabase-engine
+engine certified HEAD              = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+Platform submodule path            = engine/metabase
+Platform gitlink                   = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+upstream base                      = v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+```
+
+Read-only moving source observations at final handoff:
+```text
+ask-v2                             = d22fb3626db0fe44ea543eee6531e5544cdf0b56
+Fast Track                         = 8b9397b4f883f9c188a5fdadafa3db0dc418ec34
+```
+
+They are not source pins and were not merged/cherry-picked/rebased.
+
+## B. Supervisor sequence result
+
+```text
+C0 exact fork/source build                    = CLOSED GREEN
+C1 stock-vs-fork native capability parity     = CLOSED GREEN
+C2 stable Dima bridge/direct-native parity    = CLOSED GREEN
+C3 candidate-only upstream-sync discipline    = CLOSED GREEN
+SUPERVISOR CHECKPOINT                         = REACHED
+P13                                            = NOT STARTED
+```
+
+Key proof:
+- C1 corrected rescore: `35834874194 = SUCCESS`;
+- C2 final parity: `35839639339 = SUCCESS`, artifact `10742000058`,
+  digest `sha256:c799261cd36499c7579bdf1d6f97ecc07ce0cfaab782afe861deef169d877d94`;
+- C3 sync self-test: `35835881375 = SUCCESS`;
+- current governance: `35841686789 = SUCCESS`;
+- current P12X regression: `35841687850 = SUCCESS`.
+
+## C. Certified architecture
+
+```text
+Model/native Metabot thinks and orchestrates analytics.
+Dima owns material business/trust truth.
+Metabase Engine executes the native analytical runtime.
+```
+
+Concretely:
+```text
+Dima product / durable conversation / decision intelligence
+→ Dima semantic + security + provenance + evidence control plane
+→ typed Dima Engine Bridge
+→ pinned Dima Metabase Engine submodule
+→ native Metabot:
+   profiles
+   skills
+   native state/memory
+   tool registry
+   MBQL/query construction/repair
+   Query Processor
+   drivers
+→ customer database
+```
+
+C2 introduced no Agent-API analytical fallback, Wren fallback or raw SQL escape.
+
+## D. What the next developer reads first
+
+Exact order:
+1. `DIMA-METABASE-HANDOFF.md` — this final section first;
+2. `DIMA-METABASE-DURUM.md` tail;
+3. `backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md` — DMP-DEC-0029 and 0031..0035;
+4. `backend/belgeler/metabase/DIMA_METABASE_FAILURE_RECEIPTS.md` latest P12X receipts;
+5. `backend/belgeler/metabase/predev/P12X_C2_ENGINE_BRIDGE_PREDEVELOPMENT.md`;
+6. `backend/belgeler/metabase/UPSTREAM_ENGINE_HARVEST_MAP.md`;
+7. only then the old P13 predev/ticket as historical input.
+
+## E. P13 rule
+
+Do **not** continue the old P13 ticket verbatim.
+
+The old documents were written before the native-engine fork/bridge was certified. Their trust
+invariants remain valuable, especially:
+```text
+Dima must authorize exactly the material execution that is actually executed and receipted.
+```
+
+But the implementation seam must be redesigned around the certified native engine bridge.
+
+The first legal P13 action is **documentation/predevelopment reconciliation**, not product code.
+
+Required replacement predev must answer:
+- where Dima accepted semantic authority enters native Metabot;
+- how allowed semantic scopes constrain native cognition without becoming a second planner;
+- how current-principal retrieval and P11 value adoption occur before material authority is sealed;
+- how the exact native query/material execution is bound to `ExecutionAccessSnapshot`;
+- how the executed native artifact is represented/attested for `QueryReceipt`;
+- how Evidence promotion remains Dima-owned;
+- how cancellation/retry/replay preserve engine/request/access/provenance identity;
+- how `DMP-P11-INTEGRATION-005` closes;
+- what the first metric-only Standard vertical is;
+- what remains profile-scoped because `DMP-P5-BLOCK-001` is still open.
+
+## F. Open debt that must remain open
+
+```text
+DMP-P5-BLOCK-001             = OPEN
+DMP-P11-INTEGRATION-005      = OPEN / P13 OWNER
+EV-05 / EV-06 / EV-07       = UNCERTIFIED
+P10B2 advanced security      = OPEN / profile-scoped
+P9 dimension/time/relationship transport gaps = OPEN
+P7/P8 semantic richness gaps = OPEN / typed
+Wren historical compatibility gaps = typed debt
+```
+
+None of these are closed by C0-C3.
+
+## G. Engine development rule
+
+```text
+engine change
+→ test/certify in UpcyTech/dima-metabase-engine
+→ exact engine commit SHA
+→ explicit Platform engine/metabase gitlink bump
+→ Platform governance/integration proof
+```
+
+Never consume moving engine `main` implicitly.
+
+Upstream update:
+```text
+exact upstream stable ref
+→ sync candidate
+→ conflict/patch-surface/source-build/smoke/native regression
+→ candidate branch
+→ explicit manual promotion
+```
+
+No automatic promotion to engine `main` or production.
+
+## H. Final stop state
+
+```text
+P12X                       = COMPLETE
+repo                       = READY TO HAND OFF
+engine                     = PINNED + SYNC GOVERNED
+native bridge              = CERTIFIED
+P13 product implementation = STOP
+next action                = NEW P13 PREDEV RECONCILIATION
+```
+
+This is the intended supervisor stop point.

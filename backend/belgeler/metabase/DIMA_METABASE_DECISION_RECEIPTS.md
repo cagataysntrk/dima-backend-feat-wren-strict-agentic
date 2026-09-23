@@ -1635,3 +1635,80 @@ The earlier P13 draft must not be resumed mechanically.
 
 status:
 `SEALED / P12X C0→C3 COMPLETE / SUPERVISOR CHECKPOINT REACHED / P13 STOP`.
+
+
+---
+
+## DMP-DEC-0035 — Pre-P13 handoff checkpoint is authoritative
+
+date: 2026-09-23
+
+question:
+Is the repository now ready to hand off at the exact supervisor-requested stop point, with P12X C0-C3
+closed and P13 still intentionally unopened?
+
+evidence:
+```text
+Platform current documentation HEAD     = 9179ad880ff0376fed0bb83971c9d61fe87e735c
+final functional P12X proof SHA          = 094b5f6e0f1be939172b95fde66cab055c66ae54
+current Platform governance              = 35841686789 = SUCCESS
+current Platform P12X regression         = 35841687850 = SUCCESS
+engine repository                         = UpcyTech/dima-metabase-engine
+engine certified HEAD                     = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+Platform engine gitlink                   = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+engine upstream base                      = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+P12X-C0                                  = CLOSED GREEN
+P12X-C1                                  = CLOSED GREEN
+P12X-C2                                  = CLOSED GREEN
+P12X-C3                                  = CLOSED GREEN
+ask-v2 moving observation                 = d22fb3626db0fe44ea543eee6531e5544cdf0b56
+Fast Track moving observation             = 8b9397b4f883f9c188a5fdadafa3db0dc418ec34
+merge/cherry-pick/rebase from source refs = 0
+P13 product code                          = 0 after checkpoint
+```
+
+decision:
+The project is **READY FOR HANDOFF BEFORE P13**.
+
+The authoritative architecture at handoff is:
+```text
+DIMA PRODUCT / CONVERSATION / DECISION INTELLIGENCE
+→ DIMA semantic + security + provenance + evidence control plane
+→ typed DIMA native-engine bridge
+→ pinned UpcyTech/dima-metabase-engine submodule
+→ native Metabot / profiles / skills / engine-local state / MBQL / Query Processor / drivers
+→ customer database
+```
+
+The old P13 predevelopment document and ticket are preserved as historical trust-design inputs, but
+they are **not implementation authority** in their current Agent-API-oriented form.
+
+Before any P13 product implementation, the next developer must perform one fresh P13 reconciliation:
+1. read DMP-DEC-0029 and DMP-DEC-0031..0035;
+2. retain the invariant that Dima authorizes exactly what is executed and receipted;
+3. re-map `ResolvedAnalyticsIntent`, `ExecutionAccessSnapshot`, `CanonicalProjection`,
+   `QueryReceipt`, `EvidenceArtifact`, `DimaSemanticSpec` and `EntityValueAdoptionGate` onto the
+   certified native-engine bridge;
+4. keep native Metabot as analytical cognition/orchestration/query-construction owner;
+5. keep Dima as semantic/security/provenance/evidence truth owner;
+6. define how `DMP-P11-INTEGRATION-005` closes without a second semantic or access owner;
+7. write a replacement P13 predevelopment boundary and ticket before changing product code.
+
+Open debt intentionally carried forward:
+- `DMP-P5-BLOCK-001`;
+- `DMP-P11-INTEGRATION-005`;
+- EV-05/06/07;
+- P10B2 advanced security gaps;
+- P9 dimension/time/relationship transport gaps;
+- P7/P8 relationship/calculated/view semantic gaps;
+- historical typed Wren compatibility debt.
+
+forbidden at handoff:
+- mechanically resume the old P13 Agent-API execution seam;
+- implement `standard_execution.py` or `execute_prepared()` from the old draft without reconciliation;
+- add Agent API analytical fallback, Wren fallback, raw SQL escape or second analytical planner;
+- move the Platform gitlink to engine `main` implicitly;
+- merge/cherry-pick/rebase ask-v2 or Fast Track.
+
+status:
+`SEALED / PRE-P13 HANDOFF READY / P13 NOT STARTED`.
