@@ -57,6 +57,10 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_semantic_surface_diagnostic.py"
       - "backend/lab/v2_day7_relationship_action_diagnostic.py"
       - "backend/tests/test_v2_day7_relationship_action_diagnostic.py"
+      - "backend/app/v2/semantic_linker.py"
+      - "backend/app/v2/semantic_retriever.py"
+      - "backend/app/v2/manager_semantics.py"
+      - "backend/lab/v2_day7_sibling_scope_live_luna.py"
       - "backend/lab/v2_day7_governed_sibling_scope_discovery.py"
       - "backend/tests/test_v2_day7_governed_sibling_scope_discovery.py"
       - ".github/workflows/v2-day7-focused.yml"
@@ -100,6 +104,11 @@ jobs:
             app/v2/manager_loop.py \
             app/v2/manager_lab.py \
             app/v2/models.py \
+            app/v2/semantic_linker.py \
+            app/v2/semantic_retriever.py \
+            app/v2/manager_semantics.py \
+            lab/v2_day7_governed_sibling_scope_discovery.py \
+            lab/v2_day7_sibling_scope_live_luna.py \
             lab/v2_day7_manager_live_sol.py
       - name: Focused provider-free Day7 test
         working-directory: backend
