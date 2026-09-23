@@ -775,15 +775,44 @@ def _case_checks(
 
     checks: dict[str, bool] = {
         "http_200": response.status_code == 200,
-        "accepted_contract": bool(snapshot.get("accepted_contract_id")),
         "manager_turn_cap": int(snapshot.get("manager_turns") or 0) <= 6,
         "tool_call_cap": int(snapshot.get("tool_calls") or 0) <= 12,
         "data_query_cap": int(snapshot.get("data_queries") or 0) <= 8,
         "service_query_cap": query_delta <= int(case.get("max_queries", 8)),
-        "must_tools": set(case.get("must_tools") or ()).issubset(set(tool_names)),
-        "min_user_must": len(user_must) >= int(case.get("min_user_must", 1)),
         "no_failed_runtime": snapshot.get("state") != "FAILED",
     }
+
+    expected_preacceptance_state = case.get("expected_preacceptance_state")
+    if expected_preacceptance_state:
+        # Some sealed Day7 outcomes intentionally stop before authority is committed.
+        # The evaluator must score that contract directly instead of assuming every
+        # valid request must reach AcceptedTurnContract + tool execution.
+        checks["preacceptance_state"] = (
+            snapshot.get("state") == expected_preacceptance_state
+        )
+        checks["accepted_contract_absent"] = not bool(
+            snapshot.get("accepted_contract_id")
+        )
+        checks["zero_data_queries"] = (
+            int(snapshot.get("data_queries") or 0) == 0
+            and query_delta == 0
+        )
+        if case.get("expect_no_ledger"):
+            checks["ledger_absent"] = body.get("ledger") is None
+        expected_observation_kind = case.get("expected_observation_kind")
+        if expected_observation_kind:
+            checks["expected_observation"] = any(
+                item.get("kind") == expected_observation_kind
+                for item in body.get("observations") or []
+            )
+    else:
+        checks["accepted_contract"] = bool(snapshot.get("accepted_contract_id"))
+        checks["must_tools"] = set(case.get("must_tools") or ()).issubset(
+            set(tool_names)
+        )
+        checks["min_user_must"] = len(user_must) >= int(
+            case.get("min_user_must", 1)
+        )
 
     expected_terminal = case.get("expected_terminal")
     if expected_terminal:
