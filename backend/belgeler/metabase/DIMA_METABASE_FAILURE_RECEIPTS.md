@@ -2407,3 +2407,79 @@ framework inside P11.
 
 status:
 `OPEN / P13 OWNER`.
+
+
+---
+
+## DMP-P11-AUDIT-003 closure — GREEN
+
+implementation_sha: `9de113b779ebd261b1d0b14ba58c893b79d145b2`  
+p11_workflow: `35816344869 = SUCCESS`  
+governance: `35816344862 = SUCCESS`
+
+proof:
+- P11 provider-free job compiles `entity_value_gate.py`, eval harness, necessity tests and product-gate tests;
+- P11 provider-free job executes both focused families directly;
+- exact combined focused count = `16 PASS`;
+- Luna/Sol live job = `SKIPPED` as intended;
+- no corpus/prompt/tool/model contract change.
+
+status:
+`CLOSED GREEN`.
+
+---
+
+## DMP-P11-AUDIT-004 closure — GREEN
+
+implementation_sha: `9de113b779ebd261b1d0b14ba58c893b79d145b2`
+
+proof:
+`EntityValueAdoptionGate` now requires exact typed-scalar identity:
+`type(proposed) is type(candidate) and proposed == candidate`.
+
+Focused negatives prove:
+- evidence int 1 / proposal bool True -> BLOCK;
+- evidence bool True / proposal int 1 -> BLOCK;
+- evidence float 1.0 / proposal int 1 -> BLOCK;
+- evidence int 1 / proposal float 1.0 -> BLOCK;
+- existing case-sensitive `North` vs `north` remains BLOCK.
+
+No stringification, casefold, numeric coercion, fuzzy matching or normalization was added.
+
+status:
+`CLOSED GREEN`.
+
+---
+
+## P11 V1 final closure — INITIAL LOW-CARDINALITY NATIVE PATH GREEN
+
+closure_sha: `9de113b779ebd261b1d0b14ba58c893b79d145b2`  
+p11_provider_free: `35816344869 = SUCCESS / 16 PASS`  
+m1_wren: `35816344966 = SUCCESS`  
+governance: `35816344862 = SUCCESS`
+
+certified:
+- EV-01 exact categorical;
+- EV-02 cross-language cognition without translation/fuzzy/morphology machinery;
+- EV-03 unresolved scope guarded by the minimum Dima adoption gate;
+- EV-04 no-match / clarification;
+- official governed silent-wrong = 0 on the frozen Luna/Sol experiment;
+- typed-scalar adoption exactness;
+- P11 focused product proof is now CI-owned.
+
+not certified:
+- EV-05 high cardinality;
+- EV-06 stale index;
+- EV-07 permission-hidden value;
+- production access/provenance seam.
+
+forward requirement:
+`DMP-P11-INTEGRATION-005` remains OPEN under P13. Production allowed scopes must come from accepted
+semantic authority and value evidence must bind to P5/P10
+`ExecutionAccessSnapshot.execution_access_fingerprint`.
+
+interpretation:
+`MINIMUM_GUARDRAIL SUFFICIENT / ENTITY RESOLVER NOT NEEDED FOR P11 V1`.
+
+status:
+`P11 INITIAL NATIVE PATH CLOSED GREEN`.

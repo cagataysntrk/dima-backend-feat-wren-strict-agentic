@@ -4,7 +4,7 @@
 **Normative decision:** DMP-DEC-0026  
 **P10B2 prerequisite:** capability classification only; global P5 production blocker remains separate.
 
-Status: **SEALED / NECESSITY EVALUATION AUTHORIZED / DETERMINISTIC ENTITY RESOLVER NOT AUTHORIZED**
+Status: **CLOSED / INITIAL LOW-CARDINALITY NATIVE PATH GREEN / ENTITY RESOLVER NOT NEEDED FOR P11 V1**
 
 ## 1. Question
 
@@ -82,3 +82,19 @@ allowed semantic scopes to accepted semantic authority and value evidence to the
 `execution_access_fingerprint`.
 
 This does not reopen EV-05/06/07 and does not authorize an EntityResolver.
+
+
+## 8. Final V1 closure
+
+`9de113b779ebd261b1d0b14ba58c893b79d145b2`:
+- P11 provider-free workflow `35816344869 = SUCCESS`;
+- exact focused count = `16 PASS`;
+- governance `35816344862 = SUCCESS`;
+- M1/Wren `35816344966 = SUCCESS`;
+- Luna/Sol live rerun = SKIPPED by design.
+
+P11 V1 closes only the initial low-cardinality native path. EV-05/06/07 stay explicitly uncertified.
+`DMP-P11-INTEGRATION-005` is P13-owned.
+
+No EntityResolver, synonym/translation table, fuzzy matcher, morphology layer or second-judge model was
+added.

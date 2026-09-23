@@ -1387,3 +1387,44 @@ resolver framework                = 0
 ```
 
 P11 V1 is not reopened architecturally; this candidate closes two proof/correctness gaps only.
+
+
+---
+
+## P11 FINAL V1 CLOSURE — GREEN
+
+```text
+closure SHA                       = 9de113b779ebd261b1d0b14ba58c893b79d145b2
+P11 provider-free                 = 35816344869 = SUCCESS
+P11 focused exact count           = 16 PASS
+governance                        = 35816344862 = SUCCESS
+M1/Wren                           = 35816344966 = SUCCESS
+Luna/Sol rerun                    = SKIPPED / NOT REQUIRED
+DMP-P11-AUDIT-003                 = CLOSED GREEN
+DMP-P11-AUDIT-004                 = CLOSED GREEN
+typed scalar equality             = SAME TYPE + SAME VALUE
+DMP-P11-INTEGRATION-005           = OPEN / P13 OWNER
+EV-05 / EV-06 / EV-07             = UNCERTIFIED
+resolver framework                = 0
+```
+
+Certified wording:
+**P11 INITIAL LOW-CARDINALITY NATIVE PATH GREEN**.
+
+---
+
+## P12 workspace feasibility — OPENED
+
+```text
+Fast Track observed reference      = 3fc686c9fa4f86927a5ea51f43cf688b9c010a6c
+ask-v2 observed reference          = 3d807ee2698733ea01620e5ce6c85e88466b785a
+source disposition                 = REFERENCE ONLY
+initial UX mode                    = DIMA_SHELL + HEADLESS_API
+workspace escape hatch             = LINK_OUT
+EMBED                               = OPTIONAL FUTURE ESCALATION
+Metabase UI object as truth         = FORBIDDEN
+P12 integration code                = NOT STARTED
+```
+
+**Current phase:** P12 BI WORKSPACE FEASIBILITY / CLASSIFICATION.  
+P13 production Standard seam remains the next integration owner after P12 classification.

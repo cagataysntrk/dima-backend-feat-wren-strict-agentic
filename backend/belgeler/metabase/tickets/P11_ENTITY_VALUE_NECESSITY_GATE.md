@@ -120,3 +120,24 @@ Forward production seam:
 P5/P10 execution-access fingerprint remains the durable access-identity owner.
 
 No model rerun is required for this hardening.
+
+
+## Final V1 closure
+
+```text
+closure SHA                  = 9de113b779ebd261b1d0b14ba58c893b79d145b2
+P11 provider-free            = 35816344869 = SUCCESS
+focused count                = 16 PASS
+governance                   = 35816344862 = SUCCESS
+M1/Wren                      = 35816344966 = SUCCESS
+model rerun                  = 0
+AUDIT-003                    = CLOSED GREEN
+AUDIT-004                    = CLOSED GREEN
+DMP-P11-INTEGRATION-005      = OPEN / P13 OWNER
+resolver decision            = NOT_NEEDED
+```
+
+Certified wording:
+`P11 INITIAL LOW-CARDINALITY NATIVE PATH GREEN`.
+
+Do not claim full entity-value resolution certification.
