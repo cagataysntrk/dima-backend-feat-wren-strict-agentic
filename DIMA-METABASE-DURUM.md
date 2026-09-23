@@ -1841,3 +1841,21 @@ corrective rule     = persist candidate-level failure artifact, then continue to
 C1 seal             = HELD
 C2 implementation   = STOP
 ```
+
+
+---
+
+## P12X-C1 CLOSED GREEN / C2 AUTHORIZED
+
+```text
+C1 frozen run                       = 35831869602
+C1 corrected no-model rescore       = 35834874194 = SUCCESS
+reproducible fork regression        = 0
+reproducible new silent wrong       = 0
+reproducible permission regression  = 0
+reproducible dataset-scope drift    = 0
+stochastic variance cases           = PX-01, PX-03, PX-06, PX-16
+P12X-C1                              = CLOSED GREEN
+P12X-C2                              = AUTHORIZED
+P13                                  = PAUSED
+```
