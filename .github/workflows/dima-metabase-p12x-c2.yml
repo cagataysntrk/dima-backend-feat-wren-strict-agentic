@@ -22,8 +22,10 @@ jobs:
         with:
           python-version: "3.12"
       - working-directory: backend
-        run: pip install -e ".[dev]"
+        run: pip install "httpx>=0.27" "pydantic>=2" "pytest>=8"
       - working-directory: backend
+        env:
+          PYTHONPATH: .
         run: |
           pytest -q tests/test_v3_p12x_c2_native_engine_bridge.py
           python -m py_compile app/v3/substrate/metabase/native_models.py app/v3/substrate/metabase/native_engine.py
