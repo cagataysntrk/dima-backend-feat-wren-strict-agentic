@@ -18,7 +18,6 @@ Browser
 - **Runtime digest:** `sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b`
 - **Engine source:** repository submodule at `../../engine/dima-metabase-engine`
 
-The archived `UpcyTech/dima-metabase` repository is not a runtime dependency.
 
 ## Product surfaces
 
