@@ -1,3 +1,61 @@
+## 2026-09-23 — URGENT DAY7 HANDOFF AUTHORITY
+
+Single active continuation authority:
+
+~~~text
+backend/belgeler/plan/DIMA_DAY7_URGENT_HANDOFF_2026-09-23.md
+~~~
+
+Tested product checkpoint:
+
+~~~text
+d22fb3626db0fe44ea543eee6531e5544cdf0b56
+v2-day7-focused 35840203854 = GREEN
+~~~
+
+Latest valid frozen13:
+
+~~~text
+35840716350
+measurement_validity = VALID
+13 / 13 evaluable
+10 / 13 behavioral PASS
+artifact = 10741756172
+~~~
+
+Current closure classification:
+
+~~~text
+OPEN PRODUCT OWNER
+multi-obligation PREVIOUS_PERIOD base-period contract
+
+EVAL / CLASSIFICATION DEBT
+relationship-unsafe stale oracle
+insufficient-evidence MODEL_COGNITION vs EVAL_ORACLE classification
+
+SEALED — DO NOT REOPEN
+tenant/principal
+ResearchDirective ontology
+relationship preacceptance + Wren relationship truth
+semantic sibling-scope cognition
+obligation-local RETRIEVAL_MISS recovery
+fanout/grain safety
+Evidence/QueryContract
+provider topology
+
+DEFERRED / CLOSED FOR DAY7 DIRECT EXECUTION
+ROOT_CAUSE
+TREND
+CONTRIBUTION
+PEER_COMPARE
+~~~
+
+Emergency handoff rule:
+new developer must read the urgent handoff first and continue from its exact order.
+Do not infer current work from older Day6.5 handoff files.
+
+---
+
 ## 2026-09-23 — OBLIGATION-LOCAL RETRIEVAL-MISS RECOVERY — LIVE VERIFIED
 
 ```text
