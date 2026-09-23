@@ -35,7 +35,11 @@ export async function POST(req: Request) {
         message: current.content,
         engineContext: body.data.engineContext,
         // Migration bridge only: once a native context token exists, the adapter ignores this.
-        legacyHistory: messages.slice(0, -1),
+        legacyHistory: messages.slice(0, -1).map((message) =>
+          message.role === "user"
+            ? { role: "user" as const, content: message.content }
+            : { role: "assistant" as const, content: message.content },
+        ),
       },
       req.signal,
     );
