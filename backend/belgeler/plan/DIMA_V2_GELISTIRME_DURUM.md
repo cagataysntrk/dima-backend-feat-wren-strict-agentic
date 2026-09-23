@@ -1,3 +1,60 @@
+## 2026-09-23 — DAY7 LIVE PREFLIGHT FAIL-FAST FINAL PROVIDER-FREE SEAL
+
+```text
+tested_sha                    dee5c6ddc106834a7add1233c4c22d966c727582
+v2-day7-focused               35819146273
+result                         GREEN
+
+Day7 live Sol corpus contract GREEN
+all prior Day7 gates           GREEN
+product behavior changed       NO
+```
+
+New independent proof:
+- provider preflight reads the HTTP error response body;
+- `403 + Key limit exceeded (total limit)` is classified as
+  `PROVIDER_QUOTA_FAILURE`, not semantic/model/product failure;
+- failed preflight exits before synthetic service/app/corpus construction;
+- failed preflight therefore produces:
+  - `selected_cases = frozen corpus size`,
+  - `evaluable_cases = 0`,
+  - `behavior_pass_rate = null`,
+  - `hard_safety_failures = []`,
+  - `total_service_queries = 0`,
+  - `records = []`,
+  - `status = invalid_measurement`;
+- no fallback model/provider exists;
+- sealed topology remains `Manager=Sol / Semantic=Luna / Temporal=Sol`;
+- workers remain `1`.
+
+Current Day7 state:
+
+```text
+DETERMINISTIC DAY7 CAPABILITY       GREEN
+LIVE EVALUATION HARNESS CONTRACT    GREEN
+LIVE MEASUREMENT                    UNAVAILABLE
+EXTERNAL BLOCKER                    OpenRouter quota / authorized credential
+LAST PROVIDER SIGNAL                HTTP 403 Key limit exceeded (total limit)
+PRODUCT RED                         NO
+```
+
+Do not patch product code, prompts, budgets, Manager loop, semantics, fanout,
+relationship/grain gates, or derived families while the provider is unavailable.
+
+Next exact action after an authorized usable Sol credential/quota exists:
+
+```text
+provider preflight GREEN
+→ SAME frozen 13-case corpus
+→ workers=1
+→ Manager Sol / Semantic Luna / Temporal Sol
+→ valid behavior classification
+```
+
+Ablation remains blocked until that valid live baseline exists.
+
+---
+
 ## 2026-09-23 — DAY7 LIVE MEASUREMENT LAYER REPAIR GREEN
 
 ```text
