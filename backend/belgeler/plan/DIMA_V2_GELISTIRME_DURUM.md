@@ -1,3 +1,88 @@
+## 2026-09-23 — DAY7 CAPABILITY + SEMANTIC DIAGNOSTIC RECEIPTS
+
+Provider-free diagnostic checkpoint:
+
+```text
+diagnostic_sha              11b59a0928af1104ea1552352dac2184ba4e5af0
+v2-day7-focused             35824252528
+result                       GREEN
+product_behavior_base       b70f0aab209b2353b854463ace582c40bcc2bd98
+product behavior changed    NO
+```
+
+Capability / task / tool surface:
+
+| capability | registry executable | Day7 task mapping | declared governed tool | diagnostic disposition |
+|---|---:|---|---|---|
+| PERFORMANCE | yes | QUERY | wren.query | DIRECT_DAY7_EXECUTION |
+| BREAKDOWN | yes | BREAKDOWN | wren.breakdown | DIRECT_DAY7_EXECUTION |
+| RANKING | yes | RANK | wren.rank | DIRECT_DAY7_EXECUTION |
+| COMPARISON | yes | COMPARE | wren.compare | DIRECT_DAY7_EXECUTION |
+| RELATIONSHIP | yes | RELATIONSHIP | wren.relationship | DIRECT_DAY7_EXECUTION |
+| ROOT_CAUSE | yes | none | none | EXECUTABLE_NO_TASK_MAPPING |
+| TREND | yes | TREND | none | TASK_MAPPING_NO_DECLARED_TOOL |
+| REPORT/TABLE/CHART/EXPLAIN | no | n/a | n/a | NON_EXECUTABLE_DECLARED |
+
+Interpretation:
+- `ROOT_CAUSE` is internally open at capability policy but has no direct Day7 task
+  mapping. Do NOT normalize it to QUERY and do NOT add a ROOT_CAUSE task yet.
+- `TREND` has a task-kind shell but Manager execution remains closed because no
+  governed Research tool is declared. This is consistent with the current
+  derived-primitive-only status.
+- The receipt is architectural evidence for supervisor decision, not implementation
+  authorization.
+
+Semantic surface diagnostic:
+
+```text
+base/catalog forms:
+bölge, bölgeler, ürün, ürünler
+→ governed candidates exist
+→ exact bind
+→ BindingGate reached
+
+first-live failing inflected forms:
+bölgelere
+Bölgelerde
+bölgelerde
+ürünlere
+→ governed catalog concept exists
+→ governed_token_index_v1 candidate_count = 0
+→ Semantic Linker NOT CALLED
+→ BindingGate NOT REACHED
+→ classification = RETRIEVAL_DISCOVERY
+```
+
+Therefore the current dimension failure family is NOT:
+- Linker cognition,
+- BindingGate,
+- missing fixture/catalog concept.
+
+No Turkish suffix regex, stemming, literal failed-word aliases, morphology score,
+fuzzy-threshold tuning, or case-derived prompt example is authorized.
+
+Temporal surface:
+
+```text
+geçen dönemle
+→ typed temporal normalizer path
+→ catalog retrieval not applicable
+→ no explicit base period in request
+→ classification = OTHER CONTRACT
+```
+
+This temporal item remains separate from dimension retrieval discovery and requires a
+future temporal cognition/eval-oracle decision before any patch.
+
+Next:
+```text
+relationship structured-action diagnostic receipt
+→ choose exactly ONE next root family
+→ generic fix only after owner is frozen
+```
+
+---
+
 ## 2026-09-23 — DAY7 AFFECTED-FAMILY LIVE VERIFICATION RECEIPT
 
 Tested product checkpoint:
