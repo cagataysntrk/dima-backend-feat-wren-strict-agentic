@@ -6,7 +6,7 @@ import { DEFAULT_PREFS, type ChatPrefs } from "../prefs";
 import { mbGet } from "../metabase/client";
 import { GatewayError, scrub } from "../metabase/errors";
 import type { TenantContext } from "../metabase/guard";
-import { complete, streamComplete, type ChatMessage } from "./openrouter";
+import { complete, DEFAULT_MODEL, streamComplete, type ChatMessage } from "./openrouter";
 import { usableToolCalls } from "@/lib/sse";
 import { RUN_SQL_TOOL, describeSchema, summarizeForModel, systemPrompt, type TableSchema } from "./prompt";
 
@@ -80,7 +80,7 @@ export async function answer(ctx: TenantContext, history: Turn[], prefs = DEFAUL
   let lastOk: { sql: string; result: QueryResult } | null = null;
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const choice = await complete(messages, [RUN_SQL_TOOL], round < MAX_TOOL_ROUNDS ? "auto" : "none", prefs.model);
+    const choice = await complete(messages, [RUN_SQL_TOOL], round < MAX_TOOL_ROUNDS ? "auto" : "none", DEFAULT_MODEL);
     const calls = choice.message.tool_calls ?? [];
     if (calls.length === 0) {
       const text = (choice.message.content ?? "").trim();
@@ -180,7 +180,7 @@ export async function* answerStream(
     let text = "";
     let calls: ReturnType<typeof usableToolCalls> = [];
     let finish: string | null | undefined;
-    for await (const chunk of streamComplete(messages, [RUN_SQL_TOOL], round < MAX_TOOL_ROUNDS ? "auto" : "none", signal, prefs.model)) {
+    for await (const chunk of streamComplete(messages, [RUN_SQL_TOOL], round < MAX_TOOL_ROUNDS ? "auto" : "none", signal, DEFAULT_MODEL)) {
       if (chunk.text) {
         // The model answers only once it stops calling tools; from that point
         // the text is the answer and goes straight to the reader.
