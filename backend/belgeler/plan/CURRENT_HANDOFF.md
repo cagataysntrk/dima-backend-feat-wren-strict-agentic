@@ -41,8 +41,10 @@ latest focused
 
 paid calls = 0
 DB queries = 0
-ROOT_CAUSE executable = false
-D8-C = NOT STARTED
+ROOT_CAUSE direct executable = false
+ResearchTaskKind.ROOT_CAUSE = DOES NOT EXIST
+ROOT_CAUSE → QUERY alias = DOES NOT EXIST
+D8-C = AUTHORIZED / STARTING
 ```
 
 Changed Day8 product files in this burst:
@@ -64,21 +66,31 @@ New sealed Day8 boundaries:
 - `CONFIRMED_CAUSE -> CAUSAL_NOT_IDENTIFIED`,
 - ROOT_CAUSE remains orchestration umbrella; no `ResearchTaskKind.ROOT_CAUSE`, no QUERY alias.
 
-## STOP POINT
+## SUPERVISOR OVERRIDE — D8-C AUTHORIZED
 
-Supervisor-authorized burst is complete through D8-B.
+The prior "STOP after D8-B / D8-C unauthorized" instruction is superseded.
 
-Do NOT automatically begin:
-- D8-C,
-- capability execution-mode changes,
-- ROOT_CAUSE executable flag,
-- Manager loop wiring,
-- real-Wren root-cause sentinel,
-- live Sol,
-- paid evaluation,
-- Day9.
+D8-C is now authorized under the following unchanged hard boundaries:
+- ROOT_CAUSE must remain an orchestration umbrella, never a direct query capability;
+- no ResearchTaskKind.ROOT_CAUSE;
+- no ROOT_CAUSE → QUERY alias;
+- no new semantic owner, Evidence registry, scheduler, budget truth, SQL engine, or generic agent kernel;
+- CONFIRMED_CAUSE remains hard-denied;
+- provider-free orchestration proof precedes one deterministic real-Wren sentinel;
+- Manager-loop wiring happens only after those lower seams are GREEN;
+- only then one live Sol sentinel is permitted under the paid-call ceiling.
 
-Next work requires supervisor review.
+Authorized implementation order:
+1. characterize capability execution consumers;
+2. introduce one execution-mode truth;
+3. add deterministic ROOT_CAUSE bootstrap/applicability ownership;
+4. add server-owned hypothesis next-test proposal admission;
+5. reuse the sealed Day7 ResearchTask/fanout/registry/tool machinery;
+6. provider-free GREEN;
+7. one deterministic real-Wren sentinel;
+8. then Manager-loop wiring;
+9. then one live Sol sentinel;
+10. update living status/Harvest and STOP for supervisor receipt.
 
 
 ---
@@ -351,21 +363,23 @@ Stop development and repair abstraction if any appears:
 - causal claim strengthened by a threshold/model confidence,
 - ROOT_CAUSE disguised as direct QUERY.
 
-### What is NOT authorized now
+### Current authorization boundary
 
-Supervisor stop is active after D8-B GREEN.
+D8-C is authorized. The implementation may add orchestration semantics and the narrow
+adapters needed to reuse Day7 governed tasks.
 
-Do NOT start without new supervisor authorization:
-- D8-C,
-- capability execution-mode implementation,
-- `ROOT_CAUSE executable=true`,
+Still forbidden:
+- `ROOT_CAUSE executable=true` as a direct-execution bool flip,
 - `ResearchTaskKind.ROOT_CAUSE`,
 - ROOT_CAUSE → QUERY alias,
-- Manager loop wiring,
-- next-test execution wiring,
-- real-Wren root-cause sentinel,
-- live Sol / paid test,
+- new semantic or Evidence authority,
+- new scheduler/budget/execution engine,
+- raw-language downstream reparsing,
+- CONFIRMED_CAUSE enablement,
 - Day9.
+
+Manager-loop wiring, real-Wren sentinel and one live Sol sentinel are authorized only in the
+ordered gates above, not as shortcuts around provider-free lower-layer proof.
 
 ### Expected next phase after supervisor review
 
@@ -391,7 +405,7 @@ one provider-free real-Wren sentinel
 only then one live Sol sentinel <= 8 total paid calls
 ```
 
-But do not implement any of that until supervisor explicitly opens D8-C.
+D8-C is now explicitly open; implement it only through the ordered gates and STOP conditions above.
 
 ### New developer first actions
 
@@ -401,5 +415,5 @@ But do not implement any of that until supervisor explicitly opens D8-C.
 4. Verify latest product behavior SHA remains `e6e46c04...` unless supervisor explicitly
    authorized later product work.
 5. Do NOT rerun paid tests merely to “check things”.
-6. Wait for / read the next supervisor instruction.
-7. If D8-C is authorized, create a living-status ticket first and preserve the file boundary.
+6. Apply the current supervisor override: D8-C is authorized.
+7. Preserve the file boundary and ordered proof gates; do not reopen sealed Day7.
