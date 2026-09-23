@@ -86,9 +86,16 @@ class ManagerCapabilityRegistry:
         ManagerCapabilityKey.RELATIONSHIP: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.RELATIONSHIP,
             lane=ManagerCapabilityLane.RESEARCH,
-            allowed_kinds=_RESEARCH_KINDS,
+            # Day7's only governed executable relationship primitive is explicitly
+            # metric + counterpart dimension.  Broader semantic-concept relationships
+            # are not accepted until a governed runtime primitive exists for them.
+            required_kinds=frozenset({"metric", "dimension"}),
+            allowed_kinds=frozenset({"metric", "dimension", "filter", "period"}),
             effect_family="relationship",
-            intent_description="Investigate a requested relationship/association between semantic concepts or domains.",
+            intent_description=(
+                "Investigate a governed metric against a requested counterpart dimension "
+                "through the verified relationship execution boundary."
+            ),
         ),
         ManagerCapabilityKey.ROOT_CAUSE: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.ROOT_CAUSE,
