@@ -6,6 +6,7 @@ on:
       - feat/dima-metabase-platform
     paths:
       - "backend/lab/metabase/p13b/px01_live_standard.py"
+      - "backend/lab/metabase/p13b/px01_semantic_availability.py"
       - ".github/workflows/dima-metabase-p12x-c2-live.yml"
   workflow_dispatch:
 
@@ -314,6 +315,23 @@ jobs:
           MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
         run: python lab/metabase/scripts/bootstrap.py
 
+      - name: Provision and verify Dima-managed PX-01 metric
+        working-directory: platform/backend
+        env:
+          PYTHONPATH: .
+        run: |
+          python lab/metabase/p13b/px01_semantic_availability.py \
+            --base-url http://127.0.0.1:3314 \
+            --admin-email "$MB_ADMIN_EMAIL" \
+            --admin-password "$MB_ADMIN_PASSWORD" \
+            --restricted-email "$MB_RESTRICTED_EMAIL" \
+            --restricted-password "$MB_RESTRICTED_PASSWORD" \
+            --runtime-tag "$RUNTIME_TAG" \
+            --runtime-image-digest "$RUNTIME_IMAGE_DIGEST" \
+            --engine-sha "$ENGINE_SHA" \
+            --platform-sha "$GITHUB_SHA" \
+            --output lab/metabase/p13b/artifacts/P13B_PX01_SEMANTIC_AVAILABILITY_LIVE.json
+
       - name: Run one Luna P13B-3 PX-01 turn
         working-directory: platform/backend
         env:
@@ -333,7 +351,8 @@ jobs:
             --image-identity "$RUNTIME_IMAGE_DIGEST" \
             --model-identifier "$MODEL_IDENTIFIER" \
             --platform-sha "$GITHUB_SHA" \
-            --live-attempt-id "$LIVE_ATTEMPT_ID"
+            --live-attempt-id "$LIVE_ATTEMPT_ID" \
+            --semantic-availability-report lab/metabase/p13b/artifacts/P13B_PX01_SEMANTIC_AVAILABILITY_LIVE.json
 
       - name: Upload P13B-3 evidence
         if: always()

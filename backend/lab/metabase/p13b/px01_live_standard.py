@@ -29,6 +29,7 @@ from app.v3.execution_identity import (
     RuntimeIdentity,
 )
 from app.v3.native_execution import NativeCandidateOutcome
+from app.v3.resource_provisioning import ManagedResourceBinding, ResourceKind
 from app.v3.native_standard.contracts import (
     NativeAttestationEnvelope,
     NativeAttestedRuntimeIdentity,
@@ -366,6 +367,45 @@ def scalar(payload: dict[str, Any]) -> tuple[Any, list[list[Any]]]:
     return rows[0][0], rows
 
 
+def managed_metric_binding(
+    path: Path,
+    *,
+    engine_sha: str,
+    platform_sha: str,
+) -> ManagedResourceBinding:
+    body = json.loads(path.read_text(encoding="utf-8"))
+    if body.get("status") != "GREEN":
+        raise RuntimeError("semantic availability proof is not GREEN")
+    if body.get("engine_sha") != engine_sha:
+        raise RuntimeError("semantic availability engine SHA differs from live engine")
+    if body.get("platform_sha") != platform_sha:
+        raise RuntimeError("semantic availability Platform SHA differs from live occurrence")
+    binding = ManagedResourceBinding.model_validate(body.get("binding"))
+    if (
+        binding.tenant_binding != TENANT
+        or binding.canonical_id != "metric.sales_order_count"
+        or binding.resource_kind != ResourceKind.METRIC
+        or binding.semantic_context_version != CONTEXT_VERSION
+        or binding.applied_version != "1"
+        or binding.ownership != "DIMA_MANAGED"
+        or binding.metabase_local_id is None
+        or binding.metabase_entity_id is None
+    ):
+        raise RuntimeError("semantic availability binding is not the frozen PX-01 metric")
+    native_resource = body.get("native_metric_resource")
+    if not isinstance(native_resource, dict):
+        raise RuntimeError("semantic availability proof lacks native metric resource")
+    if (
+        int(native_resource.get("metabase_local_id") or -1) != binding.metabase_local_id
+        or str(native_resource.get("portable_entity_id") or "")
+        != binding.metabase_entity_id
+        or str(native_resource.get("semantic_context_version") or "")
+        != binding.semantic_context_version
+    ):
+        raise RuntimeError("native metric resource identity differs from P9 binding")
+    return binding
+
+
 def oracle(path: Path) -> Any:
     body = json.loads(path.read_text(encoding="utf-8"))
     matches = [
@@ -473,6 +513,7 @@ def main() -> int:
     ap.add_argument("--model-identifier", required=True)
     ap.add_argument("--platform-sha", required=True)
     ap.add_argument("--live-attempt-id", required=True)
+    ap.add_argument("--semantic-availability-report", type=Path, required=True)
     args = ap.parse_args()
 
     failure_started = time.monotonic()
@@ -493,6 +534,7 @@ def main() -> int:
         "native_agent_latency_ms": None,
         "provider_usage": {},
         "exact_serialized_pmbql": None,
+        "managed_metric_binding": None,
     }
 
     try:
@@ -502,6 +544,12 @@ def main() -> int:
             args.base_url, token
         )
         snapshot = binding_snapshot(database_id, table_id, field_id, schema_name)
+        metric_binding = managed_metric_binding(
+            args.semantic_availability_report,
+            engine_sha=args.engine_sha,
+            platform_sha=args.platform_sha,
+        )
+        failure_state["managed_metric_binding"] = metric_binding.model_dump(mode="json")
         authority, intent = authority_and_intent()
         principal = Principal(
             user_id=PRINCIPAL,
@@ -607,6 +655,7 @@ def main() -> int:
                 verified_security_facts=security,
                 dima_request_id=request_id,
                 dima_trace_id=request_id + "-trace",
+                managed_resource_bindings=(metric_binding,),
             )
             if authz.authorization.outcome != NativeCandidateOutcome.ALLOW:
                 raise RuntimeError(
@@ -720,6 +769,11 @@ def main() -> int:
             },
             "fingerprint_chain": fingerprints,
             "runtime_identity": identity.model_dump(mode="json"),
+            "managed_metric_binding": metric_binding.model_dump(mode="json"),
+            "native_metric_references": [
+                item.model_dump(mode="json")
+                for item in attestation.manifest.native_metric_references
+            ],
             "receipt": receipt.model_dump(mode="json"),
             "evidence": evidence.model_dump(mode="json"),
             "economics": {
