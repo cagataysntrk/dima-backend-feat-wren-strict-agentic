@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import os
 import time
-from urllib.parse import quote
 from pathlib import Path
 
 import httpx
@@ -103,14 +102,6 @@ def main() -> None:
     wait_health()
     session = setup_if_needed()
     with client(session) as c:
-        for key, value in (
-            ("ai-features-enabled?", True),
-            ("metabot-enabled?", True),
-            ("agent-api-enabled?", True),
-        ):
-            r = c.put(f"/api/setting/{quote(key, safe='')}", json={"value": value})
-            r.raise_for_status()
-
         dbs = c.get("/api/database")
         dbs.raise_for_status()
         database = next((x for x in items(dbs.json()) if x.get("name") == WAREHOUSE), None)
