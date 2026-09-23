@@ -11,10 +11,13 @@ from fastapi.responses import StreamingResponse
 
 from app.auth.dependencies import get_current_principal, require, require_company
 from app.config import get_settings
-from app.v2.models import AskV2Request
 from app.v2.product_coordinator import ProductCoordinator
 from app.v2.product_events import ProductEventSink
-from app.v2.product_models import ProductEventKind, ProductResponse
+from app.v2.product_models import ProductAskRequest, ProductEventKind, ProductResponse
+from app.v2.report_continuation import (
+    ReportContinuationNotAdmissibleError,
+    StaleReportContinuationError,
+)
 from app.v2.runtime_boundary import request_ref
 from control_plane.authorize import Principal
 
@@ -30,7 +33,7 @@ _coordinator = ProductCoordinator()
 )
 def ask_v2(
     request: Request,
-    body: AskV2Request,
+    body: ProductAskRequest,
     principal: Principal = Depends(get_current_principal),
 ) -> ProductResponse:
     if not get_settings().ask_v2_enabled:
@@ -54,6 +57,22 @@ def ask_v2(
             body=body,
             principal=principal,
         )
+    except StaleReportContinuationError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "stale_report_section_continuation",
+                "message": str(exc),
+            },
+        ) from exc
+    except ReportContinuationNotAdmissibleError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "section_followup_binding_not_admissible",
+                "message": str(exc),
+            },
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:
@@ -73,7 +92,7 @@ def ask_v2(
 )
 def ask_v2_stream(
     request: Request,
-    body: AskV2Request,
+    body: ProductAskRequest,
     principal: Principal = Depends(get_current_principal),
 ):
     if not get_settings().ask_v2_enabled:
