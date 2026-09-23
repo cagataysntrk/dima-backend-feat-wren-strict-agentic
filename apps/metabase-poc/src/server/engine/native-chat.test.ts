@@ -126,9 +126,11 @@ describe("native Metabot stream parser", () => {
 
 describe("native Metabot adapter contract", () => {
   const originalSecret = process.env.BETTER_AUTH_SECRET;
+  const originalEngineUrl = process.env.DIMA_ENGINE_URL;
 
   beforeEach(() => {
     process.env.BETTER_AUTH_SECRET = "native-adapter-test-secret";
+    process.env.DIMA_ENGINE_URL = "http://engine.test";
   });
 
   afterEach(() => {
@@ -136,6 +138,8 @@ describe("native Metabot adapter contract", () => {
     vi.restoreAllMocks();
     if (originalSecret === undefined) delete process.env.BETTER_AUTH_SECRET;
     else process.env.BETTER_AUTH_SECRET = originalSecret;
+    if (originalEngineUrl === undefined) delete process.env.DIMA_ENGINE_URL;
+    else process.env.DIMA_ENGINE_URL = originalEngineUrl;
   });
 
   it("maps native tool/text/query output to existing Dima events and QueryResult", async () => {
@@ -243,6 +247,7 @@ describe("native Metabot adapter contract", () => {
     expect(nativeBodies[1].conversation_id).toBe(nativeBodies[0].conversation_id);
     expect(nativeBodies[1].state).toEqual({ query: { id: "state-q1" } });
     expect(nativeBodies[1].history).toEqual([
+      { role: "user", content: "Q1" },
       {
         role: "assistant",
         tool_calls: [
@@ -255,7 +260,6 @@ describe("native Metabot adapter contract", () => {
       },
       { role: "tool", content: { ok: true }, tool_call_id: "tc1" },
       { role: "assistant", content: "A1" },
-      { role: "user", content: "Q1" },
     ]);
   });
 
