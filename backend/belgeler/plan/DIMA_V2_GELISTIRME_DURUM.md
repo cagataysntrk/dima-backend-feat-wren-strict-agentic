@@ -1,3 +1,88 @@
+## 2026-09-23 — DAY7 RELATIONSHIP STRUCTURED-ACTION LIVE DIAGNOSTIC
+
+```text
+product_behavior_base_sha       b70f0aab209b2353b854463ace582c40bcc2bd98
+diagnostic_code_sha             54a5808b10473e91639b7f6984069752997ab29d
+workflow_run                    35825073021
+artifact_id                     10735260733
+measurement_valid               true
+provider_preflight              VALID
+Manager / Semantic / Temporal   Sol / Luna / Sol
+workers                         1
+service_queries                 0
+```
+
+Cases:
+- `relationship-safe`
+- `relationship-unsafe`
+
+Both receipts identify the same FIRST OWNER:
+
+```text
+PREACCEPTANCE_COMPLETENESS
+```
+
+Evidence chain for both:
+1. Intent draft correctly models RELATIONSHIP and names two semantic surfaces.
+2. Grounding resolves only the metric.
+3. The relationship counterpart dimension remains unresolved.
+4. Grounding summary marks the unresolved dimension as
+   `required_by_capability=false`.
+5. Coverage still PASSes.
+6. Contract is ACCEPTED with only the metric semantic handle.
+7. A relationship seed task is registered anyway.
+8. Post-acceptance Manager attempts to recover missing USER_SOURCE semantics.
+9. Runtime correctly rejects post-acceptance USER_SOURCE reparsing.
+
+Raw structured-action capture:
+- current live outputs did NOT repeat the old derived-field-on-run_relationship error;
+- `derived_fields_on_run_relationship = {}` in both cases;
+- therefore that old schema/cognition symptom is not the stable first owner;
+- Manager did attempt relationship execution with missing/invalid counterpart authority,
+  then attempted forbidden USER_SOURCE repair and eventually clarification.
+
+Current accepted obligations become `BLOCKED_DATA_GAP` downstream with blocker:
+
+```text
+initial relationship primitive requires metric -> dimension semantic refs
+```
+
+This confirms the semantic-shape requirement already exists downstream.
+
+Root invariant:
+
+```text
+An executable RELATIONSHIP USER_MUST may not cross AcceptedTurnContract
+unless the semantic shape required by the governed Day7 relationship primitive
+is already grounded.
+
+Current Day7 relationship primitive shape:
+metric + dimension
+```
+
+Single owner:
+`ManagerCapabilityRegistry.RELATIONSHIP semantic algebra / preacceptance completeness`.
+
+Explicit non-owners:
+- CrossDomainJoinGate
+- CrossDomainJoinFactBuilder
+- Wren relationship truth
+- fanout certificate
+- relationship SQL/execution adapter
+- post-acceptance USER_SOURCE reparse invariant
+
+Next permitted fix:
+make RELATIONSHIP's required semantic kinds match its existing governed executable
+primitive, then prove:
+- unresolved counterpart stops before AcceptedTurnContract,
+- complete metric+dimension relationship still accepts,
+- no relationship execution occurs from incomplete authority,
+- existing real-Wren relationship vertical remains GREEN.
+
+No semantic-retrieval fix is bundled into this change.
+
+---
+
 ## 2026-09-23 — DAY7 CAPABILITY + SEMANTIC DIAGNOSTIC RECEIPTS
 
 Provider-free diagnostic checkpoint:
