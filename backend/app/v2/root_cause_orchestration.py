@@ -336,6 +336,92 @@ class RootCauseBootstrapPolicy:
         )
 
 
+def _next_test_capability_for(
+    task_kind: ResearchTaskKind,
+    *,
+    task_service: ResearchTaskService,
+    tool_registry: ResearchToolRegistry,
+    capabilities: ManagerCapabilityRegistry,
+) -> ManagerCapabilityKey:
+    """Resolve one advertised next-test family through existing deterministic owners.
+
+    This is the single mapping used by both provider-facing contract projection and
+    runtime admission. It creates no new task/capability authority.
+    """
+    try:
+        tool_registry.tool_id_for_task_kind(task_kind)
+        capability = task_service.capability_for_task_kind(task_kind)
+    except (ResearchToolContractError, ResearchTaskMaterializationError) as exc:
+        raise RootCauseOrchestrationError(
+            f"next-test task kind is not a declared governed execution family: {task_kind.value}"
+        ) from exc
+
+    spec = capabilities.get(capability)
+    if spec.execution_mode != ManagerCapabilityExecutionMode.DIRECT:
+        raise RootCauseOrchestrationError(
+            "next-test task kind is not backed by DIRECT governed capability"
+        )
+
+    # Current Day7 relationship execution binds directly to a RELATIONSHIP
+    # obligation. Day8 must not advertise a task family it cannot materialize
+    # honestly under the ROOT_CAUSE umbrella.
+    if task_kind == ResearchTaskKind.RELATIONSHIP:
+        raise RootCauseOrchestrationError(
+            "derived RELATIONSHIP under ROOT_CAUSE requires a separate governed "
+            "derived-obligation adapter; fail closed rather than bypass CrossDomainJoinGate"
+        )
+    return capability
+
+
+def root_cause_next_test_contract(
+    *,
+    task_service: ResearchTaskService | None = None,
+    tool_registry: ResearchToolRegistry | None = None,
+    capabilities: ManagerCapabilityRegistry | None = None,
+) -> tuple[dict[str, object], ...]:
+    """Project runtime-admissible Day8 next-test families for Manager cognition.
+
+    Proposal surface must not advertise task kinds that deterministic admission will
+    always reject. The projection contains only existing registry facts; runtime gates
+    remain authoritative for semantic shape, Evidence, budget and fanout.
+    """
+    tasks = task_service or ResearchTaskService()
+    tools = tool_registry or ResearchToolRegistry()
+    caps = capabilities or ManagerCapabilityRegistry()
+    rows: list[dict[str, object]] = []
+
+    for task_kind in ResearchTaskKind:
+        try:
+            capability = _next_test_capability_for(
+                task_kind,
+                task_service=tasks,
+                tool_registry=tools,
+                capabilities=caps,
+            )
+        except RootCauseOrchestrationError:
+            continue
+        spec = caps.get(capability)
+        rows.append(
+            {
+                "task_kind": task_kind.value,
+                "capability": capability.value,
+                "execution_mode": spec.execution_mode.value,
+                "required_semantic_kinds": sorted(spec.required_kinds),
+                "allowed_semantic_kinds": sorted(spec.allowed_kinds),
+                "required_operation_params": sorted(spec.required_params),
+                "allowed_operation_params": sorted(spec.allowed_params),
+            }
+        )
+    return tuple(rows)
+
+
+def root_cause_next_test_task_kinds() -> tuple[ResearchTaskKind, ...]:
+    return tuple(
+        ResearchTaskKind(row["task_kind"])
+        for row in root_cause_next_test_contract()
+    )
+
+
 class HypothesisNextTestBoundary:
     """Admit bounded next-test cognition without model-owned task identity."""
 
@@ -443,27 +529,12 @@ class HypothesisNextTestBoundary:
                     )
 
     def _capability_for(self, proposal: HypothesisNextTestProposal) -> ManagerCapabilityKey:
-        try:
-            self._tools.tool_id_for_task_kind(proposal.task_kind)
-            capability = self._tasks.capability_for_task_kind(proposal.task_kind)
-        except (ResearchToolContractError, ResearchTaskMaterializationError) as exc:
-            raise RootCauseOrchestrationError(
-                f"next-test task kind is not a declared governed execution family: {proposal.task_kind.value}"
-            ) from exc
-
-        spec = self._capabilities.get(capability)
-        if spec.execution_mode != ManagerCapabilityExecutionMode.DIRECT:
-            raise RootCauseOrchestrationError(
-                "next-test task kind is not backed by DIRECT governed capability"
-            )
-        # Current Day7 relationship execution binds directly to a RELATIONSHIP
-        # obligation. Day8 must not create an advertised dead-end under ROOT_CAUSE.
-        if proposal.task_kind == ResearchTaskKind.RELATIONSHIP:
-            raise RootCauseOrchestrationError(
-                "derived RELATIONSHIP under ROOT_CAUSE requires a separate governed "
-                "derived-obligation adapter; fail closed rather than bypass CrossDomainJoinGate"
-            )
-        return capability
+        return _next_test_capability_for(
+            proposal.task_kind,
+            task_service=self._tasks,
+            tool_registry=self._tools,
+            capabilities=self._capabilities,
+        )
 
     def _validate_shape(
         self,
