@@ -105,10 +105,15 @@ class ManagerRuntime:
         return self._snapshot.accepted_contract_id is not None
 
     def reset_semantic_resolution_receipts(self) -> None:
-        """Start a fresh pre-acceptance draft attempt without receipt carry-over."""
-        if self.has_accepted_contract:
+        """Start a fresh pre-acceptance draft attempt without receipt carry-over.
+
+        A report-section continuation keeps the immutable active contract as the lineage
+        head but re-enters UNDERSTANDING for a new user turn. Only that explicit state may
+        clear current-turn semantic receipts while preserving prior accepted authority.
+        """
+        if self.has_accepted_contract and self._snapshot.state != ManagerState.UNDERSTANDING:
             raise ManagerStateError(
-                "accepted authority semantic receipts cannot be reset"
+                "accepted authority semantic receipts may reset only for explicit follow-up understanding"
             )
         self._semantic_receipts = []
 
@@ -147,6 +152,39 @@ class ManagerRuntime:
         if self._snapshot.state != ManagerState.INITIAL:
             raise ManagerStateError("understanding can start only from INITIAL")
         self._snapshot = self._snapshot.model_copy(update={"state": ManagerState.UNDERSTANDING})
+        return self._snapshot
+
+    def begin_followup_turn(self) -> ManagerRunSnapshot:
+        """Open a new user turn on the same accepted Research lineage/run.
+
+        Evidence and immutable accepted authority remain; per-turn budgets/receipts reset.
+        No contract fields are mutated here. The next PROPOSE_ACCEPTANCE must produce a
+        new version through IntentAcceptanceGate.
+        """
+        if self._accepted_contract is None or self._ledger is None:
+            raise ManagerStateError("follow-up requires active accepted contract + ledger")
+        if self._snapshot.state not in {
+            ManagerState.COMPLETED,
+            ManagerState.BUDGET_EXHAUSTED,
+            ManagerState.BLOCKED,
+            ManagerState.NEEDS_CLARIFICATION,
+        }:
+            raise ManagerStateError(
+                f"follow-up cannot open from non-terminal state {self._snapshot.state.value}"
+            )
+        self._semantic_receipts = []
+        self._snapshot = self._snapshot.model_copy(
+            update={
+                "state": ManagerState.UNDERSTANDING,
+                "terminal_status": None,
+                "tool_calls": 0,
+                "data_queries": 0,
+                "manager_turns": 0,
+                "preacceptance_turns": 0,
+                "research_manager_turns": 0,
+                "last_error": None,
+            }
+        )
         return self._snapshot
 
     def note_manager_turn(
