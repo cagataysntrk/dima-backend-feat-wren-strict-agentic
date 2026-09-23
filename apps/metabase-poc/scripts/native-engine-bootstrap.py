@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from urllib.parse import quote
 from pathlib import Path
 
 import httpx
@@ -107,7 +108,7 @@ def main() -> None:
             ("metabot-enabled?", True),
             ("agent-api-enabled?", True),
         ):
-            r = c.put(f"/api/setting/{key}", json={"value": value})
+            r = c.put(f"/api/setting/{quote(key, safe='')}", json={"value": value})
             r.raise_for_status()
 
         dbs = c.get("/api/database")
