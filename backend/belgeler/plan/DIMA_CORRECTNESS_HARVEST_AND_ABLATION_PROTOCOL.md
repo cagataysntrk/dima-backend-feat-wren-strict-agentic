@@ -519,3 +519,40 @@ no DEV80
 no Validation50
 no Hidden50
 ```
+
+
+---
+
+## DAY8 D8-B HARVEST — 2026-09-23
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-061 | Only active accepted ROOT_CAUSE authority may own mutable hypothesis state. Allowed lifecycle statuses are ACCEPTED, READY, IN_PROGRESS; unaccepted or terminal states fail closed. | MUST_PORT | terminal/unaccepted causal authority manufacturing new epistemic state | `HypothesisLedger._validate_root_authority`; focused `35884577376` GREEN |
+| H-062 | Hypothesis/test proposal is planning; only completed VERIFIED governed Evidence may alter epistemic evidence state. | MUST_PORT | plan-as-proof / proposed-test laundering | HypothesisLedger Evidence validation + D8-B proposal boundary |
+| H-063 | Hypothesis trigger/relation proposals may reference only current, VERIFIED and cognition-inspected governed Evidence. | MUST_PORT | unseen Evidence becoming model support/contradiction | `CurrentRunEvidenceView` + `HypothesisProposalBoundary`; focused `35884577376` |
+| H-064 | Priority/interestingness failure or magnitude cannot invalidate valid Evidence and cannot itself become causal SUPPORTS truth. | MUST_PORT | ranking metadata laundering into causal state | `EpistemicLabelGate.is_priority_only` + D8-B relation admission |
+| H-065 | ROOT_CAUSE is an orchestration umbrella, not a ResearchTaskKind and not a QUERY alias. | MUST_PORT | fake direct root-cause query path / capability dead-end | ROOT_CAUSE remains `executable=false`; D8-B does not touch execution mapping |
+| H-066 | A run-scoped HypothesisLedger observes newly committed current-run Evidence through the existing Day7 runtime without reconstructing ledger authority or creating another Evidence registry. | MUST_PORT | stale Evidence snapshot / second-ledger authority drift | `CurrentRunEvidenceView` live-view attack; focused `35883953741` + `35884577376` |
+
+Permanent D8-B split:
+
+```text
+model cognition
+→ proposes hypothesis text / existing governed IDs / SUPPORTS-or-CONTRADICTS relation
+
+proposal boundary
+→ requires current + VERIFIED + inspected Evidence
+
+HypothesisLedger
+→ validates authority/lineage/IDs and mints hypothesis_id
+
+EpistemicLabelGate
+→ limits public claim class
+
+none of these
+→ execute DB
+→ infer causality
+```
+
+Trigger Evidence remains distinct from SUPPORTS Evidence.
+Status remains distinct from epistemic label.
