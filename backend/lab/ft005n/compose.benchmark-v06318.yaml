@@ -1,0 +1,7 @@
+services:
+  metabase:
+    image: metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
+    environment:
+      MB_AI_FEATURES_ENABLED: "true"
+      MB_AGENT_API_ENABLED: "true"
+      MB_ANON_TRACKING_ENABLED: "false"
