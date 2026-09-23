@@ -334,16 +334,21 @@ class ManagerState(StrEnum):
 
 
 class ManagerBudget(FrozenModel):
-    # One budget authority, separate finite phases. Pre-acceptance draft/revise is
-    # bounded independently from post-acceptance Research cognition; a clarification
-    # repair must not silently consume the adaptive Research allowance.
+    # One budget authority with phase observability plus one global hard ceiling.
+    # Phase counters are useful diagnostics; they never expand the canonical total
+    # Manager allowance.
+    max_total_manager_turns: int = Field(
+        default=6,
+        ge=1,
+        description="Hard ceiling across pre-acceptance + Research Manager turns.",
+    )
     max_preacceptance_turns: int = Field(default=2, ge=1)
     max_tool_calls: int = Field(default=12, ge=1)
     max_data_queries: int = Field(default=8, ge=0, le=12)
     max_manager_turns: int = Field(
         default=6,
         ge=1,
-        description="Post-acceptance Research Manager turns.",
+        description="Research-phase sublimit; global total ceiling still applies.",
     )
 
 
