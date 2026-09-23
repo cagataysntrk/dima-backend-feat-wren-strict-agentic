@@ -133,6 +133,13 @@
 > **FAILURE TRIAGE RECEIPT:** RED live/canary/DEV/Validation/Hidden run sonrası semantic/product code'a dokunmadan önce `belgeler/plan/DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md` zorunlu schema'sı doldurulur.
 > `failure_class + single_owner + root_cause` kapanmadan ve gerekli same-SHA A/B bitmeden product patch yasaktır. `ONE FAILURE ≠ ONE NEW RULE`.
 >
+> **TEST ECONOMY — PERMANENT:** smallest falsifying test first. Paid widening is
+> `1 LIVE → affected pair → 2-case micro → milestone → certification`; skipping tiers is
+> forbidden unless the narrower tier cannot answer the hypothesis. Paid workflows are
+> `workflow_dispatch` only, require explicit scope and hard model-call budget, and may not
+> interpret blank input as “run all”. Frozen/DEV80/Validation/Hidden are milestone resources.
+> Day7 total Manager cognition remains globally capped at 6 across preacceptance + research.
+>
 > **Kısa operasyon protokolü:** geliştirme/mimari doğrulama önceliklidir; büyük test kampanyası
 > yerine vertical slice. Normal loop `code → 3–15 sn focused/provider-free → devam`.
 > Workers=1 önce. Fail sınıflandırmadan patch yok:
