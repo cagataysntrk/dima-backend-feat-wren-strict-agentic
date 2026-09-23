@@ -224,30 +224,32 @@ class ManagerSemanticResolutionAdapter:
 
         raise TemporalResolutionError(f"unsupported temporal hint: {hint}")
 
-    def _resolve_regular(
+    def _resolve_regular_once(
         self,
         *,
-        entries: list[tuple[str | None, str, str]],
+        entries: list[tuple[str | None, str, str, str | None]],
         args: ResolveSemanticsArgs,
-    ) -> ManagerSemanticResolutionResult:
+        linker: BoundedSemanticLinker | None = None,
+    ) -> tuple[ManagerSemanticResolutionResult, tuple]:
+        active_linker = linker or self._semantic_linker
         requests = tuple(
             (
-                f"link:{index}:{source_ref or 'derived'}",
+                f"link:{index}:{owner_id or 'ungrouped'}:{source_ref or 'derived'}",
                 text,
                 hint,
             )
-            for index, (source_ref, text, hint) in enumerate(entries)
+            for index, (source_ref, text, hint, owner_id) in enumerate(entries)
         )
         decision_context: str | None = None
         source_contexts = {
             self._source_spans.message_text_for(source_ref)
-            for source_ref, _, _ in entries
+            for source_ref, _, _, _ in entries
             if source_ref is not None
         }
         if len(source_contexts) == 1:
             decision_context = next(iter(source_contexts))
 
-        selections = self._semantic_linker.resolve(
+        selections = active_linker.resolve(
             requests,
             provenance_type=args.provenance,
             decision_context=decision_context,
@@ -259,7 +261,7 @@ class ManagerSemanticResolutionAdapter:
         unresolved_source_refs: list[str] = []
         unresolved_proposals: list[str] = []
 
-        for (source_ref, proposal_text, _), selection in zip(
+        for (source_ref, proposal_text, _, owner_id), selection in zip(
             entries,
             selections,
             strict=True,
@@ -271,7 +273,7 @@ class ManagerSemanticResolutionAdapter:
                     unresolved_proposals.append(proposal_text)
                 continue
 
-            handle = self._semantic_linker.bind_selection(
+            handle = active_linker.bind_selection(
                 selection,
                 provenance_type=args.provenance,
                 parent_obligation_id=args.parent_obligation_id,
@@ -281,17 +283,73 @@ class ManagerSemanticResolutionAdapter:
                 ManagerResolvedSemantic(
                     source_ref=source_ref,
                     proposal_text=None if source_ref else proposal_text,
+                    owner_id=owner_id,
                     provenance=args.provenance,
                     handle=handle,
                 )
             )
 
-        return ManagerSemanticResolutionResult(
-            resolved=tuple(resolved),
-            unresolved_source_refs=tuple(dict.fromkeys(unresolved_source_refs)),
-            unresolved_proposals=tuple(dict.fromkeys(unresolved_proposals)),
-            clarification=None,
+        return (
+            ManagerSemanticResolutionResult(
+                resolved=tuple(resolved),
+                unresolved_source_refs=tuple(dict.fromkeys(unresolved_source_refs)),
+                unresolved_proposals=tuple(dict.fromkeys(unresolved_proposals)),
+                clarification=None,
+            ),
+            tuple(selections),
         )
+
+    def _resolve_regular(
+        self,
+        *,
+        entries: list[tuple[str | None, str, str, str | None]],
+        args: ResolveSemanticsArgs,
+    ) -> ManagerSemanticResolutionResult:
+        result, _ = self._resolve_regular_once(entries=entries, args=args)
+        return result
+
+    def _coherent_sibling_scope(
+        self,
+        *,
+        resolved: tuple[ManagerResolvedSemantic, ...],
+        owner_id: str,
+    ) -> tuple[str, ...]:
+        """Conservative same-obligation discovery scope from current governed handles."""
+        cube_sets: list[frozenset[str]] = []
+        for item in resolved:
+            if item.owner_id != owner_id:
+                continue
+            if item.handle.target_kind not in {
+                "metric",
+                "kpi",
+                "dimension",
+                "entity_value",
+            }:
+                continue
+            binding = self._handles.binding_for_execution(
+                item.handle.handle_id,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
+            )
+            cubes = frozenset(
+                str(value)
+                for value in tuple(
+                    getattr(binding.canonical_target, "cube_names", ()) or ()
+                )
+                if str(value)
+            )
+            if cubes:
+                cube_sets.append(cubes)
+
+        if not cube_sets:
+            return ()
+        scope = set(cube_sets[0])
+        for cubes in cube_sets[1:]:
+            scope.intersection_update(cubes)
+            if not scope:
+                return ()
+        return tuple(sorted(scope))
+
 
     def resolve(self, args: ResolveSemanticsArgs, runtime=None) -> ManagerSemanticResolutionResult:
         del runtime  # provenance authority is validated by GovernedManagerExecutor.
