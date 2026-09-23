@@ -1712,3 +1712,190 @@ forbidden at handoff:
 
 status:
 `SEALED / PRE-P13 HANDOFF READY / P13 NOT STARTED`.
+
+
+---
+
+## DMP-DEC-0036 — P13 native-engine trust boundary and normative precedence
+
+date: 2026-09-23
+
+question:
+After P12X certified the upstream-derived Dima Metabase Engine and typed native bridge, what architecture
+is authoritative for P13 and how does Dima prevent native analytical cognition from becoming official
+business truth without deterministic authorization?
+
+supersedes:
+- the implementation-authority portions of DMP-DEC-0029 that assumed Agent-API
+  `CanonicalProjection` was the universal production execution artifact;
+- every historical roadmap/report assumption that Agent API is the primary production analytical seam.
+
+does_not_supersede:
+- DMP-DEC-0029's trust invariant that the material execution artifact Dima authorizes must be the
+  artifact actually executed and receipted;
+- P5 one-receipt-system semantics;
+- P10 one-durable-access-identity semantics;
+- Standard/Research authority XOR;
+- P11 adoption semantics and open forward-integration requirement;
+- open security/semantic/transport debt.
+
+evidence:
+```text
+Platform audited HEAD              = 6a74994b9f968a1c3c318456832d0b68b321d202
+functional P12X proof SHA          = 094b5f6e0f1be939172b95fde66cab055c66ae54
+P12X C2 workflow                   = 35839639339 = SUCCESS
+engine repo                        = UpcyTech/dima-metabase-engine
+engine gitlink                     = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+upstream base                      = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+runtime                            = v0.63.18-dima.0
+Agent API analytical fallback      = 0
+Wren fallback                      = 0
+raw SQL fallback                   = 0
+```
+
+Pinned source evidence shows native `construct_notebook_query` already performs repair, source-table
+permission checks, validation, numeric pMBQL resolution, runability/editor validation and portable
+export, then emits structured output containing native query-id, the exact resolved pMBQL query,
+portable query-json and result columns. Dima must not rebuild this query.
+
+decision:
+
+### Current authoritative architecture
+
+```text
+Native Metabot
+= ANALYTICAL COGNITION
+= QUERY-CANDIDATE AUTHOR
+
+Dima
+= BUSINESS TRUTH
+= EXECUTION AUTHORITY
+= SECURITY / PROVENANCE / EVIDENCE AUTHORITY
+
+Metabase Query Processor
+= EXECUTOR
+```
+
+The native-engine hot path is primary. Agent API analytical execution is
+`LEGACY / AUXILIARY / NON-PRIMARY`.
+
+### Native trust transition
+
+P13A introduces a typed `NativeQueryCandidate` representing one exact native query occurrence.
+It carries at least:
+- exact engine identity;
+- Dima request/trace ids;
+- native conversation id and query-id;
+- exact resolved pMBQL artifact;
+- portable/exported representation when present;
+- stable Dima-governed source/resource bindings;
+- native validation provenance;
+- exact candidate artifact fingerprint;
+- query count.
+
+Candidate fingerprint means **exact execution-artifact identity**, not semantic equivalence. It is the
+SHA-256 of deterministic serialization of the exact pMBQL artifact that may execute. Dima must not
+strip or rewrite native fields merely to make independent candidates hash alike.
+
+The Dima authorization gate may return only:
+`ALLOW | CLARIFY/REPLAN | BLOCK`.
+The gate verifies; it does not write/rewrite MBQL.
+
+Initial P13A certification is deliberately narrow:
+```text
+one governed metric
+one governed source
+optional single accepted time scope
+one material query
+no arbitrary filters
+no approved relationship path yet
+no research/multi-query planning
+```
+
+Any unapproved extra metric/source/time/filter/join/query material is blocked.
+
+### One trust plane, engine-independent execution artifact
+
+P5 and P10 must stop depending directly on the Agent-API concrete `CanonicalProjection`.
+P13A introduces one narrow common contract, `AuthorizedExecutionArtifact` (or equivalent), exposing:
+- authority id;
+- projection hash;
+- resolved-intent hash;
+- semantic-context version;
+- semantic refs;
+- stable resource-id/fingerprint bindings;
+- exact substrate artifact fingerprint(s);
+- exact substrate artifact representation(s) needed for receipt/audit;
+- query count / step role;
+- engine/substrate identity.
+
+For native Metabase, the substrate artifact is the exact resolved pMBQL candidate.
+For the historical Agent API path, an adapter maps `CanonicalProjection` into the same contract.
+
+There will be:
+- one P10 `ExecutionAccessSnapshotIssuer`;
+- one P5 `DimaQueryReceiptSealer`;
+- one `ExecutionAccessSnapshot.execution_access_fingerprint`;
+- one Dima receipt system.
+
+No `NativeAccessSnapshot`, `NativeQueryReceipt` or second receipt/access owner is permitted.
+
+### Exact-artifact invariant
+
+```text
+native candidate pMBQL
+→ fingerprint exact artifact
+→ Dima authorization
+→ AuthorizedExecutionArtifact
+→ execute THE SAME pMBQL
+→ result
+→ DimaQueryReceipt with THE SAME artifact fingerprint
+→ Evidence promotion
+```
+
+`candidate A → authorize A → construct/execute B` is a hard fail.
+
+Native Metabot prose is never VERIFIED Evidence. Official numeric claims require authorized execution,
+receipt and Evidence promotion.
+
+### Engine identity source-review conclusion
+
+Current bridge runtime verification checks only the runtime tag. Upstream build source confirms
+`version.properties` contains the build tag plus only the first seven git-hash characters. This was
+adequate for P12X C2 because CI separately pinned exact source/image, but is insufficient by itself as
+the long-term P13B production attestation for exact engine source + image.
+
+P13A therefore makes **no engine-source change**.
+
+Before P13B, one of these must be separately certified:
+1. deployment/runtime attestation that binds exact engine SHA + immutable image digest to the running
+   instance; or
+2. a minimal isolated Dima-owned engine identity endpoint/build manifest.
+
+No patch to `run-agent-loop`, profiles, skills, native query construction or Query Processor is
+authorized for identity.
+
+### Historical code disposition
+
+Keep, do not delete:
+- `MetabaseAgentClient`;
+- `MetabaseSubstrateAdapter`;
+- `MetabaseProjectionCompiler`;
+- `CanonicalProjection`;
+- historical canonicalization tests.
+
+They remain regression/migration/auxiliary assets, not primary Standard hot-path authority.
+
+### Open debt
+
+Remain explicitly open:
+- `DMP-P5-BLOCK-001`;
+- `DMP-P11-INTEGRATION-005`;
+- EV-05/06/07;
+- P10B2 RLS/CLS/impersonation/advanced routing/cache-result reauthorization;
+- P9 dimension/time/relationship transport;
+- P7/P8 calculated/relationship/view semantic gaps;
+- historical Wren typed gaps.
+
+status:
+`SEALED / CURRENT NORMATIVE P13 ARCHITECTURE / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN`.

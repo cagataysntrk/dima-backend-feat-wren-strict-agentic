@@ -1,3 +1,10 @@
+# HISTORICAL / SUPERSEDED FOR IMPLEMENTATION
+
+> This file is preserved as Agent-API-era trust-design history. DMP-DEC-0031..0036 and the certified
+> P12X native-engine architecture are current implementation authority. Do not implement
+> `standard_execution.py / execute_prepared()` from this document as the production P13 hot path.
+> Current replacement: `P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md`.
+
 # P13 — PRE-DEVELOPMENT REVIEW
 
 

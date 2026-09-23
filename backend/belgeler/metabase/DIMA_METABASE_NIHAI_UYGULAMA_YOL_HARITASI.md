@@ -5,6 +5,75 @@
 **Tek cümlelik protokol:** Vaka geçirerek sistem yapma; doğru abstraction’ı kur, vakalar onun doğal sonucu olarak geçsin.  
 **Final audit notu:** Plan, Metabase source-level cross-check sonrası query-handle lifecycle, access-lens, retrieval states, implicit joins, bridge preflight, front-door ownership ve cutover/rollback adımlarıyla sertleştirilmiştir.
 
+
+## CURRENT NORMATIVE ARCHITECTURE — DMP-DEC-0031..0036 / P12X C0-C3
+
+> **Precedence notice — 2026-09-23**
+>
+> DMP-DEC-0031 through DMP-DEC-0036 and the certified P12X C0-C3 evidence **supersede every
+> historical assumption in this document that Agent API is the primary production analytical
+> execution seam**. Historical P0-P12 sections remain preserved for evidence, migration history and
+> regression context; they are not current hot-path implementation authority where they conflict with
+> this section.
+
+Current production-engine architecture:
+
+```text
+DIMA PRODUCT
+→ DIMA CONVERSATION / DECISION INTELLIGENCE
+→ DIMA SEMANTIC + SECURITY + PROVENANCE + EVIDENCE CONTROL PLANE
+→ TYPED DIMA NATIVE ENGINE BRIDGE
+→ PINNED DIMA METABASE ENGINE
+   repo: UpcyTech/dima-metabase-engine
+   gitlink: c56b71ab23bf2a2d266bac2fba8d165ac059d613
+   upstream: v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+→ native Metabot / profiles / skills / engine-local state
+→ native query construction + repair / MBQL / Query Processor / drivers
+→ CUSTOMER DB
+```
+
+Binding ownership:
+
+```text
+Native Metabot
+= analytical cognition / orchestration / query-candidate author
+
+Dima
+= business semantic truth
+= execution authority
+= security / provenance / evidence authority
+= durable conversation / research / decision truth
+
+Metabase Query Processor
+= executor
+```
+
+Historical Agent-API-era certification is **not** current production hot-path architecture.
+
+The following historical assumptions are explicitly overridden for current implementation:
+- P2 Agent API readiness as primary analytical runtime;
+- P3 Agent API client boundary as primary analytical seam;
+- P4 `MetabaseProjectionCompiler` / `CanonicalProjection` as universal production query-authoring identity;
+- P5 REST/Agent API as the primary production execution route;
+- P26 Agent API availability as the primary runtime-availability contract;
+- P41 “Agent API disabled” as the primary analytical-path failure.
+
+Agent API code is retained and may remain useful for measured provisioning, resource persistence,
+metadata/search utilities, administrative tooling, historical regression and migration support.
+Its analytical execution role is now:
+
+```text
+LEGACY / AUXILIARY / NON-PRIMARY
+```
+
+It must not become:
+- primary Standard query author/executor;
+- silent native fallback;
+- a second query-authoring authority.
+
+P13 now means **Production Standard over the Dima Metabase Engine**. The core invariant remains:
+Dima must authorize exactly the material execution artifact that is actually executed and receipted.
+
 ---
 
 # P0 — Branch, baseline ve source lock

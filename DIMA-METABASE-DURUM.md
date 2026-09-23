@@ -1966,3 +1966,33 @@ next legal action                  = fresh P13 predevelopment reconciliation
 
 Do not mechanically resume the historical P13 Agent-API-oriented ticket.
 See DMP-DEC-0035 and the final section of `DIMA-METABASE-HANDOFF.md`.
+
+
+---
+
+## P13 NATIVE-ENGINE TAKEOVER — NORMATIVE RECONCILIATION
+
+```text
+read HEAD                         = 6a74994b9f968a1c3c318456832d0b68b321d202
+functional P12X proof             = 094b5f6e0f1be939172b95fde66cab055c66ae54
+engine gitlink                    = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+Fast Track observation            = 8b9397b4f883f9c188a5fdadafa3db0dc418ec34
+ask-v2 latest read-only observation = 6f163d10aa760a69a196c74a5cc23aa2a2671a73
+merge/cherry-pick/rebase/write    = 0
+```
+
+DMP-DEC-0036 seals the current precedence:
+```text
+native Metabot = cognition/query candidate author
+Dima           = business + execution/security/provenance/evidence truth
+Metabase QP    = executor
+```
+
+New current P13 docs:
+- `backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md`;
+- `backend/belgeler/metabase/tickets/P13_NATIVE_ENGINE_STANDARD_VERTICAL.md`.
+
+Historical P13 Agent-API documents remain for evidence only.
+
+Next gate:
+`normative-doc governance repin → P13A provider-free implementation`.
