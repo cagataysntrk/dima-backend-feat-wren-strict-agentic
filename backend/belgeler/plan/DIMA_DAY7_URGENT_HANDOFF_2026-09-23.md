@@ -16,8 +16,13 @@ nereden ve hangi sınırlarla devam edeceğini belirleyen operasyonel handoff'tu
 branch
 feat/ask-v2-mvp
 
-CURRENT HEAD
+TESTED PRODUCT CHECKPOINT
 d22fb3626db0fe44ea543eee6531e5544cdf0b56
+
+NOTE
+branch HEAD may be a documentation-only descendant created by this urgent handoff.
+Before product work, diff HEAD against the tested product checkpoint and confirm any
+descendant commits are documentation/CI-only.
 
 latest same-SHA focused
 35840203854
@@ -637,8 +642,11 @@ case-derived prompt, arbitrary budget increase or fallback model cascade.
 BRANCH
 feat/ask-v2-mvp
 
-HEAD
+TESTED PRODUCT SHA
 d22fb3626db0fe44ea543eee6531e5544cdf0b56
+
+BRANCH HEAD
+may be documentation-only descendants from urgent handoff preparation
 
 FOCUSED
 35840203854 = GREEN
