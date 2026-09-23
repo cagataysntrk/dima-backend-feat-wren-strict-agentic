@@ -259,9 +259,20 @@ class IntentAcceptanceGate:
                 parent_spec = self._capabilities.get(parent.capability_key)
             except KeyError:
                 parent_spec = None
-            if parent_spec is not None and parent_spec.lane != ManagerCapabilityLane.RESEARCH:
+            if parent_spec is None:
                 reject.append(
-                    "research directive parent must use RESEARCH capability"
+                    "research directive parent capability is not registered"
+                )
+            elif (
+                not parent_spec.executable
+                or parent_spec.lane
+                not in {
+                    ManagerCapabilityLane.STANDARD,
+                    ManagerCapabilityLane.RESEARCH,
+                }
+            ):
+                reject.append(
+                    "research directive parent must be executable analytical obligation"
                 )
             for source_ref in directive.source_refs:
                 try:
