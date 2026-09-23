@@ -3188,3 +3188,65 @@ forbidden:
 
 status:
 `CLASSIFIED / C1-HARNESS-ONLY CORRECTION AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C1-ORACLE-001 — bounded-repeat scorer overstates stochastic divergence
+
+opened_at: 2026-09-23  
+tested_sha: `564e1d36542f962bad355978c82789d5a34cc248`  
+workflow: `35831869602`  
+artifact: `10738108477`
+
+classification:
+`ORACLE / SCORER STABILIZATION SEMANTICS`
+
+observed:
+- initial six-case comparison found four stock/fork pass-state divergences;
+- supervisor protocol already required exactly two repeats per divergent case;
+- repeat evidence is complete;
+- none of the four divergent cases reproduced a directional
+  `stock PASS / fork FAIL` result in **both** repeats:
+  - PX-01: both repeats stock=fork PASS;
+  - PX-03: repeat-1 stock FAIL/fork PASS, repeat-2 stock PASS/fork FAIL;
+  - PX-06: repeat-1 stock FAIL/fork PASS, repeat-2 stock=fork PASS;
+  - PX-16: both repeats stock/fork FAIL;
+- therefore the observed differences are stochastic/native-model variance, not a reproducible fork
+  capability regression;
+- the current scorer nevertheless fails C1 if **any one** repeat contains a stock-pass/fork-fail,
+  permission mismatch, scope mismatch or silent wrong;
+- it also treats missing permission/scope material in a failed/timeout artifact as a permission/scope
+  regression instead of transport failure evidence.
+
+root_cause:
+The final scorer did not implement the sealed bounded-repeat interpretation. It aggregated individual
+repeat anomalies rather than asking whether a directional fork regression persisted across both
+required repeats.
+
+single_owner:
+`backend/lab/metabase/p12x/c1_score_parity.py`.
+
+authorized_correction:
+- keep the initial result and every repeat in the report;
+- classify a **reproducible fork regression** only when the same directional regression is present in
+  both required repeats;
+- classify divergent cases that do not reproduce directionally as `STOCHASTIC_VARIANCE`;
+- compare permissions only when both artifacts contain permission evidence;
+- treat missing query/scope after transport failure as transport/candidate failure, not
+  `dataset_scope_drift`;
+- C1 GREEN requires zero reproducible fork regression, zero reproducible new silent wrong, zero
+  reproducible permission regression and zero reproducible dataset-scope drift;
+- the old `minimum_stock_pass` remains a diagnostic field only; it is not a parity gate because C1
+  measures fork retention relative to stock, not absolute native quality.
+
+forbidden:
+- changing corpus/questions/oracle values;
+- changing model/provider/permissions;
+- deleting failed attempts from evidence;
+- declaring a single fork success sufficient if a reproducible regression exists;
+- engine/source patch;
+- P13 work.
+
+status:
+`CLASSIFIED / SCORER-ONLY CORRECTION AUTHORIZED`.
