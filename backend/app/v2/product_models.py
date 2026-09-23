@@ -13,12 +13,19 @@ from typing import Any
 from pydantic import Field
 
 from app.v2.models import (
+    AskV2Request,
     BoundedSemanticContextV0,
     FrozenModel,
     TenantAnalyticsRuntimeV0,
 )
 from app.v2.report_builder import ReportDocument
 from app.v2.report_narration import ReportNarrationOverlay
+
+
+class ProductAskRequest(AskV2Request):
+    """Day10 product request; section continuation is opaque control state only."""
+
+    report_section_token: str | None = None
 
 
 class ProductLane(StrEnum):
@@ -79,6 +86,19 @@ class ProductTerminalReceipt(FrozenModel):
     data_queries: int = Field(default=0, ge=0)
 
 
+class VersionedReport(FrozenModel):
+    version: int = Field(ge=1)
+    report: ReportDocument
+    supersedes_report_ref: str | None = None
+    source_run_ref: str = Field(min_length=1)
+
+
+class ProductSectionContinuation(FrozenModel):
+    section_ref: str = Field(pattern=r"^rsec_[a-f0-9]{24}$")
+    followup_context_ref: str = Field(pattern=r"^rctx_[a-f0-9]{24}$")
+    token: str = Field(min_length=1)
+
+
 class ProductResponse(FrozenModel):
     request_ref: str = Field(min_length=1)
     lane: ProductLane
@@ -86,11 +106,11 @@ class ProductResponse(FrozenModel):
     events: tuple[ProductEvent, ...] = ()
     evidence_refs: tuple[ProductEvidenceRef, ...] = ()
     artifact_refs: tuple[str, ...] = ()
-    report: ReportDocument | None = None
+    report: VersionedReport | None = None
     narration: ReportNarrationOverlay | None = None
     limitations: tuple[str, ...] = ()
     terminal_receipt: ProductTerminalReceipt
-    continuation: str | None = None
+    section_continuations: tuple[ProductSectionContinuation, ...] = ()
 
 
 @dataclass(frozen=True)
