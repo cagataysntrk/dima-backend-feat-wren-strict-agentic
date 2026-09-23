@@ -9308,3 +9308,32 @@ DO NOT expand Manager total turn budget
 Next paid measurement, only after explicit supervisor receipt:
 2-case micro ablation above. If decisive, STOP. If ambiguous, add only
 `simple-performance` with <= 8 additional model calls.
+
+
+## 2026-09-23 — DAY8 P11 DESIGN / INVENTORY RECEIPT COMPLETE
+
+```text
+DAY7 / P10                 CLOSED / SEALED
+P11 / DAY8                 OPEN — DESIGN ONLY
+Day8 product implementation NOT STARTED
+paid Day8 eval             NOT RUN
+```
+
+Current design authority:
+`DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`
+
+Core conclusion:
+```text
+Day8 does not need a new SQL/query/agent engine.
+It needs a deterministic epistemic authority layer over existing governed Evidence:
+HypothesisLedger + evidence polarity + EpistemicLabelGate.
+```
+
+Current hard boundary:
+`ROOT_CAUSE` remains recognized but `executable=false` until that authority exists.
+
+Proposed D8-A after review:
+typed epistemic models → HypothesisLedger service → evidence-ref validation →
+EpistemicLabelGate → default-deny CONFIRMED_CAUSE → provider-free attacks.
+
+STOP before product implementation pending architecture review.
