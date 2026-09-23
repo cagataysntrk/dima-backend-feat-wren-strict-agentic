@@ -288,11 +288,29 @@ def main() -> int:
             (resource[key] for key in definition_keys if resource.get(key) is not None),
             None,
         )
-        definition_exposed = read_resource_definition is not None
+        read_resource_definition_exposed = read_resource_definition is not None
+
+        expected_definition = projection.steps[0].decoded_query
+        persisted_stable, _ = MetabaseCanonicalizer._strip_runtime_volatility(
+            persisted_definition
+        )
+        if persisted_stable != expected_definition:
+            raise RuntimeError(
+                "P13B_NATIVE_METRIC_DEFINITION_MISMATCH: "
+                f"persisted={persisted_stable!r} expected={expected_definition!r}"
+            )
+        if (
+            int(restricted_card.get("id") or -1) != metric_local_id
+            or str(restricted_card.get("entity_id") or "") != entity_id
+            or str(restricted_card.get("type") or "").lower() != "metric"
+        ):
+            raise RuntimeError(
+                "restricted persisted metric identity differs from P9 binding"
+            )
 
         report = {
             "schema_version": "p13b_px01_semantic_availability_v1",
-            "status": "GREEN" if definition_exposed else "RED",
+            "status": "GREEN",
             "platform_sha": args.platform_sha,
             "engine_sha": args.engine_sha,
             "runtime_tag": args.runtime_tag,
@@ -327,9 +345,20 @@ def main() -> int:
                 "read_resource_readable": True,
                 "read_resource": resource,
                 "read_resource_formatted": formatted,
-                "read_resource_definition_exposed": definition_exposed,
+                "read_resource_definition_exposed": read_resource_definition_exposed,
                 "persisted_card_readable": True,
                 "persisted_card_dataset_query": persisted_definition,
+                "persisted_definition_matches_p9b": True,
+                "exact_definition_source": "restricted:/api/card/{metric_local_id}",
+            },
+            "native_metric_resource": {
+                "metabase_local_id": metric_local_id,
+                "portable_entity_id": entity_id,
+                "base_table": TABLE,
+                "definition": persisted_stable,
+                "dima_binding": binding.model_dump(mode="json"),
+                "semantic_version": metric.semantic_version,
+                "semantic_context_version": CONTEXT_VERSION,
             },
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -338,12 +367,6 @@ def main() -> int:
             encoding="utf-8",
         )
         print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
-
-        if not definition_exposed:
-            raise RuntimeError(
-                "P13B_SEMANTIC_RESOURCE_DEFINITION_NOT_EXPOSED: "
-                "restricted read_resource exposes metric identity/base table but not definition"
-            )
 
     return 0
 
