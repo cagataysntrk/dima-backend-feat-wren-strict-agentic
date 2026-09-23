@@ -12,6 +12,10 @@ BASE = os.getenv("DIMA_ENGINE_URL", "http://127.0.0.1:3312").rstrip("/")
 ADMIN_EMAIL = os.environ["FT005N_ENGINE_ADMIN_EMAIL"]
 ADMIN_PASSWORD = os.environ["FT005N_ENGINE_ADMIN_PASSWORD"]
 WAREHOUSE = "Dima Analytics Lab"
+NATIVE_MODEL = os.getenv(
+    "DIMA_NATIVE_MODEL",
+    "openai/" + "gpt-5.6-sol",
+).strip()
 
 
 def wait_health() -> None:
@@ -102,6 +106,18 @@ def main() -> None:
     wait_health()
     session = setup_if_needed()
     with client(session) as c:
+        model_settings = c.put(
+            "/api/metabot/settings",
+            json={"provider": "openrouter", "model": NATIVE_MODEL},
+        )
+        model_settings.raise_for_status()
+        configured_model = str((model_settings.json() or {}).get("value") or "")
+        expected_model = "openrouter/" + NATIVE_MODEL
+        if configured_model != expected_model:
+            raise RuntimeError(
+                f"native model mismatch: {configured_model!r} != {expected_model!r}"
+            )
+
         dbs = c.get("/api/database")
         dbs.raise_for_status()
         database = next((x for x in items(dbs.json()) if x.get("name") == WAREHOUSE), None)
@@ -202,6 +218,7 @@ def main() -> None:
         "collection_id": collection_id,
         "dashboard_id": dashboard_id,
         "metabot_permissions": resolved,
+        "native_model": configured_model,
         "api_key_recorded": False,
     }, ensure_ascii=False, indent=2))
 
