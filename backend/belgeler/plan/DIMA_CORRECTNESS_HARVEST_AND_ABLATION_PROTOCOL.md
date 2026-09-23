@@ -333,4 +333,20 @@ relationships, peer sets, time axes or causal claims.
 | H-040 | Automatic peer-set discovery is absent | no V2 governed peer-definition contract | BENCHMARK_REQUIRED | future semantic contract | prevents invented peer universe | primitive audit @ a7303dec | future explicit contract / clarify |
 | H-041 | Derived analytics preserve parent Evidence + QueryContract lineage | backward-compatible EvidenceArtifact extension required | MUST_PORT | none | provenance loss / derived-result laundering | audit invariant; provider-free proof pending | Day7 |
 | H-042 | Interestingness/prioritization is not truth | legacy `rank_dimensions` / future scheduling | BENCHMARK_REQUIRED | none | prevents “interesting” from becoming “true/causal” | DD-16 + audit | Day8/ablation |
+| H-043 | Evaluation availability is separate from product behavior | live eval measurement-validity classifier + provider preflight | MUST_PORT | evaluator/provider independent | provider outage falsely counted as semantic/safety/product failure | `c67bc7a...` / focused `35818843086` GREEN | every future live/ablation evaluator |
 
+
+
+### Evaluation measurement-validity invariant
+
+```text
+SERVICE UNAVAILABLE != PRODUCT NEGATIVE RESULT
+```
+
+A behavior metric is defined only for a behavior-evaluable case. Provider auth/quota/
+availability failure, harness failure, or fixture failure must be reported outside the
+semantic/product numerator and denominator. Hard-safety scoring likewise applies only
+after the required cognition call actually produced an evaluable response.
+
+Provider preflight is an evaluation cost/validity guard, not a model fallback mechanism.
+It must never silently switch provider/model to manufacture a valid measurement.
