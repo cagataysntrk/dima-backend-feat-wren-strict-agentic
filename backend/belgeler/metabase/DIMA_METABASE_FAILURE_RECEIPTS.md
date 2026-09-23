@@ -2731,3 +2731,39 @@ proof:
 
 status:
 `CLOSED GREEN / P12X NATIVE SANITY GATE = GREEN`.
+
+
+---
+
+## DMP-P12X-C0-BLOCK-001 — engine repository provisioning capability unavailable
+
+opened_at: 2026-09-23
+classification: `CI/GOVERNANCE / REPOSITORY_PROVISIONING`
+
+observed:
+- DMP-DEC-0031 requires a new `UpcyTech/dima-metabase-engine` real upstream-derived fork;
+- exact repository search confirms the target does not exist;
+- existing `UpcyTech/dima-metabase` is a forbidden substitute and remains untouched;
+- the active GitHub integration can mutate existing repositories but exposes no create-repository/fork mutation;
+- plugin discovery exposes only the same installed GitHub integration for this capability.
+
+not_an_architecture_failure:
+Native sanity and fork architecture remain GREEN/accepted. Only remote repository provisioning is unavailable through this execution surface.
+
+single_owner:
+GitHub organization repository provisioning capability.
+
+prepared:
+`backend/lab/metabase/engine_bootstrap/` now contains the real-fork bootstrap, source-build/release overlay, patch-surface tool and upstream-sync candidate workflow. It must be executed by a GitHub identity with repo/fork creation permission; no old repository may be repurposed.
+
+closure_gate:
+```text
+UpcyTech/dima-metabase-engine exists
+fork=true
+parent.full_name=metabase/metabase
+upstream/base-v0.63.18=2ba2485c78d7e00a9a25f82c00fc201da71590c4
+main starts at exact base before Dima overlay
+old UpcyTech/dima-metabase unchanged
+```
+
+status: `OPEN / EXTERNAL PROVISIONING ACTION REQUIRED`.

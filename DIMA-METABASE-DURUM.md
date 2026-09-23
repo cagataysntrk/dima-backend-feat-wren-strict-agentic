@@ -1664,3 +1664,16 @@ P12X-C0 exact upstream-history fork bootstrap/source build
 ```
 
 P13 governance hooks remain unauthorized.
+
+
+### P12X-C0 provisioning state
+
+```text
+DMP-P12X-C0-BLOCK-001           = OPEN / REPOSITORY_PROVISIONING
+required repo                   = UpcyTech/dima-metabase-engine
+repo exists                     = NO
+old UpcyTech/dima-metabase      = UNTOUCHED / FORBIDDEN SUBSTITUTE
+Platform bootstrap kit          = PRESENT @ backend/lab/metabase/engine_bootstrap/
+remote C0 bootstrap             = WAITING ONLY FOR CREATE/FORK CAPABILITY
+P13                             = PAUSED
+```

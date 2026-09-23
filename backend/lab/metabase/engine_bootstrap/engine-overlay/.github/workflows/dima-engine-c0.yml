@@ -30,6 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git fetch origin refs/heads/upstream/base-v0.63.18:refs/remotes/origin/upstream/base-v0.63.18
           git merge-base --is-ancestor "$DIMA_UPSTREAM_BASE_SHA" HEAD
           test "$(git rev-parse refs/remotes/origin/upstream/base-v0.63.18^{commit})" = "$DIMA_UPSTREAM_BASE_SHA"
 
