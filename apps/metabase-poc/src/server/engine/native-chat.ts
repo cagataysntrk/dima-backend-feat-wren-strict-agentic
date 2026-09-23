@@ -48,11 +48,20 @@ export function parseNativeLine(line: string): ParsedPart | null {
   return { kind, value } as ParsedPart;
 }
 
-function toolLabel(name: string): string {
-  if (/search|retrieve|resource/i.test(name)) return "Veri kaynakları aranıyor";
-  if (/construct|query|sql/i.test(name)) return "Analiz sorgusu hazırlanıyor";
-  if (/chart|viz|analy/i.test(name)) return "Sonuç analiz ediliyor";
-  return "Analiz yürütülüyor";
+export interface NativeChatCopy {
+  searching: string;
+  constructing: string;
+  analyzing: string;
+  working: string;
+  resultReady: string;
+  completed: string;
+}
+
+function toolLabel(name: string, copy: NativeChatCopy): string {
+  if (/search|retrieve|resource/i.test(name)) return copy.searching;
+  if (/construct|query|sql/i.test(name)) return copy.constructing;
+  if (/chart|viz|analy/i.test(name)) return copy.analyzing;
+  return copy.working;
 }
 
 function queryFromData(part: NativeDataPart): GeneratedQuery | null {
@@ -77,13 +86,21 @@ function nativeSql(query: GeneratedQuery | null): string | null {
 async function executeGeneratedQuery(
   ctx: TenantContext,
   query: GeneratedQuery | null,
+  maxRows: number,
   signal?: AbortSignal,
 ): Promise<QueryResult | null> {
   if (!query) return null;
+  const cap = Math.min(Math.max(maxRows, 1), 2_000);
   const ds = await engineJson<EngineDataset>(
     ctx.tenant,
     "/api/dataset",
-    query,
+    {
+      ...query,
+      constraints: {
+        "max-results": cap,
+        "max-results-bare-rows": cap,
+      },
+    },
     signal,
   );
   return toQueryResult(ds);
@@ -117,6 +134,8 @@ export async function* nativeAnswerStream(
     message: string;
     engineContext?: string | null;
     legacyHistory?: NativeHistoryEntry[];
+    maxRows: number;
+    copy: NativeChatCopy;
   },
   signal?: AbortSignal,
 ): AsyncGenerator<NativeChatEvent> {
@@ -142,7 +161,7 @@ export async function* nativeAnswerStream(
     "/api/metabot/agent-streaming",
     {
       method: "POST",
-      headers: { Accept: "text/plain" },
+      headers: { Accept: "*/*" },
       body: JSON.stringify(request),
     },
     signal,
@@ -186,7 +205,7 @@ export async function* nativeAnswerStream(
       const callId = String(part.value.toolCallId ?? "");
       const name = String(part.value.toolName ?? "");
       const id = ++nextStepId;
-      const label = toolLabel(name);
+      const label = toolLabel(name, input.copy);
       if (callId) active.set(callId, { id, label });
       responseHistory.push({
         role: "assistant",
@@ -235,7 +254,7 @@ export async function* nativeAnswerStream(
     throw new GatewayError(502, "Analiz servisi yanıt üretemedi.", scrub(JSON.stringify(streamedError).slice(0, 800)));
   }
 
-  const result = await executeGeneratedQuery(ctx, generatedQuery, signal);
+  const result = await executeGeneratedQuery(ctx, generatedQuery, input.maxRows, signal);
   const sql = nativeSql(generatedQuery);
   const next: NativeEngineContext = {
     ...native,
@@ -249,7 +268,7 @@ export async function* nativeAnswerStream(
 
   yield {
     type: "done",
-    answer: scrub(answer.trim()) || (result ? "Sonuç aşağıda." : "Analiz tamamlandı."),
+    answer: scrub(answer.trim()) || (result ? input.copy.resultReady : input.copy.completed),
     sql,
     result,
     steps,

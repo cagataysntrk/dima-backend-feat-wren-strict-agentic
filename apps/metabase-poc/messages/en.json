@@ -75,14 +75,12 @@
     },
     "chat": {
       "title": "Chat preferences",
-      "hint": "Which model answers your questions.",
-      "model": "Model",
+      "hint": "How much data chat answers may return.",
       "maxRows": "Row limit",
       "maxRowsHint": "The most rows a single answer may return.",
       "adminsOnly": "Only admins can change these settings.",
       "saved": "Chat settings saved.",
-      "modelSolHint": "Fast and economical — for everyday questions.",
-      "modelLunaHint": "Stronger; more accurate on complex queries."
+      "engineOwnsModel": "The model and provider are managed centrally by the Dima Engine."
     }
   },
   "schema": {
@@ -141,9 +139,9 @@
     "heroTitle": "Ask your data",
     "heroBodyCompany": "Ask a question about {company}'s data in plain language; the answer comes with a chart and the query behind it.",
     "heroBodyGeneric": "Ask a question about your company's data in plain language; the answer comes with a chart and the query behind it.",
-    "notConfigured": "The chat service is not configured yet. Ask your administrator to set a key.",
+    "notConfigured": "The Dima analytics engine is not configured yet. Contact your administrator.",
     "placeholder": "Ask a question about your data…",
-    "placeholderDisabled": "Chat service not configured",
+    "placeholderDisabled": "Analytics engine not configured",
     "questionLabel": "Question",
     "send": "Send",
     "stop": "Stop",
@@ -166,7 +164,15 @@
     "save": "Save as analysis",
     "saved": "Saved",
     "savedToast": "Analysis saved.",
-    "sources": "Sources"
+    "sources": "Sources",
+    "native": {
+      "searching": "Searching data sources",
+      "constructing": "Preparing the analysis query",
+      "analyzing": "Analyzing the result",
+      "working": "Running the analysis",
+      "resultReady": "The result is below.",
+      "completed": "Analysis completed."
+    }
   },
   "starters": {
     "boyahane": [

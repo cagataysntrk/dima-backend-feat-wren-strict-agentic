@@ -1,9 +1,11 @@
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { nativeAnswerStream } from "@/server/engine/native-chat";
 import { GatewayError } from "@/server/metabase/errors";
 import { requireTenant } from "@/server/metabase/guard";
 import { localizeError } from "@/server/http";
 import { sseFrame } from "@/lib/sse";
+import { chatPrefs } from "@/server/prefs";
 
 // Streaming chat: the browser gets each real step as it happens, then the
 // answer token by token. Node runtime (the gateway uses node:crypto).
@@ -28,6 +30,7 @@ export async function POST(req: Request) {
     if (!body.success) throw new GatewayError(400, "Geçersiz istek.");
     const messages = body.data.messages.slice(-10);
     const current = messages[messages.length - 1];
+    const [prefs, t] = await Promise.all([chatPrefs(), getTranslations("chat.native")]);
     events = nativeAnswerStream(
       ctx,
       {
@@ -40,6 +43,15 @@ export async function POST(req: Request) {
             ? { role: "user" as const, content: message.content }
             : { role: "assistant" as const, content: message.content },
         ),
+        maxRows: prefs.maxRows,
+        copy: {
+          searching: t("searching"),
+          constructing: t("constructing"),
+          analyzing: t("analyzing"),
+          working: t("working"),
+          resultReady: t("resultReady"),
+          completed: t("completed"),
+        },
       },
       req.signal,
     );

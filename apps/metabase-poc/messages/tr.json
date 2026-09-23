@@ -75,14 +75,12 @@
     },
     "chat": {
       "title": "Sohbet tercihleri",
-      "hint": "Sorularınızı hangi modelin yanıtladığı.",
-      "model": "Model",
+      "hint": "Sohbet yanıtlarında döndürülen veri miktarı.",
       "maxRows": "En fazla satır",
       "maxRowsHint": "Bir yanıtın döndürebileceği en fazla satır sayısı.",
       "adminsOnly": "Bu ayarları yalnızca yöneticiler değiştirebilir.",
       "saved": "Sohbet ayarları kaydedildi.",
-      "modelSolHint": "Hızlı ve ekonomik — günlük sorular için.",
-      "modelLunaHint": "Daha güçlü; karmaşık sorgularda daha isabetli."
+      "engineOwnsModel": "Model ve sağlayıcı merkezi Dima Engine tarafından yönetilir."
     }
   },
   "schema": {
@@ -141,9 +139,9 @@
     "heroTitle": "Verinize sorun",
     "heroBodyCompany": "{company} verisi üzerinde doğal dilde soru sorun; yanıt, grafik ve kullanılan sorguyla gelsin.",
     "heroBodyGeneric": "Şirket verinizde doğal dilde soru sorun; yanıt, grafik ve kullanılan sorguyla gelsin.",
-    "notConfigured": "Sohbet servisi henüz yapılandırılmadı. Yöneticinizden anahtar tanımlamasını isteyin.",
+    "notConfigured": "Dima analiz motoru henüz yapılandırılmadı. Yöneticinize bildirin.",
     "placeholder": "Verinize bir soru sorun…",
-    "placeholderDisabled": "Sohbet servisi yapılandırılmadı",
+    "placeholderDisabled": "Analiz motoru yapılandırılmadı",
     "questionLabel": "Soru",
     "send": "Gönder",
     "stop": "Durdur",
@@ -166,7 +164,15 @@
     "save": "Analiz olarak kaydet",
     "saved": "Kaydedildi",
     "savedToast": "Analiz kaydedildi.",
-    "sources": "Kaynaklar"
+    "sources": "Kaynaklar",
+    "native": {
+      "searching": "Veri kaynakları aranıyor",
+      "constructing": "Analiz sorgusu hazırlanıyor",
+      "analyzing": "Sonuç analiz ediliyor",
+      "working": "Analiz yürütülüyor",
+      "resultReady": "Sonuç aşağıda.",
+      "completed": "Analiz tamamlandı."
+    }
   },
   "starters": {
     "boyahane": [
