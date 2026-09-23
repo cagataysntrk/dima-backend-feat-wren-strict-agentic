@@ -114,3 +114,23 @@ After this affected pair:
 - classify first bad transition if any,
 - if both green, full frozen13 once,
 - then shadow ablation / Harvest / Day7 closure.
+
+
+## Current exact gate — Day7 shadow ablation
+
+```text
+frozen13 once      35855765109 = VALID / 11 of 13
+hard safety        0
+focused after fix  35856719878 = GREEN
+adaptive affected  35857076622 = VALID / PASS
+```
+
+Remaining frozen RED:
+- breakdown-region = FUTURE-DAY DEBT / Day9 PRESENTATION
+- no unclassified Day7 RED remains.
+
+NEXT:
+FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation on the same current trust plane,
+then small confirmation, Harvest reconciliation, Day7 closure receipt.
+
+Do not start Day8.
