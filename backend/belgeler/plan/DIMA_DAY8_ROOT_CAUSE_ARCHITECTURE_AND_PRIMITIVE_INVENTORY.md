@@ -730,3 +730,72 @@ WrenService or /api/ask-v2 integration was opened.
 
 This document now stops at the supervisor review boundary.
 D8-C capability-mode design and next-test orchestration are explicitly deferred.
+
+
+---
+
+## 14. SUPERVISED POST-FIX LIVE RE-MEASUREMENT — VALID RED
+
+This section supersedes earlier design-only / D8-C-deferred wording where they conflict.
+
+Current engineering state:
+
+```text
+D8-A1 / D8-A2 / D8-B           GREEN
+D8-C deterministic             GREEN
+D8-C real-Wren                 GREEN
+D8-C live Sol                  OPEN / VALID RED
+DAY8 / P11                     NOT SEALED
+DAY9                           NOT STARTED
+```
+
+Authorized live re-measurement:
+`35898027005`.
+
+Identity receipt:
+
+```text
+product behavior SHA   3091651aea93e42e00521654af8d5dc2c51dc9c3
+run head               d5ac338ac5b242e86c77469075e6c3e8b405a72c
+scenario hash          8379daa7fc70a678514b7f87dcb41fcdfec4d317d8ded4cc2712ee7cfb4c8d6a
+harness blob           4ae479eb171eccb709eb326309734779533079ab
+Manager                openai/gpt-5.6-sol
+Manager calls          2
+semantic calls         0
+temporal calls         0
+measurement            VALID RED
+```
+
+First incorrect transition:
+
+```text
+server-owned hypothesis identity
+→ expected governed next-test proposal
+→ resolve_semantics
+```
+
+The post-fix task-kind/provider surface was correct, but opaque Manager aliases still omitted
+their governed semantic `target_kind`. The Manager therefore had the next-test shape contract
+without the stable non-secret metadata needed to match an existing `h*` handle to that shape.
+
+Final failure class:
+`CONTRACT/ARCHITECTURE`.
+
+Single owner:
+Manager-safe projection of already-governed semantic-handle metadata.
+
+Generic fix:
+- opaque alias identity remains opaque,
+- canonical semantic target remains private to `SemanticHandleRegistry`,
+- `SEMANTIC_HANDLE_CATALOG` exposes only `target_kind`, provenance type, parent obligation and
+  trigger-Evidence provenance,
+- existing next-test contract consumes that metadata cognitively,
+- semantic re-resolution is reserved for a materially missing concept grounded in inspected Evidence.
+
+Latest product behavior SHA:
+`810fa70ded3bca53542316d32a5497302b4eb9c7`.
+
+Proof:
+`35898621489 = GREEN` and affected Day7 `35898591894 = GREEN`.
+
+No further paid re-measurement is authorized automatically.
