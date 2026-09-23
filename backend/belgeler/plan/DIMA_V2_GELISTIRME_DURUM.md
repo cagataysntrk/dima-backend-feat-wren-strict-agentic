@@ -1,3 +1,63 @@
+## 2026-09-23 — SEMANTIC DISCOVERY PRODUCT PROOF + LIVE LUNA RECEIPT
+
+```text
+PRODUCT PROOF SHA
+eba283c1403702f31e16fe4b94a8ca0c3f43abb3
+
+FULL v2-day7-focused
+35832621479 = GREEN
+
+LIVE LUNA BAKE-OFF
+35832998321 = GREEN / VALID
+artifact 10737578313
+model openai/gpt-5.6-luna
+selected_cases 6
+evaluable_cases 6
+pass_count 6
+pass_rate 1.0
+```
+
+Proof-hygiene closure:
+- `app.v2.semantic_linker.GovernedSiblingScopeCandidateGenerator` is now the sole
+  candidate-generation implementation under proof;
+- provider-free LAB and LIVE Luna both exercise the PRODUCT generator;
+- duplicate LAB candidate-generation algorithm removed;
+- active semantic correctness surfaces are watched/compiled by `v2-day7-focused`:
+  `semantic_linker.py`, `semantic_retriever.py`, `manager_semantics.py`;
+- no product pipeline fallback has been activated yet.
+
+LIVE cognition receipt:
+
+```text
+region-dative            SELECT region_axis_m
+region-locative          SELECT region_axis_m
+product-dative           SELECT product_axis_n
+department-instrumental  SELECT department_axis_d
+unknown-abstain          ABSTAIN
+wrong-scope-abstain      ABSTAIN
+
+authority minted by discovery alone = 0
+outside-scope forced binding         = 0
+provider failure                     = 0
+measurement validity                 = VALID
+```
+
+This authorizes exactly the next product family:
+`obligation-local two-pass RETRIEVAL_MISS recovery`.
+
+Still forbidden:
+- global fallback,
+- cross-obligation sibling scope,
+- morphology/stemming/fuzzy aliases,
+- sibling cube membership as truth,
+- fallback after AMBIGUOUS_EXACT / TOO_BROAD / LINKER_ABSTAIN / LINKER_UNAVAILABLE,
+- cross-domain widening without governed relationship authority.
+
+Next:
+`design + implement obligation-local two-pass recovery → provider-free isolation attacks → full focused → affected semantic LIVE family only`.
+
+---
+
 ## 2026-09-23 — GOVERNED SIBLING-SCOPE DISCOVERY LAB — PROVIDER-FREE GREEN
 
 ```text
