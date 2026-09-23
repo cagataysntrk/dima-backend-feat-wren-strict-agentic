@@ -1257,11 +1257,97 @@ class Finding(FrozenModel):
 
 
 class Hypothesis(FrozenModel):
+    """Historical pre-Day8 shell. Do not use as Day8 epistemic authority."""
+
     hypothesis_id: str
     question_id: str
     statement: str
     evidence_for_refs: tuple[str, ...] = ()
     evidence_against_refs: tuple[str, ...] = ()
+
+
+class HypothesisStatus(StrEnum):
+    OPEN = "OPEN"
+    SUPPORTED = "SUPPORTED"
+    REFUTED = "REFUTED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
+class EpistemicLabel(StrEnum):
+    OBSERVATION = "OBSERVATION"
+    COMPARISON = "COMPARISON"
+    ASSOCIATION = "ASSOCIATION"
+    CONTRIBUTION = "CONTRIBUTION"
+    CANDIDATE_CAUSE = "CANDIDATE_CAUSE"
+    CONFIRMED_CAUSE = "CONFIRMED_CAUSE"
+
+
+class HypothesisEvidenceRelation(StrEnum):
+    SUPPORTS = "SUPPORTS"
+    CONTRADICTS = "CONTRADICTS"
+
+
+class HypothesisEvidenceLink(FrozenModel):
+    evidence_ref: str = Field(min_length=1)
+    relation: HypothesisEvidenceRelation
+
+
+class HypothesisProvenance(FrozenModel):
+    accepted_contract_id: str = Field(min_length=1)
+    lineage_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+
+
+class HypothesisEntry(FrozenModel):
+    """Canonical Day8 hypothesis state; human text is never semantic authority."""
+
+    hypothesis_id: str = Field(min_length=1)
+    parent_obligation_id: str = Field(min_length=1)
+    statement: str = Field(min_length=1)
+    semantic_handle_refs: tuple[str, ...] = Field(min_length=1)
+    trigger_evidence_refs: tuple[str, ...] = Field(min_length=1)
+    status: HypothesisStatus = HypothesisStatus.OPEN
+    epistemic_label: EpistemicLabel | None = None
+    evidence_links: tuple[HypothesisEvidenceLink, ...] = ()
+    next_test_task_refs: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+    provenance: HypothesisProvenance
+
+    @model_validator(mode="after")
+    def _unique_refs(self):
+        for label, refs in (
+            ("semantic_handle_refs", self.semantic_handle_refs),
+            ("trigger_evidence_refs", self.trigger_evidence_refs),
+            ("next_test_task_refs", self.next_test_task_refs),
+        ):
+            if len(refs) != len(set(refs)):
+                raise ValueError(f"{label} must be unique")
+        evidence_pairs = [
+            (link.evidence_ref, link.relation.value)
+            for link in self.evidence_links
+        ]
+        if len(evidence_pairs) != len(set(evidence_pairs)):
+            raise ValueError("hypothesis evidence links must be unique")
+        return self
+
+
+class HypothesisLedgerState(FrozenModel):
+    """Run-scoped Day8 state for one accepted ROOT_CAUSE obligation."""
+
+    parent_obligation_id: str = Field(min_length=1)
+    accepted_contract_id: str = Field(min_length=1)
+    lineage_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    entries: tuple[HypothesisEntry, ...] = ()
+
+    @model_validator(mode="after")
+    def _unique_hypotheses(self):
+        ids = [item.hypothesis_id for item in self.entries]
+        if len(ids) != len(set(ids)):
+            raise ValueError("hypothesis IDs must be unique")
+        if any(item.parent_obligation_id != self.parent_obligation_id for item in self.entries):
+            raise ValueError("ledger entries must share the ledger ROOT_CAUSE obligation")
+        return self
 
 
 # ---------------------------------------------------------------------------
