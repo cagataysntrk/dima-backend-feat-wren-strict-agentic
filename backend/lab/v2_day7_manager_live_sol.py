@@ -237,6 +237,9 @@ def _aggregate_live_records(
     hard_keys = {
         "http_200",
         "accepted_contract",
+        "accepted_contract_absent",
+        "zero_data_queries",
+        "ledger_absent",
         "manager_turn_cap",
         "tool_call_cap",
         "data_query_cap",
