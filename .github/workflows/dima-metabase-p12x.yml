@@ -1,0 +1,95 @@
+name: dima-metabase-p12x
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/lab/metabase/p12x/**"
+      - "backend/belgeler/metabase/predev/P12X_*"
+      - "backend/belgeler/metabase/tickets/P12X_*"
+      - "backend/belgeler/metabase/UPSTREAM_ENGINE_HARVEST_MAP.md"
+      - ".github/workflows/dima-metabase-p12x.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  x0-freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout Platform
+        uses: actions/checkout@v4
+        with:
+          path: platform
+
+      - name: Checkout exact Boyahane fixture
+        uses: actions/checkout@v4
+        with:
+          repository: cagataysntrk/metabase-boyahane
+          ref: f0c4a6b053ead52ca2eac80002c448323dc34a35
+          path: boyahane
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install X0 fixture dependency
+        run: pip install "duckdb==1.4.1"
+
+      - name: Freeze Boyahane dataset and schema identity
+        working-directory: platform/backend
+        env:
+          BOYAHANE_DUCKDB: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          BOYAHANE_REPO_SHA: f0c4a6b053ead52ca2eac80002c448323dc34a35
+          BOYAHANE_GIT_BLOB_SHA: a802d67ef7bf8a1233aaf7fa628c8868190f1d4b
+          P12X_OUT: lab/metabase/p12x/artifacts
+        run: python lab/metabase/p12x/freeze_dataset.py
+
+      - name: Freeze Docker image identities
+        working-directory: platform/backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lab/metabase/p12x/artifacts
+          docker pull metabase/metabase:latest
+          docker pull metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+
+          def inspect(ref):
+              raw = subprocess.check_output(["docker", "image", "inspect", ref], text=True)
+              item = json.loads(raw)[0]
+              return {
+                  "requested_ref": ref,
+                  "image_id": item.get("Id"),
+                  "repo_digests": sorted(item.get("RepoDigests") or []),
+                  "created": item.get("Created"),
+                  "labels": (item.get("Config") or {}).get("Labels") or {},
+              }
+
+          payload = {
+              "vanilla_latest": inspect("metabase/metabase:latest"),
+              "pinned_v0_63_18": inspect(
+                  "metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73"
+              ),
+              "pinned_logical_version": "v0.63.18",
+              "pinned_source_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
+          }
+          Path("lab/metabase/p12x/artifacts/runtime_pull_identity.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload X0 freeze evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p12x-x0-freeze-${{ github.sha }}
+          path: platform/backend/lab/metabase/p12x/artifacts/
+          if-no-files-found: error
+          retention-days: 30
