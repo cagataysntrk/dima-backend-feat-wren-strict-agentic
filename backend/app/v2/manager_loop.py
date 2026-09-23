@@ -399,6 +399,7 @@ class ManagerLoopOutcome:
     preacceptance_status: FiniteAcceptanceStatus | None = None
     findings: tuple[EvidenceLinkedFinding, ...] = ()
     cancelled: bool = False
+    answer_now_requested: bool = False
 
 
 def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
@@ -678,6 +679,7 @@ class ResearchManagerLoop:
         root_cause_context: RootCauseLoopContext | None = None,
         progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
         cancel_check: Callable[[], bool] | None = None,
+        answer_now_check: Callable[[], bool] | None = None,
         context_scope_by_kind: dict[str, tuple[str, ...]] | None = None,
     ) -> None:
         structured = getattr(llm, "structured_json", None)
@@ -691,6 +693,7 @@ class ResearchManagerLoop:
         self._root_cause_context = root_cause_context
         self._progress_callback = progress_callback
         self._cancel_check = cancel_check
+        self._answer_now_check = answer_now_check
         self._context_scope_by_kind = {
             str(kind): tuple(dict.fromkeys(refs))
             for kind, refs in (context_scope_by_kind or {}).items()
@@ -1332,6 +1335,7 @@ class ResearchManagerLoop:
                         )
 
         cancelled = False
+        answer_now_requested = False
         while runtime.snapshot.state not in {
             ManagerState.COMPLETED,
             ManagerState.FAILED,
@@ -1343,6 +1347,15 @@ class ResearchManagerLoop:
                     task_registry.cancel(task.task_id)
                 observations.append({"kind": "cancelled"})
                 cancelled = True
+                break
+            if self._answer_now_check is not None and self._answer_now_check():
+                observations.append(
+                    {
+                        "kind": "answer_now",
+                        "evidence_refs": list(runtime.snapshot.evidence_refs),
+                    }
+                )
+                answer_now_requested = True
                 break
             try:
                 runtime.note_manager_turn(phase="research")
@@ -1928,4 +1941,5 @@ class ResearchManagerLoop:
             preacceptance_status=FiniteAcceptanceStatus.ACCEPTED,
             findings=tuple(canonical_findings),
             cancelled=cancelled,
+            answer_now_requested=answer_now_requested,
         )
