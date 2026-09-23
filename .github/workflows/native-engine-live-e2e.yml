@@ -28,6 +28,7 @@ jobs:
     env:
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       DIMA_ENGINE_URL: http://127.0.0.1:3312
+      DIMA_ENGINE_IMAGE: dima-metabase-engine:e2e
       BETTER_AUTH_URL: http://127.0.0.1:3002
       DIMA_E2E_USER_EMAIL: ayse@boyahane.demo
       NATIVE_UI_E2E_RECEIPT: apps/metabase-poc/e2e/native-engine/artifacts/native-ui-e2e.json
