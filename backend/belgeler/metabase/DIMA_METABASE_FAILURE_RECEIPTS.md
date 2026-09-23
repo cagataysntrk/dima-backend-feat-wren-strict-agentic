@@ -3027,3 +3027,46 @@ None were Metabase engine capability failures.
 
 status:
 `CLOSED GREEN / P12X-C0 COMPLETE / P12X-C1 AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C1-CI-001 — engine repo lacks Platform model credential scope
+
+opened_at: 2026-09-23  
+engine_sha: `358f46b75c458b180bdac2854876d08ab25c1c23`  
+engine_workflow: `35828345905`  
+job: `107074967372`
+
+classification:
+`CI/GOVERNANCE / CREDENTIAL_SCOPE`
+
+observed:
+- frozen engine C1 workflow reached the explicit credential gate;
+- `DIMA_OPENROUTER_API_KEY || OPENROUTER_API_KEY` is unavailable in the new
+  `UpcyTech/dima-metabase-engine` repository;
+- the same credential is already authorized and proven in the Platform P12X environment;
+- no model call, database execution or parity scoring occurred in the RED run.
+
+root_cause:
+GitHub Actions secrets/environments are repository-scoped. Creating the new fork correctly did not and
+must not duplicate Platform secrets automatically.
+
+single_owner:
+P12X live benchmark execution placement.
+
+decision:
+Keep engine repository credential-free for C1. Execute the live C1 benchmark from the existing
+Platform P12X environment, checkout the engine candidate read-only at exact SHA, and use the exact C0
+image digest when accessible. If GHCR visibility blocks cross-repository pull, build the exact engine
+candidate source locally in the Platform lab with the already-certified Dima C0 build wrapper and
+record that fallback explicitly.
+
+forbidden:
+- copying/printing model secrets into source;
+- weakening GitHub secret boundaries;
+- changing Metabase/native semantics;
+- treating this as fork capability failure.
+
+status:
+`CLASSIFIED / EXECUTION OWNER MOVED TO PLATFORM P12X LAB`.
