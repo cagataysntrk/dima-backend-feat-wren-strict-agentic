@@ -324,6 +324,29 @@ class ManagerRuntime:
         )
         return self._snapshot
 
+    def pause_partial(self) -> ManagerRunSnapshot:
+        """Stop user-controlled Research without claiming CompletionGate success.
+
+        Obligation/Evidence truth is unchanged. BLOCKED is the existing resumable,
+        non-completion state; terminal_status=PARTIAL makes the product disposition typed.
+        """
+        if self._snapshot.state in {
+            ManagerState.COMPLETED,
+            ManagerState.FAILED,
+            ManagerState.BUDGET_EXHAUSTED,
+        }:
+            raise ManagerStateError(
+                "terminal Manager state cannot transition to user partial"
+            )
+        self._snapshot = self._snapshot.model_copy(
+            update={
+                "state": ManagerState.BLOCKED,
+                "terminal_status": ResearchRunTerminal.PARTIAL,
+                "last_error": None,
+            }
+        )
+        return self._snapshot
+
     def require_clarification(self, reason: str) -> ManagerRunSnapshot:
         """Deterministic safe stop when semantic authority cannot progress."""
         if self._snapshot.state in {
