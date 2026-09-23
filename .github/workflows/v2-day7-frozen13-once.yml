@@ -8,6 +8,11 @@ name: v2-day7-frozen13-once
         required: true
         default: ""
         type: string
+      max_model_calls:
+        description: "Explicit hard paid-call ceiling; 0 is rejected before provider use"
+        required: true
+        default: 0
+        type: number
 
 jobs:
   frozen13:
@@ -48,6 +53,7 @@ jobs:
         working-directory: backend
         run: |
           python lab/v2_day7_manager_live_sol.py \
+            --max-model-calls "${{ inputs.max_model_calls }}" \
             --output lab/reports/v2_day7_frozen13_once.json
       - uses: actions/upload-artifact@v4
         if: always()
