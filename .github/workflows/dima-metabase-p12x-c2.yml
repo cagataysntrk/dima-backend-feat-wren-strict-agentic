@@ -1,0 +1,29 @@
+name: dima-metabase-p12x-c2
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/substrate/metabase/native_*.py"
+      - "backend/tests/test_v3_p12x_c2_native_engine_bridge.py"
+      - ".github/workflows/dima-metabase-p12x-c2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - working-directory: backend
+        run: pip install -e ".[dev]"
+      - working-directory: backend
+        run: |
+          pytest -q tests/test_v3_p12x_c2_native_engine_bridge.py
+          python -m py_compile app/v3/substrate/metabase/native_models.py app/v3/substrate/metabase/native_engine.py
