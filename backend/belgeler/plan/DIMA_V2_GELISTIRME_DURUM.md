@@ -1,3 +1,85 @@
+## 2026-09-23 — RELATIONSHIP PREACCEPTANCE COMPLETENESS — LIVE SEALED
+
+```text
+product_checkpoint          b947c588616af825e91d178a4a61e34a21c6838e
+focused_run                 35827661950 = GREEN
+live_relationship_run       35828102881
+artifact                    10735404446
+measurement_validity        VALID
+selected/evaluable          2 / 2
+
+relationship-safe           PRODUCT PASS
+relationship-unsafe         CORRECT PREACCEPTANCE STOP
+family status               SEALED
+```
+
+Live proof — `relationship-safe`:
+```text
+AcceptedTurnContract        YES
+semantic authority          metric + dimension
+seed task                   RELATIONSHIP
+run_relationship            EXECUTED
+DB queries                  1
+QueryContract               YES
+Evidence                    VERIFIED
+Evidence inspected          YES
+UOL                         VERIFIED
+Completion                  VERIFIED_COMPLETE
+```
+
+This is the first live proof that the governed relationship path reaches execution after
+the preacceptance fix. It supplements, but does not replace, the separate real-Wren proof.
+
+Live proof — `relationship-unsafe`:
+```text
+metric                      resolved
+counterpart dimension       unresolved
+material_grounding_gap      missing dimension
+AcceptedTurnContract        NONE
+ledger / seed task          NONE
+DB queries                  0
+Evidence                    0
+post-acceptance USER_SOURCE repair  0
+state                       NEEDS_CLARIFICATION
+```
+
+Therefore the previous first bad transition:
+
+```text
+incomplete RELATIONSHIP accepted
+→ seed relationship task
+→ post-acceptance USER_SOURCE semantic repair
+→ rejected
+```
+
+is CLOSED.
+
+Current owner migration for the unsafe surface:
+```text
+PREACCEPTANCE_COMPLETENESS  CLOSED
+→ semantic candidate discovery / RETRIEVAL_DISCOVERY remains open
+```
+
+Evaluator note:
+the frozen live oracle still expected `accepted_contract=true` + downstream
+`typed_block` for `relationship-unsafe`. After the proven architectural correction,
+those two checks are stale **EVAL_ORACLE debt**, not product-safety failure. The frozen
+question itself remains unchanged. Do not broaden product authority merely to satisfy the
+old oracle.
+
+No reopening without independent evidence:
+- CrossDomainJoinGate,
+- CrossDomainJoinFactBuilder,
+- Wren relationship truth,
+- fanout certificate,
+- relationship adapter,
+- relationship preacceptance completeness.
+
+Next authorized work:
+**semantic retrieval discovery LAB ONLY**. No semantic product patch yet.
+
+---
+
 ## 2026-09-23 — RELATIONSHIP PREACCEPTANCE COMPLETENESS — PROVIDER-FREE GREEN
 
 ```text
