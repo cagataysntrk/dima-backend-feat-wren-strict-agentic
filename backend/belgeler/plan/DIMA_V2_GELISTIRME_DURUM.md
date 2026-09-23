@@ -1,58 +1,41 @@
-## 2026-09-23 — URGENT DAY7 HANDOFF AUTHORITY
+# DIMA V2 GELİŞTİRME DURUMU
 
-Single active continuation authority:
+## 2026-09-23 — DAY7 / P10 CLOSED / SEALED
 
-~~~text
-backend/belgeler/plan/DIMA_DAY7_URGENT_HANDOFF_2026-09-23.md
-~~~
+Single active closure authority:
 
-Tested product checkpoint:
+```text
+backend/belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md
+```
 
-~~~text
-d22fb3626db0fe44ea543eee6531e5544cdf0b56
-v2-day7-focused 35840203854 = GREEN
-~~~
+Canonical state:
 
-Latest valid frozen13:
+```text
+branch                      feat/ask-v2-mvp
+Day7 product behavior SHA   ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+provider-free seal          35872766887 = GREEN
+latest frozen13 historical  35855765109 = VALID / 11 of 13 / hard safety 0
+affected adaptive LIVE      35857076622 = PASS
+final micro                 35873755069 = INCONCLUSIVE / DAY11 DEFER
+unclassified Day7 LIVE RED  0
 
-~~~text
-35840716350
-measurement_validity = VALID
-13 / 13 evaluable
-10 / 13 behavioral PASS
-artifact = 10741756172
-~~~
+DAY7 / P10                  CLOSED / SEALED
+production /ask-v2          OFF
+DEV80                       NOT RUN
+Validation50                NOT RUN
+Hidden50                    NOT RUN
+```
 
-Current closure classification:
+Current ticket:
 
-~~~text
-OPEN PRODUCT OWNER
-multi-obligation PREVIOUS_PERIOD base-period contract
+```text
+P11 — DAY8 ROOT-CAUSE BRANCH
+provider-free architecture + legacy primitive inventory ONLY
+```
 
-EVAL / CLASSIFICATION DEBT
-relationship-unsafe stale oracle
-insufficient-evidence MODEL_COGNITION vs EVAL_ORACLE classification
+No Day8 product implementation before the P11 design/inventory receipt.
+No more paid Day7 evaluation.
 
-SEALED — DO NOT REOPEN
-tenant/principal
-ResearchDirective ontology
-relationship preacceptance + Wren relationship truth
-semantic sibling-scope cognition
-obligation-local RETRIEVAL_MISS recovery
-fanout/grain safety
-Evidence/QueryContract
-provider topology
-
-DEFERRED / CLOSED FOR DAY7 DIRECT EXECUTION
-ROOT_CAUSE
-TREND
-CONTRIBUTION
-PEER_COMPARE
-~~~
-
-Emergency handoff rule:
-new developer must read the urgent handoff first and continue from its exact order.
-Do not infer current work from older Day6.5 handoff files.
 
 ---
 
