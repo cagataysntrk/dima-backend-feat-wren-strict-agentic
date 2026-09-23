@@ -9,14 +9,19 @@ name: v2-day7-orchestration-micro
         default: ""
         type: string
       max_model_calls:
-        description: "Hard paid-call ceiling for the whole ablation; must be 1..20"
+        description: "Hard paid-call ceiling for the whole ablation; Day7 final max is 16"
         required: true
         default: 0
         type: number
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day7-orchestration-micro.yml"
 
 jobs:
   micro-ablation:
-    if: "${{ inputs.confirm_micro_ablation == 'MICRO2' }}"
+    if: "${{ (github.event_name == 'workflow_dispatch' && inputs.confirm_micro_ablation == 'MICRO2') || (github.event_name == 'push' && github.event.head_commit.message == 'test(v2-day7): run final micro ablation once') }}"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 30
@@ -41,11 +46,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          budget="${{ inputs.max_model_calls }}"
-          if (( budget < 1 || budget > 20 )); then
-            echo "ERROR: Day7 micro ablation requires max_model_calls in 1..20." >&2
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            budget=16
+          else
+            budget="${{ env.ABLATION_BUDGET }}"
+          fi
+          if (( budget < 1 || budget > 16 )); then
+            echo "ERROR: Day7 final micro ablation requires max_model_calls in 1..16." >&2
             exit 64
           fi
+          echo "ABLATION_BUDGET=${budget}" >> "${GITHUB_ENV}"
 
       - name: Install backend
         working-directory: backend
@@ -64,7 +74,7 @@ jobs:
           python lab/v2_day7_orchestration_ablation.py \
             --case-id adaptive-material \
             --case-id stable-no-extra-branch \
-            --max-model-calls "${{ inputs.max_model_calls }}" \
+            --max-model-calls "${{ env.ABLATION_BUDGET }}" \
             --dry-run
 
       - name: Paid micro ablation
@@ -73,7 +83,7 @@ jobs:
           python lab/v2_day7_orchestration_ablation.py \
             --case-id adaptive-material \
             --case-id stable-no-extra-branch \
-            --max-model-calls "${{ inputs.max_model_calls }}" \
+            --max-model-calls "${{ env.ABLATION_BUDGET }}" \
             --output lab/reports/v2_day7_orchestration_micro.json
 
       - uses: actions/upload-artifact@v4
