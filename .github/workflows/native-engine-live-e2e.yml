@@ -1,20 +1,8 @@
 name: native-engine-live-e2e
-# Canonical native-first compatibility certification.
+# Manual native-engine analytical diagnostic. Static/build compatibility is gated separately.
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/native-engine-official-ui
-    paths:
-      - ".github/workflows/native-engine-live-e2e.yml"
-      - "apps/metabase-poc/e2e/native-engine/**"
-      - "apps/metabase-poc/scripts/native-engine-bootstrap.py"
-      - "apps/metabase-poc/scripts/native-ui-e2e.py"
-      - "apps/metabase-poc/src/server/engine/**"
-      - "apps/metabase-poc/src/app/api/chat/route.ts"
-      - "apps/metabase-poc/src/lib/gateway.ts"
-      - "apps/metabase-poc/src/app/app/chat/ChatView.tsx"
 
 permissions:
   contents: read

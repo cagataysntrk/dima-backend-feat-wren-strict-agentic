@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -16,6 +16,12 @@ describe("native-first chat architecture", () => {
     expect(route).not.toContain("@/server/chat/agent");
     expect(route).not.toContain("@/server/chat/openrouter");
     expect(route).not.toContain("OPENROUTER");
+  });
+
+  it("removes the legacy custom OpenRouter analytics engine from the product tree", () => {
+    expect(existsSync(join(src, "server/chat/agent.ts"))).toBe(false);
+    expect(existsSync(join(src, "server/chat/openrouter.ts"))).toBe(false);
+    expect(existsSync(join(src, "server/chat/prompt.ts"))).toBe(false);
   });
 
   it("keeps provider credentials out of the frontend runtime configuration", () => {
