@@ -317,20 +317,34 @@ Explicitly rejected:
 - copying query/Evidence truth by value into ReportDocument,
 - creator access as permanent replay permission.
 
-## STOP POINT
+## CURRENT SUPERVISOR AUTHORITY — DAY9-B OPEN
 
-D9-A provider-free authority is GREEN.
+D9-A is ACCEPTED / GREEN / FROZEN at:
+`2415948f9857cd8ec1707c0eb05f539c8c1edb9c`.
 
-Do NOT automatically start:
-- LLM report narration,
-- legacy `report.compose` integration,
-- PDF/HTML export,
-- frontend,
-- Day10,
-- real-Wren/live Sol,
-- frozen13 / DEV80 / Validation50 / Hidden50.
+Current active ticket:
 
-Return to supervisor for Day9-B review.
+```text
+DAY9 / P12-B
+bounded narration plan over immutable ReportDocument
+```
+
+D9-B must sit above ReportBuilder. It may use exactly one structured probabilistic call to select
+and order existing canonical report IDs, followed by deterministic admission and deterministic
+rendering.
+
+Forbidden:
+- free-form factual narration,
+- DB/Wren/Research/semantic tools,
+- new Evidence/Finding/semantic identity,
+- mutation of ReportDocument,
+- missing-Evidence repair,
+- new provider topology.
+
+Day10 remains NOT AUTHORIZED.
+
+Provider-free tests must precede the single live Sol sentinel. If the live sentinel is GREEN, STOP
+for supervisor review; no second reassurance case.
 
 ---
 
