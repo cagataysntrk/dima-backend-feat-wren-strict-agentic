@@ -28,7 +28,7 @@ jobs:
     env:
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       DIMA_ENGINE_URL: http://127.0.0.1:3312
-      DIMA_ENGINE_IMAGE: dima-metabase-engine:e2e
+      DIMA_ENGINE_IMAGE: metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
       BETTER_AUTH_URL: http://127.0.0.1:3002
       DIMA_E2E_USER_EMAIL: ayse@boyahane.demo
       NATIVE_UI_E2E_RECEIPT: apps/metabase-poc/e2e/native-engine/artifacts/native-ui-e2e.json
@@ -118,7 +118,7 @@ jobs:
           test -n "$cid"
           image="$(docker inspect "$cid" --format '{{.Config.Image}}')"
           echo "engine_image=$image"
-          test "$image" = "ghcr.io/upcytech/dima-metabase-engine@sha256:0e6819e36c3bd347238159ae483bbaa8db3f0f36bf23cc5d2d8a23012fe111d9"
+          test "$image" = "$DIMA_ENGINE_IMAGE"
 
       - name: Import exact Boyahane snapshot
         env:
