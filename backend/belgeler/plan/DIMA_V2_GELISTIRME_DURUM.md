@@ -10343,3 +10343,161 @@ If narration is invalid, the canonical ReportDocument remains valid and determin
 fallback may be used. No second model call is permitted.
 
 D9-A must not be reopened merely to make narration easier.
+
+
+---
+
+## 2026-09-23 — DAY9-B BOUNDED NARRATION GREEN CANDIDATE
+
+```text
+D9-A deterministic authority = GREEN / FROZEN
+D9-A product SHA             = 2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+
+D9-B bounded narration       = GREEN CANDIDATE
+D9-B product SHA             = 164ff7e6628cca37cbfc8bdb269d84faf4561b51
+provider-free                = 35908601251 = GREEN
+tests                        = 15 / 15
+live Sol                     = 35908863544 = GREEN
+paid calls                   = 1
+
+DAY9 engineering             = GREEN candidate
+Day10                        = NOT AUTHORIZED
+```
+
+### Bounded narration authority
+
+New canonical module:
+`backend/app/v2/report_narration.py`.
+
+The model is not a report writer. It is a presentation planner over an immutable canonical report.
+
+```text
+ReportDocument
+→ NarrationPacket
+→ one structured model call
+→ NarrationPlanProposal
+→ NarrationPlanGate
+→ ReportNarrationOverlay
+→ deterministic renderer
+```
+
+Provider output has no factual-prose fields.
+
+The only probabilistic choices are:
+- which existing blocks appear as executive highlights,
+- block order inside each existing section,
+- which existing blocks receive presentation emphasis.
+
+Every material canonical block must remain present because `ordered_block_refs` is an exact
+permutation, not a subset.
+
+### Failure domain separation
+
+Narration failure is a presentation failure.
+
+Invalid provider output:
+```text
+→ no retry / no repair call
+→ deterministic fallback plan
+→ canonical ReportDocument remains valid
+```
+
+No narration path can:
+- execute DB/Wren/Research,
+- resolve semantics,
+- create Evidence,
+- create Finding,
+- repair missing Evidence,
+- create numeric/analytical/epistemic prose.
+
+### Deterministic renderer
+
+Renderer returns canonical report text verbatim.
+
+`CANDIDATE_CAUSE` presentation is deterministically labeled `Aday neden`; its canonical
+limitations are always carried. Model output does not control causal wording.
+
+Report, section and block limitations are preserved independent of model selection.
+
+### Provider-safe packet
+
+NarrationPacket excludes Evidence/Finding/QueryContract internals, semantic scope, canonical
+semantic IDs, raw data/query state, conversation transcript and Manager scratch state.
+
+It contains only presentation-safe report/section/block metadata and canonical display content.
+
+### Strict structured-output transport
+
+D9-B reuses the repository's existing OpenAI/OpenRouter native JSON-schema wrapper. No new provider
+topology exists.
+
+The narration schema is normalized to the existing strict-native rule:
+all object properties are required, defaults are removed from transport, and
+`additionalProperties=false` is enforced recursively.
+
+### Provider-free proof
+
+`35908601251 = GREEN`.
+
+15 focused high-information tests cover:
+- minimum NarrationPacket surface,
+- absence of factual-prose/authority output fields,
+- strict provider schema,
+- unknown report/section/block refs,
+- missing section,
+- foreign-section block,
+- duplicates,
+- exact block permutations,
+- executive limit <= 3,
+- server-owned overlay identity,
+- candidate-cause + limitation preservation,
+- ReportDocument immutability under alternative valid presentation plans,
+- exactly-one-call fake model path,
+- invalid plan/schema/provider deterministic fallback,
+- renderer has no analytics/probabilistic dependency.
+
+### One live Sol sentinel
+
+`35908863544 = GREEN`.
+
+```text
+openai/gpt-5.6-sol
+model calls      = 1
+tool calls       = 0
+semantic calls   = 0
+Wren calls       = 0
+DB calls         = 0
+Research calls   = 0
+
+schema valid             = yes
+canonical refs only      = yes
+full section coverage    = yes
+exact block permutations = yes
+invented IDs             = 0
+new text claims          = 0
+candidate cause retained = yes
+limitations retained     = yes
+ReportDocument unchanged = yes
+```
+
+No second live reassurance case was executed.
+
+### Day8 release debt
+
+Still OPEN:
+
+```text
+DAY8 deterministic = GREEN
+DAY8 real-Wren     = GREEN
+DAY8 live Sol      = OPEN
+```
+
+The Day8 live root-cause debt remains scheduled for the future Day10 integrated Product-MVP live
+gate. Day9 work did not run another standalone root-cause sentinel.
+
+### STOP
+
+DAY9 engineering is a GREEN candidate.
+
+Do not begin Day10, factual LLM polishing, export/frontend integration or broader test gates until
+supervisor review.
