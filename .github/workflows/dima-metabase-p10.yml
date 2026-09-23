@@ -41,8 +41,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          P13C_REVIEW="backend/belgeler/metabase/predev/P13C_NATIVE_TEXTUAL_FILTER_AND_CI_ECONOMY_REVIEW.md"
           P13_REVIEW="backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
-          if [ -f backend/app/v3/native_execution.py ] && [ -f "$P13_REVIEW" ] && grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$P13_REVIEW"; then
+
+          if [ -f "$P13C_REVIEW" ] && grep -q "SEALED / ENGINE ATTESTATION EXTENSION REQUIRED / BOUNDED IMPLEMENTATION AUTHORIZED" "$P13C_REVIEW"; then
+            # Supervisor-sealed pre-P13C code baseline. This keeps the cross-owner guard
+            # milestone-local instead of re-linting already-certified historical work.
+            BASE="b7b28df6adf1acfc552ae2890647bb96ebc24e09"
+            changed="$(git diff --name-only "$BASE"...HEAD)"
+            printf '%s\n' "$changed"
+            while IFS= read -r path; do
+              [ -z "$path" ] && continue
+              case "$path" in
+                backend/app/v3/native_execution.py) ;;
+                backend/app/v3/security_identity.py) ;;
+                backend/app/v3/native_standard/contracts.py) ;;
+                backend/app/v3/native_standard/trust.py) ;;
+                backend/tests/test_v3_p13c_native_standard.py) ;;
+                .github/workflows/dima-metabase-p13c-provider-free.yml) ;;
+                .github/workflows/dima-metabase-p10.yml) ;;
+                *)
+                  echo "P13C cross-owner regression contains unapproved file: $path"
+                  exit 1
+                  ;;
+              esac
+            done <<< "$changed"
+          elif [ -f backend/app/v3/native_execution.py ] && [ -f "$P13_REVIEW" ] && grep -q "Status: \*\*SEALED / P13A PROVIDER-FREE IMPLEMENTATION AUTHORIZED AFTER GOVERNANCE REPIN\*\*" "$P13_REVIEW"; then
             BASE="a6e272dda1218e449332da358c986a22ea534cbf"
             changed="$(git diff --name-only "$BASE"...HEAD)"
             printf '%s\n' "$changed"
