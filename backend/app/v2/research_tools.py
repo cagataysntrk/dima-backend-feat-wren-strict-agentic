@@ -394,6 +394,7 @@ class ResearchToolRunner:
     def _execution_identity(*, principal: Principal, executor) -> dict[str, object]:
         governed = getattr(executor, "principal", None)
         tenant_binding = str(getattr(executor, "tenant_binding", "") or "")
+        tenant_runtime = getattr(executor, "tenant_runtime", None)
         if governed is None:
             raise ResearchToolContractError(
                 "missing governed executor principal: Research execution fail-closed"
@@ -402,18 +403,39 @@ class ResearchToolRunner:
             raise ResearchToolContractError(
                 "missing governed executor tenant binding: Research execution fail-closed"
             )
+        if tenant_runtime is None:
+            raise ResearchToolContractError(
+                "missing governed tenant runtime: Research execution fail-closed"
+            )
 
+        # Principal substitution protection compares the same identity representation
+        # on both sides. Opaque tenant_binding strings are namespace identifiers, not
+        # raw tenant ids.
         if (
             principal.user_id != governed.user_id
             or principal.is_superadmin != governed.is_superadmin
             or principal.tenant_id != governed.tenant_id
+            or (
+                principal.tenant_id is None
+                and principal.tenant_slug != governed.tenant_slug
+            )
         ):
             raise ResearchToolContractError(
                 "Research principal mismatch between runner and governed executor"
             )
 
-        for bound in (principal, governed):
-            if not bound.is_superadmin and bound.tenant_id != tenant_binding:
+        if not principal.is_superadmin:
+            runtime_tenant_id = getattr(tenant_runtime, "tenant_id", None)
+            runtime_tenant_slug = getattr(tenant_runtime, "tenant_slug", None)
+            if runtime_tenant_id is not None:
+                if principal.tenant_id != runtime_tenant_id:
+                    raise ResearchToolContractError(
+                        "Research principal tenant does not match governed execution tenant"
+                    )
+            elif (
+                principal.tenant_id is not None
+                or principal.tenant_slug != runtime_tenant_slug
+            ):
                 raise ResearchToolContractError(
                     "Research principal tenant does not match governed execution tenant"
                 )
