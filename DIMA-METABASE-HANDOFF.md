@@ -1169,3 +1169,50 @@ next action                = NEW P13 PREDEV RECONCILIATION
 ```
 
 This is the intended supervisor stop point.
+
+
+---
+
+# FINAL P13A HANDOFF — NATIVE TRUST CONTRACT GREEN
+
+Current closure state:
+```text
+P13A NATIVE TRUST CONTRACT = GREEN
+P13B = NOT AUTHORIZED
+```
+
+Read in this order on context reset:
+1. this section;
+2. latest `DIMA-METABASE-DURUM.md` tail;
+3. `DMP-DEC-0036`;
+4. `P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md`;
+5. `P13_NATIVE_ENGINE_STANDARD_VERTICAL.md`;
+6. `backend/app/v3/native_execution.py`;
+7. P10/P5 common-artifact adaptations.
+
+Key implementation:
+```text
+Native Metabot candidate
+→ NativeQueryCandidate
+→ Dima ALLOW / CLARIFY_REPLAN / BLOCK
+→ AuthorizedExecutionArtifact
+→ P10 ExecutionAccessSnapshot
+→ exact same artifact execution contract
+→ P5 DimaQueryReceipt
+→ Evidence later
+```
+
+Do not reopen Agent API as the primary Standard hot path.
+Do not start P13B without a new predevelopment decision covering exact runtime source+image identity
+and the first pinned-live vertical.
+
+Closure evidence:
+```text
+product commit       17dea824dddf8af185d9596abc5bfdbedd11e04a
+CI guard commit      c7a95fe4c48687914b89c350b8130793467c36e6
+P13A                 35846503106 SUCCESS (12 + 61 + 7 PASS)
+P10                  35846797870 SUCCESS
+P5                   35846797938 SUCCESS
+governance            35846797967 SUCCESS
+engine gitlink        c56b71ab23bf2a2d266bac2fba8d165ac059d613
+```

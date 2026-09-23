@@ -3508,3 +3508,23 @@ cross-owner allowlist as an explicit shell `case` statement against exact baseli
 
 status:
 `CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
+
+
+---
+
+## P13A CI closure note
+
+The following P13A REDs were CI/governance-only and are CLOSED:
+- `DMP-P13-0-GOV-001` → normative blob repin; governance `35845686431 = SUCCESS`;
+- `DMP-P13A-CI-001` → P10 workflow serialization;
+- `DMP-P13A-CI-002` → stale historical P5 isolation baseline;
+- `DMP-P13A-CI-003` → truncated grep-based P13 allowlist serialization.
+
+Final corrected proof:
+```text
+P10        35846797870 = SUCCESS
+P5         35846797938 = SUCCESS
+governance 35846797967 = SUCCESS
+```
+
+No product-contract patch was made in response to these CI failures.
