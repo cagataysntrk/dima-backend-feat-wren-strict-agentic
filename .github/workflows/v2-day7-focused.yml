@@ -23,6 +23,9 @@ name: v2-day7-focused
       - "backend/app/v2/manager_runtime.py"
       - "backend/app/v2/manager_models.py"
       - "backend/app/v2/manager_loop.py"
+      - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
+      - "backend/app/v2/manager_preacceptance.py"
+      - "backend/app/v2/manager_policy.py"
       - "backend/app/v2/manager_lab.py"
       - "backend/app/v2/models.py"
       - "backend/tests/test_v2_day7_research_task_lifecycle.py"
@@ -119,6 +122,10 @@ jobs:
       - name: Research directive capability contract
         working-directory: backend
         run: pytest -q tests/test_v2_day7_directive_contract.py
+
+      - name: Day6.5 preacceptance completeness regression
+        working-directory: backend
+        run: pytest -q tests/test_v2_day6_5_preacceptance_protocol.py
 
       - name: Day7 capability surface consistency receipt
         working-directory: backend
