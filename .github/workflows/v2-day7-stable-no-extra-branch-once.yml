@@ -41,6 +41,7 @@ jobs:
         working-directory: backend
         run: |
           python lab/v2_day7_manager_live_sol.py \
+            --max-model-calls 12 \
             --case-id stable-no-extra-branch \
             --output lab/reports/v2_day7_stable_no_extra_branch_once.json
       - uses: actions/upload-artifact@v4
