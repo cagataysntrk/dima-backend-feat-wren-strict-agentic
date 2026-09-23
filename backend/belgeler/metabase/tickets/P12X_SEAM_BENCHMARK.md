@@ -76,3 +76,22 @@ Compare and classify. Stop.
 ## Product gate
 
 `P13 = PAUSED FOR METABASE SEAM DECISION`.
+
+
+---
+
+## DMP-DEC-0031 execution override
+
+Previous `P12X-C = NOT AUTHORIZED` wording is superseded only for the controlled thin-fork path.
+
+```text
+C0 = fork bootstrap/source build from exact upstream history
+C1 = 4–6 case stock-vs-fork native capability parity
+C2 = stable Dima bridge + native parity
+C3 = upstream-sync / patch-surface certification
+P13 = PAUSED
+```
+
+Required engine repository: `UpcyTech/dima-metabase-engine`, upstream `metabase/metabase`, base `v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4`. Blank repo/source copy and reuse of `UpcyTech/dima-metabase` are forbidden.
+
+C1 exit requires `FORK_CAPABILITY_RETENTION = 100%` on stock-PASS tasks, no new silent wrong, no permission regression and no dataset-scope drift.
