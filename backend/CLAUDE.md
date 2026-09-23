@@ -1,39 +1,36 @@
 <!-- DIMA-V2-ACTIVE-OPERATION -->
 <!-- DIMA-V2-DAY7-CURRENT-OPERATION -->
-> ## 🔴 CURRENT OPERATION — DAY7 / P10 RESULT-AWARE RESEARCH LOOP
+> ## 🔴 CURRENT OPERATION — P11 / DAY8 ROOT-CAUSE DESIGN
 >
-> **DAY6.5 CLOSED.**
-> Read first:
-> `belgeler/plan/DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+> **DAY7 / P10 CLOSED / SEALED.**
+> Canonical closure:
+> `belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`.
 >
-> Final Day6.5 product checkpoint:
-> `dd5c16bbe444b6d9183faea9e9937be11260f394`.
+> Product behavior SHA:
+> `ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6`.
 >
-> Closed architecture:
-> `D65-SI=FINAL GREEN`;
-> `Semantic=Luna / Temporal=Sol / Research=Sol`;
-> `M0E-DEEP-DELTA=FINAL GREEN`;
-> bridge terminal `HEAVY_SEMANTIC_DUPLICATION`.
+> Provider-free final Day7 seal:
+> `35872766887 = GREEN`.
 >
-> Wren semantic backbone + analytical execution = PRIMARY.
-> Metabase structured execution = REJECTED CURRENT RELEASE.
-> X0-REST = NOT RUN / NOT REQUIRED.
-> Metabase production runtime = OFF.
+> Frozen13 `35855765109` is historical and MUST NOT rerun.
+> One-time micro `35873755069` is INCONCLUSIVE and deferred to Day11; no retry.
 >
-> Next canonical ticket = `P10 / DAY7 RESULT-AWARE RESEARCH LOOP`.
-> Production `/ask-v2` stays OFF; front-door closure is Day10.
-> DEV80/Validation50/Hidden50 remain forbidden.
+> Production `/ask-v2` = OFF.
+> DEV80 / Validation50 / Hidden50 = NOT RUN.
 >
-> Do not reopen Day6.5 without new independent invalidating P0.
+> Current ticket:
+> `P11 — DAY8 ROOT-CAUSE BRANCH`.
+> Current subphase:
+> PROVIDER-FREE architecture + legacy primitive inventory only.
 >
-> Day7 correctness portability / orchestration ablation authority:
-> `belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`.
+> Hard invariant:
+> `ASSOCIATION != CAUSATION`.
 >
-> **Permanent cross-cutting rule:** before adding deterministic cognition/orchestration,
-> first ask whether it protects authority/security/semantic truth/execution safety/
-> Evidence/completion/hard budget or side-effect correctness. If it does not, mark the
-> mechanism `BENCHMARK_REQUIRED`; comparative evidence must justify permanent complexity.
-> Keep cognition flexible. Do not benchmark away hard trust-plane guardrails.
+> No Day8 product implementation and no paid Day8 eval before the architecture/inventory
+> receipt is written and reviewed.
+>
+> Test economy remains permanent:
+> narrow provider-free proof first; paid widening only for one explicit uncertainty.
 
 <!-- SUPERSEDED/HISTORICAL — CURRENT-BRIDGE-ACTIVE -->
 > HEAD `6d65600842731112f2362261a30660217cbde05d`.
