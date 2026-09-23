@@ -122,6 +122,11 @@ class GovernedManagerExecutor:
         """Tenant authority bound into this governed execution context."""
         return self._context.tenant_binding
 
+    @property
+    def tenant_runtime(self):
+        """Typed tenant/runtime identity; authorization compares like-for-like fields."""
+        return self._context.tenant_runtime
+
     def _validate_derived_semantic_provenance(
         self,
         args: ResolveSemanticsArgs,
