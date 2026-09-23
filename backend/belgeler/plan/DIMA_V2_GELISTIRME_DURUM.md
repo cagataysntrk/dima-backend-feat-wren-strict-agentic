@@ -1,5 +1,189 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-23 — DAY8 D8-A1 + D8-A2 PROVIDER-FREE EPISTEMIC CORE GREEN
+
+Current exact checkpoint:
+
+```text
+branch                         feat/ask-v2-mvp
+Day8 implementation HEAD       b326c8390ff73f70a85f11f4c68c4b4e4a2d95b1
+Day7 sealed product behavior   ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+Day8 design reconciliation     96d601a330c0c57fed3dc00ebda0305b47d0d25f
+D8-A1 focused run              35880144722 = GREEN
+D8-A2 focused run              35880777420 = GREEN
+paid provider calls            0
+ROOT_CAUSE executable          false
+D8-B                           NOT STARTED
+D8-C                           NOT STARTED
+Day9                           NOT STARTED
+```
+
+### D8-A1 — typed epistemic state + HypothesisLedger
+
+Implemented only in the authorized epistemic-core scope:
+
+```text
+backend/app/v2/models.py
+backend/app/v2/epistemics.py
+backend/tests/test_v2_day8_hypothesis_ledger.py
+.github/workflows/v2-day8-focused.yml
+```
+
+Canonical Day8 distinctions now exist:
+
+```text
+HypothesisStatus
+OPEN / SUPPORTED / REFUTED / INCONCLUSIVE
+
+EpistemicLabel
+OBSERVATION / COMPARISON / ASSOCIATION / CONTRIBUTION /
+CANDIDATE_CAUSE / CONFIRMED_CAUSE
+
+HypothesisEvidenceRelation
+SUPPORTS / CONTRADICTS
+```
+
+`HypothesisEntry` separates:
+
+```text
+parent ROOT_CAUSE obligation authority
+trigger_evidence_refs
+SUPPORTS / CONTRADICTS evidence links
+governed semantic handles
+governed next-test ResearchTask refs
+status
+epistemic label
+limitations
+run / lineage / accepted-contract provenance
+```
+
+Important invariant:
+
+```text
+trigger Evidence != supporting Evidence
+```
+
+`HypothesisLedger` validates only structural admissibility:
+- ROOT_CAUSE parent authority,
+- current-run VERIFIED Evidence,
+- QueryContract provenance,
+- derived-Evidence lineage,
+- current semantic-handle authority,
+- registered ResearchTask identity,
+- obligation ancestry,
+- idempotent evidence links,
+- non-conflicting SUPPORTS/CONTRADICTS,
+- structural status-transition preconditions.
+
+It does NOT execute SQL/DB, infer causality, mint semantic/task/evidence IDs or decide
+semantic entailment.
+
+D8-A1 provider-free attacks include:
+- non-ROOT parent reject,
+- missing/unverified/unrelated trigger Evidence reject,
+- fake semantic handle reject,
+- unknown/unverified attachment reject,
+- conflicting relation reject,
+- duplicate relation idempotency,
+- SUPPORTED/REFUTED/INCONCLUSIVE admission gates,
+- fake next-test task reject,
+- registered governed next-test link success.
+
+### D8-A2 — EpistemicLabelGate + Evidence-linked Finding
+
+Added:
+- `EpistemicLabelGate`,
+- typed `EpistemicGateCode`,
+- `EvidenceLinkedFinding`,
+- `EvidenceLinkedFindingBuilder`,
+- explicit `CONFIRMED_CAUSE -> CAUSAL_NOT_IDENTIFIED` deny boundary.
+
+Claim-class rules now proven provider-free:
+
+```text
+verified measured Evidence
+→ OBSERVATION allowed
+
+governed comparison / PEER_COMPARE Evidence
+→ COMPARISON allowed
+
+governed relationship Evidence
+→ ASSOCIATION allowed
+→ CONFIRMED_CAUSE denied
+
+governed CONTRIBUTION derived Evidence
+→ CONTRIBUTION allowed
+→ CONFIRMED_CAUSE denied
+
+interestingness / outlier / anomaly / priority-only signal
+→ prioritization only
+→ cannot by itself create CANDIDATE_CAUSE
+
+CANDIDATE_CAUSE
+→ accepted ROOT_CAUSE authority
+→ typed hypothesis
+→ valid SUPPORTS Evidence
+→ explicit limitations
+→ governed semantics/provenance
+→ candidate only
+
+CONFIRMED_CAUSE
+→ default deny
+→ CAUSAL_NOT_IDENTIFIED
+```
+
+The deterministic layer validates admissibility and claim-class ceilings. It does NOT
+compute whether Evidence semantically supports a hypothesis from correlation/contribution/
+interestingness thresholds.
+
+### Focused proof
+
+`v2-day8-focused` is provider-free and runs:
+- compile of Day8 models/epistemics,
+- D8-A1 attacks,
+- D8-A2 attacks,
+- relevant Day7 DerivedEvidence regression,
+- relevant Day7 ResearchTask lifecycle/registry regressions.
+
+Latest run:
+
+```text
+35880777420 = GREEN
+```
+
+### Diff / boundary audit
+
+From supervisor entry HEAD `fd974c4...` to D8-A2 HEAD `b326c839...`:
+
+```text
+allowed Day8 product files changed:
+  backend/app/v2/models.py
+  backend/app/v2/epistemics.py
+
+tests/workflow/docs only otherwise
+
+forbidden manager/research/cross-domain/front-door product files changed = 0
+ROOT_CAUSE executable remains false
+LLM calls = 0
+DB queries from Day8 tests = 0
+paid tests = 0
+```
+
+### STOP
+
+Per Day8 supervisor protocol:
+
+```text
+D8-A1 = GREEN
+D8-A2 = GREEN
+D8-B  = NOT STARTED
+D8-C  = NOT STARTED
+ROOT_CAUSE execution = DISABLED
+```
+
+STOP for supervisor review before any Manager hypothesis-proposal or next-test orchestration
+wiring.
+
 ## 2026-09-23 — DAY7 / P10 CLOSED / SEALED
 
 Single active closure authority:
