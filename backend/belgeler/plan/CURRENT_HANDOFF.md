@@ -317,7 +317,7 @@ Explicitly rejected:
 - copying query/Evidence truth by value into ReportDocument,
 - creator access as permanent replay permission.
 
-## CURRENT SUPERVISOR AUTHORITY — DAY9-B GREEN CANDIDATE / STOP
+## CURRENT SUPERVISOR AUTHORITY — DAY10 / P13 AUTHORIZED
 
 ```text
 D9-A deterministic ReportDocument authority = ACCEPTED / GREEN / FROZEN
@@ -473,21 +473,42 @@ DAY8 FINAL SEALED  = NO
 The remaining root-cause live cognition debt remains assigned to the future Day10 integrated
 Product-MVP live gate.
 
-## STOP POINT
+## DAY10 ACTIVE AUTHORITY
 
-D9-A + D9-B engineering is a GREEN candidate.
+```text
+DAY9 / P12 engineering                    = GREEN / SEALED
+Day9 deterministic Report authority       = GREEN / FROZEN
+Day9 bounded narration                    = GREEN / FROZEN
+latest Day9 product behavior              = 164ff7e6628cca37cbfc8bdb269d84faf4561b51
 
-Do NOT automatically begin:
-- Day10,
-- LLM factual sentence polishing,
-- PDF/HTML export,
-- frontend,
-- report-side analytics/query/semantic repair,
-- another narration live call,
-- standalone Day8 live root-cause testing,
-- real-Wren/full Day7/full Day8/frozen13/DEV80/Validation50/Hidden50.
+DAY10 / P13 Product MVP integration       = AUTHORIZED
 
-Return to supervisor for Day9 review and explicit Day10 authorization.
+DAY8 deterministic                        = GREEN
+DAY8 real-Wren                            = GREEN
+DAY8 live Sol                             = OPEN
+latest valid Day8 live                    = 35898027005 = RED
+```
+
+No standalone Day8 paid rerun. The Day8 live root-cause debt must be re-exercised inside the
+Day10 integrated Product-MVP gate before Day10 can become FINAL GREEN.
+
+Current Day10 implementation order is binding:
+D10-A front-door ownership closure → D10-B research product projection → D10-C typed progress
+→ D10-D section continuation → D10-E deterministic partial → D10-F deterministic real-Wren
+integration → one canonical paid Product-MVP scenario.
+
+Permanent Day10 constraints:
+- authoritative /ask-v2 has exactly STANDARD | RESEARCH product lanes;
+- only StandardLaneStatus.RESEARCH_REQUIRED may auto-enter Research;
+- rejected Standard semantic state never crosses into Research;
+- manager_lab.py is construction reference, never production dependency;
+- no observation-text parsing into Findings;
+- no LLM factual report writer/completeness judge/progress narrator;
+- report_builder.py and report_narration.py remain frozen absent independent P0;
+- legacy V2Orchestrator/SemanticResolver are non-authoritative and may remain historical;
+- Wren remains analytical execution owner;
+- Day10 does not activate pilot traffic; existing ask_v2_enabled flag remains boundary;
+- Day10 provider-free + deterministic real-Wren must be GREEN before paid Product-MVP execution.
 
 ---
 
