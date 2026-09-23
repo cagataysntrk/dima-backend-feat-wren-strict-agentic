@@ -8893,3 +8893,76 @@ neutral "araştır" is intentionally defined causal by agreed ontology
 7. shadow ablation only after behavioral closure.
 
 Do NOT start Day8.
+
+
+## 2026-09-23 — DAY7 ORACLE RECONCILIATION PROVIDER-FREE SEALED
+
+```text
+tested product base          d22fb3626db0fe44ea543eee6531e5544cdf0b56
+evaluator/diagnostic SHA     e038c3d3403bfc2caddccac19e2da54cfa0fe751
+focused run                  35847415718
+result                       GREEN
+product app/v2 code changed  NO
+```
+
+Focused run passed the full current Day7 provider-free chain including:
+- temporal owner isolation,
+- obligation-local semantic recovery,
+- relationship structured-action diagnostic,
+- fanout/seed lifecycle,
+- updated live-corpus contract,
+- derived Evidence primitives,
+- same-domain + cross-domain gates,
+- Manager/result-aware loop,
+- real Wren schema/query/adaptive/relationship verticals.
+
+Oracle reconciliation is therefore provider-free sealed:
+- multi-obligation PREVIOUS_PERIOD = EVAL_ORACLE debt; current clarification is correct,
+- relationship-unsafe = EVAL_ORACLE debt; current clarification is correct.
+
+Hard-safety evaluator remains strict for fail-closed preacceptance:
+`accepted_contract_absent`, `zero_data_queries`, and `ledger_absent` are scored
+when that outcome is the declared oracle.
+
+### Remaining D7-OPEN-3
+
+`insufficient-evidence` remains the only frozen13 owner classification still open.
+
+Additional same-run evidence from frozen13:
+- `"Net geliri araştır..."` → PERFORMANCE + ACCEPT + run_analytics,
+- `"Seyrek sinyali araştır..."` → ROOT_CAUSE + typed deferred block.
+
+This rejects the hypothesis that the word "araştır" itself globally means ROOT_CAUSE.
+Provisional class remains MODEL_COGNITION tail, but production cognition is still frozen
+until the small neutral-vs-causal family diagnostic is measured.
+
+Manual-only cognition diagnostic is now cognition-boundary only:
+- corpus: `eval/v2_day7_capability_cognition_diagnostic.yaml`
+- runner: `lab/v2_day7_capability_cognition_diagnostic.py`
+- workflow: `.github/workflows/v2-day7-capability-cognition-diagnostic.yml`
+- 8 cases, workers=1, Sol Manager,
+- one intent-draft cognition call per normal case,
+- no semantic grounding, no Wren/DB, no Evidence/Completion scoring,
+- behavioral mismatch is diagnostic output, not harness failure.
+
+The workflow remains `workflow_dispatch` only by protocol. No paid push trigger was added.
+
+### Exact continuation
+
+```text
+manual capability cognition diagnostic
+→ inspect artifact
+→ classify insufficient-evidence
+→ IF generic MODEL_COGNITION defect proven:
+     one generic capability-ontology correction
+     → provider-free focused/metamorphic
+     → affected LIVE only
+  ELSE:
+     reconcile EVAL_ORACLE / capability-floor receipt
+→ frozen13 once justified
+→ Day7 behavioral closure
+→ FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation
+→ Harvest reconciliation
+→ Day7 closure receipt
+→ STOP; do not auto-start Day8
+```
