@@ -20,6 +20,8 @@
 >
 > Current ticket:
 > `P11 — DAY8 ROOT-CAUSE BRANCH`.
+> Active design receipt:
+> `belgeler/plan/DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`.
 > Current subphase:
 > PROVIDER-FREE architecture + legacy primitive inventory only.
 >
