@@ -71,6 +71,20 @@ class AcceptedContractRegistry:
     def active(self, lineage_id: str) -> AcceptedTurnContract | None:
         return self._active_by_lineage.get(lineage_id)
 
+    def lineage_contract_ids(self, lineage_id: str) -> tuple[str, ...]:
+        """Server-committed immutable contract history for one Research lineage."""
+        return tuple(
+            contract.contract_id
+            for contract in sorted(
+                (
+                    item
+                    for item in self._by_turn.values()
+                    if item.lineage_id == lineage_id
+                ),
+                key=lambda item: item.version,
+            )
+        )
+
 
 class IntentAcceptanceGate:
     """Verify deterministic authority facts; never infer human intent heuristically."""
