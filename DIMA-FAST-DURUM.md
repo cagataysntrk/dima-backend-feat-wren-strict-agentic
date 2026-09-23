@@ -9,10 +9,10 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`22aa127c540202954a951b2ed8d07fdfac6118cb`
+`30659f7892ce2d4eafffec89716b75e2ce09ea48`
 
 CURRENT_PRODUCT_GATE:
-`FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
+`FT-005N — NATIVE METABOT CAPABILITY RETENTION CONTROL`
 
 FT-003_FINAL:
 `CLOSED / GREEN`
@@ -37,8 +37,21 @@ tested SHA: `68c53f4d1247a1fe813ebaf6bcc901916f6f2660`
 FT-005_FINAL:
 `OPEN`
 
+FT-005_DETERMINISTIC_PROMPT_REPAIR:
+`GREEN`
+product repair: `2282df3b6d9fc77e9cd20046da8e6d95d860921e`
+
+FT-005_REAL_MODEL_RECERTIFICATION:
+`PENDING / OPENROUTER CAPACITY RESTORED BY USER, RE-PROOF NOT YET RECORDED`
+
+FT-005N:
+`OPEN / NATIVE METABOT CONTROL`
+
+FT-006:
+`BLOCKED`
+
 OPEN_RED:
-`FT-005 COGNITION CERTIFICATION`
+`FT-005 FINAL CERTIFICATION + FT-005N ARCHITECTURE CONTROL`
 
 FT-004_POST_SEAL_INVARIANTS:
 `CLOSED / GREEN`
@@ -577,3 +590,67 @@ FT-005:
 
 FT-006:
 `NOT OPENED`
+
+
+## FT-005N — NATIVE METABOT CAPABILITY RETENTION CONTROL
+
+Opened after supervisor source audit.
+
+Purpose:
+`Determine whether Fast loses analytical capability by replacing Metabase native agent orchestration with custom Fast cognition/orchestration while retaining largely the same underlying Metabase primitives.`
+
+This is:
+- an architecture experiment;
+- a control study;
+- NOT a production migration;
+- NOT authorization to fork Metabase;
+- NOT authorization to bypass licensing;
+- NOT FT-006.
+
+Control arms:
+- A0 = observed current Boyahane / current `latest` runtime;
+- A1 = isolated pinned vanilla Metabase v0.63.18;
+- B = direct stock `/api/metabot/agent-streaming`;
+- C = current Fast architecture.
+
+Current Boyahane source control:
+- repo = `cagataysntrk/metabase-boyahane`;
+- observed HEAD = `f0c4a6b053ead52ca2eac80002c448323dc34a35`;
+- configured Metabase image ref = `metabase/metabase:latest`;
+- source DB shape = 80 tables / 462,962 rows;
+- current local image ID / RepoDigest / runtime version / provider / exact model = NOT YET CAPTURED BY THIS CLOUD WORKSPACE.
+
+Pinned causal control:
+- runtime = `v0.63.18`;
+- image digest = `sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73`;
+- main Boyahane compose must remain unchanged.
+
+Hard rules:
+- `ENTERPRISE_GATE_BYPASS = 0`;
+- `LICENSE_CHECK_PATCH = 0`;
+- `PAID_FEATURE_PATCH = 0`;
+- Metabase source modification = NOT YET;
+- fork = NOT YET;
+- Fast product code must not be changed to make the native benchmark win or lose.
+
+Source audit receipt:
+`backend/belgeler/fast/receipts/audits/FT_005N_NATIVE_METABOT_SOURCE_AUDIT.md`
+
+Predevelopment authority:
+`backend/belgeler/fast/predev/FT_005N_NATIVE_METABOT_CONTROL_PREDEVELOPMENT_REVIEW.md`
+
+## FT-005N NEXT EXACT ACTION
+
+1. Freeze FT005N seam corpus before results.
+2. Add Fast-owned A0 runtime-capture helper without modifying Boyahane.
+3. Create isolated A1 pinned v0.63.18 Boyahane benchmark.
+4. Test stock `/api/metabot/agent-streaming` availability with no feature-gate patch.
+5. If available, Q1 native NLQ smoke.
+6. Parse native stream into structured trace: tool calls, tool results, state, history, final result.
+7. Carry returned history/state exactly as native frontend does for Q1→Q2→Q3.
+8. Run current Fast on the same analytical cases.
+9. Compute independent DB oracle.
+10. Classify A1/B/C outcomes and `VANILLA_CAPABILITY_RETENTION`.
+11. If native materially wins, STOP before Fast prompt/algorithm patches and open architecture-pivot decision receipt.
+12. If native does not materially win, return to FT-005 model recertification.
+13. FT-006 remains blocked until FT-005N decision closes.
