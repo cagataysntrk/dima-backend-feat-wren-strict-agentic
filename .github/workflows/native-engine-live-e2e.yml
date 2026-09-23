@@ -94,6 +94,12 @@ jobs:
       - name: Require engine-owned model credential
         run: test -n "$DIMA_OPENROUTER_API_KEY"
 
+      - name: Verify canonical engine source equivalence
+        shell: bash
+        run: |
+          test "$(git -C engine-source rev-parse HEAD)" = "6bb6924452e5b9dc42b3745bb88c3125a468b297"
+          python -c 'import json,pathlib; r=json.loads(pathlib.Path("engine-source/.dima/release.json").read_text()); assert r["upstream"]["version"]=="v0.63.18"; assert r["engine"]["version"]=="0.63.18-dima.0"; assert r["engine"]["semantic_behavior_changes"]==0'
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
