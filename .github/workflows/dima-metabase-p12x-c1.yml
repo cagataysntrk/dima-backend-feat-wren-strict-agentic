@@ -22,9 +22,9 @@ jobs:
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       P12X_METABOT_PROVIDER: openrouter/openai/gpt-5.6-luna
       STOCK_IMAGE: metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
-      FORK_IMAGE: dima-engine-p13b-c1:78b8ee66464435daece5a8e3b4cffce5a77937c3
-      ENGINE_SHA: 78b8ee66464435daece5a8e3b4cffce5a77937c3
-      C0_RUNTIME_SOURCE_SHA: 78b8ee66464435daece5a8e3b4cffce5a77937c3
+      FORK_IMAGE: dima-engine-p13b-c1:8c19ea7d989579b0b915b2ce12046421ac8ad2c9
+      ENGINE_SHA: 8c19ea7d989579b0b915b2ce12046421ac8ad2c9
+      C0_RUNTIME_SOURCE_SHA: 8c19ea7d989579b0b915b2ce12046421ac8ad2c9
       P12X_WAREHOUSE_OWNER_PASSWORD: boyahane-owner-c1
       BOYAHANE_READONLY_PASSWORD: boyahane-readonly-c1
       MB_APP_PASSWORD: metabase-app-c1
@@ -276,7 +276,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p12x-c1-parity-engine-78b8ee66464435daece5a8e3b4cffce5a77937c3
+          name: p12x-c1-parity-engine-8c19ea7d989579b0b915b2ce12046421ac8ad2c9
           path: platform/backend/lab/metabase/p12x/c1-artifacts/
           if-no-files-found: error
           retention-days: 30
