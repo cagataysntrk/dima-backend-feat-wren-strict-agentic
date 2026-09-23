@@ -9602,3 +9602,262 @@ No paid test.
 No live Sol.
 No ROOT_CAUSE executable=true.
 ```
+
+
+---
+
+## 2026-09-23 — DAY8 D8-C ORCHESTRATION ENGINEERING GREEN / LIVE CERTIFICATION STOP
+
+```text
+Day7 / P10                         CLOSED / SEALED
+D8-A1                              GREEN
+D8-A2                              GREEN
+D8-B                               GREEN
+D8-C execution-mode                GREEN
+D8-C bootstrap/applicability       GREEN
+D8-C next-test identity            GREEN
+D8-C Manager-loop wiring           GREEN
+D8-C real-Wren sentinel            GREEN
+latest product behavior SHA        3091651aea93e42e00521654af8d5dc2c51dc9c3
+latest post-fix focused            35895808495 = GREEN
+
+live Sol certification             NOT GREEN / STOP
+third paid run                      FORBIDDEN without new supervisor authority
+```
+
+### Capability execution authority
+
+One truth now exists:
+
+```text
+DIRECT
+ORCHESTRATED
+DEFERRED
+PRESENTATION
+```
+
+`ManagerCapabilitySpec.execution_mode` is authoritative.
+`spec.executable` is compatibility-only and derives from `execution_mode == DIRECT`.
+
+Current critical mapping:
+
+```text
+PERFORMANCE / BREAKDOWN / RANKING / COMPARISON / RELATIONSHIP
+→ DIRECT
+
+ROOT_CAUSE
+→ ORCHESTRATED
+
+TREND
+→ DEFERRED
+
+REPORT / TABLE / CHART / EXPLAIN
+→ PRESENTATION
+```
+
+Therefore:
+
+```text
+ROOT_CAUSE semantic binding = allowed
+ROOT_CAUSE direct execution = forbidden
+ResearchTaskKind.ROOT_CAUSE = absent
+ROOT_CAUSE → QUERY alias = absent
+```
+
+### ROOT_CAUSE bootstrap
+
+`RootCauseBootstrapPolicy` is the deterministic owner.
+
+Flow:
+
+```text
+current + VERIFIED + inspected relevant Evidence exists
+→ EVIDENCE_READY
+→ no unnecessary bootstrap
+
+otherwise
+accepted ROOT_CAUSE semantic handles
+→ existing DIRECT capability/task/tool applicability
+→ exactly one lossless candidate
+→ server-owned observational seed ResearchTask
+
+zero candidate
+→ fail closed
+
+multiple candidates
+→ AMBIGUOUS_TASK
+→ no silent pick
+```
+
+Metric-only ROOT_CAUSE may therefore seed an existing QUERY observational subtask when and only
+when PERFORMANCE is the unique lossless DIRECT shape. This is not a ROOT_CAUSE→QUERY alias.
+
+### Server-owned hypothesis next-test identity
+
+`HypothesisNextTestProposal` carries:
+
+```text
+hypothesis_ref
+task_kind
+input_refs
+trigger_evidence_ref
+material_reason
+optional ranking params
+```
+
+It carries no `task_id`, `parent_task_id`, `parent_obligation_id` or canonical identity.
+
+`HypothesisNextTestBoundary` resolves governed identities and mints stable `rt_*` task identity,
+then reuses:
+- `DerivedResearchTaskProposal`,
+- `ResearchTaskService.materialize_derived_candidates`,
+- `ResearchFanoutPolicy`,
+- `ResearchTaskRegistry`,
+- `ResearchToolRegistry`.
+
+No new scheduler, Evidence registry, generic agent kernel, budget truth or SQL engine was added.
+
+### Manager-loop integration
+
+Day8 root-cause cognition is opt-in behind active ROOT_CAUSE context.
+
+Added bounded cognition actions:
+
+```text
+PROPOSE_HYPOTHESIS
+PROPOSE_HYPOTHESIS_EVIDENCE_RELATION
+PROPOSE_HYPOTHESIS_NEXT_TEST
+```
+
+Manager proposes only.
+Trust plane admits/materializes/executes.
+
+`CONFIRMED_CAUSE` remains hard-denied with `CAUSAL_NOT_IDENTIFIED`.
+
+### Deterministic / real-Wren proof
+
+Latest focused run:
+
+`35895808495 = GREEN`.
+
+It passed:
+- capability execution-mode attacks,
+- ROOT_CAUSE bootstrap/applicability attacks,
+- Manager-loop root-cause wiring,
+- HypothesisLedger attacks,
+- EpistemicLabelGate attacks,
+- D8-B proposal attacks,
+- relevant Day7 Evidence regression,
+- relevant Day7 ResearchTask lifecycle/registry regressions,
+- provider-free live-harness contract,
+- one real-Wren root-cause sentinel.
+
+The real-Wren sentinel proves:
+
+```text
+ORCHESTRATED ROOT_CAUSE
+→ existing governed bootstrap
+→ Wren
+→ QueryContract
+→ VERIFIED Evidence
+→ inspect
+→ hypothesis
+→ server-owned follow-up task
+→ VERIFIED Evidence
+→ inspect
+→ explicit SUPPORTS
+→ CANDIDATE_CAUSE ceiling
+→ CONFIRMED_CAUSE denied
+```
+
+### Live Sol receipts and failure triage
+
+#### Run 35894577133
+
+```text
+measurement_valid = false
+classification    = EVAL/HARNESS/FIXTURE
+Sol calls          = 2
+semantic calls     = 0
+temporal calls     = 0
+```
+
+Observed boundary rejection:
+`TREND` was proposed as a hypothesis next test even though it has no declared governed execution
+tool in the current Day8 surface. The trust plane correctly rejected it.
+
+The harness incorrectly terminated on that correct rejection instead of mirroring production
+bounded rejection → feedback → replan behavior.
+
+Generic harness fix:
+rejected next-test proposals become `tool_rejected` observations and may replan within the
+existing hard call ceiling. Provider-free rejection/replan proof then passed.
+
+#### Run 35895279649
+
+```text
+measurement_valid = true
+classification    = CONTRACT/ARCHITECTURE
+result             = RED
+Sol calls          = 5
+semantic calls     = 0
+temporal calls     = 0
+message            = expected governed next-test proposal, got resolve_semantics
+```
+
+Cross-check exposed a generic contract defect:
+
+```text
+provider advertised ResearchTaskKind vocabulary
+!=
+runtime-admissible ROOT_CAUSE next-test vocabulary
+```
+
+The Manager saw capability execution modes under capability names, while
+`propose_hypothesis_next_test` required task-kind names. The provider schema also advertised
+task kinds that deterministic admission would always reject.
+
+Single-owner generic fix:
+- one shared task-kind → existing capability/tool mapping now owns both advertisement and runtime admission,
+- `ROOT_CAUSE_NEXT_TEST_CONTRACT` projects the actual DIRECT governed families and semantic-shape requirements,
+- strict provider schema exposes only those same admissible task kinds,
+- runtime admission remains defense-in-depth.
+
+No phrase/keyword/business-case/model-specific rule was added.
+
+Post-fix provider-free proof:
+`35895808495 = GREEN`.
+
+### Paid-test economy / STOP
+
+Paid model calls consumed:
+
+```text
+35894577133  invalid harness measurement   2
+35895279649  valid RED                     5
+--------------------------------------------
+combined                                   7
+```
+
+No third paid run was executed.
+
+The supervisor contract explicitly allows no third case and requires progressive paid-test economy.
+Therefore the post-fix architecture is deterministically GREEN, but live Sol certification is
+not claimed GREEN without a new supervisor authorization for a post-fix live measurement.
+
+### Current hard invariants
+
+```text
+ROOT_CAUSE direct executable?        NO
+ResearchTaskKind.ROOT_CAUSE?         NO
+ROOT_CAUSE → QUERY alias?            NO
+CONFIRMED_CAUSE allowed?             NO
+model-owned ResearchTask identity?   NO
+new semantic owner?                  NO
+new Evidence owner?                  NO
+new scheduler/budget truth?          NO
+Metabase runtime/substrate adopted?  NO
+```
+
+STOP here for supervisor receipt. Do not start Day9 and do not run another paid model test without
+new supervisor authority.
