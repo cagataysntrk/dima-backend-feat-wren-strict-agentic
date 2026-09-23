@@ -49,6 +49,7 @@ name: v2-day7-focused
       - "backend/app/v2/derived_evidence.py"
       - "backend/tests/test_v2_day7_derived_evidence.py"
       - "backend/lab/v2_day7_manager_live_sol.py"
+      - "backend/lab/v2_day7_capability_cognition_diagnostic.py"
       - "backend/eval/v2_day7_live_sol_cases.yaml"
       - "backend/eval/v2_day7_capability_cognition_diagnostic.yaml"
       - "backend/tests/test_v2_day7_live_sol_contract.py"
@@ -118,7 +119,8 @@ jobs:
             app/v2/manager_semantics.py \
             lab/v2_day7_governed_sibling_scope_discovery.py \
             lab/v2_day7_sibling_scope_live_luna.py \
-            lab/v2_day7_manager_live_sol.py
+            lab/v2_day7_manager_live_sol.py \
+            lab/v2_day7_capability_cognition_diagnostic.py
       - name: Focused provider-free Day7 test
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_tool_contract.py
