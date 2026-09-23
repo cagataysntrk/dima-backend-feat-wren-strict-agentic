@@ -550,9 +550,17 @@ def test_sensitive_filter_candidate_is_never_exposed_by_scope_recovery():
         ),
     )
 
-    assert refs[1] in result.unresolved_source_refs
+    # The user's own exact sensitive value may bind locally without being sent
+    # to cognition. The privacy invariant is candidate exposure, not prohibition of
+    # governed exact USER_SOURCE authority.
+    sensitive_item = next(
+        item for item in result.resolved
+        if item.source_ref == refs[1]
+    )
+    assert sensitive_item.handle.sensitive is True
+    assert result.unresolved_source_refs == ()
     assert provider.calls == 0
-    assert len(fx.handles._bindings) == 1
+    assert len(fx.handles._bindings) == 2
 
     base = SemanticCandidateGenerator(
         semantic_context=context,
