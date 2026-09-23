@@ -1,3 +1,73 @@
+## 2026-09-23 — DAY7 POST-LIVE GENERIC FIXES — LIVE VERIFICATION PENDING
+
+```text
+CURRENT HEAD
+b70f0aab209b2353b854463ace582c40bcc2bd98
+
+LATEST FOCUSED GATE
+35822334385 = GREEN
+
+FIRST VALID LIVE
+35820646539 = VALID RED
+
+POST-LIVE ROOT FIX A
+tenant identity representation
+= focused GREEN
+= LIVE VERIFICATION PENDING
+
+POST-LIVE ROOT FIX B
+ResearchDirective / USER_MUST capability separation
+= focused GREEN
+= LIVE VERIFICATION PENDING
+```
+
+Exact commits:
+
+```text
+tenant:
+8cd6f7075cdadb00b0cf89d266e0039239d1a43e
+b6144e96069bdc312ae2dbf4973d59488e6d09ea
+2338152277f7e6c8c71bdf569026dafa66a0e381
+8f820a112333cabe6a4b49aae93d9cd8b376d4c8
+
+directive:
+171ed5d66...
+b96deab082...
+86c5c1094...
+b70f0aab209b2353b854463ace582c40bcc2bd98
+```
+
+Seal status:
+
+```text
+tenant family       NOT SEALED — live affected-family verification required
+directive family    NOT SEALED — live affected-family verification required
+full frozen13       BLOCKED until both affected families are classified
+ablation            BLOCKED
+Day8                BLOCKED
+```
+
+Next exact order:
+
+```text
+1. LIVE tenant probe only:
+   simple-performance
+   comparison-period
+   adaptive-material
+
+2. classify old vs new first bad transition
+   and record DB/Evidence reachability
+
+3. LIVE directive probe only:
+   duplicate-side-effect
+
+4. classify results
+
+5. NO full 13 until both family receipts exist
+```
+
+---
+
 ## 2026-09-23 — DAY7 FIRST VALID LIVE SOL MEASUREMENT — RED
 
 Measurement execution:
