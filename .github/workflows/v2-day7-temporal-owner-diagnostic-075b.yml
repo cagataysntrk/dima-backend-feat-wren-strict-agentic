@@ -1,0 +1,33 @@
+name: v2-day7-temporal-owner-diagnostic-075b
+
+"on":
+  push:
+    branches:
+      - ops/day7-temporal-owner-diagnostic-075b
+    paths:
+      - ".github/workflows/v2-day7-temporal-owner-diagnostic-075b.yml"
+
+jobs:
+  temporal-owner-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DIMA_LLM_PROVIDER: "rule"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 075b376f40fc547102aa53c14c5cdbca18469dd3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Temporal owner-isolation attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_temporal_owner_isolation.py
