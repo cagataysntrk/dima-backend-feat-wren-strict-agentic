@@ -20,6 +20,7 @@ name: v2-day8-focused
       - "backend/tests/test_v2_day8_hypothesis_proposals.py"
       - "backend/tests/test_v2_day8_capability_execution_mode.py"
       - "backend/tests/test_v2_day8_root_cause_orchestration.py"
+      - "backend/tests/test_v2_day8_real_wren_root_cause.py"
       - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
       - ".github/workflows/v2-day8-focused.yml"
   workflow_dispatch:
@@ -84,3 +85,7 @@ jobs:
             tests/test_v2_day7_research_task_lifecycle.py \
             tests/test_v2_day7_research_task_registry.py \
             tests/test_v2_day7_research_task_registry_execution.py
+
+      - name: Day8 one real-Wren root-cause sentinel
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_real_wren_root_cause.py
