@@ -744,3 +744,29 @@ diagnostic is prepared. It does not execute Wren/DB.
 
 Next action is exactly that manual diagnostic. Product code stays frozen until its artifact
 is classified.
+
+
+## 15. D7-OPEN-3 CLASSIFIED — MODEL_COGNITION
+
+Manual run `35848438878` was VALID and reproduced the frozen13 failure at the exact
+intent-draft boundary:
+
+```text
+neutral-investigate-tr
+expected PERFORMANCE
+actual ROOT_CAUSE
+```
+
+The second raw mismatch was evaluator-only: PERFORMANCE was present and an extra REPORT
+presentation obligation was also emitted. Cognition diagnostic now scores analytical
+STANDARD/RESEARCH lanes only.
+
+One generic product correction was made in `manager_policy.py` only:
+descriptive metric investigation remains PERFORMANCE unless the requested business result
+contains material causal intent; ROOT_CAUSE requires causal explanation/causes/drivers/
+mechanisms.
+
+Provider-free run `35849168189` at `6de7862...` = GREEN.
+
+Next gate: re-run manual `v2-day7-capability-cognition-diagnostic`.
+Do not run full frozen13 before that result is classified.
