@@ -47,6 +47,7 @@ name: v2-day7-focused
       - "backend/eval/v2_day7_live_sol_cases.yaml"
       - "backend/tests/test_v2_day7_live_sol_contract.py"
       - ".github/workflows/v2-day7-live-sol.yml"
+      - "backend/tests/test_v2_day7_directive_contract.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -108,6 +109,10 @@ jobs:
       - name: Research principal binding
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_principal_binding.py
+
+      - name: Research directive capability contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_directive_contract.py
 
       - name: Cardinality-aware Research fanout
         working-directory: backend
