@@ -1,18 +1,6 @@
 name: dima-metabase-p12x-c2-live
 
 on:
-  push:
-    branches:
-      - feat/dima-metabase-platform
-    paths:
-      - "backend/app/v3/substrate/metabase/native_models.py"
-      - "backend/app/v3/substrate/metabase/native_engine.py"
-      - "backend/lab/metabase/p12x/c2_live_canary.py"
-      - "backend/lab/metabase/p12x/c2_cases.json"
-      - "backend/lab/metabase/p12x/c2_bridge_probe.py"
-      - "backend/lab/metabase/p12x/c2_score_bridge_parity.py"
-      - "backend/lab/metabase/p12x/c2_run_parity.py"
-      - ".github/workflows/dima-metabase-p12x-c2-live.yml"
   workflow_dispatch:
 
 permissions:
