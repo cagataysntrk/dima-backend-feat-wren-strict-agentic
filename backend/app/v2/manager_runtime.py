@@ -234,6 +234,24 @@ class ManagerRuntime:
 
         return ManagerStepResult(snapshot=self._snapshot, tool_result=result)
 
+    def block_unsupported(self, reason: str) -> ManagerRunSnapshot:
+        """Deterministic stop for a recognized capability without a current governed path."""
+        if self._snapshot.state in {
+            ManagerState.COMPLETED,
+            ManagerState.FAILED,
+            ManagerState.BUDGET_EXHAUSTED,
+        }:
+            raise ManagerStateError(
+                "terminal Manager state cannot transition to unsupported block"
+            )
+        self._snapshot = self._snapshot.model_copy(
+            update={
+                "state": ManagerState.BLOCKED,
+                "last_error": reason,
+            }
+        )
+        return self._snapshot
+
     def require_clarification(self, reason: str) -> ManagerRunSnapshot:
         """Deterministic safe stop when semantic authority cannot progress."""
         if self._snapshot.state in {
