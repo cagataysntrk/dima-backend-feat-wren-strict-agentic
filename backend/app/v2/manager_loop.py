@@ -397,6 +397,7 @@ class ManagerLoopOutcome:
     observations: tuple[dict[str, Any], ...]
     preacceptance_status: FiniteAcceptanceStatus | None = None
     findings: tuple[EvidenceLinkedFinding, ...] = ()
+    cancelled: bool = False
 
 
 def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
@@ -675,6 +676,7 @@ class ResearchManagerLoop:
         research_task_service: ResearchTaskService | None = None,
         root_cause_context: RootCauseLoopContext | None = None,
         progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
+        cancel_check: Callable[[], bool] | None = None,
     ) -> None:
         structured = getattr(llm, "structured_json", None)
         if not callable(structured):
@@ -686,6 +688,7 @@ class ResearchManagerLoop:
         self._research_tasks = research_task_service or ResearchTaskService()
         self._root_cause_context = root_cause_context
         self._progress_callback = progress_callback
+        self._cancel_check = cancel_check
         self._alias_by_handle: dict[str, str] = {}
         self._handle_by_alias: dict[str, str] = {}
 
@@ -1309,12 +1312,19 @@ class ResearchManagerLoop:
                             preacceptance_status=FiniteAcceptanceStatus.ACCEPTED,
                         )
 
+        cancelled = False
         while runtime.snapshot.state not in {
             ManagerState.COMPLETED,
             ManagerState.FAILED,
             ManagerState.BUDGET_EXHAUSTED,
             ManagerState.NEEDS_CLARIFICATION,
         }:
+            if self._cancel_check is not None and self._cancel_check():
+                for task in task_registry.tasks:
+                    task_registry.cancel(task.task_id)
+                observations.append({"kind": "cancelled"})
+                cancelled = True
+                break
             try:
                 runtime.note_manager_turn(phase="research")
             except ManagerBudgetError as exc:
@@ -1767,6 +1777,7 @@ class ResearchManagerLoop:
                         executor=executor,
                         principal=getattr(executor, "principal", None),
                         task_registry=task_registry,
+                        cancel_check=self._cancel_check,
                     )
                     manager_result = self._manager_safe(
                         research_execution.observation
@@ -1897,4 +1908,5 @@ class ResearchManagerLoop:
             observations=tuple(observations),
             preacceptance_status=FiniteAcceptanceStatus.ACCEPTED,
             findings=tuple(canonical_findings),
+            cancelled=cancelled,
         )
