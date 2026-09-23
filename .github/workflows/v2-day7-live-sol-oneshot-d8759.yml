@@ -1,0 +1,53 @@
+name: v2-day7-live-sol-oneshot-d8759
+
+"on":
+  push:
+    branches:
+      - ops/day7-live-measurement-d8759
+    paths:
+      - ".github/workflows/v2-day7-live-sol-oneshot-d8759.yml"
+
+jobs:
+  day7-live-sol-oneshot:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 45
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_DAY7_LIVE_MANAGER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_DAY7_LIVE_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_DAY7_LIVE_TEMPORAL_MODEL: "openai/gpt-5.6-sol"
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - name: Checkout exact frozen Day7 checkpoint
+        uses: actions/checkout@v4
+        with:
+          ref: d8759c9cfe388560084a2886dd443c32c6346788
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend live-eval dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Run provider preflight then SAME frozen 13-case live corpus
+        working-directory: backend
+        run: python lab/v2_day7_manager_live_sol.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day7-live-sol-d8759-${{ github.run_id }}
+          path: backend/lab/reports/v2_day7_live_sol.json
+          retention-days: 90
