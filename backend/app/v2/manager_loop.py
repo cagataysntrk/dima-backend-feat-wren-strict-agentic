@@ -22,6 +22,7 @@ from app.v2.manager_models import (
     ObligationOrigin,
     ObligationPolarity,
     ObligationPriority,
+    ObligationStatus,
     UserIntentEnvelope,
 )
 from app.v2.manager_policy import ManagerCapabilityRegistry
@@ -1270,6 +1271,14 @@ class ResearchManagerLoop:
                 )
                 for item in runtime.ledger.active_user_must:
                     if item.capability_key != ManagerCapabilityKey.ROOT_CAUSE:
+                        continue
+                    if item.status not in {
+                        ObligationStatus.ACCEPTED,
+                        ObligationStatus.READY,
+                        ObligationStatus.IN_PROGRESS,
+                    }:
+                        # Accounted prior-turn ROOT_CAUSE authority is carried by the
+                        # versioned ledger but must not reopen hypothesis state.
                         continue
                     ledger = self._root_cause_context.build_ledger(
                         runtime=runtime,
