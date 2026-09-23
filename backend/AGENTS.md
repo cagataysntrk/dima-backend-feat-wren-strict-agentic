@@ -239,6 +239,28 @@
 > STOP/CONSULT before: D65-J1B, any production model cascade/threshold, full D65-X, primary substrate switch, authority/security boundary adoption, freeze candidate, DEV80.
 >
 > D65-J1 = cognition decision-model axis. D65-X = analytics execution-substrate axis. Never conflate them.
+## PERMANENT TEST ECONOMY OVERRIDE — 2026-09-23
+
+> The smallest test capable of falsifying the current hypothesis runs first.
+> A broader paid test is forbidden while a narrower test answers the same question.
+>
+> Progressive widening:
+> `LOCAL/CONTRACT/METAMORPHIC → 1 LIVE → affected pair → 2-case micro canary/ablation
+> → milestone corpus → certification corpus`.
+>
+> Paid-provider rules:
+> - workflow_dispatch only; never push/PR/schedule,
+> - explicit case scope; blank input may never mean “run all”,
+> - explicit hard model-call budget before provider execution,
+> - budget guard runs before each provider call,
+> - artifact records manager/linker/temporal/total calls, service queries, budget, exhaustion,
+> - full frozen/DEV80/Validation50/Hidden50 require explicit confirmation and milestone need,
+> - do not increase product Manager turn budget to make a scenario pass.
+>
+> Day7 canonical Manager hard ceiling:
+> `preacceptance_turns + research_manager_turns <= 6`.
+> Phase counters remain observable; they do not expand the total allowance.
+>
 ## DAY 6.5 CURRENT CLOSURE OVERRIDE — 2026-09-22
 
 > Bu bölüm eski Day 6.5 hazırlık/validation maddelerinin üzerinde okunur.
