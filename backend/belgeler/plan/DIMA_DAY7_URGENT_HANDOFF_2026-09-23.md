@@ -1,3 +1,11 @@
+> # HISTORICAL / SUPERSEDED
+>
+> Day7 is CLOSED / SEALED.
+> Active authority is now:
+> `DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`.
+>
+> This file is retained only for audit chronology. Do not continue development from it.
+
 # DIMA DAY7 — ACİL DEVİR / CONTINUATION AUTHORITY
 
 Tarih: 2026-09-23
