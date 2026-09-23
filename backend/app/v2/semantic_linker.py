@@ -566,6 +566,83 @@ class SemanticCandidateGenerator:
         )
 
 
+
+
+class GovernedSiblingScopeCandidateGenerator:
+    """Discovery-only fallback over current governed catalog truth.
+
+    This component deliberately does not interpret the unresolved surface.  It receives
+    an already-governed sibling cube scope from the caller, enumerates only current
+    catalog candidates inside that scope, and returns a bounded CandidateSet for the
+    existing semantic linker.  It never mints authority.
+    """
+
+    def __init__(
+        self,
+        *,
+        base: SemanticCandidateGenerator,
+        sibling_cube_names: tuple[str, ...],
+        max_candidates: int = 48,
+    ) -> None:
+        self._base = base
+        self._scope = frozenset(
+            str(value) for value in sibling_cube_names if str(value)
+        )
+        self._max_candidates = max(1, int(max_candidates))
+
+    @staticmethod
+    def _cube_names(item: CatalogCandidateBinding) -> frozenset[str]:
+        return frozenset(
+            str(value)
+            for value in tuple(
+                getattr(item.canonical_target, "cube_names", ()) or ()
+            )
+            if str(value)
+        )
+
+    def generate(
+        self,
+        *,
+        request_id: str,
+        surface: str,
+        kind_hint: str,
+        decision_context: str | None = None,
+    ) -> CandidateSet:
+        del decision_context  # source context belongs to cognition, never discovery truth.
+        if not self._scope:
+            return CandidateSet(
+                request_id=request_id,
+                surface=surface,
+                kind_hint=kind_hint,
+                bindings=(),
+                too_broad=False,
+                retrieval_exhaustive=False,
+                retrieval_backend="governed_sibling_scope_v1",
+                retrieval_truncated=False,
+            )
+
+        scoped = [
+            item
+            for item in self._base._governed_candidates(kind_hint)
+            if not item.sensitive
+            and bool(item.card.verified_aliases)
+            and bool(self._scope.intersection(self._cube_names(item)))
+        ]
+        scoped.sort(key=lambda item: item.card.candidate_id)
+        too_broad = len(scoped) > self._max_candidates
+        return CandidateSet(
+            request_id=request_id,
+            surface=surface,
+            kind_hint=kind_hint,
+            bindings=tuple(scoped[: self._max_candidates]),
+            too_broad=too_broad,
+            # Exhaustive only inside a discovery hint; never evidence of global absence.
+            retrieval_exhaustive=False,
+            retrieval_backend="governed_sibling_scope_v1",
+            retrieval_truncated=too_broad,
+        )
+
+
 _LINKER_SYSTEM = """You are Dima's bounded semantic linker.
 
 For each request, interpret USER_SURFACE against the supplied CANDIDATES.
