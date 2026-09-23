@@ -14,6 +14,9 @@ from lab.v2_day7_manager_live_sol import MDL_VERSION, semantic_schema
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ROOT / "eval" / "v2_day7_live_sol_cases.yaml"
+COGNITION_DIAGNOSTIC_CASES = (
+    ROOT / "eval" / "v2_day7_capability_cognition_diagnostic.yaml"
+)
 
 
 def _document():
@@ -384,3 +387,40 @@ def test_main_preflight_failure_stops_before_corpus_or_service(tmp_path, monkeyp
     assert payload["hard_safety_failures"] == []
     assert payload["total_service_queries"] == 0
     assert payload["records"] == []
+
+
+def test_capability_cognition_diagnostic_is_balanced_and_does_not_change_product_contract():
+    doc = yaml.safe_load(
+        COGNITION_DIAGNOSTIC_CASES.read_text(encoding="utf-8")
+    )
+    cases = list(doc["cases"])
+
+    assert doc["policy"]["workers"] == 1
+    assert doc["policy"]["manager_model"] == "openai/gpt-5.6-sol"
+    assert doc["policy"]["linker_model"] == "openai/gpt-5.6-luna"
+    assert doc["policy"]["temporal_model"] == "openai/gpt-5.6-sol"
+    assert (
+        doc["policy"]["frozen_product_base"]
+        == "d22fb3626db0fe44ea543eee6531e5544cdf0b56"
+    )
+    assert doc["policy"]["patching_from_cases_forbidden"] is True
+
+    direct = [
+        case for case in cases
+        if not case.get("expected_preacceptance_state")
+    ]
+    causal = [
+        case for case in cases
+        if case.get("expected_preacceptance_state") == "BLOCKED"
+    ]
+
+    assert len(direct) == 4
+    assert len(causal) == 4
+    assert all(case.get("must_tools") == ["run_analytics"] for case in direct)
+    assert all(case.get("max_queries") == 1 for case in direct)
+    assert all(
+        case.get("expected_observation_kind") == "unsupported_capability"
+        and case.get("max_queries") == 0
+        and case.get("expect_no_ledger") is True
+        for case in causal
+    )
