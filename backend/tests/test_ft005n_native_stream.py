@@ -39,7 +39,7 @@ def test_native_stream_parser_recovers_text_tools_state_and_finish():
     lines = [
         'f:{"messageId":"m1"}',
         '0:"Analiz "',
-        '9:{"toolCallId":"tc1","toolName":"nlq_search","args":"{\"query\":\"sales\"}"}',
+        '9:{"toolCallId":"tc1","toolName":"nlq_search","args":"{}"}',
         'a:{"toolCallId":"tc1","result":{"ok":true}}',
         '2:{"type":"state","version":1,"value":{"query":{"id":"q1"}}}',
         '0:"tamam."',
@@ -63,7 +63,7 @@ def test_native_stream_parser_recovers_text_tools_state_and_finish():
                 {
                     "id": "tc1",
                     "name": "nlq_search",
-                    "arguments": '{"query":"sales"}',
+                    "arguments": "{}",
                 }
             ],
         },
