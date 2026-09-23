@@ -1292,6 +1292,33 @@ class HypothesisEvidenceLink(FrozenModel):
     relation: HypothesisEvidenceRelation
 
 
+class HypothesisProposal(FrozenModel):
+    """Probabilistic D8-B cognition proposal; carries no model-owned identity."""
+
+    statement: str = Field(min_length=1)
+    semantic_handle_refs: tuple[str, ...] = Field(min_length=1)
+    trigger_evidence_refs: tuple[str, ...] = Field(min_length=1)
+    limitations: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def _proposal_refs_unique(self):
+        for label, refs in (
+            ("semantic_handle_refs", self.semantic_handle_refs),
+            ("trigger_evidence_refs", self.trigger_evidence_refs),
+        ):
+            if len(refs) != len(set(refs)):
+                raise ValueError(f"{label} must be unique")
+        return self
+
+
+class HypothesisEvidenceRelationProposal(FrozenModel):
+    """Cognition proposal linking an existing governed hypothesis and Evidence ID."""
+
+    hypothesis_ref: str = Field(min_length=1)
+    evidence_ref: str = Field(min_length=1)
+    relation: HypothesisEvidenceRelation
+
+
 class HypothesisProvenance(FrozenModel):
     accepted_contract_id: str = Field(min_length=1)
     lineage_id: str = Field(min_length=1)
