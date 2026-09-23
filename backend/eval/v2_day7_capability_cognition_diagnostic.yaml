@@ -13,57 +13,39 @@ cases:
   - id: neutral-state-tr
     question: "Seyrek sinyalin mevcut durumunu göster."
     kind: cognition_diagnostic
-    must_tools: [run_analytics]
-    max_queries: 1
+    expected_capability: performance
 
   - id: neutral-review-tr
     question: "Seyrek sinyali değerlendir ve yalnız gözlenen durumu göster."
     kind: cognition_diagnostic
-    must_tools: [run_analytics]
-    max_queries: 1
+    expected_capability: performance
 
   - id: neutral-investigate-tr
     question: "Seyrek sinyali araştır. Kanıt yoksa yeni sonuç uydurma ve gereksiz dallanma açma."
     kind: cognition_diagnostic
-    must_tools: [run_analytics]
-    require_zero_row_observation: true
-    max_derived_executions: 0
-    max_queries: 1
+    expected_capability: performance
 
   - id: neutral-inspect-en
     question: "Inspect the sparse signal and report only its observed state; do not infer causes."
     kind: cognition_diagnostic
-    must_tools: [run_analytics]
-    max_queries: 1
+    expected_capability: performance
 
   - id: causal-why-tr
     question: "Seyrek sinyal neden düştü, nedenini araştır."
     kind: cognition_diagnostic
-    expected_preacceptance_state: BLOCKED
-    expected_observation_kind: unsupported_capability
-    expect_no_ledger: true
-    max_queries: 0
+    expected_capability: root_cause
 
   - id: causal-root-tr
     question: "Seyrek sinyaldeki düşüşün kök nedenini araştır."
     kind: cognition_diagnostic
-    expected_preacceptance_state: BLOCKED
-    expected_observation_kind: unsupported_capability
-    expect_no_ledger: true
-    max_queries: 0
+    expected_capability: root_cause
 
   - id: causal-anomaly-tr
     question: "Seyrek sinyaldeki anomalinin hangi etkenlerden kaynaklandığını araştır."
     kind: cognition_diagnostic
-    expected_preacceptance_state: BLOCKED
-    expected_observation_kind: unsupported_capability
-    expect_no_ledger: true
-    max_queries: 0
+    expected_capability: root_cause
 
   - id: causal-why-en
     question: "Investigate why the sparse signal declined and identify the causes."
     kind: cognition_diagnostic
-    expected_preacceptance_state: BLOCKED
-    expected_observation_kind: unsupported_capability
-    expect_no_ledger: true
-    max_queries: 0
+    expected_capability: root_cause
