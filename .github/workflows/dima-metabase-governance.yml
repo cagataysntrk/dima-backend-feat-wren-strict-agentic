@@ -154,3 +154,42 @@ jobs:
               exit 1
             fi
           fi
+
+      - name: Guard active engine consumers against source-build fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTIVE=(
+            ".github/workflows/dima-metabase-p13b-semantic-availability.yml"
+            ".github/workflows/dima-metabase-p13c-integration.yml"
+            ".github/workflows/dima-metabase-p13c-live.yml"
+          )
+          for workflow in "${ACTIVE[@]}"; do
+            test -f "$workflow"
+            if grep -nE 'docker[[:space:]]+(build|buildx[[:space:]]+build)' "$workflow"; then
+              echo "active Platform engine consumer source-builds the engine: $workflow" >&2
+              exit 1
+            fi
+            grep -q 'engine_runtime_lock.json' "$workflow"
+            grep -q 'IMMUTABLE_IMAGE_REF' "$workflow"
+            grep -q 'docker pull "\$IMMUTABLE_IMAGE_REF"' "$workflow"
+            if grep -nE 'dima-metabase-engine:(latest|main|dima\.)' "$workflow"; then
+              echo "moving/human tag consumed as runtime authority: $workflow" >&2
+              exit 1
+            fi
+          done
+
+      - name: Validate Dima engine runtime lock when pinned
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOCK="backend/lab/metabase/engine_runtime_lock.json"
+          if [ -f "$LOCK" ]; then
+            test -f backend/lab/metabase/scripts/engine_runtime_lock.py
+            GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
+            python backend/lab/metabase/scripts/engine_runtime_lock.py \
+              --lock "$LOCK" \
+              --gitlink-sha "$GITLINK_SHA" \
+              --print-json
+          fi
+
