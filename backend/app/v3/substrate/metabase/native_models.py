@@ -62,3 +62,13 @@ class NativeEngineObservation(BaseModel):
     errors: tuple[Any, ...] = ()
     finish_parts: tuple[Any, ...] = ()
     final_state: dict[str, Any] | None = None
+
+
+class NativeDatasetExecutionObservation(BaseModel):
+    """Transport observation for one exact /api/dataset execution."""
+
+    model_config = ConfigDict(frozen=True)
+
+    status_code: int
+    latency_ms: int = Field(ge=0)
+    payload: dict[str, Any]

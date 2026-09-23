@@ -142,3 +142,72 @@ def test_c2_bridge_has_no_agent_api_wren_or_raw_sql_fallback():
 
     assert requested == ["/api/session/properties", "/api/metabot/agent-streaming"]
     assert all("/api/agent/" not in path for path in requested)
+
+
+def test_p13b_transport_reuses_session_and_submits_exact_attested_body():
+    query = {
+        "lib/type": "mbql/query",
+        "database": 1,
+        "stages": [{"lib/type": "mbql.stage/mbql", "source-table": 10}],
+    }
+    identity = {
+        "repository": "UpcyTech/dima-metabase-engine",
+        "revision_sha": "3ac50a0ad1c2fb53d538c9fccf621db816c305e1",
+        "upstream_base_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
+        "runtime_tag": "v0.63.18-dima.1",
+        "build_identity": "github-actions:test",
+        "image_identity": "local-image:test",
+        "runtime_instance_id": "00000000-0000-4000-8000-000000000131",
+    }
+    requested = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["X-Metabase-Session"] == "restricted-session"
+        body = json.loads(request.content) if request.content else None
+        requested.append((request.url.path, body))
+        if request.url.path == "/api/dima/engine/v1/identity":
+            return httpx.Response(200, json=identity)
+        if request.url.path == "/api/dima/engine/v1/native-query-attestation":
+            assert body == {
+                "conversation_id": "00000000-0000-4000-8000-000000000201",
+                "native_query_id": "native-px01",
+            }
+            return httpx.Response(
+                200,
+                json={
+                    "exact_serialized_pmbql": query,
+                    "manifest": {"native_query_id": "native-px01"},
+                },
+            )
+        if request.url.path == "/api/dataset":
+            assert body == query
+            return httpx.Response(200, json={"data": {"rows": [[126]]}})
+        return httpx.Response(599)
+
+    expected = NativeEngineIdentity(
+        engine_sha=identity["revision_sha"],
+        upstream_base_sha=identity["upstream_base_sha"],
+        runtime_tag=identity["runtime_tag"],
+    )
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="restricted-session",
+        expected_identity=expected,
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        assert client.engine_identity() == identity
+        envelope = client.attest_native_query(
+            conversation_id=UUID("00000000-0000-4000-8000-000000000201"),
+            native_query_id="native-px01",
+        )
+        assert envelope["exact_serialized_pmbql"] == query
+        execution = client.execute_dataset(query)
+
+    assert execution.status_code == 200
+    assert execution.payload["data"]["rows"] == [[126]]
+    assert [path for path, _ in requested] == [
+        "/api/dima/engine/v1/identity",
+        "/api/dima/engine/v1/native-query-attestation",
+        "/api/dataset",
+    ]
+    assert all("/api/agent/" not in path for path, _ in requested)

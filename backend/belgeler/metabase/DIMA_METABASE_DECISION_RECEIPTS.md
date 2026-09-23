@@ -2144,3 +2144,70 @@ P13B-2 requires focused provider-free deterministic tests, not a new full stock-
 status:
 `SEALED / P13B-1 GREEN / P13B-2 PROVIDER-FREE IMPLEMENTATION AUTHORIZED`.
 
+---
+
+## DMP-DEC-0039 — P13B-2 provider-free GREEN and P13B-3 first pinned-live authorization
+
+date: 2026-09-23
+
+audited_state:
+```text
+Platform branch = feat/dima-metabase-platform
+Platform certified base = 4c3ac500dd1ec35b0420bb6f3fd61bae65269364
+engine main/gitlink = 3ac50a0ad1c2fb53d538c9fccf621db816c305e1
+engine release = 0.63.18-dima.1
+
+P13B provider-free = 35879190512 SUCCESS
+P5 regression      = 35879190568 SUCCESS
+P13A regression    = 35879190231 SUCCESS
+M1 regression      = 35879190285 SUCCESS
+governance         = 35879190688 SUCCESS
+```
+
+decision:
+
+P13B-2 provider-free trust integration is GREEN.
+
+P13B-3 is authorized for exactly one model-backed positive vertical:
+
+```text
+PX-01
+Haziran 2026'da kaç satış siparişi açıldı?
+source      = satis_siparisleri
+aggregation = COUNT(*)
+time field  = acilis_tarihi
+period      = [2026-06-01, 2026-07-01)
+oracle      = 126
+model       = openrouter/openai/gpt-5.6-luna
+primary user turns = 1
+```
+
+The live path reuses NativeEngineBridge and the same authenticated Metabase session for:
+- engine identity;
+- native-query attestation;
+- exact /api/dataset execution.
+
+Hard invariant:
+```text
+attested pMBQL fingerprint
+==
+authorized artifact fingerprint
+==
+submitted dataset-body fingerprint
+==
+P5 receipt query fingerprint
+```
+
+Runtime source/build/image/instance identity must also remain exact from engine identity through
+attestation, exact execution and receipt. Official numeric truth is emitted only after P5 receipt,
+independent oracle PASS, and VERIFIED EvidenceArtifact.
+
+P12X C2 live is manual regression only. Deterministic negatives remain provider-free. The duplicate
+engine-side C1 harness is NON-AUTHORITATIVE / DEFERRED.
+
+No Agent API analytical fallback, Wren fallback, raw SQL fallback, admin analytical fallback,
+query reconstruction, Python MBQL parser, or stochastic retry is authorized.
+
+status:
+`SEALED / P13B-2 PROVIDER-FREE GREEN / P13B-3 FIRST PINNED-LIVE PX-01 AUTHORIZED`.
+

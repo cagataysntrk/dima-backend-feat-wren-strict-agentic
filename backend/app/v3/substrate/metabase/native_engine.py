@@ -8,10 +8,12 @@ from __future__ import annotations
 import json
 import time
 from typing import Any
+from uuid import UUID
 
 import httpx
 
 from app.v3.substrate.metabase.native_models import (
+    NativeDatasetExecutionObservation,
     NativeEngineIdentity,
     NativeEngineObservation,
     NativeEngineRequest,
@@ -99,6 +101,91 @@ class NativeEngineBridge:
             if isinstance(x, dict) and x.get("type") == "state" and isinstance(x.get("value"), dict)
         ]
         return states[-1] if states else None
+
+    def engine_identity(self) -> dict[str, Any]:
+        """Read the isolated Dima engine identity seam with this exact session."""
+        try:
+            response = self._client.get("/api/dima/engine/v1/identity")
+        except httpx.TimeoutException as exc:
+            raise NativeEngineBridgeError("engine identity request timed out") from exc
+        except httpx.RequestError as exc:
+            raise NativeEngineBridgeError(
+                f"engine identity transport failed: {exc}"
+            ) from exc
+        if response.status_code != 200:
+            raise NativeEngineBridgeError(
+                f"engine identity returned HTTP {response.status_code}: "
+                f"{response.text[:500]}"
+            )
+        body = response.json()
+        if not isinstance(body, dict):
+            raise NativeEngineBridgeError("engine identity response is not an object")
+        return body
+
+    def attest_native_query(
+        self,
+        *,
+        conversation_id: UUID,
+        native_query_id: str,
+    ) -> dict[str, Any]:
+        """Attest one server-side query occurrence by locator only."""
+        if not native_query_id.strip():
+            raise ValueError("native_query_id is required")
+        try:
+            response = self._client.post(
+                "/api/dima/engine/v1/native-query-attestation",
+                json={
+                    "conversation_id": str(conversation_id),
+                    "native_query_id": native_query_id,
+                },
+            )
+        except httpx.TimeoutException as exc:
+            raise NativeEngineBridgeError("native attestation request timed out") from exc
+        except httpx.RequestError as exc:
+            raise NativeEngineBridgeError(
+                f"native attestation transport failed: {exc}"
+            ) from exc
+        if response.status_code != 200:
+            raise NativeEngineBridgeError(
+                f"native attestation returned HTTP {response.status_code}: "
+                f"{response.text[:1000]}"
+            )
+        body = response.json()
+        if not isinstance(body, dict):
+            raise NativeEngineBridgeError("native attestation response is not an object")
+        return body
+
+    def execute_dataset(
+        self,
+        exact_serialized_pmbql: dict[str, Any],
+    ) -> NativeDatasetExecutionObservation:
+        """Execute the exact already-authorized pMBQL via Metabase Query Processor."""
+        started = time.monotonic()
+        try:
+            response = self._client.post(
+                "/api/dataset",
+                json=exact_serialized_pmbql,
+            )
+        except httpx.TimeoutException as exc:
+            raise NativeEngineBridgeError("dataset execution timed out") from exc
+        except httpx.RequestError as exc:
+            raise NativeEngineBridgeError(
+                f"dataset execution transport failed: {exc}"
+            ) from exc
+        latency_ms = max(0, int((time.monotonic() - started) * 1000))
+        if response.status_code not in (200, 202):
+            raise NativeEngineBridgeError(
+                f"dataset execution returned HTTP {response.status_code}: "
+                f"{response.text[:1000]}"
+            )
+        body = response.json()
+        if not isinstance(body, dict):
+            raise NativeEngineBridgeError("dataset execution response is not an object")
+        return NativeDatasetExecutionObservation(
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+            payload=body,
+        )
 
     def invoke(self, request: NativeEngineRequest) -> NativeEngineObservation:
         runtime = self._verify_runtime()
