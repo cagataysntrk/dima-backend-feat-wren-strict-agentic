@@ -52,6 +52,8 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_capability_surface_receipt.py"
       - "backend/lab/v2_day7_semantic_surface_diagnostic.py"
       - "backend/tests/test_v2_day7_semantic_surface_diagnostic.py"
+      - "backend/lab/v2_day7_relationship_action_diagnostic.py"
+      - "backend/tests/test_v2_day7_relationship_action_diagnostic.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -129,6 +131,10 @@ jobs:
         run: |
           python lab/v2_day7_semantic_surface_diagnostic.py
           pytest -q tests/test_v2_day7_semantic_surface_diagnostic.py
+
+      - name: Day7 relationship structured-action diagnostic
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_relationship_action_diagnostic.py
 
       - name: Cardinality-aware Research fanout
         working-directory: backend
