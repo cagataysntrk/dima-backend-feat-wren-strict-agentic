@@ -38,13 +38,16 @@ D8-C Manager-loop wiring               GREEN
 D8-C real-Wren sentinel                GREEN
 
 latest Day8 PRODUCT behavior SHA
-3091651aea93e42e00521654af8d5dc2c51dc9c3
+810fa70ded3bca53542316d32a5497302b4eb9c7
 
-latest post-fix focused
-35895808495 = GREEN
+latest post-RED focused
+35898621489 = GREEN
 
-paid Sol calls total                   7
-live certification                     STOP / NOT GREEN
+full affected Day7 regression
+35898591894 = GREEN
+
+paid Sol calls total                   9
+live certification                     OPEN / VALID RED
 ROOT_CAUSE direct executable           false
 ResearchTaskKind.ROOT_CAUSE            DOES NOT EXIST
 ROOT_CAUSE → QUERY alias               DOES NOT EXIST
@@ -127,24 +130,95 @@ provider-free live harness, and the one real-Wren root-cause sentinel.
 Combined paid model calls = 7.
 No third paid run was executed.
 
+## LATEST SUPERVISED LIVE RE-MEASUREMENT
+
+Run `35898027005`:
+
+```text
+measurement_valid       = true
+measurement_validity    = VALID
+result                  = RED
+Manager model           = openai/gpt-5.6-sol
+Manager calls           = 2
+semantic-linker calls   = 0
+temporal-model calls    = 0
+model-call ceiling      = 5
+
+product_behavior_sha    = 3091651aea93e42e00521654af8d5dc2c51dc9c3
+run head                = d5ac338ac5b242e86c77469075e6c3e8b405a72c
+scenario_hash           = 8379daa7fc70a678514b7f87dcb41fcdfec4d317d8ded4cc2712ee7cfb4c8d6a
+harness_version         = 4ae479eb171eccb709eb326309734779533079ab
+```
+
+The re-measurement used the exact same canonical scenario and exact same harness blob as
+`35895279649`.
+
+First incorrect transition:
+
+```text
+inspected VERIFIED initial Evidence
+→ bounded hypothesis proposal                  CORRECT
+→ server-owned hypothesis identity             CORRECT
+→ expected governed hypothesis next-test
+→ model selected resolve_semantics             FIRST INCORRECT TRANSITION
+```
+
+Initial surface reading looked like MODEL_COGNITION. Cross-check of the actual provider contract
+showed the deeper single-owner defect, so final classification is:
+
+```text
+CONTRACT/ARCHITECTURE
+```
+
+Single owner:
+post-acceptance Manager-safe semantic-handle projection.
+
+Broken invariant:
+opaque governed handles may hide canonical values, but cognition must receive the non-secret
+type/provenance metadata required to use those handles against the deterministic capability/task
+contract. Otherwise the Manager is forced to re-resolve semantic information the trust plane
+already owns.
+
+Generic post-RED fix:
+- `HypothesisLedger.semantic_handle_metadata()` exposes only governed non-secret metadata;
+- `SEMANTIC_HANDLE_CATALOG` maps Manager aliases such as `h1` to `target_kind` and provenance;
+- canonical semantic values remain inside `SemanticHandleRegistry`;
+- ROOT_CAUSE policy now prefers already-governed handles when they satisfy the advertised next-test
+  contract, and semantic expansion remains an evidence-grounded fallback;
+- no user phrase, business literal, provider-specific branch or prompt example was added.
+
+Deterministic proof after this fix:
+
+```text
+35898621489 = GREEN   Day8 focused + live-harness contract + real-Wren sentinel
+35898591894 = GREEN   full affected Day7 regression
+```
+
+Current product behavior SHA after the generic fix:
+`810fa70ded3bca53542316d32a5497302b4eb9c7`.
+
+Paid Day8 total is now 9 Sol calls:
+2 + 5 + 2.
+
 ## STOP POINT
 
-D8-C deterministic engineering is GREEN, but live Sol certification is NOT claimed GREEN after
-the post-RED contract fix because the supervisor instruction forbids a third paid case/run.
+Per the supervisor valid-RED rule:
+- no further paid Day8 rerun automatically,
+- no Day9,
+- deterministic/provider-free + real-Wren remain GREEN,
+- live certification remains OPEN.
 
 Do NOT automatically:
-- run another live/paid Day8 test,
-- broaden to a corpus/ablation,
+- rerun the live Sol sentinel,
+- broaden to corpus/ablation/negative contrast,
 - run frozen13 / DEV80 / Validation50 / Hidden50,
-- enable `ROOT_CAUSE` direct execution,
-- add `ResearchTaskKind.ROOT_CAUSE`,
+- enable ROOT_CAUSE direct execution,
+- add ResearchTaskKind.ROOT_CAUSE,
 - create ROOT_CAUSE → QUERY alias,
-- enable `CONFIRMED_CAUSE`,
+- enable CONFIRMED_CAUSE,
 - start Day9.
 
-Next action requires supervisor review of this receipt. If a post-fix live re-measurement is
-explicitly authorized, it must remain the same narrow one-scenario question and preserve the paid
-test economy; otherwise continue only with newly authorized next-phase work.
+Return to supervisor with the valid-RED receipt and the deterministic generic fix.
 
 ---
 
@@ -209,10 +283,13 @@ Key Day7 invariants that Day8 inherits:
 ### Where Day8 actually is
 
 Latest Day8 product behavior:
-`3091651aea93e42e00521654af8d5dc2c51dc9c3`.
+`810fa70ded3bca53542316d32a5497302b4eb9c7`.
 
-Latest post-fix focused/provider-free proof:
-`35895808495 = GREEN`.
+Latest post-RED focused/provider-free proof:
+`35898621489 = GREEN`.
+
+Full affected Day7 regression:
+`35898591894 = GREEN`.
 
 Implemented and green:
 
@@ -431,8 +508,10 @@ D8-C implementation authority has been consumed through the supervised live gate
 
 Current state is STOP:
 - deterministic/provider-free and real-Wren D8-C engineering is GREEN,
-- live Sol certification is not GREEN,
-- no third paid run is authorized,
+- supervised post-fix live re-measurement `35898027005` is VALID RED,
+- cumulative paid Sol calls = 9,
+- generic contract fix is provider-free GREEN,
+- no further paid rerun is authorized automatically,
 - Day9 is not authorized.
 
 All original architecture prohibitions remain active.
@@ -441,19 +520,16 @@ All original architecture prohibitions remain active.
 
 No automatic next phase is authorized.
 
-Supervisor must choose explicitly between:
-- a single post-fix live Sol re-measurement of the same narrow D8-C behavior, or
-- accepting deterministic D8-C closure while leaving live certification open and authorizing the
-  next roadmap phase.
-
-Do not infer either authorization.
+The authorized post-fix re-measurement has been consumed and returned VALID RED.
+No automatic next phase remains. Supervisor must review the receipt and the generic
+post-RED contract fix before any further paid measurement or Day9 authorization.
 
 ### New developer first actions
 
 1. Read the seven authority sources at the top of this document in order.
 2. Verify branch is `feat/ask-v2-mvp`.
 3. Re-fetch exact HEAD before editing; documentation may be ahead of product behavior.
-4. Verify latest product behavior SHA remains `3091651aea93e42e00521654af8d5dc2c51dc9c3`
+4. Verify latest product behavior SHA remains `810fa70ded3bca53542316d32a5497302b4eb9c7`
    unless supervisor explicitly authorizes later product work.
 5. Do NOT rerun paid tests merely to “check things”.
 6. Treat D8-C as deterministic GREEN but live-certification STOP.
