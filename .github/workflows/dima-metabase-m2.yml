@@ -8,7 +8,7 @@ on:
       - "backend/lab/metabase/**"
       - "!backend/lab/metabase/p6/**"
       - "!backend/lab/metabase/p11/**"
-      - ".github/workflows/dima-metabase-m2.yml"
+      - "!backend/lab/metabase/p13b/**"
   workflow_dispatch:
 
 permissions:
