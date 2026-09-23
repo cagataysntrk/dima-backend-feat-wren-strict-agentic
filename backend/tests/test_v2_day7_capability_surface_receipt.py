@@ -50,26 +50,30 @@ def test_current_direct_day7_execution_surface_is_explicit():
     assert rows["relationship"]["declared_tool_ids"] == ["wren.relationship"]
 
 
-def test_root_cause_and_trend_gaps_are_receipted_not_silently_normalized():
+def test_root_cause_and_trend_are_recognized_but_not_directly_executable_on_day7():
     rows = _rows()
 
     assert rows["root_cause"] == {
         "capability": "root_cause",
         "lane": "RESEARCH",
-        "executable": True,
+        "executable": False,
         "task_kind": None,
         "declared_tool_ids": [],
-        "disposition": "EXECUTABLE_NO_TASK_MAPPING",
+        "disposition": "NON_EXECUTABLE_DECLARED",
     }
 
     assert rows["trend"] == {
         "capability": "trend",
         "lane": "RESEARCH",
-        "executable": True,
+        "executable": False,
         "task_kind": "TREND",
         "declared_tool_ids": [],
-        "disposition": "TASK_MAPPING_NO_DECLARED_TOOL",
+        "disposition": "NON_EXECUTABLE_DECLARED",
     }
+
+
+def test_day7_has_no_advertised_executable_dead_end():
+    assert build_receipt()["unresolved_executable_surfaces"] == []
 
 
 def test_presentation_capabilities_are_explicitly_non_executable():
