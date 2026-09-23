@@ -84,3 +84,33 @@ If green:
 `case_ids=insufficient-evidence,duplicate-side-effect`.
 
 Do not jump directly to frozen13 or Day8.
+
+
+## Current exact gate — affected LIVE pair
+
+```text
+cognition diagnostic
+35850683005 = VALID / 8 of 8 PASS
+
+closed owner
+insufficient-evidence = MODEL_COGNITION
+
+generic product fix
+manager_policy.py only
+```
+
+NEXT manual workflow:
+`v2-day7-live-sol`
+
+Inputs:
+```text
+manager_model=openai/gpt-5.6-sol
+linker_model=openai/gpt-5.6-luna
+temporal_model=openai/gpt-5.6-sol
+case_ids=insufficient-evidence,duplicate-side-effect
+```
+
+After this affected pair:
+- classify first bad transition if any,
+- if both green, full frozen13 once,
+- then shadow ablation / Harvest / Day7 closure.
