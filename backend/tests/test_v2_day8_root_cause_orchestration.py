@@ -39,6 +39,8 @@ from app.v2.root_cause_orchestration import (
     RootCauseBootstrapPolicy,
     RootCauseBootstrapStatus,
     RootCauseOrchestrationError,
+    root_cause_next_test_contract,
+    root_cause_next_test_task_kinds,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
@@ -341,6 +343,34 @@ def _breakdown_proposal(hypothesis, metric, dimension):
         trigger_evidence_ref="E1",
         material_reason="Vardiya kırılımı aday açıklamayı sınar.",
     )
+
+
+
+
+def test_next_test_contract_advertises_only_runtime_admissible_direct_families():
+    kinds = root_cause_next_test_task_kinds()
+    assert kinds == (
+        ResearchTaskKind.QUERY,
+        ResearchTaskKind.COMPARE,
+        ResearchTaskKind.BREAKDOWN,
+        ResearchTaskKind.RANK,
+    )
+
+    rows = {row["task_kind"]: row for row in root_cause_next_test_contract()}
+    assert set(rows) == {"QUERY", "COMPARE", "BREAKDOWN", "RANK"}
+    assert all(row["execution_mode"] == "DIRECT" for row in rows.values())
+    assert rows["QUERY"]["capability"] == "performance"
+    assert rows["QUERY"]["required_semantic_kinds"] == ["metric"]
+    assert rows["BREAKDOWN"]["required_semantic_kinds"] == ["dimension", "metric"]
+    assert rows["COMPARE"]["required_semantic_kinds"] == ["comparison", "metric"]
+    assert rows["RANK"]["required_operation_params"] == [
+        "ranking_direction",
+        "ranking_limit",
+    ]
+    assert "TREND" not in rows
+    assert "RELATIONSHIP" not in rows
+    assert "CONTRIBUTION" not in rows
+    assert "PEER_COMPARE" not in rows
 
 
 def test_next_test_proposal_schema_has_no_model_owned_identity_fields():
