@@ -651,3 +651,64 @@ declared governed task shapes.
 Paid Day8 total after the supervised re-measurement = 9 Sol calls.
 No further paid rerun is authorized automatically.
 Day8 deterministic/real-Wren remains GREEN; live certification remains OPEN.
+
+
+---
+
+## DAY9-A REPORT AUTHORITY HARVEST — 2026-09-23
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-074 | Report composition is a pure projection over governed Evidence/Findings; reference hydration and permission resolution are separate boundaries. | MUST_PORT | report worker silently becoming a second query/resolver/security engine | `ReportBuilder` dependency boundary + focused `35903324742` GREEN |
+| H-075 | Presentation/render configuration is not analytical or Evidence truth. | MUST_PORT | chart/table settings mutating numeric value, lineage, semantic scope or epistemic label | `ReportRenderSpec` kept presentation-only; artifact failure does not mutate Evidence |
+| H-076 | Access to a report/container is not permanent access to underlying warehouse-derived data; persisted replay must reauthorize the current viewer. | MUST_PORT | creator-access laundering across users/tenants | `ReportSourceProvenance` retains tenant/run/context + `CURRENT_RUN_ONLY_REAUTHORIZE_ON_REPLAY`; no fake Day9 security token |
+| H-077 | Report artifacts reference canonical Evidence/Findings; they do not duplicate analytical truth by value. | MUST_PORT | second truth store, stale copied values, broken provenance | `ReportEvidenceRef`, `ReportFindingRef`, `ReportArtifactRef`; raw tool payload rejected |
+| H-078 | Typed result-shape metadata may guide presentation but cannot become a semantic-truth owner. | MUST_PORT | column-name/name/unit heuristics silently manufacturing semantics | `ReportResultShape` is supplied presentation support only; ReportBuilder performs no semantic inference |
+
+Day9-A structural grounding rules:
+
+```text
+NUMERIC / ANALYTICAL
+→ governed current-run VERIFIED EvidenceRef required
+
+EPISTEMIC
+→ exactly one canonical FindingRef
+→ finding provenance must match report source lineage
+→ underlying Evidence lineage required
+→ epistemic label/limitations preserved
+
+CANDIDATE_CAUSE
+→ remains CANDIDATE_CAUSE
+
+CONFIRMED_CAUSE
+→ unavailable / rejected
+```
+
+Identity policy:
+
+```text
+server owns report_id / section_id / block_id / followup_context_ref
+presentation title/content/render settings
+!=
+authority identity
+```
+
+Current-viewer replay seam is deliberately retained, not implemented:
+EvidenceRef + QueryContractRef + tenant/run/context provenance are kept so future security layers can
+reauthorize. Same-request/current-run rendering is valid; cross-user persisted replay is not yet an
+authorized cache behavior.
+
+Legacy characterization:
+- `app/report.py::compose_report` is NOT canonical Day9 authority because it queries;
+- `app/report.py::bolumlerden_kur` is reference-only for composition of already-executed blocks;
+- `app/viz.py` is deferred to a future presentation adapter and cannot own semantic truth.
+
+Focused receipt:
+
+```text
+Day9 product SHA  2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+focused run       35903324742 = GREEN
+tests             16 passed
+paid calls        0
+DB/Wren/LLM       0
+```
