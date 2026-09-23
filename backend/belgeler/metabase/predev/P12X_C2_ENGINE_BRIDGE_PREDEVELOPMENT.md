@@ -6,7 +6,7 @@
 **Current pinned engine:** `6bb6924452e5b9dc42b3745bb88c3125a468b297`  
 **Upstream native base:** `v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4`
 
-Status: **DRAFT / IMPLEMENTATION BLOCKED ON P12X-C1 CLOSURE**
+Status: **SEALED / IMPLEMENTATION AUTHORIZED AFTER P12X-C1 GREEN**
 
 ## 1. Goal
 
@@ -212,8 +212,8 @@ C2 only establishes a stable, auditable bridge to the native engine.
 ## 11. Stop gate
 
 ```text
-P12X-C1 != SEALED GREEN
-→ C2 PRODUCT CODE = STOP
+P12X-C1 = SEALED GREEN
+→ C2 PRODUCT CODE = AUTHORIZED
 ```
 
 After C1 closure, re-read current HEAD, engine gitlink and this document before implementation.
