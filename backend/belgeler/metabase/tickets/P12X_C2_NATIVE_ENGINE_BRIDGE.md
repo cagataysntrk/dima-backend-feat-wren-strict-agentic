@@ -1,6 +1,6 @@
 # P12X-C2-001 — Stable native engine bridge + direct-native parity
 
-**Status:** DRAFT / BLOCKED ON C1  
+**Status:** ACTIVE / C1 GREEN / IMPLEMENTATION AUTHORIZED  
 **Milestone:** P12X-C2
 
 ## Goal
