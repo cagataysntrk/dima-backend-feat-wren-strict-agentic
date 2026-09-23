@@ -810,3 +810,35 @@ FREE_COGNITION vs GOVERNED_ORCHESTRATION
 → Harvest reconciliation
 → Day7 closure receipt
 → STOP.
+
+
+## 18. TEST-ECONOMY OVERRIDE — CURRENT CONTINUATION
+
+This overrides older sections that said full frozen13 or broad ablation was next.
+
+Current:
+```text
+product SHA        ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+focused checkpoint 6b62fa941f4857b0e10b4c361c552d6a8b847535
+focused run        35868630145 = GREEN
+frozen13           35855765109 = 11/13, classified, DO NOT rerun
+adaptive LIVE      35857076622 = PASS
+unclassified RED   0
+```
+
+Global Manager turn cap:
+`preacceptance + research <= 6`.
+Phase counters remain separate for observability.
+
+The existing 8-case orchestration ablation is NOT the next test.
+
+Next directional check is only:
+- adaptive-material
+- stable-no-extra-branch
+- 2 arms
+- hard maximum 20 paid model calls
+- prefer <=16
+- if decisive STOP; if ambiguous add only simple-performance.
+
+Before that paid run, return the supervisor's 8-point receipt and STOP.
+No Day8.
