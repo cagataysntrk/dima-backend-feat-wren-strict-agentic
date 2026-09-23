@@ -762,7 +762,8 @@ def _case_checks(
         or [0]
     )
     zero_row_seen = any(
-        int((item.get("result") or {}).get("row_count") or -1) == 0
+        (item.get("result") or {}).get("row_count") is not None
+        and int((item.get("result") or {}).get("row_count")) == 0
         for item in tools
         if item.get("tool") == "run_analytics"
     )
