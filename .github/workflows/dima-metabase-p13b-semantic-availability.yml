@@ -15,10 +15,10 @@ permissions:
   contents: read
 
 env:
-  ENGINE_SHA: 05fccf3595623a41886cb2a7a89192636580324e
+  ENGINE_SHA: 10960f7c36bb84425b1794b557b78211c14d7f5f
   UPSTREAM_BASE_SHA: 2ba2485c78d7e00a9a25f82c00fc201da71590c4
   BOYAHANE_SHA: f0c4a6b053ead52ca2eac80002c448323dc34a35
-  RUNTIME_TAG: v0.63.18-dima.2
+  RUNTIME_TAG: v0.63.18-dima.3
   MB_ADMIN_EMAIL: admin@p13b-semantic.local
   MB_ADMIN_PASSWORD: DimaP13BSemanticAdmin2026!
   MB_RESTRICTED_EMAIL: restricted@p13b-semantic.local
