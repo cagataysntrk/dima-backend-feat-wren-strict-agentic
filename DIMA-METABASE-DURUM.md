@@ -1677,3 +1677,24 @@ Platform bootstrap kit          = PRESENT @ backend/lab/metabase/engine_bootstra
 remote C0 bootstrap             = WAITING ONLY FOR CREATE/FORK CAPABILITY
 P13                             = PAUSED
 ```
+
+
+---
+
+## P12X-C0 fork provisioning GREEN / source-build environment RED classified
+
+```text
+engine repo                    = UpcyTech/dima-metabase-engine
+fork parent                    = metabase/metabase
+immutable base                 = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+engine overlay commit          = b284739d582ce6743c17cc688a04845bfd1e30b5
+modified upstream files        = 0
+deleted upstream files         = 0
+upstream line delta            = +0 / -0
+DMP-P12X-C0-BLOCK-001          = CLOSED GREEN
+first C0 workflow              = 35826126089 = RED
+RED classification             = BUILD_ENVIRONMENT / upstream Bullseye package mirror 404
+engine/source regression       = NO EVIDENCE
+manual unchanged retry         = 35826362027 / IN PROGRESS
+P13                            = PAUSED
+```

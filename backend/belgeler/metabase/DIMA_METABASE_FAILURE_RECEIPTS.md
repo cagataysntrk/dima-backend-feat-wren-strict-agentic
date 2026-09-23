@@ -2767,3 +2767,76 @@ old UpcyTech/dima-metabase unchanged
 ```
 
 status: `OPEN / EXTERNAL PROVISIONING ACTION REQUIRED`.
+
+
+---
+
+## DMP-P12X-C0-BLOCK-001 closure — real fork provisioned
+
+closed_at: 2026-09-23
+
+proof:
+```text
+repository                   = UpcyTech/dima-metabase-engine
+fork                         = true
+parent.full_name             = metabase/metabase
+default branch               = main
+upstream/base-v0.63.18       = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+main pre-overlay base        = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+first Dima overlay commit    = b284739d582ce6743c17cc688a04845bfd1e30b5
+modified upstream files      = 0
+deleted upstream files       = 0
+upstream-owned line delta    = +0 / -0
+Dima-specific files          = 6
+Dima integration line delta  = +439 / -0
+```
+
+status:
+`CLOSED GREEN / REPOSITORY PROVISIONING COMPLETE`.
+
+---
+
+## DMP-P12X-C0-BUILD-001 — upstream Docker build dependency mirror drift
+
+opened_at: 2026-09-23  
+engine_sha: `b284739d582ce6743c17cc688a04845bfd1e30b5`  
+workflow: `35826126089`  
+job: `107068126834`
+
+classification:
+`TRANSPORT_RUNTIME / BUILD_ENVIRONMENT / UPSTREAM_DOCKERFILE_DEPENDENCY_DRIFT`
+
+observed:
+- exact ancestry verification = PASS;
+- `DIMA_PATCH_SURFACE --assert-c0` = PASS;
+- source build failed before Metabase source compilation;
+- failure occurred in upstream root `Dockerfile` builder image `node:22-bullseye`;
+- Debian security mirror returned `404 Not Found` for
+  `libasound2-data_1.2.4-1.1+deb11u1_all.deb`;
+- no Dima source or Metabase source compilation error was observed.
+
+root_cause:
+External Bullseye package-index/package-object inconsistency in the upstream Docker build environment.
+
+single_owner:
+C0 build packaging/workflow only.
+
+not_an_engine_failure:
+The exact fork/base ancestry and zero-upstream-patch invariants are GREEN. The failure occurred before
+the fork source reached Metabase compilation.
+
+authorized resolution order:
+1. one unchanged retry to test transient mirror race;
+2. if repeatable, replace only the C0 **Dima-owned build wrapper** while preserving upstream
+   `bin/build.sh`, source tree and runner image semantics;
+3. do not modify upstream-owned source files to fix package-manager infrastructure.
+
+forbidden:
+- changing Metabase business/semantic/runtime source;
+- modifying upstream root Dockerfile in C0;
+- closing patch-surface invariant;
+- P13 work;
+- treating this as fork capability regression.
+
+status:
+`OPEN / RETRY IN PROGRESS / OWNER = C0 BUILD WRAPPER`.
