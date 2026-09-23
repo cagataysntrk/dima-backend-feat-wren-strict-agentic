@@ -43,6 +43,10 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_real_relationship_vertical.py"
       - "backend/app/v2/derived_evidence.py"
       - "backend/tests/test_v2_day7_derived_evidence.py"
+      - "backend/lab/v2_day7_manager_live_sol.py"
+      - "backend/eval/v2_day7_live_sol_cases.yaml"
+      - "backend/tests/test_v2_day7_live_sol_contract.py"
+      - ".github/workflows/v2-day7-live-sol.yml"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -83,7 +87,8 @@ jobs:
             app/v2/manager_models.py \
             app/v2/manager_loop.py \
             app/v2/manager_lab.py \
-            app/v2/models.py
+            app/v2/models.py \
+            lab/v2_day7_manager_live_sol.py
       - name: Focused provider-free Day7 test
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_tool_contract.py
@@ -111,6 +116,10 @@ jobs:
       - name: Bounded initial Research seed set
         working-directory: backend
         run: pytest -q tests/test_v2_day7_seed_set.py
+
+      - name: Day7 live Sol corpus contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_live_sol_contract.py
 
       - name: Derived analytical Evidence primitives
         working-directory: backend
