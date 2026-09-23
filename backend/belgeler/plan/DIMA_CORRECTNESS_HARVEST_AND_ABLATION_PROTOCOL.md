@@ -805,3 +805,61 @@ ReportDocument changed no
 No second live reassurance case was run.
 
 Day8 live root-cause debt remains OPEN and is not superseded by this Day9 narration proof.
+
+
+---
+
+## DAY10 PRODUCT-MVP HARVEST — 2026-09-23
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-084 | A paid milestone gate must not run when sealed budget authority makes the canonical scenario structurally impossible. Measurement validity precedes spending. | MUST_PORT | paying for a guaranteed budget RED, then misclassifying it as model/product quality | Day10 budget receipt; `ManagerBudget.max_total_manager_turns=6`; paid Product-MVP NOT RUN |
+| H-085 | Evidence from a sibling USER_MUST cannot be reused as ROOT_CAUSE Evidence merely to save turns. Causal Evidence must belong to the root obligation/derived ancestry. | MUST_PORT | causal provenance laundering and false budget compression | `HypothesisLedger._validate_evidence/_obligation_belongs_to_root` |
+| H-086 | Real-Wren integration fixtures must provide bounded semantic cognition when a verified alias is legitimately ambiguous; disabling cognition is not proof that the resolver should guess. | MUST_PORT | test fixture forcing production deterministic semantic heuristics/automatic ambiguity picks | D10-F RED triage → bounded test provider → `35921618398` GREEN |
+| H-087 | Section continuation inherits only signed governed section scope; inherited handles are context scope, never forged current-turn source bindings. | MUST_PORT | follow-up semantic laundering / old report state becoming new user-source authority | signed continuation tests + immutable contract v1→v2 |
+| H-088 | Product streaming is an adapter over the same ProductCoordinator and existing Research lifecycle, not a parallel analytical core. | MUST_PORT | sync/stream semantic drift, duplicate cancellation/completion authority | Day10 focused `35921618398` GREEN |
+
+Day10 deterministic milestone receipt:
+
+```text
+product behavior SHA                 f4299a3bcfb48ab351db20f555483fe483e5e3e8
+focused + real-Wren run              35921618398
+provider-free                        29 passed
+real-Wren Product vertical           1 passed
+paid calls                           0
+```
+
+The D10-F real-Wren fixture initially returned CLARIFY because `bölüm` is a legitimate duplicate
+verified alias across multiple cubes and `semantic_provider=None` correctly refuses an automatic
+pick. The generic eval fix supplies a bounded decision provider that may select only candidate IDs
+already supplied by the production linker within the fixture's governed cube scope. No production
+regex/fuzzy/alias heuristic was added.
+
+### Day10 paid-gate validity blocker
+
+Current budget authority is intentionally:
+
+```text
+max_total_manager_turns = 6
+max_preacceptance_turns = 2
+max_manager_turns       = 6
+```
+
+Git authority:
+`a32ed3560002ac46ed5173d8ff152852878b455d`
+(`fix(v2-day7): restore global Manager turn ceiling`).
+
+The Product path necessarily consumes two pre-acceptance Manager turns. The existing Day8 live
+provider-free proof demonstrates that even from an already-inspected trigger Evidence the causal
+sequence needs five Research cognition actions. Actual Product bootstrap is stricter.
+
+Thus the integrated root-cause debt cannot fit into the remaining four post-acceptance turns without
+one of the following forbidden changes:
+- silently raising budget,
+- no longer counting pre-acceptance against the global total,
+- skipping explicit Evidence inspection,
+- turning trigger Evidence into SUPPORTS,
+- borrowing unrelated USER_MUST Evidence.
+
+Per H-053/H-054, the paid gate is therefore blocked BEFORE provider execution. Paid call count for
+this blocked measurement remains zero.
