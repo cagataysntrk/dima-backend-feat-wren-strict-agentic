@@ -6,6 +6,7 @@ execution authorization, QueryReceipt, or Evidence contracts.
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -27,7 +28,7 @@ class NativeEngineRequest(BaseModel):
     metabot_id: str | None = None
     message: str = Field(min_length=1)
     context: dict[str, Any] = Field(default_factory=dict)
-    conversation_id: str = Field(min_length=1)
+    conversation_id: UUID
     history: list[dict[str, Any]] | None = None
     state: dict[str, Any] = Field(default_factory=dict)
     dima_request_id: str = Field(min_length=1)
