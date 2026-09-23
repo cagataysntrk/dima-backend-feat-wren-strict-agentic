@@ -20,6 +20,9 @@ CASES = ROOT / "eval" / "v2_day7_live_sol_cases.yaml"
 COGNITION_DIAGNOSTIC_CASES = (
     ROOT / "eval" / "v2_day7_capability_cognition_diagnostic.yaml"
 )
+COGNITION_WORKFLOW = (
+    ROOT.parent / ".github" / "workflows" / "v2-day7-capability-cognition-diagnostic.yml"
+)
 
 
 def _document():
@@ -528,3 +531,14 @@ def test_live_model_call_budget_is_role_scoped_and_hard():
 
     assert budget.total_calls == 3
     assert budget.exhausted is True
+
+
+def test_cognition_paid_workflow_requires_explicit_scope_and_budget():
+    workflow = COGNITION_WORKFLOW.read_text(encoding="utf-8")
+
+    assert '"on":\n  workflow_dispatch:' in workflow
+    assert "\n  push:" not in workflow
+    assert "case_ids" in workflow
+    assert "explicit cognition diagnostic case_ids are required" in workflow
+    assert "max_model_calls" in workflow
+    assert "--max-model-calls" in workflow
