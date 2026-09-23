@@ -2198,3 +2198,66 @@ Current stop remains unchanged:
 
     P13B NATIVE ATTESTATION DESIGN = SEALED
     P13B IMPLEMENTATION = PENDING SUPERVISOR AUTHORIZATION
+
+---
+
+## P13B-1 ENGINE NATIVE ATTESTATION + IDENTITY — GREEN
+
+Certified engine promotion:
+
+```text
+engine repo       = UpcyTech/dima-metabase-engine
+engine main SHA   = 3ac50a0ad1c2fb53d538c9fccf621db816c305e1
+upstream base     = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+release           = 0.63.18-dima.1
+revision          = 1
+semantic changes  = 0
+P13B engine run   = 35876198926 = SUCCESS
+```
+
+Authoritative deterministic gates on the exact promoted SHA:
+
+```text
+focused P13B tests = SUCCESS
+source build/smoke = SUCCESS
+patch surface      = SUCCESS
+certification      = SUCCESS
+```
+
+Thin-fork invariant remains:
+
+```text
+modified pre-existing upstream runtime files = 1
+src/metabase/api_routes/routes.clj
+```
+
+P13B-1 closes the two implementation blockers at the engine boundary:
+- server-side native query occurrence attestation now supplies observed physical/query facts;
+- exact repository/SHA/upstream/release/build/image/instance identity is available for Platform binding.
+
+No Metabot cognition, prompt/profile/skill, query-construction/repair, Query Processor semantic, or
+driver behavior was changed.
+
+The successful full C1 evidence from exact candidate
+`78b8ee66464435daece5a8e3b4cffce5a77937c3` is retained as the P13B pre-promotion native
+capability baseline. Non-cognition release/trust changes do not trigger another routine full C1.
+
+Current phase:
+
+```text
+P13B-1 ENGINE NATIVE ATTESTATION + IDENTITY = GREEN
+P13B-2 PLATFORM TRUST INTEGRATION            = OPEN / AUTHORIZED
+P13B-3 PINNED-LIVE PX-01                     = NOT STARTED
+```
+
+Platform engine gitlink is promoted in the same checkpoint to:
+
+`3ac50a0ad1c2fb53d538c9fccf621db816c305e1`
+
+P13B-2 is provider-free. Its owner is:
+
+`backend/app/v3/native_standard/`
+
+It may orchestrate trust only. It may not plan analytics, parse general MBQL, repair/rewrite queries,
+generate SQL, or reopen Agent API/Wren analytical fallback.
+

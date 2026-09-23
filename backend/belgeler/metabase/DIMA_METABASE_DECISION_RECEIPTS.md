@@ -2069,3 +2069,78 @@ open:
 
 status:
 `SEALED / P13B NATIVE ATTESTATION DESIGN / IMPLEMENTATION PENDING SUPERVISOR AUTHORIZATION`.
+
+---
+
+## DMP-DEC-0038 — P13B-1 engine promotion and P13B-2 provider-free trust integration
+
+date: 2026-09-23
+
+question:
+After the isolated P13B engine candidate is certified, what exact engine identity becomes production
+authority for the Platform branch, and what work is authorized next without reopening expensive
+model-backed parity testing?
+
+decision:
+
+```text
+engine repo       = UpcyTech/dima-metabase-engine
+promoted main SHA = 3ac50a0ad1c2fb53d538c9fccf621db816c305e1
+upstream SHA      = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+release           = 0.63.18-dima.1
+revision          = 1
+semantic_behavior_changes = 0
+```
+
+The exact promoted SHA passed the P13B deterministic certification workflow
+`35876198926`:
+
+```text
+focused       = SUCCESS
+source-build  = SUCCESS
+patch-surface = SUCCESS
+certification = SUCCESS
+```
+
+Promotion is a fast-forward of engine `main`; no squash, rebase, history rewrite, or merge-only SHA
+was introduced.
+
+The Platform gitlink is therefore permitted to move from
+`c56b71ab23bf2a2d266bac2fba8d165ac059d613` to
+`3ac50a0ad1c2fb53d538c9fccf621db816c305e1`.
+
+P13B-1 status:
+
+`GREEN / CLOSED`.
+
+P13B-2 is now authorized as a provider-free trust-plane phase under
+`backend/app/v3/native_standard/`.
+
+Required authority separation remains:
+
+```text
+NativeExecutionManifest = observed physical/query facts from Metabase
+ResolvedAnalyticsIntent + DimaSemanticSpec + SourceLineage + CurrentCatalogSnapshot
+                        = accepted Dima business meaning
+comparison              = authorization decision
+```
+
+P13B-2 must reuse:
+- existing `NativeCandidateAuthorizationGate`;
+- existing `AuthorizedExecutionArtifact`;
+- existing `ExecutionAccessSnapshotIssuer`;
+- existing `DimaQueryReceiptSealer`.
+
+It must not create:
+- a Python MBQL parser/normalizer/repairer;
+- a second receipt or access-identity system;
+- Agent API, Wren, raw-SQL, or admin analytical fallback.
+
+The successful full C1 proof on engine candidate
+`78b8ee66464435daece5a8e3b4cffce5a77937c3` is retained as the expensive
+pre-promotion capability baseline. Because the subsequent changes are trust/infrastructure-only,
+P13B-2 requires focused provider-free deterministic tests, not a new full stock-vs-fork C1.
+
+status:
+`SEALED / P13B-1 GREEN / P13B-2 PROVIDER-FREE IMPLEMENTATION AUTHORIZED`.
+
