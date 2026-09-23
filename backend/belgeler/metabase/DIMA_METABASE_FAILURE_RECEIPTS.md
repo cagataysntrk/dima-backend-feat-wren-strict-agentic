@@ -3096,3 +3096,39 @@ semantics change.
 
 status:
 `CLASSIFIED / CI-ONLY PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-SUBMODULE-CI-001 — governance YAML insertion corruption
+
+opened_at: 2026-09-23  
+tested_sha: `79c9d5a9e776680be5c2e24d7070e52eb1706258`  
+workflow: `35830303270`
+
+classification:
+`CI/GOVERNANCE / WORKFLOW SERIALIZATION`
+
+observed:
+- GitHub created no governance job because the workflow YAML was invalid before execution;
+- the submodule contract itself is present and valid in Git:
+  `.gitmodules` points to `UpcyTech/dima-metabase-engine`, and
+  `engine/metabase` is a mode-`160000` gitlink;
+- the failure was introduced while serializing the new SHA-validation shell line into YAML;
+- no engine, semantic, security, provenance or product code executed.
+
+single_owner:
+`.github/workflows/dima-metabase-governance.yml`.
+
+authorized_correction:
+Rebuild the workflow from the last known-good governance file and add only the submodule-contract step
+with shell-safe SHA validation.
+
+forbidden:
+- changing the gitlink to hide the workflow failure;
+- vendoring engine source;
+- touching C1 runtime/scorer;
+- P13 work.
+
+status:
+`CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.

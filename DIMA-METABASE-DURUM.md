@@ -1814,3 +1814,15 @@ moving-ref consumption = forbidden
 ```
 
 Every audited engine change now requires an explicit Platform gitlink bump.
+
+
+### Engine-submodule governance CI RED classified
+
+```text
+tested SHA      = 79c9d5a9e776680be5c2e24d7070e52eb1706258
+workflow        = 35830303270
+classification  = CI/GOVERNANCE / WORKFLOW SERIALIZATION
+submodule state = no evidence of defect
+C1 live run     = untouched
+owner           = governance YAML only
+```

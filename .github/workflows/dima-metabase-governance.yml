@@ -94,7 +94,6 @@ jobs:
             grep -q "Status: \*\*SEALED / CORPUS FREEZE + PARITY HARNESS AUTHORIZED" "$REVIEW"
           fi
 
-
       - name: Verify Dima Metabase Engine submodule contract
         shell: bash
         run: |
@@ -108,17 +107,10 @@ jobs:
           sha="$(printf '%s\n' "$entry" | awk '{print $3}')"
           test "$mode" = "160000"
           test "$type" = "commit"
-          printf '%s\n' "$sha" | grep -Eq '^[0-9a-f]{40}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -d backend/app/v3 ]; then
-            if grep -R --include='*.py' -nE 'from[[:space:]]+app\.v2\.resolver|import[[:space:]]+app\.v2\.resolver|SemanticResolver' backend/app/v3; then
-              echo "Legacy SemanticResolver authority import detected in app/v3"
-              exit 1
-            fi
-          fi
-
+          test "${#sha}" -eq 40
+          case "$sha" in
+            *[!0-9a-f]*) echo "invalid gitlink sha: $sha" >&2; exit 1 ;;
+          esac
           test ! -f engine/metabase/src/metabase/metabot/api.clj
 
       - name: Guard v3 against legacy semantic resolver authority
