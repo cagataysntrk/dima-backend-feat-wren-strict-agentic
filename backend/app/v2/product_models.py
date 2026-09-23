@@ -32,6 +32,7 @@ class ProductStatus(StrEnum):
     PARTIAL = "PARTIAL"
     REPORT = "REPORT"
     UNSUPPORTED = "UNSUPPORTED"
+    CANCELLED = "CANCELLED"
     FAILED = "FAILED"
 
 
