@@ -142,6 +142,26 @@ def main() -> None:
         allowed=(400, 403, 404),
     )
 
+    _, databases = call("GET", "/api/database", session=session)
+    database_rows = (
+        databases.get("data", [])
+        if isinstance(databases, dict)
+        else databases
+    )
+    database_names = sorted(
+        str(item.get("name") or "")
+        for item in (database_rows or [])
+        if isinstance(item, dict)
+    )
+    if "Boyahane" not in database_names:
+        raise RuntimeError(
+            f"A1_CONTROL_DATABASE_MISSING: {database_names}"
+        )
+    if any("sample" in name.lower() for name in database_names):
+        raise RuntimeError(
+            f"A1_SAMPLE_DATABASE_CONTAMINATION: {database_names}"
+        )
+
     _, props = call("GET", "/api/session/properties")
     safe = {
         "bootstrap": "ok",
@@ -155,6 +175,8 @@ def main() -> None:
         "provider_configuration_error": (
             settings if status != 200 else None
         ),
+        "database_names": database_names,
+        "sample_database_present": False,
         "secret_recorded": False,
     }
     print(json.dumps(safe, ensure_ascii=False, sort_keys=True))
