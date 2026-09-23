@@ -12,6 +12,8 @@ import lab.v2_day7_orchestration_ablation as ablation
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ROOT / "eval" / "v2_day7_orchestration_ablation.yaml"
+MICRO_WORKFLOW = ROOT.parent / ".github" / "workflows" / "v2-day7-orchestration-micro.yml"
+LIVE_WORKFLOW = ROOT.parent / ".github" / "workflows" / "v2-day7-live-sol.yml"
 
 
 class _NeverCalledLLM:
@@ -172,3 +174,42 @@ def test_ablation_dry_run_receipt_declares_scope_and_cost_before_provider_use():
         "model_calls_budget": 20,
         "provider_requests_made": 0,
     }
+
+
+def test_paid_day7_workflows_require_explicit_scope_and_budget():
+    micro = MICRO_WORKFLOW.read_text(encoding="utf-8")
+    live = LIVE_WORKFLOW.read_text(encoding="utf-8")
+
+    assert '"on":\n  workflow_dispatch:' in micro
+    assert "\n  push:" not in micro
+    assert "confirm_micro_ablation" in micro
+    assert "max_model_calls" in micro
+    assert "--case-id adaptive-material" in micro
+    assert "--case-id stable-no-extra-branch" in micro
+    assert "--max-model-calls" in micro
+    assert "--dry-run" in micro
+    assert "budget < 1 || budget > 20" in micro
+
+    assert '"on":\n  workflow_dispatch:' in live
+    assert "\n  push:" not in live
+    assert "full_corpus" in live
+    assert "confirm_expensive_run" in live
+    assert "FROZEN13" in live
+    assert "blank case_ids cannot run a broad paid corpus" in live
+    assert "--max-model-calls" in live
+
+
+def test_current_day7_single_case_paid_workflows_are_manual_only():
+    workflow_dir = ROOT.parent / ".github" / "workflows"
+    names = [
+        "v2-day7-adaptive-material-once.yml",
+        "v2-day7-insufficient-evidence-once.yml",
+        "v2-day7-stable-no-extra-branch-once.yml",
+        "v2-day7-frozen13-once.yml",
+        "v2-day7-live-sol-once.yml",
+    ]
+
+    for name in names:
+        content = (workflow_dir / name).read_text(encoding="utf-8")
+        assert '"on":\n  workflow_dispatch:' in content
+        assert "\n  push:" not in content
