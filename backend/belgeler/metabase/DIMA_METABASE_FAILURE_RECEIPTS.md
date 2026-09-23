@@ -3380,3 +3380,45 @@ forbidden:
 
 status:
 `CLASSIFIED / C2 CONTRACT PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P13-0-GOV-001 — intentional normative precedence update invalidates sealed blob pins
+
+opened_at: 2026-09-23  
+tested_sha: `c76412cb497d4e3030d4f0f6f7ae39a513cf2a69`  
+workflow: `35845613591`  
+job: `107130914767`
+
+classification:
+`CI_GOVERNANCE / EXPECTED_NORMATIVE_BLOB_PIN_ROTATION`
+
+observed:
+- branch identity / certified-base ancestry passed;
+- governance failed exactly at `Verify sealed normative document blobs`;
+- no product/engine/runtime test failed;
+- DMP-DEC-0036 intentionally changed the two reviewed normative documents to establish current
+  native-engine precedence;
+- old pins still referenced the pre-P12X Agent-API-era normative blobs.
+
+new reviewed blobs:
+```text
+roadmap = bca3b643aacd3ed6924053e427d3cc66006d3610
+report  = 9d3df05c286990e3ebfc7edc9f503469981b6ed2
+```
+
+single_owner:
+`.github/workflows/dima-metabase-governance.yml` blob-pin constants only.
+
+authorized_correction:
+Repin only the two sealed normative Git blob identities above. Do not alter governance semantics,
+branch ancestry, engine gitlink, product code or source branches.
+
+forbidden:
+- revert DMP-DEC-0036 to make old pins green;
+- loosen/remove sealed-document verification;
+- touch engine or P13 product code as part of this correction.
+
+status:
+`CLASSIFIED / GOVERNANCE-ONLY REPIN AUTHORIZED`.
