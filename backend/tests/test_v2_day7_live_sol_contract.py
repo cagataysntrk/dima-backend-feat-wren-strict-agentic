@@ -93,11 +93,52 @@ def test_live_relationship_fixture_carries_explicit_wren_truth_and_fresh_fanout_
 def test_live_oracles_include_safety_specific_checks_not_only_answer_success():
     cases = {case["kind"]: case for case in _document()["cases"]}
 
-    assert cases["relationship_unsafe"]["require_typed_block"] is True
+    assert cases["multi_obligation"]["expected_preacceptance_state"] == "NEEDS_CLARIFICATION"
+    assert cases["multi_obligation"]["max_queries"] == 0
+    assert cases["relationship_unsafe"]["expected_preacceptance_state"] == "NEEDS_CLARIFICATION"
+    assert cases["relationship_unsafe"]["max_queries"] == 0
     assert cases["duplicate_safety"]["require_unique_task_side_effects"] is True
     assert cases["insufficient_evidence"]["require_zero_row_observation"] is True
     assert cases["high_cardinality"]["max_fanout_selected"] == 2
     assert cases["no_unnecessary_branch"]["max_derived_executions"] == 0
+
+
+def test_preacceptance_oracle_scores_fail_closed_without_contract_or_execution():
+    case = {
+        "id": "clarify",
+        "kind": "multi_obligation",
+        "expected_preacceptance_state": "NEEDS_CLARIFICATION",
+        "expected_observation_kind": "material_grounding_gap",
+        "expect_no_ledger": True,
+        "max_queries": 0,
+    }
+    body = {
+        "snapshot": {
+            "state": "NEEDS_CLARIFICATION",
+            "accepted_contract_id": None,
+            "manager_turns": 1,
+            "tool_calls": 1,
+            "data_queries": 0,
+        },
+        "observations": [{"kind": "material_grounding_gap"}],
+        "ledger": None,
+    }
+    response = SimpleNamespace(status_code=200)
+
+    checks = live._case_checks(
+        case,
+        response=response,
+        body=body,
+        query_delta=0,
+    )
+
+    assert checks["preacceptance_state"] is True
+    assert checks["accepted_contract_absent"] is True
+    assert checks["zero_data_queries"] is True
+    assert checks["ledger_absent"] is True
+    assert checks["expected_observation"] is True
+    assert "accepted_contract" not in checks
+    assert "must_tools" not in checks
 
 
 WORKFLOW = ROOT.parent / ".github" / "workflows" / "v2-day7-live-sol.yml"
