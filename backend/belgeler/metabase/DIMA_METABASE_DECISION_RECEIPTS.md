@@ -1502,3 +1502,52 @@ governance:
 
 status:
 `SEALED / ENGINE SUBMODULE MODEL AUTHORITATIVE`.
+
+
+---
+
+## DMP-DEC-0033 — Engine upstream-sync mechanism certified candidate-only
+
+date: 2026-09-23
+
+evidence:
+```text
+engine repo                     = UpcyTech/dima-metabase-engine
+engine HEAD                     = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+C3 workflow                     = 35835881375 = SUCCESS
+C3 artifact                     = 10739391786
+artifact digest                 = sha256:267888ba37f29d9a399518d5f70036fd31326fa7f295cacbfdbf795759c2b4d3
+self-test candidate             = v0.63.18
+candidate SHA                   = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+candidate-only                  = true
+main mutated                    = false
+source build                    = true
+patch-surface C0 assertion      = true
+modified upstream files         = 0
+deleted upstream files          = 0
+upstream-owned line delta       = +0 / -0
+Dima-specific files             = 12
+Dima integration line delta     = +1321 / -0
+```
+
+decision:
+The engine upstream synchronization contract is certified as candidate-only:
+```text
+exact upstream ref
+→ local sync candidate
+→ conflict report or merge/no-op classification
+→ DIMA_PATCH_SURFACE
+→ source build
+→ smoke
+→ sync/<ref> candidate branch
+→ explicit manual promotion decision
+```
+
+`main` and production are never automatically promoted.
+
+The Platform submodule may now advance from `6bb6924...` to
+`c56b71ab23bf2a2d266bac2fba8d165ac059d613`.
+The delta contains sync-workflow/governance files only; Metabase runtime source is unchanged.
+
+status:
+`SEALED / P12X-C3 UPSTREAM-SYNC CERTIFICATION = GREEN`.

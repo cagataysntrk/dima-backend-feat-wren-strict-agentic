@@ -1859,3 +1859,24 @@ P12X-C1                              = CLOSED GREEN
 P12X-C2                              = AUTHORIZED
 P13                                  = PAUSED
 ```
+
+
+---
+
+## P12X-C3 CLOSED GREEN
+
+```text
+engine certified HEAD              = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+sync self-test                     = 35835881375 = SUCCESS
+artifact                           = 10739391786
+candidate-only                     = PASS
+source build                       = PASS
+main auto-promotion                = 0
+sync conflicts in self-test        = 0
+modified upstream files            = 0
+upstream-owned line delta          = +0 / -0
+Platform engine gitlink target     = c56b71ab23bf2a2d266bac2fba8d165ac059d613
+P12X-C3                            = CLOSED GREEN
+```
+
+C2 remains the only open P12X closure gate.
