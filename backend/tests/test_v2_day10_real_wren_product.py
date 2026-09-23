@@ -166,52 +166,43 @@ class _RelationshipResearchLLM:
 
 
 class _SharedCubeSemanticProvider:
-    """Provider-free bounded cognition: choose only from the unique shared cube scope.
+    """Provider-free bounded cognition pinned to the fixture's governed target cube.
 
-    This is test cognition, not production semantic authority. Candidate IDs are copied
-    from the bounded cards supplied by the real semantic linker.
+    The preferred cube label is derived from the real semantic context, not from user
+    phrase matching. This test provider can only copy candidate IDs that the production
+    bounded linker supplied.
     """
 
-    def decide(self, requests):
-        cube_sets = [
-            {
-                cube
-                for candidate in request.candidates
-                for cube in candidate.cube_labels
-            }
-            for request in requests
-        ]
-        shared = set.intersection(*cube_sets) if cube_sets else set()
-        assert len(shared) == 1, {
-            "shared_cube_labels": sorted(shared),
-            "requests": [
-                {
-                    "surface": request.surface,
-                    "candidates": [
-                        {
-                            "candidate_id": candidate.candidate_id,
-                            "label": candidate.label,
-                            "cube_labels": candidate.cube_labels,
-                        }
-                        for candidate in request.candidates
-                    ],
-                }
-                for request in requests
-            ],
-        }
-        target_cube = next(iter(shared))
+    def __init__(self, *, preferred_cube_label: str) -> None:
+        self._preferred_cube_label = preferred_cube_label
 
+    def decide(self, requests):
         choices = []
         for request in requests:
             matches = [
                 candidate
                 for candidate in request.candidates
-                if target_cube in candidate.cube_labels
+                if self._preferred_cube_label in candidate.cube_labels
             ]
             assert len(matches) == 1, {
                 "surface": request.surface,
-                "target_cube": target_cube,
-                "matches": [item.candidate_id for item in matches],
+                "preferred_cube_label": self._preferred_cube_label,
+                "matches": [
+                    {
+                        "candidate_id": item.candidate_id,
+                        "label": item.label,
+                        "cube_labels": item.cube_labels,
+                    }
+                    for item in matches
+                ],
+                "candidates": [
+                    {
+                        "candidate_id": item.candidate_id,
+                        "label": item.label,
+                        "cube_labels": item.cube_labels,
+                    }
+                    for item in request.candidates
+                ],
             }
             choices.append(
                 SemanticLinkChoice(
@@ -253,6 +244,12 @@ def test_product_research_relationship_crosses_real_wren_and_builds_report(
         db_online=True,
     )
     semantic_context = ContextProviderV0().build(service, runtime)
+    relationship_cube = next(
+        cube
+        for cube in semantic_context.cubes
+        if cube.canonical_name == "makine_duruslari"
+    )
+    relationship_cube_label = relationship_cube.display or relationship_cube.canonical_name
 
     persisted = []
     monkeypatch.setattr(
@@ -284,7 +281,9 @@ def test_product_research_relationship_crosses_real_wren_and_builds_report(
     cognition = ResearchCognition(
         manager_llm=manager,
         manager_profile=profile,
-        semantic_provider=_SharedCubeSemanticProvider(),
+        semantic_provider=_SharedCubeSemanticProvider(
+            preferred_cube_label=relationship_cube_label
+        ),
         semantic_profile=ModelProfile(
             role=ModelRole.SEMANTIC_LINKER,
             provider="provider-free",
@@ -327,7 +326,7 @@ def test_product_research_relationship_crosses_real_wren_and_builds_report(
 
     assert standard_lane.calls == 1
     assert response.lane == ProductLane.RESEARCH
-    assert response.status == ProductStatus.REPORT
+    assert response.status == ProductStatus.REPORT, response.model_dump(mode="json")
     assert response.terminal_receipt.verified_complete is True
     assert response.report is not None
     assert response.report.version == 1
