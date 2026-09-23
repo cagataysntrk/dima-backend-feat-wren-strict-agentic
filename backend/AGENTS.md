@@ -22,6 +22,8 @@
 > DEV80 / Validation50 / Hidden50 were NOT run.
 >
 > **CURRENT TICKET = P11 / DAY8 ROOT-CAUSE BRANCH.**
+> Active design receipt:
+> `belgeler/plan/DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`.
 > Current subphase is PROVIDER-FREE ARCHITECTURE + LEGACY PRIMITIVE INVENTORY ONLY.
 > No Day8 product implementation until the design/inventory receipt is reviewed.
 >
