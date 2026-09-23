@@ -1,0 +1,70 @@
+name: v2-day7-temporal-surface-diagnostic-a245
+
+"on":
+  push:
+    branches:
+      - ops/day7-temporal-surface-diagnostic-a245
+    paths:
+      - ".github/workflows/v2-day7-temporal-surface-diagnostic-a245.yml"
+
+jobs:
+  temporal-surface:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 15
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_DAY7_LIVE_MANAGER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_DAY7_LIVE_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_DAY7_LIVE_TEMPORAL_MODEL: "openai/gpt-5.6-sol"
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: a245f16eb3f3a122b0c77776ab5ec1d5c7eef4be
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Diagnose exact temporal surface through sealed Sol normalizer
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import json
+          from app.config import get_settings
+          from app.v2.manager_lab import _build_role_scoped_manager_models
+          from app.v2.temporal_intent import StructuredTemporalNormalizationProvider, TypedTemporalNormalizer
+
+          settings = get_settings()
+          (
+              _manager, _manager_profile,
+              _linker, _linker_profile,
+              temporal_llm, temporal_profile,
+          ) = _build_role_scoped_manager_models(settings)
+
+          normalizer = TypedTemporalNormalizer(
+              provider=StructuredTemporalNormalizationProvider(
+                  structured=temporal_llm.structured_json
+              )
+          )
+          result = normalizer.normalize(
+              (("cmp:multi-obligation", "geçen dönemle", "COMPARISON"),)
+          )[0]
+          print(json.dumps({
+              "provider": temporal_profile.provider,
+              "model": temporal_profile.model,
+              "surface": "geçen dönemle",
+              "target": "COMPARISON",
+              "choice": result.model_dump(mode="json"),
+          }, ensure_ascii=False))
+          PY
