@@ -1,0 +1,93 @@
+services:
+  analytics-db:
+    image: postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+    environment:
+      POSTGRES_DB: boyahane
+      POSTGRES_USER: boyahane_owner
+      POSTGRES_PASSWORD: ${P12X_WAREHOUSE_OWNER_PASSWORD:-boyahane-owner-lab}
+    ports:
+      - "127.0.0.1:55442:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U boyahane_owner -d boyahane"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    networks: [p12x]
+
+  metabase-app-db-pinned:
+    image: postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+    environment:
+      POSTGRES_DB: metabase_pinned
+      POSTGRES_USER: metabase_app
+      POSTGRES_PASSWORD: ${P12X_MB_APP_PASSWORD:-metabase-app-lab}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metabase_app -d metabase_pinned"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    networks: [p12x]
+
+  metabase-app-db-latest:
+    image: postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+    environment:
+      POSTGRES_DB: metabase_latest
+      POSTGRES_USER: metabase_app
+      POSTGRES_PASSWORD: ${P12X_MB_APP_PASSWORD:-metabase-app-lab}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metabase_app -d metabase_latest"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    networks: [p12x]
+
+  metabase-pinned:
+    image: metabase/metabase@sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
+    depends_on:
+      metabase-app-db-pinned:
+        condition: service_healthy
+      analytics-db:
+        condition: service_healthy
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: metabase-app-db-pinned
+      MB_DB_PORT: "5432"
+      MB_DB_DBNAME: metabase_pinned
+      MB_DB_USER: metabase_app
+      MB_DB_PASS: ${P12X_MB_APP_PASSWORD:-metabase-app-lab}
+      MB_AI_FEATURES_ENABLED: "true"
+      MB_METABOT_ENABLED: "true"
+      MB_AGENT_API_ENABLED: "true"
+      MB_MCP_EXECUTE_SQL_ENABLED: "false"
+      MB_LLM_OPENROUTER_API_KEY: ${DIMA_OPENROUTER_API_KEY}
+      MB_LLM_METABOT_PROVIDER: ${P12X_METABOT_PROVIDER:-openrouter/openai/gpt-5.6-luna}
+    ports:
+      - "127.0.0.1:3311:3000"
+    networks: [p12x]
+
+  metabase-latest:
+    image: metabase/metabase@sha256:0ad51a232989d57795e681f9e1171c92869d6c76004943340d9d9ac1f7644bda
+    depends_on:
+      metabase-app-db-latest:
+        condition: service_healthy
+      analytics-db:
+        condition: service_healthy
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: metabase-app-db-latest
+      MB_DB_PORT: "5432"
+      MB_DB_DBNAME: metabase_latest
+      MB_DB_USER: metabase_app
+      MB_DB_PASS: ${P12X_MB_APP_PASSWORD:-metabase-app-lab}
+      MB_AI_FEATURES_ENABLED: "true"
+      MB_METABOT_ENABLED: "true"
+      MB_AGENT_API_ENABLED: "true"
+      MB_MCP_EXECUTE_SQL_ENABLED: "false"
+      MB_LLM_OPENROUTER_API_KEY: ${DIMA_OPENROUTER_API_KEY}
+      MB_LLM_METABOT_PROVIDER: ${P12X_METABOT_PROVIDER:-openrouter/openai/gpt-5.6-luna}
+    ports:
+      - "127.0.0.1:3310:3000"
+    networks: [p12x]
+
+networks:
+  p12x:
+    name: dima-p12x
