@@ -469,6 +469,7 @@ class ResearchToolRunner:
         executor,
         principal: Principal | None,
         task_registry: ResearchTaskRegistry | None = None,
+        cancel_check: Callable[[], bool] | None = None,
     ) -> ResearchToolExecution:
         spec, validated = self._registry.validate_invocation(
             task=task,
@@ -535,15 +536,20 @@ class ResearchToolRunner:
 
         class _LifecycleBoundExecutor:
             def execute(self, bound_call, validated_args, bound_runtime):
+                def commit_guard() -> None:
+                    if cancel_check is not None and cancel_check():
+                        registry.cancel(task.task_id)
+                    registry.assert_execution_active(
+                        task_id=task.task_id,
+                        tool_id=tool_id,
+                        action_fingerprint=delivery_fingerprint,
+                    )
+
                 return executor.execute(
                     bound_call,
                     validated_args,
                     bound_runtime,
-                    commit_guard=lambda: registry.assert_execution_active(
-                        task_id=task.task_id,
-                        tool_id=tool_id,
-                        action_fingerprint=delivery_fingerprint,
-                    ),
+                    commit_guard=commit_guard,
                 )
 
         try:
