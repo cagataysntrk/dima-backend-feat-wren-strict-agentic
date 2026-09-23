@@ -175,6 +175,15 @@ jobs:
           ANALYTICS_DB_PASSWORD: boyahane-readonly-lab
         run: python lab/metabase/scripts/bootstrap.py
 
+      - name: Rebuild current-head PX-01 oracle identity
+        working-directory: platform/backend
+        env:
+          BOYAHANE_DUCKDB: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          P12X_OUT: lab/metabase/p12x/artifacts
+        run: |
+          python lab/metabase/p12x/build_oracle.py
+          python -m py_compile lab/metabase/p12x/score_native_canary.py
+
       - name: Run one native Metabot canary
         working-directory: platform/backend
         run: |
@@ -186,12 +195,25 @@ jobs:
             --question "Haziran 2026'da kaç satış siparişi açıldı?" \
             --output lab/metabase/p12x/artifacts/native_canary_pinned.json
 
+      - name: Enforce executable PX-01 oracle gate
+        working-directory: platform/backend
+        run: |
+          python lab/metabase/p12x/score_native_canary.py \
+            --native lab/metabase/p12x/artifacts/native_canary_pinned.json \
+            --oracle lab/metabase/p12x/artifacts/oracle_v1.json \
+            --case-id PX-01 \
+            --output lab/metabase/p12x/artifacts/native_canary_score.json
+
       - name: Upload native canary
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: p12x-native-canary-${{ github.sha }}
-          path: platform/backend/lab/metabase/p12x/artifacts/native_canary_pinned.json
+          path: |
+            platform/backend/lab/metabase/p12x/artifacts/native_canary_pinned.json
+            platform/backend/lab/metabase/p12x/artifacts/native_canary_score.json
+            platform/backend/lab/metabase/p12x/artifacts/oracle_v1.json
+            platform/backend/lab/metabase/p12x/artifacts/corpus_fingerprint.json
           if-no-files-found: warn
           retention-days: 30
 
