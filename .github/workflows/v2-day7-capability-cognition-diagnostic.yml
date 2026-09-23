@@ -2,6 +2,17 @@ name: v2-day7-capability-cognition-diagnostic
 
 "on":
   workflow_dispatch:
+    inputs:
+      case_ids:
+        description: "Required comma-separated diagnostic case ids; blank is rejected"
+        required: true
+        default: ""
+        type: string
+      max_model_calls:
+        description: "Explicit hard paid-call ceiling; must be >= 1"
+        required: true
+        default: 0
+        type: number
 
 jobs:
   cognition-diagnostic:
@@ -39,9 +50,29 @@ jobs:
 
       - name: Workers=1 capability cognition diagnostic
         working-directory: backend
+        shell: bash
         run: |
+          set -euo pipefail
+          raw_case_ids="${{ inputs.case_ids }}"
+          budget="${{ inputs.max_model_calls }}"
+          if [[ -z "${raw_case_ids// /}" ]]; then
+            echo "ERROR: explicit cognition diagnostic case_ids are required." >&2
+            exit 64
+          fi
+          if (( budget < 1 )); then
+            echo "ERROR: max_model_calls must be >= 1." >&2
+            exit 64
+          fi
+          args=()
+          IFS=',' read -ra ids <<< "${raw_case_ids}"
+          for id in "${ids[@]}"; do
+            clean="${id// /}"
+            [[ -n "${clean}" ]] && args+=(--case-id "${clean}")
+          done
           python lab/v2_day7_capability_cognition_diagnostic.py \
             --cases eval/v2_day7_capability_cognition_diagnostic.yaml \
+            --max-model-calls "${budget}" \
+            "${args[@]}" \
             --output lab/reports/v2_day7_capability_cognition_diagnostic.json
 
       - uses: actions/upload-artifact@v4
