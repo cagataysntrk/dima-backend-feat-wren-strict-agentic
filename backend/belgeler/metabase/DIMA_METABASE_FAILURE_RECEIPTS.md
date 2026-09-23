@@ -2483,3 +2483,71 @@ interpretation:
 
 status:
 `P11 INITIAL NATIVE PATH CLOSED GREEN`.
+
+
+---
+
+## DMP-P12X-CANARY-RED-001 — native canary selected bundled Sample Database
+
+receipt_id: `DMP-P12X-CANARY-RED-001`  
+tested_sha: `2fdad83dcb844c8288293a9c6f39f89cf9cd365e`  
+workflow: `35821554136`  
+job: `107054430015`  
+artifact: `10733362325 / p12x-native-canary-2fdad83dcb844c8288293a9c6f39f89cf9cd365e`
+
+classification:
+`ORACLE_FIXTURE / BENCHMARK DATA-SCOPE CONTAMINATION`
+
+observed:
+- X0 dataset/corpus/oracle freeze is GREEN.
+- exact P12X oracle for PX-01 is `126` Boyahane sales orders opened in June 2026.
+- pinned native Metabot returned a generated query whose executed result is `264`.
+- the native tool trace selected Metabase bundled **Sample Database**, table `ORDERS`, metric
+  `Number of Orders`, rather than the Boyahane table `satis_siparisleri`.
+- generated query identity shows database id `1` / source-table `2`; the P12X Boyahane connection
+  is database id `2`.
+- the pre-call catalog readiness probe independently found Boyahane
+  `Dima Analytics Lab / satis_siparisleri`, proving the intended dataset was present and indexed.
+- restricted user Metabot permissions were all `yes`; this is not a security denial.
+- native stream completed without provider/tool error.
+
+root_cause:
+The P12X fresh Metabase app DB allowed Metabase's default bundled Sample Database to be created.
+The benchmark therefore exposed two plausible order datasets to the candidate engine. PX-01 is defined
+against the frozen Boyahane snapshot, so the candidate was not operating inside the intended
+single-dataset benchmark scope.
+
+single_owner:
+`backend/lab/metabase/p12x/docker-compose.x1.yml` lab runtime fixture configuration.
+
+not_a_product_failure:
+This RED does **not** establish native Metabot retrieval/cognition/query failure. Selecting an available
+but out-of-scope Sample Database is a contaminated benchmark fixture.
+
+authorized_correction:
+Set `MB_LOAD_SAMPLE_CONTENT=false` for every fresh P12X Metabase runtime, then rerun the exact same
+PX-01 canary with:
+- same Boyahane SHA/data;
+- same pinned v0.63.18 runtime;
+- same restricted user;
+- same Luna provider/model;
+- same question;
+- same independent oracle.
+
+forbidden_corrections:
+- prompt special-casing `satis_siparisleri`;
+- hiding the RED by changing the oracle;
+- adding Dima semantic authority;
+- query/result post-correction;
+- name/fuzzy rules;
+- P4/P5/P10/P11 changes;
+- Fast/ask-v2 changes.
+
+closure_gate:
+- no bundled Sample Database exists in the fresh runtime;
+- generated native query targets Boyahane;
+- executed result for PX-01 equals `126`;
+- no security/provider/tool error.
+
+status:
+`CLASSIFIED / LAB FIXTURE CORRECTION AUTHORIZED / AWAITING EXACT CANARY RERUN`.

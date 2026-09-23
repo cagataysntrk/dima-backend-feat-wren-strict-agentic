@@ -1572,3 +1572,26 @@ source writes/merge/cherry-pick     = 0
 
 Next:
 freeze dataset/runtime/corpus/oracle, then run lab-only V0+A+B benchmark and stop at the supervisor checkpoint.
+
+
+---
+
+## P12X first native canary — RED CLASSIFIED
+
+```text
+tested SHA                         = 2fdad83dcb844c8288293a9c6f39f89cf9cd365e
+P12X workflow                     = 35821554136 = SUCCESS infrastructure
+native canary job                 = 107054430015 = SUCCESS transport
+PX-01 oracle                      = 126
+native executed result            = 264
+selected database                 = Sample Database / OUT OF BENCHMARK SCOPE
+Boyahane catalog                  = PRESENT / SEARCHABLE
+restricted Metabot permissions    = ALL YES
+provider/tool stream errors       = 0
+classification                    = ORACLE_FIXTURE / DATA-SCOPE CONTAMINATION
+receipt                           = DMP-P12X-CANARY-RED-001
+product-code changes              = 0
+```
+
+Authorized next action: disable bundled sample content **only in the P12X lab fixture** and rerun the
+same canary. No architecture conclusion may be drawn from this RED.
