@@ -8,7 +8,6 @@ from types import SimpleNamespace
 
 from app.v2.manager_models import ManagerRunSnapshot, ManagerState
 from app.v2.models import (
-    AskV2Request,
     ContextVersionV0,
     BoundedSemanticContextV0,
     EvidenceArtifact,
@@ -16,6 +15,7 @@ from app.v2.models import (
 )
 from app.v2.product_coordinator import ProductCoordinator
 from app.v2.product_models import (
+    ProductAskRequest,
     ProductLane,
     ProductRequestContext,
     ProductStatus,
@@ -76,7 +76,7 @@ def _context(principal=None):
 
 
 def _body():
-    return AskV2Request(
+    return ProductAskRequest(
         question="performansı incele",
         session_id="session-a",
         thread_id="thread-a",
