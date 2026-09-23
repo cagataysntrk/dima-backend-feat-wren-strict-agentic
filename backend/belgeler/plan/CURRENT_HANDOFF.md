@@ -18,3 +18,20 @@ Latest valid frozen13:
 
 Do not continue from older Day6.5 handoff files.
 Read the active handoff, then DIMA_V2_GELISTIRME_DURUM.md, then the Harvest document.
+
+
+## 2026-09-23 continuation delta
+
+Product base remains:
+`d22fb3626db0fe44ea543eee6531e5544cdf0b56`
+
+Oracle debt reconciled:
+- multi-obligation PREVIOUS_PERIOD = EVAL_ORACLE
+- relationship-unsafe = EVAL_ORACLE
+
+Only unresolved frozen13 owner:
+- insufficient-evidence = MODEL_COGNITION vs EVAL_ORACLE
+- manual diagnostic prepared at
+  `.github/workflows/v2-day7-capability-cognition-diagnostic.yml`
+
+Do not patch product before that classification.
