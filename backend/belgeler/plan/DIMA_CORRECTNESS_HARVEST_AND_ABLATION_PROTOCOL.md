@@ -603,3 +603,51 @@ Paid receipt:
   5 Sol calls, no semantic/temporal calls.
 - combined paid model calls = 7.
 - no third paid case/run was executed.
+
+
+---
+
+## DAY8 POST-LIVE CONTRACT HARVEST — 2026-09-23
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-073 | Opaque governed semantic identities must expose enough non-secret type/provenance metadata for cognition to use them against deterministic capability/task contracts. Canonical semantic values remain registry-owned. | MUST_PORT | needless semantic re-resolution, cognition dead-end caused by type-blind aliases, duplicate semantic work | `SEMANTIC_HANDLE_CATALOG` + `HypothesisLedger.semantic_handle_metadata`; focused `35898621489` GREEN, affected Day7 `35898591894` GREEN |
+
+Supervised re-measurement receipt:
+
+```text
+run                    35898027005
+validity               VALID
+result                 RED
+Sol calls              2
+semantic-linker calls  0
+temporal calls         0
+scenario hash          8379daa7fc70a678514b7f87dcb41fcdfec4d317d8ded4cc2712ee7cfb4c8d6a
+harness blob           4ae479eb171eccb709eb326309734779533079ab
+```
+
+First incorrect transition:
+`hypothesis identity → resolve_semantics` where the canonical path required a governed
+next-test proposal over existing handles.
+
+Final classification:
+`CONTRACT/ARCHITECTURE`.
+
+Single owner:
+post-acceptance Manager-safe semantic-handle projection.
+
+Permanent split:
+
+```text
+opaque canonical value        YES
+opaque server identity        YES
+opaque semantic target kind   NO — cognition needs governed non-secret type metadata
+```
+
+This does not weaken semantic authority. The model still cannot mint, mutate or see canonical
+semantic targets. It receives only registry-validated metadata needed to select among already
+declared governed task shapes.
+
+Paid Day8 total after the supervised re-measurement = 9 Sol calls.
+No further paid rerun is authorized automatically.
+Day8 deterministic/real-Wren remains GREEN; live certification remains OPEN.
