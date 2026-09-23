@@ -34,6 +34,9 @@ export function openEngineContext(
   let packed: Buffer;
   try {
     packed = Buffer.from(token, "base64url");
+    if (packed.toString("base64url") !== token) {
+      throw new Error("non-canonical context token");
+    }
   } catch {
     throw new GatewayError(400, "Sohbet bağlamı geçersiz.");
   }

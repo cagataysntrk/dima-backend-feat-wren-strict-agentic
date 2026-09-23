@@ -189,7 +189,7 @@ def main() -> None:
 
     print(json.dumps({
         "engine_release": "0.63.18-dima.0",
-        "engine_digest": "sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b",
+        "engine_digest": "sha256:0e6819e36c3bd347238159ae483bbaa8db3f0f36bf23cc5d2d8a23012fe111d9",
         "database_id": database_id,
         "collection_id": collection_id,
         "dashboard_id": dashboard_id,

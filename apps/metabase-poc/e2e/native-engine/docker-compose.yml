@@ -38,7 +38,7 @@ services:
       retries: 60
 
   engine:
-    image: ghcr.io/upcytech/dima-metabase-engine@sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b
+    image: ghcr.io/upcytech/dima-metabase-engine@sha256:0e6819e36c3bd347238159ae483bbaa8db3f0f36bf23cc5d2d8a23012fe111d9
     depends_on:
       analytics-db: {condition: service_healthy}
       engine-app-db: {condition: service_healthy}
