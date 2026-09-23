@@ -680,7 +680,7 @@ class EpistemicLabelGate:
             ]
             if not usable_support:
                 if support_refs and any(
-                    ref in supplied and self._is_priority_only(supplied[ref])
+                    ref in supplied and self.is_priority_only(supplied[ref])
                     for ref in support_refs
                 ):
                     return EpistemicLabelDecision(
