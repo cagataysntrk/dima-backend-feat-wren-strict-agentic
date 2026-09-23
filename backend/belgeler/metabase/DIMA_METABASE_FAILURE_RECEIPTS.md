@@ -2840,3 +2840,32 @@ forbidden:
 
 status:
 `OPEN / RETRY IN PROGRESS / OWNER = C0 BUILD WRAPPER`.
+
+
+---
+
+## DMP-P12X-C0-CI-001 — shallow ancestry depth one commit short
+
+opened_at: 2026-09-23  
+engine_sha: `5b7e8e89f9aad9eef0231ceb2deec99558fe110c`  
+workflow: `35826802989`  
+job: `107070219789`
+
+classification:
+`CI/GOVERNANCE / SHALLOW_HISTORY_DEPTH`
+
+observed:
+- checkout was intentionally narrowed for speed;
+- current engine history is `5b7e8e8 → 8b90f15 → b284739 → 2ba2485`;
+- `fetch-depth: 3` omits the exact upstream base commit from the main-side ancestry graph;
+- immutable base branch fetched correctly;
+- `git merge-base --is-ancestor` therefore exited 1 before patch-surface/build.
+
+single_owner:
+`.github/workflows/dima-engine-c0.yml` checkout depth only.
+
+authorized_correction:
+Change `fetch-depth: 3` to `fetch-depth: 4`. No source/build semantics change.
+
+status:
+`CLASSIFIED / CI-ONLY PATCH AUTHORIZED`.
