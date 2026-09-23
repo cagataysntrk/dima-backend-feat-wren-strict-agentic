@@ -50,6 +50,7 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_derived_evidence.py"
       - "backend/lab/v2_day7_manager_live_sol.py"
       - "backend/eval/v2_day7_live_sol_cases.yaml"
+      - "backend/eval/v2_day7_capability_cognition_diagnostic.yaml"
       - "backend/tests/test_v2_day7_live_sol_contract.py"
       - ".github/workflows/v2-day7-live-sol.yml"
       - "backend/tests/test_v2_day7_directive_contract.py"
