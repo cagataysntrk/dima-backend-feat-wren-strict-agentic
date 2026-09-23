@@ -2869,3 +2869,39 @@ Change `fetch-depth: 3` to `fetch-depth: 4`. No source/build semantics change.
 
 status:
 `CLASSIFIED / CI-ONLY PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C0-CI-002 — ancestry proof coupled to exact Dima commit count
+
+opened_at: 2026-09-23  
+engine_sha: `f98b9bd3c3027adfd97a34526b08aeedb2ce2385`  
+workflow: `35826868161`  
+job: `107070418631`
+
+classification:
+`CI/GOVERNANCE / SHALLOW_HISTORY_POLICY`
+
+observed:
+- workflow fetched only `main`, which is correct and fast;
+- `fetch-depth: 4` still excluded the upstream base because current chain is
+  `f98b9bd → 5b7e8e8 → 8b90f15 → b284739 → 2ba2485`;
+- the immutable base ref itself fetched correctly;
+- exact ancestry failed only because shallow main history ended one commit before the base;
+- tying the gate to today's exact Dima commit count would recur after every infrastructure commit.
+
+single_owner:
+`.github/workflows/dima-engine-c0.yml` history-fetch policy.
+
+authorized_correction:
+Use a bounded but non-fragile `fetch-depth: 64` for the **main ref only**, then fetch the immutable
+base branch separately at depth 1. Preserve the same exact SHA and merge-base assertions.
+
+forbidden:
+- `fetch-depth: 0` on this fork, because it expands to the fork's large upstream branch surface;
+- weakening/removing exact ancestry;
+- any Metabase upstream-source change.
+
+status:
+`CLASSIFIED / CI-ONLY POLICY PATCH AUTHORIZED`.
