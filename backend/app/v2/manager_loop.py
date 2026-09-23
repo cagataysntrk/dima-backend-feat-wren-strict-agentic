@@ -358,6 +358,36 @@ def _evidence_was_inspected(
     )
 
 
+def _zero_row_completion_candidate(
+    *,
+    runtime: ManagerRuntime,
+    evidence_store,
+    task_registry: ResearchTaskRegistry,
+) -> bool:
+    """Return True only when another Manager turn cannot open grounded data work.
+
+    A zero-row current result contains no material row-level direction for an
+    evidence-grounded branch. If every registered ResearchTask is already terminal,
+    CompletionGate is the only remaining authority: the loop may attempt finish
+    without spending another probabilistic Manager turn.
+    """
+    state = build_research_state_view(
+        runtime=runtime,
+        evidence_store=evidence_store,
+    )
+    delta = state.latest_delta
+    if (
+        delta is None
+        or delta.availability.value != "AVAILABLE"
+        or not delta.inspected
+        or delta.row_count != 0
+    ):
+        return False
+    if any(task.state == "pending" for task in task_registry.tasks):
+        return False
+    return True
+
+
 def _clarification_has_governed_grounding(
     observations: list[dict[str, Any]],
     *,
@@ -1205,6 +1235,30 @@ class ResearchManagerLoop:
                         "result": manager_result,
                     }
                 )
+
+                if (
+                    call.name == ManagerToolName.INSPECT_EVIDENCE
+                    and _zero_row_completion_candidate(
+                        runtime=runtime,
+                        evidence_store=getattr(executor, "evidence_store", None),
+                        task_registry=task_registry,
+                    )
+                ):
+                    try:
+                        runtime.finish()
+                        observations.append(
+                            {
+                                "kind": "finish",
+                                "status": "accepted",
+                                "reason": "inspected_zero_row_no_material_branch",
+                            }
+                        )
+                        break
+                    except ManagerStateError:
+                        # CompletionGate remains the sole completion authority.
+                        # If it rejects, the bounded Manager loop may continue.
+                        pass
+
                 progressed = frontier.observe(
                     progress_before=progress_before,
                     action=decision,
