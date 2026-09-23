@@ -131,6 +131,7 @@ class ResearchLaneService:
         body: AskV2Request,
         progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
         cancel_check: Callable[[], bool] | None = None,
+        answer_now_check: Callable[[], bool] | None = None,
     ) -> ResearchLaneResult:
         # Lane-local semantic authority. Nothing from a rejected Standard candidate is
         # accepted as an input to this construction seam.
@@ -204,6 +205,7 @@ class ResearchLaneService:
             ),
             progress_callback=progress_callback,
             cancel_check=cancel_check,
+            answer_now_check=answer_now_check,
         )
         outcome = loop.run(
             question=body.question,
@@ -243,6 +245,7 @@ class ResearchLaneService:
         context_scope_by_kind: dict[str, tuple[str, ...]],
         progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
         cancel_check: Callable[[], bool] | None = None,
+        answer_now_check: Callable[[], bool] | None = None,
     ) -> ResearchLaneResult:
         """Continue one signed report section on the same immutable Research lineage."""
 
@@ -315,6 +318,7 @@ class ResearchLaneService:
             ),
             progress_callback=progress_callback,
             cancel_check=cancel_check,
+            answer_now_check=answer_now_check,
             context_scope_by_kind=context_scope_by_kind,
         )
         outcome = loop.run(
