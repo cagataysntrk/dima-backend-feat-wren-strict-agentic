@@ -2551,3 +2551,30 @@ closure_gate:
 
 status:
 `CLASSIFIED / LAB FIXTURE CORRECTION AUTHORIZED / AWAITING EXACT CANARY RERUN`.
+
+---
+
+## DMP-P12X-CANARY-RED-001 closure — GREEN after fixture isolation
+
+final_sha: `6a19c2790598b3c4753b0f93be383f9ff833002a`  
+workflow: `35821886266 = SUCCESS`  
+native_canary_job: `107055486890 = SUCCESS`  
+artifact: `10732874611 / p12x-native-canary-6a19c2790598b3c4753b0f93be383f9ff833002a`
+
+proof:
+- `MB_LOAD_SAMPLE_CONTENT=false` removed bundled Sample Database from the fresh P12X runtime;
+- same frozen PX-01 question/model/user/data/oracle were retained;
+- catalog probe resolves `Dima Analytics Lab / satis_siparisleri`;
+- native Metabot generated a query over Boyahane `satis_siparisleri`;
+- executing that generated query with the same restricted Metabase session returned `126`;
+- independent DuckDB oracle is `126`;
+- pinned runtime self-reports `v0.63.18 / 2ba2485`;
+- restricted user's Metabot permissions remain all yes;
+- provider/tool stream errors = 0;
+- no Dima product/semantic/security owner was changed.
+
+interpretation:
+The first RED was entirely benchmark-fixture contamination. It is not evidence against the native Metabot engine.
+
+status:
+`CLOSED GREEN / NATIVE PINNED CANARY VALID`.
