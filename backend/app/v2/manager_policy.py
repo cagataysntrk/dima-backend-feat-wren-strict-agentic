@@ -47,8 +47,11 @@ class ManagerCapabilityRegistry:
             allowed_kinds=frozenset({"metric", "filter", "period"}),
             effect_family="measure",
             intent_description=(
-                "Read/show/measure the level, value or state of a metric. "
-                "Not for explaining why, causes, drivers, anomalies or decline investigation."
+                "Observe, inspect, evaluate, read, show or measure the level/value/state "
+                "of a metric when the requested analytical result is descriptive rather "
+                "than causal. A generic request to investigate or research a metric remains "
+                "PERFORMANCE unless the user materially requests why it happened, causes, "
+                "drivers, mechanisms, or an explanation of a change/anomaly."
             ),
         ),
         ManagerCapabilityKey.BREAKDOWN: ManagerCapabilitySpec(
@@ -106,8 +109,11 @@ class ManagerCapabilityRegistry:
             allowed_kinds=_RESEARCH_KINDS,
             effect_family="root_cause",
             intent_description=(
-                "Investigate why an outcome, change, decline, increase or anomaly happened; "
-                "search for causes/drivers through research orchestration."
+                "Causal explanatory investigation: determine why an outcome, change, "
+                "decline, increase or anomaly happened, or identify causes/drivers/mechanisms. "
+                "Require material causal intent from the user's requested business result; "
+                "do not promote a merely descriptive metric investigation, evidence caution, "
+                "or adaptive/no-branch research directive into ROOT_CAUSE."
             ),
         ),
         ManagerCapabilityKey.TREND: ManagerCapabilitySpec(
