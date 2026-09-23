@@ -7,6 +7,8 @@ name: v2-day9-focused
     paths:
       - "backend/app/v2/report_builder.py"
       - "backend/tests/test_v2_day9_report_builder.py"
+      - "backend/app/v2/report_narration.py"
+      - "backend/tests/test_v2_day9_report_narration.py"
       - ".github/workflows/v2-day9-focused.yml"
   workflow_dispatch:
 
@@ -33,10 +35,10 @@ jobs:
         working-directory: backend
         run: pip install -e ".[dev]"
 
-      - name: Compile Day9 report authority
+      - name: Compile Day9 report and narration authorities
         working-directory: backend
-        run: python -m compileall -q app/v2/report_builder.py
+        run: python -m compileall -q app/v2/report_builder.py app/v2/report_narration.py
 
-      - name: Day9 deterministic ReportDocument attacks
+      - name: Day9-B bounded narration attacks
         working-directory: backend
-        run: pytest -q tests/test_v2_day9_report_builder.py
+        run: pytest -q tests/test_v2_day9_report_narration.py
