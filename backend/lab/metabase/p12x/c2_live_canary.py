@@ -58,6 +58,8 @@ def main() -> int:
     ap.add_argument("--oracle", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--engine-sha", required=True)
+    ap.add_argument("--workspace-gitlink-sha", required=True)
+    ap.add_argument("--runtime-image-ref", required=True)
     ap.add_argument("--upstream-base-sha", required=True)
     args = ap.parse_args()
 
@@ -69,7 +71,7 @@ def main() -> int:
     )
     request = NativeEngineRequest(
         message=QUESTION,
-        conversation_id="p12x-c2-live-px01",
+        conversation_id="00000000-0000-4000-8000-000000000201",
         dima_request_id="p12x-c2-live-px01",
         dima_trace_id="p12x-c2-live-px01",
     )
