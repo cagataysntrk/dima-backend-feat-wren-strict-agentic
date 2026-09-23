@@ -480,3 +480,42 @@ Day11 should use a predeclared symmetric per-arm/per-record allocation or an equ
 order-independent budget design before drawing comparative architecture conclusions.
 
 No Day7 product code was changed as a result of this ablation.
+
+
+---
+
+## DAY8 EPISTEMIC HARVEST — 2026-09-23
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-057 | Candidate-test priority / interestingness is scheduling metadata, not epistemic truth. Correlation magnitude, anomaly/outlier score, contribution share or salience may choose what to inspect next but cannot directly produce SUPPORTED, CANDIDATE_CAUSE or CONFIRMED_CAUSE. | MUST_PORT | prioritization laundering into causal truth | D8-A2 `EpistemicLabelGate`; run `35880777420` GREEN |
+| H-058 | Only completed VERIFIED governed results may become hypothesis Evidence. Planned queries/tests are not Evidence; derived Evidence must preserve parent Evidence and QueryContract lineage. | MUST_PORT | plan-as-proof, unverified-result claims, lineage loss | D8-A1 `HypothesisLedger` + existing Day7 Evidence model; runs `35880144722`, `35880777420` GREEN |
+| H-059 | Hypothesis evidence synthesis must preserve one compatible governed execution context. Evidence must be attached to the current run and belong to the ROOT_CAUSE obligation lineage; unrelated/foreign evidence cannot be silently combined. | MUST_PORT | cross-run / cross-obligation / incompatible-access evidence mixing | D8-A1 current-run Evidence + obligation-ancestry validation; run `35880144722` GREEN |
+| H-060 | Manager next-test references must resolve to server-governed ResearchTask identity. Model-minted task, semantic-handle or Evidence IDs are never execution authority. | MUST_PORT | fabricated IDs becoming executable authority | D8-A1 SemanticHandleRegistry / ResearchTaskRegistry / EvidenceStore validation; run `35880144722` GREEN |
+
+Day8 permanent epistemic rules:
+
+```text
+trigger Evidence != supporting Evidence
+status != epistemic label
+association != causation
+contribution != causation
+interestingness != truth
+candidate cause != confirmed cause
+
+CONFIRMED_CAUSE
+→ default deny
+→ CAUSAL_NOT_IDENTIFIED
+```
+
+Current Day8 test-economy receipt:
+
+```text
+D8-A1 paid calls = 0
+D8-A2 paid calls = 0
+no LIVE Sol
+no frozen13
+no DEV80
+no Validation50
+no Hidden50
+```
