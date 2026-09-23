@@ -90,3 +90,25 @@ Forbidden:
 
 Provider-free FT-005 must stay GREEN immediately.
 Real-model Luna/Sol re-proof remains BLOCKED until canonical OpenRouter credential capacity is available.
+
+
+## Additional credential check
+
+Third-model post-repair E2E:
+`35817877779`
+
+Observed:
+`HTTP 403 before first structured output`
+
+Measurement-credential bounded smoke:
+`35818129429`
+
+Observed:
+`BLOCKED_NO_MEASURE_CREDENTIAL`
+
+No model call executed in the measurement-credential lane.
+
+Current blocker:
+`OPENROUTER_CANONICAL_KEY_CAPACITY`
+
+This remains external certification debt, not a deterministic product regression.

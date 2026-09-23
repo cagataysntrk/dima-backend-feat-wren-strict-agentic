@@ -9,7 +9,7 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`f7c74d7a7b2127e14c3fd1680e70588a68352a75`
+`22aa127c540202954a951b2ed8d07fdfac6118cb`
 
 CURRENT_PRODUCT_GATE:
 `FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
@@ -255,19 +255,18 @@ Hard debt:
 
 ## NEXT_EXACT_ACTION
 
-1. Add focused real-model follow-up sentinel.
-2. Add real-model + pinned-Metabase 3-turn follow-up sentinel.
-3. Compute independent DB oracle for every executed follow-up result.
-4. Require distinct run/evidence identities for every analytical turn.
-5. Prove current resource/field authority is revalidated on each turn.
-6. Prove assistant prose authority = 0 and prior request-local handles are not reused as authority.
-7. Re-run FT-003 and FT-004 regressions.
-8. Seal all FT-005 failure receipts.
-9. Seal FT-005 only after all certification gates are GREEN.
-10. Keep `CONVERSATION_DURABILITY = NOT YET CERTIFIED`.
-11. Only after seal, add Research Doctrine docs-only reconciliation.
-12. Do not begin Analyst, Research, Root Cause, or new analytical algorithms inside FT-005.
-
+1. Do NOT open FT-006.
+2. Preserve FT-005 final status OPEN.
+3. Current minimal generic follow-up prompt repair is provider-free GREEN.
+4. Wait only on canonical model-certification capacity; do not invent another model/provider substitute.
+5. When OpenRouter capacity is available, run Luna frozen focused corpus first.
+6. If Luna hard gates pass, run Luna real-Metabase Q1 -> Q2 -> Q3 with independent DB oracle.
+7. Run Sol comparable only for Luna RED/borderline families plus full three-turn confirmation.
+8. Keep Sol ceiling reasoning in a separate lane.
+9. Any new RED -> receipt before patch.
+10. Only after honest model + Metabase + DB certification: seal FT-005.
+11. Then add Research Doctrine docs-only reconciliation.
+12. Then open FT-006.
 
 ## FT-005 CURRENT CERTIFICATION RED
 
@@ -542,3 +541,39 @@ eval-only generic follow-up contract repair experiment covering:
 4. ambiguity must remain fail-closed.
 
 Product code remains unchanged until that experiment isolates the minimal repair.
+
+
+## FT-005 MINIMAL PROMPT REPAIR — DETERMINISTIC GREEN / LIVE BLOCKED
+
+Product repair:
+`2282df3b6d9fc77e9cd20046da8e6d95d860921e`
+
+Prompt-contract test:
+`bfa721ff80ade67fa1978b5e3c83bc2be44db7e7`
+
+Provider-free core:
+- `35817877655 GREEN`
+- `35817891294 GREEN`
+
+Real Gateway regression:
+`35817877667 GREEN`
+
+Real browser regression:
+`35817877576 GREEN`
+
+Live model re-proof:
+- Luna eval contract probe `35817686083` -> HTTP 403 key total limit before semantic output;
+- third-model E2E `35817877779` -> HTTP 403 before first turn;
+- measurement credential probe `35818129429` -> BLOCKED_NO_MEASURE_CREDENTIAL before API call.
+
+Current external blocker:
+`OPENROUTER_CANONICAL_KEY_CAPACITY`
+
+Current product assessment:
+`DETERMINISTIC_REPAIR_GREEN / REAL_MODEL_CERTIFICATION_PENDING`
+
+FT-005:
+`OPEN`
+
+FT-006:
+`NOT OPENED`
