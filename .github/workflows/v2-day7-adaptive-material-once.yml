@@ -37,6 +37,7 @@ jobs:
         working-directory: backend
         run: |
           python lab/v2_day7_manager_live_sol.py \
+            --max-model-calls 12 \
             --case-id adaptive-material \
             --output lab/reports/v2_day7_adaptive_material_once.json
       - uses: actions/upload-artifact@v4
