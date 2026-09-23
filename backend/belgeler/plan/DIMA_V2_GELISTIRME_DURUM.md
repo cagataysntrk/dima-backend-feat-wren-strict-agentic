@@ -1,3 +1,55 @@
+## 2026-09-23 — GOVERNED SIBLING-SCOPE DISCOVERY LAB — PROVIDER-FREE GREEN
+
+```text
+lab_sha                 fc5001af0aa6ddab843d72842f0a4d55cc6808ae
+focused_run             35828899573
+result                  GREEN
+product behavior        UNCHANGED
+hypothesis              GOVERNED_SIBLING_SCOPE_DISCOVERY
+max candidate bound     48
+```
+
+Observed provider-free discovery signal:
+
+```text
+baseline miss           scoped governed candidates
+bölgelere      0   ->   3 (sales_omega)
+Bölgelerde     0   ->   3 (sales_omega)
+ürünlere       0   ->   3 (sales_omega)
+bölümlerle     0   ->   2 (ops_delta)
+
+outside-scope exposure  = 0
+authority minted by discovery = 0
+global catalog enumeration    = 0
+stemming / fuzzy / alias patch = 0
+```
+
+Existing base/catalog forms continue on the original retriever without fallback:
+`bölge, bölgeler, ürün, ürünler, bölüm, bölümler`.
+
+Provider-free attack family also proves:
+- unknown surface can ABSTAIN; candidate visibility does not force binding,
+- missing resolved sibling does not widen discovery,
+- sales sibling does not invent ops `department_axis_d`,
+- scope > 48 terminates as `CANDIDATE_SET_TOO_BROAD` before cognition,
+- unrelated catalog growth does not expand the selected sibling scope,
+- actual SemanticHandle authority is still minted only after bounded cognition and the
+  existing `SemanticBindingGate`.
+
+Interpretation:
+```text
+DISCOVERY HYPOTHESIS       SUPPORTED
+PRODUCT ADOPTION           NOT AUTHORIZED YET
+LIVE LUNA COGNITION        PENDING
+SEMANTIC RETRIEVER PATCH   NONE
+```
+
+Next exact action:
+small LIVE Luna LAB on the same bounded candidate sets.
+No full frozen13. No semantic product patch before the live-Luna receipt is reviewed.
+
+---
+
 ## 2026-09-23 — RELATIONSHIP PREACCEPTANCE COMPLETENESS — LIVE SEALED
 
 ```text
