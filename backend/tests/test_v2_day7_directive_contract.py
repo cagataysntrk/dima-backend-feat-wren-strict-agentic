@@ -150,6 +150,6 @@ def test_adapt_directive_rejects_nonexecutable_presentation_parent():
 
     assert result.status.value == "REJECTED"
     assert any(
-        "research directive parent must be executable analytical obligation" in reason
+        "research directive parent must be active analytical authority" in reason
         for reason in result.reasons
     )
