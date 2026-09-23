@@ -28,6 +28,7 @@ from app.v2.manager_models import (
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_tools import ManagerToolCall, ManagerToolName
 from app.v2.models import (
+    EpistemicLabel,
     ResolvedSemanticRef,
     SemanticTargetKind,
     TenantAnalyticsRuntimeV0,
@@ -326,6 +327,17 @@ def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_co
         if item.get("kind") == "hypothesis_relation_admitted"
     )
     assert relation["result"]["evidence_links"][0]["relation"] == "SUPPORTS"
+
+    assert len(outcome.findings) == 1
+    finding = outcome.findings[0]
+    assert finding.epistemic_label == EpistemicLabel.CANDIDATE_CAUSE
+    assert finding.hypothesis_ref == hypothesis["result"]["hypothesis_id"]
+    assert finding.evidence_refs == (
+        relation["result"]["evidence_links"][0]["evidence_ref"],
+    )
+    assert finding.statement == hypothesis["result"]["statement"]
+    assert finding.limitations
+    assert finding.provenance.run_id == runtime.snapshot.run_id
 
     root = next(item for item in runtime.ledger.items if item.obligation_id == "U_ROOT")
     assert root.status == ObligationStatus.IN_PROGRESS
