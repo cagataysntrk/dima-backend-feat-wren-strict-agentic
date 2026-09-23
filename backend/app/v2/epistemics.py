@@ -152,6 +152,10 @@ class HypothesisLedger:
         """Return current-run governed Evidence after structural validation."""
         return self._validate_evidence(evidence_ref)
 
+    def assert_active_root_authority(self) -> None:
+        """Public orchestration guard for Day8 adapters before they create side effects."""
+        self._validate_root_authority()
+
     def register(
         self,
         *,

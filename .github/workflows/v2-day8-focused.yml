@@ -47,7 +47,7 @@ jobs:
 
       - name: Compile Day8 epistemic slice
         working-directory: backend
-        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py
+        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py app/v2/root_cause_orchestration.py
 
       - name: Day8 capability execution-mode attacks
         working-directory: backend
@@ -55,6 +55,10 @@ jobs:
           pytest -q \
             tests/test_v2_day8_capability_execution_mode.py \
             tests/test_v2_day7_deferred_capability_boundary.py
+
+      - name: Day8 root-cause orchestration attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_root_cause_orchestration.py
 
       - name: Day8 hypothesis ledger attacks
         working-directory: backend

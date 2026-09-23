@@ -1319,6 +1319,35 @@ class HypothesisEvidenceRelationProposal(FrozenModel):
     relation: HypothesisEvidenceRelation
 
 
+class HypothesisNextTestProposal(FrozenModel):
+    """Day8 cognition proposal for governed follow-up work.
+
+    The model selects only existing governed IDs and a declared task kind. ResearchTask
+    identity, parent authority and lifecycle identity are server-owned.
+    """
+
+    hypothesis_ref: str = Field(min_length=1)
+    task_kind: ResearchTaskKind
+    input_refs: tuple[str, ...] = Field(min_length=1)
+    trigger_evidence_ref: str = Field(min_length=1)
+    material_reason: str = Field(min_length=1, max_length=500)
+    ranking_direction: Literal["asc", "desc"] | None = None
+    ranking_limit: int | None = Field(default=None, ge=1, le=1000)
+
+    @model_validator(mode="after")
+    def _next_test_shape(self):
+        if len(self.input_refs) != len(set(self.input_refs)):
+            raise ValueError("next-test input_refs must be unique")
+        if (self.ranking_direction is None) != (self.ranking_limit is None):
+            raise ValueError("ranking direction + limit must be supplied together")
+        if self.task_kind == ResearchTaskKind.RANK:
+            if self.ranking_direction is None or self.ranking_limit is None:
+                raise ValueError("RANK next test requires direction + limit")
+        elif self.ranking_direction is not None or self.ranking_limit is not None:
+            raise ValueError("ranking parameters are valid only for RANK next tests")
+        return self
+
+
 class HypothesisProvenance(FrozenModel):
     accepted_contract_id: str = Field(min_length=1)
     lineage_id: str = Field(min_length=1)

@@ -79,6 +79,22 @@ class ResearchTaskService:
                 f"no Day7 task kind for {capability_key.value}"
             ) from exc
 
+    @classmethod
+    def capability_for_task_kind(
+        cls,
+        task_kind: ResearchTaskKind,
+    ) -> ManagerCapabilityKey:
+        matches = [
+            capability
+            for capability, kind in cls._TASK_KIND_BY_CAPABILITY.items()
+            if kind == task_kind
+        ]
+        if len(matches) != 1:
+            raise ResearchTaskMaterializationError(
+                f"Research task kind {task_kind.value} has {len(matches)} capability owners"
+            )
+        return matches[0]
+
     @staticmethod
     def _ledger_item(runtime, obligation_id: str):
         ledger = runtime.ledger
@@ -132,6 +148,62 @@ class ResearchTaskService:
             question_id=obligation_id,
             task_kind=task_kind.value,
             input_refs=item.semantic_handle_refs,
+            origin="USER_SEED",
+        )
+
+    def seed_orchestrated_subtask(
+        self,
+        *,
+        runtime,
+        parent_obligation_id: str,
+        subtask_capability_key: ManagerCapabilityKey,
+        task_id: str,
+        input_refs: tuple[str, ...],
+    ) -> ResearchTask:
+        """Create one server-owned observational seed under an orchestration umbrella.
+
+        This deliberately does not add ROOT_CAUSE to _TASK_KIND_BY_CAPABILITY. The
+        selected subtask keeps its existing governed task family while the parent
+        ROOT_CAUSE USER_MUST remains the research/completion authority.
+        """
+        contract = runtime.accepted_contract
+        ledger = runtime.ledger
+        if contract is None or ledger is None:
+            raise ResearchTaskMaterializationError(
+                "orchestrated seed requires accepted Research authority"
+            )
+        accepted = runtime.authority_registry.accepted(contract.turn_id)
+        if accepted is None or accepted[0].value != "RESEARCH":
+            raise ResearchTaskMaterializationError(
+                "orchestrated seed requires Research authority family"
+            )
+
+        parent = self._ledger_item(runtime, parent_obligation_id)
+        if parent.capability_key != ManagerCapabilityKey.ROOT_CAUSE:
+            raise ResearchTaskMaterializationError(
+                "orchestrated Day8 seed requires ROOT_CAUSE parent authority"
+            )
+        if parent.status not in {
+            ObligationStatus.ACCEPTED,
+            ObligationStatus.READY,
+            ObligationStatus.IN_PROGRESS,
+        }:
+            raise ResearchTaskMaterializationError(
+                "orchestrated Day8 seed requires active ROOT_CAUSE parent"
+            )
+        if tuple(dict.fromkeys(input_refs)) != tuple(
+            dict.fromkeys(parent.semantic_handle_refs)
+        ):
+            raise ResearchTaskMaterializationError(
+                "orchestrated seed must preserve all accepted ROOT_CAUSE semantic handles"
+            )
+
+        task_kind = self.task_kind_for_capability(subtask_capability_key)
+        return ResearchTask(
+            task_id=task_id,
+            question_id=parent_obligation_id,
+            task_kind=task_kind.value,
+            input_refs=tuple(dict.fromkeys(input_refs)),
             origin="USER_SEED",
         )
 
