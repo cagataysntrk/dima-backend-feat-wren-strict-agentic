@@ -907,3 +907,31 @@ P13 PRODUCT CODE = NOT AUTHORIZED PENDING SUPERVISOR REVIEW
 
 Do not repeat P12 classification. On the next context reset, read the P13 predevelopment review and
 ticket after this handoff/status/receipts.
+
+
+---
+
+## P12X ARCHITECTURE-MEASUREMENT OVERRIDE
+
+DMP-DEC-0030 opens `P12X — METABASE NATIVE ENGINE / FORK SEAM EVALUATION`.
+
+Current state:
+```text
+P12 = CLOSED / CLASSIFICATION GREEN
+P13 = PAUSED FOR METABASE SEAM DECISION
+P12X = V0+A+B LAB MEASUREMENT AUTHORIZED
+fork / Seam C = NOT AUTHORIZED
+Dima hooks / Seam D = NOT AUTHORIZED
+```
+
+Do not implement the P13 `standard_execution.py` / `execute_prepared()` design while P12X is open.
+
+After context reset read:
+1. this handoff;
+2. living status;
+3. DMP-DEC-0030;
+4. `predev/P12X_METABASE_NATIVE_ENGINE_SEAM_EVALUATION.md`;
+5. `tickets/P12X_SEAM_BENCHMARK.md`;
+6. `UPSTREAM_ENGINE_HARVEST_MAP.md`.
+
+P12X must stop after the first V0+A+B classification and return to supervisor.

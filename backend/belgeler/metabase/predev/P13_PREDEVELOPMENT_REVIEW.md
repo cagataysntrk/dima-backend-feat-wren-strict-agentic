@@ -7,7 +7,7 @@
 **P12 closure decision:** `DMP-DEC-0028`  
 **P13 sequencing decision:** `DMP-DEC-0029`
 
-Status: **SEALED / PREDEVELOPMENT REVIEW COMPLETE / IMPLEMENTATION NOT AUTHORIZED PENDING SUPERVISOR REVIEW**
+Status: **SEALED / P13 PAUSED FOR METABASE SEAM DECISION / NO PRODUCT IMPLEMENTATION**
 
 ## 1. Purpose
 
@@ -378,3 +378,6 @@ Until then:
 ```text
 P13 PRODUCT CODE = NOT AUTHORIZED
 ```
+
+
+> P12X override: DMP-DEC-0030 pauses the Agent-API substrate implementation choice. The authority/access/receipt/evidence invariants in this review remain retained.

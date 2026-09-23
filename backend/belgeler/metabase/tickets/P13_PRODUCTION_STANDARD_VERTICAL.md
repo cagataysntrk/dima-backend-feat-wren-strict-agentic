@@ -1,7 +1,7 @@
 # P13-001 — Production Standard vertical
 
 **Milestone:** P13  
-**Status:** PREDEVELOPMENT SEALED / IMPLEMENTATION NOT AUTHORIZED PENDING SUPERVISOR REVIEW  
+**Status:** PREDEVELOPMENT SEALED / P13 PAUSED FOR METABASE SEAM DECISION / IMPLEMENTATION STOPPED  
 **Decision dependencies:** `DMP-DEC-0029`  
 **P11 forward requirement:** `DMP-P11-INTEGRATION-005 = OPEN / P13C OWNER`
 
@@ -159,3 +159,8 @@ Documentation/predevelopment only.
 P13 implementation = STOP
 until supervisor reviews the sealed boundary.
 ```
+
+
+## P12X pause
+
+DMP-DEC-0030 pauses P13 implementation until the V0+A+B Metabase seam benchmark is classified. Do not create `standard_execution.py` or `execute_prepared()` during P12X.

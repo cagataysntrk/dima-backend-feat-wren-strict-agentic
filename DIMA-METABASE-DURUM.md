@@ -1545,3 +1545,30 @@ ResolvedAnalyticsIntent
 P13C owns `DMP-P11-INTEGRATION-005`; it remains OPEN.
 `DMP-P5-BLOCK-001`, EV-05/06/07, P10B2 advanced gaps, P9 transport gaps and P7/P8 semantic gaps all
 remain OPEN/typed exactly as before.
+
+
+---
+
+## P12X OPENED — METABASE NATIVE ENGINE / FORK SEAM EVALUATION
+
+```text
+opening Platform HEAD               = ef56f6d53ebe9399a9ab322a890c6a23c5cd5c01
+DMP-DEC-0030                        = SEALED
+P13                                 = PAUSED FOR METABASE SEAM DECISION
+P13 product code                    = 0 / STOPPED
+P12X initial scope                  = V0 + A + B
+Seam C / fork                       = NOT AUTHORIZED
+Seam D / Dima hooks                 = NOT AUTHORIZED
+Boyahane fixture SHA                = f0c4a6b053ead52ca2eac80002c448323dc34a35
+Boyahane expected tables            = 80
+Boyahane expected rows              = 462962
+Boyahane compose image              = metabase/metabase:latest / UNPINNED
+pinned control                      = v0.63.18
+pinned control image                = sha256:1160b570cb11c107bce00e71293552df8a8363e01a32c2c7a048cee002dc8a73
+ask-v2 moving observation           = d8759c9cfe388560084a2886dd443c32c6346788
+Fast Track moving observation       = 30659f7892ce2d4eafffec89716b75e2ce09ea48
+source writes/merge/cherry-pick     = 0
+```
+
+Next:
+freeze dataset/runtime/corpus/oracle, then run lab-only V0+A+B benchmark and stop at the supervisor checkpoint.

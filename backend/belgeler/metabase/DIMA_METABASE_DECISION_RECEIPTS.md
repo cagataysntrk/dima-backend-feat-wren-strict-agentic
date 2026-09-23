@@ -1273,3 +1273,104 @@ mechanism requires the semantic-necessity protocol.
 
 status:
 `SEALED PREDEVELOPMENT DECISION / P13 IMPLEMENTATION NOT AUTHORIZED PENDING SUPERVISOR REVIEW`.
+
+
+---
+
+## DMP-DEC-0030 — Metabase native engine seam evaluation
+
+date: 2026-09-23
+
+question:
+Are we losing material Metabase analytical capability because the Platform is integrating at the
+Agent API primitive seam instead of preserving Metabase's native Metabot/analytics-engine runtime?
+
+status:
+`HYPOTHESIS ACCEPTED FOR MEASUREMENT / ARCHITECTURE DECISION NOT YET MADE`.
+
+source evidence:
+- pinned runtime/source remains Metabase `v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4`;
+- `src/metabase/agent_api/api.clj` exposes headless BI primitives including search,
+  construct-query, query, execute, read-resource and content endpoints;
+- `src/metabase/metabot/api.clj` endpoint `POST /api/metabot/agent-streaming` invokes
+  `metabase.metabot.agent.core/run-agent-loop`;
+- `src/metabase/metabot/agent/profiles.clj` resolves profile-specific model/tool configuration;
+  the NLQ profile has max 10 iterations and exposes native resource retrieval, resource reading,
+  notebook-query construction, navigation and chart tools;
+- the native agent core owns iterative tool-result feedback, terminal-tool handling and turn-local
+  agent state instead of being equivalent to one Agent API primitive call;
+- `cagataysntrk/metabase-boyahane@f0c4a6b053ead52ca2eac80002c448323dc34a35`
+  is a realistic 80-table / 462,962-row fixture but currently uses
+  `metabase/metabase:latest`, so its working vanilla runtime identity is not reproducibly pinned;
+- Fast Track current moving reference observed at opening:
+  `30659f7892ce2d4eafffec89716b75e2ce09ea48`;
+- ask-v2 current moving reference observed at opening:
+  `d8759c9cfe388560084a2886dd443c32c6346788`.
+  Both remain read-only reference.
+
+seams under evaluation:
+```text
+V0 = vanilla Metabase product
+
+A  = external Dima cognition
+     → Agent API primitives
+
+B  = Dima/lab client
+     → /api/metabot/agent-streaming
+     → native run-agent-loop
+
+C  = thin fork/in-process bridge
+     → native run-agent-loop
+
+D  = thin native runtime
+     + minimum Dima trust hooks
+```
+
+decision:
+Open `P12X — METABASE NATIVE ENGINE / FORK SEAM EVALUATION`.
+
+Initial authorized measurement is **V0 + A + B only**.
+Seam C/D are explicitly not authorized before the first supervisor checkpoint.
+
+P13 disposition:
+`P13 PAUSED FOR METABASE SEAM DECISION`.
+
+DMP-DEC-0029 and the existing P13 predevelopment/ticket are retained. Their durable invariant remains:
+the exact execution artifact authorized by Dima must be the artifact actually executed and receipted.
+Only the future substrate seam may change.
+
+measurement invariants:
+- do not decide by preference;
+- freeze Boyahane data identity and schema;
+- freeze exact working vanilla Metabase image/version/digest;
+- run a separate pinned v0.63.18 control;
+- same task/database snapshot/authenticated user/permissions/model/provider across seams where technically possible;
+- native Metabot keeps its own profile prompt, skills, tool descriptions, memory and state;
+- approximately 12–16 high-information tasks, not DEV80;
+- every case has an independent DB/clarification/gap oracle;
+- Luna is primary/economic baseline; Sol is differential-only if a capability difference remains ambiguous;
+- compute `VANILLA_CAPABILITY_RETENTION` in addition to absolute success;
+- classify security, semantic authority, retrieval, orchestration, query construction and model cognition failures separately.
+
+forbidden:
+- P13 product implementation while P12X is open;
+- `standard_execution.py` / `execute_prepared()`;
+- product routing;
+- Wren retirement;
+- frontend rewrite;
+- P4/P5/P10/P11 mutation;
+- modifying `metabase-boyahane`;
+- creating a Metabase fork before V0+A+B results;
+- merge/cherry-pick/rebase/write to ask-v2 or Fast Track;
+- interpreting DMP-DEC-0028 HEADLESS_API product composition as a permanent Agent-API engine selection.
+
+revisit_condition:
+After the V0+A+B checkpoint:
+- if B approximately retains Vanilla and A materially loses it, classify
+  `NATIVE_RUNTIME_MATERIAL_ADVANTAGE` and return for Seam C authorization;
+- if A approximately equals B approximately equals Vanilla, investigate version/dataset/metadata/model/
+  permissions/frontend-context confounders before any fork;
+- if Agent API retains the relevant capability, resume P13 with DMP-DEC-0029 as written.
+
+status:
+`SEALED / P12X V0+A+B MEASUREMENT AUTHORIZED / C+D NOT AUTHORIZED`.
