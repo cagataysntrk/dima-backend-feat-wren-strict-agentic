@@ -1428,3 +1428,51 @@ P12 integration code                = NOT STARTED
 
 **Current phase:** P12 BI WORKSPACE FEASIBILITY / CLASSIFICATION.  
 P13 production Standard seam remains the next integration owner after P12 classification.
+
+
+---
+
+## DEVELOPER HANDOFF SNAPSHOT
+
+Authoritative context-reset handoff:
+
+```text
+DIMA-METABASE-HANDOFF.md
+```
+
+Audited functional baseline used by the handoff:
+
+```text
+4b60bc3f1e6ab9526cd590a0989c1b227c5c43be
+```
+
+Proof at that baseline:
+
+```text
+P11 workflow                      = 35816646368 = SUCCESS
+governance                        = 35816646416 = SUCCESS
+P11 focused exact count           = 16 PASS
+P11 certified scope               = INITIAL LOW-CARDINALITY NATIVE PATH GREEN
+P11 resolver framework            = 0
+DMP-P11-INTEGRATION-005           = OPEN / P13 OWNER
+EV-05 / EV-06 / EV-07             = UNCERTIFIED
+DMP-P5-BLOCK-001                  = OPEN
+P12 mode                          = DIMA_SHELL + HEADLESS_API
+P12 escape hatch                  = LINK_OUT
+P12 integration code              = NOT AUTHORIZED / NOT STARTED
+next integration owner            = P13 Production Standard
+```
+
+Moving-source observations at handoff preparation:
+
+```text
+ask-v2                            = 80e2e101298cfb750231b4161b9e888e65323a04
+Fast Track                        = 946cb933441381078941767e8ac6205349ff81e3
+disposition                       = REFERENCE ONLY
+merge/cherry-pick/rebase          = FORBIDDEN
+```
+
+The documentation handoff commit is not a new product-code baseline.
+
+**Current phase:** P12 BI WORKSPACE FEASIBILITY / CLASSIFICATION.  
+**Next real integration owner:** P13 Production Standard seam after deliberate P12 closure.
