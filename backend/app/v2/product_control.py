@@ -10,12 +10,9 @@ from __future__ import annotations
 import threading
 import uuid
 from dataclasses import dataclass
-from enum import StrEnum
 
 
-class ProductControlAction(StrEnum):
-    ANSWER_NOW = "ANSWER_NOW"
-    CANCEL = "CANCEL"
+from app.v2.product_models import ProductControlAction
 
 
 class ProductControlError(RuntimeError):
