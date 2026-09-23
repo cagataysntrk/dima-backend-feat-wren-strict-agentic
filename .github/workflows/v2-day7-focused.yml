@@ -70,6 +70,9 @@ name: v2-day7-focused
       - "backend/lab/v2_day7_governed_sibling_scope_discovery.py"
       - "backend/tests/test_v2_day7_governed_sibling_scope_discovery.py"
       - "backend/tests/test_v2_day7_obligation_local_semantic_recovery.py"
+      - "backend/lab/v2_day7_orchestration_ablation.py"
+      - "backend/eval/v2_day7_orchestration_ablation.yaml"
+      - "backend/tests/test_v2_day7_orchestration_ablation.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -120,7 +123,8 @@ jobs:
             lab/v2_day7_governed_sibling_scope_discovery.py \
             lab/v2_day7_sibling_scope_live_luna.py \
             lab/v2_day7_manager_live_sol.py \
-            lab/v2_day7_capability_cognition_diagnostic.py
+            lab/v2_day7_capability_cognition_diagnostic.py \
+            lab/v2_day7_orchestration_ablation.py
       - name: Focused provider-free Day7 test
         working-directory: backend
         run: pytest -q tests/test_v2_day7_research_tool_contract.py
@@ -243,3 +247,7 @@ jobs:
       - name: Real governed RELATIONSHIP vertical
         working-directory: backend
         run: pytest -q tests/test_v2_day7_real_relationship_vertical.py
+
+      - name: Day7 orchestration ablation contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_orchestration_ablation.py
