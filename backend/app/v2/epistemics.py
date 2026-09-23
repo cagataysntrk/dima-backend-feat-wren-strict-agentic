@@ -120,6 +120,10 @@ class HypothesisLedger:
         return self._state
 
     @property
+    def evidence_view(self) -> CurrentRunEvidenceView:
+        return self._evidence_view
+
+    @property
     def open_hypotheses(self) -> tuple[HypothesisEntry, ...]:
         return tuple(
             item for item in self._state.entries
@@ -537,7 +541,7 @@ class EpistemicLabelGate:
     )
 
     @classmethod
-    def _is_priority_only(cls, evidence) -> bool:
+    def is_priority_only(cls, evidence) -> bool:
         kind = str(evidence.evidence_kind or "").lower()
         payload = evidence.payload or {}
         role = str(payload.get("epistemic_role") or "").upper()
@@ -672,7 +676,7 @@ class EpistemicLabelGate:
             usable_support = [
                 supplied[ref]
                 for ref in support_refs
-                if ref in supplied and not self._is_priority_only(supplied[ref])
+                if ref in supplied and not self.is_priority_only(supplied[ref])
             ]
             if not usable_support:
                 if support_refs and any(
