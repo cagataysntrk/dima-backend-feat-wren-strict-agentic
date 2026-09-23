@@ -341,6 +341,21 @@ def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_co
     assert next_test_contract["QUERY"]["capability"] == "performance"
     assert next_test_contract["QUERY"]["execution_mode"] == "DIRECT"
 
+    semantic_catalog = {
+        row["handle_ref"]: row
+        for row in first_prompt["SEMANTIC_HANDLE_CATALOG"]
+    }
+    assert semantic_catalog["h1"]["target_kind"] == "metric"
+    assert semantic_catalog["h1"]["provenance_type"] == "USER_SOURCE"
+    assert semantic_catalog["h1"]["parent_obligation_id"] == "U_ROOT"
+    assert "canonical_name" not in semantic_catalog["h1"]
+    assert not any(
+        str(value).startswith("sem_")
+        for row in first_prompt["SEMANTIC_HANDLE_CATALOG"]
+        for value in row.values()
+        if value is not None
+    )
+
     final_prompt = llm.prompts[-1]
     assert final_prompt["HYPOTHESIS_LEDGERS"][0]["entries"][0][
         "evidence_links"
