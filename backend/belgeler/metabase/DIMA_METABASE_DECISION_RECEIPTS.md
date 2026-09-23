@@ -1449,3 +1449,56 @@ One Dima Metabase Engine artifact serves SaaS and self-host. Customer/sector-spe
 
 status:
 `SEALED / THIN FORK PRIMARY CANDIDATE / C0→C1→C2→C3 AUTHORIZED IN ORDER / P13 GOVERNANCE NOT AUTHORIZED`.
+
+
+---
+
+## DMP-DEC-0032 — Dima Metabase Engine is a pinned Platform submodule
+
+date: 2026-09-23
+
+question:
+How should the upstream-derived Dima Metabase Engine be represented inside the Platform repository
+without vendoring Metabase source or losing independent upstream/fork history?
+
+evidence:
+- the real fork exists at `UpcyTech/dima-metabase-engine` and preserves
+  `metabase/metabase` ancestry;
+- C0 source build is GREEN from the fork;
+- Platform development needs engine source visible in the same workspace for bridge/parity work;
+- copying/subtree-vendoring Metabase into Platform would duplicate history and weaken upstream-sync
+  accounting;
+- a git submodule records an exact engine commit as a first-class Platform dependency while preserving
+  the independent engine repository.
+
+decision:
+```text
+Platform path     = engine/metabase
+dependency type   = Git submodule / mode 160000 gitlink
+allowed remote    = https://github.com/UpcyTech/dima-metabase-engine.git
+moving branch     = NOT product provenance
+source vendoring  = FORBIDDEN
+subtree copy      = FORBIDDEN
+```
+
+Development order:
+```text
+engine change
+→ engine-owned proof
+→ engine commit SHA
+→ Platform gitlink bump to exact SHA
+→ Platform integration/governance proof
+```
+
+The Platform commit is the deployment/integration authority for which exact engine revision it consumes.
+
+governance:
+- `.gitmodules` must contain exactly the approved engine path/URL;
+- `engine/metabase` must be a Git tree entry with mode `160000`;
+- the gitlink must be a 40-hex commit identity;
+- Platform CI must fail if the submodule is replaced by a directory/vendor copy;
+- engine `main` may move during development, but Platform never consumes it implicitly;
+- upstream synchronization stays candidate-only inside the engine repo.
+
+status:
+`SEALED / ENGINE SUBMODULE MODEL AUTHORITATIVE`.

@@ -94,6 +94,33 @@ jobs:
             grep -q "Status: \*\*SEALED / CORPUS FREEZE + PARITY HARNESS AUTHORIZED" "$REVIEW"
           fi
 
+
+      - name: Verify Dima Metabase Engine submodule contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .gitmodules
+          test "$(git config -f .gitmodules --get submodule.engine/metabase.path)" = "engine/metabase"
+          test "$(git config -f .gitmodules --get submodule.engine/metabase.url)" = "https://github.com/UpcyTech/dima-metabase-engine.git"
+          entry="$(git ls-tree HEAD engine/metabase)"
+          mode="$(printf '%s\n' "$entry" | awk '{print $1}')"
+          type="$(printf '%s\n' "$entry" | awk '{print $2}')"
+          sha="$(printf '%s\n' "$entry" | awk '{print $3}')"
+          test "$mode" = "160000"
+          test "$type" = "commit"
+          printf '%s\n' "$sha" | grep -Eq '^[0-9a-f]{40}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d backend/app/v3 ]; then
+            if grep -R --include='*.py' -nE 'from[[:space:]]+app\.v2\.resolver|import[[:space:]]+app\.v2\.resolver|SemanticResolver' backend/app/v3; then
+              echo "Legacy SemanticResolver authority import detected in app/v3"
+              exit 1
+            fi
+          fi
+
+          test ! -f engine/metabase/src/metabase/metabot/api.clj
+
       - name: Guard v3 against legacy semantic resolver authority
         shell: bash
         run: |

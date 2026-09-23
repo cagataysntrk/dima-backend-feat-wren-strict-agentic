@@ -1796,3 +1796,21 @@ The canonical C1 scorer/workflow is upgraded to discover material divergence and
 twice on both stock and fork with prompt/data/model/principal unchanged. C1 is sealed only after the
 bounded repeat stage proves no stock-PASS/fork-FAIL regression, no new silent wrong, no permission
 regression and no dataset-scope drift.
+
+
+---
+
+## Engine submodule governance sealed
+
+```text
+decision              = DMP-DEC-0032
+Platform path          = engine/metabase
+remote                 = UpcyTech/dima-metabase-engine
+dependency form        = mode 160000 gitlink
+current pinned SHA     = 6bb6924452e5b9dc42b3745bb88c3125a468b297
+source vendoring       = 0
+subtree copy           = 0
+moving-ref consumption = forbidden
+```
+
+Every audited engine change now requires an explicit Platform gitlink bump.
