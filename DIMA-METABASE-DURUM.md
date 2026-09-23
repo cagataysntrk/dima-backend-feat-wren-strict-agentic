@@ -1595,3 +1595,21 @@ product-code changes              = 0
 
 Authorized next action: disable bundled sample content **only in the P12X lab fixture** and rerun the
 same canary. No architecture conclusion may be drawn from this RED.
+
+
+---
+
+## P12X current-corpus proof audit
+
+```text
+receipt                     = DMP-P12X-AUDIT-002
+opening SHA                 = 13cb9747da80fad820b6fb62f9dc0059808c7655
+clean prior native canary   = 6a19c279... / 35821886266 GREEN
+prior corpus fingerprint    = b05bc01b1e8b41cc9dbd8c475058accc1cb39af2bdfe62f6dad17cfb78a15233
+current corpus fingerprint  = fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0
+classification              = ORACLE_FIXTURE / CURRENT-CORPUS PROOF IDENTITY DRIFT
+P13                         = PAUSED UNTIL FORK CAPABILITY PARITY + STABLE ENGINE BRIDGE
+fork bootstrap              = BLOCKED ON CURRENT-HEAD PX-01 EXECUTABLE ORACLE GREEN
+```
+
+Authorized next action: add the lab-only executable PX-01 scorer and rerun exactly one native canary.

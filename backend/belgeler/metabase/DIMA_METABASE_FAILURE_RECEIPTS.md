@@ -2578,3 +2578,75 @@ The first RED was entirely benchmark-fixture contamination. It is not evidence a
 
 status:
 `CLOSED GREEN / NATIVE PINNED CANARY VALID`.
+
+
+---
+
+## DMP-P12X-AUDIT-002 — current-corpus native canary proof drift
+
+receipt_id: `DMP-P12X-AUDIT-002`  
+opened_at: 2026-09-23  
+opening_sha: `13cb9747da80fad820b6fb62f9dc0059808c7655`
+
+classification:
+`ORACLE_FIXTURE / CURRENT-CORPUS PROOF IDENTITY DRIFT`
+
+observed:
+- clean native PX-01 canary was GREEN at `6a19c2790598b3c4753b0f93be383f9ff833002a`,
+  workflow `35821886266`, job `107055486890`;
+- that run used corpus fingerprint
+  `b05bc01b1e8b41cc9dbd8c475058accc1cb39af2bdfe62f6dad17cfb78a15233`;
+- current HEAD changed request-equivalent evaluation metadata in
+  `backend/lab/metabase/p12x/corpus_v1.json`;
+- current formally frozen corpus fingerprint is
+  `fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0`;
+- PX-01 user question and independent numeric truth remain materially unchanged:
+  Boyahane June-2026 sales-order count = `126`;
+- current `native_probe.py` records the native query/result artifact but the workflow has no executable
+  oracle assertion that fails CI on wrong result or wrong benchmark resource.
+
+root_cause:
+The clean native evidence and the current frozen corpus no longer share the same formal corpus identity,
+and transport-success of `native_probe.py` is weaker than an executable correctness gate.
+
+single_owner:
+`backend/lab/metabase/p12x/` benchmark proof tooling +
+`.github/workflows/dima-metabase-p12x.yml`.
+
+authorized_correction:
+1. add a lab-only executable PX-01 scorer;
+2. regenerate the current oracle in the native-canary job from the current corpus + exact Boyahane snapshot;
+3. assert exact PX-01 case identity, generated query existence, executed scalar == independent oracle scalar,
+   exact Boyahane runtime resource identity, and provider/tool errors == 0;
+4. non-match must exit non-zero;
+5. rerun exactly one current-HEAD/current-corpus PX-01 native canary with the same restricted user,
+   pinned v0.63.18 and Luna provider/model.
+
+forbidden_corrections:
+- changing PX-01 question/oracle to match candidate output;
+- prompt/entity special-casing;
+- fuzzy/display-name guessing;
+- Dima semantic/product owner changes;
+- P4/P5/P10/P11 mutation;
+- P13 implementation;
+- Agent-API bake-off;
+- fork bootstrap before this gate is GREEN.
+
+closure_gate:
+```text
+current corpus fingerprint = fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0
+case                       = PX-01
+runtime                    = pinned v0.63.18
+sample content             = disabled
+principal                  = restricted P12X user
+model/provider             = openrouter/openai/gpt-5.6-luna
+generated query            = present
+exact runtime resource     = Dima Analytics Lab / public / satis_siparisleri
+executed scalar            = 126
+independent oracle scalar  = 126
+provider/tool errors       = 0
+executable scorer          = exit 0
+```
+
+status:
+`OPEN / CORRECTION AUTHORIZED / P12X NATIVE SANITY GATE NOT YET GREEN`.
