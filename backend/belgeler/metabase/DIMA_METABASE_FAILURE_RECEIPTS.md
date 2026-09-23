@@ -2704,3 +2704,30 @@ rerun the exact same PX-01 canary and require `score_native_canary.py = GREEN / 
 
 status:
 `CLASSIFIED / LAB HARNESS PATCH AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-AUDIT-002 closure — CURRENT-CORPUS EXECUTABLE ORACLE GREEN
+
+final_sha: `e35b68e4b7f60fc46c677317e7a001a1d66e88ac`  
+workflow: `35824464298 = SUCCESS`  
+native_canary_job: `107063206949 = SUCCESS`  
+artifact: `10734247411 / p12x-native-canary-e35b68e4b7f60fc46c677317e7a001a1d66e88ac`
+
+proof:
+- current corpus fingerprint = `fd6e5934438795f64e9ec7d64b74b56056c3c1304aa51598d18c170839b792a0`;
+- case = `PX-01`;
+- runtime = `v0.63.18 / 2ba2485`;
+- Sample Database disabled;
+- restricted P12X principal + `openrouter/openai/gpt-5.6-luna`;
+- exact resource = `Dima Analytics Lab / public / satis_siparisleri`;
+- generated query database/table ids match the exact catalog resource;
+- executed scalar = `126`;
+- independent DuckDB oracle = `126`;
+- provider stream errors = `0`;
+- structured tool errors = `0`;
+- executable scorer = `GREEN / exit 0`.
+
+status:
+`CLOSED GREEN / P12X NATIVE SANITY GATE = GREEN`.
