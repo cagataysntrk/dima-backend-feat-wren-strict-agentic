@@ -1,15 +1,17 @@
 name: v2-day7-live-sol-once
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/workflows/v2-day7-live-sol-once.yml"
+  workflow_dispatch:
+    inputs:
+      confirm_expensive_run:
+        description: "Legacy broad run; type FROZEN13 to authorize"
+        required: true
+        default: ""
+        type: string
 
 jobs:
   live-sol-once:
-    if: "github.event.head_commit.message == 'test(v2-day7): run focused live Sol once'"
+    if: "${{ inputs.confirm_expensive_run == 'FROZEN13' }}"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 45
@@ -17,7 +19,7 @@ jobs:
       DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
       DIMA_DAY7_LIVE_MANAGER_MODEL: "openai/gpt-5.6-sol"
       DIMA_DAY7_LIVE_LINKER_MODEL: "openai/gpt-5.6-luna"
-      DIMA_DAY7_LIVE_TEMPORAL_MODEL: "openai/gpt-5.6-luna"
+      DIMA_DAY7_LIVE_TEMPORAL_MODEL: "openai/gpt-5.6-sol"
       DIMA_LLM_PROVIDER: openrouter
       DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
       DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
