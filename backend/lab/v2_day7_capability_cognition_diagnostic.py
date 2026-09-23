@@ -41,7 +41,7 @@ os.environ.setdefault("DIMA_INTERACTION_LOG", "false")
 
 from app.config import get_settings
 from app.v2.manager_lab import _build_role_scoped_manager_models
-from app.v2.manager_policy import ManagerCapabilityRegistry
+from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegistry
 from app.v2.manager_preacceptance import PreAcceptanceController
 from app.v2.source_spans import SourceSpanRegistry
 
@@ -116,10 +116,16 @@ def main() -> int:
                 conversation=None,
                 revision_feedback=None,
             )
+            registry = ManagerCapabilityRegistry()
             capabilities = [
                 obligation.capability_key.value
                 for obligation in draft.obligations
                 if obligation.polarity.value == "REQUIRED"
+                and registry.get(obligation.capability_key).lane
+                in {
+                    ManagerCapabilityLane.STANDARD,
+                    ManagerCapabilityLane.RESEARCH,
+                }
             ]
             expected = str(case["expected_capability"])
             matched = capabilities == [expected]
