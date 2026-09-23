@@ -43,9 +43,10 @@ from app.v2.report_builder import (
 from app.v2.report_narration import ReportNarrator
 from app.v2.report_continuation import (
     ReportContextRegistry,
-    ReportContinuationNotAdmissibleError,
     ReportSectionContinuationSigner,
     StaleReportContinuationError,
+    continuation_conversation,
+    continuation_scope_by_kind,
 )
 from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
 from app.v2.semantic_linker import StructuredSemanticCandidateDecisionProvider
@@ -185,9 +186,6 @@ class ProductCoordinator:
         event_sink: ProductEventSink | None = None,
         cancel_check: Callable[[], bool] | None = None,
     ) -> ProductResponse:
-        self._ensure_standard_lane()
-        assert self._standard_lane is not None
-
         context = self._bind_context(
             request=request,
             body=body,
@@ -209,7 +207,7 @@ class ProductCoordinator:
                 thread_id=body.thread_id,
             )
             principal_subject = str(getattr(context.principal, "user_id", "") or "")
-            self._report_contexts.resolve(
+            entry = self._report_contexts.resolve(
                 payload,
                 principal_subject=principal_subject,
                 tenant_binding=context.tenant_binding,
@@ -217,13 +215,57 @@ class ProductCoordinator:
                 session_id=body.session_id,
                 thread_id=body.thread_id,
             )
-            # Security/locator admission is complete, but the current Research
-            # pre-acceptance schema cannot yet bind inherited section metric handles to
-            # a new USER_MUST follow-up obligation without changing semantic authority.
-            raise ReportContinuationNotAdmissibleError(
-                "section continuation is valid but semantic follow-up binding is not yet admissible"
+
+            sink.emit(
+                ProductEventKind.LANE_SELECTED,
+                refs=(ProductLane.RESEARCH.value,),
+                transition_ref="lane:RESEARCH:section-continuation",
+            )
+            sink.emit(
+                ProductEventKind.RESEARCH_STARTED,
+                refs=(context.request_ref, entry.section.section_id),
+                transition_ref=f"research:section:{entry.section.section_id}",
+            )
+            self._ensure_research_lane()
+            assert self._research_lane is not None
+
+            transition_map = {
+                "evidence_verified": ProductEventKind.EVIDENCE_VERIFIED,
+                "adaptive_branch_opened": ProductEventKind.ADAPTIVE_BRANCH_OPENED,
+                "relationship_checked": ProductEventKind.RELATIONSHIP_CHECKED,
+                "root_cause_candidate": ProductEventKind.ROOT_CAUSE_CANDIDATE,
+            }
+
+            def on_continuation_progress(kind: str, refs: tuple[str, ...]) -> None:
+                event_kind = transition_map.get(kind)
+                if event_kind is None:
+                    return
+                sink.emit(
+                    event_kind,
+                    refs=refs,
+                    transition_ref=f"continuation:{kind}:" + "|".join(refs),
+                )
+
+            research = self._research_lane.continue_run(
+                context=context,
+                body=body,
+                prior=entry.research_result,
+                conversation=continuation_conversation(entry),
+                section_scope_refs=entry.section.semantic_scope,
+                context_scope_by_kind=continuation_scope_by_kind(entry),
+                progress_callback=on_continuation_progress,
+                cancel_check=cancel_check,
+            )
+            return self._research_response(
+                context=context,
+                result=research,
+                sink=sink,
+                report_version=entry.report_version + 1,
+                supersedes_report_ref=entry.report.report_id,
             )
 
+        self._ensure_standard_lane()
+        assert self._standard_lane is not None
         standard = self._standard_lane.run(
             question=body.question,
             turn_id=f"turn:{context.request_ref}",
@@ -295,6 +337,8 @@ class ProductCoordinator:
                 context=context,
                 result=research,
                 sink=sink,
+                report_version=1,
+                supersedes_report_ref=None,
             )
 
         if standard.status == StandardLaneStatus.CLARIFICATION_REQUIRED:
@@ -403,6 +447,8 @@ class ProductCoordinator:
         context: ProductRequestContext,
         result: ResearchLaneResult,
         sink: ProductEventSink,
+        report_version: int,
+        supersedes_report_ref: str | None,
     ) -> ProductResponse:
         snapshot = result.runtime.snapshot
         evidence = tuple(_product_evidence(item) for item in result.evidence)
@@ -539,7 +585,6 @@ class ProductCoordinator:
             transition_ref=f"terminal:{status.value}",
         )
 
-        report_version = 1
         principal_subject = str(getattr(context.principal, "user_id", "") or "")
         self._report_contexts.register(
             report=build.report,
@@ -584,6 +629,7 @@ class ProductCoordinator:
             report=VersionedReport(
                 version=report_version,
                 report=build.report,
+                supersedes_report_ref=supersedes_report_ref,
                 source_run_ref=snapshot.run_id,
             ),
             narration=overlay,
