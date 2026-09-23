@@ -9198,3 +9198,130 @@ required affected LIVE                  VALID
 Next exact gate:
 FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation.
 Do not start Day8.
+
+
+## 2026-09-23 — DAY7 TEST-ECONOMY HARDENING / MICRO-ABLATION READY
+
+### Current exact engineering state
+
+```text
+branch                          feat/ask-v2-mvp
+latest product behavior SHA     ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+latest provider-free checkpoint 6b62fa941f4857b0e10b4c361c552d6a8b847535
+focused run                     35868630145 = GREEN
+latest frozen13                 35855765109 = VALID / 11 of 13 / hard safety 0
+adaptive affected LIVE          35857076622 = PASS
+unclassified Day7 LIVE RED      0
+```
+
+No paid provider run was executed after the test-economy supervisor instruction.
+
+### Product budget correction
+
+Canonical Day7 Manager cognition ceiling is restored:
+
+```text
+max_total_manager_turns = 6
+max_preacceptance_turns <= 2
+max_research_manager_turns <= 6
+
+preacceptance_turns + research_manager_turns <= 6
+```
+
+Phase counters remain observable and useful; they no longer expand the total allowance.
+
+Provider-free proofs:
+- 1 pre + 5 research = allowed,
+- 2 pre + 4 research = allowed,
+- seventh total turn = deterministic `BUDGET_EXHAUSTED`,
+- rejected turn does not drift counters,
+- `finish()` cannot hide a budget-exhausted state.
+
+Product commits:
+- `a32ed3560002...` — global budget field,
+- `ce82d48bb8ab...` — runtime total-cap enforcement.
+
+### Paid evaluation cost safety
+
+Permanent progressive widening:
+
+```text
+LOCAL/CONTRACT/METAMORPHIC
+→ ONE LIVE
+→ AFFECTED PAIR
+→ 2-case MICRO CANARY/ABLATION
+→ MILESTONE CORPUS
+→ CERTIFICATION CORPUS
+```
+
+Current Day7 paid workflow invariants:
+- paid workflows = `workflow_dispatch` only,
+- explicit case scope required,
+- blank input cannot mean “run all”,
+- broad frozen13 requires explicit `FROZEN13` confirmation,
+- explicit model-call budget is required before provider execution,
+- evaluator guards before each provider call,
+- live artifacts expose manager/linker/temporal/total model-call counts,
+  service queries, declared budget, and exhaustion state.
+
+Harvest:
+- H-053 evaluation scope proportional to uncertainty = MUST_PORT,
+- H-054 paid evaluation predeclares/enforces model-call budget = MUST_PORT,
+- H-055 broad/certification corpora are milestone resources = MUST_PORT.
+
+### Day7 orchestration ablation — new cheap gate
+
+The existing 8-case corpus remains frozen for later evaluation and MUST NOT be run now.
+
+First micro ablation is fixed to:
+
+```text
+adaptive-material
+stable-no-extra-branch
+```
+
+Two arms:
+```text
+FREE_COGNITION
+GOVERNED_ORCHESTRATION
+```
+
+Scope:
+```text
+2 cases × 2 arms = 4 maximum loop records
+hard total paid-call ceiling = 20
+preferred actual use <= 16
+```
+
+Runner now requires:
+- explicit `--case-id`,
+- explicit `--max-model-calls`,
+- pre-call global PaidCallGuard,
+- `--dry-run` cost/scope receipt,
+- typed `EVAL_BUDGET_EXHAUSTED`,
+- artifact cost receipt.
+
+Workflow:
+`.github/workflows/v2-day7-orchestration-micro.yml`
+
+It is manual-only and requires:
+```text
+confirm_micro_ablation = MICRO2
+max_model_calls        = 1..20
+```
+
+### Explicit prohibitions at this checkpoint
+
+```text
+DO NOT run 8-case ablation
+DO NOT rerun frozen13
+DO NOT run DEV80
+DO NOT run Validation50
+DO NOT run Hidden50
+DO NOT start Day8
+DO NOT expand Manager total turn budget
+```
+
+Next paid measurement, only after explicit supervisor receipt:
+2-case micro ablation above. If decisive, STOP. If ambiguous, add only
+`simple-performance` with <= 8 additional model calls.
