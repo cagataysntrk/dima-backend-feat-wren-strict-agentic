@@ -91,7 +91,7 @@ def items(body):
     if isinstance(body, list):
         return body
     if isinstance(body, dict):
-        for key in ("data", "groups"):
+        for key in ("data", "items", "groups"):
             value = body.get(key)
             if isinstance(value, list):
                 return value
@@ -105,9 +105,25 @@ def main() -> None:
         dbs = c.get("/api/database")
         dbs.raise_for_status()
         database = next((x for x in items(dbs.json()) if x.get("name") == WAREHOUSE), None)
-        if not database:
-            raise RuntimeError("Boyahane database missing")
-        database_id = int(database["id"])
+        if database:
+            database_id = int(database["id"])
+        else:
+            created = c.post(
+                "/api/database",
+                json={
+                    "name": WAREHOUSE,
+                    "engine": "postgres",
+                    "details": {
+                        "host": "analytics-db",
+                        "port": 5432,
+                        "dbname": "boyahane",
+                        "user": "metabase_boyahane",
+                        "password": os.environ["BOYAHANE_READONLY_PASSWORD"],
+                    },
+                },
+            )
+            created.raise_for_status()
+            database_id = int(created.json()["id"])
 
         deadline = time.time() + 240
         while True:
