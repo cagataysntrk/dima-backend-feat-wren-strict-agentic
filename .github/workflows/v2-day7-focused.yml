@@ -55,6 +55,7 @@ name: v2-day7-focused
       - "backend/eval/v2_day7_capability_cognition_diagnostic.yaml"
       - "backend/tests/test_v2_day7_live_sol_contract.py"
       - ".github/workflows/v2-day7-live-sol.yml"
+      - ".github/workflows/v2-day7-capability-cognition-diagnostic.yml"
       - ".github/workflows/v2-day7-live-sol-once.yml"
       - ".github/workflows/v2-day7-frozen13-once.yml"
       - ".github/workflows/v2-day7-stable-no-extra-branch-once.yml"
