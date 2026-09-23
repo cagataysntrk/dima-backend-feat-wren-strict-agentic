@@ -160,6 +160,9 @@ def test_live_sol_sealed_model_topology_and_workers_one():
     assert dispatch["manager_model"]["default"] == "openai/gpt-5.6-sol"
     assert dispatch["linker_model"]["default"] == "openai/gpt-5.6-luna"
     assert dispatch["temporal_model"]["default"] == "openai/gpt-5.6-sol"
+    assert dispatch["max_model_calls"]["default"] == 0
+    assert dispatch["full_corpus"]["default"] is False
+    assert dispatch["confirm_expensive_run"]["default"] == ""
 
 
 def test_provider_failure_classifier_keeps_transport_out_of_product_semantics():
@@ -216,7 +219,8 @@ def test_provider_preflight_uses_one_role_scoped_strict_schema_call(monkeypatch)
         ),
     )
 
-    result = live._provider_preflight(object())
+    budget = live.LiveModelCallBudget(4)
+    result = live._provider_preflight(object(), budget)
 
     assert result["ok"] is True
     assert result["measurement_validity"] == "VALID"
@@ -254,6 +258,7 @@ def test_invalid_provider_case_is_not_scored_as_behavior_or_hard_safety_failure(
         selected_cases=1,
         service_query_count=0,
         preflight=preflight,
+        call_budget=live.LiveModelCallBudget(4),
     )
 
     assert payload["measurement_valid"] is False
@@ -316,7 +321,8 @@ def test_provider_preflight_reads_http_error_response_body_for_quota(monkeypatch
         ),
     )
 
-    result = live._provider_preflight(object())
+    budget = live.LiveModelCallBudget(4)
+    result = live._provider_preflight(object(), budget)
 
     assert result["ok"] is False
     assert result["measurement_validity"] == "PROVIDER_QUOTA_FAILURE"
@@ -351,7 +357,7 @@ def test_main_preflight_failure_stops_before_corpus_or_service(tmp_path, monkeyp
     monkeypatch.setattr(
         live,
         "_provider_preflight",
-        lambda settings: {
+        lambda settings, call_budget: {
             "measurement_validity": "PROVIDER_QUOTA_FAILURE",
             "ok": False,
             "provider": "openrouter",
@@ -373,6 +379,8 @@ def test_main_preflight_failure_stops_before_corpus_or_service(tmp_path, monkeyp
             str(cases),
             "--output",
             str(output),
+            "--max-model-calls",
+            "4",
         ],
     )
 
