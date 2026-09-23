@@ -52,6 +52,19 @@ class _SyntheticService:
         }
 
 
+class _ZeroRowSyntheticService(_SyntheticService):
+    def query(self, sql: str, limit=None, *, principal=None):
+        assert principal is not None
+        query = json.loads(sql.removeprefix("DAY7LOOP:"))
+        measures = list(query.get("measures") or ())
+        return {
+            "columns": measures,
+            "rows": [],
+            "row_count": 0,
+            "column_types": ["DOUBLE" for _ in measures],
+        }
+
+
 class _ContractStore:
     def record_v2_minimum(self, **kwargs):
         return {"id": "day7-loop-qc-1", "sealed": True}
@@ -84,7 +97,30 @@ class _ResultAwareFakeLLM:
         return {"action": "finish"}
 
 
-def _accepted_runtime():
+class _WouldKeepThinkingAfterZeroRowLLM(_ResultAwareFakeLLM):
+    def structured_json(self, system, user, **kwargs):
+        payload = json.loads(user)
+        self.prompts.append(payload)
+
+        delta = payload.get("CURRENT_RESULT_DELTA")
+        if not payload.get("EVIDENCE_REFS"):
+            return {
+                "action": "run_analytics",
+                "obligation_ids": ["U1"],
+                "metric_handles": ["h1"],
+            }
+        if delta and not delta.get("inspected"):
+            return {
+                "action": "inspect_evidence",
+                "evidence_ref": delta["evidence_ref"],
+            }
+
+        raise AssertionError(
+            "zero-row inspected evidence should complete before another Manager turn"
+        )
+
+
+def _accepted_runtime(service=None):
     tenant = "day7-loop-tenant"
     context_version = "ctx-day7-loop-v1"
     message_id = "day7-loop-turn"
@@ -114,7 +150,7 @@ def _accepted_runtime():
         roles=["owner"],
         tenant_slug="day7-loop",
     )
-    service = _SyntheticService()
+    service = service or _SyntheticService()
     executor = GovernedManagerExecutor(
         acceptance=IntentAcceptanceGate(
             source_spans=spans,
@@ -212,3 +248,37 @@ def test_manager_loop_contract_mode_materializes_task_observes_delta_and_finishe
 
     # Accumulated state does not smuggle the latest delta back into the same bucket.
     assert llm.prompts[1]["ACCUMULATED_RESEARCH_STATE"]["latest_delta"] is None
+
+
+def test_zero_row_inspected_evidence_finishes_without_spending_another_manager_turn():
+    spans, runtime, executor, question, message_id = _accepted_runtime(
+        service=_ZeroRowSyntheticService()
+    )
+    llm = _WouldKeepThinkingAfterZeroRowLLM()
+    loop = ResearchManagerLoop(
+        llm=llm,
+        source_spans=spans,
+        research_tool_runner=ResearchToolRunner(),
+    )
+
+    outcome = loop.run(
+        question=question,
+        message_id=message_id,
+        request_ref="day7-loop-request",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.run_finished is True
+    assert outcome.verified_complete is True
+    assert runtime.snapshot.manager_turns == 2
+    assert runtime.snapshot.data_queries == 1
+    assert runtime.snapshot.inspected_evidence_refs == runtime.snapshot.evidence_refs
+    assert len(llm.prompts) == 2
+
+    finish = [
+        item
+        for item in outcome.observations
+        if item.get("kind") == "finish"
+    ]
+    assert finish[-1]["reason"] == "inspected_zero_row_no_material_branch"
