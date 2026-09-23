@@ -158,6 +158,61 @@ def main() -> int:
                 image_identity=args.image_identity,
             )
 
+            # Current-lens evidence is established before native cognition. The P10/P5
+            # fingerprint deliberately excludes proof-record refs, so the later native
+            # attestation can be appended without creating a second access identity.
+            resources = (TABLE_RESOURCE, TIME_RESOURCE, FILTER_RESOURCE)
+            security = VerifiedExecutionSecurityFacts(
+                tenant_binding=TENANT,
+                principal_subject=PRINCIPAL,
+                roles=("analyst",),
+                attribute_policy_digest=h({"subject": mb_user_id, "policy": "p13c-live"}),
+                policy_version="p13c-v1",
+                rls_versions=(),
+                cls_versions=(),
+                database_route="analytics-primary",
+                database_destination="boyahane",
+                impersonation_role=None,
+                semantic_context_version=CONTEXT_VERSION,
+                source_object_refs=resources,
+                security_parameter_digest=h(
+                    {
+                        "metabase_subject": mb_user_id,
+                        "database_id": database_id,
+                        "table_id": table_id,
+                        "time_field_id": time_field_id,
+                        "filter_field_id": filter_field_id,
+                    }
+                ),
+                metabase_subject_ref=f"metabase-user:{mb_user_id}",
+                attestation_refs=(
+                    f"engine-identity:{identity.runtime_instance_id}",
+                    f"metabase-current-subject:{mb_user_id}",
+                ),
+                evidence_refs=(
+                    f"metabase-current-user:{mb_user_id}",
+                ),
+            )
+            pre_access = ExecutionAccessSnapshotIssuer.issue_for_expected_resources(
+                current_principal=principal,
+                accepted_intent=intent,
+                verified_security_facts=security,
+                expected_source_object_refs=resources,
+            )
+            values = current_user_values(
+                args.base_url,
+                token,
+                field_id=filter_field_id,
+            )
+            if FILTER_VALUE not in values:
+                raise RuntimeError("frozen filter value absent from current-user evidence")
+            current_evidence = CurrentLensValueEvidence(
+                semantic_ref=FILTER_SEMANTIC_REF,
+                values=values,
+                access_lens_ref=pre_access.execution_access_fingerprint,
+                freshness="CURRENT_USER_RETRIEVAL",
+            )
+
             state["failure_owner"] = "native-metabot-invoke"
             observation = client.invoke(
                 NativeEngineRequest(
@@ -183,51 +238,17 @@ def main() -> int:
             if attestation.manifest.runtime_identity != identity:
                 raise RuntimeError("attestation runtime identity differs from live identity")
 
-            resources = (TABLE_RESOURCE, TIME_RESOURCE, FILTER_RESOURCE)
-            security = VerifiedExecutionSecurityFacts(
-                tenant_binding=TENANT,
-                principal_subject=PRINCIPAL,
-                roles=("analyst",),
-                attribute_policy_digest=h({"subject": mb_user_id, "policy": "p13c-live"}),
-                policy_version="p13c-v1",
-                rls_versions=(),
-                cls_versions=(),
-                database_route="analytics-primary",
-                database_destination="boyahane",
-                impersonation_role=None,
-                semantic_context_version=CONTEXT_VERSION,
-                source_object_refs=resources,
-                security_parameter_digest=h(
-                    {
-                        "metabase_subject": mb_user_id,
-                        "database_id": database_id,
-                        "table_id": table_id,
-                        "time_field_id": time_field_id,
-                        "filter_field_id": filter_field_id,
-                    }
-                ),
-                metabase_subject_ref=f"metabase-user:{mb_user_id}",
-                attestation_refs=(attestation.manifest.attestation_id,),
-                evidence_refs=("evidence:metabase-restricted-field-values:p13c",),
-            )
-            pre_access = ExecutionAccessSnapshotIssuer.issue_for_expected_resources(
-                current_principal=principal,
-                accepted_intent=intent,
-                verified_security_facts=security,
-                expected_source_object_refs=resources,
-            )
-            values = current_user_values(
-                args.base_url,
-                token,
-                field_id=filter_field_id,
-            )
-            if FILTER_VALUE not in values:
-                raise RuntimeError("frozen filter value absent from current-user evidence")
-            current_evidence = CurrentLensValueEvidence(
-                semantic_ref=FILTER_SEMANTIC_REF,
-                values=values,
-                access_lens_ref=pre_access.execution_access_fingerprint,
-                freshness="CURRENT_USER_RETRIEVAL",
+            security = security.model_copy(
+                update={
+                    "attestation_refs": tuple(
+                        sorted(
+                            {
+                                *security.attestation_refs,
+                                attestation.manifest.attestation_id,
+                            }
+                        )
+                    )
+                }
             )
 
             engine = NativeEngineIdentity(
