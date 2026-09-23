@@ -188,7 +188,7 @@ def test_paid_day7_workflows_require_explicit_scope_and_budget():
     assert "--case-id stable-no-extra-branch" in micro
     assert "--max-model-calls" in micro
     assert "--dry-run" in micro
-    assert "budget < 1 || budget > 20" in micro
+    assert "budget < 1 || budget > 16" in micro
 
     assert '"on":\n  workflow_dispatch:' in live
     assert "\n  push:" not in live
