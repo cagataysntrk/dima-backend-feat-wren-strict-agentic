@@ -1,3 +1,52 @@
+## 2026-09-23 — RELATIONSHIP PREACCEPTANCE COMPLETENESS — PROVIDER-FREE GREEN
+
+```text
+behavior_checkpoint      b947c588616af825e91d178a4a61e34a21c6838e
+focused_run              35827661950
+result                   GREEN
+
+owner                    ManagerCapabilityRegistry.RELATIONSHIP
+root_invariant           accepted executable relationship authority must match
+                         current governed runtime primitive shape
+required_kinds           metric + dimension
+allowed_kinds            metric + dimension
+```
+
+Provider-free proof:
+- incomplete RELATIONSHIP with metric-only authority stops before AcceptedTurnContract,
+- incomplete authority creates no obligation ledger / seed task / data query / Evidence,
+- complete metric+dimension RELATIONSHIP still ACCEPTS,
+- complete authority still materializes a RELATIONSHIP ResearchTask,
+- capability-surface diagnostic remains GREEN,
+- semantic-surface diagnostic remains GREEN,
+- relationship structured-action diagnostic remains GREEN,
+- CrossDomainJoinFacts / CrossDomainJoinGate / fanout proof remain GREEN,
+- real governed RELATIONSHIP Wren vertical remains GREEN.
+
+Not changed:
+- CrossDomainJoinGate,
+- CrossDomainJoinFactBuilder,
+- Wren relationship metadata,
+- fanout certificate,
+- relationship SQL/adapter,
+- SemanticBindingGate,
+- Manager prompts/budgets.
+
+Seal status:
+```text
+RELATIONSHIP PREACCEPTANCE COMPLETENESS
+provider-free / real-Wren = GREEN
+live affected-family verification = PENDING
+entire relationship behavior = NOT SEALED
+```
+
+Next exact action:
+`relationship-safe + relationship-unsafe` live only on this exact checkpoint.
+Success criterion is owner migration / no incomplete accepted authority, not necessarily
+full product PASS.
+
+---
+
 ## 2026-09-23 — DAY7 RELATIONSHIP STRUCTURED-ACTION LIVE DIAGNOSTIC
 
 ```text
