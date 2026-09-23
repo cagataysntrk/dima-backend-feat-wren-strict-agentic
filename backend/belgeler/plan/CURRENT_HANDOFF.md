@@ -134,3 +134,53 @@ FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation on the same current tru
 then small confirmation, Harvest reconciliation, Day7 closure receipt.
 
 Do not start Day8.
+
+
+## CURRENT AUTHORITY — TEST ECONOMY / MICRO ABLATION GATE
+
+This section supersedes earlier “run frozen13 / broad shadow ablation next” continuation text.
+
+```text
+BRANCH
+feat/ask-v2-mvp
+
+LATEST PRODUCT BEHAVIOR
+ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+
+PROVIDER-FREE CHECKPOINT
+6b62fa941f4857b0e10b4c361c552d6a8b847535
+
+FOCUSED
+35868630145 = GREEN
+
+LATEST FROZEN13
+35855765109 = VALID / 11 of 13 / hard safety 0
+
+AFFECTED ADAPTIVE LIVE
+35857076622 = PASS
+
+UNCLASSIFIED DAY7 LIVE RED
+0
+```
+
+Canonical total Manager budget is again 6 across preacceptance + research.
+Phase counters are retained.
+
+NO paid run has been executed after the test-economy supervisor instruction.
+
+NEXT PAID GATE — but DO NOT execute before supervisor receipt:
+
+```text
+MICRO ABLATION ONLY
+cases = adaptive-material, stable-no-extra-branch
+arms  = FREE_COGNITION, GOVERNED_ORCHESTRATION
+max loop records = 4
+hard paid-call ceiling = 20
+preferred <= 16
+```
+
+The 8-case ablation corpus remains frozen for Day11.
+Frozen13 must not rerun now.
+Day8 must not start.
+
+Paid workflows are manual-only and explicit-scope/budget guarded.
