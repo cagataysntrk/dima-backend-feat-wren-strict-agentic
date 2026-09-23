@@ -328,25 +328,34 @@ def test_067_missing_trusted_metric_binding_clarifies_without_context_fabricatio
 
 
 def test_075_research_directive_is_not_user_obligation():
+    # ROOT_CAUSE is intentionally deferred from Day7 direct execution. Use the
+    # executable RESEARCH relationship primitive so this test continues to certify
+    # the invariant it owns: research directive != USER_MUST obligation.
     question = (
-        "üretkenlik düşüşünü araştır; sonuç yeni bir yön gösterirse oraya da bak"
+        "net gelir ile bölgelere göre ilişkiyi araştır; "
+        "sonuç yeni bir yön gösterirse oraya da bak"
     )
     scripted = _ScriptedStructured(
         drafts=[
             {
                 "obligations": [
                     _obligation(
-                        obligation_id="U_ROOT",
-                        capability="root_cause",
-                        source_surfaces=("üretkenlik düşüşünü araştır",),
-                        semantic_surfaces=(("üretkenlik", "metric"),),
+                        obligation_id="U_REL",
+                        capability="relationship",
+                        source_surfaces=(
+                            "net gelir ile bölgelere göre ilişkiyi araştır",
+                        ),
+                        semantic_surfaces=(
+                            ("net gelir", "metric"),
+                            ("bölgelere", "dimension"),
+                        ),
                     )
                 ],
                 "research_directives": [
                     {
                         "directive_id": "R1",
                         "directive_type": "ADAPT_ON_EVIDENCE",
-                        "parent_obligation_id": "U_ROOT",
+                        "parent_obligation_id": "U_REL",
                         "condition": "MATERIAL_NEW_DIRECTION",
                         "source_surfaces": [
                             "sonuç yeni bir yön gösterirse oraya da bak"
@@ -372,29 +381,35 @@ def test_075_research_directive_is_not_user_obligation():
     assert runtime.ledger is not None
     assert len(runtime.ledger.items) == 1
     item = runtime.ledger.items[0]
-    assert item.capability_key == ManagerCapabilityKey.ROOT_CAUSE
+    assert item.capability_key == ManagerCapabilityKey.RELATIONSHIP
     assert item.origin == ObligationOrigin.USER_MUST
     assert item.polarity == ObligationPolarity.REQUIRED
     assert len(runtime.accepted_contract.research_directives) == 1
     directive = runtime.accepted_contract.research_directives[0]
     assert directive.directive_type.value == "ADAPT_ON_EVIDENCE"
-    assert directive.parent_obligation_id == "U_ROOT"
+    assert directive.parent_obligation_id == "U_REL"
 
 
 def test_unresolved_nonrequired_grounding_does_not_short_circuit_validity():
+    # Keep the optional-unresolved grounding invariant independent from the Day8
+    # ROOT_CAUSE deferral by using an executable Day7 RESEARCH capability.
     question = (
-        "üretkenlik düşüşünü araştır; sonuç yeni bir yön gösterirse oraya da bak"
+        "net gelir ile bölgelere göre ilişkiyi ve düşüşünü araştır; "
+        "sonuç yeni bir yön gösterirse oraya da bak"
     )
     scripted = _ScriptedStructured(
         drafts=[
             {
                 "obligations": [
                     _obligation(
-                        obligation_id="U_ROOT",
-                        capability="root_cause",
-                        source_surfaces=("üretkenlik düşüşünü araştır",),
+                        obligation_id="U_REL",
+                        capability="relationship",
+                        source_surfaces=(
+                            "net gelir ile bölgelere göre ilişkiyi ve düşüşünü araştır",
+                        ),
                         semantic_surfaces=(
-                            ("üretkenlik", "metric"),
+                            ("net gelir", "metric"),
+                            ("bölgelere", "dimension"),
                             ("düşüşünü", "comparison"),
                         ),
                     )
@@ -403,7 +418,7 @@ def test_unresolved_nonrequired_grounding_does_not_short_circuit_validity():
                     {
                         "directive_id": "R1",
                         "directive_type": "ADAPT_ON_EVIDENCE",
-                        "parent_obligation_id": "U_ROOT",
+                        "parent_obligation_id": "U_REL",
                         "condition": "MATERIAL_NEW_DIRECTION",
                         "source_surfaces": [
                             "sonuç yeni bir yön gösterirse oraya da bak"
