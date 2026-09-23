@@ -209,3 +209,39 @@ def test_benchmark_generator_rejects_unapproved_model_identity():
             model_role="LUNA_BASELINE",
             reasoning_policy="disabled",
         )
+
+
+
+def test_contract_probe_exposes_existing_cross_field_rules_without_product_import_dependency():
+    from types import SimpleNamespace
+
+    class CapturingGenerator:
+        def __init__(self):
+            self.system = None
+
+        def structured_json(self, system, user, *, schema, schema_name):
+            self.system = system
+            return json.dumps(
+                {
+                    "status": "CLARIFICATION_REQUIRED",
+                    "inherited_slots": [],
+                    "replaced_slots": [],
+                    "effective_draft": None,
+                    "reason": "context is not uniquely resolvable",
+                }
+            )
+
+    generator = CapturingGenerator()
+    cognition = MODULE.ContractProbeFastFollowupCognition(generator)
+    resolution = cognition.resolve(
+        question="Peki diğeri?",
+        accepted_context=None,
+        source_questions=(),
+        clarification_question=None,
+    )
+
+    assert resolution.status.value == "CLARIFICATION_REQUIRED"
+    assert "top-level reason MUST be null" in generator.system
+    assert "top-level status=UNSUPPORTED" in generator.system
+    assert "include at least one likely English entity/table lookup term" in generator.system
+    assert "Ambiguous references must fail closed" in generator.system
