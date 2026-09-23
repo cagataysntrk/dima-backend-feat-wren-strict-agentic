@@ -57,6 +57,8 @@ name: v2-day7-focused
       - "backend/tests/test_v2_day7_semantic_surface_diagnostic.py"
       - "backend/lab/v2_day7_relationship_action_diagnostic.py"
       - "backend/tests/test_v2_day7_relationship_action_diagnostic.py"
+      - "backend/lab/v2_day7_governed_sibling_scope_discovery.py"
+      - "backend/tests/test_v2_day7_governed_sibling_scope_discovery.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -138,6 +140,12 @@ jobs:
         run: |
           python lab/v2_day7_semantic_surface_diagnostic.py
           pytest -q tests/test_v2_day7_semantic_surface_diagnostic.py
+
+      - name: Day7 governed sibling-scope discovery LAB
+        working-directory: backend
+        run: |
+          python lab/v2_day7_governed_sibling_scope_discovery.py
+          pytest -q tests/test_v2_day7_governed_sibling_scope_discovery.py
 
       - name: Day7 relationship structured-action diagnostic
         working-directory: backend
