@@ -10306,3 +10306,40 @@ Coverage includes:
 
 D9-A is GREEN. Do not automatically begin D9-B narration, export, frontend or Day10.
 Return to supervisor for report-authority review.
+
+
+---
+
+## 2026-09-23 — DAY9-B BOUNDED NARRATION AUTHORIZED
+
+Supervisor state:
+
+```text
+D9-A deterministic authority = ACCEPTED / GREEN / FROZEN
+D9-A product SHA             = 2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+D9-A focused                 = 35903324742 = GREEN
+
+D9-B bounded narration       = AUTHORIZED
+Day10                        = NOT AUTHORIZED
+```
+
+D9-B architecture:
+
+```text
+immutable ReportDocument
+→ presentation-safe NarrationPacket
+→ exactly one typed structured model call
+→ NarrationPlanProposal
+→ deterministic NarrationPlanGate
+→ server-owned ReportNarrationOverlay
+→ deterministic renderer
+```
+
+The model may select/order only existing `rpt_*`, `rsec_*`, `rblk_*` identities.
+It may not produce factual prose, numeric statements, causal labels, EvidenceRefs, FindingRefs,
+semantic identities, queries or tools.
+
+If narration is invalid, the canonical ReportDocument remains valid and deterministic presentation
+fallback may be used. No second model call is permitted.
+
+D9-A must not be reopened merely to make narration easier.
