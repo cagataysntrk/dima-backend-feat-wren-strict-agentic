@@ -1,0 +1,53 @@
+name: v2-day7-sibling-scope-live-luna-eba283
+
+"on":
+  push:
+    branches:
+      - ops/day7-sibling-scope-luna-eba283
+    paths:
+      - ".github/workflows/v2-day7-sibling-scope-live-luna-eba283.yml"
+
+jobs:
+  sibling-scope-live-luna:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 30
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_V2_SEMANTIC_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_V2_TEMPORAL_NORMALIZER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - name: Checkout exact product checkpoint
+        uses: actions/checkout@v4
+        with:
+          ref: eba283c1403702f31e16fe4b94a8ca0c3f43abb3
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend live-eval dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Run LIVE Luna product sibling-scope bake-off
+        working-directory: backend
+        run: python lab/v2_day7_sibling_scope_live_luna.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day7-sibling-scope-live-luna-eba283-${{ github.run_id }}
+          path: backend/lab/reports/v2_day7_sibling_scope_live_luna.json
+          retention-days: 90
