@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-23  
 **Ticket:** `P11 — DAY8 ROOT-CAUSE BRANCH`  
-**Phase:** **PROVIDER-FREE DESIGN / INVENTORY ONLY**  
-**Product implementation:** **NOT AUTHORIZED BY THIS DOCUMENT**
+**Phase:** **REVIEW-RECONCILED / D8-A PROVIDER-FREE CORE AUTHORIZED**  
+**Product implementation:** **D8-A1 + D8-A2 ONLY; ROOT_CAUSE EXECUTION REMAINS DISABLED**
 
 Authority:
 1. `DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md` — P11
@@ -208,21 +208,23 @@ CONFIRMED_CAUSE
 
 ### HypothesisEntry
 
-Proposed minimum contract:
+Review-corrected minimum contract:
 
 ```text
 hypothesis_id
 parent_obligation_id
-parent_task_id
 
 statement
 semantic_handle_refs
 
+trigger_evidence_refs
+
 status
 epistemic_label
 
-evidence_for_refs
-evidence_against_refs
+evidence_links[]
+  evidence_ref
+  relation = SUPPORTS | CONTRADICTS
 
 next_test_task_refs
 
@@ -230,29 +232,38 @@ limitations
 provenance
 ```
 
-`statement` is human-readable presentation, not semantic authority.
-Canonical semantic references must come from governed handles/provenance.
+`parent_obligation_id` is the mandatory root authority. A ROOT_CAUSE obligation is an
+orchestration owner and therefore does not require a synthetic parent ResearchTask.
+
+`trigger_evidence_refs` records why cognition considered the hypothesis. Trigger Evidence is
+NOT automatically supporting Evidence and MUST NOT be silently copied into SUPPORTS links.
+
+`statement` is human-readable cognition, not semantic authority.
+`semantic_handle_refs` must resolve through the existing governed SemanticHandle registry.
+`next_test_task_refs` must resolve through the existing ResearchTask registry; the Manager
+cannot mint task IDs.
 
 ### HypothesisLedger
 
-One ledger per accepted root-cause research authority.
+One run-scoped ledger per accepted root-cause research authority.
 
 Responsibilities:
-- create candidate entries,
-- attach supporting evidence,
-- attach opposing evidence,
-- attach governed next-test tasks,
-- transition status,
-- expose accounted/open hypotheses,
+- register hypothesis,
+- validate and preserve trigger Evidence provenance,
+- attach typed `SUPPORTS` / `CONTRADICTS` Evidence links,
+- link already-registered governed next-test ResearchTasks,
+- apply only structurally admissible status transitions,
+- expose OPEN / accounted hypotheses,
 - preserve provenance.
 
 It does **not**:
-- execute SQL,
-- mint canonical semantic IDs,
-- decide Wren paths,
+- execute DB or generate SQL,
+- mint SemanticHandles, ResearchTask IDs or Evidence IDs,
+- decide Wren paths / relationships,
 - change USER_MUST,
 - manufacture evidence,
-- independently assert causality.
+- run causal inference,
+- deterministically decide what Evidence semantically entails.
 
 ---
 
@@ -261,11 +272,24 @@ It does **not**:
 Day8 needs one explicit owner for:
 
 ```text
-what may this Evidence justify us saying?
+what is the strongest CLASS OF CLAIM this governed Evidence is admissible for?
 ```
 
 Proposed owner:
 `EpistemicLabelGate` / equivalent deterministic service.
+
+Critical split:
+
+```text
+Manager cognition
+= proposes that Evidence supports/contradicts a hypothesis
+
+Deterministic epistemic layer
+= validates admissibility, provenance, lineage and claim-class ceiling
+```
+
+The deterministic layer does NOT perform semantic entailment and must not use thresholds
+such as correlation > X, contribution > Y or score > Z to decide causal truth.
 
 Minimum rules:
 
@@ -295,14 +319,17 @@ It remains a candidate even if strongly supported.
 
 ### CONFIRMED_CAUSE
 
-Default Day8 policy:
+Current Day8 policy:
 
 ```text
 DENY
+reason = CAUSAL_NOT_IDENTIFIED
 ```
 
-until a separate `CausalConfirmationGate` has a proven mechanistic/interventional
-evidence contract.
+There is currently no proven intervention, experiment-assignment, causal-graph identification,
+instrumental-variable or validated causal-model contract in this repo. Do not build a large
+placeholder CausalConfirmationGate. A small explicit typed deny boundary is the correct
+implementation.
 
 LLM confidence, correlation strength, rank, R², contribution share, anomaly score or
 interestingness are **never sufficient**.
@@ -311,12 +338,12 @@ interestingness are **never sufficient**.
 
 ## 6. HYPOTHESIS LIFECYCLE
 
-Proposed bounded flow:
+ROOT_CAUSE is an orchestration umbrella, NOT a ResearchTaskKind and NOT an alias for QUERY.
 
 ```text
 Accepted ROOT_CAUSE obligation
         ↓
-verified parent Evidence / current ResearchState
+verified trigger Evidence / current ResearchState
         ↓
 Manager proposes candidate hypothesis
         ↓
@@ -326,24 +353,27 @@ HypothesisLedger OPEN entry
         ↓
 bounded next-test proposal
         ↓
-existing governed ResearchTask / tool path
+existing governed ResearchTask family
+QUERY / BREAKDOWN / COMPARE / RELATIONSHIP / CONTRIBUTION / PEER_COMPARE / later TREND
         ↓
-new verified EvidenceArtifact
+new VERIFIED EvidenceArtifact
         ↓
-attach evidence_for / evidence_against
+Manager proposes SUPPORTS / CONTRADICTS relation
         ↓
-deterministic status + epistemic-label gate
+ledger structural admission gate
         ↓
-SUPPORTED / REFUTED / INCONCLUSIVE
+status proposal
+        ↓
+EpistemicLabelGate
         ↓
 Evidence-linked Finding
 ```
 
-Candidate generation is cognition.
-Evidence validity, task authority, semantic truth and epistemic label boundaries are not.
+Trigger Evidence explains why the hypothesis exists; it does not automatically count as
+SUPPORTS. Candidate generation and evidence interpretation are cognition. Evidence validity,
+task identity, semantic truth, lineage and epistemic claim ceilings remain deterministic.
 
-A “next test” should normally compile to existing governed task families rather than create
-a second query authority.
+Do NOT add `ResearchTaskKind.ROOT_CAUSE`. Do NOT map ROOT_CAUSE → QUERY.
 
 Candidate root-cause orchestration may use:
 - QUERY / BREAKDOWN / COMPARE,
@@ -471,7 +501,33 @@ It does **not** lack:
 
 ---
 
-## 10. INTERESTINGNESS != TRUTH
+## 10. TARGETED METABASE DAY8 REFERENCE
+
+Current inspected upstream:
+
+```text
+metabase/metabase
+cdc7f386afa705593e44fac6e627d386b780a3d7
+```
+
+Previously pinned:
+
+```text
+6ec07f75184dd7f06d84c551d57c58687cf4b859
+```
+
+Relevant Day8 files changed between these inspected points: `0`.
+No source copying and no Metabase runtime dependency.
+
+Harvested Day8 patterns:
+- candidate generation is structural planning, not causal truth,
+- interestingness is post-result prioritization, not Evidence strength,
+- only applicable/hydrated candidates enter a plan,
+- model-facing IDs must be server-owned governed IDs,
+- result/Evidence and priority score remain separate records,
+- composite evidence must preserve one compatible governed access context.
+
+### Interestingness != truth
 
 Metabase reference lesson for Day8:
 
@@ -499,24 +555,43 @@ No Metabase runtime dependency is introduced.
 
 ---
 
-## 11. FIRST IMPLEMENTATION SLICE — PROPOSED, NOT YET AUTHORIZED
+## 11. AUTHORIZED PROVIDER-FREE IMPLEMENTATION SLICES
 
-After review, the smallest correct provider-free vertical should be:
+### D8-A1
 
 ```text
-D8-A
-typed epistemic enums/models
-→ HypothesisLedger deterministic service
-→ EvidenceStore-backed evidence attachment validation
-→ EpistemicLabelGate
-→ default-deny CONFIRMED_CAUSE
-→ provider-free unit/metamorphic attacks
+typed epistemic models
++ HypothesisLedger
++ Evidence-link structural validation
 ```
 
-No LLM call.
-No DB query.
-No new ROOT_CAUSE execution.
-No legacy query path.
+Preferred file scope:
+- `backend/app/v2/models.py`
+- one focused owner module: `backend/app/v2/epistemics.py`
+- `backend/tests/test_v2_day8_hypothesis_ledger.py`
+
+D8-A1 must validate current EvidenceStore, current SemanticHandleRegistry and current
+ResearchTaskRegistry identities. It creates none of those authorities.
+
+### D8-A2
+
+```text
+EpistemicLabelGate
++ minimal Evidence-linked finding model/builder
++ CONFIRMED_CAUSE typed hard deny
+```
+
+Both slices are provider-free:
+- no LLM,
+- no DB query,
+- no paid test,
+- no ROOT_CAUSE execution,
+- no legacy query path.
+
+Forbidden during D8-A:
+`manager_loop.py`, `manager_policy.py`, `manager_preacceptance.py`,
+`research_tools.py`, ResearchTask execution mapping, semantic linker/retriever,
+temporal modules, relationship/cross-domain modules, WrenService and /api/ask-v2 front door.
 
 Minimum provider-free attacks:
 
@@ -552,11 +627,43 @@ These cannot be solved by prompt wording alone.
 
 ---
 
-## 13. STOP / REVIEW POINT
+## 13. STATUS TRANSITION ADMISSION RULES
 
-This receipt completes the required **provider-free Day8 architecture + legacy primitive
-inventory**.
+Status is orthogonal to epistemic label. Do not vote-count Evidence.
 
-No Day8 product code has been added by this phase.
+```text
+OPEN
+= default
 
-Next action requires review of this architecture before implementation of D8-A.
+SUPPORTED
+= proposed transition requires >=1 valid SUPPORTS link
+
+REFUTED
+= proposed transition requires >=1 valid CONTRADICTS link
+
+INCONCLUSIVE
+= explicit limitation + attempted/observed evidence state
+```
+
+These are structural admission rules, not evidence-weighting science.
+
+## 14. REVIEW / IMPLEMENTATION GATE
+
+This receipt is now reconciled with the Day8 supervisor review.
+
+Authorized now:
+```text
+D8-A1
+→ provider-free green
+→ D8-A2
+→ provider-free green
+→ living status + Harvest
+→ STOP / supervisor review
+```
+
+Not authorized:
+- D8-B Manager hypothesis proposal,
+- D8-C next-test orchestration wiring,
+- ROOT_CAUSE executable=true,
+- live Sol / paid tests,
+- Day9.
