@@ -1,3 +1,42 @@
+## 2026-09-23 — DAY7 LIVE MEASUREMENT LAYER REPAIR GREEN
+
+```text
+tested_sha              c67bc7a440b0215f46f769b808be7cdec317b72d
+v2-day7-focused         35818843086
+result                   GREEN
+
+live_contract_step       GREEN
+all prior Day7 gates     GREEN
+product code changed     NO
+```
+
+Measurement-layer root fix now guarantees:
+- provider/auth/quota/unavailable outcomes are typed separately from product behavior,
+- a provider-unavailable case is not scored as `accepted_contract=false` hard-safety failure,
+- behavior metrics are computed only over behavior-evaluable cases,
+- `selected_cases / evaluable_cases / provider_failure_cases / harness_failure_cases`
+  are reported independently,
+- one strict-schema RESEARCH_MANAGER preflight occurs before the paid frozen corpus,
+- failed preflight stops the corpus with `status=invalid_measurement` and zero DB queries,
+- sealed model topology is restored and provider-free certified:
+  `RESEARCH_MANAGER=Sol / SEMANTIC_LINKER=Luna / TEMPORAL_NORMALIZER=Sol`,
+- workers remain `1`,
+- no fallback model/provider was added.
+
+Current external blocker:
+```text
+OpenRouter credential/quota must become usable.
+Last observed live failure:
+HTTP 403 — Key limit exceeded (total limit)
+```
+
+No product patch is authorized while this blocker remains.
+Next exact action after provider recovery:
+`same frozen 13-case workers=1 LIVE SOL corpus`.
+Only a **valid** live measurement may open behavior failure-family work or shadow ablation.
+
+---
+
 ## 2026-09-23 — DAY7 LIVE SOL INVALID MEASUREMENT RECEIPT
 
 ```text
