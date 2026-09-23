@@ -63,6 +63,7 @@ name: v2-day7-focused
       - "backend/lab/v2_day7_sibling_scope_live_luna.py"
       - "backend/lab/v2_day7_governed_sibling_scope_discovery.py"
       - "backend/tests/test_v2_day7_governed_sibling_scope_discovery.py"
+      - "backend/tests/test_v2_day7_obligation_local_semantic_recovery.py"
       - ".github/workflows/v2-day7-focused.yml"
   workflow_dispatch:
 
@@ -155,6 +156,10 @@ jobs:
         run: |
           python lab/v2_day7_governed_sibling_scope_discovery.py
           pytest -q tests/test_v2_day7_governed_sibling_scope_discovery.py
+
+      - name: Obligation-local semantic retrieval recovery attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_obligation_local_semantic_recovery.py
 
       - name: Day7 relationship structured-action diagnostic
         working-directory: backend
