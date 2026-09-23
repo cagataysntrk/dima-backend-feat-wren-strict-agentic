@@ -1,3 +1,45 @@
+## 2026-09-23 — SEMANTIC RECOVERY PRODUCT INTEGRATION — LIVE SOL PENDING
+
+```text
+product_sha                 9bb453c296bc6e134deece0e42b6c2cd20717155
+current_proof_sha           c0c9121da04fd21412009d2e6ccfecfe82b74068
+full_focused                35834720120 = GREEN
+live_luna                   35832998321 = VALID / 6 of 6 PASS
+
+obligation_local_grouping        GREEN
+cross_obligation_isolation       GREEN
+baseline_retriever_ownership     GREEN
+retrieval_miss_only_fallback     GREEN
+scope_gt_48_fail_closed          GREEN
+sensitive_candidate_non_exposure GREEN
+unrelated_catalog_growth         GREEN
+live_luna_cognition              GREEN
+live_sol_affected_family         PENDING
+```
+
+Architecture currently under proof:
+
+```text
+USER_MUST obligation
+→ pass 1 governed retrieval/linker/binding
+→ only RETRIEVAL_MISS may open fallback
+→ same-obligation already-bound SemanticHandles
+→ governed sibling cube containment
+→ current governed candidates, max 48
+→ Luna SELECT / ABSTAIN
+→ existing SemanticBindingGate
+→ authority
+```
+
+No morphology/stemming/regex/fuzzy/failed-word aliases/global catalog widening.
+Sensitive exact USER_SOURCE may bind deterministically without exposing sensitive
+candidate material to cognition; the c0c9121 change aligned the stale eval oracle only.
+
+Family is NOT SEALED until the affected LIVE SOL owner-gate removes the old
+candidate_count=0 / material_grounding_gap transition.
+
+---
+
 ## 2026-09-23 — SEMANTIC DISCOVERY PRODUCT PROOF + LIVE LUNA RECEIPT
 
 ```text
