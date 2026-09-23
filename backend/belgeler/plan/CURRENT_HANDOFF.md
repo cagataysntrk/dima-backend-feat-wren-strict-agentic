@@ -317,34 +317,177 @@ Explicitly rejected:
 - copying query/Evidence truth by value into ReportDocument,
 - creator access as permanent replay permission.
 
-## CURRENT SUPERVISOR AUTHORITY — DAY9-B OPEN
-
-D9-A is ACCEPTED / GREEN / FROZEN at:
-`2415948f9857cd8ec1707c0eb05f539c8c1edb9c`.
-
-Current active ticket:
+## CURRENT SUPERVISOR AUTHORITY — DAY9-B GREEN CANDIDATE / STOP
 
 ```text
-DAY9 / P12-B
-bounded narration plan over immutable ReportDocument
+D9-A deterministic ReportDocument authority = ACCEPTED / GREEN / FROZEN
+D9-A product SHA                            = 2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+
+D9-B bounded narration                      = GREEN CANDIDATE
+D9-B product SHA                            = 164ff7e6628cca37cbfc8bdb269d84faf4561b51
+provider-free focused                       = 35908601251 = GREEN
+focused tests                               = 15 / 15
+live Sol sentinel                           = 35908863544 = GREEN
+paid calls                                  = 1
+
+DAY9 engineering                            = GREEN candidate
+Day10                                       = NOT AUTHORIZED
 ```
 
-D9-B must sit above ReportBuilder. It may use exactly one structured probabilistic call to select
-and order existing canonical report IDs, followed by deterministic admission and deterministic
-rendering.
+### D9-B architecture
 
-Forbidden:
-- free-form factual narration,
-- DB/Wren/Research/semantic tools,
-- new Evidence/Finding/semantic identity,
-- mutation of ReportDocument,
-- missing-Evidence repair,
-- new provider topology.
+Canonical truth remains the frozen D9-A `ReportDocument`.
 
-Day10 remains NOT AUTHORIZED.
+```text
+immutable ReportDocument
+→ minimum presentation-safe NarrationPacket
+→ ONE strict structured Sol call
+→ NarrationPlanProposal
+→ deterministic NarrationPlanGate
+→ server-owned ReportNarrationOverlay
+→ deterministic ReportNarrationRenderer
+```
 
-Provider-free tests must precede the single live Sol sentinel. If the live sentinel is GREEN, STOP
-for supervisor review; no second reassurance case.
+The probabilistic schema contains only existing canonical report references:
+- `report_ref`,
+- `executive_highlight_block_refs`,
+- `section_ref`,
+- `ordered_block_refs`,
+- `emphasis_block_refs`.
+
+It contains no factual-prose field, numeric statement, causal statement, EvidenceRef, FindingRef,
+ArtifactRef, semantic identity or model-owned presentation identity.
+
+### NarrationPlanGate
+
+Deterministic admission proves:
+- proposal report ref equals canonical report,
+- exactly one plan exists for every canonical section,
+- no foreign/unknown sections,
+- every `ordered_block_refs` is an exact permutation of that section's material blocks,
+- emphasis refs are a subset of the same section,
+- executive refs are canonical report blocks only,
+- executive highlights are unique and <= 3,
+- duplicate refs fail closed.
+
+The model cannot delete material evidence-bearing blocks. It can change presentation order only.
+
+### Minimum NarrationPacket
+
+The provider receives only:
+- report id,
+- section ids + titles,
+- block ids,
+- block kind,
+- claim kind,
+- canonical block content,
+- epistemic label when present,
+- artifact-presence/kind,
+- canonical limitations.
+
+It does NOT receive:
+- Evidence payloads or EvidenceRefs,
+- FindingRefs,
+- QueryContract internals,
+- raw SQL/Wren rows,
+- semantic_scope / canonical `sem_*` ids,
+- conversation transcript/history,
+- Day8 Manager scratch state.
+
+Narration tool count = 0.
+
+### Immutable overlay + deterministic rendering
+
+`ReportNarrationOverlay` is presentation-only.
+Server owns `rnov_*` identity from:
+- canonical report id,
+- admitted narration plan,
+- narration contract version.
+
+Provider receipt/model name does not create analytical authority.
+
+Renderer:
+- emits canonical `ReportBlock.content` verbatim,
+- never rewrites numeric/analytical/epistemic claims,
+- preserves report/section/block limitations,
+- preserves canonical ArtifactRef/kind,
+- labels `CANDIDATE_CAUSE` deterministically as `Aday neden`,
+- never promotes it to confirmed cause.
+
+Invalid schema/plan/provider output:
+- causes no second model call,
+- falls back to deterministic canonical presentation,
+- does not mutate/invalidate ReportDocument.
+
+### Strict provider contract
+
+Before the live call, provider-contract audit found that raw Pydantic schema defaults would not
+match the repository's existing OpenAI/OpenRouter strict-native convention.
+
+Generic fix:
+- remove schema defaults for transport,
+- require every object property,
+- set `additionalProperties=false`,
+- preserve Pydantic/domain validation after transport.
+
+This is transport normalization only; no report/narration semantics were widened.
+
+Provider-free receipt:
+`35908601251 = GREEN`, 15/15.
+
+### Live Sol receipt
+
+Run `35908863544`:
+
+```text
+status                    = PASS
+provider                  = openrouter
+model                     = openai/gpt-5.6-sol
+model calls               = 1
+tool calls                = 0
+semantic calls            = 0
+Wren calls                = 0
+DB calls                  = 0
+Research calls            = 0
+
+all canonical sections    = covered
+section block membership  = exact permutation
+invented IDs              = 0
+new text claims           = 0
+candidate cause retained  = true
+limitations retained      = true
+ReportDocument mutation   = 0
+```
+
+No second reassurance live case was run.
+
+### Day8 debt remains OPEN
+
+```text
+DAY8 deterministic = GREEN
+DAY8 real-Wren     = GREEN
+DAY8 live Sol      = OPEN
+DAY8 FINAL SEALED  = NO
+```
+
+The remaining root-cause live cognition debt remains assigned to the future Day10 integrated
+Product-MVP live gate.
+
+## STOP POINT
+
+D9-A + D9-B engineering is a GREEN candidate.
+
+Do NOT automatically begin:
+- Day10,
+- LLM factual sentence polishing,
+- PDF/HTML export,
+- frontend,
+- report-side analytics/query/semantic repair,
+- another narration live call,
+- standalone Day8 live root-cause testing,
+- real-Wren/full Day7/full Day8/frozen13/DEV80/Validation50/Hidden50.
+
+Return to supervisor for Day9 review and explicit Day10 authorization.
 
 ---
 
