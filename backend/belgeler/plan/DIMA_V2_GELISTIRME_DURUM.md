@@ -1,3 +1,70 @@
+## 2026-09-23 — DAY7 AFFECTED-FAMILY LIVE VERIFICATION RECEIPT
+
+Tested product checkpoint:
+
+```text
+b70f0aab209b2353b854463ace582c40bcc2bd98
+Manager   = openai/gpt-5.6-sol
+Semantic  = openai/gpt-5.6-luna
+Temporal  = openai/gpt-5.6-sol
+workers   = 1
+```
+
+Tenant family LIVE probe:
+
+```text
+workflow_run         35823338833
+selected_cases       3
+evaluable_cases      3
+behavior_pass_count  3
+behavior_pass_rate   1.0
+service_queries      4
+measurement_validity VALID
+```
+
+Directive family LIVE probe:
+
+```text
+workflow_run         35823576275
+selected_cases       1
+evaluable_cases      1
+behavior_pass_count  1
+behavior_pass_rate   1.0
+service_queries      1
+measurement_validity VALID
+```
+
+Family classification:
+
+| case | previous owner | previous first bad transition | current first bad transition | family closed? | next owner |
+|---|---|---|---|---|---|
+| simple-performance | CONTRACT / INTERFACE — tenant identity | Research principal tenant does not match governed execution tenant | none; VERIFIED_COMPLETE | YES | none |
+| comparison-period | CONTRACT / INTERFACE — tenant identity | Research principal tenant does not match governed execution tenant | none; VERIFIED_COMPLETE | YES | none |
+| adaptive-material | CONTRACT / INTERFACE — tenant identity | Research principal tenant does not match governed execution tenant | USER_MUST verified; optional AGENT_DERIVED semantic expansion could not resolve an additional breakdown and correctly requested clarification | YES for tenant family | optional research-quality / semantic-discovery follow-up only; not tenant |
+| duplicate-side-effect | CONTRACT / INTERFACE — ResearchDirective parent lane | directive forced STANDARD USER_MUST retyping path toward ROOT_CAUSE | none; PERFORMANCE USER_MUST stayed PERFORMANCE, ADAPT_ON_EVIDENCE remained ResearchDirective, VERIFIED_COMPLETE | YES | none |
+
+Evidence reached:
+- simple-performance: 1 DB query, verified Evidence, explicit inspect_evidence, VERIFIED_COMPLETE.
+- comparison-period: 2 DB queries, verified comparison Evidence, explicit inspect_evidence, VERIFIED_COMPLETE.
+- adaptive-material: 1 DB query, verified Evidence, inspect_evidence, then bounded derived semantic discovery + clarification.
+- duplicate-side-effect: 1 DB query, verified Evidence, inspect_evidence, VERIFIED_COMPLETE.
+
+Sealed conclusions:
+- typed tenant identity comparison root fix is LIVE VERIFIED;
+- ResearchDirective != USER_MUST capability ontology fix is LIVE VERIFIED;
+- no prompt, budget, model topology, relationship truth, fanout, or CompletionGate patch was required;
+- full frozen13 remains blocked until capability-surface, semantic-grounding, and relationship diagnostics below are classified.
+
+Next exact order:
+```text
+1. provider-free capability-surface consistency receipt (ROOT_CAUSE focus)
+2. semantic-grounding diagnostics for inflected surfaces — no product patch
+3. relationship structured-action diagnostics — no relationship patch
+4. choose exactly one next root family from evidence
+```
+
+---
+
 ## 2026-09-23 — DAY7 POST-LIVE GENERIC FIXES — LIVE VERIFICATION PENDING
 
 ```text
