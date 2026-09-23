@@ -249,3 +249,16 @@ def test_evicted_or_missing_registry_context_requires_rebind():
             session_id="session-a",
             thread_id="thread-a",
         )
+
+
+
+def test_stream_adapter_uses_same_product_coordinator_and_existing_cancel_signal():
+    import inspect
+    import app.routers.ask_v2 as route
+
+    source = inspect.getsource(route.ask_v2_stream)
+    assert "_coordinator.handle(" in source
+    assert "ProductCoordinator(" not in source
+    assert "cancel_check=cancelled.is_set" in source
+    assert "ProductEventKind.KEEPALIVE" in source
+    assert "cancelled.set()" in source
