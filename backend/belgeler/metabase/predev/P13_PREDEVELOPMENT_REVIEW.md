@@ -381,3 +381,18 @@ P13 PRODUCT CODE = NOT AUTHORIZED
 
 
 > P12X override: DMP-DEC-0030 pauses the Agent-API substrate implementation choice. The authority/access/receipt/evidence invariants in this review remain retained.
+
+
+---
+
+## DMP-DEC-0031 substrate reframing
+
+Conceptual milestone: `P13 — PRODUCTION STANDARD OVER DIMA METABASE ENGINE`.
+
+Status: `PAUSED UNTIL FORK CAPABILITY PARITY + STABLE ENGINE BRIDGE`.
+
+Agent-API-specific implementation assumptions are no longer binding. Retain the Dima-owned contracts: `ResolvedAnalyticsIntent`, `ExecutionAccessSnapshot`, `CanonicalProjection`, `QueryReceipt`, `EvidenceArtifact`, `DimaSemanticSpec`, `EntityValueAdoptionGate`.
+
+P13 must later re-evaluate exactly where each attaches to native-engine execution. DMP-DEC-0029's trust invariant remains binding: the material execution artifact authorized by Dima must be the one actually executed and receipted.
+
+Do not implement `standard_execution.py`, `execute_prepared()` or governance hooks during C0/C1/C2.
