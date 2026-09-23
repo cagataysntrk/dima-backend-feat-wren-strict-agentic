@@ -20,6 +20,7 @@ from app.v2.manager_runtime import ManagerRuntime
 from app.v2.models import (
     EvidenceArtifact,
     HypothesisNextTestProposal,
+    PeriodKind,
     ResearchTask,
     ResearchTaskKind,
     ResolvedComparison,
@@ -88,14 +89,18 @@ def _dimension(handles, *, parent=ROOT):
 
 def _comparison(handles, *, parent=ROOT):
     base = ResolvedPeriod(
-        start_date="2026-08-01",
-        end_date="2026-08-31",
-        grain="month",
+        kind=PeriodKind.PREVIOUS_MONTH,
+        source_text="geçen ay",
+        time_dimension="Ops.date",
+        start="2026-08-01",
+        end="2026-08-31",
     )
     ref = ResolvedPeriod(
-        start_date="2026-07-01",
-        end_date="2026-07-31",
-        grain="month",
+        kind=PeriodKind.PREVIOUS_MONTH,
+        source_text="önceki ay",
+        time_dimension="Ops.date",
+        start="2026-07-01",
+        end="2026-07-31",
     )
     return handles.mint_from_temporal_engine(
         tenant_binding=TENANT,
@@ -103,9 +108,10 @@ def _comparison(handles, *, parent=ROOT):
         temporal_provenance_id="temporal:comparison",
         target_kind="comparison",
         canonical_target=ResolvedComparison(
+            mode="previous_period",
+            source_text="geçen ayla karşılaştır",
             base_period=base,
             reference_period=ref,
-            comparison_kind="previous_period",
         ),
         parent_obligation_id=parent,
     )
@@ -252,12 +258,8 @@ def test_existing_inspected_verified_evidence_blocks_unnecessary_bootstrap():
     evidence = _evidence("E_EXISTING", task_id)
     store = _EvidenceStore()
     store.put(evidence)
-    runtime.snapshot = runtime.snapshot.model_copy(
-        update={
-            "evidence_refs": ("E_EXISTING",),
-            "inspected_evidence_refs": ("E_EXISTING",),
-        }
-    )
+    runtime.attach_evidence("E_EXISTING")
+    runtime.mark_evidence_inspected("E_EXISTING")
 
     result = RootCauseBootstrapPolicy(semantic_handles=handles).prepare(
         runtime=runtime,
@@ -290,13 +292,9 @@ def _next_test_fixture(*, inspected=True, verified=True):
     evidence = _evidence("E1", parent.task_id, verified=verified)
     store = _EvidenceStore()
     store.put(evidence)
-    runtime.snapshot = runtime.snapshot.model_copy(
-        update={
-            "state": ManagerState.INVESTIGATING,
-            "evidence_refs": ("E1",),
-            "inspected_evidence_refs": ("E1",) if inspected else (),
-        }
-    )
+    runtime.attach_evidence("E1")
+    if inspected:
+        runtime.mark_evidence_inspected("E1")
 
     ledger = HypothesisLedger(
         parent_obligation_id=ROOT,
