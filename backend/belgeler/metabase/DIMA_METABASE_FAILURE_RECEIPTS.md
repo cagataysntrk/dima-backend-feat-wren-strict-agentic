@@ -3338,3 +3338,45 @@ inputs otherwise unchanged.
 
 status:
 `CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C2-CONTRACT-001 — native conversation_id contract was under-typed
+
+opened_at: 2026-09-23  
+live_workflow: `35836738526`
+
+classification:
+`CONTRACT / NATIVE_ENGINE_REQUEST_SCHEMA`
+
+observed:
+- pinned v0.63.18 runtime booted;
+- Boyahane import and restricted principal bootstrap passed;
+- bridge reached `POST /api/metabot/agent-streaming`;
+- Metabase returned HTTP 400:
+  `conversation_id: value must be a valid UUID`;
+- provider-free mocks did not enforce the native endpoint's UUID schema.
+
+root_cause:
+`NativeEngineRequest.conversation_id` was modeled as non-empty `str`, weaker than the actual native
+Metabot API contract.
+
+single_owner:
+`backend/app/v3/substrate/metabase/native_models.py` +
+serialization in `native_engine.py`.
+
+authorized_correction:
+- type `conversation_id` as UUID;
+- serialize it canonically to string at the HTTP boundary;
+- add provider-free rejection proof for invalid UUID;
+- use fixed valid UUIDs in live canaries.
+
+forbidden:
+- weakening native endpoint validation;
+- random retries to hide HTTP 400;
+- engine fork source changes;
+- P13 work.
+
+status:
+`CLASSIFIED / C2 CONTRACT PATCH AUTHORIZED`.
