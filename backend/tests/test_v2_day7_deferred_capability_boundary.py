@@ -154,6 +154,6 @@ def test_direct_acceptance_bypass_rejects_deferred_analytical_capability(capabil
     assert result.contract is None
     assert result.ledger is None
     assert any(
-        "direct execution is unavailable" in reason
+        "deferred in the current capability surface" in reason
         for reason in result.reasons
     )
