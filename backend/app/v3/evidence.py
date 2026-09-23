@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
+from uuid import UUID
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -48,6 +49,13 @@ class DimaQueryReceipt(FrozenModel):
     substrate: str = Field(min_length=1)
     substrate_runtime_version: str | None = None
     substrate_image_digest: str | None = None
+    engine_repository: str | None = None
+    engine_revision_sha: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    engine_upstream_base_sha: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    engine_runtime_tag: str | None = None
+    engine_build_identity: str | None = None
+    engine_image_identity: str | None = None
+    engine_runtime_instance_id: UUID | None = None
     database_id: str | None = None
     executed_at: datetime | None = None
     legacy_query_contract_ref: str | None = None

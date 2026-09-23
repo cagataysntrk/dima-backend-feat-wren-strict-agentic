@@ -19,6 +19,9 @@ class NativeEngineIdentity(BaseModel):
     upstream_base_sha: str = Field(pattern=r"^[0-9a-f]{40}$")
     runtime_tag: str = Field(min_length=1)
     runtime_image_digest: str | None = None
+    build_identity: str | None = None
+    runtime_image_identity: str | None = None
+    runtime_instance_id: UUID | None = None
 
 
 class NativeEngineRequest(BaseModel):

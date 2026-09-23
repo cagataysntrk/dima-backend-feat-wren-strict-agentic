@@ -51,6 +51,9 @@ ENGINE = NativeEngineIdentity(
     engine_sha="c56b71ab23bf2a2d266bac2fba8d165ac059d613",
     upstream_base_sha="2ba2485c78d7e00a9a25f82c00fc201da71590c4",
     runtime_tag="v0.63.18-dima.0",
+    build_identity="p13a-test-build",
+    runtime_image_identity="p13a-test-image",
+    runtime_instance_id="00000000-0000-4000-8000-000000000013",
 )
 
 
@@ -270,6 +273,13 @@ def test_p13a_p5_receipt_seals_exact_authorized_native_artifact():
             runtime_version=ENGINE.runtime_tag,
             image_digest="sha256:" + "1" * 64,
             database_id="database:1",
+            repository=ENGINE.repository,
+            revision_sha=ENGINE.engine_sha,
+            upstream_base_sha=ENGINE.upstream_base_sha,
+            runtime_tag=ENGINE.runtime_tag,
+            build_identity=ENGINE.build_identity,
+            image_identity=ENGINE.runtime_image_identity,
+            runtime_instance_id=ENGINE.runtime_instance_id,
         ),
         results=(result,),
         events=(event,),
@@ -312,6 +322,13 @@ def test_p13a_common_artifact_identity_mismatch_fails_p10_and_p5():
                 runtime_version=ENGINE.runtime_tag,
                 image_digest="sha256:" + "1" * 64,
                 database_id="database:1",
+            repository=ENGINE.repository,
+            revision_sha=ENGINE.engine_sha,
+            upstream_base_sha=ENGINE.upstream_base_sha,
+            runtime_tag=ENGINE.runtime_tag,
+            build_identity=ENGINE.build_identity,
+            image_identity=ENGINE.runtime_image_identity,
+            runtime_instance_id=ENGINE.runtime_instance_id,
             ),
             results=(ExecutionResultSnapshot(payload={"rows": [[1]]}, row_count=1),),
             events=(

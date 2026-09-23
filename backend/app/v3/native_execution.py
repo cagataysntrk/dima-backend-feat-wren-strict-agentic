@@ -70,6 +70,9 @@ class ExecutionSubstrateIdentity(FrozenModel):
     upstream_base_sha: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
     runtime_tag: str | None = None
     runtime_image_digest: str | None = None
+    build_identity: str | None = None
+    runtime_image_identity: str | None = None
+    runtime_instance_id: UUID | None = None
 
 
 class ExecutionArtifactStep(FrozenModel):
@@ -471,6 +474,9 @@ class NativeCandidateAuthorizationGate:
                 upstream_base_sha=candidate.engine_identity.upstream_base_sha,
                 runtime_tag=candidate.engine_identity.runtime_tag,
                 runtime_image_digest=candidate.engine_identity.runtime_image_digest,
+                build_identity=candidate.engine_identity.build_identity,
+                runtime_image_identity=candidate.engine_identity.runtime_image_identity,
+                runtime_instance_id=candidate.engine_identity.runtime_instance_id,
             ),
             provenance_refs=tuple(candidate.native_validation_refs),
         )

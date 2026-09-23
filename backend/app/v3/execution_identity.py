@@ -11,6 +11,7 @@ import hashlib
 import json
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -155,6 +156,13 @@ class RuntimeIdentity(FrozenModel):
     runtime_version: str = Field(min_length=1)
     image_digest: str = Field(pattern=r"^sha256:[a-f0-9]{64}$")
     database_id: str = Field(min_length=1)
+    repository: str | None = None
+    revision_sha: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    upstream_base_sha: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    runtime_tag: str | None = None
+    build_identity: str | None = None
+    image_identity: str | None = None
+    runtime_instance_id: UUID | None = None
 
 
 class ExecutionEventIdentity(FrozenModel):
@@ -342,6 +350,65 @@ class DimaQueryReceiptSealer:
                 "access source-object refs do not exactly cover authorized resource ids",
             )
 
+    @staticmethod
+    def _assert_runtime_matches_artifact(
+        *,
+        artifact: AuthorizedExecutionArtifact,
+        runtime: RuntimeIdentity,
+    ) -> None:
+        engine = artifact.engine_identity
+        if engine.substrate != runtime.substrate:
+            raise ReceiptSealError(
+                "NATIVE_RUNTIME_SUBSTRATE_MISMATCH",
+                "authorized artifact and executing runtime use different substrates",
+            )
+        if runtime.substrate != "metabase-native":
+            return
+        required = {
+            "artifact.repository": engine.repository,
+            "artifact.revision_sha": engine.revision_sha,
+            "artifact.upstream_base_sha": engine.upstream_base_sha,
+            "artifact.runtime_tag": engine.runtime_tag,
+            "artifact.build_identity": engine.build_identity,
+            "artifact.runtime_image_identity": engine.runtime_image_identity,
+            "artifact.runtime_instance_id": engine.runtime_instance_id,
+            "runtime.repository": runtime.repository,
+            "runtime.revision_sha": runtime.revision_sha,
+            "runtime.upstream_base_sha": runtime.upstream_base_sha,
+            "runtime.runtime_tag": runtime.runtime_tag,
+            "runtime.build_identity": runtime.build_identity,
+            "runtime.image_identity": runtime.image_identity,
+            "runtime.runtime_instance_id": runtime.runtime_instance_id,
+        }
+        missing = sorted(name for name, value in required.items() if value is None)
+        if missing:
+            raise ReceiptSealError(
+                "NATIVE_RUNTIME_IDENTITY_REQUIRED",
+                "missing exact native runtime identity: " + ", ".join(missing),
+            )
+        checks = (
+            ("NATIVE_RUNTIME_REPOSITORY_MISMATCH", engine.repository, runtime.repository),
+            ("NATIVE_RUNTIME_REVISION_MISMATCH", engine.revision_sha, runtime.revision_sha),
+            ("NATIVE_RUNTIME_UPSTREAM_MISMATCH", engine.upstream_base_sha, runtime.upstream_base_sha),
+            ("NATIVE_RUNTIME_TAG_MISMATCH", engine.runtime_tag, runtime.runtime_tag),
+            ("NATIVE_RUNTIME_BUILD_MISMATCH", engine.build_identity, runtime.build_identity),
+            ("NATIVE_RUNTIME_IMAGE_IDENTITY_MISMATCH", engine.runtime_image_identity, runtime.image_identity),
+            ("NATIVE_RUNTIME_INSTANCE_MISMATCH", str(engine.runtime_instance_id), str(runtime.runtime_instance_id)),
+        )
+        for code, expected, actual in checks:
+            if expected != actual:
+                raise ReceiptSealError(code, f"authorized={expected!r} runtime={actual!r}")
+        if runtime.runtime_version != runtime.runtime_tag:
+            raise ReceiptSealError(
+                "NATIVE_RUNTIME_VERSION_TAG_MISMATCH",
+                "runtime_version must equal the attested native runtime tag",
+            )
+        if engine.runtime_image_digest is not None and engine.runtime_image_digest != runtime.image_digest:
+            raise ReceiptSealError(
+                "NATIVE_RUNTIME_IMAGE_DIGEST_MISMATCH",
+                "authorized image digest differs from executing runtime digest",
+            )
+
     @classmethod
     def _receipt_fingerprint(
         cls,
@@ -370,6 +437,17 @@ class DimaQueryReceiptSealer:
             "substrate": runtime.substrate,
             "substrate_runtime_version": runtime.runtime_version,
             "substrate_image_digest": runtime.image_digest,
+            "engine_repository": runtime.repository,
+            "engine_revision_sha": runtime.revision_sha,
+            "engine_upstream_base_sha": runtime.upstream_base_sha,
+            "engine_runtime_tag": runtime.runtime_tag,
+            "engine_build_identity": runtime.build_identity,
+            "engine_image_identity": runtime.image_identity,
+            "engine_runtime_instance_id": (
+                str(runtime.runtime_instance_id)
+                if runtime.runtime_instance_id is not None
+                else None
+            ),
             "database_id": runtime.database_id,
             "result_hash": result.result_hash,
             "row_count": result.row_count,
@@ -423,6 +501,10 @@ class DimaQueryReceiptSealer:
             intent=intent,
             artifact=artifact,
             access=access_snapshot,
+        )
+        cls._assert_runtime_matches_artifact(
+            artifact=artifact,
+            runtime=runtime,
         )
 
         query_count = artifact.query_count
@@ -489,6 +571,13 @@ class DimaQueryReceiptSealer:
                     substrate=runtime.substrate,
                     substrate_runtime_version=runtime.runtime_version,
                     substrate_image_digest=runtime.image_digest,
+                    engine_repository=runtime.repository,
+                    engine_revision_sha=runtime.revision_sha,
+                    engine_upstream_base_sha=runtime.upstream_base_sha,
+                    engine_runtime_tag=runtime.runtime_tag,
+                    engine_build_identity=runtime.build_identity,
+                    engine_image_identity=runtime.image_identity,
+                    engine_runtime_instance_id=runtime.runtime_instance_id,
                     database_id=runtime.database_id,
                     executed_at=event.executed_at,
                     result_hash=result.result_hash,

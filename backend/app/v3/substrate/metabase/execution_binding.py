@@ -48,6 +48,19 @@ class CurrentCatalogObject(FrozenModel):
     column_name: str | None = None
     resource_entity_id: str | None = None
     resource_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    metabase_database_id: int | None = Field(default=None, ge=1)
+    metabase_table_id: int | None = Field(default=None, ge=1)
+    metabase_field_id: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def _physical_locator_integrity(self):
+        if self.metabase_field_id is not None and (
+            self.metabase_database_id is None or self.metabase_table_id is None
+        ):
+            raise ValueError("Metabase field identity requires database and table ids")
+        if self.metabase_table_id is not None and self.metabase_database_id is None:
+            raise ValueError("Metabase table identity requires database id")
+        return self
 
     @property
     def portable_table(self) -> tuple[str, str | None, str]:
@@ -103,6 +116,45 @@ class CurrentCatalogSnapshot(FrozenModel):
             "CURRENT_CATALOG_BINDING_MISSING",
             f"no current catalog object for Dima source_id {source_id}",
         )
+
+    def object_for_metabase_table(
+        self,
+        *,
+        database_id: int,
+        table_id: int,
+    ) -> CurrentCatalogObject:
+        matches = [
+            item
+            for item in self.objects
+            if item.metabase_database_id == database_id
+            and item.metabase_table_id == table_id
+            and item.column_name is None
+        ]
+        if len(matches) != 1:
+            raise MetabaseCompilationBlocked(
+                "CURRENT_CATALOG_METABASE_TABLE_BINDING_INVALID",
+                f"Metabase database/table {database_id}/{table_id} maps to {len(matches)} Dima table objects",
+            )
+        return matches[0]
+
+    def object_for_metabase_field(
+        self,
+        *,
+        database_id: int,
+        field_id: int,
+    ) -> CurrentCatalogObject:
+        matches = [
+            item
+            for item in self.objects
+            if item.metabase_database_id == database_id
+            and item.metabase_field_id == field_id
+        ]
+        if len(matches) != 1:
+            raise MetabaseCompilationBlocked(
+                "CURRENT_CATALOG_METABASE_FIELD_BINDING_INVALID",
+                f"Metabase database/field {database_id}/{field_id} maps to {len(matches)} Dima field objects",
+            )
+        return matches[0]
 
 
 class DimaExecutionBindingSnapshot(FrozenModel):
