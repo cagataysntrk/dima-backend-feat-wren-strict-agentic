@@ -39,6 +39,27 @@ class HypothesisLedgerError(RuntimeError):
     """Day8 structural epistemic-boundary violation."""
 
 
+class CurrentRunObligationView:
+    """Read-only live view over the existing ManagerRuntime obligation ledger.
+
+    UserObligationLedgerService remains the only mutation/transition authority. This
+    view exposes no mutator; it prevents Day8 from freezing obligation membership
+    before evidence-grounded AGENT_DERIVED work is added.
+    """
+
+    def __init__(self, runtime) -> None:
+        if not hasattr(runtime, "ledger"):
+            raise TypeError("CurrentRunObligationView requires a ManagerRuntime-like owner")
+        self._runtime = runtime
+
+    @property
+    def current(self) -> UserObligationLedger:
+        ledger = self._runtime.ledger
+        if ledger is None:
+            raise HypothesisLedgerError("current Manager run has no obligation ledger")
+        return ledger
+
+
 class CurrentRunEvidenceView:
     """Read-only live view over Day7 ManagerRuntime Evidence membership.
 
@@ -90,6 +111,7 @@ class HypothesisLedger:
         obligation_ledger: UserObligationLedger,
         evidence_store,
         evidence_view: CurrentRunEvidenceView,
+        obligation_view: CurrentRunObligationView | None = None,
         semantic_handles: SemanticHandleRegistry,
         research_tasks: ResearchTaskRegistry,
         tenant_binding: str,
@@ -97,6 +119,7 @@ class HypothesisLedger:
     ) -> None:
         self._obligations = UserObligationLedgerService()
         self._obligation_ledger = obligation_ledger
+        self._obligation_view = obligation_view
         self._evidence = evidence_store
         self._evidence_view = evidence_view
         self._handles = semantic_handles
@@ -122,6 +145,12 @@ class HypothesisLedger:
     @property
     def evidence_view(self) -> CurrentRunEvidenceView:
         return self._evidence_view
+
+    @property
+    def obligation_ledger(self) -> UserObligationLedger:
+        if self._obligation_view is not None:
+            return self._obligation_view.current
+        return self._obligation_ledger
 
     @property
     def open_hypotheses(self) -> tuple[HypothesisEntry, ...]:
@@ -351,13 +380,13 @@ class HypothesisLedger:
         return updated
 
     def _validate_root_authority(self) -> None:
-        if self._obligation_ledger.lineage_id != self._state.lineage_id:
+        if self.obligation_ledger.lineage_id != self._state.lineage_id:
             raise HypothesisLedgerError(
                 "hypothesis ledger lineage does not match obligation ledger"
             )
         try:
             parent = self._obligations.get(
-                self._obligation_ledger,
+                self.obligation_ledger,
                 self._state.parent_obligation_id,
             )
         except Exception as exc:
@@ -487,7 +516,7 @@ class HypothesisLedger:
                 return True
             seen.add(current_id)
             try:
-                item = self._obligations.get(self._obligation_ledger, current_id)
+                item = self._obligations.get(self.obligation_ledger, current_id)
             except Exception:
                 return False
             if item.parent_obligation_id is None:

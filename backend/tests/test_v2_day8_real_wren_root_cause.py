@@ -19,6 +19,7 @@ from app import contracts as contracts_module
 from app.v2.acceptance import IntentAcceptanceGate
 from app.v2.epistemics import (
     CurrentRunEvidenceView,
+    CurrentRunObligationView,
     EpistemicFindingError,
     EvidenceLinkedFindingBuilder,
     HypothesisLedger,
@@ -272,6 +273,7 @@ def test_day8_root_cause_orchestration_crosses_real_wren_without_causal_upgrade(
         obligation_ledger=runtime.ledger,
         evidence_store=executor.evidence_store,
         evidence_view=CurrentRunEvidenceView(runtime),
+        obligation_view=CurrentRunObligationView(runtime),
         semantic_handles=handles,
         research_tasks=registry,
         tenant_binding=tenant,

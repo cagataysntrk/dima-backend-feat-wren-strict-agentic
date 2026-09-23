@@ -7,7 +7,11 @@ from types import SimpleNamespace
 import pytest
 
 from app.v2.acceptance import IntentAcceptanceGate
-from app.v2.epistemics import CurrentRunEvidenceView, HypothesisLedger
+from app.v2.epistemics import (
+    CurrentRunEvidenceView,
+    CurrentRunObligationView,
+    HypothesisLedger,
+)
 from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
@@ -28,6 +32,7 @@ from app.v2.models import (
     ResolvedSemanticRef,
     SemanticTargetKind,
 )
+from app.v2.obligation_ledger import UserObligationLedgerService
 from app.v2.research_tasks import ResearchTaskRegistry
 from app.v2.root_cause_orchestration import (
     HypothesisNextTestBoundary,
@@ -171,11 +176,11 @@ def _accepted_runtime(handles, semantic_refs):
     return runtime
 
 
-def _evidence(ref, task_id, *, verified=True):
+def _evidence(ref, task_id, *, verified=True, obligation_ids=(ROOT,)):
     return EvidenceArtifact(
         artifact_id=ref,
         task_id=task_id,
-        obligation_ids=(ROOT,),
+        obligation_ids=tuple(obligation_ids),
         query_contract_refs=("QC1",),
         evidence_kind="standard_analytics",
         verified=verified,
@@ -304,6 +309,7 @@ def _next_test_fixture(*, inspected=True, verified=True):
         obligation_ledger=runtime.ledger,
         evidence_store=store,
         evidence_view=CurrentRunEvidenceView(runtime),
+        obligation_view=CurrentRunObligationView(runtime),
         semantic_handles=handles,
         research_tasks=registry,
         tenant_binding=TENANT,
@@ -324,7 +330,7 @@ def _next_test_fixture(*, inspected=True, verified=True):
         tenant_binding=TENANT,
         context_version=CTX,
     )
-    return boundary, ledger, runtime, registry, metric, dimension, hypothesis
+    return boundary, ledger, runtime, registry, metric, dimension, hypothesis, store
 
 
 def _breakdown_proposal(hypothesis, metric, dimension):
@@ -345,7 +351,7 @@ def test_next_test_proposal_schema_has_no_model_owned_identity_fields():
 
 
 def test_next_test_requires_inspected_verified_evidence():
-    boundary, _, _, _, metric, dimension, hypothesis = _next_test_fixture(
+    boundary, _, _, _, metric, dimension, hypothesis, _ = _next_test_fixture(
         inspected=False
     )
     with pytest.raises(RootCauseOrchestrationError, match="INSPECTION_REQUIRED"):
@@ -353,7 +359,7 @@ def test_next_test_requires_inspected_verified_evidence():
 
 
 def test_next_test_rejects_fake_semantic_handle_before_materialization():
-    boundary, _, _, registry, metric, _, hypothesis = _next_test_fixture()
+    boundary, _, _, registry, metric, _, hypothesis, _ = _next_test_fixture()
     proposal = HypothesisNextTestProposal(
         hypothesis_ref=hypothesis.hypothesis_id,
         task_kind=ResearchTaskKind.BREAKDOWN,
@@ -368,7 +374,7 @@ def test_next_test_rejects_fake_semantic_handle_before_materialization():
 
 
 def test_next_test_invalid_shape_rejected_before_materialization():
-    boundary, _, _, registry, metric, _, hypothesis = _next_test_fixture()
+    boundary, _, _, registry, metric, _, hypothesis, _ = _next_test_fixture()
     proposal = HypothesisNextTestProposal(
         hypothesis_ref=hypothesis.hypothesis_id,
         task_kind=ResearchTaskKind.BREAKDOWN,
@@ -383,7 +389,7 @@ def test_next_test_invalid_shape_rejected_before_materialization():
 
 
 def test_next_test_materializes_server_owned_id_and_replay_is_idempotent():
-    boundary, ledger, _, registry, metric, dimension, hypothesis = _next_test_fixture()
+    boundary, ledger, _, registry, metric, dimension, hypothesis, _ = _next_test_fixture()
     proposal = _breakdown_proposal(hypothesis, metric, dimension)
 
     first = boundary.materialize(proposal)
@@ -400,7 +406,7 @@ def test_next_test_materializes_server_owned_id_and_replay_is_idempotent():
 
 
 def test_relationship_next_test_fails_closed_before_dead_end_materialization():
-    boundary, _, _, registry, metric, dimension, hypothesis = _next_test_fixture()
+    boundary, _, _, registry, metric, dimension, hypothesis, _ = _next_test_fixture()
     before = registry.tasks
     with pytest.raises(RootCauseOrchestrationError, match="derived RELATIONSHIP"):
         boundary.materialize(
@@ -413,3 +419,46 @@ def test_relationship_next_test_fails_closed_before_dead_end_materialization():
             )
         )
     assert registry.tasks == before
+
+
+def test_live_obligation_view_accepts_evidence_from_child_added_after_ledger_creation():
+    boundary, ledger, runtime, registry, metric, _, hypothesis, store = _next_test_fixture()
+    del boundary, hypothesis
+
+    child_id = "D_LIVE_CHILD"
+    runtime.replace_ledger(
+        UserObligationLedgerService().add_agent_derived(
+            runtime.ledger,
+            obligation_id=child_id,
+            parent_obligation_id=ROOT,
+            capability_key=ManagerCapabilityKey.PERFORMANCE,
+            source_refs=(),
+            semantic_handle_refs=(metric.handle_id,),
+        )
+    )
+    registry.register(
+        ResearchTask(
+            task_id=child_id,
+            question_id=ROOT,
+            task_kind=ResearchTaskKind.QUERY.value,
+            input_refs=(metric.handle_id,),
+            origin="AGENT_DERIVED",
+            parent_task_id="rt_parent",
+            parent_obligation_id=ROOT,
+            trigger_evidence_ref="E1",
+            branch_depth=1,
+            state="complete",
+        )
+    )
+    child_evidence = _evidence(
+        "E_CHILD",
+        child_id,
+        obligation_ids=(child_id,),
+    )
+    store.put(child_evidence)
+    runtime.attach_evidence(child_evidence.artifact_id)
+    runtime.mark_evidence_inspected(child_evidence.artifact_id)
+
+    validated = ledger.validated_evidence(child_evidence.artifact_id)
+    assert validated.artifact_id == "E_CHILD"
+    assert ledger.obligation_ledger is runtime.ledger
