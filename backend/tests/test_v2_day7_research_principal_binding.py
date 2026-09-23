@@ -263,26 +263,29 @@ def test_runtime_boundary_canonical_id_binding_executes_against_typed_runtime_te
     assert fx["service"].query_calls == 1
 
 
-def test_runtime_boundary_canonical_slug_binding_executes_when_tenant_id_absent():
+def test_slug_only_principal_fails_closed_at_control_plane_before_research_execution():
     fx = _fixture(canonical_binding=True, use_slug=True)
 
-    result = ResearchToolRunner().execute(
-        task=fx["task"],
-        tool_id="wren.query",
-        call=fx["call"],
-        runtime=fx["runtime"],
-        executor=fx["executor_a"],
-        principal=fx["principal_a"],
-        task_registry=ResearchTaskRegistry(),
-    )
+    with pytest.raises(
+        ResearchToolContractError,
+        match="Research permission denied.*Tenant context yok",
+    ):
+        ResearchToolRunner().execute(
+            task=fx["task"],
+            tool_id="wren.query",
+            call=fx["call"],
+            runtime=fx["runtime"],
+            executor=fx["executor_a"],
+            principal=fx["principal_a"],
+            task_registry=ResearchTaskRegistry(),
+        )
 
-    assert result.evidence.verified is True
     assert fx["principal_a"].tenant_id is None
     assert fx["tenant_binding"] == f"slug:{fx['tenant_slug']}"
-    assert fx["service"].query_calls == 1
+    assert fx["service"].query_calls == 0
 
 
-def test_foreign_slug_principal_denies_against_governed_slug_runtime():
+def test_foreign_slug_only_principal_also_fails_closed_before_db():
     fx = _fixture(canonical_binding=True, use_slug=True)
     foreign = fx["principal"](
         "user-foreign",
@@ -293,7 +296,7 @@ def test_foreign_slug_principal_denies_against_governed_slug_runtime():
 
     with pytest.raises(
         ResearchToolContractError,
-        match="tenant does not match governed execution tenant",
+        match="Research permission denied.*Tenant context yok",
     ):
         ResearchToolRunner().execute(
             task=fx["task"],
