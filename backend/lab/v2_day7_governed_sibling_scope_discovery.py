@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 from app.v2.context_provider import ContextProviderV0
 from app.v2.manager_models import SemanticHandle
@@ -25,8 +24,8 @@ from app.v2.models import TenantAnalyticsRuntimeV0
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
-    CandidateSet,
     CatalogCandidateBinding,
+    GovernedSiblingScopeCandidateGenerator,
     SemanticBindingGate,
     SemanticCandidateGenerator,
 )
@@ -76,125 +75,83 @@ def _canonical_name(binding: CatalogCandidateBinding) -> str:
     return str(value or "")
 
 
-class GovernedSiblingScopeCandidateGenerator:
-    """LAB wrapper that widens only discovery after a real retrieval miss.
+def _scoped_receipt(
+    *,
+    base: SemanticCandidateGenerator,
+    sibling_cube_names: tuple[str, ...],
+    request_id: str,
+    surface: str,
+    kind_hint: str,
+    decision_context: str | None = None,
+    sibling_surface: str | None = None,
+    max_candidates: int = DEFAULT_MAX_CANDIDATES,
+) -> ScopedDiscoveryReceipt:
+    """LAB receipt over the PRODUCT candidate generator.
 
-    The wrapped product generator remains the source of current governed candidate
-    bindings.  This wrapper never interprets the unresolved surface.  It only filters
-    current candidate truth by an already-resolved sibling's governed cube scope.
+    The LAB owns only measurement and fallback-eligibility bookkeeping.  Candidate
+    enumeration/filtering is exclusively app.v2.semantic_linker.
     """
+    baseline = base.generate(
+        request_id=request_id,
+        surface=surface,
+        kind_hint=kind_hint,
+        decision_context=decision_context,
+    )
+    scope = tuple(
+        dict.fromkeys(
+            str(value) for value in sibling_cube_names if str(value)
+        )
+    )
+    fallback_eligible = (
+        not baseline.bindings
+        and not baseline.too_broad
+        and not baseline.retrieval_exhaustive
+        and bool(scope)
+    )
 
-    def __init__(
-        self,
-        *,
-        base: SemanticCandidateGenerator,
-        sibling_cube_names: Iterable[str],
-        max_candidates: int = DEFAULT_MAX_CANDIDATES,
-    ) -> None:
-        self._base = base
-        self._scope = frozenset(str(value) for value in sibling_cube_names if str(value))
-        self._max_candidates = max(1, int(max_candidates))
-
-    @property
-    def scope(self) -> tuple[str, ...]:
-        return tuple(sorted(self._scope))
-
-    def _scoped_bindings(self, kind_hint: str) -> tuple[CatalogCandidateBinding, ...]:
-        if not self._scope:
-            return ()
-        out = []
-        for item in self._base._governed_candidates(kind_hint):
-            if item.sensitive or not item.card.verified_aliases:
-                continue
-            if self._scope.intersection(_target_cube_names(item)):
-                out.append(item)
-        # Candidate ids are stable governed ids; sort only for reproducible lab output.
-        out.sort(key=lambda item: item.card.candidate_id)
-        return tuple(out)
-
-    def generate(
-        self,
-        *,
-        request_id: str,
-        surface: str,
-        kind_hint: str,
-        decision_context: str | None = None,
-    ) -> CandidateSet:
-        baseline = self._base.generate(
+    scoped = GovernedSiblingScopeCandidateGenerator(
+        base=base,
+        sibling_cube_names=scope,
+        max_candidates=max_candidates,
+    )
+    scoped_all = scoped.scoped_bindings(kind_hint) if fallback_eligible else ()
+    result = (
+        scoped.generate(
             request_id=request_id,
             surface=surface,
             kind_hint=kind_hint,
             decision_context=decision_context,
         )
-        # Fallback is strictly retrieval-miss only.  Exact, ambiguous, broad or any
-        # already-visible product candidate set keeps the product discovery result.
-        if baseline.bindings or baseline.too_broad or baseline.retrieval_exhaustive:
-            return baseline
-        if not self._scope:
-            return baseline
-
-        scoped = self._scoped_bindings(kind_hint)
-        too_broad = len(scoped) > self._max_candidates
-        visible = scoped[: self._max_candidates]
-        return CandidateSet(
-            request_id=request_id,
-            surface=surface,
-            kind_hint=kind_hint,
-            bindings=visible,
-            too_broad=too_broad,
-            # Exhaustive only inside the sibling hint, never globally.
-            retrieval_exhaustive=False,
-            retrieval_backend="lab_governed_sibling_scope_v1",
-            retrieval_truncated=too_broad,
-        )
-
-    def receipt(
-        self,
-        *,
-        request_id: str,
-        surface: str,
-        kind_hint: str,
-        decision_context: str | None = None,
-        sibling_surface: str | None = None,
-    ) -> ScopedDiscoveryReceipt:
-        baseline = self._base.generate(
-            request_id=request_id,
-            surface=surface,
-            kind_hint=kind_hint,
-            decision_context=decision_context,
-        )
-        scoped_all = self._scoped_bindings(kind_hint) if not baseline.bindings else ()
-        result = self.generate(
-            request_id=request_id,
-            surface=surface,
-            kind_hint=kind_hint,
-            decision_context=decision_context,
-        )
-        outside = [
-            item
-            for item in result.bindings
-            if not self._scope.intersection(_target_cube_names(item))
-        ]
-        return ScopedDiscoveryReceipt(
-            surface=surface,
-            kind_hint=kind_hint,
-            sibling_surface=sibling_surface,
-            sibling_cube_names=self.scope,
-            baseline_backend=baseline.retrieval_backend,
-            baseline_candidate_count=len(baseline.bindings),
-            fallback_used=(
-                result.retrieval_backend == "lab_governed_sibling_scope_v1"
-            ),
-            scoped_candidate_count_before_bound=len(scoped_all),
-            scoped_candidate_count_visible=len(result.bindings),
-            candidate_ids=tuple(item.card.candidate_id for item in result.bindings),
-            candidate_canonical_names=tuple(
-                _canonical_name(item) for item in result.bindings
-            ),
-            outside_scope_count=len(outside),
-            too_broad=result.too_broad,
-            retrieval_truncated=result.retrieval_truncated,
-        )
+        if fallback_eligible
+        else baseline
+    )
+    scope_set = frozenset(scope)
+    outside = [
+        item
+        for item in result.bindings
+        if not scope_set.intersection(_target_cube_names(item))
+    ]
+    return ScopedDiscoveryReceipt(
+        surface=surface,
+        kind_hint=kind_hint,
+        sibling_surface=sibling_surface,
+        sibling_cube_names=scoped.scope,
+        baseline_backend=baseline.retrieval_backend,
+        baseline_candidate_count=len(baseline.bindings),
+        fallback_used=(
+            fallback_eligible
+            and result.retrieval_backend == "governed_sibling_scope_v1"
+        ),
+        scoped_candidate_count_before_bound=len(scoped_all),
+        scoped_candidate_count_visible=len(result.bindings),
+        candidate_ids=tuple(item.card.candidate_id for item in result.bindings),
+        candidate_canonical_names=tuple(
+            _canonical_name(item) for item in result.bindings
+        ),
+        outside_scope_count=len(outside),
+        too_broad=result.too_broad,
+        retrieval_truncated=result.retrieval_truncated,
+    )
 
 
 def _context():
@@ -294,17 +251,15 @@ def build_receipt() -> dict:
             kind_hint=sibling_kind,
             decision_context=decision_context,
         )
-        scoped = GovernedSiblingScopeCandidateGenerator(
+        receipt = _scoped_receipt(
             base=base,
             sibling_cube_names=scope,
-            max_candidates=DEFAULT_MAX_CANDIDATES,
-        )
-        receipt = scoped.receipt(
             request_id=f"lab:{index}",
             surface=surface,
             kind_hint=kind_hint,
             decision_context=decision_context,
             sibling_surface=sibling_surface,
+            max_candidates=DEFAULT_MAX_CANDIDATES,
         )
         rows.append(
             {
