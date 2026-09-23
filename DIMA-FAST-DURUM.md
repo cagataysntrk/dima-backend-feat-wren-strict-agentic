@@ -9,7 +9,7 @@ PRE_SEAL_FT004_HEAD:
 `5114372fb78049d95a7b4ba763e73817d7052a55`
 
 OBSERVED_BRANCH_HEAD:
-`57943518e9c4ca85710795423f1cd0ee2090f809`
+`946cb933441381078941767e8ac6205349ff81e3`
 
 CURRENT_PRODUCT_GATE:
 `FT-005 — CONVERSATION + FOLLOW-UP / IMPLEMENTATION + CERTIFICATION`
@@ -476,3 +476,40 @@ Proven:
 
 MODEL_MATRIX:
 `TRANSPORT_READY / FULL_FROZEN_CORPUS_NEXT`
+
+
+## FT-005 FULL MODEL MATRIX — PARTIALLY EVALUABLE RED
+
+Run:
+`35816894471`
+
+Tested SHA:
+`946cb933441381078941767e8ac6205349ff81e3`
+
+LUNA_BASELINE / MODEL_COMPARABLE:
+`RED / EVALUABLE`
+
+SOL_CEILING / MODEL_COMPARABLE:
+`RED / PARTIALLY EVALUABLE`
+
+SOL_CEILING / MODEL_CEILING:
+`RED / PARTIALLY EVALUABLE`
+
+Why partially evaluable:
+later Sol calls hit OpenRouter HTTP 403 total key limit and are transport/provider failures, not model wrongs.
+
+Current proven families:
+- shared executable-reason typed-contract mismatch;
+- retrieval-language/entity lookup drift candidate;
+- Sol ceiling unsafe ambiguity auto-pick;
+- unsupported representation mismatch;
+- Luna clarification temporal semantic mismatch;
+- OpenRouter provider-limit rows excluded from model-quality scoring.
+
+Current conclusion:
+`STRONGER_MODEL_REQUIREMENT = NOT PROVEN`
+
+`SHARED_CONTRACT_REPRESENTATION_DEBT = PROVEN`
+
+Next exact action:
+real pinned-Metabase metadata SEARCH proof for observed retrieval terms before any retrieval prompt change.
