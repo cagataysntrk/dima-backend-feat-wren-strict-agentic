@@ -60,6 +60,7 @@ from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
     ObligationOrigin,
+    UserIntentEnvelope,
 )
 from app.v2.manager_policy import (
     ManagerCapabilityExecutionMode,
