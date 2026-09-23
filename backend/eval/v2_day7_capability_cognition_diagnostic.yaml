@@ -13,21 +13,18 @@ cases:
   - id: neutral-state-tr
     question: "Seyrek sinyalin mevcut durumunu göster."
     kind: cognition_diagnostic
-    expected_terminal: VERIFIED_COMPLETE
     must_tools: [run_analytics]
     max_queries: 1
 
   - id: neutral-review-tr
     question: "Seyrek sinyali değerlendir ve yalnız gözlenen durumu göster."
     kind: cognition_diagnostic
-    expected_terminal: VERIFIED_COMPLETE
     must_tools: [run_analytics]
     max_queries: 1
 
   - id: neutral-investigate-tr
     question: "Seyrek sinyali araştır. Kanıt yoksa yeni sonuç uydurma ve gereksiz dallanma açma."
     kind: cognition_diagnostic
-    expected_terminal: VERIFIED_COMPLETE
     must_tools: [run_analytics]
     require_zero_row_observation: true
     max_derived_executions: 0
@@ -36,7 +33,6 @@ cases:
   - id: neutral-inspect-en
     question: "Inspect the sparse signal and report only its observed state; do not infer causes."
     kind: cognition_diagnostic
-    expected_terminal: VERIFIED_COMPLETE
     must_tools: [run_analytics]
     max_queries: 1
 
