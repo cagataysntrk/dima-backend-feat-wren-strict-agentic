@@ -235,24 +235,36 @@ def test_verified_evidence_backed_claim_builds_canonical_report():
     )
 
 
-def test_finding_with_missing_evidence_lineage_returns_needs_evidence():
-    finding = _finding("F1", evidence_refs=("E_MISSING",))
+def test_finding_with_missing_derived_parent_lineage_never_becomes_cached_truth():
+    child = _evidence(
+        "E_CHILD",
+        query_contract_refs=("QC_PARENT", "QC_CHILD"),
+        source_kind="DERIVED_ANALYTICAL",
+        parent_evidence_refs=("E_PARENT",),
+        parent_query_contract_refs=("QC_PARENT",),
+        transformation="TREND",
+    )
+    finding = _finding("F1", evidence_refs=("E_CHILD",))
     builder, _, _ = _builder(
-        current_refs=("E_MISSING",),
+        evidence=(child,),
+        current_refs=("E_CHILD", "E_PARENT"),
         findings=(finding,),
     )
-    result = builder.build(
-        _request(
-            ReportBlockSpec(
-                block_kind=ReportBlockKind.ROOT_CAUSE,
-                claim_kind=ReportClaimKind.EPISTEMIC,
-                content="Aday neden.",
-                finding_refs=("F1",),
-            )
+    request = _request(
+        ReportBlockSpec(
+            block_kind=ReportBlockKind.ROOT_CAUSE,
+            claim_kind=ReportClaimKind.EPISTEMIC,
+            content="Aday neden.",
+            finding_refs=("F1",),
         )
     )
-    assert result.status == ReportBuildStatus.NEEDS_EVIDENCE
-    assert any(issue.code == ReportIssueCode.UNKNOWN_EVIDENCE for issue in result.issues)
+
+    first = builder.build(request)
+    second = builder.build(request)
+
+    assert first.status == second.status == ReportBuildStatus.NEEDS_EVIDENCE
+    assert any(issue.code == ReportIssueCode.UNKNOWN_EVIDENCE for issue in first.issues)
+    assert any(issue.ref == "E_PARENT" for issue in second.issues)
 
 
 def test_candidate_cause_label_and_limitations_are_preserved():
@@ -275,6 +287,24 @@ def test_candidate_cause_label_and_limitations_are_preserved():
     assert finding.limitations[0] in block.limitations
     assert block.finding_refs[0].finding_ref == "F1"
     assert block.evidence_refs[0].evidence_ref == "E1"
+
+
+def test_finding_ref_cannot_be_hidden_inside_non_epistemic_claim():
+    finding = _finding("F1")
+    builder, _, _ = _builder(findings=(finding,))
+    result = builder.build(
+        _request(
+            ReportBlockSpec(
+                block_kind=ReportBlockKind.TEXT,
+                claim_kind=ReportClaimKind.ANALYTICAL,
+                content="Analitik yorum.",
+                evidence_refs=("E1",),
+                finding_refs=("F1",),
+            )
+        )
+    )
+    assert result.status == ReportBuildStatus.REJECTED
+    assert result.issues[0].code == ReportIssueCode.FINDING_CLAIM_KIND_MISMATCH
 
 
 def test_confirmed_cause_cannot_be_laundered_into_report():
