@@ -11,19 +11,24 @@ from fastapi.responses import StreamingResponse
 
 from app.auth.dependencies import get_current_principal, require, require_company
 from app.config import get_settings
+from app.v2.product_control import ProductControlError, ProductRunControlRegistry
 from app.v2.product_coordinator import ProductCoordinator
 from app.v2.product_events import ProductEventSink
-from app.v2.product_models import ProductAskRequest, ProductEventKind, ProductResponse
-from app.v2.report_continuation import (
-    ReportContinuationNotAdmissibleError,
-    StaleReportContinuationError,
+from app.v2.product_models import (
+    ProductAskRequest,
+    ProductControlReceipt,
+    ProductControlRequest,
+    ProductEventKind,
+    ProductResponse,
 )
+from app.v2.report_continuation import StaleReportContinuationError
 from app.v2.runtime_boundary import request_ref
 from control_plane.authorize import Principal
 
 
 router = APIRouter(tags=["ask-v2"])
 _coordinator = ProductCoordinator()
+_controls = ProductRunControlRegistry()
 
 
 @router.post(
@@ -65,14 +70,6 @@ def ask_v2(
                 "message": str(exc),
             },
         ) from exc
-    except ReportContinuationNotAdmissibleError as exc:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "section_followup_binding_not_admissible",
-                "message": str(exc),
-            },
-        ) from exc
     except HTTPException:
         raise
     except Exception as exc:
@@ -107,8 +104,33 @@ def ask_v2_stream(
         )
 
     frames: queue.Queue = queue.Queue()
-    cancelled = threading.Event()
     req_ref = request_ref(body)
+    principal_subject = str(principal.user_id)
+    principal_tenant = (
+        f"id:{principal.tenant_id}"
+        if principal.tenant_id is not None
+        else f"slug:{principal.tenant_slug or ''}"
+    )
+    try:
+        control = _controls.register(
+            principal_subject=principal_subject,
+            tenant_binding=principal_tenant,
+        )
+    except ProductControlError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "product_control_unavailable",
+                "message": str(exc),
+            },
+        ) from exc
+
+    frames.put(
+        {
+            "type": "control",
+            "control_ref": control.control_ref,
+        }
+    )
 
     def on_event(event) -> None:
         frames.put(
@@ -130,7 +152,8 @@ def ask_v2_stream(
                 body=body,
                 principal=principal,
                 event_sink=sink,
-                cancel_check=cancelled.is_set,
+                cancel_check=control.cancelled,
+                answer_now_check=control.answer_now_requested,
             )
             frames.put(
                 {
@@ -151,7 +174,8 @@ def ask_v2_stream(
         finally:
             frames.put(None)
 
-    threading.Thread(target=run_product, daemon=True).start()
+    worker = threading.Thread(target=run_product, daemon=True)
+    worker.start()
 
     def stream():
         keepalive_ix = 0
@@ -177,12 +201,57 @@ def ask_v2_stream(
                     + "\n"
                 )
         finally:
-            # This is only a cancellation signal. Existing ResearchTaskRegistry remains
-            # the lifecycle authority and rejects any late Evidence commit.
-            cancelled.set()
+            # Transport disconnect signals the same live cancel control. Existing
+            # ResearchTaskRegistry remains lifecycle authority and rejects late commits.
+            if worker.is_alive():
+                control.signal("CANCEL")
+            _controls.release(control.control_ref)
 
     return StreamingResponse(
         stream(),
         media_type="application/x-ndjson",
         headers={"Cache-Control": "no-cache"},
+    )
+
+
+@router.post(
+    "/ask-v2/runs/{control_ref}/control",
+    response_model=ProductControlReceipt,
+    dependencies=[Depends(require("query:run")), Depends(require_company)],
+)
+def ask_v2_control(
+    control_ref: str,
+    body: ProductControlRequest,
+    principal: Principal = Depends(get_current_principal),
+) -> ProductControlReceipt:
+    """Signal a currently attached live Product stream; this does not mutate run truth."""
+
+    if not get_settings().ask_v2_enabled:
+        raise HTTPException(status_code=404, detail="ask-v2 kapalı")
+
+    principal_subject = str(principal.user_id)
+    principal_tenant = (
+        f"id:{principal.tenant_id}"
+        if principal.tenant_id is not None
+        else f"slug:{principal.tenant_slug or ''}"
+    )
+    try:
+        _controls.signal(
+            control_ref,
+            principal_subject=principal_subject,
+            tenant_binding=principal_tenant,
+            action=body.action,
+        )
+    except ProductControlError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "product_control_not_found",
+                "message": str(exc),
+            },
+        ) from exc
+
+    return ProductControlReceipt(
+        control_ref=control_ref,
+        action=body.action,
     )
