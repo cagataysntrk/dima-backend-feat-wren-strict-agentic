@@ -50,3 +50,5 @@ jobs:
           name: v2-day7-insufficient-evidence-once-${{ github.run_id }}
           path: backend/lab/reports/v2_day7_insufficient_evidence_once.json
           retention-days: 90
+
+# rerun-seal: 2
