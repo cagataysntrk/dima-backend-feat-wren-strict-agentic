@@ -1,0 +1,47 @@
+name: dima-fast-ft005n-db-oracle
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft005n-db-oracle.yml"
+      - "backend/lab/ft005n/db_oracle.py"
+      - "backend/eval/ft005n_seam_corpus_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Fast
+        uses: actions/checkout@v4
+
+      - name: Checkout frozen Boyahane
+        uses: actions/checkout@v4
+        with:
+          repository: cagataysntrk/metabase-boyahane
+          ref: f0c4a6b053ead52ca2eac80002c448323dc34a35
+          path: boyahane-control
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install duckdb
+
+      - name: Compute frozen independent DB oracle
+        run: |
+          mkdir -p backend/lab/ft005n/artifacts
+          python backend/lab/ft005n/db_oracle.py             --source boyahane-control/data/boyahane.duckdb             --corpus backend/eval/ft005n_seam_corpus_v1.json             --out backend/lab/ft005n/artifacts/db-oracle.json
+
+      - name: Upload oracle
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-fast-ft005n-db-oracle-${{ github.sha }}
+          path: backend/lab/ft005n/artifacts/db-oracle.json
+          retention-days: 14
