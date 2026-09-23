@@ -37,9 +37,10 @@ cases:
   - id: multi-obligation
     question: "Net geliri değerlendir; ayrıca sipariş sayısını geçen dönemle karşılaştır."
     kind: multi_obligation
-    must_tools: [run_analytics]
-    min_user_must: 2
-    max_queries: 4
+    expected_preacceptance_state: NEEDS_CLARIFICATION
+    expected_observation_kind: material_grounding_gap
+    expect_no_ledger: true
+    max_queries: 0
 
   - id: relationship-safe
     question: "Duruş süresinin bölümlerle ilişkisini incele."
@@ -51,9 +52,10 @@ cases:
   - id: relationship-unsafe
     question: "Net gelir ile üretim bölümü arasındaki ilişkiyi incele."
     kind: relationship_unsafe
-    must_tools: [run_relationship]
-    require_typed_block: true
-    max_queries: 1
+    expected_preacceptance_state: NEEDS_CLARIFICATION
+    expected_observation_kind: material_grounding_gap
+    expect_no_ledger: true
+    max_queries: 0
 
   - id: adaptive-material
     question: "Net geliri bölgelere göre araştır. Bir bölge belirgin ayrışırsa, kanıtı gördükten sonra uygun başka bir kırılımı yalnız gerekliyse aç."
