@@ -3132,3 +3132,59 @@ forbidden:
 
 status:
 `CLASSIFIED / CI-ONLY CORRECTION AUTHORIZED`.
+
+
+---
+
+## DMP-P12X-C1-TRANSIENT-001 — PX-13 stock stream timeout aborts the entire benchmark
+
+opened_at: 2026-09-23  
+tested_sha: `d3c4bc4a7a4b4a7d1b0650e03b0c2cf357d60f81`  
+workflow: `35830152880`  
+job: `107080635696`  
+artifact: `10737161556`
+
+classification:
+`TRANSPORT_RUNTIME / BENCHMARK_HARNESS_FAIL_FAST`
+
+observed:
+- stock/fork image resolution, Boyahane import, restricted-user bootstrap and first four cases all completed;
+- artifacts exist for `PX-01`, `PX-03`, `PX-06`, `PX-07` on both stock and fork;
+- `PX-13 / stock` started normally;
+- the native stream exceeded the existing probe read timeout and raised
+  `httpx.ReadTimeout` while iterating the response body;
+- the workflow aborted before producing a PX-13 stock artifact, before the PX-13 fork attempt, and
+  before divergence discovery/repeat scoring;
+- no scorer or fork-capability assertion failed;
+- prior canonical C1 evidence `35828372103` already showed PX-13 as
+  `stock FAIL / fork PASS`, so the supervisor protocol requires bounded remeasurement rather than
+  whole-run termination.
+
+root_cause:
+The generic native probe is fail-fast at process level. C1 needs **candidate-level failure evidence**
+so a transient/provider/runtime timeout can be scored as that side's FAIL and, when materially
+divergent, enter the already-authorized two-repeat protocol.
+
+single_owner:
+`backend/lab/metabase/p12x/` C1 benchmark harness +
+`.github/workflows/dima-metabase-p12x-c1.yml`.
+
+authorized_correction:
+- add a C1-only resilient wrapper around `native_probe.py`;
+- on probe process failure, persist a typed JSON candidate artifact containing the case/question,
+  failure class, return code and bounded stderr tail;
+- return success to the outer C1 case loop **only after that failure artifact is written**;
+- let the existing scorer mark that runtime/case as FAIL;
+- let the existing divergence stage decide which cases require exactly two repeats per side;
+- final C1 gate remains unchanged.
+
+forbidden:
+- increasing correctness tolerance;
+- changing corpus/oracle;
+- treating timeout as PASS;
+- suppressing provider/tool errors inside a successful native artifact;
+- changing native Metabot prompts or source;
+- P13/C2 implementation before C1 seal.
+
+status:
+`CLASSIFIED / C1-HARNESS-ONLY CORRECTION AUTHORIZED`.

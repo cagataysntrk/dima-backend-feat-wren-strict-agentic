@@ -1826,3 +1826,18 @@ submodule state = no evidence of defect
 C1 live run     = untouched
 owner           = governance YAML only
 ```
+
+
+### P12X-C1 run 35830152880 RED classified
+
+```text
+failure point       = PX-13 / stock native stream
+exception           = httpx.ReadTimeout
+scorer reached      = NO
+fork regression     = NO EVIDENCE
+classification      = TRANSPORT_RUNTIME / BENCHMARK_HARNESS_FAIL_FAST
+owner               = C1 lab harness/workflow only
+corrective rule     = persist candidate-level failure artifact, then continue to divergence scoring
+C1 seal             = HELD
+C2 implementation   = STOP
+```
