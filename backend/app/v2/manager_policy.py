@@ -100,6 +100,7 @@ class ManagerCapabilityRegistry:
         ManagerCapabilityKey.ROOT_CAUSE: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.ROOT_CAUSE,
             lane=ManagerCapabilityLane.RESEARCH,
+            executable=False,
             required_kinds=frozenset({"metric"}),
             exclusion_required_kinds=frozenset({"metric"}),
             allowed_kinds=_RESEARCH_KINDS,
@@ -112,6 +113,7 @@ class ManagerCapabilityRegistry:
         ManagerCapabilityKey.TREND: ManagerCapabilitySpec(
             key=ManagerCapabilityKey.TREND,
             lane=ManagerCapabilityLane.RESEARCH,
+            executable=False,
             allowed_kinds=_RESEARCH_KINDS,
             effect_family="trend",
             intent_description="Investigate how a metric changes over time as a trend.",
