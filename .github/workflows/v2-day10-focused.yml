@@ -51,4 +51,4 @@ jobs:
       - name: Day10 focused provider-free
         working-directory: backend
         run: |
-          pytest -q             tests/test_v2_day10_frontdoor.py             tests/test_v2_day10_report_projection.py
+          pytest -q             tests/test_v2_day10_frontdoor.py             tests/test_v2_day10_report_projection.py             tests/test_v2_day10_product_events.py
