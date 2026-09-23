@@ -590,6 +590,11 @@ class GovernedSiblingScopeCandidateGenerator:
         )
         self._max_candidates = max(1, int(max_candidates))
 
+    @property
+    def scope(self) -> tuple[str, ...]:
+        """Deterministic governed containment scope; diagnostic only, never authority."""
+        return tuple(sorted(self._scope))
+
     @staticmethod
     def _cube_names(item: CatalogCandidateBinding) -> frozenset[str]:
         return frozenset(
@@ -599,6 +604,23 @@ class GovernedSiblingScopeCandidateGenerator:
             )
             if str(value)
         )
+
+    def scoped_bindings(
+        self,
+        kind_hint: str,
+    ) -> tuple[CatalogCandidateBinding, ...]:
+        """Return current governed candidates inside scope before the hard visibility bound."""
+        if not self._scope:
+            return ()
+        out = [
+            item
+            for item in self._base._governed_candidates(kind_hint)
+            if not item.sensitive
+            and bool(item.card.verified_aliases)
+            and bool(self._scope.intersection(self._cube_names(item)))
+        ]
+        out.sort(key=lambda item: item.card.candidate_id)
+        return tuple(out)
 
     def generate(
         self,
@@ -621,14 +643,7 @@ class GovernedSiblingScopeCandidateGenerator:
                 retrieval_truncated=False,
             )
 
-        scoped = [
-            item
-            for item in self._base._governed_candidates(kind_hint)
-            if not item.sensitive
-            and bool(item.card.verified_aliases)
-            and bool(self._scope.intersection(self._cube_names(item)))
-        ]
-        scoped.sort(key=lambda item: item.card.candidate_id)
+        scoped = self.scoped_bindings(kind_hint)
         too_broad = len(scoped) > self._max_candidates
         return CandidateSet(
             request_id=request_id,
