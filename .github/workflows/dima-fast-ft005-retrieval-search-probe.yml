@@ -1,0 +1,83 @@
+name: dima-fast-ft005-retrieval-search-probe
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft005-retrieval-search-probe.yml"
+      - "backend/lab/fast_ft005_retrieval_search_probe.py"
+      - "backend/app/fast/resource_registry.py"
+      - "backend/app/fast/metabase_gateway.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retrieval-search-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      DIMA_FAST_FT005_RETRIEVAL_PROBE_RECEIPT: "lab/metabase/artifacts/ft005-retrieval-search-probe.json"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Start pinned Metabase OSS lab
+        working-directory: backend/lab/metabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          docker compose --env-file .env up -d
+          ./scripts/health.sh
+          set -a
+          source .env
+          set +a
+          python3 scripts/bootstrap.py
+
+      - name: Run real metadata SEARCH language probe
+        working-directory: backend
+        env:
+          METABASE_PORT: "3300"
+          MB_ADMIN_EMAIL: "admin@dima-lab.local"
+          MB_ADMIN_PASSWORD: "DimaMetabaseLabAdmin!2026"
+        run: |
+          mkdir -p lab/metabase/artifacts
+          python lab/fast_ft005_retrieval_search_probe.py
+
+      - name: Upload retrieval probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-fast-ft005-retrieval-search-probe-${{ github.sha }}
+          path: backend/lab/metabase/artifacts/ft005-retrieval-search-probe.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show retrieval probe
+        if: always()
+        working-directory: backend
+        run: |
+          test ! -f lab/metabase/artifacts/ft005-retrieval-search-probe.json || cat lab/metabase/artifacts/ft005-retrieval-search-probe.json
+
+      - name: Teardown
+        if: always()
+        working-directory: backend/lab/metabase
+        run: |
+          test -f .env || cp .env.example .env
+          docker compose --env-file .env down -v --remove-orphans || true
