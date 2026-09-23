@@ -595,3 +595,28 @@ Do not teach Metabot the answer.
 
 Give Metabot the canonical business semantic resource the architecture says it should have, then let
 native Metabot reason. Dima remains the truth boundary.
+
+
+---
+
+## 19. POST-P13B SUPERVISOR DIRECTIVE — P13C + CI ECONOMY
+
+The previous `STOP FOR SUPERVISOR AUDIT` was satisfied by a new supervisor directive.
+
+P13B remains sealed; it must not be reopened or rerun.
+
+Current authorized work is bounded to:
+1. a real next engine revision with typed same-table textual equality predicate attestation;
+2. permanent certified-image CI so Platform tests pull an immutable digest instead of rebuilding;
+3. P13C provider-free integration reusing P11 + P10/P5 security identity;
+4. after provider-free GREEN, one Luna P13C canary only;
+5. if GREEN, stop for supervisor audit.
+
+Predevelopment review:
+`backend/belgeler/metabase/predev/P13C_NATIVE_TEXTUAL_FILTER_AND_CI_ECONOMY_REVIEW.md`.
+
+Current source-level conclusion:
+`ENGINE FILTER ATTESTATION EXTENSION REQUIRED = YES`.
+
+No new entity resolver, second access fingerprint, Python MBQL parser, filter normalizer, fuzzy
+matcher, translation layer or analytical fallback is authorized.

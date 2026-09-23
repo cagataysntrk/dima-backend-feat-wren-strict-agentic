@@ -2310,3 +2310,43 @@ remove source-build certification.
 status:
 `SEALED / P13B-3 BOUNDED LIVE GREEN / STOP FOR SUPERVISOR AUDIT`.
 
+
+
+---
+
+## DMP-DEC-0041 — P13C predevelopment seal and certified-image CI authorization
+
+date: 2026-09-23
+
+The post-P13B supervisor audit authorizes two linked bounded goals:
+
+1. eliminate repeated Platform engine source builds by certifying/publishing one immutable engine
+   image per real engine candidate;
+2. then open the first same-table low-cardinality textual equality P13C Standard vertical.
+
+Provider-free source inspection proves dima.3 cannot safely authorize the textual predicate:
+the engine reports `non_temporal_filter_count` but not the typed physical field/operator/literal
+facts required to map the native query to Dima-owned filter truth. Therefore the next real engine
+revision requires a bounded native textual-equality attestation extension.
+
+The next engine release is derived from the existing 1→2→3 release history as
+`0.63.18-dima.4`; this is an observation/trust seam extension, not a Metabot cognition change.
+
+P11 production integration must reuse `EntityValueAdoptionGate` and the existing P5/P10
+`ExecutionAccessSnapshot.execution_access_fingerprint`. A second access fingerprint/resolver is
+forbidden. P10 may expose a bounded expected-resource issuance path using the same snapshot contract
+and fingerprint algorithm so current-user value evidence can carry the final durable lens identity
+before native candidate authorization.
+
+P13A may accept at most one governed filter only with an exact filter-scope fingerprint and exact
+authorized resource equality. P13B's zero-filter path remains a required regression.
+
+The dima.4 candidate must also establish the permanent build-once/pull-many pattern:
+cheap gates first, one BuildKit-cached source build, smoke, GHCR publish, immutable digest resolution,
+pull-by-digest, runtime /identity verification and a machine-readable certified-image receipt.
+
+No model call is authorized before provider-free P13C GREEN. After that, one Luna P13C canary is
+authorized; a GREEN result requires an immediate supervisor stop.
+
+status:
+`SEALED / P13C BOUNDED IMPLEMENTATION + DIMA.4 CERTIFIED-IMAGE CI AUTHORIZED`.

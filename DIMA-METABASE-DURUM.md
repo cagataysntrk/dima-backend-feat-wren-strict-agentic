@@ -2483,3 +2483,61 @@ NO GENERALIZATION
 STOP FOR SUPERVISOR AUDIT
 ```
 
+
+
+---
+
+## 2026-09-23 — P13C PREDEVELOPMENT + CI ECONOMY AUTHORIZED
+
+New supervisor directive supersedes the prior P13B stop only for the two bounded next milestones.
+P13B itself remains sealed and will not be rerun.
+
+Provider-free source inspection result:
+
+```text
+engine dima.3 textual filter typed attestation = INSUFFICIENT
+non_temporal_filter_count                      = PRESENT
+typed field/operator/literal/type              = ABSENT
+engine attestation extension needed            = YES
+Python MBQL parser                              = NO
+Metabot cognition change                        = NO
+```
+
+Authorized next engine revision, derived from release history:
+
+```text
+0.63.18-dima.4
+```
+
+The same revision must establish permanent CI economy:
+
+```text
+cheap deterministic gates
+→ one cached source build
+→ smoke
+→ publish exact GHCR image
+→ immutable digest
+→ pull exact digest
+→ /identity verify
+→ certified-image receipt
+```
+
+P13C first capability stays one same-table low-cardinality textual equality filter. The frozen
+Boyahane schema confirms `satis_siparisleri.kanal` exists as VARCHAR, but no value is frozen until
+the actual fixture and restricted-current-user retrieval prove it.
+
+Security invariant:
+P11 evidence must use the existing P5/P10 `execution_access_fingerprint`; no second lens hash or
+resolver framework is allowed.
+
+Model budget before provider-free GREEN:
+
+```text
+Luna = 0
+Sol  = 0
+C1   = 0
+```
+
+Current next action:
+bounded dima.4 engine filter-attestation + certified-image CI implementation, then Platform
+gitlink/runtime-lock migration and provider-free P13C proof.
