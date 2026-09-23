@@ -10,7 +10,7 @@ No failed/clarification/unsupported Standard state is reinterpreted as Research.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from app.config import get_settings
 from app.llm import build_generator
@@ -167,6 +167,7 @@ class ProductCoordinator:
         body: AskV2Request,
         principal,
         event_sink: ProductEventSink | None = None,
+        cancel_check: Callable[[], bool] | None = None,
     ) -> ProductResponse:
         self._ensure_standard_lane()
         assert self._standard_lane is not None
@@ -247,6 +248,7 @@ class ProductCoordinator:
                 context=context,
                 body=body,
                 progress_callback=on_progress,
+                cancel_check=cancel_check,
             )
             return self._research_response(
                 context=context,
@@ -371,6 +373,15 @@ class ProductCoordinator:
             )
         )
 
+        if result.outcome.cancelled:
+            return self._research_terminal(
+                context=context,
+                result=result,
+                status=ProductStatus.CANCELLED,
+                evidence=evidence,
+                limitations=base_limitations,
+                sink=sink,
+            )
         if result.outcome.clarification_required:
             return self._research_terminal(
                 context=context,
