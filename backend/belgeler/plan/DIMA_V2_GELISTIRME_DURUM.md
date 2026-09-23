@@ -10074,3 +10074,235 @@ Hidden50, or broad Day9/Day8 corpora.
 
 Historical Day8 live RED receipts above remain authoritative history and are intentionally not
 rewritten.
+
+
+---
+
+## 2026-09-23 — DAY9-A DETERMINISTIC REPORT AUTHORITY GREEN
+
+```text
+DAY8 deterministic engineering = GREEN
+DAY8 real-Wren                  = GREEN
+DAY8 live Sol                   = OPEN / NOT GREEN
+DAY8 final seal                 = DEFERRED TO DAY10 INTEGRATED LIVE GATE
+
+DAY9 / P12-A                    = GREEN / SUPERVISOR STOP
+Day9 product behavior SHA       = 2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+Day9 focused                    = 35903324742 = GREEN
+focused tests                   = 16 passed
+Day9 paid calls                 = 0
+```
+
+### Canonical Day9-A output
+
+New file:
+`backend/app/v2/report_builder.py`.
+
+Typed authority:
+
+```text
+ReportDocument
+  report_id
+  title
+  sections
+  evidence_index
+  limitations
+  provenance
+
+ReportSection
+  section_id
+  title
+  blocks
+  evidence_refs
+  semantic_scope
+  followup_context_ref
+  limitations
+
+ReportBlock
+  block_id
+  block_kind
+  claim_kind
+  content
+  evidence_refs
+  finding_refs
+  artifact_ref
+  render_spec
+  epistemic_label
+  hypothesis_ref
+  limitations
+```
+
+Reference models:
+- `ReportEvidenceRef` preserves Evidence identity + QueryContract refs only;
+- `ReportFindingRef` preserves canonical Finding identity;
+- `ReportArtifactRef` preserves presentation artifact identity + kind;
+- `ReportRenderSpec` / `ReportResultShape` are presentation support only.
+
+### Structural claim grounding
+
+```text
+NUMERIC
+→ Evidence required
+
+ANALYTICAL
+→ Evidence required
+
+EPISTEMIC
+→ exactly one canonical FindingRef
+→ underlying verified Evidence lineage required
+
+NARRATIVE
+→ evidence-free only by explicit typed claim class
+
+LIMITATION
+→ limitation presentation, never analytical truth
+```
+
+No regex scans prose for digits or analytical meaning.
+
+### Evidence / finding validation
+
+Every report EvidenceRef must:
+- belong to the supplied current report source run,
+- resolve in the existing Evidence authority,
+- be VERIFIED,
+- preserve QueryContract provenance,
+- preserve derived parent Evidence lineage when derived.
+
+FindingRef must:
+- resolve to a supplied canonical `EvidenceLinkedFinding`,
+- match accepted contract / lineage / run provenance,
+- preserve its underlying Evidence,
+- preserve causal limitations,
+- never expose unavailable `CONFIRMED_CAUSE`.
+
+A FindingRef is legal only in typed `EPISTEMIC` blocks. It cannot be hidden inside
+`ANALYTICAL` or `NUMERIC` prose to bypass epistemic classification.
+
+### Deterministic identity / section anchor
+
+Authority IDs are server-generated hashes:
+
+```text
+rblk_*
+rsec_*
+rctx_*
+rpt_*
+```
+
+Identity seeds exclude presentation title/content/render settings.
+Reference order is normalized; equivalent authoritative input order produces stable report,
+section and follow-up identities.
+
+Section follow-up anchor:
+
+```text
+section_id
++ EvidenceRef[]
++ governed semantic_scope
++ followup_context_ref
+```
+
+No section semantic scope is recovered from prose.
+
+### Pure composition boundary
+
+`ReportBuilder` imports/executes none of:
+- DB query path,
+- Wren,
+- LLM,
+- semantic linker/retriever,
+- legacy report composer,
+- viz recommendation.
+
+Missing Evidence returns typed `NEEDS_EVIDENCE`.
+Invalid semantic/finding/artifact authority returns typed `REJECTED`.
+The builder does not create replacement analytical work.
+
+### Current-viewer replay seam
+
+`ReportSourceProvenance` retains:
+- accepted_contract_id,
+- lineage_id,
+- run_id,
+- tenant_binding,
+- context_version,
+- `CURRENT_RUN_ONLY_REAUTHORIZE_ON_REPLAY` access policy.
+
+Evidence index retains EvidenceRef + QueryContractRef pointers.
+
+Therefore future Day12–14 current-viewer reauthorization remains possible without inventing
+a fake Day9 security token.
+
+Current restriction:
+ReportDocument is safe for same-request/current-run rendering under existing authority, but it is
+NOT yet a freely replayable cross-user/cross-tenant cache of warehouse-derived truth.
+
+### Legacy report/viz characterization
+
+`backend/app/report.py::compose_report`
+must NOT be canonical because it executes `cube_sql → query`.
+
+`backend/app/report.py::bolumlerden_kur`
+is reference-only for the pure idea:
+already-executed sections → compose without re-query.
+
+`backend/app/viz.py`
+is deferred. It may later be a presentation adapter only; its name/unit/result heuristics cannot
+become semantic authority.
+
+### Metabase patterns
+
+Adopted:
+```text
+document composition
+!= reference hydration
+!= permission resolution
+
+presentation/render config
+!= analytical truth
+```
+
+Also preserved:
+```text
+valid Evidence
++ render/artifact failure
+→ Evidence remains valid
+```
+
+Explicitly rejected:
+- Metabase runtime/code as Dima execution substrate,
+- copying query/Evidence truth by value into report authority,
+- treating creator access as permanent report replay permission.
+
+### Focused proof
+
+Run `35903324742`:
+
+```text
+compile report_builder.py = GREEN
+16 focused tests          = GREEN
+paid calls                = 0
+Wren/DB/LLM calls         = 0
+```
+
+Coverage includes:
+- numeric/analytical claims without Evidence,
+- unknown/unverified Evidence,
+- derived parent-lineage failure,
+- canonical Finding lineage,
+- CANDIDATE_CAUSE preservation,
+- CONFIRMED_CAUSE rejection,
+- Finding claim-class anti-laundering,
+- governed semantic scope,
+- stable section/follow-up identity,
+- broken artifact handling,
+- result-shape metadata as presentation support,
+- raw tool payload rejection,
+- order normalization,
+- static no-analytics/no-probabilistic dependency guard.
+
+### STOP
+
+D9-A is GREEN. Do not automatically begin D9-B narration, export, frontend or Day10.
+Return to supervisor for report-authority review.
