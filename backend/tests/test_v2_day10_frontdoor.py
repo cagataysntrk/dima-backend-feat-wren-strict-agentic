@@ -225,7 +225,13 @@ def test_only_research_required_enters_research_with_raw_request_and_context(mon
     assert response.status == ProductStatus.CLARIFY
     assert len(research.calls) == 1
     call = research.calls[0]
-    assert set(call) == {"context", "body", "progress_callback", "cancel_check"}
+    assert set(call) == {
+        "context",
+        "body",
+        "progress_callback",
+        "cancel_check",
+        "answer_now_check",
+    }
     assert call["context"] is context
     assert call["body"] is body
     assert response.evidence_refs[0].evidence_ref == "evi_research"
@@ -235,6 +241,7 @@ def test_only_research_required_enters_research_with_raw_request_and_context(mon
     assert "obligations" not in call
     assert callable(call["progress_callback"])
     assert call["cancel_check"] is None
+    assert call["answer_now_check"] is None
 
 
 def test_standard_nonresearch_terminals_never_silently_fallback(monkeypatch):
