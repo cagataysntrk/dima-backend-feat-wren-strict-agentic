@@ -73,6 +73,75 @@ class NativeTurn:
         }
 
 
+def apply_stream_line(turn: NativeTurn, line: str) -> None:
+    if not line:
+        return
+    prefix, sep, encoded = line.partition(":")
+    if not sep or prefix not in PREFIX:
+        return
+    try:
+        value = json.loads(encoded)
+    except json.JSONDecodeError:
+        turn.errors.append(
+            {"class": "STREAM_PARSE_ERROR", "line_digest": digest(line)}
+        )
+        return
+
+    kind = PREFIX[prefix]
+    if kind == "text":
+        text = str(value)
+        turn.text += text
+        if (
+            turn.response_history
+            and turn.response_history[-1].get("role") == "assistant"
+            and "content" in turn.response_history[-1]
+        ):
+            turn.response_history[-1]["content"] += text
+        else:
+            turn.response_history.append(
+                {"role": "assistant", "content": text}
+            )
+    elif kind == "data":
+        if isinstance(value, dict):
+            turn.data_parts.append(value)
+            if (
+                value.get("type") == "state"
+                and isinstance(value.get("value"), dict)
+            ):
+                turn.state = value["value"]
+    elif kind == "tool_call":
+        if isinstance(value, dict):
+            turn.tool_calls.append(value)
+            tool_name = str(value.get("toolName") or "")
+            turn.tool_sequence.append(tool_name)
+            turn.response_history.append(
+                {
+                    "role": "assistant",
+                    "tool_calls": [
+                        {
+                            "id": value.get("toolCallId"),
+                            "name": value.get("toolName"),
+                            "arguments": value.get("args"),
+                        }
+                    ],
+                }
+            )
+    elif kind == "tool_result":
+        if isinstance(value, dict):
+            turn.tool_results.append(value)
+            turn.response_history.append(
+                {
+                    "role": "tool",
+                    "content": value.get("result"),
+                    "tool_call_id": value.get("toolCallId"),
+                }
+            )
+    elif kind == "error":
+        turn.errors.append(value)
+    elif kind == "finish_message" and isinstance(value, dict):
+        turn.finish_reason = value.get("finishReason")
+
+
 class NativeMetabotSession:
     def __init__(self, *, base_url: str, session: str, profile_id: str = "nlq") -> None:
         self.base_url = base_url.rstrip("/")
@@ -127,60 +196,7 @@ class NativeMetabotSession:
                     return turn
 
                 for line in response.iter_lines():
-                    if not line:
-                        continue
-                    prefix, sep, encoded = line.partition(":")
-                    if not sep or prefix not in PREFIX:
-                        continue
-                    try:
-                        value = json.loads(encoded)
-                    except json.JSONDecodeError:
-                        turn.errors.append({"class": "STREAM_PARSE_ERROR", "line_digest": digest(line)})
-                        continue
-                    kind = PREFIX[prefix]
-                    if kind == "text":
-                        text = str(value)
-                        turn.text += text
-                        if turn.response_history and turn.response_history[-1].get("role") == "assistant" and "content" in turn.response_history[-1]:
-                            turn.response_history[-1]["content"] += text
-                        else:
-                            turn.response_history.append({"role": "assistant", "content": text})
-                    elif kind == "data":
-                        if isinstance(value, dict):
-                            turn.data_parts.append(value)
-                            if value.get("type") == "state" and isinstance(value.get("value"), dict):
-                                turn.state = value["value"]
-                    elif kind == "tool_call":
-                        if isinstance(value, dict):
-                            turn.tool_calls.append(value)
-                            tool_name = str(value.get("toolName") or "")
-                            turn.tool_sequence.append(tool_name)
-                            turn.response_history.append(
-                                {
-                                    "role": "assistant",
-                                    "tool_calls": [
-                                        {
-                                            "id": value.get("toolCallId"),
-                                            "name": value.get("toolName"),
-                                            "arguments": value.get("args"),
-                                        }
-                                    ],
-                                }
-                            )
-                    elif kind == "tool_result":
-                        if isinstance(value, dict):
-                            turn.tool_results.append(value)
-                            turn.response_history.append(
-                                {
-                                    "role": "tool",
-                                    "content": value.get("result"),
-                                    "tool_call_id": value.get("toolCallId"),
-                                }
-                            )
-                    elif kind == "error":
-                        turn.errors.append(value)
-                    elif kind == "finish_message" and isinstance(value, dict):
-                        turn.finish_reason = value.get("finishReason")
+                    apply_stream_line(turn, line)
 
         turn.latency_ms = int((time.monotonic() - started) * 1000)
         if not turn.errors:
