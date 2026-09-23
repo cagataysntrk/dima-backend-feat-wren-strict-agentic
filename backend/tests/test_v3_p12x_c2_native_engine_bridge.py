@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from uuid import UUID
 
 import httpx
 import pytest
@@ -24,7 +25,7 @@ IDENTITY = NativeEngineIdentity(
 def req() -> NativeEngineRequest:
     return NativeEngineRequest(
         message="Haziran 2026'da kaç satış siparişi açıldı?",
-        conversation_id="conv-1",
+        conversation_id="00000000-0000-4000-8000-000000000001",
         dima_request_id="req-1",
         dima_trace_id="trace-1",
     )
@@ -39,6 +40,7 @@ def transport(stream_lines: list[str], *, runtime_tag: str = "v0.63.18-dima.0"):
         body = json.loads(request.content)
         assert body["profile_id"] == "nlq"
         assert body["message"] == req().message
+        assert body["conversation_id"] == "00000000-0000-4000-8000-000000000001"
         assert "query" not in body
         assert "sql" not in body
         return httpx.Response(202, text="\n".join(stream_lines) + "\n")
@@ -49,10 +51,26 @@ def test_c2_request_requires_dima_correlation_ids():
     with pytest.raises(ValidationError):
         NativeEngineRequest(
             message="x",
-            conversation_id="conv",
+            conversation_id="00000000-0000-4000-8000-000000000001",
             dima_request_id="",
             dima_trace_id="trace",
         )
+
+
+def test_c2_request_rejects_non_uuid_native_conversation_id():
+    with pytest.raises(ValidationError):
+        NativeEngineRequest(
+            message="x",
+            conversation_id="not-a-native-uuid",
+            dima_request_id="req",
+            dima_trace_id="trace",
+        )
+
+
+def test_c2_request_normalizes_native_conversation_id_to_uuid():
+    request = req()
+    assert isinstance(request.conversation_id, UUID)
+    assert str(request.conversation_id) == "00000000-0000-4000-8000-000000000001"
 
 
 def test_c2_bridge_preserves_ordered_native_stream_and_final_state():
