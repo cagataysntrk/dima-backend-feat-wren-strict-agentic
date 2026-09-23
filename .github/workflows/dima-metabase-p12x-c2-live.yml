@@ -1,0 +1,167 @@
+name: dima-metabase-p12x-c2-live
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/lab/metabase/p12x/c2_live_canary.py"
+      - ".github/workflows/dima-metabase-p12x-c2-live.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  ENGINE_SHA: 6bb6924452e5b9dc42b3745bb88c3125a468b297
+  RUNTIME_SOURCE_SHA: 9fb21da0177935aff5882472577c8e14a67ebd65
+  UPSTREAM_BASE_SHA: 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+  BOYAHANE_SHA: f0c4a6b053ead52ca2eac80002c448323dc34a35
+  DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+  MB_ADMIN_EMAIL: admin@c2.local
+  MB_ADMIN_PASSWORD: DimaC2Admin2026!
+  MB_RESTRICTED_EMAIL: restricted@c2.local
+  MB_RESTRICTED_PASSWORD: DimaC2Restricted2026!
+  MB_RESTRICTED_GROUP: Dima C2 Restricted
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: platform
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UpcyTech/dima-metabase-engine
+          ref: ${{ env.ENGINE_SHA }}
+          path: engine
+
+      - uses: actions/checkout@v4
+        with:
+          repository: cagataysntrk/metabase-boyahane
+          ref: ${{ env.BOYAHANE_SHA }}
+          path: boyahane
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install live proof dependencies
+        run: pip install "httpx>=0.27" "pydantic>=2" "duckdb==1.4.3" "psycopg[binary]==3.3.3"
+
+      - name: Require model credential
+        run: test -n "$DIMA_OPENROUTER_API_KEY"
+
+      - name: Freeze independent oracle
+        working-directory: platform/backend
+        env:
+          BOYAHANE_DUCKDB: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          P12X_OUT: lab/metabase/p12x/c2-artifacts
+        run: python lab/metabase/p12x/build_oracle.py
+
+      - name: Resolve exact fork runtime image
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="ghcr.io/upcytech/dima-metabase-engine@sha256:674d1ac4a929b95ab476bcdf37baa43099b398c444bc3f53fef404318892554b"
+          if echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin >/dev/null 2>&1 && docker pull "$image"; then
+            echo "FORK_IMAGE=$image" >> "$GITHUB_ENV"
+            echo "runtime_source=$RUNTIME_SOURCE_SHA" >> "$GITHUB_ENV"
+          else
+            docker build -f engine/.dima/docker/Dockerfile.c0 \
+              --build-arg MB_EDITION=oss --build-arg VERSION=0.63.18-dima.0 \
+              -t dima-engine-c2:local engine
+            echo "FORK_IMAGE=dima-engine-c2:local" >> "$GITHUB_ENV"
+            echo "runtime_source=$ENGINE_SHA" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create dima-c2
+          PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
+          docker run -d --name analytics-db --network dima-c2 --network-alias analytics-db -p 127.0.0.1:55442:5432 \
+            -e POSTGRES_DB=boyahane -e POSTGRES_USER=boyahane_owner -e POSTGRES_PASSWORD=boyahane-owner-c2 "$PG"
+          docker run -d --name app-db --network dima-c2 --network-alias app-db \
+            -e POSTGRES_DB=metabase_c2 -e POSTGRES_USER=metabase_app -e POSTGRES_PASSWORD=metabase-app-c2 "$PG"
+          for n in analytics-db app-db; do
+            for i in $(seq 1 90); do
+              docker exec "$n" pg_isready >/dev/null 2>&1 && break
+              sleep 2
+              test "$i" -lt 90
+            done
+          done
+
+      - name: Import Boyahane
+        env:
+          SOURCE_DATABASE: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          PGHOST: 127.0.0.1
+          PGPORT: "55442"
+          PGDATABASE: boyahane
+          PGUSER: boyahane_owner
+          PGPASSWORD: boyahane-owner-c2
+          BOYAHANE_READONLY_PASSWORD: boyahane-readonly-c2
+        run: python boyahane/importer/import_boyahane.py
+
+      - name: Start fork runtime
+        shell: bash
+        run: |
+          docker run -d --name mb-c2 --network dima-c2 -p 127.0.0.1:3312:3000 \
+            -e MB_DB_TYPE=postgres -e MB_DB_HOST=app-db -e MB_DB_PORT=5432 \
+            -e MB_DB_DBNAME=metabase_c2 -e MB_DB_USER=metabase_app -e MB_DB_PASS=metabase-app-c2 \
+            -e MB_AI_FEATURES_ENABLED=true -e MB_METABOT_ENABLED=true -e MB_AGENT_API_ENABLED=true \
+            -e MB_LOAD_SAMPLE_CONTENT=false -e MB_MCP_EXECUTE_SQL_ENABLED=false \
+            -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY" \
+            -e MB_LLM_METABOT_PROVIDER=openrouter/openai/gpt-5.6-luna "$FORK_IMAGE"
+
+      - name: Bootstrap restricted principal
+        working-directory: platform/backend
+        env:
+          METABASE_URL: http://127.0.0.1:3312
+          MB_SITE_NAME: Dima C2
+          ANALYTICS_DB_NAME: boyahane
+          ANALYTICS_DB_USER: metabase_boyahane
+          ANALYTICS_DB_PASSWORD: boyahane-readonly-c2
+          PGPASSWORD: boyahane-owner-c2
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+          MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
+        run: python lab/metabase/scripts/bootstrap.py
+
+      - name: Run live bridge canary
+        working-directory: platform/backend
+        env:
+          PYTHONPATH: .
+        run: |
+          python lab/metabase/p12x/c2_live_canary.py \
+            --base-url http://127.0.0.1:3312 \
+            --email "$MB_RESTRICTED_EMAIL" --password "$MB_RESTRICTED_PASSWORD" \
+            --oracle lab/metabase/p12x/c2-artifacts/oracle_v1.json \
+            --engine-sha "$ENGINE_SHA" --upstream-base-sha "$UPSTREAM_BASE_SHA" \
+            --output lab/metabase/p12x/c2-artifacts/C2_LIVE_REPORT.json
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p12x-c2-live-${{ github.sha }}
+          path: platform/backend/lab/metabase/p12x/c2-artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Logs
+        if: failure()
+        run: docker logs --tail=600 mb-c2 || true
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker rm -f mb-c2 analytics-db app-db 2>/dev/null || true
+          docker network rm dima-c2 2>/dev/null || true
