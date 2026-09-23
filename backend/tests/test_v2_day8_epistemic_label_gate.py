@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import pytest
+from types import SimpleNamespace
 
 from app.v2.epistemics import (
+    CurrentRunEvidenceView,
     EpistemicFindingError,
     EpistemicLabelGate,
     EvidenceLinkedFindingBuilder,
@@ -13,6 +15,8 @@ from app.v2.epistemics import (
 from app.v2.manager_executor import EvidenceStore
 from app.v2.manager_models import (
     ManagerCapabilityKey,
+    ManagerRunSnapshot,
+    ManagerState,
     ObligationLedgerItem,
     ObligationOrigin,
     ObligationPolarity,
@@ -152,6 +156,14 @@ def _fixture(*evidence: EvidenceArtifact):
             )
         )
 
+    runtime = SimpleNamespace(
+        snapshot=ManagerRunSnapshot(
+            run_id="run-1",
+            state=ManagerState.INVESTIGATING,
+            evidence_refs=tuple(item.artifact_id for item in evidence),
+            inspected_evidence_refs=tuple(item.artifact_id for item in evidence),
+        )
+    )
     ledger = HypothesisLedger(
         parent_obligation_id=ROOT,
         accepted_contract_id="act-1",
@@ -159,7 +171,7 @@ def _fixture(*evidence: EvidenceArtifact):
         run_id="run-1",
         obligation_ledger=_obligations(),
         evidence_store=store,
-        current_evidence_refs=tuple(item.artifact_id for item in evidence),
+        evidence_view=CurrentRunEvidenceView(runtime),
         semantic_handles=handles,
         research_tasks=tasks,
         tenant_binding=TENANT,
