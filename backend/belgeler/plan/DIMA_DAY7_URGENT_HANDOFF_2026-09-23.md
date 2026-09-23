@@ -770,3 +770,19 @@ Provider-free run `35849168189` at `6de7862...` = GREEN.
 
 Next gate: re-run manual `v2-day7-capability-cognition-diagnostic`.
 Do not run full frozen13 before that result is classified.
+
+
+## 16. POST-FIX COGNITION DIAGNOSTIC GREEN
+
+Run `35850683005` on `8e423f8105...`:
+`VALID, 8/8 evaluable, 8/8 PASS, mismatches=[]`.
+
+D7-OPEN-3 is now closed as MODEL_COGNITION with one generic correction in
+`manager_policy.py`.
+
+Next and only next paid gate:
+`v2-day7-live-sol` with
+`case_ids=insufficient-evidence,duplicate-side-effect`,
+Manager Sol / Linker Luna / Temporal Sol / workers=1.
+
+No full frozen13 before the affected pair is classified.
