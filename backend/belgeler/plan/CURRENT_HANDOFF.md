@@ -2,64 +2,50 @@
 
 ## ACTIVE AUTHORITY
 
-Read first:
+Read in this order:
 
-`backend/belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`
+1. `backend/belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`
+2. `backend/belgeler/plan/DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`
+3. `backend/belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
+4. `backend/belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`
+5. Roadmap P11 + architecture report R13
 
-Then:
-
-1. `backend/belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
-2. `backend/belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`
-3. Roadmap `P11 — DAY8 ROOT-CAUSE BRANCH`
-4. Architecture report `R13 — ROOT CAUSE VE CAUSALITY DİSİPLİNİ`
-
-## SEALED STATE
+## SEALED DAY7
 
 ```text
 branch                         feat/ask-v2-mvp
 Day7 product behavior SHA      ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
-Day7 provider-free seal        35872766887 = GREEN
+provider-free seal             35872766887 = GREEN
 historical frozen13            35855765109 = VALID / 11 of 13 / hard safety 0
 adaptive affected LIVE         35857076622 = PASS
-final micro ablation           35873755069 = INCONCLUSIVE / DAY11 DEFER
-unclassified Day7 LIVE RED     0
+final micro                    35873755069 = INCONCLUSIVE / DAY11 DEFER
 
 DAY7 / P10                     CLOSED / SEALED
-RESULT-AWARE RESEARCH LOOP     CLOSED FOR CURRENT GOVERNED SURFACE
 production /ask-v2             OFF
 DEV80                          NOT RUN
 Validation50                   NOT RUN
 Hidden50                       NOT RUN
 ```
 
-Final Day7 micro-ablation exhausted its predeclared 16-call evaluation budget before
-the final governed arm received cognition. This is an evaluation-budget outcome, not a
-product failure. **NO RETRY / NO MORE PAID DAY7 EVALUATION.** Broader FREE vs GOVERNED
-measurement is Day11-owned.
+No more paid Day7 evaluation.
 
 ## CURRENT TICKET
 
 ```text
 P11 — DAY8 ROOT-CAUSE BRANCH
-PHASE = PROVIDER-FREE ARCHITECTURE + LEGACY PRIMITIVE INVENTORY ONLY
+CURRENT SUBPHASE = DESIGN RECEIPT COMPLETE / REVIEW REQUIRED
+PRODUCT IMPLEMENTATION = NOT STARTED
 ```
 
-No Day8 product implementation is authorized until the architecture/inventory receipt is
-written and reviewed.
+Provider-free Day8 design conclusion:
+- reuse Day7 Evidence/ResearchTask/ResearchState/CrossDomain trust plane,
+- add an epistemic authority layer, not a new query/agent engine,
+- target `HypothesisLedger + evidence_for/evidence_against + EpistemicLabelGate`,
+- `ASSOCIATION != CAUSATION`,
+- `CONFIRMED_CAUSE` default-deny until a mechanistic/interventional confirmation gate exists,
+- legacy pure transforms may be wrapped over VERIFIED Evidence,
+- legacy query/orchestration paths remain rejected as authority.
 
-Day8 hard invariant:
+Proposed first implementation slice `D8-A` is documented but **not yet authorized**.
 
-```text
-ASSOCIATION != CAUSATION
-```
-
-Expected design target:
-
-```text
-HypothesisLedger
-+ evidence_for / evidence_against
-+ epistemic finding labels
-```
-
-Do not reopen Day7 without a newly discovered independent P0 defect.
-Do not run paid Day8 evaluation during this design block.
+STOP here for architecture review before Day8 product code.
