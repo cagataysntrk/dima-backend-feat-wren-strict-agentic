@@ -510,6 +510,102 @@ Permanent Day10 constraints:
 - Day10 does not activate pilot traffic; existing ask_v2_enabled flag remains boundary;
 - Day10 provider-free + deterministic real-Wren must be GREEN before paid Product-MVP execution.
 
+## DAY10 D10-A..F DETERMINISTIC GREEN / PAID GATE BLOCKED
+
+```text
+Day10 product behavior SHA                 = f4299a3bcfb48ab351db20f555483fe483e5e3e8
+latest test/harness HEAD                   = 031056398535f325ea9ce34701cc711861eeec33
+
+focused provider-free + real-Wren          = 35921618398 = GREEN
+provider-free Day10 tests                  = 29 passed
+real-Wren Product vertical                 = 1 passed
+
+paid Product-MVP                           = NOT RUN
+paid calls after Day10 authorization       = 0
+Day8 live debt                             = OPEN
+Day10 FINAL GREEN                          = NO / BLOCKED
+```
+
+Implemented and provider-free/real-Wren proven:
+- D10-A authoritative two-lane ProductCoordinator;
+- D10-B deterministic Research -> ReportDocument projection;
+- D10-C typed/idempotent ProductEvents + thin stream adapter;
+- cancel/Answer-Now controls reuse existing Research lifecycle/completion authority;
+- D10-D signed section continuation, current-viewer/tenant/context revalidation, same-run immutable
+  contract versioning and report v1 -> v2 supersession;
+- D10-E deterministic evidence-backed partial;
+- D10-F real ProductCoordinator -> governed Research -> real Wren/DuckDB -> QueryContract/Evidence
+  -> report vertical.
+
+The real-Wren RED encountered during D10-F was an EVAL/HARNESS fixture assumption, not a product
+semantic bug: `bölüm` has multiple verified exact candidates across cubes, so provider-free
+`semantic_provider=None` correctly failed closed. The deterministic test cognition was repaired to
+choose only from the production bounded candidate cards and a fixture-owned governed cube scope.
+No production semantic heuristic was added. Final run `35921618398` is GREEN.
+
+### Paid integrated gate blocker — STOP
+
+The one canonical paid Product-MVP run is currently inadmissible because two binding authorities
+cannot both be satisfied:
+
+```text
+ManagerBudget.max_total_manager_turns = 6
+ManagerBudget.max_preacceptance_turns = 2
+ManagerBudget.max_manager_turns       = 6   # phase sublimit only
+```
+
+Git history proves the total ceiling is intentional:
+`a32ed3560002ac46ed5173d8ff152852878b455d`
+= `fix(v2-day7): restore global Manager turn ceiling`.
+
+The canonical Product front door necessarily spends two Manager turns on finite pre-acceptance
+(DRAFT + COVERAGE) before post-acceptance Research. Therefore at most four Research Manager actions
+remain under the global ceiling.
+
+Day8 root-cause debt cannot fit inside those four actions. Even the already-favourable Day8
+provider-free live state machine that STARTS with inspected initial Evidence requires five cognition
+actions:
+
+```text
+propose_hypothesis
+→ propose_hypothesis_next_test
+→ run_analytics
+→ inspect_evidence
+→ propose_hypothesis_evidence_relation
+```
+
+The actual Product path is stricter because ROOT_CAUSE bootstrap Evidence must first be executed and
+inspected before hypothesis proposal.
+
+Evidence from an unrelated BREAKDOWN/RELATIONSHIP USER_MUST cannot be borrowed to compress this:
+`HypothesisLedger._validate_evidence()` requires the Evidence obligation to belong to the
+ROOT_CAUSE parent/derived lineage.
+
+Supervisor constraints additionally forbid increasing budgets merely to pass a case. The latest
+Day10 authority also requires the Day8 live root-cause debt to be exercised inside the canonical
+integrated Product-MVP gate before FINAL GREEN.
+
+Therefore:
+- no budget was increased;
+- no Day8 invariant was weakened;
+- no unrelated Evidence was laundered into causal support;
+- no paid run was spent on a structurally impossible certification.
+
+### Required supervisor decision
+
+Before the paid gate, supervisor must explicitly resolve the authority conflict by choosing a
+deliberate policy/architecture change. Do not infer one in code.
+
+Until then do NOT:
+- run the paid Product-MVP gate,
+- rerun standalone Day8 paid tests,
+- raise `max_total_manager_turns`,
+- stop counting pre-acceptance against the global ceiling,
+- merge inspect/relation steps to bypass Day8 inspection invariants,
+- reuse sibling-obligation Evidence as ROOT_CAUSE Evidence,
+- claim Day8 or Day10 FINAL GREEN,
+- start Day11 broad evaluation.
+
 ---
 
 ## NEW DEVELOPER ONBOARDING — READ BEFORE TOUCHING CODE
