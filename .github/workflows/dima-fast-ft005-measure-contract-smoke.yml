@@ -1,0 +1,70 @@
+name: dima-fast-ft005-measure-contract-smoke
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-product-fast-track
+    paths:
+      - ".github/workflows/dima-fast-ft005-measure-contract-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  luna-two-case:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    environment: DIMA_OPENROUTER_API_KEY
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_MEASURE_API_KEY }}
+      DIMA_FAST_FT005_PROVIDER: "openrouter"
+      DIMA_FAST_FT005_TRANSPORT: "openrouter_strict_benchmark"
+      DIMA_FAST_FT005_MODEL: "openai/gpt-5.6-luna"
+      DIMA_FAST_FT005_CANONICAL_MODEL: "gpt-5.6-luna"
+      DIMA_FAST_FT005_MODEL_ROLE: "LUNA_BASELINE"
+      DIMA_FAST_FT005_MEASUREMENT_MODE: "POST_REPAIR_TWO_CASE"
+      DIMA_FAST_FT005_REASONING_EFFORT: "disabled"
+      DIMA_FAST_FT005_PROMPT_VARIANT: "baseline"
+      DIMA_FAST_FT005_REPEATABILITY: "0"
+      DIMA_FAST_FT005_CASES: "q2_previous_month,q3_breakdown"
+      DIMA_FAST_FT005_MODEL_RECEIPT: "lab/metabase/artifacts/ft005-measure-contract-smoke.json"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Require measurement credential
+        shell: bash
+        run: |
+          if [[ -z "$DIMA_OPENROUTER_API_KEY" ]]; then
+            echo "BLOCKED_NO_MEASURE_CREDENTIAL"
+            exit 2
+          fi
+      - name: Run bounded two-case Luna post-repair smoke
+        working-directory: backend
+        run: |
+          mkdir -p lab/metabase/artifacts
+          python lab/fast_ft005_model_sentinel.py
+      - name: Upload bounded smoke receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dima-fast-ft005-measure-contract-smoke-${{ github.sha }}
+          path: backend/lab/metabase/artifacts/ft005-measure-contract-smoke.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Show bounded smoke receipt
+        if: always()
+        working-directory: backend
+        run: |
+          test ! -f lab/metabase/artifacts/ft005-measure-contract-smoke.json || cat lab/metabase/artifacts/ft005-measure-contract-smoke.json
