@@ -1613,3 +1613,19 @@ fork bootstrap              = BLOCKED ON CURRENT-HEAD PX-01 EXECUTABLE ORACLE GR
 ```
 
 Authorized next action: add the lab-only executable PX-01 scorer and rerun exactly one native canary.
+
+
+### P12X executable-oracle first RED
+
+```text
+tested SHA        = d17c7dac487d327070a4ebe69583d17cb9569dc0
+workflow          = 35824180896
+native selection  = CORRECT BOYAHANE RESOURCE
+response prefix   = rows:[[126]]
+scorer            = RED
+classification    = ORACLE_FIXTURE / HARNESS RESULT-CAPTURE CONTRACT
+owner             = backend/lab/metabase/p12x/native_probe.py
+product patch     = 0
+```
+
+Only the 202-success capture contract is authorized for correction.

@@ -2650,3 +2650,57 @@ executable scorer          = exit 0
 
 status:
 `OPEN / CORRECTION AUTHORIZED / P12X NATIVE SANITY GATE NOT YET GREEN`.
+
+
+---
+
+## DMP-P12X-AUDIT-002 / RED-01 — dataset success envelope truncated by lab probe
+
+tested_sha: `d17c7dac487d327070a4ebe69583d17cb9569dc0`  
+workflow: `35824180896`  
+job: `107062348730`  
+artifact: `10734616153 / p12x-native-canary-d17c7dac487d327070a4ebe69583d17cb9569dc0`
+
+classification:
+`ORACLE_FIXTURE / BENCHMARK HARNESS RESULT-CAPTURE CONTRACT`
+
+observed:
+- native agent-streaming request succeeded with HTTP `202`;
+- runtime is pinned `v0.63.18 / 2ba2485`;
+- exact catalog resource is `Dima Analytics Lab / public / satis_siparisleri`;
+- generated MBQL uses the exact runtime database/table ids from that resource;
+- stream/provider errors = 0;
+- executing the generated query through `/api/dataset` returned HTTP `202`;
+- response body begins with the correct result `rows:[[126]]`;
+- `native_probe.py` treated only HTTP 200 as a successful JSON result and, for 202, stored
+  `rr.text[:2000]`;
+- the executable scorer then failed with
+  `JSONDecodeError: Unterminated string ...` because the harness itself truncated valid JSON.
+
+root_cause:
+`backend/lab/metabase/p12x/native_probe.py` encoded the wrong transport oracle for Metabase
+`/api/dataset`: a successful 202 query response was routed through the error/truncation branch.
+
+single_owner:
+`backend/lab/metabase/p12x/native_probe.py`.
+
+not_a_native_engine_failure:
+The candidate native engine selected the correct benchmark resource and produced/executed a result whose
+captured response prefix already contains the independent oracle scalar `126`.
+
+authorized_correction:
+Treat HTTP 200 **or 202** from `/api/dataset` as a successful JSON execution envelope and persist
+rows/cols/full structured result metadata needed by the scorer. Keep non-success bodies bounded.
+
+forbidden_corrections:
+- changing scorer expected value;
+- changing corpus/oracle;
+- prompt/resource special-casing;
+- product code changes;
+- P13/fork bootstrap before rerun GREEN.
+
+closure:
+rerun the exact same PX-01 canary and require `score_native_canary.py = GREEN / exit 0`.
+
+status:
+`CLASSIFIED / LAB HARNESS PATCH AUTHORIZED`.
