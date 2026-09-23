@@ -19,6 +19,9 @@ from app.v2.manager_models import (
     ObligationPriority,
     ObligationStatus,
     RepresentabilityDecision,
+    ResearchDirective,
+    ResearchDirectiveCondition,
+    ResearchDirectiveType,
     ResearchRunTerminal,
     StandardProjection,
     UserIntentEnvelope,
@@ -737,3 +740,136 @@ def test_model_open_questions_are_advisory_not_clarification_authority():
         context_version="ctx-1",
     )
     assert result.status.value == "ACCEPTED"
+
+
+
+def test_research_directive_can_parent_standard_breakdown_without_retyping_user_must():
+    spans = SourceSpanRegistry()
+    text = (
+        "net geliri bölgelere göre araştır; "
+        "bir bölge ayrışırsa kanıtı gördükten sonra başka kırılıma bak"
+    )
+    source_hash = spans.register_message(message_id="directive-standard", text=text)
+    obligation_source = spans.mint_exact(
+        message_id="directive-standard",
+        surface="net geliri bölgelere göre araştır",
+    )
+    directive_source = spans.mint_exact(
+        message_id="directive-standard",
+        surface="bir bölge ayrışırsa kanıtı gördükten sonra başka kırılıma bak",
+    )
+
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="directive-standard-metric",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="directive-standard-metric",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    dimension = handles.mint_from_resolver(
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+        resolver_provenance_id="directive-standard-dim",
+        target_kind="dimension",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="directive-standard-dim",
+            target_kind=SemanticTargetKind.DIMENSION,
+            canonical_name="Sales.region",
+            cube_names=("Sales",),
+        ),
+    )
+    result = IntentAcceptanceGate(
+        source_spans=spans,
+        semantic_handles=handles,
+    ).evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="directive-standard-a1",
+            turn_id="directive-standard",
+            request_ref="directive-standard-request",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_BREAK",
+                    capability_key=ManagerCapabilityKey.BREAKDOWN,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(obligation_source.source_ref,),
+                    semantic_handle_refs=(metric.handle_id, dimension.handle_id),
+                ),
+            ),
+            research_directives=(
+                ResearchDirective(
+                    directive_id="R_ADAPT",
+                    directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+                    parent_obligation_id="U_BREAK",
+                    condition=ResearchDirectiveCondition.MATERIAL_NEW_DIRECTION,
+                    source_refs=(directive_source.source_ref,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+
+    assert result.status.value == "ACCEPTED"
+    assert result.contract is not None
+    assert result.ledger is not None
+    assert result.ledger.items[0].capability_key == ManagerCapabilityKey.BREAKDOWN
+    assert result.contract.research_directives[0].parent_obligation_id == "U_BREAK"
+
+
+def test_research_directive_cannot_parent_nonexecutable_presentation_obligation():
+    spans = SourceSpanRegistry()
+    text = "rapor hazırla; sonuç yeni yön gösterirse oraya da bak"
+    source_hash = spans.register_message(message_id="directive-report", text=text)
+    report_source = spans.mint_exact(
+        message_id="directive-report",
+        surface="rapor hazırla",
+    )
+    directive_source = spans.mint_exact(
+        message_id="directive-report",
+        surface="sonuç yeni yön gösterirse oraya da bak",
+    )
+    result = IntentAcceptanceGate(
+        source_spans=spans,
+        semantic_handles=SemanticHandleRegistry(),
+    ).evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="directive-report-a1",
+            turn_id="directive-report",
+            request_ref="directive-report-request",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_REPORT",
+                    capability_key=ManagerCapabilityKey.REPORT,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(report_source.source_ref,),
+                ),
+            ),
+            research_directives=(
+                ResearchDirective(
+                    directive_id="R_ADAPT",
+                    directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+                    parent_obligation_id="U_REPORT",
+                    condition=ResearchDirectiveCondition.MATERIAL_NEW_DIRECTION,
+                    source_refs=(directive_source.source_ref,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-1",
+    )
+
+    assert result.status.value == "REJECTED"
+    assert any(
+        "research directive parent must be executable analytical obligation" in reason
+        for reason in result.reasons
+    )
