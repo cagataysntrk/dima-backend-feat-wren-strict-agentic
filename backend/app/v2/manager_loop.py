@@ -1349,6 +1349,7 @@ class ResearchManagerLoop:
                 cancelled = True
                 break
             if self._answer_now_check is not None and self._answer_now_check():
+                runtime.pause_partial()
                 observations.append(
                     {
                         "kind": "answer_now",
