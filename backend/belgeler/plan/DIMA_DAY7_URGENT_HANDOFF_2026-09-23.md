@@ -719,3 +719,28 @@ Manual diagnostic:
 Exact next:
 provider-free evaluator proof -> manual cognition diagnostic -> classify owner -> generic
 fix only if proven -> affected LIVE -> justified frozen13 rerun -> shadow ablation -> Day7 close.
+
+
+## 14. PROVIDER-FREE ORACLE SEAL
+
+```text
+product base      d22fb3626db0fe44ea543eee6531e5544cdf0b56
+eval checkpoint   e038c3d3403bfc2caddccac19e2da54cfa0fe751
+focused run       35847415718 = GREEN
+```
+
+No product `app/v2` code changed during oracle reconciliation.
+
+Closed:
+- multi-obligation PREVIOUS_PERIOD stale oracle,
+- relationship-unsafe stale oracle.
+
+Only open frozen13 classification:
+- insufficient-evidence = MODEL_COGNITION vs EVAL_ORACLE.
+
+Same frozen13 run already proves generic `"Net geliri araştır"` can map to PERFORMANCE,
+so no keyword rule is authorized. A manual, cognition-only 8-case neutral-vs-causal
+diagnostic is prepared. It does not execute Wren/DB.
+
+Next action is exactly that manual diagnostic. Product code stays frozen until its artifact
+is classified.
