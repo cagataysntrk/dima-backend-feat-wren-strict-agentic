@@ -63,6 +63,20 @@ def _provider_failure(message: str) -> str | None:
     return None
 
 
+def _analytical_required_capabilities(draft) -> list[str]:
+    registry = ManagerCapabilityRegistry()
+    return [
+        obligation.capability_key.value
+        for obligation in draft.obligations
+        if obligation.polarity.value == "REQUIRED"
+        and registry.get(obligation.capability_key).lane
+        in {
+            ManagerCapabilityLane.STANDARD,
+            ManagerCapabilityLane.RESEARCH,
+        }
+    ]
+
+
 def _controller():
     settings = get_settings()
     research_llm, research_profile, *_ = _build_role_scoped_manager_models(settings)
@@ -116,17 +130,7 @@ def main() -> int:
                 conversation=None,
                 revision_feedback=None,
             )
-            registry = ManagerCapabilityRegistry()
-            capabilities = [
-                obligation.capability_key.value
-                for obligation in draft.obligations
-                if obligation.polarity.value == "REQUIRED"
-                and registry.get(obligation.capability_key).lane
-                in {
-                    ManagerCapabilityLane.STANDARD,
-                    ManagerCapabilityLane.RESEARCH,
-                }
-            ]
+            capabilities = _analytical_required_capabilities(draft)
             expected = str(case["expected_capability"])
             matched = capabilities == [expected]
             records.append({
