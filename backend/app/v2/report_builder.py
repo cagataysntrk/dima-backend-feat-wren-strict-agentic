@@ -42,6 +42,7 @@ class ReportIssueCode(StrEnum):
     UNKNOWN_FINDING = "UNKNOWN_FINDING"
     FINDING_PROVENANCE_MISMATCH = "FINDING_PROVENANCE_MISMATCH"
     FINDING_EVIDENCE_REQUIRED = "FINDING_EVIDENCE_REQUIRED"
+    FINDING_CLAIM_KIND_MISMATCH = "FINDING_CLAIM_KIND_MISMATCH"
     CONFIRMED_CAUSE_UNAVAILABLE = "CONFIRMED_CAUSE_UNAVAILABLE"
     INVALID_SEMANTIC_SCOPE = "INVALID_SEMANTIC_SCOPE"
     UNKNOWN_ARTIFACT = "UNKNOWN_ARTIFACT"
@@ -463,6 +464,18 @@ class ReportBuilder:
                 )
             )
 
+        if finding_ids and block.claim_kind != ReportClaimKind.EPISTEMIC:
+            issues.append(
+                ReportBuildIssue(
+                    code=ReportIssueCode.FINDING_CLAIM_KIND_MISMATCH,
+                    path=f"{path}.finding_refs",
+                    reason=(
+                        "FindingRef may appear only on EPISTEMIC blocks so the canonical "
+                        "finding label/limitations cannot be laundered into another claim class"
+                    ),
+                )
+            )
+
         if block.claim_kind == ReportClaimKind.EPISTEMIC:
             if len(finding_ids) != 1:
                 issues.append(
@@ -662,6 +675,7 @@ class ReportBuilder:
             return None
 
         if evidence.source_kind == "DERIVED_ANALYTICAL":
+            before_lineage = len(issues)
             next_visiting = frozenset((*_visiting, evidence_ref))
             for parent_ref in evidence.parent_evidence_refs:
                 self._require_evidence(
@@ -684,6 +698,8 @@ class ReportBuilder:
                         ),
                     )
                 )
+            if len(issues) != before_lineage:
+                return None
         if any(issue.ref == evidence_ref for issue in issues):
             return None
 
