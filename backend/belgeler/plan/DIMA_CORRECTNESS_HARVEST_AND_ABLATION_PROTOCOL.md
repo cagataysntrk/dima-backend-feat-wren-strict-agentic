@@ -356,3 +356,41 @@ after the required cognition call actually produced an evaluable response.
 
 Provider preflight is an evaluation cost/validity guard, not a model fallback mechanism.
 It must never silently switch provider/model to manufacture a valid measurement.
+
+
+---
+
+## TEST ECONOMY HARVEST — 2026-09-23
+
+| ID | Mechanism / invariant | Class | Failure class prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-053 | Evaluation scope must be proportional to the uncertainty being resolved. Narrowest falsifying test runs first; broader paid corpus is forbidden while a narrower probe answers the same question. | MUST_PORT | unnecessary paid-eval cost, noisy debugging, broad-corpus misuse | Day7 supervisor test-economy protocol; permanent eval policy |
+| H-054 | Paid evaluation must declare and enforce a model-call budget before provider execution. Guard checks occur before each provider request and artifact records role/total call counts plus exhaustion state. | MUST_PORT | silent API-cost overrun, post-hoc-only accounting | Day7 live/ablation evaluator cost-safety work |
+| H-055 | Broad/certification corpora are milestone resources, not iterative debugging tools. | MUST_PORT | DEV80/frozen/validation churn during active tuning | Day7 progressive-widening protocol |
+
+Permanent progressive widening:
+
+```text
+LOCAL UNIT / CONTRACT / METAMORPHIC
+→ ONE LIVE SENTINEL
+→ AFFECTED PAIR
+→ MICRO CANARY / MICRO ABLATION
+→ MILESTONE CORPUS
+→ CERTIFICATION CORPUS
+```
+
+STOP-THE-LINE for evaluation cost:
+- full frozen corpus to debug one case,
+- 8–12 case A/B before 2-case contrast,
+- paid LIVE before provider-free proof,
+- blank paid workflow input meaning “run all”,
+- increasing product/model-turn budget merely to make a scenario pass,
+- broad rerun after docs/test-only change.
+
+Current Day7 ablation policy:
+- keep 8-case corpus frozen for later,
+- first paid ablation = `adaptive-material` + `stable-no-extra-branch`,
+- two arms only,
+- hard total model-call ceiling = 20,
+- if decisive, STOP; if ambiguous, add only `simple-performance`,
+- broad ablation deferred to Day11 Eval Expansion.
