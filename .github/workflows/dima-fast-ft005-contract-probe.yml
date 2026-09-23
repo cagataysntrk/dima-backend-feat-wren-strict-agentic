@@ -1,16 +1,7 @@
 name: dima-fast-ft005-contract-probe
 
 on:
-  push:
-    branches:
-      - feat/dima-metabase-product-fast-track
-    paths:
-      - ".github/workflows/dima-fast-ft005-contract-probe.yml"
-      - "backend/lab/fast_model_eval.py"
-      - "backend/lab/fast_ft005_model_sentinel.py"
-      - "backend/tests/test_fast_model_eval.py"
   workflow_dispatch:
-
 permissions:
   contents: read
 
