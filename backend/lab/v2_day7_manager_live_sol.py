@@ -60,6 +60,7 @@ from app.config import get_settings
 from app.contracts import result_hash
 from app.routers.manager_lab import router as manager_lab_router
 from app.v2.manager_lab import _build_role_scoped_manager_models
+import app.v2.manager_lab as manager_lab_module
 import app.v2.runtime_boundary as runtime_boundary
 from control_plane.authorize import Principal
 
@@ -74,6 +75,106 @@ class MeasurementValidity(StrEnum):
     PROVIDER_QUOTA_FAILURE = "PROVIDER_QUOTA_FAILURE"
     HARNESS_FAILURE = "HARNESS_FAILURE"
     GROUNDING_FIXTURE_FAILURE = "GROUNDING_FIXTURE_FAILURE"
+    EVAL_BUDGET_EXHAUSTED = "EVAL_BUDGET_EXHAUSTED"
+
+
+class LiveEvalBudgetExhausted(RuntimeError):
+    pass
+
+
+class LiveModelCallBudget:
+    """Shared paid-call budget across preflight + all role-scoped case calls."""
+
+    def __init__(self, max_calls: int) -> None:
+        if max_calls < 1:
+            raise ValueError("max_model_calls must be >= 1")
+        self.max_calls = max_calls
+        self.manager_calls = 0
+        self.semantic_linker_calls = 0
+        self.temporal_model_calls = 0
+        self.exhausted = False
+
+    @property
+    def total_calls(self) -> int:
+        return (
+            self.manager_calls
+            + self.semantic_linker_calls
+            + self.temporal_model_calls
+        )
+
+    def reserve(self, role: str) -> None:
+        if self.total_calls >= self.max_calls:
+            self.exhausted = True
+            raise LiveEvalBudgetExhausted(
+                f"live model-call budget exhausted ({self.total_calls}/{self.max_calls})"
+            )
+        if role == "research_manager":
+            self.manager_calls += 1
+        elif role == "semantic_linker":
+            self.semantic_linker_calls += 1
+        elif role == "temporal_normalizer":
+            self.temporal_model_calls += 1
+        else:
+            raise ValueError(f"unknown live model role: {role}")
+
+    def receipt(self) -> dict[str, Any]:
+        return {
+            "manager_model_calls": self.manager_calls,
+            "semantic_linker_calls": self.semantic_linker_calls,
+            "temporal_model_calls": self.temporal_model_calls,
+            "total_model_calls": self.total_calls,
+            "model_calls_budget": self.max_calls,
+            "budget_exhausted": self.exhausted,
+        }
+
+
+class _CountingRoleLLM:
+    def __init__(self, inner, *, role: str, budget: LiveModelCallBudget) -> None:
+        self._inner = inner
+        self._role = role
+        self._budget = budget
+
+    def __getattr__(self, name: str):
+        return getattr(self._inner, name)
+
+    def structured_json(self, *args, **kwargs):
+        self._budget.reserve(self._role)
+        return self._inner.structured_json(*args, **kwargs)
+
+    def structured_text(self, *args, **kwargs):
+        self._budget.reserve(self._role)
+        return self._inner.structured_text(*args, **kwargs)
+
+
+def _counted_role_scoped_manager_models(settings, budget: LiveModelCallBudget):
+    (
+        manager_llm,
+        manager_profile,
+        linker_llm,
+        linker_profile,
+        temporal_llm,
+        temporal_profile,
+    ) = _build_role_scoped_manager_models(settings)
+    return (
+        _CountingRoleLLM(
+            manager_llm,
+            role="research_manager",
+            budget=budget,
+        ),
+        manager_profile,
+        _CountingRoleLLM(
+            linker_llm,
+            role="semantic_linker",
+            budget=budget,
+        ),
+        linker_profile,
+        _CountingRoleLLM(
+            temporal_llm,
+            role="temporal_normalizer",
+            budget=budget,
+        ),
+        temporal_profile,
+    )
 
 
 def _classify_provider_failure(message: str) -> MeasurementValidity | None:
@@ -120,7 +221,10 @@ def _classify_provider_failure(message: str) -> MeasurementValidity | None:
     return None
 
 
-def _provider_preflight(settings) -> dict[str, Any]:
+def _provider_preflight(
+    settings,
+    call_budget: LiveModelCallBudget,
+) -> dict[str, Any]:
     """One role-scoped strict-schema call before the paid frozen corpus."""
     started = time.perf_counter()
     try:
@@ -132,6 +236,11 @@ def _provider_preflight(settings) -> dict[str, Any]:
             _temporal_llm,
             _temporal_profile,
         ) = _build_role_scoped_manager_models(settings)
+        manager_llm = _CountingRoleLLM(
+            manager_llm,
+            role="research_manager",
+            budget=call_budget,
+        )
         structured = getattr(manager_llm, "structured_json", None)
         if not callable(structured):
             return {
@@ -230,6 +339,7 @@ def _aggregate_live_records(
     selected_cases: int,
     service_query_count: int,
     preflight: dict[str, Any],
+    call_budget: LiveModelCallBudget,
 ) -> dict[str, Any]:
     evaluable = [record for record in records if record["behavior_evaluable"]]
     non_evaluable = [record for record in records if not record["behavior_evaluable"]]
@@ -294,8 +404,16 @@ def _aggregate_live_records(
         and all_cases_evaluable
     )
 
+    budget_failure_records = [
+        record for record in non_evaluable
+        if record["measurement_validity"]
+        == MeasurementValidity.EVAL_BUDGET_EXHAUSTED.value
+    ]
+
     if measurement_valid:
         aggregate_validity = MeasurementValidity.VALID.value
+    elif budget_failure_records or call_budget.exhausted:
+        aggregate_validity = MeasurementValidity.EVAL_BUDGET_EXHAUSTED.value
     elif provider_failure_records:
         aggregate_validity = provider_failure_records[0]["measurement_validity"]
     elif harness_failure_records:
@@ -356,6 +474,8 @@ def _aggregate_live_records(
         "hard_safety_failures": hard_failures,
         "model_failure_cases": model_failure_cases,
         "total_service_queries": service_query_count,
+        "service_queries": service_query_count,
+        **call_budget.receipt(),
         "total_latency_s": round(
             sum(float(record["latency_s"]) for record in records),
             4,
@@ -877,7 +997,16 @@ def main() -> int:
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--case-id", action="append", default=[])
+    parser.add_argument(
+        "--max-model-calls",
+        type=int,
+        required=True,
+        help="Shared hard paid-call ceiling across preflight, Manager, linker and temporal calls.",
+    )
     args = parser.parse_args()
+
+    if args.max_model_calls < 1:
+        raise SystemExit("--max-model-calls must be >= 1")
 
     document = yaml.safe_load(args.cases.read_text(encoding="utf-8"))
     cases = list(document.get("cases") or [])
@@ -889,7 +1018,8 @@ def main() -> int:
 
     settings = get_settings()
     selected_count = len(cases)
-    preflight = _provider_preflight(settings)
+    call_budget = LiveModelCallBudget(args.max_model_calls)
+    preflight = _provider_preflight(settings, call_budget)
 
     if not preflight.get("ok"):
         payload = {
@@ -932,6 +1062,8 @@ def main() -> int:
             "hard_safety_failures": [],
             "model_failure_cases": [],
             "total_service_queries": 0,
+            "service_queries": 0,
+            **call_budget.receipt(),
             "total_latency_s": 0.0,
             "records": [],
             "status": "invalid_measurement",
@@ -954,6 +1086,16 @@ def main() -> int:
     app.state.contracts = LiveContracts()
 
     records: list[dict[str, Any]] = []
+
+    # ManagerLabHarness builds role-scoped clients inside each request. Wrap that
+    # boundary so every paid role call participates in the same evaluator budget.
+    manager_lab_module._build_role_scoped_manager_models = (
+        lambda scoped_settings: _counted_role_scoped_manager_models(
+            scoped_settings,
+            call_budget,
+        )
+    )
+
     with TestClient(app) as client:
         for index, case in enumerate(cases, start=1):
             before = service.query_calls
@@ -976,6 +1118,29 @@ def main() -> int:
                     json_ok = False
                     body = {}
                 status_code = int(response.status_code)
+            except LiveEvalBudgetExhausted as exc:
+                latency = time.perf_counter() - started
+                records.append(
+                    {
+                        "case_id": case["id"],
+                        "kind": case["kind"],
+                        "question": case["question"],
+                        "latency_s": round(latency, 4),
+                        "status_code": None,
+                        "terminal_status": None,
+                        "snapshot": None,
+                        "query_delta": service.query_calls - before,
+                        "checks": {},
+                        "behavior_evaluable": False,
+                        "measurement_validity": MeasurementValidity.EVAL_BUDGET_EXHAUSTED.value,
+                        "behavior_pass": None,
+                        "model_errors": [],
+                        "observations": [],
+                        "ledger": None,
+                        "harness_error": str(exc)[:1200],
+                    }
+                )
+                break
             except Exception as exc:
                 latency = time.perf_counter() - started
                 records.append(
@@ -1056,6 +1221,7 @@ def main() -> int:
         selected_cases=selected_count,
         service_query_count=service.query_calls,
         preflight=preflight,
+        call_budget=call_budget,
     )
     _write_report(args.output, payload)
     if payload["status"] == "pass":
