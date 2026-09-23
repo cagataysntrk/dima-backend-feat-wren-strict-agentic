@@ -8,7 +8,7 @@ the front door; semantic authority is always created fresh inside the Research l
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 from app.llm import build_generator
 from app.v2.acceptance import AcceptedContractRegistry, IntentAcceptanceGate
@@ -129,6 +129,7 @@ class ResearchLaneService:
         *,
         context: ProductRequestContext,
         body: AskV2Request,
+        progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
     ) -> ResearchLaneResult:
         # Lane-local semantic authority. Nothing from a rejected Standard candidate is
         # accepted as an input to this construction seam.
@@ -200,6 +201,7 @@ class ResearchLaneService:
                 tenant_binding=context.tenant_binding,
                 context_version=context.semantic_context.context_version.version,
             ),
+            progress_callback=progress_callback,
         )
         outcome = loop.run(
             question=body.question,
