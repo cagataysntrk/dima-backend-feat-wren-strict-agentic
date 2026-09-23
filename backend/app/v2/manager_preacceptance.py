@@ -871,7 +871,7 @@ class PreAcceptanceController:
         for attempt in range(1, self._max_draft_attempts + 1):
             runtime.reset_semantic_resolution_receipts()
             try:
-                runtime.note_manager_turn()
+                runtime.note_manager_turn(phase="preacceptance")
                 draft = self._draft(
                     question=question,
                     conversation=conversation,
