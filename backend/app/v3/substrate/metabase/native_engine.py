@@ -106,7 +106,7 @@ class NativeEngineBridge:
             "profile_id": request.profile_id,
             "message": request.message,
             "context": request.context,
-            "conversation_id": request.conversation_id,
+            "conversation_id": str(request.conversation_id),
             "history": request.history,
             "state": request.state,
             "debug": False,
