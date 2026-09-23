@@ -200,11 +200,7 @@ Current product behavior SHA after the generic fix:
 Paid Day8 total is now 9 Sol calls:
 2 + 5 + 2.
 
-## CURRENT SUPERVISOR AUTHORITY — DAY9/P12-A OPEN
-
-The prior "no Day9" stop is superseded.
-
-Current authority:
+## CURRENT SUPERVISOR AUTHORITY — DAY9/P12-A GREEN / STOP
 
 ```text
 DAY8 deterministic engineering = GREEN
@@ -212,35 +208,129 @@ DAY8 real-Wren                  = GREEN
 DAY8 live Sol                   = OPEN / NOT GREEN
 DAY8 final seal                 = DEFERRED TO INTEGRATED LIVE GATE
 
-CURRENT ACTIVE TICKET
-= DAY9 / P12-A
-  deterministic ReportDocument authority
+DAY9 / P12-A
+deterministic ReportDocument authority = GREEN
+
+Day9 product behavior SHA
+2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+
+Day9 focused
+35903324742 = GREEN
+16 passed
+
+Day9 paid calls = 0
 ```
 
-Day8 behavior is frozen at:
-
+Day8 behavior remains frozen at:
 `810fa70ded3bca53542316d32a5497302b4eb9c7`.
 
-No more standalone paid Day8 root-cause tests are authorized. The remaining live cognition debt
-must be re-exercised later inside the canonical Day10 integrated Product-MVP live gate.
+No more standalone paid Day8 root-cause tests are authorized. The remaining Day8 live cognition
+debt must be re-exercised later inside the canonical Day10 integrated Product-MVP live gate.
 
-Day9-A is provider-free only. It may add a deterministic immutable report projection over existing
-governed Evidence/Findings/semantic scope and presentation artifact refs. It may NOT add:
-- an LLM report writer,
-- DB/Wren execution,
-- semantic resolution,
-- a new Evidence store,
+### Day9-A canonical authority
+
+New canonical module:
+`backend/app/v2/report_builder.py`.
+
+`ReportBuilder` is a deterministic projection over already-governed authorities:
+
+```text
+VERIFIED current-run EvidenceArtifact
++ canonical EvidenceLinkedFinding
++ governed SemanticHandle scope
++ known presentation ArtifactRef
+→ immutable ReportDocument
+```
+
+It has no DB, Wren, LLM, semantic-resolution or external-content dependency.
+
+Canonical output surface:
+- `ReportDocument`
+- `ReportSection`
+- `ReportBlock`
+- `ReportEvidenceRef`
+- `ReportFindingRef`
+- `ReportArtifactRef`
+- `ReportRenderSpec`
+- `ReportResultShape`
+- typed build status/issues.
+
+Claim grounding is structural:
+- `NUMERIC` and `ANALYTICAL` require governed Evidence;
+- `EPISTEMIC` requires exactly one canonical FindingRef;
+- `NARRATIVE` may be evidence-free only by typed declaration;
+- no prose/number regex exists.
+
+Evidence validation requires:
+- ref belongs to supplied current-run membership,
+- ref resolves through existing Evidence authority,
+- `verified == true`,
+- QueryContract provenance exists,
+- derived Evidence parent lineage remains valid.
+
+Day8 epistemics are preserved:
+- canonical Finding provenance must match report source run/lineage,
+- `CANDIDATE_CAUSE` label + limitations + hypothesis ref remain visible,
+- `CONFIRMED_CAUSE` is rejected,
+- FindingRef cannot hide inside a non-EPISTEMIC claim class.
+
+Section anchor:
+```text
+section_id
++ EvidenceRef[]
++ semantic_scope
++ followup_context_ref
+```
+All identities are server-generated deterministic hashes. Presentation title/content/render settings
+do not create analytical authority identity.
+
+Future access seam:
+`ReportSourceProvenance.access_policy =
+CURRENT_RUN_ONLY_REAUTHORIZE_ON_REPLAY`.
+
+The report retains EvidenceRefs, QueryContractRefs and tenant/run/context provenance so future
+current-viewer reauthorization remains possible. It is NOT a freely shareable cross-user/tenant
+warehouse-truth cache.
+
+### Legacy reuse decision
+
+`backend/app/report.py::compose_report`
+= REJECTED as canonical Day9 authority because it executes `cube_sql → query`.
+
+`backend/app/report.py::bolumlerden_kur`
+= reference-only idea: compose already-executed blocks without re-querying.
+
+`backend/app/viz.py`
+= not integrated in D9-A; may later serve only as a presentation adapter after separate
+characterization. Its naming/unit heuristics are not semantic authority.
+
+### Metabase carry-forward
+
+Adopted:
+- pure document representation/composition is separate from reference hydration,
+- permission/reference resolution is a separate boundary,
+- presentation/render configuration is separate from query/evidence truth,
+- rendering failure does not retroactively invalidate Evidence.
+
+Explicitly rejected:
+- Metabase runtime/code as Dima analytical substrate,
+- copying query/Evidence truth by value into ReportDocument,
+- creator access as permanent replay permission.
+
+## STOP POINT
+
+D9-A provider-free authority is GREEN.
+
+Do NOT automatically start:
+- LLM report narration,
+- legacy `report.compose` integration,
 - PDF/HTML export,
-- frontend/report routing,
-- Day10 behavior.
+- frontend,
+- Day10,
+- real-Wren/live Sol,
+- frozen13 / DEV80 / Validation50 / Hidden50.
 
-Expected file boundary:
-- `backend/app/v2/report_builder.py`,
-- `backend/app/v2/models.py` only if canonical report models belong there,
-- focused Day9 tests,
-- living docs / Harvest.
-
-Do not touch Day8 execution/cognition owners unless an independent P0 proves necessity.
+Return to supervisor for Day9-B review.
 
 ---
 
