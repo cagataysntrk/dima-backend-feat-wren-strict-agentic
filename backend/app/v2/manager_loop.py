@@ -290,6 +290,36 @@ def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _post_acceptance_native_schema() -> dict[str, Any]:
+    """Expose only actions that are legal after AcceptedTurnContract commit.
+
+    Pre-acceptance is owned by PreAcceptanceController.  Leaving
+    propose_acceptance in the post-acceptance provider schema creates a deterministic
+    dead end: the model can select an action the runtime must reject.  Runtime policy
+    remains defense-in-depth; this function narrows only the advertised cognition
+    surface.
+    """
+    schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
+
+    def remove_value(node: Any) -> None:
+        if isinstance(node, dict):
+            enum_values = node.get("enum")
+            if isinstance(enum_values, list) and ManagerActionKind.PROPOSE_ACCEPTANCE.value in enum_values:
+                node["enum"] = [
+                    value
+                    for value in enum_values
+                    if value != ManagerActionKind.PROPOSE_ACCEPTANCE.value
+                ]
+            for value in node.values():
+                remove_value(value)
+        elif isinstance(node, list):
+            for value in node:
+                remove_value(value)
+
+    remove_value(schema)
+    return schema
+
+
 _SYSTEM = """You are Dima's bounded post-acceptance RESEARCH_MANAGER.
 
 AcceptedTurnContract is already the only semantic authority. Use typed governed tools to
@@ -628,7 +658,7 @@ class ResearchManagerLoop:
             research_state=research_state,
             ready_tasks=ready_tasks,
         )
-        schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
+        schema = _post_acceptance_native_schema()
         kwargs = {
             "schema": schema,
             "schema_name": "dima_research_manager_action_v1",
