@@ -13,6 +13,7 @@ on:
       - "backend/app/v3/substrate/metabase/native_engine.py"
       - "backend/app/v3/substrate/metabase/execution_binding.py"
       - "backend/lab/metabase/p13b/px01_live_standard.py"
+      - "backend/tests/test_v3_p13b_semantic_availability.py"
       - "backend/tests/test_v3_p13b_native_standard.py"
       - "backend/tests/test_v3_p13_native_trust.py"
       - ".github/workflows/dima-metabase-p13b.yml"
@@ -57,8 +58,13 @@ jobs:
             app/v3/substrate/metabase/native_engine.py \
             app/v3/substrate/metabase/execution_binding.py \
             lab/metabase/p13b/px01_live_standard.py \
+            tests/test_v3_p13b_semantic_availability.py \
             tests/test_v3_p13b_native_standard.py \
             tests/test_v3_p12x_c2_native_engine_bridge.py
+
+      - name: PX-01 provider-free semantic availability contract
+        working-directory: backend
+        run: pytest -q tests/test_v3_p13b_semantic_availability.py
 
       - name: PX-01 provider-free observed-vs-expected proof
         working-directory: backend

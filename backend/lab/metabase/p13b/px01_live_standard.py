@@ -38,6 +38,7 @@ from app.v3.security_identity import VerifiedExecutionSecurityFacts
 from app.v3.semantic_spec import (
     DimensionSpec,
     DimaSemanticSpec,
+    ManagedResourcePolicy,
     MetricSpec,
     SourceLineage,
     TimeSpec,
@@ -156,13 +157,13 @@ def binding_snapshot(
 ) -> DimaExecutionBindingSnapshot:
     table = SourceLineage(
         source_id="source.satis_siparisleri",
-        database_ref="boyahane",
+        database_ref=WAREHOUSE_NAME,
         schema_name=schema_name,
         table_name=TABLE,
     )
     opened = SourceLineage(
         source_id="source.satis_siparisleri.acilis_tarihi",
-        database_ref="boyahane",
+        database_ref=WAREHOUSE_NAME,
         schema_name=schema_name,
         table_name=TABLE,
         column_name=TIME_FIELD,
@@ -201,6 +202,13 @@ def binding_snapshot(
                 grain="day",
             ),
         ),
+        managed_resources=(
+            ManagedResourcePolicy(
+                semantic_ref="metric.sales_order_count",
+                ownership="DIMA_MANAGED",
+                reconciliation="OVERWRITE",
+            ),
+        ),
     )
     return DimaExecutionBindingSnapshot(
         semantic_context_version=CONTEXT_VERSION,
@@ -223,7 +231,7 @@ def binding_snapshot(
             objects=(
                 CurrentCatalogObject(
                     source_id=table.source_id,
-                    database_ref="boyahane",
+                    database_ref=WAREHOUSE_NAME,
                     schema_name=schema_name,
                     table_name=TABLE,
                     resource_entity_id=TABLE_RESOURCE,
@@ -233,7 +241,7 @@ def binding_snapshot(
                 ),
                 CurrentCatalogObject(
                     source_id=opened.source_id,
-                    database_ref="boyahane",
+                    database_ref=WAREHOUSE_NAME,
                     schema_name=schema_name,
                     table_name=TABLE,
                     column_name=TIME_FIELD,
@@ -305,6 +313,30 @@ def authority_and_intent() -> tuple[AcceptedStandardAuthority, ResolvedAnalytics
         ),
     )
     return authority, intent
+
+
+def metric_definition_intent() -> ResolvedAnalyticsIntent:
+    """P9/P9B metric-definition projection from the same PX-01 canonical metric."""
+    _, live_intent = authority_and_intent()
+    projection = StandardProjection(
+        obligation_ids=("obl-px01-metric-definition",),
+        metric_handles=("handle.sales_order_count",),
+    )
+    return live_intent.model_copy(
+        update={
+            "authority_id": "p9b:metric.sales_order_count",
+            "request_ref": "p9b:metric.sales_order_count",
+            "source_message_hash": h(
+                {
+                    "canonical_metric": "metric.sales_order_count",
+                    "semantic_context_version": CONTEXT_VERSION,
+                }
+            ),
+            "projection_hash": projection_hash(projection),
+            "obligation_ids": projection.obligation_ids,
+            "period": None,
+        }
+    )
 
 
 def query_id_from_stream(data_parts: tuple[Any, ...]) -> str:
