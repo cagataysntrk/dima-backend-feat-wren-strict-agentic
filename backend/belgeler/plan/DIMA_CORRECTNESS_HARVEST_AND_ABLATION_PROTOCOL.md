@@ -334,6 +334,8 @@ relationships, peer sets, time axes or causal claims.
 | H-041 | Derived analytics preserve parent Evidence + QueryContract lineage | backward-compatible EvidenceArtifact extension required | MUST_PORT | none | provenance loss / derived-result laundering | audit invariant; provider-free proof pending | Day7 |
 | H-042 | Interestingness/prioritization is not truth | legacy `rank_dimensions` / future scheduling | BENCHMARK_REQUIRED | none | prevents “interesting” from becoming “true/causal” | DD-16 + audit | Day8/ablation |
 | H-043 | Evaluation availability is separate from product behavior | live eval measurement-validity classifier + provider preflight | MUST_PORT | evaluator/provider independent | provider outage falsely counted as semantic/safety/product failure | `c67bc7a...` / focused `35818843086` GREEN | every future live/ablation evaluator |
+| H-044 | Principal and governed tenant identity must be compared in the same typed representation | typed TenantAnalyticsRuntime identity + ResearchToolRunner execution identity gate | MUST_PORT | none | false tenant denial or unsafe cross-tenant equivalence caused by opaque/raw identifier mixing | focused `35822334385` GREEN + LIVE tenant family `35823338833` 3/3 | permanent invariant; representation implementation-specific |
+| H-045 | Research control directives cannot mutate USER_MUST semantic capability | ResearchDirective ontology separated from UserObligation capability | MUST_PORT | none | policy/cognition instruction laundering into semantic authority and USER_MUST retyping | focused `35822334385` GREEN + LIVE directive family `35823576275` 1/1 | permanent ontology invariant |
 
 
 
