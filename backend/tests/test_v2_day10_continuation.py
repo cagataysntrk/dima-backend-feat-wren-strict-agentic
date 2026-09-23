@@ -273,16 +273,19 @@ def test_evicted_or_missing_registry_context_requires_rebind():
 
 
 
-def test_stream_adapter_uses_same_product_coordinator_and_existing_cancel_signal():
+def test_stream_adapter_uses_same_product_coordinator_and_bound_control_signals():
     import inspect
     import app.routers.ask_v2 as route
 
     source = inspect.getsource(route.ask_v2_stream)
     assert "_coordinator.handle(" in source
     assert "ProductCoordinator(" not in source
-    assert "cancel_check=cancelled.is_set" in source
+    assert "_controls.register(" in source
+    assert "cancel_check=control.cancelled" in source
+    assert "answer_now_check=control.answer_now_requested" in source
     assert "ProductEventKind.KEEPALIVE" in source
-    assert "cancelled.set()" in source
+    assert "control.signal(ProductControlAction.CANCEL)" in source
+    assert "_controls.release(control.control_ref)" in source
 
 
 def _semantic_scope():
