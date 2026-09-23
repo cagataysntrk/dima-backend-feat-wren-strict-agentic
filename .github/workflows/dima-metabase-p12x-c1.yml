@@ -194,14 +194,16 @@ jobs:
           PY
             )"
             echo "=== $case_id / stock ==="
-            python lab/metabase/p12x/native_probe.py \
+            python lab/metabase/p12x/c1_probe.py \
               --base-url http://127.0.0.1:3311 \
               --email "$MB_RESTRICTED_EMAIL" --password "$MB_RESTRICTED_PASSWORD" \
+              --case-id "$case_id" --runtime-label stock \
               --question "$question" --output "lab/metabase/p12x/c1-artifacts/stock/$case_id.json"
             echo "=== $case_id / fork ==="
-            python lab/metabase/p12x/native_probe.py \
+            python lab/metabase/p12x/c1_probe.py \
               --base-url http://127.0.0.1:3312 \
               --email "$MB_RESTRICTED_EMAIL" --password "$MB_RESTRICTED_PASSWORD" \
+              --case-id "$case_id" --runtime-label fork \
               --question "$question" --output "lab/metabase/p12x/c1-artifacts/fork/$case_id.json"
           done
 
@@ -242,15 +244,17 @@ jobs:
             )"
             for attempt in 1 2; do
               echo "=== repeat $attempt / $case_id / stock ==="
-              python lab/metabase/p12x/native_probe.py \
+              python lab/metabase/p12x/c1_probe.py \
                 --base-url http://127.0.0.1:3311 \
                 --email "$MB_RESTRICTED_EMAIL" --password "$MB_RESTRICTED_PASSWORD" \
+                --case-id "$case_id" --runtime-label stock \
                 --question "$question" \
                 --output "lab/metabase/p12x/c1-artifacts/repeats/stock/$case_id-$attempt.json"
               echo "=== repeat $attempt / $case_id / fork ==="
-              python lab/metabase/p12x/native_probe.py \
+              python lab/metabase/p12x/c1_probe.py \
                 --base-url http://127.0.0.1:3312 \
                 --email "$MB_RESTRICTED_EMAIL" --password "$MB_RESTRICTED_PASSWORD" \
+                --case-id "$case_id" --runtime-label fork \
                 --question "$question" \
                 --output "lab/metabase/p12x/c1-artifacts/repeats/fork/$case_id-$attempt.json"
             done
