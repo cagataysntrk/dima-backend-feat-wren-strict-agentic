@@ -510,6 +510,8 @@ DAY8 ROOT_CAUSE RULES:
 - SUPPORTS/CONTRADICTS requires propose_hypothesis_evidence_relation explicitly.
 - propose_hypothesis_next_test selects a task_kind ONLY from ROOT_CAUSE_NEXT_TEST_CONTRACT and uses existing h* inputs only.
 - ROOT_CAUSE_NEXT_TEST_CONTRACT maps each advertised task kind to its existing DIRECT capability and required semantic shape; do not invent a missing shape.
+- h* aliases are opaque identities. Use SEMANTIC_HANDLE_CATALOG for their governed target_kind/provenance; never re-resolve an already-known handle merely to rediscover its type.
+- Before AGENT_DERIVED resolve_semantics, check whether a material next test can already be formed from ROOT_CAUSE_NEXT_TEST_CONTRACT + SEMANTIC_HANDLE_CATALOG. Prefer existing governed handles; semantic expansion is for a materially missing concept grounded in inspected Evidence, not a default exploration step.
 - Never invent or provide ResearchTask IDs for hypothesis next tests; the server owns identity.
 - A planned/running/completed-but-unverified task is not epistemic Evidence.
 - ASSOCIATION/CONTRIBUTION/priority/interestingness are not causation.
@@ -759,6 +761,35 @@ class ResearchManagerLoop:
                 }
                 for item in ledger.items
             ]
+        semantic_handle_catalog: list[dict[str, Any]] = []
+        seen_semantic_aliases: set[str] = set()
+        for root_id, hypothesis_ledger in sorted(
+            (hypothesis_ledgers or {}).items()
+        ):
+            try:
+                root_item = next(
+                    item
+                    for item in hypothesis_ledger.obligation_ledger.items
+                    if item.obligation_id == root_id
+                )
+            except StopIteration:
+                continue
+            refs = list(root_item.semantic_handle_refs)
+            for entry in hypothesis_ledger.state.entries:
+                refs.extend(entry.semantic_handle_refs)
+            for handle_id in dict.fromkeys(refs):
+                alias = self._handle_alias(handle_id)
+                if alias in seen_semantic_aliases:
+                    continue
+                metadata = hypothesis_ledger.semantic_handle_metadata(handle_id)
+                semantic_handle_catalog.append(
+                    {
+                        "handle_ref": alias,
+                        **metadata,
+                    }
+                )
+                seen_semantic_aliases.add(alias)
+
         payload = {
             "USER_MESSAGE": question,
             "MANAGER_STATE": runtime.snapshot.state.value,
@@ -772,6 +803,7 @@ class ResearchManagerLoop:
                 if hypothesis_ledgers
                 else []
             ),
+            "SEMANTIC_HANDLE_CATALOG": semantic_handle_catalog,
             "ACCEPTED_RESEARCH_DIRECTIVES": (
                 [
                     item.model_dump(mode="json")
