@@ -181,7 +181,6 @@ export interface Member {
 }
 
 export interface ChatPrefs {
-  model: string;
   maxRows: number;
 }
 
