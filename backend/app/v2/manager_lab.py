@@ -30,6 +30,7 @@ from app.v2.relationship_adapter import (
     GovernedRelationshipAdapter,
     GovernedRelationshipExecutionContext,
 )
+from app.v2.root_cause_orchestration import RootCauseLoopContext
 from app.v2.research_tools import ResearchToolRunner
 from app.v2.model_policy import ModelRole, ModelRolePolicy
 from app.v2.models import AskV2Request, FrozenModel
@@ -190,6 +191,11 @@ class ManagerLabHarness:
             llm=llm,
             source_spans=source_spans,
             research_tool_runner=ResearchToolRunner(),
+            root_cause_context=RootCauseLoopContext(
+                semantic_handles=semantic_handles,
+                tenant_binding=binding,
+                context_version=context.context_version.version,
+            ),
         )
         outcome = loop.run(
             question=body.question,

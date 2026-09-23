@@ -14,12 +14,15 @@ name: v2-day8-focused
       - "backend/app/v2/manager_preacceptance.py"
       - "backend/app/v2/representability.py"
       - "backend/app/v2/root_cause_orchestration.py"
+      - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/manager_lab.py"
       - "backend/app/v2/research_tasks.py"
       - "backend/tests/test_v2_day8_hypothesis_ledger.py"
       - "backend/tests/test_v2_day8_epistemic_label_gate.py"
       - "backend/tests/test_v2_day8_hypothesis_proposals.py"
       - "backend/tests/test_v2_day8_capability_execution_mode.py"
       - "backend/tests/test_v2_day8_root_cause_orchestration.py"
+      - "backend/tests/test_v2_day8_manager_root_cause_loop.py"
       - "backend/tests/test_v2_day8_real_wren_root_cause.py"
       - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
       - ".github/workflows/v2-day8-focused.yml"
@@ -48,7 +51,7 @@ jobs:
 
       - name: Compile Day8 epistemic slice
         working-directory: backend
-        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py app/v2/root_cause_orchestration.py
+        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py app/v2/root_cause_orchestration.py app/v2/manager_loop.py app/v2/manager_lab.py
 
       - name: Day8 capability execution-mode attacks
         working-directory: backend
@@ -60,6 +63,10 @@ jobs:
       - name: Day8 root-cause orchestration attacks
         working-directory: backend
         run: pytest -q tests/test_v2_day8_root_cause_orchestration.py
+
+      - name: Day8 Manager-loop root-cause wiring
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_manager_root_cause_loop.py
 
       - name: Day8 hypothesis ledger attacks
         working-directory: backend

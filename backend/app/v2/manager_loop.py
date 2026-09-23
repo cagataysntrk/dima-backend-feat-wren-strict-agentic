@@ -30,6 +30,17 @@ from app.v2.manager_preacceptance import (
     PreAcceptanceController,
 )
 from app.v2.manager_progress import DynamicActionFrontier
+from app.v2.hypothesis_proposals import (
+    HypothesisProposalBoundary,
+    HypothesisProposalError,
+)
+from app.v2.root_cause_orchestration import (
+    HypothesisNextTestBoundary,
+    RootCauseBootstrapPolicy,
+    RootCauseBootstrapStatus,
+    RootCauseLoopContext,
+    RootCauseOrchestrationError,
+)
 from app.v2.manager_runtime import (
     ManagerBudgetError,
     ManagerRuntime,
@@ -47,7 +58,15 @@ from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
 )
-from app.v2.models import ConversationStateV2, FrozenModel
+from app.v2.models import (
+    ConversationStateV2,
+    FrozenModel,
+    HypothesisEvidenceRelation,
+    HypothesisEvidenceRelationProposal,
+    HypothesisNextTestProposal,
+    HypothesisProposal,
+    ResearchTaskKind,
+)
 from app.v2.source_spans import SourceSpanRegistry
 
 
@@ -55,6 +74,9 @@ class ManagerActionKind(StrEnum):
     RESOLVE_SEMANTICS = "resolve_semantics"
     PROPOSE_ACCEPTANCE = "propose_acceptance"
     PROPOSE_BRANCHES = "propose_branches"
+    PROPOSE_HYPOTHESIS = "propose_hypothesis"
+    PROPOSE_HYPOTHESIS_EVIDENCE_RELATION = "propose_hypothesis_evidence_relation"
+    PROPOSE_HYPOTHESIS_NEXT_TEST = "propose_hypothesis_next_test"
     RUN_ANALYTICS = "run_analytics"
     RUN_RELATIONSHIP = "run_relationship"
     INSPECT_EVIDENCE = "inspect_evidence"
@@ -148,6 +170,23 @@ class ManagerDecisionTransport(FrozenModel):
         max_length=12,
     )
 
+    hypothesis_parent_obligation_id: str | None = None
+    hypothesis_statement: str | None = Field(default=None, min_length=1, max_length=1000)
+    hypothesis_semantic_handles: tuple[str, ...] = ()
+    hypothesis_trigger_evidence_refs: tuple[str, ...] = ()
+    hypothesis_limitations: tuple[str, ...] = ()
+
+    hypothesis_ref: str | None = None
+    hypothesis_relation_evidence_ref: str | None = None
+    hypothesis_relation: HypothesisEvidenceRelation | None = None
+
+    next_test_task_kind: ResearchTaskKind | None = None
+    next_test_input_handles: tuple[str, ...] = ()
+    next_test_trigger_evidence_ref: str | None = None
+    next_test_material_reason: str | None = Field(default=None, min_length=1, max_length=500)
+    next_test_ranking_direction: Literal["asc", "desc"] | None = None
+    next_test_ranking_limit: int | None = Field(default=None, ge=1, le=1000)
+
     obligation_ids: tuple[str, ...] = ()
     metric_handles: tuple[str, ...] = ()
     dimension_handles: tuple[str, ...] = ()
@@ -207,6 +246,44 @@ class ManagerDecisionTransport(FrozenModel):
                 raise ValueError(
                     "propose_branches parent obligation + evidence + candidates gerektirir"
                 )
+        elif self.action == ManagerActionKind.PROPOSE_HYPOTHESIS:
+            if (
+                not self.hypothesis_parent_obligation_id
+                or not self.hypothesis_statement
+                or not self.hypothesis_semantic_handles
+                or not self.hypothesis_trigger_evidence_refs
+            ):
+                raise ValueError(
+                    "propose_hypothesis root obligation + statement + semantic handles "
+                    "+ trigger evidence gerektirir"
+                )
+        elif self.action == ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION:
+            if (
+                not self.hypothesis_ref
+                or not self.hypothesis_relation_evidence_ref
+                or self.hypothesis_relation is None
+            ):
+                raise ValueError(
+                    "hypothesis evidence relation hypothesis_ref + evidence_ref + relation gerektirir"
+                )
+        elif self.action == ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST:
+            if (
+                not self.hypothesis_ref
+                or self.next_test_task_kind is None
+                or not self.next_test_input_handles
+                or not self.next_test_trigger_evidence_ref
+                or not self.next_test_material_reason
+            ):
+                raise ValueError(
+                    "hypothesis next test hypothesis_ref + task kind + inputs + trigger "
+                    "evidence + material reason gerektirir"
+                )
+            if (self.next_test_ranking_direction is None) != (
+                self.next_test_ranking_limit is None
+            ):
+                raise ValueError(
+                    "next-test ranking direction + limit birlikte verilmelidir"
+                )
         elif self.action == ManagerActionKind.RUN_ANALYTICS:
             if not self.obligation_ids or not self.metric_handles:
                 raise ValueError("run_analytics obligation_ids + metric_handles gerektirir")
@@ -235,6 +312,55 @@ class ManagerDecisionTransport(FrozenModel):
             or bool(self.branch_candidates)
         ):
             raise ValueError("branch fields are valid only for propose_branches")
+
+        hypothesis_register_values = (
+            self.hypothesis_parent_obligation_id,
+            self.hypothesis_statement,
+            self.hypothesis_semantic_handles,
+            self.hypothesis_trigger_evidence_refs,
+            self.hypothesis_limitations,
+        )
+        if self.action != ManagerActionKind.PROPOSE_HYPOTHESIS and any(
+            value not in (None, (), []) for value in hypothesis_register_values
+        ):
+            raise ValueError(
+                "hypothesis registration fields are valid only for propose_hypothesis"
+            )
+
+        relation_values = (
+            self.hypothesis_relation_evidence_ref,
+            self.hypothesis_relation,
+        )
+        if (
+            self.action != ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION
+            and any(value is not None for value in relation_values)
+        ):
+            raise ValueError(
+                "hypothesis relation fields are valid only for evidence relation action"
+            )
+
+        next_test_values = (
+            self.next_test_task_kind,
+            self.next_test_input_handles,
+            self.next_test_trigger_evidence_ref,
+            self.next_test_material_reason,
+            self.next_test_ranking_direction,
+            self.next_test_ranking_limit,
+        )
+        if self.action != ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST and any(
+            value not in (None, (), []) for value in next_test_values
+        ):
+            raise ValueError(
+                "next-test fields are valid only for propose_hypothesis_next_test"
+            )
+
+        if self.hypothesis_ref is not None and self.action not in {
+            ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION,
+            ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST,
+        }:
+            raise ValueError(
+                "hypothesis_ref is valid only for relation or next-test action"
+            )
 
         derived_values = (
             self.derived_task_id,
@@ -290,7 +416,7 @@ def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _post_acceptance_native_schema() -> dict[str, Any]:
+def _post_acceptance_native_schema(*, root_cause_enabled: bool = False) -> dict[str, Any]:
     """Expose only actions that are legal after AcceptedTurnContract commit.
 
     Pre-acceptance is owned by PreAcceptanceController.  Leaving
@@ -304,11 +430,18 @@ def _post_acceptance_native_schema() -> dict[str, Any]:
     def remove_value(node: Any) -> None:
         if isinstance(node, dict):
             enum_values = node.get("enum")
-            if isinstance(enum_values, list) and ManagerActionKind.PROPOSE_ACCEPTANCE.value in enum_values:
+            if isinstance(enum_values, list):
+                forbidden = {ManagerActionKind.PROPOSE_ACCEPTANCE.value}
+                if not root_cause_enabled:
+                    forbidden.update(
+                        {
+                            ManagerActionKind.PROPOSE_HYPOTHESIS.value,
+                            ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value,
+                            ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value,
+                        }
+                    )
                 node["enum"] = [
-                    value
-                    for value in enum_values
-                    if value != ManagerActionKind.PROPOSE_ACCEPTANCE.value
+                    value for value in enum_values if value not in forbidden
                 ]
             for value in node.values():
                 remove_value(value)
@@ -343,6 +476,20 @@ Rules:
 - finish is only a proposal; deterministic CompletionGate decides completion truth.
 - One action per turn. No prose outside the strict schema.
 - Emit every schema field; use []/null for unused fields.
+"""
+
+_ROOT_CAUSE_SYSTEM_ADDENDUM = """
+DAY8 ROOT_CAUSE RULES:
+- Hypotheses are cognition proposals, never Evidence or canonical semantic truth.
+- propose_hypothesis may use only runtime-issued h* aliases and current VERIFIED inspected Evidence.
+- Trigger Evidence does NOT become SUPPORTS automatically.
+- SUPPORTS/CONTRADICTS requires propose_hypothesis_evidence_relation explicitly.
+- propose_hypothesis_next_test selects an existing governed task kind and h* inputs only.
+- Never invent or provide ResearchTask IDs for hypothesis next tests; the server owns identity.
+- A planned/running/completed-but-unverified task is not epistemic Evidence.
+- ASSOCIATION/CONTRIBUTION/priority/interestingness are not causation.
+- Never claim CONFIRMED_CAUSE. Current Day8 ceiling is at most CANDIDATE_CAUSE.
+- Use READY_RESEARCH_TASKS only after the server has materialized a governed task.
 """
 
 
@@ -492,6 +639,7 @@ class ResearchManagerLoop:
         source_spans: SourceSpanRegistry,
         research_tool_runner: ResearchToolRunner | None = None,
         research_task_service: ResearchTaskService | None = None,
+        root_cause_context: RootCauseLoopContext | None = None,
     ) -> None:
         structured = getattr(llm, "structured_json", None)
         if not callable(structured):
@@ -501,6 +649,7 @@ class ResearchManagerLoop:
         self._capabilities = ManagerCapabilityRegistry()
         self._research_tool_runner = research_tool_runner
         self._research_tasks = research_task_service or ResearchTaskService()
+        self._root_cause_context = root_cause_context
         self._alias_by_handle: dict[str, str] = {}
         self._handle_by_alias: dict[str, str] = {}
 
@@ -563,6 +712,7 @@ class ResearchManagerLoop:
         action_frontier: dict[str, Any] | None = None,
         research_state: ResearchStateView | None = None,
         ready_tasks: tuple[Any, ...] = (),
+        hypothesis_ledgers: dict[str, Any] | None = None,
     ) -> str:
         ledger = runtime.ledger
         ledger_view = []
@@ -601,6 +751,36 @@ class ResearchManagerLoop:
                 else []
             ),
             "ACTION_FRONTIER": action_frontier or {},
+            "HYPOTHESIS_LEDGERS": [
+                {
+                    "parent_obligation_id": root_id,
+                    "entries": [
+                        {
+                            "hypothesis_id": entry.hypothesis_id,
+                            "statement": entry.statement,
+                            "status": entry.status.value,
+                            "semantic_handle_refs": [
+                                self._handle_alias(ref)
+                                for ref in entry.semantic_handle_refs
+                            ],
+                            "trigger_evidence_refs": list(entry.trigger_evidence_refs),
+                            "evidence_links": [
+                                {
+                                    "evidence_ref": link.evidence_ref,
+                                    "relation": link.relation.value,
+                                }
+                                for link in entry.evidence_links
+                            ],
+                            "next_test_task_refs": list(entry.next_test_task_refs),
+                            "limitations": list(entry.limitations),
+                        }
+                        for entry in ledger.state.entries
+                    ],
+                }
+                for root_id, ledger in sorted(
+                    (hypothesis_ledgers or {}).items()
+                )
+            ],
             "READY_RESEARCH_TASKS": [
                 {
                     "task_id": task.task_id,
@@ -648,6 +828,7 @@ class ResearchManagerLoop:
         action_frontier: dict[str, Any] | None = None,
         research_state: ResearchStateView | None = None,
         ready_tasks: tuple[Any, ...] = (),
+        hypothesis_ledgers: dict[str, Any] | None = None,
     ):
         user = self._prompt(
             question=question,
@@ -657,18 +838,27 @@ class ResearchManagerLoop:
             action_frontier=action_frontier,
             research_state=research_state,
             ready_tasks=ready_tasks,
+            hypothesis_ledgers=hypothesis_ledgers,
         )
-        schema = _post_acceptance_native_schema()
+        root_cause_enabled = bool(hypothesis_ledgers)
+        schema = _post_acceptance_native_schema(
+            root_cause_enabled=root_cause_enabled
+        )
+        system_prompt = (
+            _SYSTEM + _ROOT_CAUSE_SYSTEM_ADDENDUM
+            if root_cause_enabled
+            else _SYSTEM
+        )
         kwargs = {
             "schema": schema,
             "schema_name": "dima_research_manager_action_v1",
         }
-        raw = self._structured(_SYSTEM, user, **kwargs)
+        raw = self._structured(system_prompt, user, **kwargs)
         try:
             return self._parse_decision(raw)
         except Exception as first_error:
             repair_system = (
-                _SYSTEM
+                system_prompt
                 + "\n\nFORMAT_REPAIR_ONLY: Previous output failed the application schema. "
                   "Keep the SAME next action and semantic decision. Only fill/fix schema "
                   "fields. Do not add/remove obligations, change polarity, or choose another tool."
@@ -822,6 +1012,44 @@ class ResearchManagerLoop:
 
         raise RuntimeError(f"unsupported Manager action: {decision.action}")
 
+    @staticmethod
+    def _ledger_for_hypothesis(
+        ledgers: dict[str, Any],
+        hypothesis_ref: str,
+    ):
+        matches = []
+        for ledger in ledgers.values():
+            try:
+                ledger.get(hypothesis_ref)
+                matches.append(ledger)
+            except Exception:
+                continue
+        if len(matches) != 1:
+            raise RootCauseOrchestrationError(
+                f"hypothesis_ref resolves to {len(matches)} active ROOT_CAUSE ledgers"
+            )
+        return matches[0]
+
+    @staticmethod
+    def _pending_user_seed_for_obligation(
+        *,
+        task_registry: ResearchTaskRegistry,
+        obligation_id: str,
+    ):
+        candidates = [
+            task
+            for task in task_registry.tasks
+            if task.origin == "USER_SEED"
+            and task.question_id == obligation_id
+            and task.state == "pending"
+        ]
+        if len(candidates) > 1:
+            raise ResearchTaskMaterializationError(
+                "multiple pending USER_SEED tasks exist for one obligation; "
+                "explicit orchestration selection is required"
+            )
+        return candidates[0] if candidates else None
+
     def understand(
         self,
         *,
@@ -913,6 +1141,7 @@ class ResearchManagerLoop:
         frontier = DynamicActionFrontier()
         task_registry = ResearchTaskRegistry()
 
+        root_cause_ledgers: dict[str, Any] = {}
         if self._research_tool_runner is not None:
             seed_set = self._research_tasks.seed_initial_user_must(
                 runtime=runtime,
@@ -936,6 +1165,74 @@ class ResearchManagerLoop:
                     ),
                 }
             )
+
+            if (
+                self._root_cause_context is not None
+                and runtime.ledger is not None
+            ):
+                evidence_store = getattr(executor, "evidence_store", None)
+                if evidence_store is None:
+                    raise RootCauseOrchestrationError(
+                        "Day8 ROOT_CAUSE loop requires governed EvidenceStore"
+                    )
+                bootstrap_policy = RootCauseBootstrapPolicy(
+                    semantic_handles=self._root_cause_context.semantic_handles,
+                    capabilities=self._capabilities,
+                    task_service=self._research_tasks,
+                )
+                for item in runtime.ledger.active_user_must:
+                    if item.capability_key != ManagerCapabilityKey.ROOT_CAUSE:
+                        continue
+                    ledger = self._root_cause_context.build_ledger(
+                        runtime=runtime,
+                        evidence_store=evidence_store,
+                        task_registry=task_registry,
+                        root_obligation_id=item.obligation_id,
+                    )
+                    root_cause_ledgers[item.obligation_id] = ledger
+                    bootstrap = bootstrap_policy.prepare(
+                        runtime=runtime,
+                        evidence_store=evidence_store,
+                        task_registry=task_registry,
+                        root_obligation_id=item.obligation_id,
+                        tenant_binding=self._root_cause_context.tenant_binding,
+                        context_version=self._root_cause_context.context_version,
+                    )
+                    observations.append(
+                        {
+                            "kind": "root_cause_bootstrap",
+                            "parent_obligation_id": item.obligation_id,
+                            "status": bootstrap.status.value,
+                            "evidence_refs": list(bootstrap.evidence_refs),
+                            "candidate_task_kinds": [
+                                kind.value for kind in bootstrap.candidate_task_kinds
+                            ],
+                            "selected_capability": (
+                                bootstrap.selected_capability.value
+                                if bootstrap.selected_capability is not None
+                                else None
+                            ),
+                            "task_id": (
+                                bootstrap.task.task_id
+                                if bootstrap.task is not None
+                                else None
+                            ),
+                            "reason": bootstrap.reason,
+                        }
+                    )
+                    if bootstrap.status == RootCauseBootstrapStatus.AMBIGUOUS_TASK:
+                        runtime.require_clarification(bootstrap.reason)
+                    elif bootstrap.status == RootCauseBootstrapStatus.NO_APPLICABLE_TASK:
+                        runtime.block_unsupported(bootstrap.reason)
+                        return ManagerLoopOutcome(
+                            snapshot=runtime.snapshot,
+                            run_finished=False,
+                            verified_complete=False,
+                            terminal_status=runtime.snapshot.terminal_status,
+                            clarification_required=False,
+                            observations=tuple(observations),
+                            preacceptance_status=FiniteAcceptanceStatus.ACCEPTED,
+                        )
 
         while runtime.snapshot.state not in {
             ManagerState.COMPLETED,
@@ -963,6 +1260,7 @@ class ResearchManagerLoop:
                     action_frontier=frontier_view,
                     research_state=research_state,
                     ready_tasks=task_registry.tasks,
+                    hypothesis_ledgers=root_cause_ledgers,
                 )
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
@@ -1089,6 +1387,145 @@ class ResearchManagerLoop:
                     runtime=runtime,
                     result={"rejected": "clarification_ungrounded"},
                 )
+                continue
+
+            if decision.action in {
+                ManagerActionKind.PROPOSE_HYPOTHESIS,
+                ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION,
+                ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST,
+            }:
+                try:
+                    if not root_cause_ledgers:
+                        raise RootCauseOrchestrationError(
+                            "Day8 epistemic action requires active ROOT_CAUSE authority"
+                        )
+
+                    if decision.action == ManagerActionKind.PROPOSE_HYPOTHESIS:
+                        ledger = root_cause_ledgers[
+                            decision.hypothesis_parent_obligation_id
+                        ]
+                        hypothesis = HypothesisProposalBoundary(
+                            ledger=ledger
+                        ).register(
+                            HypothesisProposal(
+                                statement=decision.hypothesis_statement,
+                                semantic_handle_refs=self._decode_handles(
+                                    decision.hypothesis_semantic_handles
+                                ),
+                                trigger_evidence_refs=decision.hypothesis_trigger_evidence_refs,
+                                limitations=decision.hypothesis_limitations,
+                            )
+                        )
+                        result_view = {
+                            "hypothesis_id": hypothesis.hypothesis_id,
+                            "parent_obligation_id": hypothesis.parent_obligation_id,
+                            "status": hypothesis.status.value,
+                            "trigger_evidence_refs": list(
+                                hypothesis.trigger_evidence_refs
+                            ),
+                        }
+                        observation_kind = "hypothesis_registered"
+
+                    elif (
+                        decision.action
+                        == ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION
+                    ):
+                        ledger = self._ledger_for_hypothesis(
+                            root_cause_ledgers,
+                            decision.hypothesis_ref,
+                        )
+                        hypothesis = HypothesisProposalBoundary(
+                            ledger=ledger
+                        ).attach_relation(
+                            HypothesisEvidenceRelationProposal(
+                                hypothesis_ref=decision.hypothesis_ref,
+                                evidence_ref=decision.hypothesis_relation_evidence_ref,
+                                relation=decision.hypothesis_relation,
+                            )
+                        )
+                        result_view = {
+                            "hypothesis_id": hypothesis.hypothesis_id,
+                            "evidence_links": [
+                                {
+                                    "evidence_ref": link.evidence_ref,
+                                    "relation": link.relation.value,
+                                }
+                                for link in hypothesis.evidence_links
+                            ],
+                        }
+                        observation_kind = "hypothesis_relation_admitted"
+
+                    else:
+                        ledger = self._ledger_for_hypothesis(
+                            root_cause_ledgers,
+                            decision.hypothesis_ref,
+                        )
+                        task = HypothesisNextTestBoundary(
+                            ledger=ledger,
+                            runtime=runtime,
+                            evidence_store=executor.evidence_store,
+                            semantic_handles=self._root_cause_context.semantic_handles,
+                            task_registry=task_registry,
+                            tenant_binding=self._root_cause_context.tenant_binding,
+                            context_version=self._root_cause_context.context_version,
+                            task_service=self._research_tasks,
+                            capabilities=self._capabilities,
+                        ).materialize(
+                            HypothesisNextTestProposal(
+                                hypothesis_ref=decision.hypothesis_ref,
+                                task_kind=decision.next_test_task_kind,
+                                input_refs=self._decode_handles(
+                                    decision.next_test_input_handles
+                                ),
+                                trigger_evidence_ref=decision.next_test_trigger_evidence_ref,
+                                material_reason=decision.next_test_material_reason,
+                                ranking_direction=decision.next_test_ranking_direction,
+                                ranking_limit=decision.next_test_ranking_limit,
+                            )
+                        )
+                        result_view = {
+                            "hypothesis_id": decision.hypothesis_ref,
+                            "task_id": task.task_id,
+                            "task_kind": task.task_kind,
+                            "state": task.state,
+                            "trigger_evidence_ref": task.trigger_evidence_ref,
+                        }
+                        observation_kind = "hypothesis_next_test_registered"
+
+                    observations.append(
+                        {
+                            "kind": observation_kind,
+                            "result": result_view,
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result=result_view,
+                    )
+                except (
+                    HypothesisProposalError,
+                    RootCauseOrchestrationError,
+                    KeyError,
+                    ValueError,
+                ) as exc:
+                    observations.append(
+                        {
+                            "kind": "tool_rejected",
+                            "action": decision.action.value,
+                            "message": str(exc),
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result={
+                            "root_cause_action_error": type(exc).__name__,
+                            "message": str(exc),
+                        },
+                    )
                 continue
 
             if decision.action == ManagerActionKind.PROPOSE_BRANCHES:
@@ -1218,11 +1655,16 @@ class ResearchManagerLoop:
                         except ResearchTaskMaterializationError:
                             raise
                         except Exception:
-                            task = self._research_tasks.seed_for_obligation(
-                                runtime=runtime,
+                            task = self._pending_user_seed_for_obligation(
+                                task_registry=task_registry,
                                 obligation_id=obligation_id,
-                                task_id=task_id,
                             )
+                            if task is None:
+                                task = self._research_tasks.seed_for_obligation(
+                                    runtime=runtime,
+                                    obligation_id=obligation_id,
+                                    task_id=task_id,
+                                )
                     else:
                         try:
                             task = task_registry.get(decision.derived_task_id)

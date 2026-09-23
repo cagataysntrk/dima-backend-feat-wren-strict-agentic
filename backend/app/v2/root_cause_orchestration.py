@@ -11,10 +11,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
 from enum import StrEnum
 
 from app.v2.capability_bindings import CapabilityBindingValidator
-from app.v2.epistemics import HypothesisLedger, HypothesisLedgerError
+from app.v2.epistemics import (
+    CurrentRunEvidenceView,
+    CurrentRunObligationView,
+    HypothesisLedger,
+    HypothesisLedgerError,
+)
 from app.v2.manager_models import (
     ManagerCapabilityKey,
     ObligationOrigin,
@@ -49,6 +55,44 @@ from app.v2.semantic_handles import SemanticHandleRegistry
 
 class RootCauseOrchestrationError(RuntimeError):
     """Day8-C proposal/applicability violation."""
+
+
+@dataclass(frozen=True)
+class RootCauseLoopContext:
+    """Opt-in Day8 bridge; carries existing trust-plane owners into Manager loop."""
+
+    semantic_handles: SemanticHandleRegistry
+    tenant_binding: str
+    context_version: str
+
+    def build_ledger(
+        self,
+        *,
+        runtime,
+        evidence_store,
+        task_registry: ResearchTaskRegistry,
+        root_obligation_id: str,
+    ) -> HypothesisLedger:
+        contract = runtime.accepted_contract
+        ledger = runtime.ledger
+        if contract is None or ledger is None:
+            raise RootCauseOrchestrationError(
+                "Day8 loop context requires accepted Research authority"
+            )
+        return HypothesisLedger(
+            parent_obligation_id=root_obligation_id,
+            accepted_contract_id=contract.contract_id,
+            lineage_id=ledger.lineage_id,
+            run_id=runtime.snapshot.run_id,
+            obligation_ledger=ledger,
+            evidence_store=evidence_store,
+            evidence_view=CurrentRunEvidenceView(runtime),
+            obligation_view=CurrentRunObligationView(runtime),
+            semantic_handles=self.semantic_handles,
+            research_tasks=task_registry,
+            tenant_binding=self.tenant_binding,
+            context_version=self.context_version,
+        )
 
 
 class RootCauseBootstrapStatus(StrEnum):
