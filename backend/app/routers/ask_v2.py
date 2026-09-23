@@ -16,6 +16,7 @@ from app.v2.product_coordinator import ProductCoordinator
 from app.v2.product_events import ProductEventSink
 from app.v2.product_models import (
     ProductAskRequest,
+    ProductControlAction,
     ProductControlReceipt,
     ProductControlRequest,
     ProductEventKind,
@@ -204,7 +205,7 @@ def ask_v2_stream(
             # Transport disconnect signals the same live cancel control. Existing
             # ResearchTaskRegistry remains lifecycle authority and rejects late commits.
             if worker.is_alive():
-                control.signal("CANCEL")
+                control.signal(ProductControlAction.CANCEL)
             _controls.release(control.control_ref)
 
     return StreamingResponse(
