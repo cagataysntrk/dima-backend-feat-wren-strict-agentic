@@ -129,8 +129,12 @@ def main() -> int:
             }
         ),
         metabase_subject_ref=f"metabase-user:{mb_user_id}",
-        attestation_refs=("attestation:p13c-provider-free:runtime",),
-        evidence_refs=("evidence:metabase-restricted-field-values:p13c",),
+        attestation_refs=(
+            f"engine-identity:{identity.runtime_instance_id}",
+        ),
+        evidence_refs=(
+            f"metabase-current-user:{mb_user_id}:field:{filter_field_id}",
+        ),
     )
     access = ExecutionAccessSnapshotIssuer.issue_for_expected_resources(
         current_principal=principal,
