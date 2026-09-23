@@ -30,6 +30,10 @@ class StaleReportContinuationError(ReportContinuationError):
     pass
 
 
+class ReportContinuationNotAdmissibleError(ReportContinuationError):
+    pass
+
+
 class ReportSectionContinuationPayload(FrozenModel):
     version: int = Field(ge=1)
     tenant_binding: str = Field(min_length=1)
