@@ -373,40 +373,71 @@ class ManagerSemanticResolutionAdapter:
         resolved: tuple[ManagerResolvedSemantic, ...] | list[ManagerResolvedSemantic],
         kind_hint: str,
     ) -> tuple:
-        """Map current-call USER_SOURCE authority back to safe governed catalog cards.
+        """Build bounded current-message applicability candidates.
 
-        These bindings are discovery context only. The unresolved source receives no
-        authority until the existing bounded linker selects a card and BindingGate admits
-        that selection.
+        Existing USER_SOURCE bindings remain context only. Candidate construction may
+        reuse their current governed cube metadata, but every unresolved source still
+        requires a fresh linker decision and BindingGate admission.
         """
         if kind_hint not in {"metric", "dimension"}:
             return ()
-        candidate_ids: set[str] = set()
+
+        direct_candidate_ids: set[str] = set()
+        cube_sets: list[frozenset[str]] = []
         for item in resolved:
             if item.source_ref is None or item.provenance != "USER_SOURCE":
                 continue
             handle = item.handle
             if handle.sensitive:
                 continue
-            if self._normalized_target_kind(handle.target_kind) != kind_hint:
-                continue
-            candidate_id = str(handle.resolver_provenance_id or "")
-            if not candidate_id.startswith("cand_"):
-                continue
-            # Defense in depth: current registry must still validate tenant/context.
-            self._handles.binding_for_execution(
+
+            binding = self._handles.binding_for_execution(
                 handle.handle_id,
                 tenant_binding=self._tenant_binding,
                 context_version=self._semantic_context.context_version.version,
             )
-            candidate_ids.add(candidate_id)
+            cubes = frozenset(
+                str(value)
+                for value in tuple(
+                    getattr(binding.canonical_target, "cube_names", ()) or ()
+                )
+                if str(value)
+            )
+            if cubes:
+                cube_sets.append(cubes)
 
-        return tuple(
-            item
-            for item in self._candidate_generator._governed_candidates(kind_hint)
-            if item.card.candidate_id in candidate_ids
-            and not item.sensitive
-        )
+            if self._normalized_target_kind(handle.target_kind) == kind_hint:
+                candidate_id = str(handle.resolver_provenance_id or "")
+                if candidate_id.startswith("cand_"):
+                    direct_candidate_ids.add(candidate_id)
+
+        coherent_scope: set[str] = set()
+        if cube_sets:
+            coherent_scope = set(cube_sets[0])
+            for cubes in cube_sets[1:]:
+                coherent_scope.intersection_update(cubes)
+                if not coherent_scope:
+                    break
+
+        out = []
+        for item in self._candidate_generator._governed_candidates(kind_hint):
+            if item.sensitive or not item.card.verified_aliases:
+                continue
+            candidate_cubes = {
+                str(value)
+                for value in tuple(
+                    getattr(item.canonical_target, "cube_names", ()) or ()
+                )
+                if str(value)
+            }
+            if (
+                item.card.candidate_id in direct_candidate_ids
+                or bool(coherent_scope.intersection(candidate_cubes))
+            ):
+                out.append(item)
+
+        out.sort(key=lambda item: item.card.candidate_id)
+        return tuple(out)
 
     def _coherent_sibling_scope(
         self,
