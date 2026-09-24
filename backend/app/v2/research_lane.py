@@ -120,9 +120,33 @@ class ResearchLaneService:
         self._contracts = contract_registry or AcceptedContractRegistry()
         self._authorities = authority_registry or AcceptedAuthorityRegistry()
 
+    @property
+    def authority_registry(self) -> AcceptedAuthorityRegistry:
+        return self._authorities
+
+    def bind_authority_registry(
+        self,
+        registry: AcceptedAuthorityRegistry,
+    ) -> None:
+        if self._authorities is registry:
+            return
+        if self._authorities.has_any:
+            raise RuntimeError(
+                "cannot rebind Research authority registry after authority commit"
+            )
+        self._authorities = registry
+
     @classmethod
-    def from_settings(cls, settings) -> "ResearchLaneService":
-        return cls(cognition=build_research_cognition(settings))
+    def from_settings(
+        cls,
+        settings,
+        *,
+        authority_registry: AcceptedAuthorityRegistry | None = None,
+    ) -> "ResearchLaneService":
+        return cls(
+            cognition=build_research_cognition(settings),
+            authority_registry=authority_registry,
+        )
 
     def run(
         self,
@@ -191,6 +215,7 @@ class ResearchLaneService:
         )
         manager_runtime = ManagerRuntime(
             request_ref=context.request_ref,
+            turn_ref=context.turn_ref,
             contract_registry=self._contracts,
             authority_registry=self._authorities,
         )
@@ -209,7 +234,7 @@ class ResearchLaneService:
         )
         outcome = loop.run(
             question=body.question,
-            message_id=f"turn:{context.request_ref}",
+            message_id=context.turn_ref,
             request_ref=context.request_ref,
             runtime=manager_runtime,
             executor=executor,
@@ -323,7 +348,7 @@ class ResearchLaneService:
         )
         outcome = loop.run(
             question=body.question,
-            message_id=f"turn:{context.request_ref}",
+            message_id=context.turn_ref,
             request_ref=context.request_ref,
             runtime=manager_runtime,
             executor=executor,
