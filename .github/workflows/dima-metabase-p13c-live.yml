@@ -21,7 +21,7 @@ permissions:
 env:
   BOYAHANE_SHA: f0c4a6b053ead52ca2eac80002c448323dc34a35
   MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
-  LIVE_ATTEMPT_ID: p13c-01-textual-equality-dima4-pending
+  LIVE_ATTEMPT_ID: p13c-01-textual-equality-dima4-001
   DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
   MB_ADMIN_EMAIL: admin@p13c-live.local
   MB_ADMIN_PASSWORD: DimaP13CLiveAdmin2026!
