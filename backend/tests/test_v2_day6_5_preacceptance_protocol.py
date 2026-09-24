@@ -1143,7 +1143,8 @@ def test_preacceptance_turn_budget_is_independently_bounded():
 
 def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification():
     question = (
-        "net geliri incele; gözlenen analitik sapmanın kök nedenini araştır"
+        "üretkenlik yalnız bağlam etiketidir; net geliri incele; "
+        "gözlenen analitik sapmanın kök nedenini araştır"
     )
     scripted = _ScriptedStructured(
         drafts=[
@@ -1213,6 +1214,6 @@ def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification(
         "pass1",
         "current_turn_applicability",
     ]
-    assert root_receipts[0]["selection"]["status"] == "RETRIEVAL_MISS"
+    assert root_receipts[0]["selection"]["status"] == "ABSTAIN"
     assert root_receipts[1]["selection"]["status"] == "BOUND"
     assert root_receipts[1]["candidate_count"] == 1
