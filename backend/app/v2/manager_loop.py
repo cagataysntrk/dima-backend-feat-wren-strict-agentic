@@ -775,6 +775,65 @@ class ResearchManagerLoop:
                 current = item.parent_obligation_id
         return False
 
+    @classmethod
+    def _admit_no_material_direction(
+        cls,
+        *,
+        runtime: ManagerRuntime,
+        evidence_store,
+        directive_id: str,
+        evidence_ref: str,
+        reason: str,
+    ):
+        contract = runtime.accepted_contract
+        if contract is None:
+            raise ManagerStateError(
+                "directive disposition requires accepted contract"
+            )
+        directive = next(
+            (
+                item
+                for item in contract.research_directives
+                if item.directive_id == directive_id
+            ),
+            None,
+        )
+        if directive is None:
+            raise ManagerStateError(
+                "directive_id is not present in accepted contract"
+            )
+        if directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE:
+            raise ManagerStateError(
+                "only ADAPT_ON_EVIDENCE has completion-relevant disposition"
+            )
+        if evidence_ref not in runtime.snapshot.evidence_refs:
+            raise ManagerStateError(
+                "directive disposition Evidence is outside current run"
+            )
+        if evidence_ref not in runtime.snapshot.inspected_evidence_refs:
+            raise ManagerStateError(
+                "directive disposition requires inspected Evidence"
+            )
+        evidence = evidence_store.get(evidence_ref)
+        if not evidence.verified:
+            raise ManagerStateError(
+                "directive disposition requires VERIFIED Evidence"
+            )
+        if not cls._evidence_belongs_to_parent_lineage(
+            runtime=runtime,
+            evidence=evidence,
+            parent_obligation_id=directive.parent_obligation_id,
+        ):
+            raise ManagerStateError(
+                "directive disposition Evidence is outside parent obligation lineage"
+            )
+        return runtime.account_research_directive(
+            directive_id=directive.directive_id,
+            status=ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
+            evidence_ref=evidence_ref,
+            reason=reason,
+        )
+
     @staticmethod
     def _try_deterministic_finish(
         *,
@@ -2016,54 +2075,12 @@ class ResearchManagerLoop:
 
             if decision.action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE:
                 try:
-                    contract = runtime.accepted_contract
-                    if contract is None:
-                        raise ManagerStateError(
-                            "directive disposition requires accepted contract"
-                        )
-                    directive = next(
-                        (
-                            item
-                            for item in contract.research_directives
-                            if item.directive_id == decision.directive_id
-                        ),
-                        None,
-                    )
-                    if directive is None:
-                        raise ManagerStateError(
-                            "directive_id is not present in accepted contract"
-                        )
-                    if directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE:
-                        raise ManagerStateError(
-                            "only ADAPT_ON_EVIDENCE has completion-relevant disposition"
-                        )
-                    evidence_ref = str(decision.directive_evidence_ref)
-                    if evidence_ref not in runtime.snapshot.evidence_refs:
-                        raise ManagerStateError(
-                            "directive disposition Evidence is outside current run"
-                        )
-                    if evidence_ref not in runtime.snapshot.inspected_evidence_refs:
-                        raise ManagerStateError(
-                            "directive disposition requires inspected Evidence"
-                        )
-                    evidence = executor.evidence_store.get(evidence_ref)
-                    if not evidence.verified:
-                        raise ManagerStateError(
-                            "directive disposition requires VERIFIED Evidence"
-                        )
-                    if not self._evidence_belongs_to_parent_lineage(
+                    disposition = self._admit_no_material_direction(
                         runtime=runtime,
-                        evidence=evidence,
-                        parent_obligation_id=directive.parent_obligation_id,
-                    ):
-                        raise ManagerStateError(
-                            "directive disposition Evidence is outside parent obligation lineage"
-                        )
-                    disposition = runtime.account_research_directive(
-                        directive_id=directive.directive_id,
-                        status=ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
-                        evidence_ref=evidence_ref,
-                        reason=decision.directive_reason,
+                        evidence_store=executor.evidence_store,
+                        directive_id=str(decision.directive_id),
+                        evidence_ref=str(decision.directive_evidence_ref),
+                        reason=str(decision.directive_reason),
                     )
                     result_view = disposition.model_dump(mode="json")
                     observations.append(
