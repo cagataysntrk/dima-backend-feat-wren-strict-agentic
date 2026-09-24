@@ -18,6 +18,7 @@ from app.v2.manager_models import (
     ManagerState,
     ObligationOrigin,
     ObligationPolarity,
+    ObligationPriority,
 )
 from app.v2.manager_preacceptance import CoverageAudit, FiniteAcceptanceStatus
 from app.v2.manager_progress import DynamicActionFrontier
@@ -1806,34 +1807,18 @@ def test_d10_p_repair_provider_rejects_unknown_source_token():
 
 
 def test_d10_p_repair_pool_never_borrows_prior_conversation_semantics():
-    question = "Makine duruşları ile bölüm bazındaki performansı araştır."
+    question = (
+        "Makine duruşları ve arıza sayısı ile bölüm bazındaki performansı araştır."
+    )
     context, schema = _d10_p_decomposition_context()
-    draft = {
-        "obligations": [
-            _obligation(
-                obligation_id="U_PERFORMANCE",
-                capability="performance",
-                source_surfaces=("Makine duruşları",),
-                semantic_surfaces=(("Makine duruşları", "metric"),),
-            ),
-            _obligation(
-                obligation_id="U_BREAKDOWN",
-                capability="breakdown",
-                source_surfaces=("bölüm bazındaki performansı",),
-                semantic_surfaces=(
-                    ("bölüm", "dimension"),
-                    ("performansı", "metric"),
-                ),
-            ),
-        ],
-        "research_directives": [],
-        "control_requests": [],
-    }
+    draft = _d10_p_draft()
     scripted = _ScriptedStructured(
         drafts=[draft],
         audits=[{"status": "PASS", "issues": []}],
     )
-    repair = _SourceSelectingRepairProvider(selected_surfaces=("Makine duruşları",))
+    repair = _SourceSelectingRepairProvider(
+        selected_surfaces=("Makine duruşları", "arıza sayısı"),
+    )
     loop, runtime, executor = _loop(
         scripted,
         semantic_provider=_SingleCandidateSemanticProvider(),
@@ -1843,7 +1828,7 @@ def test_d10_p_repair_pool_never_borrows_prior_conversation_semantics():
         conversation=ConversationStateV2(
             has_prior_analytical_request=True,
             has_active_result=True,
-            focus_labels=("arıza sayısı",),
+            focus_labels=("ortalama duruş",),
         ),
     )
     outcome = loop.understand(
@@ -1862,8 +1847,8 @@ def test_d10_p_repair_pool_never_borrows_prior_conversation_semantics():
     request = repair.calls[0][0][0]
     assert {
         item.surface for item in request.available_user_source_concepts
-    } == {"Makine duruşları"}
-    assert "arıza sayısı" not in {
+    } == {"Makine duruşları", "arıza sayısı"}
+    assert "ortalama duruş" not in {
         item.surface for item in request.available_user_source_concepts
     }
 
@@ -1902,6 +1887,20 @@ def test_d10_p_wrong_kind_current_source_cannot_enter_metric_repair_pool():
     )
     assert outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
     assert repair.calls == []
+
+
+class _AlwaysAbstainSemanticProvider:
+    def decide(self, requests):
+        return SemanticLinkBatchDecision(
+            choices=tuple(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="ABSTAIN",
+                    reason="NO_MATCH",
+                )
+                for request in requests
+            )
+        )
 
 
 def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
@@ -1977,7 +1976,7 @@ def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
     repair = _SourceSelectingRepairProvider(selected_surfaces=("email",))
     loop, runtime, executor = _loop(
         scripted,
-        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_provider=_AlwaysAbstainSemanticProvider(),
         semantic_repair_provider=repair,
         semantic_context=context,
         semantic_schema=schema,
@@ -1991,11 +1990,7 @@ def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
         conversation=ConversationStateV2(),
     )
     assert outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
-    if repair.calls:
-        request = repair.calls[0][0][0]
-        assert "email" not in {
-            item.surface for item in request.available_user_source_concepts
-        }
+    assert repair.calls == []
 
 
 def test_d10_p_repair_does_not_rewrite_business_intent_shape():
