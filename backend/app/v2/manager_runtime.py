@@ -19,6 +19,9 @@ from app.v2.manager_models import (
     ManagerBudget,
     ManagerRunSnapshot,
     ManagerState,
+    ResearchDirectiveDisposition,
+    ResearchDirectiveDispositionStatus,
+    ResearchDirectiveType,
     ResearchRunTerminal,
     SemanticResolutionReceipt,
     UserObligationLedger,
@@ -72,6 +75,7 @@ class ManagerRuntime:
         self._ledger: UserObligationLedger | None = None
         self._accepted_contract = None
         self._semantic_receipts: list[SemanticResolutionReceipt] = []
+        self._directive_dispositions: dict[str, ResearchDirectiveDisposition] = {}
 
     @property
     def snapshot(self) -> ManagerRunSnapshot:
@@ -101,6 +105,84 @@ class ManagerRuntime:
     @property
     def semantic_resolution_receipts(self) -> tuple[SemanticResolutionReceipt, ...]:
         return tuple(self._semantic_receipts)
+
+    @property
+    def directive_dispositions(self) -> tuple[ResearchDirectiveDisposition, ...]:
+        if self._accepted_contract is None:
+            return ()
+        return tuple(
+            self._directive_dispositions[item.directive_id]
+            for item in self._accepted_contract.research_directives
+            if item.directive_id in self._directive_dispositions
+        )
+
+    def directive_disposition(
+        self,
+        directive_id: str,
+    ) -> ResearchDirectiveDisposition:
+        try:
+            return self._directive_dispositions[directive_id]
+        except KeyError as exc:
+            raise ManagerStateError(
+                f"unknown accepted research directive: {directive_id}"
+            ) from exc
+
+    def account_research_directive(
+        self,
+        *,
+        directive_id: str,
+        status: ResearchDirectiveDispositionStatus,
+        evidence_ref: str,
+        branch_task_refs: tuple[str, ...] = (),
+        reason: str | None = None,
+    ) -> ResearchDirectiveDisposition:
+        if self._accepted_contract is None:
+            raise ManagerStateError("directive accounting requires accepted contract")
+        directive = next(
+            (
+                item
+                for item in self._accepted_contract.research_directives
+                if item.directive_id == directive_id
+            ),
+            None,
+        )
+        if directive is None:
+            raise ManagerStateError(
+                f"directive is not part of accepted contract: {directive_id}"
+            )
+        if directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE:
+            raise ManagerStateError(
+                "only ADAPT_ON_EVIDENCE has completion-relevant disposition"
+            )
+        current = self.directive_disposition(directive_id)
+        if current.status != ResearchDirectiveDispositionStatus.OPEN:
+            candidate = ResearchDirectiveDisposition(
+                directive_id=directive.directive_id,
+                directive_type=directive.directive_type,
+                parent_obligation_id=directive.parent_obligation_id,
+                status=status,
+                evidence_ref=evidence_ref,
+                branch_task_refs=tuple(dict.fromkeys(branch_task_refs)),
+                reason=reason,
+            )
+            if candidate == current:
+                return current
+            raise ManagerStateError(
+                f"research directive already terminal: {directive_id}"
+            )
+        if status == ResearchDirectiveDispositionStatus.OPEN:
+            raise ManagerStateError("directive accounting must be terminal")
+        disposition = ResearchDirectiveDisposition(
+            directive_id=directive.directive_id,
+            directive_type=directive.directive_type,
+            parent_obligation_id=directive.parent_obligation_id,
+            status=status,
+            evidence_ref=evidence_ref,
+            branch_task_refs=tuple(dict.fromkeys(branch_task_refs)),
+            reason=reason,
+        )
+        self._directive_dispositions[directive_id] = disposition
+        return disposition
 
     @property
     def has_accepted_contract(self) -> bool:
@@ -286,6 +368,16 @@ class ManagerRuntime:
                 self._authorities.commit(result.contract)
                 self._accepted_contract = result.contract
                 self._ledger = result.ledger
+                self._directive_dispositions = {
+                    directive.directive_id: ResearchDirectiveDisposition(
+                        directive_id=directive.directive_id,
+                        directive_type=directive.directive_type,
+                        parent_obligation_id=directive.parent_obligation_id,
+                        status=ResearchDirectiveDispositionStatus.OPEN,
+                    )
+                    for directive in result.contract.research_directives
+                    if directive.directive_type == ResearchDirectiveType.ADAPT_ON_EVIDENCE
+                }
                 self._snapshot = self._snapshot.model_copy(
                     update={
                         "state": ManagerState.CONTRACT_ACCEPTED,
