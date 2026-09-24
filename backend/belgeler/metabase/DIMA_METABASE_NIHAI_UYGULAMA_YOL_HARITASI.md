@@ -105,12 +105,10 @@ UX yet. This includes, where the exact pinned runtime supports the required cont
 - native permissions/derived permissions and caching;
 - saved questions, collections, dashboards, query builder, visualization and workspace surfaces.
 
-Ownership is split by layer, not duplicated. Metabase/Metabot own native analytical definitions,
-analytical cognition and analytical execution mechanics. Dima owns business concept ontology,
-company/sector context, engine-resource mapping, accepted obligations, product-level identity/policy
-binding, claim lineage/Evidence state, finding/hypothesis epistemics, durable Research state and
-Decision/Action/Memory state. Existing P7/P9 DimaSemanticSpec resources remain sealed compatibility
-assets; new development must not create independent formula authorship in both Dima and Metabase.
+Reuse does **not** transfer Dima truth ownership. Dima remains owner of business semantic authority,
+accepted user obligations, tenant/principal control truth, approved relationships, execution
+authorization, QueryReceipt, Evidence state, finding/hypothesis epistemics, durable Research state and
+Decision state.
 
 DMP-DEC-0026 `SEMANTIC_NECESSITY_GATE` is therefore scoped narrowly:
 
@@ -124,139 +122,6 @@ established Dima trust boundary.
 Normative architecture must not hard-code moving engine candidate identities. Exact current engine
 SHA, certification run, registry digest and build identity belong in the Platform gitlink, certified
 runtime lock, living status and release/decision receipts.
-
-
-## P13 FINAL GENERALIZATION STOP + ANALYTICAL OWNERSHIP SPLIT — DMP-DEC-0044
-
-The P13 trust program has now proven the architecture it was created to prove. It is no longer a
-program for teaching Dima every Metabase query operator.
-
-Binding status:
-
-```text
-P13 STANDARD TRUST BASELINE          = SEALED
-P13 OPERATOR-FAMILY GENERALIZATION   = STOPPED
-P13E / P13F STYLE EXPANSION          = FORBIDDEN BY DEFAULT
-
-P13D BREAKDOWN LIVE                  = GREEN
-P13D TOP-N RANKING LIVE              = GREEN
-P13D PERIOD COMPARISON CERTIFICATION = DEFERRED COMPATIBILITY GAP / NOT GREEN
-
-P14 NATIVE RESEARCH FOUNDATION       = AUTHORIZED NOW
-```
-
-The failed comparison case does not become a hidden GREEN. It remains explicit debt. It also no
-longer blocks the entire product roadmap because the failure was fail-closed inside a Dima
-compatibility seam after the native engine had already demonstrated the requested analytical
-capability family.
-
-### Native Capability Inheritance Contract
-
-Compatible capability present in the pinned native Metabase/Metabot stack is available to Dima by
-default. Dima does not create a new milestone merely because the native engine used another filter,
-breakout, ordering, temporal, chart, repair, exploration or query representation.
-
-The permanent order remains:
-
-```text
-USE_NATIVE
-→ COMPOSE_NATIVE
-→ WRAP_NATIVE
-→ HOOK_NATIVE
-→ DIMA_OWNS
-```
-
-A new Dima deterministic mechanism is justified only by a measured material business, security,
-provenance or product-intelligence gap.
-
-### Ownership is split by layer, not duplicated
-
-For the native Metabase product path:
-
-```text
-METABASE + METABOT
-= analytical definition + analytical cognition + analytical execution substrate
-
-DIMA
-= business ontology / company + sector context
-+ engine-resource mapping
-+ research obligations / epistemics
-+ claim lineage / Evidence state
-+ Decision / Action / Memory
-+ product-level tenant/principal binding and policy
-```
-
-Metabase owns the native mechanics and definitions it actually executes: Metric/Model definitions,
-field/query semantics, MBQL, query construction/repair, breakouts, ordering/ranking, temporal
-operations, Query Processor, drivers and native data-permission enforcement.
-
-Dima owns stable business concept identity, aliases, company terminology, sector meaning, decision
-relevance, mapping from a Dima concept to a concrete engine resource/version, accepted research
-obligations, claim lineage, Evidence state, hypothesis/finding epistemics, Decision state, Action
-policy and institutional memory.
-
-Dima must not keep a second independently authored copy of a Metabase metric/model formula merely so
-it can re-prove Metabase to itself.
-
-Existing P7/P8/P9 `DimaSemanticSpec` and DIMA_MANAGED resources are **not deleted or rewritten in
-this milestone**. They are sealed compatibility/migration assets for already-certified paths. From
-this point forward, do not expand them into a shadow analytical-definition engine. Their future role
-is Dima Business Ontology / Engine Mapping plus only those company/sector constraints that are truly
-Dima-owned. Any destructive migration of old formula fields requires its own explicit migration
-decision; silent ownership reversal is forbidden.
-
-### Evidence contract
-
-The target is no longer:
-
-```text
-every native operator
-→ Dima mini-interpreter
-→ Dima re-proves the engine
-```
-
-The target is:
-
-```text
-native engine resource + native execution
-→ exact occurrence / principal / scope / result lineage
-→ Dima Evidence
-→ finding / hypothesis / decision use
-```
-
-Metabase proves what analytical resource/query it executed and returns the analytical result. Dima
-proves which claim/research obligation that result supports, under which principal/scope/resource
-binding, and what epistemic status it may receive.
-
-`VERIFIED` still requires no unresolved material ambiguity. Unsupported or insufficiently bound
-native output must fail closed or become an explicit limitation; it must never be silently promoted
-to VERIFIED.
-
-### Security split
-
-Metabase + the database enforce native data permissions. Dima binds the correct tenant/principal and
-owns product-level research/Evidence/Decision/Action authorization and sharing rules. P10 remains the
-identity/provenance binding contract; it must not grow into a second generic RLS/CLS engine.
-
-### P13 comparison debt policy
-
-Current comparison failure:
-`NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED` in the Dima compatibility codec.
-
-Do not cut dima.7 and do not spend another Luna merely to finish a certification table. Record the
-gap and continue P14. If a real P14/product execution materially hits the same gap, capture the exact
-native representation first, then fix only the narrow Dima compatibility boundary provider-free.
-Native Metabase/Metabot/QP/driver source remains immutable by default.
-
-### P14 start rule
-
-P14 may start without another P13 live run, engine build or model call. Initial P14 work is durable
-Research state + native Metabot session delegation + reuse of the existing P13 exact-occurrence
-execution/receipt/Evidence path.
-
-A typed unsupported native execution may limit one Research branch; it does not justify a second
-analytics engine and does not globally block Research progress.
-
 
 ---
 
@@ -918,12 +783,6 @@ Dima UX primary kalır. Workspace adoption analytics-substrate doğruluğunu blo
 
 # P13 — Production Standard path
 
-> **CURRENT DISPOSITION — DMP-DEC-0044:** P13 Standard trust baseline is sealed. Do not create
-> operator-family P13E/P13F expansions. Breakdown and top-N ranking have live VERIFIED proof.
-> Period-comparison certification remains an explicit Dima compatibility debt, not a hidden GREEN and
-> not a blocker for P14. New native capabilities inherit by default and are gated only at material
-> Dima-owned business/security/provenance boundaries.
-
 ```text
 User
 → Language Runtime
@@ -973,11 +832,6 @@ Legacy code migration/history olarak kalabilir; authority olamaz.
 ---
 
 # P14 — Native Research integration foundation
-
-**AUTHORIZED NOW by DMP-DEC-0044.** No further P13 model run, dima.7 build or operator-family
-certification is a prerequisite for starting this foundation. A native execution that hits a typed
-compatibility gap fails/limits that Research branch without silently producing VERIFIED Evidence;
-it does not cause Dima to author a replacement query engine.
 
 Dima Research / Decision Manager analitik motor değildir. Sahip olduğu state:
 
@@ -1050,11 +904,6 @@ altında kullanmak için "neden harvest edelim?" gate'i çalıştırılmaz.
 ---
 
 # P16 — Evidence Plane V2
-
-Evidence is a claim-lineage and epistemic product plane, not a second MBQL/query-semantics
-implementation. It records which native engine resource/execution/result supports which Dima claim
-or Research obligation under which principal/scope. It does not reimplement ranking, filtering,
-temporal normalization or query repair.
 
 Evidence state:
 
@@ -1833,27 +1682,26 @@ Rollback must switch substrate without changing accepted Dima semantic authority
 
 ```text
 Dima owns:
-  business concept identity / ontology
-  company + sector context and aliases
-  engine-resource mapping / version binding
-  material business relationship policy where required
+  user language understanding
+  semantic authority
+  semantic version
+  approved relationships
   accepted obligations
-  research state / hypotheses / stopping
-  claim lineage and Evidence epistemic state
-  reports / decisions / actions / institutional memory
-  product-level tenant/principal policy binding
+  research state
+  evidence truth status
+  findings/hypotheses
+  reports/decisions
+  tenant business semantics
 
-Metabase + Metabot own:
-  native Metric/Model/field analytical definitions
-  metadata access and resource discovery
-  analytical cognition / query strategy
+Metabase owns:
+  metadata access
   query representation machinery
-  query construction / validation / repair mechanics
-  breakouts / filters / ranking / temporal operations
-  Query Processor / drivers / native execution
-  native data-permission enforcement
-  BI / visualization / dashboard / Explorations substrate
-  selected cache/result/lifecycle mechanics
+  query validation/repair mechanics
+  query processor
+  driver connectivity
+  BI resource execution
+  visualization/dashboard substrate
+  selected cache/result mechanics
 
 Shared only through explicit contracts:
   resource mapping
@@ -1870,7 +1718,7 @@ Hiçbir shared responsibility “iki owner” anlamına gelmez.
 
 ```text
 Metabase çalışıyor → Wren’i hemen sil
-Metabase metric var → Dima business concept/mapping/provenance gereksiz
+Metabase metric var → Dima metric definition gereksiz
 Agent API query döndürdü → query semantically correct
 query_handle var → durable provenance hazır
 embedding hit → canonical semantic bulundu

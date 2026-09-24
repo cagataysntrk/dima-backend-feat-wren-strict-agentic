@@ -843,3 +843,15 @@ A. P14 durable Research state + native Metabot delegation + one provider-free en
 
 B. a genuine native-core/second-authority/security architecture conflict is proven.
 
+
+
+### Binding forward plan location
+
+Do not edit/reseal the historical roadmap merely to carry current product direction.
+
+Read next:
+
+`backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md`
+
+This is the DMP-DEC-0044 forward-development overlay for P13+ and supersedes conflicting historical
+P13+ roadmap prose while the sealed roadmap remains immutable.

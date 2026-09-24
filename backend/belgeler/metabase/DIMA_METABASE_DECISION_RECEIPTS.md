@@ -2657,3 +2657,10 @@ synthesis and decision intelligence.
 
 status:
 `SEALED / P13 TRUST BASELINE CLOSED / P14 NATIVE RESEARCH AUTHORIZED / COMPARISON COMPATIBILITY DEBT CARRIED EXPLICITLY`.
+
+
+governance note:
+The sealed historical roadmap is intentionally not rehashed/resealed by DMP-DEC-0044. The binding
+forward plan is now
+`backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md`.
+Governance retains the original sealed-roadmap blob for audit history.

@@ -57,3 +57,9 @@ Do not:
 - add Wren/raw-SQL/Agent-API/admin analytical fallback.
 
 New developer starts directly with the P14 work order in the canonical onboarding file.
+
+
+Binding forward-development plan:
+`backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md`
+
+The historical roadmap remains sealed for audit and is not the sole current P13+ instruction source.
