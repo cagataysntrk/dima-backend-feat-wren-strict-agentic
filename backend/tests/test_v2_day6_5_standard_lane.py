@@ -144,9 +144,15 @@ def test_research_capability_stops_without_standard_authority(monkeypatch):
         assert schema_name == "dima_standard_intent_draft_v1"
         return _draft_response("relationship")
 
+    coverage_calls = []
+
+    def forbidden_coverage(*args, **kwargs):
+        coverage_calls.append((args, kwargs))
+        raise AssertionError("correctly typed Research must not spend coverage cognition")
+
     engine = StandardLaneEngine(
         intent_structured=intent,
-        coverage_structured=_coverage_pass,
+        coverage_structured=forbidden_coverage,
         semantic_provider=_SemanticProvider(),
         temporal_provider=None,
     )
@@ -170,6 +176,7 @@ def test_research_capability_stops_without_standard_authority(monkeypatch):
     assert outcome.authority is None
     assert outcome.projection is None
     assert engine.authority_registry.accepted("turn-research") is None
+    assert coverage_calls == []
 
 
 
@@ -541,7 +548,7 @@ def test_unresolved_declared_filter_still_fails_closed_after_contract_clarificat
     assert outcome.authority is None
     assert calls == []
 
-def test_d10_j_current_research_omission_veto_is_cognition_rejected(monkeypatch):
+def test_d10_j_research_omission_veto_routes_research_without_standard_authority(monkeypatch):
     question = "net geliri göster ve kök nedenini araştır"
 
     def intent(system, user, *, schema, schema_name):
@@ -593,13 +600,15 @@ def test_d10_j_current_research_omission_veto_is_cognition_rejected(monkeypatch)
     )
 
     assert coverage_calls
-    assert outcome.status == StandardLaneStatus.COGNITION_REJECTED
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
     assert outcome.coverage_status == "VETO"
     assert outcome.authority is None
+    assert outcome.projection is None
+    assert outcome.obligations == ()
     assert engine.authority_registry.accepted("turn-d10-j-current-veto") is None
 
 
-def test_d10_j_current_presentation_only_standard_draft_is_unsupported_before_coverage():
+def test_d10_j_presentation_only_standard_draft_stays_unsupported_after_coverage_pass():
     coverage_calls = []
 
     def intent(system, user, *, schema, schema_name):
@@ -647,15 +656,17 @@ def test_d10_j_current_presentation_only_standard_draft_is_unsupported_before_co
     )
 
     assert outcome.status == StandardLaneStatus.UNSUPPORTED
-    assert coverage_calls == []
+    assert len(coverage_calls) == 1
     assert engine.authority_registry.accepted("turn-d10-j-unsupported") is None
 
 
-def test_d10_j_current_draft_exception_fails_after_one_attempt_without_research():
+def test_d10_j_two_malformed_drafts_fail_closed_after_one_generic_repair():
     draft_calls = []
 
-    def intent(*args, **kwargs):
-        draft_calls.append((args, kwargs))
+    def intent(system, user, *, schema, schema_name):
+        import json
+
+        draft_calls.append(json.loads(user))
         raise ValueError("typed draft contract rejected")
 
     engine = StandardLaneEngine(
@@ -680,8 +691,233 @@ def test_d10_j_current_draft_exception_fails_after_one_attempt_without_research(
         session_id=None,
     )
 
-    assert len(draft_calls) == 1
+    assert len(draft_calls) == 2
+    assert draft_calls[0]["REVISION_FEEDBACK"] is None
+    assert draft_calls[1]["REVISION_FEEDBACK"] == {
+        "kind": "DRAFT_CONTRACT_REJECTED",
+        "reasons": ["typed response did not satisfy StandardIntentDraft"],
+    }
     assert outcome.status == StandardLaneStatus.FAILED
-    assert outcome.attempts == 1
+    assert outcome.attempts == 2
     assert engine.authority_registry.accepted("turn-d10-j-draft-failure") is None
+
+def test_d10_j_first_malformed_draft_gets_one_generic_repair_then_standard_can_accept(
+    monkeypatch,
+):
+    import json
+
+    payloads = []
+
+    def intent(system, user, *, schema, schema_name):
+        payloads.append(json.loads(user))
+        if len(payloads) == 1:
+            return {"obligations": []}
+        return _draft_response("performance")
+
+    monkeypatch.setattr(
+        "app.v2.standard_lane.WrenStandardExecutionAdapter.execute",
+        lambda *args, **kwargs: _Execution(),
+    )
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=_coverage_pass,
+        semantic_provider=_SemanticProvider(),
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question="net geliri",
+        turn_id="turn-d10-j-repaired-draft",
+        request_ref="request-d10-j-repaired-draft",
+        semantic_context=_context(),
+        schema=_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert len(payloads) == 2
+    assert payloads[1]["REVISION_FEEDBACK"] == {
+        "kind": "DRAFT_CONTRACT_REJECTED",
+        "reasons": ["typed response did not satisfy StandardIntentDraft"],
+    }
+    assert outcome.status == StandardLaneStatus.ACCEPTED
+    assert outcome.attempts == 2
+    assert outcome.authority is not None
+
+
+def test_d10_j_nonresearch_coverage_veto_never_routes_research(monkeypatch):
+    question = "net geliri göster ve yönetim özetini de eksiksiz kapsa"
+
+    def intent(system, user, *, schema, schema_name):
+        return _draft_response("performance")
+
+    def coverage(system, user, *, schema, schema_name):
+        return {
+            "status": "VETO",
+            "issues": [
+                {
+                    "kind": "MATERIAL_REQUEST_OMITTED",
+                    "source_surfaces": ["yönetim özetini de eksiksiz kapsa"],
+                    "note": "material Standard request omitted",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        "app.v2.standard_lane.WrenStandardExecutionAdapter.execute",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("coverage veto must stop before execution")
+        ),
+    )
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=coverage,
+        semantic_provider=_SemanticProvider(),
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id="turn-d10-j-nonresearch-veto",
+        request_ref="request-d10-j-nonresearch-veto",
+        semantic_context=_context(),
+        schema=_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert outcome.status == StandardLaneStatus.COGNITION_REJECTED
+    assert outcome.coverage_status == "VETO"
+    assert outcome.authority is None
+    assert engine.authority_registry.accepted("turn-d10-j-nonresearch-veto") is None
+
+
+def test_d10_j_material_semantic_gap_routes_research_only_when_coverage_proves_omission():
+    question = "net gelir ve belirsiz marj için kök neden araştırması yap"
+
+    def intent(system, user, *, schema, schema_name):
+        return _draft(
+            [
+                _obligation(
+                    obligation_id="U1",
+                    capability="performance",
+                    source_surfaces=("net gelir ve belirsiz marj",),
+                    semantic_surfaces=(
+                        ("net gelir", "metric"),
+                        ("belirsiz marj", "metric"),
+                    ),
+                )
+            ]
+        )
+
+    def coverage(system, user, *, schema, schema_name):
+        return {
+            "status": "VETO",
+            "issues": [
+                {
+                    "kind": "RESEARCH_NEED_OMITTED",
+                    "source_surfaces": ["kök neden araştırması yap"],
+                    "note": "material Research request omitted",
+                }
+            ],
+        }
+
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=coverage,
+        semantic_provider=_AlwaysAbstainProvider(),
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id="turn-d10-j-gap-research",
+        request_ref="request-d10-j-gap-research",
+        semantic_context=_rich_context(),
+        schema=_rich_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert outcome.coverage_status == "VETO"
+    assert outcome.authority is None
+    assert outcome.projection is None
+
+
+def test_d10_j_unsupported_standard_shape_routes_research_only_on_typed_omission():
+    question = "rapor üret ve ilişkiyi araştır"
+
+    def intent(system, user, *, schema, schema_name):
+        return {
+            "obligations": [
+                {
+                    "obligation_id": "U1",
+                    "capability_key": "report",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["rapor üret"],
+                    "semantic_surfaces": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                }
+            ],
+            "control_requests": [],
+        }
+
+    def coverage(system, user, *, schema, schema_name):
+        return {
+            "status": "VETO",
+            "issues": [
+                {
+                    "kind": "RESEARCH_NEED_OMITTED",
+                    "source_surfaces": ["ilişkiyi araştır"],
+                    "note": "material Research request omitted",
+                }
+            ],
+        }
+
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=coverage,
+        semantic_provider=None,
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id="turn-d10-j-unsupported-research",
+        request_ref="request-d10-j-unsupported-research",
+        semantic_context=_context(),
+        schema=_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert outcome.coverage_status == "VETO"
+    assert outcome.authority is None
+    assert outcome.projection is None
+    assert engine.authority_registry.accepted("turn-d10-j-unsupported-research") is None
 
