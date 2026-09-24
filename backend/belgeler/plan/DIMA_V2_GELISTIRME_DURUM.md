@@ -1,5 +1,54 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-24 — D10-P TRUE STOP / D10-Q ACTIVE
+
+Current active checkpoint:
+
+```text
+branch                         feat/ask-v2-mvp
+current HEAD                   22e8770014094af2c02eefc2c1d94d5f04a124f0
+latest Product behavior        c4f25b2346b451f08b7892465abccc3a62adb7d2
+
+latest deterministic proofs
+Day10                          36052309001 = GREEN
+Day8                           36052317079 = GREEN
+Day7                           36052244024 = GREEN
+
+D10-P paid attempt 1           36050427414 = RED / 7 calls
+D10-P paid attempt 2           36051494562 = RED / 6 calls
+D10-P paid attempt 3           36052945833 = RED / 5 calls
+invalid cleanup-trigger run    36053319641 = INVALID / NOT RELEASE EVIDENCE
+
+D10-P authorized dispatches    3 / 3 consumed
+D10-P authorized provider      18 / 45 calls
+actual period calls incl invalid cleanup 24
+
+current paid workflow          workflow_dispatch only
+temporary marker               absent
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+
+D10-Q                          ACTIVE
+repair target                  EXPLICIT MULTI-METRIC SCOPE GROUPS
+```
+
+D10-Q does not change ROOT_CAUSE required semantic algebra, Manager global ceiling, provider/model topology,
+SemanticBindingGate ownership, AcceptedTurnContract semantics, Wren truth, Evidence ownership or lane ownership.
+
+The remaining D10-P failure was safe fail-closed cognition: BREAKDOWN selected the two exact governed current-message
+metrics, while ROOT_CAUSE abstained with AMBIGUOUS_SCOPE. Multi-metric ROOT_CAUSE is already compatible with the accepted
+semantic algebra and root bootstrap preserves all accepted ROOT_CAUSE semantic handles. D10-Q therefore adds only
+ephemeral typed co-occurrence scope-group context before the existing repair cognition. A scope group is never authority.
+
+Development order is authoritative: scope-group schema → deterministic server construction → repair provider contract
+→ atomic expansion/revalidation → focused provider-free attacks → affected Day7/Day8 → real-Wren multi-metric root sentinel.
+Only after all of those are GREEN may the existing manual-dispatch paid workflow be used. Temporary push-trigger/marker
+bridges are permanently prohibited.
+
+
 ## 2026-09-24 — D10-J PROVIDER-FREE ROOT FIX GREEN / PAID REMEASUREMENT NOT AUTHORIZED
 
 Current active checkpoint:
