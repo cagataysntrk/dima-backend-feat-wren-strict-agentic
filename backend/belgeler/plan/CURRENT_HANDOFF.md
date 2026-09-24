@@ -1629,3 +1629,54 @@ Temporary push-trigger infrastructure was removed after the second measurement:
 - paid workflow blob restored to `f9ddebd74f8e8349ef6961eebf1d69f2f71acffb`.
 
 No third live measurement is authorized. The next generic repair question for supervisor review is whether a model-authored required-kind grounding gap should use the already-bounded second preacceptance draft revision before user clarification, without weakening SemanticBindingGate or forcing a semantic selection.
+
+
+### D10-O Metabase-backed supervisor decision candidate
+
+Upstream reference audited at `metabase/metabase@b6f625ed4b0c6e6716dbbd61b8691841e34d626d`.
+
+Working Metabase Exploration separates:
+
+```text
+explicit metric selection
+→ applicable dimensions for those metrics
+→ hydrated per-pair applicability
+→ planner
+→ materialization/execution
+```
+
+It does not use applicability to invent the metric identity.
+
+D10-O attempt 2 therefore should not be repaired by selecting one of the four applicable maintenance
+metrics for the generic model-authored surface `performansı`. The live `NO_MATCH` abstention is
+safe.
+
+Recommended next owner for supervisor authorization:
+
+```text
+first material_grounding_gap caused by model-authored decomposition
+→ one typed MATERIAL_GROUNDING_REJECTED draft revision
+→ exact-source validation again
+→ ordinary semantic resolution
+→ SemanticBindingGate
+→ accept or fail closed
+
+second unresolved material gap
+→ CLARIFICATION_REQUIRED
+```
+
+The revision may receive obligation/capability, missing required kind, exact source surfaces and safe
+grounding summary. It must not receive semantic/candidate IDs as truth and must not force a metric
+selection.
+
+This is currently a design proposal only. No Product code implements it because the D10-O TRUE STOP
+boundary is active:
+
+```text
+paid measurements   2 / 2
+provider calls       9 / 30
+third paid           NOT AUTHORIZED
+Day8 live debt       OPEN
+Day10 FINAL          OPEN
+Day11                NOT AUTHORIZED
+```
