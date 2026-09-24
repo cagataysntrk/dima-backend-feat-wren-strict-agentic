@@ -1,0 +1,3 @@
+D10-O canonical paid gate authorized
+semantic_product_sha=8b2ea59045a87ec03d78517d6dbe653fcc9b14f6
+budget=20
