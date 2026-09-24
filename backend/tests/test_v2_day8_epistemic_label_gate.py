@@ -338,7 +338,7 @@ def test_candidate_cause_without_support_evidence_is_rejected():
         )
 
 
-def test_candidate_cause_without_limitations_is_rejected():
+def test_candidate_cause_without_model_limitations_gets_server_ceiling():
     rel = _execution_evidence("E_REL", kind="relationship_analytics")
     ledger, metric = _fixture(rel)
     hyp = _candidate(ledger, metric, trigger="E_REL", limitations=())
@@ -348,13 +348,14 @@ def test_candidate_cause_without_limitations_is_rejected():
         relation=HypothesisEvidenceRelation.SUPPORTS,
     )
 
-    with pytest.raises(EpistemicFindingError, match="LIMITATION_REQUIRED"):
-        EvidenceLinkedFindingBuilder(ledger=ledger).build(
-            statement="Aday neden.",
-            epistemic_label=EpistemicLabel.CANDIDATE_CAUSE,
-            evidence_refs=("E_REL",),
-            hypothesis_ref=hyp.hypothesis_id,
-        )
+    finding = EvidenceLinkedFindingBuilder(ledger=ledger).build(
+        statement="Aday neden.",
+        epistemic_label=EpistemicLabel.CANDIDATE_CAUSE,
+        evidence_refs=("E_REL",),
+        hypothesis_ref=hyp.hypothesis_id,
+    )
+    assert finding.epistemic_label == EpistemicLabel.CANDIDATE_CAUSE
+    assert any("nedenselliği doğrulamaz" in item for item in finding.limitations)
 
 
 def test_supported_candidate_cause_is_allowed_but_not_confirmed():
