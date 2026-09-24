@@ -145,6 +145,18 @@ def test_identical_fresh_payloads_have_distinct_turn_authority_and_initial_linea
     spans = SourceSpanRegistry()
     handles = SemanticHandleRegistry()
     gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
+    metric = handles.mint_from_resolver(
+        tenant_binding="id:tenant-a",
+        context_version="ctx",
+        resolver_provenance_id="metric-turn-identity",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="metric-turn-identity",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
     message = "net gelir"
     hash1 = spans.register_message(message_id=first.turn_ref, text=message)
     hash2 = spans.register_message(message_id=second.turn_ref, text=message)
@@ -165,6 +177,7 @@ def test_identical_fresh_payloads_have_distinct_turn_authority_and_initial_linea
                         capability_key=ManagerCapabilityKey.PERFORMANCE,
                         origin=ObligationOrigin.USER_MUST,
                         source_refs=(source_ref,),
+                        semantic_handle_refs=(metric.handle_id,),
                     ),
                 ),
             ),
