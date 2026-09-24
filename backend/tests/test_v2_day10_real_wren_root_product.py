@@ -1265,10 +1265,8 @@ def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_ev
     assert service.query_calls > before
     assert result.evidence.verified is True
     assert result.evidence.query_contract_refs
-    assert len(result.analytics_ir.metrics) == 2
-    assert {
-        item.canonical_name for item in result.analytics_ir.metrics
-    } == {
+    assert persisted
+    expected_metric_names = {
         semantic_handles.binding_for_execution(
             ref,
             tenant_binding=f"id:{tenant}",
@@ -1276,7 +1274,18 @@ def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_ev
         ).canonical_target.canonical_name
         for ref in root_metric_handles
     }
-    assert persisted
+    contract_ir = [
+        json.loads(row.provenance_json)["v2_manager"]["analytics_ir"]
+        for row in persisted
+        if row.provenance_json
+    ]
+    assert contract_ir
+    assert all(
+        {item["canonical_name"] for item in snapshot["metrics"]}
+        == expected_metric_names
+        for snapshot in contract_ir
+    )
+    assert all(len(snapshot["metrics"]) == 2 for snapshot in contract_ir)
     assert any(
         item.get("kind") == "semantic_decomposition_repair"
         for item in diagnostics
