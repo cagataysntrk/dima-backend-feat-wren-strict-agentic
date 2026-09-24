@@ -67,8 +67,14 @@ jobs:
             --gitlink-sha "$GITLINK_SHA" \
             --github-env "$GITHUB_ENV" \
             --print-json
+
+      - name: Verify exact dima.6 lock after env export
+        shell: bash
+        run: |
+          set -euo pipefail
           test "$RUNTIME_TAG" = "v0.63.18-dima.6"
           test "$ENGINE_SHA" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$CERTIFICATION_RUN_ID" = "36042062775"
           test "$REGISTRY_DIGEST" = "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
 
       - name: Pull exact certified dima.6 digest anonymously
