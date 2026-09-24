@@ -52,6 +52,7 @@ from app.v2.product_models import (
     ProductLane,
     ProductRequestContext,
     ProductStatus,
+    mint_product_turn_ref,
 )
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
 from app.v2.report_builder import ReportBlockKind
@@ -331,7 +332,7 @@ def _build_product(
     semantic_context = ContextProviderV0().build(service, runtime)
     contract_store = ContractStore()
 
-    def bind_context(*, request, body, principal):
+    def bind_context(*, request, body, principal, turn_ref=None):
         return ProductRequestContext(
             request_ref="r-live-" + str(time.time_ns()),
             tenant_binding=f"id:{runtime.tenant_id}",
@@ -343,6 +344,7 @@ def _build_product(
             contract_store=contract_store,
             session_id=body.session_id,
             thread_id=body.thread_id,
+            turn_ref=turn_ref or mint_product_turn_ref(),
         )
 
     coordinator._bind_context = bind_context
@@ -442,6 +444,7 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
     turn_count = 0
     started = time.monotonic()
 
+    initial_turn_ref = mint_product_turn_ref()
     initial = coordinator.handle(
         request=object(),
         body=ProductAskRequest(
@@ -450,7 +453,11 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
             thread_id=thread_id,
         ),
         principal=principal,
-        event_sink=ProductEventSink(request_ref="paid-initial"),
+        event_sink=ProductEventSink(
+            request_ref="paid-initial",
+            turn_ref=initial_turn_ref,
+        ),
+        turn_ref=initial_turn_ref,
     )
     turn_count += 1
 
@@ -494,6 +501,7 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         if isinstance(item, dict)
     }
     required_root_chain = {
+        "adaptive_branch_executed",
         "hypothesis_registered",
         "hypothesis_next_test_executed",
         "hypothesis_relation_admitted",
@@ -522,8 +530,39 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
             "ROOT_CAUSE USER_MUST is not terminal/accounted as bounded investigation"
         )
 
+    event_kinds = {item.kind for item in initial.events}
+    if ProductEventKind.ADAPTIVE_BRANCH_OPENED not in event_kinds:
+        raise PaidHarnessError("canonical paid scenario did not execute adaptive branch")
+    if ProductEventKind.RELATIONSHIP_CHECKED not in event_kinds:
+        raise PaidHarnessError("canonical paid scenario did not execute relationship analysis")
+
+    accepted_adapt = [
+        item
+        for item in initial_research.accepted_contract.research_directives
+        if item.directive_type.value == "ADAPT_ON_EVIDENCE"
+    ]
+    dispositions = {
+        item.directive_id: item
+        for item in initial_research.runtime.directive_dispositions
+    }
+    if len(accepted_adapt) != 1:
+        raise PaidHarnessError(
+            f"canonical paid scenario requires exactly one ADAPT_ON_EVIDENCE directive; "
+            f"got {len(accepted_adapt)}"
+        )
+    adapt_disposition = dispositions.get(accepted_adapt[0].directive_id)
+    if adapt_disposition is None or adapt_disposition.status.value != "APPLIED":
+        raise PaidHarnessError(
+            "canonical paid adaptive directive was not accounted by governed branch"
+        )
+    if not adapt_disposition.evidence_ref or not adapt_disposition.branch_task_refs:
+        raise PaidHarnessError(
+            "canonical paid adaptive directive lacks Evidence/branch accounting proof"
+        )
+
     token = _candidate_section_token(initial)
 
+    continuation_turn_ref = mint_product_turn_ref()
     continuation = coordinator.handle(
         request=object(),
         body=ProductAskRequest(
@@ -533,7 +572,11 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
             report_section_token=token,
         ),
         principal=principal,
-        event_sink=ProductEventSink(request_ref="paid-continuation"),
+        event_sink=ProductEventSink(
+            request_ref="paid-continuation",
+            turn_ref=continuation_turn_ref,
+        ),
+        turn_ref=continuation_turn_ref,
     )
     turn_count += 1
     if turn_count != MAX_PRODUCT_TURNS:
@@ -570,12 +613,29 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
                 f"role/model drift: {item['role']} -> {item['model']}"
             )
 
+    confirmed_cause_count = sum(
+        1
+        for section in initial.report.report.sections
+        for block in section.blocks
+        if getattr(block, "epistemic_label", None) is not None
+        and block.epistemic_label.value == "CONFIRMED_CAUSE"
+    )
+    if confirmed_cause_count != 0:
+        raise PaidHarnessError("CONFIRMED_CAUSE remains forbidden")
+
     return {
         "status": "pass",
         "scope": scope,
         "product_turns": turn_count,
         "initial_status": initial.status.value,
         "continuation_status": continuation.status.value,
+        "initial_turn_ref": initial.turn_ref,
+        "continuation_turn_ref": continuation.turn_ref,
+        "directive_id": accepted_adapt[0].directive_id,
+        "directive_type": accepted_adapt[0].directive_type.value,
+        "directive_final_status": adapt_disposition.status.value,
+        "directive_accounting_evidence_ref": adapt_disposition.evidence_ref,
+        "directive_branch_task_refs": list(adapt_disposition.branch_task_refs),
         "initial_evidence_count": initial_evidence,
         "initial_artifact_count": initial_artifacts,
         "initial_report_ref": initial.report.report.report_id,
@@ -598,13 +658,7 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         "slo_note": "single observed sample; not a p95 estimate",
         "day8_live_debt_exercised": True,
         "root_chain_observations": sorted(required_root_chain),
-        "confirmed_cause_count": sum(
-            1
-            for section in initial.report.report.sections
-            for block in section.blocks
-            if getattr(block, "epistemic_label", None) is not None
-            and block.epistemic_label.value == "CONFIRMED_CAUSE"
-        ),
+        "confirmed_cause_count": confirmed_cause_count,
     }
 
 
