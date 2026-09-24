@@ -25,7 +25,8 @@ from app.v2.product_models import (
 )
 from app.v2.report_narration import ReportNarrator
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
-from app.v2.standard_lane import StandardLaneOutcome, StandardLaneStatus
+from app.v2.semantic_linker import SemanticLinkBatchDecision, SemanticLinkChoice
+from app.v2.standard_lane import StandardLaneEngine
 from control_plane.authorize import Principal
 
 
@@ -50,20 +51,69 @@ class _CountingWren:
         return self._wren.query(sql, limit=limit, principal=principal)
 
 
-class _ForceResearchStandardLane:
+class _OmittedResearchStandardLLM:
+    """Misclassify as Standard; typed CoverageVeto must recover the omitted Research need."""
+
     def __init__(self) -> None:
-        self.calls = 0
-        self.authority_registry = None
+        self.schemas: list[str] = []
 
-    def bind_authority_registry(self, registry) -> None:
-        self.authority_registry = registry
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, user, schema
+        self.schemas.append(schema_name)
+        if schema_name == "dima_standard_intent_draft_v1":
+            return {
+                "obligations": [
+                    {
+                        "obligation_id": "S1",
+                        "capability_key": "performance",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": ["arıza sayısı"],
+                        "semantic_surfaces": [
+                            {"surface": "arıza sayısı", "kind_hint": "metric"},
+                        ],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    }
+                ],
+                "control_requests": [],
+            }
+        if schema_name == "dima_standard_coverage_v1":
+            return {
+                "status": "VETO",
+                "issues": [
+                    {
+                        "kind": "RESEARCH_NEED_OMITTED",
+                        "source_surfaces": ["nedenini araştır"],
+                        "note": "material Research request omitted from Standard view",
+                    }
+                ],
+            }
+        raise AssertionError(f"unexpected Standard schema: {schema_name}")
 
-    def run(self, **_kwargs):
-        self.calls += 1
-        return StandardLaneOutcome(
-            status=StandardLaneStatus.RESEARCH_REQUIRED,
-            reasons=("root-cause capability requires Research",),
-        )
+
+class _StandardSemanticProvider:
+    def decide(self, requests):
+        choices = []
+        for request in requests:
+            assert request.candidates
+            candidate = next(
+                (
+                    item
+                    for item in request.candidates
+                    if item.label.casefold() == request.surface.casefold()
+                ),
+                request.candidates[0],
+            )
+            choices.append(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="SELECT",
+                    candidate_id=candidate.candidate_id,
+                )
+            )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
 
 
 class _RootResearchLLM:
@@ -236,7 +286,13 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
             temporal_profile=_profile(ModelRole.TEMPORAL_NORMALIZER),
         )
     )
-    standard_lane = _ForceResearchStandardLane()
+    standard_llm = _OmittedResearchStandardLLM()
+    standard_lane = StandardLaneEngine(
+        intent_structured=standard_llm.structured_json,
+        coverage_structured=standard_llm.structured_json,
+        semantic_provider=_StandardSemanticProvider(),
+        temporal_provider=None,
+    )
     coordinator = ProductCoordinator(
         standard_lane=standard_lane,
         standard_model_role="FAST_LANGUAGE",
@@ -263,7 +319,11 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
         principal=principal,
     )
 
-    assert standard_lane.calls == 1
+    assert standard_llm.schemas == [
+        "dima_standard_intent_draft_v1",
+        "dima_standard_coverage_v1",
+    ]
+    assert standard_lane.authority_registry.accepted(context.turn_ref) is None
     assert response.lane == ProductLane.RESEARCH
     assert response.status == ProductStatus.REPORT, response.model_dump(mode="json")
     assert response.terminal_receipt.verified_complete is True
