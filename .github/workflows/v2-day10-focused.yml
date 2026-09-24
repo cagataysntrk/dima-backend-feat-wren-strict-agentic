@@ -36,6 +36,7 @@ name: v2-day10-focused
       - "backend/tests/test_v2_day6_5_standard_lane.py"
       - "backend/tests/test_v2_day6_5_standard_coverage.py"
       - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
+      - "backend/tests/test_v2_day6_5_capability_algebra.py"
       - "backend/tests/test_v2_day6_5_semantic_linker.py"
       - "backend/tests/test_v2_day7_obligation_local_semantic_recovery.py"
       - "backend/lab/v2_day10_ns4_provider_free_rehearsal.py"
@@ -96,6 +97,7 @@ jobs:
         run: |
           pytest -q \
             tests/test_v2_day6_5_preacceptance_protocol.py \
+            tests/test_v2_day6_5_capability_algebra.py \
             tests/test_v2_day6_5_semantic_linker.py \
             tests/test_v2_day7_obligation_local_semantic_recovery.py
 
