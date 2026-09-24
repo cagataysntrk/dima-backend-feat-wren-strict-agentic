@@ -927,3 +927,77 @@ def test_decision_context_cannot_retrieve_candidate_outside_governed_catalog():
     assert {
         item.card.candidate_id for item in candidate_set.bindings
     } <= governed
+
+
+def test_semantic_diagnostic_redacts_filter_surface_even_on_retrieval_miss():
+    context = BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-diagnostic-redaction",
+            mdl_version="mdl-diagnostic-redaction",
+            compact_catalog_builder_version="diagnostic-redaction",
+            business_rules_hash="6" * 64,
+            prompt_context_policy_version="diagnostic-redaction",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="people",
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="email",
+                        display="E-posta",
+                    ),
+                ),
+            ),
+        ),
+    )
+    schema = {
+        "models": [
+            {
+                "name": "people",
+                "columns": [
+                    {
+                        "name": "email",
+                        "type": "VARCHAR",
+                        "sensitivity": "person",
+                    }
+                ],
+            }
+        ],
+        "cubes": [
+            {
+                "name": "people",
+                "dimension_values": {
+                    "email": ["secret.person@example.com"],
+                },
+            }
+        ],
+        "company_vocabulary": [],
+    }
+    diagnostics = []
+    generator = SemanticCandidateGenerator(
+        semantic_context=context,
+        schema=schema,
+    )
+    linker = BoundedSemanticLinker(
+        generator=generator,
+        binding_gate=SemanticBindingGate(
+            semantic_handles=SemanticHandleRegistry(),
+            tenant_binding="tenant-a",
+            context_version="ctx-diagnostic-redaction",
+        ),
+        provider=None,
+        diagnostic_sink=diagnostics.append,
+    )
+
+    (selection,) = linker.resolve(
+        (("redact-1", "secret.person@example.com", "filter"),),
+        provenance_type="USER_SOURCE",
+    )
+
+    assert selection.status in {"RETRIEVAL_MISS", "GAP"}
+    assert len(diagnostics) == 1
+    receipt = diagnostics[0]
+    assert receipt["surface"] == "<redacted-sensitive-filter>"
+    assert receipt["surface_redacted"] is True
+    assert "secret.person@example.com" not in str(receipt)
+    assert receipt["candidate_cards"] == []
