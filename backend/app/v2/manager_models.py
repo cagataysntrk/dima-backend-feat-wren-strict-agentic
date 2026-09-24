@@ -113,6 +113,45 @@ class ResearchDirective(FrozenModel):
         return self
 
 
+class ResearchDirectiveDispositionStatus(StrEnum):
+    OPEN = "OPEN"
+    APPLIED = "APPLIED"
+    NO_MATERIAL_DIRECTION = "NO_MATERIAL_DIRECTION"
+    BLOCKED = "BLOCKED"
+
+
+class ResearchDirectiveDisposition(FrozenModel):
+    """Runtime accounting for accepted research policy, never analytical truth."""
+
+    directive_id: str = Field(min_length=1)
+    directive_type: ResearchDirectiveType
+    parent_obligation_id: str = Field(min_length=1)
+    status: ResearchDirectiveDispositionStatus
+    evidence_ref: str | None = None
+    branch_task_refs: tuple[str, ...] = ()
+    reason: str | None = Field(default=None, max_length=500)
+
+    @model_validator(mode="after")
+    def _terminal_shape(self):
+        if self.status == ResearchDirectiveDispositionStatus.OPEN:
+            if self.evidence_ref is not None or self.branch_task_refs or self.reason is not None:
+                raise ValueError("OPEN directive disposition cannot carry accounting proof")
+            return self
+        if self.evidence_ref is None:
+            raise ValueError("terminal directive disposition requires governed Evidence ref")
+        if (
+            self.status == ResearchDirectiveDispositionStatus.APPLIED
+            and not self.branch_task_refs
+        ):
+            raise ValueError("APPLIED directive disposition requires branch task refs")
+        if (
+            self.status == ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION
+            and self.branch_task_refs
+        ):
+            raise ValueError("NO_MATERIAL_DIRECTION cannot carry branch task refs")
+        return self
+
+
 class StandardProjection(FrozenModel):
     obligation_ids: tuple[str, ...] = Field(min_length=1)
     metric_handles: tuple[str, ...] = Field(min_length=1)
