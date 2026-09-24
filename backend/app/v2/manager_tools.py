@@ -39,6 +39,24 @@ class SemanticDecompositionRepairGap(FrozenModel):
     obligation_source_refs: tuple[str, ...] = Field(min_length=1)
 
 
+class SemanticDecompositionRepairScopeGroup(FrozenModel):
+    kind: Literal["metric", "dimension"]
+    member_source_refs: tuple[str, ...] = Field(min_length=2)
+    supporting_capabilities: tuple[ManagerCapabilityKey, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _group_contract(self):
+        members = tuple(dict.fromkeys(self.member_source_refs))
+        if len(members) != len(self.member_source_refs):
+            raise ValueError("decomposition repair scope group members must be unique")
+        if len(members) < 2:
+            raise ValueError("decomposition repair scope group requires >=2 members")
+        capabilities = tuple(dict.fromkeys(self.supporting_capabilities))
+        if len(capabilities) != len(self.supporting_capabilities):
+            raise ValueError("decomposition repair scope group capabilities must be unique")
+        return self
+
+
 class ResolveSemanticsArgs(FrozenModel):
     provenance: Literal["USER_SOURCE", "AGENT_DERIVED"] = "USER_SOURCE"
     source_refs: tuple[str, ...] = ()
@@ -67,6 +85,9 @@ class ResolveSemanticsArgs(FrozenModel):
     natural_language_proposal: str | None = Field(default=None, min_length=1, max_length=240)
     decomposition_repair_gaps: tuple[SemanticDecompositionRepairGap, ...] = ()
     decomposition_repair_source_refs: tuple[str, ...] = ()
+    decomposition_repair_scope_groups: tuple[
+        SemanticDecompositionRepairScopeGroup, ...
+    ] = ()
 
     @model_validator(mode="after")
     def _resolution_contract(self):
@@ -81,6 +102,12 @@ class ResolveSemanticsArgs(FrozenModel):
                     raise ValueError(
                         "decomposition repair governed USER_SOURCE refs gerektirir"
                     )
+                source_ref_set = set(self.decomposition_repair_source_refs)
+                for group in self.decomposition_repair_scope_groups:
+                    if not set(group.member_source_refs).issubset(source_ref_set):
+                        raise ValueError(
+                            "decomposition repair scope group members must belong to source pool"
+                        )
                 if (
                     self.parent_obligation_id
                     or self.evidence_ref
@@ -104,6 +131,7 @@ class ResolveSemanticsArgs(FrozenModel):
                 if (
                     self.decomposition_repair_source_refs
                     or self.decomposition_repair_gaps
+                    or self.decomposition_repair_scope_groups
                 ):
                     raise ValueError(
                         "normal USER_SOURCE resolve decomposition repair alanları taşıyamaz"
@@ -124,6 +152,7 @@ class ResolveSemanticsArgs(FrozenModel):
                 or self.source_obligation_ids
                 or self.decomposition_repair_gaps
                 or self.decomposition_repair_source_refs
+                or self.decomposition_repair_scope_groups
             ):
                 raise ValueError(
                     "AGENT_DERIVED exact USER source/decomposition repair alanları kullanmaz"
