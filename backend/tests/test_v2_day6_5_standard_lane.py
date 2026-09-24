@@ -142,7 +142,7 @@ def test_standard_intent_draft_is_closed_and_typed():
 def test_research_capability_stops_without_standard_authority(monkeypatch):
     def intent(system, user, *, schema, schema_name):
         assert schema_name == "dima_standard_intent_draft_v1"
-        return _draft_response("relationship")
+        return _draft_response("root_cause")
 
     coverage_calls = []
 
