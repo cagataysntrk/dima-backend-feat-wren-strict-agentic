@@ -1,11 +1,6 @@
 name: v2-day10-product-mvp-paid-once
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/d10o-paid-trigger.txt"
   workflow_dispatch:
     inputs:
       scope:
@@ -27,7 +22,7 @@ name: v2-day10-product-mvp-paid-once
 
 jobs:
   canonical-product-mvp:
-    if: "${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.scope == 'CANONICAL_NS4' && inputs.confirm_expensive_run == 'DAY10_PAID_ONCE' && inputs.max_total_model_calls > 0 && inputs.max_total_model_calls <= 20) }}"
+    if: "${{ inputs.scope == 'CANONICAL_NS4' && inputs.confirm_expensive_run == 'DAY10_PAID_ONCE' && inputs.max_total_model_calls > 0 && inputs.max_total_model_calls <= 20 }}"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 35
@@ -68,16 +63,7 @@ jobs:
       - name: ONE supervised paid Product-MVP gate
         working-directory: backend
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            PAID_SCOPE="CANONICAL_NS4"
-            PAID_MAX_CALLS="20"
-          else
-            PAID_SCOPE="${{ inputs.scope }}"
-            PAID_MAX_CALLS="${{ inputs.max_total_model_calls }}"
-          fi
-          python lab/v2_day10_product_mvp_live.py \
-            --scope "$PAID_SCOPE" \
-            --max-total-model-calls "$PAID_MAX_CALLS"
+          python lab/v2_day10_product_mvp_live.py             --scope "${{ inputs.scope }}"             --max-total-model-calls "${{ inputs.max_total_model_calls }}"
 
       - uses: actions/upload-artifact@v4
         if: always()
