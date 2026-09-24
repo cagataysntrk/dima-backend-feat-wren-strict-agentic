@@ -490,7 +490,7 @@ def _diagnostic_snapshot(
             ],
             "semantic_linker_diagnostics": [
                 _json_safe(item)
-                for item in research_lane.semantic_diagnostics
+                for item in getattr(research_lane, "semantic_diagnostics", ())
             ],
         }
 
