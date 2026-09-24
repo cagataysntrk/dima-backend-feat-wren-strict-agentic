@@ -177,6 +177,10 @@ class AcceptedAuthorityRegistry:
             return
         self._by_turn[turn_id] = candidate
 
+    @property
+    def has_any(self) -> bool:
+        return bool(self._by_turn)
+
     def accepted(
         self,
         turn_id: str,
