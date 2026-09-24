@@ -23,6 +23,8 @@ from app.v2.manager_models import (
     ObligationPolarity,
     ObligationPriority,
     ObligationStatus,
+    ResearchDirectiveDispositionStatus,
+    ResearchDirectiveType,
     UserIntentEnvelope,
 )
 from app.v2.manager_policy import ManagerCapabilityRegistry
@@ -90,6 +92,7 @@ class ManagerActionKind(StrEnum):
     RESOLVE_SEMANTICS = "resolve_semantics"
     PROPOSE_ACCEPTANCE = "propose_acceptance"
     PROPOSE_BRANCHES = "propose_branches"
+    DISPOSITION_RESEARCH_DIRECTIVE = "disposition_research_directive"
     PROPOSE_HYPOTHESIS = "propose_hypothesis"
     PROPOSE_HYPOTHESIS_EVIDENCE_RELATION = "propose_hypothesis_evidence_relation"
     PROPOSE_HYPOTHESIS_NEXT_TEST = "propose_hypothesis_next_test"
@@ -186,6 +189,11 @@ class ManagerDecisionTransport(FrozenModel):
         max_length=12,
     )
 
+    directive_id: str | None = None
+    directive_evidence_ref: str | None = None
+    directive_disposition: Literal["NO_MATERIAL_DIRECTION"] | None = None
+    directive_reason: str | None = Field(default=None, min_length=1, max_length=500)
+
     hypothesis_parent_obligation_id: str | None = None
     hypothesis_statement: str | None = Field(default=None, min_length=1, max_length=1000)
     hypothesis_semantic_handles: tuple[str, ...] = ()
@@ -262,6 +270,17 @@ class ManagerDecisionTransport(FrozenModel):
                 raise ValueError(
                     "propose_branches parent obligation + evidence + candidates gerektirir"
                 )
+        elif self.action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE:
+            if (
+                not self.directive_id
+                or not self.directive_evidence_ref
+                or self.directive_disposition != "NO_MATERIAL_DIRECTION"
+                or not self.directive_reason
+            ):
+                raise ValueError(
+                    "directive disposition requires directive_id + evidence_ref + "
+                    "NO_MATERIAL_DIRECTION + bounded reason"
+                )
         elif self.action == ManagerActionKind.PROPOSE_HYPOTHESIS:
             if (
                 not self.hypothesis_parent_obligation_id
@@ -328,6 +347,19 @@ class ManagerDecisionTransport(FrozenModel):
             or bool(self.branch_candidates)
         ):
             raise ValueError("branch fields are valid only for propose_branches")
+
+        directive_values = (
+            self.directive_id,
+            self.directive_evidence_ref,
+            self.directive_disposition,
+            self.directive_reason,
+        )
+        if self.action != ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE and any(
+            value is not None for value in directive_values
+        ):
+            raise ValueError(
+                "directive disposition fields are valid only for disposition action"
+            )
 
         hypothesis_register_values = (
             self.hypothesis_parent_obligation_id,
@@ -504,6 +536,9 @@ handles. Capability meanings and semantic shapes come only from CAPABILITY_BINDI
 Rules:
 - Never mutate, reinterpret, drop or replace accepted USER_MUST obligations.
 - Research directives are policy/authorization, not user obligations.
+- ADAPT_ON_EVIDENCE remains OPEN until a governed material branch is executed/accounted or
+  disposition_research_directive records NO_MATERIAL_DIRECTION from current inspected VERIFIED Evidence.
+- BROADEN_WITHIN_BUDGET is authorization only; never invent work merely to close it.
 - AGENT_DERIVED semantic discovery requires accepted parent + inspected verified evidence.
 - Rejected attempts leave no semantic authority to merge.
 - run_analytics/run_relationship may reference only accepted/derived obligation IDs.
@@ -728,10 +763,24 @@ class ResearchManagerLoop:
         ):
             return False
         contract = runtime.accepted_contract
-        if contract is not None and contract.research_directives:
-            # Directive completion does not yet have a separate deterministic lifecycle
-            # owner. Do not manufacture terminality here.
-            return False
+        if contract is not None:
+            completion_relevant = {
+                item.directive_id
+                for item in contract.research_directives
+                if item.directive_type == ResearchDirectiveType.ADAPT_ON_EVIDENCE
+            }
+            accounted = {
+                item.directive_id
+                for item in runtime.directive_dispositions
+                if item.status
+                in {
+                    ResearchDirectiveDispositionStatus.APPLIED,
+                    ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
+                    ResearchDirectiveDispositionStatus.BLOCKED,
+                }
+            }
+            if not completion_relevant.issubset(accounted):
+                return False
         try:
             runtime.finish()
             return True
@@ -898,6 +947,10 @@ class ResearchManagerLoop:
                 if runtime.accepted_contract is not None
                 else []
             ),
+            "RESEARCH_DIRECTIVE_DISPOSITIONS": [
+                item.model_dump(mode="json")
+                for item in runtime.directive_dispositions
+            ],
             "ACTION_FRONTIER": action_frontier or {},
             "HYPOTHESIS_LEDGERS": [
                 {
@@ -1932,6 +1985,101 @@ class ResearchManagerLoop:
                         runtime=runtime,
                         result={
                             "root_cause_action_error": type(exc).__name__,
+                            "message": str(exc),
+                        },
+                    )
+                continue
+
+            if decision.action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE:
+                try:
+                    contract = runtime.accepted_contract
+                    if contract is None:
+                        raise ManagerStateError(
+                            "directive disposition requires accepted contract"
+                        )
+                    directive = next(
+                        (
+                            item
+                            for item in contract.research_directives
+                            if item.directive_id == decision.directive_id
+                        ),
+                        None,
+                    )
+                    if directive is None:
+                        raise ManagerStateError(
+                            "directive_id is not present in accepted contract"
+                        )
+                    if directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE:
+                        raise ManagerStateError(
+                            "only ADAPT_ON_EVIDENCE has completion-relevant disposition"
+                        )
+                    evidence_ref = str(decision.directive_evidence_ref)
+                    if evidence_ref not in runtime.snapshot.evidence_refs:
+                        raise ManagerStateError(
+                            "directive disposition Evidence is outside current run"
+                        )
+                    if evidence_ref not in runtime.snapshot.inspected_evidence_refs:
+                        raise ManagerStateError(
+                            "directive disposition requires inspected Evidence"
+                        )
+                    evidence = executor.evidence_store.get(evidence_ref)
+                    if not evidence.verified:
+                        raise ManagerStateError(
+                            "directive disposition requires VERIFIED Evidence"
+                        )
+                    if not self._evidence_belongs_to_parent_lineage(
+                        runtime=runtime,
+                        evidence=evidence,
+                        parent_obligation_id=directive.parent_obligation_id,
+                    ):
+                        raise ManagerStateError(
+                            "directive disposition Evidence is outside parent obligation lineage"
+                        )
+                    disposition = runtime.account_research_directive(
+                        directive_id=directive.directive_id,
+                        status=ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
+                        evidence_ref=evidence_ref,
+                        reason=decision.directive_reason,
+                    )
+                    result_view = disposition.model_dump(mode="json")
+                    observations.append(
+                        {
+                            "kind": "research_directive_disposition",
+                            "result": result_view,
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result=result_view,
+                    )
+                    if self._try_deterministic_finish(
+                        runtime=runtime,
+                        task_registry=task_registry,
+                    ):
+                        observations.append(
+                            {
+                                "kind": "finish",
+                                "status": "accepted",
+                                "reason": "deterministic_completion_gate",
+                            }
+                        )
+                        break
+                except Exception as exc:
+                    observations.append(
+                        {
+                            "kind": "tool_rejected",
+                            "action": decision.action.value,
+                            "message": str(exc),
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result={
+                            "directive_disposition_error": type(exc).__name__,
                             "message": str(exc),
                         },
                     )
