@@ -132,7 +132,7 @@ class _Fixture:
     schema: dict
 
 
-def _fixture(*, context=None, schema=None, provider=None) -> _Fixture:
+def _fixture(*, context=None, schema=None, provider=None, diagnostic_sink=None) -> _Fixture:
     if context is None or schema is None:
         service, default_context = _context()
         context = context or default_context
@@ -152,6 +152,7 @@ def _fixture(*, context=None, schema=None, provider=None) -> _Fixture:
         session_id="day7-owner-local",
         thread_id="day7-owner-local",
         semantic_decision_provider=provider,
+        semantic_diagnostic_sink=diagnostic_sink,
     )
     return _Fixture(
         spans=spans,
@@ -168,9 +169,9 @@ def _resolve(
     *,
     text: str,
     entries: tuple[tuple[str, str, str], ...],
+    message_id: str = "turn-owner-local",
 ):
     """entries = (owner_id, exact_surface, kind_hint)."""
-    message_id = "turn-owner-local"
     fx.spans.register_message(message_id=message_id, text=text)
     refs = tuple(
         fx.spans.mint_exact(
@@ -644,3 +645,196 @@ def test_existing_baseline_candidate_remains_owner_and_skips_sibling_fallback(mo
     assert resolved[("U1", refs[0])] == "net_value_x"
     assert resolved[("U1", refs[1])] == "region_axis_m"
     assert result.unresolved_source_refs == ()
+
+
+# D10-N: cross-obligation current-turn applicability recovery.
+# Existing authority is discovery context only; BindingGate still mints the new source edge.
+
+def test_current_turn_metric_context_recovers_generic_root_surface_without_handle_copy():
+    service, context = _context()
+    schema = service.schema()
+    diagnostics = []
+    provider = _RecordingProvider(
+        id_to_canonical=_catalog_index(context, schema),
+        selections={"gözlenen analitik sapma": "net_value_x"},
+    )
+    fx = _fixture(
+        context=context,
+        schema=schema,
+        provider=provider,
+        diagnostic_sink=diagnostics.append,
+    )
+
+    result, refs = _resolve(
+        fx,
+        text="Net gelir ile gözlenen analitik sapmayı araştır.",
+        entries=(
+            ("U_PERF", "Net gelir", "metric"),
+            ("U_ROOT", "gözlenen analitik sapma", "metric"),
+        ),
+        message_id="turn-d10-n-current-metric",
+    )
+
+    resolved = _resolved_canonicals(fx, result)
+    assert resolved[("U_PERF", refs[0])] == "net_value_x"
+    assert resolved[("U_ROOT", refs[1])] == "net_value_x"
+    assert result.unresolved_source_refs == ()
+
+    root_receipts = [
+        item for item in diagnostics
+        if item.get("owner_obligation_id") == "U_ROOT"
+    ]
+    assert [item["discovery_pass"] for item in root_receipts] == [
+        "pass1",
+        "current_turn_applicability",
+    ]
+    assert root_receipts[0]["selection"]["status"] == "RETRIEVAL_MISS"
+    assert root_receipts[1]["retrieval_backend"] == "governed_current_turn_context_v1"
+    assert root_receipts[1]["candidate_count"] == 1
+    assert root_receipts[1]["selection"]["status"] == "BOUND"
+
+    # Same canonical sem_* may be idempotent, but the source-bound authority edge is new.
+    assert refs[0] != refs[1]
+    assert len(result.resolved) == 2
+    assert {item.source_ref for item in result.resolved} == set(refs)
+
+
+def test_current_turn_multiple_metric_candidates_require_linker_and_may_abstain():
+    service, context = _context()
+    schema = service.schema()
+    diagnostics = []
+    provider = _RecordingProvider(
+        id_to_canonical=_catalog_index(context, schema),
+        selections={},
+    )
+    fx = _fixture(
+        context=context,
+        schema=schema,
+        provider=provider,
+        diagnostic_sink=diagnostics.append,
+    )
+
+    result, refs = _resolve(
+        fx,
+        text=(
+            "Net gelir ve duruş süresi incelensin; "
+            "gözlenen analitik sapma ayrıca araştırılsın."
+        ),
+        entries=(
+            ("U_SALES", "Net gelir", "metric"),
+            ("U_OPS", "duruş süresi", "metric"),
+            ("U_ROOT", "gözlenen analitik sapma", "metric"),
+        ),
+        message_id="turn-d10-n-many-metrics",
+    )
+
+    resolved = _resolved_canonicals(fx, result)
+    assert resolved[("U_SALES", refs[0])] == "net_value_x"
+    assert resolved[("U_OPS", refs[1])] == "downtime_min_d"
+    assert ("U_ROOT", refs[2]) not in resolved
+    assert refs[2] in result.unresolved_source_refs
+
+    recovery = next(
+        item for item in diagnostics
+        if item.get("owner_obligation_id") == "U_ROOT"
+        and item.get("discovery_pass") == "current_turn_applicability"
+    )
+    assert recovery["candidate_count"] == 2
+    assert recovery["selection"]["status"] == "ABSTAIN"
+
+
+def test_prior_turn_governed_handle_is_not_current_turn_candidate_context():
+    service, context = _context()
+    schema = service.schema()
+    provider = _RecordingProvider(
+        id_to_canonical=_catalog_index(context, schema),
+        selections={"gözlenen analitik sapma": "net_value_x"},
+    )
+    fx = _fixture(context=context, schema=schema, provider=provider)
+
+    first, _ = _resolve(
+        fx,
+        text="Net gelir incelensin.",
+        entries=(("U_PERF", "Net gelir", "metric"),),
+        message_id="turn-d10-n-prior",
+    )
+    assert len(first.resolved) == 1
+
+    before_calls = len(provider.calls)
+    second, refs = _resolve(
+        fx,
+        text="Gözlenen analitik sapmayı araştır.",
+        entries=(("U_ROOT", "Gözlenen analitik sapma", "metric"),),
+        message_id="turn-d10-n-current",
+    )
+
+    assert second.resolved == ()
+    assert second.unresolved_source_refs == (refs[0],)
+    # No current-call governed sibling exists, so old registry truth cannot trigger
+    # current-turn applicability cognition.
+    assert len(provider.calls) == before_calls
+
+
+def test_current_turn_dimension_context_can_support_relationship_counterpart_discovery():
+    service, context = _context()
+    schema = service.schema()
+    diagnostics = []
+    provider = _RecordingProvider(
+        id_to_canonical=_catalog_index(context, schema),
+        selections={"ilişki için analitik eksen": "department_axis_d"},
+    )
+    fx = _fixture(
+        context=context,
+        schema=schema,
+        provider=provider,
+        diagnostic_sink=diagnostics.append,
+    )
+
+    result, refs = _resolve(
+        fx,
+        text="Bölüm kırılımını çıkar ve ilişki için analitik ekseni değerlendir.",
+        entries=(
+            ("U_BREAK", "Bölüm", "dimension"),
+            ("U_REL", "ilişki için analitik eksen", "dimension"),
+        ),
+        message_id="turn-d10-n-current-dimension",
+    )
+
+    resolved = _resolved_canonicals(fx, result)
+    assert resolved[("U_BREAK", refs[0])] == "department_axis_d"
+    assert resolved[("U_REL", refs[1])] == "department_axis_d"
+    recovery = next(
+        item for item in diagnostics
+        if item.get("owner_obligation_id") == "U_REL"
+        and item.get("discovery_pass") == "current_turn_applicability"
+    )
+    assert recovery["candidate_count"] == 1
+    assert recovery["selection"]["status"] == "BOUND"
+
+
+def test_current_turn_recovery_never_expands_to_filter_kind():
+    service, context = _context()
+    schema = service.schema()
+    provider = _RecordingProvider(
+        id_to_canonical=_catalog_index(context, schema),
+        selections={},
+    )
+    fx = _fixture(context=context, schema=schema, provider=provider)
+
+    result, refs = _resolve(
+        fx,
+        text="Kuzey ve belirsiz kapsam.",
+        entries=(
+            ("U_FILTER", "Kuzey", "filter"),
+            ("U_OTHER", "belirsiz kapsam", "filter"),
+        ),
+        message_id="turn-d10-n-filter",
+    )
+
+    # Current-turn recovery is intentionally metric/dimension only.
+    assert refs[1] in result.unresolved_source_refs
+    assert not any(
+        record["surface"] == "belirsiz kapsam"
+        for call in provider.calls
+        for record in call
+    )
