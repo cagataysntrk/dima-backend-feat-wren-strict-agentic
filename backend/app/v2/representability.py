@@ -37,6 +37,74 @@ class RepresentabilityGate:
     def _active(item: BoundObligation) -> bool:
         return getattr(item, "status", None) != ObligationStatus.SUPERSEDED
 
+    def _effective_capability_partition(
+        self,
+        capability_key: ManagerCapabilityKey,
+    ) -> tuple[bool, ManagerCapabilityLane | None]:
+        """Return the existing execution participation + effective lane policy.
+
+        This is the single registry-driven owner used by both typed pre-ground routing
+        and fully bound representability. DEFERRED/PRESENTATION do not become active
+        Research merely because their declared lane is non-Standard.
+        """
+        spec = self._registry.get(capability_key)
+        if spec.execution_mode in {
+            ManagerCapabilityExecutionMode.DEFERRED,
+            ManagerCapabilityExecutionMode.PRESENTATION,
+        }:
+            return False, None
+        if spec.execution_mode == ManagerCapabilityExecutionMode.ORCHESTRATED:
+            return False, ManagerCapabilityLane.RESEARCH
+        return True, spec.lane
+
+    def decide_typed_capabilities(
+        self,
+        *,
+        capabilities: tuple[
+            tuple[ManagerCapabilityKey, ObligationPolarity],
+            ...,
+        ],
+    ) -> RepresentabilityResult:
+        """Prove lane necessity from source-valid typed capability/polarity only."""
+        executable = 0
+        standard: list[ManagerCapabilityKey] = []
+        research: list[ManagerCapabilityKey] = []
+
+        for capability_key, polarity in capabilities:
+            if polarity != ObligationPolarity.REQUIRED:
+                continue
+            participates, effective_lane = self._effective_capability_partition(
+                capability_key
+            )
+            if effective_lane == ManagerCapabilityLane.RESEARCH:
+                research.append(capability_key)
+            elif effective_lane == ManagerCapabilityLane.STANDARD:
+                standard.append(capability_key)
+            if participates:
+                executable += 1
+
+        if research:
+            return RepresentabilityResult(
+                decision=RepresentabilityDecision.RESEARCH_REQUIRED,
+                reasons=(
+                    "at least one source-valid typed obligation requires research orchestration",
+                ),
+                standard_capability_keys=tuple(dict.fromkeys(standard)),
+                research_capability_keys=tuple(dict.fromkeys(research)),
+            )
+
+        if not executable:
+            return RepresentabilityResult(
+                decision=RepresentabilityDecision.UNSUPPORTED,
+                reasons=("typed authority has no directly executable analytical capability",),
+            )
+
+        return RepresentabilityResult(
+            decision=RepresentabilityDecision.STANDARD_BUILD_REQUIRED,
+            reasons=("typed authority remains eligible for Standard grounding/build",),
+            standard_capability_keys=tuple(dict.fromkeys(standard)),
+        )
+
     def decide_bound(
         self,
         *,
@@ -179,20 +247,15 @@ class RepresentabilityGate:
         standard: list[ManagerCapabilityKey] = []
         research: list[ManagerCapabilityKey] = []
         for item in active:
-            spec = self._registry.get(item.capability_key)
-            if spec.execution_mode in {
-                ManagerCapabilityExecutionMode.DEFERRED,
-                ManagerCapabilityExecutionMode.PRESENTATION,
-            }:
-                continue
-            if spec.execution_mode == ManagerCapabilityExecutionMode.ORCHESTRATED:
+            participates, effective_lane = self._effective_capability_partition(
+                item.capability_key
+            )
+            if effective_lane == ManagerCapabilityLane.RESEARCH:
                 research.append(item.capability_key)
-                continue
-            executable.append(item)
-            if spec.lane == ManagerCapabilityLane.RESEARCH:
-                research.append(item.capability_key)
-            elif spec.lane == ManagerCapabilityLane.STANDARD:
+            elif effective_lane == ManagerCapabilityLane.STANDARD:
                 standard.append(item.capability_key)
+            if participates:
+                executable.append(item)
 
         if research:
             return RepresentabilityResult(
