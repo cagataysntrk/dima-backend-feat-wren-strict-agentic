@@ -37,6 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq -- '- "!backend/lab/metabase/p13c/**"' .github/workflows/dima-metabase-m2.yml
+          grep -Fq -- '- "!backend/lab/metabase/p13d/**"' .github/workflows/dima-metabase-m2.yml
           grep -Fq 'workflow_dispatch:' .github/workflows/dima-metabase-p13c-provider-free.yml
           ! grep -Eq '^[[:space:]]+push:' .github/workflows/dima-metabase-p13c-provider-free.yml
 
