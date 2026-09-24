@@ -53,9 +53,18 @@ class ManagerResolvedSemantic(FrozenModel):
     handle: SemanticHandle
 
 
+class ManagerUnresolvedSemantic(FrozenModel):
+    source_ref: str
+    owner_id: str | None = None
+    kind_hint: str
+    status: str
+    candidate_ids: tuple[str, ...] = ()
+
+
 class ManagerSemanticResolutionResult(FrozenModel):
     resolved: tuple[ManagerResolvedSemantic, ...] = ()
     unresolved_source_refs: tuple[str, ...] = ()
+    unresolved_semantics: tuple[ManagerUnresolvedSemantic, ...] = ()
     unresolved_proposals: tuple[str, ...] = ()
     clarification: ClarificationState | None = None
 
@@ -316,9 +325,10 @@ class ManagerSemanticResolutionAdapter:
 
         resolved: list[ManagerResolvedSemantic] = []
         unresolved_source_refs: list[str] = []
+        unresolved_semantics: list[ManagerUnresolvedSemantic] = []
         unresolved_proposals: list[str] = []
 
-        for (source_ref, proposal_text, _, owner_id), selection in zip(
+        for (source_ref, proposal_text, kind_hint, owner_id), selection in zip(
             entries,
             selections,
             strict=True,
@@ -326,6 +336,15 @@ class ManagerSemanticResolutionAdapter:
             if selection.status != "BOUND":
                 if source_ref:
                     unresolved_source_refs.append(source_ref)
+                    unresolved_semantics.append(
+                        ManagerUnresolvedSemantic(
+                            source_ref=source_ref,
+                            owner_id=owner_id,
+                            kind_hint=kind_hint,
+                            status=selection.status,
+                            candidate_ids=selection.candidate_ids,
+                        )
+                    )
                 else:
                     unresolved_proposals.append(proposal_text)
                 continue
@@ -354,6 +373,7 @@ class ManagerSemanticResolutionAdapter:
             ManagerSemanticResolutionResult(
                 resolved=tuple(resolved),
                 unresolved_source_refs=tuple(dict.fromkeys(unresolved_source_refs)),
+                unresolved_semantics=tuple(unresolved_semantics),
                 unresolved_proposals=tuple(dict.fromkeys(unresolved_proposals)),
                 clarification=None,
             ),
@@ -768,6 +788,10 @@ class ManagerSemanticResolutionAdapter:
                 recovered: list[ManagerResolvedSemantic] = list(
                     pass1_result.resolved
                 )
+                status_by_key = {
+                    (item.owner_id, item.source_ref): item
+                    for item in pass1_result.unresolved_semantics
+                }
 
                 if args.source_obligation_ids:
                     misses_by_owner: dict[
@@ -805,13 +829,29 @@ class ManagerSemanticResolutionAdapter:
                             provider=self._semantic_decision_provider,
                             diagnostic_sink=self._semantic_diagnostic_sink,
                         )
-                        fallback_result, _ = self._resolve_regular_once(
+                        fallback_result, fallback_selections = self._resolve_regular_once(
                             entries=missed_entries,
                             args=args,
                             linker=scoped_linker,
                             discovery_pass="same_owner_sibling_scope",
                         )
                         recovered.extend(fallback_result.resolved)
+                        for entry, selection in zip(
+                            missed_entries,
+                            fallback_selections,
+                            strict=True,
+                        ):
+                            key = (entry[3], entry[0])
+                            if selection.status == "BOUND":
+                                status_by_key.pop(key, None)
+                            elif entry[0] is not None:
+                                status_by_key[key] = ManagerUnresolvedSemantic(
+                                    source_ref=entry[0],
+                                    owner_id=entry[3],
+                                    kind_hint=entry[2],
+                                    status=selection.status,
+                                    candidate_ids=selection.candidate_ids,
+                                )
 
                 # D10-N: if baseline discovery truly missed, a still-unresolved
                 # metric/dimension may see already-governed USER_SOURCE truth from this
@@ -882,13 +922,29 @@ class ManagerSemanticResolutionAdapter:
                         provider=self._semantic_decision_provider,
                         diagnostic_sink=self._semantic_diagnostic_sink,
                     )
-                    current_turn_result, _ = self._resolve_regular_once(
+                    current_turn_result, current_turn_selections = self._resolve_regular_once(
                         entries=missed_entries,
                         args=args,
                         linker=current_turn_linker,
                         discovery_pass="current_turn_applicability",
                     )
                     recovered.extend(current_turn_result.resolved)
+                    for entry, selection in zip(
+                        missed_entries,
+                        current_turn_selections,
+                        strict=True,
+                    ):
+                        key = (entry[3], entry[0])
+                        if selection.status == "BOUND":
+                            status_by_key.pop(key, None)
+                        elif entry[0] is not None:
+                            status_by_key[key] = ManagerUnresolvedSemantic(
+                                source_ref=entry[0],
+                                owner_id=entry[3],
+                                kind_hint=entry[2],
+                                status=selection.status,
+                                candidate_ids=selection.candidate_ids,
+                            )
 
                 resolved_keys = {
                     (item.owner_id, item.source_ref)
@@ -905,9 +961,22 @@ class ManagerSemanticResolutionAdapter:
                         )
                     )
                 )
+                unresolved_keys = {
+                    (owner_id, source_ref)
+                    for source_ref, _, _, owner_id in regular
+                    if (
+                        source_ref is not None
+                        and (owner_id, source_ref) not in resolved_keys
+                    )
+                }
                 regular_result = ManagerSemanticResolutionResult(
                     resolved=tuple(recovered),
                     unresolved_source_refs=unresolved_regular_refs,
+                    unresolved_semantics=tuple(
+                        status_by_key[key]
+                        for key in status_by_key
+                        if key in unresolved_keys
+                    ),
                     unresolved_proposals=pass1_result.unresolved_proposals,
                     clarification=pass1_result.clarification,
                 )
@@ -1027,6 +1096,7 @@ class ManagerSemanticResolutionAdapter:
                 unresolved_source_refs=tuple(
                     dict.fromkeys(unresolved_refs)
                 ),
+                unresolved_semantics=regular_result.unresolved_semantics,
                 unresolved_proposals=regular_result.unresolved_proposals,
                 clarification=regular_result.clarification,
             )
