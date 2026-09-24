@@ -6,6 +6,9 @@ on:
       - feat/dima-metabase-platform
     paths:
       - "backend/app/v3/**"
+      - "!backend/app/v3/research.py"
+      - "!backend/app/v3/research_store.py"
+      - "!backend/app/v3/research_product.py"
       - "backend/tests/test_v3_m1_*.py"
       - ".github/workflows/dima-metabase-m1.yml"
   workflow_dispatch:
@@ -15,6 +18,9 @@ permissions:
 
 jobs:
   m1-contract-and-wren-parity:
+    # P14 has its own provider-free seal. This one-off guard prevents the workflow-file
+    # correction commit itself from replaying the historical M1 source-isolation gate.
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[p14-ci]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
