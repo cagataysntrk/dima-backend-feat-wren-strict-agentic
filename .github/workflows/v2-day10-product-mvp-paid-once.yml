@@ -58,7 +58,7 @@ jobs:
         working-directory: backend
         run: |
           python -m compileall -q             lab/v2_day10_product_mvp_live.py             lab/v2_day10_ns4_provider_free_rehearsal.py
-          pytest -q             tests/test_v2_day10_paid_harness_contract.py             tests/test_v2_day10_prepaid_hardening.py             tests/test_v2_day10_ns4_rehearsal.py             tests/test_v2_day10_real_wren_root_product.py
+          pytest -q             tests/test_v2_day10_paid_harness_contract.py             tests/test_v2_day10_prepaid_hardening.py             tests/test_v2_day10_directive_lifecycle.py             tests/test_v2_day10_ns4_rehearsal.py             tests/test_v2_day10_real_wren_root_product.py
 
       - name: ONE supervised paid Product-MVP gate
         working-directory: backend
