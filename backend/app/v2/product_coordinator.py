@@ -49,6 +49,7 @@ from app.v2.report_continuation import (
     continuation_scope_by_kind,
 )
 from app.v2.runtime_boundary import bind_runtime, request_ref, tenant_binding
+from app.v2.standard_authority import AcceptedAuthorityRegistry
 from app.v2.semantic_linker import StructuredSemanticCandidateDecisionProvider
 from app.v2.standard_lane import (
     StandardLaneEngine,
@@ -68,7 +69,11 @@ def _product_evidence(item: EvidenceArtifact) -> ProductEvidenceRef:
     )
 
 
-def build_standard_lane(settings) -> tuple[StandardLaneEngine, str]:
+def build_standard_lane(
+    settings,
+    *,
+    authority_registry: AcceptedAuthorityRegistry | None = None,
+) -> tuple[StandardLaneEngine, str]:
     """Resolve the sealed Standard cognition profile without introducing a router model."""
 
     policy = ModelRolePolicy(settings)
@@ -100,6 +105,7 @@ def build_standard_lane(settings) -> tuple[StandardLaneEngine, str]:
                 if callable(temporal_structured)
                 else None
             ),
+            authority_registry=authority_registry,
         ),
         fast_profile.role.value,
     )
@@ -130,7 +136,9 @@ class ProductCoordinator:
         report_narrator: ReportNarrator | None = None,
         report_contexts: ReportContextRegistry | None = None,
         continuation_signer: ReportSectionContinuationSigner | None = None,
+        authority_registry: AcceptedAuthorityRegistry | None = None,
     ) -> None:
+        self._authority_registry = authority_registry or AcceptedAuthorityRegistry()
         self._standard_lane = standard_lane
         self._standard_model_role = standard_model_role
         self._research_lane = research_lane
@@ -139,16 +147,26 @@ class ProductCoordinator:
         self._continuation_signer = continuation_signer or ReportSectionContinuationSigner(
             signing_key=derive_hmac_key("v2-report-section-continuation-v1")
         )
+        if self._standard_lane is not None:
+            self._standard_lane.bind_authority_registry(self._authority_registry)
+        if self._research_lane is not None:
+            self._research_lane.bind_authority_registry(self._authority_registry)
 
     def _ensure_standard_lane(self) -> None:
         if self._standard_lane is None:
-            lane, role = build_standard_lane(get_settings())
+            lane, role = build_standard_lane(
+                get_settings(),
+                authority_registry=self._authority_registry,
+            )
             self._standard_lane = lane
             self._standard_model_role = role
 
     def _ensure_research_lane(self) -> None:
         if self._research_lane is None:
-            self._research_lane = ResearchLaneService.from_settings(get_settings())
+            self._research_lane = ResearchLaneService.from_settings(
+                get_settings(),
+                authority_registry=self._authority_registry,
+            )
 
     def _ensure_report_narrator(self) -> None:
         if self._report_narrator is None:
@@ -270,7 +288,7 @@ class ProductCoordinator:
         assert self._standard_lane is not None
         standard = self._standard_lane.run(
             question=body.question,
-            turn_id=f"turn:{context.request_ref}",
+            turn_id=context.turn_ref,
             request_ref=context.request_ref,
             semantic_context=context.semantic_context,
             schema=context.schema,
