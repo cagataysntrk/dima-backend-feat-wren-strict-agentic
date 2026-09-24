@@ -2746,3 +2746,77 @@ wire the sealed Research aggregate into the product Research/Ask orchestration b
 session resume and real native conversation/result correlation, while continuing to reuse the same
 P13 exact-occurrence, P10, P5 and Evidence authorities. No model-backed evaluation is required until
 that result would change an architectural/product decision.
+
+
+---
+
+## DMP-DEC-0046 — P14 product Research/Ask orchestration is provider-free GREEN
+
+Date: 2026-09-24
+
+DMP-DEC-0045's next coherent slice is complete.
+
+```text
+product implementation checkpoint = 47ac0d4ecae7addbd7d79cff6452b6e60b7a3d9b
+CI-economy correction             = 939f51facba7951bf0a07d4ef8facb38c9e11d13
+final focused code checkpoint     = dbef0499abe6b7804b5f09d8ec7ad76b99946b1c
+provider-free seal                = 36057793900 SUCCESS
+governance                        = 36057794099 SUCCESS
+P14 focused tests                 = 13 passed
+P13D/P10/P5 regressions           = 69 passed
+
+engine SHA                        = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                    = 0.63.18-dima.6
+new engine build                  = 0
+Luna / Sol / C1 calls             = 0 / 0 / 0
+native Metabase/Metabot files     = 0
+duplicate analytics mechanisms    = 0
+```
+
+The product Ask boundary now turns a READY, already-grounded ResearchBrief into one durable
+ResearchSession and returns its session identity on the same `/ask-v2` surface. Research resume
+uses `research_session_id` and enters the durable P14 state before any language interpreter runs.
+The old raw prompt is therefore not reparsed into a new semantic authority during resume.
+
+Durability is explicit:
+- `research_session` stores the immutable/fingerprinted Research checkpoint and revision;
+- `research_execution_link` stores obligation → Dima request/trace → native conversation →
+  exact native query occurrence → attestation/receipt/Evidence correlation;
+- optimistic revision checks prevent lost Research-state updates;
+- a DELEGATED state without durable correlation is not replayed;
+- a delegated native turn with unknown outcome is converted to an obligation-level limitation
+  rather than issuing duplicate cognition;
+- once an exact native query occurrence is captured, restart resumes that occurrence instead of
+  invoking Metabot again.
+
+The P14 product owner still does not perform analytics. It delegates the analytical objective to
+`NativeEngineBridge` and requires a separately installed, principal-scoped existing P13 material
+executor. Receipt/Evidence admission remains the DMP-DEC-0045 ResearchManager contract: only eligible
+VERIFIED Evidence linked to a complete existing P5 QueryReceipt and matching tenant/principal/context
+can advance Research state.
+
+The provider-free product tests mock only the external native HTTP transport/material boundary needed
+to exercise lifecycle and crash/restart correlation. In the same P14 seal, the inherited DMP-DEC-0045
+foundation tests continue to exercise the real existing P13 NativeStandardTrustOrchestrator, P10
+ExecutionAccessSnapshot and P5 DimaQueryReceipt owners. No second execution, access or receipt
+authority was introduced.
+
+Production startup intentionally does **not** mint a shared Metabase admin/service session and does
+not invent a second identity broker. Until the existing principal-scoped native/P13 runtime owner is
+installed through the bounded runtime seam, Research material execution returns fail-closed
+`P14_NATIVE_RUNTIME_NOT_CONFIGURED` / HTTP 503. This is a security invariant, not an analytical
+fallback.
+
+The historical M1 workflow had been broadly triggered by `backend/app/v3/**` and then rejected the
+legitimate P14 product-boundary changes against its old certified-base isolation rule. P14 Research
+paths are now excluded from M1 and that CI-economy rule is enforced by governance. P14's own
+provider-free seal remains authoritative for this slice.
+
+P13D period-comparison remains deferred compatibility debt. No dima.7, codec widening, query rewrite,
+native-core patch or additional model/live run was performed.
+
+status:
+`SEALED / P14 PRODUCT RESEARCH-ASK BOUNDARY PROVIDER-FREE GREEN / P13 TRUST REUSED / NATIVE SUBSTRATE UNCHANGED`.
+
+Next phase:
+`P15 NATIVE METABASE EXPLORATIONS INTEGRATION` is next and is not started by this decision receipt.

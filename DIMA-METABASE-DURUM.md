@@ -2977,3 +2977,59 @@ Next coherent P14 work:
 product-level Research/Ask orchestration + durable resume/correlation around this aggregate, reusing
 the same native Metabot and P13/P10/P5/Evidence path. No engine rebuild or paid/model run is needed
 for that integration by default.
+
+
+---
+
+## 2026-09-24 — P14 PRODUCT RESEARCH/ASK INTEGRATION GREEN — DMP-DEC-0046
+
+The DMP-DEC-0045 foundation is now wired to the product Ask boundary and sealed provider-free.
+
+```text
+implementation                    = 47ac0d4ecae7addbd7d79cff6452b6e60b7a3d9b
+CI economy                        = 939f51facba7951bf0a07d4ef8facb38c9e11d13
+final focused code                = dbef0499abe6b7804b5f09d8ec7ad76b99946b1c
+provider-free                     = 36057793900 SUCCESS
+governance                        = 36057794099 SUCCESS
+P14 focused                       = 13 passed
+P13D/P10/P5 regression            = 69 passed
+
+engine                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine build                      = 0
+model calls                       = 0
+native Metabase/Metabot files     = 0
+duplicate analytics mechanisms    = 0
+```
+
+Product flow now exists:
+
+```text
+/ask-v2 READY ResearchBrief
+→ durable ResearchSession
+→ governed/delegatable obligation
+→ durable native conversation/request correlation
+→ NativeEngineBridge delegation
+→ exact native occurrence correlation
+→ existing P13/P10/P5 material owner
+→ eligible VERIFIED Evidence
+→ durable Research state
+```
+
+Resume uses `research_session_id` and bypasses re-interpretation of the old prompt. Restart after
+exact native occurrence capture resumes the same occurrence. Unknown/unsupported material work
+becomes an obligation-level limitation and does not poison independent valid obligations.
+
+Production does not use a shared Metabase admin/session fallback. The application installs the
+durable Research product owner, but material native execution remains fail-closed until the existing
+principal-scoped native/P13 runtime owner is supplied through the bounded runtime seam.
+
+The old P13D comparison gap is unchanged and remains deferred / NOT GREEN.
+
+Current phase:
+
+```text
+P13 STANDARD TRUST BASELINE       = SEALED
+P14 FOUNDATION                    = GREEN / SEALED
+P14 PRODUCT RESEARCH/ASK          = PROVIDER-FREE GREEN / SEALED
+P15 NATIVE EXPLORATIONS           = NEXT / NOT STARTED
+```

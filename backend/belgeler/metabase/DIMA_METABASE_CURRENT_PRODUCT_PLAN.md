@@ -445,28 +445,40 @@ Ordinary P14 implementation progress is not a STOP.
 
 ## 19. Immediate developer objective
 
-Do not touch engine first.
+DMP-DEC-0046 sealed the P14 product Research/Ask boundary provider-free.
 
-Do not fix comparison first.
+Do not reopen P13 or rebuild P14 foundation/product wiring.
 
-Do not rebuild the already-GREEN P14 foundation.
-
-Continue P14 at the real product boundary.
-
-Return after substantial progress:
+Next coherent phase:
 
 ```text
-real Ask/Research orchestration
-+
-durable ResearchSession ↔ native Metabot conversation correlation
-+
-existing P13 exact-occurrence execution reuse
-+
-P10 / P5 / Evidence reuse
-+
-provider-free Research → receipted Evidence → Research state path
+P15 NATIVE METABASE EXPLORATIONS INTEGRATION
 ```
 
-or after one genuine STOP condition.
+First inspect the pinned native Explorations surfaces and reuse them in place:
 
-Ordinary P14 implementation progress is not a STOP.
+```text
+applicability
+variants
+interestingness
+Top-N + Other
+temporal patterns
+stored results
+runner
+cancel/restart
+idempotency
+derived permissions
+native query/result lifecycle
+```
+
+Dima maps native Exploration work into Research obligations and Evidence. It must not copy those
+analytical primitives into Python and must not treat Metabase interestingness as VERIFIED Finding.
+
+The principal-scoped native/P13 runtime binding remains a required deployment seam. Do not create a
+shared admin/service-session fallback or a second security identity owner to satisfy it.
+
+Use focused provider-free tests while building one coherent P15 vertical. No model/live run or engine
+build is required unless a decision-changing hypothesis specifically justifies one.
+
+Return after one provider-free native Exploration → Research/Evidence vertical is GREEN, or after one
+genuine STOP condition.

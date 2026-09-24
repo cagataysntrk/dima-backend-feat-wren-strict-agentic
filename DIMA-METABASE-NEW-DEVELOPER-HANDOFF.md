@@ -412,3 +412,57 @@ or
 B. a genuine STOP condition is proven.
 
 Keep moving otherwise.
+
+
+---
+
+## 18. CURRENT TAKEOVER AFTER DMP-DEC-0046 — P14 PRODUCT BOUNDARY SEALED
+
+This section supersedes the earlier P14 product-wiring target above.
+
+Exact code checkpoint before this docs-only update:
+
+```text
+Platform code HEAD                 = dbef0499abe6b7804b5f09d8ec7ad76b99946b1c
+P14 provider-free                  = 36057793900 SUCCESS
+governance                         = 36057794099 SUCCESS
+P14 focused                        = 13 passed
+P13D/P10/P5 inherited regression   = 69 passed
+
+engine SHA                         = cbe313af9ac2d5960f662068e433d328d896fb06
+release                            = 0.63.18-dima.6
+engine builds                      = 0
+model calls                        = 0
+native Metabase/Metabot changes    = 0
+```
+
+P14 now has both:
+1. the DMP-DEC-0045 Research foundation; and
+2. the DMP-DEC-0046 durable product Research/Ask boundary.
+
+Read these active files first:
+- `backend/app/v3/research.py`;
+- `backend/app/v3/research_store.py`;
+- `backend/app/v3/research_product.py`;
+- `backend/app/routers/ask_v2.py`;
+- `backend/tests/test_v3_p14_research.py`;
+- `backend/tests/test_v3_p14_product.py`.
+
+Important runtime boundary:
+the product layer does not own Metabase authentication. It never creates a shared admin/service
+session. Native material work requires the existing principal-scoped P13/P10 runtime owner to be
+installed into the P14 runtime seam. If absent, material execution fails closed with 503. Do not
+"fix" that by adding an admin fallback or a second security identity system.
+
+Do not reopen P14 foundation or P13 operator certification. P13D comparison remains deferred debt.
+
+Next coherent phase is P15:
+`NATIVE METABASE EXPLORATIONS INTEGRATION`.
+
+P15 must reuse native applicability, variants, interestingness, Top-N + Other, temporal patterns,
+stored results, runner/cancel/restart/idempotency and derived permissions in place. Do not port those
+primitives into Python. Dima maps native Exploration output into Research/Evidence; Metabase
+interestingness is not itself a Dima VERIFIED Finding.
+
+If P15 exposes a genuine need for a native Metabot/QP/Lib/driver patch or a second
+security/receipt/analytical authority, stop for supervisor. Otherwise keep developing.
