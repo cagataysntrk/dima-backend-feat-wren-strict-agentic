@@ -842,11 +842,32 @@ class TurnInterpretation(FrozenModel):
 
 
 class AskV2Request(FrozenModel):
-    question: str = Field(min_length=1)
+    question: str = ""
     session_id: str | None = None
     thread_id: str | None = None
     conversation: ConversationStateV2 = Field(default_factory=ConversationStateV2)
     clarification_token: str | None = None
+    research_session_id: str | None = Field(
+        default=None,
+        pattern=r"^rs_[a-f0-9]{24}$",
+    )
+    research_obligation_id: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def _research_resume_shape(self):
+        if self.research_session_id is not None:
+            if self.clarification_token is not None:
+                raise ValueError(
+                    "Research session resume cannot carry a clarification token"
+                )
+            return self
+        if not self.question.strip():
+            raise ValueError("question is required unless resuming a Research session")
+        if self.research_obligation_id is not None:
+            raise ValueError(
+                "research_obligation_id requires research_session_id"
+            )
+        return self
 
 
 class TurnInterpretationFailure(FrozenModel):
@@ -1304,6 +1325,9 @@ class AskV2CoreResponse(AskV2Day4Response):
     status: Literal["core_mvp", "research_brief"] = "core_mvp"
     stage: Literal["day5_core_mvp", "day6_research_brief"] = "day5_core_mvp"
     response: ConversationResponseV0
+    research_session_id: str | None = None
+    research_session_revision: int | None = None
+    research_stopping_status: str | None = None
     next_stage: Literal[
         "core_mvp_gate",
         "research_ready_day7",

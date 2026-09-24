@@ -40,6 +40,7 @@ async def lifespan(app: FastAPI):
     # Control-plane (auth) DB: lokal SQLite'ı hazırla; Postgres'te Alembic devralır (ADR-0015).
     from control_plane.audit import replay_spool
     from control_plane.bootstrap import ensure_bootstrap_superadmin
+    from control_plane import models as _control_plane_models  # noqa: F401
     from control_plane.db import init_db
 
     # Control-plane şeması (SQLite'ta oluştur; Postgres'te Alembic sahibi) + superadmin seed.
@@ -96,6 +97,15 @@ async def lifespan(app: FastAPI):
     from app.contracts import ContractStore
 
     app.state.contracts = ContractStore()
+
+    # P14 Research state is durable in the existing control-plane DB. Native execution
+    # remains unconfigured here until the principal-scoped P13/P10 owner is installed.
+    from app.v3.research_product import ResearchAskOrchestrator
+    from app.v3.research_store import ResearchSessionStore
+
+    app.state.research_product = ResearchAskOrchestrator(
+        store=ResearchSessionStore()
+    )
 
     # Zamanlanmış raporlar (ADR-0011): tanım + koşum durumu (last_run) + bildirim HEPSİ
     # tek-kaynak DB'de (schedule_definition + notification_log) — dosya-state yok (double-fire fix).

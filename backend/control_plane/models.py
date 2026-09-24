@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Column, Text, UniqueConstraint
 
 from sqlmodel import Field, SQLModel
 
@@ -568,6 +568,54 @@ class ConversationMessage(SQLModel, table=True):
     question: str = ""
     payload_json: str = "{}"                                  # tam AskResponse (JSON)
     created_at: datetime = Field(default_factory=_now)
+
+
+class ResearchSessionRecord(SQLModel, table=True):
+    """Durable P14 Research aggregate checkpoint, scoped to one tenant/principal."""
+
+    __tablename__ = "research_session"
+    session_id: str = Field(primary_key=True)
+    tenant_binding: str = Field(index=True)
+    principal_subject: str = Field(index=True)
+    authority_id: str = Field(index=True)
+    context_version: str
+    revision: int
+    checkpoint_json: str = Field(sa_column=Column(Text, nullable=False))
+    checkpoint_fingerprint: str = Field(index=True)
+    delegatable_ids_json: str = Field(sa_column=Column(Text, nullable=False))
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+class ResearchExecutionLink(SQLModel, table=True):
+    """Durable correlation from a Research obligation to one native occurrence."""
+
+    __tablename__ = "research_execution_link"
+    __table_args__ = (
+        UniqueConstraint(
+            "dima_request_id",
+            name="uq_research_execution_link_request",
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    session_id: str = Field(foreign_key="research_session.session_id", index=True)
+    obligation_id: str = Field(index=True)
+    dima_request_id: str = Field(index=True)
+    dima_trace_id: str
+    native_conversation_id: uuid.UUID
+    native_query_id: str | None = Field(default=None, index=True)
+    attestation_id: str | None = None
+    status: str = Field(default="DELEGATED", index=True)
+    receipt_id: str | None = Field(default=None, index=True)
+    evidence_id: str | None = Field(default=None, index=True)
+    limitation_code: str | None = None
+    limitation_detail: str | None = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
 
 
 class MetrikSahipligi(SQLModel, table=True):
