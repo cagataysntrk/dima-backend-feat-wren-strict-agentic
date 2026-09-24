@@ -492,3 +492,77 @@ def test_global_breakdown_exclusion_needs_no_dimension_handle():
         context_version=CONTEXT,
     )
     assert result.status.value == "ACCEPTED"
+
+
+def test_presentation_report_is_valid_nonexecuting_deliverable_with_analytical_authority():
+    _, source_hash, source, handles, gate = _setup(
+        "net geliri incele ve yönetim raporu hazırla"
+    )
+    metric = _handle(
+        handles,
+        candidate_id="metric-presentation-report",
+        kind="metric",
+        canonical_name="Sales.revenue",
+    )
+
+    result = gate.evaluate(
+        envelope=_envelope(
+            source_hash,
+            CandidateObligation(
+                obligation_id="U_PERF",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(source.source_ref,),
+                semantic_handle_refs=(metric.handle_id,),
+            ),
+            CandidateObligation(
+                obligation_id="U_REPORT",
+                capability_key=ManagerCapabilityKey.REPORT,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(source.source_ref,),
+                semantic_handle_refs=(),
+            ),
+        ),
+        tenant_binding=TENANT,
+        context_version=CONTEXT,
+    )
+
+    assert result.status.value == "ACCEPTED"
+    report = next(
+        item for item in result.ledger.items
+        if item.obligation_id == "U_REPORT"
+    )
+    assert report.semantic_handle_refs == ()
+
+
+def test_presentation_report_rejects_analytical_semantic_binding():
+    _, source_hash, source, handles, gate = _setup(
+        "net geliri yönetim raporu olarak hazırla"
+    )
+    metric = _handle(
+        handles,
+        candidate_id="metric-presentation-forbidden",
+        kind="metric",
+        canonical_name="Sales.revenue",
+    )
+
+    result = gate.evaluate(
+        envelope=_envelope(
+            source_hash,
+            CandidateObligation(
+                obligation_id="U_REPORT",
+                capability_key=ManagerCapabilityKey.REPORT,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(source.source_ref,),
+                semantic_handle_refs=(metric.handle_id,),
+            ),
+        ),
+        tenant_binding=TENANT,
+        context_version=CONTEXT,
+    )
+
+    assert result.status.value == "REJECTED"
+    assert any(
+        "report contains forbidden semantic kinds: metric" in reason
+        for reason in result.reasons
+    )
