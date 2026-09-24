@@ -11562,3 +11562,89 @@ Day11                        NOT AUTHORIZED
 ```
 
 The temporary push trigger has been removed and the live workflow is restored to workflow_dispatch-only state. No third live measurement is authorized.
+
+
+---
+
+## 2026-09-24 — D10-P TRUE STOP / DAY10 STILL OPEN
+
+D10-P semantic decomposition repair is implemented and deterministic/real-Wren certified, but the
+authorized live envelope ended without full Product GREEN.
+
+Latest Product behavior:
+
+`c4f25b2346b451f08b7892465abccc3a62adb7d2`
+
+Repair contract:
+
+```text
+role                    SEMANTIC_LINKER / GPT-5.6 Luna
+schema                  dima_semantic_decomposition_repair_v1
+repair batches          max 1 per preacceptance attempt
+Manager turns           +0
+Manager global ceiling  6 unchanged
+SemanticBindingGate     unchanged authority owner
+```
+
+Latest affected deterministic certification:
+
+```text
+Day10  36052309001 = GREEN
+Day8   36052317079 = GREEN
+Day7   36052244024 = GREEN
+```
+
+Live D10-P sequence:
+
+```text
+36050427414  RED  7 calls
+  → presentation deliverable acceptance mismatch
+  → generic fix
+
+36051494562  RED  6 calls
+  → multi-metric RELATIONSHIP execution shape mismatch
+  → pairwise CrossDomainJoinGate + one Wren materialization generic fix
+
+36052945833  RED  5 calls
+  → ROOT_CAUSE semantic decomposition repair ABSTAIN / AMBIGUOUS_SCOPE
+  → no further fix: 3/3 dispatch TRUE STOP reached
+```
+
+Attempt 3 retained the safe trust plane:
+- exact current-message source tokens only;
+- BREAKDOWN repair selected both governed metric source tokens;
+- fresh target-owner BindingGate authority was available for selected repairs;
+- ROOT_CAUSE repair abstained;
+- remaining material gap caused deterministic clarification before Coverage/acceptance;
+- no forced semantic selection and no second repair batch.
+
+Paid authority:
+
+```text
+authorized dispatches        3 / 3
+authorized new provider calls 18 / 45
+status                       TRUE STOP
+```
+
+Operational note: cleanup accidentally triggered run `36053319641` after the authority was already
+consumed. It is classified `INVALID / UNAUTHORIZED POST-TRUE-STOP`, incurred 6 provider calls, and
+has zero release-evidence authority. Actual D10-P-period provider cost was therefore 24 calls.
+The paid workflow is now hard-restored to dispatch-only and the temporary marker is removed.
+
+Current release state:
+
+```text
+Day8 live debt   OPEN
+Day8 FINAL       NOT SEALED
+
+Day10 FINAL      OPEN / NOT SEALED
+
+Day11            NOT AUTHORIZED
+
+first unresolved P0
+MODEL_COGNITION / semantic decomposition:
+ROOT_CAUSE missing metric remains after the one bounded repair batch because repair cognition
+ABSTAINS / AMBIGUOUS_SCOPE over exact current-message governed metric sources.
+```
+
+No additional Product fix or paid measurement is authorized until a new supervisor decision.
