@@ -5,15 +5,15 @@
 Read in this order:
 
 1. `backend/belgeler/plan/CURRENT_HANDOFF.md`
-2. `backend/belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`
-3. `backend/belgeler/plan/DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`
+2. `backend/belgeler/plan/DIMA_FRONTDOOR_OWNERSHIP_CLOSURE.md`
+3. `backend/belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`
 4. `backend/belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
 5. `backend/belgeler/plan/DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`
-6. Roadmap P11
-7. Architecture report R13
+6. Roadmap P13 / Day10 Product MVP
+7. Architecture report R26B and later Day10 authority addenda
 
 
-## LATEST AUTHORITY OVERRIDE — D10-G PRE-PAID HARDENING GREEN / STOP
+## LATEST AUTHORITY OVERRIDE — D10-H FINAL PRE-PAID SEAL GREEN / STOP
 
 This section supersedes older Day8/Day9/early-Day10 STOP text below where they conflict.
 
@@ -27,182 +27,239 @@ D10-C progress/stream                  GREEN
 D10-D section continuation             GREEN
 D10-E Answer-Now                       GREEN
 D10-F real-Wren Product                GREEN
-D10-G pre-paid hardening               GREEN / RECEIPT READY
+D10-G pre-paid hardening               GREEN
+D10-H final pre-paid seal              GREEN / STOP
 
 Day10 product behavior SHA
-e46c3a3e28dc14ed78dfc5fd66d48605b41fae98
+3db7f8688a5598188ae70375f778d2bef90452cf
 
-latest deterministic proof
-35957173325 = GREEN
+latest authoritative deterministic proof
+35961399933 = GREEN
 
-provider-free focused                  47 passed
-real-Wren ROOT_CAUSE Product micro     1 passed
-G16 NS4 provider-free receipt          PASS
-Day10 paid Product-MVP calls           0
+provider-free focused                  65 passed
+real-Wren ROOT_CAUSE Product micro     GREEN
+directive-bearing G16                  GREEN
+paid Product-MVP calls                 0
 
 paid gate structural status
-STRUCTURALLY_ADMISSIBLE_AT_CEILING
+STRUCTURALLY_ADMISSIBLE — NOT AUTHORIZED
 
 Day8 live root-cause debt              OPEN
-Day10 FINAL GREEN                      NO
+Day10 FINAL PAID CERTIFICATION         NO
 Day11                                 NOT AUTHORIZED
 ```
 
-### D10-G closure
+### D10-H root completion seal
 
-G1 — Product turn identity:
-- `request_ref` remains deterministic content/correlation identity only;
-- every Product HTTP turn gets a server-minted opaque `turn_ref`;
-- Standard authority, Research contract turn_id, SourceSpan message identity and Research run identity use the unique turn;
-- initial Research lineage derives from unique turn identity;
-- signed section continuation gets a NEW turn_ref but preserves the active immutable lineage and creates version +1.
+Trigger Evidence may create a hypothesis and remain attached for context.
 
-G2 — cross-lane authority:
-- ProductCoordinator owns one shared `AcceptedAuthorityRegistry`;
-- StandardLaneEngine and ResearchLaneService receive the exact same registry;
-- a second Standard/Research authority family on the same authoritative turn fails closed.
+It cannot complete ROOT_CAUSE by itself.
 
-G3 — hypothesis prose isolation:
-- `HypothesisEntry.statement` remains cognition/audit material;
-- canonical `EvidenceLinkedFinding` carries governed semantic_handle_refs;
-- hypothesis-backed causal report wording is server-rendered from governed semantic labels and epistemic class;
-- invented model text such as `%27` cannot enter canonical ReportDocument merely because EvidenceRef exists.
-
-G4 — hypothesis lifecycle:
-- admitted SUPPORTS only -> SUPPORTED;
-- CONTRADICTS only -> REFUTED;
-- both -> INCONCLUSIVE + server-owned mixed-evidence limitation;
-- no admitted relation -> OPEN.
-The model does not own hypothesis lifecycle truth.
-
-G5/G10 — bounded ROOT_CAUSE completion:
-- RootCauseObligationVerifier verifies completion of the requested investigation, not causation;
-- every material hypothesis must be accounted;
-- linked next-test tasks must be terminal;
-- root-lineage Evidence must remain current, VERIFIED and governed;
-- no pending/failed/cancelled required root task may remain;
-- CompletionGate remains the sole run-completion owner;
-- ROOT_CAUSE VERIFIED never implies CONFIRMED_CAUSE.
-
-G6/G7 — ceremony removal:
-- fully-bound DIRECT USER_SEED work executes through DeterministicResearchScheduler;
-- exactly-one lossless ROOT_CAUSE bootstrap executes without a Manager echo turn;
-- exactly-one admitted hypothesis next-test executes in the same orchestration transition;
-- exactly-one admitted adaptive branch may execute deterministically;
-- fresh bounded Evidence becomes inspected only AFTER a successful Manager cognition call that actually received it;
-- historical/opaque Evidence still requires explicit inspection;
-- cancellation still crosses the existing ResearchTask commit_guard; attempted work is metered but late Evidence commit is zero.
-
-G8 — phase accounting:
-- both DRAFT and COVERAGE increment `phase="preacceptance"`;
-- global `max_total_manager_turns=6` was NOT raised.
-
-### G15 real-Wren micro-gate
-
-The single deterministic real-Wren root Product case crosses:
+For every accounted hypothesis used to complete ROOT_CAUSE:
 
 ```text
-ProductCoordinator
--> Standard RESEARCH_REQUIRED
--> Research acceptance
--> deterministic bootstrap
--> real Wren
--> QueryContract
--> VERIFIED Evidence
--> hypothesis
--> governed next test
--> second real-Wren Evidence
--> explicit Evidence relation
--> deterministic hypothesis status
--> RootCauseObligationVerifier
--> CompletionGate
--> canonical Finding
--> deterministic ReportDocument
+hypothesis.status != OPEN
+AND
+next_test_task_refs non-empty
+AND
+>=1 linked ResearchTask COMPLETE
+AND
+>=1 admitted Evidence relation whose EvidenceArtifact.task_id
+    belongs to a linked COMPLETE next-test task
 ```
 
-No second real-Wren case was added.
+Status alignment:
+- SUPPORTED requires post-test SUPPORTS;
+- REFUTED requires post-test CONTRADICTS;
+- INCONCLUSIVE still requires completed next-test + governed post-test relation/accounting.
 
-### G16 cognition lower-bound receipt
+Identity inequality alone is not proof. Completion checks task provenance structurally.
 
-Artifact:
-`v2-day10-g16-rehearsal-35957173325`.
+Required A-G attacks are GREEN:
+- trigger-only support cannot complete;
+- pending next-test cannot complete;
+- completed next-test + trigger-only relation cannot complete;
+- fresh linked next-test SUPPORTS may account the investigation;
+- fresh linked next-test CONTRADICTS may account the investigation;
+- sibling/foreign Evidence cannot satisfy;
+- failed/blocked/cancelled required next-test cannot verify.
+
+`ROOT_CAUSE VERIFIED != CONFIRMED_CAUSE` remains permanent.
+
+### D10-H ResearchDirective lifecycle
+
+ResearchDirective remains policy, never duplicate USER_MUST.
+
+Completion-relevant `ADAPT_ON_EVIDENCE` now has typed runtime disposition:
 
 ```text
-initial USER_MUST              3
-families                       PERFORMANCE / RELATIONSHIP / ROOT_CAUSE
-
-preacceptance cognition        2
-  DRAFT_ACCEPTED_INTENT
-  COVERAGE_PROOF
-
-Research Manager cognition     4
-  propose_branches
-  propose_hypothesis
-  propose_hypothesis_next_test
-  propose_hypothesis_evidence_relation
-
-Manager total                  6
-global ceiling                 6
-headroom                       0
-
-deterministic task executions  5
-fresh Evidence disclosures     3
-explicit old-Evidence inspect  0
-redundant fresh inspect turns  0
-redundant execution-control    0
+OPEN
+APPLIED
+NO_MATERIAL_DIRECTION
+BLOCKED
 ```
 
-Therefore the canonical no-retry/no-ambiguity path now fits the existing global ceiling exactly.
-The budget was not changed.
+APPLIED:
+- admitted material branch,
+- governed execution/accounting,
+- accounting Evidence ref,
+- branch task refs.
 
-### G17 manual paid harness — PREPARED, NOT RUN
+NO_MATERIAL_DIRECTION:
+- accepted directive ID/type/parent,
+- current VERIFIED inspected/disclosed Evidence,
+- Evidence belongs to directive parent lineage,
+- bounded reason,
+- no branch task,
+- no fake Evidence/Finding.
 
-Prepared only:
-- `backend/lab/v2_day10_product_mvp_live.py`
-- `.github/workflows/v2-day10-product-mvp-paid-once.yml`
-- `backend/tests/test_v2_day10_paid_harness_contract.py`
+`BROADEN_WITHIN_BUDGET` is authorization-only. It does not silently become an unfinished
+business deliverable and does not fabricate branches to close itself.
 
-The workflow is `workflow_dispatch` only, one job, explicit `CANONICAL_NS4` scope, explicit
-`DAY10_PAID_ONCE` confirmation and hard provider-call ceiling before the first request.
+Model FINISH cannot bypass this accounting; deterministic finish + CompletionGate remain authority.
 
-Role ceilings across the maximum two Product turns:
+### Directive-bearing G16
+
+Canonical rehearsal now includes exact conditional source text:
+
+`doğrulanmış sonuçlar yeni bir maddi kırılıma işaret ederse onu takip et`
+
+Runtime receipt:
 
 ```text
-FAST_LANGUAGE        2   existing sealed model policy
-RESEARCH_MANAGER    12   openai/gpt-5.6-sol
-SEMANTIC_LINKER      3   openai/gpt-5.6-luna
-TEMPORAL_NORMALIZER  1   openai/gpt-5.6-sol
-REPORT_NARRATOR      2   openai/gpt-5.6-sol
-GLOBAL              20
+directive_count                 1
+directive_id                    R_ADAPT_ROOT
+directive_type                  ADAPT_ON_EVIDENCE
+directive_final_status          APPLIED
+directive_accounting_evidence   present
+directive_branch_task_refs      non-empty
+
+preacceptance                   2
+Research cognition              4
+Manager total                   6
+global ceiling                  6
+headroom                        0
+
+Research cognition sequence
+1 propose_branches
+2 propose_hypothesis
+3 propose_hypothesis_next_test
+4 propose_hypothesis_evidence_relation
+
+root_status                     VERIFIED
+CONFIRMED_CAUSE                 0
+provider_calls                  0
 ```
 
-The harness may execute:
-1. one canonical initial Product-MVP scenario;
-2. only if initial GREEN, one signed ROOT_CAUSE section continuation;
-3. never a third paid Product turn.
+The first branch cognition both opens/executes governed material work and accounts the ADAPT
+directive. No fifth Research cognition turn was added.
 
-It records calls per role, Wren query counts, tool/Evidence events and actual single-sample SLO timings.
-It refuses to close Day8 debt unless the integrated Research receipt contains the genuine:
-hypothesis -> admitted next test -> new VERIFIED Evidence -> explicit relation -> candidate Finding chain.
+### Product identity seal
 
-### Concurrency boundary
+`request_ref` remains deterministic content/correlation fingerprint.
 
-Day10 continuation/authority registries remain same-process ephemeral:
-- multi-process resume unsupported;
-- restart loses continuation registry;
-- concurrent same-lineage CAS/locking remains Day14 debt;
-- stale/missing section context remains fail-closed / rebind required.
+`turn_ref` is the unique Product turn identity.
+
+ProductResponse exposes `turn_ref`.
+
+ProductEvent identity includes `turn_ref`.
+
+Repeated identical Product turns prove:
+
+```text
+same request_ref
+different turn_ref
+different event-id sets
+```
+
+Same governed transition replay inside one sink/turn remains idempotent.
+
+Streaming mints exactly one turn_ref and threads it through:
+
+```text
+router
+-> ProductEventSink
+-> ProductCoordinator
+-> ProductResponse
+```
+
+If a caller supplies a pre-minted ProductEventSink without an explicit turn_ref, coordinator reuses
+the sink turn identity rather than minting a second one. Explicit mismatch fails closed.
+
+### Manager budget seal
+
+Budget was not raised:
+
+```text
+max_total_manager_turns = 6
+max_preacceptance_turns  = 4
+```
+
+`max_preacceptance_turns=4` is phase safety capacity only, supporting at most two bounded
+draft+coverage attempts. It is not extra global spend.
+
+Canonical success remains:
+
+```text
+draft + coverage      2
+Research cognition    4
+total                  6
+7th total call         fail closed
+```
+
+### Final deterministic certification
+
+Authoritative run:
+
+`35961399933 = GREEN`
+
+Steps:
+- focused provider-free: `65 passed`;
+- one real-Wren ROOT_CAUSE Product micro-gate: GREEN;
+- directive-bearing G16 provider-free cognition receipt: GREEN.
+
+Affected sealed trust-plane regressions:
+- Day7 full focused: `35960964752 = GREEN`;
+- Day8 focused: `35960964807 = GREEN`.
+
+No second real-Wren root reassurance case was added.
+
+### Paid harness boundary
+
+`v2-day10-product-mvp-paid-once` remains manual-only and UNEXECUTED.
+
+Only its deterministic contract/preflight was aligned with D10-H:
+- >=4 Evidence-producing analytical steps;
+- adaptive branch;
+- relationship check;
+- hypothesis next-test;
+- new VERIFIED Evidence;
+- explicit relation;
+- ROOT_CAUSE accounted;
+- CANDIDATE_CAUSE present;
+- CONFIRMED_CAUSE = 0;
+- exactly one accepted ADAPT directive accounted as APPLIED with Evidence + branch refs;
+- unique Product turn identity for initial and signed continuation turns.
+
+```text
+paid workflow dispatched = NO
+paid calls               = 0
+```
 
 ## CURRENT STOP
 
-D10-G engineering and deterministic certification are GREEN.
+D10-H FINAL PRE-PAID SEAL is GREEN.
 
-Do NOT dispatch the prepared paid Product-MVP workflow until supervisor reviews this receipt.
-Do NOT run another standalone Day8 paid root-cause test.
-Do NOT start Day11, DEV80, Validation50 or Hidden50.
+The paid gate is structurally admissible but NOT authorized.
 
-Day8 live debt remains OPEN until a future supervised integrated paid Product-MVP run genuinely
-exercises the governed root-cause chain.
+Do NOT:
+- dispatch `v2-day10-product-mvp-paid-once`;
+- start Day11;
+- run DEV80 / Validation50 / Hidden50;
+- run another standalone paid Day8 root-cause test.
+
+Day8 live debt remains OPEN until a separately authorized integrated paid Product-MVP run genuinely
+exercises the root-cause chain.
 
 ## SEALED DAY7
 
