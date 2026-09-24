@@ -3591,3 +3591,82 @@ governance                       = 35911051608 SUCCESS
 
 status:
 `ROOT CAUSE CLOSED PROVIDER-FREE / ONE DIMA.3 LUNA LIVE CANARY STILL REQUIRED`.
+
+---
+
+## DMP-P13D-LIVE-001 — pure breakdown introduced unaccepted native order/limit
+
+opened_at: 2026-09-24  
+platform_sha: `cb5e6ff8ddb8cc00578d925feb7e1c252e7fd8b8`  
+engine_sha: `71788caff1f366593a24d21161db6f212de69006`  
+engine_release: `0.63.18-dima.5`  
+engine_certification: `35961869359 = SUCCESS`  
+provider_free_seal: `35964155418 = SUCCESS`  
+digest_runtime: `35964388842 = SUCCESS`  
+live_workflow: `35964722881 = FAILURE`  
+live_artifact: `10793334817`  
+live_artifact_digest: `sha256:9b9d27617e2c109603753ff545a488fa3089114492aa8fbb07bf58704ff6e5db`
+
+classification:
+`METABOT_COGNITION / UNREQUESTED_ANALYTICAL_EXPANSION / CORRECT_TRUST_BLOCK`
+
+observed:
+- P13D provider-free cohesive attack matrix and focused sealed-boundary regressions are GREEN;
+- exact dima.5 digest runtime, restricted principal, semantic provisioning, runtime identity and independent oracles are GREEN;
+- live pre-model provider-free proof is GREEN with all analytical fallback counters at zero;
+- the first live case was the pure breakdown question:
+  `Haziran 2026'da satış siparişlerini kanala göre dağıt.`;
+- native Metabot authored a material query containing explicit order and/or limit despite no accepted ranking authority;
+- Dima rejected the candidate before official dataset execution with:
+  `P13D_RANKING_SCOPE_VIOLATION: native query introduced order/limit without accepted ranking authority`;
+- therefore no QueryReceipt or VERIFIED Evidence was issued for the failed live case;
+- no second live case, retry or Sol confirmation was run.
+
+independent fixture truth used by the pre-live gate:
+```text
+BREAKDOWN
+Fuar            22
+Mevcut Müşteri  34
+Referans         21
+Saha Ziyareti   22
+Web              27
+
+RANKING top-2
+Mevcut Müşteri  34
+Web              27
+
+COMPARISON
+2026-05         464
+2026-06         126
+```
+
+preceding_oracle_correction:
+The initially frozen top-3 ranking case was rejected before live because the third-place boundary is
+tied. It was replaced with top-2, whose second/third boundary is unique. The corrected provider-free
+seal and digest runtime are GREEN. No answer was hard-coded into model cognition.
+
+why_the_block_is_correct:
+P13D requires ranking/order/limit to be backed by accepted ranking authority. A pure breakdown turn
+does not grant that authority. Accepting native order/limit silently would weaken the exact
+accepted-meaning boundary and contradict the P13D attack matrix.
+
+forbidden_corrections:
+- weaken or bypass `P13D_RANKING_SCOPE_VIOLATION`;
+- silently treat Metabot-selected ordering/limit as user-authorized ranking;
+- inject a hard-coded breakdown query;
+- add regex/fuzzy/morph/query repair logic;
+- raw SQL, Wren, Agent-API analytical or admin analytical fallback;
+- rerun Luna merely for stochastic dissatisfaction;
+- patch Metabot prompt/profile/skill without supervisor authorization.
+
+supervisor_boundary:
+A further product correction requires an explicit ownership decision:
+1. change Metabot prompt/profile/skill/agent cognition so a pure breakdown emits no unrequested
+   ranking/order/limit; or
+2. formally change the accepted Standard semantics to authorize a defined default ordering policy.
+
+Either option crosses an explicit supervisor STOP condition. No such change is made here.
+
+status:
+`OPEN / SUPERVISOR STOP — P13D LIVE NOT SEALED; P14 NOT STARTED`.
+

@@ -2687,3 +2687,61 @@ source-build once in engine certification
 P13C is closed. Per DMP-DEC-0042/Product-First authority, development continues directly to one
 cohesive P13D Standard analytical-expansion slice; no P13B rerun and no dima.4 rebuild is required
 for the P13C closure.
+
+---
+
+## 2026-09-24 — P13D DETERMINISTIC GREEN / LIVE STOP AT UNACCEPTED RANKING
+
+Current exact engine/runtime:
+```text
+engine main / SHA       = 71788caff1f366593a24d21161db6f212de69006
+release                 = 0.63.18-dima.5
+engine certification    = 35961869359 SUCCESS
+immutable image         = ghcr.io/upcytech/dima-metabase-engine@sha256:2ace4b5ec406578188b5147c932ff7f91ff6e4706257c8d4c261ff920c18f444
+build identity          = github-actions:35961869359:71788caff1f366593a24d21161db6f212de69006
+```
+
+P13D engine changes are observational only:
+- exact physical breakout field + field type;
+- temporal breakout grain;
+- exact order direction;
+- native order target kind;
+- aggregation index or physical field target;
+- existing exact limit observation.
+
+Metabot prompts/skills/profiles/agent loop changed = **0**. Query Processor and drivers changed = **0**.
+
+Proof corridor:
+```text
+P13D provider-free corrected seal = 35964155418 SUCCESS
+P13D digest runtime               = 35964388842 SUCCESS
+P13D compact Luna live            = 35964722881 FAILURE
+```
+
+The first runtime attempt `35963767430` was correctly rejected by the oracle because the original
+top-3 ranking boundary was tied. The frozen ranking proof was changed to top-2 and resealed
+provider-free before runtime.
+
+The final live pre-model gate was GREEN. Independent truth:
+```text
+breakdown = {Fuar:22, Mevcut Müşteri:34, Referans:21, Saha Ziyareti:22, Web:27}
+ranking top-2 = [[Mevcut Müşteri,34],[Web,27]]
+comparison = {2026-05:464, 2026-06:126}
+fallbacks = Wren 0 / raw SQL 0 / Agent API analytical 0 / admin analytical 0
+```
+
+Live STOP:
+```text
+case      = P13D-BREAKDOWN
+question  = Haziran 2026'da satış siparişlerini kanala göre dağıt.
+block     = P13D_RANKING_SCOPE_VIOLATION
+detail    = native query introduced order/limit without accepted ranking authority
+receipt   = NOT ISSUED
+Evidence  = NOT ISSUED
+```
+
+This is a correct Dima trust block, not an engine/runtime/security/oracle failure. P13D is therefore
+**not sealed GREEN** and P14 has **not started**. Further correction would require a supervisor-level
+decision about Metabot cognition or accepted default-ordering semantics. See
+`DMP-P13D-LIVE-001`.
+
