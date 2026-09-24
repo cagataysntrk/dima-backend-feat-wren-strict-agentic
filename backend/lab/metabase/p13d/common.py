@@ -303,6 +303,9 @@ def independent_oracles(path: Path) -> dict[str, Any]:
     ).fetchall()
     if len(ranking_rows) < 3:
         raise RuntimeError("P13D ranking oracle has fewer than three channels")
+    top_counts = [int(row[1]) for row in ranking_rows[:3]]
+    if len(set(top_counts)) != 3:
+        raise RuntimeError("P13D top-3 counts are tied; frozen ranking order is ambiguous")
     if len(ranking_rows) > 3 and int(ranking_rows[2][1]) == int(ranking_rows[3][1]):
         raise RuntimeError("P13D top-3 boundary is tied; frozen ranking case is ambiguous")
     comparison = {str(month): int(n) for month, n in comparison_rows}
