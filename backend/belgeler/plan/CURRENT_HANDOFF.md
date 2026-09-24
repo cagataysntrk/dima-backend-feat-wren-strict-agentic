@@ -1,5 +1,59 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY OVERRIDE — D10-Q DETERMINISTIC + REAL-WREN GREEN / PAID READY
+
+This is the current active Day10 authority. Historical blocks below are receipts only.
+
+```text
+branch                         feat/ask-v2-mvp
+Product behavior SHA           4e9f7a32561ff8f4ebaf95f61e36316453677802
+final test-only candidate      16d9bdc89141a4685616ad10094699185744995b
+
+Day10 final candidate          36056867465 = GREEN
+Day8 final candidate           36056867485 = GREEN
+Day7 same Product SHA          36055934356 = GREEN
+Day10 real-Wren proof          36056672128 = GREEN
+
+scope-group repair             GREEN
+multi-metric ROOT_CAUSE        GREEN
+real Wren / QueryContract      GREEN
+VERIFIED Evidence              GREEN
+Manager ceiling                6 unchanged
+SemanticBindingGate owner      unchanged
+CONFIRMED_CAUSE                0
+
+D10-Q paid envelope            0 / 2 dispatches used
+D10-Q new provider calls       0 / 30 used
+paid workflow                  workflow_dispatch only
+temporary push bridge          FORBIDDEN / ABSENT
+
+Day8 live debt                 OPEN pending paid integrated Product proof
+Day10 FINAL                    OPEN pending paid integrated Product proof
+Day11                          NOT AUTHORIZED
+```
+
+### D10-Q sealed deterministic architecture
+
+Ephemeral scope groups are derived only from current-message, exact, non-sensitive, already-governed
+USER_SOURCE semantics co-occurring inside REQUIRED analytical obligations. Identical groups dedupe,
+member ordering is deterministic, and supporting capability provenance is merged.
+
+`SELECT_SCOPE_GROUP` is cognition only. The selected group expands to source tokens; every member is
+revalidated atomically against current source/runtime receipt/tenant/context/catalog/kind before any
+new authority is minted. Only the existing `SemanticBindingGate` mints fresh target-obligation
+`sem_*` handles. Any member failure yields zero target authority. Group tokens are never persisted
+into AcceptedTurnContract or obligation authority.
+
+Multi-metric ROOT_CAUSE remains within the existing semantic algebra. The existing
+`RootCauseBootstrapPolicy` proves one lossless DIRECT `PERFORMANCE / QUERY` seed when only governed
+metrics are present and preserves all accepted metric handles. Real-Wren proof confirms both metrics
+survive into QueryContract provenance and VERIFIED Evidence.
+
+Paid certification may start only through the existing manual `workflow_dispatch` gate. Do not
+reintroduce push/marker triggers. If the current tool surface cannot dispatch Actions, treat that as an
+operational tooling limitation, not a Product reason to mutate CI semantics.
+
+
 ## LATEST AUTHORITY OVERRIDE — D10-P TRUE STOP / DAY10 OPEN
 
 This is the current authority. Historical blocks below are receipts only.
