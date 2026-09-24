@@ -253,6 +253,40 @@ def test_only_research_required_enters_research_with_raw_request_and_context(mon
     assert call["answer_now_check"] is None
 
 
+def test_d10_j_coverage_research_omission_carries_zero_standard_semantics(monkeypatch):
+    poisoned_standard = StandardLaneOutcome(
+        status=StandardLaneStatus.RESEARCH_REQUIRED,
+        reasons=("RESEARCH_NEED_OMITTED: material Research request omitted",),
+        obligations=(SimpleNamespace(obligation_id="U-poison"),),
+        projection=SimpleNamespace(projection_id="projection-poison"),
+        authority=None,
+        coverage_status="VETO",
+    )
+    coordinator, _, research, context = _coordinator(
+        monkeypatch,
+        standard_outcome=poisoned_standard,
+        research_result=_research_result(),
+    )
+    body = _body()
+
+    response = coordinator.handle(
+        request=object(),
+        body=body,
+        principal=context.principal,
+    )
+
+    assert response.lane == ProductLane.RESEARCH
+    assert len(research.calls) == 1
+    call = research.calls[0]
+    assert call["body"] is body
+    assert call["context"] is context
+    assert "standard" not in call
+    assert "projection" not in call
+    assert "obligations" not in call
+    assert "semantic_handles" not in call
+    assert "coverage" not in call
+
+
 def test_standard_nonresearch_terminals_never_silently_fallback(monkeypatch):
     cases = (
         (StandardLaneStatus.CLARIFICATION_REQUIRED, ProductStatus.CLARIFY),
