@@ -33,6 +33,7 @@ from app.v2.semantic_linker import (
     SemanticCandidateGenerator,
     SemanticDecompositionRepairProvider,
     SemanticDecompositionRepairRequest,
+    SemanticRepairScopeGroupCard,
     SemanticRepairSourceCard,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
@@ -590,13 +591,14 @@ class ManagerSemanticResolutionAdapter:
             args.decomposition_repair_gaps[0].obligation_source_refs[0]
         )
 
-        source_refs = tuple(dict.fromkeys(args.decomposition_repair_source_refs))
+        source_refs = tuple(sorted(set(args.decomposition_repair_source_refs)))
         token_by_ref_kind: dict[tuple[str, str], str] = {}
         proof_by_token: dict[str, tuple[str, Any]] = {}
         next_token = 1
 
         requests: list[SemanticDecompositionRepairRequest] = []
         allowed_tokens_by_gap: dict[str, set[str]] = {}
+        allowed_groups_by_gap: dict[str, dict[str, tuple[str, ...]]] = {}
 
         for gap in args.decomposition_repair_gaps:
             cards: list[SemanticRepairSourceCard] = []
@@ -630,6 +632,41 @@ class ManagerSemanticResolutionAdapter:
 
             if not cards:
                 continue
+
+            normalized_groups: dict[tuple[str, ...], set[str]] = {}
+            for group in args.decomposition_repair_scope_groups:
+                if group.kind != gap.missing_kind:
+                    continue
+                member_tokens: list[str] = []
+                for member_ref in sorted(group.member_source_refs):
+                    token = token_by_ref_kind.get((member_ref, gap.missing_kind))
+                    if token is None:
+                        member_tokens = []
+                        break
+                    member_tokens.append(token)
+                members = tuple(sorted(dict.fromkeys(member_tokens)))
+                if len(members) < 2:
+                    continue
+                normalized_groups.setdefault(members, set()).update(
+                    item.value for item in group.supporting_capabilities
+                )
+
+            group_cards: list[SemanticRepairScopeGroupCard] = []
+            group_members: dict[str, tuple[str, ...]] = {}
+            for index, (members, capabilities) in enumerate(
+                sorted(normalized_groups.items(), key=lambda item: item[0]),
+                start=1,
+            ):
+                group_token = f"g{index}"
+                group_cards.append(
+                    SemanticRepairScopeGroupCard(
+                        group_token=group_token,
+                        member_source_tokens=members,
+                        supporting_capabilities=tuple(sorted(capabilities)),
+                    )
+                )
+                group_members[group_token] = members
+
             target_surfaces = tuple(
                 self._source_spans.validate(
                     ref,
@@ -645,9 +682,11 @@ class ManagerSemanticResolutionAdapter:
                     missing_kind=gap.missing_kind,
                     obligation_source_surfaces=target_surfaces,
                     available_user_source_concepts=tuple(cards),
+                    available_scope_groups=tuple(group_cards),
                 )
             )
             allowed_tokens_by_gap[gap.gap_ref] = allowed
+            allowed_groups_by_gap[gap.gap_ref] = group_members
 
         if not requests:
             return ManagerSemanticResolutionResult()
@@ -672,12 +711,55 @@ class ManagerSemanticResolutionAdapter:
         for request in requests:
             choice = choices[request.gap_ref]
             selected = tuple(dict.fromkeys(choice.selected_source_tokens))
+            selected_group_token = choice.selected_group_token
+
             if choice.decision == "ABSTAIN":
                 selected = ()
+                selected_group_token = None
+            elif choice.decision == "SELECT_SCOPE_GROUP":
+                group_members = allowed_groups_by_gap[request.gap_ref]
+                if (
+                    selected_group_token is None
+                    or selected_group_token not in group_members
+                ):
+                    raise ValueError(
+                        "semantic decomposition repair selected unknown scope group"
+                    )
+                selected = group_members[selected_group_token]
             elif not set(selected).issubset(allowed_tokens_by_gap[request.gap_ref]):
                 raise ValueError(
                     "semantic decomposition repair selected unknown/wrong-kind source token"
                 )
+
+            # Revalidate every selected member before minting ANY target authority.
+            # This makes a selected group atomic with respect to stale/foreign/current-
+            # catalog failures. The existing BindingGate remains the only sem_* minter.
+            selected_proofs: dict[str, tuple[str, Any]] = {}
+            for token in selected:
+                if token not in proof_by_token:
+                    raise ValueError(
+                        "semantic decomposition repair selected unavailable source token"
+                    )
+                source_ref, original_binding = proof_by_token[token]
+                proof = self._governed_repair_source(
+                    source_ref=source_ref,
+                    missing_kind=request.missing_kind,
+                    runtime=runtime,
+                    expected_message_hash=message_hash,
+                )
+                if proof is None:
+                    raise ValueError(
+                        "semantic decomposition repair selected source failed revalidation"
+                    )
+                _span, _source_handle, current_binding = proof
+                if (
+                    current_binding.card.candidate_id
+                    != original_binding.card.candidate_id
+                ):
+                    raise ValueError(
+                        "semantic decomposition repair source identity changed during batch"
+                    )
+                selected_proofs[token] = (source_ref, current_binding)
 
             gap = gap_by_ref[request.gap_ref]
             diagnostic_choices.append(
@@ -689,17 +771,25 @@ class ManagerSemanticResolutionAdapter:
                         item.source_token
                         for item in request.available_user_source_concepts
                     ],
+                    "available_scope_groups": [
+                        item.model_dump(mode="json")
+                        for item in request.available_scope_groups
+                    ],
                     "decision": choice.decision,
                     "selected_source_tokens": list(selected),
+                    "selected_group_token": selected_group_token,
                     "reason": choice.reason,
                 }
             )
 
             for token in selected:
-                source_ref, binding = proof_by_token[token]
+                source_ref, binding = selected_proofs[token]
                 candidate_set = CandidateSet(
                     request_id=f"repair:{request.gap_ref}:{token}",
-                    surface=self._source_spans.validate(source_ref).exact_surface,
+                    surface=self._source_spans.validate(
+                        source_ref,
+                        expected_message_hash=message_hash,
+                    ).exact_surface,
                     kind_hint=request.missing_kind,
                     bindings=(binding,),
                     too_broad=False,
