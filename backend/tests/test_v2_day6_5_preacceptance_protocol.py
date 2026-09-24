@@ -33,7 +33,12 @@ from app.v2.models import (
     ConversationStateV2,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
-from app.v2.semantic_linker import SemanticLinkBatchDecision, SemanticLinkChoice
+from app.v2.semantic_linker import (
+    SemanticDecompositionRepairBatchDecision,
+    SemanticDecompositionRepairChoice,
+    SemanticLinkBatchDecision,
+    SemanticLinkChoice,
+)
 from app.v2.source_spans import SourceSpanRegistry
 
 
@@ -164,6 +169,7 @@ def _loop(
     *,
     conversation=None,
     semantic_provider=None,
+    semantic_repair_provider=None,
     semantic_diagnostic_sink=None,
     semantic_context=None,
     semantic_schema=None,
@@ -182,6 +188,7 @@ def _loop(
         session_id="session-stabilized",
         thread_id="thread-stabilized",
         semantic_decision_provider=semantic_provider,
+        semantic_decomposition_repair_provider=semantic_repair_provider,
         semantic_diagnostic_sink=semantic_diagnostic_sink,
     )
     executor = GovernedManagerExecutor(
@@ -1423,3 +1430,376 @@ def test_d10_n_missing_relationship_dimension_uses_fresh_source_bound_applicabil
     assert [item["discovery_pass"] for item in rel_dim_receipts] == ["pass1"]
     assert rel_dim_receipts[0]["candidate_count"] == 1
     assert rel_dim_receipts[0]["selection"]["status"] == "BOUND"
+
+
+class _SourceSelectingRepairProvider:
+    def __init__(self, *, selected_surfaces=(), abstain=False) -> None:
+        self.selected_surfaces = set(selected_surfaces)
+        self.abstain = abstain
+        self.calls = []
+
+    def decide(self, requests, *, user_message):
+        self.calls.append((requests, user_message))
+        choices = []
+        for request in requests:
+            if self.abstain:
+                choices.append(
+                    SemanticDecompositionRepairChoice(
+                        gap_ref=request.gap_ref,
+                        decision="ABSTAIN",
+                        selected_source_tokens=(),
+                        reason="INSUFFICIENT_SOURCE_SUPPORT",
+                    )
+                )
+                continue
+            selected = tuple(
+                item.source_token
+                for item in request.available_user_source_concepts
+                if item.surface in self.selected_surfaces
+            )
+            if selected:
+                choices.append(
+                    SemanticDecompositionRepairChoice(
+                        gap_ref=request.gap_ref,
+                        decision="SELECT_SOURCES",
+                        selected_source_tokens=selected,
+                        reason="SOURCE_SUPPORTS_SCOPE",
+                    )
+                )
+            else:
+                choices.append(
+                    SemanticDecompositionRepairChoice(
+                        gap_ref=request.gap_ref,
+                        decision="ABSTAIN",
+                        selected_source_tokens=(),
+                        reason="INSUFFICIENT_SOURCE_SUPPORT",
+                    )
+                )
+        return SemanticDecompositionRepairBatchDecision(choices=tuple(choices))
+
+
+def _d10_p_decomposition_context():
+    context = BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-d10-p-decomposition",
+            mdl_version="mdl-d10-p-decomposition",
+            compact_catalog_builder_version="d10-p",
+            business_rules_hash="7" * 64,
+            prompt_context_policy_version="d10-p",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="maintenance",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="downtime",
+                        display="Makine duruşları",
+                        synonyms=("Makine duruşları",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="failure_count",
+                        display="arıza sayısı",
+                        synonyms=("arıza sayısı",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="mean_downtime",
+                        display="ortalama duruş",
+                        synonyms=("ortalama duruş",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="spare_parts",
+                        display="yedek parça",
+                        synonyms=("yedek parça",),
+                    ),
+                ),
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="department",
+                        display="bölüm",
+                        synonyms=("bölüm",),
+                    ),
+                ),
+            ),
+        ),
+    )
+    schema = {
+        "models": [],
+        "cubes": [
+            {
+                "name": "maintenance",
+                "measures": [
+                    "downtime",
+                    "failure_count",
+                    "mean_downtime",
+                    "spare_parts",
+                ],
+                "measure_synonyms": {
+                    "downtime": ["Makine duruşları"],
+                    "failure_count": ["arıza sayısı"],
+                    "mean_downtime": ["ortalama duruş"],
+                    "spare_parts": ["yedek parça"],
+                },
+                "dimensions": ["department"],
+                "dimension_labels": {"department": "bölüm"},
+                "dimension_synonyms": {"department": ["bölüm"]},
+                "dimension_values": {},
+                "time_dimensions": [],
+            }
+        ],
+        "kpis": [],
+        "relationships": [],
+        "business_rules": "",
+        "db_online": True,
+    }
+    return context, schema
+
+
+def _d10_p_draft():
+    return {
+        "obligations": [
+            _obligation(
+                obligation_id="U_PERFORMANCE",
+                capability="performance",
+                source_surfaces=("Makine duruşları",),
+                semantic_surfaces=(("Makine duruşları", "metric"),),
+            ),
+            _obligation(
+                obligation_id="U_FAILURES",
+                capability="performance",
+                source_surfaces=("arıza sayısı",),
+                semantic_surfaces=(("arıza sayısı", "metric"),),
+            ),
+            _obligation(
+                obligation_id="U_BREAKDOWN",
+                capability="breakdown",
+                source_surfaces=("bölüm bazındaki performansı",),
+                semantic_surfaces=(
+                    ("bölüm", "dimension"),
+                    ("performansı", "metric"),
+                ),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+
+
+def test_d10_p_semantic_decomposition_repair_reuses_truth_not_authority():
+    question = (
+        "Makine duruşları ve arıza sayısı ile bölüm bazındaki performansı araştır."
+    )
+    context, schema = _d10_p_decomposition_context()
+    scripted = _ScriptedStructured(
+        drafts=[_d10_p_draft()],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    repair = _SourceSelectingRepairProvider(
+        selected_surfaces=("Makine duruşları", "arıza sayısı"),
+    )
+    semantic_provider = _SingleCandidateSemanticProvider()
+    diagnostics = []
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=semantic_provider,
+        semantic_repair_provider=repair,
+        semantic_diagnostic_sink=diagnostics.append,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-repair",
+        request_ref="req-d10-p-repair",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.accepted is True
+    assert outcome.status == FiniteAcceptanceStatus.ACCEPTED
+    assert runtime.snapshot.preacceptance_turns == 2
+    assert runtime.snapshot.manager_turns == 2
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    assert len(repair.calls) == 1
+
+    requests, repair_message = repair.calls[0]
+    assert repair_message == question
+    assert len(requests) == 1
+    request = requests[0]
+    assert request.obligation_id == "U_BREAKDOWN"
+    assert request.missing_kind == "metric"
+    assert {
+        item.surface for item in request.available_user_source_concepts
+    } == {"Makine duruşları", "arıza sayısı"}
+    assert all(
+        item.kind == "metric"
+        for item in request.available_user_source_concepts
+    )
+
+    ledger = runtime.ledger
+    assert ledger is not None
+    items = {item.obligation_id: item for item in ledger.items}
+    perf_handle = items["U_PERFORMANCE"].semantic_handle_refs[0]
+    failure_handle = items["U_FAILURES"].semantic_handle_refs[0]
+    breakdown_metric_handles = [
+        ref
+        for ref in items["U_BREAKDOWN"].semantic_handle_refs
+        if executor._semantic_resolution._handles.validate(
+            ref,
+            tenant_binding="tenant-stabilized",
+            context_version=context.context_version.version,
+        ).target_kind in {"metric", "kpi"}
+    ]
+    assert len(breakdown_metric_handles) == 2
+    assert perf_handle not in breakdown_metric_handles
+    assert failure_handle not in breakdown_metric_handles
+
+    perf = executor._semantic_resolution._handles.validate(
+        perf_handle,
+        tenant_binding="tenant-stabilized",
+        context_version=context.context_version.version,
+    )
+    failure = executor._semantic_resolution._handles.validate(
+        failure_handle,
+        tenant_binding="tenant-stabilized",
+        context_version=context.context_version.version,
+    )
+    repaired = [
+        executor._semantic_resolution._handles.validate(
+            ref,
+            tenant_binding="tenant-stabilized",
+            context_version=context.context_version.version,
+        )
+        for ref in breakdown_metric_handles
+    ]
+    assert perf.parent_obligation_id == "U_PERFORMANCE"
+    assert failure.parent_obligation_id == "U_FAILURES"
+    assert {item.parent_obligation_id for item in repaired} == {"U_BREAKDOWN"}
+    assert {item.resolver_provenance_id for item in repaired} == {
+        perf.resolver_provenance_id,
+        failure.resolver_provenance_id,
+    }
+    assert {item.handle_id for item in repaired}.isdisjoint(
+        {perf.handle_id, failure.handle_id}
+    )
+    assert any(
+        item.get("kind") == "semantic_decomposition_repair"
+        for item in diagnostics
+    )
+
+
+def test_d10_p_semantic_repair_abstain_remains_clarification():
+    question = (
+        "Makine duruşları ve arıza sayısı ile bölüm bazındaki performansı araştır."
+    )
+    context, schema = _d10_p_decomposition_context()
+    scripted = _ScriptedStructured(
+        drafts=[_d10_p_draft()],
+        audits=[],
+    )
+    repair = _SourceSelectingRepairProvider(abstain=True)
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=repair,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-abstain",
+        request_ref="req-d10-p-abstain",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
+    assert runtime.snapshot.preacceptance_turns == 1
+    assert len(repair.calls) == 1
+    assert scripted.calls == ["dima_intent_draft_v1"]
+
+
+def test_d10_p_excluded_metric_never_enters_repair_source_pool():
+    question = (
+        "Makine duruşlarını kullanma; arıza sayısı ile bölüm bazındaki performansı araştır."
+    )
+    context, schema = _d10_p_decomposition_context()
+    draft = _d10_p_draft()
+    draft["obligations"][0]["polarity"] = "EXCLUDED"
+    draft["obligations"][0]["source_surfaces"] = ["Makine duruşlarını kullanma"]
+    draft["obligations"][0]["semantic_surfaces"] = [
+        {"surface": "Makine duruşları", "kind_hint": "metric"}
+    ]
+    scripted = _ScriptedStructured(drafts=[draft], audits=[{"status": "PASS", "issues": []}])
+    repair = _SourceSelectingRepairProvider(selected_surfaces=("arıza sayısı",))
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=repair,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-excluded",
+        request_ref="req-d10-p-excluded",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.accepted is True
+    request = repair.calls[0][0][0]
+    assert {
+        item.surface for item in request.available_user_source_concepts
+    } == {"arıza sayısı"}
+
+
+def test_d10_p_repair_provider_rejects_unknown_source_token():
+    question = (
+        "Makine duruşları ve arıza sayısı ile bölüm bazındaki performansı araştır."
+    )
+    context, schema = _d10_p_decomposition_context()
+    scripted = _ScriptedStructured(drafts=[_d10_p_draft()], audits=[])
+
+    class BadRepair:
+        def decide(self, requests, *, user_message):
+            del user_message
+            return SemanticDecompositionRepairBatchDecision(
+                choices=(
+                    SemanticDecompositionRepairChoice(
+                        gap_ref=requests[0].gap_ref,
+                        decision="SELECT_SOURCES",
+                        selected_source_tokens=("s999",),
+                        reason="SOURCE_SUPPORTS_SCOPE",
+                    ),
+                )
+            )
+
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=BadRepair(),
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-bad-token",
+        request_ref="req-d10-p-bad-token",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+    assert outcome.status == FiniteAcceptanceStatus.GROUNDING_FAILURE
+    assert any(
+        item.get("kind") == "semantic_decomposition_repair_error"
+        for item in outcome.observations
+    )
