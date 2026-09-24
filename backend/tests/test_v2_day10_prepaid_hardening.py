@@ -742,3 +742,40 @@ def test_old_opaque_evidence_requires_explicit_inspection_while_fresh_delta_auto
         and item.get("tool") == "inspect_evidence"
         for item in outcome.observations
     )
+
+
+def test_pending_root_next_test_blocks_investigation_completion():
+    runtime, ledger, tasks, _, _, entry = _root_fixture()
+    ledger.attach_evidence(
+        entry.hypothesis_id,
+        evidence_ref="E1",
+        relation=HypothesisEvidenceRelation.SUPPORTS,
+    )
+    from app.v2.models import ResearchTask
+    pending = ResearchTask(
+        task_id="rt_pending_root",
+        question_id="U_ROOT",
+        task_kind="QUERY",
+        input_refs=entry.semantic_handle_refs,
+        origin="AGENT_DERIVED",
+        parent_task_id="seed:U_ROOT",
+        parent_obligation_id="U_ROOT",
+        trigger_evidence_ref="E1",
+        branch_depth=1,
+    )
+    tasks.register(pending)
+    ledger.link_next_test(
+        entry.hypothesis_id,
+        task_ref=pending.task_id,
+    )
+
+    assert RootCauseObligationVerifier().reconcile(
+        runtime=runtime,
+        hypothesis_ledger=ledger,
+        task_registry=tasks,
+    ) is False
+    root = next(
+        item for item in runtime.ledger.items
+        if item.obligation_id == "U_ROOT"
+    )
+    assert root.status == ObligationStatus.IN_PROGRESS
