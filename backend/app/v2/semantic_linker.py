@@ -119,6 +119,26 @@ class SemanticRepairSourceCard(FrozenModel):
     safe_label: str = Field(min_length=1, max_length=240)
 
 
+class SemanticRepairScopeGroupCard(FrozenModel):
+    group_token: str = Field(pattern=r"^g[1-9][0-9]*$")
+    member_source_tokens: tuple[
+        Annotated[str, Field(pattern=r"^s[1-9][0-9]*$")], ...
+    ] = Field(min_length=2)
+    supporting_capabilities: tuple[str, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _group_shape(self):
+        if len(set(self.member_source_tokens)) != len(self.member_source_tokens):
+            raise ValueError("scope group member tokens must be unique")
+        if tuple(sorted(self.member_source_tokens)) != self.member_source_tokens:
+            raise ValueError("scope group member tokens must be deterministically normalized")
+        if len(set(self.supporting_capabilities)) != len(self.supporting_capabilities):
+            raise ValueError("scope group supporting capabilities must be unique")
+        if tuple(sorted(self.supporting_capabilities)) != self.supporting_capabilities:
+            raise ValueError("scope group capabilities must be deterministically normalized")
+        return self
+
+
 class SemanticDecompositionRepairRequest(FrozenModel):
     gap_ref: str = Field(min_length=1, max_length=120)
     obligation_id: str = Field(min_length=1, max_length=160)
@@ -128,14 +148,18 @@ class SemanticDecompositionRepairRequest(FrozenModel):
     available_user_source_concepts: tuple[SemanticRepairSourceCard, ...] = Field(
         min_length=1
     )
+    available_scope_groups: tuple[SemanticRepairScopeGroupCard, ...] = ()
 
 
 class SemanticDecompositionRepairChoice(FrozenModel):
     gap_ref: str = Field(min_length=1, max_length=120)
-    decision: Literal["SELECT_SOURCES", "ABSTAIN"]
+    decision: Literal["SELECT_SOURCES", "SELECT_SCOPE_GROUP", "ABSTAIN"]
     selected_source_tokens: tuple[
         Annotated[str, Field(pattern=r"^s[1-9][0-9]*$")], ...
     ] = ()
+    selected_group_token: Annotated[
+        str, Field(pattern=r"^g[1-9][0-9]*$")
+    ] | None = None
     reason: Literal[
         "SOURCE_SUPPORTS_SCOPE",
         "INSUFFICIENT_SOURCE_SUPPORT",
@@ -145,13 +169,22 @@ class SemanticDecompositionRepairChoice(FrozenModel):
     @model_validator(mode="after")
     def _shape(self):
         if self.decision == "SELECT_SOURCES":
-            if not self.selected_source_tokens:
-                raise ValueError("SELECT_SOURCES requires at least one source token")
+            if not self.selected_source_tokens or self.selected_group_token is not None:
+                raise ValueError(
+                    "SELECT_SOURCES requires source tokens and forbids group token"
+                )
             if self.reason not in {None, "SOURCE_SUPPORTS_SCOPE"}:
                 raise ValueError("SELECT_SOURCES may use SOURCE_SUPPORTS_SCOPE only")
+        elif self.decision == "SELECT_SCOPE_GROUP":
+            if self.selected_source_tokens or self.selected_group_token is None:
+                raise ValueError(
+                    "SELECT_SCOPE_GROUP requires exactly one group token and no source tokens"
+                )
+            if self.reason not in {None, "SOURCE_SUPPORTS_SCOPE"}:
+                raise ValueError("SELECT_SCOPE_GROUP may use SOURCE_SUPPORTS_SCOPE only")
         else:
-            if self.selected_source_tokens:
-                raise ValueError("ABSTAIN requires zero selected source tokens")
+            if self.selected_source_tokens or self.selected_group_token is not None:
+                raise ValueError("ABSTAIN requires zero source/group selections")
             if self.reason not in {
                 "INSUFFICIENT_SOURCE_SUPPORT",
                 "AMBIGUOUS_SCOPE",
@@ -172,11 +205,19 @@ whether semantic concepts the USER ALREADY EXPLICITLY NAMED elsewhere in this ex
 current message should also scope that obligation.
 
 AVAILABLE_USER_SOURCE_CONCEPTS contains only server-issued source tokens for already
-governed, non-sensitive current-message USER_SOURCE concepts. You may select one or more
-of those exact source tokens, or ABSTAIN. Never invent a new source phrase, metric,
-dimension, candidate id, semantic handle, SQL, database field, or reasoning chain.
-Do not rewrite obligation id, capability, polarity, priority, origin, directives, ranking
-parameters, or business source surfaces. Return only the strict schema.
+governed, non-sensitive current-message USER_SOURCE concepts.
+
+AVAILABLE_SCOPE_GROUPS contains only server-generated ephemeral co-occurrence groups.
+A scope group means all of its exact source concepts jointly form one candidate semantic
+scope for the target obligation. Multiplicity inside ONE group is not, by itself,
+ambiguity and does not imply a primary metric, equivalence, correlation, or causation.
+Ambiguity exists when materially different candidate scopes remain possible.
+
+You may SELECT_SOURCES, SELECT_SCOPE_GROUP, or ABSTAIN. Never invent a source/group token,
+new source phrase, metric, dimension, candidate id, semantic handle, SQL, database field,
+or reasoning chain. Do not rewrite obligation id, capability, polarity, priority, origin,
+directives, ranking parameters, or business source surfaces. A scope group is cognition
+context only; semantic authority is minted later by the server. Return only the strict schema.
 """
 
 
