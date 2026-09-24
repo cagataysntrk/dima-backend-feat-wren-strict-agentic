@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import inspect
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+from app.v2.product_models import ProductLane, ProductStatus
+from app.v2.standard_lane import StandardLaneStatus
 from lab import v2_day10_product_mvp_live as paid
 
 
@@ -92,3 +95,125 @@ def test_paid_harness_requires_final_root_directive_and_turn_contracts():
     assert "continuation_turn_ref" in source
     assert "confirmed_cause_count != 0" in source
     assert "initial_evidence < 4" in source
+
+@pytest.mark.parametrize(
+    ("product_status", "standard_status"),
+    (
+        (ProductStatus.ANSWER, StandardLaneStatus.ACCEPTED),
+        (ProductStatus.CLARIFY, StandardLaneStatus.CLARIFICATION_REQUIRED),
+        (ProductStatus.UNSUPPORTED, StandardLaneStatus.UNSUPPORTED),
+        (ProductStatus.FAILED, StandardLaneStatus.FAILED),
+    ),
+)
+def test_paid_failure_diagnostics_preserve_exact_standard_terminal_family(
+    product_status,
+    standard_status,
+):
+    budget = paid.RoleCallBudget(
+        max_total=paid.MAX_HARNESS_TOTAL_CALLS,
+        role_limits=dict(paid.ROLE_LIMITS),
+    )
+    budget.reserve(
+        role="FAST_LANGUAGE",
+        model=paid.FAST_MODEL,
+        schema_name="dima_standard_intent_draft_v1",
+    )
+    standard_lane = SimpleNamespace(
+        last_outcome=SimpleNamespace(
+            status=standard_status,
+            reasons=("typed-standard-terminal",),
+            attempts=1,
+            coverage_status=None,
+            work_mode=None,
+            obligations=(),
+        )
+    )
+    service = SimpleNamespace(query_calls=0, dry_plan_calls=0, cube_sql_calls=0)
+    product = SimpleNamespace(
+        lane=ProductLane.STANDARD,
+        status=product_status,
+        turn_ref="turn_diagnostic",
+        terminal_receipt=SimpleNamespace(
+            terminal_status=standard_status.value,
+            reasons=("typed-product-terminal",),
+        ),
+        events=(),
+    )
+
+    snapshot = paid._diagnostic_snapshot(
+        product=product,
+        standard_lane=standard_lane,
+        budget=budget,
+        service=service,
+        structured_outputs=[
+            {
+                "sequence": 1,
+                "role": "FAST_LANGUAGE",
+                "model": paid.FAST_MODEL,
+                "schema_name": "dima_standard_intent_draft_v1",
+                "validated_output": {"obligations": []},
+            }
+        ],
+    )
+
+    assert snapshot["product"]["lane"] == "STANDARD"
+    assert snapshot["product"]["status"] == product_status.value
+    assert snapshot["product"]["terminal_status"] == standard_status.value
+    assert snapshot["product"]["terminal_reasons"] == ["typed-product-terminal"]
+    assert snapshot["standard"]["status"] == standard_status.value
+    assert snapshot["standard"]["reasons"] == ["typed-standard-terminal"]
+    assert snapshot["standard"]["attempts"] == 1
+    assert snapshot["model_calls"]["total"] == 1
+    assert snapshot["model_calls"]["calls"][0]["schema_name"] == "dima_standard_intent_draft_v1"
+    assert snapshot["structured_standard_outputs"][0]["schema_name"] == (
+        "dima_standard_intent_draft_v1"
+    )
+    assert snapshot["wren"] == {
+        "query_calls": 0,
+        "dry_plan_calls": 0,
+        "cube_sql_calls": 0,
+    }
+
+
+def test_counting_structured_captures_only_controlled_standard_outputs():
+    class Inner:
+        def structured_json(self, *args, **kwargs):
+            return {"status": "PASS"}
+
+    captured = []
+    budget = paid.RoleCallBudget(
+        max_total=paid.MAX_HARNESS_TOTAL_CALLS,
+        role_limits=dict(paid.ROLE_LIMITS),
+    )
+    wrapper = paid.CountingStructured(
+        inner=Inner(),
+        budget=budget,
+        role="FAST_LANGUAGE",
+        model=paid.FAST_MODEL,
+        captured_outputs=captured,
+    )
+
+    wrapper.structured_json(
+        "system",
+        "user",
+        schema={},
+        schema_name="dima_standard_coverage_v1",
+    )
+    wrapper.structured_json(
+        "system",
+        "user",
+        schema={},
+        schema_name="not-a-controlled-standard-schema",
+    )
+
+    assert len(captured) == 1
+    assert captured[0]["schema_name"] == "dima_standard_coverage_v1"
+    assert captured[0]["validated_output"] == {"status": "PASS"}
+    assert [item["sequence"] for item in budget.calls] == [1, 2]
+
+
+def test_paid_failure_artifact_contract_includes_diagnostics():
+    source = inspect.getsource(paid.main)
+    assert '"diagnostics": getattr(exc, "diagnostics", {})' in source
+    assert "CapturingStandardLane" in inspect.getsource(paid._build_product)
+
