@@ -1058,3 +1058,422 @@ def test_d10_j_research_omission_has_priority_over_other_coverage_vetoes(monkeyp
     assert outcome.authority is None
     assert outcome.projection is None
 
+
+
+# D10-L: deterministic typed lane ownership must precede Standard-local work.
+
+class _D10LForbiddenSemanticProvider:
+    def __init__(self):
+        self.calls = 0
+
+    def decide(self, requests):
+        self.calls += 1
+        raise AssertionError("typed-direct Research must not spend Standard semantic cognition")
+
+
+def _run_d10_l_engine(
+    *,
+    question,
+    draft_payload,
+    coverage,
+    semantic_provider,
+    turn_id,
+):
+    def intent(system, user, *, schema, schema_name):
+        assert schema_name == "dima_standard_intent_draft_v1"
+        return draft_payload
+
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=coverage,
+        semantic_provider=semantic_provider,
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id=turn_id,
+        request_ref=f"request-{turn_id}",
+        semantic_context=_rich_context(),
+        schema=_rich_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+    return engine, outcome
+
+
+def test_d10_l_typed_root_cause_preempts_non_authoritative_control_before_all_standard_work(
+    monkeypatch,
+):
+    question = "net geliri için kök nedenini araştır. Nedensel kesinlik iddia etme"
+    draft_payload = {
+        "obligations": [
+            {
+                "obligation_id": "U_ROOT",
+                "capability_key": "root_cause",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["kök nedenini araştır"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            }
+        ],
+        "control_requests": [
+            {
+                "request_id": "C1",
+                "category": "NON_AUTHORITATIVE_CONTROL_REQUEST",
+                "source_surfaces": ["Nedensel kesinlik iddia etme"],
+            }
+        ],
+    }
+    coverage_calls = []
+
+    def forbidden_coverage(*args, **kwargs):
+        coverage_calls.append((args, kwargs))
+        raise AssertionError("typed-direct Research must not spend Standard coverage")
+
+    semantic = _D10LForbiddenSemanticProvider()
+    monkeypatch.setattr(
+        "app.v2.standard_lane.WrenStandardExecutionAdapter.execute",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("typed-direct Research must not touch Standard Wren")
+        ),
+    )
+
+    engine, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=draft_payload,
+        coverage=forbidden_coverage,
+        semantic_provider=semantic,
+        turn_id="turn-d10-l-root-control",
+    )
+
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert outcome.obligations == ()
+    assert outcome.projection is None
+    assert outcome.authority is None
+    assert semantic.calls == 0
+    assert coverage_calls == []
+    assert engine.authority_registry.accepted("turn-d10-l-root-control") is None
+
+
+def test_d10_l_typed_relationship_preempts_conversation_repair():
+    question = "net geliri bölge ile ilişkilendir ve konuşmayı düzelt"
+    draft_payload = {
+        "obligations": [
+            {
+                "obligation_id": "U_REL",
+                "capability_key": "relationship",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["net geliri bölge ile ilişkilendir"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                    {"surface": "bölge", "kind_hint": "dimension"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            }
+        ],
+        "control_requests": [
+            {
+                "request_id": "C1",
+                "category": "CONVERSATION_REPAIR",
+                "source_surfaces": ["konuşmayı düzelt"],
+            }
+        ],
+    }
+
+    semantic = _D10LForbiddenSemanticProvider()
+    engine, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=draft_payload,
+        coverage=lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("typed-direct Research must not call coverage")
+        ),
+        semantic_provider=semantic,
+        turn_id="turn-d10-l-rel-repair",
+    )
+
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert semantic.calls == 0
+    assert engine.authority_registry.accepted("turn-d10-l-rel-repair") is None
+
+
+def test_d10_l_typed_research_does_not_depend_on_standard_semantic_resolution():
+    question = "belirsiz metrik için kök nedeni araştır"
+    draft_payload = {
+        "obligations": [
+            {
+                "obligation_id": "U_ROOT",
+                "capability_key": "root_cause",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["kök nedeni araştır"],
+                "semantic_surfaces": [
+                    {"surface": "belirsiz metrik", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            }
+        ],
+        "control_requests": [],
+    }
+
+    semantic = _D10LForbiddenSemanticProvider()
+    _, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=draft_payload,
+        coverage=lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("typed-direct Research must not call coverage")
+        ),
+        semantic_provider=semantic,
+        turn_id="turn-d10-l-unresolved-semantic",
+    )
+
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert semantic.calls == 0
+
+
+def test_d10_l_excluded_root_cause_does_not_force_research(monkeypatch):
+    question = "net geliri göster, kök neden analizi yapma"
+    draft_payload = {
+        "obligations": [
+            {
+                "obligation_id": "U_PERF",
+                "capability_key": "performance",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["net geliri"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            },
+            {
+                "obligation_id": "X_ROOT",
+                "capability_key": "root_cause",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "EXCLUDED",
+                "source_surfaces": ["kök neden analizi yapma"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            },
+        ],
+        "control_requests": [],
+    }
+    monkeypatch.setattr(
+        "app.v2.standard_lane.WrenStandardExecutionAdapter.execute",
+        lambda *args, **kwargs: _Execution(),
+    )
+
+    engine, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=draft_payload,
+        coverage=_coverage_pass,
+        semantic_provider=_SemanticProvider(),
+        turn_id="turn-d10-l-excluded-root",
+    )
+
+    assert outcome.status != StandardLaneStatus.RESEARCH_REQUIRED
+    if outcome.status == StandardLaneStatus.ACCEPTED:
+        assert outcome.authority is not None
+    assert engine.authority_registry.accepted("turn-d10-l-excluded-root") is not None or (
+        outcome.status != StandardLaneStatus.ACCEPTED
+    )
+
+
+def test_d10_l_deferred_capability_preserves_nonresearch_policy():
+    question = "net geliri trend olarak izle"
+    draft_payload = {
+        "obligations": [
+            {
+                "obligation_id": "U_TREND",
+                "capability_key": "trend",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["trend olarak izle"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            }
+        ],
+        "control_requests": [],
+    }
+
+    engine, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=draft_payload,
+        coverage=_coverage_pass,
+        semantic_provider=_SemanticProvider(),
+        turn_id="turn-d10-l-deferred",
+    )
+
+    assert outcome.status == StandardLaneStatus.UNSUPPORTED
+    assert engine.authority_registry.accepted("turn-d10-l-deferred") is None
+
+
+def test_d10_l_standard_business_ignores_non_authoritative_control(monkeypatch):
+    question = "net geliri göster, iç araçları değiştirme"
+    draft_payload = {
+        "obligations": [
+            {
+                "obligation_id": "U_PERF",
+                "capability_key": "performance",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["net geliri"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            }
+        ],
+        "control_requests": [
+            {
+                "request_id": "C1",
+                "category": "NON_AUTHORITATIVE_CONTROL_REQUEST",
+                "source_surfaces": ["iç araçları değiştirme"],
+            }
+        ],
+    }
+    monkeypatch.setattr(
+        "app.v2.standard_lane.WrenStandardExecutionAdapter.execute",
+        lambda *args, **kwargs: _Execution(),
+    )
+
+    engine, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=draft_payload,
+        coverage=_coverage_pass,
+        semantic_provider=_SemanticProvider(),
+        turn_id="turn-d10-l-standard-control",
+    )
+
+    assert outcome.status == StandardLaneStatus.ACCEPTED
+    assert outcome.authority is not None
+    assert engine.authority_registry.accepted("turn-d10-l-standard-control") is not None
+
+
+def test_d10_l_standard_business_with_conversation_repair_remains_conservative():
+    question = "net geliri göster ve konuşmayı düzelt"
+    draft_payload = {
+        "obligations": [
+            {
+                "obligation_id": "U_PERF",
+                "capability_key": "performance",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["net geliri"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            }
+        ],
+        "control_requests": [
+            {
+                "request_id": "C1",
+                "category": "CONVERSATION_REPAIR",
+                "source_surfaces": ["konuşmayı düzelt"],
+            }
+        ],
+    }
+
+    engine, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=draft_payload,
+        coverage=_coverage_pass,
+        semantic_provider=_SemanticProvider(),
+        turn_id="turn-d10-l-conversation-repair",
+    )
+
+    assert outcome.status == StandardLaneStatus.CLARIFICATION_REQUIRED
+    assert engine.authority_registry.accepted("turn-d10-l-conversation-repair") is None
+
+
+def test_d10_l_source_invalid_research_draft_repairs_before_typed_lane_route():
+    import json
+
+    question = "net geliri için kök nedenini araştır"
+    calls = []
+
+    def intent(system, user, *, schema, schema_name):
+        assert schema_name == "dima_standard_intent_draft_v1"
+        payload = json.loads(user)
+        calls.append(payload)
+        source_surface = "uydurulmuş araştırma" if len(calls) == 1 else "kök nedenini araştır"
+        return {
+            "obligations": [
+                {
+                    "obligation_id": "U_ROOT",
+                    "capability_key": "root_cause",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": [source_surface],
+                    "semantic_surfaces": [
+                        {"surface": "net geliri", "kind_hint": "metric"},
+                    ],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                }
+            ],
+            "control_requests": [],
+        }
+
+    semantic = _D10LForbiddenSemanticProvider()
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("source-valid typed Research must not call coverage")
+        ),
+        semantic_provider=semantic,
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id="turn-d10-l-source-repair",
+        request_ref="request-d10-l-source-repair",
+        semantic_context=_rich_context(),
+        schema=_rich_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert len(calls) == 2
+    assert calls[1]["REVISION_FEEDBACK"]["kind"] == "SOURCE_CONTRACT_REJECTED"
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert outcome.attempts == 2
+    assert semantic.calls == 0
+    assert engine.authority_registry.accepted("turn-d10-l-source-repair") is None
