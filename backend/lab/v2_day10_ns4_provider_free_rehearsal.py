@@ -211,6 +211,7 @@ class ScriptedNS4Manager:
     def __init__(self) -> None:
         self.preacceptance_calls = 0
         self.manager_prompts: list[dict] = []
+        self.actions: list[str] = []
 
     def structured_json(self, _system, user, *, schema, schema_name):
         del schema
@@ -293,6 +294,7 @@ class ScriptedNS4Manager:
             for item in recent
         )
         if not branch_seen and not hypothesis_entries:
+            self.actions.append("propose_branches")
             return {
                 "action": "propose_branches",
                 "branch_parent_obligation_id": "U_ROOT",
@@ -310,6 +312,7 @@ class ScriptedNS4Manager:
             }
 
         if not hypothesis_entries:
+            self.actions.append("propose_hypothesis")
             return {
                 "action": "propose_hypothesis",
                 "hypothesis_parent_obligation_id": "U_ROOT",
@@ -323,6 +326,7 @@ class ScriptedNS4Manager:
 
         hypothesis = hypothesis_entries[0]
         if not hypothesis["next_test_task_refs"]:
+            self.actions.append("propose_hypothesis_next_test")
             return {
                 "action": "propose_hypothesis_next_test",
                 "hypothesis_ref": hypothesis["hypothesis_id"],
@@ -335,6 +339,7 @@ class ScriptedNS4Manager:
             }
 
         if not hypothesis["evidence_links"]:
+            self.actions.append("propose_hypothesis_evidence_relation")
             return {
                 "action": "propose_hypothesis_evidence_relation",
                 "hypothesis_ref": hypothesis["hypothesis_id"],
@@ -348,7 +353,11 @@ class ScriptedNS4Manager:
 
 
 class NarrationFailure:
+    def __init__(self) -> None:
+        self.calls = 0
+
     def structured_json(self, *_args, **_kwargs):
+        self.calls += 1
         raise RuntimeError("provider-free narration fallback")
 
 
@@ -416,12 +425,13 @@ def run_rehearsal() -> dict[str, object]:
         )
     )
     standard = ForceResearchStandardLane()
+    narration = NarrationFailure()
     coordinator = ProductCoordinator(
         standard_lane=standard,
         standard_model_role="FAST_LANGUAGE",
         research_lane=research_lane,
         report_narrator=ReportNarrator(
-            llm=NarrationFailure(),
+            llm=narration,
             provider="provider-free",
             model="provider-free",
         ),
@@ -498,19 +508,7 @@ def run_rehearsal() -> dict[str, object]:
     ]
     del manager_actions  # call count is authoritative; action kinds come from observations.
 
-    cognition_actions = [
-        item.get("action")
-        for item in observations
-        if item.get("kind") == "manager_decision"
-    ]
-    # Current loop does not persist a generic manager_decision observation for every
-    # action; derive the four admitted cognition classes from their canonical receipts.
-    cognition_sequence = (
-        "propose_branches",
-        "propose_hypothesis",
-        "propose_hypothesis_next_test",
-        "propose_hypothesis_evidence_relation",
-    )
+    cognition_sequence = tuple(manager.actions)
 
     fresh_disclosures = sum(
         1 for item in observations
@@ -559,6 +557,7 @@ def run_rehearsal() -> dict[str, object]:
         "evidence_relations": 1,
         "semantic_linker_model_calls": 0,
         "temporal_model_calls": 0,
+        "narration_calls": narration.calls,
         "narration_provider_calls": 0,
         "completion_gate_final_state": snapshot.state.value,
         "root_status": active["U_ROOT"].status.value,
