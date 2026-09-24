@@ -68,7 +68,19 @@ def test_pass_view_exposes_no_semantic_handle_or_canonical_identifier():
     dumped = json.dumps(scripted.payload, ensure_ascii=False)
     assert "sem_" not in dumped
     assert "canonical" not in dumped.lower()
-    assert scripted.payload["STANDARD_INTENT_VIEW"][0]["capability_key"] == "performance"
+    intent_item = scripted.payload["STANDARD_INTENT_VIEW"][0]
+    assert {
+        "obligation_id",
+        "capability_key",
+        "polarity",
+        "source_surfaces",
+        "semantic_source_surfaces",
+    }.issubset(intent_item)
+    assert intent_item["obligation_id"] == "U1"
+    assert intent_item["capability_key"] == "performance"
+    assert intent_item["polarity"] == "REQUIRED"
+    assert intent_item["source_surfaces"] == ["net geliri"]
+    assert intent_item["semantic_source_surfaces"] == []
 
 
 def test_veto_can_only_report_bounded_coverage_issue_with_exact_source_text():
