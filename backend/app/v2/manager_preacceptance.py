@@ -898,6 +898,7 @@ class PreAcceptanceController:
         draft: IntentDraft,
         material_gaps: tuple[dict[str, Any], ...],
         grounded: dict[tuple[str, str, str], SemanticBindingRef],
+        resolution: Any | None,
         message_id: str,
         attempt: int,
         runtime: ManagerRuntime,
@@ -918,6 +919,34 @@ class PreAcceptanceController:
             for missing_kind in tuple(gap.get("missing_required_kinds") or ()):
                 if missing_kind not in {"metric", "dimension"}:
                     continue
+
+                declared_surfaces = tuple(
+                    item.surface
+                    for item in obligation.semantic_surfaces
+                    if self._normalized_hint_kind(item.kind_hint) == missing_kind
+                )
+                target_surfaces = declared_surfaces or obligation.source_surfaces
+                target_refs = self._source_refs(
+                    message_id=message_id,
+                    surfaces=target_surfaces,
+                )
+                eligible_unresolved = {
+                    item.source_ref
+                    for item in tuple(
+                        getattr(resolution, "unresolved_semantics", ()) or ()
+                    )
+                    if (
+                        item.owner_id == obligation.obligation_id
+                        and self._normalized_hint_kind(item.kind_hint) == missing_kind
+                        and item.status in {"RETRIEVAL_MISS", "ABSTAIN"}
+                    )
+                }
+                eligible_target_refs = tuple(
+                    ref for ref in target_refs if ref in eligible_unresolved
+                )
+                if not eligible_target_refs:
+                    continue
+
                 repair_gaps.append(
                     SemanticDecompositionRepairGap(
                         gap_ref=(
@@ -926,10 +955,7 @@ class PreAcceptanceController:
                         obligation_id=obligation.obligation_id,
                         capability_key=obligation.capability_key,
                         missing_kind=missing_kind,
-                        obligation_source_refs=self._source_refs(
-                            message_id=message_id,
-                            surfaces=obligation.source_surfaces,
-                        ),
+                        obligation_source_refs=eligible_target_refs,
                     )
                 )
 
@@ -1195,6 +1221,7 @@ class PreAcceptanceController:
                         draft=draft,
                         material_gaps=material_gaps,
                         grounded=grounded,
+                        resolution=resolution,
                         message_id=message_id,
                         attempt=attempt,
                         runtime=runtime,
