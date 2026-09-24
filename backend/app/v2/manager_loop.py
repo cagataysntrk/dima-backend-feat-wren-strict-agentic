@@ -841,9 +841,13 @@ class ResearchManagerLoop:
         task_registry: ResearchTaskRegistry,
     ) -> bool:
         if any(
-            task.state in {"pending", "running"}
+            task.origin == "USER_SEED"
+            and task.state in {"pending", "running"}
             for task in task_registry.tasks
         ):
+            # USER_SEED tasks are the direct execution obligations. Agent-derived
+            # candidates are policy/cognition options unless another authority makes
+            # them completion-relevant (ROOT_CAUSE next-test or ADAPT disposition).
             return False
         contract = runtime.accepted_contract
         if contract is not None:
