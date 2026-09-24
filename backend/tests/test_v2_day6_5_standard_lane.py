@@ -921,3 +921,140 @@ def test_d10_j_unsupported_standard_shape_routes_research_only_on_typed_omission
     assert outcome.projection is None
     assert engine.authority_registry.accepted("turn-d10-j-unsupported-research") is None
 
+def test_d10_j_control_request_uses_only_typed_research_omission_as_bridge():
+    question = "net geliri göster, konuşmayı da düzelt ve kök nedeni araştır"
+
+    def intent(system, user, *, schema, schema_name):
+        return {
+            "obligations": [
+                {
+                    "obligation_id": "U1",
+                    "capability_key": "performance",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["net geliri"],
+                    "semantic_surfaces": [
+                        {"surface": "net geliri", "kind_hint": "metric"}
+                    ],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                }
+            ],
+            "control_requests": [
+                {
+                    "request_id": "C1",
+                    "category": "CONVERSATION_REPAIR",
+                    "source_surfaces": ["konuşmayı da düzelt"],
+                }
+            ],
+        }
+
+    coverage_modes = iter(
+        (
+            {
+                "status": "PASS",
+                "issues": [],
+            },
+            {
+                "status": "VETO",
+                "issues": [
+                    {
+                        "kind": "RESEARCH_NEED_OMITTED",
+                        "source_surfaces": ["kök nedeni araştır"],
+                        "note": "material Research request omitted",
+                    }
+                ],
+            },
+        )
+    )
+
+    def run_once(turn_id):
+        def coverage(system, user, *, schema, schema_name):
+            return next(coverage_modes)
+
+        engine = StandardLaneEngine(
+            intent_structured=intent,
+            coverage_structured=coverage,
+            semantic_provider=_SemanticProvider(),
+            temporal_provider=None,
+        )
+        outcome = engine.run(
+            question=question,
+            turn_id=turn_id,
+            request_ref=f"request-{turn_id}",
+            semantic_context=_context(),
+            schema=_schema(),
+            conversation=ConversationStateV2(),
+            tenant_binding="tenant-a",
+            cognition_model_role="FAST_LANGUAGE",
+            principal=object(),
+            service=object(),
+            tenant_runtime=object(),
+            contract_store=object(),
+            session_id=None,
+        )
+        return engine, outcome
+
+    first_engine, first = run_once("turn-d10-j-control-pass")
+    assert first.status == StandardLaneStatus.CLARIFICATION_REQUIRED
+    assert first_engine.authority_registry.accepted("turn-d10-j-control-pass") is None
+
+    second_engine, second = run_once("turn-d10-j-control-research")
+    assert second.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert second.coverage_status == "VETO"
+    assert second.authority is None
+    assert second.projection is None
+    assert second_engine.authority_registry.accepted("turn-d10-j-control-research") is None
+
+
+def test_d10_j_research_omission_has_priority_over_other_coverage_vetoes(monkeypatch):
+    question = "net geliri göster, yönetim özetini kapsa ve kök nedeni araştır"
+
+    def intent(system, user, *, schema, schema_name):
+        return _draft_response("performance")
+
+    def coverage(system, user, *, schema, schema_name):
+        return {
+            "status": "VETO",
+            "issues": [
+                {
+                    "kind": "MATERIAL_REQUEST_OMITTED",
+                    "source_surfaces": ["yönetim özetini kapsa"],
+                    "note": "material Standard request omitted",
+                },
+                {
+                    "kind": "RESEARCH_NEED_OMITTED",
+                    "source_surfaces": ["kök nedeni araştır"],
+                    "note": "material Research request omitted",
+                },
+            ],
+        }
+
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=coverage,
+        semantic_provider=_SemanticProvider(),
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id="turn-d10-j-mixed-veto",
+        request_ref="request-d10-j-mixed-veto",
+        semantic_context=_context(),
+        schema=_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert outcome.coverage_status == "VETO"
+    assert outcome.authority is None
+    assert outcome.projection is None
+
