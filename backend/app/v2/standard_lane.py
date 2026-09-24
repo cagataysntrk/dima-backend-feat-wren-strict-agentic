@@ -579,6 +579,22 @@ class StandardLaneEngine:
                     attempts=attempt,
                 )
 
+            # Lane ownership is deterministic once the typed proposal is proven to quote
+            # exact current-message source. Research-required business capability must
+            # stop Standard before semantic grounding, control handling, coverage or Wren.
+            typed_precheck = representability.decide_typed_capabilities(
+                capabilities=tuple(
+                    (item.capability_key, item.polarity)
+                    for item in draft.obligations
+                ),
+            )
+            if typed_precheck.decision == RepresentabilityDecision.RESEARCH_REQUIRED:
+                return StandardLaneOutcome(
+                    status=StandardLaneStatus.RESEARCH_REQUIRED,
+                    reasons=typed_precheck.reasons,
+                    attempts=attempt,
+                )
+
             try:
                 obligations, material_gaps = self._ground(
                     draft=draft,
@@ -610,32 +626,9 @@ class StandardLaneEngine:
                         attempts=attempt,
                     )
 
-            # Conversation/control semantics remain non-Research by default.  The only
-            # allowed bridge is the existing typed omission veto over the raw message.
-            if draft.control_requests:
-                audit = coverage_guard()
-                if isinstance(audit, StandardLaneOutcome):
-                    return audit
-                if self._coverage_requires_research(audit):
-                    return StandardLaneOutcome(
-                        status=StandardLaneStatus.RESEARCH_REQUIRED,
-                        reasons=self._coverage_reasons(audit),
-                        attempts=attempt,
-                        coverage_status=audit.status,
-                    )
-                return StandardLaneOutcome(
-                    status=StandardLaneStatus.CLARIFICATION_REQUIRED,
-                    reasons=(
-                        "standard fresh-turn SI path does not convert conversation control "
-                        "requests into business authority",
-                    ),
-                    obligations=obligations,
-                    attempts=attempt,
-                    coverage_status=audit.status,
-                )
-
             # A genuine semantic gap remains a clarification unless the independent
-            # omission guard proves that the Standard view dropped material Research work.
+            # omission guard proves that the still-Standard typed view dropped material
+            # Research work.
             if material_gaps:
                 audit = coverage_guard()
                 if isinstance(audit, StandardLaneOutcome):
@@ -650,6 +643,36 @@ class StandardLaneEngine:
                 return StandardLaneOutcome(
                     status=StandardLaneStatus.CLARIFICATION_REQUIRED,
                     reasons=material_gaps,
+                    obligations=obligations,
+                    attempts=attempt,
+                    coverage_status=audit.status,
+                )
+
+            # NON_AUTHORITATIVE_CONTROL_REQUEST cannot mint business authority or own lane
+            # selection. It is ignored once independent Standard business work is valid.
+            # CONVERSATION_REPAIR remains conservative in Day10: only the existing typed
+            # omission veto may bridge it to Research; otherwise clarification is required.
+            has_conversation_repair = any(
+                item.category == "CONVERSATION_REPAIR"
+                for item in draft.control_requests
+            )
+            if has_conversation_repair:
+                audit = coverage_guard()
+                if isinstance(audit, StandardLaneOutcome):
+                    return audit
+                if self._coverage_requires_research(audit):
+                    return StandardLaneOutcome(
+                        status=StandardLaneStatus.RESEARCH_REQUIRED,
+                        reasons=self._coverage_reasons(audit),
+                        attempts=attempt,
+                        coverage_status=audit.status,
+                    )
+                return StandardLaneOutcome(
+                    status=StandardLaneStatus.CLARIFICATION_REQUIRED,
+                    reasons=(
+                        "standard fresh-turn SI path does not convert conversation repair "
+                        "into business authority",
+                    ),
                     obligations=obligations,
                     attempts=attempt,
                     coverage_status=audit.status,
