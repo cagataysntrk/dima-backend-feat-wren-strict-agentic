@@ -38,6 +38,7 @@ from app.v2.hypothesis_proposals import (
 from app.v2.epistemics import (
     EvidenceLinkedFindingBuilder,
     EpistemicFindingError,
+    RootCauseObligationVerifier,
 )
 from app.v2.root_cause_orchestration import (
     HypothesisNextTestBoundary,
@@ -71,6 +72,7 @@ from app.v2.models import (
     EpistemicLabel,
     FrozenModel,
     HypothesisEvidenceRelation,
+    HypothesisStatus,
     HypothesisEvidenceRelationProposal,
     HypothesisNextTestProposal,
     HypothesisProposal,
@@ -705,6 +707,56 @@ class ResearchManagerLoop:
     def _emit_progress(self, kind: str, refs: tuple[str, ...] = ()) -> None:
         if self._progress_callback is not None:
             self._progress_callback(kind, refs)
+
+    @staticmethod
+    def _try_deterministic_finish(
+        *,
+        runtime: ManagerRuntime,
+        task_registry: ResearchTaskRegistry,
+    ) -> bool:
+        if any(
+            task.state in {"pending", "running"}
+            for task in task_registry.tasks
+        ):
+            return False
+        contract = runtime.accepted_contract
+        if contract is not None and contract.research_directives:
+            # Directive completion does not yet have a separate deterministic lifecycle
+            # owner. Do not manufacture terminality here.
+            return False
+        try:
+            runtime.finish()
+            return True
+        except ManagerStateError:
+            return False
+
+    @staticmethod
+    def _reconcile_root_obligations(
+        *,
+        runtime: ManagerRuntime,
+        root_cause_ledgers: dict[str, Any],
+        task_registry: ResearchTaskRegistry,
+    ) -> bool:
+        changed = False
+        verifier = RootCauseObligationVerifier()
+        for ledger in root_cause_ledgers.values():
+            before = next(
+                item.status
+                for item in runtime.ledger.items
+                if item.obligation_id == ledger.state.parent_obligation_id
+            )
+            verifier.reconcile(
+                runtime=runtime,
+                hypothesis_ledger=ledger,
+                task_registry=task_registry,
+            )
+            after = next(
+                item.status
+                for item in runtime.ledger.items
+                if item.obligation_id == ledger.state.parent_obligation_id
+            )
+            changed = changed or before != after
+        return changed
 
     def _handle_alias(self, handle_id: str) -> str:
         if not str(handle_id).startswith("sem_"):
@@ -1380,6 +1432,21 @@ class ResearchManagerLoop:
                     ready_tasks=task_registry.tasks,
                     hypothesis_ledgers=root_cause_ledgers,
                 )
+                latest_delta = research_state.latest_delta
+                if (
+                    latest_delta is not None
+                    and latest_delta.availability.value == "AVAILABLE"
+                    and latest_delta.verified is True
+                    and latest_delta.inspected is False
+                    and bool(latest_delta.bounded_payload)
+                ):
+                    runtime.mark_evidence_inspected(latest_delta.evidence_ref)
+                    observations.append(
+                        {
+                            "kind": "fresh_evidence_disclosed",
+                            "evidence_ref": latest_delta.evidence_ref,
+                        }
+                    )
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
                 break
@@ -1622,6 +1689,30 @@ class ResearchManagerLoop:
                         runtime=runtime,
                         result=result_view,
                     )
+                    root_changed = self._reconcile_root_obligations(
+                        runtime=runtime,
+                        root_cause_ledgers=root_cause_ledgers,
+                        task_registry=task_registry,
+                    )
+                    if root_changed:
+                        observations.append(
+                            {
+                                "kind": "root_cause_obligation_reconciled",
+                                "status": "VERIFIED",
+                            }
+                        )
+                    if self._try_deterministic_finish(
+                        runtime=runtime,
+                        task_registry=task_registry,
+                    ):
+                        observations.append(
+                            {
+                                "kind": "finish",
+                                "status": "accepted",
+                                "reason": "deterministic_completion_gate",
+                            }
+                        )
+                        break
                 except (
                     HypothesisProposalError,
                     RootCauseOrchestrationError,
@@ -1841,6 +1932,32 @@ class ResearchManagerLoop:
                     }
                 )
 
+                if root_cause_ledgers:
+                    root_changed = self._reconcile_root_obligations(
+                        runtime=runtime,
+                        root_cause_ledgers=root_cause_ledgers,
+                        task_registry=task_registry,
+                    )
+                    if root_changed:
+                        observations.append(
+                            {
+                                "kind": "root_cause_obligation_reconciled",
+                                "status": "VERIFIED",
+                            }
+                        )
+                    if self._try_deterministic_finish(
+                        runtime=runtime,
+                        task_registry=task_registry,
+                    ):
+                        observations.append(
+                            {
+                                "kind": "finish",
+                                "status": "accepted",
+                                "reason": "deterministic_completion_gate",
+                            }
+                        )
+                        break
+
                 if (
                     call.name == ManagerToolName.INSPECT_EVIDENCE
                     and _zero_row_completion_candidate(
@@ -1900,18 +2017,30 @@ class ResearchManagerLoop:
         for ledger in root_cause_ledgers.values():
             builder = EvidenceLinkedFindingBuilder(ledger=ledger)
             for hypothesis in ledger.state.entries:
-                support_refs = tuple(
-                    link.evidence_ref
-                    for link in hypothesis.evidence_links
-                    if link.relation == HypothesisEvidenceRelation.SUPPORTS
-                )
-                if not support_refs:
+                if hypothesis.status == HypothesisStatus.SUPPORTED:
+                    finding_refs = tuple(
+                        link.evidence_ref
+                        for link in hypothesis.evidence_links
+                        if link.relation == HypothesisEvidenceRelation.SUPPORTS
+                    )
+                    finding_label = EpistemicLabel.CANDIDATE_CAUSE
+                elif hypothesis.status == HypothesisStatus.INCONCLUSIVE:
+                    finding_refs = tuple(
+                        dict.fromkeys(
+                            link.evidence_ref
+                            for link in hypothesis.evidence_links
+                        )
+                    )
+                    finding_label = EpistemicLabel.OBSERVATION
+                else:
+                    continue
+                if not finding_refs:
                     continue
                 try:
                     finding = builder.build(
                         statement=hypothesis.statement,
-                        epistemic_label=EpistemicLabel.CANDIDATE_CAUSE,
-                        evidence_refs=support_refs,
+                        epistemic_label=finding_label,
+                        evidence_refs=finding_refs,
                         hypothesis_ref=hypothesis.hypothesis_id,
                     )
                     canonical_findings.append(finding)
