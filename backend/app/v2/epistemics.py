@@ -705,13 +705,51 @@ class RootCauseObligationVerifier:
 
         evidence_refs: list[str] = []
         for item in entries:
+            if not item.next_test_task_refs:
+                return False
+
+            linked_tasks = tuple(
+                task_registry.get(task_ref)
+                for task_ref in item.next_test_task_refs
+            )
+            if any(
+                task.state in {"pending", "running", "failed", "blocked", "cancelled"}
+                for task in linked_tasks
+            ):
+                return False
+            completed_task_ids = {
+                task.task_id
+                for task in linked_tasks
+                if task.state == "complete"
+            }
+            if not completed_task_ids:
+                return False
+
+            post_test_links = []
             for link in item.evidence_links:
-                hypothesis_ledger.validated_evidence(link.evidence_ref)
-                evidence_refs.append(link.evidence_ref)
-            for task_ref in item.next_test_task_refs:
-                task = task_registry.get(task_ref)
-                if task.state != "complete":
+                evidence = hypothesis_ledger.validated_evidence(link.evidence_ref)
+                if evidence.task_id in completed_task_ids:
+                    post_test_links.append(link)
+
+            if item.status == HypothesisStatus.SUPPORTED:
+                if not any(
+                    link.relation == HypothesisEvidenceRelation.SUPPORTS
+                    for link in post_test_links
+                ):
                     return False
+            elif item.status == HypothesisStatus.REFUTED:
+                if not any(
+                    link.relation == HypothesisEvidenceRelation.CONTRADICTS
+                    for link in post_test_links
+                ):
+                    return False
+            elif item.status == HypothesisStatus.INCONCLUSIVE:
+                if not post_test_links:
+                    return False
+            else:
+                return False
+
+            evidence_refs.extend(link.evidence_ref for link in post_test_links)
 
         relevant_tasks = tuple(
             task
