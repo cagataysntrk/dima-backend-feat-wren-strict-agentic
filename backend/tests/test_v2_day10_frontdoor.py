@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import inspect
+import threading
 from types import SimpleNamespace
 
 from app.v2.manager_models import ManagerRunSnapshot, ManagerState
@@ -297,3 +298,98 @@ def test_research_preserves_frontdoor_principal_and_tenant_binding(monkeypatch):
     assert research.calls[0]["context"].principal is principal
     assert research.calls[0]["context"].tenant_binding == "id:tenant-a"
     assert research.calls[0]["context"].tenant_runtime.tenant_id == "tenant-a"
+
+
+def test_stream_reuses_exactly_one_server_turn_ref_per_request(monkeypatch):
+    import app.routers.ask_v2 as route
+
+    records = []
+    done = threading.Event()
+
+    class Coordinator:
+        def handle(
+            self,
+            *,
+            request,
+            body,
+            principal,
+            event_sink,
+            turn_ref,
+            cancel_check,
+            answer_now_check,
+        ):
+            del request, body, principal, cancel_check, answer_now_check
+            records.append(
+                {
+                    "turn_ref": turn_ref,
+                    "sink_turn_ref": event_sink.turn_ref,
+                    "request_ref": event_sink.request_ref,
+                }
+            )
+            done.set()
+            return SimpleNamespace(
+                model_dump=lambda mode="json": {
+                    "request_ref": event_sink.request_ref,
+                    "turn_ref": turn_ref,
+                    "status": "ANSWER",
+                }
+            )
+
+    class Control:
+        control_ref = "prun_" + "a" * 24
+
+        @staticmethod
+        def cancelled():
+            return False
+
+        @staticmethod
+        def answer_now_requested():
+            return False
+
+        @staticmethod
+        def signal(_action):
+            return None
+
+    class Controls:
+        def register(self, **_kwargs):
+            return Control()
+
+        def release(self, _control_ref):
+            return None
+
+    monkeypatch.setattr(route, "_coordinator", Coordinator())
+    monkeypatch.setattr(route, "_controls", Controls())
+    monkeypatch.setattr(
+        route,
+        "get_settings",
+        lambda: SimpleNamespace(ask_v2_enabled=True),
+    )
+    principal = SimpleNamespace(
+        user_id="stream-user",
+        tenant_id="stream-tenant",
+        tenant_slug="stream",
+    )
+
+    first = route.ask_v2_stream(
+        request=object(),
+        body=_body(),
+        principal=principal,
+    )
+    assert first is not None
+    assert done.wait(2)
+    first_record = records[-1]
+    assert first_record["turn_ref"] == first_record["sink_turn_ref"]
+
+    done.clear()
+    second = route.ask_v2_stream(
+        request=object(),
+        body=_body(),
+        principal=principal,
+    )
+    assert second is not None
+    assert done.wait(2)
+    second_record = records[-1]
+
+    assert second_record["turn_ref"] == second_record["sink_turn_ref"]
+    assert first_record["request_ref"] == second_record["request_ref"]
+    assert first_record["turn_ref"] != second_record["turn_ref"]
