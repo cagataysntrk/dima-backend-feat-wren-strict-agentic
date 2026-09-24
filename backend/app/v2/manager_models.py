@@ -349,7 +349,14 @@ class ManagerBudget(FrozenModel):
         ge=1,
         description="Hard ceiling across pre-acceptance + Research Manager turns.",
     )
-    max_preacceptance_turns: int = Field(default=2, ge=1)
+    max_preacceptance_turns: int = Field(
+        default=4,
+        ge=1,
+        description=(
+            "Pre-acceptance phase sublimit; two bounded draft attempts may each "
+            "consume one draft and one coverage cognition call. Global total remains 6."
+        ),
+    )
     max_tool_calls: int = Field(default=12, ge=1)
     max_data_queries: int = Field(default=8, ge=0, le=12)
     max_manager_turns: int = Field(
