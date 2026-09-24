@@ -209,11 +209,19 @@ class ProductCoordinator:
         cancel_check: Callable[[], bool] | None = None,
         answer_now_check: Callable[[], bool] | None = None,
     ) -> ProductResponse:
+        effective_turn_ref = turn_ref
+        if event_sink is not None:
+            if turn_ref is not None and event_sink.turn_ref != turn_ref:
+                raise RuntimeError(
+                    "explicit Product turn_ref does not match ProductEventSink"
+                )
+            effective_turn_ref = event_sink.turn_ref
+
         context = self._bind_context(
             request=request,
             body=body,
             principal=principal,
-            turn_ref=turn_ref,
+            turn_ref=effective_turn_ref,
         )
         sink = event_sink or ProductEventSink(
             request_ref=context.request_ref,
