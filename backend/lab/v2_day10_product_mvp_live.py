@@ -170,6 +170,24 @@ class CountingStructured:
         return self._inner.structured_json(*args, **kwargs)
 
 
+class CapturingResearchLane(ResearchLaneService):
+    """Eval-only observation seam; does not alter Research authority."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.last_result = None
+
+    def run(self, **kwargs):
+        result = super().run(**kwargs)
+        self.last_result = result
+        return result
+
+    def continue_run(self, **kwargs):
+        result = super().continue_run(**kwargs)
+        self.last_result = result
+        return result
+
+
 class CountingWren:
     def __init__(self, inner) -> None:
         self._inner = inner
@@ -278,7 +296,7 @@ def _build_product(
         semantic_provider=semantic_provider,
         temporal_provider=temporal_provider,
     )
-    research_lane = ResearchLaneService(
+    research_lane = CapturingResearchLane(
         cognition=ResearchCognition(
             manager_llm=manager,
             manager_profile=research_profile,
@@ -328,7 +346,7 @@ def _build_product(
         )
 
     coordinator._bind_context = bind_context
-    return coordinator
+    return coordinator, research_lane
 
 
 def _event_metrics(events) -> dict[str, int | None]:
@@ -412,7 +430,7 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         roles=["owner"],
         tenant_slug="demo-boyahane",
     )
-    coordinator = _build_product(
+    coordinator, research_lane = _build_product(
         settings=settings,
         budget=budget,
         service=service,
@@ -448,6 +466,9 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         raise PaidHarnessError("initial Product report is not CompletionGate-verified")
     if initial.report is None or initial.narration is None:
         raise PaidHarnessError("initial Product report/narration missing")
+    initial_research = research_lane.last_result
+    if initial_research is None:
+        raise PaidHarnessError("initial Research authority receipt missing")
 
     initial_evidence = len(initial.evidence_refs)
     initial_artifacts = len(initial.artifact_refs)
@@ -465,6 +486,41 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         for block in section.blocks
     ):
         raise PaidHarnessError("canonical report contains no ROOT_CAUSE block")
+
+    observations = tuple(initial_research.outcome.observations)
+    observation_kinds = {
+        str(item.get("kind"))
+        for item in observations
+        if isinstance(item, dict)
+    }
+    required_root_chain = {
+        "hypothesis_registered",
+        "hypothesis_next_test_executed",
+        "hypothesis_relation_admitted",
+        "root_cause_obligation_reconciled",
+    }
+    missing_root_chain = required_root_chain - observation_kinds
+    if missing_root_chain:
+        raise PaidHarnessError(
+            "integrated Day8 root debt was not genuinely exercised: "
+            + ", ".join(sorted(missing_root_chain))
+        )
+    if not initial_research.findings:
+        raise PaidHarnessError("integrated root path produced no canonical Finding")
+    if not any(
+        finding.epistemic_label.value == "CANDIDATE_CAUSE"
+        for finding in initial_research.findings
+    ):
+        raise PaidHarnessError("integrated root path produced no CANDIDATE_CAUSE Finding")
+    root_items = [
+        item
+        for item in initial_research.ledger.active_user_must
+        if item.capability_key.value == "root_cause"
+    ]
+    if len(root_items) != 1 or root_items[0].status.value != "VERIFIED":
+        raise PaidHarnessError(
+            "ROOT_CAUSE USER_MUST is not terminal/accounted as bounded investigation"
+        )
 
     token = _candidate_section_token(initial)
 
@@ -540,11 +596,8 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
             "total_ms": total_ms,
         },
         "slo_note": "single observed sample; not a p95 estimate",
-        "day8_live_debt_exercised": any(
-            block.block_kind == ReportBlockKind.ROOT_CAUSE
-            for section in initial.report.report.sections
-            for block in section.blocks
-        ),
+        "day8_live_debt_exercised": True,
+        "root_chain_observations": sorted(required_root_chain),
         "confirmed_cause_count": sum(
             1
             for section in initial.report.report.sections
