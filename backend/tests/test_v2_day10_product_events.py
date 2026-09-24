@@ -19,7 +19,7 @@ class _Clock:
 
 def test_equivalent_governed_transition_replays_same_event_identity():
     clock = _Clock()
-    sink = ProductEventSink(request_ref="req-1", clock=clock)
+    sink = ProductEventSink(request_ref="req-1", turn_ref="turn-1", clock=clock)
 
     first = sink.emit(
         ProductEventKind.EVIDENCE_VERIFIED,
@@ -45,6 +45,7 @@ def test_product_event_sequence_is_server_authored_and_monotonic():
     seen = []
     sink = ProductEventSink(
         request_ref="req-2",
+        turn_ref="turn-2",
         clock=clock,
         on_event=seen.append,
     )
@@ -81,6 +82,7 @@ def test_product_event_sequence_is_server_authored_and_monotonic():
 def test_event_surface_contains_no_reasoning_or_raw_tool_payload_fields():
     fields = set(ProductEventSink(
         request_ref="req-3",
+        turn_ref="turn-3",
     ).emit(
         ProductEventKind.KEEPALIVE,
         transition_ref="keepalive:1",
@@ -98,3 +100,37 @@ def test_event_surface_contains_no_reasoning_or_raw_tool_payload_fields():
     assert "sql" not in fields
     assert "tool_payload" not in fields
     assert "provider_message" not in fields
+
+
+def test_same_correlation_fingerprint_has_distinct_turn_scoped_event_identity():
+    first = ProductEventSink(
+        request_ref="same-request-fingerprint",
+        turn_ref="turn-first",
+    )
+    second = ProductEventSink(
+        request_ref="same-request-fingerprint",
+        turn_ref="turn-second",
+    )
+
+    a = first.emit(
+        ProductEventKind.REQUEST_ACCEPTED,
+        refs=("same-request-fingerprint",),
+        transition_ref="frontdoor:bound",
+    )
+    b = second.emit(
+        ProductEventKind.REQUEST_ACCEPTED,
+        refs=("same-request-fingerprint",),
+        transition_ref="frontdoor:bound",
+    )
+
+    assert first.request_ref == second.request_ref
+    assert first.turn_ref != second.turn_ref
+    assert a.event_id != b.event_id
+
+    replay = first.emit(
+        ProductEventKind.REQUEST_ACCEPTED,
+        refs=("same-request-fingerprint",),
+        transition_ref="frontdoor:bound",
+    )
+    assert replay.event_id == a.event_id
+    assert replay.sequence == a.sequence
