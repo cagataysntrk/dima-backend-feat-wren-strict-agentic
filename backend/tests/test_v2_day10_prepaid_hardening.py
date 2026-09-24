@@ -915,4 +915,6 @@ def test_deterministic_scheduler_cancel_blocks_late_evidence_commit():
     assert executor.commit_attempts == 1
     assert tasks.get(task.task_id).state == "cancelled"
     assert runtime.snapshot.evidence_refs == ()
-    assert runtime.snapshot.data_queries == 0
+    # The governed query attempt is still metered; cancellation blocks Evidence commit,
+    # not accounting of work already attempted before the commit boundary.
+    assert runtime.snapshot.data_queries == 1
