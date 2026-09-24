@@ -1,5 +1,81 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-24 — D10-J PROVIDER-FREE ROOT FIX GREEN / PAID REMEASUREMENT NOT AUTHORIZED
+
+Current active checkpoint:
+
+```text
+branch                                feat/ask-v2-mvp
+historical paid run                   35963884332 = VALID RED
+historical paid tested HEAD           8c85996c16a4bcecd9332d9fd335e57f6bf3a69f
+historical Standard terminal subtype  UNRESOLVED
+paid authorization                    CONSUMED
+
+D10-J latest Product behavior SHA
+a449bcfd62ede142ced7d2c9631fba2430534d62
+
+D10-J final deterministic receipt
+35967647254 = GREEN
+
+focused provider-free                  96 passed
+real-Wren omission-veto routing        GREEN
+G16 provider-free rehearsal            GREEN
+paid calls                              0
+
+Day8 live root-cause debt              OPEN
+Day10 FINAL                            NOT SEALED
+Day11                                 NOT AUTHORIZED
+```
+
+### What D10-J changed
+
+1. The paid harness is now diagnostically complete for future supervised measurements:
+   Product terminal state, exact StandardLaneOutcome, attempts, coverage status, work mode,
+   typed obligation keys/polarities, role/model/schema call sequence, controlled Standard
+   structured outputs and Wren counters are preserved before a harness failure aborts.
+
+2. Standard routing now uses one generic invariant:
+   RESEARCH_NEED_OMITTED in the typed CoverageAudit routes to
+   StandardLaneStatus.RESEARCH_REQUIRED. No other coverage issue creates Research routing.
+
+3. Correctly typed Research capability uses the existing RepresentabilityGate and returns
+   RESEARCH_REQUIRED before spending a coverage call.
+
+4. Material semantic gaps, control requests and unsupported Standard shapes preserve their
+   safe non-Research terminal unless the independent CoverageVeto proves a material omitted
+   Research need.
+
+5. Coverage creates no Research authority. ProductCoordinator remains the transition owner
+   and Research restarts from the raw current request plus shared infrastructure context.
+   Standard CandidateObligation, projection, semantic binding and rejected authority
+   carry-over count is zero.
+
+6. Malformed StandardIntentDraft receives one bounded generic repair only. Revision feedback
+   is DRAFT_CONTRACT_REJECTED / typed response did not satisfy StandardIntentDraft.
+   The second malformed draft fails closed. There is no Research fallback and no
+   case/language/business-literal feedback.
+
+### Narrow RED history
+
+35967138289 and 35967181704 were EVAL/HARNESS/FIXTURE REDs caused by a stale
+relationship test fixture that lacked the required metric+dimension binding. No Product fix
+was made from them.
+
+35967487249 and 35967571343 were test-oracle REDs: the strengthened real-Wren sentinel
+incorrectly expected the shared authority registry to be empty after Research had accepted
+authority. The corrected assertion requires AcceptedAuthorityFamily.RESEARCH; this also
+proves no Standard authority had been accepted first because the shared registry enforces
+cross-family XOR.
+
+35967647254 is the final D10-J GREEN proof.
+
+### STOP
+
+Do not rerun 35963884332. Do not dispatch a second paid smoke. Do not run standalone Day8
+live. Any new paid Product measurement requires a new supervisor authorization. Until then,
+Day8 live debt stays OPEN, Day10 FINAL stays NOT SEALED and Day11 remains NOT AUTHORIZED.
+
+
 ## 2026-09-24 — D10-I PAID PRODUCT-MVP VALID RED / D10-J FORENSIC HOLD
 
 Superseding active checkpoint:
