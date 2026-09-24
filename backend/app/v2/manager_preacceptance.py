@@ -39,7 +39,11 @@ from app.v2.manager_policy import (
     ManagerCapabilityRegistry,
 )
 from app.v2.manager_runtime import ManagerBudgetError, ManagerRuntime
-from app.v2.manager_tools import ManagerToolCall, ManagerToolName
+from app.v2.manager_tools import (
+    ManagerToolCall,
+    ManagerToolName,
+    SemanticDecompositionRepairGap,
+)
 from app.v2.models import ConversationStateV2, FrozenModel
 from app.v2.source_spans import SourceSpanRegistry
 
@@ -869,6 +873,107 @@ class PreAcceptanceController:
                 )
         return tuple(gaps)
 
+    def _eligible_repair_source_refs(
+        self,
+        *,
+        draft: IntentDraft,
+        grounded: dict[tuple[str, str, str], SemanticBindingRef],
+    ) -> tuple[str, ...]:
+        polarity_by_owner = {
+            item.obligation_id: item.polarity
+            for item in draft.obligations
+        }
+        refs = []
+        for (owner_id, _surface, kind), binding in grounded.items():
+            if polarity_by_owner.get(owner_id) == ObligationPolarity.EXCLUDED:
+                continue
+            if self._normalized_hint_kind(kind) not in {"metric", "dimension"}:
+                continue
+            refs.append(binding.source_ref)
+        return tuple(dict.fromkeys(refs))
+
+    def _repair_material_grounding_gaps(
+        self,
+        *,
+        draft: IntentDraft,
+        material_gaps: tuple[dict[str, Any], ...],
+        grounded: dict[tuple[str, str, str], SemanticBindingRef],
+        message_id: str,
+        attempt: int,
+        runtime: ManagerRuntime,
+        executor,
+    ) -> tuple[
+        dict[tuple[str, str, str], SemanticBindingRef],
+        Any | None,
+    ]:
+        repair_gaps: list[SemanticDecompositionRepairGap] = []
+        obligation_by_id = {
+            item.obligation_id: item
+            for item in draft.obligations
+        }
+        for gap in material_gaps:
+            obligation = obligation_by_id.get(str(gap.get("obligation_id") or ""))
+            if obligation is None or obligation.polarity != ObligationPolarity.REQUIRED:
+                continue
+            for missing_kind in tuple(gap.get("missing_required_kinds") or ()):
+                if missing_kind not in {"metric", "dimension"}:
+                    continue
+                repair_gaps.append(
+                    SemanticDecompositionRepairGap(
+                        gap_ref=(
+                            f"gap:{attempt}:{obligation.obligation_id}:{missing_kind}"
+                        ),
+                        obligation_id=obligation.obligation_id,
+                        capability_key=obligation.capability_key,
+                        missing_kind=missing_kind,
+                        obligation_source_refs=self._source_refs(
+                            message_id=message_id,
+                            surfaces=obligation.source_surfaces,
+                        ),
+                    )
+                )
+
+        source_refs = self._eligible_repair_source_refs(
+            draft=draft,
+            grounded=grounded,
+        )
+        if not repair_gaps or not source_refs:
+            return grounded, None
+
+        step = runtime.call_tool(
+            ManagerToolCall(
+                name=ManagerToolName.RESOLVE_SEMANTICS,
+                args={
+                    "provenance": "USER_SOURCE",
+                    "decomposition_repair_gaps": [
+                        item.model_dump(mode="json")
+                        for item in repair_gaps
+                    ],
+                    "decomposition_repair_source_refs": list(source_refs),
+                },
+            ),
+            executor=executor,
+        )
+        result = step.tool_result
+        repaired = dict(grounded)
+        for item in tuple(getattr(result, "resolved", ()) or ()):
+            if (
+                item.source_ref is None
+                or item.owner_id is None
+                or item.provenance != "USER_SOURCE"
+            ):
+                continue
+            span = self._source_spans.validate(item.source_ref)
+            kind = self._normalized_hint_kind(item.handle.target_kind)
+            if kind not in {"metric", "dimension"}:
+                continue
+            repaired[(item.owner_id, span.exact_surface, kind)] = SemanticBindingRef(
+                source_ref=item.source_ref,
+                handle_id=item.handle.handle_id,
+                target_kind=item.handle.target_kind,
+            )
+        return repaired, result
+
     @staticmethod
     def _surface_feedback(
         violations: tuple[DraftSurfaceViolation, ...],
@@ -1077,20 +1182,76 @@ class PreAcceptanceController:
                 grounded=grounded,
             )
             if material_gaps:
-                runtime.require_clarification(
-                    "material capability-required semantic binding is unresolved"
-                )
                 observations.append(
                     {
                         "kind": "material_grounding_gap",
                         "attempt": attempt,
+                        "phase": "BEFORE_DECOMPOSITION_REPAIR",
                         "gaps": list(material_gaps),
                     }
                 )
-                return FiniteAcceptanceOutcome(
-                    status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
-                    observations=tuple(observations),
-                )
+                try:
+                    grounded, repair_result = self._repair_material_grounding_gaps(
+                        draft=draft,
+                        material_gaps=material_gaps,
+                        grounded=grounded,
+                        message_id=message_id,
+                        attempt=attempt,
+                        runtime=runtime,
+                        executor=executor,
+                    )
+                except Exception as exc:
+                    observations.append(
+                        {
+                            "kind": "semantic_decomposition_repair_error",
+                            "attempt": attempt,
+                            "message": str(exc),
+                        }
+                    )
+                    return FiniteAcceptanceOutcome(
+                        status=FiniteAcceptanceStatus.GROUNDING_FAILURE,
+                        observations=tuple(observations),
+                    )
+
+                if repair_result is not None:
+                    grounding_summary = self._grounding_summary(
+                        draft=draft,
+                        grounded=grounded,
+                        resolution=repair_result,
+                    )
+                    observations.append(
+                        {
+                            "kind": "semantic_decomposition_repair",
+                            "attempt": attempt,
+                            "resolved_count": len(
+                                tuple(getattr(repair_result, "resolved", ()) or ())
+                            ),
+                            "receipt_count": len(
+                                runtime.semantic_resolution_receipts
+                            ),
+                        }
+                    )
+                    material_gaps = self._material_grounding_gaps(
+                        draft=draft,
+                        grounded=grounded,
+                    )
+
+                if material_gaps:
+                    runtime.require_clarification(
+                        "material capability-required semantic binding is unresolved"
+                    )
+                    observations.append(
+                        {
+                            "kind": "material_grounding_gap",
+                            "attempt": attempt,
+                            "phase": "AFTER_DECOMPOSITION_REPAIR",
+                            "gaps": list(material_gaps),
+                        }
+                    )
+                    return FiniteAcceptanceOutcome(
+                        status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
+                        observations=tuple(observations),
+                    )
 
             try:
                 runtime.note_manager_turn(phase="preacceptance")
