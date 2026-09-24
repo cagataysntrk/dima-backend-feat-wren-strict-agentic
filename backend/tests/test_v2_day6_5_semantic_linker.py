@@ -26,6 +26,10 @@ from app.v2.semantic_linker import (
     StructuredSemanticCandidateDecisionProvider,
     SemanticLinkAuthorityError,
     SemanticLinkCandidateCard,
+    SemanticDecompositionRepairRequest,
+    SemanticRepairSourceCard,
+    StructuredSemanticDecompositionRepairProvider,
+    SemanticDecisionProviderError,
 )
 from app.v2.semantic_retriever import (
     SemanticRetrievalContractError,
@@ -1003,3 +1007,131 @@ def test_semantic_diagnostic_redacts_filter_surface_even_on_retrieval_miss():
     assert receipt["surface_redacted"] is True
     assert "secret.person@example.com" not in str(receipt)
     assert receipt["candidate_cards"] == []
+
+
+class _RepairScripted:
+    def __init__(self, response):
+        self.response = response
+        self.calls = []
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        assert schema_name == "dima_semantic_decomposition_repair_v1"
+        self.calls.append(
+            {
+                "system": system,
+                "payload": json.loads(user),
+                "schema": schema,
+            }
+        )
+        return self.response
+
+
+def _repair_request():
+    return SemanticDecompositionRepairRequest(
+        gap_ref="gap:1:U_BREAK:metric",
+        obligation_id="U_BREAK",
+        capability_key="breakdown",
+        missing_kind="metric",
+        obligation_source_surfaces=("department performance",),
+        available_user_source_concepts=(
+            SemanticRepairSourceCard(
+                source_token="s1",
+                surface="downtime",
+                kind="metric",
+                safe_label="Downtime",
+            ),
+            SemanticRepairSourceCard(
+                source_token="s2",
+                surface="failure count",
+                kind="metric",
+                safe_label="Failure Count",
+            ),
+        ),
+    )
+
+
+def test_semantic_decomposition_repair_provider_selects_only_server_source_tokens():
+    scripted = _RepairScripted(
+        {
+            "choices": [
+                {
+                    "gap_ref": "gap:1:U_BREAK:metric",
+                    "decision": "SELECT_SOURCES",
+                    "selected_source_tokens": ["s1", "s2"],
+                    "reason": "SOURCE_SUPPORTS_SCOPE",
+                }
+            ]
+        }
+    )
+    provider = StructuredSemanticDecompositionRepairProvider(
+        structured=scripted.structured_json
+    )
+
+    decision = provider.decide(
+        (_repair_request(),),
+        user_message="downtime and failure count by department performance",
+    )
+
+    assert decision.choices[0].selected_source_tokens == ("s1", "s2")
+    assert len(scripted.calls) == 1
+    payload = scripted.calls[0]["payload"]
+    assert payload["REPAIR_REQUESTS"][0]["available_user_source_concepts"][0][
+        "source_token"
+    ] == "s1"
+    dumped = json.dumps(payload, ensure_ascii=False)
+    assert "cand_" not in dumped
+    assert "sem_" not in dumped
+    assert "SELECT_SOURCES" not in payload["USER_MESSAGE"]
+
+
+def test_semantic_decomposition_repair_provider_abstain_requires_zero_tokens():
+    scripted = _RepairScripted(
+        {
+            "choices": [
+                {
+                    "gap_ref": "gap:1:U_BREAK:metric",
+                    "decision": "ABSTAIN",
+                    "selected_source_tokens": [],
+                    "reason": "INSUFFICIENT_SOURCE_SUPPORT",
+                }
+            ]
+        }
+    )
+    provider = StructuredSemanticDecompositionRepairProvider(
+        structured=scripted.structured_json
+    )
+    decision = provider.decide(
+        (_repair_request(),),
+        user_message="downtime and failure count by department performance",
+    )
+    assert decision.choices[0].decision == "ABSTAIN"
+    assert decision.choices[0].selected_source_tokens == ()
+
+
+@pytest.mark.parametrize(
+    "choice",
+    (
+        {
+            "gap_ref": "gap:1:U_BREAK:metric",
+            "decision": "SELECT_SOURCES",
+            "selected_source_tokens": ["revenue"],
+            "reason": "SOURCE_SUPPORTS_SCOPE",
+        },
+        {
+            "gap_ref": "gap:1:U_BREAK:metric",
+            "decision": "ABSTAIN",
+            "selected_source_tokens": ["s1"],
+            "reason": "INSUFFICIENT_SOURCE_SUPPORT",
+        },
+    ),
+)
+def test_semantic_decomposition_repair_schema_rejects_free_text_or_abstain_tokens(choice):
+    scripted = _RepairScripted({"choices": [choice]})
+    provider = StructuredSemanticDecompositionRepairProvider(
+        structured=scripted.structured_json
+    )
+    with pytest.raises(SemanticDecisionProviderError):
+        provider.decide(
+            (_repair_request(),),
+            user_message="downtime and failure count by department performance",
+        )
