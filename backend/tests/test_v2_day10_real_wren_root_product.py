@@ -33,7 +33,12 @@ from app.v2.product_models import (
 from app.v2.report_narration import ReportNarrator
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
 from app.v2.semantic_handles import SemanticHandleRegistry
-from app.v2.semantic_linker import SemanticLinkBatchDecision, SemanticLinkChoice
+from app.v2.semantic_linker import (
+    SemanticDecompositionRepairBatchDecision,
+    SemanticDecompositionRepairChoice,
+    SemanticLinkBatchDecision,
+    SemanticLinkChoice,
+)
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.standard_authority import AcceptedAuthorityFamily
 from app.v2.standard_lane import StandardLaneEngine
@@ -670,3 +675,313 @@ def test_d10_n_real_wren_preacceptance_accepts_current_turn_metric_recovery(
     assert len(root_recovery) == 1
     assert root_recovery[0]["selection"]["status"] == "BOUND"
     assert root_recovery[0]["candidate_count"] >= 1
+
+
+class _AlwaysAbstainNonExactSemanticProvider:
+    """Exact matches remain deterministic; every non-exact cognition call abstains."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def decide(self, requests):
+        self.calls += 1
+        return SemanticLinkBatchDecision(
+            choices=tuple(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="ABSTAIN",
+                    reason="NO_MATCH",
+                )
+                for request in requests
+            )
+        )
+
+
+class _SelectCurrentMetricSourcesRepairProvider:
+    def __init__(self, surfaces) -> None:
+        self._surfaces = set(surfaces)
+        self.calls = []
+
+    def decide(self, requests, *, user_message):
+        self.calls.append((requests, user_message))
+        choices = []
+        for request in requests:
+            selected = tuple(
+                item.source_token
+                for item in request.available_user_source_concepts
+                if item.surface in self._surfaces
+            )
+            choices.append(
+                SemanticDecompositionRepairChoice(
+                    gap_ref=request.gap_ref,
+                    decision=("SELECT_SOURCES" if selected else "ABSTAIN"),
+                    selected_source_tokens=selected,
+                    reason=(
+                        "SOURCE_SUPPORTS_SCOPE"
+                        if selected
+                        else "INSUFFICIENT_SOURCE_SUPPORT"
+                    ),
+                )
+            )
+        return SemanticDecompositionRepairBatchDecision(choices=tuple(choices))
+
+
+class _D10PRepairResearchLLM:
+    def __init__(self, *, metric_a: str, metric_b: str, dimension: str) -> None:
+        self.metric_a = metric_a
+        self.metric_b = metric_b
+        self.dimension = dimension
+        self.schemas = []
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, user, schema
+        self.schemas.append(schema_name)
+        if schema_name == "dima_intent_draft_v1":
+            return {
+                "obligations": [
+                    {
+                        "obligation_id": "U_METRIC_A",
+                        "capability_key": "performance",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": [self.metric_a],
+                        "semantic_surfaces": [
+                            {"surface": self.metric_a, "kind_hint": "metric"}
+                        ],
+                        "open_questions": [],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    },
+                    {
+                        "obligation_id": "U_METRIC_B",
+                        "capability_key": "performance",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": [self.metric_b],
+                        "semantic_surfaces": [
+                            {"surface": self.metric_b, "kind_hint": "metric"}
+                        ],
+                        "open_questions": [],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    },
+                    {
+                        "obligation_id": "U_BREAKDOWN",
+                        "capability_key": "breakdown",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": [
+                            f"{self.dimension} bazındaki performansı"
+                        ],
+                        "semantic_surfaces": [
+                            {"surface": self.dimension, "kind_hint": "dimension"},
+                            {"surface": "performansı", "kind_hint": "metric"},
+                        ],
+                        "open_questions": [],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    },
+                ],
+                "research_directives": [],
+                "control_requests": [],
+            }
+        if schema_name == "dima_intent_coverage_v1":
+            return {"status": "PASS", "issues": []}
+        raise AssertionError(f"unexpected D10-P preacceptance schema: {schema_name}")
+
+
+def _field_surface(field):
+    return next(
+        value
+        for value in (field.display, *field.synonyms)
+        if value
+    )
+
+
+def test_d10_p_real_wren_preacceptance_repairs_decomposition_with_fresh_owner_handles(
+    wren,
+    schema,
+):
+    """Real governed catalog; scripted cognition; zero paid/provider calls."""
+    cube = next(item for item in schema["cubes"] if item.get("name") == "bakim")
+    assert len(tuple(cube.get("measures") or ())) >= 2
+
+    runtime_ctx = TenantAnalyticsRuntimeV0(
+        tenant_id="day10-p-semantic",
+        tenant_slug="day10-p-semantic",
+        principal_user_id="day10-p",
+        roles=("owner",),
+        mdl_version=str(wren.mdl_version),
+        catalog=str(schema.get("catalog") or "wren"),
+        schema_name=str(schema.get("schema_name") or "public"),
+        db_online=bool(schema.get("db_online", True)),
+    )
+    service = _CountingWren(wren, schema)
+    semantic_context = ContextProviderV0().build(service, runtime_ctx)
+    bakim_context = next(
+        item for item in semantic_context.cubes
+        if item.canonical_name == "bakim"
+    )
+    assert len(bakim_context.measures) >= 2
+    assert bakim_context.dimensions
+
+    metric_a = _field_surface(bakim_context.measures[0])
+    metric_b = _field_surface(bakim_context.measures[1])
+    dimension = _field_surface(bakim_context.dimensions[0])
+    assert metric_a != metric_b
+
+    question = (
+        f"{metric_a}, {metric_b} ve {dimension} bazındaki performansı araştır"
+    )
+    source_spans = SourceSpanRegistry()
+    semantic_handles = SemanticHandleRegistry()
+    semantic_provider = _AlwaysAbstainNonExactSemanticProvider()
+    repair_provider = _SelectCurrentMetricSourcesRepairProvider(
+        (metric_a, metric_b)
+    )
+    diagnostics = []
+
+    semantic = ManagerSemanticResolutionAdapter(
+        source_spans=source_spans,
+        semantic_handles=semantic_handles,
+        semantic_context=semantic_context,
+        conversation=ConversationStateV2(),
+        schema=schema,
+        tenant_binding=f"id:{runtime_ctx.tenant_id}",
+        session_id="d10-p-semantic",
+        thread_id="d10-p-semantic",
+        semantic_decision_provider=semantic_provider,
+        semantic_decomposition_repair_provider=repair_provider,
+        semantic_diagnostic_sink=diagnostics.append,
+    )
+    executor = GovernedManagerExecutor(
+        acceptance=IntentAcceptanceGate(
+            source_spans=source_spans,
+            semantic_handles=semantic_handles,
+        ),
+        core_analytics=object(),
+        context=GovernedManagerExecutionContext(
+            tenant_binding=f"id:{runtime_ctx.tenant_id}",
+            context_version=semantic_context.context_version.version,
+            principal=Principal(
+                user_id="day10-p",
+                tenant_id="day10-p-semantic",
+                roles=["owner"],
+                tenant_slug="day10-p-semantic",
+            ),
+            service=service,
+            tenant_runtime=runtime_ctx,
+            contract_store=contracts_module.ContractStore(),
+            session_id="d10-p-semantic",
+        ),
+        semantic_resolution=semantic,
+    )
+    cognition = _D10PRepairResearchLLM(
+        metric_a=metric_a,
+        metric_b=metric_b,
+        dimension=dimension,
+    )
+    loop = ResearchManagerLoop(llm=cognition, source_spans=source_spans)
+    manager_runtime = ManagerRuntime(
+        request_ref="req-d10-p-semantic",
+        turn_ref="turn-d10-p-semantic",
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-semantic",
+        request_ref="req-d10-p-semantic",
+        runtime=manager_runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.accepted is True
+    assert outcome.clarification_required is False
+    assert manager_runtime.accepted_contract is not None
+    assert manager_runtime.ledger is not None
+    assert manager_runtime.snapshot.preacceptance_turns == 2
+    assert manager_runtime.snapshot.manager_turns == 2
+    assert cognition.schemas == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    assert len(repair_provider.calls) == 1
+    assert service.query_calls == 0
+
+    repair_requests, repair_message = repair_provider.calls[0]
+    assert repair_message == question
+    assert len(repair_requests) == 1
+    request = repair_requests[0]
+    assert request.obligation_id == "U_BREAKDOWN"
+    assert request.missing_kind == "metric"
+    assert {
+        item.surface
+        for item in request.available_user_source_concepts
+    } == {metric_a, metric_b}
+
+    items = {
+        item.obligation_id: item
+        for item in manager_runtime.ledger.items
+    }
+    a_handle_id = next(
+        ref
+        for ref in items["U_METRIC_A"].semantic_handle_refs
+        if semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{runtime_ctx.tenant_id}",
+            context_version=semantic_context.context_version.version,
+        ).target_kind in {"metric", "kpi"}
+    )
+    b_handle_id = next(
+        ref
+        for ref in items["U_METRIC_B"].semantic_handle_refs
+        if semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{runtime_ctx.tenant_id}",
+            context_version=semantic_context.context_version.version,
+        ).target_kind in {"metric", "kpi"}
+    )
+    breakdown_metrics = [
+        ref
+        for ref in items["U_BREAKDOWN"].semantic_handle_refs
+        if semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{runtime_ctx.tenant_id}",
+            context_version=semantic_context.context_version.version,
+        ).target_kind in {"metric", "kpi"}
+    ]
+    assert len(breakdown_metrics) == 2
+    assert set(breakdown_metrics).isdisjoint({a_handle_id, b_handle_id})
+
+    original = [
+        semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{runtime_ctx.tenant_id}",
+            context_version=semantic_context.context_version.version,
+        )
+        for ref in (a_handle_id, b_handle_id)
+    ]
+    repaired = [
+        semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{runtime_ctx.tenant_id}",
+            context_version=semantic_context.context_version.version,
+        )
+        for ref in breakdown_metrics
+    ]
+    assert {item.parent_obligation_id for item in original} == {
+        "U_METRIC_A",
+        "U_METRIC_B",
+    }
+    assert {item.parent_obligation_id for item in repaired} == {"U_BREAKDOWN"}
+    assert {item.resolver_provenance_id for item in repaired} == {
+        item.resolver_provenance_id for item in original
+    }
+    assert any(
+        item.get("kind") == "semantic_decomposition_repair"
+        for item in diagnostics
+    )
