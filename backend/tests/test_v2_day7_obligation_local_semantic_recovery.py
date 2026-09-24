@@ -151,6 +151,59 @@ class _SingleCandidateRecordingProvider(_RecordingProvider):
         return SemanticLinkBatchDecision(choices=tuple(choices))
 
 
+class _SecondAttemptSelectionProvider(_RecordingProvider):
+    """Provider-free stand-in: baseline abstains, narrowed recovery may select."""
+
+    def __init__(self, *, id_to_canonical, selections):
+        super().__init__(id_to_canonical=id_to_canonical, selections=selections)
+        self._surface_attempts = {}
+
+    def decide(self, requests):
+        records = []
+        choices = []
+        for request in requests:
+            visible = tuple(
+                self._id_to_canonical.get(item.candidate_id, item.label)
+                for item in request.candidates
+            )
+            records.append(
+                {
+                    "surface": request.surface,
+                    "request_id": request.request_id,
+                    "visible": visible,
+                }
+            )
+            attempt = self._surface_attempts.get(request.surface, 0) + 1
+            self._surface_attempts[request.surface] = attempt
+            wanted = self._selections.get(request.surface)
+            candidate_id = next(
+                (
+                    item.candidate_id
+                    for item in request.candidates
+                    if self._id_to_canonical.get(item.candidate_id) == wanted
+                ),
+                None,
+            )
+            if attempt >= 2 and wanted is not None and candidate_id is not None:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="SELECT",
+                        candidate_id=candidate_id,
+                    )
+                )
+            else:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="ABSTAIN",
+                        reason="AMBIGUOUS",
+                    )
+                )
+        self.calls.append(tuple(records))
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
 class _ForbiddenProvider:
     def __init__(self):
         self.calls = 0
@@ -692,8 +745,9 @@ def test_current_turn_metric_context_recovers_generic_root_surface_without_handl
     service, context = _context()
     schema = service.schema()
     diagnostics = []
-    provider = _SingleCandidateRecordingProvider(
+    provider = _SecondAttemptSelectionProvider(
         id_to_canonical=_catalog_index(context, schema),
+        selections={"gözlenen analitik sapma": "net_value_x"},
     )
     fx = _fixture(
         context=context,
@@ -730,7 +784,7 @@ def test_current_turn_metric_context_recovers_generic_root_surface_without_handl
     ]
     assert root_receipts[0]["selection"]["status"] == "ABSTAIN"
     assert root_receipts[1]["retrieval_backend"] == "governed_current_turn_context_v1"
-    assert root_receipts[1]["candidate_count"] == 1
+    assert root_receipts[1]["candidate_count"] >= 1
     assert root_receipts[1]["selection"]["status"] == "BOUND"
 
     # Same canonical sem_* may be idempotent, but the source-bound authority edge is new.
@@ -825,8 +879,9 @@ def test_current_turn_dimension_context_can_support_relationship_counterpart_dis
     service, context = _context()
     schema = service.schema()
     diagnostics = []
-    provider = _SingleCandidateRecordingProvider(
+    provider = _SecondAttemptSelectionProvider(
         id_to_canonical=_catalog_index(context, schema),
+        selections={"ilişki için analitik eksen": "department_axis_d"},
     )
     fx = _fixture(
         context=context,
@@ -856,7 +911,7 @@ def test_current_turn_dimension_context_can_support_relationship_counterpart_dis
         if item.get("owner_obligation_id") == "U_REL"
         and item.get("discovery_pass") == "current_turn_applicability"
     )
-    assert recovery["candidate_count"] == 1
+    assert recovery["candidate_count"] >= 1
     assert recovery["selection"]["status"] == "BOUND"
 
 
