@@ -1266,3 +1266,23 @@ The historical paid authorization remains consumed. D10-J does not close Day8 li
 does not seal Day10 FINAL. A future paid remeasurement, if any, requires a new supervisor
 decision.
 
+
+
+### D10-L harvest additions
+
+**H-106 — MUST_PORT**  
+A source-grounded REQUIRED Research capability must be routed by deterministic Representability authority before Standard semantic grounding or control handling can preempt it.
+
+**H-107 — MUST_PORT**  
+`NON_AUTHORITATIVE_CONTROL_REQUEST` cannot override or block independently valid business authority; it never owns lane selection.
+
+**H-108 — MUST_PORT**  
+`CONVERSATION_REPAIR` and `NON_AUTHORITATIVE_CONTROL_REQUEST` are distinct control classes and must not share accidental terminal semantics.
+
+**H-109 — SHOULD_PORT (performance + correctness)**  
+Correctly typed Research routing must not spend Standard semantic-linker, coverage or Wren work after deterministic Research necessity is proven.
+
+**H-110 — MUST_PORT**  
+Standard CoverageVeto is an omission safety net for a still-Standard candidate; it must not run after deterministic typed capability authority already forbids Standard.
+
+Evidence receipt: D10-K paid run `35970179887` exposed the ordering defect; D10-L deterministic proof `35972060988` is GREEN with 104 focused provider-free tests, both real-Wren routing paths, and zero paid calls.
