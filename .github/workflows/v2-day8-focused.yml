@@ -30,6 +30,8 @@ name: v2-day8-focused
       - "backend/tests/test_v2_day8_live_sol_contract.py"
       - "backend/lab/v2_day8_root_cause_live_sol.py"
       - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
+      - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
+      - "backend/tests/test_v2_day6_5_semantic_linker.py"
       - ".github/workflows/v2-day8-focused.yml"
   workflow_dispatch:
 
@@ -56,7 +58,7 @@ jobs:
 
       - name: Compile Day8 epistemic slice
         working-directory: backend
-        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py app/v2/root_cause_orchestration.py app/v2/manager_loop.py app/v2/manager_lab.py lab/v2_day8_root_cause_live_sol.py
+        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py app/v2/root_cause_orchestration.py app/v2/manager_loop.py app/v2/manager_lab.py app/v2/manager_preacceptance.py app/v2/manager_semantics.py app/v2/semantic_linker.py app/v2/semantic_retriever.py lab/v2_day8_root_cause_live_sol.py
 
       - name: Day8 capability execution-mode attacks
         working-directory: backend
@@ -64,6 +66,13 @@ jobs:
           pytest -q \
             tests/test_v2_day8_capability_execution_mode.py \
             tests/test_v2_day7_deferred_capability_boundary.py
+
+      - name: D10-N semantic preacceptance regression
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day6_5_preacceptance_protocol.py \
+            tests/test_v2_day6_5_semantic_linker.py
 
       - name: Day8 root-cause orchestration attacks
         working-directory: backend
