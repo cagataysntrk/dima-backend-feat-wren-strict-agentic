@@ -32,7 +32,10 @@ from app.v2.relationship_adapter import (
 from app.v2.research_tools import ResearchToolRunner
 from app.v2.root_cause_orchestration import RootCauseLoopContext
 from app.v2.semantic_handles import SemanticHandleRegistry
-from app.v2.semantic_linker import StructuredSemanticCandidateDecisionProvider
+from app.v2.semantic_linker import (
+    StructuredSemanticCandidateDecisionProvider,
+    StructuredSemanticDecompositionRepairProvider,
+)
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.standard_authority import AcceptedAuthorityRegistry
 from app.v2.temporal_intent import StructuredTemporalNormalizationProvider
@@ -43,6 +46,7 @@ class ResearchCognition:
     manager_llm: Any
     manager_profile: ModelProfile
     semantic_provider: Any
+    semantic_decomposition_repair_provider: Any
     semantic_profile: ModelProfile
     temporal_provider: Any
     temporal_profile: ModelProfile
@@ -89,6 +93,13 @@ def build_research_cognition(settings) -> ResearchCognition:
         manager_profile=manager_profile,
         semantic_provider=(
             StructuredSemanticCandidateDecisionProvider(
+                structured=semantic_structured
+            )
+            if callable(semantic_structured)
+            else None
+        ),
+        semantic_decomposition_repair_provider=(
+            StructuredSemanticDecompositionRepairProvider(
                 structured=semantic_structured
             )
             if callable(semantic_structured)
@@ -174,6 +185,9 @@ class ResearchLaneService:
             session_id=body.session_id,
             thread_id=body.thread_id,
             semantic_decision_provider=self._cognition.semantic_provider,
+            semantic_decomposition_repair_provider=(
+                self._cognition.semantic_decomposition_repair_provider
+            ),
             temporal_normalization_provider=self._cognition.temporal_provider,
             semantic_diagnostic_sink=self._semantic_diagnostic_sink,
         )
@@ -289,6 +303,9 @@ class ResearchLaneService:
             session_id=body.session_id,
             thread_id=body.thread_id,
             semantic_decision_provider=self._cognition.semantic_provider,
+            semantic_decomposition_repair_provider=(
+                self._cognition.semantic_decomposition_repair_provider
+            ),
             temporal_normalization_provider=self._cognition.temporal_provider,
             semantic_diagnostic_sink=self._semantic_diagnostic_sink,
         )
