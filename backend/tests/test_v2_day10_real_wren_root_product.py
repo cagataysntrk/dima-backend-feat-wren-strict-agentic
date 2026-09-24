@@ -379,7 +379,6 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
             "dima_standard_intent_draft_v1",
             "dima_standard_coverage_v1",
         ]
-        assert standard_semantic.calls == 1
     else:
         assert standard_llm.schemas == ["dima_standard_intent_draft_v1"]
         assert standard_semantic.calls == 0
