@@ -13,6 +13,7 @@ name: v2-day8-focused
       - "backend/app/v2/acceptance.py"
       - "backend/app/v2/manager_preacceptance.py"
       - "backend/app/v2/manager_semantics.py"
+      - "backend/app/v2/relationship_adapter.py"
       - "backend/app/v2/semantic_linker.py"
       - "backend/app/v2/semantic_retriever.py"
       - "backend/app/v2/representability.py"
@@ -32,6 +33,7 @@ name: v2-day8-focused
       - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
       - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
       - "backend/tests/test_v2_day6_5_semantic_linker.py"
+      - "backend/tests/test_v2_day7_real_relationship_vertical.py"
       - ".github/workflows/v2-day8-focused.yml"
   workflow_dispatch:
 
@@ -73,6 +75,10 @@ jobs:
           pytest -q \
             tests/test_v2_day6_5_preacceptance_protocol.py \
             tests/test_v2_day6_5_semantic_linker.py
+
+      - name: D10-P relationship execution regression
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_relationship_vertical.py
 
       - name: Day8 root-cause orchestration attacks
         working-directory: backend
