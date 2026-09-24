@@ -448,7 +448,7 @@ class IntentAcceptanceGate:
             active_contract.lineage_id
             if active_contract is not None
             else "atl_"
-            + hashlib.sha256(envelope.request_ref.encode("utf-8")).hexdigest()[:20]
+            + hashlib.sha256(envelope.turn_id.encode("utf-8")).hexdigest()[:20]
         )
         version = active_contract.version + 1 if active_contract is not None else 1
         supersedes = (
