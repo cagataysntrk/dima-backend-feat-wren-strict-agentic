@@ -1414,3 +1414,174 @@ next paid measurement        SUPERVISOR DECISION REQUIRED
 ```
 
 STOP here. Do not dispatch another paid workflow and do not begin Day11 without new supervisor authorization.
+
+
+---
+
+## ACTIVE OVERRIDE — D10-M VALID RED → D10-N DETERMINISTIC GREEN (2026-09-24)
+
+This block supersedes older Day10 STOP/authorization text below where it conflicts. Historical receipts remain immutable.
+
+### Historical D10-M paid RED
+
+```text
+run                         36016509479
+tested HEAD                 8a03e6673b78842b0fbe8538d01107233d9e6871
+Product behavior            29b66000fd64d50ee464f989c23cc7f8f7502721
+result                      VALID RED
+
+routing                     PATH A / typed-direct
+Research entered            YES
+
+FAST_LANGUAGE               1
+RESEARCH_MANAGER            1
+SEMANTIC_LINKER             1
+TEMPORAL_NORMALIZER         0
+REPORT_NARRATOR             0
+TOTAL                       3
+
+Wren query/dry-plan/cube    0 / 0 / 0
+acceptance                  NOT REACHED
+```
+
+First wrong transition:
+
+```text
+Research preacceptance draft
+→ bounded semantic grounding
+→ capability-required semantic kind unresolved
+→ material_grounding_gap
+→ CLARIFICATION_REQUIRED
+```
+
+D10-M also exposed an eval observability defect: the paid artifact did not preserve the Research draft,
+semantic linker decision/candidate set, grounding summary, or material-gap receipt. D10-N fixed that
+diagnostic seam before changing semantic behavior.
+
+### D10-N generic semantic recovery
+
+Latest semantic Product behavior SHA:
+
+`8b2ea59045a87ec03d78517d6dbe653fcc9b14f6`
+
+D10-N keeps all existing authority owners. The semantic path is now:
+
+```text
+current Research draft
+→ exact source validation
+→ pass-1 governed catalog discovery
+→ existing same-owner sibling-scope recovery where eligible
+
+if required metric/dimension is still unresolved:
+    current-attempt governed USER_SOURCE bindings of the required kind
+    → discovery-only applicability candidates
+    → bounded Semantic Linker SELECT | ABSTAIN
+    → SemanticBindingGate
+    → fresh source-bound sem_* authority
+
+only then:
+→ material_grounding_gap / clarification if still unresolved
+```
+
+Permanent constraints:
+
+- current-turn context is candidate applicability, never semantic authority;
+- no sibling handle is copied between obligations;
+- the unresolved obligation receives a fresh source-bound edge only through the existing linker + BindingGate;
+- recovery is limited to metric/dimension;
+- filter/entity, period and comparison keep their dedicated authorities;
+- sensitive candidates are excluded from current-turn recovery;
+- prior turn/report/run/tenant/context handles are never eligible;
+- RETRIEVAL_MISS may recover;
+- ABSTAIN may be re-adjudicated only when the bounded candidate set is materially different;
+- same candidate set + same context is not called again;
+- AMBIGUOUS_EXACT remains fail-closed;
+- cube co-occurrence narrows discovery only and never auto-binds;
+- ROOT_CAUSE.required_kinds and Manager total-turn ceiling remain unchanged.
+
+### Research diagnostics
+
+The manual paid lab now captures validated outputs for Standard and Research intent/coverage plus
+`dima_bounded_semantic_link_v1`, Research preacceptance observations, semantic resolution receipts,
+and bounded semantic-linker receipts.
+
+Semantic receipts record request/owner/source/kind, discovery pass/backend, exhaustive/truncated state,
+bounded candidate IDs/kinds/safe labels, and SELECT/ABSTAIN outcome. Sensitive filter/entity source
+surfaces are redacted in lab diagnostics. Detailed diagnostics remain lab/test/artifact only and are
+not added to ordinary `/ask-v2` responses.
+
+### Metabase cross-check
+
+Metabase Exploration query-plan context was used as a pattern reference only:
+
+```text
+metadata hydration
+→ applicability
+→ candidate plan item
+→ materialization
+→ execution/result
+```
+
+Dima keeps the stronger trust boundary:
+
+```text
+catalog candidate
+→ current-turn applicability context
+→ bounded linker proposal
+→ SemanticBindingGate
+→ sem_* authority
+```
+
+No Metabase matching/runtime code was ported.
+
+### D10-N deterministic certification
+
+Final deterministic candidate SHA:
+
+`7c5b8be2bc46178a0f8b4e33882223203f4c57cd`
+
+Authoritative runs at that exact SHA:
+
+```text
+Day10 focused               36035224902 = GREEN
+  focused provider-free     106 passed
+  D10-N semantic attacks     59 passed
+  real-Wren Product/sentinel  3 passed
+  G16 provider_calls          0
+  G16 preacceptance           2
+  G16 Research cognition      4
+  G16 headroom                0
+  G16 ADAPT                   APPLIED
+  G16 root_status             VERIFIED
+  G16 CONFIRMED_CAUSE         0
+
+Day8 affected regression    36035224892 = GREEN
+Day7 full affected          36035224835 = GREEN
+```
+
+The redaction-test REDs immediately before the final proof were `EVAL/HARNESS/FIXTURE`: the test
+incorrectly expected a sensitive exact source to be RETRIEVAL_MISS/GAP, while exact governed
+USER_SOURCE may legitimately bind. The invariant is that diagnostics redact the raw value regardless
+of semantic outcome. Only the test oracle changed.
+
+### Current authorization/status
+
+D10-N uses the supervisor-approved continuous development policy:
+
+```text
+D10-N deterministic state       GREEN
+D10-N paid dispatches used      0 / 2
+D10-N new provider calls        0 / 30
+
+Day8 live debt                  OPEN
+Day8 FINAL                      NOT SEALED
+Day10 FINAL                     OPEN / NOT SEALED
+Day11                           NOT AUTHORIZED
+
+next action
+first authorized D10-N canonical paid Product-MVP measurement
+```
+
+A paid RED is no longer an automatic STOP. Classify the first wrong transition and continue with a
+generic owner fix unless a frozen architecture boundary is crossed or the D10-N paid envelope is
+exhausted.
