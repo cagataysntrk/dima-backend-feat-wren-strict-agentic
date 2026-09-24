@@ -1,5 +1,36 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-24 — D10-Q DETERMINISTIC + REAL-WREN GREEN / PAID READY
+
+```text
+branch                         feat/ask-v2-mvp
+Product behavior SHA           4e9f7a32561ff8f4ebaf95f61e36316453677802
+final test-only candidate      16d9bdc89141a4685616ad10094699185744995b
+
+Day10                          36056867465 = GREEN
+Day8                           36056867485 = GREEN
+Day7 same Product SHA          36055934356 = GREEN
+D10-Q real-Wren                36056672128 = GREEN
+
+D10-Q paid                     NOT YET DISPATCHED
+paid dispatch budget           0 / 2
+new provider-call budget       0 / 30
+
+Day8 live debt                 OPEN
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+D10-Q explicit multi-metric scope groups are provider-free and real-Wren certified. Scope groups are
+ephemeral cognition context only; accepted truth remains exact source refs, fresh SemanticBindingGate
+handles, semantic receipts and AcceptedTurnContract. Multi-metric ROOT_CAUSE is accepted without a
+single-primary-metric rule and boots losslessly into the existing PERFORMANCE / QUERY execution shape.
+
+The paid workflow remains permanently manual-dispatch-only. No push bridge or marker may be added.
+The next release action is the first D10-Q canonical paid Product measurement under the authorized
+2-dispatch / 30-new-provider-call envelope.
+
+
 ## 2026-09-24 — D10-P TRUE STOP / D10-Q ACTIVE
 
 Current active checkpoint:
