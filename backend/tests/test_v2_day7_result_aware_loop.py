@@ -343,8 +343,14 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert service.query_calls == 2
     assert store.n == 2
     assert len(runtime.snapshot.evidence_refs) == 2
-    assert runtime.snapshot.evidence_refs[0] in runtime.snapshot.inspected_evidence_refs
-    assert len(runtime.snapshot.inspected_evidence_refs) == 1
+    assert set(runtime.snapshot.inspected_evidence_refs) == set(
+        runtime.snapshot.evidence_refs
+    )
+    assert any(
+        item.get("kind") == "fresh_evidence_disclosed"
+        and item.get("evidence_ref") == runtime.snapshot.evidence_refs[1]
+        for item in outcome.observations
+    )
 
     parent = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
     child = next(item for item in runtime.ledger.items if item.obligation_id == "D1")
