@@ -184,15 +184,10 @@ class CapabilityBindingValidator:
                     "but deferred in the current capability surface",
                 ),
             )
-        if spec.execution_mode == ManagerCapabilityExecutionMode.PRESENTATION:
-            return CapabilityBindingResult(
-                binding=None,
-                reasons=(
-                    f"{item.obligation_id}: {item.capability_key.value} is presentation-only "
-                    "and has no analytical semantic binding",
-                ),
-            )
-
+        # PRESENTATION obligations are accepted as non-executable deliverables.
+        # They carry no analytical semantic authority: required/allowed kinds and params
+        # remain empty in the registry, so any attempted analytical binding is rejected
+        # by the ordinary forbidden-kind/parameter checks below.
         by_kind: dict[str, list[str]] = {}
         effect_by_kind: dict[str, list[str]] = {}
         for handle_id in item.semantic_handle_refs:
