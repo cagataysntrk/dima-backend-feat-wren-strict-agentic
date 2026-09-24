@@ -6,9 +6,10 @@ Evidence, epistemic, or completion truth.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
+from uuid import uuid4
 
 from pydantic import Field
 
@@ -20,6 +21,12 @@ from app.v2.models import (
 )
 from app.v2.report_builder import ReportDocument
 from app.v2.report_narration import ReportNarrationOverlay
+
+
+def mint_product_turn_ref() -> str:
+    """Fresh server-owned identity for one authoritative Product turn."""
+
+    return "turn_" + uuid4().hex
 
 
 class ProductAskRequest(AskV2Request):
@@ -142,3 +149,4 @@ class ProductRequestContext:
     contract_store: Any
     session_id: str | None
     thread_id: str | None
+    turn_ref: str = field(default_factory=mint_product_turn_ref)
