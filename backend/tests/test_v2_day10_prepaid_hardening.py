@@ -28,6 +28,10 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
     UserObligationLedger,
     CandidateObligation,
+    ResearchDirective,
+    ResearchDirectiveCondition,
+    ResearchDirectiveDispositionStatus,
+    ResearchDirectiveType,
 )
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_loop import ResearchManagerLoop
@@ -39,6 +43,7 @@ from app.v2.models import (
     HypothesisEvidenceRelation,
     HypothesisStatus,
     ResolvedSemanticRef,
+    ResearchTask,
     SemanticTargetKind,
     TenantAnalyticsRuntimeV0,
 )
@@ -419,19 +424,150 @@ def test_hypothesis_status_reconciles_from_admitted_relations_only():
     assert refuted.status == HypothesisStatus.REFUTED
 
 
-def test_root_completion_requires_accounted_hypothesis_and_no_pending_next_test():
+def _add_root_next_test(
+    *,
+    runtime,
+    hypothesis,
+    tasks,
+    store,
+    entry,
+    task_id="rt_root_next",
+    task_state="complete",
+    evidence_ref="E_NEXT",
+    evidence_obligation_id="U_ROOT",
+    relation=None,
+    link_to_hypothesis=True,
+):
+    task = ResearchTask(
+        task_id=task_id,
+        question_id="U_ROOT",
+        task_kind="QUERY",
+        input_refs=entry.semantic_handle_refs,
+        origin="AGENT_DERIVED",
+        parent_task_id="seed:U_ROOT",
+        parent_obligation_id="U_ROOT",
+        trigger_evidence_ref="E1",
+        branch_depth=1,
+        state=task_state,
+    )
+    tasks.register(task)
+    if link_to_hypothesis:
+        hypothesis.link_next_test(entry.hypothesis_id, task_ref=task_id)
+
+    evidence = EvidenceArtifact(
+        artifact_id=evidence_ref,
+        task_id=task_id,
+        obligation_ids=(evidence_obligation_id,),
+        query_contract_refs=(f"QC_{evidence_ref}",),
+        evidence_kind="standard_analytics",
+        verified=True,
+        payload={"executions": ()},
+    )
+    store.put(evidence)
+    runtime._snapshot = runtime.snapshot.model_copy(
+        update={
+            "evidence_refs": tuple(
+                dict.fromkeys((*runtime.snapshot.evidence_refs, evidence_ref))
+            ),
+            "inspected_evidence_refs": tuple(
+                dict.fromkeys((*runtime.snapshot.inspected_evidence_refs, evidence_ref))
+            ),
+            "latest_evidence_ref": evidence_ref,
+        }
+    )
+    if relation is not None:
+        hypothesis.attach_evidence(
+            entry.hypothesis_id,
+            evidence_ref=evidence_ref,
+            relation=relation,
+        )
+    return task, evidence
+
+
+def test_root_trigger_only_support_cannot_complete_investigation():
     runtime, ledger, tasks, _, _, entry = _root_fixture()
+    ledger.attach_evidence(
+        entry.hypothesis_id,
+        evidence_ref="E1",
+        relation=HypothesisEvidenceRelation.SUPPORTS,
+    )
+    assert ledger.get(entry.hypothesis_id).status == HypothesisStatus.SUPPORTED
+    assert RootCauseObligationVerifier().reconcile(
+        runtime=runtime,
+        hypothesis_ledger=ledger,
+        task_registry=tasks,
+    ) is False
+    assert runtime.ledger.active_user_must[0].status == ObligationStatus.IN_PROGRESS
+
+
+def test_root_pending_next_test_cannot_complete():
+    runtime, ledger, tasks, store, _, entry = _root_fixture()
+    ledger.attach_evidence(
+        entry.hypothesis_id,
+        evidence_ref="E1",
+        relation=HypothesisEvidenceRelation.SUPPORTS,
+    )
+    _add_root_next_test(
+        runtime=runtime,
+        hypothesis=ledger,
+        tasks=tasks,
+        store=store,
+        entry=entry,
+        task_state="pending",
+        relation=None,
+    )
     assert RootCauseObligationVerifier().reconcile(
         runtime=runtime,
         hypothesis_ledger=ledger,
         task_registry=tasks,
     ) is False
 
+
+def test_root_complete_next_test_but_trigger_only_relation_cannot_complete():
+    runtime, ledger, tasks, store, _, entry = _root_fixture()
     ledger.attach_evidence(
         entry.hypothesis_id,
         evidence_ref="E1",
         relation=HypothesisEvidenceRelation.SUPPORTS,
     )
+    _add_root_next_test(
+        runtime=runtime,
+        hypothesis=ledger,
+        tasks=tasks,
+        store=store,
+        entry=entry,
+        task_state="complete",
+        relation=None,
+    )
+    assert RootCauseObligationVerifier().reconcile(
+        runtime=runtime,
+        hypothesis_ledger=ledger,
+        task_registry=tasks,
+    ) is False
+
+
+@pytest.mark.parametrize(
+    ("relation", "expected_status"),
+    (
+        (HypothesisEvidenceRelation.SUPPORTS, HypothesisStatus.SUPPORTED),
+        (HypothesisEvidenceRelation.CONTRADICTS, HypothesisStatus.REFUTED),
+    ),
+)
+def test_root_fresh_completed_next_test_evidence_can_account_investigation(
+    relation,
+    expected_status,
+):
+    runtime, ledger, tasks, store, _, entry = _root_fixture()
+    _add_root_next_test(
+        runtime=runtime,
+        hypothesis=ledger,
+        tasks=tasks,
+        store=store,
+        entry=entry,
+        task_state="complete",
+        relation=relation,
+    )
+    assert ledger.get(entry.hypothesis_id).status == expected_status
     assert RootCauseObligationVerifier().reconcile(
         runtime=runtime,
         hypothesis_ledger=ledger,
@@ -439,8 +575,65 @@ def test_root_completion_requires_accounted_hypothesis_and_no_pending_next_test(
     ) is True
     root = runtime.ledger.active_user_must[0]
     assert root.status == ObligationStatus.VERIFIED
-    assert "nedensel doğruluk" in root.verdict
-    assert EpistemicLabel.CONFIRMED_CAUSE.value not in root.verdict
+    assert root.evidence_refs == ("E_NEXT",)
+    assert EpistemicLabel.CONFIRMED_CAUSE.value not in (root.verdict or "")
+
+
+def test_root_foreign_or_sibling_evidence_cannot_satisfy_linked_next_test():
+    runtime, ledger, tasks, store, _, entry = _root_fixture()
+    _add_root_next_test(
+        runtime=runtime,
+        hypothesis=ledger,
+        tasks=tasks,
+        store=store,
+        entry=entry,
+        task_id="rt_linked",
+        task_state="complete",
+        evidence_ref="E_LINKED",
+        relation=None,
+    )
+    _add_root_next_test(
+        runtime=runtime,
+        hypothesis=ledger,
+        tasks=tasks,
+        store=store,
+        entry=entry,
+        task_id="rt_sibling",
+        task_state="complete",
+        evidence_ref="E_SIBLING",
+        relation=HypothesisEvidenceRelation.SUPPORTS,
+        link_to_hypothesis=False,
+    )
+    assert ledger.get(entry.hypothesis_id).status == HypothesisStatus.SUPPORTED
+    assert RootCauseObligationVerifier().reconcile(
+        runtime=runtime,
+        hypothesis_ledger=ledger,
+        task_registry=tasks,
+    ) is False
+
+
+@pytest.mark.parametrize("state", ("failed", "blocked", "cancelled"))
+def test_root_terminal_failed_next_test_cannot_verify(state):
+    runtime, ledger, tasks, store, _, entry = _root_fixture()
+    ledger.attach_evidence(
+        entry.hypothesis_id,
+        evidence_ref="E1",
+        relation=HypothesisEvidenceRelation.SUPPORTS,
+    )
+    _add_root_next_test(
+        runtime=runtime,
+        hypothesis=ledger,
+        tasks=tasks,
+        store=store,
+        entry=entry,
+        task_state=state,
+        relation=None,
+    )
+    assert RootCauseObligationVerifier().reconcile(
+        runtime=runtime,
+        hypothesis_ledger=ledger,
+        task_registry=tasks,
+    ) is False
 
 
 def test_model_invented_numeric_hypothesis_never_becomes_canonical_finding_statement():
