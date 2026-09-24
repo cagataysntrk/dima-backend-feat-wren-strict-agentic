@@ -1434,6 +1434,7 @@ class EvidenceLinkedFinding(FrozenModel):
     epistemic_label: EpistemicLabel
     evidence_refs: tuple[str, ...] = Field(min_length=1)
     hypothesis_ref: str | None = None
+    semantic_handle_refs: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
     provenance: HypothesisProvenance
 
