@@ -14,7 +14,7 @@ import copy
 import hashlib
 import json
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Callable, Literal, Protocol
 
 from pydantic import Field, model_validator
@@ -159,6 +159,9 @@ class BoundedSemanticSelection:
     binding: CatalogCandidateBinding | None = None
     mode: Literal["EXACT", "LINKER", "NONE"] = "NONE"
     reason: str | None = None
+    # Discovery receipt only. This is not authority and is used solely to avoid
+    # repeating cognition when a recovery stage would expose the same candidate set.
+    candidate_ids: tuple[str, ...] = ()
 
 
 class SemanticLinkAuthorityError(RuntimeError):
@@ -1015,7 +1018,16 @@ class BoundedSemanticLinker:
                     mode="LINKER",
                 )
 
-        ordered = tuple(outputs[item.request_id] for item in candidate_sets)
+        ordered = tuple(
+            replace(
+                outputs[item.request_id],
+                candidate_ids=tuple(
+                    candidate.card.candidate_id
+                    for candidate in item.bindings
+                ),
+            )
+            for item in candidate_sets
+        )
 
         if self._diagnostic_sink is not None:
             metadata = diagnostic_metadata or {}
