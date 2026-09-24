@@ -1,5 +1,110 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY OVERRIDE — D10-J ROOT FIX GREEN / SUPERVISOR STOP
+
+This section supersedes the D10-I forensic-hold block below only for the current D10-J
+engineering state. The historical paid run classification remains unchanged.
+
+```text
+D10-H FINAL PRE-PAID SEAL             GREEN
+
+D10-I PAID PRODUCT-MVP
+run                                   35963884332
+tested HEAD                           8c85996c16a4bcecd9332d9fd335e57f6bf3a69f
+classification                        VALID RED
+historical Standard terminal subtype  UNRESOLVED
+paid authorization                    CONSUMED
+paid rerun                            NOT AUTHORIZED
+
+D10-J diagnostic harness              GREEN
+D10-J Standard FSM characterization   GREEN
+D10-J Research-omission root fix      GREEN
+D10-J zero-carry-over attacks         GREEN
+D10-J bounded draft repair            GREEN
+D10-J real-Wren routing sentinel      GREEN
+
+latest Product behavior SHA
+a449bcfd62ede142ced7d2c9631fba2430534d62
+
+latest authoritative D10-J proof
+35967647254 = GREEN
+
+focused provider-free                  96 passed
+real-Wren omission-veto -> Research    GREEN
+G16 directive-bearing rehearsal        GREEN
+paid calls                              0
+
+Day8 live root-cause debt              OPEN
+Day10 FINAL                            NOT SEALED
+Day11                                 NOT AUTHORIZED
+next paid measurement                  SUPERVISOR DECISION REQUIRED
+```
+
+### D10-J active routing invariant
+
+The Standard lane tolerates one probabilistic omission without creating hidden Research
+authority:
+
+```text
+typed Standard draft
+→ exact-source validation
+→ governed grounding
+
+if material-gap/control/unsupported terminal is pending:
+    CoverageVeto may inspect raw USER_MESSAGE vs typed Standard view
+
+if deterministic RepresentabilityGate already proves Research:
+    RESEARCH_REQUIRED immediately
+    coverage call = 0
+
+if CoverageAudit contains RESEARCH_NEED_OMITTED:
+    RESEARCH_REQUIRED
+
+otherwise:
+    preserve the correct non-Research Standard terminal
+```
+
+RESEARCH_NEED_OMITTED is the only CoverageVeto bridge to Research. Ordinary
+MATERIAL_REQUEST_OMITTED and EXCLUSION_OMITTED_OR_WRONG_POLARITY do not become
+Research fallback.
+
+Coverage still cannot mint:
+- AcceptedTurnContract,
+- Research obligations,
+- SemanticHandles,
+- Standard accepted authority.
+
+ProductCoordinator remains the sole transition owner. It restarts Research from the raw
+current Product request plus shared infrastructure context. No Standard projection,
+CandidateObligation, Standard semantic binding or rejected Standard authority crosses the
+boundary.
+
+Malformed StandardIntentDraft receives at most one generic repair:
+DRAFT_CONTRACT_REJECTED / typed response did not satisfy StandardIntentDraft.
+No canonical fixture wording, capability hint, root-cause phrase, language token or
+business literal is supplied. A second malformed draft fails closed and does not fall
+through to Research.
+
+### D10-J proof history
+
+The two early expanded focused REDs (35967138289, 35967181704) were
+EVAL/HARNESS/FIXTURE: an old provider-free fixture declared RELATIONSHIP without the
+now-required metric+dimension binding. The fixture was repaired to a valid typed
+ROOT_CAUSE + metric Research case; no Product patch followed from those REDs.
+
+The first strengthened real-Wren sentinel REDs (35967487249, 35967571343) were also
+test-oracle failures: the assertion expected the shared AcceptedAuthorityRegistry to be
+empty after Research completed. The correct invariant is that the shared registry contains
+AcceptedAuthorityFamily.RESEARCH; a Standard authority would have conflicted with that
+XOR owner. No Product patch followed.
+
+Final proof 35967647254 passed compile, 96 focused provider-free tests, the real-Wren
+omission-veto → Research → ROOT_CAUSE Product micro-gate, and G16 with zero paid calls.
+
+STOP here. Do not dispatch or rerun a paid workflow, and do not begin Day11 without a new
+supervisor decision.
+
+
 ## LATEST AUTHORITY OVERRIDE — D10-I PAID PRODUCT-MVP VALID RED / D10-J FORENSIC HOLD
 
 This section supersedes the D10-H pre-paid STOP below where they conflict. Historical receipts remain unchanged.
