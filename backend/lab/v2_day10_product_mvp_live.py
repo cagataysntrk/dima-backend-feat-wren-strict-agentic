@@ -90,11 +90,34 @@ CONTINUATION_QUESTION = (
 
 
 class PaidHarnessError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, diagnostics: dict[str, Any] | None = None):
+        super().__init__(message)
+        self.diagnostics = diagnostics or {}
 
 
 class PaidBudgetExceeded(PaidHarnessError):
     pass
+
+
+_CAPTURED_STANDARD_SCHEMAS = {
+    "dima_standard_intent_draft_v1",
+    "dima_standard_coverage_v1",
+}
+
+
+def _json_safe(value: Any) -> Any:
+    if hasattr(value, "model_dump"):
+        return value.model_dump(mode="json")
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    try:
+        json.dumps(value)
+        return value
+    except TypeError:
+        return repr(value)
 
 
 @dataclass
@@ -153,22 +176,52 @@ class CountingStructured:
         budget: RoleCallBudget,
         role: str,
         model: str,
+        captured_outputs: list[dict[str, Any]] | None = None,
     ) -> None:
         self._inner = inner
         self._budget = budget
         self._role = role
         self._model = model
+        self._captured_outputs = captured_outputs
 
     def __getattr__(self, name: str):
         return getattr(self._inner, name)
 
     def structured_json(self, *args, **kwargs):
+        schema_name = kwargs.get("schema_name")
         self._budget.reserve(
             role=self._role,
             model=self._model,
-            schema_name=kwargs.get("schema_name"),
+            schema_name=schema_name,
         )
-        return self._inner.structured_json(*args, **kwargs)
+        result = self._inner.structured_json(*args, **kwargs)
+        if (
+            self._captured_outputs is not None
+            and schema_name in _CAPTURED_STANDARD_SCHEMAS
+        ):
+            self._captured_outputs.append(
+                {
+                    "sequence": len(self._budget.calls),
+                    "role": self._role,
+                    "model": self._model,
+                    "schema_name": schema_name,
+                    "validated_output": _json_safe(result),
+                }
+            )
+        return result
+
+
+class CapturingStandardLane(StandardLaneEngine):
+    """Eval-only Standard outcome capture; delegates all Product behavior unchanged."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.last_outcome = None
+
+    def run(self, **kwargs):
+        outcome = super().run(**kwargs)
+        self.last_outcome = outcome
+        return outcome
 
 
 class CapturingResearchLane(ResearchLaneService):
@@ -232,6 +285,7 @@ def _build_product(
     principal: Principal,
 ):
     policy = ModelRolePolicy(settings)
+    structured_outputs: list[dict[str, Any]] = []
 
     fast_settings, fast_profile = _profile(
         policy,
@@ -259,6 +313,7 @@ def _build_product(
         budget=budget,
         role="FAST_LANGUAGE",
         model=fast_profile.model,
+        captured_outputs=structured_outputs,
     )
     manager = CountingStructured(
         inner=build_generator(research_settings),
@@ -291,7 +346,7 @@ def _build_product(
     temporal_provider = StructuredTemporalNormalizationProvider(
         structured=temporal.structured_json
     )
-    standard_lane = StandardLaneEngine(
+    standard_lane = CapturingStandardLane(
         intent_structured=fast.structured_json,
         coverage_structured=fast.structured_json,
         semantic_provider=semantic_provider,
@@ -348,7 +403,66 @@ def _build_product(
         )
 
     coordinator._bind_context = bind_context
-    return coordinator, research_lane
+    return coordinator, research_lane, standard_lane, structured_outputs
+
+
+def _value(value: Any) -> Any:
+    return getattr(value, "value", value)
+
+
+def _diagnostic_snapshot(
+    *,
+    product,
+    standard_lane: CapturingStandardLane,
+    budget: RoleCallBudget,
+    service: CountingWren,
+    structured_outputs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    standard = standard_lane.last_outcome
+    product_receipt = getattr(product, "terminal_receipt", None)
+    product_data = None
+    if product is not None:
+        product_data = {
+            "lane": _value(getattr(product, "lane", None)),
+            "status": _value(getattr(product, "status", None)),
+            "turn_ref": getattr(product, "turn_ref", None),
+            "terminal_status": getattr(product_receipt, "terminal_status", None),
+            "terminal_reasons": list(getattr(product_receipt, "reasons", ()) or ()),
+            "events": [
+                _json_safe(item)
+                for item in (getattr(product, "events", ()) or ())
+            ],
+        }
+
+    standard_data = None
+    if standard is not None:
+        standard_data = {
+            "status": _value(standard.status),
+            "reasons": list(standard.reasons),
+            "attempts": standard.attempts,
+            "coverage_status": standard.coverage_status,
+            "work_mode": _value(standard.work_mode) if standard.work_mode is not None else None,
+            "obligation_capability_keys": [
+                _value(item.capability_key)
+                for item in standard.obligations
+            ],
+            "obligation_polarities": [
+                _value(item.polarity)
+                for item in standard.obligations
+            ],
+        }
+
+    return {
+        "product": product_data,
+        "standard": standard_data,
+        "model_calls": budget.receipt(),
+        "structured_standard_outputs": list(structured_outputs),
+        "wren": {
+            "query_calls": service.query_calls,
+            "dry_plan_calls": service.dry_plan_calls,
+            "cube_sql_calls": service.cube_sql_calls,
+        },
+    }
 
 
 def _event_metrics(events) -> dict[str, int | None]:
@@ -432,12 +546,26 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         roles=["owner"],
         tenant_slug="demo-boyahane",
     )
-    coordinator, research_lane = _build_product(
+    coordinator, research_lane, standard_lane, structured_outputs = _build_product(
         settings=settings,
         budget=budget,
         service=service,
         principal=principal,
     )
+
+    current_response = None
+
+    def _fail(message: str) -> None:
+        raise PaidHarnessError(
+            message,
+            diagnostics=_diagnostic_snapshot(
+                product=current_response,
+                standard_lane=standard_lane,
+                budget=budget,
+                service=service,
+                structured_outputs=structured_outputs,
+            ),
+        )
 
     session_id = "day10-paid-product"
     thread_id = "day10-paid-product"
@@ -445,46 +573,52 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
     started = time.monotonic()
 
     initial_turn_ref = mint_product_turn_ref()
-    initial = coordinator.handle(
-        request=object(),
-        body=ProductAskRequest(
-            question=INITIAL_QUESTION,
-            session_id=session_id,
-            thread_id=thread_id,
-        ),
-        principal=principal,
-        event_sink=ProductEventSink(
-            request_ref="paid-initial",
+    try:
+        initial = coordinator.handle(
+            request=object(),
+            body=ProductAskRequest(
+                question=INITIAL_QUESTION,
+                session_id=session_id,
+                thread_id=thread_id,
+            ),
+            principal=principal,
+            event_sink=ProductEventSink(
+                request_ref="paid-initial",
+                turn_ref=initial_turn_ref,
+            ),
             turn_ref=initial_turn_ref,
-        ),
-        turn_ref=initial_turn_ref,
-    )
+        )
+    except Exception as exc:
+        current_response = None
+        _fail(f"initial Product execution failed: {type(exc).__name__}: {exc}")
+        raise AssertionError("unreachable")
+    current_response = initial
     turn_count += 1
 
     if initial.lane != ProductLane.RESEARCH:
-        raise PaidHarnessError(
+        _fail(
             f"canonical Product scenario must route to RESEARCH, got {initial.lane.value}"
         )
     if initial.status != ProductStatus.REPORT:
-        raise PaidHarnessError(
+        _fail(
             f"initial Product turn is not GREEN REPORT: {initial.status.value}"
         )
     if not initial.terminal_receipt.verified_complete:
-        raise PaidHarnessError("initial Product report is not CompletionGate-verified")
+        _fail("initial Product report is not CompletionGate-verified")
     if initial.report is None or initial.narration is None:
-        raise PaidHarnessError("initial Product report/narration missing")
+        _fail("initial Product report/narration missing")
     initial_research = research_lane.last_result
     if initial_research is None:
-        raise PaidHarnessError("initial Research authority receipt missing")
+        _fail("initial Research authority receipt missing")
 
     initial_evidence = len(initial.evidence_refs)
     initial_artifacts = len(initial.artifact_refs)
     if initial_evidence < 4:
-        raise PaidHarnessError(
+        _fail(
             f"canonical scenario requires >=4 Evidence-producing analytical steps; got {initial_evidence}"
         )
     if initial_artifacts < 3:
-        raise PaidHarnessError(
+        _fail(
             f"canonical scenario requires >=3 meaningful artifacts; got {initial_artifacts}"
         )
     if not any(
@@ -492,7 +626,7 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         for section in initial.report.report.sections
         for block in section.blocks
     ):
-        raise PaidHarnessError("canonical report contains no ROOT_CAUSE block")
+        _fail("canonical report contains no ROOT_CAUSE block")
 
     observations = tuple(initial_research.outcome.observations)
     observation_kinds = {
@@ -509,32 +643,32 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
     }
     missing_root_chain = required_root_chain - observation_kinds
     if missing_root_chain:
-        raise PaidHarnessError(
+        _fail(
             "integrated Day8 root debt was not genuinely exercised: "
             + ", ".join(sorted(missing_root_chain))
         )
     if not initial_research.findings:
-        raise PaidHarnessError("integrated root path produced no canonical Finding")
+        _fail("integrated root path produced no canonical Finding")
     if not any(
         finding.epistemic_label.value == "CANDIDATE_CAUSE"
         for finding in initial_research.findings
     ):
-        raise PaidHarnessError("integrated root path produced no CANDIDATE_CAUSE Finding")
+        _fail("integrated root path produced no CANDIDATE_CAUSE Finding")
     root_items = [
         item
         for item in initial_research.ledger.active_user_must
         if item.capability_key.value == "root_cause"
     ]
     if len(root_items) != 1 or root_items[0].status.value != "VERIFIED":
-        raise PaidHarnessError(
+        _fail(
             "ROOT_CAUSE USER_MUST is not terminal/accounted as bounded investigation"
         )
 
     event_kinds = {item.kind for item in initial.events}
     if ProductEventKind.ADAPTIVE_BRANCH_OPENED not in event_kinds:
-        raise PaidHarnessError("canonical paid scenario did not execute adaptive branch")
+        _fail("canonical paid scenario did not execute adaptive branch")
     if ProductEventKind.RELATIONSHIP_CHECKED not in event_kinds:
-        raise PaidHarnessError("canonical paid scenario did not execute relationship analysis")
+        _fail("canonical paid scenario did not execute relationship analysis")
 
     accepted_adapt = [
         item
@@ -546,53 +680,62 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         for item in initial_research.runtime.directive_dispositions
     }
     if len(accepted_adapt) != 1:
-        raise PaidHarnessError(
+        _fail(
             f"canonical paid scenario requires exactly one ADAPT_ON_EVIDENCE directive; "
             f"got {len(accepted_adapt)}"
         )
     adapt_disposition = dispositions.get(accepted_adapt[0].directive_id)
     if adapt_disposition is None or adapt_disposition.status.value != "APPLIED":
-        raise PaidHarnessError(
+        _fail(
             "canonical paid adaptive directive was not accounted by governed branch"
         )
     if not adapt_disposition.evidence_ref or not adapt_disposition.branch_task_refs:
-        raise PaidHarnessError(
+        _fail(
             "canonical paid adaptive directive lacks Evidence/branch accounting proof"
         )
 
-    token = _candidate_section_token(initial)
+    try:
+        token = _candidate_section_token(initial)
+    except PaidHarnessError as exc:
+        _fail(str(exc))
+        raise AssertionError("unreachable")
 
     continuation_turn_ref = mint_product_turn_ref()
-    continuation = coordinator.handle(
-        request=object(),
-        body=ProductAskRequest(
-            question=CONTINUATION_QUESTION,
-            session_id=session_id,
-            thread_id=thread_id,
-            report_section_token=token,
-        ),
-        principal=principal,
-        event_sink=ProductEventSink(
-            request_ref="paid-continuation",
+    try:
+        continuation = coordinator.handle(
+            request=object(),
+            body=ProductAskRequest(
+                question=CONTINUATION_QUESTION,
+                session_id=session_id,
+                thread_id=thread_id,
+                report_section_token=token,
+            ),
+            principal=principal,
+            event_sink=ProductEventSink(
+                request_ref="paid-continuation",
+                turn_ref=continuation_turn_ref,
+            ),
             turn_ref=continuation_turn_ref,
-        ),
-        turn_ref=continuation_turn_ref,
-    )
+        )
+    except Exception as exc:
+        _fail(f"signed continuation execution failed: {type(exc).__name__}: {exc}")
+        raise AssertionError("unreachable")
+    current_response = continuation
     turn_count += 1
     if turn_count != MAX_PRODUCT_TURNS:
-        raise PaidHarnessError("paid harness must execute exactly two Product turns")
+        _fail("paid harness must execute exactly two Product turns")
     if continuation.lane != ProductLane.RESEARCH:
-        raise PaidHarnessError("signed continuation left RESEARCH lane")
+        _fail("signed continuation left RESEARCH lane")
     if continuation.status != ProductStatus.REPORT:
-        raise PaidHarnessError(
+        _fail(
             f"signed continuation did not produce report: {continuation.status.value}"
         )
     if continuation.report is None:
-        raise PaidHarnessError("signed continuation report missing")
+        _fail("signed continuation report missing")
     if continuation.report.version != initial.report.version + 1:
-        raise PaidHarnessError("continuation did not create version +1 report")
+        _fail("continuation did not create version +1 report")
     if continuation.report.supersedes_report_ref != initial.report.report.report_id:
-        raise PaidHarnessError("continuation does not supersede initial immutable report")
+        _fail("continuation does not supersede initial immutable report")
 
     total_ms = int((time.monotonic() - started) * 1000)
     all_events = (*initial.events, *continuation.events)
@@ -609,7 +752,7 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
     }
     for item in role_receipt["calls"]:
         if item["model"] != expected_models[item["role"]]:
-            raise PaidHarnessError(
+            _fail(
                 f"role/model drift: {item['role']} -> {item['model']}"
             )
 
@@ -621,7 +764,7 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         and block.epistemic_label.value == "CONFIRMED_CAUSE"
     )
     if confirmed_cause_count != 0:
-        raise PaidHarnessError("CONFIRMED_CAUSE remains forbidden")
+        _fail("CONFIRMED_CAUSE remains forbidden")
 
     return {
         "status": "pass",
@@ -682,6 +825,7 @@ def main() -> int:
             "error_type": type(exc).__name__,
             "error": str(exc),
             "paid_harness_max_total_calls": MAX_HARNESS_TOTAL_CALLS,
+            "diagnostics": getattr(exc, "diagnostics", {}),
         }
         report_path.write_text(
             json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True),
