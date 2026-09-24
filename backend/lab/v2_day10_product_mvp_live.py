@@ -231,7 +231,11 @@ class CapturingResearchLane(ResearchLaneService):
     """Eval-only observation seam; does not alter Research authority."""
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        self.semantic_diagnostics: list[dict[str, Any]] = []
+        super().__init__(
+            semantic_diagnostic_sink=self.semantic_diagnostics.append,
+            **kwargs,
+        )
         self.last_result = None
 
     def run(self, **kwargs):
@@ -483,6 +487,10 @@ def _diagnostic_snapshot(
             "semantic_resolution_receipts": [
                 _json_safe(item)
                 for item in research.runtime.semantic_resolution_receipts
+            ],
+            "semantic_linker_diagnostics": [
+                _json_safe(item)
+                for item in research_lane.semantic_diagnostics
             ],
         }
 
