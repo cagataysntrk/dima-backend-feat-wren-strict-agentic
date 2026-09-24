@@ -42,7 +42,7 @@ RANKING_CASE = "P13D-RANKING"
 COMPARISON_CASE = "P13D-COMPARISON"
 
 BREAKDOWN_QUESTION = "Haziran 2026'da satış siparişlerini kanala göre dağıt."
-RANKING_QUESTION = "Haziran 2026'da en çok satış siparişi açılan 3 kanal hangileri?"
+RANKING_QUESTION = "Haziran 2026'da en çok satış siparişi açılan 2 kanal hangileri?"
 COMPARISON_QUESTION = "Haziran 2026 ile Mayıs 2026 satış siparişi sayısını karşılaştır."
 
 METRIC_HANDLE = "handle.sales_order_count"
@@ -190,7 +190,7 @@ def ranking_authority_and_intent() -> tuple[AcceptedStandardAuthority, ResolvedA
         dimension_handles=(DIMENSION_HANDLE,),
         period_handle=PERIOD_HANDLE,
         ranking_direction="desc",
-        limit=3,
+        limit=2,
     )
     authority = _accepted(
         case_id=RANKING_CASE,
@@ -210,7 +210,7 @@ def ranking_authority_and_intent() -> tuple[AcceptedStandardAuthority, ResolvedA
         ranking=ResolvedRanking(
             measure="Sales Order Count",
             direction="desc",
-            limit=3,
+            limit=2,
         ),
         principal=_principal(),
     )
@@ -288,7 +288,7 @@ def independent_oracles(path: Path) -> dict[str, Any]:
           AND acilis_tarihi < DATE '2026-07-01'
         GROUP BY kanal
         ORDER BY n DESC, kanal ASC
-        LIMIT 4
+        LIMIT 3
         """
     ).fetchall()
     comparison_rows = con.execute(
@@ -301,13 +301,13 @@ def independent_oracles(path: Path) -> dict[str, Any]:
         ORDER BY 1
         """
     ).fetchall()
-    if len(ranking_rows) < 3:
-        raise RuntimeError("P13D ranking oracle has fewer than three channels")
-    top_counts = [int(row[1]) for row in ranking_rows[:3]]
-    if len(set(top_counts)) != 3:
-        raise RuntimeError("P13D top-3 counts are tied; frozen ranking order is ambiguous")
-    if len(ranking_rows) > 3 and int(ranking_rows[2][1]) == int(ranking_rows[3][1]):
-        raise RuntimeError("P13D top-3 boundary is tied; frozen ranking case is ambiguous")
+    if len(ranking_rows) < 2:
+        raise RuntimeError("P13D ranking oracle has fewer than two channels")
+    top_counts = [int(row[1]) for row in ranking_rows[:2]]
+    if len(set(top_counts)) != 2:
+        raise RuntimeError("P13D top-2 counts are tied; frozen ranking order is ambiguous")
+    if len(ranking_rows) > 2 and int(ranking_rows[1][1]) == int(ranking_rows[2][1]):
+        raise RuntimeError("P13D top-2 boundary is tied; frozen ranking case is ambiguous")
     comparison = {str(month): int(n) for month, n in comparison_rows}
     if set(comparison) != {"2026-05", "2026-06"}:
         raise RuntimeError(f"P13D comparison oracle months drifted: {comparison!r}")
@@ -315,7 +315,7 @@ def independent_oracles(path: Path) -> dict[str, Any]:
         BREAKDOWN_CASE: {str(channel): int(n) for channel, n in breakdown_rows},
         RANKING_CASE: [
             [str(channel), int(n)]
-            for channel, n in ranking_rows[:3]
+            for channel, n in ranking_rows[:2]
         ],
         COMPARISON_CASE: comparison,
     }

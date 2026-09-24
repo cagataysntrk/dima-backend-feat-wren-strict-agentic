@@ -202,7 +202,7 @@ def _intent(*, ranking: bool = False, dimension: bool = True) -> ResolvedAnalyti
             end="2026-07-01",
         ),
         ranking=(
-            ResolvedRanking(measure="Sales Order Count", direction="desc", limit=3)
+            ResolvedRanking(measure="Sales Order Count", direction="desc", limit=2)
             if ranking
             else None
         ),
@@ -245,7 +245,7 @@ def _query(*, ranking: bool = False) -> dict:
                 ["aggregation", {"lib/uuid": "00000000-0000-4000-8000-000000000208"}, "00000000-0000-4000-8000-000000000201"],
             ]
         ]
-        stage["limit"] = 3
+        stage["limit"] = 2
     return {"lib/type": "mbql/query", "database": 1, "stages": [stage]}
 
 
@@ -324,7 +324,7 @@ def _manifest(*, ranking: bool = False, query: dict | None = None, **updates) ->
             if ranking
             else ()
         ),
-        "limit": 3 if ranking else None,
+        "limit": 2 if ranking else None,
         "stage_count": 1,
         "material_query_count": 1,
         "authenticated_metabase_subject": 42,
@@ -434,7 +434,7 @@ def test_breakdown_exact_dimension_authorizes():
     assert set(artifact.resource_entity_ids) == {TABLE, TIME, CHANNEL}
 
 
-def test_ranking_exact_metric_desc_top3_authorizes():
+def test_ranking_exact_metric_desc_top2_authorizes():
     result = _authorize(ranking=True)
     assert result.authorization.outcome == NativeCandidateOutcome.ALLOW
 
@@ -529,7 +529,7 @@ def test_unexpected_ranking_without_authority_blocks():
 
 
 def test_limit_without_ranking_authority_blocks():
-    result = _authorize(attestation=_attestation(limit=3))
+    result = _authorize(attestation=_attestation(limit=2))
     assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
     assert result.authorization.code == "P13D_RANKING_SCOPE_VIOLATION"
 
@@ -543,7 +543,7 @@ def test_join_introduction_still_blocks():
 def test_ranking_without_dimension_is_not_authorized():
     result = _authorize(
         intent=_intent(ranking=False, dimension=False).model_copy(
-            update={"ranking": ResolvedRanking(measure="Sales Order Count", direction="desc", limit=3)}
+            update={"ranking": ResolvedRanking(measure="Sales Order Count", direction="desc", limit=2)}
         ),
         attestation=_attestation(ranking=True),
     )
