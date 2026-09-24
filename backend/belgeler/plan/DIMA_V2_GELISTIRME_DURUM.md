@@ -10999,3 +10999,239 @@ This is NOT Day10 FINAL GREEN.
 Do not dispatch the paid workflow without supervisor review.
 Do not close Day8 live debt before that integrated run genuinely exercises the root chain.
 Do not start Day11 / DEV80 / Validation50 / Hidden50.
+
+
+---
+
+## 2026-09-24 — DAY10-H FINAL PRE-PAID SEAL GREEN
+
+```text
+DAY9 / P12                         SEALED
+
+DAY10 / P13
+D10-A front door                  GREEN
+D10-B Research -> Report          GREEN
+D10-C progress/stream             GREEN
+D10-D section continuation        GREEN
+D10-E Answer-Now                  GREEN
+D10-F real-Wren Product           GREEN
+D10-G pre-paid hardening          GREEN
+D10-H final pre-paid seal         GREEN / STOP
+
+product behavior SHA
+3db7f8688a5598188ae70375f778d2bef90452cf
+
+authoritative deterministic run
+35961399933 = GREEN
+
+provider-free focused             65 passed
+real-Wren ROOT_CAUSE Product      GREEN
+G16 directive-bearing rehearsal   GREEN
+paid calls                        0
+```
+
+### H1/H2 — ROOT_CAUSE completion hardened
+
+Trigger Evidence can still justify creating a hypothesis and may remain linked for context.
+
+It cannot by itself complete the requested investigation.
+
+For every hypothesis that accounts the ROOT_CAUSE USER_MUST, completion now requires:
+- non-OPEN hypothesis status,
+- at least one linked hypothesis next-test task,
+- at least one linked next-test task in COMPLETE state,
+- admitted post-test relation Evidence whose `EvidenceArtifact.task_id` is one of those linked
+  COMPLETE next-test task IDs.
+
+Relationship alignment remains typed:
+- SUPPORTED -> SUPPORTS from post-test Evidence,
+- REFUTED -> CONTRADICTS from post-test Evidence,
+- INCONCLUSIVE -> attempted completed test + post-test relation/accounting.
+
+Required attacks prove:
+- trigger-only support cannot complete,
+- pending next test cannot complete,
+- completed next test + trigger-only relation cannot complete,
+- fresh linked next-test support/refutation can complete bounded investigation,
+- sibling/foreign Evidence cannot satisfy,
+- failed/blocked/cancelled required next test cannot verify.
+
+`ROOT_CAUSE VERIFIED` continues to mean bounded investigation fulfilled, never causal certainty.
+
+### H3-H9 — ResearchDirective now has typed runtime lifecycle
+
+New runtime accounting:
+`ResearchDirectiveDisposition`.
+
+Completion-relevant `ADAPT_ON_EVIDENCE`:
+- OPEN at acceptance,
+- APPLIED when an admitted governed material branch is executed/accounted,
+- NO_MATERIAL_DIRECTION when bounded cognition explicitly disposes the directive using current
+  VERIFIED inspected parent-lineage Evidence,
+- BLOCKED remains an explicit governed terminal disposition shape.
+
+No new research ledger/planner was introduced.
+
+`BROADEN_WITHIN_BUDGET` is authorization-only and does not become a hidden USER_MUST.
+
+Model FINISH is no longer allowed to bypass directive/task accounting; it delegates to the same
+deterministic finish gate.
+
+Provider-free no-branch attack proves:
+```text
+accepted ADAPT
++ current VERIFIED inspected Evidence
++ NO_MATERIAL_DIRECTION
+-> no branch task
+-> no fake Evidence
+-> no Finding
+-> CompletionGate may finish if USER_MUST is otherwise accounted
+```
+
+### H8 — canonical G16 now carries a real adaptive directive
+
+The rehearsal question includes the exact accepted conditional source surface:
+
+`doğrulanmış sonuçlar yeni bir maddi kırılıma işaret ederse onu takip et`
+
+Accepted directive:
+```text
+directive_id     R_ADAPT_ROOT
+directive_type   ADAPT_ON_EVIDENCE
+parent           U_ROOT
+condition        MATERIAL_NEW_DIRECTION
+```
+
+Runtime observed final disposition:
+```text
+APPLIED
+accounting Evidence   present
+branch task refs      non-empty
+```
+
+No extra Manager cognition was added.
+
+Cognition remains exactly:
+```text
+PREACCEPTANCE
+1 draft
+2 coverage
+
+RESEARCH
+1 propose_branches
+2 propose_hypothesis
+3 propose_hypothesis_next_test
+4 propose_hypothesis_evidence_relation
+```
+
+Receipt:
+```text
+preacceptance 2
+research      4
+total         6
+ceiling       6
+headroom      0
+```
+
+### H10/H11 — Product turn/event identity
+
+`request_ref` remains deterministic correlation fingerprint.
+
+Every Product turn has fresh server-owned `turn_ref`.
+
+`ProductResponse` now exposes `turn_ref`.
+
+`ProductEventSink` event identity includes the same `turn_ref`.
+
+Repeated identical Product requests prove:
+```text
+same request_ref
+different turn_ref
+different event-id sets
+```
+
+Repeated emission within the same sink/turn remains idempotent.
+
+Streaming mints one turn_ref once and reuses it across:
+```text
+router
+-> ProductEventSink
+-> ProductCoordinator
+-> ProductResponse
+```
+
+No second UUID is minted at the coordinator boundary when a pre-minted sink is supplied.
+
+### H12 — budget seal
+
+Budget fields were not changed:
+
+```text
+max_total_manager_turns = 6
+max_preacceptance_turns  = 4
+```
+
+Interpretation of preacceptance `4`:
+phase safety cap only, supporting at most two bounded draft+coverage attempts.
+
+Canonical success still uses two preacceptance calls.
+
+Provider-free attack proves three preacceptance + three Research calls reaches total six, while
+a seventh total Manager call fails closed.
+
+### Deterministic certification
+
+Authoritative run:
+`35961399933`.
+
+Steps:
+- Day10 focused provider-free: GREEN, 65 passed;
+- one real-Wren ROOT_CAUSE Product micro-gate: GREEN;
+- directive-bearing G16 provider-free cognition receipt: GREEN.
+
+G16:
+```text
+directive_final_status       APPLIED
+research cognition sequence  branch -> hypothesis -> next-test -> relation
+root_status                  VERIFIED
+CONFIRMED_CAUSE              0
+provider_calls               0
+```
+
+Affected sealed regressions:
+- Day7 full focused: `35960964752 = GREEN`
+- Day8 focused: `35960964807 = GREEN`
+
+### Paid harness boundary
+
+The manual `v2-day10-product-mvp-paid-once` workflow was NOT dispatched.
+
+Paid call count remains zero.
+
+Only deterministic contract/preflight was updated so the future paid run must also require:
+- >=4 Evidence-producing analytical steps,
+- adaptive branch,
+- relationship check,
+- hypothesis next-test,
+- fresh VERIFIED Evidence,
+- explicit relation,
+- ROOT_CAUSE accounted,
+- CANDIDATE_CAUSE present,
+- CONFIRMED_CAUSE = 0,
+- accepted ADAPT directive APPLIED with Evidence + branch-task accounting,
+- unique Product turn identity for both initial and continuation turns.
+
+### CURRENT STOP
+
+D10-H final pre-paid seal is GREEN.
+
+The paid gate is structurally admissible, but NOT authorized to run.
+
+Do not:
+- dispatch `v2-day10-product-mvp-paid-once`,
+- start Day11,
+- run DEV80 / Validation50 / Hidden50,
+- run another standalone paid Day8 root-cause test.
+
+Day8 live debt remains OPEN until a separately authorized integrated paid Product-MVP run genuinely
+exercises the governed root-cause chain.
