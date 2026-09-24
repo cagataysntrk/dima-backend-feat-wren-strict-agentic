@@ -26,7 +26,9 @@ from app.v2.semantic_linker import (
     StructuredSemanticCandidateDecisionProvider,
     SemanticLinkAuthorityError,
     SemanticLinkCandidateCard,
+    SemanticDecompositionRepairChoice,
     SemanticDecompositionRepairRequest,
+    SemanticRepairScopeGroupCard,
     SemanticRepairSourceCard,
     StructuredSemanticDecompositionRepairProvider,
     SemanticDecisionProviderError,
@@ -1134,4 +1136,56 @@ def test_semantic_decomposition_repair_schema_rejects_free_text_or_abstain_token
         provider.decide(
             (_repair_request(),),
             user_message="downtime and failure count by department performance",
+        )
+
+
+def test_d10_q_scope_group_choice_is_mutually_exclusive_with_source_tokens():
+    with pytest.raises(ValueError, match="forbids group token"):
+        SemanticDecompositionRepairChoice(
+            gap_ref="gap-q",
+            decision="SELECT_SOURCES",
+            selected_source_tokens=("s1",),
+            selected_group_token="g1",
+            reason="SOURCE_SUPPORTS_SCOPE",
+        )
+
+    with pytest.raises(ValueError, match="no source tokens"):
+        SemanticDecompositionRepairChoice(
+            gap_ref="gap-q",
+            decision="SELECT_SCOPE_GROUP",
+            selected_source_tokens=("s1",),
+            selected_group_token="g1",
+            reason="SOURCE_SUPPORTS_SCOPE",
+        )
+
+    valid = SemanticDecompositionRepairChoice(
+        gap_ref="gap-q",
+        decision="SELECT_SCOPE_GROUP",
+        selected_source_tokens=(),
+        selected_group_token="g1",
+        reason="SOURCE_SUPPORTS_SCOPE",
+    )
+    assert valid.selected_group_token == "g1"
+
+
+def test_d10_q_scope_group_card_requires_stable_unique_members():
+    card = SemanticRepairScopeGroupCard(
+        group_token="g1",
+        member_source_tokens=("s1", "s2"),
+        supporting_capabilities=("performance", "relationship"),
+    )
+    assert card.member_source_tokens == ("s1", "s2")
+
+    with pytest.raises(ValueError, match="deterministically normalized"):
+        SemanticRepairScopeGroupCard(
+            group_token="g1",
+            member_source_tokens=("s2", "s1"),
+            supporting_capabilities=("performance",),
+        )
+
+    with pytest.raises(ValueError, match="unique"):
+        SemanticRepairScopeGroupCard(
+            group_token="g1",
+            member_source_tokens=("s1", "s1"),
+            supporting_capabilities=("performance",),
         )
