@@ -99,7 +99,11 @@ class _RootCauseFakeLLM:
             }
 
         latest = payload.get("CURRENT_RESULT_DELTA")
-        if latest and not latest.get("inspected"):
+        if (
+            latest
+            and not latest.get("inspected")
+            and not latest.get("disclosed_in_current_prompt")
+        ):
             return {
                 "action": "inspect_evidence",
                 "evidence_ref": latest["evidence_ref"],
@@ -262,7 +266,7 @@ def test_day8_actions_are_not_advertised_without_root_cause_context():
     ]
 
 
-def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_completion():
+def test_root_cause_loop_bootstraps_executes_next_test_and_completes_bounded_investigation():
     (
         spans,
         handles,
@@ -294,12 +298,12 @@ def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_co
         executor=executor,
     )
 
-    assert outcome.run_finished is False
-    assert outcome.verified_complete is False
-    assert outcome.clarification_required is True
-    assert service.query_calls == 1
-    assert contracts.n == 1
-    assert len(llm.prompts) == 6
+    assert outcome.run_finished is True
+    assert outcome.verified_complete is True
+    assert outcome.clarification_required is False
+    assert service.query_calls == 2
+    assert contracts.n == 2
+    assert len(llm.prompts) <= 4
 
     bootstrap = next(
         item for item in outcome.observations
@@ -317,7 +321,7 @@ def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_co
 
     next_test = next(
         item for item in outcome.observations
-        if item.get("kind") == "hypothesis_next_test_registered"
+        if item.get("kind") == "hypothesis_next_test_executed"
     )
     assert next_test["result"]["task_id"].startswith("rt_")
     assert next_test["result"]["task_id"] != bootstrap["task_id"]
@@ -340,7 +344,8 @@ def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_co
     assert finding.provenance.run_id == runtime.snapshot.run_id
 
     root = next(item for item in runtime.ledger.items if item.obligation_id == "U_ROOT")
-    assert root.status == ObligationStatus.IN_PROGRESS
+    assert root.status == ObligationStatus.VERIFIED
+    assert "nedensel doğruluk" in (root.verdict or "")
     assert runtime.snapshot.evidence_refs
     assert runtime.snapshot.inspected_evidence_refs == runtime.snapshot.evidence_refs
 
@@ -372,4 +377,4 @@ def test_root_cause_loop_bootstraps_and_admits_epistemic_actions_without_auto_co
     assert final_prompt["HYPOTHESIS_LEDGERS"][0]["entries"][0][
         "evidence_links"
     ][0]["relation"] == "SUPPORTS"
-    assert final_prompt["READY_RESEARCH_TASKS"][0]["task_id"] == next_test["result"]["task_id"]
+    assert not final_prompt["READY_RESEARCH_TASKS"]
