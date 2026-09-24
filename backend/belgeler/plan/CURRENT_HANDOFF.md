@@ -1325,3 +1325,92 @@ post-RED contract fix before any further paid measurement or Day9 authorization.
 5. Do NOT rerun paid tests merely to “check things”.
 6. Treat D8-C as deterministic GREEN but live-certification STOP.
 7. Preserve the authority boundaries; do not reopen sealed Day7 or start Day9 without new authority.
+
+
+---
+
+## ACTIVE OVERRIDE — D10-K VALID RED → D10-L DETERMINISTIC ROOT FIX GREEN (2026-09-24)
+
+This block supersedes older Day10 routing-status summaries below where they conflict.
+
+### Frozen history
+
+- D10-K paid run: `35970179887` = **VALID RED**
+- Tested HEAD: `0c6258ca988ee21e654f41a7d636102ddf801c52`
+- Tested Product behavior: `a449bcfd62ede142ced7d2c9631fba2430534d62`
+- Failure class: `CONTRACT/ARCHITECTURE`
+- FAST correctly emitted REQUIRED `relationship` and `root_cause`.
+- First wrong transition: Standard control handling preempted deterministic Research representability.
+- D10-K paid authorization is consumed. Never rerun it.
+
+### D10-L root fix
+
+Latest Product behavior SHA:
+
+`29b66000fd64d50ee464f989c23cc7f8f7502721`
+
+Representability ownership now is:
+
+`StandardIntentDraft → exact-source validation → RepresentabilityGate.decide_typed_capabilities() → [Research stop OR Standard-local grounding]`
+
+`RepresentabilityGate._effective_capability_partition()` is the single registry-driven execution-mode/lane partition used by both the typed precheck and fully bound representability. StandardLane contains no copied ROOT_CAUSE/RELATIONSHIP/TREND routing table.
+
+Permanent D10-L invariants:
+
+- source validation remains before typed lane precheck;
+- REQUIRED ORCHESTRATED and REQUIRED DIRECT+RESEARCH capability authority routes `RESEARCH_REQUIRED`;
+- EXCLUDED Research capability does not positively route Research;
+- DEFERRED/PRESENTATION remains non-direct and is not promoted merely from lane metadata;
+- typed-direct Research exits before Standard semantic linker, CoverageVeto, builder, seal or Wren;
+- `NON_AUTHORITATIVE_CONTROL_REQUEST` does not own lane selection and does not block valid Standard business work;
+- `CONVERSATION_REPAIR` remains conservative when no deterministic Research obligation exists;
+- Path B `RESEARCH_NEED_OMITTED → RESEARCH_REQUIRED` remains unchanged;
+- ProductCoordinator remains the sole Standard→Research transition owner;
+- Research reconstructs authority from raw user source; zero Standard semantic/authority carry-over remains mandatory.
+
+### D10-L proof
+
+Final deterministic proof run:
+
+`35972060988 = GREEN`
+
+Exact tested SHA:
+
+`4888c10a1cfd3027402e928a616d8a975ad26eef`
+
+Receipt:
+
+- compile = GREEN
+- focused provider-free = **104 passed**
+- real-Wren Product routing sentinel = **2 passed**
+  - Path A: typed-direct Research + non-authoritative control
+  - Path B: omission-veto recovery
+- G16 = GREEN
+- G16 provider calls = 0
+- G16 confirmed cause count = 0
+- G16 directive = `ADAPT_ON_EVIDENCE / APPLIED`
+- G16 root status = `VERIFIED`
+- Day7 affected regression = GREEN
+- Day8 affected regression = GREEN
+
+Intermediate run `35971912520` was RED only because the new dual-route test incorrectly required one Standard semantic-provider call on Path B even when deterministic exact resolution used zero provider calls. Classified `EVAL/HARNESS/FIXTURE`; assertion corrected only. No Product patch followed that RED.
+
+### Current authority/status
+
+```text
+D10-I historical paid        VALID RED
+D10-J omission safety fix    GREEN
+D10-K post-fix paid          VALID RED
+D10-L ordering root fix      GREEN
+
+Day8 live debt               OPEN
+Day10 FINAL                  OPEN / NOT SEALED
+
+D10-L paid calls             0
+new paid dispatch            NO
+Day11                        NOT AUTHORIZED
+
+next paid measurement        SUPERVISOR DECISION REQUIRED
+```
+
+STOP here. Do not dispatch another paid workflow and do not begin Day11 without new supervisor authorization.
