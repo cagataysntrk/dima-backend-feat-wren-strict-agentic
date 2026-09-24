@@ -658,6 +658,69 @@ class GovernedSiblingScopeCandidateGenerator:
         )
 
 
+class GovernedCurrentTurnCandidateGenerator:
+    """Discovery-only candidates from already-governed current-message USER_SOURCE truth.
+
+    The caller supplies current-attempt catalog bindings that were already selected and
+    admitted through SemanticBindingGate for another source span. This generator never
+    copies a semantic handle and never mints authority. It only re-exposes safe metric or
+    dimension candidate cards to the existing bounded linker for a fresh source binding.
+    """
+
+    def __init__(
+        self,
+        *,
+        bindings: tuple[CatalogCandidateBinding, ...],
+        max_candidates: int = 48,
+    ) -> None:
+        self._bindings = tuple(
+            item
+            for item in bindings
+            if not item.sensitive
+            and item.card.target_kind in {"metric", "kpi", "dimension"}
+            and bool(item.card.verified_aliases)
+        )
+        self._max_candidates = max(1, int(max_candidates))
+
+    def generate(
+        self,
+        *,
+        request_id: str,
+        surface: str,
+        kind_hint: str,
+        decision_context: str | None = None,
+    ) -> CandidateSet:
+        del decision_context
+        allowed_kinds = (
+            {"metric", "kpi"}
+            if kind_hint == "metric"
+            else ({"dimension"} if kind_hint == "dimension" else set())
+        )
+        scoped = [
+            item
+            for item in self._bindings
+            if item.card.target_kind in allowed_kinds
+        ]
+        unique = {
+            item.card.candidate_id: item
+            for item in scoped
+        }
+        ordered = tuple(unique[key] for key in sorted(unique))
+        too_broad = len(ordered) > self._max_candidates
+        return CandidateSet(
+            request_id=request_id,
+            surface=surface,
+            kind_hint=kind_hint,
+            bindings=ordered[: self._max_candidates],
+            too_broad=too_broad,
+            # This pool is bounded current-turn applicability context, never proof of
+            # global catalog absence.
+            retrieval_exhaustive=False,
+            retrieval_backend="governed_current_turn_context_v1",
+            retrieval_truncated=too_broad,
+        )
+
+
 _LINKER_SYSTEM = """You are Dima's bounded semantic linker.
 
 For each request, interpret USER_SURFACE against the supplied CANDIDATES.
