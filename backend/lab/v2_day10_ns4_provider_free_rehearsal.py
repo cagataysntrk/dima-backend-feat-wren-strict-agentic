@@ -266,7 +266,17 @@ class ScriptedNS4Manager:
                         "ranking_limit": None,
                     },
                 ],
-                "research_directives": [],
+                "research_directives": [
+                    {
+                        "directive_id": "R_ADAPT_ROOT",
+                        "directive_type": "ADAPT_ON_EVIDENCE",
+                        "parent_obligation_id": "U_ROOT",
+                        "condition": "MATERIAL_NEW_DIRECTION",
+                        "source_surfaces": [
+                            "doğrulanmış sonuçlar yeni bir maddi kırılıma işaret ederse onu takip et"
+                        ],
+                    }
+                ],
                 "control_requests": [],
             }
 
@@ -448,7 +458,8 @@ def run_rehearsal() -> dict[str, object]:
         body=ProductAskRequest(
             question=(
                 "Research downtime performance, its governed relationship with department, "
-                "and investigate the root cause of faults."
+                "and investigate the root cause of faults; doğrulanmış sonuçlar yeni bir maddi "
+                "kırılıma işaret ederse onu takip et"
             ),
             session_id=context.session_id,
             thread_id=context.thread_id,
@@ -533,9 +544,27 @@ def run_rehearsal() -> dict[str, object]:
     if any(action in execution_control for action in cognition_sequence):
         raise RehearsalError("execution-control cognition remains in G16 sequence")
 
+    dispositions = result.runtime.directive_dispositions
+    if len(dispositions) != 1:
+        raise RehearsalError(
+            f"expected one completion-relevant directive disposition, got {len(dispositions)}"
+        )
+    directive = dispositions[0]
+    accepted_directives = result.accepted_contract.research_directives
+    if len(accepted_directives) != 1:
+        raise RehearsalError(
+            f"expected one accepted ResearchDirective, got {len(accepted_directives)}"
+        )
+
     return {
         "contract": "d10-g16-ns4-provider-free-runtime-v2",
         "provider_calls": 0,
+        "directive_count": len(accepted_directives),
+        "directive_id": accepted_directives[0].directive_id,
+        "directive_type": accepted_directives[0].directive_type.value,
+        "directive_final_status": directive.status.value,
+        "directive_accounting_evidence_ref": directive.evidence_ref,
+        "directive_branch_task_refs": list(directive.branch_task_refs),
         "initial_user_must_count": len(active),
         "user_must_families": [
             active[key].capability_key.value.upper()
@@ -587,6 +616,16 @@ def run_rehearsal() -> dict[str, object]:
 
 def main() -> int:
     receipt = run_rehearsal()
+    if receipt["directive_count"] != 1:
+        raise SystemExit("canonical rehearsal directive count drifted")
+    if receipt["directive_type"] != "ADAPT_ON_EVIDENCE":
+        raise SystemExit("canonical rehearsal directive type drifted")
+    if receipt["directive_final_status"] != "APPLIED":
+        raise SystemExit("canonical rehearsal adaptive directive is not accounted")
+    if not receipt["directive_accounting_evidence_ref"]:
+        raise SystemExit("canonical rehearsal directive lacks accounting Evidence")
+    if not receipt["directive_branch_task_refs"]:
+        raise SystemExit("canonical rehearsal directive lacks governed branch task")
     if receipt["preacceptance_model_calls"] != 2:
         raise SystemExit("canonical rehearsal preacceptance count drifted")
     if receipt["research_manager_calls"] != 4:
