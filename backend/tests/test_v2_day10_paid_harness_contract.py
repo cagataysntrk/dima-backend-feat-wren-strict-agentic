@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.v2.manager_models import SemanticResolutionReceipt
 from app.v2.product_models import ProductLane, ProductStatus
 from app.v2.standard_lane import StandardLaneStatus
 from lab import v2_day10_product_mvp_live as paid
@@ -219,7 +220,7 @@ def test_counting_structured_captures_only_controlled_diagnostic_outputs():
 def test_paid_failure_diagnostics_preserve_research_preacceptance_receipt():
     runtime = SimpleNamespace(
         semantic_resolution_receipts=(
-            SimpleNamespace(
+            SemanticResolutionReceipt(
                 source_ref="src_" + "a" * 24,
                 handle_id="sem_" + "b" * 24,
                 target_kind="metric",
