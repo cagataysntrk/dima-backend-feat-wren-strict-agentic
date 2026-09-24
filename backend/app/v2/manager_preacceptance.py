@@ -1078,7 +1078,7 @@ class PreAcceptanceController:
                 )
 
             try:
-                runtime.note_manager_turn()
+                runtime.note_manager_turn(phase="preacceptance")
                 coverage = self._coverage(
                     question=question,
                     draft=draft,
