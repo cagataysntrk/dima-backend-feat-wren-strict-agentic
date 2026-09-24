@@ -1286,3 +1286,121 @@ Correctly typed Research routing must not spend Standard semantic-linker, covera
 Standard CoverageVeto is an omission safety net for a still-Standard candidate; it must not run after deterministic typed capability authority already forbids Standard.
 
 Evidence receipt: D10-K paid run `35970179887` exposed the ordering defect; D10-L deterministic proof `35972060988` is GREEN with 104 focused provider-free tests, both real-Wren routing paths, and zero paid calls.
+
+
+---
+
+## D10-N RESEARCH SEMANTIC APPLICABILITY HARVEST — 2026-09-24
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-111 | A capability-required semantic binding gap is not automatically a user clarification if bounded current-turn governed context can still supply non-authoritative candidate applicability. | MUST_PORT | premature clarification even though the same source message already contains sufficient governed semantic context | D10-N current-turn applicability recovery + preacceptance acceptance attacks |
+| H-112 | Current-turn sibling semantic authority may be reused only as discovery context; an unresolved obligation receives authority only through a fresh bounded linker decision + SemanticBindingGate. | MUST_PORT | cross-obligation handle laundering / copied semantic authority | GovernedCurrentTurnCandidateGenerator + fresh source-bound binding tests |
+| H-113 | Cross-obligation semantic context is current-message/current-tenant/current-context/current-attempt only and must never silently copy handles between obligations. | MUST_PORT | stale-turn, foreign-tenant, report-lineage or sibling provenance leakage | manager semantic adapter scoping + foreign/prior-turn/sensitive attacks |
+| H-114 | Material semantic grounding errors should consume the cheapest bounded cognition layer capable of resolving them; do not spend an extra Manager turn when Semantic Linker cognition suffices. | SHOULD_PORT | Manager-budget failure caused by unnecessary redraft/replanning | semantic-linker recovery before clarification; global Manager ceiling unchanged |
+| H-115 | A RED classification identifies the repair owner; it is not itself a reason to halt engineering. | MUST_PORT | repeated supervisor STOP cycles for developer-owned contract/eval/resolver defects | D10-N continuous RED→owner→root-fix→narrow-proof loop |
+
+### Authority-preserving applicability law
+
+```text
+retrieval candidate
+!= applicability
+
+applicability
+!= semantic authority
+
+linker SELECT
+!= semantic authority
+
+SemanticBindingGate
+= only owner that mints sem_* authority
+```
+
+D10-N recovery:
+
+```text
+current-message governed USER_SOURCE metric/dimension truth
+→ bounded candidate applicability only
+→ unresolved obligation exact source context
+→ bounded linker SELECT | ABSTAIN
+→ SemanticBindingGate
+→ fresh source-bound sem_* edge
+```
+
+Never:
+
+```text
+missing ROOT_CAUSE metric
+→ copy PERFORMANCE metric handle
+```
+
+Scope:
+- metric/dimension only;
+- same current message/tenant/context/attempt;
+- sensitive candidates excluded;
+- no filter/entity cross-owner reuse;
+- no temporal/comparison cross-owner reuse;
+- no prior conversation/report/run truth;
+- no exact-ambiguity override;
+- no same-set ABSTAIN retry;
+- no cube-cooccurrence auto-bind.
+
+### Metabase pattern cross-check
+
+Reference pattern from current Metabase Exploration query planning:
+
+```text
+metadata hydration
+→ metric/dimension applicability
+→ candidate plan item
+→ materialization
+→ execution/result
+```
+
+Harvested principle only:
+
+```text
+known governed context should be available before declaring an operation impossible,
+but candidate context is still not authority.
+```
+
+Dima did not import Metabase semantic matching or runtime execution.
+
+### D10-N deterministic receipt
+
+Semantic Product behavior SHA:
+
+`8b2ea59045a87ec03d78517d6dbe653fcc9b14f6`
+
+Final deterministic candidate SHA:
+
+`7c5b8be2bc46178a0f8b4e33882223203f4c57cd`
+
+```text
+Day10  36035224902 = GREEN
+  focused provider-free             106 passed
+  semantic/preacceptance attacks     59 passed
+  real-Wren Product/sentinel          3 passed
+  G16 provider calls                  0
+  G16 preacceptance                   2
+  G16 Research cognition              4
+  G16 Manager headroom                0
+  G16 directive                       APPLIED
+  G16 root_status                     VERIFIED
+  G16 CONFIRMED_CAUSE                 0
+
+Day8   36035224892 = GREEN
+Day7   36035224835 = GREEN
+```
+
+D10-M paid run `36016509479` remains historical VALID RED and is not rewritten.
+
+D10-N paid development envelope after deterministic closure:
+
+```text
+new paid dispatches used    0 / 2
+new provider calls          0 / 30
+```
+
+Day8 live debt and Day10 FINAL remain OPEN until the integrated paid Product measurement proves the
+full initial report + signed continuation chain. Day11 remains unauthorized.
