@@ -32,6 +32,18 @@ Day10 FINAL                    OPEN pending paid integrated Product proof
 Day11                          NOT AUTHORIZED
 ```
 
+
+### Higher-authority paid-envelope override
+
+The repository owner has explicitly raised the D10-Q paid dispatch ceiling from 2 to 3.
+This supersedes only the dispatch-count stop boundary. The cumulative D10-Q provider-call
+budget remains 30, all frozen architecture/security/authority boundaries remain unchanged,
+and every paid RED still requires first-wrong-transition classification, one-owner generic
+root fix, focused GREEN, affected regressions GREEN, a new Product behavior SHA, and a
+remaining-budget check before any next dispatch.
+
+No same-SHA reassurance rerun is authorized. No push/marker bridge is authorized.
+
 ### D10-Q sealed deterministic architecture
 
 Ephemeral scope groups are derived only from current-message, exact, non-sensitive, already-governed
