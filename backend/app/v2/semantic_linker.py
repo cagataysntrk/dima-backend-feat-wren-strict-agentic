@@ -1033,11 +1033,20 @@ class BoundedSemanticLinker:
             metadata = diagnostic_metadata or {}
             for candidate_set, selection in zip(candidate_sets, ordered, strict=True):
                 extra = dict(metadata.get(candidate_set.request_id) or {})
+                redact_surface = (
+                    candidate_set.kind_hint == "filter"
+                    or any(item.sensitive for item in candidate_set.bindings)
+                )
                 self._diagnostic_sink(
                     {
                         **extra,
                         "request_id": candidate_set.request_id,
-                        "surface": candidate_set.surface,
+                        "surface": (
+                            "<redacted-sensitive-filter>"
+                            if redact_surface
+                            else candidate_set.surface
+                        ),
+                        "surface_redacted": redact_surface,
                         "kind_hint": candidate_set.kind_hint,
                         "retrieval_backend": candidate_set.retrieval_backend,
                         "retrieval_exhaustive": candidate_set.retrieval_exhaustive,
