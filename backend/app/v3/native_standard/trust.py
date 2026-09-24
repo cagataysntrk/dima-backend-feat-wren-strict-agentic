@@ -119,7 +119,7 @@ def _unique_resources(
 
 
 class NativeStandardTrustOrchestrator:
-    """P13B-v1 verifier/orchestrator. No analytical planning lives here."""
+    """P13B→P13D bounded verifier/orchestrator. No analytical planning lives here."""
 
     @staticmethod
     def _metric(snapshot: DimaExecutionBindingSnapshot, metric_id: str) -> MetricSpec:
@@ -157,28 +157,58 @@ class NativeStandardTrustOrchestrator:
         MetricSpec,
         DimensionSpec | None,
         DimensionSpec | None,
+        DimensionSpec | None,
         tuple[ExecutionResourceBinding, ...],
     ]:
         if (
             len(intent.metrics) != 1
-            or intent.dimensions
+            or len(intent.dimensions) > 1
             or len(intent.filters) > 1
             or intent.comparison is not None
-            or intent.ranking is not None
             or intent.approved_relationship_paths
             or intent.grain_constraints
         ):
             raise NativeStandardTrustError(
                 "P13_STANDARD_CAPABILITY_UNSUPPORTED",
-                "certified native Standard surface is one metric/source, optional period, and at most one filter",
+                "certified native Standard surface is one metric/source, at most one dimension/filter, optional period, and bounded ranking",
             )
+        if intent.ranking is not None and len(intent.dimensions) != 1:
+            raise NativeStandardTrustError(
+                "P13D_RANKING_REQUIRES_DIMENSION",
+                "ranking requires exactly one accepted breakout dimension",
+            )
+
         metric_ref = intent.metrics[0]
         metric = cls._metric(
             snapshot,
             snapshot.candidate(metric_ref.source_candidate_id, kind="metric"),
         )
+        if metric.name != metric_ref.canonical_name:
+            raise NativeStandardTrustError(
+                "NATIVE_EXPECTED_METRIC_BINDING_INVALID",
+                "accepted metric canonical name differs from its Dima semantic binding",
+            )
         metric_current = snapshot.current_lineage(_single_lineage(metric))
         resources = [_resource(metric_current)]
+
+        breakout_dimension = None
+        if intent.dimensions:
+            dimension_ref = intent.dimensions[0]
+            breakout_dimension = cls._dimension(
+                snapshot,
+                snapshot.candidate(
+                    dimension_ref.source_candidate_id,
+                    kind="dimension",
+                ),
+            )
+            if breakout_dimension.name != dimension_ref.canonical_name:
+                raise NativeStandardTrustError(
+                    "NATIVE_EXPECTED_DIMENSION_BINDING_INVALID",
+                    "accepted dimension canonical name differs from its Dima semantic binding",
+                )
+            resources.append(
+                _resource(snapshot.current_lineage(_single_lineage(breakout_dimension)))
+            )
 
         time_dimension = None
         if intent.period is not None:
@@ -211,10 +241,12 @@ class NativeStandardTrustOrchestrator:
 
         return (
             metric,
+            breakout_dimension,
             time_dimension,
             filter_dimension,
             _unique_resources(resources),
         )
+
 
     @staticmethod
     def _assert_engine_pin(
@@ -254,23 +286,14 @@ class NativeStandardTrustOrchestrator:
         if manifest.material_query_count != 1 or manifest.stage_count != 1:
             raise NativeStandardTrustError(
                 "QUERY_COUNT_VIOLATION",
-                "P13B-v1 requires one material query and one query stage",
-            )
-        if manifest.breakout_count:
-            raise NativeStandardTrustError(
-                "P13B_CAPABILITY_UNSUPPORTED",
-                "P13B-v1 does not certify breakouts",
-            )
-        if manifest.order_by_count or manifest.limit is not None:
-            raise NativeStandardTrustError(
-                "P13B_CAPABILITY_UNSUPPORTED",
-                "P13B-v1 simple count does not certify order/limit",
+                "native Standard requires one material query and one query stage",
             )
         if manifest.explicit_join_count or manifest.implicit_join_count:
             raise NativeStandardTrustError(
                 "RELATIONSHIP_GRAIN_VIOLATION",
-                "P13B-v1 blocks explicit and implicit relationships",
+                "current P13D slice blocks explicit and implicit relationships",
             )
+
 
     @staticmethod
     def _observed_table(
@@ -583,6 +606,100 @@ class NativeStandardTrustOrchestrator:
         return expected_filter_dimension
 
     @classmethod
+    def _observed_breakout(
+        cls,
+        *,
+        manifest: NativeExecutionManifest,
+        snapshot: DimaExecutionBindingSnapshot,
+        expected_dimension: DimensionSpec | None,
+    ) -> DimensionSpec | None:
+        if expected_dimension is None:
+            if manifest.breakout_count or manifest.breakouts:
+                raise NativeStandardTrustError(
+                    "P13D_BREAKOUT_SCOPE_VIOLATION",
+                    "native query introduced a breakout without accepted dimension authority",
+                )
+            return None
+
+        if manifest.breakout_count != 1 or len(manifest.breakouts) != 1:
+            raise NativeStandardTrustError(
+                "P13D_BREAKOUT_SCOPE_VIOLATION",
+                "P13D-v1 requires exactly one observed breakout",
+            )
+        breakout = manifest.breakouts[0]
+        if breakout.stage_number != 0 or breakout.breakout_index != 0:
+            raise NativeStandardTrustError(
+                "P13D_BREAKOUT_SHAPE_UNSUPPORTED",
+                "P13D-v1 certifies the sole stage-0 breakout",
+            )
+        observed_field = snapshot.current_catalog.object_for_metabase_field(
+            database_id=manifest.database_id,
+            field_id=breakout.field_id,
+        )
+        expected_field = snapshot.current_lineage(_single_lineage(expected_dimension))
+        if observed_field != expected_field:
+            raise NativeStandardTrustError(
+                "P13D_BREAKOUT_FIELD_MISMATCH",
+                "engine-observed breakout field differs from accepted Dima dimension lineage",
+            )
+        return expected_dimension
+
+    @staticmethod
+    def _observed_ranking(
+        *,
+        intent: ResolvedAnalyticsIntent,
+        manifest: NativeExecutionManifest,
+        expected_metric: MetricSpec,
+        expected_dimension: DimensionSpec | None,
+    ) -> None:
+        ranking = intent.ranking
+        if ranking is None:
+            if manifest.order_by_count or manifest.order_bys or manifest.limit is not None:
+                raise NativeStandardTrustError(
+                    "P13D_RANKING_SCOPE_VIOLATION",
+                    "native query introduced order/limit without accepted ranking authority",
+                )
+            return
+
+        if expected_dimension is None:
+            raise NativeStandardTrustError(
+                "P13D_RANKING_REQUIRES_DIMENSION",
+                "accepted ranking has no accepted breakout dimension",
+            )
+        if ranking.measure != expected_metric.name:
+            raise NativeStandardTrustError(
+                "P13D_RANKING_MEASURE_MISMATCH",
+                "accepted ranking measure differs from the accepted metric",
+            )
+        if manifest.order_by_count != 1 or len(manifest.order_bys) != 1:
+            raise NativeStandardTrustError(
+                "P13D_RANKING_SCOPE_VIOLATION",
+                "P13D-v1 requires exactly one explicit ranking order",
+            )
+        order = manifest.order_bys[0]
+        if order.stage_number != 0 or order.order_index != 0:
+            raise NativeStandardTrustError(
+                "P13D_RANKING_SHAPE_UNSUPPORTED",
+                "P13D-v1 certifies the sole stage-0 order",
+            )
+        if order.target_kind != "aggregation" or order.aggregation_index != 0:
+            raise NativeStandardTrustError(
+                "P13D_RANKING_TARGET_MISMATCH",
+                "ranking must order the sole accepted metric aggregation",
+            )
+        if order.direction != ranking.direction:
+            raise NativeStandardTrustError(
+                "P13D_RANKING_DIRECTION_MISMATCH",
+                "engine-observed ranking direction differs from accepted ranking",
+            )
+        if manifest.limit != ranking.limit:
+            raise NativeStandardTrustError(
+                "P13D_RANKING_LIMIT_MISMATCH",
+                "engine-observed limit differs from accepted ranking limit",
+            )
+
+
+    @classmethod
     def _candidate(
         cls,
         *,
@@ -599,6 +716,7 @@ class NativeStandardTrustOrchestrator:
         cls._assert_shape(manifest)
         (
             expected_metric,
+            expected_dimension,
             expected_time,
             expected_filter,
             expected_resources,
@@ -659,10 +777,39 @@ class NativeStandardTrustOrchestrator:
                 "observed physical filter field maps to a different Dima filter dimension",
             )
 
+        observed_dimension = cls._observed_breakout(
+            manifest=manifest,
+            snapshot=snapshot,
+            expected_dimension=expected_dimension,
+        )
+        if (
+            (expected_dimension is None) != (observed_dimension is None)
+            or (
+                expected_dimension is not None
+                and observed_dimension is not None
+                and expected_dimension.dimension_id != observed_dimension.dimension_id
+            )
+        ):
+            raise NativeStandardTrustError(
+                "P13D_BREAKOUT_SCOPE_VIOLATION",
+                "observed breakout maps to a different Dima dimension",
+            )
+
+        cls._observed_ranking(
+            intent=intent,
+            manifest=manifest,
+            expected_metric=expected_metric,
+            expected_dimension=expected_dimension,
+        )
+
         observed_resources = [_resource(observed_table)]
         if observed_time is not None:
             observed_resources.append(
                 _resource(snapshot.current_lineage(_single_lineage(observed_time)))
+            )
+        if observed_dimension is not None:
+            observed_resources.append(
+                _resource(snapshot.current_lineage(_single_lineage(observed_dimension)))
             )
         if observed_filter is not None:
             observed_resources.append(
@@ -706,6 +853,7 @@ class NativeStandardTrustOrchestrator:
             portable_query=None,
             semantic_refs=(
                 intent.metrics[0].semantic_ref,
+                *(item.semantic_ref for item in intent.dimensions),
                 *(item.semantic_ref for item in intent.filters),
             ),
             resource_bindings=_unique_resources(observed_resources),

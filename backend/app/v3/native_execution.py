@@ -409,21 +409,27 @@ class NativeCandidateAuthorizationGate:
 
         if (
             len(intent.metrics) != 1
-            or intent.dimensions
+            or len(intent.dimensions) > 1
             or len(intent.filters) > 1
             or intent.comparison is not None
-            or intent.ranking is not None
             or intent.approved_relationship_paths
             or intent.grain_constraints
         ):
             return cls._decision(
                 NativeCandidateOutcome.CLARIFY_REPLAN,
                 "P13A_CAPABILITY_UNSUPPORTED",
-                "P13A certifies one metric/source, optional period, and at most one accepted filter",
+                "native Standard certifies one metric/source, at most one dimension/filter, optional period, and bounded ranking",
+            )
+        if intent.ranking is not None and len(intent.dimensions) != 1:
+            return cls._decision(
+                NativeCandidateOutcome.CLARIFY_REPLAN,
+                "P13D_RANKING_REQUIRES_DIMENSION",
+                "P13D ranking requires exactly one accepted breakout dimension",
             )
 
         expected_semantic_refs = (
             *(item.semantic_ref for item in intent.metrics),
+            *(item.semantic_ref for item in intent.dimensions),
             *(item.semantic_ref for item in intent.filters),
         )
         if tuple(candidate.semantic_refs) != expected_semantic_refs:

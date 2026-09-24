@@ -60,6 +60,43 @@ class NativeTextualEqualityPredicate(FrozenModel):
     field_type: str = Field(min_length=1)
 
 
+class NativeBreakoutFact(FrozenModel):
+    """One engine-observed physical breakout; no semantic interpretation."""
+
+    stage_number: int = Field(ge=0)
+    breakout_index: int = Field(ge=0)
+    field_id: int = Field(gt=0)
+    field_type: str = Field(min_length=1)
+
+
+class NativeOrderByFact(FrozenModel):
+    """One engine-observed explicit order-by target."""
+
+    stage_number: int = Field(ge=0)
+    order_index: int = Field(ge=0)
+    direction: Literal["asc", "desc"]
+    target_kind: Literal["aggregation", "field", "other"]
+    aggregation_index: int | None = Field(default=None, ge=0)
+    field_id: int | None = Field(default=None, gt=0)
+    field_type: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def _target_identity(self):
+        if self.target_kind == "aggregation":
+            if self.aggregation_index is None or self.field_id is not None or self.field_type is not None:
+                raise ValueError("aggregation order target requires only aggregation_index")
+        elif self.target_kind == "field":
+            if self.field_id is None or self.field_type is None or self.aggregation_index is not None:
+                raise ValueError("field order target requires only field_id/field_type")
+        elif (
+            self.aggregation_index is not None
+            or self.field_id is not None
+            or self.field_type is not None
+        ):
+            raise ValueError("other order target must not claim a typed target identity")
+        return self
+
+
 class NativeValidationProvenance(FrozenModel):
     producer_structured_output: Literal["PASSED"]
     pmbql_schema: Literal["PASSED"]
@@ -88,6 +125,7 @@ class NativeExecutionManifest(FrozenModel):
     aggregations: tuple[NativeAggregationFact, ...]
     native_metric_references: tuple[NativeMetricReferenceFact, ...] = ()
     breakout_count: int = Field(ge=0)
+    breakouts: tuple[NativeBreakoutFact, ...] = ()
     material_filter_count: int = Field(ge=0)
     non_temporal_filter_count: int = Field(ge=0)
     temporal_predicates: tuple[NativeTemporalPredicate, ...]
@@ -96,6 +134,7 @@ class NativeExecutionManifest(FrozenModel):
     implicit_join_count: int = Field(ge=0)
     implicit_joined_table_ids: tuple[int, ...]
     order_by_count: int = Field(ge=0)
+    order_bys: tuple[NativeOrderByFact, ...] = ()
     limit: int | None = Field(default=None, ge=0)
     stage_count: int = Field(ge=0)
     material_query_count: int = Field(ge=0)
@@ -116,6 +155,10 @@ class NativeExecutionManifest(FrozenModel):
             raise ValueError("duplicate native metric reference location")
         if len(self.native_metric_references) > self.aggregation_count:
             raise ValueError("native metric references exceed aggregation count")
+        if self.breakout_count != len(self.breakouts):
+            raise ValueError("breakout_count does not match breakouts")
+        if self.order_by_count != len(self.order_bys):
+            raise ValueError("order_by_count does not match order_bys")
         if self.material_filter_count != (
             self.non_temporal_filter_count + len(self.temporal_predicates)
         ):
