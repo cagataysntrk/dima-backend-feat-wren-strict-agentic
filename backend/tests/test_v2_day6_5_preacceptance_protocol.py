@@ -22,7 +22,12 @@ from app.v2.manager_models import (
     ObligationPriority,
     SemanticResolutionReceipt,
 )
-from app.v2.manager_preacceptance import CoverageAudit, FiniteAcceptanceStatus
+from app.v2.manager_preacceptance import (
+    CoverageAudit,
+    FiniteAcceptanceStatus,
+    IntentDraft,
+    PreAcceptanceController,
+)
 from app.v2.manager_progress import DynamicActionFrontier
 from app.v2.manager_runtime import ManagerBudgetError, ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
@@ -2006,3 +2011,87 @@ def test_d10_p_repair_does_not_rewrite_business_intent_shape():
         item.source_refs[0]
     )
     assert source_span.exact_surface == "bölüm bazındaki performansı"
+
+
+def test_d10_p_ambiguous_exact_never_enters_decomposition_repair():
+    source_spans = SourceSpanRegistry()
+    source_spans.register_message(
+        message_id="turn-d10-p-ambiguous",
+        text="Metric A target",
+    )
+    source_ref = source_spans.mint_exact(
+        message_id="turn-d10-p-ambiguous",
+        surface="Metric A",
+    ).source_ref
+    target_ref = source_spans.mint_exact(
+        message_id="turn-d10-p-ambiguous",
+        surface="target",
+    ).source_ref
+    controller = PreAcceptanceController(
+        structured=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("no model call expected")
+        ),
+        source_spans=source_spans,
+    )
+    draft = IntentDraft.model_validate(
+        {
+            "obligations": [
+                _obligation(
+                    obligation_id="U_SOURCE",
+                    capability="performance",
+                    source_surfaces=("Metric A",),
+                    semantic_surfaces=(("Metric A", "metric"),),
+                ),
+                _obligation(
+                    obligation_id="U_TARGET",
+                    capability="root_cause",
+                    source_surfaces=("target",),
+                    semantic_surfaces=(("target", "metric"),),
+                ),
+            ],
+            "research_directives": [],
+            "control_requests": [],
+        }
+    )
+    grounded = {
+        ("U_SOURCE", "Metric A", "metric"): SemanticBindingRef(
+            source_ref=source_ref,
+            handle_id="sem_" + "1" * 24,
+            target_kind="metric",
+        )
+    }
+    resolution = SimpleNamespace(
+        unresolved_semantics=(
+            SimpleNamespace(
+                source_ref=target_ref,
+                owner_id="U_TARGET",
+                kind_hint="metric",
+                status="AMBIGUOUS_EXACT",
+            ),
+        )
+    )
+
+    class ForbiddenRuntime:
+        def call_tool(self, *_args, **_kwargs):
+            raise AssertionError("AMBIGUOUS_EXACT must not invoke repair")
+
+    repaired, repair_result = controller._repair_material_grounding_gaps(
+        draft=draft,
+        material_gaps=(
+            {
+                "obligation_id": "U_TARGET",
+                "capability": "root_cause",
+                "polarity": "REQUIRED",
+                "missing_required_kinds": ["metric"],
+            },
+        ),
+        grounded=grounded,
+        resolution=resolution,
+        message_id="turn-d10-p-ambiguous",
+        attempt=1,
+        runtime=ForbiddenRuntime(),
+        executor=object(),
+    )
+
+    assert repaired == grounded
+    assert repair_result is None
