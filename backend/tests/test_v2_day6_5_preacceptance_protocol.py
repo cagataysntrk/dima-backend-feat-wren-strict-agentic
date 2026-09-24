@@ -165,17 +165,19 @@ def _loop(
     conversation=None,
     semantic_provider=None,
     semantic_diagnostic_sink=None,
+    semantic_context=None,
+    semantic_schema=None,
 ):
     source_spans = SourceSpanRegistry()
     handles = SemanticHandleRegistry()
-    context = _context()
+    context = semantic_context or _context()
     conversation = conversation or ConversationStateV2()
     semantic = ManagerSemanticResolutionAdapter(
         source_spans=source_spans,
         semantic_handles=handles,
         semantic_context=context,
         conversation=conversation,
-        schema=_schema(),
+        schema=semantic_schema or _schema(),
         tenant_binding="tenant-stabilized",
         session_id="session-stabilized",
         thread_id="thread-stabilized",
@@ -1141,11 +1143,54 @@ def test_preacceptance_turn_budget_is_independently_bounded():
     assert runtime.snapshot.state == ManagerState.BUDGET_EXHAUSTED
 
 
-def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification():
-    question = (
-        "üretkenlik yalnız bağlam etiketidir; net geliri incele; "
-        "gözlenen analitik sapmanın kök nedenini araştır"
+def _d10_n_ambiguous_metric_context():
+    context = BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-d10-n-applicability",
+            mdl_version="mdl-d10-n-applicability",
+            compact_catalog_builder_version="d10-n",
+            business_rules_hash="0" * 64,
+            prompt_context_policy_version="d10-n",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="ops",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="net_revenue",
+                        display="Net Gelir",
+                        synonyms=("net gelir", "net geliri", "sapma gelir"),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="productivity",
+                        display="Üretkenlik",
+                        synonyms=("üretkenlik", "sapma üretkenlik"),
+                    ),
+                ),
+            ),
+        ),
     )
+    schema = {
+        "models": [],
+        "cubes": [
+            {
+                "name": "ops",
+                "measures": ["net_revenue", "productivity"],
+                "dimensions": [],
+                "dimension_values": {},
+                "time_dimensions": [],
+            }
+        ],
+        "kpis": [],
+        "relationships": [],
+        "business_rules": "",
+        "db_online": True,
+    }
+    return context, schema
+
+
+def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification():
+    question = "net geliri incele; sapma için kök nedenini araştır"
     scripted = _ScriptedStructured(
         drafts=[
             {
@@ -1159,10 +1204,8 @@ def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification(
                     _obligation(
                         obligation_id="U_ROOT",
                         capability="root_cause",
-                        source_surfaces=(
-                            "gözlenen analitik sapmanın kök nedenini araştır",
-                        ),
-                        semantic_surfaces=(("gözlenen analitik sapma", "metric"),),
+                        source_surfaces=("sapma için kök nedenini araştır",),
+                        semantic_surfaces=(("sapma", "metric"),),
                     ),
                 ],
                 "research_directives": [],
@@ -1173,10 +1216,13 @@ def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification(
     )
     semantic_provider = _SingleCandidateSemanticProvider()
     diagnostics = []
+    semantic_context, semantic_schema = _d10_n_ambiguous_metric_context()
     loop, runtime, executor = _loop(
         scripted,
         semantic_provider=semantic_provider,
         semantic_diagnostic_sink=diagnostics.append,
+        semantic_context=semantic_context,
+        semantic_schema=semantic_schema,
     )
 
     outcome = loop.understand(
