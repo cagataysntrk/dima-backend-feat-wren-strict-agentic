@@ -863,3 +863,118 @@ one of the following forbidden changes:
 
 Per H-053/H-054, the paid gate is therefore blocked BEFORE provider execution. Paid call count for
 this blocked measurement remains zero.
+
+
+---
+
+## DAY10-G PRE-PAID HARDENING HARVEST — 2026-09-24
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-089 | Content/correlation identity is not turn authority identity. Fresh server-owned turn identity prevents cross-request/cross-tenant authority registry collisions. | MUST_PORT | identical user payload becoming the same accepted turn/run/initial lineage | Product `turn_ref` + fresh-turn/cross-tenant/continuation attacks; Day10 focused `35957173325` GREEN |
+| H-090 | A fresh governed tool result already disclosed in the Manager cognition packet does not require a second cognition turn merely to mark it inspected. Explicit inspect remains for undisclosed historical Evidence. | MUST_PORT | paid inspect ceremony and wasted Manager budget without adding cognition | post-success fresh-delta disclosure rule + provider-failure/old-Evidence attacks |
+| H-091 | Accepted fully-bound DIRECT USER_MUST tasks are scheduling/execution work, not necessarily Manager cognition. Deterministic execution must still cross ToolContract/permission/budget/trust boundaries. | SHOULD_PORT / architecture-dependent | Manager becoming a query-execution remote control; avoidable execution echo turns | `ResearchTaskInvocationCompiler` + `DeterministicResearchScheduler` + real-Wren root Product proof |
+| H-092 | Hypothesis Evidence relation and Hypothesis status are distinct: status is deterministically reconciled from admitted Evidence relations; the model does not mint epistemic lifecycle truth. | MUST_PORT | OPEN hypotheses with admitted support/contradiction; model-owned status inflation | `HypothesisLedger.reconcile_status` + SUPPORTS/CONTRADICTS/mixed attacks |
+| H-093 | ROOT_CAUSE obligation VERIFIED means the requested bounded investigation was fulfilled; it never means causation was confirmed. | MUST_PORT | completion laundering from candidate-cause Evidence into causal truth | `RootCauseObligationVerifier` + CompletionGate + real-Wren root Product micro-gate |
+| H-094 | Model-authored hypothesis prose is cognition/audit material, not canonical user-facing factual report content. | MUST_PORT | valid Evidence laundering invented numbers/claims into ReportDocument | deterministic `EvidenceLinkedFindingBuilder` semantic rendering; `%27` attack |
+| H-095 | Exactly-one accepted authority must be physically shared across Standard and Research at the Product boundary, not only guaranteed by router convention. | MUST_PORT | future routing/refactor bug committing both authority families for one turn | one ProductCoordinator-owned `AcceptedAuthorityRegistry`; cross-family conflict attack |
+
+### D10-G cognition/effect split
+
+```text
+Manager cognition:
+- propose material adaptive branch
+- form hypothesis
+- select material hypothesis next test
+- relate new governed Evidence to hypothesis
+
+Deterministic runtime:
+- execute fully-bound seed tasks
+- execute unique lossless ROOT_CAUSE bootstrap
+- execute one admitted exact next-test
+- execute one admitted exact branch
+- record fresh-result disclosure after successful cognition
+- reconcile hypothesis lifecycle
+- verify bounded ROOT_CAUSE obligation
+- terminate through CompletionGate
+
+Trust plane:
+- semantic truth
+- QueryContract
+- numeric truth
+- Evidence
+- epistemic ceiling
+- completion
+```
+
+### G16 lower-bound receipt
+
+Run:
+`35957173325 = GREEN`.
+
+```text
+provider-free focused                  47 passed
+real-Wren ROOT_CAUSE Product           1 passed
+paid calls                              0
+
+preacceptance cognition                 2
+Research Manager cognition              4
+Manager total                           6
+global Manager ceiling                  6
+headroom                                0
+
+deterministic task executions           5
+fresh Evidence disclosures              3
+explicit historical Evidence inspect    0
+redundant fresh inspect cognition        0
+redundant execution-control cognition    0
+
+paid structural status
+STRUCTURALLY_ADMISSIBLE_AT_CEILING
+```
+
+The six-turn budget was not raised.
+
+### Cancellation invariant
+
+The deterministic scheduler uses the same Day7 `ResearchTaskRegistry` lifecycle and
+`ResearchToolRunner` commit guard.
+
+If cancellation becomes true before Evidence commit:
+
+```text
+governed query attempt may already be metered
+ResearchTask -> cancelled
+Evidence commit -> 0
+late completion -> cannot resurrect task
+```
+
+Attempt accounting and Evidence authority are deliberately distinct.
+
+### Metabase pattern refresh
+
+Reference:
+`metabase/metabase@fa7362a1e4792c2e83faffc11fba7f36c2dd49d4`.
+
+Patterns harvested:
+- tool output -> completed step -> working memory -> next cognition;
+- fresh message identity -> UUID-like identity, not content hash;
+- conversation lock + stale parent/retry validation -> fail closed;
+- successful deterministic terminal state need not spend another model turn saying FINISH.
+
+Dima keeps its stronger trust-plane owners and copies no Metabase runtime/source.
+
+### Paid harness boundary
+
+The integrated Day10 paid harness is prepared but unexecuted.
+
+It is:
+- manual `workflow_dispatch` only;
+- one job, no matrix;
+- explicit `CANONICAL_NS4` scope;
+- explicit supervisor confirmation string;
+- hard provider-call ceiling before first provider request;
+- fixed role topology;
+- maximum two Product turns (initial + one signed section continuation).
+
+Preparing this harness does not close Day8 live debt and does not make Day10 FINAL GREEN.
