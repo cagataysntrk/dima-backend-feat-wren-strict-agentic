@@ -99,9 +99,12 @@ class PaidBudgetExceeded(PaidHarnessError):
     pass
 
 
-_CAPTURED_STANDARD_SCHEMAS = {
+_CAPTURED_DIAGNOSTIC_SCHEMAS = {
     "dima_standard_intent_draft_v1",
     "dima_standard_coverage_v1",
+    "dima_intent_draft_v1",
+    "dima_intent_coverage_v1",
+    "dima_bounded_semantic_link_v1",
 }
 
 
@@ -197,7 +200,7 @@ class CountingStructured:
         result = self._inner.structured_json(*args, **kwargs)
         if (
             self._captured_outputs is not None
-            and schema_name in _CAPTURED_STANDARD_SCHEMAS
+            and schema_name in _CAPTURED_DIAGNOSTIC_SCHEMAS
         ):
             self._captured_outputs.append(
                 {
@@ -320,12 +323,14 @@ def _build_product(
         budget=budget,
         role="RESEARCH_MANAGER",
         model=research_profile.model,
+        captured_outputs=structured_outputs,
     )
     semantic = CountingStructured(
         inner=build_generator(semantic_settings),
         budget=budget,
         role="SEMANTIC_LINKER",
         model=semantic_profile.model,
+        captured_outputs=structured_outputs,
     )
     temporal = CountingStructured(
         inner=build_generator(temporal_settings),
@@ -414,6 +419,7 @@ def _diagnostic_snapshot(
     *,
     product,
     standard_lane: CapturingStandardLane,
+    research_lane: CapturingResearchLane,
     budget: RoleCallBudget,
     service: CountingWren,
     structured_outputs: list[dict[str, Any]],
@@ -452,11 +458,40 @@ def _diagnostic_snapshot(
             ],
         }
 
+    research = research_lane.last_result
+    research_data = None
+    if research is not None:
+        research_data = {
+            "preacceptance_status": _value(research.outcome.preacceptance_status),
+            "observations": [
+                _json_safe(item)
+                for item in (research.outcome.observations or ())
+                if isinstance(item, dict)
+                and item.get("kind")
+                in {
+                    "intent_draft",
+                    "grounding",
+                    "material_grounding_gap",
+                    "coverage_audit",
+                    "contract_validity",
+                    "draft_source_contract",
+                    "grounding_error",
+                }
+            ],
+            "accepted_contract": _json_safe(research.accepted_contract),
+            "ledger": _json_safe(research.ledger),
+            "semantic_resolution_receipts": [
+                _json_safe(item)
+                for item in research.runtime.semantic_resolution_receipts
+            ],
+        }
+
     return {
         "product": product_data,
         "standard": standard_data,
+        "research": research_data,
         "model_calls": budget.receipt(),
-        "structured_standard_outputs": list(structured_outputs),
+        "structured_outputs": list(structured_outputs),
         "wren": {
             "query_calls": service.query_calls,
             "dry_plan_calls": service.dry_plan_calls,
@@ -561,6 +596,7 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
             diagnostics=_diagnostic_snapshot(
                 product=current_response,
                 standard_lane=standard_lane,
+                research_lane=research_lane,
                 budget=budget,
                 service=service,
                 structured_outputs=structured_outputs,
