@@ -13,7 +13,12 @@ import json
 import pytest
 
 from app import contracts as contracts_module
+from app.v2.acceptance import IntentAcceptanceGate
 from app.v2.context_provider import ContextProviderV0
+from app.v2.manager_executor import GovernedManagerExecutionContext, GovernedManagerExecutor
+from app.v2.manager_loop import ResearchManagerLoop
+from app.v2.manager_runtime import ManagerRuntime
+from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
 from app.v2.manager_models import ObligationStatus
 from app.v2.model_policy import ModelProfile, ModelRole
 from app.v2.models import EpistemicLabel, TenantAnalyticsRuntimeV0
@@ -27,7 +32,9 @@ from app.v2.product_models import (
 )
 from app.v2.report_narration import ReportNarrator
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
+from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import SemanticLinkBatchDecision, SemanticLinkChoice
+from app.v2.source_spans import SourceSpanRegistry
 from app.v2.standard_authority import AcceptedAuthorityFamily
 from app.v2.standard_lane import StandardLaneEngine
 from control_plane.authorize import Principal
@@ -160,6 +167,55 @@ class _StandardSemanticProvider:
                 )
             )
         return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
+class _CurrentTurnRecoveryResearchLLM:
+    """Preacceptance-only fixture for D10-N current-turn applicability."""
+
+    def __init__(self) -> None:
+        self.schemas: list[str] = []
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, user, schema
+        self.schemas.append(schema_name)
+        if schema_name == "dima_intent_draft_v1":
+            return {
+                "obligations": [
+                    {
+                        "obligation_id": "U_PERF",
+                        "capability_key": "performance",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": ["arıza sayısı"],
+                        "semantic_surfaces": [
+                            {"surface": "arıza sayısı", "kind_hint": "metric"},
+                        ],
+                        "open_questions": [],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    },
+                    {
+                        "obligation_id": "U_ROOT",
+                        "capability_key": "root_cause",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": ["gözlenen bozulma"],
+                        "semantic_surfaces": [
+                            {"surface": "gözlenen bozulma", "kind_hint": "metric"},
+                        ],
+                        "open_questions": [],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    },
+                ],
+                "research_directives": [],
+                "control_requests": [],
+            }
+        if schema_name == "dima_intent_coverage_v1":
+            return {"status": "PASS", "issues": []}
+        raise AssertionError(f"preacceptance sentinel reached unexpected schema: {schema_name}")
 
 
 class _RootResearchLLM:
@@ -446,3 +502,104 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
     assert result.runtime.snapshot.research_manager_turns == 3
     assert result.runtime.snapshot.manager_turns == 5
     assert response.terminal_receipt.manager_turns == 5
+
+
+def test_d10_n_real_wren_preacceptance_accepts_current_turn_metric_recovery(
+    wren,
+    schema,
+):
+    """Real catalog/Wren context; scripted cognition; no Product report or paid model."""
+    cube = next(item for item in schema["cubes"] if item.get("name") == "bakim")
+    runtime_ctx = TenantAnalyticsRuntimeV0(
+        tenant_id="day10-n-semantic",
+        tenant_slug="day10-n-semantic",
+        principal_user_id="day10-n",
+        roles=("owner",),
+        mdl_version=str(wren.mdl_version),
+        catalog=str(schema.get("catalog") or "wren"),
+        schema_name=str(schema.get("schema_name") or "public"),
+        db_online=bool(schema.get("db_online", True)),
+    )
+    service = _CountingWren(wren, schema)
+    semantic_context = ContextProviderV0().build(service, runtime_ctx)
+    source_spans = SourceSpanRegistry()
+    semantic_handles = SemanticHandleRegistry()
+    semantic_provider = _StandardSemanticProvider()
+    diagnostics = []
+
+    semantic = ManagerSemanticResolutionAdapter(
+        source_spans=source_spans,
+        semantic_handles=semantic_handles,
+        semantic_context=semantic_context,
+        conversation=ConversationStateV2(),
+        schema=schema,
+        tenant_binding=f"id:{runtime_ctx.tenant_id}",
+        session_id="d10-n-semantic",
+        thread_id="d10-n-semantic",
+        semantic_decision_provider=semantic_provider,
+        semantic_diagnostic_sink=diagnostics.append,
+    )
+    executor = GovernedManagerExecutor(
+        acceptance=IntentAcceptanceGate(
+            source_spans=source_spans,
+            semantic_handles=semantic_handles,
+        ),
+        core_analytics=object(),
+        context=GovernedManagerExecutionContext(
+            tenant_binding=f"id:{runtime_ctx.tenant_id}",
+            context_version=semantic_context.context_version.version,
+            principal=Principal(
+                user_id="day10-n",
+                tenant_id="day10-n-semantic",
+                roles=["owner"],
+                tenant_slug="day10-n-semantic",
+            ),
+            service=service,
+            tenant_runtime=runtime_ctx,
+            contract_store=contracts_module.ContractStore(),
+            session_id="d10-n-semantic",
+        ),
+        semantic_resolution=semantic,
+    )
+    cognition = _CurrentTurnRecoveryResearchLLM()
+    loop = ResearchManagerLoop(llm=cognition, source_spans=source_spans)
+    manager_runtime = ManagerRuntime(
+        request_ref="req-d10-n-semantic",
+        turn_ref="turn-d10-n-semantic",
+    )
+
+    question = (
+        "arıza sayısı ve gözlenen bozulma için kök neden araştırması yap"
+    )
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-n-semantic",
+        request_ref="req-d10-n-semantic",
+        runtime=manager_runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.accepted is True
+    assert outcome.clarification_required is False
+    assert manager_runtime.accepted_contract is not None
+    assert manager_runtime.ledger is not None
+    assert {
+        item.capability_key.value
+        for item in manager_runtime.ledger.active_user_must
+    } == {"performance", "root_cause"}
+    assert cognition.schemas == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    assert service.query_calls == 0
+
+    root_recovery = [
+        item
+        for item in diagnostics
+        if item.get("owner_obligation_id") == "U_ROOT"
+        and item.get("discovery_pass") == "current_turn_applicability"
+    ]
+    assert len(root_recovery) == 1
+    assert root_recovery[0]["selection"]["status"] == "BOUND"
+    assert root_recovery[0]["candidate_count"] >= 1
