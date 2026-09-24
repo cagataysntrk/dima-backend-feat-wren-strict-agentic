@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -2247,6 +2248,16 @@ def test_d10_q_joint_scope_group_mints_fresh_root_owned_handles():
         ).resolver_provenance_id
         for ref in scope_handles
     }
+    persisted_authority = json.dumps(
+        {
+            "contract": runtime.accepted_contract.model_dump(mode="json"),
+            "ledger": runtime.ledger.model_dump(mode="json"),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    assert "available_scope_groups" not in persisted_authority
+    assert "selected_group_token" not in persisted_authority
 
 
 def test_d10_q_unknown_scope_group_token_fails_closed():
@@ -2415,6 +2426,72 @@ def test_d10_q_scope_group_generation_is_permutation_stable_and_excludes_exclude
     )
     assert groups_a[0].supporting_capabilities == (
         ManagerCapabilityKey.PERFORMANCE,
+    )
+
+
+def test_d10_q_identical_scope_sets_deduplicate_and_merge_supporting_capabilities():
+    controller = PreAcceptanceController(
+        structured=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("no cognition expected")
+        ),
+        source_spans=SourceSpanRegistry(),
+    )
+    draft = IntentDraft.model_validate(
+        {
+            "obligations": [
+                _obligation(
+                    obligation_id="U_PERF",
+                    capability="performance",
+                    source_surfaces=("A ve B",),
+                    semantic_surfaces=(("A", "metric"), ("B", "metric")),
+                ),
+                _obligation(
+                    obligation_id="U_REL",
+                    capability="relationship",
+                    source_surfaces=("A ve B ilişkisi",),
+                    semantic_surfaces=(
+                        ("A", "metric"),
+                        ("B", "metric"),
+                        ("D", "dimension"),
+                    ),
+                ),
+            ],
+            "research_directives": [],
+            "control_requests": [],
+        }
+    )
+    a_ref = "src_" + "a" * 24
+    b_ref = "src_" + "b" * 24
+    grounded = {
+        ("U_PERF", "A", "metric"): SemanticBindingRef(
+            source_ref=a_ref,
+            handle_id="sem_" + "1" * 24,
+            target_kind="metric",
+        ),
+        ("U_PERF", "B", "metric"): SemanticBindingRef(
+            source_ref=b_ref,
+            handle_id="sem_" + "2" * 24,
+            target_kind="metric",
+        ),
+        ("U_REL", "A", "metric"): SemanticBindingRef(
+            source_ref=a_ref,
+            handle_id="sem_" + "3" * 24,
+            target_kind="metric",
+        ),
+        ("U_REL", "B", "metric"): SemanticBindingRef(
+            source_ref=b_ref,
+            handle_id="sem_" + "4" * 24,
+            target_kind="metric",
+        ),
+    }
+
+    groups = controller._repair_scope_groups(draft=draft, grounded=grounded)
+
+    assert len(groups) == 1
+    assert groups[0].member_source_refs == (a_ref, b_ref)
+    assert groups[0].supporting_capabilities == (
+        ManagerCapabilityKey.PERFORMANCE,
+        ManagerCapabilityKey.RELATIONSHIP,
     )
 
 
