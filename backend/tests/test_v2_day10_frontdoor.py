@@ -27,6 +27,10 @@ class _Standard:
     def __init__(self, outcome):
         self.outcome = outcome
         self.calls = []
+        self.authority_registry = None
+
+    def bind_authority_registry(self, registry):
+        self.authority_registry = registry
 
     def run(self, **kwargs):
         self.calls.append(kwargs)
@@ -37,6 +41,10 @@ class _Research:
     def __init__(self, result=None):
         self.result = result
         self.calls = []
+        self.authority_registry = None
+
+    def bind_authority_registry(self, registry):
+        self.authority_registry = registry
 
     def run(self, **kwargs):
         self.calls.append(kwargs)
