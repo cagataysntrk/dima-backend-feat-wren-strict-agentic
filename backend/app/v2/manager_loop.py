@@ -1985,6 +1985,46 @@ class ResearchManagerLoop:
                             "adaptive_branch_opened",
                             tuple(task.task_id for task in materialized.registered_tasks),
                         )
+                    if len(materialized.registered_tasks) == 1:
+                        selected_task = materialized.registered_tasks[0]
+                        candidate_by_id = {
+                            item.task_id: item
+                            for item in decision.branch_candidates
+                        }
+                        selected_candidate = candidate_by_id[selected_task.task_id]
+                        try:
+                            scheduled = self._execute_scheduled_task(
+                                runtime=runtime,
+                                executor=executor,
+                                task_registry=task_registry,
+                                task=selected_task,
+                                capability_key=selected_candidate.capability_key,
+                            )
+                            result_view["deterministic_execution"] = {
+                                "task_id": scheduled.task.task_id,
+                                "tool_id": scheduled.contract.tool_id,
+                                "evidence_ref": scheduled.evidence.artifact_id,
+                            }
+                            observations.append(
+                                {
+                                    "kind": "adaptive_branch_executed",
+                                    "task_id": scheduled.task.task_id,
+                                    "tool_id": scheduled.contract.tool_id,
+                                    "evidence_ref": scheduled.evidence.artifact_id,
+                                }
+                            )
+                            self._emit_progress(
+                                "evidence_verified",
+                                (scheduled.evidence.artifact_id,),
+                            )
+                        except ResearchTaskInvocationCompileError as exc:
+                            observations.append(
+                                {
+                                    "kind": "deterministic_schedule_deferred",
+                                    "task_id": selected_task.task_id,
+                                    "reason": str(exc),
+                                }
+                            )
                     frontier.observe(
                         progress_before=progress_before,
                         action=decision,
