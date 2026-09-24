@@ -477,7 +477,7 @@ def run_rehearsal() -> dict[str, object]:
     observations = tuple(result.outcome.observations)
     kinds = [str(item.get("kind")) for item in observations if isinstance(item, dict)]
     required = {
-        "deterministic_seed_executed",
+        "deterministic_task_executed",
         "root_cause_bootstrap_executed",
         "adaptive_branch_executed",
         "hypothesis_registered",
