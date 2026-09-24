@@ -123,6 +123,7 @@ class ProductSectionContinuation(FrozenModel):
 
 class ProductResponse(FrozenModel):
     request_ref: str = Field(min_length=1)
+    turn_ref: str = Field(min_length=1)
     lane: ProductLane
     status: ProductStatus
     events: tuple[ProductEvent, ...] = ()
