@@ -500,6 +500,12 @@ class PreAcceptanceController:
     ]:
         requests: list[tuple[str, str, str]] = []
         seen: set[tuple[str, str, str]] = set()
+        declared_kinds_anywhere = {
+            self._normalized_hint_kind(item.kind_hint)
+            for obligation in draft.obligations
+            for item in obligation.semantic_surfaces
+            if item.kind_hint != "unknown"
+        }
         for obligation in draft.obligations:
             for item in obligation.semantic_surfaces:
                 owned = (
@@ -510,6 +516,33 @@ class PreAcceptanceController:
                 if owned not in seen:
                     seen.add(owned)
                     requests.append(owned)
+
+            # D10-N applicability recovery for a capability-required kind that cognition
+            # omitted locally. Only metric/dimension may be recovered, and only when the
+            # same current draft contains another source-grounded surface of that kind.
+            # The obligation's own exact source surface is still the provenance edge;
+            # sibling authority is candidate context only inside ManagerSemanticResolutionAdapter.
+            if obligation.polarity == ObligationPolarity.REQUIRED:
+                spec = self._capabilities.get(obligation.capability_key)
+                declared_local = {
+                    self._normalized_hint_kind(item.kind_hint)
+                    for item in obligation.semantic_surfaces
+                    if item.kind_hint != "unknown"
+                }
+                recoverable_missing = (
+                    spec.required_kinds
+                    - declared_local
+                ) & {"metric", "dimension"} & declared_kinds_anywhere
+                for kind in sorted(recoverable_missing):
+                    for source_surface in obligation.source_surfaces:
+                        owned = (
+                            obligation.obligation_id,
+                            source_surface,
+                            kind,
+                        )
+                        if owned not in seen:
+                            seen.add(owned)
+                            requests.append(owned)
 
         if not requests:
             return {}, None
@@ -576,19 +609,9 @@ class PreAcceptanceController:
             )
             semantic_bindings = tuple(
                 dict.fromkeys(
-                    grounded[
-                        (
-                            item.obligation_id,
-                            surface.surface,
-                            surface.kind_hint,
-                        )
-                    ]
-                    for surface in item.semantic_surfaces
-                    if (
-                        item.obligation_id,
-                        surface.surface,
-                        surface.kind_hint,
-                    ) in grounded
+                    binding
+                    for (owner_id, _surface, _kind), binding in grounded.items()
+                    if owner_id == item.obligation_id
                 )
             )
             source_handle_refs = tuple(
@@ -666,7 +689,7 @@ class PreAcceptanceController:
         self,
         *,
         draft: IntentDraft,
-        grounded: dict[tuple[str, str], SemanticBindingRef],
+        grounded: dict[tuple[str, str, str], SemanticBindingRef],
         resolution: Any | None,
     ) -> dict[str, Any]:
         requested: list[dict[str, Any]] = []
@@ -811,7 +834,7 @@ class PreAcceptanceController:
         self,
         *,
         draft: IntentDraft,
-        grounded: dict[tuple[str, str], SemanticBindingRef],
+        grounded: dict[tuple[str, str, str], SemanticBindingRef],
     ) -> tuple[dict[str, Any], ...]:
         """Find missing capability-required bindings; optional extra surfaces do not block."""
         gaps: list[dict[str, Any]] = []
@@ -826,16 +849,8 @@ class PreAcceptanceController:
                 continue
             resolved_kinds = {
                 self._normalized_hint_kind(binding.target_kind)
-                for surface in obligation.semantic_surfaces
-                if (
-                    binding := grounded.get(
-                        (
-                            obligation.obligation_id,
-                            surface.surface,
-                            surface.kind_hint,
-                        )
-                    )
-                ) is not None
+                for (owner_id, _surface, _kind), binding in grounded.items()
+                if owner_id == obligation.obligation_id
             }
             inherited_kinds = {
                 kind
