@@ -1,6 +1,0 @@
-D10-O canonical paid gate authorized
-attempt=2
-semantic_product_sha=482d118e105be729660906596ac1ef65365920ea
-prior_paid_calls=4
-max_this_run=20
-cumulative_ceiling=30
