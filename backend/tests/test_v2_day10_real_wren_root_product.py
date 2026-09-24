@@ -15,11 +15,13 @@ import pytest
 from app import contracts as contracts_module
 from app.v2.acceptance import IntentAcceptanceGate
 from app.v2.context_provider import ContextProviderV0
+from app.v2.manager_core_adapter import ManagerCoreAnalyticsAdapter
 from app.v2.manager_executor import GovernedManagerExecutionContext, GovernedManagerExecutor
 from app.v2.manager_loop import ResearchManagerLoop
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
 from app.v2.manager_models import ObligationStatus
+from app.v2.manager_tools import ManagerToolCall, ManagerToolName
 from app.v2.model_policy import ModelProfile, ModelRole
 from app.v2.models import ConversationStateV2, EpistemicLabel, TenantAnalyticsRuntimeV0
 from app.v2.product_coordinator import ProductCoordinator
@@ -32,6 +34,12 @@ from app.v2.product_models import (
 )
 from app.v2.report_narration import ReportNarrator
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
+from app.v2.research_tasks import ResearchTaskRegistry
+from app.v2.research_tools import ResearchToolRunner, ResearchTaskKind
+from app.v2.root_cause_orchestration import (
+    RootCauseBootstrapPolicy,
+    RootCauseBootstrapStatus,
+)
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import (
     SemanticDecompositionRepairBatchDecision,
@@ -981,6 +989,294 @@ def test_d10_p_real_wren_preacceptance_repairs_decomposition_with_fresh_owner_ha
     assert {item.resolver_provenance_id for item in repaired} == {
         item.resolver_provenance_id for item in original
     }
+    assert any(
+        item.get("kind") == "semantic_decomposition_repair"
+        for item in diagnostics
+    )
+
+
+class _SelectFirstScopeGroupRepairProvider:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def decide(self, requests, *, user_message):
+        self.calls.append((requests, user_message))
+        choices = []
+        for request in requests:
+            groups = tuple(request.available_scope_groups)
+            choices.append(
+                SemanticDecompositionRepairChoice(
+                    gap_ref=request.gap_ref,
+                    decision=("SELECT_SCOPE_GROUP" if groups else "ABSTAIN"),
+                    selected_source_tokens=(),
+                    selected_group_token=(
+                        groups[0].group_token if groups else None
+                    ),
+                    reason=(
+                        "SOURCE_SUPPORTS_SCOPE"
+                        if groups
+                        else "INSUFFICIENT_SOURCE_SUPPORT"
+                    ),
+                )
+            )
+        return SemanticDecompositionRepairBatchDecision(choices=tuple(choices))
+
+
+class _D10QMultiMetricRootLLM:
+    def __init__(self, *, metric_a: str, metric_b: str) -> None:
+        self.metric_a = metric_a
+        self.metric_b = metric_b
+        self.schemas = []
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, user, schema
+        self.schemas.append(schema_name)
+        if schema_name == "dima_intent_draft_v1":
+            return {
+                "obligations": [
+                    {
+                        "obligation_id": "U_SCOPE",
+                        "capability_key": "performance",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": [
+                            f"{self.metric_a} ve {self.metric_b} birlikte"
+                        ],
+                        "semantic_surfaces": [
+                            {"surface": self.metric_a, "kind_hint": "metric"},
+                            {"surface": self.metric_b, "kind_hint": "metric"},
+                        ],
+                        "open_questions": [],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    },
+                    {
+                        "obligation_id": "U_ROOT",
+                        "capability_key": "root_cause",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": [
+                            "gözlenen bozulmanın kök nedenlerini sınırla"
+                        ],
+                        "semantic_surfaces": [
+                            {"surface": "gözlenen bozulma", "kind_hint": "metric"}
+                        ],
+                        "open_questions": [],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    },
+                ],
+                "research_directives": [],
+                "control_requests": [],
+            }
+        if schema_name == "dima_intent_coverage_v1":
+            return {"status": "PASS", "issues": []}
+        raise AssertionError(f"unexpected D10-Q schema: {schema_name}")
+
+
+def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_evidence(
+    wren,
+    schema,
+    monkeypatch,
+):
+    cube = next(item for item in schema["cubes"] if item.get("name") == "bakim")
+    assert len(tuple(cube.get("measures") or ())) >= 2
+
+    tenant = "day10-q-multi-root"
+    runtime_ctx = TenantAnalyticsRuntimeV0(
+        tenant_id=tenant,
+        tenant_slug="demo-boyahane",
+        principal_user_id="day10-q",
+        roles=("owner",),
+        mdl_version=str(wren.mdl_version),
+        catalog=str(schema.get("catalog") or "wren"),
+        schema_name=str(schema.get("schema_name") or "public"),
+        db_online=bool(schema.get("db_online", True)),
+    )
+    service = _CountingWren(wren, schema)
+    semantic_context = ContextProviderV0().build(service, runtime_ctx)
+    bakim_context = next(
+        item for item in semantic_context.cubes
+        if item.canonical_name == "bakim"
+    )
+    metric_a = _field_surface(bakim_context.measures[0])
+    metric_b = _field_surface(bakim_context.measures[1])
+    assert metric_a != metric_b
+
+    question = (
+        f"{metric_a} ve {metric_b} birlikte değerlendirilsin; "
+        "gözlenen bozulmanın kök nedenlerini sınırla"
+    )
+    source_spans = SourceSpanRegistry()
+    semantic_handles = SemanticHandleRegistry()
+    repair = _SelectFirstScopeGroupRepairProvider()
+    diagnostics = []
+    principal = Principal(
+        user_id="day10-q",
+        tenant_id=tenant,
+        roles=["owner"],
+        tenant_slug="demo-boyahane",
+    )
+    persisted = []
+    monkeypatch.setattr(
+        contracts_module,
+        "_persist",
+        lambda row: persisted.append(row),
+    )
+    contract_store = contracts_module.ContractStore()
+
+    semantic = ManagerSemanticResolutionAdapter(
+        source_spans=source_spans,
+        semantic_handles=semantic_handles,
+        semantic_context=semantic_context,
+        conversation=ConversationStateV2(),
+        schema=schema,
+        tenant_binding=f"id:{tenant}",
+        session_id="d10-q-multi-root",
+        thread_id="d10-q-multi-root",
+        semantic_decision_provider=_AlwaysAbstainNonExactSemanticProvider(),
+        semantic_decomposition_repair_provider=repair,
+        semantic_diagnostic_sink=diagnostics.append,
+    )
+    executor = GovernedManagerExecutor(
+        acceptance=IntentAcceptanceGate(
+            source_spans=source_spans,
+            semantic_handles=semantic_handles,
+        ),
+        core_analytics=ManagerCoreAnalyticsAdapter(
+            semantic_handles=semantic_handles,
+        ),
+        context=GovernedManagerExecutionContext(
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+            principal=principal,
+            service=service,
+            tenant_runtime=runtime_ctx,
+            contract_store=contract_store,
+            session_id="d10-q-multi-root",
+        ),
+        semantic_resolution=semantic,
+    )
+    cognition = _D10QMultiMetricRootLLM(
+        metric_a=metric_a,
+        metric_b=metric_b,
+    )
+    loop = ResearchManagerLoop(llm=cognition, source_spans=source_spans)
+    runtime = ManagerRuntime(
+        request_ref="req-d10-q-multi-root",
+        turn_ref="turn-d10-q-multi-root",
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-q-multi-root",
+        request_ref="req-d10-q-multi-root",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+    assert outcome.accepted is True
+    assert runtime.accepted_contract is not None
+    assert runtime.ledger is not None
+    assert runtime.snapshot.preacceptance_turns == 2
+    assert cognition.schemas == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    assert len(repair.calls) == 1
+    request = repair.calls[0][0][0]
+    assert request.obligation_id == "U_ROOT"
+    assert len(request.available_scope_groups) == 1
+    assert len(request.available_scope_groups[0].member_source_tokens) == 2
+
+    items = {item.obligation_id: item for item in runtime.ledger.items}
+    scope_metric_handles = tuple(
+        ref
+        for ref in items["U_SCOPE"].semantic_handle_refs
+        if semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+        ).target_kind in {"metric", "kpi"}
+    )
+    root_metric_handles = tuple(
+        ref
+        for ref in items["U_ROOT"].semantic_handle_refs
+        if semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+        ).target_kind in {"metric", "kpi"}
+    )
+    assert len(scope_metric_handles) == 2
+    assert len(root_metric_handles) == 2
+    assert set(root_metric_handles).isdisjoint(scope_metric_handles)
+    assert {
+        semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+        ).resolver_provenance_id
+        for ref in root_metric_handles
+    } == {
+        semantic_handles.validate(
+            ref,
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+        ).resolver_provenance_id
+        for ref in scope_metric_handles
+    }
+
+    registry = ResearchTaskRegistry()
+    bootstrap = RootCauseBootstrapPolicy(
+        semantic_handles=semantic_handles,
+    ).prepare(
+        runtime=runtime,
+        evidence_store=executor.evidence_store,
+        task_registry=registry,
+        root_obligation_id="U_ROOT",
+        tenant_binding=f"id:{tenant}",
+        context_version=semantic_context.context_version.version,
+    )
+    assert bootstrap.status == RootCauseBootstrapStatus.TASK_READY
+    assert bootstrap.selected_capability.value == "performance"
+    assert bootstrap.task is not None
+    assert bootstrap.task.task_kind == ResearchTaskKind.QUERY.value
+    assert bootstrap.task.input_refs == root_metric_handles
+
+    before = service.query_calls
+    result = ResearchToolRunner().execute(
+        task=bootstrap.task,
+        tool_id=ResearchToolRunner().tool_id_for_task(bootstrap.task),
+        call=ManagerToolCall(
+            name=ManagerToolName.RUN_ANALYTICS,
+            args={
+                "obligation_ids": ("U_ROOT",),
+                "metric_handles": root_metric_handles,
+            },
+        ),
+        runtime=runtime,
+        executor=executor,
+        principal=principal,
+        task_registry=registry,
+    )
+    assert service.query_calls > before
+    assert result.evidence.verified is True
+    assert result.evidence.query_contract_refs
+    assert len(result.analytics_ir.metrics) == 2
+    assert {
+        item.canonical_name for item in result.analytics_ir.metrics
+    } == {
+        semantic_handles.binding_for_execution(
+            ref,
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+        ).canonical_target.canonical_name
+        for ref in root_metric_handles
+    }
+    assert persisted
     assert any(
         item.get("kind") == "semantic_decomposition_repair"
         for item in diagnostics
