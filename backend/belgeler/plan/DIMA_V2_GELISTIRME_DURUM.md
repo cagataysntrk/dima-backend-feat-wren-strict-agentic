@@ -11349,3 +11349,77 @@ Do not:
 
 Day8 live debt remains OPEN until a separately authorized integrated paid Product-MVP run genuinely
 exercises the governed root-cause chain.
+
+
+---
+
+## 2026-09-24 — D10-K VALID RED / D10-L GREEN CHECKPOINT
+
+Historical D10-K paid measurement is immutable history:
+
+```text
+run                         35970179887
+tested HEAD                 0c6258ca988ee21e654f41a7d636102ddf801c52
+tested Product SHA          a449bcfd62ede142ced7d2c9631fba2430534d62
+result                      VALID RED
+failure class               CONTRACT/ARCHITECTURE
+Research entered            NO
+Wren query/dry-plan/cube    0 / 0 / 0
+```
+
+FAST correctly represented REQUIRED `relationship` and `root_cause`, but `NON_AUTHORITATIVE_CONTROL_REQUEST` handling ran before deterministic representability and terminated Standard as clarification. This established the first wrong transition: control handling preempted an already source-valid typed Research requirement.
+
+D10-L corrected ownership, not cognition:
+
+```text
+draft
+→ exact-source validation
+→ RepresentabilityGate.decide_typed_capabilities
+→ if Research required: stop Standard
+→ otherwise Standard-local semantic grounding
+→ material-gap handling
+→ conversation/control handling
+→ bound representability / builder
+→ CoverageVeto
+→ Standard seal / execution
+```
+
+Shared owner:
+
+- `RepresentabilityGate._effective_capability_partition()`
+- `RepresentabilityGate.decide_typed_capabilities()`
+- existing bound `RepresentabilityGate._decide_items()`
+
+No duplicated business-literal routing exists in StandardLane.
+
+Latest Product behavior SHA:
+
+`29b66000fd64d50ee464f989c23cc7f8f7502721`
+
+Final D10-L deterministic candidate SHA:
+
+`4888c10a1cfd3027402e928a616d8a975ad26eef`
+
+Authoritative proof:
+
+`35972060988 = GREEN`
+
+- 104 focused provider-free tests passed.
+- Real-Wren sentinel: 2 passed, covering typed-direct Path A and omission-veto Path B.
+- G16 provider-free receipt remained structurally admissible at ceiling.
+- `provider_calls=0`, `confirmed_cause_count=0`, `root_status=VERIFIED`.
+- Day7 and Day8 affected deterministic regressions remained GREEN.
+
+`35971912520` is a historical test-oracle RED only: Path B test assumed one semantic-provider call, while deterministic exact resolution legitimately required zero. Classification `EVAL/HARNESS/FIXTURE`; only the assertion changed.
+
+Current status:
+
+```text
+Day8 live debt      OPEN
+Day10 FINAL         OPEN / NOT SEALED
+D10-L paid calls    0
+paid dispatch       NO
+Day11               NOT AUTHORIZED
+```
+
+D10-K authorization is consumed. No third paid measurement is authorized. STOP pending supervisor decision.
