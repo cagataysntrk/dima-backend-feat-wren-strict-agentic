@@ -334,6 +334,9 @@ class HypothesisLedger:
             )
         elif has_support:
             status = HypothesisStatus.SUPPORTED
+            limitations.append(
+                "Destekleyici gözlemsel kanıt nedenselliği doğrulamaz."
+            )
         elif has_contradiction:
             status = HypothesisStatus.REFUTED
         else:
