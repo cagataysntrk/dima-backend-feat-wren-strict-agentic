@@ -208,21 +208,24 @@ Policy:
 
 ---
 
-## 9. P14 — Native Research foundation — START NOW
+## 9. P14 — Native Research — FOUNDATION GREEN / CONTINUE PRODUCT INTEGRATION
 
 P14 is no longer blocked by comparison certification.
 
-Initial foundation requires:
+The first coherent Research foundation vertical is already sealed GREEN:
 
 ```text
-engine build = 0
-Luna         = 0
-Sol          = 0
-C1           = 0
-full corpus  = 0
+implementation             = a8c7b5d2b922e85ff046c6c7ce1bfce92aa13552
+integrated exact-occurrence = bab26fe51978929ace44f7703543f78099c692ce
+provider-free               = 36052728145 SUCCESS
+P14 focused                 = 6 passed
+P13D/P10/P5 regression      = 69 passed
+engine build                = 0
+model calls                 = 0
+native Metabase/Metabot diff= 0
 ```
 
-Build one coherent Research domain slice:
+Current Research foundation owns:
 
 ```text
 ResearchSession
@@ -233,27 +236,36 @@ EvidenceRef
 ResearchBudget
 StoppingState
 NativeMetabotConversationRef
+ResearchLimitation
 ```
 
-Flow:
+The integrated provider-free flow already proves:
 
 ```text
-accepted Research objective
-→ Dima Research state
-→ governed semantic/security/company context
-→ native Metabot conversation
-→ native analytical work
-→ each material execution uses existing P13 exact-occurrence path
-→ P10 binding
+Research obligation
+→ native Metabot delegation identity
+→ existing P13 authorization
+→ exact native occurrence execution
+→ P10 access identity
 → P5 QueryReceipt
-→ Evidence
-→ Research state / hypothesis update
+→ VERIFIED Evidence
+→ Research state
 ```
 
 ResearchManager does not see or author raw MBQL/SQL as analytical strategy.
 
 It owns **what must be investigated and what the evidence means**, not **how Metabase constructs the
 query**.
+
+Next coherent P14 slice is product-level integration, not another foundation rewrite:
+
+1. wire the Research aggregate into the real Ask/Research orchestration boundary;
+2. durably correlate ResearchSession with a real native Metabot conversation/session;
+3. delegate governed obligations to the native engine;
+4. reuse the same P13 exact-occurrence/P10/P5/Evidence chain for every material execution;
+5. add durable resume/correlation and obligation-scoped limitations;
+6. keep engine builds and model calls at zero until a real native Research bridge exists and one
+   bounded live evaluation can change a product/architecture decision.
 
 ---
 
@@ -437,18 +449,24 @@ Do not touch engine first.
 
 Do not fix comparison first.
 
-Start P14.
+Do not rebuild the already-GREEN P14 foundation.
+
+Continue P14 at the real product boundary.
 
 Return after substantial progress:
 
 ```text
-Research durable state
+real Ask/Research orchestration
 +
-native Metabot delegation
+durable ResearchSession ↔ native Metabot conversation correlation
 +
-existing P13 execution reuse
+existing P13 exact-occurrence execution reuse
 +
-one provider-free Research → receipted Evidence path
+P10 / P5 / Evidence reuse
++
+provider-free Research → receipted Evidence → Research state path
 ```
 
 or after one genuine STOP condition.
+
+Ordinary P14 implementation progress is not a STOP.
