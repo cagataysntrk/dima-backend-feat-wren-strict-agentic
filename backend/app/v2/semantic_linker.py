@@ -772,10 +772,12 @@ class BoundedSemanticLinker:
         generator: SemanticCandidateGenerator,
         binding_gate: SemanticBindingGate,
         provider: SemanticCandidateDecisionProvider | None,
+        diagnostic_sink: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self._generator = generator
         self._binding_gate = binding_gate
         self._provider = provider
+        self._diagnostic_sink = diagnostic_sink
 
     def resolve(
         self,
@@ -785,6 +787,7 @@ class BoundedSemanticLinker:
         decision_context: str | None = None,
         parent_obligation_id: str | None = None,
         trigger_evidence_ref: str | None = None,
+        diagnostic_metadata: dict[str, dict[str, Any]] | None = None,
     ) -> tuple[BoundedSemanticSelection, ...]:
         candidate_sets = [
             self._generator.generate(
@@ -950,6 +953,44 @@ class BoundedSemanticLinker:
                 )
 
         ordered = tuple(outputs[item.request_id] for item in candidate_sets)
+
+        if self._diagnostic_sink is not None:
+            metadata = diagnostic_metadata or {}
+            for candidate_set, selection in zip(candidate_sets, ordered, strict=True):
+                extra = dict(metadata.get(candidate_set.request_id) or {})
+                self._diagnostic_sink(
+                    {
+                        **extra,
+                        "request_id": candidate_set.request_id,
+                        "surface": candidate_set.surface,
+                        "kind_hint": candidate_set.kind_hint,
+                        "retrieval_backend": candidate_set.retrieval_backend,
+                        "retrieval_exhaustive": candidate_set.retrieval_exhaustive,
+                        "retrieval_truncated": candidate_set.retrieval_truncated,
+                        "candidate_count": len(candidate_set.bindings),
+                        "candidate_cards": [
+                            {
+                                "candidate_id": item.card.candidate_id,
+                                "target_kind": item.card.target_kind,
+                                # Sensitive entity candidates are excluded from linker-visible
+                                # sets; labels here are therefore safe display metadata only.
+                                "label": item.card.label,
+                            }
+                            for item in candidate_set.bindings
+                            if not item.sensitive
+                        ],
+                        "selection": {
+                            "status": selection.status,
+                            "mode": selection.mode,
+                            "candidate_id": (
+                                selection.binding.card.candidate_id
+                                if selection.binding is not None
+                                else None
+                            ),
+                            "reason": selection.reason,
+                        },
+                    }
+                )
 
         # Authority is minted only after every model decision has passed candidate-set
         # validation. The caller requests handles through bind_selection().
