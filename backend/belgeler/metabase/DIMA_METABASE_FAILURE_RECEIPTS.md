@@ -3594,79 +3594,119 @@ status:
 
 ---
 
-## DMP-P13D-LIVE-001 — pure breakdown introduced unaccepted native order/limit
+## DMP-P13D-LIVE-001 — presentation ordering misclassified as ranking
 
 opened_at: 2026-09-24  
-platform_sha: `cb5e6ff8ddb8cc00578d925feb7e1c252e7fd8b8`  
+original_platform_sha: `cb5e6ff8ddb8cc00578d925feb7e1c252e7fd8b8`  
+original_live_workflow: `35964722881 = FAILURE`  
+original_live_artifact: `10793334817`
+
+classification:
+`PLATFORM TRUST CLASSIFICATION DEFECT / CLOSED`
+
+observed:
+- BREAKDOWN had no accepted ranking authority;
+- the old trust rule rejected any native `order_by` or `limit` under that condition;
+- the recovery audit distinguished presentation ordering from membership-changing top-N ranking;
+- without LIMIT, order over the already-authorized breakout or accepted metric aggregation is
+  presentation semantics and does not change result membership;
+- LIMIT without ranking authority remains material and remains blocked.
+
+root_solution:
+```text
+ranking is None
++ limit is None
++ order target in {authorized breakout, sole accepted metric aggregation}
+=> presentation order is eligible
+
+ranking is None
++ any limit
+=> BLOCK
+```
+
+proof:
+```text
+fix commit          = 6055c8b981c09f33176ca80dc5d8c435539066ba
+provider-free seal  = 35967035036 SUCCESS
+```
+
+Metabot prompt/profile/skill changes = 0. Engine changes = 0. QP/driver changes = 0.
+
+status:
+`CLOSED / GENERAL TRUST RULE CORRECTED`.
+
+---
+
+## DMP-P13D-LIVE-002 — dima.5 persisted temporal literal restore fails during native attestation
+
+opened_at: 2026-09-24  
+platform_sha: `6ae0fc66af7f638550c9342300097fd16f8a9901`  
 engine_sha: `71788caff1f366593a24d21161db6f212de69006`  
 engine_release: `0.63.18-dima.5`  
 engine_certification: `35961869359 = SUCCESS`  
-provider_free_seal: `35964155418 = SUCCESS`  
-digest_runtime: `35964388842 = SUCCESS`  
-live_workflow: `35964722881 = FAILURE`  
-live_artifact: `10793334817`  
-live_artifact_digest: `sha256:9b9d27617e2c109603753ff545a488fa3089114492aa8fbb07bf58704ff6e5db`
+provider_free_after_trust_fix: `35967035036 = SUCCESS`  
+previous_digest_runtime: `35964388842 = SUCCESS`  
+live_workflow: `35967191948 = FAILURE`  
+live_artifact: `10794717399`  
+live_artifact_digest: `sha256:17da8ebdb7c73b9c18b6182bdf7ae4d5bc05afa13eba35f8c18b281dcafab90f`  
+live_attempt_id: `p13d-cohesive-dima5-top2-002`
 
 classification:
-`METABOT_COGNITION / UNREQUESTED_ANALYTICAL_EXPANSION / CORRECT_TRUST_BLOCK`
+`DIMA ENGINE ATTESTATION / PERSISTED-QUERY RESTORE-PREPROCESS COMPATIBILITY / SUPERVISOR STOP`
 
 observed:
-- P13D provider-free cohesive attack matrix and focused sealed-boundary regressions are GREEN;
-- exact dima.5 digest runtime, restricted principal, semantic provisioning, runtime identity and independent oracles are GREEN;
-- live pre-model provider-free proof is GREEN with all analytical fallback counters at zero;
-- the first live case was the pure breakdown question:
-  `Haziran 2026'da satış siparişlerini kanala göre dağıt.`;
-- native Metabot authored a material query containing explicit order and/or limit despite no accepted ranking authority;
-- Dima rejected the candidate before official dataset execution with:
-  `P13D_RANKING_SCOPE_VIOLATION: native query introduced order/limit without accepted ranking authority`;
-- therefore no QueryReceipt or VERIFIED Evidence was issued for the failed live case;
-- no second live case, retry or Sol confirmation was run.
+- exact certified dima.5 digest pull = SUCCESS;
+- restricted principal/bootstrap = SUCCESS;
+- Dima-managed metric provisioning = SUCCESS;
+- deterministic pre-live boundary and independent oracles = SUCCESS;
+- live advanced past BREAKDOWN and entered `P13D-RANKING`;
+- ranking native query id = `dH2WJPR7FtxB70vwm6MyH`;
+- native tool-call count at failure = `12`;
+- failure occurred at `native-query-attestation`, before Dima trust authorization, dataset execution,
+  QueryReceipt or Evidence for the ranking case;
+- engine endpoint returned HTTP 500 while QP preprocessing the restored persisted native query;
+- root exception:
+  `No implementation of method :truncate-to ... for class java.lang.String`;
+- engine error payload shows `between` over `absolute-datetime` bounds represented as serialized
+  date strings.
 
-independent fixture truth used by the pre-live gate:
-```text
-BREAKDOWN
-Fuar            22
-Mevcut Müşteri  34
-Referans         21
-Saha Ziyareti   22
-Web              27
+source-level root-cause candidate:
+- `src/metabase/dima/native_attestation.clj::restore-persisted-query` restores persisted JSON by
+  calling `lib/query` directly;
+- pinned Metabase provides `lib.serialize/prepare-after-deserialization` as the inverse native
+  REST/app-DB deserialization boundary;
+- therefore the leading bounded fix is to restore/hydrate the persisted query through the native
+  deserialization contract before permission/preprocess observation, with an exact regression for
+  the failing `between + absolute-datetime` shape;
+- this candidate must be proven provider-free before any release promotion. Do not patch QP core or
+  drivers merely to make this Dima observation seam pass.
 
-RANKING top-2
-Mevcut Müşteri  34
-Web              27
+diagnostic caveat:
+The failure artifact updates attestation-derived fields only after a successful attestation. Because
+the ranking attestation itself returned HTTP 500, its `exact_serialized_pmbql`,
+`exact_pmbql_fingerprint`, breakouts/order fields in the failure file are stale from the preceding
+successful BREAKDOWN case. The ranking query identity and the HTTP 500 payload/query fragment are the
+authoritative evidence for this failure.
 
-COMPARISON
-2026-05         464
-2026-06         126
-```
+forbidden:
+- rewrite/repair the Metabot query in Platform;
+- bypass native attestation;
+- accept un-attested ranking execution;
+- raw SQL / Wren / Agent API analytical fallback;
+- prompt/profile/skill patch;
+- QP/driver semantic patch without proof;
+- dima.6 build or another paid/model live run under the current directive.
 
-preceding_oracle_correction:
-The initially frozen top-3 ranking case was rejected before live because the third-place boundary is
-tied. It was replaced with top-2, whose second/third boundary is unique. The corrected provider-free
-seal and digest runtime are GREEN. No answer was hard-coded into model cognition.
-
-why_the_block_is_correct:
-P13D requires ranking/order/limit to be backed by accepted ranking authority. A pure breakdown turn
-does not grant that authority. Accepting native order/limit silently would weaken the exact
-accepted-meaning boundary and contradict the P13D attack matrix.
-
-forbidden_corrections:
-- weaken or bypass `P13D_RANKING_SCOPE_VIOLATION`;
-- silently treat Metabot-selected ordering/limit as user-authorized ranking;
-- inject a hard-coded breakdown query;
-- add regex/fuzzy/morph/query repair logic;
-- raw SQL, Wren, Agent-API analytical or admin analytical fallback;
-- rerun Luna merely for stochastic dissatisfaction;
-- patch Metabot prompt/profile/skill without supervisor authorization.
-
-supervisor_boundary:
-A further product correction requires an explicit ownership decision:
-1. change Metabot prompt/profile/skill/agent cognition so a pure breakdown emits no unrequested
-   ranking/order/limit; or
-2. formally change the accepted Standard semantics to authorize a defined default ordering policy.
-
-Either option crosses an explicit supervisor STOP condition. No such change is made here.
+required supervisor decision:
+Authorize or reject a bounded `0.63.18-dima.6` **observational compatibility** candidate limited to
+persisted-query restore/hydration in the Dima attestation seam, with:
+1. exact provider-free reproduction/regression for the serialized temporal literal shape;
+2. no Metabot cognition changes;
+3. no QP core/driver changes;
+4. one focused engine certification/build only if the source fix is proven;
+5. Platform gitlink/runtime-lock repin only to the certified immutable digest;
+6. a new explicit authorization for one final compact P13D Luna live run, because the recovery
+   directive's single retry budget has already been consumed.
 
 status:
-`OPEN / SUPERVISOR STOP — P13D LIVE NOT SEALED; P14 NOT STARTED`.
-
+`OPEN / SUPERVISOR STOP — P13D NOT SEALED; P14 NOT STARTED`.

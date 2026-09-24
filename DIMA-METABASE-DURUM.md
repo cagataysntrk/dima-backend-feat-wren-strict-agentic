@@ -2690,7 +2690,7 @@ for the P13C closure.
 
 ---
 
-## 2026-09-24 — P13D DETERMINISTIC GREEN / LIVE STOP AT UNACCEPTED RANKING
+## 2026-09-24 — P13D TRUST CORRECTED / SECOND LIVE STOP AT DIMA.5 ATTESTATION RESTORE
 
 Current exact engine/runtime:
 ```text
@@ -2701,47 +2701,75 @@ immutable image         = ghcr.io/upcytech/dima-metabase-engine@sha256:2ace4b5ec
 build identity          = github-actions:35961869359:71788caff1f366593a24d21161db6f212de69006
 ```
 
-P13D engine changes are observational only:
-- exact physical breakout field + field type;
-- temporal breakout grain;
-- exact order direction;
-- native order target kind;
-- aggregation index or physical field target;
-- existing exact limit observation.
+The first P13D live RED was reclassified under the recovery directive. Dima had conflated presentation
+ordering with result-set-changing ranking. General trust correction:
+- no ranking + any LIMIT => BLOCK;
+- no ranking + order-only over the already-authorized breakout or sole metric aggregation => ALLOW;
+- hidden/unaccepted order targets => BLOCK;
+- explicit ranking remains exact direction + exact metric target + exact limit.
 
-Metabot prompts/skills/profiles/agent loop changed = **0**. Query Processor and drivers changed = **0**.
-
-Proof corridor:
+Correction evidence:
 ```text
-P13D provider-free corrected seal = 35964155418 SUCCESS
-P13D digest runtime               = 35964388842 SUCCESS
-P13D compact Luna live            = 35964722881 FAILURE
+trust/diagnostic fix commit       = 6055c8b981c09f33176ca80dc5d8c435539066ba
+provider-free seal               = 35967035036 SUCCESS
+engine changes                   = 0
+Metabot cognition changes        = 0
+QP/driver changes                = 0
+runtime rebuild/rerun            = 0
 ```
 
-The first runtime attempt `35963767430` was correctly rejected by the oracle because the original
-top-3 ranking boundary was tied. The frozen ranking proof was changed to top-2 and resealed
-provider-free before runtime.
-
-The final live pre-model gate was GREEN. Independent truth:
+The one authorized compact Luna retry was then run unchanged:
 ```text
-breakdown = {Fuar:22, Mevcut Müşteri:34, Referans:21, Saha Ziyareti:22, Web:27}
-ranking top-2 = [[Mevcut Müşteri,34],[Web,27]]
-comparison = {2026-05:464, 2026-06:126}
-fallbacks = Wren 0 / raw SQL 0 / Agent API analytical 0 / admin analytical 0
+live trigger commit              = 6ae0fc66af7f638550c9342300097fd16f8a9901
+live workflow                    = 35967191948 FAILURE
+live artifact                    = 10794717399
+artifact digest                  = sha256:17da8ebdb7c73b9c18b6182bdf7ae4d5bc05afa13eba35f8c18b281dcafab90f
+attempt                          = p13d-cohesive-dima5-top2-002
 ```
 
-Live STOP:
+The run passed the exact digest pull, restricted principal, Dima-managed metric provisioning and
+provider-free pre-live boundary, then advanced past BREAKDOWN into P13D-RANKING. The ranking case
+failed before Dima trust authorization at the native-query-attestation endpoint:
+
 ```text
-case      = P13D-BREAKDOWN
-question  = Haziran 2026'da satış siparişlerini kanala göre dağıt.
-block     = P13D_RANKING_SCOPE_VIOLATION
-detail    = native query introduced order/limit without accepted ranking authority
-receipt   = NOT ISSUED
-Evidence  = NOT ISSUED
+failure owner = native-query-attestation
+HTTP          = 500
+engine        = dima.5 exact certified digest
+native query  = dH2WJPR7FtxB70vwm6MyH
+tool calls    = 12
+
+root exception:
+optimize-temporal-filters/optimize-temporal-clauses
+No implementation of :truncate-to for java.lang.String
 ```
 
-This is a correct Dima trust block, not an engine/runtime/security/oracle failure. P13D is therefore
-**not sealed GREEN** and P14 has **not started**. Further correction would require a supervisor-level
-decision about Metabot cognition or accepted default-ordering semantics. See
-`DMP-P13D-LIVE-001`.
+The engine error payload shows a native ranking query containing a `between` temporal filter whose
+bounds are serialized `absolute-datetime` strings. Dima's attestation restore path currently feeds the
+persisted JSON query into `lib/query` and then QP preprocess. The pinned Metabase source also exposes
+`lib.serialize/prepare-after-deserialization` as the native inverse for REST/app-DB query
+deserialization. This makes a Dima-local persisted-query restore/hydration compatibility defect the
+leading root-cause candidate; it is not evidence that Metabot cognition, ranking semantics, QP core or
+a driver is wrong.
+
+Diagnostic nuance:
+the failure artifact's attestation-derived pMBQL fields still contain the preceding successful
+BREAKDOWN attestation because the RANKING attestation failed before those fields could be replaced.
+The authoritative ranking-failure evidence is therefore the new `native_query_id`, failure owner,
+tool count and the engine HTTP 500 payload/query fragment. Do not treat the stale breakdown pMBQL in
+that failure artifact as the failed ranking query.
+
+Current boundary:
+```text
+P13D provider-free        = GREEN
+P13D digest runtime       = GREEN
+presentation-order fix    = GREEN
+P13D live                 = RED / engine attestation restore-preprocess compatibility
+P13D sealed               = NO
+P14 started               = NO
+```
+
+The current recovery directive explicitly forbids dima.6 / engine rebuild and authorized only one new
+compact Luna retry. Therefore no engine patch, no additional model run, no P14 start and no query
+rewrite/fallback is performed here. Supervisor authorization is required for a bounded observational
+engine compatibility correction plus its post-fix certification/live budget.
 
