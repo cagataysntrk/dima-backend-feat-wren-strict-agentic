@@ -28,6 +28,7 @@ from app.v2.product_models import (
     ProductStatus,
     ProductTerminalReceipt,
     VersionedReport,
+    mint_product_turn_ref,
 )
 from app.v2.product_events import ProductEventSink
 from app.v2.research_lane import ResearchLaneResult, ResearchLaneService
@@ -178,6 +179,7 @@ class ProductCoordinator:
         request,
         body: ProductAskRequest,
         principal,
+        turn_ref: str | None = None,
     ) -> ProductRequestContext:
         service, schema, runtime = bind_runtime(request, principal)
         semantic_context = ContextProviderV0().build(service, runtime)
@@ -193,6 +195,7 @@ class ProductCoordinator:
             contract_store=getattr(request.app.state, "contracts", None),
             session_id=body.session_id,
             thread_id=body.thread_id,
+            turn_ref=turn_ref or mint_product_turn_ref(),
         )
 
     def handle(
@@ -202,6 +205,7 @@ class ProductCoordinator:
         body: ProductAskRequest,
         principal,
         event_sink: ProductEventSink | None = None,
+        turn_ref: str | None = None,
         cancel_check: Callable[[], bool] | None = None,
         answer_now_check: Callable[[], bool] | None = None,
     ) -> ProductResponse:
@@ -209,8 +213,14 @@ class ProductCoordinator:
             request=request,
             body=body,
             principal=principal,
+            turn_ref=turn_ref,
         )
-        sink = event_sink or ProductEventSink(request_ref=context.request_ref)
+        sink = event_sink or ProductEventSink(
+            request_ref=context.request_ref,
+            turn_ref=context.turn_ref,
+        )
+        if sink.turn_ref != context.turn_ref:
+            raise RuntimeError("ProductEventSink turn_ref does not match Product turn")
         sink.emit(
             ProductEventKind.REQUEST_ACCEPTED,
             refs=(context.request_ref,),
@@ -420,6 +430,7 @@ class ProductCoordinator:
         )
         return ProductResponse(
             request_ref=context.request_ref,
+            turn_ref=context.turn_ref,
             lane=ProductLane.STANDARD,
             status=ProductStatus.ANSWER,
             events=sink.events,
@@ -449,6 +460,7 @@ class ProductCoordinator:
         )
         return ProductResponse(
             request_ref=context.request_ref,
+            turn_ref=context.turn_ref,
             lane=ProductLane.STANDARD,
             status=status,
             events=sink.events,
@@ -648,6 +660,7 @@ class ProductCoordinator:
 
         return ProductResponse(
             request_ref=context.request_ref,
+            turn_ref=context.turn_ref,
             lane=ProductLane.RESEARCH,
             status=status,
             events=sink.events,
@@ -712,6 +725,7 @@ class ProductCoordinator:
         )
         return ProductResponse(
             request_ref=context.request_ref,
+            turn_ref=context.turn_ref,
             lane=ProductLane.RESEARCH,
             status=status,
             events=sink.events,
