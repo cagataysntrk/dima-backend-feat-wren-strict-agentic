@@ -752,6 +752,30 @@ class ResearchManagerLoop:
             self._progress_callback(kind, refs)
 
     @staticmethod
+    def _evidence_belongs_to_parent_lineage(
+        *,
+        runtime: ManagerRuntime,
+        evidence,
+        parent_obligation_id: str,
+    ) -> bool:
+        ledger = runtime.ledger
+        if ledger is None:
+            return False
+        by_id = {item.obligation_id: item for item in ledger.items}
+        for obligation_id in evidence.obligation_ids:
+            current = obligation_id
+            seen: set[str] = set()
+            while current not in seen:
+                if current == parent_obligation_id:
+                    return True
+                seen.add(current)
+                item = by_id.get(current)
+                if item is None or item.parent_obligation_id is None:
+                    break
+                current = item.parent_obligation_id
+        return False
+
+    @staticmethod
     def _try_deterministic_finish(
         *,
         runtime: ManagerRuntime,
@@ -2165,6 +2189,22 @@ class ResearchManagerLoop:
                                 "evidence_verified",
                                 (scheduled.evidence.artifact_id,),
                             )
+                            contract = runtime.accepted_contract
+                            if contract is not None:
+                                for directive in contract.research_directives:
+                                    if (
+                                        directive.directive_type
+                                        == ResearchDirectiveType.ADAPT_ON_EVIDENCE
+                                        and directive.parent_obligation_id
+                                        == decision.branch_parent_obligation_id
+                                    ):
+                                        runtime.account_research_directive(
+                                            directive_id=directive.directive_id,
+                                            status=ResearchDirectiveDispositionStatus.APPLIED,
+                                            evidence_ref=str(decision.branch_evidence_ref),
+                                            branch_task_refs=(scheduled.task.task_id,),
+                                            reason="governed material branch executed and accounted",
+                                        )
                         except ResearchTaskInvocationCompileError as exc:
                             observations.append(
                                 {
@@ -2199,21 +2239,31 @@ class ResearchManagerLoop:
                 continue
 
             if decision.action == ManagerActionKind.FINISH:
-                try:
-                    runtime.finish()
+                if self._try_deterministic_finish(
+                    runtime=runtime,
+                    task_registry=task_registry,
+                ):
                     observations.append({"kind": "finish", "status": "accepted"})
                     break
-                except ManagerStateError as exc:
-                    observations.append(
-                        {"kind": "finish_rejected", "message": str(exc)}
-                    )
-                    frontier.observe(
-                        progress_before=progress_before,
-                        action=decision,
-                        runtime=runtime,
-                        result={"finish_rejected": str(exc)},
-                    )
-                    continue
+                observations.append(
+                    {
+                        "kind": "finish_rejected",
+                        "message": (
+                            "deterministic completion/directive/task accounting is incomplete"
+                        ),
+                    }
+                )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={
+                        "finish_rejected": (
+                            "deterministic completion/directive/task accounting is incomplete"
+                        )
+                    },
+                )
+                continue
 
             try:
                 call = self._compile_tool(
