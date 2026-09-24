@@ -35,6 +35,7 @@ _DISPLAY = {
 def _event_id(
     *,
     request_ref: str,
+    turn_ref: str,
     kind: ProductEventKind,
     refs: tuple[str, ...],
     transition_ref: str,
@@ -42,6 +43,7 @@ def _event_id(
     raw = json.dumps(
         {
             "request_ref": request_ref,
+            "turn_ref": turn_ref,
             "kind": kind.value,
             "refs": refs,
             "transition_ref": transition_ref,
@@ -60,16 +62,26 @@ class ProductEventSink:
         self,
         *,
         request_ref: str,
+        turn_ref: str,
         clock: Callable[[], float] = time.monotonic,
         on_event: Callable[[ProductEvent], None] | None = None,
     ) -> None:
         self._request_ref = request_ref
+        self._turn_ref = turn_ref
         self._clock = clock
         self._started = clock()
         self._on_event = on_event
         self._events: list[ProductEvent] = []
         self._by_id: dict[str, ProductEvent] = {}
         self._lock = threading.Lock()
+
+    @property
+    def turn_ref(self) -> str:
+        return self._turn_ref
+
+    @property
+    def request_ref(self) -> str:
+        return self._request_ref
 
     @property
     def events(self) -> tuple[ProductEvent, ...]:
@@ -86,6 +98,7 @@ class ProductEventSink:
         canonical_refs = tuple(dict.fromkeys(str(ref) for ref in refs if ref))
         event_id = _event_id(
             request_ref=self._request_ref,
+            turn_ref=self._turn_ref,
             kind=kind,
             refs=canonical_refs,
             transition_ref=transition_ref,
