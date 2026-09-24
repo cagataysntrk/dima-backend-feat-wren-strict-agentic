@@ -359,6 +359,14 @@ class ManagerSemanticResolutionAdapter:
         result, _ = self._resolve_regular_once(entries=entries, args=args)
         return result
 
+    @staticmethod
+    def _normalized_target_kind(kind: str) -> str:
+        return {
+            "kpi": "metric",
+            "entity_value": "filter",
+            "time": "period",
+        }.get(kind, kind)
+
     def _current_turn_candidate_bindings(
         self,
         *,
@@ -380,7 +388,7 @@ class ManagerSemanticResolutionAdapter:
             handle = item.handle
             if handle.sensitive:
                 continue
-            if self._normalized_hint_kind(handle.target_kind) != kind_hint:
+            if self._normalized_target_kind(handle.target_kind) != kind_hint:
                 continue
             candidate_id = str(handle.resolver_provenance_id or "")
             if not candidate_id.startswith("cand_"):
