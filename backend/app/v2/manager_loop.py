@@ -26,6 +26,7 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
 )
 from app.v2.manager_policy import ManagerCapabilityRegistry
+from app.v2.capability_bindings import CapabilityBindingValidator
 from app.v2.manager_preacceptance import (
     FiniteAcceptanceStatus,
     PreAcceptanceController,
@@ -62,6 +63,10 @@ from app.v2.research_tasks import (
     ResearchTaskService,
 )
 from app.v2.research_tools import ResearchToolRunner
+from app.v2.research_scheduler import (
+    DeterministicResearchScheduler,
+    ResearchTaskInvocationCompileError,
+)
 from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
@@ -1190,6 +1195,101 @@ class ResearchManagerLoop:
             )
         return candidates[0] if candidates else None
 
+    def _scheduled_binding(
+        self,
+        *,
+        runtime: ManagerRuntime,
+        task,
+        capability_key: ManagerCapabilityKey | None = None,
+        ranking_direction: str | None = None,
+        ranking_limit: int | None = None,
+    ):
+        if runtime.ledger is None or self._root_cause_context is None:
+            raise ResearchTaskInvocationCompileError(
+                "deterministic scheduling requires accepted ledger + semantic authority"
+            )
+        obligation_id = (
+            task.question_id
+            if task.origin == "USER_SEED"
+            else task.parent_obligation_id
+        )
+        if obligation_id is None:
+            raise ResearchTaskInvocationCompileError(
+                "scheduled task has no accepted obligation owner"
+            )
+        try:
+            obligation = next(
+                item
+                for item in runtime.ledger.items
+                if item.obligation_id == obligation_id
+            )
+        except StopIteration as exc:
+            raise ResearchTaskInvocationCompileError(
+                "scheduled task obligation is absent from accepted ledger"
+            ) from exc
+
+        candidate = obligation
+        if capability_key is not None:
+            candidate = obligation.model_copy(
+                update={
+                    "capability_key": capability_key,
+                    "semantic_handle_refs": task.input_refs,
+                    "ranking_direction": ranking_direction,
+                    "ranking_limit": ranking_limit,
+                }
+            )
+        validator = CapabilityBindingValidator(
+            semantic_handles=self._root_cause_context.semantic_handles,
+            capabilities=self._capabilities,
+        )
+        result = validator.validate(
+            candidate,
+            tenant_binding=self._root_cause_context.tenant_binding,
+            context_version=self._root_cause_context.context_version,
+        )
+        if not result.valid or result.binding is None:
+            raise ResearchTaskInvocationCompileError(
+                "scheduled task is not losslessly bound: "
+                + "; ".join(result.reasons)
+            )
+        return obligation, result.binding
+
+    def _execute_scheduled_task(
+        self,
+        *,
+        runtime: ManagerRuntime,
+        executor,
+        task_registry: ResearchTaskRegistry,
+        task,
+        capability_key: ManagerCapabilityKey | None = None,
+        ranking_direction: str | None = None,
+        ranking_limit: int | None = None,
+    ):
+        if self._research_tool_runner is None:
+            raise ResearchTaskInvocationCompileError(
+                "deterministic scheduler requires ResearchToolRunner"
+            )
+        obligation, binding = self._scheduled_binding(
+            runtime=runtime,
+            task=task,
+            capability_key=capability_key,
+            ranking_direction=ranking_direction,
+            ranking_limit=ranking_limit,
+        )
+        scheduler = DeterministicResearchScheduler(
+            runner=self._research_tool_runner,
+        )
+        return scheduler.execute(
+            task=task,
+            obligation=obligation,
+            binding=binding,
+            runtime=runtime,
+            executor=executor,
+            principal=getattr(executor, "principal", None),
+            task_registry=task_registry,
+            cancel_check=self._cancel_check,
+        )
+
     def understand(
         self,
         *,
@@ -1310,6 +1410,41 @@ class ResearchManagerLoop:
                 }
             )
 
+            for task in seed_set.registered_tasks:
+                try:
+                    execution = self._execute_scheduled_task(
+                        runtime=runtime,
+                        executor=executor,
+                        task_registry=task_registry,
+                        task=task,
+                    )
+                except ResearchTaskInvocationCompileError as exc:
+                    observations.append(
+                        {
+                            "kind": "deterministic_schedule_deferred",
+                            "task_id": task.task_id,
+                            "reason": str(exc),
+                        }
+                    )
+                    continue
+                observations.append(
+                    {
+                        "kind": "deterministic_task_executed",
+                        "task_id": execution.task.task_id,
+                        "tool_id": execution.contract.tool_id,
+                        "evidence_ref": execution.evidence.artifact_id,
+                    }
+                )
+                self._emit_progress(
+                    "evidence_verified",
+                    (execution.evidence.artifact_id,),
+                )
+                if execution.evidence.evidence_kind == "relationship_analytics":
+                    self._emit_progress(
+                        "relationship_checked",
+                        (execution.evidence.artifact_id,),
+                    )
+
             if (
                 self._root_cause_context is not None
                 and runtime.ledger is not None
@@ -1372,6 +1507,39 @@ class ResearchManagerLoop:
                             "reason": bootstrap.reason,
                         }
                     )
+                    if (
+                        bootstrap.status == RootCauseBootstrapStatus.TASK_READY
+                        and bootstrap.task is not None
+                        and bootstrap.selected_capability is not None
+                    ):
+                        try:
+                            execution = self._execute_scheduled_task(
+                                runtime=runtime,
+                                executor=executor,
+                                task_registry=task_registry,
+                                task=bootstrap.task,
+                                capability_key=bootstrap.selected_capability,
+                            )
+                            observations.append(
+                                {
+                                    "kind": "root_cause_bootstrap_executed",
+                                    "task_id": execution.task.task_id,
+                                    "tool_id": execution.contract.tool_id,
+                                    "evidence_ref": execution.evidence.artifact_id,
+                                }
+                            )
+                            self._emit_progress(
+                                "evidence_verified",
+                                (execution.evidence.artifact_id,),
+                            )
+                        except ResearchTaskInvocationCompileError as exc:
+                            observations.append(
+                                {
+                                    "kind": "deterministic_schedule_deferred",
+                                    "task_id": bootstrap.task.task_id,
+                                    "reason": str(exc),
+                                }
+                            )
                     if bootstrap.status == RootCauseBootstrapStatus.AMBIGUOUS_TASK:
                         runtime.require_clarification(bootstrap.reason)
                     elif bootstrap.status == RootCauseBootstrapStatus.NO_APPLICABLE_TASK:
@@ -1385,6 +1553,18 @@ class ResearchManagerLoop:
                             observations=tuple(observations),
                             preacceptance_status=FiniteAcceptanceStatus.ACCEPTED,
                         )
+
+        if self._try_deterministic_finish(
+            runtime=runtime,
+            task_registry=task_registry,
+        ):
+            observations.append(
+                {
+                    "kind": "finish",
+                    "status": "accepted",
+                    "reason": "deterministic_completion_gate",
+                }
+            )
 
         cancelled = False
         answer_now_requested = False
@@ -1645,6 +1825,17 @@ class ResearchManagerLoop:
                             root_cause_ledgers,
                             decision.hypothesis_ref,
                         )
+                        next_test_proposal = HypothesisNextTestProposal(
+                            hypothesis_ref=decision.hypothesis_ref,
+                            task_kind=decision.next_test_task_kind,
+                            input_refs=self._decode_handles(
+                                decision.next_test_input_handles
+                            ),
+                            trigger_evidence_ref=decision.next_test_trigger_evidence_ref,
+                            material_reason=decision.next_test_material_reason,
+                            ranking_direction=decision.next_test_ranking_direction,
+                            ranking_limit=decision.next_test_ranking_limit,
+                        )
                         task = HypothesisNextTestBoundary(
                             ledger=ledger,
                             runtime=runtime,
@@ -1655,27 +1846,33 @@ class ResearchManagerLoop:
                             context_version=self._root_cause_context.context_version,
                             task_service=self._research_tasks,
                             capabilities=self._capabilities,
-                        ).materialize(
-                            HypothesisNextTestProposal(
-                                hypothesis_ref=decision.hypothesis_ref,
-                                task_kind=decision.next_test_task_kind,
-                                input_refs=self._decode_handles(
-                                    decision.next_test_input_handles
-                                ),
-                                trigger_evidence_ref=decision.next_test_trigger_evidence_ref,
-                                material_reason=decision.next_test_material_reason,
-                                ranking_direction=decision.next_test_ranking_direction,
-                                ranking_limit=decision.next_test_ranking_limit,
-                            )
+                        ).materialize(next_test_proposal)
+                        capability = self._research_tasks.capability_for_task_kind(
+                            next_test_proposal.task_kind
+                        )
+                        execution = self._execute_scheduled_task(
+                            runtime=runtime,
+                            executor=executor,
+                            task_registry=task_registry,
+                            task=task,
+                            capability_key=capability,
+                            ranking_direction=decision.next_test_ranking_direction,
+                            ranking_limit=decision.next_test_ranking_limit,
                         )
                         result_view = {
                             "hypothesis_id": decision.hypothesis_ref,
-                            "task_id": task.task_id,
-                            "task_kind": task.task_kind,
-                            "state": task.state,
-                            "trigger_evidence_ref": task.trigger_evidence_ref,
+                            "task_id": execution.task.task_id,
+                            "task_kind": execution.task.task_kind,
+                            "state": execution.task.state,
+                            "trigger_evidence_ref": execution.task.trigger_evidence_ref,
+                            "evidence_ref": execution.evidence.artifact_id,
+                            "tool_id": execution.contract.tool_id,
                         }
-                        observation_kind = "hypothesis_next_test_registered"
+                        self._emit_progress(
+                            "evidence_verified",
+                            (execution.evidence.artifact_id,),
+                        )
+                        observation_kind = "hypothesis_next_test_executed"
 
                     observations.append(
                         {
