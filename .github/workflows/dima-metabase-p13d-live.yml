@@ -1,0 +1,13 @@
+name: dima-metabase-p13d-live
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pending-runtime-seal:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "P13D live remains closed until digest-backed runtime GREEN."
