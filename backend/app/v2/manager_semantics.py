@@ -27,9 +27,13 @@ from app.v2.semantic_linker import (
     BoundedSemanticLinker,
     GovernedCurrentTurnCandidateGenerator,
     GovernedSiblingScopeCandidateGenerator,
+    CandidateSet,
     SemanticBindingGate,
     SemanticCandidateDecisionProvider,
     SemanticCandidateGenerator,
+    SemanticDecompositionRepairProvider,
+    SemanticDecompositionRepairRequest,
+    SemanticRepairSourceCard,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
@@ -77,6 +81,7 @@ class ManagerSemanticResolutionAdapter:
         session_id: str | None,
         thread_id: str | None,
         semantic_decision_provider: SemanticCandidateDecisionProvider | None = None,
+        semantic_decomposition_repair_provider: SemanticDecompositionRepairProvider | None = None,
         temporal_normalization_provider: TemporalNormalizationProvider | None = None,
         semantic_diagnostic_sink: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
@@ -102,6 +107,7 @@ class ManagerSemanticResolutionAdapter:
             context_version=semantic_context.context_version.version,
         )
         self._semantic_decision_provider = semantic_decision_provider
+        self._semantic_decomposition_repair_provider = semantic_decomposition_repair_provider
         self._semantic_diagnostic_sink = semantic_diagnostic_sink
         self._semantic_linker = BoundedSemanticLinker(
             generator=self._candidate_generator,
@@ -327,7 +333,11 @@ class ManagerSemanticResolutionAdapter:
             handle = active_linker.bind_selection(
                 selection,
                 provenance_type=args.provenance,
-                parent_obligation_id=args.parent_obligation_id,
+                parent_obligation_id=(
+                    owner_id
+                    if args.provenance == "USER_SOURCE" and owner_id is not None
+                    else args.parent_obligation_id
+                ),
                 trigger_evidence_ref=args.evidence_ref,
             )
             resolved.append(
@@ -482,8 +492,232 @@ class ManagerSemanticResolutionAdapter:
         return tuple(sorted(scope))
 
 
+    def _governed_repair_source(
+        self,
+        *,
+        source_ref: str,
+        missing_kind: str,
+        runtime,
+        expected_message_hash: str,
+    ):
+        """Return one revalidated current governed source identity or None.
+
+        Runtime receipt proves this exact current source crossed the normal semantic path.
+        Current registry + catalog revalidation prevents stale handle/candidate reuse.
+        """
+        span = self._source_spans.validate(
+            source_ref,
+            expected_message_hash=expected_message_hash,
+        )
+        matches = []
+        for receipt in runtime.semantic_resolution_receipts:
+            if receipt.source_ref != source_ref:
+                continue
+            if self._normalized_target_kind(receipt.target_kind) != missing_kind:
+                continue
+            handle = self._handles.validate(
+                receipt.handle_id,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
+            )
+            if handle.provenance_type != "USER_SOURCE" or handle.sensitive:
+                continue
+            candidate_id = str(handle.resolver_provenance_id or "")
+            if not candidate_id.startswith("cand_"):
+                continue
+            current = [
+                item
+                for item in self._candidate_generator._governed_candidates(missing_kind)
+                if item.card.candidate_id == candidate_id
+                and not item.sensitive
+                and self._normalized_target_kind(item.card.target_kind) == missing_kind
+            ]
+            if len(current) == 1:
+                matches.append((handle, current[0]))
+
+        unique = {
+            item.card.candidate_id: (handle, item)
+            for handle, item in matches
+        }
+        if len(unique) != 1:
+            return None
+        handle, binding = next(iter(unique.values()))
+        return span, handle, binding
+
+    def _resolve_decomposition_repair(
+        self,
+        args: ResolveSemanticsArgs,
+        runtime,
+    ) -> ManagerSemanticResolutionResult:
+        if runtime is None:
+            raise ValueError("semantic decomposition repair requires ManagerRuntime")
+        if self._semantic_decomposition_repair_provider is None:
+            return ManagerSemanticResolutionResult()
+
+        gap_spans = [
+            self._source_spans.validate(ref)
+            for gap in args.decomposition_repair_gaps
+            for ref in gap.obligation_source_refs
+        ]
+        if not gap_spans:
+            return ManagerSemanticResolutionResult()
+        message_hashes = {item.message_hash for item in gap_spans}
+        message_ids = {item.message_id for item in gap_spans}
+        if len(message_hashes) != 1 or len(message_ids) != 1:
+            raise ValueError("semantic repair gaps must belong to one current message")
+        message_hash = next(iter(message_hashes))
+        user_message = self._source_spans.message_text_for(
+            args.decomposition_repair_gaps[0].obligation_source_refs[0]
+        )
+
+        source_refs = tuple(dict.fromkeys(args.decomposition_repair_source_refs))
+        token_by_ref_kind: dict[tuple[str, str], str] = {}
+        proof_by_token: dict[str, tuple[str, Any]] = {}
+        next_token = 1
+
+        requests: list[SemanticDecompositionRepairRequest] = []
+        allowed_tokens_by_gap: dict[str, set[str]] = {}
+
+        for gap in args.decomposition_repair_gaps:
+            cards: list[SemanticRepairSourceCard] = []
+            allowed: set[str] = set()
+            for source_ref in source_refs:
+                proof = self._governed_repair_source(
+                    source_ref=source_ref,
+                    missing_kind=gap.missing_kind,
+                    runtime=runtime,
+                    expected_message_hash=message_hash,
+                )
+                if proof is None:
+                    continue
+                span, _source_handle, binding = proof
+                key = (source_ref, gap.missing_kind)
+                token = token_by_ref_kind.get(key)
+                if token is None:
+                    token = f"s{next_token}"
+                    next_token += 1
+                    token_by_ref_kind[key] = token
+                    proof_by_token[token] = (source_ref, binding)
+                cards.append(
+                    SemanticRepairSourceCard(
+                        source_token=token,
+                        surface=span.exact_surface,
+                        kind=gap.missing_kind,
+                        safe_label=binding.card.label,
+                    )
+                )
+                allowed.add(token)
+
+            if not cards:
+                continue
+            target_surfaces = tuple(
+                self._source_spans.validate(
+                    ref,
+                    expected_message_hash=message_hash,
+                ).exact_surface
+                for ref in gap.obligation_source_refs
+            )
+            requests.append(
+                SemanticDecompositionRepairRequest(
+                    gap_ref=gap.gap_ref,
+                    obligation_id=gap.obligation_id,
+                    capability_key=gap.capability_key.value,
+                    missing_kind=gap.missing_kind,
+                    obligation_source_surfaces=target_surfaces,
+                    available_user_source_concepts=tuple(cards),
+                )
+            )
+            allowed_tokens_by_gap[gap.gap_ref] = allowed
+
+        if not requests:
+            return ManagerSemanticResolutionResult()
+
+        decision = self._semantic_decomposition_repair_provider.decide(
+            tuple(requests),
+            user_message=user_message,
+        )
+        choices = {item.gap_ref: item for item in decision.choices}
+        expected = {item.gap_ref for item in requests}
+        if set(choices) != expected:
+            raise ValueError(
+                "semantic decomposition repair response gap refs do not match batch"
+            )
+
+        gap_by_ref = {
+            gap.gap_ref: gap for gap in args.decomposition_repair_gaps
+        }
+        resolved: list[ManagerResolvedSemantic] = []
+        diagnostic_choices: list[dict[str, Any]] = []
+
+        for request in requests:
+            choice = choices[request.gap_ref]
+            selected = tuple(dict.fromkeys(choice.selected_source_tokens))
+            if choice.decision == "ABSTAIN":
+                selected = ()
+            elif not set(selected).issubset(allowed_tokens_by_gap[request.gap_ref]):
+                raise ValueError(
+                    "semantic decomposition repair selected unknown/wrong-kind source token"
+                )
+
+            gap = gap_by_ref[request.gap_ref]
+            diagnostic_choices.append(
+                {
+                    "gap_ref": request.gap_ref,
+                    "obligation_id": request.obligation_id,
+                    "missing_kind": request.missing_kind,
+                    "available_source_tokens": [
+                        item.source_token
+                        for item in request.available_user_source_concepts
+                    ],
+                    "decision": choice.decision,
+                    "selected_source_tokens": list(selected),
+                    "reason": choice.reason,
+                }
+            )
+
+            for token in selected:
+                source_ref, binding = proof_by_token[token]
+                candidate_set = CandidateSet(
+                    request_id=f"repair:{request.gap_ref}:{token}",
+                    surface=self._source_spans.validate(source_ref).exact_surface,
+                    kind_hint=request.missing_kind,
+                    bindings=(binding,),
+                    too_broad=False,
+                    retrieval_exhaustive=True,
+                    retrieval_backend="governed_decomposition_source_reuse_v1",
+                    retrieval_truncated=False,
+                )
+                handle = self._binding_gate.bind(
+                    candidate_set=candidate_set,
+                    candidate_id=binding.card.candidate_id,
+                    provenance_type="USER_SOURCE",
+                    parent_obligation_id=gap.obligation_id,
+                )
+                resolved.append(
+                    ManagerResolvedSemantic(
+                        source_ref=source_ref,
+                        proposal_text=None,
+                        owner_id=gap.obligation_id,
+                        provenance="USER_SOURCE",
+                        handle=handle,
+                    )
+                )
+
+        if self._semantic_diagnostic_sink is not None:
+            self._semantic_diagnostic_sink(
+                {
+                    "kind": "semantic_decomposition_repair",
+                    "schema_name": "dima_semantic_decomposition_repair_v1",
+                    "gap_count": len(requests),
+                    "choices": diagnostic_choices,
+                }
+            )
+
+        return ManagerSemanticResolutionResult(resolved=tuple(resolved))
+
     def resolve(self, args: ResolveSemanticsArgs, runtime=None) -> ManagerSemanticResolutionResult:
-        del runtime  # provenance authority is validated by GovernedManagerExecutor.
+        if args.provenance == "USER_SOURCE" and args.decomposition_repair_gaps:
+            return self._resolve_decomposition_repair(args, runtime)
 
         if args.provenance == "USER_SOURCE":
             spans = [
