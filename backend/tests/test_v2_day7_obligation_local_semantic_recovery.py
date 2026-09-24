@@ -892,3 +892,131 @@ def test_current_turn_recovery_never_expands_to_filter_kind():
         for item in diagnostics
         if item.get("owner_obligation_id") == "U_OTHER"
     )
+
+
+def test_current_turn_metric_metadata_hydrates_cross_owner_dimension_applicability():
+    service, context = _context()
+    schema = service.schema()
+    fx = _fixture(context=context, schema=schema, provider=_ForbiddenProvider())
+
+    resolved, _ = _resolve(
+        fx,
+        text="Duruş süresi incelensin.",
+        entries=(("U_METRIC", "Duruş süresi", "metric"),),
+        message_id="turn-d10-o-scope-source",
+    )
+    assert len(resolved.resolved) == 1
+
+    applicable = fx.adapter._current_turn_candidate_bindings(
+        resolved=resolved.resolved,
+        kind_hint="dimension",
+    )
+    assert {_canonical(item) for item in applicable} == {
+        "department_axis_d",
+        "line_axis_p",
+    }
+
+
+def test_cross_domain_current_turn_context_has_no_coherent_applicability_scope():
+    service, context = _context()
+    schema = service.schema()
+    fx = _fixture(context=context, schema=schema, provider=_ForbiddenProvider())
+
+    resolved, _ = _resolve(
+        fx,
+        text="Net gelir ve duruş süresi birlikte incelensin.",
+        entries=(
+            ("U_SALES", "Net gelir", "metric"),
+            ("U_OPS", "duruş süresi", "metric"),
+        ),
+        message_id="turn-d10-o-cross-domain",
+    )
+    assert len(resolved.resolved) == 2
+
+    applicable = fx.adapter._current_turn_candidate_bindings(
+        resolved=resolved.resolved,
+        kind_hint="dimension",
+    )
+    assert applicable == ()
+
+
+def test_current_turn_scope_candidates_remain_discovery_until_fresh_binding_gate_edge():
+    service, context = _context()
+    schema = service.schema()
+    diagnostics = []
+
+    class ScopeSelectProvider(_RecordingProvider):
+        def decide(self, requests):
+            records = []
+            choices = []
+            for request in requests:
+                visible = tuple(
+                    self._id_to_canonical.get(item.candidate_id, item.label)
+                    for item in request.candidates
+                )
+                records.append(
+                    {
+                        "surface": request.surface,
+                        "request_id": request.request_id,
+                        "visible": visible,
+                    }
+                )
+                # Broad baseline abstains; narrowed governed scope may select.
+                if (
+                    request.surface == "bölümlerle"
+                    and set(visible) == {"department_axis_d", "line_axis_p"}
+                ):
+                    selected = next(
+                        item.candidate_id
+                        for item in request.candidates
+                        if self._id_to_canonical.get(item.candidate_id)
+                        == "department_axis_d"
+                    )
+                    choices.append(
+                        SemanticLinkChoice(
+                            request_id=request.request_id,
+                            decision="SELECT",
+                            candidate_id=selected,
+                        )
+                    )
+                else:
+                    choices.append(
+                        SemanticLinkChoice(
+                            request_id=request.request_id,
+                            decision="ABSTAIN",
+                            reason="AMBIGUOUS",
+                        )
+                    )
+            self.calls.append(tuple(records))
+            return SemanticLinkBatchDecision(choices=tuple(choices))
+
+    provider = ScopeSelectProvider(id_to_canonical=_catalog_index(context, schema))
+    fx = _fixture(
+        context=context,
+        schema=schema,
+        provider=provider,
+        diagnostic_sink=diagnostics.append,
+    )
+
+    result, refs = _resolve(
+        fx,
+        text="Duruş süresi ana metriktir; bölümlerle governed ilişkiyi incele.",
+        entries=(
+            ("U_METRIC", "Duruş süresi", "metric"),
+            ("U_REL", "bölümlerle", "dimension"),
+        ),
+        message_id="turn-d10-o-cross-owner-fresh-edge",
+    )
+
+    resolved = _resolved_canonicals(fx, result)
+    assert resolved[("U_METRIC", refs[0])] == "downtime_min_d"
+    assert resolved[("U_REL", refs[1])] == "department_axis_d"
+    assert refs[0] != refs[1]
+
+    recovery = next(
+        item for item in diagnostics
+        if item.get("owner_obligation_id") == "U_REL"
+        and item.get("discovery_pass") == "current_turn_applicability"
+    )
+    assert recovery["selection"]["status"] == "BOUND"
+    assert recovery["candidate_count"] == 2
