@@ -64,7 +64,7 @@ jobs:
       - name: Compile Day10 product surface
         working-directory: backend
         run: |
-          python -m compileall -q             app/routers/ask_v2.py             app/v2/product_models.py             app/v2/product_control.py             app/v2/product_coordinator.py             app/v2/research_lane.py             app/v2/manager_loop.py             app/v2/manager_runtime.py             app/v2/manager_models.py             app/v2/manager_preacceptance.py             app/v2/acceptance.py             app/v2/standard_authority.py             app/v2/epistemics.py             app/v2/models.py             app/v2/research_tools.py             app/v2/research_scheduler.py             app/v2/research_report_projector.py             app/v2/product_events.py             app/v2/report_continuation.py
+          python -m compileall -q             app/routers/ask_v2.py             app/v2/product_models.py             app/v2/product_control.py             app/v2/product_coordinator.py             app/v2/standard_lane.py             app/v2/standard_coverage.py             app/v2/representability.py             app/v2/research_lane.py             app/v2/manager_loop.py             app/v2/manager_runtime.py             app/v2/manager_models.py             app/v2/manager_preacceptance.py             app/v2/acceptance.py             app/v2/standard_authority.py             app/v2/epistemics.py             app/v2/models.py             app/v2/research_tools.py             app/v2/research_scheduler.py             app/v2/research_report_projector.py             app/v2/product_events.py             app/v2/report_continuation.py
 
       - name: Day10 focused provider-free
         working-directory: backend
