@@ -440,6 +440,7 @@ def test_acceptance_allows_only_signed_context_scope_and_versions_immutably():
     )
     assert second.status == AcceptanceStatus.ACCEPTED
     assert second.contract.version == 2
+    assert second.contract.turn_id != first.contract.turn_id
     assert second.contract.lineage_id == first.contract.lineage_id
     assert second.contract.supersedes_contract_id == first.contract.contract_id
     assert first.contract.version == 1
