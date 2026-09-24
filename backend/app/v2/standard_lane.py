@@ -240,6 +240,18 @@ class StandardLaneEngine:
     def authority_registry(self) -> AcceptedAuthorityRegistry:
         return self._authorities
 
+    def bind_authority_registry(
+        self,
+        registry: AcceptedAuthorityRegistry,
+    ) -> None:
+        if self._authorities is registry:
+            return
+        if self._authorities.has_any:
+            raise RuntimeError(
+                "cannot rebind Standard authority registry after authority commit"
+            )
+        self._authorities = registry
+
     def _draft(
         self,
         *,
