@@ -1786,3 +1786,84 @@ CONSUMED / TRUE STOP
 
 Do not erase the three authorized REDs or the invalid cleanup-trigger receipt. Do not perform
 another paid run or Product fix until a new supervisor authority explicitly reopens development.
+
+
+---
+
+## D10-Q EXPLICIT MULTI-METRIC SCOPE GROUPS — GREEN HARVEST
+
+Final Product behavior owner:
+
+`4e9f7a32561ff8f4ebaf95f61e36316453677802`
+
+Final test-only candidate:
+
+`16d9bdc89141a4685616ad10094699185744995b`
+
+Deterministic / real-Wren receipts:
+
+```text
+Day10 final candidate        36056867465 = GREEN
+Day8 final candidate         36056867485 = GREEN
+Day7 same Product SHA        36055934356 = GREEN
+Day10 real-Wren proof        36056672128 = GREEN
+G16 provider calls           0
+G16 manager turns            6 / 6
+G16 confirmed cause          0
+G16 root status              VERIFIED
+G16 directive                ADAPT_ON_EVIDENCE / APPLIED
+```
+
+D10-Q scope groups are ephemeral cognition context only. They are deterministically derived from
+already-grounded exact current-message USER_SOURCE semantics owned by REQUIRED analytical
+obligations. They are never persisted as accepted authority and never become a new truth store.
+
+**H-131 — MUST_PORT**  
+A multi-concept analytical scope is a set, not an implicit instruction to choose one primary
+semantic concept.
+
+**H-132 — MUST_PORT**  
+Semantic scope groups are cognition context only; target authority still requires fresh exact-source
+revalidation and SemanticBindingGate admission for every member.
+
+**H-133 — MUST_PORT**  
+Co-occurrence may define a candidate scope group but may never itself become semantic truth or
+auto-binding authority. Even one available group still requires bounded cognition selection.
+
+**H-134 — MUST_PORT**  
+Selecting a scope group is atomic: every member revalidates against current message/runtime
+receipt/tenant/context/catalog/kind before any new target handle is minted. Any member failure
+produces zero target authority.
+
+**H-135 — MUST_PORT**  
+Multiplicity inside one explicit scope group is not semantic ambiguity. Ambiguity exists between
+materially different candidate scopes; ABSTAIN remains valid there.
+
+**H-136 — SHOULD_PORT**  
+Hydrate explicit scope/applicability before planning, then execute every admitted combination rather
+than silently selecting a single "best" concept. This is the adopted Metabase Exploration pattern,
+not a Metabase runtime dependency.
+
+**H-137 — MUST_PORT**  
+Paid certification workflows remain manual-dispatch only. Temporary push-trigger/marker bridges are
+prohibited even when the local tool surface cannot dispatch Actions.
+
+### Proof details
+
+- `SemanticRepairScopeGroupCard` uses opaque deterministic `g*` tokens and opaque `s*` members.
+- Candidate IDs, `sem_*` IDs, canonical DB names, SQL and raw Wren internals are not exposed as
+  group truth.
+- Identical source-member sets deduplicate; supporting capability provenance is merged.
+- Group identity/member ordering is stable under input permutation.
+- EXCLUDED, sensitive, prior-turn, foreign and wrong-kind semantic sources do not become members.
+- `SELECT_SOURCES`, `SELECT_SCOPE_GROUP` and `ABSTAIN` are mutually exclusive strict shapes.
+- Existing single-source repair remains valid.
+- AMBIGUOUS_EXACT remains outside decomposition repair.
+- Multi-metric ROOT_CAUSE is valid under the existing capability algebra.
+- `RootCauseBootstrapPolicy` selects the existing lossless `PERFORMANCE / QUERY` seed when the
+  ROOT_CAUSE scope contains only governed metrics, preserving every accepted handle.
+- Real Wren sentinel proves two fresh ROOT_CAUSE-owned metric handles survive through one governed
+  query, QueryContract provenance and VERIFIED Evidence.
+- No new authority store, block model, root metric selector, Manager turn or semantic owner was
+  introduced.
+
