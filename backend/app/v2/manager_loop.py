@@ -511,7 +511,10 @@ Rules:
 - propose_branches registers bounded typed candidates only; it NEVER executes data work.
 - Every derived run_analytics must select a task already listed in READY_RESEARCH_TASKS.
 - Every derived branch must cite parent obligation + inspected evidence.
-- Use inspect_evidence before result-dependent replanning.
+- CURRENT_RESULT_DELTA with disclosed_in_current_prompt=true is already visible in this cognition call.
+  Do NOT spend inspect_evidence on that same fresh Evidence; after a successful structured response
+  the runtime records it as inspected. Explicit inspect_evidence remains for older accumulated
+  Evidence whose bounded payload is not present in CURRENT_RESULT_DELTA.
 - Follow ACTION_FRONTIER. Never repeat an exact action listed in blocked_exact_actions.
 - Semantic ambiguity is Resolver authority; do not guess canonical truth.
 - finish is only a proposal; deterministic CompletionGate decides completion truth.
