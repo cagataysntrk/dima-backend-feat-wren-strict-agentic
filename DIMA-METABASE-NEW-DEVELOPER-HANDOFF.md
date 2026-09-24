@@ -620,3 +620,90 @@ Current source-level conclusion:
 
 No new entity resolver, second access fingerprint, Python MBQL parser, filter normalizer, fuzzy
 matcher, translation layer or analytical fallback is authorized.
+
+
+---
+
+## 20. CURRENT AUTHORITATIVE STOP — DIMA.6 FINAL P13D LIVE (2026-09-24)
+
+This section supersedes the older P13B/P13C stop text above for the current handoff point.
+
+Exact current runtime:
+
+```text
+Platform branch/head     = feat/dima-metabase-platform
+Platform HEAD            = af66d2999e1710717c4ef117f936b302bd3b3870
+coherent migration       = dd4e69a762f28f3eae78f73d4ac00e3ecf22d570
+engine main/SHA          = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release           = 0.63.18-dima.6
+engine certification     = 36042062775 SUCCESS
+immutable digest         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+build identity           = github-actions:36042062775:cbe313af9ac2d5960f662068e433d328d896fb06
+```
+
+Platform exact-occurrence migration is provider-free GREEN:
+```text
+governance               = 36046089473 SUCCESS
+native bridge regression = 36046089305 SUCCESS
+P13D provider-free       = 36046089168 SUCCESS
+```
+
+Final Luna evidence:
+```text
+run                      = 36046994140 FAILURE
+artifact                 = 10829286413
+artifact digest          = sha256:7106a194b029225d3b9959b6d02c5898f5ca07ec1d410b5abdf4aab686880e02
+attempt                   = p13d-final-dima6-exact-occurrence-001
+```
+
+Two frozen live cases are valid GREEN:
+- BREAKDOWN: oracle exact; fingerprints attested=authorized=executed=receipt; QueryReceipt
+  `dqr_1ba94e6399d85042e37723a7`; Evidence
+  `evi_c8ff53766d3d684f2cc48744 / VERIFIED`.
+- RANKING: oracle exact; fingerprints attested=authorized=executed=receipt; QueryReceipt
+  `dqr_ca8dcbbc1180a9cd2355db25`; Evidence
+  `evi_87349d18181df8342ffe0ebd / VERIFIED`.
+
+Third frozen case `P13D-COMPARISON` is RED before authorization/execution:
+```text
+question       = Haziran 2026 ile Mayıs 2026 satış siparişi sayısını karşılaştır.
+native query   = Y1gaCQmrnk92z4CWE25Pj
+tool calls     = 12
+owner          = native-query-attestation
+HTTP           = 422
+Dima code      = NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED
+```
+
+The dima.6 Dima-local compatibility codec received a string in an `:absolute-datetime` literal slot
+that is not parseable as local ISO LocalDateTime. The exact string value was not persisted in the
+failure artifact/log, so do not guess its representation and do not broaden the codec speculatively.
+
+Current supervisor boundary is absolute:
+```text
+NATIVE_SUBSTRATE_IMMUTABILITY = BINDING
+NATIVE_CORE_PATCH = EXCEPTION ONLY
+
+second Luna/live retry          = NOT AUTHORIZED
+dima.7                          = NOT AUTHORIZED
+native_query_compat patch       = NOT AUTHORIZED
+native core/QP/driver patch     = NOT AUTHORIZED
+P13D seal                       = NOT AUTHORIZED / NOT GREEN
+P14 start                       = NOT AUTHORIZED / NOT STARTED
+```
+
+Next developer must first obtain a new supervisor directive. The directive must explicitly authorize
+(or reject) a bounded diagnostic/compatibility cycle and any additional live/model budget. Until then:
+no retry, no prompt patch, no query rewrite, no fallback, no P14 implementation.
+
+Canonical architecture remains:
+```text
+native Metabot cognition
+→ persisted exact native occurrence
+→ engine attestation
+→ Dima authorization
+→ engine exact-occurrence execution
+→ P10 access identity
+→ P5 QueryReceipt
+→ independent oracle
+→ VERIFIED Evidence
+```

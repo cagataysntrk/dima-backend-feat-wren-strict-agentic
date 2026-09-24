@@ -3710,3 +3710,109 @@ persisted-query restore/hydration in the Dima attestation seam, with:
 
 status:
 `OPEN / SUPERVISOR STOP — P13D NOT SEALED; P14 NOT STARTED`.
+
+
+---
+
+## DMP-P13D-LIVE-003 — final dima.6 Luna gate stops fail-closed on unsupported comparison datetime representation
+
+opened_at: 2026-09-24  
+platform_coherent_migration: `dd4e69a762f28f3eae78f73d4ac00e3ecf22d570`  
+final_platform_sha: `af66d2999e1710717c4ef117f936b302bd3b3870`  
+engine_sha: `cbe313af9ac2d5960f662068e433d328d896fb06`  
+engine_release: `0.63.18-dima.6`  
+engine_certification: `36042062775 = SUCCESS`  
+engine_build_identity: `github-actions:36042062775:cbe313af9ac2d5960f662068e433d328d896fb06`  
+immutable_digest: `sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353`  
+provider_free_platform_gate: `36046089168 = SUCCESS`  
+governance: `36046089473 = SUCCESS`  
+native_bridge_regression: `36046089305 = SUCCESS`  
+final_live_workflow: `36046994140 = FAILURE`  
+final_live_artifact: `10829286413`  
+final_live_artifact_digest: `sha256:7106a194b029225d3b9959b6d02c5898f5ca07ec1d410b5abdf4aab686880e02`  
+live_attempt_id: `p13d-final-dima6-exact-occurrence-001`
+
+classification:
+`DIMA ENGINE ATTESTATION / DIMA-LOCAL RUNTIME REPRESENTATION COMPATIBILITY / FINAL-LIVE SUPERVISOR STOP`
+
+pre-live proof:
+- exact dima.6 runtime lock = VERIFIED;
+- immutable digest pull = SUCCESS;
+- deterministic exact-occurrence preflight = 66/66 PASS;
+- restricted principal/bootstrap = SUCCESS;
+- Dima-managed metric provisioning = SUCCESS;
+- provider-free final pre-live boundary = GREEN;
+- independent oracles were frozen as:
+  - BREAKDOWN = `{Fuar:22, Mevcut Müşteri:34, Referans:21, Saha Ziyareti:22, Web:27}`;
+  - RANKING = `[[Mevcut Müşteri,34],[Web,27]]`;
+  - COMPARISON = `{2026-05:464, 2026-06:126}`;
+- Wren/raw-SQL/Agent-API/admin analytical fallbacks = 0 in provider-free proof.
+
+live completed cases:
+1. `P13D-BREAKDOWN` = GREEN:
+   - official answer = oracle;
+   - attested = authorized = executed = receipt fingerprint =
+     `61deebda4be371eca9f6f5200312401762573ae83c44a2fc147e40d8caefb5ff`;
+   - QueryReceipt = `dqr_1ba94e6399d85042e37723a7`;
+   - Evidence = `evi_c8ff53766d3d684f2cc48744 / VERIFIED`;
+   - one material native query and one database execution.
+2. `P13D-RANKING` = GREEN:
+   - official answer = oracle = `[[Mevcut Müşteri,34],[Web,27]]`;
+   - attested = authorized = executed = receipt fingerprint =
+     `96172acd1c6473a2b0b9c65cff205314e297d41192eed8ab32bb7cab2c347892`;
+   - QueryReceipt = `dqr_ca8dcbbc1180a9cd2355db25`;
+   - Evidence = `evi_87349d18181df8342ffe0ebd / VERIFIED`;
+   - one material native query and one database execution.
+
+failing case:
+- case = `P13D-COMPARISON`;
+- question = `Haziran 2026 ile Mayıs 2026 satış siparişi sayısını karşılaştır.`;
+- native query id = `Y1gaCQmrnk92z4CWE25Pj`;
+- native tool-call count = `12`;
+- failure owner = `native-query-attestation`;
+- engine response = HTTP 422;
+- Dima error = `NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED`;
+- codec message =
+  `Dima compatibility codec supports only local ISO datetime strings in :absolute-datetime literal slots`;
+- failure occurred before Dima authorization, exact-occurrence execution, QueryReceipt or Evidence
+  for COMPARISON.
+
+root-cause boundary:
+The failing value is proven to be a string in an `:absolute-datetime` literal slot, but the final
+artifact and logs do **not** preserve that exact literal value. Therefore this receipt must not guess
+whether the unsupported representation is offset/Z/date-only/another ISO shape. The current dima.6
+codec accepts a local ISO datetime string or an already-hydrated Temporal value and fail-closes
+otherwise.
+
+security/correctness disposition:
+- no un-attested COMPARISON query was executed;
+- no official COMPARISON answer/receipt/evidence was emitted;
+- no fallback path ran;
+- no query rewriting or semantic relaxation is authorized;
+- BREAKDOWN and RANKING GREEN evidence remains valid, but it does not seal P13D because all three
+  frozen cases are required.
+
+binding invariants:
+```text
+NATIVE_SUBSTRATE_IMMUTABILITY = BINDING
+NATIVE_CORE_PATCH = EXCEPTION ONLY
+```
+
+forbidden under current supervisor authority:
+- second Luna/live retry;
+- `0.63.18-dima.7` cut/build/certification;
+- speculative `native_query_compat` widening without exact failure representation evidence;
+- native Metabase/Metabot/QP/driver patch;
+- prompt/profile/skill patch;
+- Platform query rewrite;
+- raw SQL / Wren / Agent API / admin analytical fallback;
+- P13D seal;
+- P14 start.
+
+required supervisor decision:
+Authorize or reject a new bounded diagnostic/compatibility cycle. Any authorization must explicitly
+state the permitted Dima-local diagnostic surface, whether a new certified engine release is allowed,
+and whether one additional compact Luna live run is granted after deterministic/provider-free proof.
+
+status:
+`OPEN / FINAL-LIVE SUPERVISOR STOP — P13D NOT SEALED; P14 NOT STARTED`.

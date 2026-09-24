@@ -2773,3 +2773,94 @@ compact Luna retry. Therefore no engine patch, no additional model run, no P14 s
 rewrite/fallback is performed here. Supervisor authorization is required for a bounded observational
 engine compatibility correction plus its post-fix certification/live budget.
 
+
+
+---
+
+## 2026-09-24 — DIMA.6 EXACT-OCCURRENCE MIGRATION GREEN / FINAL P13D LIVE STOPS AT COMPARISON CODEC
+
+Certified engine/runtime is now:
+
+```text
+engine main / SHA       = cbe313af9ac2d5960f662068e433d328d896fb06
+release                 = 0.63.18-dima.6
+certification           = 36042062775 SUCCESS
+immutable digest        = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+build identity          = github-actions:36042062775:cbe313af9ac2d5960f662068e433d328d896fb06
+upstream base           = 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+```
+
+dima.6 certification proved one source build, smoke, publish, pull-by-digest and runtime identity
+verification. Engine `main` was non-force fast-forwarded to the certified SHA.
+
+Platform coherent migration:
+
+```text
+migration commit         = dd4e69a762f28f3eae78f73d4ac00e3ecf22d570
+final live HEAD          = af66d2999e1710717c4ef117f936b302bd3b3870
+engine gitlink           = cbe313af9ac2d5960f662068e433d328d896fb06
+runtime lock             = exact dima.6 SHA/digest/certification identity
+governance               = 36046089473 SUCCESS
+native bridge regression = 36046089305 SUCCESS
+provider-free P13D       = 36046089168 SUCCESS
+```
+
+The canonical execution seam is now exact-occurrence identity only:
+
+```text
+Platform authorization keeps attested A
+→ execution transport sends:
+   conversation_id
+   native_query_id
+   expected_pmbql_fingerprint
+   expected_attestation_id
+→ caller pMBQL body is not sent
+→ engine reloads/re-attests the same persisted occurrence
+→ engine executes it through native QP
+→ engine returns executed fingerprint + re-attestation
+→ Platform binds those facts into existing P5 QueryReceipt
+```
+
+P5 QueryReceipt and P10 ExecutionAccessSnapshot remain the only receipt/security authorities.
+No second planner, semantic authority, security fingerprint or receipt system was introduced.
+
+Final compact Luna gate:
+
+```text
+run                      = 36046994140 FAILURE
+artifact                 = 10829286413
+artifact digest          = sha256:7106a194b029225d3b9959b6d02c5898f5ca07ec1d410b5abdf4aab686880e02
+attempt                   = p13d-final-dima6-exact-occurrence-001
+deterministic preflight  = 66/66 PASS
+pre-live boundary        = GREEN
+```
+
+Live evidence:
+- BREAKDOWN = GREEN / oracle exact / QueryReceipt + VERIFIED Evidence;
+- RANKING = GREEN / oracle exact / QueryReceipt + VERIFIED Evidence;
+- COMPARISON = RED before authorization/execution at `native-query-attestation`;
+- COMPARISON engine error = HTTP 422 / `NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED`;
+- current codec rejected a string `:absolute-datetime` literal because it was not parseable as a
+  local ISO LocalDateTime;
+- exact failed literal value is not present in the artifact/log, so no speculative codec widening
+  is permitted.
+
+Current binding boundary:
+
+```text
+NATIVE_SUBSTRATE_IMMUTABILITY = BINDING
+NATIVE_CORE_PATCH = EXCEPTION ONLY
+
+P13D provider-free        = GREEN
+P13D BREAKDOWN live       = GREEN
+P13D RANKING live         = GREEN
+P13D COMPARISON live      = RED / FAIL-CLOSED
+P13D sealed               = NO
+P14 started               = NO
+second Luna authorized    = NO
+dima.7 authorized         = NO
+codec diagnostic patch    = NO
+```
+
+Supervisor authorization is required before any further P13D engine compatibility work or paid/model
+live attempt. Do not rerun `36046994140`.
