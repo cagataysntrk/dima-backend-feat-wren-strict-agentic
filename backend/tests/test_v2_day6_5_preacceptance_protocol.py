@@ -1404,10 +1404,10 @@ def test_d10_n_missing_relationship_dimension_uses_fresh_source_bound_applicabil
         if item.get("owner_obligation_id") == "U_REL"
         and item.get("kind_hint") == "dimension"
     ]
-    assert [item["discovery_pass"] for item in rel_dim_receipts] == [
-        "pass1",
-        "current_turn_applicability",
-    ]
-    assert rel_dim_receipts[0]["selection"]["status"] == "ABSTAIN"
-    assert rel_dim_receipts[1]["candidate_count"] == 1
-    assert rel_dim_receipts[1]["selection"]["status"] == "BOUND"
+    # This fixture is cheap enough for local governed discovery to resolve the
+    # synthesized missing-kind probe in pass1. The important invariant here is that
+    # U_REL receives a fresh source-bound dimension edge rather than U_BREAK's handle
+    # being copied. Narrowed current-turn fallback is certified separately.
+    assert [item["discovery_pass"] for item in rel_dim_receipts] == ["pass1"]
+    assert rel_dim_receipts[0]["candidate_count"] == 1
+    assert rel_dim_receipts[0]["selection"]["status"] == "BOUND"
