@@ -1457,3 +1457,154 @@ Classification: `MODEL_COGNITION`.
 Do not repair this by nearest-metric selection, retrieval ranking as truth, one/few-candidate auto-bind, phrase rules, fuzzy matching, required-kind weakening, BindingGate weakening, or Manager-budget increase.
 
 Potential next bounded owner, subject to supervisor authorization: preacceptance revision policy for model-authored required-kind decomposition gaps. It should preserve exact source proof and semantic authority boundaries.
+
+
+---
+
+## D10-O METABASE REFERENCE AUDIT / SUPERVISOR DECISION NOTE — 2026-09-24
+
+Reference upstream inspected:
+
+`metabase/metabase@b6f625ed4b0c6e6716dbbd61b8691841e34d626d`
+
+Relevant files:
+
+- `src/metabase/metabot/tools/explorations.clj`
+- `src/metabase/explorations/query_plan/context.clj`
+- `src/metabase/explorations/query_plan/mechanical.clj`
+- `src/metabase/metabot/agent/profiles.clj` / profile tests
+
+### What the working Metabase flow actually separates
+
+Metabase Exploration does not ask the planner to infer a metric identity from an ambiguous generic phrase.
+
+Its research tool flow is structurally:
+
+```text
+list_research_metrics
+→ choose explicit metric IDs
+→ get_research_candidates(metric_ids)
+→ expose only dimensions applicable to those already-chosen metrics
+→ add_research_groups(metric_id, dimension_ids)
+→ hydrate selected metric/dimension metadata
+→ compute per-pair applicability
+→ planner sees only applicable metric × dimension pairs
+→ materialize
+→ execute
+```
+
+`query_plan/context.clj` explicitly hydrates chosen metrics/dimensions and snapshots per-pair
+applicability before the planner. Dimensions that resolve on no selected metric are dropped rather
+than surfaced as planner noise.
+
+The mechanical planner then iterates the already-computed applicability matrix; existence in the
+catalog is not enough.
+
+Metabot profiles independently enforce the analogous control-plane rule:
+
+```text
+resolved profile
+→ advertised tool surface
+→ capability/permission filtering
+→ actual executable tool surface
+```
+
+### D10-O implication
+
+The second D10-O live RED is not evidence that the bounded linker should be more willing to select.
+
+Live receipt:
+
+```text
+source phrase              "bölüm bazındaki performansı"
+draft breakdown dimension  "bölüm"
+draft breakdown metric     "performansı"
+
+current-turn applicability
+→ 4 legitimate maintenance metrics
+
+linker
+→ ABSTAIN / NO_MATCH
+
+material gap
+→ breakdown requires metric
+```
+
+This is a model-authored decomposition problem upstream of semantic authority.
+
+The closest safe Dima analogue to the Metabase pattern is therefore:
+
+```text
+Research draft
+→ exact-source validation
+→ governed semantic grounding
+→ material required-kind gap
+
+if the gap is caused by model-authored decomposition
+and current exact source already contains grounded governed semantic material:
+    one bounded Research-draft revision
+    with typed MATERIAL_GROUNDING_REJECTED feedback
+    containing only:
+      - obligation/capability
+      - missing required kind
+      - exact source surfaces
+      - safe grounding summary / already-grounded kinds
+      - instruction to re-express intent from source evidence only
+
+revision
+→ exact-source validation again
+→ ordinary semantic linker
+→ SemanticBindingGate
+→ contract validity
+
+second unresolved material gap
+→ CLARIFICATION_REQUIRED
+```
+
+The revision must NOT receive canonical IDs, candidate IDs, semantic handles as truth, SQL, or an
+instruction to choose one of the four candidates.
+
+It may restructure the user intent only when the exact current message supports that structure.
+For example, a broad breakdown phrase may be re-expressed around separately source-grounded metrics
+already named by the user, but only if the revised obligation remains exact-source-valid.
+
+### New harvested invariants
+
+**H-121 — MUST_PORT**  
+Metric identity must be established before metric/dimension applicability can safely constrain
+planning. Applicability may narrow valid combinations; it must not invent metric identity.
+
+**H-122 — MUST_PORT**  
+A linker ABSTAIN over multiple applicable candidates is a valid semantic outcome, not a resolver
+failure. Never convert it into nearest/top-1 truth.
+
+**H-123 — SHOULD_PORT**  
+A model-authored required-kind decomposition gap should consume at most one bounded typed draft
+revision before becoming user clarification, when exact current source already contains governed
+semantic material that can support a different valid decomposition.
+
+**H-124 — MUST_PORT**  
+Any such revision is cognition repair only. It must re-enter exact-source validation and the normal
+Semantic Linker → SemanticBindingGate authority path; no semantic handle/candidate authority is
+copied into the revised obligation.
+
+**H-125 — SHOULD_PORT**  
+Planner/agent advertised capability surfaces should be derived from the same executable profile or
+capability registry so the model is not invited to express work the runtime cannot actually admit.
+
+### Current boundary
+
+No Product code was changed from this reference audit.
+
+```text
+D10-O paid measurements     2 / 2
+D10-O provider calls        9 / 30
+third paid measurement      NOT AUTHORIZED
+
+Day8 live debt              OPEN
+Day10 FINAL                 OPEN
+Day11                       NOT AUTHORIZED
+```
+
+Supervisor decision required before implementing the bounded preacceptance-revision owner described
+above, because the D10-O two-measurement TRUE STOP boundary has been reached.
