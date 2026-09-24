@@ -21,6 +21,7 @@ from app.v2.product_models import (
     ProductControlRequest,
     ProductEventKind,
     ProductResponse,
+    mint_product_turn_ref,
 )
 from app.v2.report_continuation import StaleReportContinuationError
 from app.v2.runtime_boundary import request_ref
@@ -106,6 +107,7 @@ def ask_v2_stream(
 
     frames: queue.Queue = queue.Queue()
     req_ref = request_ref(body)
+    turn_ref = mint_product_turn_ref()
     principal_subject = str(principal.user_id)
     principal_tenant = (
         f"id:{principal.tenant_id}"
@@ -143,6 +145,7 @@ def ask_v2_stream(
 
     sink = ProductEventSink(
         request_ref=req_ref,
+        turn_ref=turn_ref,
         on_event=on_event,
     )
 
@@ -153,6 +156,7 @@ def ask_v2_stream(
                 body=body,
                 principal=principal,
                 event_sink=sink,
+                turn_ref=turn_ref,
                 cancel_check=control.cancelled,
                 answer_now_check=control.answer_now_requested,
             )
