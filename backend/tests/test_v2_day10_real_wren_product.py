@@ -369,5 +369,6 @@ def test_product_research_relationship_crosses_real_wren_and_builds_report(
         for block in section.blocks
     )
 
-    # One relationship query, one inspection, one finish — no hidden duplicate Wren work.
-    assert len(manager.manager_prompts) == 3
+    # Fully-bound DIRECT USER_MUST execution is deterministic scheduling work.
+    # No Manager cognition turn is spent saying run/inspect/finish for this simple case.
+    assert len(manager.manager_prompts) == 0
