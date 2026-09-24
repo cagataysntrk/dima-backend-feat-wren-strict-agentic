@@ -1585,3 +1585,47 @@ first authorized D10-N canonical paid Product-MVP measurement
 A paid RED is no longer an automatic STOP. Classify the first wrong transition and continue with a
 generic owner fix unless a frozen architecture boundary is crossed or the D10-N paid envelope is
 exhausted.
+
+
+---
+
+## D10-O BOUNDARY — 2026-09-24
+
+D10-O live measurement history:
+
+- run `36039697895`: VALID RED, 4 provider calls.
+- generic applicability fix Product SHA: `482d118e105be729660906596ac1ef65365920ea`.
+- provider-free proof before second measurement:
+  - Day10 `36041069927` GREEN;
+  - Day7 `36040669543` GREEN;
+  - Day8 `36040542397` GREEN.
+- run `36041398308`: VALID RED, 5 provider calls.
+
+Second-run live progress:
+- typed-direct Standard routing remained correct;
+- Research entered;
+- `Makine duruşları` bound to governed `arıza duruşu`;
+- `arıza sayısı` bound exactly;
+- `bölüm` bound by the bounded semantic linker;
+- remaining material gap: breakdown required metric.
+
+Research Manager decomposed `bölüm bazındaki performansı` into `bölüm:dimension` plus `performansı:metric`. Narrowed current-turn applicability exposed four legitimate maintenance metrics for `performansı`; the semantic linker returned `ABSTAIN/NO_MATCH`. Do not override that abstention.
+
+Primary failure class: `MODEL_COGNITION`.
+
+Current boundary:
+
+```text
+D10-O measurements used       2 / 2
+D10-O provider calls          9 / 30
+Day8 live debt                OPEN
+Day10 FINAL                   OPEN / NOT SEALED
+Day11                         NOT AUTHORIZED
+```
+
+Temporary push-trigger infrastructure was removed after the second measurement:
+- workflow restored at `71be1ba5f9d1b812f05e6b1cf32f0461fdde02e8`;
+- marker removed at `8775fd0c228aa546ba864eb229480896d9f9e787`;
+- paid workflow blob restored to `f9ddebd74f8e8349ef6961eebf1d69f2f71acffb`.
+
+No third live measurement is authorized. The next generic repair question for supervisor review is whether a model-authored required-kind grounding gap should use the already-bounded second preacceptance draft revision before user clarification, without weakening SemanticBindingGate or forcing a semantic selection.
