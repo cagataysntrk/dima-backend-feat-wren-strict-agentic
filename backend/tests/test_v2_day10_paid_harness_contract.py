@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 
 import pytest
@@ -75,3 +76,19 @@ def test_workflow_is_manual_only_single_job_and_explicit_scope():
     assert "matrix:" not in text
     assert "strategy:" not in text
     assert "workers" not in text.lower()
+
+
+def test_paid_harness_requires_final_root_directive_and_turn_contracts():
+    source = inspect.getsource(paid.run_paid)
+
+    assert "doğrulanmış sonuçlar yeni bir maddi" in paid.INITIAL_QUESTION
+    assert '"adaptive_branch_executed"' in source
+    assert "ProductEventKind.RELATIONSHIP_CHECKED" in source
+    assert '"ADAPT_ON_EVIDENCE"' in source
+    assert '"APPLIED"' in source
+    assert "directive_accounting_evidence_ref" in source
+    assert "directive_branch_task_refs" in source
+    assert "initial_turn_ref" in source
+    assert "continuation_turn_ref" in source
+    assert "confirmed_cause_count != 0" in source
+    assert "initial_evidence < 4" in source
