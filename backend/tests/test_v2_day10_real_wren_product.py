@@ -93,6 +93,10 @@ class _ForceResearchStandardLane:
 
     def __init__(self) -> None:
         self.calls = 0
+        self.authority_registry = None
+
+    def bind_authority_registry(self, registry) -> None:
+        self.authority_registry = registry
 
     def run(self, **_kwargs):
         self.calls += 1
