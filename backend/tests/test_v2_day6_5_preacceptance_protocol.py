@@ -1803,3 +1803,239 @@ def test_d10_p_repair_provider_rejects_unknown_source_token():
         item.get("kind") == "semantic_decomposition_repair_error"
         for item in outcome.observations
     )
+
+
+def test_d10_p_repair_pool_never_borrows_prior_conversation_semantics():
+    question = "Makine duruşları ile bölüm bazındaki performansı araştır."
+    context, schema = _d10_p_decomposition_context()
+    draft = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_PERFORMANCE",
+                capability="performance",
+                source_surfaces=("Makine duruşları",),
+                semantic_surfaces=(("Makine duruşları", "metric"),),
+            ),
+            _obligation(
+                obligation_id="U_BREAKDOWN",
+                capability="breakdown",
+                source_surfaces=("bölüm bazındaki performansı",),
+                semantic_surfaces=(
+                    ("bölüm", "dimension"),
+                    ("performansı", "metric"),
+                ),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[draft],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    repair = _SourceSelectingRepairProvider(selected_surfaces=("Makine duruşları",))
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=repair,
+        semantic_context=context,
+        semantic_schema=schema,
+        conversation=ConversationStateV2(
+            has_prior_analytical_request=True,
+            has_active_result=True,
+            focus_labels=("arıza sayısı",),
+        ),
+    )
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-no-prior-borrow",
+        request_ref="req-d10-p-no-prior-borrow",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(
+            has_prior_analytical_request=True,
+            has_active_result=True,
+            focus_labels=("arıza sayısı",),
+        ),
+    )
+    assert outcome.accepted is True
+    request = repair.calls[0][0][0]
+    assert {
+        item.surface for item in request.available_user_source_concepts
+    } == {"Makine duruşları"}
+    assert "arıza sayısı" not in {
+        item.surface for item in request.available_user_source_concepts
+    }
+
+
+def test_d10_p_wrong_kind_current_source_cannot_enter_metric_repair_pool():
+    question = "bölüm bazındaki performansı araştır"
+    context, schema = _d10_p_decomposition_context()
+    draft = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_BREAKDOWN",
+                capability="breakdown",
+                source_surfaces=("bölüm bazındaki performansı",),
+                semantic_surfaces=(("bölüm", "dimension"),),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    scripted = _ScriptedStructured(drafts=[draft], audits=[])
+    repair = _SourceSelectingRepairProvider(selected_surfaces=("bölüm",))
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=repair,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-wrong-kind",
+        request_ref="req-d10-p-wrong-kind",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+    assert outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
+    assert repair.calls == []
+
+
+def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
+    question = (
+        "Makine duruşları email bazında göster; "
+        "Makine duruşları performans kırılımında araştır."
+    )
+    base_context, base_schema = _d10_p_decomposition_context()
+    cube = base_context.cubes[0].model_copy(
+        update={
+            "dimensions": (
+                *base_context.cubes[0].dimensions,
+                CompactSemanticFieldV0(
+                    canonical_name="email",
+                    display="email",
+                    synonyms=("email",),
+                ),
+            )
+        }
+    )
+    context = base_context.model_copy(update={"cubes": (cube,)})
+    cube_schema = dict(base_schema["cubes"][0])
+    cube_schema["dimensions"] = ["department", "email"]
+    cube_schema["dimension_labels"] = {
+        **cube_schema["dimension_labels"],
+        "email": "email",
+    }
+    cube_schema["dimension_synonyms"] = {
+        **cube_schema["dimension_synonyms"],
+        "email": ["email"],
+    }
+    schema = {
+        **base_schema,
+        "cubes": [cube_schema],
+        "models": [
+            {
+                "name": "maintenance",
+                "columns": [
+                    {
+                        "name": "email",
+                        "type": "VARCHAR",
+                        "sensitivity": "person",
+                    }
+                ],
+            }
+        ],
+    }
+    draft = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_EMAIL_BREAK",
+                capability="breakdown",
+                source_surfaces=("Makine duruşları email bazında göster",),
+                semantic_surfaces=(
+                    ("Makine duruşları", "metric"),
+                    ("email", "dimension"),
+                ),
+            ),
+            _obligation(
+                obligation_id="U_TARGET",
+                capability="breakdown",
+                source_surfaces=("Makine duruşları performans kırılımında araştır",),
+                semantic_surfaces=(
+                    ("Makine duruşları", "metric"),
+                    ("performans kırılımında", "dimension"),
+                ),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    scripted = _ScriptedStructured(drafts=[draft], audits=[])
+    repair = _SourceSelectingRepairProvider(selected_surfaces=("email",))
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=repair,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-sensitive",
+        request_ref="req-d10-p-sensitive",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+    assert outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
+    if repair.calls:
+        request = repair.calls[0][0][0]
+        assert "email" not in {
+            item.surface for item in request.available_user_source_concepts
+        }
+
+
+def test_d10_p_repair_does_not_rewrite_business_intent_shape():
+    question = (
+        "Makine duruşları ve arıza sayısı ile bölüm bazındaki performansı araştır."
+    )
+    context, schema = _d10_p_decomposition_context()
+    scripted = _ScriptedStructured(
+        drafts=[_d10_p_draft()],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    repair = _SourceSelectingRepairProvider(
+        selected_surfaces=("Makine duruşları", "arıza sayısı"),
+    )
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=repair,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-p-shape",
+        request_ref="req-d10-p-shape",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+    assert outcome.accepted is True
+    item = next(
+        entry for entry in runtime.ledger.items
+        if entry.obligation_id == "U_BREAKDOWN"
+    )
+    assert item.capability_key == ManagerCapabilityKey.BREAKDOWN
+    assert item.polarity == ObligationPolarity.REQUIRED
+    assert item.origin == ObligationOrigin.USER_MUST
+    assert item.priority == ObligationPriority.MUST
+    assert len(item.source_refs) == 1
+    source_span = executor._semantic_resolution._source_spans.validate(
+        item.source_refs[0]
+    )
+    assert source_span.exact_surface == "bölüm bazındaki performansı"
