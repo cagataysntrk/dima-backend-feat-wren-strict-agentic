@@ -36,6 +36,7 @@ class ResearchEvidenceDelta(FrozenModel):
     row_count: int | None = None
     limitations: tuple[str, ...] = ()
     bounded_payload: dict[str, Any] = {}
+    disclosed_in_current_prompt: bool = False
 
 
 class ResearchObligationState(FrozenModel):
@@ -168,6 +169,7 @@ def build_research_state_view(*, runtime, evidence_store=None) -> ResearchStateV
                 row_count=row_count,
                 limitations=artifact.limitations,
                 bounded_payload=_manager_bounded_payload(artifact),
+                disclosed_in_current_prompt=True,
             )
         else:
             latest_delta = ResearchEvidenceDelta(
