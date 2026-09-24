@@ -1,0 +1,77 @@
+"""Provider-free contract for the manual D10-G17/G18 paid harness."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from lab import v2_day10_product_mvp_live as paid
+
+
+def test_paid_harness_role_and_global_ceiling_are_hard_and_explicit():
+    assert paid.MAX_HARNESS_TOTAL_CALLS == 20
+    assert paid.ROLE_LIMITS == {
+        "FAST_LANGUAGE": 2,
+        "RESEARCH_MANAGER": 12,
+        "SEMANTIC_LINKER": 3,
+        "TEMPORAL_NORMALIZER": 1,
+        "REPORT_NARRATOR": 2,
+    }
+    assert sum(paid.ROLE_LIMITS.values()) == paid.MAX_HARNESS_TOTAL_CALLS
+
+    budget = paid.RoleCallBudget(
+        max_total=2,
+        role_limits={**paid.ROLE_LIMITS, "FAST_LANGUAGE": 1},
+    )
+    budget.reserve(
+        role="FAST_LANGUAGE",
+        model=paid.FAST_MODEL,
+        schema_name="x",
+    )
+    with pytest.raises(paid.PaidBudgetExceeded):
+        budget.reserve(
+            role="FAST_LANGUAGE",
+            model=paid.FAST_MODEL,
+            schema_name="y",
+        )
+
+
+def test_blank_or_unknown_scope_fails_before_settings_or_provider_construction(monkeypatch):
+    touched = {"settings": False}
+
+    def forbidden_settings():
+        touched["settings"] = True
+        raise AssertionError("settings/provider construction must not occur")
+
+    monkeypatch.setattr(paid, "get_settings", forbidden_settings)
+    for scope in ("", "ALL", "NS4", "anything"):
+        with pytest.raises(paid.PaidHarnessError, match="explicit scope"):
+            paid.run_paid(scope=scope, max_total_model_calls=1)
+
+    assert touched["settings"] is False
+
+
+def test_paid_topology_is_exact_and_has_no_provider_cascade():
+    assert paid.RESEARCH_MODEL == "openai/gpt-5.6-sol"
+    assert paid.SEMANTIC_MODEL == "openai/gpt-5.6-luna"
+    assert paid.TEMPORAL_MODEL == "openai/gpt-5.6-sol"
+    assert paid.NARRATOR_MODEL == "openai/gpt-5.6-sol"
+    assert paid.MAX_PRODUCT_TURNS == 2
+
+
+def test_workflow_is_manual_only_single_job_and_explicit_scope():
+    workflow = Path("../.github/workflows/v2-day10-product-mvp-paid-once.yml")
+    text = workflow.read_text(encoding="utf-8")
+
+    assert "workflow_dispatch:" in text
+    assert "\npush:" not in text
+    assert "\npull_request:" not in text
+    assert "CANONICAL_NS4" in text
+    assert "DAY10_PAID_ONCE" in text
+    assert "max_total_model_calls > 0" in text
+    assert "max_total_model_calls <= 20" in text
+    assert "ONE supervised paid Product-MVP gate" in text
+    assert "matrix:" not in text
+    assert "strategy:" not in text
+    assert "workers" not in text.lower()
