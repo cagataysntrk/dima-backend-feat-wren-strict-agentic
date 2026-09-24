@@ -1189,6 +1189,59 @@ def _d10_n_ambiguous_metric_context():
     return context, schema
 
 
+def _d10_n_relationship_context():
+    context = BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-d10-n-relationship",
+            mdl_version="mdl-d10-n-relationship",
+            compact_catalog_builder_version="d10-n",
+            business_rules_hash="0" * 64,
+            prompt_context_policy_version="d10-n",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="sales",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="net_revenue",
+                        display="Net Gelir",
+                        synonyms=("net gelir", "net geliri"),
+                    ),
+                ),
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="region",
+                        display="Bölge",
+                        synonyms=("bölge", "eksen bölge"),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="product",
+                        display="Ürün",
+                        synonyms=("ürün", "eksen ürün"),
+                    ),
+                ),
+            ),
+        ),
+    )
+    schema = {
+        "models": [],
+        "cubes": [
+            {
+                "name": "sales",
+                "measures": ["net_revenue"],
+                "dimensions": ["region", "product"],
+                "dimension_values": {},
+                "time_dimensions": [],
+            }
+        ],
+        "kpis": [],
+        "relationships": [],
+        "business_rules": "",
+        "db_online": True,
+    }
+    return context, schema
+
+
 def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification():
     question = "net geliri incele; sapma için kök nedenini araştır"
     scripted = _ScriptedStructured(
@@ -1263,3 +1316,98 @@ def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification(
     assert root_receipts[0]["selection"]["status"] == "ABSTAIN"
     assert root_receipts[1]["selection"]["status"] == "BOUND"
     assert root_receipts[1]["candidate_count"] == 1
+
+
+def test_d10_n_missing_relationship_dimension_uses_fresh_source_bound_applicability():
+    question = (
+        "net geliri bölge kırılımında incele; "
+        "ilişki eksenini ayrıca değerlendir"
+    )
+    scripted = _ScriptedStructured(
+        drafts=[
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_BREAK",
+                        capability="breakdown",
+                        source_surfaces=("net geliri bölge kırılımında incele",),
+                        semantic_surfaces=(
+                            ("net geliri", "metric"),
+                            ("bölge", "dimension"),
+                        ),
+                    ),
+                    _obligation(
+                        obligation_id="U_REL",
+                        capability="relationship",
+                        source_surfaces=("ilişki eksenini ayrıca değerlendir",),
+                        # Cognition omitted the required dimension locally.
+                        semantic_surfaces=(("net geliri", "metric"),),
+                    ),
+                ],
+                "research_directives": [],
+                "control_requests": [],
+            }
+        ],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    provider = _SingleCandidateSemanticProvider()
+    diagnostics = []
+    semantic_context, semantic_schema = _d10_n_relationship_context()
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=provider,
+        semantic_diagnostic_sink=diagnostics.append,
+        semantic_context=semantic_context,
+        semantic_schema=semantic_schema,
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-n-rel-missing-kind",
+        request_ref="req-d10-n-rel-missing-kind",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.accepted is True
+    relationship = next(
+        item for item in runtime.ledger.active_user_must
+        if item.obligation_id == "U_REL"
+    )
+    assert relationship.capability_key == ManagerCapabilityKey.RELATIONSHIP
+    assert {
+        binding.target_kind for binding in relationship.semantic_bindings
+    } == {"metric", "dimension"}
+
+    # The recovered dimension is bound to U_REL's own exact source span; the U_BREAK
+    # dimension source is discovery context only and is not copied as provenance.
+    break_item = next(
+        item for item in runtime.ledger.active_user_must
+        if item.obligation_id == "U_BREAK"
+    )
+    break_dimension_source = next(
+        binding.source_ref
+        for binding in break_item.semantic_bindings
+        if binding.target_kind == "dimension"
+    )
+    rel_dimension_source = next(
+        binding.source_ref
+        for binding in relationship.semantic_bindings
+        if binding.target_kind == "dimension"
+    )
+    assert rel_dimension_source != break_dimension_source
+
+    rel_dim_receipts = [
+        item
+        for item in diagnostics
+        if item.get("owner_obligation_id") == "U_REL"
+        and item.get("kind_hint") == "dimension"
+    ]
+    assert [item["discovery_pass"] for item in rel_dim_receipts] == [
+        "pass1",
+        "current_turn_applicability",
+    ]
+    assert rel_dim_receipts[0]["selection"]["status"] == "ABSTAIN"
+    assert rel_dim_receipts[1]["candidate_count"] == 1
+    assert rel_dim_receipts[1]["selection"]["status"] == "BOUND"
