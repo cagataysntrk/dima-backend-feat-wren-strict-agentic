@@ -540,3 +540,148 @@ def test_unresolved_declared_filter_still_fails_closed_after_contract_clarificat
     assert any("özel durum" in reason for reason in outcome.reasons)
     assert outcome.authority is None
     assert calls == []
+
+def test_d10_j_current_research_omission_veto_is_cognition_rejected(monkeypatch):
+    question = "net geliri göster ve kök nedenini araştır"
+
+    def intent(system, user, *, schema, schema_name):
+        assert schema_name == "dima_standard_intent_draft_v1"
+        return _draft_response("performance")
+
+    coverage_calls = []
+
+    def coverage(system, user, *, schema, schema_name):
+        assert schema_name == "dima_standard_coverage_v1"
+        coverage_calls.append(user)
+        return {
+            "status": "VETO",
+            "issues": [
+                {
+                    "kind": "RESEARCH_NEED_OMITTED",
+                    "source_surfaces": ["kök nedenini araştır"],
+                    "note": "material Research request omitted",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        "app.v2.standard_lane.WrenStandardExecutionAdapter.execute",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("coverage veto must stop before execution")
+        ),
+    )
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=coverage,
+        semantic_provider=_SemanticProvider(),
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question=question,
+        turn_id="turn-d10-j-current-veto",
+        request_ref="request-d10-j-current-veto",
+        semantic_context=_context(),
+        schema=_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert coverage_calls
+    assert outcome.status == StandardLaneStatus.COGNITION_REJECTED
+    assert outcome.coverage_status == "VETO"
+    assert outcome.authority is None
+    assert engine.authority_registry.accepted("turn-d10-j-current-veto") is None
+
+
+def test_d10_j_current_presentation_only_standard_draft_is_unsupported_before_coverage():
+    coverage_calls = []
+
+    def intent(system, user, *, schema, schema_name):
+        return {
+            "obligations": [
+                {
+                    "obligation_id": "U1",
+                    "capability_key": "report",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["rapor"],
+                    "semantic_surfaces": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                }
+            ],
+            "control_requests": [],
+        }
+
+    def coverage(*args, **kwargs):
+        coverage_calls.append((args, kwargs))
+        return {"status": "PASS", "issues": []}
+
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=coverage,
+        semantic_provider=None,
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question="rapor",
+        turn_id="turn-d10-j-unsupported",
+        request_ref="request-d10-j-unsupported",
+        semantic_context=_context(),
+        schema=_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert outcome.status == StandardLaneStatus.UNSUPPORTED
+    assert coverage_calls == []
+    assert engine.authority_registry.accepted("turn-d10-j-unsupported") is None
+
+
+def test_d10_j_current_draft_exception_fails_after_one_attempt_without_research():
+    draft_calls = []
+
+    def intent(*args, **kwargs):
+        draft_calls.append((args, kwargs))
+        raise ValueError("typed draft contract rejected")
+
+    engine = StandardLaneEngine(
+        intent_structured=intent,
+        coverage_structured=_coverage_pass,
+        semantic_provider=_SemanticProvider(),
+        temporal_provider=None,
+    )
+    outcome = engine.run(
+        question="net geliri göster",
+        turn_id="turn-d10-j-draft-failure",
+        request_ref="request-d10-j-draft-failure",
+        semantic_context=_context(),
+        schema=_schema(),
+        conversation=ConversationStateV2(),
+        tenant_binding="tenant-a",
+        cognition_model_role="FAST_LANGUAGE",
+        principal=object(),
+        service=object(),
+        tenant_runtime=object(),
+        contract_store=object(),
+        session_id=None,
+    )
+
+    assert len(draft_calls) == 1
+    assert outcome.status == StandardLaneStatus.FAILED
+    assert outcome.attempts == 1
+    assert engine.authority_registry.accepted("turn-d10-j-draft-failure") is None
+
