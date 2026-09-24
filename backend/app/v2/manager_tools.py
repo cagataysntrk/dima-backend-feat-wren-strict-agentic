@@ -31,6 +31,14 @@ class ManagerToolName(StrEnum):
     REQUEST_CLARIFICATION = "request_clarification"
 
 
+class SemanticDecompositionRepairGap(FrozenModel):
+    gap_ref: str = Field(min_length=1, max_length=120)
+    obligation_id: str = Field(min_length=1, max_length=160)
+    capability_key: ManagerCapabilityKey
+    missing_kind: Literal["metric", "dimension"]
+    obligation_source_refs: tuple[str, ...] = Field(min_length=1)
+
+
 class ResolveSemanticsArgs(FrozenModel):
     provenance: Literal["USER_SOURCE", "AGENT_DERIVED"] = "USER_SOURCE"
     source_refs: tuple[str, ...] = ()
@@ -57,26 +65,68 @@ class ResolveSemanticsArgs(FrozenModel):
     parent_obligation_id: str | None = None
     evidence_ref: str | None = None
     natural_language_proposal: str | None = Field(default=None, min_length=1, max_length=240)
+    decomposition_repair_gaps: tuple[SemanticDecompositionRepairGap, ...] = ()
+    decomposition_repair_source_refs: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def _resolution_contract(self):
         if self.provenance == "USER_SOURCE":
-            if not self.source_refs:
-                raise ValueError("USER_SOURCE resolve source_refs gerektirir")
-            if self.parent_obligation_id or self.evidence_ref or self.natural_language_proposal:
-                raise ValueError("USER_SOURCE derived provenance alanları taşıyamaz")
-            if self.target_kind_hints and len(self.target_kind_hints) != len(self.source_refs):
-                raise ValueError("target_kind_hints boş olmalı veya source_refs ile aynı uzunlukta olmalı")
-            if self.source_obligation_ids and len(self.source_obligation_ids) != len(self.source_refs):
-                raise ValueError(
-                    "source_obligation_ids boş olmalı veya source_refs ile aynı uzunlukta olmalı"
-                )
-            if any(not str(value).strip() for value in self.source_obligation_ids):
-                raise ValueError("source_obligation_ids boş owner taşıyamaz")
+            repair_mode = bool(self.decomposition_repair_gaps)
+            if repair_mode:
+                if self.source_refs or self.source_obligation_ids or self.target_kind_hints:
+                    raise ValueError(
+                        "decomposition repair normal source batch fields taşıyamaz"
+                    )
+                if not self.decomposition_repair_source_refs:
+                    raise ValueError(
+                        "decomposition repair governed USER_SOURCE refs gerektirir"
+                    )
+                if (
+                    self.parent_obligation_id
+                    or self.evidence_ref
+                    or self.natural_language_proposal
+                ):
+                    raise ValueError(
+                        "decomposition repair derived provenance alanları taşıyamaz"
+                    )
+                refs = {
+                    ref
+                    for gap in self.decomposition_repair_gaps
+                    for ref in gap.obligation_source_refs
+                }
+                if not refs:
+                    raise ValueError(
+                        "decomposition repair target source refs gerektirir"
+                    )
+            else:
+                if not self.source_refs:
+                    raise ValueError("USER_SOURCE resolve source_refs gerektirir")
+                if (
+                    self.decomposition_repair_source_refs
+                    or self.decomposition_repair_gaps
+                ):
+                    raise ValueError(
+                        "normal USER_SOURCE resolve decomposition repair alanları taşıyamaz"
+                    )
+                if self.parent_obligation_id or self.evidence_ref or self.natural_language_proposal:
+                    raise ValueError("USER_SOURCE derived provenance alanları taşıyamaz")
+                if self.target_kind_hints and len(self.target_kind_hints) != len(self.source_refs):
+                    raise ValueError("target_kind_hints boş olmalı veya source_refs ile aynı uzunlukta olmalı")
+                if self.source_obligation_ids and len(self.source_obligation_ids) != len(self.source_refs):
+                    raise ValueError(
+                        "source_obligation_ids boş olmalı veya source_refs ile aynı uzunlukta olmalı"
+                    )
+                if any(not str(value).strip() for value in self.source_obligation_ids):
+                    raise ValueError("source_obligation_ids boş owner taşıyamaz")
         else:
-            if self.source_refs or self.source_obligation_ids:
+            if (
+                self.source_refs
+                or self.source_obligation_ids
+                or self.decomposition_repair_gaps
+                or self.decomposition_repair_source_refs
+            ):
                 raise ValueError(
-                    "AGENT_DERIVED exact USER source ref/obligation grouping kullanmaz"
+                    "AGENT_DERIVED exact USER source/decomposition repair alanları kullanmaz"
                 )
             if not self.parent_obligation_id or not self.evidence_ref or not self.natural_language_proposal:
                 raise ValueError("AGENT_DERIVED parent + evidence + proposal gerektirir")
