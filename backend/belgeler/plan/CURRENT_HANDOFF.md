@@ -1,5 +1,56 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY OVERRIDE — D10-I PAID PRODUCT-MVP VALID RED / D10-J FORENSIC HOLD
+
+This section supersedes the D10-H pre-paid STOP below where they conflict. Historical receipts remain unchanged.
+
+```text
+D10-H FINAL PRE-PAID SEAL             GREEN
+
+D10-I PAID PRODUCT-MVP
+run                                   35963884332
+tested HEAD                           8c85996c16a4bcecd9332d9fd335e57f6bf3a69f
+classification                        VALID RED
+
+provider calls
+FAST_LANGUAGE                         1
+RESEARCH_MANAGER                      0
+SEMANTIC_LINKER                       0
+TEMPORAL_NORMALIZER                   0
+REPORT_NARRATOR                       0
+TOTAL                                 1
+
+Research entered                      NO
+continuation entered                  NO
+
+first observable wrong transition
+Product did not enter RESEARCH
+
+exact Standard terminal subtype       UNRESOLVED
+previous MODEL_COGNITION root cause   NOT SEALED
+
+EVAL/HARNESS/FIXTURE
+diagnostic observability gap          OPEN
+
+paid authorization                    CONSUMED
+paid rerun                            NOT AUTHORIZED
+standalone Day8 live rerun            NOT AUTHORIZED
+
+Day8 live root-cause debt             OPEN
+Day10 FINAL                           NOT SEALED
+Day11                                 NOT AUTHORIZED
+```
+
+Important forensic correction:
+
+- the paid artifact proves one FAST cognition call completed and Product returned `lane=STANDARD`;
+- it does **not** prove `StandardLaneStatus.ACCEPTED`;
+- at this SHA an accepted Standard path requires both draft and coverage FAST calls, while the paid receipt contains exactly one FAST call;
+- therefore the product RED is real, but the exact Standard terminal cause is not yet proven;
+- D10-J must first close the evaluator observability gap, then characterize the Standard finite-state machine provider-free before any product root fix;
+- no paid rerun or second paid measurement is authorized.
+
+
 ## ACTIVE AUTHORITY
 
 Read in this order:
