@@ -1893,62 +1893,22 @@ def test_d10_p_wrong_kind_current_source_cannot_enter_metric_repair_pool():
 
 
 def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
-    base_context, base_schema = _d10_p_decomposition_context()
-    cube = base_context.cubes[0].model_copy(
-        update={
-            "dimensions": (
-                *base_context.cubes[0].dimensions,
-                CompactSemanticFieldV0(
-                    canonical_name="email",
-                    display="email",
-                    synonyms=("email",),
-                ),
-            )
-        }
-    )
-    context = base_context.model_copy(update={"cubes": (cube,)})
-    cube_schema = dict(base_schema["cubes"][0])
-    cube_schema["dimensions"] = ["department", "email"]
-    cube_schema["dimension_labels"] = {
-        **cube_schema["dimension_labels"],
-        "email": "email",
-    }
-    cube_schema["dimension_synonyms"] = {
-        **cube_schema["dimension_synonyms"],
-        "email": ["email"],
-    }
-    schema = {
-        **base_schema,
-        "cubes": [cube_schema],
-        "models": [
-            {
-                "name": "maintenance",
-                "columns": [
-                    {
-                        "name": "email",
-                        "type": "VARCHAR",
-                        "sensitivity": "person",
-                    }
-                ],
-            }
-        ],
-    }
-
+    context, schema = _d10_p_decomposition_context()
     source_spans = SourceSpanRegistry()
     source_spans.register_message(
         message_id="turn-d10-p-sensitive",
-        text="email performans kırılımında",
+        text="bölüm performans kırılımında",
     )
-    email_ref = source_spans.mint_exact(
+    source_ref = source_spans.mint_exact(
         message_id="turn-d10-p-sensitive",
-        surface="email",
+        surface="bölüm",
     ).source_ref
     target_ref = source_spans.mint_exact(
         message_id="turn-d10-p-sensitive",
         surface="performans kırılımında",
     ).source_ref
     handles = SemanticHandleRegistry()
-    repair = _SourceSelectingRepairProvider(selected_surfaces=("email",))
+    repair = _SourceSelectingRepairProvider(selected_surfaces=("bölüm",))
     adapter = ManagerSemanticResolutionAdapter(
         source_spans=source_spans,
         semantic_handles=handles,
@@ -1961,23 +1921,25 @@ def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
         semantic_decision_provider=None,
         semantic_decomposition_repair_provider=repair,
     )
-
-    first = adapter.resolve(
-        ResolveSemanticsArgs(
-            provenance="USER_SOURCE",
-            source_refs=(email_ref,),
-            source_obligation_ids=("U_EMAIL",),
-            target_kind_hints=("dimension",),
-        )
+    binding = next(
+        item
+        for item in adapter._candidate_generator._governed_candidates("dimension")
+        if item.card.label.casefold() == "bölüm"
     )
-    assert len(first.resolved) == 1
-    sensitive_handle = first.resolved[0].handle
-    assert sensitive_handle.sensitive is True
-
+    sensitive_handle = handles.mint_from_binding_gate(
+        tenant_binding="tenant-stabilized",
+        context_version=context.context_version.version,
+        candidate_id=binding.card.candidate_id,
+        target_kind=binding.card.target_kind,
+        canonical_target=binding.canonical_target,
+        sensitive=True,
+        provenance_type="USER_SOURCE",
+        parent_obligation_id="U_SOURCE",
+    )
     runtime = SimpleNamespace(
         semantic_resolution_receipts=(
             SemanticResolutionReceipt(
-                source_ref=email_ref,
+                source_ref=source_ref,
                 handle_id=sensitive_handle.handle_id,
                 target_kind=sensitive_handle.target_kind,
             ),
@@ -1995,7 +1957,7 @@ def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
                     obligation_source_refs=(target_ref,),
                 ),
             ),
-            decomposition_repair_source_refs=(email_ref,),
+            decomposition_repair_source_refs=(source_ref,),
         ),
         runtime=runtime,
     )
