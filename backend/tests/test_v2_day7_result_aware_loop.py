@@ -384,5 +384,6 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert fanout["result"]["selected_task_ids"] == ["D1", "D2"]
 
     # Fanout registration is cognition-only; only one selected READY branch executes.
+    # G6-A removes the redundant fresh-result inspect cognition turn.
     assert service.query_calls == 2
-    assert len(llm.prompts) == 6
+    assert len(llm.prompts) == 5
