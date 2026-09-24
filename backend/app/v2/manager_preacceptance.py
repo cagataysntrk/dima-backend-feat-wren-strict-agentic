@@ -43,6 +43,7 @@ from app.v2.manager_tools import (
     ManagerToolCall,
     ManagerToolName,
     SemanticDecompositionRepairGap,
+    SemanticDecompositionRepairScopeGroup,
 )
 from app.v2.models import ConversationStateV2, FrozenModel
 from app.v2.source_spans import SourceSpanRegistry
@@ -892,6 +893,56 @@ class PreAcceptanceController:
             refs.append(binding.source_ref)
         return tuple(dict.fromkeys(refs))
 
+    def _repair_scope_groups(
+        self,
+        *,
+        draft: IntentDraft,
+        grounded: dict[tuple[str, str, str], SemanticBindingRef],
+    ) -> tuple[SemanticDecompositionRepairScopeGroup, ...]:
+        """Derive ephemeral co-occurrence groups from current REQUIRED draft truth only."""
+        grouped: dict[
+            tuple[str, tuple[str, ...]],
+            set[ManagerCapabilityKey],
+        ] = {}
+        for obligation in draft.obligations:
+            if obligation.polarity != ObligationPolarity.REQUIRED:
+                continue
+            spec = self._capabilities.get(obligation.capability_key)
+            if spec.execution_mode not in {
+                ManagerCapabilityExecutionMode.DIRECT,
+                ManagerCapabilityExecutionMode.ORCHESTRATED,
+            }:
+                continue
+            by_kind: dict[str, set[str]] = {"metric": set(), "dimension": set()}
+            for (owner_id, _surface, kind), binding in grounded.items():
+                if owner_id != obligation.obligation_id:
+                    continue
+                normalized = self._normalized_hint_kind(kind)
+                if normalized not in by_kind:
+                    continue
+                by_kind[normalized].add(binding.source_ref)
+            for kind, refs in by_kind.items():
+                normalized_refs = tuple(sorted(refs))
+                if len(normalized_refs) < 2:
+                    continue
+                grouped.setdefault((kind, normalized_refs), set()).add(
+                    obligation.capability_key
+                )
+
+        return tuple(
+            SemanticDecompositionRepairScopeGroup(
+                kind=kind,
+                member_source_refs=members,
+                supporting_capabilities=tuple(
+                    sorted(capabilities, key=lambda item: item.value)
+                ),
+            )
+            for (kind, members), capabilities in sorted(
+                grouped.items(),
+                key=lambda item: (item[0][0], item[0][1]),
+            )
+        )
+
     def _repair_material_grounding_gaps(
         self,
         *,
@@ -965,6 +1016,15 @@ class PreAcceptanceController:
         )
         if not repair_gaps or not source_refs:
             return grounded, None
+        source_ref_set = set(source_refs)
+        scope_groups = tuple(
+            group
+            for group in self._repair_scope_groups(
+                draft=draft,
+                grounded=grounded,
+            )
+            if set(group.member_source_refs).issubset(source_ref_set)
+        )
 
         step = runtime.call_tool(
             ManagerToolCall(
@@ -976,6 +1036,9 @@ class PreAcceptanceController:
                         for item in repair_gaps
                     ],
                     "decomposition_repair_source_refs": list(source_refs),
+                    "decomposition_repair_scope_groups": [
+                        item.model_dump(mode="json") for item in scope_groups
+                    ],
                 },
             ),
             executor=executor,
