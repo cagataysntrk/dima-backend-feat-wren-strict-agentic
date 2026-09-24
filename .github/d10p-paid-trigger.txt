@@ -1,0 +1,4 @@
+D10-P canonical paid gate authorized
+product_sha=9ab40568b46d313b4e3c6cab6eb24f925e614750
+semantic_repair_schema=dima_semantic_decomposition_repair_v1
+budget=20
