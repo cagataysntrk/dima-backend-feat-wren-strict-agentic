@@ -778,10 +778,15 @@ def test_current_turn_multiple_metric_candidates_require_linker_and_may_abstain(
         item for item in diagnostics
         if item.get("owner_obligation_id") == "U_ROOT"
     ]
-    assert [item["discovery_pass"] for item in root_receipts] == ["pass1"]
+    assert [item["discovery_pass"] for item in root_receipts] == [
+        "pass1",
+        "current_turn_applicability",
+    ]
     assert root_receipts[0]["selection"]["status"] == "ABSTAIN"
-    # Same exact two governed current-turn candidates would add no information,
-    # therefore a second linker call is intentionally forbidden.
+    assert root_receipts[1]["candidate_count"] == 2
+    assert root_receipts[1]["selection"]["status"] == "ABSTAIN"
+    # The second call is permitted only because the governed current-turn pool
+    # materially narrows the pass1 set; abstention still mints no authority.
 
 
 def test_prior_turn_governed_handle_is_not_current_turn_candidate_context():
