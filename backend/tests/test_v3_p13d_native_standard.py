@@ -519,6 +519,79 @@ def test_ranking_attacks_block(updates, code):
     assert result.authorization.code == code
 
 
+def _presentation_order(*, target: str, direction: str = "asc", index: int = 0) -> dict:
+    if target == "metric":
+        return {
+            "stage_number": 0,
+            "order_index": index,
+            "direction": direction,
+            "target_kind": "aggregation",
+            "aggregation_index": 0,
+        }
+    field_id, field_type = {
+        "dimension": (13, "type/Text"),
+        "time": (11, "type/DateTime"),
+        "unaccepted": (11, "type/DateTime"),
+    }[target]
+    return {
+        "stage_number": 0,
+        "order_index": index,
+        "direction": direction,
+        "target_kind": "field",
+        "field_id": field_id,
+        "field_type": field_type,
+    }
+
+
+def test_breakdown_metric_presentation_order_without_limit_authorizes():
+    result = _authorize(
+        attestation=_attestation(
+            order_by_count=1,
+            order_bys=(_presentation_order(target="metric", direction="desc"),),
+            limit=None,
+        )
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.ALLOW
+
+
+def test_breakdown_dimension_presentation_order_without_limit_authorizes():
+    result = _authorize(
+        attestation=_attestation(
+            order_by_count=1,
+            order_bys=(_presentation_order(target="dimension", direction="asc"),),
+            limit=None,
+        )
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.ALLOW
+
+
+def test_breakdown_presentation_order_on_unaccepted_field_blocks():
+    result = _authorize(
+        attestation=_attestation(
+            order_by_count=1,
+            order_bys=(_presentation_order(target="unaccepted", direction="asc"),),
+            limit=None,
+        )
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "P13D_PRESENTATION_ORDER_TARGET_MISMATCH"
+
+
+def test_breakdown_extra_order_target_blocks_when_any_target_is_unaccepted():
+    result = _authorize(
+        attestation=_attestation(
+            order_by_count=2,
+            order_bys=(
+                _presentation_order(target="metric", direction="desc", index=0),
+                _presentation_order(target="unaccepted", direction="asc", index=1),
+            ),
+            limit=None,
+        )
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "P13D_PRESENTATION_ORDER_TARGET_MISMATCH"
+
+
 def test_unexpected_ranking_without_authority_blocks():
     result = _authorize(
         attestation=_attestation(ranking=True),
@@ -697,6 +770,23 @@ def _authorize_comparison(attestation=None, intent=None):
         dima_request_id="dima-req-p13d-comparison",
         dima_trace_id="dima-trace-p13d-comparison",
     )
+
+
+def test_comparison_month_presentation_order_without_limit_authorizes():
+    result = _authorize_comparison(
+        _comparison_attestation(
+            order_by_count=1,
+            order_bys=(_presentation_order(target="time", direction="asc"),),
+            limit=None,
+        )
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.ALLOW
+
+
+def test_comparison_limit_without_ranking_authority_blocks():
+    result = _authorize_comparison(_comparison_attestation(limit=2))
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "P13D_RANKING_SCOPE_VIOLATION"
 
 
 def test_previous_period_comparison_exact_single_native_query_authorizes():

@@ -722,13 +722,45 @@ class NativeStandardTrustOrchestrator:
         manifest: NativeExecutionManifest,
         expected_metric: MetricSpec,
         expected_dimension: DimensionSpec | None,
+        expected_breakout: DimensionSpec | None,
     ) -> None:
         ranking = intent.ranking
         if ranking is None:
-            if manifest.order_by_count or manifest.order_bys or manifest.limit is not None:
+            # Ordering alone is presentation semantics: it does not change result
+            # membership/cardinality. It is safe only over analytical output that
+            # Dima has already authorized. LIMIT remains material ranking authority.
+            if manifest.limit is not None:
                 raise NativeStandardTrustError(
                     "P13D_RANKING_SCOPE_VIOLATION",
-                    "native query introduced order/limit without accepted ranking authority",
+                    "native query introduced a limit without accepted ranking authority",
+                )
+            if not manifest.order_bys:
+                return
+            if expected_breakout is None:
+                raise NativeStandardTrustError(
+                    "P13D_PRESENTATION_ORDER_SCOPE_VIOLATION",
+                    "native query introduced presentation ordering without an accepted breakout",
+                )
+
+            breakout = manifest.breakouts[0] if len(manifest.breakouts) == 1 else None
+            for expected_index, order in enumerate(manifest.order_bys):
+                if order.stage_number != 0 or order.order_index != expected_index:
+                    raise NativeStandardTrustError(
+                        "P13D_PRESENTATION_ORDER_SHAPE_UNSUPPORTED",
+                        "presentation ordering must use contiguous stage-0 native order clauses",
+                    )
+                if order.target_kind == "aggregation" and order.aggregation_index == 0:
+                    continue
+                if (
+                    order.target_kind == "field"
+                    and breakout is not None
+                    and order.field_id == breakout.field_id
+                    and order.field_type == breakout.field_type
+                ):
+                    continue
+                raise NativeStandardTrustError(
+                    "P13D_PRESENTATION_ORDER_TARGET_MISMATCH",
+                    "presentation ordering targets output outside the accepted breakout/metric authority",
                 )
             return
 
@@ -876,6 +908,7 @@ class NativeStandardTrustOrchestrator:
             manifest=manifest,
             expected_metric=expected_metric,
             expected_dimension=expected_dimension,
+            expected_breakout=expected_breakout,
         )
 
         observed_resources = [_resource(observed_table)]

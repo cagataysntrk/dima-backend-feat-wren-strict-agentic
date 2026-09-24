@@ -257,6 +257,12 @@ def main() -> int:
                     )
                 )
                 native_query_id = query_id_from_stream(observation.data_parts)
+                state.update(
+                    {
+                        "native_query_id": native_query_id,
+                        "native_tool_call_count": len(observation.tool_calls),
+                    }
+                )
 
                 state["failure_owner"] = "native-query-attestation"
                 attestation = NativeAttestationEnvelope.model_validate(
@@ -269,6 +275,28 @@ def main() -> int:
                     raise RuntimeError(
                         f"{case_id}: attestation runtime identity differs from live identity"
                     )
+                state.update(
+                    {
+                        "exact_pmbql_fingerprint": attestation.manifest.exact_pmbql_fingerprint,
+                        "exact_serialized_pmbql": attestation.exact_serialized_pmbql,
+                        "breakouts": [
+                            item.model_dump(mode="json") for item in attestation.manifest.breakouts
+                        ],
+                        "order_bys": [
+                            item.model_dump(mode="json") for item in attestation.manifest.order_bys
+                        ],
+                        "limit": attestation.manifest.limit,
+                        "temporal_predicates": [
+                            item.model_dump(mode="json")
+                            for item in attestation.manifest.temporal_predicates
+                        ],
+                        "metric_references": [
+                            item.model_dump(mode="json")
+                            for item in attestation.manifest.native_metric_references
+                        ],
+                        "engine_runtime_identity": identity.model_dump(mode="json"),
+                    }
+                )
                 security = security.model_copy(
                     update={
                         "attestation_refs": tuple(
@@ -295,6 +323,12 @@ def main() -> int:
                     managed_resource_bindings=(metric_binding,),
                 )
                 if authz.authorization.outcome != NativeCandidateOutcome.ALLOW:
+                    state.update(
+                        {
+                            "trust_error_code": authz.authorization.code,
+                            "trust_error_detail": authz.authorization.detail,
+                        }
+                    )
                     raise RuntimeError(
                         f"{case_id} blocked: {authz.authorization.code}: "
                         f"{authz.authorization.detail}"
