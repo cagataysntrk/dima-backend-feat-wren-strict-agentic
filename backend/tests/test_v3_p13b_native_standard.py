@@ -647,6 +647,9 @@ def test_metabase_native_runtime_revision_mismatch_hard_fails_in_existing_p5():
             intent=_intent(),
             result=result,
             execution_request=request,
+            attestation=attestation,
+            executed_pmbql_fingerprint=request.expected_pmbql_fingerprint,
+            executed_attestation_id=request.expected_attestation_id,
             runtime=runtime,
             execution_result=ExecutionResultSnapshot(
                 payload={"rows": [[126]]},
