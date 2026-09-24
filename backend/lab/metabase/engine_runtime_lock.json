@@ -1,0 +1,10 @@
+{
+  "schema_version": "dima_engine_runtime_lock_v1",
+  "engine_sha": "cdd117558fea3b0a80f6b89bb872ffb6e9ab175f",
+  "upstream_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
+  "runtime_tag": "v0.63.18-dima.4",
+  "certification_run_id": "35951538259",
+  "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:ce8d135163faba74f80c18c8e0a585037be2e6049a7ca74d4f477e655e039a71",
+  "registry_digest": "sha256:ce8d135163faba74f80c18c8e0a585037be2e6049a7ca74d4f477e655e039a71",
+  "build_identity": "github-actions:35951538259:cdd117558fea3b0a80f6b89bb872ffb6e9ab175f"
+}
