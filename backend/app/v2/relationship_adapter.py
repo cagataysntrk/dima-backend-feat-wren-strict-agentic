@@ -43,6 +43,7 @@ class GovernedRelationshipResult:
     available: bool
     evidence: EvidenceArtifact | None
     facts: CrossDomainJoinFactResult
+    fact_results: tuple[CrossDomainJoinFactResult, ...] = ()
     query_count: int = 0
     reason: str | None = None
 
@@ -90,22 +91,52 @@ class GovernedRelationshipAdapter:
                 reason="accepted Research contract/obligation is unavailable",
             )
 
-        facts = self._facts.build(
-            args=args,
-            obligation=obligation,
-            service=self._context.service,
-        )
-        if not facts.ready or facts.facts is None or facts.gate_decision is None:
+        # CrossDomainJoinGate remains pairwise truth. A relationship obligation may
+        # legitimately carry several already-governed focus metrics against one governed
+        # counterpart dimension. Validate every metric × dimension pair independently,
+        # then materialize one Wren analytics query only if every pair is admissible.
+        if not args.focus_handles or len(args.counterpart_handles) != 1:
+            facts = self._facts.build(
+                args=args,
+                obligation=obligation,
+                service=self._context.service,
+            )
             return GovernedRelationshipResult(
                 available=False,
                 evidence=None,
                 facts=facts,
+                fact_results=(facts,),
                 reason=facts.reason,
             )
 
-        # The counterpart handle is already an accepted source-cube dimension.  Wren
-        # relationship provenance proves whether it denotes a target row key or target
-        # analytical attribute.  Core analytics therefore needs no new SQL/join DSL.
+        pair_results: list[CrossDomainJoinFactResult] = []
+        for focus_handle in args.focus_handles:
+            pair_args = RunRelationshipArgs(
+                research_task_id=args.research_task_id,
+                obligation_id=args.obligation_id,
+                focus_handles=(focus_handle,),
+                counterpart_handles=args.counterpart_handles,
+            )
+            pair = self._facts.build(
+                args=pair_args,
+                obligation=obligation,
+                service=self._context.service,
+            )
+            pair_results.append(pair)
+            if not pair.ready or pair.facts is None or pair.gate_decision is None:
+                return GovernedRelationshipResult(
+                    available=False,
+                    evidence=None,
+                    facts=pair,
+                    fact_results=tuple(pair_results),
+                    reason=pair.reason,
+                )
+
+        facts = pair_results[0]
+
+        # All pairwise gates are proven before execution. Core analytics may then project
+        # all governed focus metrics over the same admitted counterpart dimension without
+        # inventing a metric identity or changing CrossDomainJoinGate semantics.
         analytics_args = RunAnalyticsArgs(
             research_task_id=args.research_task_id,
             obligation_ids=(args.obligation_id,),
@@ -131,6 +162,16 @@ class GovernedRelationshipAdapter:
                     "kind": "cross_domain_relationship",
                     "facts": facts.facts.model_dump(mode="json"),
                     "gate_decision": facts.gate_decision.model_dump(mode="json"),
+                    "pair_facts": [
+                        item.facts.model_dump(mode="json")
+                        for item in pair_results
+                        if item.facts is not None
+                    ],
+                    "pair_gate_decisions": [
+                        item.gate_decision.model_dump(mode="json")
+                        for item in pair_results
+                        if item.gate_decision is not None
+                    ],
                 },
                 evidence_kind="relationship_analytics",
             )
@@ -146,5 +187,6 @@ class GovernedRelationshipAdapter:
             available=True,
             evidence=result.evidence,
             facts=facts,
+            fact_results=tuple(pair_results),
             query_count=result.query_count,
         )
