@@ -169,6 +169,35 @@ class _StandardSemanticProvider:
         return SemanticLinkBatchDecision(choices=tuple(choices))
 
 
+class _CautiousSemanticProvider:
+    """Select one bounded candidate; abstain rather than rank genuine plurality."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def decide(self, requests):
+        self.calls += 1
+        choices = []
+        for request in requests:
+            if len(request.candidates) == 1:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="SELECT",
+                        candidate_id=request.candidates[0].candidate_id,
+                    )
+                )
+            else:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="ABSTAIN",
+                        reason="AMBIGUOUS",
+                    )
+                )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
 class _CurrentTurnRecoveryResearchLLM:
     """Preacceptance-only fixture for D10-N current-turn applicability."""
 
@@ -524,7 +553,7 @@ def test_d10_n_real_wren_preacceptance_accepts_current_turn_metric_recovery(
     semantic_context = ContextProviderV0().build(service, runtime_ctx)
     source_spans = SourceSpanRegistry()
     semantic_handles = SemanticHandleRegistry()
-    semantic_provider = _StandardSemanticProvider()
+    semantic_provider = _CautiousSemanticProvider()
     diagnostics = []
 
     semantic = ManagerSemanticResolutionAdapter(
@@ -568,7 +597,22 @@ def test_d10_n_real_wren_preacceptance_accepts_current_turn_metric_recovery(
         turn_ref="turn-d10-n-semantic",
     )
 
+    bakim_context = next(
+        item for item in semantic_context.cubes
+        if item.canonical_name == "bakim"
+    )
+    other_metric_label = next(
+        (
+            value
+            for field in bakim_context.measures
+            for value in (field.display, *field.synonyms)
+            if value and "arıza say" not in value.casefold()
+        ),
+        None,
+    )
+    assert other_metric_label is not None
     question = (
+        f"{other_metric_label} yalnız bağlam bilgisidir; "
         "arıza sayısı ve gözlenen bozulma için kök neden araştırması yap"
     )
     outcome = loop.understand(
