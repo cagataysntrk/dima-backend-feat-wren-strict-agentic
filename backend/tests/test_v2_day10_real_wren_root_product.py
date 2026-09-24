@@ -320,4 +320,7 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
     # Two pre-acceptance cognition calls + three genuinely adaptive Manager decisions.
     assert manager.preacceptance_calls == 2
     assert len(manager.manager_prompts) == 3
+    assert result.runtime.snapshot.preacceptance_turns == 2
+    assert result.runtime.snapshot.research_manager_turns == 3
+    assert result.runtime.snapshot.manager_turns == 5
     assert response.terminal_receipt.manager_turns == 5
