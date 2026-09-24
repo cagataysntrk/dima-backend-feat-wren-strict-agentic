@@ -25,6 +25,8 @@ name: v2-day10-focused
       - "backend/app/v2/report_continuation.py"
       - "backend/tests/test_v2_day10_*.py"
       - "backend/lab/v2_day10_ns4_provider_free_rehearsal.py"
+      - "backend/lab/v2_day10_product_mvp_live.py"
+      - ".github/workflows/v2-day10-product-mvp-paid-once.yml"
       - ".github/workflows/v2-day10-focused.yml"
   workflow_dispatch:
 
@@ -63,7 +65,8 @@ jobs:
         working-directory: backend
         run: |
           pytest -q             tests/test_v2_day10_frontdoor.py             tests/test_v2_day10_report_projection.py             tests/test_v2_day10_product_events.py             tests/test_v2_day10_product_control.py             tests/test_v2_day10_continuation.py             tests/test_v2_day10_prepaid_hardening.py \
-            tests/test_v2_day10_ns4_rehearsal.py
+            tests/test_v2_day10_ns4_rehearsal.py \
+            tests/test_v2_day10_paid_harness_contract.py
 
       - name: Day10 one real-Wren ROOT_CAUSE Product micro-gate
         working-directory: backend
