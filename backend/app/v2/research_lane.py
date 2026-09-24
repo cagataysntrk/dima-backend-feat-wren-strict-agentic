@@ -115,10 +115,12 @@ class ResearchLaneService:
         cognition: ResearchCognition,
         contract_registry: AcceptedContractRegistry | None = None,
         authority_registry: AcceptedAuthorityRegistry | None = None,
+        semantic_diagnostic_sink: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self._cognition = cognition
         self._contracts = contract_registry or AcceptedContractRegistry()
         self._authorities = authority_registry or AcceptedAuthorityRegistry()
+        self._semantic_diagnostic_sink = semantic_diagnostic_sink
 
     @property
     def authority_registry(self) -> AcceptedAuthorityRegistry:
@@ -173,6 +175,7 @@ class ResearchLaneService:
             thread_id=body.thread_id,
             semantic_decision_provider=self._cognition.semantic_provider,
             temporal_normalization_provider=self._cognition.temporal_provider,
+            semantic_diagnostic_sink=self._semantic_diagnostic_sink,
         )
         acceptance = IntentAcceptanceGate(
             source_spans=source_spans,
@@ -287,6 +290,7 @@ class ResearchLaneService:
             thread_id=body.thread_id,
             semantic_decision_provider=self._cognition.semantic_provider,
             temporal_normalization_provider=self._cognition.temporal_provider,
+            semantic_diagnostic_sink=self._semantic_diagnostic_sink,
         )
         acceptance = IntentAcceptanceGate(
             source_spans=source_spans,
