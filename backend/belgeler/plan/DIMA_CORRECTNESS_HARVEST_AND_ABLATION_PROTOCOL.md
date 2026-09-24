@@ -978,3 +978,164 @@ It is:
 - maximum two Product turns (initial + one signed section continuation).
 
 Preparing this harness does not close Day8 live debt and does not make Day10 FINAL GREEN.
+
+
+---
+
+## DAY10-H FINAL PRE-PAID SEAL HARVEST — 2026-09-24
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-096 | ROOT_CAUSE trigger Evidence may create a hypothesis but cannot by itself complete the investigation. Completion requires post-hypothesis Evidence produced by a linked completed governed next test. | MUST_PORT | trigger Evidence laundering into root completion without actually testing the hypothesis | `RootCauseObligationVerifier` linked-task provenance check + H2 A–G attacks + real-Wren root micro-gate |
+| H-097 | ResearchDirective is policy, not USER_MUST. Completion-relevant conditional directives require typed disposition; authorization-only directives do not silently become hidden obligations. | MUST_PORT | conditional research policy permanently blocking finish or being retyped as fake business deliverable | `ResearchDirectiveDisposition`; ADAPT lifecycle; BROADEN non-blocking attack |
+| H-098 | ADAPT_ON_EVIDENCE is accounted either by an admitted governed material branch or an explicit evidence-grounded NO_MATERIAL_DIRECTION disposition. | MUST_PORT | hidden adaptive work, fake branch completion, or unnecessary extra Manager cognition | branch execution -> APPLIED; typed no-branch admission -> NO_MATERIAL_DIRECTION; directive-bearing G16 |
+| H-099 | Product content/correlation fingerprint is not Product turn/event identity. Event identity must be scoped by server-owned unique turn identity. | MUST_PORT | identical repeated user payloads sharing Product/UI telemetry identity | `ProductResponse.turn_ref`; turn-scoped `ProductEventSink`; repeated-request + stream one-turn attacks |
+
+### Root-cause completion provenance
+
+Permanent completion rule:
+
+```text
+trigger Evidence
+→ hypothesis creation context only
+
+ROOT_CAUSE VERIFIED
+requires, for every accounted hypothesis:
+  status != OPEN
+  + non-empty next_test_task_refs
+  + linked current governed ResearchTask COMPLETE
+  + admitted relation Evidence whose EvidenceArtifact.task_id
+    belongs to that linked COMPLETE next test
+```
+
+Status/relation alignment:
+
+```text
+SUPPORTED
+→ post-test SUPPORTS relation required
+
+REFUTED
+→ post-test CONTRADICTS relation required
+
+INCONCLUSIVE
+→ completed next test + governed post-test relation/accounting required
+```
+
+A different Evidence ID is not enough; task provenance is structural.
+
+`ROOT_CAUSE VERIFIED != CONFIRMED_CAUSE` remains permanent.
+
+### ResearchDirective lifecycle
+
+```text
+USER_MUST
+= business result owed to user
+
+ResearchDirective
+= conditional research policy / authorization
+```
+
+Completion-relevant `ADAPT_ON_EVIDENCE` runtime states:
+
+```text
+OPEN
+APPLIED
+NO_MATERIAL_DIRECTION
+BLOCKED
+```
+
+`APPLIED` requires a governed executed/accounted branch and branch task refs.
+
+`NO_MATERIAL_DIRECTION` requires:
+- accepted directive ID/type/parent,
+- current VERIFIED Evidence,
+- Evidence inspected/disclosed,
+- Evidence in directive parent obligation lineage,
+- bounded reason,
+- no new branch task,
+- no fake Evidence/Finding.
+
+`BROADEN_WITHIN_BUDGET` remains permission/policy. Its mere presence does not fabricate
+work or block CompletionGate.
+
+### Manager budget interpretation
+
+```text
+max_total_manager_turns = 6
+max_preacceptance_turns  = 4
+```
+
+The preacceptance value `4` is a phase safety cap for at most two bounded
+draft+coverage attempts. It is NOT additional Manager spend.
+
+Canonical successful path remains:
+
+```text
+preacceptance actual = 2
+Research cognition   = 4
+Manager total        = 6
+headroom             = 0
+```
+
+The seventh total Manager call fails closed.
+
+### Product identity
+
+```text
+request_ref
+= deterministic content/correlation fingerprint
+
+turn_ref
+= fresh server-owned Product turn identity
+
+event_id
+= hash(turn_ref + request_ref + governed transition identity)
+```
+
+Repeated identical requests therefore may keep the same `request_ref`, but must have different
+`turn_ref` and different event-id sets. Re-emitting the same governed transition inside one
+turn remains idempotent.
+
+Streaming mints exactly one `turn_ref` and threads that same identity through:
+router -> ProductEventSink -> ProductCoordinator -> ProductResponse.
+
+### Final deterministic receipt
+
+Product behavior SHA:
+
+`3db7f8688a5598188ae70375f778d2bef90452cf`
+
+Authoritative Day10-H run:
+
+`35961399933`
+
+```text
+focused provider-free            65 passed
+real-Wren ROOT_CAUSE Product     GREEN
+G16 directive-bearing NS4        GREEN
+
+directive_count                  1
+directive_id                     R_ADAPT_ROOT
+directive_type                   ADAPT_ON_EVIDENCE
+directive_final_status           APPLIED
+directive_accounting_evidence    runtime-observed VERIFIED Evidence
+directive_branch_task_refs       non-empty governed branch refs
+
+preacceptance calls              2
+Research cognition               4
+Manager total                    6
+headroom                         0
+
+root trigger-only completion     impossible
+root fresh-test completion       proven
+CONFIRMED_CAUSE                  0
+
+paid workflow dispatched         NO
+paid calls                       0
+```
+
+Affected trust-plane regressions:
+- Day7 full focused `35960964752 = GREEN`
+- Day8 focused `35960964807 = GREEN`
+
+The manual paid Product-MVP workflow remains prepared but unexecuted.
