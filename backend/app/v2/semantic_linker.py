@@ -112,6 +112,126 @@ class SemanticLinkBatchDecision(FrozenModel):
     choices: tuple[SemanticLinkChoice, ...] = Field(min_length=1)
 
 
+class SemanticRepairSourceCard(FrozenModel):
+    source_token: str = Field(pattern=r"^s[1-9][0-9]*$")
+    surface: str = Field(min_length=1, max_length=240)
+    kind: Literal["metric", "dimension"]
+    safe_label: str = Field(min_length=1, max_length=240)
+
+
+class SemanticDecompositionRepairRequest(FrozenModel):
+    gap_ref: str = Field(min_length=1, max_length=120)
+    obligation_id: str = Field(min_length=1, max_length=160)
+    capability_key: str = Field(min_length=1, max_length=80)
+    missing_kind: Literal["metric", "dimension"]
+    obligation_source_surfaces: tuple[str, ...] = Field(min_length=1)
+    available_user_source_concepts: tuple[SemanticRepairSourceCard, ...] = Field(
+        min_length=1
+    )
+
+
+class SemanticDecompositionRepairChoice(FrozenModel):
+    gap_ref: str = Field(min_length=1, max_length=120)
+    decision: Literal["SELECT_SOURCES", "ABSTAIN"]
+    selected_source_tokens: tuple[str, ...] = ()
+    reason: Literal[
+        "SOURCE_SUPPORTS_SCOPE",
+        "INSUFFICIENT_SOURCE_SUPPORT",
+        "AMBIGUOUS_SCOPE",
+    ] | None = None
+
+    @model_validator(mode="after")
+    def _shape(self):
+        if self.decision == "SELECT_SOURCES":
+            if not self.selected_source_tokens:
+                raise ValueError("SELECT_SOURCES requires at least one source token")
+            if self.reason not in {None, "SOURCE_SUPPORTS_SCOPE"}:
+                raise ValueError("SELECT_SOURCES may use SOURCE_SUPPORTS_SCOPE only")
+        else:
+            if self.selected_source_tokens:
+                raise ValueError("ABSTAIN requires zero selected source tokens")
+            if self.reason not in {
+                "INSUFFICIENT_SOURCE_SUPPORT",
+                "AMBIGUOUS_SCOPE",
+            }:
+                raise ValueError("ABSTAIN requires bounded reason")
+        return self
+
+
+class SemanticDecompositionRepairBatchDecision(FrozenModel):
+    choices: tuple[SemanticDecompositionRepairChoice, ...] = Field(min_length=1)
+
+
+_REPAIR_SYSTEM = """You are Dima's bounded semantic-decomposition repair cognition.
+
+You do NOT choose catalog candidates and you do NOT infer nearest metrics.
+For each already-typed REQUIRED obligation with one missing semantic kind, decide only
+whether semantic concepts the USER ALREADY EXPLICITLY NAMED elsewhere in this exact
+current message should also scope that obligation.
+
+AVAILABLE_USER_SOURCE_CONCEPTS contains only server-issued source tokens for already
+governed, non-sensitive current-message USER_SOURCE concepts. You may select one or more
+of those exact source tokens, or ABSTAIN. Never invent a new source phrase, metric,
+dimension, candidate id, semantic handle, SQL, database field, or reasoning chain.
+Do not rewrite obligation id, capability, polarity, priority, origin, directives, ranking
+parameters, or business source surfaces. Return only the strict schema.
+"""
+
+
+class SemanticDecompositionRepairProvider(Protocol):
+    def decide(
+        self,
+        requests: tuple[SemanticDecompositionRepairRequest, ...],
+        *,
+        user_message: str,
+    ) -> SemanticDecompositionRepairBatchDecision:
+        ...
+
+
+class StructuredSemanticDecompositionRepairProvider:
+    """Strict source-token cognition only; owns no semantic authority."""
+
+    def __init__(self, *, structured: Callable[..., Any]) -> None:
+        self._structured = structured
+
+    def decide(
+        self,
+        requests: tuple[SemanticDecompositionRepairRequest, ...],
+        *,
+        user_message: str,
+    ) -> SemanticDecompositionRepairBatchDecision:
+        if not requests:
+            raise ValueError("semantic decomposition repair requires requests")
+        schema = _strict_schema(
+            SemanticDecompositionRepairBatchDecision.model_json_schema()
+        )
+        try:
+            raw = self._structured(
+                _REPAIR_SYSTEM,
+                json.dumps(
+                    {
+                        "USER_MESSAGE": user_message,
+                        "REPAIR_REQUESTS": [
+                            item.model_dump(mode="json") for item in requests
+                        ],
+                    },
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+                schema=schema,
+                schema_name="dima_semantic_decomposition_repair_v1",
+            )
+            data = json.loads(raw) if isinstance(raw, str) else raw
+            return SemanticDecompositionRepairBatchDecision.model_validate(data)
+        except SemanticDecisionProviderError:
+            raise
+        except Exception as exc:
+            raise SemanticDecisionProviderError(
+                "structured semantic decomposition repair failed: "
+                f"{type(exc).__name__}: {exc}"
+            ) from exc
+
+
 @dataclass(frozen=True)
 class CatalogCandidateBinding:
     card: SemanticLinkCandidateCard
