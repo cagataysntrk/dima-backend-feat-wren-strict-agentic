@@ -15,7 +15,7 @@ import hashlib
 import json
 import unicodedata
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Literal, Protocol
+from typing import Annotated, Any, Callable, Literal, Protocol
 
 from pydantic import Field, model_validator
 
@@ -133,7 +133,9 @@ class SemanticDecompositionRepairRequest(FrozenModel):
 class SemanticDecompositionRepairChoice(FrozenModel):
     gap_ref: str = Field(min_length=1, max_length=120)
     decision: Literal["SELECT_SOURCES", "ABSTAIN"]
-    selected_source_tokens: tuple[str, ...] = ()
+    selected_source_tokens: tuple[
+        Annotated[str, Field(pattern=r"^s[1-9][0-9]*$")], ...
+    ] = ()
     reason: Literal[
         "SOURCE_SUPPORTS_SCOPE",
         "INSUFFICIENT_SOURCE_SUPPORT",
