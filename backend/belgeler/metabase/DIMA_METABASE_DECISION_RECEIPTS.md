@@ -2413,3 +2413,89 @@ authorization or dataset execution. Model calls and analytical executions for th
 
 status:
 `SEALED / PRODUCT-FIRST NATIVE ENGINE INHERITANCE + FAST CORRIDOR ACTIVE / GHCR ACCESS OWNER OPEN`.
+
+
+---
+
+## DMP-DEC-0043 — P13C textual-equality Standard seal and anonymous public-digest runtime corridor
+
+date: 2026-09-24
+
+P13C is sealed GREEN.
+
+The certified `0.63.18-dima.4` engine was not rebuilt. The runtime lock, engine SHA, immutable
+digest and product/trust/Metabot implementation remained unchanged while the Platform runtime
+failure was isolated to CI authentication.
+
+Root cause and disposition:
+
+```text
+public GHCR exact-digest anonymous pull              = WORKS
+cross-owner repository-scoped GITHUB_TOKEN login    = REMOVED FROM ACTIVE DIGEST CONSUMERS
+old failed run 35953149626                           = NOT RERUN
+legacy p12x-c2 live workflow                         = UNTOUCHED
+PAT / duplicate image / alternate registry           = NOT INTRODUCED
+```
+
+The first corrected runtime run proved exact-digest pull and the complete runtime/P11 chain, then
+failed only because the integration job had installed the package without the repository's canonical
+`.[dev]` test extra. The root fix reused that existing extra; no ad-hoc pytest dependency was
+introduced.
+
+Final provider-free runtime integration:
+
+```text
+commit = c3397f68d4af5e524455fec5bff2d1f21b489d0d
+run    = 35956274118 SUCCESS
+```
+
+Exactly one P13C Luna user-turn canary was then run:
+
+```text
+commit                  = c0cfd65f1162cda31bd8d984dcaa2865e7d2466c
+run                     = 35956538018 SUCCESS
+artifact id             = 10790995760
+artifact digest         = sha256:52ffc8c96e9ba30ca9f1764dc5b695ea7b25e63d1bf409523961dd3be700c69a
+model                   = openrouter/openai/gpt-5.6-luna
+question                = Haziran 2026'da Web kanalından kaç satış siparişi açıldı?
+official answer         = 27
+oracle                  = 27
+silent_wrong            = 0
+```
+
+The native textual predicate was attested as exact stage-0 equality on physical field id `531`,
+type `type/Text`, literal `Web`. Dima bound it to the accepted semantic filter and exact
+current-lens P11 evidence before authorization.
+
+Immutable execution identity:
+
+```text
+attested   = 950ea75436af26ea9d307cf37421a4b98fe2a86fbceee4e2487001ed8dadb393
+authorized = 950ea75436af26ea9d307cf37421a4b98fe2a86fbceee4e2487001ed8dadb393
+submitted  = 950ea75436af26ea9d307cf37421a4b98fe2a86fbceee4e2487001ed8dadb393
+receipted  = 950ea75436af26ea9d307cf37421a4b98fe2a86fbceee4e2487001ed8dadb393
+```
+
+Existing truth systems remained singular:
+
+```text
+AcceptedStandardAuthority = asa_365b8456f7d15192697cc339
+QueryReceipt              = dqr_36e99d80963cb15f9db629c5
+Evidence                  = evi_c5bf623c5f7ef98c796ee4d7 / VERIFIED
+ExecutionAccess lens      = existing P5/P10 fingerprint path
+```
+
+Fallback cardinality is zero for Wren, raw SQL, Agent API analytical fallback and admin analytical
+fallback. There is one material native query and one database execution.
+
+This seal also certifies the intended CI economy for unchanged engine candidates:
+source-build/certify once, publish immutable digest once, then pull and re-attest that digest from
+Platform jobs. It does not authorize moving tags or skipping engine source certification when engine
+code truly changes.
+
+Per DMP-DEC-0042, P13C GREEN is not a supervisor stop. Continue directly to the cohesive P13D
+breakout + ordering/top-N + period-comparison Standard slice unless an explicit stop condition is
+crossed.
+
+status:
+`SEALED / P13C TEXTUAL EQUALITY GREEN / DIGEST CORRIDOR GREEN / CONTINUE P13D`.

@@ -2587,3 +2587,103 @@ registry workaround is authorized.
 Product-first architecture correction is now normative:
 native Metabase/Metabot capability reuse is default; Dima adds only its differentiated semantic,
 security, provenance, Evidence, Research epistemics and Decision truth.
+
+
+---
+
+## 2026-09-24 — P13C SEALED GREEN / PRODUCT-FIRST DIGEST CORRIDOR PROVEN
+
+The prior GHCR blocker is closed at its actual owner. The certified engine package is public and the
+exact immutable digest is anonymously pullable. The Platform failure was caused by authenticating
+the public cross-owner GHCR pull with the repository-scoped `GITHUB_TOKEN`.
+
+CI-only correction:
+
+```text
+active workflows changed:
+- dima-metabase-p13c-integration.yml
+- dima-metabase-p13c-live.yml
+- dima-metabase-p13b-semantic-availability.yml
+
+removed:
+docker login ghcr.io ...
+
+preserved:
+docker pull "$IMMUTABLE_IMAGE_REF"
+docker image inspect ... | grep -Fx "$IMMUTABLE_IMAGE_REF"
+
+legacy dima-metabase-p12x-c2-live.yml = untouched
+packages: read                         = retained
+runtime lock                           = unchanged
+product/trust/Metabot code             = unchanged
+```
+
+Proof sequence:
+
+```text
+anonymous-pull CI fix commit          = ac6013fcdc31c9c8e8fb072f2f6dc14451f02a3d
+first new runtime run                 = 35956052648
+exact digest pull                     = SUCCESS
+runtime/P11 chain                     = SUCCESS
+failure owner                         = CI test dependency only
+failure                               = pytest: command not found
+
+canonical dev-extra fix commit        = c3397f68d4af5e524455fec5bff2d1f21b489d0d
+final P13C runtime integration run    = 35956274118 SUCCESS
+
+single Luna canary trigger commit     = c0cfd65f1162cda31bd8d984dcaa2865e7d2466c
+single Luna live run                  = 35956538018 SUCCESS
+live artifact id                      = 10790995760
+live artifact digest                  = sha256:52ffc8c96e9ba30ca9f1764dc5b695ea7b25e63d1bf409523961dd3be700c69a
+```
+
+Certified runtime remained exactly:
+
+```text
+engine SHA              = cdd117558fea3b0a80f6b89bb872ffb6e9ab175f
+release                 = 0.63.18-dima.4
+immutable image         = ghcr.io/upcytech/dima-metabase-engine@sha256:ce8d135163faba74f80c18c8e0a585037be2e6049a7ca74d4f477e655e039a71
+engine certification    = 35951538259 SUCCESS
+```
+
+P13C-01 live proof:
+
+```text
+question                         = Haziran 2026'da Web kanalından kaç satış siparişi açıldı?
+model                            = openrouter/openai/gpt-5.6-luna
+primary user turns               = 1
+official answer                  = 27
+independent oracle               = 27
+silent_wrong                     = 0
+
+attested fingerprint             = 950ea75436af26ea9d307cf37421a4b98fe2a86fbceee4e2487001ed8dadb393
+authorized fingerprint           = 950ea75436af26ea9d307cf37421a4b98fe2a86fbceee4e2487001ed8dadb393
+submitted fingerprint            = 950ea75436af26ea9d307cf37421a4b98fe2a86fbceee4e2487001ed8dadb393
+receipted fingerprint            = 950ea75436af26ea9d307cf37421a4b98fe2a86fbceee4e2487001ed8dadb393
+
+typed predicate                  = field_id 531 / type/Text / "=" / "Web" / stage 0
+QueryReceipt                     = dqr_36e99d80963cb15f9db629c5
+Evidence                         = evi_c5bf623c5f7ef98c796ee4d7 / VERIFIED
+authority                        = asa_365b8456f7d15192697cc339
+
+native material queries          = 1
+database executions              = 1
+Wren fallback                    = 0
+raw SQL fallback                 = 0
+Agent API analytical fallback    = 0
+admin analytical fallback        = 0
+```
+
+The permanent fast corridor is therefore operational:
+
+```text
+source-build once in engine certification
+→ publish immutable digest
+→ Platform pulls exact digest
+→ verify RepoDigest + /identity
+→ run bounded Platform proof
+```
+
+P13C is closed. Per DMP-DEC-0042/Product-First authority, development continues directly to one
+cohesive P13D Standard analytical-expansion slice; no P13B rerun and no dima.4 rebuild is required
+for the P13C closure.
