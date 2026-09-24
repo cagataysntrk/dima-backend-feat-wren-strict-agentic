@@ -189,7 +189,9 @@ class NativeAttestationEnvelope(FrozenModel):
     manifest: NativeExecutionManifest
 
 
-class NativeDatasetExecutionRequest(FrozenModel):
-    artifact_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+class NativeExactOccurrenceExecutionRequest(FrozenModel):
+    native_conversation_id: UUID
+    native_query_id: str = Field(min_length=1)
+    expected_pmbql_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    expected_attestation_id: str = Field(min_length=1)
     database_id: int = Field(gt=0)
-    exact_serialized_pmbql: dict[str, Any]

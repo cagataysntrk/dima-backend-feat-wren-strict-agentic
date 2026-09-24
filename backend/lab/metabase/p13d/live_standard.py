@@ -362,26 +362,47 @@ def main() -> int:
                 fingerprints = {
                     "attested": attestation.manifest.exact_pmbql_fingerprint,
                     "authorized": artifact.steps[0].artifact_fingerprint,
-                    "submitted": h(execution_request.exact_serialized_pmbql),
                 }
                 if len(set(fingerprints.values())) != 1:
                     raise RuntimeError(
                         f"{case_id}: pre-execution fingerprint mismatch: {fingerprints}"
                     )
 
-                state["failure_owner"] = "dataset-execution"
-                execution = client.execute_dataset(execution_request.exact_serialized_pmbql)
+                state["failure_owner"] = "exact-occurrence-execution"
+                execution = client.execute_native_query(
+                    conversation_id=execution_request.native_conversation_id,
+                    native_query_id=execution_request.native_query_id,
+                    expected_pmbql_fingerprint=execution_request.expected_pmbql_fingerprint,
+                    expected_attestation_id=execution_request.expected_attestation_id,
+                )
+                fingerprints["executed"] = execution.executed_pmbql_fingerprint
+                if len(set(fingerprints.values())) != 1:
+                    raise RuntimeError(f"P13D: executed fingerprint mismatch: {fingerprints}")
+                execution_identity = NativeAttestedRuntimeIdentity.model_validate(
+                    execution.runtime_identity
+                )
+                if execution_identity != identity:
+                    raise RuntimeError("P13D: runtime identity changed in exact-occurrence execution")
+                execution_attestation = NativeAttestationEnvelope.model_validate(execution.attestation)
+                if execution_attestation != attestation:
+                    raise RuntimeError("P13D: execution re-attestation differs from authorized occurrence")
                 rows = _rows(execution.payload)
                 observed = _official(case_id, execution.payload)
                 after = NativeAttestedRuntimeIdentity.model_validate(client.engine_identity())
                 if after != identity:
-                    raise RuntimeError(f"{case_id}: runtime changed across dataset execution")
+                    raise RuntimeError(f"{case_id}: runtime changed across exact-occurrence execution")
 
                 state["failure_owner"] = "receipt-sealing"
                 receipt = NativeStandardTrustOrchestrator.seal_receipt(
                     intent=intent,
                     result=authz,
                     execution_request=execution_request,
+
+                    attestation=attestation,
+
+                    executed_pmbql_fingerprint=execution.executed_pmbql_fingerprint,
+
+                    executed_attestation_id=execution.attestation_id,
                     runtime=RuntimeIdentity(
                         substrate="metabase-native",
                         runtime_version=identity.runtime_tag,
@@ -481,7 +502,7 @@ def main() -> int:
                             "native_tool_call_count": len(observation.tool_calls),
                             "analytical_query_count": attestation.manifest.material_query_count,
                             "native_agent_latency_ms": observation.latency_ms,
-                            "dataset_latency_ms": execution.latency_ms,
+                            "exact_occurrence_execution_latency_ms": execution.latency_ms,
                             "end_to_end_ms": max(
                                 0, int((time.monotonic() - case_started) * 1000)
                             ),

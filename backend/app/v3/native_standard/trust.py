@@ -51,7 +51,7 @@ from control_plane.authorize import Principal
 
 from .contracts import (
     NativeAttestationEnvelope,
-    NativeDatasetExecutionRequest,
+    NativeExactOccurrenceExecutionRequest,
     NativeExecutionManifest,
 )
 
@@ -1101,11 +1101,11 @@ class NativeStandardTrustOrchestrator:
         *,
         result: NativeStandardAuthorizationResult,
         attestation: NativeAttestationEnvelope,
-    ) -> NativeDatasetExecutionRequest:
+    ) -> NativeExactOccurrenceExecutionRequest:
         if result.authorization.outcome != NativeCandidateOutcome.ALLOW:
             raise NativeStandardTrustError(
                 "NATIVE_EXECUTION_NOT_AUTHORIZED",
-                "cannot create /api/dataset request from a non-ALLOW decision",
+                "cannot create exact-occurrence execution request from a non-ALLOW decision",
             )
         artifact = result.authorization.authorized_artifact
         assert artifact is not None
@@ -1113,10 +1113,17 @@ class NativeStandardTrustOrchestrator:
             role="primary",
             artifact_representation=attestation.exact_serialized_pmbql,
         )
-        return NativeDatasetExecutionRequest(
-            artifact_fingerprint=artifact.steps[0].artifact_fingerprint,
+        if artifact.steps[0].artifact_fingerprint != attestation.manifest.exact_pmbql_fingerprint:
+            raise NativeStandardTrustError(
+                "EXECUTION_ARTIFACT_MISMATCH",
+                "attested fingerprint differs from authorized artifact",
+            )
+        return NativeExactOccurrenceExecutionRequest(
+            native_conversation_id=attestation.manifest.native_conversation_id,
+            native_query_id=attestation.manifest.native_query_id,
+            expected_pmbql_fingerprint=artifact.steps[0].artifact_fingerprint,
+            expected_attestation_id=attestation.manifest.attestation_id,
             database_id=attestation.manifest.database_id,
-            exact_serialized_pmbql=copy.deepcopy(attestation.exact_serialized_pmbql),
         )
 
     @staticmethod
@@ -1124,7 +1131,10 @@ class NativeStandardTrustOrchestrator:
         *,
         intent: ResolvedAnalyticsIntent,
         result: NativeStandardAuthorizationResult,
-        execution_request: NativeDatasetExecutionRequest,
+        execution_request: NativeExactOccurrenceExecutionRequest,
+        attestation: NativeAttestationEnvelope,
+        executed_pmbql_fingerprint: str,
+        executed_attestation_id: str,
         runtime: RuntimeIdentity,
         execution_result: ExecutionResultSnapshot,
         execution_event: ExecutionEventIdentity,
@@ -1138,12 +1148,37 @@ class NativeStandardTrustOrchestrator:
         assert artifact is not None
         artifact.assert_execution_matches(
             role="primary",
-            artifact_representation=execution_request.exact_serialized_pmbql,
+            artifact_representation=attestation.exact_serialized_pmbql,
         )
-        if artifact.steps[0].artifact_fingerprint != execution_request.artifact_fingerprint:
+        if artifact.steps[0].artifact_fingerprint != execution_request.expected_pmbql_fingerprint:
             raise NativeStandardTrustError(
                 "EXECUTION_ARTIFACT_MISMATCH",
                 "execution request fingerprint differs from authorized artifact",
+            )
+        if attestation.manifest.attestation_id != execution_request.expected_attestation_id:
+            raise NativeStandardTrustError(
+                "NATIVE_EXECUTION_ATTESTATION_MISMATCH",
+                "execution request attestation differs from authorized attestation",
+            )
+        if attestation.manifest.native_conversation_id != execution_request.native_conversation_id:
+            raise NativeStandardTrustError(
+                "NATIVE_EXECUTION_OCCURRENCE_MISMATCH",
+                "execution request conversation differs from authorized occurrence",
+            )
+        if attestation.manifest.native_query_id != execution_request.native_query_id:
+            raise NativeStandardTrustError(
+                "NATIVE_EXECUTION_OCCURRENCE_MISMATCH",
+                "execution request query id differs from authorized occurrence",
+            )
+        if executed_pmbql_fingerprint != execution_request.expected_pmbql_fingerprint:
+            raise NativeStandardTrustError(
+                "NATIVE_EXECUTION_FINGERPRINT_MISMATCH",
+                "engine executed fingerprint differs from authorized artifact",
+            )
+        if executed_attestation_id != execution_request.expected_attestation_id:
+            raise NativeStandardTrustError(
+                "NATIVE_EXECUTION_ATTESTATION_MISMATCH",
+                "engine execution attestation differs from authorized attestation",
             )
         if result.access_snapshot is None:
             raise NativeStandardTrustError(

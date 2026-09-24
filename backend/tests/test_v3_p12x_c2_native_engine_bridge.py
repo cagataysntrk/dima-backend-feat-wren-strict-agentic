@@ -144,19 +144,22 @@ def test_c2_bridge_has_no_agent_api_wren_or_raw_sql_fallback():
     assert all("/api/agent/" not in path for path in requested)
 
 
-def test_p13b_transport_reuses_session_and_submits_exact_attested_body():
+def test_p13d_transport_executes_only_server_side_occurrence_identity():
     query = {
         "lib/type": "mbql/query",
         "database": 1,
         "stages": [{"lib/type": "mbql.stage/mbql", "source-table": 10}],
     }
+    fingerprint = "a" * 64
+    attestation_id = "dima_att_exact_occurrence"
+    conversation_id = "00000000-0000-4000-8000-000000000201"
     identity = {
         "repository": "UpcyTech/dima-metabase-engine",
-        "revision_sha": "3ac50a0ad1c2fb53d538c9fccf621db816c305e1",
+        "revision_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
         "upstream_base_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
-        "runtime_tag": "v0.63.18-dima.1",
-        "build_identity": "github-actions:test",
-        "image_identity": "local-image:test",
+        "runtime_tag": "v0.63.18-dima.6",
+        "build_identity": "github-actions:36042062775:cbe313af9ac2d5960f662068e433d328d896fb06",
+        "image_identity": "sha256:" + "4" * 64,
         "runtime_instance_id": "00000000-0000-4000-8000-000000000131",
     }
     requested = []
@@ -169,19 +172,48 @@ def test_p13b_transport_reuses_session_and_submits_exact_attested_body():
             return httpx.Response(200, json=identity)
         if request.url.path == "/api/dima/engine/v1/native-query-attestation":
             assert body == {
-                "conversation_id": "00000000-0000-4000-8000-000000000201",
+                "conversation_id": conversation_id,
                 "native_query_id": "native-px01",
             }
             return httpx.Response(
                 200,
                 json={
                     "exact_serialized_pmbql": query,
-                    "manifest": {"native_query_id": "native-px01"},
+                    "manifest": {
+                        "native_query_id": "native-px01",
+                        "attestation_id": attestation_id,
+                        "exact_pmbql_fingerprint": fingerprint,
+                    },
                 },
             )
-        if request.url.path == "/api/dataset":
-            assert body == query
-            return httpx.Response(200, json={"data": {"rows": [[126]]}})
+        if request.url.path == "/api/dima/engine/v1/native-query-execution":
+            assert body == {
+                "conversation_id": conversation_id,
+                "native_query_id": "native-px01",
+                "expected_pmbql_fingerprint": fingerprint,
+                "expected_attestation_id": attestation_id,
+            }
+            assert "query" not in body
+            assert "exact_serialized_pmbql" not in body
+            return httpx.Response(
+                200,
+                json={
+                    "native_conversation_id": conversation_id,
+                    "native_query_id": "native-px01",
+                    "attestation_id": attestation_id,
+                    "executed_pmbql_fingerprint": fingerprint,
+                    "runtime_identity": identity,
+                    "result": {"status": "completed", "data": {"rows": [[126]]}},
+                    "attestation": {
+                        "exact_serialized_pmbql": query,
+                        "manifest": {
+                            "native_query_id": "native-px01",
+                            "attestation_id": attestation_id,
+                            "exact_pmbql_fingerprint": fingerprint,
+                        },
+                    },
+                },
+            )
         return httpx.Response(599)
 
     expected = NativeEngineIdentity(
@@ -197,17 +229,25 @@ def test_p13b_transport_reuses_session_and_submits_exact_attested_body():
     ) as client:
         assert client.engine_identity() == identity
         envelope = client.attest_native_query(
-            conversation_id=UUID("00000000-0000-4000-8000-000000000201"),
+            conversation_id=UUID(conversation_id),
             native_query_id="native-px01",
         )
         assert envelope["exact_serialized_pmbql"] == query
-        execution = client.execute_dataset(query)
+        execution = client.execute_native_query(
+            conversation_id=UUID(conversation_id),
+            native_query_id="native-px01",
+            expected_pmbql_fingerprint=fingerprint,
+            expected_attestation_id=attestation_id,
+        )
 
     assert execution.status_code == 200
     assert execution.payload["data"]["rows"] == [[126]]
+    assert execution.executed_pmbql_fingerprint == fingerprint
+    assert execution.attestation_id == attestation_id
     assert [path for path, _ in requested] == [
         "/api/dima/engine/v1/identity",
         "/api/dima/engine/v1/native-query-attestation",
-        "/api/dataset",
+        "/api/dima/engine/v1/native-query-execution",
     ]
+    assert all("/api/dataset" not in path for path, _ in requested)
     assert all("/api/agent/" not in path for path, _ in requested)

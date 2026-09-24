@@ -64,11 +64,17 @@ class NativeEngineObservation(BaseModel):
     final_state: dict[str, Any] | None = None
 
 
-class NativeDatasetExecutionObservation(BaseModel):
-    """Transport observation for one exact /api/dataset execution."""
+class NativeExactOccurrenceExecutionObservation(BaseModel):
+    """Transport observation for one engine-owned exact query occurrence execution."""
 
     model_config = ConfigDict(frozen=True)
 
     status_code: int
     latency_ms: int = Field(ge=0)
+    native_conversation_id: UUID
+    native_query_id: str = Field(min_length=1)
+    attestation_id: str = Field(min_length=1)
+    executed_pmbql_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    runtime_identity: dict[str, Any]
     payload: dict[str, Any]
+    attestation: dict[str, Any]

@@ -13,8 +13,8 @@ from uuid import UUID
 import httpx
 
 from app.v3.substrate.metabase.native_models import (
-    NativeDatasetExecutionObservation,
     NativeEngineIdentity,
+    NativeExactOccurrenceExecutionObservation,
     NativeEngineObservation,
     NativeEngineRequest,
     NativeStreamEvent,
@@ -155,36 +155,64 @@ class NativeEngineBridge:
             raise NativeEngineBridgeError("native attestation response is not an object")
         return body
 
-    def execute_dataset(
+    def execute_native_query(
         self,
-        exact_serialized_pmbql: dict[str, Any],
-    ) -> NativeDatasetExecutionObservation:
-        """Execute the exact already-authorized pMBQL via Metabase Query Processor."""
+        *,
+        conversation_id: UUID,
+        native_query_id: str,
+        expected_pmbql_fingerprint: str,
+        expected_attestation_id: str,
+    ) -> NativeExactOccurrenceExecutionObservation:
+        """Execute one already-authorized server-side query occurrence by identity only."""
+        if not native_query_id.strip():
+            raise ValueError("native_query_id is required")
+        if not expected_pmbql_fingerprint.strip():
+            raise ValueError("expected_pmbql_fingerprint is required")
+        if not expected_attestation_id.strip():
+            raise ValueError("expected_attestation_id is required")
         started = time.monotonic()
         try:
             response = self._client.post(
-                "/api/dataset",
-                json=exact_serialized_pmbql,
+                "/api/dima/engine/v1/native-query-execution",
+                json={
+                    "conversation_id": str(conversation_id),
+                    "native_query_id": native_query_id,
+                    "expected_pmbql_fingerprint": expected_pmbql_fingerprint,
+                    "expected_attestation_id": expected_attestation_id,
+                },
             )
         except httpx.TimeoutException as exc:
-            raise NativeEngineBridgeError("dataset execution timed out") from exc
+            raise NativeEngineBridgeError("native exact-occurrence execution timed out") from exc
         except httpx.RequestError as exc:
             raise NativeEngineBridgeError(
-                f"dataset execution transport failed: {exc}"
+                f"native exact-occurrence execution transport failed: {exc}"
             ) from exc
         latency_ms = max(0, int((time.monotonic() - started) * 1000))
-        if response.status_code not in (200, 202):
+        if response.status_code != 200:
             raise NativeEngineBridgeError(
-                f"dataset execution returned HTTP {response.status_code}: "
+                f"native exact-occurrence execution returned HTTP {response.status_code}: "
                 f"{response.text[:1000]}"
             )
         body = response.json()
         if not isinstance(body, dict):
-            raise NativeEngineBridgeError("dataset execution response is not an object")
-        return NativeDatasetExecutionObservation(
+            raise NativeEngineBridgeError(
+                "native exact-occurrence execution response is not an object"
+            )
+        result = body.get("result")
+        if not isinstance(result, dict):
+            raise NativeEngineBridgeError(
+                "native exact-occurrence execution response has no result object"
+            )
+        return NativeExactOccurrenceExecutionObservation(
             status_code=response.status_code,
             latency_ms=latency_ms,
-            payload=body,
+            native_conversation_id=body.get("native_conversation_id"),
+            native_query_id=body.get("native_query_id"),
+            attestation_id=body.get("attestation_id"),
+            executed_pmbql_fingerprint=body.get("executed_pmbql_fingerprint"),
+            runtime_identity=body.get("runtime_identity"),
+            payload=result,
+            attestation=body.get("attestation"),
         )
 
     def invoke(self, request: NativeEngineRequest) -> NativeEngineObservation:

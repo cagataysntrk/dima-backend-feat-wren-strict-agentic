@@ -580,9 +580,11 @@ def test_exact_attested_authorized_execution_and_receipt_artifact_are_identical(
     )
     artifact = result.authorization.authorized_artifact
     assert artifact is not None
-    assert request.exact_serialized_pmbql == attestation.exact_serialized_pmbql
-    assert request.artifact_fingerprint == attestation.manifest.exact_pmbql_fingerprint
-    assert request.artifact_fingerprint == artifact.steps[0].artifact_fingerprint
+    assert request.native_conversation_id == attestation.manifest.native_conversation_id
+    assert request.native_query_id == attestation.manifest.native_query_id
+    assert request.expected_attestation_id == attestation.manifest.attestation_id
+    assert request.expected_pmbql_fingerprint == attestation.manifest.exact_pmbql_fingerprint
+    assert request.expected_pmbql_fingerprint == artifact.steps[0].artifact_fingerprint
 
     runtime = RuntimeIdentity(
         substrate="metabase-native",
@@ -601,6 +603,9 @@ def test_exact_attested_authorized_execution_and_receipt_artifact_are_identical(
         intent=_intent(),
         result=result,
         execution_request=request,
+        attestation=attestation,
+        executed_pmbql_fingerprint=request.expected_pmbql_fingerprint,
+        executed_attestation_id=request.expected_attestation_id,
         runtime=runtime,
         execution_result=ExecutionResultSnapshot(
             payload={"rows": [[126]]},
@@ -611,8 +616,8 @@ def test_exact_attested_authorized_execution_and_receipt_artifact_are_identical(
             executed_at=datetime.now(timezone.utc),
         ),
     )
-    assert receipt.canonical_query_fingerprint == request.artifact_fingerprint
-    assert receipt.canonical_query_representation == request.exact_serialized_pmbql
+    assert receipt.canonical_query_fingerprint == request.expected_pmbql_fingerprint
+    assert receipt.canonical_query_representation == attestation.exact_serialized_pmbql
     assert receipt.engine_revision_sha == ENGINE_SHA
     assert str(receipt.engine_runtime_instance_id) == INSTANCE_ID
 
@@ -682,9 +687,10 @@ def test_native_metric_ref_authorizes_only_through_exact_p9_binding():
         result=result,
         attestation=attestation,
     )
-    assert request.exact_serialized_pmbql == _metric_query()
-    assert request.artifact_fingerprint == _hash(_metric_query())
-    assert request.artifact_fingerprint == attestation.manifest.exact_pmbql_fingerprint
+    assert request.native_query_id == attestation.manifest.native_query_id
+    assert request.expected_attestation_id == attestation.manifest.attestation_id
+    assert request.expected_pmbql_fingerprint == _hash(_metric_query())
+    assert request.expected_pmbql_fingerprint == attestation.manifest.exact_pmbql_fingerprint
 
 
 def test_native_metric_ref_missing_binding_fails_closed():
