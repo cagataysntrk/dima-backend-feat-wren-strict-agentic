@@ -779,3 +779,140 @@ def test_pending_root_next_test_blocks_investigation_completion():
         if item.obligation_id == "U_ROOT"
     )
     assert root.status == ObligationStatus.IN_PROGRESS
+
+
+
+def test_deterministic_scheduler_cancel_blocks_late_evidence_commit():
+    """G14.20: deterministic scheduling keeps the Day7 cancel commit_guard."""
+
+    from app.v2.models import ResearchTask
+    from app.v2.research_scheduler import DeterministicResearchScheduler
+    from app.v2.research_tools import ResearchToolRunner
+    from control_plane.authorize import Principal
+
+    tenant = "tenant-cancel-scheduler"
+    ctx = "ctx-cancel-scheduler"
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding=tenant,
+        context_version=ctx,
+        resolver_provenance_id="cancel-metric",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="cancel-metric",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    obligation = ObligationLedgerItem(
+        obligation_id="U_CANCEL",
+        capability_key=ManagerCapabilityKey.PERFORMANCE,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.IN_PROGRESS,
+        source_refs=("src_" + "c" * 24,),
+        semantic_handle_refs=(metric.handle_id,),
+        introduced_in_version=1,
+    )
+    binding = CapabilityBindingValidator(
+        semantic_handles=handles,
+    ).validate(
+        obligation,
+        tenant_binding=tenant,
+        context_version=ctx,
+    ).binding
+    assert binding is not None
+
+    contract = AcceptedTurnContract(
+        contract_id="atc-cancel",
+        lineage_id="atl-cancel",
+        version=1,
+        turn_id="turn_cancel",
+        request_ref="r-cancel",
+        source_message_hash="c" * 64,
+        accepted_attempt_id="a1",
+        model_role="RESEARCH_MANAGER",
+        obligation_ids=("U_CANCEL",),
+        context_version=ctx,
+        accepted_at_iso="2026-09-24T00:00:00+00:00",
+    )
+    runtime = ManagerRuntime(
+        request_ref="r-cancel",
+        turn_ref="turn_cancel",
+    )
+    runtime._accepted_contract = contract
+    runtime._ledger = UserObligationLedger(
+        lineage_id=contract.lineage_id,
+        version=1,
+        items=(obligation,),
+    )
+    runtime.authority_registry.commit(contract)
+    runtime._snapshot = ManagerRunSnapshot(
+        run_id=runtime.snapshot.run_id,
+        state=ManagerState.INVESTIGATING,
+        accepted_contract_id=contract.contract_id,
+        lineage_id=contract.lineage_id,
+    )
+
+    principal = Principal(
+        user_id="cancel-user",
+        tenant_id=tenant,
+        roles=["owner"],
+        tenant_slug="cancel",
+    )
+    tenant_runtime = TenantAnalyticsRuntimeV0(
+        tenant_id=tenant,
+        tenant_slug="cancel",
+        principal_user_id=principal.user_id,
+        roles=tuple(principal.roles),
+        mdl_version="mdl-cancel",
+        catalog="cancel",
+        schema_name="main",
+        db_online=True,
+    )
+
+    class CancelBeforeCommitExecutor:
+        def __init__(self):
+            self.principal = principal
+            self.tenant_binding = tenant
+            self.tenant_runtime = tenant_runtime
+            self.evidence_store = EvidenceStore()
+            self.commit_attempts = 0
+
+        def execute(self, call, validated_args, bound_runtime, commit_guard=None):
+            self.commit_attempts += 1
+            assert commit_guard is not None
+            commit_guard()
+            raise AssertionError("cancelled execution must not cross commit guard")
+
+    executor = CancelBeforeCommitExecutor()
+    task = ResearchTask(
+        task_id="seed:U_CANCEL",
+        question_id="U_CANCEL",
+        task_kind="QUERY",
+        input_refs=(metric.handle_id,),
+        origin="USER_SEED",
+    )
+    tasks = ResearchTaskRegistry()
+    tasks.register(task)
+
+    with pytest.raises(Exception):
+        DeterministicResearchScheduler(
+            runner=ResearchToolRunner(),
+        ).execute(
+            task=task,
+            obligation=obligation,
+            binding=binding,
+            runtime=runtime,
+            executor=executor,
+            principal=principal,
+            task_registry=tasks,
+            cancel_check=lambda: True,
+        )
+
+    assert executor.commit_attempts == 1
+    assert tasks.get(task.task_id).state == "cancelled"
+    assert runtime.snapshot.evidence_refs == ()
+    assert runtime.snapshot.data_queries == 0
