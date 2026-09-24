@@ -8,6 +8,12 @@ def test_ns4_runtime_rehearsal_fits_existing_six_turn_ceiling_without_ceremony()
     receipt = run_rehearsal()
 
     assert receipt["provider_calls"] == 0
+    assert receipt["directive_count"] == 1
+    assert receipt["directive_id"] == "R_ADAPT_ROOT"
+    assert receipt["directive_type"] == "ADAPT_ON_EVIDENCE"
+    assert receipt["directive_final_status"] == "APPLIED"
+    assert receipt["directive_accounting_evidence_ref"]
+    assert receipt["directive_branch_task_refs"]
     assert receipt["preacceptance_model_calls"] == 2
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 6
