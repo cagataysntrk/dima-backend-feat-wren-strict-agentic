@@ -1404,3 +1404,56 @@ new provider calls          0 / 30
 
 Day8 live debt and Day10 FINAL remain OPEN until the integrated paid Product measurement proves the
 full initial report + signed continuation chain. Day11 remains unauthorized.
+
+
+---
+
+## D10-O LIVE HARVEST — 2026-09-24
+
+**H-116 — MUST_PORT**  
+Current-turn applicability may hydrate governed metric/dimension candidates from one coherent current USER_SOURCE cube scope, but cross-domain context must not broaden candidate truth.
+
+**H-117 — MUST_PORT**  
+Applicability narrowing remains non-authoritative. Semantic Linker still owns SELECT vs ABSTAIN and SemanticBindingGate still owns new `sem_*` authority.
+
+**H-118 — MUST_PORT**  
+A model-authored semantic decomposition can be the first wrong transition. Safe resolver abstention after that point must not be repaired by forced candidate selection.
+
+**H-119 — SHOULD_PORT**  
+Track movement of the live failure frontier, not only final GREEN/RED. D10-O attempt 2 proved the applicability repair by newly grounding `Makine duruşları` and `bölüm` even though the Product turn remained RED.
+
+**H-120 — MUST_PORT**  
+Temporary measurement-trigger infrastructure must be removed after the bounded measurement envelope.
+
+Receipts:
+
+```text
+attempt 1  run 36039697895  calls 4  RED
+attempt 2  run 36041398308  calls 5  RED
+total calls                           9
+measurements                          2 / 2
+```
+
+Second-run blocker:
+
+```text
+source phrase:
+"bölüm bazındaki performansı"
+
+Research draft:
+breakdown REQUIRED
+  dimension = "bölüm"
+  metric    = "performansı"
+
+live result:
+dimension = BOUND
+metric candidate pool = 4 governed maintenance metrics
+linker = ABSTAIN / NO_MATCH
+material_grounding_gap = breakdown metric
+```
+
+Classification: `MODEL_COGNITION`.
+
+Do not repair this by nearest-metric selection, retrieval ranking as truth, one/few-candidate auto-bind, phrase rules, fuzzy matching, required-kind weakening, BindingGate weakening, or Manager-budget increase.
+
+Potential next bounded owner, subject to supervisor authorization: preacceptance revision policy for model-authored required-kind decomposition gaps. It should preserve exact source proof and semantic authority boundaries.
