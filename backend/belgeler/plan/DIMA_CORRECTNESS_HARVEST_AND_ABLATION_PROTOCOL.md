@@ -1139,3 +1139,130 @@ Affected trust-plane regressions:
 - Day8 focused `35960964807 = GREEN`
 
 The manual paid Product-MVP workflow remains prepared but unexecuted.
+
+---
+
+## DAY10-J PAID-RED FORENSICS + STANDARD OMISSION ROUTING HARVEST — 2026-09-24
+
+| ID | Mechanism / invariant | Class | Failure prevented / value | Current proof / owner |
+|---|---|---|---|---|
+| H-100 | A paid Product harness must preserve the exact Product terminal and underlying StandardLaneOutcome before aborting on a lane/status gate. | MUST_PORT | collapsing CLARIFY / UNSUPPORTED / FAILED / ACCEPTED into an undiagnosable "got STANDARD" artifact | eval-only CapturingStandardLane + diagnostic snapshot + controlled Standard structured-output capture |
+| H-101 | RESEARCH_NEED_OMITTED is the only CoverageVeto issue that may force StandardLaneStatus.RESEARCH_REQUIRED. Other coverage veto kinds remain non-Research terminals. | MUST_PORT | silent loss of material Research intent or broad FAILED/CLARIFY/UNSUPPORTED -> Research fallback | StandardLaneEngine typed coverage routing + focused failure-family tests |
+| H-102 | Standard -> Research transition carries zero rejected Standard semantics. Research receives the raw Product request and shared infrastructure context only. | MUST_PORT | rejected CandidateObligation / projection / semantic binding becoming hidden Research authority | ProductCoordinator transition seam + omission-route carry-over attack |
+| H-103 | A malformed StandardIntentDraft gets at most one generic typed-contract repair. The repair contains no fixture phrase, expected capability, language token or business literal; second failure is terminal. | MUST_PORT | testcase-specific prompt repair, semantic guessing after schema failure, unbounded draft loops | max_draft_attempts=2 + DRAFT_CONTRACT_REJECTED generic feedback tests |
+| H-104 | Correctly typed Research capability is routed by the existing deterministic RepresentabilityGate before CoverageVeto spends another cognition call. | MUST_PORT | redundant FAST coverage call and duplicated lane classifier | preliminary decide_bound proof + no-coverage correctly-typed Research attack |
+| H-105 | AcceptedAuthorityRegistry is shared across Standard and Research; after successful Research acceptance the valid registry family is RESEARCH, not "empty". Cross-family XOR proves no Standard authority was accepted first. | MUST_PORT | false test oracle interpreting successful Research authority as Standard carry-over | strengthened real-Wren omission-veto routing sentinel |
+
+### Paid RED forensic correction
+
+Historical paid run:
+
+```text
+run                                   35963884332
+tested SHA                            8c85996c16a4bcecd9332d9fd335e57f6bf3a69f
+classification                        VALID RED
+
+FAST_LANGUAGE                         1
+RESEARCH_MANAGER                      0
+SEMANTIC_LINKER                       0
+TEMPORAL_NORMALIZER                   0
+REPORT_NARRATOR                       0
+TOTAL                                 1
+
+Research entered                      NO
+historical Standard terminal subtype  UNRESOLVED
+previous MODEL_COGNITION root cause   NOT SEALED
+paid authorization                    CONSUMED
+```
+
+One FAST call is inconsistent with a successful Standard ACCEPTED path at that SHA because
+that path requires both the draft and StandardCoverageVeto structured calls. Therefore the
+product RED is real, but the old artifact cannot prove which one-call Standard terminal
+family occurred. That historical subtype remains UNRESOLVED; no inference is substituted
+for missing measurement.
+
+### D10-J routing law
+
+```text
+draft
+→ exact-source validation
+→ governed grounding
+
+material semantic gap?
+    CoverageVeto may test for omitted Research
+    RESEARCH_NEED_OMITTED -> RESEARCH_REQUIRED
+    otherwise -> CLARIFICATION_REQUIRED
+
+control request?
+    CoverageVeto may test for independently omitted Research
+    RESEARCH_NEED_OMITTED -> RESEARCH_REQUIRED
+    otherwise -> safe control/clarification terminal
+
+no gap/control:
+    RepresentabilityGate
+    typed Research -> RESEARCH_REQUIRED without CoverageVeto
+
+    otherwise CoverageVeto where needed
+    RESEARCH_NEED_OMITTED -> RESEARCH_REQUIRED
+    other VETO -> preserve correct non-Research failure/terminal
+```
+
+Coverage remains veto-only. It does not choose ROOT_CAUSE/RELATIONSHIP, mint a Research
+obligation, mint a SemanticHandle, create AcceptedTurnContract or seal Standard authority.
+
+### Bounded draft repair
+
+A structured provider/API success may still fail StandardIntentDraft parse/validation.
+
+Current bounded behavior:
+
+```text
+attempt 1 malformed
+→ generic revision feedback only:
+  DRAFT_CONTRACT_REJECTED
+  typed response did not satisfy StandardIntentDraft
+
+attempt 2 valid
+→ continue normal deterministic routing
+
+attempt 2 malformed
+→ FAILED
+
+Research fallback from draft-contract failure
+→ forbidden
+```
+
+### D10-J proof receipt
+
+Product behavior SHA:
+
+a449bcfd62ede142ced7d2c9631fba2430534d62
+
+Final deterministic / real-Wren run:
+
+35967647254 = GREEN
+
+```text
+compile D10-J routing owners          GREEN
+focused provider-free                96 passed
+real-Wren omission-veto -> Research  1 passed
+G16 provider-free rehearsal          GREEN
+
+G16 preacceptance calls              2
+G16 Research Manager calls           4
+G16 Manager headroom                 0
+G16 CONFIRMED_CAUSE                  0
+G16 ADAPT_ON_EVIDENCE                APPLIED
+
+paid calls                            0
+```
+
+Intermediate RED classification:
+- 35967138289 / 35967181704: EVAL/HARNESS/FIXTURE stale invalid Research fixture;
+- 35967487249 / 35967571343: test-oracle error about the shared authority registry;
+- no Product patch was made from either failure family.
+
+The historical paid authorization remains consumed. D10-J does not close Day8 live debt and
+does not seal Day10 FINAL. A future paid remeasurement, if any, requires a new supervisor
+decision.
+
