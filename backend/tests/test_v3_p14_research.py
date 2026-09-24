@@ -283,3 +283,553 @@ def test_counter_evidence_is_explicit_and_never_silently_promotes_a_hypothesis()
     assert updated.counter_evidence_refs[0].hypothesis_id == hypothesis_id
     assert updated.obligations[0].state == ObligationState.DELEGATED
     assert updated.stopping.status == StoppingStatus.ACTIVE
+
+
+# Integrated P14 proof: do not fake Dima trust/receipt ownership.
+from app.v3.analytics_contract import (
+    PrincipalContextRef,
+    ResolvedAnalyticsIntent,
+    ResolvedPeriod,
+    ResolvedSemanticRef,
+)
+from app.v3.execution_identity import (
+    ExecutionEventIdentity,
+    ExecutionResultSnapshot,
+    RuntimeIdentity,
+)
+from app.v3.native_execution import NativeCandidateOutcome
+from app.v3.native_standard.contracts import NativeAttestationEnvelope
+from app.v3.native_standard.trust import NativeStandardTrustOrchestrator
+from app.v3.security_identity import VerifiedExecutionSecurityFacts
+from app.v3.semantic_spec import (
+    DimensionSpec,
+    DimaSemanticSpec,
+    MetricSpec,
+    SourceLineage,
+    TimeSpec,
+)
+from app.v3.substrate.metabase.execution_binding import (
+    CandidateSemanticBinding,
+    CurrentCatalogObject,
+    CurrentCatalogSnapshot,
+    DimaExecutionBindingSnapshot,
+    TemporalSemanticBinding,
+)
+from control_plane.authorize import Principal
+
+
+P14_TABLE = "boyahane:satis_siparisleri"
+P14_TIME = "boyahane:satis_siparisleri.acilis_tarihi"
+P14_CHANNEL = "boyahane:satis_siparisleri.kanal"
+P14_NATIVE_USER = "user-p14-native"
+P14_NATIVE_CONTEXT = "ctx-p14-native-v1"
+P14_NATIVE_OBLIGATION = "obl-p14-native"
+P14_RUNTIME_INSTANCE = "00000000-0000-4000-8000-000000000314"
+P14_IMAGE_IDENTITY = "sha256:" + "e" * 64
+
+
+def _native_hash(value) -> str:
+    raw = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _native_snapshot() -> DimaExecutionBindingSnapshot:
+    table = SourceLineage(
+        source_id="source.satis_siparisleri",
+        database_ref="boyahane",
+        schema_name="main",
+        table_name="satis_siparisleri",
+    )
+    opened = SourceLineage(
+        source_id="source.satis_siparisleri.acilis_tarihi",
+        database_ref="boyahane",
+        schema_name="main",
+        table_name="satis_siparisleri",
+        column_name="acilis_tarihi",
+    )
+    channel = SourceLineage(
+        source_id="source.satis_siparisleri.kanal",
+        database_ref="boyahane",
+        schema_name="main",
+        table_name="satis_siparisleri",
+        column_name="kanal",
+    )
+    spec = DimaSemanticSpec(
+        semantic_context_version=P14_NATIVE_CONTEXT,
+        metrics=(
+            MetricSpec(
+                metric_id="metric.sales_order_count",
+                name="Sales Order Count",
+                aggregation="count",
+                semantic_version="1",
+                compatibility_hash="a" * 64,
+                source_lineage=(table,),
+            ),
+        ),
+        dimensions=(
+            DimensionSpec(
+                dimension_id="dimension.sales_order_opened_at",
+                name="Sales Order Opened At",
+                data_type="datetime",
+                semantic_version="1",
+                source_lineage=(opened,),
+            ),
+            DimensionSpec(
+                dimension_id="dimension.sales_order_channel",
+                name="Sales Order Channel",
+                data_type="string",
+                semantic_version="1",
+                source_lineage=(channel,),
+            ),
+        ),
+        time_specs=(
+            TimeSpec(
+                time_id="time.sales_order_opened_at",
+                dimension_ref="dimension.sales_order_opened_at",
+                grain="day",
+            ),
+        ),
+    )
+    return DimaExecutionBindingSnapshot(
+        semantic_context_version=P14_NATIVE_CONTEXT,
+        semantic_spec=spec,
+        candidate_bindings=(
+            CandidateSemanticBinding(
+                candidate_id="cand_sales_order_count",
+                semantic_id="metric.sales_order_count",
+                kind="metric",
+            ),
+            CandidateSemanticBinding(
+                candidate_id="cand_sales_order_channel",
+                semantic_id="dimension.sales_order_channel",
+                kind="dimension",
+            ),
+        ),
+        temporal_bindings=(
+            TemporalSemanticBinding(
+                compatibility_key="sales_orders.opened_at",
+                dimension_id="dimension.sales_order_opened_at",
+            ),
+        ),
+        current_catalog=CurrentCatalogSnapshot(
+            catalog_version="boyahane-p14-v1",
+            objects=(
+                CurrentCatalogObject(
+                    source_id=table.source_id,
+                    database_ref="boyahane",
+                    schema_name="main",
+                    table_name="satis_siparisleri",
+                    resource_entity_id=P14_TABLE,
+                    resource_fingerprint="1" * 64,
+                    metabase_database_id=1,
+                    metabase_table_id=10,
+                ),
+                CurrentCatalogObject(
+                    source_id=opened.source_id,
+                    database_ref="boyahane",
+                    schema_name="main",
+                    table_name="satis_siparisleri",
+                    column_name="acilis_tarihi",
+                    resource_entity_id=P14_TIME,
+                    resource_fingerprint="2" * 64,
+                    metabase_database_id=1,
+                    metabase_table_id=10,
+                    metabase_field_id=11,
+                ),
+                CurrentCatalogObject(
+                    source_id=channel.source_id,
+                    database_ref="boyahane",
+                    schema_name="main",
+                    table_name="satis_siparisleri",
+                    column_name="kanal",
+                    resource_entity_id=P14_CHANNEL,
+                    resource_fingerprint="3" * 64,
+                    metabase_database_id=1,
+                    metabase_table_id=10,
+                    metabase_field_id=13,
+                ),
+            ),
+        ),
+    )
+
+
+def _native_intent(authority_id: str) -> ResolvedAnalyticsIntent:
+    return ResolvedAnalyticsIntent(
+        authority_id=authority_id,
+        request_ref="request:p14:native",
+        source_message_hash="4" * 64,
+        projection_hash="6" * 64,
+        semantic_context_version=P14_NATIVE_CONTEXT,
+        obligation_ids=(P14_NATIVE_OBLIGATION,),
+        metrics=(
+            ResolvedSemanticRef(
+                semantic_ref="handle.sales_order_count",
+                source_candidate_id="cand_sales_order_count",
+                kind="metric",
+                canonical_name="Sales Order Count",
+                source_scopes=("satis_siparisleri",),
+            ),
+        ),
+        dimensions=(
+            ResolvedSemanticRef(
+                semantic_ref="handle.sales_order_channel",
+                source_candidate_id="cand_sales_order_channel",
+                kind="dimension",
+                canonical_name="Sales Order Channel",
+                source_scopes=("satis_siparisleri",),
+            ),
+        ),
+        period=ResolvedPeriod(
+            kind="absolute",
+            source_text="Haziran 2026",
+            time_dimension="sales_orders.opened_at",
+            start="2026-06-01",
+            end="2026-07-01",
+        ),
+        principal=PrincipalContextRef(
+            tenant_binding=TENANT,
+            principal_subject=P14_NATIVE_USER,
+            roles=("analyst",),
+        ),
+    )
+
+
+def _native_query() -> dict:
+    return {
+        "lib/type": "mbql/query",
+        "database": 1,
+        "stages": [
+            {
+                "lib/type": "mbql.stage/mbql",
+                "source-table": 10,
+                "aggregation": [
+                    [
+                        "count",
+                        {"lib/uuid": "00000000-0000-4000-8000-000000000401"},
+                    ]
+                ],
+                "breakout": [
+                    [
+                        "field",
+                        {"lib/uuid": "00000000-0000-4000-8000-000000000402"},
+                        13,
+                    ]
+                ],
+                "filters": [
+                    [
+                        ">=",
+                        {"lib/uuid": "00000000-0000-4000-8000-000000000403"},
+                        [
+                            "field",
+                            {"lib/uuid": "00000000-0000-4000-8000-000000000404"},
+                            11,
+                        ],
+                        "2026-06-01",
+                    ],
+                    [
+                        "<",
+                        {"lib/uuid": "00000000-0000-4000-8000-000000000405"},
+                        [
+                            "field",
+                            {"lib/uuid": "00000000-0000-4000-8000-000000000406"},
+                            11,
+                        ],
+                        "2026-07-01",
+                    ],
+                ],
+            }
+        ],
+    }
+
+
+def _native_attestation() -> NativeAttestationEnvelope:
+    query = _native_query()
+    return NativeAttestationEnvelope(
+        exact_serialized_pmbql=query,
+        manifest={
+            "attestation_id": "dima_att_" + "f" * 24,
+            "native_conversation_id": "00000000-0000-4000-8000-000000000331",
+            "native_assistant_message_id": 301,
+            "native_tool_call_id": "call-p14",
+            "native_query_id": "native-p14",
+            "producer_tool": "construct_notebook_query",
+            "exact_pmbql_fingerprint": _native_hash(query),
+            "database_id": 1,
+            "primary_source_table_id": 10,
+            "referenced_source_table_ids": (10,),
+            "aggregation_count": 1,
+            "aggregations": (
+                {
+                    "operator": "count",
+                    "argument_kind": "all_rows",
+                    "referenced_field_ids": (),
+                    "distinct": False,
+                },
+            ),
+            "native_metric_references": (),
+            "breakout_count": 1,
+            "breakouts": (
+                {
+                    "stage_number": 0,
+                    "breakout_index": 0,
+                    "field_id": 13,
+                    "field_type": "type/Text",
+                    "temporal_unit": None,
+                },
+            ),
+            "material_filter_count": 2,
+            "non_temporal_filter_count": 0,
+            "temporal_predicates": (
+                {
+                    "time_field_id": 11,
+                    "operator": ">=",
+                    "lower_bound": "2026-06-01",
+                    "upper_bound": None,
+                    "lower_inclusive": True,
+                    "upper_inclusive": None,
+                    "field_temporal_type": "type/DateTime",
+                    "temporal_unit": None,
+                },
+                {
+                    "time_field_id": 11,
+                    "operator": "<",
+                    "lower_bound": None,
+                    "upper_bound": "2026-07-01",
+                    "lower_inclusive": None,
+                    "upper_inclusive": False,
+                    "field_temporal_type": "type/DateTime",
+                    "temporal_unit": None,
+                },
+            ),
+            "textual_equality_predicates": (),
+            "explicit_join_count": 0,
+            "implicit_join_count": 0,
+            "implicit_joined_table_ids": (),
+            "order_by_count": 0,
+            "order_bys": (),
+            "limit": None,
+            "stage_count": 1,
+            "material_query_count": 1,
+            "authenticated_metabase_subject": 42,
+            "validation_provenance": {
+                "producer_structured_output": "PASSED",
+                "pmbql_schema": "PASSED",
+                "producer_query_id_match": "PASSED",
+                "producer_state_match": "PASSED",
+            },
+            "permission_provenance": {
+                "current_metabase_user_id": 42,
+                "permission_check": "PASSED",
+                "checked_source_table_ids": (10,),
+            },
+            "runtime_identity": {
+                "repository": "UpcyTech/dima-metabase-engine",
+                "revision_sha": ENGINE_SHA,
+                "upstream_base_sha": UPSTREAM_SHA,
+                "runtime_tag": RUNTIME_TAG,
+                "build_identity": "github-actions:test:" + ENGINE_SHA,
+                "image_identity": P14_IMAGE_IDENTITY,
+                "runtime_instance_id": P14_RUNTIME_INSTANCE,
+            },
+        },
+    )
+
+
+def _native_engine() -> NativeEngineIdentity:
+    return NativeEngineIdentity(
+        repository="UpcyTech/dima-metabase-engine",
+        engine_sha=ENGINE_SHA,
+        upstream_base_sha=UPSTREAM_SHA,
+        runtime_tag=RUNTIME_TAG,
+        build_identity="github-actions:test:" + ENGINE_SHA,
+        runtime_image_identity=P14_IMAGE_IDENTITY,
+        runtime_instance_id=P14_RUNTIME_INSTANCE,
+    )
+
+
+def _native_security(attestation: NativeAttestationEnvelope) -> VerifiedExecutionSecurityFacts:
+    return VerifiedExecutionSecurityFacts(
+        tenant_binding=TENANT,
+        principal_subject=P14_NATIVE_USER,
+        roles=("analyst",),
+        attribute_policy_digest="9" * 64,
+        policy_version="policy-p14-v1",
+        rls_versions=(),
+        cls_versions=(),
+        database_route="analytics-primary",
+        database_destination="boyahane",
+        impersonation_role=None,
+        semantic_context_version=P14_NATIVE_CONTEXT,
+        source_object_refs=(P14_TABLE, P14_TIME, P14_CHANNEL),
+        security_parameter_digest="a" * 64,
+        metabase_subject_ref="metabase-user:42",
+        attestation_refs=(attestation.manifest.attestation_id,),
+        evidence_refs=("evidence:metabase-session:p14",),
+    )
+
+
+def _native_research_session() -> tuple[ResearchManager, object]:
+    authority = AcceptedResearchAuthority(
+        contract_id="research-contract-p14-native",
+        lineage_id="research-lineage-p14-native",
+        version=1,
+        turn_id="turn-p14-native",
+        request_ref="request:p14:native",
+        source_message_hash="4" * 64,
+        accepted_attempt_id="attempt-p14-native",
+        model_role="research-manager",
+        obligation_ids=(P14_NATIVE_OBLIGATION,),
+        context_version=P14_NATIVE_CONTEXT,
+        accepted_at_iso=NOW.isoformat(),
+    )
+    session = ResearchManager.start(
+        authority=authority,
+        objective="Haziran satış siparişlerini kanala göre araştır.",
+        obligation_objectives={
+            P14_NATIVE_OBLIGATION: "Haziran satış siparişlerini kanala göre incele."
+        },
+        tenant_binding=TENANT,
+        principal_subject=P14_NATIVE_USER,
+        now=NOW,
+        session_id="rs_" + "7" * 24,
+    )
+    return ResearchManager, session
+
+
+def test_p14_vertical_reuses_p13_exact_occurrence_p10_p5_and_evidence_without_second_authority():
+    _, session = _native_research_session()
+    attestation = _native_attestation()
+    intent = _native_intent("asa-p14-native")
+    principal = Principal(
+        user_id=P14_NATIVE_USER,
+        tenant_id=TENANT,
+        tenant_slug=TENANT,
+        roles=["analyst"],
+    )
+    authz = NativeStandardTrustOrchestrator.authorize(
+        intent=intent,
+        snapshot=_native_snapshot(),
+        attestation=attestation,
+        expected_engine=_native_engine(),
+        current_principal=principal,
+        verified_security_facts=_native_security(attestation),
+        dima_request_id="dima-req-p14-native",
+        dima_trace_id="dima-trace-p14-native",
+    )
+    assert authz.authorization.outcome == NativeCandidateOutcome.ALLOW
+    assert authz.access_snapshot is not None
+
+    execution_request = NativeStandardTrustOrchestrator.execution_request(
+        result=authz,
+        attestation=attestation,
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/api/dima/engine/v1/native-query-execution"
+        body = json.loads(request.content.decode("utf-8"))
+        assert body == {
+            "conversation_id": str(execution_request.native_conversation_id),
+            "native_query_id": execution_request.native_query_id,
+            "expected_pmbql_fingerprint": execution_request.expected_pmbql_fingerprint,
+            "expected_attestation_id": execution_request.expected_attestation_id,
+        }
+        return httpx.Response(
+            200,
+            json={
+                "native_conversation_id": str(execution_request.native_conversation_id),
+                "native_query_id": execution_request.native_query_id,
+                "attestation_id": execution_request.expected_attestation_id,
+                "executed_pmbql_fingerprint": (
+                    execution_request.expected_pmbql_fingerprint
+                ),
+                "runtime_identity": attestation.manifest.runtime_identity.model_dump(
+                    mode="json"
+                ),
+                "result": {
+                    "data": {
+                        "rows": [["Web", 27], ["Mevcut Müşteri", 34]],
+                    }
+                },
+                "attestation": attestation.model_dump(mode="json"),
+            },
+        )
+
+    with NativeEngineBridge(
+        base_url="http://native.test",
+        session_token="restricted-session",
+        expected_identity=_native_engine(),
+        transport=httpx.MockTransport(handler),
+    ) as bridge:
+        execution = bridge.execute_native_query(
+            conversation_id=execution_request.native_conversation_id,
+            native_query_id=execution_request.native_query_id,
+            expected_pmbql_fingerprint=execution_request.expected_pmbql_fingerprint,
+            expected_attestation_id=execution_request.expected_attestation_id,
+        )
+
+    receipt = NativeStandardTrustOrchestrator.seal_receipt(
+        intent=intent,
+        result=authz,
+        execution_request=execution_request,
+        attestation=attestation,
+        executed_pmbql_fingerprint=execution.executed_pmbql_fingerprint,
+        executed_attestation_id=execution.attestation_id,
+        runtime=RuntimeIdentity(
+            substrate="metabase-native",
+            runtime_version=RUNTIME_TAG,
+            image_digest="sha256:" + "e" * 64,
+            database_id="metabase:1",
+            repository="UpcyTech/dima-metabase-engine",
+            revision_sha=ENGINE_SHA,
+            upstream_base_sha=UPSTREAM_SHA,
+            runtime_tag=RUNTIME_TAG,
+            build_identity="github-actions:test:" + ENGINE_SHA,
+            image_identity=P14_IMAGE_IDENTITY,
+            runtime_instance_id=UUID(P14_RUNTIME_INSTANCE),
+        ),
+        execution_result=ExecutionResultSnapshot(
+            payload=execution.payload,
+            row_count=2,
+        ),
+        execution_event=ExecutionEventIdentity(
+            execution_id="exec-p14-native-1",
+            executed_at=NOW,
+        ),
+    )
+    assert receipt.execution_access_fingerprint == (
+        authz.access_snapshot.execution_access_fingerprint
+    )
+    assert receipt.canonical_query_fingerprint == (
+        execution.executed_pmbql_fingerprint
+    )
+
+    evidence = EvidenceArtifact(
+        artifact_id="evi_" + "1" * 24,
+        authority_id=receipt.authority_id,
+        obligation_ids=(P14_NATIVE_OBLIGATION,),
+        query_receipt_refs=(receipt.receipt_id,),
+        evidence_kind="p14_native_exact_occurrence",
+        state=EvidenceState.VERIFIED,
+        payload={"native_result": execution.payload},
+    )
+    updated = ResearchManager.admit_receipted_evidence(
+        session,
+        obligation_id=P14_NATIVE_OBLIGATION,
+        receipt=receipt,
+        evidence=evidence,
+        satisfies_obligation=True,
+        now=NOW,
+    )
+
+    assert updated.obligations[0].state == ObligationState.VERIFIED
+    assert updated.evidence_refs[0].receipt_id == receipt.receipt_id
+    assert updated.stopping.status == StoppingStatus.COMPLETE
+    assert receipt.substrate == "metabase-native"
+    assert receipt.engine_revision_sha == ENGINE_SHA
