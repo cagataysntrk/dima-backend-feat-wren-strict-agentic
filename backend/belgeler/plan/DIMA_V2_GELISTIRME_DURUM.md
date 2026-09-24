@@ -11528,3 +11528,37 @@ Day11                          NOT AUTHORIZED
 Next authorized action is the first D10-N canonical paid Product-MVP measurement. A paid RED is a
 repair-owner signal rather than an automatic STOP unless a frozen architecture boundary or the
 D10-N paid envelope is crossed.
+
+
+---
+
+## 2026-09-24 — D10-O LIVE BOUNDARY
+
+Two authorized D10-O live Product measurements were used:
+
+```text
+36039697895  RED  4 provider calls
+36041398308  RED  5 provider calls
+cumulative        9 provider calls
+measurement count 2 / 2
+```
+
+Attempt 1 led to generic Product fix `482d118e105be729660906596ac1ef65365920ea`: current-turn metric/dimension candidate applicability may now be hydrated from one coherent current governed cube scope, while bounded Semantic Linker + SemanticBindingGate remain the only route to new authority.
+
+Pre-attempt-2 certification:
+- Day10 `36041069927` GREEN;
+- Day7 `36040669543` GREEN;
+- Day8 `36040542397` GREEN.
+
+Attempt 2 moved the live failure frontier forward. `Makine duruşları`, `arıza sayısı`, and `bölüm` were successfully governed. The remaining breakdown metric surface `performansı` could not be justified from four applicable maintenance metrics; the linker safely abstained.
+
+Classification: `MODEL_COGNITION` in Research draft semantic decomposition, not resolver truth.
+
+```text
+latest semantic Product SHA  482d118e105be729660906596ac1ef65365920ea
+Day8 live debt               OPEN
+Day10 FINAL                  OPEN
+Day11                        NOT AUTHORIZED
+```
+
+The temporary push trigger has been removed and the live workflow is restored to workflow_dispatch-only state. No third live measurement is authorized.
