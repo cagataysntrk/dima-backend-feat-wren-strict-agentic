@@ -12,6 +12,8 @@ Legacy SemanticResolver may remain for non-Manager compatibility paths, but this
 
 from __future__ import annotations
 
+from typing import Any, Callable
+
 from app.v2.manager_models import SemanticHandle
 from app.v2.manager_tools import ResolveSemanticsArgs
 from app.v2.models import (
@@ -75,6 +77,7 @@ class ManagerSemanticResolutionAdapter:
         thread_id: str | None,
         semantic_decision_provider: SemanticCandidateDecisionProvider | None = None,
         temporal_normalization_provider: TemporalNormalizationProvider | None = None,
+        semantic_diagnostic_sink: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self._source_spans = source_spans
         self._handles = semantic_handles
@@ -98,10 +101,12 @@ class ManagerSemanticResolutionAdapter:
             context_version=semantic_context.context_version.version,
         )
         self._semantic_decision_provider = semantic_decision_provider
+        self._semantic_diagnostic_sink = semantic_diagnostic_sink
         self._semantic_linker = BoundedSemanticLinker(
             generator=self._candidate_generator,
             binding_gate=self._binding_gate,
             provider=self._semantic_decision_provider,
+            diagnostic_sink=self._semantic_diagnostic_sink,
         )
 
     def _time_dimension(self, anchor_handle: str | None) -> str:
@@ -261,6 +266,7 @@ class ManagerSemanticResolutionAdapter:
         entries: list[tuple[str | None, str, str, str | None]],
         args: ResolveSemanticsArgs,
         linker: BoundedSemanticLinker | None = None,
+        discovery_pass: str = "pass1",
     ) -> tuple[ManagerSemanticResolutionResult, tuple]:
         active_linker = linker or self._semantic_linker
         requests = tuple(
@@ -271,6 +277,18 @@ class ManagerSemanticResolutionAdapter:
             )
             for index, (source_ref, text, hint, owner_id) in enumerate(entries)
         )
+        diagnostic_metadata = {
+            request_id: {
+                "owner_obligation_id": owner_id,
+                "source_ref": source_ref,
+                "discovery_pass": discovery_pass,
+            }
+            for request_id, (source_ref, _, _, owner_id) in zip(
+                (item[0] for item in requests),
+                entries,
+                strict=True,
+            )
+        }
         decision_context: str | None = None
         source_contexts = {
             self._source_spans.message_text_for(source_ref)
@@ -286,6 +304,7 @@ class ManagerSemanticResolutionAdapter:
             decision_context=decision_context,
             parent_obligation_id=args.parent_obligation_id,
             trigger_evidence_ref=args.evidence_ref,
+            diagnostic_metadata=diagnostic_metadata,
         )
 
         resolved: list[ManagerResolvedSemantic] = []
@@ -469,11 +488,13 @@ class ManagerSemanticResolutionAdapter:
                             ),
                             binding_gate=self._binding_gate,
                             provider=self._semantic_decision_provider,
+                            diagnostic_sink=self._semantic_diagnostic_sink,
                         )
                         fallback_result, _ = self._resolve_regular_once(
                             entries=missed_entries,
                             args=args,
                             linker=scoped_linker,
+                            discovery_pass="same_owner_sibling_scope",
                         )
                         recovered.extend(fallback_result.resolved)
 
