@@ -131,10 +131,12 @@ class _RootCauseFakeLLM:
             }
 
         if not hypothesis.get("evidence_links"):
+            assert latest is not None
+            assert latest["evidence_ref"] != evidence_refs[0]
             return {
                 "action": "propose_hypothesis_evidence_relation",
                 "hypothesis_ref": hypothesis["hypothesis_id"],
-                "hypothesis_relation_evidence_ref": evidence_refs[0],
+                "hypothesis_relation_evidence_ref": latest["evidence_ref"],
                 "hypothesis_relation": "SUPPORTS",
             }
 
