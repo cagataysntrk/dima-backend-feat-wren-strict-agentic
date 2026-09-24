@@ -25,6 +25,7 @@ from app.v2.models import (
 )
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
+    GovernedCurrentTurnCandidateGenerator,
     GovernedSiblingScopeCandidateGenerator,
     SemanticBindingGate,
     SemanticCandidateDecisionProvider,
@@ -358,6 +359,47 @@ class ManagerSemanticResolutionAdapter:
         result, _ = self._resolve_regular_once(entries=entries, args=args)
         return result
 
+    def _current_turn_candidate_bindings(
+        self,
+        *,
+        resolved: tuple[ManagerResolvedSemantic, ...] | list[ManagerResolvedSemantic],
+        kind_hint: str,
+    ) -> tuple:
+        """Map current-call USER_SOURCE authority back to safe governed catalog cards.
+
+        These bindings are discovery context only. The unresolved source receives no
+        authority until the existing bounded linker selects a card and BindingGate admits
+        that selection.
+        """
+        if kind_hint not in {"metric", "dimension"}:
+            return ()
+        candidate_ids: set[str] = set()
+        for item in resolved:
+            if item.source_ref is None or item.provenance != "USER_SOURCE":
+                continue
+            handle = item.handle
+            if handle.sensitive:
+                continue
+            if self._normalized_hint_kind(handle.target_kind) != kind_hint:
+                continue
+            candidate_id = str(handle.resolver_provenance_id or "")
+            if not candidate_id.startswith("cand_"):
+                continue
+            # Defense in depth: current registry must still validate tenant/context.
+            self._handles.binding_for_execution(
+                handle.handle_id,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
+            )
+            candidate_ids.add(candidate_id)
+
+        return tuple(
+            item
+            for item in self._candidate_generator._governed_candidates(kind_hint)
+            if item.card.candidate_id in candidate_ids
+            and not item.sensitive
+        )
+
     def _coherent_sibling_scope(
         self,
         *,
@@ -497,6 +539,64 @@ class ManagerSemanticResolutionAdapter:
                             discovery_pass="same_owner_sibling_scope",
                         )
                         recovered.extend(fallback_result.resolved)
+
+                # D10-N: if baseline discovery truly missed, a still-unresolved
+                # metric/dimension may see already-governed USER_SOURCE truth from this
+                # exact current batch as candidate applicability context. No handle is
+                # copied across obligations; the existing linker + BindingGate must make
+                # a fresh source->candidate admission.
+                already_resolved = {
+                    (item.owner_id, item.source_ref)
+                    for item in recovered
+                    if item.source_ref is not None
+                }
+                pass1_by_key = {
+                    (entry[3], entry[0]): selection
+                    for entry, selection in zip(
+                        regular,
+                        pass1_selections,
+                        strict=True,
+                    )
+                }
+                recovery_by_kind: dict[
+                    str,
+                    list[tuple[str | None, str, str, str | None]],
+                ] = {}
+                for entry in regular:
+                    source_ref, _, kind_hint, owner_id = entry
+                    if source_ref is None or (owner_id, source_ref) in already_resolved:
+                        continue
+                    selection = pass1_by_key.get((owner_id, source_ref))
+                    if (
+                        selection is None
+                        or selection.status != "RETRIEVAL_MISS"
+                        or kind_hint not in {"metric", "dimension"}
+                    ):
+                        continue
+                    recovery_by_kind.setdefault(kind_hint, []).append(entry)
+
+                for kind_hint, missed_entries in recovery_by_kind.items():
+                    current_turn_bindings = self._current_turn_candidate_bindings(
+                        resolved=recovered,
+                        kind_hint=kind_hint,
+                    )
+                    if not current_turn_bindings:
+                        continue
+                    current_turn_linker = BoundedSemanticLinker(
+                        generator=GovernedCurrentTurnCandidateGenerator(
+                            bindings=current_turn_bindings,
+                        ),
+                        binding_gate=self._binding_gate,
+                        provider=self._semantic_decision_provider,
+                        diagnostic_sink=self._semantic_diagnostic_sink,
+                    )
+                    current_turn_result, _ = self._resolve_regular_once(
+                        entries=missed_entries,
+                        args=args,
+                        linker=current_turn_linker,
+                        discovery_pass="current_turn_applicability",
+                    )
+                    recovered.extend(current_turn_result.resolved)
 
                 resolved_keys = {
                     (item.owner_id, item.source_ref)
