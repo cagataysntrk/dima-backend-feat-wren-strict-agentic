@@ -10,6 +10,8 @@ from __future__ import annotations
 import copy
 import json
 
+import pytest
+
 from app import contracts as contracts_module
 from app.v2.context_provider import ContextProviderV0
 from app.v2.manager_models import ObligationStatus
@@ -94,8 +96,51 @@ class _OmittedResearchStandardLLM:
         raise AssertionError(f"unexpected Standard schema: {schema_name}")
 
 
+class _TypedResearchStandardLLM:
+    """Source-valid Research capability plus non-authoritative control (D10-K family)."""
+
+    def __init__(self) -> None:
+        self.schemas: list[str] = []
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, user, schema
+        self.schemas.append(schema_name)
+        if schema_name == "dima_standard_intent_draft_v1":
+            return {
+                "obligations": [
+                    {
+                        "obligation_id": "S_ROOT",
+                        "capability_key": "root_cause",
+                        "origin": "USER_MUST",
+                        "priority": "MUST",
+                        "polarity": "REQUIRED",
+                        "source_surfaces": ["nedenini araştır"],
+                        "semantic_surfaces": [
+                            {"surface": "arıza sayısı", "kind_hint": "metric"},
+                        ],
+                        "ranking_direction": None,
+                        "ranking_limit": None,
+                    }
+                ],
+                "control_requests": [
+                    {
+                        "request_id": "C1",
+                        "category": "NON_AUTHORITATIVE_CONTROL_REQUEST",
+                        "source_surfaces": ["Nedensel kesinlik iddia etme"],
+                    }
+                ],
+            }
+        raise AssertionError(
+            f"typed-direct Research must stop Standard before schema: {schema_name}"
+        )
+
+
 class _StandardSemanticProvider:
+    def __init__(self) -> None:
+        self.calls = 0
+
     def decide(self, requests):
+        self.calls += 1
         choices = []
         for request in requests:
             assert request.candidates
@@ -226,10 +271,12 @@ def _profile(role: ModelRole) -> ModelProfile:
     return ModelProfile(role=role, provider="provider-free", model="provider-free")
 
 
+@pytest.mark.parametrize("standard_mode", ("omission_veto", "typed_direct"))
 def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation(
     wren,
     schema,
     monkeypatch,
+    standard_mode,
 ):
     cube = next(item for item in schema["cubes"] if item.get("name") == "bakim")
     assert "ariza_sayisi" in tuple(cube.get("measures") or ())
@@ -287,11 +334,16 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
             temporal_profile=_profile(ModelRole.TEMPORAL_NORMALIZER),
         )
     )
-    standard_llm = _OmittedResearchStandardLLM()
+    standard_llm = (
+        _OmittedResearchStandardLLM()
+        if standard_mode == "omission_veto"
+        else _TypedResearchStandardLLM()
+    )
+    standard_semantic = _StandardSemanticProvider()
     standard_lane = StandardLaneEngine(
         intent_structured=standard_llm.structured_json,
         coverage_structured=standard_llm.structured_json,
-        semantic_provider=_StandardSemanticProvider(),
+        semantic_provider=standard_semantic,
         temporal_provider=None,
     )
     coordinator = ProductCoordinator(
@@ -313,17 +365,24 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
     response = coordinator.handle(
         request=object(),
         body=ProductAskRequest(
-            question="arıza sayısının nedenini araştır",
+            question=(
+                "arıza sayısının nedenini araştır. Nedensel kesinlik iddia etme"
+            ),
             session_id=context.session_id,
             thread_id=context.thread_id,
         ),
         principal=principal,
     )
 
-    assert standard_llm.schemas == [
-        "dima_standard_intent_draft_v1",
-        "dima_standard_coverage_v1",
-    ]
+    if standard_mode == "omission_veto":
+        assert standard_llm.schemas == [
+            "dima_standard_intent_draft_v1",
+            "dima_standard_coverage_v1",
+        ]
+        assert standard_semantic.calls == 1
+    else:
+        assert standard_llm.schemas == ["dima_standard_intent_draft_v1"]
+        assert standard_semantic.calls == 0
     accepted_family, _accepted_ref = standard_lane.authority_registry.accepted(
         context.turn_ref
     )
