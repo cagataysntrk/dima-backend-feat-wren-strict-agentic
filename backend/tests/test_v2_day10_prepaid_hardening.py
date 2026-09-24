@@ -45,6 +45,11 @@ from app.v2.product_coordinator import ProductCoordinator
 from app.v2.product_models import ProductAskRequest, ProductRequestContext
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
 from app.v2.research_tasks import ResearchTaskRegistry
+from app.v2.research_scheduler import (
+    ResearchTaskInvocationCompileError,
+    ResearchTaskInvocationCompiler,
+)
+from app.v2.capability_bindings import CapabilityBindingValidator
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from app.v2.standard_authority import (
@@ -457,3 +462,125 @@ def test_model_invented_numeric_hypothesis_never_becomes_canonical_finding_state
     assert finding.semantic_handle_refs == supported.semantic_handle_refs
     assert finding.epistemic_label == EpistemicLabel.CANDIDATE_CAUSE
     assert any("nedenselliği doğrulamaz" in x for x in finding.limitations)
+
+
+def test_lossless_user_seed_compiles_without_language_or_semantic_guessing():
+    tenant = "tenant-scheduler"
+    ctx = "ctx-scheduler"
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding=tenant,
+        context_version=ctx,
+        resolver_provenance_id="m",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="m",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    obligation = ObligationLedgerItem(
+        obligation_id="U1",
+        capability_key=ManagerCapabilityKey.PERFORMANCE,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=("src_" + "1" * 24,),
+        semantic_handle_refs=(metric.handle_id,),
+        introduced_in_version=1,
+    )
+    binding_result = CapabilityBindingValidator(
+        semantic_handles=handles,
+    ).validate(
+        obligation,
+        tenant_binding=tenant,
+        context_version=ctx,
+    )
+    assert binding_result.valid and binding_result.binding is not None
+
+    from app.v2.models import ResearchTask
+    task = ResearchTask(
+        task_id="seed:U1",
+        question_id="U1",
+        task_kind="QUERY",
+        input_refs=(metric.handle_id,),
+        origin="USER_SEED",
+    )
+    compiled = ResearchTaskInvocationCompiler().compile(
+        task=task,
+        obligation=obligation,
+        binding=binding_result.binding,
+    )
+    assert compiled.tool_id == "wren.query"
+    assert compiled.call.name.value == "run_analytics"
+    assert compiled.call.args["metric_handles"] == (metric.handle_id,)
+    assert compiled.call.args["obligation_ids"] == ("U1",)
+
+
+def test_nonlossless_task_binding_mismatch_never_auto_compiles():
+    tenant = "tenant-scheduler"
+    ctx = "ctx-scheduler"
+    handles = SemanticHandleRegistry()
+    metric = handles.mint_from_resolver(
+        tenant_binding=tenant,
+        context_version=ctx,
+        resolver_provenance_id="m2",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="m2",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.revenue",
+            cube_names=("Sales",),
+        ),
+    )
+    extra = handles.mint_from_resolver(
+        tenant_binding=tenant,
+        context_version=ctx,
+        resolver_provenance_id="m3",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="m3",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name="Sales.margin",
+            cube_names=("Sales",),
+        ),
+    )
+    obligation = ObligationLedgerItem(
+        obligation_id="U1",
+        capability_key=ManagerCapabilityKey.PERFORMANCE,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=("src_" + "1" * 24,),
+        semantic_handle_refs=(metric.handle_id,),
+        introduced_in_version=1,
+    )
+    binding = CapabilityBindingValidator(
+        semantic_handles=handles,
+    ).validate(
+        obligation,
+        tenant_binding=tenant,
+        context_version=ctx,
+    ).binding
+    assert binding is not None
+
+    from app.v2.models import ResearchTask
+    task = ResearchTask(
+        task_id="seed:U1",
+        question_id="U1",
+        task_kind="QUERY",
+        input_refs=(metric.handle_id, extra.handle_id),
+        origin="USER_SEED",
+    )
+    with pytest.raises(
+        ResearchTaskInvocationCompileError,
+        match="exactly account",
+    ):
+        ResearchTaskInvocationCompiler().compile(
+            task=task,
+            obligation=obligation,
+            binding=binding,
+        )
