@@ -108,6 +108,7 @@ class _AdaptiveFakeLLM:
         if (
             delta
             and not delta.get("inspected")
+            and not delta.get("disclosed_in_current_prompt")
             and len(payload.get("EVIDENCE_REFS") or []) == 1
         ):
             return {
