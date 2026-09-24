@@ -1,16 +1,6 @@
 name: dima-metabase-p13a
 
 on:
-  push:
-    branches:
-      - feat/dima-metabase-platform
-    paths:
-      - "backend/app/v3/native_execution.py"
-      - "backend/app/v3/security_identity.py"
-      - "backend/app/v3/execution_identity.py"
-      - "backend/tests/test_v3_p13_native_trust.py"
-      - "backend/belgeler/metabase/predev/P13_NATIVE_ENGINE_TRUST_BOUNDARY_REVIEW.md"
-      - ".github/workflows/dima-metabase-p13a.yml"
   workflow_dispatch:
 
 permissions:

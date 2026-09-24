@@ -1,22 +1,6 @@
 name: dima-metabase-p13b
 
 on:
-  push:
-    branches:
-      - feat/dima-metabase-platform
-    paths:
-      - "backend/app/v3/native_standard/**"
-      - "backend/app/v3/native_execution.py"
-      - "backend/app/v3/execution_identity.py"
-      - "backend/app/v3/evidence.py"
-      - "backend/app/v3/substrate/metabase/native_models.py"
-      - "backend/app/v3/substrate/metabase/native_engine.py"
-      - "backend/app/v3/substrate/metabase/execution_binding.py"
-      - "backend/lab/metabase/p13b/px01_live_standard.py"
-      - "backend/tests/test_v3_p13b_semantic_availability.py"
-      - "backend/tests/test_v3_p13b_native_standard.py"
-      - "backend/tests/test_v3_p13_native_trust.py"
-      - ".github/workflows/dima-metabase-p13b.yml"
   workflow_dispatch:
 
 permissions:
