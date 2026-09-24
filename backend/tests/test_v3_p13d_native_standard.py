@@ -382,7 +382,11 @@ def _principal() -> Principal:
     )
 
 
-def _security(attestation: NativeAttestationEnvelope) -> VerifiedExecutionSecurityFacts:
+def _security(
+    attestation: NativeAttestationEnvelope,
+    *,
+    source_object_refs: tuple[str, ...] = (TABLE, TIME, CHANNEL),
+) -> VerifiedExecutionSecurityFacts:
     return VerifiedExecutionSecurityFacts(
         tenant_binding="tenant-boyahane",
         principal_subject="user-p13d",
@@ -395,7 +399,7 @@ def _security(attestation: NativeAttestationEnvelope) -> VerifiedExecutionSecuri
         database_destination="boyahane",
         impersonation_role=None,
         semantic_context_version="ctx-p13d-v1",
-        source_object_refs=(TABLE, TIME, CHANNEL),
+        source_object_refs=source_object_refs,
         security_parameter_digest="a" * 64,
         metabase_subject_ref="metabase-user:42",
         attestation_refs=(attestation.manifest.attestation_id,),
@@ -686,7 +690,10 @@ def _authorize_comparison(attestation=None, intent=None):
         attestation=attestation,
         expected_engine=_engine(),
         current_principal=_principal(),
-        verified_security_facts=_security(attestation),
+        verified_security_facts=_security(
+            attestation,
+            source_object_refs=(TABLE, TIME),
+        ),
         dima_request_id="dima-req-p13d-comparison",
         dima_trace_id="dima-trace-p13d-comparison",
     )
