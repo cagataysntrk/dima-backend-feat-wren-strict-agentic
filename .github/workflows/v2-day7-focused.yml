@@ -78,6 +78,7 @@ name: v2-day7-focused
       - "backend/lab/v2_day7_governed_sibling_scope_discovery.py"
       - "backend/tests/test_v2_day7_governed_sibling_scope_discovery.py"
       - "backend/tests/test_v2_day7_obligation_local_semantic_recovery.py"
+      - "backend/tests/test_v2_day6_5_semantic_linker.py"
       - "backend/lab/v2_day7_orchestration_ablation.py"
       - "backend/eval/v2_day7_orchestration_ablation.yaml"
       - "backend/tests/test_v2_day7_orchestration_ablation.py"
@@ -160,6 +161,10 @@ jobs:
       - name: Day6.5 preacceptance completeness regression
         working-directory: backend
         run: pytest -q tests/test_v2_day6_5_preacceptance_protocol.py
+
+      - name: Semantic linker authority + diagnostic attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day6_5_semantic_linker.py
 
       - name: Day7 capability surface consistency receipt
         working-directory: backend
