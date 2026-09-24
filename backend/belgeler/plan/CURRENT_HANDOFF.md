@@ -1,6 +1,124 @@
 # CURRENT HANDOFF
 
-## LATEST AUTHORITY OVERRIDE — D10-O PAID RED / D10-P ACTIVE
+## LATEST AUTHORITY OVERRIDE — D10-P TRUE STOP / DAY10 OPEN
+
+This is the current authority. Historical blocks below are receipts only.
+
+```text
+branch                         feat/ask-v2-mvp
+docs-preseal HEAD              203f7b4c40d6f5fdb53aecf97e4087acba3a28c9
+latest Product behavior        c4f25b2346b451f08b7892465abccc3a62adb7d2
+
+semantic repair schema         dima_semantic_decomposition_repair_v1
+semantic repair role           SEMANTIC_LINKER / GPT-5.6 Luna
+Manager global ceiling         6 unchanged
+SemanticBindingGate owner      unchanged
+repair batch ceiling           1 per preacceptance attempt
+
+latest deterministic proofs
+Day10                          36052309001 = GREEN
+Day8                           36052317079 = GREEN
+Day7                           36052244024 = GREEN
+
+D10-P paid attempt 1           36050427414 = RED / 7 calls
+D10-P paid attempt 2           36051494562 = RED / 6 calls
+D10-P paid attempt 3           36052945833 = RED / 5 calls
+
+authorized D10-P envelope      3 / 3 dispatches CONSUMED
+authorized provider calls      18 / 45
+status                         TRUE STOP
+
+INVALID cleanup-trigger run    36053319641 / 6 calls
+release authority              NONE
+actual D10-P-period calls      24
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN / NOT SEALED
+Day11                          NOT AUTHORIZED
+```
+
+### D10-P sealed development history
+
+Attempt 1 proved the new semantic-decomposition repair itself could select exact current-message
+source tokens and keep the semantic-role ceiling at 3, but deterministic contract validity rejected
+a semantics-free REPORT presentation obligation. Root owner: `CapabilityBindingValidator`.
+Generic Product fix: `3cac02d25072dbedffe6e44e76c76aff41e865c2`.
+
+Attempt 2 proved semantic repair + Coverage + acceptance progressed into Wren execution. The live
+RELATIONSHIP obligation carried several governed focus metrics and one governed dimension, while
+the initial relationship fact primitive was one-metric/one-dimension. Root owner: governed
+relationship execution shape. Generic Product fix:
+`c4f25b2346b451f08b7892465abccc3a62adb7d2`.
+
+That relationship fix does NOT choose one metric. Every governed metric × counterpart-dimension pair
+is independently checked by the existing `CrossDomainJoinGate`; only if all pairs ALLOW does one
+Wren analytics execution materialize all already-selected metrics. Real-Wren certification is part
+of the latest Day7/Day8/Day10 GREEN receipts.
+
+Attempt 3 reached the final authorized frontier:
+
+```text
+initial material gaps
+BREAKDOWN  metric
+ROOT_CAUSE metric
+
+repair source pool
+exact current-message governed metric tokens s1, s2
+
+BREAKDOWN
+SELECT_SOURCES [s1, s2]
+
+ROOT_CAUSE
+ABSTAIN / AMBIGUOUS_SCOPE
+
+post-repair material gap
+ROOT_CAUSE metric only
+
+terminal
+CLARIFICATION_REQUIRED
+```
+
+Classification: `MODEL_COGNITION / semantic decomposition repair abstain`.
+
+This is a safe fail-closed outcome under the active contract. No second repair batch, nearest metric,
+top-1/default semantic, fuzzy inference, sibling handle copy, Manager redraft, Manager budget increase,
+or forced ROOT_CAUSE source selection is authorized.
+
+### First unresolved P0
+
+The remaining P0 is not Wren truth, SemanticBindingGate, ROOT_CAUSE completion algebra, or the
+applicability layer. It is the bounded cognition contract for source ownership of a ROOT_CAUSE
+required metric when the user has explicitly named multiple governed current-message metrics but the
+repair role judges their relationship to the broad root-cause phrase ambiguous.
+
+A new supervisor decision is required before changing this contract or reopening paid development.
+
+### Cleanup / measurement integrity
+
+D10-P paid authority ended at authorized attempt 3. During cleanup, the temporary marker-path push
+trigger was mistakenly still active when the marker was deleted. This unintentionally started
+`36053319641` after TRUE STOP. It is `INVALID / UNAUTHORIZED POST-TRUE-STOP`, is not used as
+release evidence, and incurred 6 provider calls.
+
+Cleanup is now hard-corrected:
+
+```text
+paid workflow clean blob
+f9ddebd74f8e8349ef6961eebf1d69f2f71acffb
+
+paid trigger marker
+ABSENT
+
+new paid run
+NOT AUTHORIZED
+```
+
+Do not perform another Product fix, paid run, or Day11 work until supervisor authority explicitly
+reopens the boundary.
+
+
+## HISTORICAL AUTHORITY OVERRIDE — D10-O PAID RED / D10-P ACTIVE
 
 This block is the current active Day10 authority. Historical blocks below remain receipts only.
 
