@@ -1,5 +1,43 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-24 — D10-I PAID PRODUCT-MVP VALID RED / D10-J FORENSIC HOLD
+
+Superseding active checkpoint:
+
+```text
+branch                                feat/ask-v2-mvp
+D10-H frozen/pre-paid HEAD            8c85996c16a4bcecd9332d9fd335e57f6bf3a69f
+latest Product behavior SHA           3db7f8688a5598188ae70375f778d2bef90452cf
+pre-paid deterministic receipt        35961399933 = GREEN
+paid Product-MVP run                  35963884332 = VALID RED
+
+FAST_LANGUAGE                         1
+RESEARCH_MANAGER                      0
+SEMANTIC_LINKER                       0
+TEMPORAL_NORMALIZER                   0
+REPORT_NARRATOR                       0
+TOTAL provider calls                  1
+
+Research entered                      NO
+continuation entered                  NO
+exact Standard terminal subtype       UNRESOLVED
+previous MODEL_COGNITION statement    NOT SEALED
+eval diagnostic observability gap     OPEN
+
+paid authorization                    CONSUMED
+paid rerun                            NOT AUTHORIZED
+Day8 live debt                        OPEN
+Day10 FINAL                           NOT SEALED
+Day11                                 NOT AUTHORIZED
+```
+
+Forensic correction:
+
+The run proves only that one bounded FAST Standard cognition call completed and Product did not enter Research. The harness aborted on `ProductResponse.lane == STANDARD` before preserving the exact Product/Standard terminal diagnosis. Because a true Standard `ACCEPTED` path at this SHA requires a second counted FAST coverage call, `ACCEPTED` is inconsistent with the observed one-call receipt. The exact one-call terminal family remains unresolved until D10-J observability and provider-free characterization close that gap.
+
+D10-J sequence is authoritative: docs-only receipt → eval-only diagnostic capture → provider-free Standard terminal characterization → generic `RESEARCH_NEED_OMITTED -> RESEARCH_REQUIRED` routing fix → narrow affected regressions. No prompt/literal/regex patch, model swap, paid rerun, Day11, DEV80, Validation50 or Hidden50 is authorized.
+
+
 ## 2026-09-23 — DAY8 D8-A1 + D8-A2 PROVIDER-FREE EPISTEMIC CORE GREEN
 
 Current exact checkpoint:
