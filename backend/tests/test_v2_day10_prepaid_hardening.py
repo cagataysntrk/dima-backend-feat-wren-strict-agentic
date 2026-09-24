@@ -515,8 +515,8 @@ def test_lossless_user_seed_compiles_without_language_or_semantic_guessing():
     )
     assert compiled.tool_id == "wren.query"
     assert compiled.call.name.value == "run_analytics"
-    assert compiled.call.args["metric_handles"] == (metric.handle_id,)
-    assert compiled.call.args["obligation_ids"] == ("U1",)
+    assert compiled.call.args["metric_handles"] == [metric.handle_id]
+    assert compiled.call.args["obligation_ids"] == ["U1"]
 
 
 def test_nonlossless_task_binding_mismatch_never_auto_compiles():
