@@ -11423,3 +11423,108 @@ Day11               NOT AUTHORIZED
 ```
 
 D10-K authorization is consumed. No third paid measurement is authorized. STOP pending supervisor decision.
+
+
+---
+
+## 2026-09-24 — D10-N RESEARCH SEMANTIC RECOVERY / DETERMINISTIC GREEN
+
+D10-M historical paid run remains immutable:
+
+```text
+run                         36016509479
+tested HEAD                 8a03e6673b78842b0fbe8538d01107233d9e6871
+result                      VALID RED
+route                       PATH A / RESEARCH entered
+provider calls              3
+first wrong transition      Research preacceptance material semantic grounding gap
+```
+
+D10-N first closed the diagnostic blind spot. The paid lab now preserves Research intent/coverage
+validated outputs, bounded semantic-linker output, preacceptance observations, semantic-resolution
+receipts and safe candidate-selection diagnostics. Sensitive filter/entity surfaces are redacted.
+
+Generic behavior fix:
+
+```text
+pass-1 governed discovery
+→ existing same-owner recovery
+→ bounded current-turn applicability recovery for metric/dimension only
+→ Semantic Linker SELECT | ABSTAIN
+→ existing SemanticBindingGate
+→ fresh source-bound authority
+```
+
+Current-turn governed handles are never copied into another obligation. They provide only bounded
+candidate context from the same current source message/tenant/context/attempt. Exact ambiguity stays
+fail-closed; same-set ABSTAIN is not repeated; sensitive/filter/period/comparison values are outside
+this cross-owner recovery.
+
+The preacceptance owner also handles a REQUIRED capability kind omitted locally by cognition only
+when the same current draft already contains source-grounded material of that kind. It synthesizes
+no canonical truth: the unresolved obligation's own exact source span still crosses the ordinary
+semantic linker + BindingGate path.
+
+Latest semantic Product behavior:
+
+`8b2ea59045a87ec03d78517d6dbe653fcc9b14f6`
+
+Final deterministic candidate:
+
+`7c5b8be2bc46178a0f8b4e33882223203f4c57cd`
+
+Certification at that exact SHA:
+
+```text
+Day10  36035224902 = GREEN
+  106 focused provider-free passed
+  59 D10-N semantic/preacceptance attacks passed
+  3 real-Wren Product/semantic sentinel tests passed
+  G16 provider_calls=0
+  G16 preacceptance=2
+  G16 Research cognition=4
+  G16 headroom=0
+  G16 ADAPT=APPLIED
+  G16 root_status=VERIFIED
+  G16 CONFIRMED_CAUSE=0
+
+Day8   36035224892 = GREEN
+Day7   36035224835 = GREEN
+```
+
+Metabase Exploration was consulted only for the generic applicability separation:
+
+```text
+candidate existence != applicability
+applicability       != authority
+authority           != execution result
+```
+
+Dima translation remains:
+
+```text
+catalog candidate
+→ current-turn applicability context
+→ bounded linker proposal
+→ SemanticBindingGate
+→ sem_* authority
+```
+
+No Metabase runtime or semantic matcher was imported.
+
+Current status:
+
+```text
+D10-N deterministic            GREEN
+D10-N paid dispatches          0 / 2
+D10-N new provider calls       0 / 30
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN / NOT SEALED
+Day11                          NOT AUTHORIZED
+```
+
+Next authorized action is the first D10-N canonical paid Product-MVP measurement. A paid RED is a
+repair-owner signal rather than an automatic STOP unless a frozen architecture boundary or the
+D10-N paid envelope is crossed.
