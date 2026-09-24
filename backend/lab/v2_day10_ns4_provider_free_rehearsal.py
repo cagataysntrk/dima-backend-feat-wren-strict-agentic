@@ -212,6 +212,7 @@ class ScriptedNS4Manager:
         self.preacceptance_calls = 0
         self.manager_prompts: list[dict] = []
         self.actions: list[str] = []
+        self.root_trigger_evidence_ref: str | None = None
 
     def structured_json(self, _system, user, *, schema, schema_name):
         del schema
@@ -294,6 +295,8 @@ class ScriptedNS4Manager:
             for item in recent
         )
         if not branch_seen and not hypothesis_entries:
+            assert "U_ROOT" in tuple(delta.get("obligation_ids") or ()), delta
+            self.root_trigger_evidence_ref = delta["evidence_ref"]
             self.actions.append("propose_branches")
             return {
                 "action": "propose_branches",
@@ -320,7 +323,9 @@ class ScriptedNS4Manager:
                     "Provider-free audit hypothesis contains %27 but report must not."
                 ),
                 "hypothesis_semantic_handles": [root_handle],
-                "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
+                "hypothesis_trigger_evidence_refs": [
+                    self.root_trigger_evidence_ref
+                ],
                 "hypothesis_limitations": [],
             }
 
@@ -332,7 +337,7 @@ class ScriptedNS4Manager:
                 "hypothesis_ref": hypothesis["hypothesis_id"],
                 "next_test_task_kind": "QUERY",
                 "next_test_input_handles": [root_handle],
-                "next_test_trigger_evidence_ref": delta["evidence_ref"],
+                "next_test_trigger_evidence_ref": self.root_trigger_evidence_ref,
                 "next_test_material_reason": (
                     "Test the candidate against a fresh governed root-lineage measurement."
                 ),
