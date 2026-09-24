@@ -21,7 +21,7 @@ from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
 from app.v2.manager_models import ObligationStatus
 from app.v2.model_policy import ModelProfile, ModelRole
-from app.v2.models import EpistemicLabel, TenantAnalyticsRuntimeV0
+from app.v2.models import ConversationStateV2, EpistemicLabel, TenantAnalyticsRuntimeV0
 from app.v2.product_coordinator import ProductCoordinator
 from app.v2.product_models import (
     ProductAskRequest,
