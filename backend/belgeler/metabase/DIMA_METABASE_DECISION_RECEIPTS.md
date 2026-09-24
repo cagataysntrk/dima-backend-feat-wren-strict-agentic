@@ -2499,3 +2499,161 @@ crossed.
 
 status:
 `SEALED / P13C TEXTUAL EQUALITY GREEN / DIGEST CORRIDOR GREEN / CONTINUE P13D`.
+
+
+---
+
+## DMP-DEC-0044 — Seal P13 trust baseline, stop operator-by-operator generalization, authorize Native Research
+
+date: 2026-09-24
+
+question:
+After the certified dima.6 exact-occurrence path and the final cohesive live attempt, should Platform
+continue extending P13 one Metabase operator/representation family at a time, or treat the trust
+architecture as proven and move to Dima's Research/Evidence/Decision product layer while carrying
+unsupported native representations as explicit fail-closed compatibility debt?
+
+evidence:
+
+```text
+Platform audited pre-decision HEAD = 77000d07da0af4d43688bf963880ebc5120c8f1f
+engine main / dima.6 SHA            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                      = 0.63.18-dima.6
+engine certification                = 36042062775 SUCCESS
+immutable digest                    = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+Platform exact-occurrence gate      = 36046089168 SUCCESS
+native bridge regression            = 36046089305 SUCCESS
+final cohesive live                 = 36046994140 FAILURE
+```
+
+dima.6 remained a thin Dima integration seam. No native Metabot prompt/profile/skill, Query
+Processor, driver or Metabase Lib source was modified.
+
+The final live run proved two advanced native Standard cases end to end:
+
+```text
+BREAKDOWN = GREEN
+QueryReceipt = dqr_1ba94e6399d85042e37723a7
+Evidence     = evi_c8ff53766d3d684f2cc48744 / VERIFIED
+
+TOP-N RANKING = GREEN
+QueryReceipt = dqr_ca8dcbbc1180a9cd2355db25
+Evidence     = evi_87349d18181df8342ffe0ebd / VERIFIED
+```
+
+In both cases the attested, authorized, executed and receipted query fingerprint was identical and
+the independent oracle matched.
+
+The third case, period comparison, failed closed before authorization/execution with:
+
+```text
+NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED
+```
+
+The failure is in the Dima-owned compatibility codec for one unobserved absolute-datetime serialized
+representation. No un-attested comparison execution, QueryReceipt or VERIFIED Evidence was emitted.
+
+decision:
+
+```text
+P13 STANDARD TRUST BASELINE          = SEALED
+P13 OPERATOR-FAMILY GENERALIZATION   = STOPPED
+P13D BREAKDOWN LIVE                  = GREEN
+P13D TOP-N RANKING LIVE              = GREEN
+P13D PERIOD COMPARISON               = DEFERRED COMPATIBILITY GAP / NOT GREEN
+P13D WHOLE ORIGINAL THREE-CASE SEAL  = NOT CLAIMED
+P14 NATIVE RESEARCH FOUNDATION       = AUTHORIZED
+P13E / P13F                          = DO NOT CREATE
+```
+
+Rationale:
+P13 was created to prove that real native Metabot analytics can cross Dima's identity, provenance,
+execution and Evidence boundary without silent wrong or fallback. P13B/P13C plus the dima.6
+breakdown/ranking evidence and fail-closed comparison behavior are sufficient proof of that
+architecture. Continuing one operator/representation at a time would turn Dima into a shadow
+Metabase and reduce product velocity without proportionate information gain.
+
+### Native Capability Inheritance Contract
+
+Compatible functionality present in the pinned Metabase/Metabot engine is inherited by default:
+
+```text
+USE_NATIVE
+→ COMPOSE_NATIVE
+→ WRAP_NATIVE
+→ HOOK_NATIVE
+→ DIMA_OWNS
+```
+
+Do not create a Dima parser/planner/validator merely because native Metabase used a different query
+primitive. Dima adds deterministic machinery only for a measured material business/security/
+provenance/product-intelligence gap.
+
+### Ownership refinement
+
+The phrase "Dima semantic authority" is henceforth split so it cannot be misread as authority over
+Metabase's entire analytical grammar.
+
+For the native Metabase path:
+
+```text
+Metabase + Metabot
+= analytical definition/cognition/execution authority inside the selected analytics substrate
+
+Dima
+= business ontology + company/sector context + engine-resource mapping
++ research/evidence/decision/action/memory authority
++ product-level identity/policy binding
+```
+
+Metabase owns persisted native Metric/Model analytical definitions, field/query semantics, query
+construction/repair, MBQL, filters, breakouts, ranking, temporal operations, Query Processor, drivers
+and native data-permission enforcement.
+
+Dima owns business concept IDs, aliases, company terminology, sector meaning, decision relevance,
+mapping to exact engine resources/versions, accepted obligations, claim lineage, Evidence epistemic
+state, hypotheses/findings, decisions, actions and institutional memory.
+
+Existing P7/P8/P9 DimaSemanticSpec/DIMA_MANAGED resources are not removed by this decision. They are
+sealed compatibility/migration assets for existing certified paths. New work must not expand them
+into a second independently-authored analytics-definition store. A future explicit migration may
+narrow DimaSemanticSpec toward "Business Ontology / Engine Mapping"; no silent destructive migration
+is authorized here.
+
+### Evidence and security consequences
+
+Evidence proves claim lineage and epistemic status, not every internal Metabase operator. VERIFIED
+still requires exact provenance, correct principal/scope/resource binding and no unresolved material
+ambiguity.
+
+Metabase/database remain the native data-permission enforcers. Dima binds the correct tenant/principal
+and owns product-level Research/Evidence/Decision/Action policy. P10 remains identity/provenance
+binding and must not grow into a duplicate generic RLS engine.
+
+### Comparison compatibility debt
+
+No dima.7, no extra Luna and no speculative codec widening is authorized merely to make the old
+three-case certification table all green. Record the comparison gap. If a real P14/product path
+materially encounters it, capture the exact representation and apply the smallest reversible
+Dima-local compatibility correction provider-free. Native core source remains immutable by default.
+
+### Immediate next phase
+
+P14 starts now with zero model calls required for foundation work:
+
+```text
+ResearchSession / durable Research state
+ResearchObligation
+Hypothesis + counter-evidence links
+budget / stopping state
+native Metabot conversation/session reference
+reuse existing exact-occurrence execution
+reuse P10 / P5 / Evidence
+```
+
+ResearchManager does not author MBQL/SQL and does not recreate compare/breakdown/rank/root-cause
+query tools. Native Metabot/Metabase owns analytical cognition; Dima owns investigation epistemics,
+synthesis and decision intelligence.
+
+status:
+`SEALED / P13 TRUST BASELINE CLOSED / P14 NATIVE RESEARCH AUTHORIZED / COMPARISON COMPATIBILITY DEBT CARRIED EXPLICITLY`.

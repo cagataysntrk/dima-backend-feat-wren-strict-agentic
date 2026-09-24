@@ -707,3 +707,139 @@ native Metabot cognition
 → independent oracle
 → VERIFIED Evidence
 ```
+
+
+---
+
+## 21. CURRENT AUTHORITATIVE TAKEOVER — DMP-DEC-0044 / P14 START
+
+This section supersedes section 20's supervisor STOP.
+
+The previous developer left after completing the dima.6 exact-occurrence migration and recording the
+final P13D live evidence. Do not wait for an additional handoff.
+
+Audited code checkpoint before this docs-only authority update:
+
+```text
+Platform branch              = feat/dima-metabase-platform
+Platform code/docs HEAD      = 77000d07da0af4d43688bf963880ebc5120c8f1f
+engine main                  = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release               = 0.63.18-dima.6
+engine certification         = 36042062775 SUCCESS
+engine immutable digest      = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+build identity               = github-actions:36042062775:cbe313af9ac2d5960f662068e433d328d896fb06
+```
+
+The docs-only authority commit that contains this section may move Platform HEAD; it does not change
+the product/engine checkpoint above.
+
+Current truthful status:
+
+```text
+P13A                         GREEN
+P13B                         GREEN
+P13C                         GREEN
+P13D BREAKDOWN live          GREEN / VERIFIED
+P13D TOP-N RANKING live      GREEN / VERIFIED
+P13D PERIOD COMPARISON       DEFERRED COMPATIBILITY GAP / NOT GREEN
+
+P13 STANDARD TRUST BASELINE  SEALED
+P13 GENERALIZATION           STOPPED
+P14 NATIVE RESEARCH          AUTHORIZED / START NOW
+```
+
+Do not claim the original three-case P13D milestone fully GREEN. The comparison case remains recorded
+debt. It is no longer a global roadmap blocker.
+
+### What changed architecturally
+
+Do not treat Dima as a second analytics engine.
+
+```text
+METABASE + METABOT
+= native analytical definitions + cognition + query mechanics + execution
+
+DIMA
+= business ontology / company + sector context
++ engine-resource mapping
++ Research / Evidence / Hypothesis / Decision / Action / Memory
++ product-level identity and policy binding
+```
+
+Existing DimaSemanticSpec/DIMA_MANAGED resources remain valid for sealed paths. Do not delete them and
+do not broaden them into a duplicate Metric/Model/query-definition system.
+
+### Permanent prohibitions
+
+Do not modify native Metabot prompts/profiles/skills, QP, drivers or Metabase Lib merely to make a
+Dima test pass.
+
+Do not build:
+- Python MBQL parser;
+- filter/ranking/temporal planner;
+- query repair engine;
+- generic analytics state machine;
+- duplicate metric formula owner;
+- second RLS/CLS engine;
+- second QueryReceipt or access-fingerprint system.
+
+No Wren/raw-SQL/Agent-API/admin analytical fallback.
+
+### Immediate work order for the new developer
+
+Start P14 directly. First coherent slice:
+
+1. inspect existing v3 Evidence/P5/P10/native-engine contracts and reuse them;
+2. introduce the smallest durable Research domain state:
+   - ResearchSession (or equivalent),
+   - ResearchObligation,
+   - Hypothesis,
+   - counter-evidence refs,
+   - Evidence refs,
+   - budget/stopping state,
+   - native Metabot conversation/session reference;
+3. build a bridge that delegates one governed analytical objective to a native Metabot session;
+4. every material native execution reuses the existing exact-occurrence attestation/execution,
+   P10 access binding, P5 QueryReceipt and Evidence path;
+5. update Research state only from receipted/eligible Evidence;
+6. add focused provider-free tests only for the new Research owner.
+
+Do not build analytical primitives in ResearchManager. It tells the native engine what analytical
+objective is needed; Metabot/Metabase decides how to analyze.
+
+Initial P14 foundation requires:
+
+```text
+new engine build = 0
+Luna calls       = 0
+Sol calls        = 0
+C1/full corpus   = 0
+```
+
+Only run a model-backed Research evaluation after a coherent native Research bridge exists and the
+result can change an architectural/product decision.
+
+### How to treat the comparison debt
+
+Do not cut dima.7 now.
+
+If a real P14 execution encounters
+`NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED`:
+
+- fail that material execution closed;
+- retain an explicit Research limitation;
+- capture the exact native representation;
+- continue independent Research obligations where valid;
+- only then open a focused Dima-local compatibility fix if the gap materially blocks product value.
+
+Do not rewrite the query and do not patch native core.
+
+### Return point
+
+Do not return after tiny commits. Return after one of:
+
+A. P14 durable Research state + native Metabot delegation + one provider-free end-to-end Research
+   Evidence path is GREEN;
+
+B. a genuine native-core/second-authority/security architecture conflict is proven.
+

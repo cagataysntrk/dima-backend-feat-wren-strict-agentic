@@ -2864,3 +2864,51 @@ codec diagnostic patch    = NO
 
 Supervisor authorization is required before any further P13D engine compatibility work or paid/model
 live attempt. Do not rerun `36046994140`.
+
+
+---
+
+## 2026-09-24 — P13 TRUST BASELINE SEALED / P14 NATIVE RESEARCH AUTHORIZED — DMP-DEC-0044
+
+Supervisor audit after the certified dima.6 final P13D live:
+
+```text
+audited Platform checkpoint       = 77000d07da0af4d43688bf963880ebc5120c8f1f
+engine main                       = cbe313af9ac2d5960f662068e433d328d896fb06
+release                           = 0.63.18-dima.6
+certification                     = 36042062775 SUCCESS
+immutable digest                  = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+
+P13D BREAKDOWN live               = GREEN / VERIFIED
+P13D TOP-N RANKING live           = GREEN / VERIFIED
+P13D PERIOD COMPARISON            = DEFERRED COMPATIBILITY GAP / NOT GREEN
+
+P13 STANDARD TRUST BASELINE       = SEALED
+P13 OPERATOR-FAMILY EXPANSION     = STOPPED
+P14 NATIVE RESEARCH               = AUTHORIZED
+```
+
+The comparison RED is not hidden or reclassified as GREEN. It remains fail-closed compatibility debt
+in the Dima-owned runtime representation seam. No additional dima.7/Luna cycle is authorized merely
+to complete the historical three-case matrix.
+
+Binding product direction:
+
+```text
+METABASE + METABOT
+= native analytics substrate
+
+DIMA
+= business ontology / engine mapping
++ Research / Evidence / Hypothesis / Decision / Action / Memory
+```
+
+Native capabilities are inherited by default. Dima does not certify or reimplement every MBQL
+operator family. Existing P7/P9 semantic resources remain sealed compatibility assets; duplicate
+formula/query ownership must not expand.
+
+Immediate next action:
+implement the P14 durable Research foundation and native Metabot delegation using existing P13
+exact-occurrence execution, P10, P5 and Evidence contracts. Initial P14 foundation uses zero new
+engine builds and zero model calls.
+

@@ -4,41 +4,56 @@
 >
 > Read `DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md` first.
 >
-> This older handoff filename is retained so historical links do not break. The prior long-form
-> contents were superseded because they stopped at P12/P13B-0 and could cause a new developer to
-> resume already-completed work.
+> This pointer intentionally contains only the current authority. Historical P12/P13B snapshots in
+> older revisions are not current implementation instructions.
 
-Current snapshot at this pointer update:
-
-```text
-Platform branch = feat/dima-metabase-platform
-Platform HEAD   = 2ea02530fbaa2999d1dac1d6166064e49bd8f51c
-
-engine main     = 10960f7c36bb84425b1794b557b78211c14d7f5f
-Platform gitlink= 10960f7c36bb84425b1794b557b78211c14d7f5f
-engine release  = 0.63.18-dima.3
-
-governance                  35911051608 = SUCCESS
-semantic availability       35911051644 = SUCCESS
-P13B provider-free current  35914038368 = SUCCESS
-engine P13B certification   35909836120 = SUCCESS
-```
-
-Current stop:
+Current audited product checkpoint before the docs-only DMP-DEC-0044 authority update:
 
 ```text
-P13B provider-free semantic/resource/attestation path = GREEN
-next = exactly one Luna PX-01 live canary on dima.3
-then STOP for supervisor audit
+Platform branch          = feat/dima-metabase-platform
+Platform checkpoint      = 77000d07da0af4d43688bf963880ebc5120c8f1f
+engine main              = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release           = 0.63.18-dima.6
+engine certification     = 36042062775 SUCCESS
+immutable engine digest  = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
 ```
 
-Absolute prohibitions remain:
-- no merge/cherry-pick/rebase from ask-v2/Fast Track;
-- no regex/fuzzy/morph semantic truth;
-- no prompt patch to teach PX-01;
-- no Wren/raw-SQL/Agent-API analytical fallback;
-- no Python MBQL parser/repair owner;
-- no trust weakening after a RED.
+Current authority:
 
-For architecture, exact history, current code map and next-step procedure, use the canonical new
-developer handoff.
+```text
+DMP-DEC-0044                     = BINDING
+P13 STANDARD TRUST BASELINE      = SEALED
+P13 OPERATOR GENERALIZATION      = STOPPED
+P13D BREAKDOWN / RANKING         = LIVE GREEN
+P13D COMPARISON                  = DEFERRED COMPATIBILITY GAP / NOT GREEN
+P14 NATIVE RESEARCH              = AUTHORIZED NOW
+```
+
+Permanent architecture:
+
+```text
+METABASE + METABOT
+= native analytical definitions / cognition / execution
+
+DIMA
+= business ontology + engine mapping
++ Research / Evidence / Hypothesis / Decision / Action / Memory
++ product-level identity/policy binding
+```
+
+Reuse order:
+
+```text
+USE_NATIVE → COMPOSE_NATIVE → WRAP_NATIVE → HOOK_NATIVE → DIMA_OWNS
+```
+
+Do not:
+- reopen P13 operator-family certification;
+- create P13E/P13F by default;
+- cut dima.7 merely to make the old comparison test green;
+- patch Metabot/QP/drivers/Lib;
+- build Python MBQL/filter/ranking/temporal/query-repair substitutes;
+- duplicate Metric/Model formula ownership;
+- add Wren/raw-SQL/Agent-API/admin analytical fallback.
+
+New developer starts directly with the P14 work order in the canonical onboarding file.
