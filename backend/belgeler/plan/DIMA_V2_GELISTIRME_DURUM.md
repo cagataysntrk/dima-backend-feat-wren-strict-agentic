@@ -13,13 +13,20 @@ Day7                           36056867709 = GREEN
 D10-Q real-Wren                36056672128 = GREEN
 
 D10-Q paid                     NOT YET DISPATCHED
-paid dispatch budget           0 / 2
+paid dispatch budget           0 / 3
 new provider-call budget       0 / 30
 
 Day8 live debt                 OPEN
 Day10 FINAL                    OPEN
 Day11                          NOT AUTHORIZED
 ```
+
+
+Higher-authority override: D10-Q may use at most 3 paid dispatches. The cumulative
+new-provider-call budget remains 30. This override changes no Product architecture,
+provider topology, Manager ceiling, authority owner, semantic algebra, Wren truth,
+security boundary, or test-economy rule. Each RED must still produce a material generic
+fix and a new Product behavior SHA before another paid dispatch.
 
 D10-Q explicit multi-metric scope groups are provider-free and real-Wren certified. Scope groups are
 ephemeral cognition context only; accepted truth remains exact source refs, fresh SemanticBindingGate
