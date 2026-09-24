@@ -108,11 +108,15 @@ def _current_certified_schema(wren):
     return schema
 
 
-def _accepted_relationship_runtime(wren, schema, monkeypatch):
+def _accepted_relationship_runtime(wren, schema, monkeypatch, *, multi_metric=False):
     tenant = "day7-rel-tenant"
     context_version = "ctx-day7-rel-v1"
     message_id = "day7-rel-turn"
-    question = "duruş süresini makine bölümü ile ilişkilendir"
+    question = (
+        "duruş süresini ve duruş sayısını makine bölümü ile ilişkilendir"
+        if multi_metric
+        else "duruş süresini makine bölümü ile ilişkilendir"
+    )
 
     spans = SourceSpanRegistry()
     source_hash = spans.register_message(message_id=message_id, text=question)
@@ -123,6 +127,14 @@ def _accepted_relationship_runtime(wren, schema, monkeypatch):
     dim_source = spans.mint_exact(
         message_id=message_id,
         surface="makine bölümü",
+    )
+    second_metric_source = (
+        spans.mint_exact(
+            message_id=message_id,
+            surface="duruş sayısını",
+        )
+        if multi_metric
+        else None
     )
 
     handles = SemanticHandleRegistry()
@@ -137,6 +149,22 @@ def _accepted_relationship_runtime(wren, schema, monkeypatch):
             canonical_name="toplam_sure_dk",
             cube_names=("makine_duruslari",),
         ),
+    )
+    second_metric = (
+        handles.mint_from_resolver(
+            tenant_binding=tenant,
+            context_version=context_version,
+            resolver_provenance_id="day7-rel:count",
+            target_kind="metric",
+            canonical_target=ResolvedSemanticRef(
+                candidate_id="day7-rel-count",
+                target_kind=SemanticTargetKind.METRIC,
+                canonical_name="duruş_sayisi",
+                cube_names=("makine_duruslari",),
+            ),
+        )
+        if multi_metric
+        else None
     )
     department = handles.mint_from_resolver(
         tenant_binding=tenant,
@@ -225,8 +253,32 @@ def _accepted_relationship_runtime(wren, schema, monkeypatch):
                 obligation_id="U_REL",
                 capability_key=ManagerCapabilityKey.RELATIONSHIP,
                 origin=ObligationOrigin.USER_MUST,
-                source_refs=(metric_source.source_ref, dim_source.source_ref),
-                semantic_handle_refs=(metric.handle_id, department.handle_id),
+                source_refs=tuple(
+                    ref
+                    for ref in (
+                        metric_source.source_ref,
+                        (
+                            second_metric_source.source_ref
+                            if second_metric_source is not None
+                            else None
+                        ),
+                        dim_source.source_ref,
+                    )
+                    if ref is not None
+                ),
+                semantic_handle_refs=tuple(
+                    handle_id
+                    for handle_id in (
+                        metric.handle_id,
+                        (
+                            second_metric.handle_id
+                            if second_metric is not None
+                            else None
+                        ),
+                        department.handle_id,
+                    )
+                    if handle_id is not None
+                ),
             ),
         ),
     )
@@ -242,13 +294,28 @@ def _accepted_relationship_runtime(wren, schema, monkeypatch):
         task_id="seed:U_REL",
         question_id="U_REL",
         task_kind=ResearchTaskKind.RELATIONSHIP.value,
-        input_refs=(metric.handle_id, department.handle_id),
+        input_refs=tuple(
+            handle_id
+            for handle_id in (
+                metric.handle_id,
+                second_metric.handle_id if second_metric is not None else None,
+                department.handle_id,
+            )
+            if handle_id is not None
+        ),
     )
     call = ManagerToolCall(
         name=ManagerToolName.RUN_RELATIONSHIP,
         args={
             "obligation_id": "U_REL",
-            "focus_handles": (metric.handle_id,),
+            "focus_handles": tuple(
+                handle_id
+                for handle_id in (
+                    metric.handle_id,
+                    second_metric.handle_id if second_metric is not None else None,
+                )
+                if handle_id is not None
+            ),
             "counterpart_handles": (department.handle_id,),
         },
     )
@@ -315,6 +382,49 @@ def test_real_wren_relationship_vertical_is_governed_and_evidence_producing(
     assert facts["requested_output_grain"] == "bolum"
     assert facts["relationship_path"] == ["makine_duruslari_makineler"]
     assert extension["gate_decision"]["allowed"] is True
+
+
+def test_real_wren_relationship_supports_multiple_governed_metrics_against_one_dimension(
+    wren,
+    monkeypatch,
+):
+    schema = _current_certified_schema(wren)
+    principal, service, persisted, runtime, executor, task, call = (
+        _accepted_relationship_runtime(
+            wren,
+            schema,
+            monkeypatch,
+            multi_metric=True,
+        )
+    )
+    result = ResearchToolRunner().execute(
+        task=task,
+        tool_id="wren.relationship",
+        call=call,
+        runtime=runtime,
+        executor=executor,
+        principal=principal,
+        task_registry=ResearchTaskRegistry(),
+    )
+
+    assert service.query_calls == 1
+    assert result.evidence.verified is True
+    assert result.observation.status == "EXECUTED"
+    exposed = result.evidence.payload["executions"][0]
+    assert set(exposed["columns"]) == set(task.input_refs)
+
+    provenance = json.loads(persisted[0].provenance_json)["v2_manager"][
+        "governed_extension"
+    ]
+    assert len(provenance["pair_facts"]) == 2
+    assert len(provenance["pair_gate_decisions"]) == 2
+    assert all(item["allowed"] is True for item in provenance["pair_gate_decisions"])
+    assert {
+        item["source_metric_handle"] for item in provenance["pair_facts"]
+    } == set(call.args["focus_handles"])
+    assert {
+        item["target_dimension_handle"] for item in provenance["pair_facts"]
+    } == set(call.args["counterpart_handles"])
 
 
 def test_stale_fanout_proof_causes_zero_relationship_execution(
