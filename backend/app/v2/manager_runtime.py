@@ -56,12 +56,14 @@ class ManagerRuntime:
         self,
         *,
         request_ref: str,
+        turn_ref: str | None = None,
         budget: ManagerBudget | None = None,
         tools: ManagerToolRegistry | None = None,
         contract_registry: AcceptedContractRegistry | None = None,
         authority_registry: AcceptedAuthorityRegistry | None = None,
     ) -> None:
-        run_id = "mgr_" + hashlib.sha256(request_ref.encode("utf-8")).hexdigest()[:20]
+        run_identity = turn_ref or request_ref
+        run_id = "mgr_" + hashlib.sha256(run_identity.encode("utf-8")).hexdigest()[:20]
         self._budget = budget or ManagerBudget()
         self._tools = tools or ManagerToolRegistry()
         self._contracts = contract_registry or AcceptedContractRegistry()
