@@ -577,18 +577,37 @@ class ManagerSemanticResolutionAdapter:
                     selection = pass1_by_key.get((owner_id, source_ref))
                     if (
                         selection is None
-                        or selection.status != "RETRIEVAL_MISS"
+                        or selection.status not in {"RETRIEVAL_MISS", "ABSTAIN"}
                         or kind_hint not in {"metric", "dimension"}
                     ):
                         continue
                     recovery_by_kind.setdefault(kind_hint, []).append(entry)
 
-                for kind_hint, missed_entries in recovery_by_kind.items():
+                for kind_hint, candidate_entries in recovery_by_kind.items():
                     current_turn_bindings = self._current_turn_candidate_bindings(
                         resolved=recovered,
                         kind_hint=kind_hint,
                     )
                     if not current_turn_bindings:
+                        continue
+                    current_candidate_ids = {
+                        item.card.candidate_id for item in current_turn_bindings
+                    }
+                    missed_entries = [
+                        entry
+                        for entry in candidate_entries
+                        if (
+                            pass1_by_key[(entry[3], entry[0])].status
+                            == "RETRIEVAL_MISS"
+                            or set(
+                                pass1_by_key[(entry[3], entry[0])].candidate_ids
+                            )
+                            != current_candidate_ids
+                        )
+                    ]
+                    if not missed_entries:
+                        # An ABSTAIN over the exact same bounded candidate set is final;
+                        # repeating cognition would add cost without new information.
                         continue
                     current_turn_linker = BoundedSemanticLinker(
                         generator=GovernedCurrentTurnCandidateGenerator(
