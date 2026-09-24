@@ -11,7 +11,7 @@ final test-only candidate      16d9bdc89141a4685616ad10094699185744995b
 
 Day10 final candidate          36056867465 = GREEN
 Day8 final candidate           36056867485 = GREEN
-Day7 same Product SHA          36055934356 = GREEN
+Day7 final candidate           36056867709 = GREEN
 Day10 real-Wren proof          36056672128 = GREEN
 
 scope-group repair             GREEN
