@@ -140,9 +140,11 @@ def test_paid_failure_diagnostics_preserve_exact_standard_terminal_family(
         events=(),
     )
 
+    research_lane = SimpleNamespace(last_result=None)
     snapshot = paid._diagnostic_snapshot(
         product=product,
         standard_lane=standard_lane,
+        research_lane=research_lane,
         budget=budget,
         service=service,
         structured_outputs=[
@@ -165,7 +167,7 @@ def test_paid_failure_diagnostics_preserve_exact_standard_terminal_family(
     assert snapshot["standard"]["attempts"] == 1
     assert snapshot["model_calls"]["total"] == 1
     assert snapshot["model_calls"]["calls"][0]["schema_name"] == "dima_standard_intent_draft_v1"
-    assert snapshot["structured_standard_outputs"][0]["schema_name"] == (
+    assert snapshot["structured_outputs"][0]["schema_name"] == (
         "dima_standard_intent_draft_v1"
     )
     assert snapshot["wren"] == {
@@ -175,7 +177,7 @@ def test_paid_failure_diagnostics_preserve_exact_standard_terminal_family(
     }
 
 
-def test_counting_structured_captures_only_controlled_standard_outputs():
+def test_counting_structured_captures_only_controlled_diagnostic_outputs():
     class Inner:
         def structured_json(self, *args, **kwargs):
             return {"status": "PASS"}
@@ -203,7 +205,7 @@ def test_counting_structured_captures_only_controlled_standard_outputs():
         "system",
         "user",
         schema={},
-        schema_name="not-a-controlled-standard-schema",
+        schema_name="not-a-controlled-diagnostic-schema",
     )
 
     assert len(captured) == 1
@@ -211,6 +213,93 @@ def test_counting_structured_captures_only_controlled_standard_outputs():
     assert captured[0]["validated_output"] == {"status": "PASS"}
     assert [item["sequence"] for item in budget.calls] == [1, 2]
 
+
+
+
+def test_paid_failure_diagnostics_preserve_research_preacceptance_receipt():
+    runtime = SimpleNamespace(
+        semantic_resolution_receipts=(
+            SimpleNamespace(
+                source_ref="src_" + "a" * 24,
+                handle_id="sem_" + "b" * 24,
+                target_kind="metric",
+            ),
+        )
+    )
+    outcome = SimpleNamespace(
+        preacceptance_status=SimpleNamespace(value="CLARIFICATION_REQUIRED"),
+        observations=(
+            {"kind": "intent_draft", "draft": {"obligations": [{"obligation_id": "U1"}]}},
+            {"kind": "grounding", "summary": {"unresolved_source_refs": ["src_gap"]}},
+            {
+                "kind": "material_grounding_gap",
+                "gaps": [{"obligation_id": "U1", "missing_required_kinds": ["metric"]}],
+            },
+        ),
+    )
+    research_lane = SimpleNamespace(
+        last_result=SimpleNamespace(
+            outcome=outcome,
+            accepted_contract=None,
+            ledger=None,
+            runtime=runtime,
+        )
+    )
+    standard_lane = SimpleNamespace(last_outcome=None)
+    service = SimpleNamespace(query_calls=0, dry_plan_calls=0, cube_sql_calls=0)
+    budget = paid.RoleCallBudget(
+        max_total=paid.MAX_HARNESS_TOTAL_CALLS,
+        role_limits=dict(paid.ROLE_LIMITS),
+    )
+
+    snapshot = paid._diagnostic_snapshot(
+        product=None,
+        standard_lane=standard_lane,
+        research_lane=research_lane,
+        budget=budget,
+        service=service,
+        structured_outputs=[],
+    )
+
+    assert snapshot["research"]["preacceptance_status"] == "CLARIFICATION_REQUIRED"
+    assert [item["kind"] for item in snapshot["research"]["observations"]] == [
+        "intent_draft",
+        "grounding",
+        "material_grounding_gap",
+    ]
+    assert snapshot["research"]["accepted_contract"] is None
+    assert snapshot["research"]["ledger"] is None
+    assert snapshot["research"]["semantic_resolution_receipts"][0]["target_kind"] == "metric"
+
+
+def test_counting_structured_captures_research_and_semantic_schemas():
+    class Inner:
+        def structured_json(self, *args, **kwargs):
+            return {"ok": True}
+
+    captured = []
+    budget = paid.RoleCallBudget(
+        max_total=paid.MAX_HARNESS_TOTAL_CALLS,
+        role_limits=dict(paid.ROLE_LIMITS),
+    )
+    for role, model, schema_name in (
+        ("RESEARCH_MANAGER", paid.RESEARCH_MODEL, "dima_intent_draft_v1"),
+        ("RESEARCH_MANAGER", paid.RESEARCH_MODEL, "dima_intent_coverage_v1"),
+        ("SEMANTIC_LINKER", paid.SEMANTIC_MODEL, "dima_bounded_semantic_link_v1"),
+    ):
+        paid.CountingStructured(
+            inner=Inner(),
+            budget=budget,
+            role=role,
+            model=model,
+            captured_outputs=captured,
+        ).structured_json("system", "user", schema={}, schema_name=schema_name)
+
+    assert [item["schema_name"] for item in captured] == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+        "dima_bounded_semantic_link_v1",
+    ]
 
 def test_paid_failure_artifact_contract_includes_diagnostics():
     source = inspect.getsource(paid.main)
