@@ -57,7 +57,10 @@ from app.v2.product_models import (
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
 from app.v2.report_builder import ReportBlockKind
 from app.v2.report_narration import ReportNarrator
-from app.v2.semantic_linker import StructuredSemanticCandidateDecisionProvider
+from app.v2.semantic_linker import (
+    StructuredSemanticCandidateDecisionProvider,
+    StructuredSemanticDecompositionRepairProvider,
+)
 from app.v2.standard_lane import StandardLaneEngine
 from app.v2.temporal_intent import StructuredTemporalNormalizationProvider
 from app.wren_service import WrenService
@@ -105,6 +108,7 @@ _CAPTURED_DIAGNOSTIC_SCHEMAS = {
     "dima_intent_draft_v1",
     "dima_intent_coverage_v1",
     "dima_bounded_semantic_link_v1",
+    "dima_semantic_decomposition_repair_v1",
 }
 
 
@@ -352,6 +356,11 @@ def _build_product(
     semantic_provider = StructuredSemanticCandidateDecisionProvider(
         structured=semantic.structured_json
     )
+    semantic_decomposition_repair_provider = (
+        StructuredSemanticDecompositionRepairProvider(
+            structured=semantic.structured_json
+        )
+    )
     temporal_provider = StructuredTemporalNormalizationProvider(
         structured=temporal.structured_json
     )
@@ -366,6 +375,9 @@ def _build_product(
             manager_llm=manager,
             manager_profile=research_profile,
             semantic_provider=semantic_provider,
+            semantic_decomposition_repair_provider=(
+                semantic_decomposition_repair_provider
+            ),
             semantic_profile=semantic_profile,
             temporal_provider=temporal_provider,
             temporal_profile=temporal_profile,
