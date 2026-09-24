@@ -8,6 +8,7 @@ import pytest
 from app.v3.analytics_contract import (
     PrincipalContextRef,
     ResolvedAnalyticsIntent,
+    ResolvedComparison,
     ResolvedPeriod,
     ResolvedRanking,
     ResolvedSemanticRef,
@@ -278,6 +279,7 @@ def _manifest(*, ranking: bool = False, query: dict | None = None, **updates) ->
                 "breakout_index": 0,
                 "field_id": 13,
                 "field_type": "type/Text",
+                "temporal_unit": None,
             },
         ),
         "material_filter_count": 2,
@@ -454,8 +456,8 @@ def test_ranking_exact_metric_desc_top3_authorizes():
             {
                 "breakout_count": 2,
                 "breakouts": (
-                    {"stage_number": 0, "breakout_index": 0, "field_id": 13, "field_type": "type/Text"},
-                    {"stage_number": 0, "breakout_index": 1, "field_id": 11, "field_type": "type/DateTime"},
+                    {"stage_number": 0, "breakout_index": 0, "field_id": 13, "field_type": "type/Text", "temporal_unit": None},
+                    {"stage_number": 0, "breakout_index": 1, "field_id": 11, "field_type": "type/DateTime", "temporal_unit": None},
                 ),
             },
             "P13D_BREAKOUT_SCOPE_VIOLATION",
@@ -543,3 +545,231 @@ def test_ranking_without_dimension_is_not_authorized():
     )
     assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
     assert result.authorization.code == "P13D_RANKING_REQUIRES_DIMENSION"
+
+
+def _comparison_intent() -> ResolvedAnalyticsIntent:
+    return ResolvedAnalyticsIntent(
+        authority_id="asa-p13d-comparison",
+        request_ref="req-p13d-comparison",
+        source_message_hash="7" * 64,
+        projection_hash="8" * 64,
+        semantic_context_version="ctx-p13d-v1",
+        obligation_ids=("obl-p13d-comparison",),
+        metrics=(
+            ResolvedSemanticRef(
+                semantic_ref="handle.sales_order_count",
+                source_candidate_id="cand_sales_order_count",
+                kind="metric",
+                canonical_name="Sales Order Count",
+                source_scopes=("satis_siparisleri",),
+            ),
+        ),
+        comparison=ResolvedComparison(
+            mode="previous_period",
+            source_text="Haziran 2026 ile Mayıs 2026'yı karşılaştır",
+            base_period=ResolvedPeriod(
+                kind="absolute",
+                source_text="Haziran 2026",
+                time_dimension="sales_orders.opened_at",
+                start="2026-06-01",
+                end="2026-07-01",
+            ),
+            reference_period=ResolvedPeriod(
+                kind="absolute",
+                source_text="Mayıs 2026",
+                time_dimension="sales_orders.opened_at",
+                start="2026-05-01",
+                end="2026-06-01",
+            ),
+        ),
+        principal=PrincipalContextRef(
+            tenant_binding="tenant-boyahane",
+            principal_subject="user-p13d",
+            roles=("analyst",),
+        ),
+    )
+
+
+def _comparison_query() -> dict:
+    return {
+        "lib/type": "mbql/query",
+        "database": 1,
+        "stages": [
+            {
+                "lib/type": "mbql.stage/mbql",
+                "source-table": 10,
+                "aggregation": [
+                    ["count", {"lib/uuid": "00000000-0000-4000-8000-000000000301"}]
+                ],
+                "breakout": [
+                    [
+                        "field",
+                        {
+                            "lib/uuid": "00000000-0000-4000-8000-000000000302",
+                            "temporal-unit": "month",
+                        },
+                        11,
+                    ]
+                ],
+                "filters": [
+                    [
+                        ">=",
+                        {"lib/uuid": "00000000-0000-4000-8000-000000000303"},
+                        ["field", {"lib/uuid": "00000000-0000-4000-8000-000000000304"}, 11],
+                        "2026-05-01",
+                    ],
+                    [
+                        "<",
+                        {"lib/uuid": "00000000-0000-4000-8000-000000000305"},
+                        ["field", {"lib/uuid": "00000000-0000-4000-8000-000000000306"}, 11],
+                        "2026-07-01",
+                    ],
+                ],
+            }
+        ],
+    }
+
+
+def _comparison_attestation(**updates) -> NativeAttestationEnvelope:
+    query = _comparison_query()
+    manifest = _manifest(query=query)
+    manifest.update(
+        {
+            "exact_pmbql_fingerprint": _hash(query),
+            "breakout_count": 1,
+            "breakouts": (
+                {
+                    "stage_number": 0,
+                    "breakout_index": 0,
+                    "field_id": 11,
+                    "field_type": "type/DateTime",
+                    "temporal_unit": "month",
+                },
+            ),
+            "temporal_predicates": (
+                {
+                    "time_field_id": 11,
+                    "operator": ">=",
+                    "lower_bound": "2026-05-01",
+                    "upper_bound": None,
+                    "lower_inclusive": True,
+                    "upper_inclusive": None,
+                    "field_temporal_type": "type/DateTime",
+                    "temporal_unit": None,
+                },
+                {
+                    "time_field_id": 11,
+                    "operator": "<",
+                    "lower_bound": None,
+                    "upper_bound": "2026-07-01",
+                    "lower_inclusive": None,
+                    "upper_inclusive": False,
+                    "field_temporal_type": "type/DateTime",
+                    "temporal_unit": None,
+                },
+            ),
+        }
+    )
+    manifest.update(updates)
+    return NativeAttestationEnvelope(
+        exact_serialized_pmbql=query,
+        manifest=manifest,
+    )
+
+
+def _authorize_comparison(attestation=None, intent=None):
+    attestation = attestation or _comparison_attestation()
+    intent = intent or _comparison_intent()
+    return NativeStandardTrustOrchestrator.authorize(
+        intent=intent,
+        snapshot=_snapshot(),
+        attestation=attestation,
+        expected_engine=_engine(),
+        current_principal=_principal(),
+        verified_security_facts=_security(attestation),
+        dima_request_id="dima-req-p13d-comparison",
+        dima_trace_id="dima-trace-p13d-comparison",
+    )
+
+
+def test_previous_period_comparison_exact_single_native_query_authorizes():
+    result = _authorize_comparison()
+    assert result.authorization.outcome == NativeCandidateOutcome.ALLOW
+    artifact = result.authorization.authorized_artifact
+    assert artifact is not None
+    assert artifact.query_count == 1
+    assert set(artifact.resource_entity_ids) == {TABLE, TIME}
+
+
+@pytest.mark.parametrize(
+    ("updates", "code"),
+    [
+        (
+            {
+                "breakouts": (
+                    {
+                        "stage_number": 0,
+                        "breakout_index": 0,
+                        "field_id": 11,
+                        "field_type": "type/DateTime",
+                        "temporal_unit": "day",
+                    },
+                ),
+            },
+            "P13D_COMPARISON_GRAIN_MISMATCH",
+        ),
+        (
+            {"breakout_count": 0, "breakouts": ()},
+            "P13D_BREAKOUT_SCOPE_VIOLATION",
+        ),
+        (
+            {
+                "temporal_predicates": (
+                    {
+                        "time_field_id": 11,
+                        "operator": ">=",
+                        "lower_bound": "2026-06-01",
+                        "upper_bound": None,
+                        "lower_inclusive": True,
+                        "upper_inclusive": None,
+                        "field_temporal_type": "type/DateTime",
+                        "temporal_unit": None,
+                    },
+                    {
+                        "time_field_id": 11,
+                        "operator": "<",
+                        "lower_bound": None,
+                        "upper_bound": "2026-07-01",
+                        "lower_inclusive": None,
+                        "upper_inclusive": False,
+                        "field_temporal_type": "type/DateTime",
+                        "temporal_unit": None,
+                    },
+                ),
+            },
+            "TIME_SCOPE_VIOLATION",
+        ),
+    ],
+)
+def test_comparison_attacks_block(updates, code):
+    result = _authorize_comparison(_comparison_attestation(**updates))
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == code
+
+
+def test_non_contiguous_comparison_authority_blocks():
+    intent = _comparison_intent()
+    bad = intent.model_copy(
+        update={
+            "comparison": intent.comparison.model_copy(
+                update={
+                    "reference_period": intent.comparison.reference_period.model_copy(
+                        update={"end": "2026-05-31"}
+                    )
+                }
+            )
+        }
+    )
+    result = _authorize_comparison(intent=bad)
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "P13D_COMPARISON_PERIODS_UNSUPPORTED"

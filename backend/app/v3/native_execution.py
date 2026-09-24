@@ -226,6 +226,22 @@ def period_scope_fingerprint(period: ResolvedPeriod | None) -> str | None:
     )
 
 
+def analytical_time_scope_fingerprint(intent: ResolvedAnalyticsIntent) -> str | None:
+    """Exact accepted temporal authority for a native candidate; no query interpretation."""
+
+    if intent.period is not None and intent.comparison is not None:
+        raise NativeExecutionTrustError(
+            "TIME_SCOPE_AUTHORITY_CONFLICT",
+            "native Standard cannot carry both period and comparison authority",
+        )
+    if intent.comparison is not None:
+        return _sha256_json(
+            {"comparison": intent.comparison.model_dump(mode="json")},
+            code="TIME_SCOPE_NOT_SERIALIZABLE",
+        )
+    return period_scope_fingerprint(intent.period)
+
+
 def filter_scope_fingerprint(
     filters: tuple[ResolvedFilterRef, ...],
 ) -> str | None:
@@ -411,14 +427,24 @@ class NativeCandidateAuthorizationGate:
             len(intent.metrics) != 1
             or len(intent.dimensions) > 1
             or len(intent.filters) > 1
-            or intent.comparison is not None
             or intent.approved_relationship_paths
             or intent.grain_constraints
         ):
             return cls._decision(
                 NativeCandidateOutcome.CLARIFY_REPLAN,
                 "P13A_CAPABILITY_UNSUPPORTED",
-                "native Standard certifies one metric/source, at most one dimension/filter, optional period, and bounded ranking",
+                "native Standard certifies one metric/source, at most one dimension/filter, and the bounded P13D comparison/ranking shapes",
+            )
+        if intent.comparison is not None and (
+            intent.period is not None
+            or intent.dimensions
+            or intent.filters
+            or intent.ranking is not None
+        ):
+            return cls._decision(
+                NativeCandidateOutcome.CLARIFY_REPLAN,
+                "P13D_COMPARISON_SHAPE_UNSUPPORTED",
+                "bounded P13D comparison is metric-only with one accepted previous-period comparison",
             )
         if intent.ranking is not None and len(intent.dimensions) != 1:
             return cls._decision(
@@ -477,7 +503,7 @@ class NativeCandidateAuthorizationGate:
                 "P13A candidate introduced an unapproved join",
             )
 
-        expected_time = period_scope_fingerprint(intent.period)
+        expected_time = analytical_time_scope_fingerprint(intent)
         if candidate.time_scope_fingerprint != expected_time:
             return cls._decision(
                 NativeCandidateOutcome.BLOCK,

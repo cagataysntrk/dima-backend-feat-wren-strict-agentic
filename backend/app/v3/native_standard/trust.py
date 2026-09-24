@@ -25,8 +25,8 @@ from app.v3.native_execution import (
     NativeCandidateAuthorizationGate,
     NativeCandidateOutcome,
     NativeQueryCandidate,
+    analytical_time_scope_fingerprint,
     filter_scope_fingerprint,
-    period_scope_fingerprint,
 )
 from app.v3.entity_value_gate import (
     CurrentLensValueEvidence,
@@ -164,13 +164,22 @@ class NativeStandardTrustOrchestrator:
             len(intent.metrics) != 1
             or len(intent.dimensions) > 1
             or len(intent.filters) > 1
-            or intent.comparison is not None
             or intent.approved_relationship_paths
             or intent.grain_constraints
         ):
             raise NativeStandardTrustError(
                 "P13_STANDARD_CAPABILITY_UNSUPPORTED",
-                "certified native Standard surface is one metric/source, at most one dimension/filter, optional period, and bounded ranking",
+                "certified native Standard surface is one metric/source, at most one dimension/filter, optional period, bounded ranking, or one previous-period comparison",
+            )
+        if intent.comparison is not None and (
+            intent.period is not None
+            or intent.dimensions
+            or intent.filters
+            or intent.ranking is not None
+        ):
+            raise NativeStandardTrustError(
+                "P13D_COMPARISON_SHAPE_UNSUPPORTED",
+                "P13D comparison is metric-only and cannot carry a separate period/dimension/filter/ranking",
             )
         if intent.ranking is not None and len(intent.dimensions) != 1:
             raise NativeStandardTrustError(
@@ -215,6 +224,29 @@ class NativeStandardTrustOrchestrator:
             time_dimension = cls._dimension(
                 snapshot,
                 snapshot.temporal_dimension(intent.period.time_dimension),
+            )
+            resources.append(
+                _resource(snapshot.current_lineage(_single_lineage(time_dimension)))
+            )
+        elif intent.comparison is not None:
+            comparison = intent.comparison
+            if (
+                comparison.mode != "previous_period"
+                or comparison.base_period.end is None
+                or comparison.reference_period.end is None
+                or comparison.base_period.time_dimension
+                != comparison.reference_period.time_dimension
+                or comparison.reference_period.end != comparison.base_period.start
+            ):
+                raise NativeStandardTrustError(
+                    "P13D_COMPARISON_PERIODS_UNSUPPORTED",
+                    "P13D-v1 requires contiguous explicit previous-period windows on one time dimension",
+                )
+            time_dimension = cls._dimension(
+                snapshot,
+                snapshot.temporal_dimension(
+                    comparison.base_period.time_dimension
+                ),
             )
             resources.append(
                 _resource(snapshot.current_lineage(_single_lineage(time_dimension)))
@@ -480,23 +512,47 @@ class NativeStandardTrustOrchestrator:
         manifest: NativeExecutionManifest,
         snapshot: DimaExecutionBindingSnapshot,
     ) -> DimensionSpec | None:
-        if intent.period is None:
+        period = intent.period
+        comparison = intent.comparison
+        if period is None and comparison is None:
             if manifest.temporal_predicates:
                 raise NativeStandardTrustError(
                     "TIME_SCOPE_VIOLATION",
-                    "native query introduced time scope without accepted period",
+                    "native query introduced time scope without accepted temporal authority",
                 )
             return None
-        if intent.period.end is None:
-            raise NativeStandardTrustError(
-                "P13B_CAPABILITY_UNSUPPORTED",
-                "P13B-v1 requires an explicit exclusive period end",
-            )
+
+        if period is not None:
+            if period.end is None:
+                raise NativeStandardTrustError(
+                    "P13B_CAPABILITY_UNSUPPORTED",
+                    "native Standard requires an explicit exclusive period end",
+                )
+            expected_dimension_key = period.time_dimension
+            expected_start = period.start
+            expected_end = period.end
+        else:
+            assert comparison is not None
+            if (
+                comparison.base_period.end is None
+                or comparison.reference_period.end is None
+                or comparison.base_period.time_dimension
+                != comparison.reference_period.time_dimension
+                or comparison.reference_period.end != comparison.base_period.start
+            ):
+                raise NativeStandardTrustError(
+                    "P13D_COMPARISON_PERIODS_UNSUPPORTED",
+                    "P13D-v1 comparison periods must be explicit, contiguous, and share one time dimension",
+                )
+            expected_dimension_key = comparison.base_period.time_dimension
+            expected_start = comparison.reference_period.start
+            expected_end = comparison.base_period.end
+
         predicates = manifest.temporal_predicates
         if len(predicates) != 2:
             raise NativeStandardTrustError(
                 "TIME_SCOPE_VIOLATION",
-                "P13B-v1 requires exactly lower and upper temporal predicates",
+                "native Standard requires exactly lower and upper temporal predicates",
             )
         field_ids = {x.time_field_id for x in predicates}
         if len(field_ids) != 1:
@@ -509,40 +565,36 @@ class NativeStandardTrustOrchestrator:
         if lower is None or upper is None:
             raise NativeStandardTrustError(
                 "TIME_SCOPE_VIOLATION",
-                "P13B-v1 requires >= lower and < upper predicates",
+                "native Standard requires >= lower and < upper predicates",
             )
         if (
-            lower.lower_bound != intent.period.start
+            lower.lower_bound != expected_start
             or lower.lower_inclusive is not True
             or lower.upper_bound is not None
-            or upper.upper_bound != intent.period.end
+            or upper.upper_bound != expected_end
             or upper.upper_inclusive is not False
             or upper.lower_bound is not None
         ):
             raise NativeStandardTrustError(
                 "TIME_SCOPE_VIOLATION",
-                "observed temporal bounds differ from accepted half-open period",
+                "observed temporal bounds differ from accepted temporal authority",
             )
         observed_field = snapshot.current_catalog.object_for_metabase_field(
             database_id=manifest.database_id,
             field_id=next(iter(field_ids)),
         )
-        matches: list[DimensionSpec] = []
-        for dimension in snapshot.semantic_spec.dimensions:
-            if len(dimension.source_lineage) != 1:
-                continue
-            try:
-                current = snapshot.current_lineage(dimension.source_lineage[0])
-            except MetabaseCompilationBlocked:
-                continue
-            if current == observed_field:
-                matches.append(dimension)
-        if len(matches) != 1:
+        expected_dimension = cls._dimension(
+            snapshot,
+            snapshot.temporal_dimension(expected_dimension_key),
+        )
+        expected_field = snapshot.current_lineage(_single_lineage(expected_dimension))
+        if observed_field != expected_field:
             raise NativeStandardTrustError(
                 "NATIVE_OBSERVED_TIME_UNMAPPED",
-                f"observed time field maps to {len(matches)} Dima dimensions",
+                "observed time field differs from the accepted Dima time dimension",
             )
-        return matches[0]
+        return expected_dimension
+
 
     @classmethod
     def _observed_filter(
@@ -609,15 +661,21 @@ class NativeStandardTrustOrchestrator:
     def _observed_breakout(
         cls,
         *,
+        intent: ResolvedAnalyticsIntent,
         manifest: NativeExecutionManifest,
         snapshot: DimaExecutionBindingSnapshot,
         expected_dimension: DimensionSpec | None,
+        expected_time_dimension: DimensionSpec | None,
     ) -> DimensionSpec | None:
-        if expected_dimension is None:
+        comparison = intent.comparison
+        breakout_authority = (
+            expected_time_dimension if comparison is not None else expected_dimension
+        )
+        if breakout_authority is None:
             if manifest.breakout_count or manifest.breakouts:
                 raise NativeStandardTrustError(
                     "P13D_BREAKOUT_SCOPE_VIOLATION",
-                    "native query introduced a breakout without accepted dimension authority",
+                    "native query introduced a breakout without accepted dimension/comparison authority",
                 )
             return None
 
@@ -632,17 +690,30 @@ class NativeStandardTrustOrchestrator:
                 "P13D_BREAKOUT_SHAPE_UNSUPPORTED",
                 "P13D-v1 certifies the sole stage-0 breakout",
             )
+        if comparison is not None:
+            if breakout.temporal_unit != "month":
+                raise NativeStandardTrustError(
+                    "P13D_COMPARISON_GRAIN_MISMATCH",
+                    "previous-period month comparison requires the native time breakout grain to be month",
+                )
+        elif breakout.temporal_unit is not None:
+            raise NativeStandardTrustError(
+                "P13D_BREAKOUT_GRAIN_UNEXPECTED",
+                "non-comparison P13D-v1 breakout must not introduce temporal bucketing",
+            )
+
         observed_field = snapshot.current_catalog.object_for_metabase_field(
             database_id=manifest.database_id,
             field_id=breakout.field_id,
         )
-        expected_field = snapshot.current_lineage(_single_lineage(expected_dimension))
+        expected_field = snapshot.current_lineage(_single_lineage(breakout_authority))
         if observed_field != expected_field:
             raise NativeStandardTrustError(
                 "P13D_BREAKOUT_FIELD_MISMATCH",
-                "engine-observed breakout field differs from accepted Dima dimension lineage",
+                "engine-observed breakout field differs from accepted Dima lineage",
             )
-        return expected_dimension
+        return breakout_authority
+
 
     @staticmethod
     def _observed_ranking(
@@ -778,21 +849,26 @@ class NativeStandardTrustOrchestrator:
             )
 
         observed_dimension = cls._observed_breakout(
+            intent=intent,
             manifest=manifest,
             snapshot=snapshot,
             expected_dimension=expected_dimension,
+            expected_time_dimension=expected_time,
+        )
+        expected_breakout = (
+            expected_time if intent.comparison is not None else expected_dimension
         )
         if (
-            (expected_dimension is None) != (observed_dimension is None)
+            (expected_breakout is None) != (observed_dimension is None)
             or (
-                expected_dimension is not None
+                expected_breakout is not None
                 and observed_dimension is not None
-                and expected_dimension.dimension_id != observed_dimension.dimension_id
+                and expected_breakout.dimension_id != observed_dimension.dimension_id
             )
         ):
             raise NativeStandardTrustError(
                 "P13D_BREAKOUT_SCOPE_VIOLATION",
-                "observed breakout maps to a different Dima dimension",
+                "observed breakout maps to a different accepted Dima dimension",
             )
 
         cls._observed_ranking(
@@ -807,7 +883,13 @@ class NativeStandardTrustOrchestrator:
             observed_resources.append(
                 _resource(snapshot.current_lineage(_single_lineage(observed_time)))
             )
-        if observed_dimension is not None:
+        if (
+            observed_dimension is not None
+            and (
+                observed_time is None
+                or observed_dimension.dimension_id != observed_time.dimension_id
+            )
+        ):
             observed_resources.append(
                 _resource(snapshot.current_lineage(_single_lineage(observed_dimension)))
             )
@@ -858,7 +940,7 @@ class NativeStandardTrustOrchestrator:
             ),
             resource_bindings=_unique_resources(observed_resources),
             native_validation_refs=tuple(native_validation_refs),
-            time_scope_fingerprint=period_scope_fingerprint(intent.period),
+            time_scope_fingerprint=analytical_time_scope_fingerprint(intent),
             filter_scope_fingerprint=filter_scope_fingerprint(intent.filters),
             material_filter_count=manifest.non_temporal_filter_count,
             material_join_count=(

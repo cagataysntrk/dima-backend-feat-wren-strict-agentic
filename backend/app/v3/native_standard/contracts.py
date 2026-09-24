@@ -67,6 +67,7 @@ class NativeBreakoutFact(FrozenModel):
     breakout_index: int = Field(ge=0)
     field_id: int = Field(gt=0)
     field_type: str = Field(min_length=1)
+    temporal_unit: str | None = Field(default=None, min_length=1)
 
 
 class NativeOrderByFact(FrozenModel):
