@@ -29,7 +29,11 @@ from app.v2.manager_models import (
     ResearchDirectiveType,
     UserObligationLedger,
 )
-from app.v2.manager_runtime import ManagerRuntime, ManagerStateError
+from app.v2.manager_runtime import (
+    ManagerBudgetError,
+    ManagerRuntime,
+    ManagerStateError,
+)
 from app.v2.models import EvidenceArtifact
 from app.v2.research_tasks import ResearchTaskRegistry
 
@@ -236,3 +240,33 @@ def test_applied_adapt_disposition_requires_branch_task_refs():
     )
     assert applied.status == ResearchDirectiveDispositionStatus.APPLIED
     assert applied.branch_task_refs == ("D1",)
+
+
+def test_preacceptance_phase_cap_does_not_expand_global_six_turn_budget():
+    canonical = ManagerRuntime(
+        request_ref="budget-canonical",
+        turn_ref="turn-budget-canonical",
+    )
+    canonical.note_manager_turn(phase="preacceptance")
+    canonical.note_manager_turn(phase="preacceptance")
+    assert canonical.snapshot.preacceptance_turns == 2
+    assert canonical.snapshot.manager_turns == 2
+    assert canonical.budget.max_preacceptance_turns == 4
+    assert canonical.budget.max_total_manager_turns == 6
+
+    revision = ManagerRuntime(
+        request_ref="budget-revision",
+        turn_ref="turn-budget-revision",
+    )
+    for _ in range(3):
+        revision.note_manager_turn(phase="preacceptance")
+    for _ in range(3):
+        revision.note_manager_turn(phase="research")
+
+    assert revision.snapshot.preacceptance_turns == 3
+    assert revision.snapshot.research_manager_turns == 3
+    assert revision.snapshot.manager_turns == 6
+
+    with pytest.raises(ManagerBudgetError, match="total Manager turn budget exhausted"):
+        revision.note_manager_turn(phase="research")
+    assert revision.snapshot.state == ManagerState.BUDGET_EXHAUSTED
