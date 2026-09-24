@@ -26,6 +26,7 @@ from app.v2.product_models import (
 from app.v2.report_narration import ReportNarrator
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
 from app.v2.semantic_linker import SemanticLinkBatchDecision, SemanticLinkChoice
+from app.v2.standard_authority import AcceptedAuthorityFamily
 from app.v2.standard_lane import StandardLaneEngine
 from control_plane.authorize import Principal
 
@@ -323,7 +324,10 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
         "dima_standard_intent_draft_v1",
         "dima_standard_coverage_v1",
     ]
-    assert standard_lane.authority_registry.accepted(context.turn_ref) is None
+    accepted_family, _accepted_ref = standard_lane.authority_registry.accepted(
+        context.turn_ref
+    )
+    assert accepted_family == AcceptedAuthorityFamily.RESEARCH
     assert response.lane == ProductLane.RESEARCH
     assert response.status == ProductStatus.REPORT, response.model_dump(mode="json")
     assert response.terminal_receipt.verified_complete is True
