@@ -108,6 +108,7 @@ class CapabilityBindingValidator:
         item: BoundObligation,
         spec: ManagerCapabilitySpec,
         handles_by_kind: dict[str, tuple[str, ...]],
+        effect_refs_by_kind: dict[str, tuple[str, ...]],
     ) -> tuple[ObligationEffect, ...]:
         family = spec.effect_family
         if not family:
@@ -124,28 +125,28 @@ class CapabilityBindingValidator:
             )
 
         if family == "measure":
-            effects = effects_for("metric", handles_by_kind.get("metric", ()))
+            effects = effects_for("metric", effect_refs_by_kind.get("metric", ()))
         elif family == "group_by":
-            effects = effects_for("dimension", handles_by_kind.get("dimension", ()))
+            effects = effects_for("dimension", effect_refs_by_kind.get("dimension", ()))
         elif family == "rank":
-            refs = handles_by_kind.get("dimension", ())
+            refs = effect_refs_by_kind.get("dimension", ())
             kind = "dimension"
             if not refs:
-                refs = handles_by_kind.get("metric", ())
+                refs = effect_refs_by_kind.get("metric", ())
                 kind = "metric"
             effects = effects_for(kind, refs)
         elif family == "compare":
-            refs = handles_by_kind.get("comparison", ())
+            refs = effect_refs_by_kind.get("comparison", ())
             kind = "comparison"
             if not refs:
-                refs = handles_by_kind.get("metric", ())
+                refs = effect_refs_by_kind.get("metric", ())
                 kind = "metric"
             effects = effects_for(kind, refs)
         else:
             all_refs = tuple(
                 dict.fromkeys(
                     ref
-                    for _, refs in sorted(handles_by_kind.items())
+                    for _, refs in sorted(effect_refs_by_kind.items())
                     for ref in refs
                 )
             )
@@ -193,6 +194,7 @@ class CapabilityBindingValidator:
             )
 
         by_kind: dict[str, list[str]] = {}
+        effect_by_kind: dict[str, list[str]] = {}
         for handle_id in item.semantic_handle_refs:
             try:
                 handle = self._handles.validate(
@@ -212,11 +214,23 @@ class CapabilityBindingValidator:
                 )
                 continue
             by_kind.setdefault(normalized, []).append(handle_id)
+            # Authority ownership lives in sem_* handle identity, while effect conflict
+            # semantics must compare the governed semantic identity underneath it.
+            # Fresh owner-bound handles for the same current candidate therefore still
+            # conflict deterministically when their business effects oppose each other.
+            effect_by_kind.setdefault(normalized, []).append(
+                str(handle.resolver_provenance_id)
+            )
 
         normalized_by_kind = {
             kind: tuple(dict.fromkeys(refs))
             for kind, refs in by_kind.items()
         }
+        normalized_effect_by_kind = {
+            kind: tuple(dict.fromkeys(refs))
+            for kind, refs in effect_by_kind.items()
+        }
+
         present_kinds = set(normalized_by_kind)
 
         required_kinds = (
@@ -278,6 +292,7 @@ class CapabilityBindingValidator:
                 item=item,
                 spec=spec,
                 handles_by_kind=normalized_by_kind,
+                effect_refs_by_kind=normalized_effect_by_kind,
             ),
         )
         return CapabilityBindingResult(binding=binding)
