@@ -190,6 +190,40 @@ def _evidence(ref, task_id, *, verified=True, obligation_ids=(ROOT,)):
     )
 
 
+def test_multi_metric_root_bootstrap_preserves_all_metrics_in_one_query_seed():
+    handles = SemanticHandleRegistry()
+    metric_a = _metric(handles, candidate="metric_a")
+    metric_b = _metric(handles, candidate="metric_b")
+    runtime = _accepted_runtime(
+        handles,
+        (metric_a.handle_id, metric_b.handle_id),
+    )
+    registry = ResearchTaskRegistry()
+
+    result = RootCauseBootstrapPolicy(semantic_handles=handles).prepare(
+        runtime=runtime,
+        evidence_store=_EvidenceStore(),
+        task_registry=registry,
+        root_obligation_id=ROOT,
+        tenant_binding=TENANT,
+        context_version=CTX,
+    )
+
+    assert result.status == RootCauseBootstrapStatus.TASK_READY
+    assert result.selected_capability == ManagerCapabilityKey.PERFORMANCE
+    assert result.task is not None
+    assert result.task.task_kind == ResearchTaskKind.QUERY.value
+    assert result.task.input_refs == (
+        metric_a.handle_id,
+        metric_b.handle_id,
+    )
+    assert tuple(
+        item.semantic_handle_refs
+        for item in runtime.ledger.active_user_must
+        if item.obligation_id == ROOT
+    ) == ((metric_a.handle_id, metric_b.handle_id),)
+
+
 def test_metric_only_root_bootstrap_selects_one_server_owned_query_seed():
     handles = SemanticHandleRegistry()
     metric = _metric(handles)
