@@ -1,6 +1,80 @@
 # CURRENT HANDOFF
 
-## LATEST AUTHORITY OVERRIDE — D10-J ROOT FIX GREEN / SUPERVISOR STOP
+## LATEST AUTHORITY OVERRIDE — D10-O PAID RED / D10-P ACTIVE
+
+This block is the current active Day10 authority. Historical blocks below remain receipts only.
+
+```text
+branch                         feat/ask-v2-mvp
+current HEAD                   edb7a735722bbe78a92b0e269181011f098a15d7
+latest Product behavior        482d118e105be729660906596ac1ef65365920ea
+
+D10-O paid attempt 1           36039697895 = RED
+provider calls                 4
+
+D10-O paid attempt 2           36041398308 = RED
+provider calls                 5
+
+D10-O cumulative               2 dispatches / 9 provider calls
+
+sealed first wrong transition
+MODEL_COGNITION / semantic decomposition
+
+exact remaining gap
+BREAKDOWN REQUIRED
+source                         "bölüm bazındaki performansı"
+draft dimension                "bölüm"       -> governed BOUND
+draft metric                   "performansı" -> 4 applicable maintenance metrics
+Semantic Linker                ABSTAIN / NO_MATCH
+
+latest deterministic proofs
+Day10                          36041813630 = GREEN
+pre-second-paid Day10          36041069927 = GREEN
+affected Day7                  36040669543 = GREEN
+affected Day8                  36040542397 = GREEN
+
+Day8 live debt                 OPEN
+Day10 FINAL                    OPEN / NOT SEALED
+Day11                          NOT AUTHORIZED
+
+D10-P                          ACTIVE
+new paid envelope              3 dispatches / 45 NEW provider calls
+```
+
+### D10-P active repair owner
+
+D10-P must repair semantic decomposition at the cheapest bounded cognition layer without adding a
+Research Manager turn.
+
+```text
+owner role                     SEMANTIC_LINKER / GPT-5.6 Luna
+schema                         dima_semantic_decomposition_repair_v1
+max repair batches             1 per preacceptance attempt
+Manager turns consumed         0
+SemanticBindingGate owner      UNCHANGED
+Manager global ceiling         6
+SEMANTIC_LINKER paid ceiling   3
+```
+
+Repair answers only which already-governed exact current-message USER_SOURCE metric/dimension source
+concepts should additionally scope a REQUIRED obligation's missing semantic kind. It never chooses
+catalog candidates directly, never copies a sibling sem_* handle, never changes business intent, and
+never runs for AMBIGUOUS_EXACT, sensitive, filter/entity, period/comparison, prior-turn, foreign
+tenant/context, AGENT_DERIVED, or EXCLUDED-only sources.
+
+Selected source tokens must be server-issued ephemeral tokens. The semantic adapter revalidates
+same-message/same-tenant/same-context/USER_SOURCE/non-sensitive/correct-kind/unique governed identity,
+rehydrates the current catalog candidate, and passes it through the existing SemanticBindingGate to
+mint a fresh target-obligation-owned handle and canonical SemanticResolutionReceipt.
+
+After the one repair batch, recompute material gaps. Zero gaps -> normal CoverageVeto. Remaining
+material gap -> CLARIFICATION_REQUIRED. No second repair and no full Manager redraft in D10-P.
+
+Proceed continuously through deterministic proof, one real-Wren sentinel and the newly authorized
+D10-P paid envelope until FULL Day10 GREEN or a true frozen-owner/paid-envelope STOP boundary.
+
+
+## HISTORICAL AUTHORITY OVERRIDE — D10-J ROOT FIX GREEN / SUPERVISOR STOP
 
 This section supersedes the D10-I forensic-hold block below only for the current D10-J
 engineering state. The historical paid run classification remains unchanged.
@@ -105,7 +179,7 @@ STOP here. Do not dispatch or rerun a paid workflow, and do not begin Day11 with
 supervisor decision.
 
 
-## LATEST AUTHORITY OVERRIDE — D10-I PAID PRODUCT-MVP VALID RED / D10-J FORENSIC HOLD
+## HISTORICAL AUTHORITY OVERRIDE — D10-I PAID PRODUCT-MVP VALID RED / D10-J FORENSIC HOLD
 
 This section supersedes the D10-H pre-paid STOP below where they conflict. Historical receipts remain unchanged.
 
@@ -169,7 +243,7 @@ Read in this order:
 7. Architecture report R26B and later Day10 authority addenda
 
 
-## LATEST AUTHORITY OVERRIDE — D10-H FINAL PRE-PAID SEAL GREEN / STOP
+## HISTORICAL AUTHORITY OVERRIDE — D10-H FINAL PRE-PAID SEAL GREEN / STOP
 
 This section supersedes older Day8/Day9/early-Day10 STOP text below where they conflict.
 
