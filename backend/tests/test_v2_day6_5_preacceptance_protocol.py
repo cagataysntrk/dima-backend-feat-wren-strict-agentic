@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+from types import SimpleNamespace
 
 import pytest
 
@@ -19,11 +20,13 @@ from app.v2.manager_models import (
     ObligationOrigin,
     ObligationPolarity,
     ObligationPriority,
+    SemanticResolutionReceipt,
 )
 from app.v2.manager_preacceptance import CoverageAudit, FiniteAcceptanceStatus
 from app.v2.manager_progress import DynamicActionFrontier
 from app.v2.manager_runtime import ManagerBudgetError, ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
+from app.v2.manager_tools import ResolveSemanticsArgs, SemanticDecompositionRepairGap
 from app.v2.research_tasks import ResearchTaskService
 from app.v2.research_tools import ResearchTaskKind
 from app.v2.models import (
@@ -1889,25 +1892,7 @@ def test_d10_p_wrong_kind_current_source_cannot_enter_metric_repair_pool():
     assert repair.calls == []
 
 
-class _AlwaysAbstainSemanticProvider:
-    def decide(self, requests):
-        return SemanticLinkBatchDecision(
-            choices=tuple(
-                SemanticLinkChoice(
-                    request_id=request.request_id,
-                    decision="ABSTAIN",
-                    reason="NO_MATCH",
-                )
-                for request in requests
-            )
-        )
-
-
 def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
-    question = (
-        "Makine duruşları email bazında göster; "
-        "Makine duruşları performans kırılımında araştır."
-    )
     base_context, base_schema = _d10_p_decomposition_context()
     cube = base_context.cubes[0].model_copy(
         update={
@@ -1948,50 +1933,75 @@ def test_d10_p_sensitive_dimension_is_not_exposed_as_repair_source():
             }
         ],
     }
-    draft = {
-        "obligations": [
-            _obligation(
-                obligation_id="U_EMAIL_BREAK",
-                capability="breakdown",
-                source_surfaces=("Makine duruşları email bazında göster",),
-                semantic_surfaces=(
-                    ("Makine duruşları", "metric"),
-                    ("email", "dimension"),
-                ),
-            ),
-            _obligation(
-                obligation_id="U_TARGET",
-                capability="breakdown",
-                source_surfaces=("Makine duruşları performans kırılımında araştır",),
-                semantic_surfaces=(
-                    ("Makine duruşları", "metric"),
-                    ("performans kırılımında", "dimension"),
-                ),
-            ),
-        ],
-        "research_directives": [],
-        "control_requests": [],
-    }
-    scripted = _ScriptedStructured(drafts=[draft], audits=[])
-    repair = _SourceSelectingRepairProvider(selected_surfaces=("email",))
-    loop, runtime, executor = _loop(
-        scripted,
-        semantic_provider=_AlwaysAbstainSemanticProvider(),
-        semantic_repair_provider=repair,
-        semantic_context=context,
-        semantic_schema=schema,
-    )
-    outcome = loop.understand(
-        question=question,
-        message_id="turn-d10-p-sensitive",
-        request_ref="req-d10-p-sensitive",
-        runtime=runtime,
-        executor=executor,
-        conversation=ConversationStateV2(),
-    )
-    assert outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
-    assert repair.calls == []
 
+    source_spans = SourceSpanRegistry()
+    source_spans.register_message(
+        message_id="turn-d10-p-sensitive",
+        text="email performans kırılımında",
+    )
+    email_ref = source_spans.mint_exact(
+        message_id="turn-d10-p-sensitive",
+        surface="email",
+    ).source_ref
+    target_ref = source_spans.mint_exact(
+        message_id="turn-d10-p-sensitive",
+        surface="performans kırılımında",
+    ).source_ref
+    handles = SemanticHandleRegistry()
+    repair = _SourceSelectingRepairProvider(selected_surfaces=("email",))
+    adapter = ManagerSemanticResolutionAdapter(
+        source_spans=source_spans,
+        semantic_handles=handles,
+        semantic_context=context,
+        conversation=ConversationStateV2(),
+        schema=schema,
+        tenant_binding="tenant-stabilized",
+        session_id="session-stabilized",
+        thread_id="thread-stabilized",
+        semantic_decision_provider=None,
+        semantic_decomposition_repair_provider=repair,
+    )
+
+    first = adapter.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(email_ref,),
+            source_obligation_ids=("U_EMAIL",),
+            target_kind_hints=("dimension",),
+        )
+    )
+    assert len(first.resolved) == 1
+    sensitive_handle = first.resolved[0].handle
+    assert sensitive_handle.sensitive is True
+
+    runtime = SimpleNamespace(
+        semantic_resolution_receipts=(
+            SemanticResolutionReceipt(
+                source_ref=email_ref,
+                handle_id=sensitive_handle.handle_id,
+                target_kind=sensitive_handle.target_kind,
+            ),
+        )
+    )
+    repaired = adapter.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            decomposition_repair_gaps=(
+                SemanticDecompositionRepairGap(
+                    gap_ref="gap:1:U_TARGET:dimension",
+                    obligation_id="U_TARGET",
+                    capability_key=ManagerCapabilityKey.BREAKDOWN,
+                    missing_kind="dimension",
+                    obligation_source_refs=(target_ref,),
+                ),
+            ),
+            decomposition_repair_source_refs=(email_ref,),
+        ),
+        runtime=runtime,
+    )
+
+    assert repaired.resolved == ()
+    assert repair.calls == []
 
 def test_d10_p_repair_does_not_rewrite_business_intent_shape():
     question = (
