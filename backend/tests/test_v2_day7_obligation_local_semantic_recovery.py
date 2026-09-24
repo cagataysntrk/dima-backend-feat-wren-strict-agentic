@@ -113,6 +113,44 @@ class _RecordingProvider:
         return SemanticLinkBatchDecision(choices=tuple(choices))
 
 
+class _SingleCandidateRecordingProvider(_RecordingProvider):
+    """Select only when applicability has narrowed to exactly one governed card."""
+
+    def decide(self, requests):
+        records = []
+        choices = []
+        for request in requests:
+            visible = tuple(
+                self._id_to_canonical.get(item.candidate_id, item.label)
+                for item in request.candidates
+            )
+            records.append(
+                {
+                    "surface": request.surface,
+                    "request_id": request.request_id,
+                    "visible": visible,
+                }
+            )
+            if len(request.candidates) == 1:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="SELECT",
+                        candidate_id=request.candidates[0].candidate_id,
+                    )
+                )
+            else:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="ABSTAIN",
+                        reason="AMBIGUOUS",
+                    )
+                )
+        self.calls.append(tuple(records))
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
 class _ForbiddenProvider:
     def __init__(self):
         self.calls = 0
@@ -654,9 +692,8 @@ def test_current_turn_metric_context_recovers_generic_root_surface_without_handl
     service, context = _context()
     schema = service.schema()
     diagnostics = []
-    provider = _RecordingProvider(
+    provider = _SingleCandidateRecordingProvider(
         id_to_canonical=_catalog_index(context, schema),
-        selections={"gözlenen analitik sapma": "net_value_x"},
     )
     fx = _fixture(
         context=context,
@@ -667,7 +704,10 @@ def test_current_turn_metric_context_recovers_generic_root_surface_without_handl
 
     result, refs = _resolve(
         fx,
-        text="Net gelir ile gözlenen analitik sapmayı araştır.",
+        text=(
+            "Net gelir ana hedeftir; duruş süresi yalnız bağlam bilgisidir; "
+            "gözlenen analitik sapmayı araştır."
+        ),
         entries=(
             ("U_PERF", "Net gelir", "metric"),
             ("U_ROOT", "gözlenen analitik sapma", "metric"),
@@ -688,7 +728,7 @@ def test_current_turn_metric_context_recovers_generic_root_surface_without_handl
         "pass1",
         "current_turn_applicability",
     ]
-    assert root_receipts[0]["selection"]["status"] == "RETRIEVAL_MISS"
+    assert root_receipts[0]["selection"]["status"] == "ABSTAIN"
     assert root_receipts[1]["retrieval_backend"] == "governed_current_turn_context_v1"
     assert root_receipts[1]["candidate_count"] == 1
     assert root_receipts[1]["selection"]["status"] == "BOUND"
@@ -734,13 +774,14 @@ def test_current_turn_multiple_metric_candidates_require_linker_and_may_abstain(
     assert ("U_ROOT", refs[2]) not in resolved
     assert refs[2] in result.unresolved_source_refs
 
-    recovery = next(
+    root_receipts = [
         item for item in diagnostics
         if item.get("owner_obligation_id") == "U_ROOT"
-        and item.get("discovery_pass") == "current_turn_applicability"
-    )
-    assert recovery["candidate_count"] == 2
-    assert recovery["selection"]["status"] == "ABSTAIN"
+    ]
+    assert [item["discovery_pass"] for item in root_receipts] == ["pass1"]
+    assert root_receipts[0]["selection"]["status"] == "ABSTAIN"
+    # Same exact two governed current-turn candidates would add no information,
+    # therefore a second linker call is intentionally forbidden.
 
 
 def test_prior_turn_governed_handle_is_not_current_turn_candidate_context():
@@ -779,9 +820,8 @@ def test_current_turn_dimension_context_can_support_relationship_counterpart_dis
     service, context = _context()
     schema = service.schema()
     diagnostics = []
-    provider = _RecordingProvider(
+    provider = _SingleCandidateRecordingProvider(
         id_to_canonical=_catalog_index(context, schema),
-        selections={"ilişki için analitik eksen": "department_axis_d"},
     )
     fx = _fixture(
         context=context,
@@ -792,7 +832,10 @@ def test_current_turn_dimension_context_can_support_relationship_counterpart_dis
 
     result, refs = _resolve(
         fx,
-        text="Bölüm kırılımını çıkar ve ilişki için analitik ekseni değerlendir.",
+        text=(
+            "Bölüm kırılımını çıkar; bölge yalnız bağlam bilgisidir; "
+            "ilişki için analitik ekseni değerlendir."
+        ),
         entries=(
             ("U_BREAK", "Bölüm", "dimension"),
             ("U_REL", "ilişki için analitik eksen", "dimension"),
@@ -819,7 +862,13 @@ def test_current_turn_recovery_never_expands_to_filter_kind():
         id_to_canonical=_catalog_index(context, schema),
         selections={},
     )
-    fx = _fixture(context=context, schema=schema, provider=provider)
+    diagnostics = []
+    fx = _fixture(
+        context=context,
+        schema=schema,
+        provider=provider,
+        diagnostic_sink=diagnostics.append,
+    )
 
     result, refs = _resolve(
         fx,
@@ -834,7 +883,7 @@ def test_current_turn_recovery_never_expands_to_filter_kind():
     # Current-turn recovery is intentionally metric/dimension only.
     assert refs[1] in result.unresolved_source_refs
     assert not any(
-        record["surface"] == "belirsiz kapsam"
-        for call in provider.calls
-        for record in call
+        item.get("discovery_pass") == "current_turn_applicability"
+        for item in diagnostics
+        if item.get("owner_obligation_id") == "U_OTHER"
     )
