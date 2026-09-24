@@ -29,6 +29,8 @@ from app.v2.models import (
     HypothesisLedgerState,
     HypothesisProvenance,
     HypothesisStatus,
+    ResolvedFilterRef,
+    ResolvedSemanticRef,
 )
 from app.v2.obligation_ledger import UserObligationLedgerService
 from app.v2.research_tasks import ResearchTaskLifecycleError, ResearchTaskRegistry
@@ -309,7 +311,65 @@ class HypothesisLedger:
             }
         )
         self._replace(updated)
+        return self.reconcile_status(hypothesis_id)
+
+    def reconcile_status(self, hypothesis_id: str) -> HypothesisEntry:
+        """Derive lifecycle state only from already-admitted governed Evidence links."""
+
+        entry = self.get(hypothesis_id)
+        has_support = any(
+            link.relation == HypothesisEvidenceRelation.SUPPORTS
+            for link in entry.evidence_links
+        )
+        has_contradiction = any(
+            link.relation == HypothesisEvidenceRelation.CONTRADICTS
+            for link in entry.evidence_links
+        )
+        limitations = list(entry.limitations)
+
+        if has_support and has_contradiction:
+            status = HypothesisStatus.INCONCLUSIVE
+            limitations.append(
+                "Karışık doğrulanmış kanıt bulundu; nedensel sonuç kesinleştirilemez."
+            )
+        elif has_support:
+            status = HypothesisStatus.SUPPORTED
+        elif has_contradiction:
+            status = HypothesisStatus.REFUTED
+        else:
+            status = HypothesisStatus.OPEN
+
+        updated = entry.model_copy(
+            update={
+                "status": status,
+                "limitations": tuple(dict.fromkeys(limitations)),
+            }
+        )
+        self._replace(updated)
         return updated
+
+    def semantic_display_label(self, handle_id: str) -> str:
+        """Deterministic user-visible label from governed semantic authority."""
+
+        try:
+            binding = self._handles.binding_for_execution(
+                handle_id,
+                tenant_binding=self._tenant_binding,
+                context_version=self._context_version,
+            )
+        except (KeyError, ValueError) as exc:
+            raise HypothesisLedgerError(
+                f"invalid/non-governed semantic handle: {handle_id}"
+            ) from exc
+        handle = binding.handle
+        if handle.sensitive:
+            return handle.target_kind
+        target = binding.canonical_target
+        if isinstance(target, ResolvedSemanticRef):
+            return target.canonical_name
+        if isinstance(target, ResolvedFilterRef):
+            return f"{target.dimension_name} filtresi"
+        return handle.target_kind
 
     def link_next_test(
         self,
@@ -594,6 +654,92 @@ class EpistemicFindingError(RuntimeError):
     """A requested finding label exceeds the structurally admissible Evidence class."""
 
 
+class RootCauseObligationVerifier:
+    """Verify fulfillment of a bounded ROOT_CAUSE investigation, never causal truth."""
+
+    VERDICT = (
+        "Sınırlandırılmış kök-neden araştırması doğrulanmış kanıtla tamamlandı; "
+        "nedensel doğruluk EpistemicLabelGate sınırları içinde kalır."
+    )
+
+    def reconcile(
+        self,
+        *,
+        runtime,
+        hypothesis_ledger: HypothesisLedger,
+        task_registry: ResearchTaskRegistry,
+    ) -> bool:
+        ledger = runtime.ledger
+        if ledger is None:
+            raise HypothesisLedgerError(
+                "ROOT_CAUSE completion requires current obligation ledger"
+            )
+        root_id = hypothesis_ledger.state.parent_obligation_id
+        root = UserObligationLedgerService.get(ledger, root_id)
+        if root.capability_key != ManagerCapabilityKey.ROOT_CAUSE:
+            raise HypothesisLedgerError("root completion requires ROOT_CAUSE obligation")
+        if root.origin != ObligationOrigin.USER_MUST:
+            raise HypothesisLedgerError("root completion requires USER_MUST authority")
+        if root.polarity != ObligationPolarity.REQUIRED:
+            raise HypothesisLedgerError("excluded ROOT_CAUSE cannot complete")
+        if root.status == ObligationStatus.VERIFIED:
+            return True
+        if root.status in {
+            ObligationStatus.BLOCKED_DATA_GAP,
+            ObligationStatus.LIMITED,
+            ObligationStatus.UNSUPPORTED,
+            ObligationStatus.SUPERSEDED,
+        }:
+            return False
+
+        entries = hypothesis_ledger.state.entries
+        if not entries:
+            return False
+        if any(item.status == HypothesisStatus.OPEN for item in entries):
+            return False
+        if any(not item.evidence_links for item in entries):
+            return False
+
+        evidence_refs: list[str] = []
+        for item in entries:
+            for link in item.evidence_links:
+                hypothesis_ledger.validated_evidence(link.evidence_ref)
+                evidence_refs.append(link.evidence_ref)
+            for task_ref in item.next_test_task_refs:
+                task = task_registry.get(task_ref)
+                if task.state != "complete":
+                    return False
+
+        relevant_tasks = tuple(
+            task
+            for task in task_registry.tasks
+            if (
+                task.question_id == root_id
+                or task.parent_obligation_id == root_id
+            )
+        )
+        if any(task.state in {"pending", "running"} for task in relevant_tasks):
+            return False
+        if any(
+            task.state in {"failed", "blocked", "cancelled"}
+            for task in relevant_tasks
+        ):
+            return False
+
+        refs = tuple(dict.fromkeys(evidence_refs))
+        if not refs:
+            return False
+        runtime.replace_ledger(
+            UserObligationLedgerService().verify(
+                ledger,
+                root_id,
+                evidence_refs=refs,
+                verdict=self.VERDICT,
+            )
+        )
+        return True
+
+
 class EpistemicLabelGate:
     """Validate claim-class ceilings without pretending to infer causal truth."""
 
@@ -816,8 +962,8 @@ class EvidenceLinkedFindingBuilder:
         hypothesis_ref: str | None = None,
         limitations: tuple[str, ...] = (),
     ) -> EvidenceLinkedFinding:
-        clean_statement = statement.strip()
-        if not clean_statement:
+        supplied_statement = statement.strip()
+        if not supplied_statement:
             raise EpistemicFindingError("finding statement cannot be empty")
         if not evidence_refs:
             raise EpistemicFindingError(
@@ -845,8 +991,29 @@ class EvidenceLinkedFindingBuilder:
             )
 
         finding_limitations = list(limitations)
+        semantic_handle_refs: tuple[str, ...] = ()
+        clean_statement = supplied_statement
         if hypothesis is not None:
+            semantic_handle_refs = tuple(hypothesis.semantic_handle_refs)
             finding_limitations.extend(hypothesis.limitations)
+            labels = tuple(
+                dict.fromkeys(
+                    self._ledger.semantic_display_label(ref)
+                    for ref in semantic_handle_refs
+                )
+            )
+            concept = ", ".join(labels) if labels else "yönetilen kavram"
+            if epistemic_label == EpistemicLabel.CANDIDATE_CAUSE:
+                clean_statement = (
+                    f"{concept} için destekleyici gözlemsel kanıt bulundu; "
+                    "aday neden olarak değerlendirilmiştir. "
+                    "Nedensellik doğrulanmış değildir."
+                )
+            elif hypothesis.status == HypothesisStatus.INCONCLUSIVE:
+                clean_statement = (
+                    f"{concept} için doğrulanmış kanıtlar karışıktır; "
+                    "kök-neden değerlendirmesi sonuçsuzdur."
+                )
         finding_limitations = list(
             dict.fromkeys(x.strip() for x in finding_limitations if x.strip())
         )
@@ -857,6 +1024,7 @@ class EvidenceLinkedFindingBuilder:
             "epistemic_label": epistemic_label.value,
             "evidence_refs": [item.artifact_id for item in evidence],
             "hypothesis_ref": hypothesis_ref,
+            "semantic_handle_refs": list(semantic_handle_refs),
             "provenance": {
                 "accepted_contract_id": self._ledger.state.accepted_contract_id,
                 "lineage_id": self._ledger.state.lineage_id,
@@ -876,6 +1044,7 @@ class EvidenceLinkedFindingBuilder:
             epistemic_label=epistemic_label,
             evidence_refs=tuple(item.artifact_id for item in evidence),
             hypothesis_ref=hypothesis_ref,
+            semantic_handle_refs=semantic_handle_refs,
             limitations=tuple(finding_limitations),
             provenance=HypothesisProvenance(
                 accepted_contract_id=self._ledger.state.accepted_contract_id,
