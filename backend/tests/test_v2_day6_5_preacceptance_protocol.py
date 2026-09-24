@@ -33,6 +33,7 @@ from app.v2.models import (
     ConversationStateV2,
 )
 from app.v2.semantic_handles import SemanticHandleRegistry
+from app.v2.semantic_linker import SemanticLinkBatchDecision, SemanticLinkChoice
 from app.v2.source_spans import SourceSpanRegistry
 
 
@@ -56,6 +57,33 @@ class _ScriptedStructured:
         if schema_name == "dima_intent_coverage_v1":
             return self._audits.popleft()
         raise AssertionError(f"unexpected schema: {schema_name}")
+
+
+class _SingleCandidateSemanticProvider:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def decide(self, requests):
+        self.calls.append(requests)
+        choices = []
+        for request in requests:
+            if len(request.candidates) == 1:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="SELECT",
+                        candidate_id=request.candidates[0].candidate_id,
+                    )
+                )
+            else:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="ABSTAIN",
+                        reason="AMBIGUOUS",
+                    )
+                )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
 
 
 def _context() -> BoundedSemanticContextV0:
@@ -131,7 +159,13 @@ def _schema() -> dict:
     }
 
 
-def _loop(scripted: _ScriptedStructured, *, conversation=None):
+def _loop(
+    scripted: _ScriptedStructured,
+    *,
+    conversation=None,
+    semantic_provider=None,
+    semantic_diagnostic_sink=None,
+):
     source_spans = SourceSpanRegistry()
     handles = SemanticHandleRegistry()
     context = _context()
@@ -145,6 +179,8 @@ def _loop(scripted: _ScriptedStructured, *, conversation=None):
         tenant_binding="tenant-stabilized",
         session_id="session-stabilized",
         thread_id="thread-stabilized",
+        semantic_decision_provider=semantic_provider,
+        semantic_diagnostic_sink=semantic_diagnostic_sink,
     )
     executor = GovernedManagerExecutor(
         acceptance=IntentAcceptanceGate(
@@ -1103,3 +1139,80 @@ def test_preacceptance_turn_budget_is_independently_bounded():
     assert runtime.snapshot.preacceptance_turns == 2
     assert runtime.snapshot.research_manager_turns == 0
     assert runtime.snapshot.state == ManagerState.BUDGET_EXHAUSTED
+
+
+def test_d10_n_current_turn_context_closes_root_metric_gap_before_clarification():
+    question = (
+        "net geliri incele; gözlenen analitik sapmanın kök nedenini araştır"
+    )
+    scripted = _ScriptedStructured(
+        drafts=[
+            {
+                "obligations": [
+                    _obligation(
+                        obligation_id="U_PERF",
+                        capability="performance",
+                        source_surfaces=("net geliri",),
+                        semantic_surfaces=(("net geliri", "metric"),),
+                    ),
+                    _obligation(
+                        obligation_id="U_ROOT",
+                        capability="root_cause",
+                        source_surfaces=(
+                            "gözlenen analitik sapmanın kök nedenini araştır",
+                        ),
+                        semantic_surfaces=(("gözlenen analitik sapma", "metric"),),
+                    ),
+                ],
+                "research_directives": [],
+                "control_requests": [],
+            }
+        ],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    semantic_provider = _SingleCandidateSemanticProvider()
+    diagnostics = []
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=semantic_provider,
+        semantic_diagnostic_sink=diagnostics.append,
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-n-preacceptance",
+        request_ref="req-d10-n-preacceptance",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.accepted is True
+    assert outcome.clarification_required is False
+    assert outcome.status == FiniteAcceptanceStatus.ACCEPTED
+    assert runtime.accepted_contract is not None
+    assert runtime.ledger is not None
+    assert {
+        item.capability_key
+        for item in runtime.ledger.active_user_must
+    } == {
+        ManagerCapabilityKey.PERFORMANCE,
+        ManagerCapabilityKey.ROOT_CAUSE,
+    }
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+
+    root_receipts = [
+        item
+        for item in diagnostics
+        if item.get("owner_obligation_id") == "U_ROOT"
+    ]
+    assert [item["discovery_pass"] for item in root_receipts] == [
+        "pass1",
+        "current_turn_applicability",
+    ]
+    assert root_receipts[0]["selection"]["status"] == "RETRIEVAL_MISS"
+    assert root_receipts[1]["selection"]["status"] == "BOUND"
+    assert root_receipts[1]["candidate_count"] == 1
