@@ -20,6 +20,7 @@ from app.v2.manager_models import (
     ObligationOrigin,
     ObligationPolarity,
     ObligationPriority,
+    SemanticBindingRef,
     SemanticResolutionReceipt,
 )
 from app.v2.manager_preacceptance import (
