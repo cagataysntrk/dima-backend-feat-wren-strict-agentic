@@ -120,6 +120,7 @@ class SyntheticService:
                     "join_type": "MANY_TO_ONE",
                     "models": ["events", "machines"],
                     "condition": "events.machine_id = machines.machine_id",
+                    "certified": "olculdu:saglikli",
                     "fanout_proof": {
                         "relationship": "events_machines",
                         "status": "HEALTHY",
