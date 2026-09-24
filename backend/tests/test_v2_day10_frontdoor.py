@@ -393,3 +393,41 @@ def test_stream_reuses_exactly_one_server_turn_ref_per_request(monkeypatch):
     assert second_record["turn_ref"] == second_record["sink_turn_ref"]
     assert first_record["request_ref"] == second_record["request_ref"]
     assert first_record["turn_ref"] != second_record["turn_ref"]
+
+
+def test_repeated_identical_product_turns_keep_correlation_but_change_turn_identity(monkeypatch):
+    standard = _Standard(_accepted_standard())
+    research = _Research()
+    coordinator = ProductCoordinator(
+        standard_lane=standard,
+        standard_model_role="FAST_LANGUAGE",
+        research_lane=research,
+    )
+
+    contexts = [_context(), _context()]
+    assert contexts[0].request_ref == contexts[1].request_ref
+    assert contexts[0].turn_ref != contexts[1].turn_ref
+    iterator = iter(contexts)
+    monkeypatch.setattr(
+        coordinator,
+        "_bind_context",
+        lambda **_kwargs: next(iterator),
+    )
+
+    first = coordinator.handle(
+        request=object(),
+        body=_body(),
+        principal=object(),
+    )
+    second = coordinator.handle(
+        request=object(),
+        body=_body(),
+        principal=object(),
+    )
+
+    assert first.request_ref == second.request_ref
+    assert first.turn_ref != second.turn_ref
+    assert first.events and second.events
+    assert {item.event_id for item in first.events}.isdisjoint(
+        {item.event_id for item in second.events}
+    )
