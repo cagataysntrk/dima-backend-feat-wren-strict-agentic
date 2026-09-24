@@ -1154,13 +1154,18 @@ def _d10_n_ambiguous_metric_context():
         ),
         cubes=(
             CompactCubeContextV0(
-                canonical_name="ops",
+                canonical_name="sales",
                 measures=(
                     CompactSemanticFieldV0(
                         canonical_name="net_revenue",
                         display="Net Gelir",
                         synonyms=("net gelir", "net geliri", "sapma gelir"),
                     ),
+                ),
+            ),
+            CompactCubeContextV0(
+                canonical_name="production",
+                measures=(
                     CompactSemanticFieldV0(
                         canonical_name="productivity",
                         display="Üretkenlik",
@@ -1174,12 +1179,19 @@ def _d10_n_ambiguous_metric_context():
         "models": [],
         "cubes": [
             {
-                "name": "ops",
-                "measures": ["net_revenue", "productivity"],
+                "name": "sales",
+                "measures": ["net_revenue"],
                 "dimensions": [],
                 "dimension_values": {},
                 "time_dimensions": [],
-            }
+            },
+            {
+                "name": "production",
+                "measures": ["productivity"],
+                "dimensions": [],
+                "dimension_values": {},
+                "time_dimensions": [],
+            },
         ],
         "kpis": [],
         "relationships": [],
