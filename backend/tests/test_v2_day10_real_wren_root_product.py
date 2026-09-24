@@ -170,21 +170,44 @@ class _StandardSemanticProvider:
 
 
 class _CautiousSemanticProvider:
-    """Select one bounded candidate; abstain rather than rank genuine plurality."""
+    """Provider-free stand-in for baseline abstain -> narrowed contextual selection."""
 
     def __init__(self) -> None:
         self.calls = 0
+        self._surface_attempts = {}
 
     def decide(self, requests):
         self.calls += 1
         choices = []
         for request in requests:
+            attempt = self._surface_attempts.get(request.surface, 0) + 1
+            self._surface_attempts[request.surface] = attempt
             if len(request.candidates) == 1:
                 choices.append(
                     SemanticLinkChoice(
                         request_id=request.request_id,
                         decision="SELECT",
                         candidate_id=request.candidates[0].candidate_id,
+                    )
+                )
+                continue
+
+            contextual = next(
+                (
+                    item
+                    for item in request.candidates
+                    if attempt >= 2
+                    and "arıza say" in item.label.casefold()
+                    and "gözlenen bozulma" in request.source_context.casefold()
+                ),
+                None,
+            )
+            if contextual is not None:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="SELECT",
+                        candidate_id=contextual.candidate_id,
                     )
                 )
             else:
