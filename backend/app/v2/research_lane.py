@@ -46,10 +46,10 @@ class ResearchCognition:
     manager_llm: Any
     manager_profile: ModelProfile
     semantic_provider: Any
-    semantic_decomposition_repair_provider: Any
     semantic_profile: ModelProfile
     temporal_provider: Any
     temporal_profile: ModelProfile
+    semantic_decomposition_repair_provider: Any = None
 
 
 @dataclass(frozen=True)
