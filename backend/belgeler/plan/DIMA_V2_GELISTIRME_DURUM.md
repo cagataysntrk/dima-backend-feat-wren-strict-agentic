@@ -10651,3 +10651,351 @@ Day8 live certification       = OPEN
 Day10 FINAL GREEN             = NO
 Day11                        = NOT STARTED
 ```
+
+
+---
+
+## 2026-09-24 — DAY10-G PRE-PAID HARDENING GREEN / PAID STOP
+
+This section supersedes the earlier Day10 paid-gate budget blocker recorded above.
+
+```text
+Day10 product behavior SHA              e46c3a3e28dc14ed78dfc5fd66d48605b41fae98
+latest deterministic run                35957173325 = GREEN
+provider-free Day10                     47 passed
+real-Wren ROOT_CAUSE Product            1 passed
+G16 NS4 provider-free receipt            PASS
+
+paid Product-MVP                        NOT RUN
+Day10 paid calls                         0
+Day8 live root-cause debt                OPEN
+Day10 FINAL                              NO
+Day11                                   NOT AUTHORIZED
+```
+
+### What changed since the earlier paid blocker
+
+The global Manager ceiling remains:
+
+```text
+max_total_manager_turns = 6
+```
+
+The architecture was reduced to genuine cognition rather than increasing the budget.
+
+Canonical lower-bound now:
+
+```text
+PREACCEPTANCE
+1  draft accepted intent
+2  coverage proof
+
+RESEARCH COGNITION
+3  propose result-driven branch
+4  propose hypothesis
+5  propose hypothesis next test
+6  propose explicit Evidence relation
+```
+
+The following no longer require Manager echo turns when their authority is already complete:
+
+```text
+fully-bound DIRECT USER_SEED execution
+fresh-result inspect ceremony
+exactly-one lossless ROOT_CAUSE bootstrap execution
+exactly-one admitted hypothesis next-test execution
+exactly-one admitted adaptive branch execution
+finish declaration after deterministic CompletionGate truth
+```
+
+Receipt from `35957173325`:
+
+```text
+preacceptance model calls               2
+Research Manager cognition              4
+Manager total                           6
+ceiling                                 6
+headroom                                0
+
+deterministic task executions           5
+fresh Evidence disclosures              3
+explicit historical Evidence inspect    0
+redundant fresh inspect turns            0
+redundant execution-control turns        0
+
+structural status
+STRUCTURALLY_ADMISSIBLE_AT_CEILING
+```
+
+No budget field was increased.
+
+### G1 — fresh Product turn authority
+
+Product content identity and authority identity are separated.
+
+`request_ref` remains deterministic correlation/audit identity.
+
+Every Product turn receives a server-owned opaque `turn_ref`.
+
+Authoritative use:
+- Standard `turn_id`,
+- Research `AcceptedTurnContract.turn_id`,
+- current SourceSpan message identity,
+- Research run identity,
+- initial Research lineage seed.
+
+Identical body/session/thread repeated twice therefore creates different turn/run/initial-lineage authority.
+
+Identical payload strings in different tenants likewise cannot collide.
+
+Signed section continuation:
+- new turn_ref,
+- same existing Research lineage,
+- immutable contract version +1.
+
+### G2 — physically shared cross-lane authority
+
+ProductCoordinator owns one `AcceptedAuthorityRegistry`.
+
+That exact registry object is injected/bound into both:
+- StandardLaneEngine,
+- ResearchLaneService.
+
+Cross-family second authority on the same authoritative turn fails closed. This is no longer merely a router convention.
+
+### G3/G11 — model hypothesis prose is not canonical report truth
+
+Internal `HypothesisEntry.statement` remains cognition/audit material.
+
+Canonical `EvidenceLinkedFinding` now also preserves governed semantic_handle_refs.
+
+For hypothesis-backed causal output, `EvidenceLinkedFindingBuilder` deterministically renders user-facing wording from:
+- governed semantic labels,
+- epistemic class,
+- governed Evidence,
+- canonical limitations.
+
+The model's arbitrary hypothesis sentence is not copied into causal report prose.
+
+Attack:
+```text
+model hypothesis includes "%27"
+supporting Evidence does not
+→ internal hypothesis retains "%27"
+→ canonical Finding / ReportDocument does not
+```
+
+No numeric regex or phrase sanitizer exists.
+
+### G4 — deterministic hypothesis status
+
+Admitted governed Evidence relations reconcile lifecycle:
+
+```text
+SUPPORTS only       -> SUPPORTED
+CONTRADICTS only    -> REFUTED
+both                -> INCONCLUSIVE + server-owned mixed-Evidence limitation
+no relation         -> OPEN
+```
+
+The model proposes relation class; it does not own final hypothesis status.
+
+### G5/G10 — ROOT_CAUSE investigation completion
+
+`RootCauseObligationVerifier` is inside the existing root-cause authority family.
+
+ROOT_CAUSE USER_MUST may become VERIFIED only when:
+- governed hypotheses exist,
+- no hypothesis is OPEN,
+- every accounted hypothesis has admitted Evidence relations,
+- those Evidence refs validate against current root lineage,
+- linked next-test ResearchTasks are complete,
+- no relevant root task is pending/running,
+- no failed/blocked/cancelled required root task remains.
+
+The obligation verdict explicitly means:
+the bounded investigation was fulfilled.
+
+It does NOT mean:
+the proposed cause was proven true.
+
+`CONFIRMED_CAUSE` remains unavailable.
+
+Completion remains owned by `CompletionGate`.
+
+### G6/G7 — deterministic scheduling versus cognition
+
+New/extended owner:
+`app/v2/research_scheduler.py`.
+
+Lossless scheduler input:
+```text
+ResearchTask
++ accepted ObligationLedgerItem
++ governed CapabilityBinding
+```
+
+Output uses existing typed Manager tool calls and crosses:
+- ResearchToolContract,
+- permission checks,
+- canonical runtime budgets,
+- ResearchTask lifecycle,
+- cancel commit_guard,
+- QueryContract,
+- Evidence lineage.
+
+No raw-language interpretation is permitted.
+
+Current deterministic executions:
+- accepted fully-bound DIRECT USER_SEED,
+- exactly-one lossless ROOT_CAUSE bootstrap,
+- exactly-one admitted hypothesis next test,
+- exactly-one admitted adaptive branch.
+
+Ambiguous/non-lossless work remains cognition or fail-closed; scheduler does not choose semantics.
+
+Fresh Evidence rule:
+```text
+fresh VERIFIED bounded result included in successful Manager cognition packet
+-> may be marked inspected after provider returns successfully
+```
+
+Provider failure:
+```text
+-> not inspected
+```
+
+Older Evidence whose payload is not the current disclosed delta still needs explicit inspect.
+
+Cancellation attack:
+the deterministic scheduler retains the existing ResearchTask commit_guard.
+A query attempt may be metered, but cancellation before Evidence commit leaves:
+```text
+task = cancelled
+Evidence commit = 0
+```
+
+### G8 — correct phase accounting
+
+Both successful preacceptance calls are now explicitly:
+
+```text
+phase="preacceptance"
+```
+
+The real-Wren root Product proof observes:
+```text
+preacceptance_turns     = 2
+research_manager_turns  = 3
+manager_turns           = 5
+```
+
+No accounting trick changes the total.
+
+### G15 — one real-Wren root Product micro-gate
+
+The single gated case proves:
+
+```text
+ProductCoordinator
+-> Standard RESEARCH_REQUIRED
+-> Research acceptance
+-> deterministic root bootstrap
+-> real Wren
+-> QueryContract
+-> VERIFIED Evidence
+-> hypothesis
+-> governed next test
+-> follow-up real Wren Evidence
+-> explicit Evidence relation
+-> hypothesis status reconciliation
+-> RootCauseObligationVerifier
+-> CompletionGate
+-> canonical Finding
+-> deterministic report
+```
+
+Expected epistemic ceiling remains:
+```text
+CANDIDATE_CAUSE possible
+CONFIRMED_CAUSE = 0
+```
+
+Only one root real-Wren micro-case is in the Day10 gate.
+
+### G17 — integrated paid harness prepared, not executed
+
+Prepared:
+- `lab/v2_day10_product_mvp_live.py`
+- `.github/workflows/v2-day10-product-mvp-paid-once.yml`
+- `tests/test_v2_day10_paid_harness_contract.py`
+
+The workflow:
+- is `workflow_dispatch` only;
+- has one job / no matrix;
+- requires explicit `CANONICAL_NS4`;
+- requires explicit `DAY10_PAID_ONCE`;
+- rejects call ceilings outside `1..20`;
+- runs deterministic preflight before provider access;
+- permits one initial Product turn and, only after initial GREEN, one signed section continuation;
+- contains no third Product turn.
+
+Hard role ceilings across those maximum two turns:
+
+```text
+FAST_LANGUAGE         2  existing sealed fast policy
+RESEARCH_MANAGER     12  Sol
+SEMANTIC_LINKER       3  Luna
+TEMPORAL_NORMALIZER   1  Sol
+REPORT_NARRATOR       2  Sol
+GLOBAL               20
+```
+
+The harness records actual calls by role, Wren query counts, tool/Evidence events and:
+- first_status_ms,
+- first_verified_evidence_ms,
+- max_progress_silence_ms,
+- report_ready_ms,
+- total_ms.
+
+One run remains one observed sample, never a p95 claim.
+
+It cannot declare Day8 root debt exercised merely from report presence.
+The initial integrated receipt must include:
+- hypothesis registration,
+- admitted/executed next test,
+- new VERIFIED Evidence,
+- explicit Evidence relation,
+- reconciled ROOT_CAUSE obligation,
+- canonical CANDIDATE_CAUSE Finding.
+
+### G12/G13 carry-forward
+
+Metabase upstream pattern reference was refreshed at:
+`fa7362a1e4792c2e83faffc11fba7f36c2dd49d4`.
+
+Adopted principles only:
+- completed tool result becomes next-step memory;
+- new turn/message identity is UUID-like, not content-derived;
+- stale parent/retry advancement fails closed;
+- deterministic terminal state may end a loop without an extra model FINISH turn.
+
+No Metabase code/runtime was copied.
+
+Day10 persistence/concurrency boundary remains:
+```text
+same-process Product MVP only
+multi-process resume unsupported
+restart destroys continuation registry
+same-lineage concurrent CAS/locking = Day14 debt
+```
+
+### Current STOP
+
+D10-G exit criteria are satisfied deterministically and the future paid gate is structurally admissible at the current six-turn ceiling.
+
+This is NOT Day10 FINAL GREEN.
+
+Do not dispatch the paid workflow without supervisor review.
+Do not close Day8 live debt before that integrated run genuinely exercises the root chain.
+Do not start Day11 / DEV80 / Validation50 / Hidden50.
