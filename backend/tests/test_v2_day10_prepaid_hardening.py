@@ -30,6 +30,7 @@ from app.v2.manager_models import (
     CandidateObligation,
 )
 from app.v2.manager_runtime import ManagerRuntime
+from app.v2.manager_loop import ResearchManagerLoop
 from app.v2.models import (
     BoundedSemanticContextV0,
     ContextVersionV0,
@@ -584,3 +585,160 @@ def test_nonlossless_task_binding_mismatch_never_auto_compiles():
             obligation=obligation,
             binding=binding,
         )
+
+
+class _InspectionExecutor:
+    def __init__(self, store):
+        self.evidence_store = store
+
+    def execute(self, call, validated_args, runtime):
+        if call.name.value == "inspect_evidence":
+            runtime.mark_evidence_inspected(validated_args.evidence_ref)
+            return self.evidence_store.get(validated_args.evidence_ref)
+        if call.name.value == "request_clarification":
+            return validated_args
+        raise AssertionError(f"unexpected tool: {call.name.value}")
+
+
+def _inspection_runtime(*, evidence_refs, latest_ref):
+    runtime = ManagerRuntime(
+        request_ref="inspection-correlation",
+        turn_ref="turn_inspection",
+    )
+    ledger = UserObligationLedger(
+        lineage_id="atl-inspection",
+        version=1,
+        items=(
+            ObligationLedgerItem(
+                obligation_id="U1",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.IN_PROGRESS,
+                source_refs=("src_" + "1" * 24,),
+                introduced_in_version=1,
+            ),
+        ),
+    )
+    runtime._ledger = ledger
+    runtime._accepted_contract = AcceptedTurnContract(
+        contract_id="atc-inspection",
+        lineage_id="atl-inspection",
+        version=1,
+        turn_id="turn_inspection",
+        request_ref="inspection-correlation",
+        source_message_hash="a" * 64,
+        accepted_attempt_id="a1",
+        model_role="RESEARCH_MANAGER",
+        obligation_ids=("U1",),
+        context_version="ctx-inspection",
+        accepted_at_iso="2026-09-24T00:00:00+00:00",
+    )
+    runtime._snapshot = ManagerRunSnapshot(
+        run_id=runtime.snapshot.run_id,
+        state=ManagerState.INVESTIGATING,
+        accepted_contract_id="atc-inspection",
+        lineage_id="atl-inspection",
+        evidence_refs=tuple(evidence_refs),
+        inspected_evidence_refs=(),
+        latest_evidence_ref=latest_ref,
+    )
+    store = EvidenceStore()
+    for ref in evidence_refs:
+        store.put(
+            EvidenceArtifact(
+                artifact_id=ref,
+                task_id=f"task:{ref}",
+                obligation_ids=("U1",),
+                query_contract_refs=(f"QC:{ref}",),
+                evidence_kind="standard_analytics",
+                verified=True,
+                payload={
+                    "query_count": 1,
+                    "executions": (
+                        {
+                            "execution_id": f"exec:{ref}",
+                            "role": "primary",
+                            "columns": ("metric",),
+                            "row_count": 1,
+                            "rows": ({"metric": 1.0},),
+                        },
+                    ),
+                },
+            )
+        )
+    return runtime, store
+
+
+def test_fresh_evidence_provider_failure_does_not_record_inspection():
+    runtime, store = _inspection_runtime(
+        evidence_refs=("E_FRESH",),
+        latest_ref="E_FRESH",
+    )
+
+    class FailingLLM:
+        def structured_json(self, *args, **kwargs):
+            raise RuntimeError("provider failed before cognition receipt")
+
+    outcome = ResearchManagerLoop(
+        llm=FailingLLM(),
+        source_spans=SourceSpanRegistry(),
+    ).run(
+        question="incele",
+        message_id="turn_inspection",
+        request_ref="inspection-correlation",
+        runtime=runtime,
+        executor=_InspectionExecutor(store),
+    )
+
+    assert runtime.snapshot.inspected_evidence_refs == ()
+    assert any(item.get("kind") == "model_error" for item in outcome.observations)
+
+
+def test_old_opaque_evidence_requires_explicit_inspection_while_fresh_delta_auto_discloses():
+    runtime, store = _inspection_runtime(
+        evidence_refs=("E_OLD", "E_FRESH"),
+        latest_ref="E_FRESH",
+    )
+
+    class InspectOldLLM:
+        def __init__(self):
+            self.calls = 0
+
+        def structured_json(self, system, user, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return {
+                    "action": "inspect_evidence",
+                    "evidence_ref": "E_OLD",
+                }
+            return {
+                "action": "request_clarification",
+                "obligation_ids": ["U1"],
+                "clarification_reason": "test stop",
+            }
+
+    llm = InspectOldLLM()
+    outcome = ResearchManagerLoop(
+        llm=llm,
+        source_spans=SourceSpanRegistry(),
+    ).run(
+        question="incele",
+        message_id="turn_inspection",
+        request_ref="inspection-correlation",
+        runtime=runtime,
+        executor=_InspectionExecutor(store),
+    )
+
+    assert set(runtime.snapshot.inspected_evidence_refs) == {"E_FRESH", "E_OLD"}
+    assert any(
+        item.get("kind") == "fresh_evidence_disclosed"
+        and item.get("evidence_ref") == "E_FRESH"
+        for item in outcome.observations
+    )
+    assert any(
+        item.get("kind") == "tool"
+        and item.get("tool") == "inspect_evidence"
+        for item in outcome.observations
+    )
