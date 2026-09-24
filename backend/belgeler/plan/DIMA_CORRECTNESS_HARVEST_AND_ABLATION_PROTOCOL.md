@@ -1608,3 +1608,181 @@ Day11                       NOT AUTHORIZED
 
 Supervisor decision required before implementing the bounded preacceptance-revision owner described
 above, because the D10-O two-measurement TRUE STOP boundary has been reached.
+
+
+---
+
+## D10-P TRUE STOP HARVEST — 2026-09-24
+
+D10-P implemented the bounded semantic-decomposition repair under the existing
+`SEMANTIC_LINKER / GPT-5.6 Luna` role with strict schema
+`dima_semantic_decomposition_repair_v1`.
+
+Permanent harvest refinements:
+
+**H-126 — MUST_PORT**  
+A material required-kind gap caused by semantic decomposition should first use the cheapest
+bounded semantic cognition capable of repairing source ownership; a full Manager redraft is not
+justified while semantic repair can preserve the accepted Manager-turn ceiling.
+
+**H-127 — MUST_PORT**  
+Semantic decomposition repair may select only already-governed exact current-message
+`USER_SOURCE` concepts. It may never select catalog candidates or semantic handles directly.
+
+**H-128 — MUST_PORT**  
+Reusing semantic truth as repair context is not reusing semantic authority. The target obligation
+must receive a fresh `SemanticBindingGate` handle with its own `parent_obligation_id` and a fresh
+explicit source→handle `SemanticResolutionReceipt`.
+
+**H-129 — MUST_PORT**  
+An applicability candidate set and an identity-repair source set are different objects:
+applicability answers “what could execute”; source repair answers “what did this user mean”.
+
+**H-130 — SHOULD_PORT**  
+Expensive full-plan cognition repair should be attempted only after narrower semantic-role repair
+is proven insufficient under the release budget.
+
+### Deterministic / real-Wren certification before final paid attempt
+
+```text
+latest semantic Product behavior
+c4f25b2346b451f08b7892465abccc3a62adb7d2
+
+Day10  36052309001 = GREEN
+Day8   36052317079 = GREEN
+Day7   36052244024 = GREEN
+```
+
+The Day10 gate included:
+- D10-P semantic repair attacks,
+- presentation acceptance algebra,
+- real-Wren multi-metric relationship regression,
+- real-Wren Product/root-cause micro-gate,
+- G16 with Manager total ceiling preserved at 6 and CONFIRMED_CAUSE=0.
+
+### D10-P paid history
+
+```text
+attempt 1
+run                       36050427414
+result                    RED
+provider calls            7
+first wrong transition    CONTRACT/ARCHITECTURE
+owner                     CapabilityBindingValidator
+issue                     PRESENTATION/REPORT was rejected despite carrying no
+                          analytical semantic binding
+
+generic fix Product SHA   3cac02d25072dbedffe6e44e76c76aff41e865c2
+```
+
+The presentation fix admits presentation-only deliverables with zero analytical semantic bindings,
+while ordinary forbidden-kind/parameter validation still rejects analytical authority attached to
+those presentation obligations.
+
+```text
+attempt 2
+run                       36051494562
+result                    RED
+provider calls            6
+first wrong transition    CONTRACT/ARCHITECTURE
+owner                     governed RELATIONSHIP execution shape
+issue                     several accepted focus metrics + one governed dimension reached
+                          a one-metric CrossDomainJoinFact primitive as one tuple
+```
+
+Generic fix Product SHA:
+
+`c4f25b2346b451f08b7892465abccc3a62adb7d2`
+
+The fix preserves `CrossDomainJoinGate` semantics:
+- validate each governed metric × counterpart-dimension pair independently;
+- require every pair to ALLOW;
+- only then materialize one Wren analytics execution over all already-selected metrics;
+- never choose an arbitrary metric winner.
+
+Real-Wren regression proves two governed maintenance metrics against one governed relationship-derived
+dimension produce one verified relationship Evidence path only after both pair gates pass.
+
+```text
+attempt 3
+run                       36052945833
+result                    RED
+provider calls            5
+classification            MODEL_COGNITION
+Product                   RESEARCH / CLARIFY
+Wren query/dry-plan/cube  0 / 0 / 0
+AcceptedTurnContract      NONE
+UOL                       NONE
+```
+
+Attempt 3 exact repair frontier:
+
+```text
+material gaps before repair
+BREAKDOWN  missing metric
+ROOT_CAUSE missing metric
+
+available exact current-message governed metric source tokens
+s1
+s2
+
+repair BREAKDOWN
+SELECT_SOURCES [s1, s2]
+
+repair ROOT_CAUSE
+ABSTAIN / AMBIGUOUS_SCOPE
+
+material gaps after repair
+ROOT_CAUSE missing metric only
+
+deterministic result
+CLARIFICATION_REQUIRED
+```
+
+This final ABSTAIN is valid fail-closed behavior. No second repair batch, no fuzzy/nearest metric,
+no arbitrary source, and no forced selection are authorized.
+
+Authorized D10-P envelope receipt:
+
+```text
+authorized paid dispatches   3 / 3   TRUE STOP
+authorized provider calls    18 / 45
+```
+
+### Invalid post-STOP cleanup-trigger run
+
+An operational cleanup mistake left the temporary marker-path push trigger active while deleting
+the marker. That deletion unintentionally started:
+
+```text
+run                         36053319641
+classification              INVALID / UNAUTHORIZED POST-TRUE-STOP
+provider calls              6
+release-evidence authority  NONE
+```
+
+It is not used to justify any Product or architecture decision. Actual provider calls incurred
+during the D10-P period are therefore 24 (=18 authorized +6 invalid cleanup run).
+
+The paid workflow was subsequently hard-restored from the known clean pre-bridge blob
+`f9ddebd74f8e8349ef6961eebf1d69f2f71acffb`, and the temporary marker is absent.
+
+### Current release boundary
+
+```text
+Day8 live debt    OPEN
+Day8 FINAL        NOT SEALED
+Day10 FINAL       OPEN / NOT SEALED
+Day11             NOT AUTHORIZED
+
+first unresolved P0
+MODEL_COGNITION:
+bounded semantic-decomposition repair safely ABSTAINS for the ROOT_CAUSE metric scope
+while explicit current-message governed metrics exist.
+
+D10-P paid authority
+CONSUMED / TRUE STOP
+```
+
+Do not erase the three authorized REDs or the invalid cleanup-trigger receipt. Do not perform
+another paid run or Product fix until a new supervisor authority explicitly reopens development.
