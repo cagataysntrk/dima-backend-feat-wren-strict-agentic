@@ -139,6 +139,7 @@ def main() -> int:
         "model_identifier": args.model_identifier,
         "live_attempt_id": args.live_attempt_id,
         "failure_owner": "bootstrap",
+        "completed_cases": [],
     }
 
     try:
@@ -213,6 +214,19 @@ def main() -> int:
                         "case_id": case_id,
                         "question": question,
                         "failure_owner": "native-metabot-invoke",
+                        "native_query_id": None,
+                        "native_tool_call_count": None,
+                        "exact_pmbql_fingerprint": None,
+                        "exact_serialized_pmbql": None,
+                        "breakouts": [],
+                        "order_bys": [],
+                        "limit": None,
+                        "temporal_predicates": [],
+                        "metric_references": [],
+                        "trust_error_code": None,
+                        "trust_error_detail": None,
+                        "engine_runtime_identity": None,
+                        "engine_attestation_state": None,
                     }
                 )
                 security = VerifiedExecutionSecurityFacts(
@@ -295,6 +309,10 @@ def main() -> int:
                             for item in attestation.manifest.native_metric_references
                         ],
                         "engine_runtime_identity": identity.model_dump(mode="json"),
+                        "engine_attestation_state": {
+                            "status": "ATTESTED",
+                            "attestation_id": attestation.manifest.attestation_id,
+                        },
                     }
                 )
                 security = security.model_copy(
@@ -476,6 +494,7 @@ def main() -> int:
                 )
                 if tuple(reports[-1]["counts"].values()) != (1, 1, 1, 1, 1, 1, 1, 1):
                     raise RuntimeError(f"{case_id}: cardinality failure")
+                state["completed_cases"].append(reports[-1])
 
         report = {
             "schema_version": "p13d_cohesive_live_v1",
