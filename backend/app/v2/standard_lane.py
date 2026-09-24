@@ -33,6 +33,7 @@ from app.v2.manager_models import (
     ObligationOrigin,
     ObligationPolarity,
     ObligationPriority,
+    RepresentabilityDecision,
     SemanticBindingRef,
     StandardProjection,
 )
@@ -40,6 +41,7 @@ from app.v2.manager_policy import ManagerCapabilityLane, ManagerCapabilityRegist
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
 from app.v2.manager_tools import ResolveSemanticsArgs
 from app.v2.models import BoundedSemanticContextV0, ConversationStateV2, FrozenModel
+from app.v2.representability import RepresentabilityGate
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import SemanticCandidateDecisionProvider
 from app.v2.source_spans import SourceSpanRegistry
@@ -53,7 +55,11 @@ from app.v2.standard_builder import (
     StandardBuilderState,
     StandardWorkMode,
 )
-from app.v2.standard_coverage import StandardCoverageVeto
+from app.v2.standard_coverage import (
+    StandardCoverageAudit,
+    StandardCoverageIssueKind,
+    StandardCoverageVeto,
+)
 from app.v2.standard_execution import (
     StandardExecutionResult,
     WrenStandardExecutionAdapter,
@@ -239,6 +245,20 @@ class StandardLaneEngine:
     @property
     def authority_registry(self) -> AcceptedAuthorityRegistry:
         return self._authorities
+
+    @staticmethod
+    def _coverage_requires_research(audit: StandardCoverageAudit) -> bool:
+        return any(
+            issue.kind == StandardCoverageIssueKind.RESEARCH_NEED_OMITTED
+            for issue in audit.issues
+        )
+
+    @staticmethod
+    def _coverage_reasons(audit: StandardCoverageAudit) -> tuple[str, ...]:
+        return tuple(
+            f"{issue.kind.value}: {issue.note}"
+            for issue in audit.issues
+        )
 
     def bind_authority_registry(
         self,
@@ -509,6 +529,7 @@ class StandardLaneEngine:
             tenant_binding=tenant_binding,
             context_version=semantic_context.context_version.version,
         )
+        representability = RepresentabilityGate(self._capabilities)
         coverage = StandardCoverageVeto(
             structured=self._coverage_structured,
             source_spans=source_spans,
@@ -526,6 +547,14 @@ class StandardLaneEngine:
                     revision_feedback=revision_feedback,
                 )
             except Exception as exc:
+                if attempt < self._max_draft_attempts:
+                    revision_feedback = {
+                        "kind": "DRAFT_CONTRACT_REJECTED",
+                        "reasons": [
+                            "typed response did not satisfy StandardIntentDraft",
+                        ],
+                    }
+                    continue
                 return StandardLaneOutcome(
                     status=StandardLaneStatus.FAILED,
                     reasons=(f"standard intent draft failed: {type(exc).__name__}: {exc}",),
@@ -550,16 +579,6 @@ class StandardLaneEngine:
                     attempts=attempt,
                 )
 
-            if draft.control_requests:
-                return StandardLaneOutcome(
-                    status=StandardLaneStatus.CLARIFICATION_REQUIRED,
-                    reasons=(
-                        "standard fresh-turn SI path does not convert conversation control "
-                        "requests into business authority",
-                    ),
-                    attempts=attempt,
-                )
-
             try:
                 obligations, material_gaps = self._ground(
                     draft=draft,
@@ -574,12 +593,110 @@ class StandardLaneEngine:
                     attempts=attempt,
                 )
 
+            def coverage_guard() -> StandardCoverageAudit | StandardLaneOutcome:
+                try:
+                    return coverage.audit(
+                        question=question,
+                        obligations=obligations,
+                        source_message_hash=source_hash,
+                    )
+                except Exception as exc:
+                    return StandardLaneOutcome(
+                        status=StandardLaneStatus.FAILED,
+                        reasons=(
+                            f"standard coverage failed: {type(exc).__name__}: {exc}",
+                        ),
+                        obligations=obligations,
+                        attempts=attempt,
+                    )
+
+            # Conversation/control semantics remain non-Research by default.  The only
+            # allowed bridge is the existing typed omission veto over the raw message.
+            if draft.control_requests:
+                audit = coverage_guard()
+                if isinstance(audit, StandardLaneOutcome):
+                    return audit
+                if self._coverage_requires_research(audit):
+                    return StandardLaneOutcome(
+                        status=StandardLaneStatus.RESEARCH_REQUIRED,
+                        reasons=self._coverage_reasons(audit),
+                        attempts=attempt,
+                        coverage_status=audit.status,
+                    )
+                return StandardLaneOutcome(
+                    status=StandardLaneStatus.CLARIFICATION_REQUIRED,
+                    reasons=(
+                        "standard fresh-turn SI path does not convert conversation control "
+                        "requests into business authority",
+                    ),
+                    obligations=obligations,
+                    attempts=attempt,
+                    coverage_status=audit.status,
+                )
+
+            # A genuine semantic gap remains a clarification unless the independent
+            # omission guard proves that the Standard view dropped material Research work.
             if material_gaps:
+                audit = coverage_guard()
+                if isinstance(audit, StandardLaneOutcome):
+                    return audit
+                if self._coverage_requires_research(audit):
+                    return StandardLaneOutcome(
+                        status=StandardLaneStatus.RESEARCH_REQUIRED,
+                        reasons=self._coverage_reasons(audit),
+                        attempts=attempt,
+                        coverage_status=audit.status,
+                    )
                 return StandardLaneOutcome(
                     status=StandardLaneStatus.CLARIFICATION_REQUIRED,
                     reasons=material_gaps,
                     obligations=obligations,
                     attempts=attempt,
+                    coverage_status=audit.status,
+                )
+
+            # Reuse the existing deterministic representability owner before asking the
+            # omission guard to spend another cognition call. Correctly typed Research
+            # authority never needs a coverage call merely to discover its lane.
+            preliminary = representability.decide_bound(
+                obligations=obligations,
+                projection=None,
+            )
+            if preliminary.decision == RepresentabilityDecision.RESEARCH_REQUIRED:
+                return StandardLaneOutcome(
+                    status=StandardLaneStatus.RESEARCH_REQUIRED,
+                    reasons=preliminary.reasons,
+                    attempts=attempt,
+                )
+
+            # Presentation-only / otherwise non-executable Standard candidates must still
+            # allow the omission guard to detect independently omitted Research intent.
+            if preliminary.decision in {
+                RepresentabilityDecision.CLARIFICATION_REQUIRED,
+                RepresentabilityDecision.UNSUPPORTED,
+            }:
+                audit = coverage_guard()
+                if isinstance(audit, StandardLaneOutcome):
+                    return audit
+                if self._coverage_requires_research(audit):
+                    return StandardLaneOutcome(
+                        status=StandardLaneStatus.RESEARCH_REQUIRED,
+                        reasons=self._coverage_reasons(audit),
+                        attempts=attempt,
+                        coverage_status=audit.status,
+                    )
+                terminal_status = (
+                    StandardLaneStatus.CLARIFICATION_REQUIRED
+                    if preliminary.decision
+                    == RepresentabilityDecision.CLARIFICATION_REQUIRED
+                    else StandardLaneStatus.UNSUPPORTED
+                )
+                return StandardLaneOutcome(
+                    status=terminal_status,
+                    reasons=preliminary.reasons,
+                    obligations=obligations,
+                    attempts=attempt,
+                    coverage_status=audit.status,
                 )
 
             builder_outcome = builder.submit(obligations)
@@ -591,18 +708,32 @@ class StandardLaneEngine:
                     reasons=builder_outcome.reasons,
                     attempts=attempt,
                 )
-            if builder_outcome.state == StandardBuilderState.CLARIFICATION_REQUIRED:
+            if builder_outcome.state in {
+                StandardBuilderState.CLARIFICATION_REQUIRED,
+                StandardBuilderState.UNSUPPORTED,
+            }:
+                audit = coverage_guard()
+                if isinstance(audit, StandardLaneOutcome):
+                    return audit
+                if self._coverage_requires_research(audit):
+                    return StandardLaneOutcome(
+                        status=StandardLaneStatus.RESEARCH_REQUIRED,
+                        reasons=self._coverage_reasons(audit),
+                        attempts=attempt,
+                        coverage_status=audit.status,
+                    )
+                terminal_status = (
+                    StandardLaneStatus.CLARIFICATION_REQUIRED
+                    if builder_outcome.state
+                    == StandardBuilderState.CLARIFICATION_REQUIRED
+                    else StandardLaneStatus.UNSUPPORTED
+                )
                 return StandardLaneOutcome(
-                    status=StandardLaneStatus.CLARIFICATION_REQUIRED,
+                    status=terminal_status,
                     reasons=builder_outcome.reasons,
                     obligations=obligations,
                     attempts=attempt,
-                )
-            if builder_outcome.state == StandardBuilderState.UNSUPPORTED:
-                return StandardLaneOutcome(
-                    status=StandardLaneStatus.UNSUPPORTED,
-                    reasons=builder_outcome.reasons,
-                    attempts=attempt,
+                    coverage_status=audit.status,
                 )
             if builder_outcome.state == StandardBuilderState.NEEDS_REPAIR:
                 if attempt < self._max_draft_attempts:
@@ -629,29 +760,25 @@ class StandardLaneEngine:
             assert builder_outcome.projection is not None
             assert builder_outcome.work_mode is not None
 
-            try:
-                audit = coverage.audit(
-                    question=question,
-                    obligations=obligations,
-                    source_message_hash=source_hash,
-                )
-            except Exception as exc:
+            audit = coverage_guard()
+            if isinstance(audit, StandardLaneOutcome):
+                return audit
+
+            if self._coverage_requires_research(audit):
+                # Coverage is veto-only: it creates no Research authority and exports no
+                # Standard semantic/projection state. ProductCoordinator owns the raw
+                # Standard -> Research transition.
                 return StandardLaneOutcome(
-                    status=StandardLaneStatus.FAILED,
-                    reasons=(f"standard coverage failed: {type(exc).__name__}: {exc}",),
-                    obligations=obligations,
-                    projection=builder_outcome.projection,
-                    work_mode=builder_outcome.work_mode,
+                    status=StandardLaneStatus.RESEARCH_REQUIRED,
+                    reasons=self._coverage_reasons(audit),
                     attempts=attempt,
+                    coverage_status=audit.status,
                 )
 
             if audit.status != "PASS":
                 return StandardLaneOutcome(
                     status=StandardLaneStatus.COGNITION_REJECTED,
-                    reasons=tuple(
-                        f"{issue.kind.value}: {issue.note}"
-                        for issue in audit.issues
-                    ),
+                    reasons=self._coverage_reasons(audit),
                     obligations=obligations,
                     projection=builder_outcome.projection,
                     work_mode=builder_outcome.work_mode,
