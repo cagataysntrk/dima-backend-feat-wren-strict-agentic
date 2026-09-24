@@ -2664,3 +2664,85 @@ The sealed historical roadmap is intentionally not rehashed/resealed by DMP-DEC-
 forward plan is now
 `backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md`.
 Governance retains the original sealed-roadmap blob for audit history.
+
+
+---
+
+## DMP-DEC-0045 — P14 native Research foundation vertical is GREEN
+
+Date: 2026-09-24
+
+Authority:
+DMP-DEC-0044 authorized P14 Native Research and explicitly closed P13 as the product-development loop.
+
+Implementation/proof checkpoint:
+
+\`\`\`text
+foundation implementation       = a8c7b5d2b922e85ff046c6c7ce1bfce92aa13552
+integrated trust proof          = bab26fe51978929ace44f7703543f78099c692ce
+provider-free seal              = 36052728145 SUCCESS
+governance                      = 36052727756 SUCCESS
+P14 focused tests               = 6 passed
+P13D/P10/P5 regressions         = 69 passed
+engine SHA                      = cbe313af9ac2d5960f662068e433d328d896fb06
+new engine build                = 0
+Luna / Sol / C1 calls           = 0 / 0 / 0
+native Metabot/Metabase changes = 0
+\`\`\`
+
+The first coherent P14 vertical now provides durable/versioned Research state:
+
+\`\`\`text
+ResearchSession
+ResearchObligation
+Hypothesis
+CounterEvidenceRef
+EvidenceRef
+ResearchBudget
+StoppingState
+NativeMetabotConversationRef
+ResearchLimitation
+\`\`\`
+
+ResearchManager owns investigation obligations, evidence admission, hypothesis/counter-evidence
+epistemics, budget and stopping. It does not own SQL/MBQL generation, parsing, ranking, comparison,
+temporal planning, query repair or a second analytics state machine.
+
+The provider-free proof exercises the existing product authority chain rather than faking a second
+Dima execution authority:
+
+\`\`\`text
+accepted Research obligation
+→ native Metabot delegation
+→ existing P13 NativeStandardTrustOrchestrator authorization
+→ existing exact-occurrence execution request/transport
+→ existing P10 ExecutionAccessSnapshot
+→ existing P5 DimaQueryReceipt seal
+→ VERIFIED EvidenceArtifact
+→ Research obligation / hypothesis state
+\`\`\`
+
+The native HTTP boundary alone is mocked in the provider-free test. P13 authorization, P10 access
+identity, P5 receipt sealing and Dima Evidence/Research admission are the production owners under
+test.
+
+Evidence admission is fail-closed:
+- only VERIFIED Evidence is eligible;
+- the exact P5 receipt must be linked;
+- authority, obligation, tenant, principal and semantic-context identity must match;
+- material execution identity fields must be present;
+- counter-evidence remains explicit and cannot silently promote a hypothesis.
+
+The carried P13D comparison compatibility gap remains unchanged and is not reclassified GREEN.
+A matching real P14 failure may be recorded as an obligation-scoped Research limitation while
+independent valid obligations continue. No dima.7, codec widening or native query rewrite was
+introduced.
+
+status:
+\`SEALED / P14 FIRST COHERENT RESEARCH FOUNDATION VERTICAL GREEN / NATIVE SUBSTRATE UNCHANGED\`.
+
+Next coherent P14 slice:
+wire the sealed Research aggregate into the product Research/Ask orchestration boundary with durable
+session resume and real native conversation/result correlation, while continuing to reuse the same
+P13 exact-occurrence, P10, P5 and Evidence authorities. No model-backed evaluation is required until
+that result would change an architectural/product decision.

@@ -2912,3 +2912,68 @@ implement the P14 durable Research foundation and native Metabot delegation usin
 exact-occurrence execution, P10, P5 and Evidence contracts. Initial P14 foundation uses zero new
 engine builds and zero model calls.
 
+
+
+---
+
+## 2026-09-24 — P14 NATIVE RESEARCH FOUNDATION VERTICAL GREEN — DMP-DEC-0045
+
+P14 has started under DMP-DEC-0044. The first coherent Research foundation vertical is sealed GREEN.
+
+\`\`\`text
+implementation                  = a8c7b5d2b922e85ff046c6c7ce1bfce92aa13552
+integrated exact-occurrence proof = bab26fe51978929ace44f7703543f78099c692ce
+provider-free                   = 36052728145 SUCCESS
+governance                      = 36052727756 SUCCESS
+P14 focused                     = 6 passed
+P13D/P10/P5 regression          = 69 passed
+
+engine                          = cbe313af9ac2d5960f662068e433d328d896fb06
+engine build                    = 0
+model calls                     = 0
+native Metabase/Metabot files   = 0
+duplicate analytics mechanisms  = 0
+\`\`\`
+
+New P14 owner:
+\`backend/app/v3/research.py\`.
+
+It introduces durable/versioned ResearchSession state, obligations, hypotheses, explicit
+counter-evidence, Evidence refs, bounded budget/stopping, native Metabot conversation identity and
+obligation-scoped limitations.
+
+The integrated provider-free proof uses the existing chain:
+
+\`\`\`text
+Research obligation
+→ native Metabot delegation
+→ P13 authorization
+→ exact native occurrence
+→ P10 access identity
+→ P5 QueryReceipt
+→ VERIFIED Evidence
+→ Research state
+\`\`\`
+
+ResearchManager contains no SQL/MBQL generator/parser, comparison/ranking/temporal planner, query
+repairer, second receipt/access authority or Wren/Agent-API/raw-SQL analytical fallback.
+
+P13D period-comparison remains explicit deferred compatibility debt. It was not retried, widened or
+marked GREEN.
+
+Current status:
+
+\`\`\`text
+P13 STANDARD TRUST BASELINE      = SEALED
+P13D BREAKDOWN / RANKING         = LIVE GREEN / VERIFIED
+P13D PERIOD COMPARISON           = DEFERRED COMPATIBILITY GAP / NOT GREEN
+
+P14 NATIVE RESEARCH              = IN PROGRESS
+P14 FOUNDATION VERTICAL          = GREEN / SEALED
+P15                              = NOT STARTED
+\`\`\`
+
+Next coherent P14 work:
+product-level Research/Ask orchestration + durable resume/correlation around this aggregate, reusing
+the same native Metabot and P13/P10/P5/Evidence path. No engine rebuild or paid/model run is needed
+for that integration by default.
