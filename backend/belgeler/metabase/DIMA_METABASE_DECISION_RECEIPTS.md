@@ -2350,3 +2350,66 @@ authorized; a GREEN result requires an immediate supervisor stop.
 
 status:
 `SEALED / P13C BOUNDED IMPLEMENTATION + DIMA.4 CERTIFIED-IMAGE CI AUTHORIZED`.
+
+---
+
+## DMP-DEC-0042 — Product-first native-engine inheritance, corrected Research/Explorations ownership and fast corridor
+
+date: 2026-09-24
+
+Current authority update:
+
+```text
+METABASE + METABOT = primary native analytics engine
+Dima                = business semantic/security/provenance/Evidence/Research/Decision truth
+```
+
+Native capability reuse is the default:
+
+```text
+USE_NATIVE
+→ COMPOSE_NATIVE
+→ WRAP_NATIVE
+→ HOOK_NATIVE
+→ DIMA_OWNS
+```
+
+`DIMA_OWNS` is last. DMP-DEC-0026 `SEMANTIC_NECESSITY_GATE` applies before introducing new
+Dima-owned deterministic cognition/heuristic machinery; it does not require a justification cycle
+before simply using an already-native Metabase capability under the established Dima trust boundary.
+
+Normative consequences:
+- P14 is Native Research integration: ResearchManager owns obligations, hypotheses, counter-evidence,
+  budget/stopping, Evidence synthesis and Decision state; native Metabot/Metabase owns analytical work.
+- P15 is Native Metabase Explorations Integration, not primitive harvest.
+- native variants, top-N-other, temporal patterns, interestingness, stored results, lifecycle,
+  cancel/restart and derived permissions are not ported to Python by default.
+- P23 reuses native lifecycle/job machinery when it satisfies the execution contract; Dima does not
+  create a second generic background analytics runner.
+- moving engine SHA/digest values live in gitlink/runtime-lock/status/receipts, not conceptual
+  architecture prose.
+- P13C GREEN no longer implies a supervisor stop; after one sealed P13C live proof, continue directly
+  to cohesive P13D unless an explicit supervisor-stop condition is crossed.
+
+Fast-CI consequences:
+- old M2 excludes `backend/lab/metabase/p13c/**`;
+- P13C provider-free suite is deliberate `workflow_dispatch`, not every micro-push;
+- expensive runtime/model proofs remain marker/manual boundaries.
+
+Current dima.4 state:
+
+```text
+engine main/certified SHA = cdd117558fea3b0a80f6b89bb872ffb6e9ab175f
+release                   = 0.63.18-dima.4
+certification             = 35951538259 SUCCESS
+certified digest          = sha256:ce8d135163faba74f80c18c8e0a585037be2e6049a7ca74d4f477e655e039a71
+build identity            = github-actions:35951538259:cdd117558fea3b0a80f6b89bb872ffb6e9ab175f
+```
+
+P13C runtime run `35953149626` failed before runtime start at GHCR digest pull with
+`manifest unknown` after successful login. This is classified as registry/package access until
+disproven. It is not negative evidence about P13C semantics, P11, P10, native attestation, Metabot,
+authorization or dataset execution. Model calls and analytical executions for that run are zero.
+
+status:
+`SEALED / PRODUCT-FIRST NATIVE ENGINE INHERITANCE + FAST CORRIDOR ACTIVE / GHCR ACCESS OWNER OPEN`.

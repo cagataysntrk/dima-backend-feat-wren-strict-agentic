@@ -29,8 +29,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_FIZIBILITE_VE_MIMARI_RAPORU.md)" = "9d3df05c286990e3ebfc7edc9f503469981b6ed2"
-          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_UYGULAMA_YOL_HARITASI.md)" = "bca3b643aacd3ed6924053e427d3cc66006d3610"
+          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_FIZIBILITE_VE_MIMARI_RAPORU.md)" = "a29fcabfeba22a7bd684287dafe4d4fc6f74ab82"
+          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_UYGULAMA_YOL_HARITASI.md)" = "32ec18ce5ec0f62df30263e567364d7efb8ce2f2"
+
+      - name: Verify permanent product-first CI economy rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq -- '- "!backend/lab/metabase/p13c/**"' .github/workflows/dima-metabase-m2.yml
+          grep -Fq 'workflow_dispatch:' .github/workflows/dima-metabase-p13c-provider-free.yml
+          ! grep -Eq '^[[:space:]]+push:' .github/workflows/dima-metabase-p13c-provider-free.yml
 
       - name: Verify mandatory governance files
         shell: bash

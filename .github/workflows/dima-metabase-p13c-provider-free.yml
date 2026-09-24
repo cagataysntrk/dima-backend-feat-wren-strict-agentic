@@ -1,23 +1,7 @@
 name: dima-metabase-p13c-provider-free
 
 on:
-  push:
-    branches:
-      - feat/dima-metabase-platform
-    paths:
-      - "backend/app/v3/native_standard/**"
-      - "backend/app/v3/native_execution.py"
-      - "backend/app/v3/security_identity.py"
-      - "backend/app/v3/entity_value_gate.py"
-      - "backend/tests/test_v3_p13c_native_standard.py"
-      - "backend/tests/test_v3_p13b_native_standard.py"
-      - "backend/tests/test_v3_p13_native_trust.py"
-      - "backend/tests/test_v3_p10_security_identity.py"
-      - "backend/tests/test_v3_p11_entity_value_gate.py"
-      - "backend/lab/metabase/p13c/**"
-      - ".github/workflows/dima-metabase-p13c-provider-free.yml"
   workflow_dispatch:
-
 permissions:
   contents: read
 

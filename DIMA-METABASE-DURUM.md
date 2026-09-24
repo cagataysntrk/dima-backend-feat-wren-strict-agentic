@@ -2541,3 +2541,49 @@ C1   = 0
 Current next action:
 bounded dima.4 engine filter-attestation + certified-image CI implementation, then Platform
 gitlink/runtime-lock migration and provider-free P13C proof.
+
+---
+
+## 2026-09-24 — DIMA.4 CERTIFIED / P13C RUNTIME BLOCKED AT GHCR ACCESS ONLY
+
+Exact certified runtime:
+
+```text
+engine main              = cdd117558fea3b0a80f6b89bb872ffb6e9ab175f
+release                  = 0.63.18-dima.4
+certification            = 35951538259 SUCCESS
+certified image          = ghcr.io/upcytech/dima-metabase-engine@sha256:ce8d135163faba74f80c18c8e0a585037be2e6049a7ca74d4f477e655e039a71
+build identity           = github-actions:35951538259:cdd117558fea3b0a80f6b89bb872ffb6e9ab175f
+Platform pinned HEAD     = bb8fb6edd36611ecccfbb18acccc7f2098d44569
+Platform engine gitlink  = cdd117558fea3b0a80f6b89bb872ffb6e9ab175f
+```
+
+The certified-image artifact proves exact digest pull and runtime-identity verification succeeded
+inside engine certification.
+
+Current P13C runtime integration:
+
+```text
+run                      = 35953149626 FAILURE
+failed owner             = GHCR package/repository Actions access
+failed step              = Pull exact certified engine digest
+login                    = SUCCESS
+docker pull              = manifest unknown
+engine started           = NO
+model calls              = 0
+analytical executions    = 0
+```
+
+Therefore the run proves nothing negative about P13C semantic mapping, P11/P10, native textual-filter
+attestation, Metabot cognition, candidate authorization or dataset execution. Do not modify those
+owners for this RED.
+
+Required next boundary action:
+grant the Platform repository GitHub Actions read access to the existing GHCR package (or make the
+package public only if that is the intended owner policy), then rerun the same failed P13C runtime
+boundary. No engine rebuild, new engine revision, PAT, duplicated image, moving tag or alternate
+registry workaround is authorized.
+
+Product-first architecture correction is now normative:
+native Metabase/Metabot capability reuse is default; Dima adds only its differentiated semantic,
+security, provenance, Evidence, Research epistemics and Decision truth.

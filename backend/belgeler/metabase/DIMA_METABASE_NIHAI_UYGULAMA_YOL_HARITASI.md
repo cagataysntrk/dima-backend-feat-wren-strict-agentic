@@ -25,8 +25,12 @@ DIMA PRODUCT
 → TYPED DIMA NATIVE ENGINE BRIDGE
 → PINNED DIMA METABASE ENGINE
    repo: UpcyTech/dima-metabase-engine
-   gitlink: c56b71ab23bf2a2d266bac2fba8d165ac059d613
-   upstream: v0.63.18 / 2ba2485c78d7e00a9a25f82c00fc201da71590c4
+   runtime authority:
+     Platform engine gitlink
+     + certified engine runtime lock
+     + immutable registry digest
+   exact current SHA/digest:
+     living status + decision/release receipt + runtime lock
 → native Metabot / profiles / skills / engine-local state
 → native query construction + repair / MBQL / Query Processor / drivers
 → CUSTOMER DB
@@ -74,7 +78,57 @@ It must not become:
 P13 now means **Production Standard over the Dima Metabase Engine**. The core invariant remains:
 Dima must authorize exactly the material execution artifact that is actually executed and receipted.
 
+## NATIVE ENGINE INHERITANCE RULE — DMP-DEC-0042
+
+```text
+METABASE + METABOT ARE THE PRIMARY NATIVE ANALYTICS ENGINE.
+
+Native capability reuse is the default.
+
+USE_NATIVE
+→ COMPOSE_NATIVE
+→ WRAP_NATIVE
+→ HOOK_NATIVE
+→ DIMA_OWNS
+```
+
+`DIMA_OWNS` is the last resort, not the default. Compatible capability already present in the pinned
+native engine is part of Dima's available analytics substrate even when it is not exposed in product
+UX yet. This includes, where the exact pinned runtime supports the required contract:
+
+- Metabot agent loop, profiles, skills and engine-local state/memory;
+- search, resource discovery, metrics/measures, field values and indexed entities;
+- native query construction/repair, MBQL, Query Processor and drivers;
+- breakouts, comparisons, ranking/top-N and temporal analytical patterns;
+- native Explorations, variants and interestingness;
+- stored results, query lifecycle, cancel/restart and idempotent execution machinery;
+- native permissions/derived permissions and caching;
+- saved questions, collections, dashboards, query builder, visualization and workspace surfaces.
+
+Reuse does **not** transfer Dima truth ownership. Dima remains owner of business semantic authority,
+accepted user obligations, tenant/principal control truth, approved relationships, execution
+authorization, QueryReceipt, Evidence state, finding/hypothesis epistemics, durable Research state and
+Decision state.
+
+DMP-DEC-0026 `SEMANTIC_NECESSITY_GATE` is therefore scoped narrowly:
+
+```text
+before introducing NEW DIMA deterministic cognition / heuristic machinery
+```
+
+It is **not** a prerequisite for using an already-native Metabase/Metabot capability under the
+established Dima trust boundary.
+
+Normative architecture must not hard-code moving engine candidate identities. Exact current engine
+SHA, certification run, registry digest and build identity belong in the Platform gitlink, certified
+runtime lock, living status and release/decision receipts.
+
 ---
+
+## HISTORICAL / SUPERSEDED FOR PRIMARY HOT PATH — P0–P12
+
+The following P0–P12 material is retained as migration, audit and regression history. It is not
+future implementation authority where it conflicts with the current native-engine rule above.
 
 # P0 — Branch, baseline ve source lock
 
@@ -777,58 +831,75 @@ Legacy code migration/history olarak kalabilir; authority olamaz.
 
 ---
 
-# P14 — Research tool adapter
+# P14 — Native Research integration foundation
 
-ResearchManager tools:
+Dima Research / Decision Manager analitik motor değildir. Sahip olduğu state:
 
 ```text
-run_analytics
-compare
-breakdown
-rank
-analyze_relationship
-inspect_evidence
+research obligations
+hypotheses
+counter-evidence
+stopping / budget
+Evidence synthesis
+finding promotion
+decision state
+durable research state
 ```
 
-Manager MBQL/SQL/table-id/Metabase numeric resource-id görmez. Tool request Dima semantic refs + typed analytical contract taşır; adapter substrate IDs ile ilgilenir.
+Analytical work:
 
-Tool output bounded’dır. Conversational path ham büyük result export etmez; aggregate-first ve explicit row budget kullanır.
+```text
+ResearchManager
+→ governed analytical objective + accepted Dima semantic/security context
+→ native Metabot session
+→ full compatible native Metabase analytical capability
+→ attested material executions
+→ Dima QueryReceipts
+→ EvidenceArtifacts
+→ ResearchManager epistemic reasoning / decision synthesis
+```
+
+ResearchManager ham MBQL/SQL/table-id/Metabase numeric resource-id görmez; ancak native agentın güvenli
+biçimde yapabildiği analitik işi altı ayrı Python compare/breakdown/rank aracı olarak yeniden kurmaz.
+Dima adapter'ı yalnız semantic/security/provenance/Evidence sınırını bağlar. Conversational output
+bounded kalır; large extract ayrı governed export/batch capability'dir.
 
 ---
 
-# P15 — Metabase Explorations harvest
+# P15 — Native Metabase Explorations Integration
 
-İncelenecek/reuse edilecek desenler:
-- metric-dimension applicability,
-- deterministic variants,
-- top-N-other,
-- temporal patterns,
-- interestingness,
-- stored results,
-- idempotent runner,
-- cancel/restart,
-- derived permissions.
-
-Her mechanism şu disposition ile sınıflanır:
+Default architecture:
 
 ```text
-DIMA_CORE_NATIVE
-METABASE_RUNTIME_CANDIDATE
-PATTERN_ONLY
-DEFER_PRODUCT
-REJECT
+native Metabase Explorations capability
+→ USE IN PLACE
+→ bind Dima semantic / security / provenance / Evidence boundary
+→ expose through Dima product
 ```
 
-Alınmayacak:
-- Dima semantic authority,
-- Dima UserObligationLedger yerine Metabase thread semantics,
-- interestingness’ın truth/finding/cause authority olması.
+Native engine'de bulunan metric-dimension applicability, variants, top-N-other, temporal patterns,
+interestingness, stored-result machinery, runner, cancel/restart, idempotency and derived permissions
+Python'a port edilmez ve "primitive harvest" gerekçesiyle yeniden yazılmaz.
 
-DMP-DEC-0026:
-deterministic variant/interestingness/planning mekanizması otomatik harvest edilmez. Önce aynı frozen
-problemde Luna baseline + Sol ceiling ile `SEMANTIC_NECESSITY_GATE` çalışır. Yalnız maddi Architecture
-Value Delta kanıtlanan bounded primitive harvest edilir. Harvest edilen primitive cognition owner
-olmaz.
+Dima yalnız farklı ownership katmanını ekler:
+- business semantic authority;
+- accepted user obligation;
+- tenant/principal control truth;
+- approved relationships;
+- execution authorization;
+- QueryReceipt;
+- Evidence state;
+- finding/hypothesis epistemics;
+- durable Research and Decision state.
+
+`Metabase interestingness score != Dima verified finding`.
+Native interestingness/variants analizi önerebilir veya önceliklendirebilir; official finding
+promotion yalnız Dima Evidence/epistemic gates'ten geçer.
+
+DMP-DEC-0026 kapsamı:
+`SEMANTIC_NECESSITY_GATE` yalnız **yeni Dima-owned deterministic cognition/heuristic machinery**
+önerildiğinde gerekir. Zaten native olan bir Metabase capability'sini established trust boundary
+altında kullanmak için "neden harvest edelim?" gate'i çalıştırılmaz.
 
 ---
 
@@ -1013,29 +1084,27 @@ Resume raw promptu yeni semantic authority olarak yeniden parse etmez.
 
 ---
 
-# P23 — Background execution
+# P23 — Background execution / native lifecycle integration
 
-Metabase exploration desenlerinden öğren:
+Default:
 
 ```text
-plan job
-query job
-idempotency key
-terminal state
-retry policy
-cancel
-restart
-orphan cleanup
+USE native Metabase lifecycle / job / cancel / restart / stored-result machinery
 ```
 
-Workers=1 certification önce.
+when the pinned engine already satisfies the required execution contract. Dima must not build a
+second generic background analytics runner merely to mirror native Metabase.
 
-Background execution invariants:
-- missing creator/principal → fail closed,
-- duplicate delivery → idempotent,
-- cancel-after-plan race → cleanup,
-- terminal work yeniden execute edilmez,
-- result persistence transactionally tied to terminal state.
+Dima-owned durable state is limited to cross-system Research/Decision workflow truth: obligations,
+hypotheses, Evidence references, stopping/budget and decision state.
+
+Required invariants remain:
+- missing creator/principal → fail closed;
+- duplicate delivery → one terminal effect;
+- cancel-after-plan race → cleanup;
+- terminal work is not re-executed accidentally;
+- result persistence and Dima Evidence linkage remain auditable;
+- security/lens reauthorization remains Dima-governed where required.
 
 ---
 
@@ -1345,8 +1414,8 @@ M12 tenant/principal/access-lens mapping
 M13 entity values / indexed retrieval / live re-read
 M14 full real Standard path + AcceptedStandardAuthority → Metabase → Evidence
 M15 front-door STANDARD ownership closure behind flag
-M16 Research analytics tools through Dima Analytics Gateway
-M17 deterministic variants / interestingness / cardinality-bounded exploration primitives
+M16 Native Research integration foundation: Dima epistemic state → native Metabot analytical work → receipts/Evidence
+M17 Native Metabase Explorations integration under Dima semantic/trust/Evidence boundaries
 M18 Evidence Plane V2 + current-viewer reauthorization
 M19 Research Manager evidence-aware loop + no-progress/budget
 M20 relationship graph + implicit-FK veto + grain safety
@@ -1354,7 +1423,7 @@ M21 root-cause / HypothesisLedger / epistemic gates
 M22 ReportDocument + ReportClaimGate
 M23 DecisionBrief + recommendation/decision record
 M24 persistence/resume + semantic/resource staleness
-M25 async jobs: idempotency/cancel/restart/principal fail-closed
+M25 native lifecycle/job/cancel/restart integration + Dima cross-system Research/Decision durability
 M26 BI workspace integration feasibility + chosen UX mode
 M27 first real sector pack migration
 M28 automated onboarding / semantic proposal → verify → provision
@@ -1426,7 +1495,7 @@ NEXT ACTION
 - semantic linker ve temporal normalizer ayrı model-role contract’larıdır,
 - LLM_FIRST_COGNITION; deterministic code analytical strategy sahibi olmaz,
 - SEMANTIC_CORE_IS_NOT_ANALYTICAL_PLANNER,
-- yeni deterministic cognition/semantic mechanism önce SEMANTIC_NECESSITY_GATE,
+- yeni Dima-owned deterministic cognition/heuristic mechanism önce SEMANTIC_NECESSITY_GATE; native Metabase capability reuse'ı bu gate'i gerektirmez,
 - Luna default/economic baseline; Sol ceiling/headroom,
 - same frozen data/tools/prompt/context/permissions/oracle model A/B şartı,
 - Luna fail tek başına deterministic mechanism gerekçesi değildir,
@@ -1441,7 +1510,8 @@ NEXT ACTION
 # P40 — Nihai tamamlanma tanımı
 
 ```text
-Dima engine-independent cognition/authority = complete
+Dima semantic/research/evidence/decision authority = complete
+Native Metabot analytical cognition integration = complete
 DimaSemanticSpec = canonical
 Metabase primary analytics substrate = certified
 Wren removed OR explicitly retained for proven semantic gap
