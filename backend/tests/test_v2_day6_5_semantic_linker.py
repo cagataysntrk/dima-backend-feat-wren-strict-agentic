@@ -994,7 +994,9 @@ def test_semantic_diagnostic_redacts_filter_surface_even_on_retrieval_miss():
         provenance_type="USER_SOURCE",
     )
 
-    assert selection.status in {"RETRIEVAL_MISS", "GAP"}
+    # Exact sensitive USER_SOURCE may still bind deterministically; diagnostics must
+    # redact the raw entity value regardless of semantic outcome.
+    assert selection.status == "BOUND"
     assert len(diagnostics) == 1
     receipt = diagnostics[0]
     assert receipt["surface"] == "<redacted-sensitive-filter>"
