@@ -8,6 +8,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
+    ManagerCapabilityRegistry,
+)
 from app.v2.manager_models import (
     ObligationStatus,
     ResearchRunTerminal,
@@ -29,13 +33,39 @@ class CompletionGate:
         ObligationStatus.UNSUPPORTED,
     }
 
+    def __init__(
+        self,
+        *,
+        capabilities: ManagerCapabilityRegistry | None = None,
+    ) -> None:
+        self._capabilities = capabilities or ManagerCapabilityRegistry()
+
+    def _completion_relevant_user_must(
+        self,
+        ledger: UserObligationLedger,
+    ):
+        """Project analytical completion owners without deleting accepted authority.
+
+        PRESENTATION obligations (REPORT/TABLE/CHART/EXPLAIN) remain intact in the
+        accepted ledger. They are deliverables owned by the Product presentation layer
+        after Research completes, so waiting for Research to mark them VERIFIED would
+        create an ownership cycle. All other active USER_MUST obligations retain the
+        existing terminal requirements.
+        """
+        return tuple(
+            item
+            for item in ledger.active_user_must
+            if self._capabilities.get(item.capability_key).execution_mode
+            != ManagerCapabilityExecutionMode.PRESENTATION
+        )
+
     def evaluate(self, ledger: UserObligationLedger) -> CompletionGateResult:
-        must = ledger.active_user_must
+        must = self._completion_relevant_user_must(ledger)
         if not must:
             return CompletionGateResult(
                 allowed=False,
                 terminal=ResearchRunTerminal.FAILED,
-                reasons=("no active USER_MUST obligation",),
+                reasons=("no completion-relevant analytical USER_MUST obligation",),
             )
 
         if all(item.status == ObligationStatus.VERIFIED for item in must):
