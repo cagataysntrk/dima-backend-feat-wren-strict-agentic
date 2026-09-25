@@ -91,6 +91,54 @@ def adapt_legacy_manager_intent(
             if matching:
                 cards = matching
 
+    if action in {"run_analytics", "run_relationship"}:
+        requested_ids = (
+            legacy.get("obligation_ids")
+            if action == "run_analytics"
+            else [legacy.get("relationship_obligation_id")]
+        ) or []
+        requested_id = str(requested_ids[0]) if len(requested_ids) == 1 else None
+        if requested_id:
+            ledger_item = next(
+                (
+                    item
+                    for item in payload.get("OBLIGATION_LEDGER") or ()
+                    if str(item.get("obligation_id")) == requested_id
+                ),
+                None,
+            )
+            if ledger_item is not None:
+                target_aliases = {
+                    str(value)
+                    for value in (ledger_item.get("semantic_handle_refs") or ())
+                }
+                target_surfaces: set[str] = set()
+                for row in payload.get("GOVERNED_SEMANTIC_INVENTORY") or ():
+                    if str(row.get("handle_ref")) not in target_aliases:
+                        continue
+                    target_surfaces.update(
+                        str(value)
+                        for value in (row.get("source_surfaces") or ())
+                        if str(value).strip()
+                    )
+                if target_surfaces:
+                    matching = [
+                        row
+                        for row in cards
+                        if target_surfaces.intersection(
+                            {
+                                str(value)
+                                for value in (
+                                    (row.get("context") or {}).get(
+                                        "semantic_context"
+                                    ) or ()
+                                )
+                            }
+                        )
+                    ]
+                    if matching:
+                        cards = matching
+
     if action == "propose_branches":
         requested = {
             str(item.get("capability_key"))
