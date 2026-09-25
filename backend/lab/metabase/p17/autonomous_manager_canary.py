@@ -75,7 +75,7 @@ USER_ID = UUID("00000000-0000-4000-8000-000000001751")
 CONTEXT = "ctx-p17-autonomous-live-v1"
 STAMP = datetime(2026, 9, 25, 12, 0, tzinfo=timezone.utc)
 
-LEGAL_AUTONOMOUS_INTENTS = {
+LEGAL_AUTONOMOUS_INTENTS = (
     InvestigationIntent.INVESTIGATE_GAP,
     InvestigationIntent.EXPLORE_ALTERNATIVES,
     InvestigationIntent.SEEK_COUNTER_EVIDENCE,
@@ -84,7 +84,7 @@ LEGAL_AUTONOMOUS_INTENTS = {
     InvestigationIntent.REPLAN,
     InvestigationIntent.STOP_BRANCH,
     InvestigationIntent.STOP_INVESTIGATION,
-}
+)
 
 
 class AutonomousVocabularyManager:
@@ -94,7 +94,10 @@ class AutonomousVocabularyManager:
         self.provider = provider
 
     def propose(self, snapshot: ResearchManagerSnapshot) -> ManagerProposal:
-        proposal = self.provider.propose(snapshot)
+        proposal = self.provider.propose_with_constraints(
+            snapshot,
+            allowed_intents=LEGAL_AUTONOMOUS_INTENTS,
+        )
         if proposal.effective_intent not in LEGAL_AUTONOMOUS_INTENTS:
             raise RuntimeError(
                 "P17 autonomous manager emitted intent outside the certified "
