@@ -1139,3 +1139,69 @@ class AuditLog(SQLModel, table=True):
     onceki_kayit_hash: str | None = None
     kayit_hash: str | None = None
     contract_id: str | None = None  # ADR-0010 contract'a bağ
+
+class ResearchReasoningStepRecord(SQLModel, table=True):
+    """Durable P17 manager proposal/transition under accepted Research authority."""
+
+    __tablename__ = "research_reasoning_step"
+
+    step_id: str = Field(primary_key=True)
+    session_id: str = Field(foreign_key="research_session.session_id", index=True)
+    source_revision: int = Field(index=True)
+    source_snapshot_fingerprint: str = Field(index=True)
+    parent_obligation_id: str = Field(index=True)
+    proposal_id: str = Field(index=True)
+    proposal_json: str = Field(sa_column=Column(Text, nullable=False))
+    action: str = Field(index=True)
+    objective_key: str = Field(index=True)
+    bounded_objective: str | None = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
+    rationale: str = Field(sa_column=Column(Text, nullable=False))
+    inspected_evidence_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    inspected_claim_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    inspected_material_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    proposal_fingerprint: str = Field(index=True)
+    status: str = Field(index=True)
+    stop_reason: str | None = Field(default=None, index=True)
+    result_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    completed_at: datetime | None = None
+
+
+class ResearchInvestigationTaskRecord(SQLModel, table=True):
+    """Durable child task created by one P17 reasoning step.
+
+    It is subordinate to a sealed P14 obligation and is never appended to
+    ResearchSession.obligations.
+    """
+
+    __tablename__ = "research_investigation_task"
+    __table_args__ = (
+        UniqueConstraint(
+            "reasoning_step_id",
+            name="uq_research_investigation_task_reasoning_step",
+        ),
+    )
+
+    task_id: str = Field(primary_key=True)
+    session_id: str = Field(foreign_key="research_session.session_id", index=True)
+    reasoning_step_id: str = Field(
+        foreign_key="research_reasoning_step.step_id",
+        index=True,
+    )
+    parent_obligation_id: str = Field(index=True)
+    bounded_objective: str = Field(sa_column=Column(Text, nullable=False))
+    counter_to_claim_id: str | None = Field(default=None, index=True)
+    status: str = Field(index=True)
+    native_execution_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    material_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    evidence_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    completed_at: datetime | None = None
+
