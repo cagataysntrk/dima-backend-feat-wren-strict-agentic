@@ -243,6 +243,16 @@ class ResearchSessionStore:
                 .order_by(ResearchExecutionLink.created_at.desc())
             ).first()
 
+    def execution_link(self, link_id: uuid.UUID) -> ResearchExecutionLink:
+        with Session(self._engine) as db:
+            link = db.get(ResearchExecutionLink, link_id)
+            if link is None:
+                raise ResearchPersistenceError(
+                    "P14_RESEARCH_EXECUTION_LINK_NOT_FOUND",
+                    str(link_id),
+                )
+            return link
+
     def _update_link(self, link_id: uuid.UUID, **values) -> ResearchExecutionLink:
         values["updated_at"] = _now()
         with Session(self._engine) as db:

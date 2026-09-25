@@ -263,7 +263,7 @@ class ResearchManager:
     def check_evidence(session,oid,receipt:DimaQueryReceipt,evidence:EvidenceArtifact):
         if evidence.state!=EvidenceState.VERIFIED: raise ResearchStateError("P14_EVIDENCE_NOT_VERIFIED","only VERIFIED Evidence is admissible")
         if evidence.authority_id!=receipt.authority_id: raise ResearchStateError("P14_EVIDENCE_RECEIPT_AUTHORITY_MISMATCH","authority mismatch")
-        if receipt.authority_id!=session.authority_id: raise ResearchStateError("P14_EVIDENCE_SESSION_AUTHORITY_MISMATCH","receipt belongs to another Research authority")
+        if receipt.authority_kind=="research_material" and receipt.authority_id!=session.authority_id: raise ResearchStateError("P14_EVIDENCE_SESSION_AUTHORITY_MISMATCH","native Research receipt belongs to another Research authority")
         if receipt.receipt_id not in evidence.query_receipt_refs: raise ResearchStateError("P14_EVIDENCE_RECEIPT_LINK_MISSING","receipt link missing")
         if oid not in receipt.obligation_ids or oid not in evidence.obligation_ids: raise ResearchStateError("P14_EVIDENCE_OBLIGATION_MISMATCH","obligation mismatch")
         if (receipt.tenant_id,receipt.principal_id)!=(session.tenant_binding,session.principal_subject): raise ResearchStateError("P14_EVIDENCE_SECURITY_LENS_MISMATCH","security lens mismatch")
