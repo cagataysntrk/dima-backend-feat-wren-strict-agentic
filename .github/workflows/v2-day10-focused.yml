@@ -34,7 +34,7 @@ name: v2-day10-focused
       - "backend/app/v2/relationship_adapter.py"
       - "backend/app/v2/research_report_projector.py"
       - "backend/app/v2/product_events.py"
-      - "backend/app/v2/report_continuation.py"
+      - "backend/app/v2/report_continuation.py             lab/v2_certification_oracle.py             lab/v2_day10_product_mvp_live.py"
       - "backend/tests/test_v2_day10_*.py"
       - "backend/tests/test_v2_day6_5_standard_lane.py"
       - "backend/tests/test_v2_day6_5_standard_coverage.py"
@@ -44,7 +44,7 @@ name: v2-day10-focused
       - "backend/tests/test_v2_day7_obligation_local_semantic_recovery.py"
       - "backend/tests/test_v2_day7_real_relationship_vertical.py"
       - "backend/lab/v2_day10_ns4_provider_free_rehearsal.py"
-      - "backend/lab/v2_day10_product_mvp_live.py"
+      - "backend/lab/v2_day10_product_mvp_live.py"\n      - "backend/lab/v2_certification_oracle.py"
       - ".github/workflows/v2-day10-product-mvp-paid-once.yml"
       - ".github/workflows/v2-day10-focused.yml"
   workflow_dispatch:
