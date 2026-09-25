@@ -277,6 +277,7 @@ jobs:
             grep -q "DMP-DEC-0049 — RECURSIVE INVESTIGATION" "$DECISIONS"
             grep -q "DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION" "$DECISIONS"
             grep -q "DMP-DEC-0051 — BOUNDED RED RECOVERY" "$DECISIONS"
+          grep -q "DMP-DEC-0052 — FAILURE-FAMILY-SCOPED RECOVERY BUDGET" "$DECISIONS"
             grep -q "P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
             grep -q "DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
           fi
@@ -343,6 +344,12 @@ jobs:
           grep -q "diff-tree" "$AUTH"
           grep -q "cat-file" "$AUTH"
           grep -q "authorizations/" "$AUTH"
+          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-manager-structured-schema"' "$AUTH"
+          grep -q 'CURRENT_ATTEMPT_IN_FAMILY = 2' "$AUTH"
+          grep -q 'EXPECTED_DECISION = "DMP-DEC-0052"' "$AUTH"
+          grep -q 'failure_family_id' "$AUTH"
+          grep -q 'attempt_in_family' "$AUTH"
+          ! grep -nE 'recovery_cycle' "$AUTH"
           ! grep -nE 'GITHUB_EVENT_PATH|head_commit' "$AUTH"
           for file in "$AUTO" "$EVAL"; do
             ! grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$file"
