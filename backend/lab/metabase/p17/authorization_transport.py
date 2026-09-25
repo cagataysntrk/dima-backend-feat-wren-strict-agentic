@@ -179,12 +179,12 @@ def verify_dispatch_authorization(
     *,
     dispatch_sha: str,
     branch: str = EXPECTED_BRANCH,
-    recovery_cycle: int,
+    recovery_cycle: int | None = None,
     run_git: RunGit | None = None,
 ) -> AuthorizationReceipt:
     """Verify one append-only authorization receipt from exact Git history."""
 
-    if recovery_cycle not in {1, 2, 3}:
+    if recovery_cycle is not None and recovery_cycle not in {1, 2, 3}:
         raise AuthorizationTransportError("recovery_cycle must be 1, 2, or 3")
     if branch != EXPECTED_BRANCH:
         raise AuthorizationTransportError("authorization branch is not allowed")
@@ -229,12 +229,32 @@ def verify_dispatch_authorization(
         )
 
     path = added[0]
+    name = Path(path).name
+    prefix = "autonomous-luna-recovery-"
+    suffix = ".json"
+    if not name.startswith(prefix) or not name.endswith(suffix):
+        raise AuthorizationTransportError(
+            "authorization receipt filename is not a recovery identity"
+        )
+    cycle_token = name[len(prefix) : -len(suffix)]
+    cycle_by_token = {"001": 1, "002": 2, "003": 3}
+    inferred_cycle = cycle_by_token.get(cycle_token)
+    if inferred_cycle is None:
+        raise AuthorizationTransportError(
+            "authorization receipt filename recovery cycle is invalid"
+        )
+    if recovery_cycle is not None and recovery_cycle != inferred_cycle:
+        raise AuthorizationTransportError(
+            "authorization filename does not match expected recovery_cycle"
+        )
+    effective_cycle = inferred_cycle
+
     payload = _load_receipt(repo_root, path)
 
     exact = {
         "decision": EXPECTED_DECISION,
         "branch": EXPECTED_BRANCH,
-        "recovery_cycle": recovery_cycle,
+        "recovery_cycle": effective_cycle,
         "candidate_product_sha": EXPECTED_PRODUCT_SHA,
         "dispatch_parent_sha": parent_sha,
         "model": EXPECTED_MODEL,
@@ -276,7 +296,7 @@ def verify_dispatch_authorization(
     return AuthorizationReceipt(
         path=path,
         authorization_id=authorization_id,
-        recovery_cycle=recovery_cycle,
+        recovery_cycle=effective_cycle,
         candidate_product_sha=EXPECTED_PRODUCT_SHA,
         dispatch_parent_sha=parent_sha,
         provider_free_run_id=provider_free_run_id,
