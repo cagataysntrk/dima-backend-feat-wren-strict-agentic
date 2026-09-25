@@ -17,6 +17,12 @@ NO CAUSALITY IN P18.
 METABASE + METABOT REMAIN THE ANALYTICAL ENGINE.
 ```
 
+Permanent retained P17 certification rule:
+
+```text
+DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY.
+```
+
 P18 v1 is permanently bounded to one durable policy authority,
 one durable policy-use lineage and one transient typed requirement.
 No P18B/P18C, relationship graph platform, policy DSL or ontology framework is authorized.
