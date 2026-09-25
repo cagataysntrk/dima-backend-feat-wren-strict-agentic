@@ -4401,3 +4401,38 @@ next_authorization:
 
 disposition:
 P17 remains NOT SEALED; P18 remains BLOCKED until autonomous cognition completes GREEN.
+
+
+### DMP-P17-FAMILY-STRUCTURED-SCHEMA-001 provider-free closure
+
+date: 2026-09-25
+
+```text
+root-fix product/provider candidate = f940a9731be98212b47b44391e28080648c00629
+family-aware seal candidate         = c50f3e8a08e35d0846eb5e06432e45fd47e3082e
+provider-free                       = 36147150264 SUCCESS
+governance                          = 36147150224 SUCCESS
+
+family-aware authorization          = 26 PASS
+strict-schema regression            = 3 PASS
+trajectory-invariant evaluator      = 7 PASS
+P17 reasoning                       = 31 PASS
+P16 claim lineage                   = 6 PASS
+P15 native Exploration              = 5 PASS
+P14 native-direct                   = 17 PASS
+```
+
+The structured-schema family remains `attempt 1 / 3` until the next authoritative live gate. The
+provider-free development work above does not consume another family attempt. The next authoritative
+certification is explicitly authorized as:
+
+```text
+failure_family_id = p17-manager-structured-schema
+attempt_in_family = 2
+receipt            = p17-manager-structured-schema--attempt-002.json
+```
+
+If that run crosses provider schema validation and a materially different owner/invariant fails, the
+structured-schema family closes at the crossed boundary and the new family starts at `1 / 3`. If
+provider strict-schema compatibility fails again under the same invariant, the structured-schema
+family becomes `attempt 2 / 3 = RED`.
