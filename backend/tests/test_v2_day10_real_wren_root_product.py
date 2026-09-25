@@ -425,6 +425,7 @@ class _D10SStateAwareRootLLM(_RootResearchLLM):
         super().__init__()
         self.actions: list[str] = []
         self.inventory_snapshots: list[tuple[dict, ...]] = []
+        self.availability_snapshots: list[dict] = []
 
     def structured_json(self, system, user, *, schema, schema_name):
         if schema_name != "dima_research_manager_action_v1":
@@ -439,6 +440,21 @@ class _D10SStateAwareRootLLM(_RootResearchLLM):
         self.manager_prompts.append(payload)
         actions = _schema_property_values(schema, "action")
         delta = payload["CURRENT_RESULT_DELTA"]
+        root_item_payload = next(
+            item
+            for item in payload["OBLIGATION_LEDGER"]
+            if item["obligation_id"] == "U_ROOT"
+        )
+        self.availability_snapshots.append(
+            {
+                "actions": sorted(actions),
+                "availability": payload["ACTION_AVAILABILITY"],
+                "root_obligation": root_item_payload,
+                "root_next_test_contract": payload["ROOT_CAUSE_NEXT_TEST_CONTRACT"],
+                "hypothesis_state": payload["HYPOTHESIS_LEDGERS"],
+                "current_delta": delta,
+            }
+        )
         assert delta is not None
         assert delta["verified"] is True
         assert delta["disclosed_in_current_prompt"] is True
@@ -459,11 +475,10 @@ class _D10SStateAwareRootLLM(_RootResearchLLM):
         assert len(root_inventory) == 1
         assert root_inventory[0]["target_kind"] in {"metric", "kpi"}
 
-        # D10-S structural contract: the currently disclosed Evidence does not need
-        # explicit inspection and the already-governed root metric can satisfy QUERY,
-        # so semantic rediscovery is not advertised.
+        # Fresh disclosed Evidence must never require another inspection turn.
+        # resolve_semantics is asserted after the full run so the second-turn governed
+        # state is captured even when availability is wrong.
         assert "inspect_evidence" not in actions
-        assert "resolve_semantics" not in actions
 
         ledgers = payload["HYPOTHESIS_LEDGERS"]
         assert len(ledgers) == 1
@@ -809,6 +824,13 @@ def test_d10_s_real_wren_state_aware_action_profile_reaches_report(
             "D10S_REAL_WREN_DIAGNOSTIC="
             + json.dumps(diagnostic, ensure_ascii=False, sort_keys=True, default=str)
         )
+    assert len(manager.availability_snapshots) == 2, diagnostic
+    second_turn = manager.availability_snapshots[1]
+    assert "resolve_semantics" not in second_turn["actions"], {
+        **diagnostic,
+        "second_turn_availability": second_turn,
+        "governed_semantic_inventory": manager.inventory_snapshots[1],
+    }
     assert response.status == ProductStatus.REPORT, diagnostic
     assert response.terminal_receipt.verified_complete is True, diagnostic
     assert result.runtime.snapshot.manager_turns <= 6
