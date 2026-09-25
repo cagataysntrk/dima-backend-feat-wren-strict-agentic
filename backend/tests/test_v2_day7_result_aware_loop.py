@@ -17,6 +17,7 @@ from app.v2.manager_models import (
     ObligationOrigin,
     ObligationStatus,
     ResearchDirective,
+    ResearchDirectiveDispositionStatus,
     ResearchDirectiveType,
     UserIntentEnvelope,
 )
@@ -400,10 +401,14 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert service.query_calls == 2
     assert store.n == 2
     assert len(runtime.snapshot.evidence_refs) == 2
-    assert set(runtime.snapshot.inspected_evidence_refs) == set(
-        runtime.snapshot.evidence_refs
+    # The first result is disclosed because cognition uses it to derive the bounded
+    # branch. The second result completes the accepted analytical work, so loop-boundary
+    # CompletionGate must finish before another cognition turn and must not manufacture
+    # inspection/disclosure of Evidence the model never saw.
+    assert runtime.snapshot.inspected_evidence_refs == (
+        runtime.snapshot.evidence_refs[0],
     )
-    assert any(
+    assert not any(
         item.get("kind") == "fresh_evidence_disclosed"
         and item.get("evidence_ref") == runtime.snapshot.evidence_refs[1]
         for item in outcome.observations
@@ -439,7 +444,18 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert fanout["result"]["allowed_children"] == 2
     assert fanout["result"]["selected_task_ids"] == ["D1", "D2"]
 
-    # Fanout registration is cognition-only; only one selected READY branch executes.
-    # G6-A removes the redundant fresh-result inspect cognition turn.
+    # Fanout registration is cognition-only; one selected READY branch executes.
+    # The accepted ADAPT_ON_EVIDENCE directive is lifecycle-accounted by successful
+    # branch execution, so deterministic completion requires no fifth cognition turn.
     assert service.query_calls == 2
-    assert len(llm.prompts) == 5
+    assert len(llm.prompts) == 4
+    disposition = runtime.directive_disposition("R_ADAPT_U1")
+    assert disposition.status == ResearchDirectiveDispositionStatus.APPLIED
+    assert disposition.branch_task_refs == ("D1",)
+    assert disposition.evidence_ref == runtime.snapshot.evidence_refs[0]
+    assert any(
+        item.get("kind") == "research_directive_accounted"
+        and item.get("task_id") == "D1"
+        and item.get("execution_path") == "manager_selected_derived_task"
+        for item in outcome.observations
+    )
