@@ -45,6 +45,7 @@ class HypothesisActionState:
     hypothesis_ref: str
     semantic_refs: tuple[SemanticActionRef, ...]
     admissible_evidence_refs: tuple[str, ...]
+    next_test_evidence_refs: tuple[str, ...] = ()
     pending_relation_evidence_refs: tuple[str, ...] = ()
 
 
@@ -53,6 +54,7 @@ class RootActionState:
     root_id: str
     semantic_refs: tuple[SemanticActionRef, ...]
     evidence_refs: tuple[str, ...]
+    next_test_evidence_refs: tuple[str, ...]
     hypotheses: tuple[HypothesisActionState, ...]
     next_test_contracts: tuple[NextTestContractState, ...]
 
@@ -385,62 +387,72 @@ class ManagerActionSetBuilder:
                 feasible_root_ids.add(root.root_id)
 
             if not root.hypotheses and root.evidence_refs:
-                if root_contracts and context.remaining_research_turns >= 1:
-                    for evidence_ref in root.evidence_refs:
-                        for contract, handles in root_contracts:
-                            instances.append(
-                                _instance(
-                                    state_version=state_version,
-                                    action_kind="propose_hypothesis_with_next_test",
-                                    bindings={
-                                        "parent_obligation_id": root.root_id,
-                                        "semantic_handles": handles,
-                                        "trigger_evidence_ref": evidence_ref,
-                                        "next_test_task_kind": contract.task_kind,
-                                        "next_test_input_handles": handles,
-                                    },
-                                    cognitive_schema={
-                                        "hypothesis_statement": _HYPOTHESIS_STATEMENT,
-                                        "hypothesis_limitations": _LIMITATIONS,
-                                        "next_test_material_reason": _STRING_REASON,
-                                        "next_test_ranking_direction": _RANKING_DIRECTION,
-                                        "next_test_ranking_limit": _RANKING_LIMIT,
-                                    },
-                                    reason_codes=("ROOT_COMPOSITE_EXECUTABLE",),
-                                    cognitive_context={
-                                        "task_family": contract.task_kind,
-                                        "required_semantic_kinds": list(
-                                            contract.required_kinds
-                                        ),
-                                    },
-                                )
-                            )
-
-                # Separate hypothesis remains useful only if bounded headroom can still
-                # reach a next test + relation, or no composite path exists.
+                # Evidence identity is server bookkeeping. Prefer the newest direct
+                # next-test-materializable ROOT Evidence when one exists; otherwise
+                # use the newest governed ROOT-lineage Evidence for hypothesis-only
+                # cognition. The model never chooses between Evidence IDs.
+                hypothesis_evidence_ref = (
+                    root.next_test_evidence_refs[-1]
+                    if root.next_test_evidence_refs
+                    else root.evidence_refs[-1]
+                )
                 if (
-                    context.remaining_research_turns >= 2
-                    or not root_contracts
+                    root_contracts
+                    and root.next_test_evidence_refs
+                    and context.remaining_research_turns >= 1
                 ):
-                    for evidence_ref in root.evidence_refs:
+                    evidence_ref = root.next_test_evidence_refs[-1]
+                    for contract, handles in root_contracts:
                         instances.append(
                             _instance(
                                 state_version=state_version,
-                                action_kind="propose_hypothesis",
+                                action_kind="propose_hypothesis_with_next_test",
                                 bindings={
                                     "parent_obligation_id": root.root_id,
-                                    "semantic_handles": tuple(
-                                        item.ref for item in root.semantic_refs
-                                    ),
+                                    "semantic_handles": handles,
                                     "trigger_evidence_ref": evidence_ref,
+                                    "next_test_task_kind": contract.task_kind,
+                                    "next_test_input_handles": handles,
                                 },
                                 cognitive_schema={
                                     "hypothesis_statement": _HYPOTHESIS_STATEMENT,
                                     "hypothesis_limitations": _LIMITATIONS,
+                                    "next_test_material_reason": _STRING_REASON,
+                                    "next_test_ranking_direction": _RANKING_DIRECTION,
+                                    "next_test_ranking_limit": _RANKING_LIMIT,
                                 },
-                                reason_codes=("ROOT_HYPOTHESIS_EXECUTABLE",),
+                                reason_codes=("ROOT_COMPOSITE_EXECUTABLE",),
+                                cognitive_context={
+                                    "task_family": contract.task_kind,
+                                    "required_semantic_kinds": list(
+                                        contract.required_kinds
+                                    ),
+                                },
                             )
                         )
+
+                if (
+                    context.remaining_research_turns >= 2
+                    or not root_contracts
+                ):
+                    instances.append(
+                        _instance(
+                            state_version=state_version,
+                            action_kind="propose_hypothesis",
+                            bindings={
+                                "parent_obligation_id": root.root_id,
+                                "semantic_handles": tuple(
+                                    item.ref for item in root.semantic_refs
+                                ),
+                                "trigger_evidence_ref": hypothesis_evidence_ref,
+                            },
+                            cognitive_schema={
+                                "hypothesis_statement": _HYPOTHESIS_STATEMENT,
+                                "hypothesis_limitations": _LIMITATIONS,
+                            },
+                            reason_codes=("ROOT_HYPOTHESIS_EXECUTABLE",),
+                        )
+                    )
 
             for hypothesis in root.hypotheses:
                 if hypothesis.pending_relation_evidence_refs:
@@ -463,6 +475,9 @@ class ManagerActionSetBuilder:
 
                 if context.remaining_research_turns <= 0:
                     continue
+                if not hypothesis.next_test_evidence_refs:
+                    continue
+                evidence_ref = hypothesis.next_test_evidence_refs[-1]
                 for contract in root.next_test_contracts:
                     handles = _contract_handles(
                         hypothesis.semantic_refs,
@@ -470,58 +485,66 @@ class ManagerActionSetBuilder:
                     )
                     if handles is None:
                         continue
-                    for evidence_ref in hypothesis.admissible_evidence_refs:
-                        instances.append(
-                            _instance(
-                                state_version=state_version,
-                                action_kind="propose_hypothesis_next_test",
-                                bindings={
-                                    "hypothesis_ref": hypothesis.hypothesis_ref,
-                                    "next_test_task_kind": contract.task_kind,
-                                    "next_test_input_handles": handles,
-                                    "trigger_evidence_ref": evidence_ref,
-                                },
-                                cognitive_schema={
-                                    "next_test_material_reason": _STRING_REASON,
-                                    "next_test_ranking_direction": _RANKING_DIRECTION,
-                                    "next_test_ranking_limit": _RANKING_LIMIT,
-                                },
-                                reason_codes=("ROOT_NEXT_TEST_EXECUTABLE",),
-                                cognitive_context={
-                                    "task_family": contract.task_kind,
-                                    "required_semantic_kinds": list(
-                                        contract.required_kinds
-                                    ),
-                                },
-                            )
+                    instances.append(
+                        _instance(
+                            state_version=state_version,
+                            action_kind="propose_hypothesis_next_test",
+                            bindings={
+                                "hypothesis_ref": hypothesis.hypothesis_ref,
+                                "next_test_task_kind": contract.task_kind,
+                                "next_test_input_handles": handles,
+                                "trigger_evidence_ref": evidence_ref,
+                            },
+                            cognitive_schema={
+                                "next_test_material_reason": _STRING_REASON,
+                                "next_test_ranking_direction": _RANKING_DIRECTION,
+                                "next_test_ranking_limit": _RANKING_LIMIT,
+                            },
+                            reason_codes=("ROOT_NEXT_TEST_EXECUTABLE",),
+                            cognitive_context={
+                                "task_family": contract.task_kind,
+                                "required_semantic_kinds": list(
+                                    contract.required_kinds
+                                ),
+                            },
                         )
+                    )
 
         # Conditional directives are independent concrete action instances. No
         # directive/evidence Cartesian product reaches cognition.
         for directive in context.directive_states:
-            for evidence_ref in directive.eligible_evidence_refs:
-                instances.append(
-                    _instance(
-                        state_version=state_version,
-                        action_kind="disposition_research_directive",
-                        bindings={
-                            "directive_id": directive.directive_id,
-                            "parent_obligation_id": directive.parent_obligation_id,
-                            "evidence_ref": evidence_ref,
-                        },
-                        cognitive_schema={
-                            "directive_reason": _STRING_REASON,
-                        },
-                        reason_codes=("ADAPTIVE_DIRECTIVE_EVIDENCE_ACCOUNTABLE",),
-                    )
+            if not directive.eligible_evidence_refs:
+                continue
+            evidence_ref = directive.eligible_evidence_refs[-1]
+            instances.append(
+                _instance(
+                    state_version=state_version,
+                    action_kind="disposition_research_directive",
+                    bindings={
+                        "directive_id": directive.directive_id,
+                        "parent_obligation_id": directive.parent_obligation_id,
+                        "evidence_ref": evidence_ref,
+                    },
+                    cognitive_schema={
+                        "directive_reason": _STRING_REASON,
+                    },
+                    reason_codes=("ADAPTIVE_DIRECTIVE_EVIDENCE_ACCOUNTABLE",),
                 )
+            )
+
+        # Parent/Evidence identity is server bookkeeping. Collapse multiple
+        # eligible Evidence rows for one parent to the newest current row before
+        # producing resolve/branch actions.
+        latest_parent_evidence: dict[str, ParentEvidenceActionState] = {}
+        for item in context.parent_evidence_states:
+            latest_parent_evidence[item.parent_obligation_id] = item
 
         # Parent/Evidence facts are already lineage-validated authority projections.
         # Resolve semantics only when an active parent still lacks an executable shape.
         directive_parents = {
             item.parent_obligation_id for item in context.directive_states
         }
-        for parent in context.parent_evidence_states:
+        for parent in latest_parent_evidence.values():
             root = root_by_id.get(parent.parent_obligation_id)
             needs_semantics = (
                 root is not None
