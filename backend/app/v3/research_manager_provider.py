@@ -381,6 +381,25 @@ class StructuredResearchProposalManager:
     def propose(self, snapshot: ResearchManagerSnapshot) -> ManagerProposal:
         return self._propose(snapshot)
 
+    def propose_with_constraints(
+        self,
+        snapshot: ResearchManagerSnapshot,
+        *,
+        allowed_intents: tuple[InvestigationIntent, ...],
+    ) -> ManagerProposal:
+        """Constrain only the legal intent vocabulary, never investigation content.
+
+        This seam is for autonomous certification/product surfaces whose authority
+        already excludes some payload families. It supplies no guidance, parent,
+        branch, target, or trajectory choice to the model.
+        """
+        if not allowed_intents:
+            raise ValueError("allowed_intents must not be empty")
+        return self._propose(
+            snapshot,
+            allowed_intents=allowed_intents,
+        )
+
     def propose_with_guidance(
         self,
         snapshot: ResearchManagerSnapshot,
