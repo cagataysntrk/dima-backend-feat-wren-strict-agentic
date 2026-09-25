@@ -826,6 +826,18 @@ def test_d10_s_real_wren_state_aware_action_profile_reaches_report(
         )
     assert len(manager.availability_snapshots) == 2, diagnostic
     second_turn = manager.availability_snapshots[1]
+    print(
+        "D10S_SECOND_TURN_AVAILABILITY="
+        + json.dumps(
+            {
+                **second_turn,
+                "governed_semantic_inventory": manager.inventory_snapshots[1],
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            default=str,
+        )
+    )
     assert "resolve_semantics" not in second_turn["actions"], {
         **diagnostic,
         "second_turn_availability": second_turn,
