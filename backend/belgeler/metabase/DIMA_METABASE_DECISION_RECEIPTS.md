@@ -3685,3 +3685,156 @@ P18                     = BLOCKED
 No third paid Luna canary is authorized. Return to supervisor with
 `DMP-P17-LIVE-RED-002`; do not begin P18 implementation.
 
+
+
+---
+
+## DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION / TRAJECTORY-INVARIANT LIVE EVALUATION
+
+date: 2026-09-25
+
+status:
+`RATIFIED FORWARD DECISION / PROVIDER-FREE CERTIFICATION IMPLEMENTATION IN PROGRESS / P18 BLOCKED`
+
+DMP-DEC-0048 remains the native-direct analytical authority.
+DMP-DEC-0049 remains the recursive-investigation and P17/P19 ownership authority.
+DMP-DEC-0050 governs **how P17 cognition is certified**.
+
+Permanent rule:
+
+```text
+A PROBABILISTIC INVESTIGATOR
+MUST NOT BE CERTIFIED AGAINST
+ONE PRE-WRITTEN TRAJECTORY.
+```
+
+Authority split:
+
+```text
+DETERMINISTIC DIMA
+OWNS LEGALITY / IDENTITY / BUDGET / LINEAGE.
+
+RESEARCH MANAGER
+OWNS NEXT-STEP INVESTIGATION CHOICE.
+
+METABASE + METABOT
+OWN ANALYTICAL EXECUTION.
+```
+
+The historical `recursive_manager_canary.py` screenplay is retained only as a deterministic
+scenario / contract lab. Its fixed sequence, fixed branch expectations, exact call-count expectations
+and fixed depth are **not** an autonomous-cognition oracle.
+
+Certification is split into two layers:
+
+```text
+Layer A
+= provider-free deterministic contract certification
+= legality + topology + identity + budgets + durability + lineage
+  + P14/P15/P16 authority preservation
+
+Layer B
+= one bounded real-Luna autonomous behavioral canary
+= useful next-step investigation choices inside those deterministic boundaries
+```
+
+Layer B must use the unrestricted governed `StructuredResearchProposalManager.propose(snapshot)`
+path (or a behaviorally equivalent unrestricted path). The harness must not supply one expected
+intent, parent, branch, candidate, depth, replan point, or stop point per turn.
+
+The harness owns only:
+
+```text
+scope
+principal
+budget
+legal vocabulary
+authority/safety invariants
+trajectory-invariant result evaluation
+```
+
+The Research Manager owns which legal investigation action comes next, which branch deserves
+attention, whether counter-Evidence or deeper work is useful, and when stopping is justified.
+Metabase/Metabot remain the only analytical executor.
+
+The live success oracle is trajectory-invariant. It requires materially:
+
+```text
+autonomous manager choices
+multiple materially distinct alternatives
+at least one real native analytical test of an alternative
+new Evidence visible to a later manager snapshot
+a later manager choice after that Evidence
+an alternative challenged, explicitly retained, or branch-stopped with reason
+meaningful recursive deepening OR an explicit supported no-information-gain stop
+native Metabot/Metabase analytical ownership
+valid follow-up lineage
+immutable P14 authority
+sole P16 claim/Evidence authority
+bounded termination
+```
+
+It does **not** require a named branch to win, a named sibling to stop, an exact sequence, an exact
+manager-call count, an exact native-follow-up count, or a theatrical minimum depth. Budgets are
+ceilings, not expected trajectories.
+
+Permanent evaluation governance:
+
+```text
+DO NOT TUNE PRODUCT BEHAVIOR
+TO ONE PROBABILISTIC TEST TRAJECTORY.
+
+CERTIFY AUTONOMOUS AGENTS
+BY AUTHORITY / SAFETY / OUTCOME INVARIANTS,
+NOT ONE EXPECTED SEQUENCE.
+
+A TEST ORACLE MUST NOT BE
+NARROWER THAN THE PRODUCT AUTHORITY
+UNLESS IT IS EXPLICITLY A SCENARIO TEST.
+```
+
+This rule applies beyond P17, including future P19 root-cause reasoning and P21 decision reasoning.
+
+Current implementation evidence before paid certification:
+
+```text
+old screenplay canary
+= HISTORICAL DETERMINISTIC SCENARIO / CONTRACT LAB
+= SUPERSEDED AS FINAL COGNITION ORACLE
+
+new evaluator
+= backend/lab/metabase/p17/autonomous_eval.py
+
+new live lab
+= backend/lab/metabase/p17/autonomous_manager_canary.py
+
+provider-free evaluator tests
+= backend/tests/test_v3_p17_autonomous_manager_eval.py
+
+P17 recursive product authority
+= PROVIDER-FREE GREEN
+
+P17 autonomous cognition certification
+= OPEN
+
+P18
+= BLOCKED
+```
+
+`DMP-P17-LIVE-RED-001` and `DMP-P17-LIVE-RED-002` remain append-only historical evidence. They
+are not rewritten as Metabase, native-analytics, or recursive-architecture failures without new
+evidence.
+
+Paid policy after DMP-DEC-0050:
+
+```text
+Luna autonomous live runs after DMP-DEC-0050 = max 1
+Sol                                         = 0
+engine build                                = 0
+C1                                          = 0
+```
+
+That one Luna run is authorized only after the new evaluator, autonomous harness, deterministic
+P14/P15/P16/P17 regressions, and governance are GREEN. If it is RED, stop with the first wrong
+transition and exact owner classification. If it is GREEN, seal P17 and authorize only the P18
+material-business-relationship pre-development review; do not begin P18 product implementation.
