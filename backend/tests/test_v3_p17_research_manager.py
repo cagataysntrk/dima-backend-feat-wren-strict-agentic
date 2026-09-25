@@ -2080,7 +2080,7 @@ def test_live_canary_replan_assertion_uses_runtime_selected_parent():
         / "lab"
         / "metabase"
         / "p17"
-        / "recursive_manager_canary.py"
+        / "recursive_manager_scenario_lab.py"
     ).read_text(encoding="utf-8")
     start = source.index("    replanned = stage(")
     end = source.index("    final_stop = stage(", start)
