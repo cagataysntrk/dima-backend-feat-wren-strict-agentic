@@ -1,4 +1,4 @@
-# DMP-DEC-0052 family-scoped schema + authorization closure. Paid cognition remains separately bounded. Seal candidate.
+# DMP-DEC-0052 semantic-output family root-fix closure. Paid cognition remains separately bounded.
 # Closure candidate includes portable strict live-manager schema and compiled canary harness.
 # Final pre-paid candidate also locks model-owned branch selection with deterministic topology identity.
 # Post-live-RED closure verifies the typed nullability root fix without another paid run.
@@ -113,7 +113,7 @@ jobs:
           grep -q 'evaluate_autonomous_canary' backend/lab/metabase/p17/autonomous_manager_canary.py
           grep -qi 'trajectory-invariant' backend/lab/metabase/p17/autonomous_eval.py
           grep -q 'diff-tree' backend/lab/metabase/p17/authorization_transport.py
-          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-manager-structured-schema"' backend/lab/metabase/p17/authorization_transport.py
+          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-manager-semantic-output"' backend/lab/metabase/p17/authorization_transport.py
           grep -q 'CURRENT_ATTEMPT_IN_FAMILY = 2' backend/lab/metabase/p17/authorization_transport.py
           grep -q 'EXPECTED_DECISION = "DMP-DEC-0052"' backend/lab/metabase/p17/authorization_transport.py
           grep -q 'cat-file' backend/lab/metabase/p17/authorization_transport.py
@@ -158,7 +158,7 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v3_p17_authorization_transport.py
 
-      - name: Structured-schema family generic regression
+      - name: Manager semantic-output family generic regression
         working-directory: backend
         run: pytest -q tests/test_v3_p17_autonomous_provider_schema.py
 
