@@ -1244,6 +1244,7 @@ class ResearchManagerLoop:
         hypothesis_ledgers: dict[str, Any] | None,
         evidence_store,
         research_tasks: tuple[Any, ...] = (),
+        governed_semantic_inventory: tuple[dict[str, Any], ...] = (),
     ) -> ManagerActionAvailabilityProfile:
         latest = None if research_state is None else research_state.latest_delta
         fresh_ref = None
@@ -1285,9 +1286,12 @@ class ResearchManagerLoop:
                 if getattr(evidence, "verified", False):
                     inspectable_old.append(ref)
 
+        contract_rows = root_cause_next_test_contract(
+            capabilities=self._capabilities
+        )
         contracts = tuple(
             tuple(str(kind) for kind in row.get("required_semantic_kinds", ()))
-            for row in root_cause_next_test_contract(capabilities=self._capabilities)
+            for row in contract_rows
         )
         root_states: list[RootActionState] = []
         for root_id, hypothesis_ledger in sorted(
@@ -1448,6 +1452,7 @@ class ResearchManagerLoop:
                 )
 
         evidence_grounded_parent_ids: list[str] = []
+        evidence_grounded_refs_by_parent: dict[str, tuple[str, ...]] = {}
         ledger = runtime.ledger
         if ledger is not None and evidence_store is not None and effective_refs:
             evidence_by_ref = {}
@@ -1461,20 +1466,377 @@ class ResearchManagerLoop:
                     continue
                 if item.status == ObligationStatus.SUPERSEDED:
                     continue
-                if not any(
-                    getattr(evidence, "verified", False)
+                eligible_refs = tuple(
+                    ref
+                    for ref, evidence in evidence_by_ref.items()
+                    if getattr(evidence, "verified", False)
                     and self._evidence_belongs_to_parent_lineage(
                         runtime=runtime,
                         evidence=evidence,
                         parent_obligation_id=item.obligation_id,
                     )
-                    for evidence in evidence_by_ref.values()
-                ):
+                )
+                if not eligible_refs:
                     continue
                 evidence_grounded_parent_ids.append(item.obligation_id)
+                evidence_grounded_refs_by_parent[item.obligation_id] = tuple(
+                    dict.fromkeys(eligible_refs)
+                )
+
+        # Build correlated identity candidates strictly from existing authoritative
+        # owners. ManagerActionAvailability remains the sole owner deciding which of
+        # these candidates is visible to cognition and mints scope/snapshot identity.
+        normalized_kind = {
+            "metric": "metric",
+            "kpi": "metric",
+            "dimension": "dimension",
+            "entity_value": "filter",
+            "filter": "filter",
+            "period": "period",
+            "time": "period",
+            "comparison": "comparison",
+        }
+        handles_by_parent: dict[str, list[str]] = {}
+        handles_by_parent_kind: dict[str, dict[str, list[str]]] = {}
+        for row in governed_semantic_inventory:
+            handle_ref = str(row.get("handle_ref") or "")
+            if not handle_ref:
+                continue
+            parents = list(row.get("accepted_obligation_ids") or ())
+            explicit_parent = row.get("parent_obligation_id")
+            if explicit_parent is not None:
+                parents.append(str(explicit_parent))
+            kind = normalized_kind.get(str(row.get("target_kind") or ""))
+            for parent_id in dict.fromkeys(str(value) for value in parents if value):
+                handles_by_parent.setdefault(parent_id, []).append(handle_ref)
+                if kind:
+                    handles_by_parent_kind.setdefault(parent_id, {}).setdefault(
+                        kind, []
+                    ).append(handle_ref)
+
+        scope_seeds: list[ActionScopeSeed] = []
+
+        for ref in inspectable_old:
+            scope_seeds.append(
+                ActionScopeSeed(
+                    action=ManagerActionKind.INSPECT_EVIDENCE.value,
+                    evidence_refs=(ref,),
+                    reason_codes=("INSPECTABLE_CURRENT_RUN_EVIDENCE",),
+                )
+            )
+
+        # Clarification and finish are identity-light but still receive server-minted
+        # scopes so every advertised action belongs to one snapshot lineage.
+        accepted_obligation_ids = tuple(
+            item.obligation_id
+            for item in (ledger.items if ledger is not None else ())
+            if item.status != ObligationStatus.SUPERSEDED
+        )
+        scope_seeds.append(
+            ActionScopeSeed(
+                action=ManagerActionKind.REQUEST_CLARIFICATION.value,
+                obligation_ids=accepted_obligation_ids,
+                reason_codes=("ACCEPTED_AUTHORITY_SCOPE",),
+            )
+        )
+        scope_seeds.append(
+            ActionScopeSeed(
+                action=ManagerActionKind.FINISH.value,
+                reason_codes=("COMPLETION_GATE_REVALIDATES",),
+            )
+        )
+
+        for parent_id, refs in sorted(evidence_grounded_refs_by_parent.items()):
+            parent_handles = tuple(
+                dict.fromkeys(handles_by_parent.get(parent_id, ()))
+            )
+            scope_seeds.append(
+                ActionScopeSeed(
+                    action=ManagerActionKind.RESOLVE_SEMANTICS.value,
+                    parent_obligation_id=parent_id,
+                    evidence_refs=refs,
+                    reason_codes=("EVIDENCE_GROUNDED_PARENT",),
+                )
+            )
+            if parent_handles:
+                scope_seeds.append(
+                    ActionScopeSeed(
+                        action=ManagerActionKind.PROPOSE_BRANCHES.value,
+                        parent_obligation_id=parent_id,
+                        evidence_refs=refs,
+                        handle_refs=parent_handles,
+                        reason_codes=("EVIDENCE_GROUNDED_PARENT",),
+                    )
+                )
+
+        for disposition in adaptive_disposition_states:
+            if not disposition.eligible_evidence_refs:
+                continue
+            scope_seeds.append(
+                ActionScopeSeed(
+                    action=ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE.value,
+                    parent_obligation_id=disposition.parent_obligation_id,
+                    directive_id=disposition.directive_id,
+                    evidence_refs=disposition.eligible_evidence_refs,
+                    reason_codes=("OPEN_ADAPTIVE_DIRECTIVE",),
+                )
+            )
+
+        root_by_id = {item.root_id: item for item in root_states}
+        task_by_id = {task.task_id: task for task in research_tasks}
+        for root_id, root in sorted(root_by_id.items()):
+            root_handles = tuple(dict.fromkeys(root.root_handle_refs))
+            root_evidence = tuple(
+                dict.fromkeys(root.effective_inspected_verified_evidence_refs)
+            )
+            available_kinds = frozenset(root.root_handle_kinds)
+            feasible_task_kinds = tuple(
+                str(row.get("task_kind"))
+                for row in contract_rows
+                if frozenset(
+                    str(kind)
+                    for kind in row.get("required_semantic_kinds", ())
+                ).issubset(available_kinds)
+            )
+
+            if root.hypothesis_count == 0 and root_evidence and root_handles:
+                scope_seeds.append(
+                    ActionScopeSeed(
+                        action=ManagerActionKind.PROPOSE_HYPOTHESIS.value,
+                        parent_obligation_id=root_id,
+                        evidence_refs=root_evidence,
+                        handle_refs=root_handles,
+                        reason_codes=("ROOT_INITIAL_HYPOTHESIS",),
+                    )
+                )
+                if feasible_task_kinds:
+                    scope_seeds.append(
+                        ActionScopeSeed(
+                            action=(
+                                ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value
+                            ),
+                            parent_obligation_id=root_id,
+                            evidence_refs=root_evidence,
+                            handle_refs=root_handles,
+                            task_kinds=feasible_task_kinds,
+                            reason_codes=("ROOT_COMPOSITE_NEXT_TEST",),
+                        )
+                    )
+
+            hypothesis_ledger = (hypothesis_ledgers or {}).get(root_id)
+            if hypothesis_ledger is not None:
+                for entry in hypothesis_ledger.state.entries:
+                    admissible_evidence = tuple(
+                        ref
+                        for ref in root_evidence
+                        if ref in {
+                            *entry.trigger_evidence_refs,
+                            *(link.evidence_ref for link in entry.evidence_links),
+                        }
+                    )
+                    if admissible_evidence and root_handles and feasible_task_kinds:
+                        scope_seeds.append(
+                            ActionScopeSeed(
+                                action=ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value,
+                                parent_obligation_id=root_id,
+                                hypothesis_ref=entry.hypothesis_id,
+                                evidence_refs=admissible_evidence,
+                                handle_refs=root_handles,
+                                task_kinds=feasible_task_kinds,
+                                reason_codes=("ROOT_EXISTING_HYPOTHESIS",),
+                            )
+                        )
+
+                    linked = {link.evidence_ref for link in entry.evidence_links}
+                    completed_next_test_ids = {
+                        task_ref
+                        for task_ref in entry.next_test_task_refs
+                        if (
+                            task_ref in task_by_id
+                            and task_by_id[task_ref].state == "complete"
+                        )
+                    }
+                    pending_refs: list[str] = []
+                    if evidence_store is not None:
+                        for evidence_ref in root_evidence:
+                            if (
+                                evidence_ref in linked
+                                or not completed_next_test_ids
+                            ):
+                                continue
+                            try:
+                                evidence = evidence_store.get(evidence_ref)
+                            except Exception:
+                                continue
+                            if (
+                                getattr(evidence, "verified", False)
+                                and evidence.task_id in completed_next_test_ids
+                            ):
+                                pending_refs.append(evidence_ref)
+                    if pending_refs:
+                        scope_seeds.append(
+                            ActionScopeSeed(
+                                action=(
+                                    ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value
+                                ),
+                                parent_obligation_id=root_id,
+                                hypothesis_ref=entry.hypothesis_id,
+                                evidence_refs=tuple(dict.fromkeys(pending_refs)),
+                                reason_codes=("ROOT_POST_TEST_RELATION_PENDING",),
+                            )
+                        )
+
+        # READY ResearchTask identity is server-owned. Project one correlated execution
+        # scope per pending task from the same binding validator used by execution.
+        for task in research_tasks:
+            if getattr(task, "state", None) != "pending":
+                continue
+            try:
+                capability_override = None
+                if task.origin == "AGENT_DERIVED":
+                    capability_override = self._research_tasks.capability_for_task_kind(
+                        ResearchTaskKind(task.task_kind)
+                    )
+                obligation, binding = self._scheduled_binding(
+                    runtime=runtime,
+                    task=task,
+                    capability_key=capability_override,
+                )
+            except Exception:
+                continue
+
+            def aliases(kind: str) -> tuple[str, ...]:
+                return tuple(
+                    self._handle_alias(handle_id)
+                    for handle_id in binding.refs(kind)
+                )
+
+            capability_key = binding.spec.key
+            if capability_key == ManagerCapabilityKey.RELATIONSHIP:
+                focus = aliases("metric")
+                counterpart = aliases("dimension")
+                if focus and counterpart:
+                    scope_seeds.append(
+                        ActionScopeSeed(
+                            action=ManagerActionKind.RUN_RELATIONSHIP.value,
+                            parent_obligation_id=obligation.obligation_id,
+                            task_id=task.task_id,
+                            capability_key=capability_key.value,
+                            obligation_ids=(obligation.obligation_id,),
+                            evidence_refs=(
+                                (task.trigger_evidence_ref,)
+                                if task.trigger_evidence_ref is not None
+                                else ()
+                            ),
+                            focus_handles=focus,
+                            counterpart_handles=counterpart,
+                            reason_codes=("READY_RESEARCH_TASK",),
+                        )
+                    )
+                continue
+
+            metric = aliases("metric")
+            if not metric:
+                continue
+            scope_seeds.append(
+                ActionScopeSeed(
+                    action=ManagerActionKind.RUN_ANALYTICS.value,
+                    parent_obligation_id=(
+                        task.parent_obligation_id
+                        if task.origin == "AGENT_DERIVED"
+                        else obligation.obligation_id
+                    ),
+                    task_id=(
+                        task.task_id if task.origin == "AGENT_DERIVED" else None
+                    ),
+                    capability_key=capability_key.value,
+                    obligation_ids=(obligation.obligation_id,),
+                    evidence_refs=(
+                        (task.trigger_evidence_ref,)
+                        if task.origin == "AGENT_DERIVED"
+                        and task.trigger_evidence_ref is not None
+                        else ()
+                    ),
+                    handle_refs=tuple(
+                        self._handle_alias(handle_id)
+                        for handle_id in task.input_refs
+                    ),
+                    metric_handles=metric,
+                    dimension_handles=aliases("dimension"),
+                    filter_handles=aliases("filter"),
+                    period_handles=aliases("period"),
+                    comparison_handles=aliases("comparison"),
+                    ranking_direction=getattr(obligation, "ranking_direction", None),
+                    ranking_limit=getattr(obligation, "ranking_limit", None),
+                    reason_codes=("READY_RESEARCH_TASK",),
+                )
+            )
+
+        state_payload = {
+            "run_id": runtime.snapshot.run_id,
+            "manager_state": runtime.snapshot.state.value,
+            "accepted_contract_id": runtime.snapshot.accepted_contract_id,
+            "lineage_id": runtime.snapshot.lineage_id,
+            "ledger_version": getattr(ledger, "version", None),
+            "manager_turns": runtime.snapshot.manager_turns,
+            "research_manager_turns": runtime.snapshot.research_manager_turns,
+            "evidence_refs": list(runtime.snapshot.evidence_refs),
+            "effective_evidence_refs": list(effective_refs),
+            "directive_dispositions": [
+                item.model_dump(mode="json")
+                for item in runtime.directive_dispositions
+            ],
+            "tasks": [
+                {
+                    "task_id": task.task_id,
+                    "state": task.state,
+                    "origin": task.origin,
+                    "parent_obligation_id": task.parent_obligation_id,
+                    "trigger_evidence_ref": task.trigger_evidence_ref,
+                    "input_refs": list(task.input_refs),
+                }
+                for task in research_tasks
+            ],
+            "hypotheses": [
+                {
+                    "root_id": root_id,
+                    "entries": [
+                        {
+                            "hypothesis_id": entry.hypothesis_id,
+                            "status": entry.status.value,
+                            "evidence_links": [
+                                {
+                                    "evidence_ref": link.evidence_ref,
+                                    "relation": link.relation.value,
+                                }
+                                for link in entry.evidence_links
+                            ],
+                            "next_test_task_refs": list(entry.next_test_task_refs),
+                        }
+                        for entry in hypothesis_ledger.state.entries
+                    ],
+                }
+                for root_id, hypothesis_ledger in sorted(
+                    (hypothesis_ledgers or {}).items()
+                )
+            ],
+        }
+        state_version = (
+            "apsv_"
+            + hashlib.sha256(
+                json.dumps(
+                    state_payload,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()[:24]
+        )
 
         context = ManagerActionAvailabilityContext(
             root_states=tuple(root_states),
+            state_version=state_version,
+            scope_seeds=tuple(scope_seeds),
             inspectable_old_evidence_refs=tuple(dict.fromkeys(inspectable_old)),
             effective_inspected_verified_evidence_refs=effective_refs,
             fresh_disclosed_evidence_ref=fresh_ref,
