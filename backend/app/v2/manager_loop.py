@@ -529,6 +529,7 @@ def _post_acceptance_native_schema(
     pending_relation_evidence_refs: tuple[str, ...] = (),
     directive_disposition_ids: tuple[str, ...] = (),
     directive_disposition_evidence_refs: tuple[str, ...] = (),
+    applicability_snapshot: ActionApplicabilitySnapshot | None = None,
 ) -> dict[str, Any]:
     """Expose only actions that are legal after AcceptedTurnContract commit.
 
@@ -576,6 +577,408 @@ def _post_acceptance_native_schema(
                 narrow(value)
 
     narrow(schema)
+
+    if applicability_snapshot is not None:
+        if not applicability_snapshot.scopes:
+            raise RuntimeError(
+                "post-acceptance applicability snapshot has no model-visible scopes"
+            )
+
+        shared_defs = copy.deepcopy(schema.get("$defs") or {})
+        base_choice = copy.deepcopy(schema)
+        base_choice.pop("$defs", None)
+
+        scalar_identity_fields = (
+            "temporal_anchor_handle",
+            "base_period_handle",
+            "semantic_parent_obligation_id",
+            "semantic_evidence_ref",
+            "branch_parent_obligation_id",
+            "branch_evidence_ref",
+            "directive_id",
+            "directive_evidence_ref",
+            "hypothesis_parent_obligation_id",
+            "hypothesis_ref",
+            "hypothesis_relation_evidence_ref",
+            "next_test_task_kind",
+            "next_test_trigger_evidence_ref",
+            "period_handle",
+            "comparison_handle",
+            "derived_task_id",
+            "derived_parent_obligation_id",
+            "derived_capability_key",
+            "derived_evidence_ref",
+            "relationship_obligation_id",
+            "evidence_ref",
+        )
+        array_identity_fields = (
+            "hypothesis_semantic_handles",
+            "hypothesis_trigger_evidence_refs",
+            "next_test_input_handles",
+            "obligation_ids",
+            "metric_handles",
+            "dimension_handles",
+            "filter_handles",
+            "focus_handles",
+            "counterpart_handles",
+        )
+
+        def set_null(props: dict[str, Any], name: str) -> None:
+            if name in props:
+                props[name] = {"type": "null"}
+
+        def set_scalar_values(
+            props: dict[str, Any],
+            name: str,
+            values: tuple[str, ...],
+            *,
+            nullable: bool = False,
+        ) -> None:
+            if name not in props:
+                return
+            deduped = tuple(dict.fromkeys(str(value) for value in values))
+            if not deduped:
+                set_null(props, name)
+                return
+            value_schema: dict[str, Any] = {
+                "type": "string",
+                "enum": list(deduped),
+            }
+            props[name] = (
+                {"anyOf": [value_schema, {"type": "null"}]}
+                if nullable
+                else value_schema
+            )
+
+        def set_array_values(
+            props: dict[str, Any],
+            name: str,
+            values: tuple[str, ...],
+            *,
+            required_nonempty: bool = False,
+        ) -> None:
+            if name not in props:
+                return
+            deduped = tuple(dict.fromkeys(str(value) for value in values))
+            if not deduped:
+                props[name] = {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "maxItems": 0,
+                }
+                return
+            node: dict[str, Any] = {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": list(deduped),
+                },
+            }
+            if required_nonempty:
+                node["minItems"] = 1
+            props[name] = node
+
+        def set_exact_string(
+            props: dict[str, Any],
+            name: str,
+            value: str | None,
+        ) -> None:
+            if value is None:
+                set_null(props, name)
+            else:
+                set_scalar_values(props, name, (value,))
+
+        def set_exact_int_or_null(
+            props: dict[str, Any],
+            name: str,
+            value: int | None,
+        ) -> None:
+            if name not in props:
+                return
+            props[name] = (
+                {"type": "null"}
+                if value is None
+                else {"type": "integer", "enum": [int(value)]}
+            )
+
+        def scoped_branch_candidates(
+            props: dict[str, Any],
+            handle_refs: tuple[str, ...],
+        ) -> None:
+            if "branch_candidates" not in props:
+                return
+            candidate_def = copy.deepcopy(
+                shared_defs.get("ManagerBranchCandidateProposal") or {}
+            )
+            if not candidate_def:
+                raise RuntimeError(
+                    "strict Manager schema missing ManagerBranchCandidateProposal"
+                )
+            candidate_props = candidate_def.get("properties") or {}
+            input_node = candidate_props.get("input_handles")
+            if isinstance(input_node, dict):
+                input_node.clear()
+                input_node.update(
+                    {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "string",
+                            "enum": list(dict.fromkeys(handle_refs)),
+                        },
+                    }
+                )
+            props["branch_candidates"] = {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 12,
+                "items": candidate_def,
+            }
+
+        choice_variants: list[dict[str, Any]] = []
+        for scope in applicability_snapshot.scopes:
+            variant = copy.deepcopy(base_choice)
+            props = variant.get("properties") or {}
+            required = list(variant.get("required") or ())
+
+            props["scope_ref"] = {
+                "type": "string",
+                "enum": [scope.scope_ref],
+            }
+            if "scope_ref" not in required:
+                required.append("scope_ref")
+            variant["required"] = required
+
+            props["action"] = {
+                "type": "string",
+                "enum": [scope.action],
+            }
+
+            for name in scalar_identity_fields:
+                set_null(props, name)
+            for name in array_identity_fields:
+                set_array_values(props, name, ())
+            if "branch_candidates" in props:
+                props["branch_candidates"] = {
+                    "type": "array",
+                    "items": {"type": "object"},
+                    "maxItems": 0,
+                }
+
+            action = scope.action
+            if action == ManagerActionKind.RESOLVE_SEMANTICS.value:
+                set_exact_string(
+                    props,
+                    "semantic_parent_obligation_id",
+                    scope.parent_obligation_id,
+                )
+                set_scalar_values(
+                    props,
+                    "semantic_evidence_ref",
+                    scope.evidence_refs,
+                )
+            elif action == ManagerActionKind.PROPOSE_BRANCHES.value:
+                set_exact_string(
+                    props,
+                    "branch_parent_obligation_id",
+                    scope.parent_obligation_id,
+                )
+                set_scalar_values(
+                    props,
+                    "branch_evidence_ref",
+                    scope.evidence_refs,
+                )
+                scoped_branch_candidates(props, scope.handle_refs)
+            elif action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE.value:
+                set_exact_string(props, "directive_id", scope.directive_id)
+                set_scalar_values(
+                    props,
+                    "directive_evidence_ref",
+                    scope.evidence_refs,
+                )
+            elif action in {
+                ManagerActionKind.PROPOSE_HYPOTHESIS.value,
+                ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
+            }:
+                set_exact_string(
+                    props,
+                    "hypothesis_parent_obligation_id",
+                    scope.parent_obligation_id,
+                )
+                set_array_values(
+                    props,
+                    "hypothesis_semantic_handles",
+                    scope.handle_refs,
+                    required_nonempty=True,
+                )
+                set_array_values(
+                    props,
+                    "hypothesis_trigger_evidence_refs",
+                    scope.evidence_refs,
+                    required_nonempty=True,
+                )
+                if action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value:
+                    set_scalar_values(
+                        props,
+                        "next_test_task_kind",
+                        scope.task_kinds,
+                    )
+                    set_array_values(
+                        props,
+                        "next_test_input_handles",
+                        scope.handle_refs,
+                        required_nonempty=True,
+                    )
+                    set_scalar_values(
+                        props,
+                        "next_test_trigger_evidence_ref",
+                        scope.evidence_refs,
+                    )
+            elif action == ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value:
+                set_exact_string(props, "hypothesis_ref", scope.hypothesis_ref)
+                set_scalar_values(
+                    props,
+                    "hypothesis_relation_evidence_ref",
+                    scope.evidence_refs,
+                )
+            elif action == ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value:
+                set_exact_string(props, "hypothesis_ref", scope.hypothesis_ref)
+                set_scalar_values(
+                    props,
+                    "next_test_task_kind",
+                    scope.task_kinds,
+                )
+                set_array_values(
+                    props,
+                    "next_test_input_handles",
+                    scope.handle_refs,
+                    required_nonempty=True,
+                )
+                set_scalar_values(
+                    props,
+                    "next_test_trigger_evidence_ref",
+                    scope.evidence_refs,
+                )
+            elif action == ManagerActionKind.RUN_ANALYTICS.value:
+                set_array_values(
+                    props,
+                    "obligation_ids",
+                    scope.obligation_ids,
+                    required_nonempty=True,
+                )
+                set_array_values(
+                    props,
+                    "metric_handles",
+                    scope.metric_handles,
+                    required_nonempty=True,
+                )
+                set_array_values(
+                    props,
+                    "dimension_handles",
+                    scope.dimension_handles,
+                )
+                set_array_values(
+                    props,
+                    "filter_handles",
+                    scope.filter_handles,
+                )
+                if scope.period_handles:
+                    set_scalar_values(
+                        props,
+                        "period_handle",
+                        scope.period_handles,
+                        nullable=True,
+                    )
+                if scope.comparison_handles:
+                    set_scalar_values(
+                        props,
+                        "comparison_handle",
+                        scope.comparison_handles,
+                        nullable=True,
+                    )
+                if scope.task_id is not None:
+                    set_exact_string(props, "derived_task_id", scope.task_id)
+                    set_exact_string(
+                        props,
+                        "derived_parent_obligation_id",
+                        scope.parent_obligation_id,
+                    )
+                    set_exact_string(
+                        props,
+                        "derived_capability_key",
+                        scope.capability_key,
+                    )
+                    set_scalar_values(
+                        props,
+                        "derived_evidence_ref",
+                        scope.evidence_refs,
+                    )
+                if scope.ranking_direction is not None:
+                    set_exact_string(
+                        props,
+                        "ranking_direction",
+                        scope.ranking_direction,
+                    )
+                if scope.ranking_limit is not None:
+                    set_exact_int_or_null(
+                        props,
+                        "limit",
+                        scope.ranking_limit,
+                    )
+            elif action == ManagerActionKind.RUN_RELATIONSHIP.value:
+                set_exact_string(
+                    props,
+                    "relationship_obligation_id",
+                    (
+                        scope.obligation_ids[0]
+                        if scope.obligation_ids
+                        else scope.parent_obligation_id
+                    ),
+                )
+                set_array_values(
+                    props,
+                    "focus_handles",
+                    scope.focus_handles,
+                    required_nonempty=True,
+                )
+                set_array_values(
+                    props,
+                    "counterpart_handles",
+                    scope.counterpart_handles,
+                    required_nonempty=True,
+                )
+            elif action == ManagerActionKind.INSPECT_EVIDENCE.value:
+                set_scalar_values(props, "evidence_ref", scope.evidence_refs)
+            elif action == ManagerActionKind.REQUEST_CLARIFICATION.value:
+                set_array_values(
+                    props,
+                    "obligation_ids",
+                    scope.obligation_ids,
+                )
+            elif action == ManagerActionKind.FINISH.value:
+                pass
+            else:
+                raise RuntimeError(
+                    f"unsupported scoped post-acceptance action: {action}"
+                )
+
+            choice_variants.append(variant)
+
+        return {
+            "type": "object",
+            "properties": {
+                "snapshot_ref": {
+                    "type": "string",
+                    "enum": [applicability_snapshot.snapshot_ref],
+                },
+                "choice": {
+                    "anyOf": choice_variants,
+                },
+            },
+            "required": ["snapshot_ref", "choice"],
+            "additionalProperties": False,
+            "$defs": shared_defs,
+        }
 
     # When inspection remains useful because older Evidence is not disclosed in the
     # current cognition packet, constrain the inspect target to exactly those refs.
