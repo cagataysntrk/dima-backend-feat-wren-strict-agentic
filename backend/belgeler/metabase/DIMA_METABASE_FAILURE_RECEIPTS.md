@@ -4739,3 +4739,127 @@ Wren / raw SQL / admin fallback       = 0 / 0 / 0
 
 No further Luna recovery attempt is authorized or needed for this closed family.
 P17 is SEALED. P18 may proceed only through its pre-development review at this handoff.
+
+
+---
+
+## DMP-P18-FAMILY-WORKFLOW-TRANSPORT-001 — provider-free workflow parse/transport
+
+date: 2026-09-25  
+failure_family_id: `p18-provider-free-workflow-transport`  
+attempt_in_family: `1 / 3`  
+authoritative run: `36165899954 = FAILURE`  
+tested SHA: `fdf15611e7f0aa57e80f75fe7f8630d8434a2af3`  
+status: `CLOSED`
+
+first_wrong_transition:
+
+```text
+P18 workflow file accepted into repository
+→ GitHub Actions workflow failed before any job existed
+→ no compile / migration / P18 test executed
+```
+
+owner:
+`CI / PROVIDER-FREE WORKFLOW TRANSPORT`
+
+root_cause:
+the initial P18 workflow serialization was not executable by Actions. This was not a P18 domain,
+migration, policy-resolution or architecture failure.
+
+generic_fix:
+replace the workflow with a minimal valid Actions definition while preserving the same provider-free
+proof surface.
+
+root_fix_sha:
+`b037b48feffc5c7cf66fd4897e639b0822dcf0b2`
+
+closure evidence:
+later P18 provider-free runs executed real jobs and completed GREEN.
+
+paid/model calls: `0`  
+engine builds: `0`
+
+---
+
+## DMP-P18-FAMILY-HANDOFF-GOVERNANCE-001 — retained P17 permanent marker
+
+date: 2026-09-25  
+failure_family_id: `p18-governance-handoff-marker`  
+attempt_in_family: `1 / 3`  
+authoritative run: `36165901475 = FAILURE`  
+tested SHA: `fdf15611e7f0aa57e80f75fe7f8630d8434a2af3`  
+status: `CLOSED`
+
+first_wrong_transition:
+
+```text
+DMP-0054 living-doc repin
+→ current P18 block valid
+→ governance required retained permanent P17 trajectory-oracle sentence
+→ exact historical permanent marker absent from visible handoff text
+```
+
+owner:
+`GOVERNANCE / LIVING-HANDOFF COMPATIBILITY`
+
+root_cause:
+current-state repin preserved the P17 architecture but accidentally omitted one governance-required
+permanent sentence. No P18 product behavior was involved.
+
+generic_fix:
+restore the permanent retained rule without changing P17 or P18 behavior:
+
+```text
+DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY.
+```
+
+root_fix_sha:
+`62ef2343425e591dab42ed384648810817e73229`
+
+paid/model calls: `0`  
+engine builds: `0`
+
+---
+
+## DMP-P18-FAMILY-GOVERNANCE-RUNTIME-001 — dependency-free static guard
+
+date: 2026-09-25  
+failure_family_id: `p18-governance-static-guard-runtime-dependency`  
+attempt_in_family: `1 / 3`  
+authoritative run: `36166067966 = FAILURE`  
+tested SHA: `62ef2343425e591dab42ed384648810817e73229`  
+status: `CLOSED`
+
+first_wrong_transition:
+
+```text
+P18 authority guard entered
+→ governance job had intentionally not installed backend dependencies
+→ static table-count guard imported sqlmodel
+→ ModuleNotFoundError before policy guard completed
+```
+
+owner:
+`GOVERNANCE STATIC-GUARD RUNTIME DEPENDENCY`
+
+root_cause:
+a static governance proof incorrectly depended on the application runtime. The P18 product and its
+provider-free tests were not the failing owner.
+
+generic_fix:
+use Python AST over `control_plane/models.py` to prove exactly two P18 `__tablename__` values and
+AST imports over the P18 production module, requiring no backend runtime dependency.
+
+root_fix_sha:
+`3d419d152d64b542bfc91d4fdc730ecf432a8fb2`
+
+closure evidence:
+
+```text
+governance = 36166157228 SUCCESS
+final governance = 36166506443 SUCCESS
+```
+
+paid/model calls: `0`  
+engine builds: `0`

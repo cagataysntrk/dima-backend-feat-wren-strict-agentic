@@ -4897,7 +4897,7 @@ second receipt family, P19 causal authority, engine fork, Wren/raw-SQL fallback 
 date: 2026-09-25
 
 status:
-`RATIFIED / P18 MINIMAL IMPLEMENTATION AUTHORIZED / PROVIDER-FREE ONLY / P19 BLOCKED`
+`SEALED / P18 GREEN / MINIMAL BUSINESS RELATIONSHIP POLICY COMPLETE / P19 PRE-DEVELOPMENT AUTHORIZATION REQUIRED`
 
 Current sealed input:
 
@@ -5188,3 +5188,115 @@ P19 = PRE-DEVELOPMENT AUTHORIZATION REQUIRED
 
 No P18B/P18C, relationship graph platform, policy DSL, ontology framework, UI/UX or P19 causal
 implementation is authorized by DMP-DEC-0054.
+
+
+### DMP-DEC-0054 final seal — GREEN
+
+date: 2026-09-25
+
+Canonical identities:
+
+```text
+DMP-DEC-0054 authorization HEAD        = 3970c02140df4ed6aa7cf170f5bfa7613ce322db
+P18 product/code candidate             = fdf15611e7f0aa57e80f75fe7f8630d8434a2af3
+P18 integrated seal candidate          = ce56a7c478393d5656824b0f9715263bb837756c
+Alembic head                           = f5a1d7c9e2b4
+
+sealed P17 product/code candidate      = 3664d3d706d70225323126cbc994b8c2c732aaf4
+P17 live GREEN                         = 36160559037 SUCCESS
+
+engine SHA                             = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                         = 0.63.18-dima.6
+engine digest                          = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+engine certification                   = 36042062775 SUCCESS
+```
+
+Final deterministic seal:
+
+```text
+P18 provider-free                      = 36166506385 SUCCESS
+P18 governance                         = 36166506443 SUCCESS
+
+P18 focused                            = 23 PASS
+P17 provider-free regressions          = 95 PASS
+P16 claim-lineage                      = 6 PASS
+P15 native Exploration                 = 5 PASS
+P14 native-direct                      = 17 PASS
+
+model calls                            = 0
+Luna                                   = 0
+Sol                                    = 0
+C1                                     = 0
+engine builds                          = 0
+Metabase modification                  = 0
+```
+
+The P18 vertical proves:
+
+```text
+explicit typed RelationshipPolicyRequirement
+→ sealed ResearchSession / P16 claim / P17 reasoning-step references
+→ exact tenant/context/key/business-ref/scope policy resolution
+→ ACTIVE exact policy
+→ immutable BusinessRelationshipPolicyUse lineage
+→ SATISFIED downstream eligibility
+```
+
+and the negative path proves exact, durable distinctions for:
+
+```text
+NOT_REQUIRED
+BLOCKED_MISSING
+BLOCKED_RETIRED
+BLOCKED_TENANT
+BLOCKED_CONTEXT
+BLOCKED_SCOPE
+business-ref mismatch = fail closed
+claim/session/obligation mismatch = fail closed
+reasoning-step/session/obligation mismatch = fail closed
+```
+
+Restart reuses the exact policy-use identity. Historical SATISFIED use remains immutable after
+retirement; a new governed meaning receives a new fingerprint/policy authority. P18 stores no
+Research requirement table and exactly two P18 durable tables exist.
+
+Permanent sealed boundary:
+
+```text
+P18 BUSINESS RELATIONSHIP POLICY
+!=
+METABASE PHYSICAL RELATIONSHIP GRAPH
+
+P18 VALIDATES GOVERNED BUSINESS INTERPRETATION POLICY.
+P18 DOES NOT DISCOVER OR EXECUTE JOINS.
+NO TABLE/FIELD JOIN GRAPH IN DIMA.
+NO RELATIONSHIP SCORING.
+NO FUZZY RELATIONSHIP INFERENCE.
+NO CAUSALITY IN P18.
+
+NativeResourceBinding is NOT P18 policy authority.
+legacy relationships.yml is NOT P18 production truth.
+
+METABASE + METABOT REMAIN THE ANALYTICAL ENGINE.
+```
+
+No Evidence owner, receipt family, analytical executor, join planner, physical relationship graph,
+Metabase locator mirror, policy DSL, ontology framework, P19 causal authority, paid model work or
+engine change was introduced.
+
+Final phase state:
+
+```text
+P14 = SEALED
+P15 = SEALED
+P16 = SEALED
+P17 = SEALED
+P18 = SEALED
+
+P18 development = STOP
+P18B / P18C = NOT AUTHORIZED
+
+P19 = PRE-DEVELOPMENT AUTHORIZATION REQUIRED
+P19 implementation = NOT AUTHORIZED
+UI / UX = FORBIDDEN UNTIL P21 SEALED
+```

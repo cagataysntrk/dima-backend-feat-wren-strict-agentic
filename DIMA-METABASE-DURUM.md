@@ -1,25 +1,6 @@
 # DIMA + METABASE — LIVING STATUS
 
-## DMP-DEC-0054 — CURRENT P18 AUTHORITY
-
-```text
-branch                                = feat/dima-metabase-platform
-branch HEAD at authorization          = bb1dfeb449e51b49c0824c3d21686b180ca9b689
-sealed P17 product/code candidate     = 3664d3d706d70225323126cbc994b8c2c732aaf4
-P17 live GREEN receipt                = 36160559037 SUCCESS
-P18 implementation candidate          = PENDING
-engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
-engine release                        = 0.63.18-dima.6
-engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
-model calls                           = 0
-engine builds                         = 0
-
-P17                                   = SEALED
-P18 implementation                    = AUTHORIZED NOW
-P18                                   = OPEN / PROVIDER-FREE
-P19                                   = NOT AUTHORIZED
-UI / UX                               = FORBIDDEN
-```
+## P18 SEALED — DMP-DEC-0054
 
 ```text
 P18 BUSINESS RELATIONSHIP POLICY
@@ -32,12 +13,71 @@ NO TABLE/FIELD JOIN GRAPH IN DIMA.
 NO RELATIONSHIP SCORING.
 NO FUZZY RELATIONSHIP INFERENCE.
 NO CAUSALITY IN P18.
+
 METABASE + METABOT REMAIN THE ANALYTICAL ENGINE.
 ```
 
-P18 v1 is deliberately bounded to one durable policy authority, one durable policy-use lineage and
-one transient typed requirement. No additional P18 authority store is permitted without a new
-supervisor decision.
+P18 v1 is permanently bounded to one durable policy authority,
+one durable policy-use lineage and one transient typed requirement.
+No P18B/P18C, relationship graph platform, policy DSL or ontology framework is authorized.
+
+## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
+
+> **FORWARD AUTHORITY.** This block overrides all historical current/next/blocked text below it.
+
+```text
+branch                                = feat/dima-metabase-platform
+P18 product/code candidate            = fdf15611e7f0aa57e80f75fe7f8630d8434a2af3
+P18 integrated seal candidate         = ce56a7c478393d5656824b0f9715263bb837756c
+Alembic head                          = f5a1d7c9e2b4
+
+sealed P17 product/code candidate     = 3664d3d706d70225323126cbc994b8c2c732aaf4
+P17 live GREEN                        = 36160559037 SUCCESS
+
+P18 provider-free                     = 36166506385 SUCCESS
+P18 governance                        = 36166506443 SUCCESS
+
+P18 focused                           = 23 PASS
+P17 provider-free regressions         = 95 PASS
+P16 claim-lineage                     = 6 PASS
+P15 native Exploration                = 5 PASS
+P14 native-direct                     = 17 PASS
+
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                        = 0.63.18-dima.6
+engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+engine certification                  = 36042062775 SUCCESS
+model calls                           = 0
+Luna / Sol / C1                       = 0 / 0 / 0
+engine builds                         = 0
+Metabase modification                 = 0
+
+P14                                   = SEALED
+P15                                   = SEALED
+P16                                   = SEALED
+P17                                   = SEALED
+P18                                   = SEALED
+
+P18 development                       = STOP
+P18B / P18C                           = NOT AUTHORIZED
+P19                                   = PRE-DEVELOPMENT AUTHORIZATION REQUIRED
+P19 implementation                    = NOT AUTHORIZED
+UI / UX                               = FORBIDDEN UNTIL P21 SEALED
+```
+
+### CURRENT RETURN POINT
+
+P18 is complete. Do not extend it with a relationship graph, physical/native join metadata,
+relationship scoring, fuzzy inference, policy DSL, ontology framework or P19 causal semantics.
+
+The next permitted product step requires a new supervisor decision for:
+
+```text
+P19 HYPOTHESIS / ROOT CAUSE
+PRE-DEVELOPMENT AUTHORIZATION
+```
+
+No P19 implementation has been started.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 
