@@ -263,6 +263,8 @@ class StructuredResearchProposalManager:
         *,
         guidance: str | None = None,
         allowed_intents: tuple[InvestigationIntent, ...] | None = None,
+        allowed_parent_step_ids: tuple[str | None, ...] | None = None,
+        branch_key_mode: str | None = None,
     ) -> ManagerProposal:
         user = (
             "Choose exactly one next bounded investigation step from this "
@@ -281,6 +283,44 @@ class StructuredResearchProposalManager:
             + self._snapshot_payload(snapshot)
         )
         schema = _schema_for_intents(allowed_intents)
+        props = schema["properties"]
+        props["source_revision"] = {
+            "type": "integer",
+            "enum": [snapshot.source_revision],
+        }
+        props["target_parent_obligation"] = {
+            "type": "string",
+            "enum": [
+                x.obligation_id for x in snapshot.parent_obligations
+            ],
+        }
+        if allowed_parent_step_ids is not None:
+            values = list(allowed_parent_step_ids)
+            if values == [None]:
+                props["parent_step_id"] = {"type": "null"}
+            elif all(isinstance(x, str) for x in values):
+                props["parent_step_id"] = {
+                    "type": "string",
+                    "enum": values,
+                }
+            else:
+                props["parent_step_id"] = {
+                    "anyOf": [
+                        {"type": "null"},
+                        {
+                            "type": "string",
+                            "enum": [x for x in values if x is not None],
+                        },
+                    ]
+                }
+        if branch_key_mode == "null":
+            props["branch_key"] = {"type": "null"}
+        elif branch_key_mode == "string":
+            props["branch_key"] = {"type": "string"}
+        elif branch_key_mode is not None:
+            raise ValueError(
+                f"unknown branch_key_mode: {branch_key_mode}"
+            )
         raw = self._transport.structured_json(
             _SYSTEM,
             user,
@@ -304,10 +344,14 @@ class StructuredResearchProposalManager:
         *,
         guidance: str,
         allowed_intents: tuple[InvestigationIntent, ...] | None = None,
+        allowed_parent_step_ids: tuple[str | None, ...] | None = None,
+        branch_key_mode: str | None = None,
     ) -> ManagerProposal:
         """Canary/evaluation seam: constrain authority shape, never the answer."""
         return self._propose(
             snapshot,
             guidance=guidance,
             allowed_intents=allowed_intents,
+            allowed_parent_step_ids=allowed_parent_step_ids,
+            branch_key_mode=branch_key_mode,
         )
