@@ -1347,6 +1347,10 @@ class ResearchManagerLoop:
                             capability_key=item.capability_key.value,
                             evidence_ref=ref,
                             semantic_refs=semantic_refs,
+                            branch_eligible=(
+                                item.obligation_id
+                                in tuple(getattr(evidence, "obligation_ids", ()) or ())
+                            ),
                         )
                     )
 
