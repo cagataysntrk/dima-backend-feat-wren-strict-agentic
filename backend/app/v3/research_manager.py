@@ -204,6 +204,13 @@ class ManagerProposal(Frozen):
             raise ValueError(
                 f"{intent.value} requires parent_step_id"
             )
+        if (
+            intent == InvestigationIntent.EXPLORE_ALTERNATIVES
+            and self.branch_key is None
+        ):
+            raise ValueError(
+                "EXPLORE_ALTERNATIVES requires branch_key"
+            )
 
         for name, refs in (
             ("Evidence", self.inspected_evidence_refs),
@@ -690,6 +697,7 @@ class ResearchReasoningStore:
         proposal_fingerprint: str,
         status: ReasoningStepStatus = ReasoningStepStatus.PENDING,
         stop_reason: ManagerStopReason | None = None,
+        stop_scope_override: StopScope | None = None,
         now: datetime | None = None,
     ) -> ResearchReasoningStep:
         when = _now(now)
@@ -725,7 +733,11 @@ class ResearchReasoningStore:
             intent=topology.intent.value,
             target_kind=topology.target_kind.value,
             target_ref=topology.target_ref,
-            stop_scope=topology.stop_scope.value if topology.stop_scope else None,
+            stop_scope=(
+                (stop_scope_override or topology.stop_scope).value
+                if (stop_scope_override or topology.stop_scope)
+                else None
+            ),
             proposal_id=proposal.proposal_id,
             proposal_json=proposal.model_dump_json(),
             action=proposal.action.value,
@@ -1268,6 +1280,29 @@ class ResearchInvestigationManager:
                 proposal.target_parent_obligation,
             )
 
+        topology = self._ledger.topology_for(
+            session=session,
+            proposal=proposal,
+        )
+        if topology.depth > self._budget.max_depth:
+            raise ResearchManagerMaturationError(
+                "P17_DEPTH_BUDGET_EXHAUSTED",
+                (
+                    f"requested depth {topology.depth} exceeds "
+                    f"max_depth={self._budget.max_depth}"
+                ),
+            )
+        if (
+            topology.branch_id
+            in snapshot.investigation.stopped_branch_ids
+            and proposal.effective_intent
+            != InvestigationIntent.STOP_BRANCH
+        ):
+            raise ResearchManagerMaturationError(
+                "P17_BRANCH_TERMINAL",
+                topology.branch_id,
+            )
+
         evidence_scope = {
             x.evidence_id: x.obligation_id for x in session.evidence_refs
         }
@@ -1584,6 +1619,7 @@ class ResearchInvestigationManager:
                 proposal_fingerprint=fingerprint,
                 status=ReasoningStepStatus.NO_PROGRESS,
                 stop_reason=ManagerStopReason.NO_PROGRESS,
+                stop_scope_override=StopScope.BRANCH,
             )
             return step, None
 
