@@ -268,7 +268,8 @@ def test_root_ready_does_not_hide_nonroot_semantic_expansion_parent():
             fresh_disclosed_evidence_ref="evi_root",
             fresh_disclosed_verified=True,
             open_adaptive_directive_count=1,
-            semantic_expansion_parent_obligation_ids=("U_REL",),
+            open_adaptive_parent_obligation_ids=("U_REL",),
+            evidence_grounded_parent_obligation_ids=("U_REL",),
             remaining_research_turns=3,
         )
     )
@@ -302,7 +303,8 @@ def test_no_eligible_semantic_parent_removes_resolve_even_with_root_evidence():
             effective_inspected_verified_evidence_refs=("evi_root",),
             fresh_disclosed_evidence_ref="evi_root",
             fresh_disclosed_verified=True,
-            semantic_expansion_parent_obligation_ids=(),
+            open_adaptive_parent_obligation_ids=(),
+            evidence_grounded_parent_obligation_ids=("rt_child",),
             remaining_research_turns=3,
         )
     )
@@ -310,3 +312,25 @@ def test_no_eligible_semantic_parent_removes_resolve_even_with_root_evidence():
     assert "resolve_semantics" not in profile.available_actions
     assert profile.resolve_semantics_parent_obligation_ids == ()
 
+
+
+
+def test_verified_root_next_test_child_does_not_become_semantic_authority():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            root_states=(_root(hypothesis_count=1),),
+            effective_inspected_verified_evidence_refs=("evi_root", "evi_child"),
+            fresh_disclosed_evidence_ref="evi_child",
+            fresh_disclosed_verified=True,
+            open_adaptive_directive_count=0,
+            open_adaptive_parent_obligation_ids=(),
+            evidence_grounded_parent_obligation_ids=("U_ROOT", "rt_child"),
+            remaining_research_turns=2,
+        )
+    )
+
+    assert "resolve_semantics" not in profile.available_actions
+    assert profile.resolve_semantics_parent_obligation_ids == ()
+    assert profile.reasons_for_unavailable("resolve_semantics") == (
+        ActionAvailabilityReason.EXISTING_GOVERNED_HANDLES_SATISFY_NEXT_TEST.value,
+    )
