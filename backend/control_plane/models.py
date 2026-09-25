@@ -674,6 +674,10 @@ class ResearchExecutionLink(SQLModel, table=True):
         default=None,
         sa_column=Column(Text, nullable=True),
     )
+    native_result_json: str | None = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
     result_hash: str | None = Field(default=None, index=True)
     executed_at: datetime | None = None
     attestation_id: str | None = None

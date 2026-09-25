@@ -237,7 +237,7 @@ class ResearchSessionStore:
                 .where(ResearchExecutionLink.obligation_id == obligation_id)
                 .where(
                     ResearchExecutionLink.status.in_(
-                        ("DELEGATED", "CANDIDATE_CAPTURED")
+                        ("DELEGATED", "CANDIDATE_CAPTURED", "EXECUTED")
                     )
                 )
                 .order_by(ResearchExecutionLink.created_at.desc())
@@ -308,35 +308,110 @@ class ResearchSessionStore:
             )
         return query, observed
 
+    def mark_executed(
+        self,
+        link_id: uuid.UUID,
+        *,
+        native_subject_ref: str,
+        runtime_identity: dict,
+        result_payload: dict,
+        result_hash: str,
+        executed_at: datetime,
+    ) -> ResearchExecutionLink:
+        try:
+            result_json = json.dumps(
+                result_payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+            runtime_json = json.dumps(
+                runtime_identity,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+                default=str,
+            )
+        except (TypeError, ValueError) as exc:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_EXECUTION_RESULT_NOT_CANONICAL_JSON",
+                "native execution provenance is not deterministic JSON",
+            ) from exc
+        observed_hash = hashlib.sha256(result_json.encode("utf-8")).hexdigest()
+        if observed_hash != result_hash:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_RESULT_FINGERPRINT_MISMATCH",
+                "native result payload differs from its claimed result hash",
+            )
+        return self._update_link(
+            link_id,
+            native_subject_ref=native_subject_ref,
+            runtime_identity_json=runtime_json,
+            native_result_json=result_json,
+            result_hash=result_hash,
+            executed_at=executed_at,
+            status="EXECUTED",
+        )
+
+    def captured_execution(
+        self,
+        link: ResearchExecutionLink,
+    ) -> tuple[dict, dict, str, str, datetime]:
+        if (
+            link.status != "EXECUTED"
+            or not link.native_result_json
+            or not link.runtime_identity_json
+            or not link.result_hash
+            or not link.native_subject_ref
+            or link.executed_at is None
+        ):
+            raise ResearchPersistenceError(
+                "P14_NATIVE_EXECUTION_PROVENANCE_MISSING",
+                "Research occurrence has no complete durable native result provenance",
+            )
+        try:
+            result = json.loads(link.native_result_json)
+            runtime = json.loads(link.runtime_identity_json)
+        except json.JSONDecodeError as exc:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_EXECUTION_PROVENANCE_INVALID",
+                "persisted native execution provenance is invalid JSON",
+            ) from exc
+        if not isinstance(result, dict) or not isinstance(runtime, dict):
+            raise ResearchPersistenceError(
+                "P14_NATIVE_EXECUTION_PROVENANCE_INVALID",
+                "persisted native execution provenance has invalid shape",
+            )
+        result_json = json.dumps(
+            result,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        observed_hash = hashlib.sha256(result_json.encode("utf-8")).hexdigest()
+        if observed_hash != link.result_hash:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_RESULT_FINGERPRINT_MISMATCH",
+                "persisted native result changed after execution",
+            )
+        return result, runtime, link.result_hash, link.native_subject_ref, link.executed_at
+
     def mark_verified(
         self,
         link_id: uuid.UUID,
         *,
         receipt_id: str,
         evidence_id: str,
-        native_subject_ref: str,
-        runtime_identity: dict,
-        result_hash: str,
-        executed_at: datetime,
         attestation_id: str | None = None,
     ) -> ResearchExecutionLink:
-        runtime_json = json.dumps(
-            runtime_identity,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-            default=str,
-        )
         return self._update_link(
             link_id,
             attestation_id=attestation_id,
             receipt_id=receipt_id,
             evidence_id=evidence_id,
-            native_subject_ref=native_subject_ref,
-            runtime_identity_json=runtime_json,
-            result_hash=result_hash,
-            executed_at=executed_at,
             status="VERIFIED",
         )
 

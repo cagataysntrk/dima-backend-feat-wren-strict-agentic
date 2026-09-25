@@ -33,6 +33,10 @@ def upgrade() -> None:
     )
     op.add_column(
         "research_execution_link",
+        sa.Column("native_result_json", sa.Text(), nullable=True),
+    )
+    op.add_column(
+        "research_execution_link",
         sa.Column("result_hash", sa.String(), nullable=True),
     )
     op.add_column(
@@ -120,6 +124,7 @@ def downgrade() -> None:
     for column in (
         "executed_at",
         "result_hash",
+        "native_result_json",
         "runtime_identity_json",
         "native_subject_ref",
         "native_query_fingerprint",
