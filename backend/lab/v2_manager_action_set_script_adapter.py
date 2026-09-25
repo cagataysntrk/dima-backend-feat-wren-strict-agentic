@@ -33,8 +33,11 @@ def adapt_legacy_manager_intent(
             for row in cards
             if (row.get("context") or {}).get("task_family") == task_family
         ]
-        if matching:
-            cards = matching
+        if not matching:
+            raise AssertionError(
+                f"scripted intent task family is not executable: {task_family}"
+            )
+        cards = matching
 
     capability = legacy.get("derived_capability_key")
     if capability is not None:
@@ -43,8 +46,11 @@ def adapt_legacy_manager_intent(
             for row in cards
             if (row.get("context") or {}).get("capability") == capability
         ]
-        if matching:
-            cards = matching
+        if not matching:
+            raise AssertionError(
+                f"scripted intent capability is not executable: {capability}"
+            )
+        cards = matching
 
     def ledger_capability(obligation_id: str | None) -> str | None:
         if not obligation_id:
@@ -71,8 +77,11 @@ def adapt_legacy_manager_intent(
                     set((row.get("context") or {}).get("capabilities") or ())
                 )
             ]
-            if matching:
-                cards = matching
+            if not matching:
+                raise AssertionError(
+                    f"scripted evidence intent is not executable: {requested_ref}"
+                )
+            cards = matching
 
     if action in {"propose_branches", "resolve_semantics"}:
         parent_id = (
@@ -88,8 +97,12 @@ def adapt_legacy_manager_intent(
                 if (row.get("context") or {}).get("parent_capability")
                 == parent_capability
             ]
-            if matching:
-                cards = matching
+            if not matching:
+                raise AssertionError(
+                    "scripted parent capability has no legal ActionInstance: "
+                    f"{parent_capability}"
+                )
+            cards = matching
 
     if action in {"run_analytics", "run_relationship"}:
         requested_ids = (
@@ -136,8 +149,11 @@ def adapt_legacy_manager_intent(
                             }
                         )
                     ]
-                    if matching:
-                        cards = matching
+                    if not matching:
+                        raise AssertionError(
+                            "scripted analytical intent has no matching semantic context"
+                        )
+                    cards = matching
 
     if action == "propose_branches":
         requested = {
@@ -151,8 +167,12 @@ def adapt_legacy_manager_intent(
                 set((row.get("context") or {}).get("capability_choices") or ())
             )
         ]
-        if matching:
-            cards = matching
+        if not matching:
+            raise AssertionError(
+                "scripted branch capability set is not executable: "
+                + ",".join(sorted(requested))
+            )
+        cards = matching
 
     cards = sorted(cards, key=lambda row: str(row["action_ref"]))
     card = cards[0]
