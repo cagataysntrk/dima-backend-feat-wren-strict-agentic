@@ -111,6 +111,84 @@ Pinned source evidence remains a design reference, not runtime/code authority.
 Do not reopen the Metabase execution runtime. Do not copy Metabase code. Harvest only the
 proven reliability invariant.
 
+### 4.1 D10-S CURRENT-SOURCE CARRY-FORWARD — 2026-09-25
+
+Current bounded upstream reference was rechecked at:
+
+```text
+metabase/metabase
+2f3fe9904e4addbcbe4d32403d6a7ab2fc471100
+```
+
+D10-S harvested architecture principles only. No Metabase code/runtime is imported.
+
+| Current-source pattern | Dima carry-forward | Disposition |
+|---|---|---|
+| Resolve the agent profile once, then reuse it for prompt + tools | One ManagerActionAvailability profile feeds both provider schema and runtime validation | KEEP |
+| Capability/scope-filter tools before cognition | Deterministically unavailable Manager actions are absent from the model schema | KEEP |
+| A failed terminal tool is not successful terminality | Tool rejection/failure cannot manufacture completion | KEEP |
+| Hydrate applicability before planning | Typed runtime applicability/action availability precedes proposal cognition | KEEP |
+| Planner proposes; materialization is separate | Model proposes; server validates, mints identity, materializes ResearchTask/Evidence | KEEP |
+| No-row / failed / canceled planning states are explicit terminal semantics | Dima keeps blocked/failed/cancel/deadline states typed and non-resurrecting | KEEP |
+| Optional plan-item failure may be isolated without corrupting successful materialization | Derived branch failure must not mutate unrelated verified authority or completion truth | REFERENCE |
+
+D10-S also paid for the following Dima-specific invariants:
+
+```text
+fresh disclosed VERIFIED Evidence
+→ implicit current cognition context
+→ no redundant inspect_evidence turn
+
+accepted governed semantic handles satisfy a material next-test contract
+→ reuse existing semantic authority
+→ no semantic rediscovery
+
+new material concept exposed by inspected VERIFIED Evidence
++ accepted eligible parent
+→ AGENT_DERIVED semantic discovery may be available
+
+server-owned derived ResearchTask child
+→ execution identity only
+→ does NOT become semantic authority merely because it produced Evidence
+```
+
+Day7 preservation added one lifecycle invariant:
+
+```text
+successful governed AGENT_DERIVED branch
++ inspected VERIFIED trigger Evidence
++ matching accepted parent
++ COMPLETE task
++ VERIFIED result Evidence
+→ matching ADAPT_ON_EVIDENCE may be accounted APPLIED
+```
+
+That accounting is execution-transport independent; blocked/failed/foreign-lineage/unverified work cannot close the directive.
+
+Presentation ownership remains split:
+
+```text
+analytical USER_MUST
+→ Evidence-producing Research
+→ analytical CompletionGate
+
+presentation USER_MUST
+→ accepted authority retained
+→ Product/report layer owns actual deliverable
+```
+
+Current proof receipts:
+
+```text
+Day7 affected   36127275608 = GREEN
+Day8 affected   36126639512 = GREEN
+Day10 focused   36126639503 = GREEN
+real-Wren root  GREEN inside 36126639503
+paid calls      0 / 40 fresh envelope
+```
+
+ManagerBudget is currently implemented as 4 preacceptance / 4 Research / 8 outer, but that architecture remains explicitly pending supervisor ratification. No further budget change or paid measurement is authorized by this Harvest entry.
+
 ---
 
 ## 5. FREE_COGNITION vs GOVERNED_ORCHESTRATION — SHADOW ABLATION
