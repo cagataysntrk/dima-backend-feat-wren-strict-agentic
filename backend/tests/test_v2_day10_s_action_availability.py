@@ -4,14 +4,20 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from app.v2.manager_action_availability import (
+    ActionScopeSeed,
     ActionAvailabilityReason,
     AdaptiveDirectiveDispositionState,
     ManagerActionAvailability,
     ManagerActionAvailabilityContext,
     RootActionState,
 )
-from app.v2.manager_loop import _post_acceptance_native_schema
+from app.v2.manager_loop import (
+    ResearchManagerLoop,
+    _post_acceptance_native_schema,
+)
 
 
 def _root(
@@ -600,3 +606,415 @@ def test_derived_child_evidence_can_be_exposed_only_after_product_lineage_valida
         "parent_obligation_id": "U_PARENT",
         "eligible_evidence_refs": ["evi_child"],
     }
+
+
+
+def _snapshot_profile(
+    *seeds: ActionScopeSeed,
+    roots: tuple[RootActionState, ...] = (),
+    effective_evidence: tuple[str, ...] = (),
+    semantic_parents: tuple[str, ...] = (),
+    adaptive_states: tuple[AdaptiveDirectiveDispositionState, ...] = (),
+    state_version: str = "apsv_test_state",
+):
+    return ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            root_states=roots,
+            state_version=state_version,
+            scope_seeds=tuple(seeds),
+            effective_inspected_verified_evidence_refs=effective_evidence,
+            open_adaptive_directive_count=len(adaptive_states),
+            open_adaptive_parent_obligation_ids=semantic_parents,
+            adaptive_disposition_states=adaptive_states,
+            evidence_grounded_parent_obligation_ids=semantic_parents,
+            remaining_research_turns=4,
+        )
+    )
+
+
+def _choice_variants(schema: dict[str, Any]) -> list[dict[str, Any]]:
+    return list(schema["properties"]["choice"]["anyOf"])
+
+
+def _variant_for_scope(
+    schema: dict[str, Any],
+    scope_ref: str,
+) -> dict[str, Any]:
+    matches = []
+    for variant in _choice_variants(schema):
+        props = variant.get("properties") or {}
+        if scope_ref in _enum_values(props.get("scope_ref") or {}):
+            matches.append(variant)
+    assert len(matches) == 1
+    return matches[0]
+
+
+def _schema_for_profile(profile):
+    return _post_acceptance_native_schema(
+        root_cause_enabled=bool(profile.root_parent_obligation_ids),
+        allowed_actions=profile.available_actions,
+        inspectable_evidence_refs=profile.inspectable_evidence_refs,
+        resolve_provenance=profile.post_acceptance_resolve_provenance,
+        applicability_snapshot=profile.applicability_snapshot,
+    )
+
+
+def test_snapshot_multi_root_preserves_parent_handle_evidence_correlation():
+    roots = (
+        RootActionState(
+            root_id="R1",
+            hypothesis_count=0,
+            root_handle_kinds=("metric",),
+            next_test_required_kind_sets=(("metric",),),
+            root_handle_refs=("h_r1",),
+            effective_inspected_verified_evidence_refs=("e_r1",),
+        ),
+        RootActionState(
+            root_id="R2",
+            hypothesis_count=0,
+            root_handle_kinds=("metric",),
+            next_test_required_kind_sets=(("metric",),),
+            root_handle_refs=("h_r2",),
+            effective_inspected_verified_evidence_refs=("e_r2",),
+        ),
+    )
+    profile = _snapshot_profile(
+        ActionScopeSeed(
+            action="propose_hypothesis",
+            parent_obligation_id="R1",
+            evidence_refs=("e_r1",),
+            handle_refs=("h_r1",),
+        ),
+        ActionScopeSeed(
+            action="propose_hypothesis",
+            parent_obligation_id="R2",
+            evidence_refs=("e_r2",),
+            handle_refs=("h_r2",),
+        ),
+        roots=roots,
+        effective_evidence=("e_r1", "e_r2"),
+    )
+    snapshot = profile.applicability_snapshot
+    assert snapshot is not None
+    scopes = snapshot.scopes_for("propose_hypothesis")
+    assert len(scopes) == 2
+    r1 = next(item for item in scopes if item.parent_obligation_id == "R1")
+    r2 = next(item for item in scopes if item.parent_obligation_id == "R2")
+    assert r1.handle_refs == ("h_r1",)
+    assert r1.evidence_refs == ("e_r1",)
+    assert r2.handle_refs == ("h_r2",)
+    assert r2.evidence_refs == ("e_r2",)
+
+    schema = _schema_for_profile(profile)
+    r1_props = _variant_for_scope(schema, r1.scope_ref)["properties"]
+    assert _enum_values(r1_props["hypothesis_parent_obligation_id"]) == {"R1"}
+    assert _enum_values(r1_props["hypothesis_semantic_handles"]) == {"h_r1"}
+    assert _enum_values(r1_props["hypothesis_trigger_evidence_refs"]) == {"e_r1"}
+    assert "h_r2" not in _enum_values(r1_props["hypothesis_semantic_handles"])
+    assert "e_r2" not in _enum_values(r1_props["hypothesis_trigger_evidence_refs"])
+
+
+def test_snapshot_multi_hypothesis_relation_keeps_post_test_evidence_local():
+    root = RootActionState(
+        root_id="R",
+        hypothesis_count=2,
+        root_handle_kinds=("metric",),
+        next_test_required_kind_sets=(("metric",),),
+        root_handle_refs=("h",),
+        hypothesis_refs=("H1", "H2"),
+        effective_inspected_verified_evidence_refs=("E1", "E2"),
+        pending_relation_hypothesis_refs=("H1", "H2"),
+        pending_relation_evidence_refs=("E1", "E2"),
+    )
+    profile = _snapshot_profile(
+        ActionScopeSeed(
+            action="propose_hypothesis_evidence_relation",
+            parent_obligation_id="R",
+            hypothesis_ref="H1",
+            evidence_refs=("E1",),
+        ),
+        ActionScopeSeed(
+            action="propose_hypothesis_evidence_relation",
+            parent_obligation_id="R",
+            hypothesis_ref="H2",
+            evidence_refs=("E2",),
+        ),
+        roots=(root,),
+        effective_evidence=("E1", "E2"),
+    )
+    snapshot = profile.applicability_snapshot
+    assert snapshot is not None
+    h1 = next(
+        item
+        for item in snapshot.scopes_for("propose_hypothesis_evidence_relation")
+        if item.hypothesis_ref == "H1"
+    )
+    schema = _schema_for_profile(profile)
+    props = _variant_for_scope(schema, h1.scope_ref)["properties"]
+    assert _enum_values(props["hypothesis_ref"]) == {"H1"}
+    assert _enum_values(props["hypothesis_relation_evidence_ref"]) == {"E1"}
+    assert "E2" not in _enum_values(props["hypothesis_relation_evidence_ref"])
+
+
+def test_snapshot_multi_directive_never_exposes_directive_evidence_cross_product():
+    states = (
+        AdaptiveDirectiveDispositionState(
+            directive_id="D1",
+            parent_obligation_id="P1",
+            eligible_evidence_refs=("E1",),
+        ),
+        AdaptiveDirectiveDispositionState(
+            directive_id="D2",
+            parent_obligation_id="P2",
+            eligible_evidence_refs=("E2",),
+        ),
+    )
+    profile = _snapshot_profile(
+        ActionScopeSeed(
+            action="disposition_research_directive",
+            parent_obligation_id="P1",
+            directive_id="D1",
+            evidence_refs=("E1",),
+        ),
+        ActionScopeSeed(
+            action="disposition_research_directive",
+            parent_obligation_id="P2",
+            directive_id="D2",
+            evidence_refs=("E2",),
+        ),
+        effective_evidence=("E1", "E2"),
+        adaptive_states=states,
+    )
+    snapshot = profile.applicability_snapshot
+    assert snapshot is not None
+    assert {
+        (item.directive_id, item.evidence_refs)
+        for item in snapshot.scopes_for("disposition_research_directive")
+    } == {("D1", ("E1",)), ("D2", ("E2",))}
+
+    schema = _schema_for_profile(profile)
+    for scope in snapshot.scopes_for("disposition_research_directive"):
+        props = _variant_for_scope(schema, scope.scope_ref)["properties"]
+        assert _enum_values(props["directive_id"]) == {scope.directive_id}
+        assert _enum_values(props["directive_evidence_ref"]) == set(scope.evidence_refs)
+
+
+@pytest.mark.parametrize("action", ("resolve_semantics", "propose_branches"))
+def test_snapshot_parent_grounded_actions_reject_sibling_evidence_domains(action):
+    seeds = (
+        ActionScopeSeed(
+            action=action,
+            parent_obligation_id="P1",
+            evidence_refs=("E1",),
+            handle_refs=("H1",),
+        ),
+        ActionScopeSeed(
+            action=action,
+            parent_obligation_id="P2",
+            evidence_refs=("E2",),
+            handle_refs=("H2",),
+        ),
+    )
+    profile = _snapshot_profile(
+        *seeds,
+        effective_evidence=("E1", "E2"),
+        semantic_parents=("P1", "P2"),
+    )
+    snapshot = profile.applicability_snapshot
+    assert snapshot is not None
+    p1 = next(
+        item
+        for item in snapshot.scopes_for(action)
+        if item.parent_obligation_id == "P1"
+    )
+    assert p1.evidence_refs == ("E1",)
+    schema = _schema_for_profile(profile)
+    props = _variant_for_scope(schema, p1.scope_ref)["properties"]
+    evidence_field = (
+        "semantic_evidence_ref"
+        if action == "resolve_semantics"
+        else "branch_evidence_ref"
+    )
+    assert _enum_values(props[evidence_field]) == {"E1"}
+    assert "E2" not in _enum_values(props[evidence_field])
+    if action == "propose_branches":
+        encoded = str(props["branch_candidates"])
+        assert "H1" in encoded
+        assert "H2" not in encoded
+
+
+def test_snapshot_ready_derived_task_keeps_task_parent_trigger_and_handles_correlated():
+    profile = _snapshot_profile(
+        ActionScopeSeed(
+            action="run_analytics",
+            parent_obligation_id="P1",
+            task_id="T1",
+            capability_key="breakdown",
+            obligation_ids=("P1",),
+            evidence_refs=("E1",),
+            handle_refs=("M1", "D1"),
+            metric_handles=("M1",),
+            dimension_handles=("D1",),
+        ),
+        ActionScopeSeed(
+            action="run_analytics",
+            parent_obligation_id="P2",
+            task_id="T2",
+            capability_key="breakdown",
+            obligation_ids=("P2",),
+            evidence_refs=("E2",),
+            handle_refs=("M2", "D2"),
+            metric_handles=("M2",),
+            dimension_handles=("D2",),
+        ),
+    )
+    snapshot = profile.applicability_snapshot
+    assert snapshot is not None
+    t1 = next(
+        item for item in snapshot.scopes_for("run_analytics") if item.task_id == "T1"
+    )
+    schema = _schema_for_profile(profile)
+    props = _variant_for_scope(schema, t1.scope_ref)["properties"]
+    assert _enum_values(props["derived_task_id"]) == {"T1"}
+    assert _enum_values(props["derived_parent_obligation_id"]) == {"P1"}
+    assert _enum_values(props["derived_evidence_ref"]) == {"E1"}
+    assert _enum_values(props["metric_handles"]) == {"M1"}
+    assert _enum_values(props["dimension_handles"]) == {"D1"}
+    assert "M2" not in _enum_values(props["metric_handles"])
+
+
+def test_stale_snapshot_ref_fails_closed_against_new_current_state():
+    seed = ActionScopeSeed(action="finish")
+    old = _snapshot_profile(seed, state_version="apsv_N")
+    current = _snapshot_profile(seed, state_version="apsv_N_plus_1")
+    old_snapshot = old.applicability_snapshot
+    assert old_snapshot is not None
+    scope = old_snapshot.scopes_for("finish")[0]
+
+    with pytest.raises(ValueError, match="stale applicability snapshot"):
+        ResearchManagerLoop._parse_scoped_decision(
+            {
+                "snapshot_ref": old_snapshot.snapshot_ref,
+                "choice": {
+                    "scope_ref": scope.scope_ref,
+                    "action": "finish",
+                },
+            },
+            availability=current,
+        )
+
+
+def test_action_scope_mismatch_and_unknown_scope_fail_closed():
+    seed = ActionScopeSeed(
+        action="disposition_research_directive",
+        parent_obligation_id="P",
+        directive_id="D",
+        evidence_refs=("E",),
+    )
+    profile = _snapshot_profile(
+        seed,
+        effective_evidence=("E",),
+        adaptive_states=(
+            AdaptiveDirectiveDispositionState(
+                directive_id="D",
+                parent_obligation_id="P",
+                eligible_evidence_refs=("E",),
+            ),
+        ),
+    )
+    snapshot = profile.applicability_snapshot
+    assert snapshot is not None
+    scope = snapshot.scopes_for("disposition_research_directive")[0]
+
+    with pytest.raises(ValueError, match="escape selected applicability scope"):
+        ResearchManagerLoop._parse_scoped_decision(
+            {
+                "snapshot_ref": snapshot.snapshot_ref,
+                "choice": {
+                    "scope_ref": scope.scope_ref,
+                    "action": "finish",
+                },
+            },
+            availability=profile,
+        )
+
+    with pytest.raises(KeyError, match="unknown applicability scope"):
+        ResearchManagerLoop._parse_scoped_decision(
+            {
+                "snapshot_ref": snapshot.snapshot_ref,
+                "choice": {
+                    "scope_ref": "aps_unknown",
+                    "action": "finish",
+                },
+            },
+            availability=profile,
+        )
+
+
+def test_candidate_escape_from_selected_scope_is_rejected():
+    seed = ActionScopeSeed(
+        action="disposition_research_directive",
+        parent_obligation_id="P",
+        directive_id="D",
+        evidence_refs=("E1",),
+    )
+    profile = _snapshot_profile(
+        seed,
+        effective_evidence=("E1",),
+        adaptive_states=(
+            AdaptiveDirectiveDispositionState(
+                directive_id="D",
+                parent_obligation_id="P",
+                eligible_evidence_refs=("E1",),
+            ),
+        ),
+    )
+    snapshot = profile.applicability_snapshot
+    assert snapshot is not None
+    scope = snapshot.scopes_for("disposition_research_directive")[0]
+    with pytest.raises(ValueError, match="escape selected applicability scope"):
+        ResearchManagerLoop._parse_scoped_decision(
+            {
+                "snapshot_ref": snapshot.snapshot_ref,
+                "choice": {
+                    "scope_ref": scope.scope_ref,
+                    "action": "disposition_research_directive",
+                    "directive_id": "D",
+                    "directive_evidence_ref": "E_INVENTED",
+                    "directive_disposition": "NO_MATERIAL_DIRECTION",
+                    "directive_reason": "bounded",
+                },
+            },
+            availability=profile,
+        )
+
+
+def test_snapshot_identity_is_invariant_to_candidate_order_permutation():
+    a = ActionScopeSeed(
+        action="inspect_evidence",
+        evidence_refs=("E1",),
+    )
+    b = ActionScopeSeed(
+        action="request_clarification",
+        obligation_ids=("P1",),
+    )
+    first = _snapshot_profile(
+        a,
+        b,
+        state_version="apsv_order",
+    )
+    second = _snapshot_profile(
+        b,
+        a,
+        state_version="apsv_order",
+    )
+    assert first.applicability_snapshot is not None
+    assert second.applicability_snapshot is not None
+    assert (
+        first.applicability_snapshot.snapshot_ref
+        == second.applicability_snapshot.snapshot_ref
+    )
+    assert (
+        first.applicability_snapshot.model_view()
+        == second.applicability_snapshot.model_view()
+    )
