@@ -1,4 +1,4 @@
-# AUTHORIZED CORRECTED ONE-SHOT.
+# DMP-DEC-0052 FAMILY-SCOPED AUTHORIZED LIVE CERTIFICATION.
 # Root-fix candidate: d1bc5291b315ff19c3456d08ff1820e983d85942.
 # Provider-free: 36128262857 SUCCESS. Current governance: 36128767992 SUCCESS.
 # First live RED 36127753645 remains append-only evidence; no automatic third run.
@@ -11,6 +11,7 @@ on:
     paths:
       - ".github/workflows/dima-metabase-p17-recursive-live.yml"
       - "backend/lab/metabase/p17/recursive_manager_canary.py"
+      - "backend/lab/metabase/p17/authorizations/**"
       - "backend/app/v3/research_manager.py"
       - "backend/app/v3/research_manager_provider.py"
       - "backend/app/v3/research_followup.py"
