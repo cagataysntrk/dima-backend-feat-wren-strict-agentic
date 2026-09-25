@@ -64,6 +64,7 @@ class NativeBridgeFactory(Protocol):
         *,
         principal: Principal,
         session: ResearchSession,
+        native_session_token: str | None,
     ) -> AbstractContextManager[NativeEngineBridge]: ...
 
 
@@ -390,6 +391,7 @@ class ResearchAskOrchestrator:
         session_id: str,
         principal: Principal,
         obligation_id: str | None = None,
+        native_session_token: str | None = None,
     ) -> ResearchAskResponse:
         bridge_factory, material_executor = self._runtime()
         tenant = self.tenant_binding_for(principal)
@@ -455,7 +457,11 @@ class ResearchAskOrchestrator:
                 native_conversation_id=conversation.conversation_id,
             )
 
-        with bridge_factory.open(principal=principal, session=session) as bridge:
+        with bridge_factory.open(
+            principal=principal,
+            session=session,
+            native_session_token=native_session_token,
+        ) as bridge:
             if pending.native_query_id is None:
                 assert prepared is not None
                 try:

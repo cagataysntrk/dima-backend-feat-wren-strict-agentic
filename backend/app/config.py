@@ -46,6 +46,16 @@ class Settings(BaseSettings):
     # explicit tenant-server setting, never a per-request silent legacy fallback.
     ask_v2_enabled: bool = False
 
+    # --- P14 native Metabase gateway ------------------------------------
+    # Authentication is request-scoped pass-through; no native credential is stored here.
+    metabase_native_base_url: str = ""
+    metabase_engine_sha: str = "cbe313af9ac2d5960f662068e433d328d896fb06"
+    metabase_engine_upstream_sha: str = "2ba2485c78d7e00a9a25f82c00fc201da71590c4"
+    metabase_engine_runtime_tag: str = "0.63.18-dima.6"
+    metabase_engine_image_digest: str = "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
+    metabase_engine_build_identity: str = "github-actions:36042062775:cbe313af9ac2d5960f662068e433d328d896fb06"
+    metabase_engine_image_identity: str = "ghcr.io/upcytech/dima-metabase-engine@sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
+
     # --- LLM sağlayıcı ---------------------------------------------------
     # auto: anthropic → xai → gemini → groq → ollama (ayakta ise) → kural-tabanlı.
     # Açık değerler: auto | anthropic | xai | gemini | groq | openrouter | ollama | rule

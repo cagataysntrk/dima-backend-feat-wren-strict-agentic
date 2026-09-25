@@ -103,9 +103,36 @@ async def lifespan(app: FastAPI):
     from app.v3.research_product import ResearchAskOrchestrator
     from app.v3.research_store import ResearchSessionStore
 
-    app.state.research_product = ResearchAskOrchestrator(
-        store=ResearchSessionStore()
-    )
+    app.state.research_product = ResearchAskOrchestrator(store=ResearchSessionStore())
+    if settings.metabase_native_base_url.strip():
+        from app.v3.research_native_gateway import (
+            NativeResearchMaterialExecutor,
+            NativeResourceBindingProvider,
+            NativeSubjectSessionProvider,
+        )
+        from app.v3.substrate.metabase.native_models import NativeEngineIdentity
+
+        native_identity = NativeEngineIdentity(
+            engine_sha=settings.metabase_engine_sha,
+            upstream_base_sha=settings.metabase_engine_upstream_sha,
+            runtime_tag=settings.metabase_engine_runtime_tag,
+            runtime_image_digest=settings.metabase_engine_image_digest,
+            build_identity=settings.metabase_engine_build_identity,
+            runtime_image_identity=settings.metabase_engine_image_identity,
+        )
+        native_subjects = NativeSubjectSessionProvider(
+            base_url=settings.metabase_native_base_url,
+            expected_identity=native_identity,
+        )
+        native_resources = NativeResourceBindingProvider()
+        app.state.research_product.configure_native_runtime(
+            bridge_factory=native_subjects,
+            material_executor=NativeResearchMaterialExecutor(
+                subject_provider=native_subjects,
+                resource_provider=native_resources,
+                expected_identity=native_identity,
+            ),
+        )
 
     # Zamanlanmış raporlar (ADR-0011): tanım + koşum durumu (last_run) + bildirim HEPSİ
     # tek-kaynak DB'de (schedule_definition + notification_log) — dosya-state yok (double-fire fix).
