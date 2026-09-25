@@ -263,12 +263,26 @@ class ResearchManager:
     def check_evidence(session,oid,receipt:DimaQueryReceipt,evidence:EvidenceArtifact):
         if evidence.state!=EvidenceState.VERIFIED: raise ResearchStateError("P14_EVIDENCE_NOT_VERIFIED","only VERIFIED Evidence is admissible")
         if evidence.authority_id!=receipt.authority_id: raise ResearchStateError("P14_EVIDENCE_RECEIPT_AUTHORITY_MISMATCH","authority mismatch")
+        if receipt.authority_id!=session.authority_id: raise ResearchStateError("P14_EVIDENCE_SESSION_AUTHORITY_MISMATCH","receipt belongs to another Research authority")
         if receipt.receipt_id not in evidence.query_receipt_refs: raise ResearchStateError("P14_EVIDENCE_RECEIPT_LINK_MISSING","receipt link missing")
         if oid not in receipt.obligation_ids or oid not in evidence.obligation_ids: raise ResearchStateError("P14_EVIDENCE_OBLIGATION_MISMATCH","obligation mismatch")
         if (receipt.tenant_id,receipt.principal_id)!=(session.tenant_binding,session.principal_subject): raise ResearchStateError("P14_EVIDENCE_SECURITY_LENS_MISMATCH","security lens mismatch")
         if receipt.semantic_context_version!=session.context_version: raise ResearchStateError("P14_EVIDENCE_CONTEXT_MISMATCH","context mismatch")
-        if any(x is None for x in (receipt.execution_id,receipt.receipt_fingerprint,receipt.execution_access_fingerprint,receipt.result_hash,receipt.executed_at)):
+        common=(receipt.execution_id,receipt.receipt_fingerprint,receipt.result_hash,receipt.executed_at)
+        if any(x is None for x in common):
             raise ResearchStateError("P14_RECEIPT_EXECUTION_IDENTITY_INCOMPLETE","fully sealed QueryReceipt required")
+        if receipt.authority_kind=="research_material":
+            if (
+                receipt.research_session_id!=session.session_id
+                or receipt.native_subject_ref is None
+                or receipt.native_conversation_id is None
+                or receipt.native_query_id is None
+                or receipt.native_query_provenance_ref is None
+                or receipt.native_result_provenance_ref is None
+            ):
+                raise ResearchStateError("P14_RECEIPT_EXECUTION_IDENTITY_INCOMPLETE","native Research provenance is incomplete")
+        elif receipt.execution_access_fingerprint is None:
+            raise ResearchStateError("P14_RECEIPT_EXECUTION_IDENTITY_INCOMPLETE","Standard receipt lacks access identity")
 
     @classmethod
     def admit_receipted_evidence(cls,session,*,obligation_id,receipt,evidence,satisfies_obligation,hypothesis_id=None,relation=None,now=None):

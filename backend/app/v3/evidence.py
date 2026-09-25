@@ -7,7 +7,7 @@ from enum import StrEnum
 from uuid import UUID
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class FrozenModel(BaseModel):
@@ -36,8 +36,26 @@ class DimaQueryReceipt(FrozenModel):
     tenant_id: str | None = None
     principal_id: str | None = None
     semantic_refs: tuple[str, ...] = ()
-    projection_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
-    resolved_intent_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    # Standard-only identities. Native Research deliberately does not pretend it
+    # owns a Standard projection or ResolvedAnalyticsIntent.
+    projection_hash: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    resolved_intent_hash: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    # Research-native occurrence provenance.
+    research_session_id: str | None = Field(
+        default=None,
+        pattern=r"^rs_[a-f0-9]{24}$",
+    )
+    native_subject_ref: str | None = None
+    native_conversation_id: UUID | None = None
+    native_query_id: str | None = None
+    native_query_provenance_ref: str | None = None
+    native_result_provenance_ref: str | None = None
     canonical_query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     canonical_query_representation: dict[str, Any] | None = None
     ephemeral_query_handle: str | None = None
@@ -64,6 +82,39 @@ class DimaQueryReceipt(FrozenModel):
     row_count: int = Field(ge=0)
     warnings: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def _authority_specific_identity(self):
+        if self.authority_kind == "standard_analytics":
+            if self.projection_hash is None or self.resolved_intent_hash is None:
+                raise ValueError(
+                    "standard analytics receipt requires projection/resolved intent identity"
+                )
+            return self
+
+        if self.projection_hash is not None or self.resolved_intent_hash is not None:
+            raise ValueError(
+                "research material receipt must not populate Standard projection/intent fields"
+            )
+        required = {
+            "research_session_id": self.research_session_id,
+            "native_subject_ref": self.native_subject_ref,
+            "native_conversation_id": self.native_conversation_id,
+            "native_query_id": self.native_query_id,
+            "native_query_provenance_ref": self.native_query_provenance_ref,
+            "native_result_provenance_ref": self.native_result_provenance_ref,
+        }
+        missing = sorted(name for name, value in required.items() if value is None or value == "")
+        if missing:
+            raise ValueError(
+                "research material receipt missing native provenance: "
+                + ", ".join(missing)
+            )
+        if self.execution_access_fingerprint is not None:
+            raise ValueError(
+                "research material receipt must not manufacture a P10 access fingerprint"
+            )
+        return self
 
 
 class EvidenceArtifact(FrozenModel):

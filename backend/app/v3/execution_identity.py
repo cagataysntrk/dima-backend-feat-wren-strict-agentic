@@ -469,75 +469,122 @@ class DimaQueryReceiptSealer:
         raw = f"{receipt_fingerprint}\x1f{execution_id}"
         return "dqr_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
+    @staticmethod
+    def _assert_research_runtime(runtime: RuntimeIdentity) -> None:
+        if runtime.substrate != "metabase-native":
+            raise ReceiptSealError(
+                "NATIVE_RUNTIME_SUBSTRATE_MISMATCH",
+                "P14 native Research receipt requires metabase-native substrate",
+            )
+        required = {
+            "repository": runtime.repository,
+            "revision_sha": runtime.revision_sha,
+            "upstream_base_sha": runtime.upstream_base_sha,
+            "runtime_tag": runtime.runtime_tag,
+            "build_identity": runtime.build_identity,
+            "image_identity": runtime.image_identity,
+            "runtime_instance_id": runtime.runtime_instance_id,
+        }
+        missing = sorted(name for name, value in required.items() if value is None)
+        if missing:
+            raise ReceiptSealError(
+                "NATIVE_RUNTIME_IDENTITY_REQUIRED",
+                "missing exact native runtime identity: " + ", ".join(missing),
+            )
+        if runtime.runtime_version != runtime.runtime_tag:
+            raise ReceiptSealError(
+                "NATIVE_RUNTIME_VERSION_TAG_MISMATCH",
+                "runtime_version must equal the attested native runtime tag",
+            )
+
     @classmethod
     def seal_research_execution(
         cls,
         *,
         authority_id: str,
+        research_session_id: str,
         obligation_ids: tuple[str, ...],
         tenant_binding: str,
         principal_subject: str,
         roles: tuple[str, ...],
-        semantic_refs: tuple[str, ...],
-        accepted_context_hash: str,
-        material_scope_hash: str,
+        native_subject_ref: str,
+        native_conversation_id: UUID,
+        native_query_id: str,
+        native_query_provenance_ref: str,
+        native_result_provenance_ref: str,
+        query_fingerprint: str,
         semantic_context_version: str,
-        execution_artifact: AuthorizedExecutionArtifact,
-        access_snapshot: ExecutionAccessSnapshot | None,
         runtime: RuntimeIdentity | None,
         result: ExecutionResultSnapshot,
         event: ExecutionEventIdentity,
+        resource_entity_ids: tuple[str, ...] = (),
+        resource_fingerprints: tuple[str, ...] = (),
+        semantic_refs: tuple[str, ...] = (),
     ) -> DimaQueryReceipt:
-        """Seal one P14 native occurrence through the existing P5 owner."""
-        if access_snapshot is None:
-            raise ReceiptSealError("ACCESS_SNAPSHOT_REQUIRED", "attested access snapshot required")
-        if runtime is None:
-            raise ReceiptSealError("RUNTIME_IDENTITY_REQUIRED", "exact runtime identity required")
-        if not obligation_ids:
-            raise ReceiptSealError("RESEARCH_OBLIGATION_REQUIRED", "Research obligation required")
-        checks = (
-            ("AUTHORITY_MISMATCH", authority_id, execution_artifact.authority_id),
-            ("PROJECTION_MISMATCH", accepted_context_hash, execution_artifact.projection_hash),
-            ("RESOLVED_INTENT_MISMATCH", material_scope_hash, execution_artifact.resolved_intent_hash),
-            ("SEMANTIC_CONTEXT_MISMATCH", semantic_context_version, execution_artifact.semantic_context_version),
-        )
-        for code, expected, actual in checks:
-            if expected != actual:
-                raise ReceiptSealError(code, f"expected={expected!r} artifact={actual!r}")
-        execution_artifact.assert_intact()
-        if execution_artifact.query_count != 1 or len(execution_artifact.steps) != 1:
-            raise ReceiptSealError("QUERY_RESULT_CARDINALITY_MISMATCH", "P14 seals one occurrence")
-        if access_snapshot.tenant_binding != tenant_binding:
-            raise ReceiptSealError("TENANT_MISMATCH", "Research access tenant mismatch")
-        if access_snapshot.principal_subject != principal_subject:
-            raise ReceiptSealError("PRINCIPAL_MISMATCH", "Research access principal mismatch")
-        if tuple(sorted(access_snapshot.roles)) != tuple(sorted(roles)):
-            raise ReceiptSealError("ROLE_SET_MISMATCH", "Research access roles mismatch")
-        if access_snapshot.semantic_context_version != semantic_context_version:
-            raise ReceiptSealError("ACCESS_SEMANTIC_CONTEXT_MISMATCH", "Research access context mismatch")
-        if tuple(sorted(access_snapshot.source_object_refs)) != tuple(sorted(execution_artifact.resource_entity_ids)):
-            raise ReceiptSealError("SOURCE_RESOURCE_MISMATCH", "Research resource lens mismatch")
-        cls._assert_runtime_matches_artifact(artifact=execution_artifact, runtime=runtime)
+        """Seal direct native Research provenance through the single P5 receipt family.
 
-        step = execution_artifact.steps[0]
-        step.assert_intact()
+        This path does not create a Standard projection, ResolvedAnalyticsIntent,
+        AuthorizedExecutionArtifact, or P10 access snapshot.
+        """
+        if runtime is None:
+            raise ReceiptSealError(
+                "RUNTIME_IDENTITY_REQUIRED",
+                "Research receipt requires exact native runtime identity",
+            )
+        cls._assert_research_runtime(runtime)
+        if not obligation_ids:
+            raise ReceiptSealError(
+                "RESEARCH_OBLIGATION_REQUIRED",
+                "Research material receipt requires an obligation",
+            )
+        if not native_subject_ref.strip():
+            raise ReceiptSealError(
+                "NATIVE_SUBJECT_REQUIRED",
+                "Research material receipt requires the authenticated native subject",
+            )
+        if not native_query_id.strip():
+            raise ReceiptSealError(
+                "NATIVE_QUERY_ID_REQUIRED",
+                "Research material receipt requires the captured native query id",
+            )
+        if len(resource_entity_ids) != len(resource_fingerprints):
+            raise ReceiptSealError(
+                "RESOURCE_IDENTITY_CARDINALITY_MISMATCH",
+                "optional Research resource ids/fingerprints differ in cardinality",
+            )
+        if len(resource_entity_ids) != len(set(resource_entity_ids)):
+            raise ReceiptSealError(
+                "RESOURCE_IDENTITY_DUPLICATE",
+                "Research receipt contains duplicate resource ids",
+            )
+
         principal_fingerprint = _sha256_json(
-            {"tenant_binding": tenant_binding, "principal_subject": principal_subject, "roles": sorted(roles)},
+            {
+                "tenant_binding": tenant_binding,
+                "principal_subject": principal_subject,
+                "roles": sorted(roles),
+            },
             error_code="PRINCIPAL_NOT_SERIALIZABLE",
         )
         receipt_fingerprint = _sha256_json(
             {
                 "authority_kind": "research_material",
                 "authority_id": authority_id,
+                "research_session_id": research_session_id,
                 "obligation_ids": sorted(obligation_ids),
-                "projection_hash": accepted_context_hash,
-                "resolved_intent_hash": material_scope_hash,
-                "canonical_query_fingerprint": step.artifact_fingerprint,
-                "execution_access_fingerprint": access_snapshot.execution_access_fingerprint,
-                "access_attestation_refs": sorted(access_snapshot.attestation_refs),
+                "tenant_binding": tenant_binding,
+                "principal_subject": principal_subject,
+                "native_subject_ref": native_subject_ref,
+                "native_conversation_id": str(native_conversation_id),
+                "native_query_id": native_query_id,
+                "native_query_provenance_ref": native_query_provenance_ref,
+                "native_result_provenance_ref": native_result_provenance_ref,
+                "canonical_query_fingerprint": query_fingerprint,
                 "semantic_context_version": semantic_context_version,
                 "semantic_refs": sorted(semantic_refs),
-                "resource_bindings": sorted(zip(execution_artifact.resource_entity_ids, execution_artifact.resource_fingerprints, strict=True)),
+                "resource_bindings": sorted(
+                    zip(resource_entity_ids, resource_fingerprints, strict=True)
+                ),
                 "substrate": runtime.substrate,
                 "substrate_runtime_version": runtime.runtime_version,
                 "substrate_image_digest": runtime.image_digest,
@@ -551,33 +598,42 @@ class DimaQueryReceiptSealer:
                 "database_id": runtime.database_id,
                 "result_hash": result.result_hash,
                 "row_count": result.row_count,
-                "step_role": step.role,
                 "warnings": result.warnings,
                 "limitations": result.limitations,
             },
             error_code="RECEIPT_CONTENT_NOT_SERIALIZABLE",
         )
         return DimaQueryReceipt(
-            receipt_id=cls._receipt_id(receipt_fingerprint=receipt_fingerprint, execution_id=event.execution_id),
+            receipt_id=cls._receipt_id(
+                receipt_fingerprint=receipt_fingerprint,
+                execution_id=event.execution_id,
+            ),
             receipt_fingerprint=receipt_fingerprint,
             execution_id=event.execution_id,
-            step_role=step.role,
+            step_role="primary",
             authority_kind="research_material",
             authority_id=authority_id,
             obligation_ids=obligation_ids,
             tenant_id=tenant_binding,
             principal_id=principal_subject,
             semantic_refs=semantic_refs,
-            projection_hash=accepted_context_hash,
-            resolved_intent_hash=material_scope_hash,
-            canonical_query_fingerprint=step.artifact_fingerprint,
-            canonical_query_representation=step.artifact_representation,
+            projection_hash=None,
+            resolved_intent_hash=None,
+            research_session_id=research_session_id,
+            native_subject_ref=native_subject_ref,
+            native_conversation_id=native_conversation_id,
+            native_query_id=native_query_id,
+            native_query_provenance_ref=native_query_provenance_ref,
+            native_result_provenance_ref=native_result_provenance_ref,
+            canonical_query_fingerprint=query_fingerprint,
+            canonical_query_representation=None,
+            ephemeral_query_handle=None,
             principal_fingerprint=principal_fingerprint,
-            execution_access_fingerprint=access_snapshot.execution_access_fingerprint,
-            access_attestation_refs=access_snapshot.attestation_refs,
+            execution_access_fingerprint=None,
+            access_attestation_refs=(),
             semantic_context_version=semantic_context_version,
-            resource_entity_ids=execution_artifact.resource_entity_ids,
-            resource_fingerprints=execution_artifact.resource_fingerprints,
+            resource_entity_ids=resource_entity_ids,
+            resource_fingerprints=resource_fingerprints,
             substrate=runtime.substrate,
             substrate_runtime_version=runtime.runtime_version,
             substrate_image_digest=runtime.image_digest,
