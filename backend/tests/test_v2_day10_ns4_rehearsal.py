@@ -248,7 +248,18 @@ def test_adaptive_relationship_blocked_terminal_does_not_apply_directive(
         if item.get("kind") == "deterministic_task_blocked"
         and item.get("context") == "adaptive_branch"
     ]
-    assert blocked_candidates, result.outcome.observations
+    diagnostic = tuple(
+        item
+        for item in result.outcome.observations
+        if item.get("kind") in {
+            "fanout_registered",
+            "tool_rejected",
+            "deterministic_schedule_deferred",
+            "deterministic_task_blocked",
+            "adaptive_branch_executed",
+        }
+    )
+    assert blocked_candidates, diagnostic
     blocked = blocked_candidates[0]
     assert blocked["task_id"] == "D_ROOT_REL_BLOCKED"
     assert blocked["result"]["available"] is False
