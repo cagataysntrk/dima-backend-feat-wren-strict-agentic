@@ -33,6 +33,7 @@ on:
       - "backend/tests/test_v3_p17_research_manager.py"
       - "backend/tests/test_v3_p17_autonomous_manager_eval.py"
       - "backend/tests/test_v3_p17_authorization_transport.py"
+      - "backend/tests/test_v3_p17_autonomous_provider_schema.py"
       - "backend/tests/test_v3_p16_claim_lineage.py"
       - "backend/tests/test_v3_p15_native_exploration.py"
       - "backend/tests/test_v3_p14_native_gateway.py"
@@ -106,7 +107,8 @@ jobs:
             ! grep -nE 'app\.wren|wren_service|MetabaseAgentClient|NativeStandardTrustOrchestrator' "$file"
           done
           ! grep -nE 'propose_with_guidance|GuidedTurn' backend/lab/metabase/p17/autonomous_manager_canary.py
-          grep -q 'provider.propose(snapshot)' backend/lab/metabase/p17/autonomous_manager_canary.py
+          grep -q 'propose_with_constraints' backend/lab/metabase/p17/autonomous_manager_canary.py
+          grep -q 'allowed_intents=LEGAL_AUTONOMOUS_INTENTS' backend/lab/metabase/p17/autonomous_manager_canary.py
           grep -q 'evaluate_autonomous_canary' backend/lab/metabase/p17/autonomous_manager_canary.py
           grep -qi 'trajectory-invariant' backend/lab/metabase/p17/autonomous_eval.py
           grep -q 'diff-tree' backend/lab/metabase/p17/authorization_transport.py
@@ -137,6 +139,7 @@ jobs:
             lab/metabase/p17/recursive_manager_scenario_lab.py \
             tests/test_v3_p17_autonomous_manager_eval.py \
             tests/test_v3_p17_authorization_transport.py \
+            tests/test_v3_p17_autonomous_provider_schema.py \
             tests/test_v3_p17_research_manager.py
 
       - name: Verify single Alembic head includes P17 durability
@@ -150,6 +153,10 @@ jobs:
       - name: DMP-DEC-0051 exact-Git authorization transport proof
         working-directory: backend
         run: pytest -q tests/test_v3_p17_authorization_transport.py
+
+      - name: Cycle-2 autonomous strict-schema regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p17_autonomous_provider_schema.py
 
       - name: DMP-DEC-0050 trajectory-invariant evaluator proof
         working-directory: backend
