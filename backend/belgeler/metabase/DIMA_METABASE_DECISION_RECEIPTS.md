@@ -4436,3 +4436,67 @@ Exactly one corrected autonomous Luna certification is authorized under DMP-DEC-
 append-only V2 receipt is added. The receipt must identify
 `failure_family_id=p17-manager-structured-schema` and `attempt_in_family=2`; commit-message
 markers can trigger the workflow but cannot establish authorization truth.
+
+
+### DMP-DEC-0052 family transition — structured-schema CLOSED / semantic-output OPEN
+
+date: 2026-09-25
+
+Authoritative live run:
+
+```text
+run          = 36147620834 FAILURE
+dispatch SHA = c1324ba3ab41f362a272e5a45be7c2da4735fe57
+```
+
+DMP-DEC-0052 family-change test:
+
+```text
+provider strict response_format accepted
+AND Luna structured-output call succeeded
+→ previous structured-schema owner/invariant succeeded
+
+then
+ResearchManagerProposalDraft semantic validation failed
+→ materially different owner/invariant
+→ NEW FAILURE FAMILY
+```
+
+Accounting:
+
+```text
+p17-manager-structured-schema
+attempt 2 / 3 = boundary crossed
+status        = CLOSED
+
+p17-manager-semantic-output
+attempt 1 / 3 = RED
+status        = GENERIC ROOT FIX IN DEVELOPMENT
+```
+
+First wrong transition for the new family:
+
+```text
+schema-valid model response
+→ Pydantic draft semantic validation
+→ non-STOP proposal lacks usable expected_information_gain
+→ rejected before accepted ManagerProposal
+```
+
+Generic invariant:
+the provider-facing transport representation must encode conditional payload shape for the chosen
+intent family without replacing Pydantic/ManagerProposal semantic authority.
+
+Authorized owner-local correction:
+a nested strict transport envelope with object variants for semantic families (regular non-STOP,
+counter-Evidence, FORM_CLAIM, STOP). The envelope is a representation codec only. Runtime Pydantic
+validation remains authoritative, and the Research Manager still chooses the intent/path.
+
+Current root-fix candidate:
+`e6ab0bcf29bcbc17004c045a4391235ebc1fed19`.
+
+Current focused regression candidate:
+`c005c7c7f51707f1ecf73b01b043b962d4c4da83`.
+
+No live retry is authorized until this new family is provider-free GREEN with the trajectory
+evaluator, P17/P16/P15/P14 regressions and governance.
