@@ -116,9 +116,10 @@ class _WouldKeepThinkingAfterZeroRowLLM(_ResultAwareFakeLLM):
                 "evidence_ref": delta["evidence_ref"],
             }
 
-        raise AssertionError(
-            "zero-row inspected evidence should complete before another Manager turn"
-        )
+        # The cognition turn must return so the runtime can atomically persist the
+        # already-disclosed fresh Evidence as inspected. The deterministic zero-row
+        # CompletionGate runs before this proposed action is applied.
+        return {"action": "finish"}
 
 
 def _accepted_runtime(service=None):
