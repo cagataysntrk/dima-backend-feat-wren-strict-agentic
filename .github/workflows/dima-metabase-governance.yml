@@ -42,6 +42,10 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/research.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_store.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_product.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/research_native_gateway.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/research_exploration.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq 'workflow_dispatch:' .github/workflows/dima-metabase-p13c-provider-free.yml
           ! grep -Eq '^[[:space:]]+push:' .github/workflows/dima-metabase-p13c-provider-free.yml
 
@@ -187,6 +191,37 @@ jobs:
           done
           grep -q "capture_produced_query" backend/app/v3/research_product.py
           grep -q "execute_dataset" backend/app/v3/research_native_gateway.py
+
+      - name: Require sealed P15 native Exploration source review
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/research_exploration.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P15_NATIVE_EXPLORATION_SOURCE_REVIEW.md"
+            test -f "$REVIEW"
+            grep -q "SEALED / PROVIDER-FREE P15 NATIVE EXPLORATION IMPLEMENTATION AUTHORIZED" "$REVIEW"
+            grep -q "DMP-DEC-0048" "$REVIEW"
+          fi
+
+      - name: Guard P15 Exploration as native Research material only
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/research_exploration.py"
+          if [ -f "$HOT" ]; then
+            FORBIDDEN='NativeStandardTrustOrchestrator|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer|attest_native_query[[:space:]]*\(|execute_native_query[[:space:]]*\(|app\.wren|wren_service|MetabaseAgentClient'
+            if grep -nE "$FORBIDDEN" "$HOT"; then
+              echo "P15 reintroduced certification/shadow analytics authority" >&2
+              exit 1
+            fi
+            if grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$HOT"; then
+              echo "P15 introduced a Python analytical primitive library" >&2
+              exit 1
+            fi
+            grep -q "RESEARCH_MATERIAL" "$HOT"
+            grep -q "explore_adhoc" "$HOT"
+            grep -q "automagic-dashboards/adhoc" backend/app/v3/substrate/metabase/native_engine.py
+          fi
 
       - name: Guard active engine consumers against source-build fallback
         shell: bash
