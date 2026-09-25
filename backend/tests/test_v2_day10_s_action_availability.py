@@ -32,11 +32,17 @@ def _root(
 def _property_schema(schema: dict[str, Any], name: str) -> dict[str, Any]:
     found: list[dict[str, Any]] = []
 
+    def resolve(node: dict[str, Any]) -> dict[str, Any]:
+        ref = node.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/$defs/"):
+            return (schema.get("$defs") or {})[ref.rsplit("/", 1)[-1]]
+        return node
+
     def walk(node: Any) -> None:
         if isinstance(node, dict):
             properties = node.get("properties")
             if isinstance(properties, dict) and isinstance(properties.get(name), dict):
-                found.append(properties[name])
+                found.append(resolve(properties[name]))
             for value in node.values():
                 walk(value)
         elif isinstance(node, list):
