@@ -1,5 +1,129 @@
 # DIMA + METABASE — LIVING STATUS
 
+## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
+
+> **FORWARD AUTHORITY.** This block overrides any older "current", "next", "blocked", or
+> "immediate work" language later in this living document. Older sections remain historical
+> evidence only unless they explicitly say they are current under DMP-DEC-0048.
+
+```text
+authoritative implementation checkpoint = 01140b059318b2487b002a0c94f989fd693ce6f2
+branch                              = feat/dima-metabase-platform
+forward authority                   = DMP-DEC-0048
+engine gitlink                      = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                      = 0.63.18-dima.6
+engine certification                = 36042062775 SUCCESS
+engine digest                       = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+
+P14 final provider-free             = 36102734433 SUCCESS
+P14 final governance                = 36102734425 SUCCESS
+P14 real native-direct Luna canary  = 36100443464 SUCCESS
+second paid P14 model run           = 0
+
+CURRENT SEALED PHASE                = P14 NATIVE-DIRECT RESEARCH
+CURRENT OPEN PHASE                  = P15 NATIVE METABASE EXPLORATION
+P16                                 = NEXT AFTER P15 GREEN
+UI / UX                             = FORBIDDEN UNTIL P21 SEALED
+```
+
+Permanent ownership:
+
+```text
+METABASE + METABOT
+= analytics cognition + exploration + analytical semantics
++ native permissions + query construction/repair + execution
+
+DIMA
+= business context + Research + lineage + epistemic state
++ claims + hypotheses/root cause + reports
++ decisions + actions + outcomes + memory
+```
+
+```text
+METABASE PROVES THE ANALYSIS.
+DIMA PROVES THE LINEAGE, EPISTEMIC STATE, AND DECISION CONTEXT.
+```
+
+### P14 is CLOSED
+
+P14 is not a place for more trust middleware. The sealed product hot path is:
+
+```text
+Research obligation
+→ same principal-scoped native Metabot session
+→ capture exact query A
+→ persist query A/fingerprint
+→ direct native Metabase /api/dataset execution ONCE
+→ persist result/runtime/subject provenance
+→ one DimaQueryReceipt(authority_kind=research_material)
+→ Evidence
+→ Research state
+```
+
+Durability is fail-closed:
+
+```text
+EXECUTED + persisted result
+→ resume from persisted result
+→ same deterministic receipt
+→ NO second /api/dataset call
+
+EXECUTION_STARTED + no persisted result
+→ UNKNOWN OUTCOME
+→ NO BLIND RETRY
+→ explicit limitation/recovery path
+```
+
+Do not restore mandatory P13 attestation/re-execution, P10 synthetic Research access facts,
+operator-level MBQL/resource validation, Standard projection hashes, Wren/raw-SQL/Agent-API fallback,
+shared admin/service analytical sessions, or any second analytics/security/receipt authority.
+
+P13 remains sealed beside the product path as a **CERTIFICATION / DEBUG / FORENSICS microscope**.
+
+### Forward phase chain
+
+```text
+P14 Research                  SEALED
+→ P15 native Exploration      OPEN NOW
+→ P16 claim-lineage Evidence
+→ P17 Research reasoning
+→ P18 material business relationship policy
+→ P19 Hypothesis / Root Cause
+→ P20 ReportDocument
+→ P21 DecisionBrief
+→ only then UI/UX architecture
+```
+
+Every phase consumes the authority produced below it. No disconnected subsystem and no parallel truth
+owner.
+
+### Next bounded objective — P15
+
+Use pinned native Metabase capability. Current source audit identifies the first provider-free vertical
+as the native X-Ray / automagic ad-hoc analysis surface over the exact P14-captured query, under the
+same authenticated native subject. Dima may persist only Research-material provenance/lead identity.
+
+P15 must not implement Python interestingness, variants, Top-N, temporal exploration, query repair,
+join planning, or an analytical scorer. Native "interesting" output remains **RESEARCH_MATERIAL**;
+it is not a VERIFIED Dima claim. P16 owns claim/Evidence promotion.
+
+### Current STOP conditions
+
+Stop for supervisor only if one of these becomes concrete:
+
+- Metabot/QP/Lib/driver/core engine modification is necessary;
+- principal-scoped native security cannot be preserved;
+- native permission enforcement is insufficient for a real Dima-specific policy;
+- a second analytical, security, or receipt authority appears necessary;
+- silent wrong can enter trusted claim/finding/decision state;
+- destructive semantic migration is required;
+- large paid evaluation is required;
+- a phase cannot consume prior-phase authority without a parallel system.
+
+Otherwise continue through the core chain. Do not return to UI work before P21.
+
+---
+
 **Branch:** `feat/dima-metabase-platform`  
 **Source branch:** `feat/ask-v2-mvp` — READ ONLY  
 **Base certified SHA:** `3774484167f1056d89da0e0609246fb4a05057ec`  
