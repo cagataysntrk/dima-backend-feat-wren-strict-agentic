@@ -1029,6 +1029,13 @@ def recursive_proposal(
             InvestigationIntent.STOP_BRANCH,
             InvestigationIntent.STOP_INVESTIGATION,
         }
+        else ManagerAction.RECORD_INVESTIGATION
+        if intent
+        in {
+            InvestigationIntent.EXPLORE_ALTERNATIVES,
+            InvestigationIntent.DEEPEN_EXPLANATION,
+            InvestigationIntent.REPLAN,
+        }
         else ManagerAction.EXPLORE_NATIVE
     )
     kwargs = dict(
