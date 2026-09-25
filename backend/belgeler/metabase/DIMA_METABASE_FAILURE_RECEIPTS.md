@@ -3816,3 +3816,88 @@ and whether one additional compact Luna live run is granted after deterministic/
 
 status:
 `OPEN / FINAL-LIVE SUPERVISOR STOP — P13D NOT SEALED; P14 NOT STARTED`.
+
+
+---
+
+## DMP-P14-RUNTIME-STOP-001 — production Research runtime lacks an existing principal/authority materialization seam
+
+opened_at: 2026-09-25  
+platform_sha: `367f5e6e468f6b86ebe02816f2310b0f1330830c`  
+governance: `36092002345 = SUCCESS`  
+engine_sha: `cbe313af9ac2d5960f662068e433d328d896fb06`  
+engine_release: `0.63.18-dima.6`
+
+classification:
+`P14 RUNTIME INTEGRATION / IDENTITY + ACCEPTED-AUTHORITY MATERIALIZATION / RETURN POINT B`
+
+progress before STOP:
+- the exact accepted `ResearchBrief` is now persisted inside the existing fingerprinted
+  `ResearchSession` checkpoint;
+- resolver-proven semantic refs survive restart with no raw-prompt reparse;
+- typed ranking/comparison payloads are preserved and included in ResearchBrief authority identity;
+- no new semantic store, resolver, planner, engine patch or model call was introduced.
+
+observed blocker A — principal-scoped bridge:
+- product Dima authentication yields `control_plane.authorize.Principal`;
+- `NativeEngineBridge` requires an authenticated Metabase session token;
+- current product config, control-plane schema, startup wiring and deployment topology expose no
+  production principal -> exact Metabase subject credential/session provider;
+- P10B1 proves a restricted Metabase subject/session in an isolated lab only and explicitly does not
+  establish a production identity/session issuer.
+
+Any implementation using a shared admin/service session, synthesizing Metabase login from Dima
+identity, or introducing a new mapping broker would create a new identity authority and violate the
+sealed ownership rule.
+
+observed blocker B — accepted temporal authority:
+- ResearchBrief persists the accepted temporal surface but not exact normalized absolute bounds;
+- P13 native trust requires exact accepted `ResolvedPeriod` / time-scope authority;
+- `app.v2.temporal_intent.TemporalBindingEngine` is a valid deterministic calendar owner only after
+  a typed normalization choice;
+- the Research acceptance path does not currently persist such a choice, and the closed
+  `TemporalIntentKind` ontology does not represent an absolute named month such as `Haziran 2026`;
+- invoking a new normalizer/parser during resume would reinterpret old language and create a new
+  semantic decision.
+
+observed blocker C — product binding/security materialization:
+- `DimaExecutionBindingSnapshot`, `ManagedResourceBinding` and
+  `VerifiedExecutionSecurityFacts` remain the correct existing contracts;
+- current product runtime has no durable production provider that materializes those facts for the
+  active principal/native subject;
+- P13 live helpers materialize the Boyahane proof fixture and cannot be reused as production truth.
+
+forbidden corrections:
+```text
+shared admin analytical session
+global service analytical account
+new identity broker/authority
+old-prompt semantic reparse
+new temporal/date parser or planner
+hard-coded Boyahane production mapping
+second P10/security owner
+new receipt/access fingerprint
+Wren/raw SQL/Agent API analytical fallback
+native Metabot/QP/Lib/driver patch
+```
+
+test/economy:
+```text
+governance on current SHA = GREEN
+P14 provider-free seal after partial runtime changes = NOT RUN
+Luna / Sol / C1 = 0 / 0 / 0
+engine builds = 0
+live Research canary = NOT RUN
+```
+
+required supervisor continuation:
+identify/authorize existing production owners or seams for:
+1. Dima principal -> exact authenticated Metabase subject/session;
+2. current Dima-to-Metabase execution/resource binding + truthful security facts;
+3. accepted typed temporal authority when the Research obligation includes an absolute named period.
+
+If satisfying any item requires creating a new identity, semantic, security or receipt authority,
+that is an explicit architecture decision and remains STOPPED until supervisor authorization.
+
+status:
+`RETURN POINT B / P14 PRODUCTION NATIVE RUNTIME NOT GREEN / P15 NOT STARTED`.

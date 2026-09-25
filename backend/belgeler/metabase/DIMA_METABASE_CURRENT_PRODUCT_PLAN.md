@@ -482,3 +482,44 @@ build is required unless a decision-changing hypothesis specifically justifies o
 
 Return after one provider-free native Exploration → Research/Evidence vertical is GREEN, or after one
 genuine STOP condition.
+
+
+---
+
+## 18. 2026-09-25 P14 production-runtime activation checkpoint
+
+The production-runtime directive supersedes the premature implication that P15 may start immediately
+after DMP-DEC-0046. P15 remains gated by P14 runtime + one real Research canary.
+
+Accepted-context preservation is now implemented without a second semantic system:
+- exact accepted `ResearchBrief` is stored in the existing fingerprinted Research checkpoint;
+- resolver-proven semantic refs survive restart;
+- typed ranking/comparison payloads survive and participate in brief authority identity;
+- resume continues to bypass language interpretation.
+
+No new database table/store was added for semantic context.
+
+P14 runtime wiring is currently blocked before implementation of a production
+`NativeBridgeFactory` / `ResearchMaterialExecutor` because the current repository exposes no
+existing production owner that can faithfully provide all of:
+
+```text
+Dima principal -> exact authenticated Metabase subject/session
+current production DimaExecutionBindingSnapshot / ManagedResourceBinding
+truthful VerifiedExecutionSecurityFacts for that same lens
+accepted exact temporal authority for absolute named-month Research scope
+```
+
+The existing contracts remain the intended owners; the gap is their production materialization and
+binding, not analytical logic.
+
+Until that owner boundary is resolved:
+
+```text
+P14 PRODUCTION NATIVE RUNTIME = NOT GREEN
+P14 LIVE RESEARCH CANARY      = NOT AUTHORIZED/RUN
+P15                           = NOT STARTED
+```
+
+Do not add a new identity broker, temporal parser/planner, security issuer or fixture-backed
+production truth to make the gate pass.

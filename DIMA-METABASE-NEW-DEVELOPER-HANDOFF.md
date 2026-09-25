@@ -466,3 +466,48 @@ interestingness is not itself a Dima VERIFIED Finding.
 
 If P15 exposes a genuine need for a native Metabot/QP/Lib/driver patch or a second
 security/receipt/analytical authority, stop for supervisor. Otherwise keep developing.
+
+
+---
+
+## 19. 2026-09-25 TAKEOVER UPDATE — P14 RUNTIME RETURN POINT B
+
+Current Platform HEAD after bounded accepted-context work:
+
+```text
+HEAD       = 367f5e6e468f6b86ebe02816f2310b0f1330830c
+governance = 36092002345 SUCCESS
+engine     = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6
+```
+
+Two bounded commits were added:
+- `af7de7e5...`: persist the exact accepted `ResearchBrief` inside the durable/fingerprinted
+  `ResearchSession`; preserve typed ranking/comparison payloads;
+- `367f5e6e...`: bind those typed operation payloads into the ResearchBrief authority identity.
+
+Do not revert these to a raw-prompt resume scheme.
+
+The next developer/supervisor must not start P15 yet. P14 production runtime is blocked at the owner
+boundary, not at Metabot analytics:
+
+```text
+Dima Principal
+  -> [MISSING EXISTING PRODUCTION OWNER]
+  -> exact authenticated Metabase subject/session
+
+accepted Research named-month surface
+  -> [MISSING ACCEPTED TYPED ABSOLUTE PERIOD BINDING]
+  -> P13 ResolvedPeriod authority
+
+current Dima business/engine mapping
+  -> [MISSING PRODUCT RUNTIME PROVIDER]
+  -> DimaExecutionBindingSnapshot / ManagedResourceBinding / verified security facts
+```
+
+Do not close these by inventing a service/admin session, new identity broker, string/date parser,
+second planner, or lab-fixture production binding. The correct continuation is to identify or
+explicitly authorize the existing production owners/seams. If doing that requires a new identity,
+semantic, security or receipt authority, return to supervisor before implementation.
+
+No P14 provider-free seal was run after these partial runtime changes; only governance is GREEN.
+No Luna/Sol/C1/live canary was run.

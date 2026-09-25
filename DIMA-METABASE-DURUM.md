@@ -3033,3 +3033,72 @@ P14 FOUNDATION                    = GREEN / SEALED
 P14 PRODUCT RESEARCH/ASK          = PROVIDER-FREE GREEN / SEALED
 P15 NATIVE EXPLORATIONS           = NEXT / NOT STARTED
 ```
+
+
+---
+
+## 2026-09-25 — P14 PRODUCTION RUNTIME ACTIVATION / RETURN POINT B
+
+Supervisor runtime-closure directive was applied from the current remote state without reopening P13
+or the sealed P14 foundation.
+
+Code progress:
+
+```text
+accepted Research context persistence = IMPLEMENTED
+context implementation                = af7de7e5ae0d84384fc45752cc3f3608b771ba02
+typed operation identity hardening    = 367f5e6e468f6b86ebe02816f2310b0f1330830c
+governance                            = 36092002345 SUCCESS
+engine changes                        = 0
+model calls                           = 0
+engine builds                         = 0
+```
+
+The exact accepted `ResearchBrief` is now part of the fingerprinted durable `ResearchSession`
+checkpoint. Resolver-proven semantic refs plus typed ranking/comparison payloads survive restart.
+Ranking/comparison payloads are also bound into `ResearchBrief.brief_id`; resume does not reparse the
+old prompt.
+
+Production runtime is **not** GREEN. Current source audit proves three unresolved owner boundaries:
+
+1. **Principal-scoped native identity owner is absent from product runtime.**
+   Dima auth issues the Dima principal/JWT, while `NativeEngineBridge` requires an authenticated
+   Metabase session. No production principal -> exact Metabase subject credential/session provider is
+   present in current product config/control-plane/startup. P10B1 proves the native subject contract in
+   an isolated lab but explicitly is not a production identity/session issuer.
+
+2. **Accepted named-month temporal authority is not yet losslessly carried to P13.**
+   Research currently persists the accepted temporal surface, e.g. `Haziran 2026`, but P13 trust
+   requires exact accepted period bounds/time dimension. The newer typed `TemporalBindingEngine` is
+   deterministic after a typed normalization choice, but the current Research acceptance path does not
+   persist such a choice and its closed ontology does not represent an absolute named month. Reparsing
+   the old surface during resume would create a new semantic/temporal decision and is forbidden.
+
+3. **Production current execution/resource-binding provider is absent.**
+   `DimaExecutionBindingSnapshot` / `ManagedResourceBinding` contracts exist and P13 live proofs use
+   them, but current product runtime has no durable production provider for the exact current
+   Dima-to-Metabase binding/security facts. Lab Boyahane helpers are not promoted to product truth.
+
+Forbidden shortcuts were not used:
+- shared admin or global service-account analytical session;
+- new identity broker;
+- old-prompt reparse;
+- new temporal/parser/planner;
+- hard-coded Boyahane production binding;
+- Wren/raw SQL/Agent API analytical fallback;
+- P13/native-core patch.
+
+Current milestone state:
+
+```text
+P14 FOUNDATION                       = GREEN / SEALED
+P14 PRODUCT BOUNDARY                 = GREEN / SEALED
+P14 ACCEPTED CONTEXT DURABILITY      = IMPLEMENTED / GOVERNANCE GREEN
+P14 PRODUCTION NATIVE RUNTIME        = BLOCKED / NOT GREEN
+P14 LIVE RESEARCH CANARY             = NOT RUN
+P15                                  = NOT STARTED
+```
+
+This is a genuine supervisor Return Point B. Do not run the P14 provider-free seal or a Luna canary
+until an existing production owner is identified/authorized for the missing identity/security/binding
+boundary and the accepted temporal authority can reach P13 without reinterpretation.
