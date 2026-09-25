@@ -242,7 +242,7 @@ def test_applied_adapt_disposition_requires_branch_task_refs():
     assert applied.branch_task_refs == ("D1",)
 
 
-def test_preacceptance_phase_cap_does_not_expand_global_six_turn_budget():
+def test_preacceptance_retry_does_not_consume_research_phase_budget():
     canonical = ManagerRuntime(
         request_ref="budget-canonical",
         turn_ref="turn-budget-canonical",
@@ -252,21 +252,40 @@ def test_preacceptance_phase_cap_does_not_expand_global_six_turn_budget():
     assert canonical.snapshot.preacceptance_turns == 2
     assert canonical.snapshot.manager_turns == 2
     assert canonical.budget.max_preacceptance_turns == 4
-    assert canonical.budget.max_total_manager_turns == 6
+    assert canonical.budget.max_manager_turns == 4
+    assert canonical.budget.max_total_manager_turns == 8
 
     revision = ManagerRuntime(
         request_ref="budget-revision",
         turn_ref="turn-budget-revision",
     )
-    for _ in range(3):
+    for _ in range(4):
         revision.note_manager_turn(phase="preacceptance")
-    for _ in range(3):
+    for _ in range(4):
         revision.note_manager_turn(phase="research")
 
-    assert revision.snapshot.preacceptance_turns == 3
-    assert revision.snapshot.research_manager_turns == 3
-    assert revision.snapshot.manager_turns == 6
+    assert revision.snapshot.preacceptance_turns == 4
+    assert revision.snapshot.research_manager_turns == 4
+    assert revision.snapshot.manager_turns == 8
 
     with pytest.raises(ManagerBudgetError, match="total Manager turn budget exhausted"):
         revision.note_manager_turn(phase="research")
     assert revision.snapshot.state == ManagerState.BUDGET_EXHAUSTED
+
+
+def test_research_phase_has_its_own_four_turn_hard_cap():
+    runtime = ManagerRuntime(
+        request_ref="budget-research-phase",
+        turn_ref="turn-budget-research-phase",
+    )
+    for _ in range(2):
+        runtime.note_manager_turn(phase="preacceptance")
+    for _ in range(4):
+        runtime.note_manager_turn(phase="research")
+
+    assert runtime.snapshot.manager_turns == 6
+    assert runtime.snapshot.research_manager_turns == 4
+
+    with pytest.raises(ManagerBudgetError, match="research Manager turn budget exhausted"):
+        runtime.note_manager_turn(phase="research")
+    assert runtime.snapshot.state == ManagerState.BUDGET_EXHAUSTED
