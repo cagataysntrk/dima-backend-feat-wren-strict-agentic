@@ -167,6 +167,26 @@ jobs:
             fi
           fi
 
+      - name: Guard P14 Research hot path as native-direct only
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "DMP-DEC-0048" backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
+          HOT=(
+            "backend/app/v3/research.py"
+            "backend/app/v3/research_product.py"
+            "backend/app/v3/research_native_gateway.py"
+          )
+          FORBIDDEN='NativeStandardTrustOrchestrator|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer|NativeExecutionManifest|AuthorizedExecutionArtifact|ExecutionAccessSnapshotIssuer|VerifiedExecutionSecurityFacts|NativeResourceBindingProvider|attest_native_query[[:space:]]*\(|execute_native_query[[:space:]]*\(|app\.wren|wren_service'
+          for file in "${HOT[@]}"; do
+            if grep -nE "$FORBIDDEN" "$file"; then
+              echo "P14 Research hot path reintroduced certification/shadow analytics authority: $file" >&2
+              exit 1
+            fi
+          done
+          grep -q "capture_produced_query" backend/app/v3/research_product.py
+          grep -q "execute_dataset" backend/app/v3/research_native_gateway.py
+
       - name: Guard active engine consumers against source-build fallback
         shell: bash
         run: |

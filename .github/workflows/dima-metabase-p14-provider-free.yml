@@ -82,7 +82,7 @@ jobs:
           set -euo pipefail
           python -m alembic heads | grep -q '^c6f1a2d9e870'
 
-      - name: P14 focused provider-free Research proof
+      - name: P14 native-direct focused provider-free Research proof
         working-directory: backend
         run: |
           pytest -q             tests/test_v3_p14_research.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py             tests/test_v3_p12x_c2_native_engine_bridge.py::test_native_direct_metabot_query_reaches_dataset_unchanged             tests/test_v3_p12x_c2_native_engine_bridge.py::test_native_direct_dataset_permission_failure_stays_native_http_failure
