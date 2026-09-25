@@ -207,7 +207,7 @@ def _accepted_runtime(service=None):
     return spans, runtime, executor, question, message_id
 
 
-def test_manager_loop_contract_mode_materializes_task_observes_delta_and_finishes():
+def test_manager_loop_contract_mode_finishes_without_redundant_delta_cognition():
     spans, runtime, executor, question, message_id = _accepted_runtime()
     llm = _ResultAwareFakeLLM()
     loop = ResearchManagerLoop(
@@ -226,7 +226,7 @@ def test_manager_loop_contract_mode_materializes_task_observes_delta_and_finishe
 
     assert outcome.run_finished is True
     assert outcome.verified_complete is True
-    assert runtime.snapshot.inspected_evidence_refs == runtime.snapshot.evidence_refs
+    assert runtime.snapshot.inspected_evidence_refs == ()
     assert runtime.snapshot.latest_evidence_ref in runtime.snapshot.evidence_refs
 
     tool_observations = [
@@ -241,22 +241,19 @@ def test_manager_loop_contract_mode_materializes_task_observes_delta_and_finishe
         item.get("tool") == "inspect_evidence"
         for item in tool_observations
     )
-    assert any(
+    assert not any(
         item.get("kind") == "fresh_evidence_disclosed"
         for item in outcome.observations
     )
 
-    assert len(llm.prompts) == 2
+    # Once the only analytical USER_MUST is deterministically VERIFIED, the run
+    # completes at the next user-control-safe loop boundary. No second cognition is
+    # spent merely to disclose Evidence to a model that has no remaining decision.
+    assert len(llm.prompts) == 1
     assert llm.prompts[0]["CURRENT_RESULT_DELTA"] is None
-    assert llm.prompts[1]["CURRENT_RESULT_DELTA"]["verified"] is True
-    assert llm.prompts[1]["CURRENT_RESULT_DELTA"]["inspected"] is False
-    assert llm.prompts[1]["CURRENT_RESULT_DELTA"]["inspection_required"] is False
-
-    # Accumulated state does not smuggle the latest delta back into the same bucket.
-    assert llm.prompts[1]["ACCUMULATED_RESEARCH_STATE"]["latest_delta"] is None
 
 
-def test_zero_row_inspected_evidence_finishes_without_spending_another_manager_turn():
+def test_zero_row_verified_evidence_finishes_without_spending_another_manager_turn():
     spans, runtime, executor, question, message_id = _accepted_runtime(
         service=_ZeroRowSyntheticService()
     )
@@ -277,17 +274,17 @@ def test_zero_row_inspected_evidence_finishes_without_spending_another_manager_t
 
     assert outcome.run_finished is True
     assert outcome.verified_complete is True
-    assert runtime.snapshot.manager_turns == 2
+    assert runtime.snapshot.manager_turns == 1
     assert runtime.snapshot.data_queries == 1
-    assert runtime.snapshot.inspected_evidence_refs == runtime.snapshot.evidence_refs
-    assert len(llm.prompts) == 2
+    assert runtime.snapshot.inspected_evidence_refs == ()
+    assert len(llm.prompts) == 1
 
     finish = [
         item
         for item in outcome.observations
         if item.get("kind") == "finish"
     ]
-    assert finish[-1]["reason"] == "fresh_disclosed_zero_row_no_material_branch"
+    assert finish[-1]["reason"] == "loop_boundary_deterministic_completion_gate"
 
 
 def test_postacceptance_schema_does_not_advertise_propose_acceptance():
