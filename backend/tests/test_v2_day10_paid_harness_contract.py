@@ -286,6 +286,7 @@ def test_counting_structured_captures_research_and_semantic_schemas():
     for role, model, schema_name in (
         ("RESEARCH_MANAGER", paid.RESEARCH_MODEL, "dima_intent_draft_v1"),
         ("RESEARCH_MANAGER", paid.RESEARCH_MODEL, "dima_intent_coverage_v1"),
+        ("RESEARCH_MANAGER", paid.RESEARCH_MODEL, "dima_research_manager_action_v1"),
         ("SEMANTIC_LINKER", paid.SEMANTIC_MODEL, "dima_bounded_semantic_link_v1"),
     ):
         paid.CountingStructured(
@@ -299,6 +300,7 @@ def test_counting_structured_captures_research_and_semantic_schemas():
     assert [item["schema_name"] for item in captured] == [
         "dima_intent_draft_v1",
         "dima_intent_coverage_v1",
+        "dima_research_manager_action_v1",
         "dima_bounded_semantic_link_v1",
     ]
 
