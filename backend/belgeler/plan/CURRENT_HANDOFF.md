@@ -1,5 +1,133 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY — INTEGRATED LIVE #1 RED / GENERIC APPLICABILITY FIX GREEN / RE-MEASUREMENT NOT AUTHORIZED
+
+D10-S remains SEALED. This block records the first post-seal integrated live measurement and the bounded generic implementation correction that followed. Historical blocks below remain audit receipts.
+
+```text
+branch                         feat/ask-v2-mvp
+
+D10-S FINAL                    SEALED
+ManagerBudget                  4 / 4 / 8 RATIFIED
+budget changes                 FORBIDDEN
+
+integrated live run #1         36128949886 = RED
+tested transport SHA           674ac1aed68ea42ea67bedb0660298e95c9f86c7
+tested Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+scope                          CANONICAL_NS4
+
+fresh provider calls used      12 / 40
+remaining owner envelope       28
+second integrated paid run     NOT AUTHORIZED
+
+calls by role
+FAST_LANGUAGE                  1
+RESEARCH_MANAGER               7 provider calls
+SEMANTIC_LINKER                3
+TEMPORAL_NORMALIZER            0
+REPORT_NARRATOR                1
+
+Manager phase interpretation
+preacceptance                  2 turns
+Research                       4 turns
+total Manager turns            6 / 8
+note                           one Research turn used one format-repair provider call
+
+Wren
+cube_sql_calls                 5
+dry_plan_calls                 5
+query_calls                    5
+
+Product                        PARTIAL
+ReportDocument                 BUILT
+signed continuation            NOT REACHED
+CONFIRMED_CAUSE                0
+```
+
+### First wrong transition
+
+The first post-acceptance cognition action proposed a ROOT_CAUSE composite under `obl_4` but supplied semantic handle alias `h3`.
+
+Deterministic alias lineage for the accepted contract was:
+
+```text
+obl_1 PERFORMANCE   → h1, h2
+obl_2 BREAKDOWN     → h3, h4, h5
+obl_3 RELATIONSHIP  → h6, h7, h8
+obl_4 ROOT_CAUSE    → h9, h10
+```
+
+Therefore `h3` belonged to another accepted obligation. `HypothesisLedger` / root orchestration correctly rejected the proposal. The truth boundary was correct.
+
+Classification:
+
+```text
+CONTRACT / ARCHITECTURE
+
+model-facing action name was state-aware
+BUT
+root epistemic action arguments were not parent-scoped before cognition
+```
+
+The same live receipt exposed an adjacent defect in the same owner: after a successful governed next-test produced fresh VERIFIED Evidence, `propose_hypothesis_next_test` remained advertised before that Evidence had been admitted as a hypothesis relation. Runtime correctly rejected the unrelated trigger; a format-repair provider call occurred inside the same Research turn.
+
+### Generic correction — ratified architecture unchanged
+
+Latest Product behavior:
+
+```text
+999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+```
+
+`ManagerActionAvailability` now projects the bounded server-known ROOT action scope:
+- eligible ROOT parent obligation IDs;
+- eligible ROOT semantic handle aliases;
+- governed ROOT Evidence refs;
+- existing server hypothesis IDs;
+- pending post-test Evidence/hypothesis relation refs.
+
+The strict provider schema uses that same profile to narrow:
+- `hypothesis_parent_obligation_id`;
+- `hypothesis_semantic_handles`;
+- `hypothesis_trigger_evidence_refs`;
+- `next_test_input_handles`;
+- `next_test_trigger_evidence_ref`;
+- `hypothesis_ref`;
+- `hypothesis_relation_evidence_ref`.
+
+When a completed governed next-test has produced VERIFIED Evidence that is not yet represented in hypothesis state, another `propose_hypothesis_next_test` is not advertised until the Evidence relation is accounted.
+
+Frozen owners were not changed:
+- ManagerBudget remains 4 / 4 / 8;
+- SemanticBindingGate and AcceptedTurnContract remain authority;
+- UserObligationLedger / Evidence / EpistemicLabelGate unchanged;
+- Wren / CrossDomainJoinGate unchanged;
+- tenant/principal and provider topology unchanged.
+
+Provider-free proof after the correction:
+
+```text
+Day10 final attack + real-Wren   36130046060 = GREEN
+Day8 affected                    36129994598 = GREEN
+Day7 affected                    36129994504 = GREEN
+```
+
+No second paid run was dispatched. Paid workflow is back to permanent `workflow_dispatch`-only blob
+`f9ddebd74f8e8349ef6961eebf1d69f2f71acffb`; temporary marker is absent.
+
+Current release authority:
+
+```text
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+
+next paid/live action          REQUIRES NEW SUPERVISOR AUTHORITY
+```
+
+
 ## LATEST AUTHORITY — D10-S FINAL SEALED / ONE INTEGRATED LIVE MEASUREMENT AUTHORIZED
 
 This is the current active authority. Older D10-S / D10-Q blocks remain historical receipts and MUST NOT be rewritten.
