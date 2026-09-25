@@ -1298,9 +1298,9 @@ class ResearchManagerLoop:
             semantic_expansion_parent_obligation_ids=tuple(
                 dict.fromkeys(semantic_expansion_parents)
             ),
-            remaining_manager_turns=max(
-                runtime.budget.max_total_manager_turns
-                - runtime.snapshot.manager_turns,
+            remaining_research_turns=max(
+                runtime.budget.max_manager_turns
+                - runtime.snapshot.research_manager_turns,
                 0,
             ),
         )
