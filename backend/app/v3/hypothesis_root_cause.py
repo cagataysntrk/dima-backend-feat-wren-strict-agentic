@@ -1011,13 +1011,39 @@ class HypothesisRootCauseStore:
             grounding_map.update(
                 {item.grounding_link_id: item for item in selected}
             )
+            selected_sources = {
+                (
+                    item.source_kind,
+                    item.source_ref,
+                    item.source_receipt_id,
+                )
+                for item in selected
+            }
             for numeric in candidate.numeric_provenance:
+                if (
+                    numeric.source_kind,
+                    numeric.source_ref,
+                    numeric.source_receipt_id,
+                ) not in selected_sources:
+                    raise P19EpistemicError(
+                        "P19_PROVENANCE_GROUNDING_REQUIRED",
+                        candidate.hypothesis_id,
+                    )
                 self._validate_numeric(
                     session_id=session.session_id,
                     obligation_id=draft.obligation_id,
                     ref=numeric,
                 )
             for causal_ref in candidate.causal_identification_refs:
+                if (
+                    causal_ref.source_kind,
+                    causal_ref.source_ref,
+                    causal_ref.source_receipt_id,
+                ) not in selected_sources:
+                    raise P19EpistemicError(
+                        "P19_PROVENANCE_GROUNDING_REQUIRED",
+                        candidate.hypothesis_id,
+                    )
                 self._validate_causal_identification(
                     session_id=session.session_id,
                     obligation_id=draft.obligation_id,
