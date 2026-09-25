@@ -242,12 +242,14 @@ def test_adaptive_relationship_blocked_terminal_does_not_apply_directive(
         progress_callback=lambda kind, refs: progress.append((kind, refs)),
     )
 
-    blocked = next(
+    blocked_candidates = [
         item
         for item in result.outcome.observations
         if item.get("kind") == "deterministic_task_blocked"
         and item.get("context") == "adaptive_branch"
-    )
+    ]
+    assert blocked_candidates, result.outcome.observations
+    blocked = blocked_candidates[0]
     assert blocked["task_id"] == "D_ROOT_REL_BLOCKED"
     assert blocked["result"]["available"] is False
     assert blocked["result"]["status"] == "UNSUPPORTED"
