@@ -18,14 +18,22 @@ def _root(
     hypothesis_count: int = 0,
     kinds: tuple[str, ...] = ("metric",),
     required: tuple[tuple[str, ...], ...] = (("metric",),),
+    handles: tuple[str, ...] = ("h_root",),
+    hypothesis_refs: tuple[str, ...] = (),
     evidence: tuple[str, ...] = ("evi_fresh",),
+    pending_hypotheses: tuple[str, ...] = (),
+    pending_evidence: tuple[str, ...] = (),
 ) -> RootActionState:
     return RootActionState(
         root_id="U_ROOT",
         hypothesis_count=hypothesis_count,
         root_handle_kinds=kinds,
         next_test_required_kind_sets=required,
+        root_handle_refs=handles,
+        hypothesis_refs=hypothesis_refs,
         effective_inspected_verified_evidence_refs=evidence,
+        pending_relation_hypothesis_refs=pending_hypotheses,
+        pending_relation_evidence_refs=pending_evidence,
     )
 
 
@@ -334,3 +342,111 @@ def test_verified_root_next_test_child_does_not_become_semantic_authority():
     assert profile.reasons_for_unavailable("resolve_semantics") == (
         ActionAvailabilityReason.EXISTING_GOVERNED_HANDLES_SATISFY_NEXT_TEST.value,
     )
+
+
+def test_live_root_action_schema_excludes_cross_obligation_handles_before_cognition():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            root_states=(
+                _root(
+                    kinds=("metric", "metric"),
+                    handles=("h9", "h10"),
+                    evidence=("evi_root",),
+                ),
+            ),
+            effective_inspected_verified_evidence_refs=("evi_root",),
+            fresh_disclosed_evidence_ref="evi_root",
+            fresh_disclosed_verified=True,
+            remaining_research_turns=4,
+        )
+    )
+    schema = _post_acceptance_native_schema(
+        root_cause_enabled=True,
+        allowed_actions=profile.available_actions,
+        inspectable_evidence_refs=profile.inspectable_evidence_refs,
+        resolve_provenance=profile.post_acceptance_resolve_provenance,
+        resolve_semantics_parent_obligation_ids=(
+            profile.resolve_semantics_parent_obligation_ids
+        ),
+        root_parent_obligation_ids=profile.root_parent_obligation_ids,
+        root_action_handle_refs=profile.root_action_handle_refs,
+        root_evidence_refs=profile.root_evidence_refs,
+        hypothesis_refs=profile.hypothesis_refs,
+        pending_relation_hypothesis_refs=(
+            profile.pending_relation_hypothesis_refs
+        ),
+        pending_relation_evidence_refs=profile.pending_relation_evidence_refs,
+    )
+
+    parents = _enum_values(
+        _property_schema(schema, "hypothesis_parent_obligation_id")
+    )
+    hypothesis_handles = _enum_values(
+        _property_schema(schema, "hypothesis_semantic_handles")
+    )
+    next_test_handles = _enum_values(
+        _property_schema(schema, "next_test_input_handles")
+    )
+    trigger_refs = _enum_values(
+        _property_schema(schema, "hypothesis_trigger_evidence_refs")
+    )
+
+    assert parents == {"U_ROOT"}
+    assert hypothesis_handles == {"h9", "h10"}
+    assert next_test_handles == {"h9", "h10"}
+    assert "h3" not in hypothesis_handles
+    assert "h3" not in next_test_handles
+    assert trigger_refs == {"evi_root"}
+
+
+def test_unlinked_verified_next_test_evidence_requires_relation_before_more_testing():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            root_states=(
+                _root(
+                    hypothesis_count=1,
+                    handles=("h9", "h10"),
+                    hypothesis_refs=("hyp_1",),
+                    evidence=("evi_seed", "evi_post"),
+                    pending_hypotheses=("hyp_1",),
+                    pending_evidence=("evi_post",),
+                ),
+            ),
+            effective_inspected_verified_evidence_refs=("evi_seed", "evi_post"),
+            fresh_disclosed_evidence_ref="evi_post",
+            fresh_disclosed_verified=True,
+            remaining_research_turns=2,
+        )
+    )
+
+    assert "propose_hypothesis_next_test" not in profile.available_actions
+    assert profile.reasons_for_unavailable("propose_hypothesis_next_test") == (
+        ActionAvailabilityReason.POST_TEST_EVIDENCE_RELATION_PENDING.value,
+    )
+    assert "propose_hypothesis_evidence_relation" in profile.available_actions
+
+    schema = _post_acceptance_native_schema(
+        root_cause_enabled=True,
+        allowed_actions=profile.available_actions,
+        inspectable_evidence_refs=profile.inspectable_evidence_refs,
+        resolve_provenance=profile.post_acceptance_resolve_provenance,
+        resolve_semantics_parent_obligation_ids=(
+            profile.resolve_semantics_parent_obligation_ids
+        ),
+        root_parent_obligation_ids=profile.root_parent_obligation_ids,
+        root_action_handle_refs=profile.root_action_handle_refs,
+        root_evidence_refs=profile.root_evidence_refs,
+        hypothesis_refs=profile.hypothesis_refs,
+        pending_relation_hypothesis_refs=(
+            profile.pending_relation_hypothesis_refs
+        ),
+        pending_relation_evidence_refs=profile.pending_relation_evidence_refs,
+    )
+
+    actions = _enum_values(_property_schema(schema, "action"))
+    assert "propose_hypothesis_next_test" not in actions
+    assert "propose_hypothesis_evidence_relation" in actions
+    assert _enum_values(_property_schema(schema, "hypothesis_ref")) == {"hyp_1"}
+    assert _enum_values(
+        _property_schema(schema, "hypothesis_relation_evidence_ref")
+    ) == {"evi_post"}
