@@ -414,6 +414,9 @@ class ManagerSemanticResolutionAdapter:
             cognition_requests.append((request_id, text, kind_hint))
             request_key_by_id[request_id] = key
             diagnostic_metadata[request_id] = {
+                "owner_obligation_id": (
+                    owners[0] if len(owners) == 1 else None
+                ),
                 "owner_obligation_ids": list(owners),
                 "source_ref": source_ref,
                 "source_truth_key_kind": normalized_kind,
