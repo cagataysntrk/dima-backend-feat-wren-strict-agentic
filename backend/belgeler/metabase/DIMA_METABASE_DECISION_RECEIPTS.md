@@ -3215,3 +3215,71 @@ Do not reopen P14 as P14B/P14C. Do not restore thick-gateway/P13 middleware.
 
 status:
 `SEALED IMPLEMENTATION / P14 CLOSED / DMP-DEC-0048 FORWARD AUTHORITY / P15 NEXT`.
+
+
+---
+
+## DMP-DEC-0048 — P15 / P16 CORE-AUTHORITY IMPLEMENTATION EVIDENCE
+
+date: 2026-09-25
+
+No new DMP-DEC is created. DMP-DEC-0048 remains the forward architecture authority.
+
+### P15 Native Metabase Exploration
+
+```text
+seal commit / tested SHA          = c529f28d34712d149f1c3c1e594a413974c37130
+provider-free run                 = 36103561534 SUCCESS
+governance                        = GREEN
+engine patch/build                = 0
+model calls                       = 0
+Python analytical primitive copy = 0
+```
+
+The first P15 vertical consumes one VERIFIED P14 native occurrence, reuses its exact captured query
+A and principal-scoped native session, delegates to pinned Metabase X-Ray/automagic analysis, and
+stores only durable native Research material/provenance.
+
+P15 output is explicitly `RESEARCH_MATERIAL`. It is not a claim or finding.
+
+### P16 Claim-lineage Evidence
+
+```text
+seal commit / tested SHA = 9fa97e041bf51e87518943d010a070cce6b0dcac
+provider-free run        = 36104299903 SUCCESS
+governance run           = 36104299868 SUCCESS
+engine patch/build       = 0
+model calls              = 0
+```
+
+The P16 gate proves the entire authority chain in one run:
+
+```text
+P16 claim-lineage focused proof = SUCCESS
+P15 native Exploration regression = SUCCESS
+P14 native-direct regression = SUCCESS
+```
+
+P16 durable semantics:
+- P15 lead/material may be claim origin only;
+- claim begins `PROPOSED`;
+- only eligible P14 Evidence edges change epistemic state;
+- `SUPPORTS`, `CHALLENGES`, `CONTEXTUALIZES`, `INSUFFICIENT` are explicit;
+- support + challenge becomes `CONTESTED`;
+- insufficient-only becomes `INSUFFICIENT_EVIDENCE`;
+- contextual material does not promote truth;
+- Evidence relation for a claim is immutable once recorded;
+- receipt/execution provenance mismatch fails closed;
+- no numeric confidence exists.
+
+Current phase state:
+
+```text
+P14 = SEALED
+P15 = SEALED
+P16 = SEALED
+P17 = AUTHORIZED / OPEN
+```
+
+The next owner is P17 Research Manager maturation. It consumes P14/P15/P16; it must not invent a
+parallel analytics or claim authority.

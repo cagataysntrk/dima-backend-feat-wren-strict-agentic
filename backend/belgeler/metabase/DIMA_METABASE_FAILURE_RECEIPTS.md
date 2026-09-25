@@ -4082,3 +4082,45 @@ engine builds         = 0
 
 status:
 `CLOSED / ROOT CAUSE FIXED / NO-BLIND-RETRY INVARIANT SEALED`.
+
+
+---
+
+## DMP-CI-OWNER-RED-003 — historical P3/M1 gates fired on P14/P15 product-owned files
+
+date: 2026-09-25  
+classification: `CI OWNER / HISTORICAL PATH FILTER / NOT PRODUCT RED`  
+status: `CLOSED`
+
+Observed historical failures during the P15 build:
+
+```text
+36103181224 = dima-metabase-p3 FAILURE
+  failed step: Enforce P3 forbidden-file isolation
+
+36103376332 = dima-metabase-m1 FAILURE
+36103481508 = dima-metabase-m1 FAILURE
+  failed step: Enforce M1 forbidden-file isolation
+```
+
+These failures did not identify an analytical/product defect. The historical workflows were triggered
+because their broad path filters still claimed newer native product files.
+
+Root correction:
+
+```text
+20519777f2134232cd74bea190d9fd715ae9295d
+→ M1 excludes sealed P14/P15 product files and native product transport
+→ app runtime wires P15 through its own owner
+
+2eb50f89f09c26cfdca6974591e59f4368a456b1
+→ P3 excludes native_engine.py / native_models.py
+→ those files are governed by P14/P15 product gates instead
+```
+
+Governance now asserts those exclusions. P15's real gate
+`36103561534 = SUCCESS` and P16's downstream regression gate
+`36104299903 = SUCCESS` prove the product path itself is GREEN.
+
+Do not use the historical P3/M1 failures to reopen Wren parity, P3 Agent client work, P13 middleware,
+or any earlier architecture.
