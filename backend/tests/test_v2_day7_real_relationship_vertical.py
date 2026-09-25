@@ -11,6 +11,7 @@ from app import contracts as contracts_module
 from app import fanout
 from app.wren_service import WrenService
 from app.v2.acceptance import IntentAcceptanceGate
+from app.v2.context_provider import ContextProviderV0
 from app.v2.cross_domain_facts import CrossDomainJoinFactBuilder
 from app.v2.manager_core_adapter import ManagerCoreAnalyticsAdapter
 from app.v2.manager_executor import (
@@ -25,8 +26,10 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
 )
 from app.v2.manager_runtime import ManagerRuntime
-from app.v2.manager_tools import ManagerToolCall, ManagerToolName
+from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
+from app.v2.manager_tools import ManagerToolCall, ManagerToolName, ResolveSemanticsArgs
 from app.v2.models import (
+    ConversationStateV2,
     ResolvedSemanticRef,
     SemanticTargetKind,
     ResearchTask,
@@ -40,6 +43,11 @@ from app.v2.relationship_adapter import (
 from app.v2.research_tasks import ResearchTaskLifecycleError, ResearchTaskRegistry
 from app.v2.research_tools import ResearchToolRunner
 from app.v2.semantic_handles import SemanticHandleRegistry
+from app.v2.semantic_linker import (
+    SemanticCandidateGenerator,
+    SemanticLinkBatchDecision,
+    SemanticLinkChoice,
+)
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
 
@@ -330,6 +338,296 @@ def _accepted_relationship_runtime(wren, schema, monkeypatch, *, multi_metric=Fa
         task,
         call,
     )
+
+
+
+class _SelectCanonicalCandidateProvider:
+    def __init__(self, candidate_id: str) -> None:
+        self.candidate_id = candidate_id
+        self.calls = []
+
+    def decide(self, requests):
+        self.calls.append(tuple(requests))
+        choices = []
+        for request in requests:
+            visible = {item.candidate_id for item in request.candidates}
+            if self.candidate_id not in visible:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="ABSTAIN",
+                        reason="NO_MATCH",
+                    )
+                )
+                continue
+            choices.append(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="SELECT",
+                    candidate_id=self.candidate_id,
+                )
+            )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
+def test_real_wren_same_dimension_source_reuses_truth_across_breakdown_and_relationship(
+    wren,
+    monkeypatch,
+):
+    """One current-message source truth; two owner edges; real governed relationship."""
+    schema = _current_certified_schema(wren)
+    tenant = "day10-source-truth-real-wren"
+    principal = Principal(
+        user_id="day10-source-truth",
+        tenant_id=tenant,
+        roles=["owner"],
+        tenant_slug="demo-boyahane",
+    )
+    service = _CertifiedService(wren, schema)
+    runtime_ctx = TenantAnalyticsRuntimeV0(
+        tenant_id=tenant,
+        tenant_slug="demo-boyahane",
+        principal_user_id=principal.user_id,
+        roles=tuple(principal.roles),
+        mdl_version=wren.mdl_version,
+        catalog=str(schema.get("catalog") or "wren"),
+        schema_name=str(schema.get("schema_name") or "public"),
+        db_online=True,
+    )
+    semantic_context = ContextProviderV0().build(service, runtime_ctx)
+    context_version = semantic_context.context_version.version
+
+    generator = SemanticCandidateGenerator(
+        semantic_context=semantic_context,
+        schema=schema,
+    )
+    dimension_candidates = generator._governed_candidates("dimension")
+    target_dimension = next(
+        item
+        for item in dimension_candidates
+        if (
+            str(
+                getattr(item.canonical_target, "canonical_name", None)
+                or getattr(item.canonical_target, "dimension_name", None)
+                or ""
+            )
+            == "bolum"
+            and "makine_duruslari"
+            in set(getattr(item.canonical_target, "cube_names", ()) or ())
+        )
+    )
+    provider = _SelectCanonicalCandidateProvider(
+        target_dimension.card.candidate_id
+    )
+
+    source_spans = SourceSpanRegistry()
+    semantic_handles = SemanticHandleRegistry()
+    dimension_surface = target_dimension.card.label
+    metric_name = next(
+        item
+        for item in next(
+            cube
+            for cube in schema["cubes"]
+            if cube.get("name") == "makine_duruslari"
+        ).get("measures", ())
+    )
+    question = (
+        f"{metric_name} with {dimension_surface} is used for both breakdown "
+        "and relationship analysis"
+    )
+    message_id = "turn-source-truth-real-wren"
+    source_hash = source_spans.register_message(
+        message_id=message_id,
+        text=question,
+    )
+    metric_source = source_spans.mint_exact(
+        message_id=message_id,
+        surface=metric_name,
+    )
+    dimension_source = source_spans.mint_exact(
+        message_id=message_id,
+        surface=dimension_surface,
+    )
+
+    semantic = ManagerSemanticResolutionAdapter(
+        source_spans=source_spans,
+        semantic_handles=semantic_handles,
+        semantic_context=semantic_context,
+        conversation=ConversationStateV2(),
+        schema=schema,
+        tenant_binding=tenant,
+        session_id="source-truth-real-wren",
+        thread_id="source-truth-real-wren",
+        semantic_decision_provider=provider,
+    )
+    resolved_dimension = semantic.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(
+                dimension_source.source_ref,
+                dimension_source.source_ref,
+            ),
+            source_obligation_ids=("U_BREAKDOWN", "U_REL"),
+            target_kind_hints=("dimension", "dimension"),
+        )
+    )
+    assert resolved_dimension.unresolved_source_refs == ()
+    assert len(resolved_dimension.resolved) == 2
+    by_owner = {
+        item.owner_id: item.handle for item in resolved_dimension.resolved
+    }
+    assert set(by_owner) == {"U_BREAKDOWN", "U_REL"}
+    assert (
+        by_owner["U_BREAKDOWN"].resolver_provenance_id
+        == by_owner["U_REL"].resolver_provenance_id
+        == target_dimension.card.candidate_id
+    )
+    assert by_owner["U_BREAKDOWN"].handle_id != by_owner["U_REL"].handle_id
+    assert by_owner["U_BREAKDOWN"].parent_obligation_id == "U_BREAKDOWN"
+    assert by_owner["U_REL"].parent_obligation_id == "U_REL"
+    # Duplicate exact candidates require at most one bounded cognition decision.
+    assert len(provider.calls) <= 1
+
+    metric_handle = semantic_handles.mint_from_resolver(
+        tenant_binding=tenant,
+        context_version=context_version,
+        resolver_provenance_id="source-truth-real-wren:metric",
+        target_kind="metric",
+        canonical_target=ResolvedSemanticRef(
+            candidate_id="source-truth-real-wren-metric",
+            target_kind=SemanticTargetKind.METRIC,
+            canonical_name=metric_name,
+            cube_names=("makine_duruslari",),
+        ),
+    )
+
+    persisted_rows = []
+    monkeypatch.setattr(
+        contracts_module,
+        "_persist",
+        lambda row: persisted_rows.append(row),
+    )
+    contract_store = contracts_module.ContractStore()
+    core = ManagerCoreAnalyticsAdapter(semantic_handles=semantic_handles)
+    fact_builder = CrossDomainJoinFactBuilder(
+        semantic_handles=semantic_handles,
+        tenant_binding=tenant,
+        context_version=context_version,
+    )
+    relationship_adapter = GovernedRelationshipAdapter(
+        fact_builder=fact_builder,
+        core_analytics=core,
+        context=GovernedRelationshipExecutionContext(
+            tenant_binding=tenant,
+            principal=principal,
+            service=service,
+            tenant_runtime=runtime_ctx,
+            contract_store=contract_store,
+            session_id="source-truth-real-wren",
+        ),
+    )
+    executor = GovernedManagerExecutor(
+        acceptance=IntentAcceptanceGate(
+            source_spans=source_spans,
+            semantic_handles=semantic_handles,
+        ),
+        core_analytics=core,
+        context=GovernedManagerExecutionContext(
+            tenant_binding=tenant,
+            context_version=context_version,
+            principal=principal,
+            service=service,
+            tenant_runtime=runtime_ctx,
+            contract_store=contract_store,
+            session_id="source-truth-real-wren",
+        ),
+        relationship=relationship_adapter,
+        semantic_resolution=semantic,
+    )
+
+    runtime = ManagerRuntime(request_ref="req-source-truth-real-wren")
+    runtime.begin_understanding()
+    envelope = UserIntentEnvelope(
+        attempt_id="attempt-source-truth-real-wren",
+        turn_id=message_id,
+        request_ref="req-source-truth-real-wren",
+        source_message_hash=source_hash,
+        model_role="RESEARCH_MANAGER",
+        obligations=(
+            CandidateObligation(
+                obligation_id="U_BREAKDOWN",
+                capability_key=ManagerCapabilityKey.BREAKDOWN,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(
+                    metric_source.source_ref,
+                    dimension_source.source_ref,
+                ),
+                semantic_handle_refs=(
+                    metric_handle.handle_id,
+                    by_owner["U_BREAKDOWN"].handle_id,
+                ),
+            ),
+            CandidateObligation(
+                obligation_id="U_REL",
+                capability_key=ManagerCapabilityKey.RELATIONSHIP,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(
+                    metric_source.source_ref,
+                    dimension_source.source_ref,
+                ),
+                semantic_handle_refs=(
+                    metric_handle.handle_id,
+                    by_owner["U_REL"].handle_id,
+                ),
+            ),
+        ),
+    )
+    runtime.call_tool(
+        ManagerToolCall(
+            name=ManagerToolName.PROPOSE_ACCEPTANCE,
+            args={"envelope": envelope.model_dump(mode="json")},
+        ),
+        executor=executor,
+    )
+    assert runtime.accepted_contract is not None
+
+    task = ResearchTask(
+        task_id="seed:U_REL",
+        question_id="U_REL",
+        task_kind=ResearchTaskKind.RELATIONSHIP.value,
+        input_refs=(
+            metric_handle.handle_id,
+            by_owner["U_REL"].handle_id,
+        ),
+    )
+    call = ManagerToolCall(
+        name=ManagerToolName.RUN_RELATIONSHIP,
+        args={
+            "obligation_id": "U_REL",
+            "focus_handles": (metric_handle.handle_id,),
+            "counterpart_handles": (by_owner["U_REL"].handle_id,),
+        },
+    )
+    result = ResearchToolRunner().execute(
+        task=task,
+        tool_id="wren.relationship",
+        call=call,
+        runtime=runtime,
+        executor=executor,
+        principal=principal,
+        task_registry=ResearchTaskRegistry(),
+    )
+
+    assert service.query_calls == 1
+    assert result.evidence.verified is True
+    assert result.observation.status == "EXECUTED"
+    extension = json.loads(persisted_rows[0].provenance_json)["v2_manager"][
+        "governed_extension"
+    ]
+    assert extension["gate_decision"]["allowed"] is True
+    assert extension["facts"]["relationship_path"] == [
+        "makine_duruslari_makineler"
+    ]
 
 
 def test_real_wren_relationship_vertical_is_governed_and_evidence_producing(
