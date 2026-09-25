@@ -267,9 +267,13 @@ jobs:
           set -euo pipefail
           if [ -f backend/app/v3/research_manager.py ]; then
             REVIEW="backend/belgeler/metabase/predev/P17_RESEARCH_MANAGER_MATURATION_PREDEVELOPMENT_REVIEW.md"
+            DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
             test -f "$REVIEW"
+            test -f "$DECISIONS"
             grep -q "SEALED / P17 RESEARCH MANAGER MATURATION IMPLEMENTATION AUTHORIZED" "$REVIEW"
             grep -q "DMP-DEC-0048" "$REVIEW"
+            grep -q "DMP-DEC-0049 — RECURSIVE INVESTIGATION" "$DECISIONS"
+            grep -q "P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
           fi
 
       - name: Guard P17 from becoming a second analytics planner
