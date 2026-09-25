@@ -1,45 +1,71 @@
-## LATEST AUTHORITY — PREACCEPTANCE UNIQUE-SCOPE FIX GREEN / ONE PAID INTEGRATED MEASUREMENT AUTHORIZED
+## LATEST AUTHORITY — SOURCE-TRUTH CONSISTENCY + HONEST BLOCKED LIFECYCLE ACTIVE / PAID HARD STOP
 
 ```text
 branch                           feat/ask-v2-mvp
-engineering closure SHA          dbf256f9122028fdb5398f360a951a66030a7fe5
+engineering HEAD                 889fdbe6bc638ef8d2d6b6376decd32b8d67d84f
 Product behavior                 fde87df46c3fdee986fdf48f4e37884f5b51c395
+backend/app diff after Product   ZERO
 
-D10-U PROVIDER-FREE CLOSURE      GREEN / CLOSED
-ManagerActionSet                 SOLE executable projection
-ActionApplicabilitySnapshot      RETIRED
-ManagerActionAvailability        SHIM ONLY
-
-preacceptance failure family     FAM-PREACCEPTANCE-SCOPE-REPAIR-NONDETERMINISM
-Cycle 1 / 3                      PROVIDER-FREE CLOSED
-root fix                         unique full-cover governed scope
-                                 → deterministic server SELECT_SCOPE_GROUP
-genuine ambiguity                → existing bounded cognition
-
-final one-SHA cheap proof        dbf256f9122028fdb5398f360a951a66030a7fe5
+D10-U PROVIDER-FREE              CLOSED / GREEN
+one-SHA affected closure         dbf256f9122028fdb5398f360a951a66030a7fe5
 Day7 focused                     36182712251 = GREEN
 Day8 focused                     36182712368 = GREEN
 Day10 focused                    36182712258 = GREEN
+latest transport/focused         36183603679 = GREEN
 
-real-Wren ROOT                   GREEN
-real-Wren relationship           GREEN
-provider-free canonical NS4      GREEN
-ManagerActionSet attacks         GREEN
-certification oracle             GREEN
+unique-scope nondeterminism      CLOSED / LIVE-PROVEN
+latest paid                      36183555931 = RED
+accepted contract                YES
+Wren cube_sql / dry_plan / query 4 / 4 / 4
+relationship                     BLOCKED_DATA_GAP
+ROOT                             VERIFIED
+ADAPT directive                  OPEN
+Product                          PARTIAL / BUDGET_EXHAUSTED
 
-latest historical paid           36179726900 = RED
-historical paid stage             PREACCEPTANCE
-PAID_EPOCH_2                     18 / 40 used
-PAID_EPOCH_2 remaining           22 / 40
-next paid                        ONE corrected CANONICAL_NS4 integrated measurement
-max_total_model_calls            20
-same-SHA retry                   FORBIDDEN
+primary family                   FAM-CURRENT-TURN-SOURCE-TRUTH-DIVERGENCE
+cycle                            1 / 3
+secondary family                 FAM-BLOCKED-DIRECTIVE-TERMINAL-UNREACHABLE
+cycle                            1 / 3
+
+PAID_EPOCH_2                     29 / 40 used
+PAID_EPOCH_2 remaining           11 / 40
+paid execution                   STOP / INSUFFICIENT FULL ENVELOPE
+max scientifically valid run     20 calls; cap MUST NOT be lowered
 
 Day8 FINAL                       SEALED
-Day10 FINAL                      OPEN / PAID PROOF PENDING
+Day10 FINAL                      OPEN
 Day11 / DEV80 / Validation50 /
 Hidden50                         NOT AUTHORIZED
 ```
+
+Current engineering order:
+
+```text
+1. SOURCE-TRUTH CONSISTENCY
+2. semantic + real-Wren relationship proof
+3. BLOCKED directive lifecycle reconciliation
+4. blocked lifecycle + certification proof
+5. same-final-Product-SHA Day7 / Day8 / Day10 cheap closure
+6. STOP at FINAL PROVIDER-FREE CANDIDATE
+```
+
+Permanent new invariants:
+
+```text
+SOURCE TRUTH != OWNER AUTHORITY
+
+same exact current-message source_ref + same semantic kind
+→ one canonical source decision
+
+multiple owner obligations
+→ fresh parent-owned sem_* authority per owner
+
+authoritative partial-terminal parent
+→ dependent ADAPT directive reconciles BLOCKED server-side
+→ honest PARTIAL, never cognition-until-budget-exhaustion
+```
+
+Paid must not resume until the owner supplies a fresh sufficient envelope.
 
 Permanent determinism boundary:
 
