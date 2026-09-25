@@ -9,6 +9,10 @@ on:
       - "!backend/app/v3/research.py"
       - "!backend/app/v3/research_store.py"
       - "!backend/app/v3/research_product.py"
+      - "!backend/app/v3/research_native_gateway.py"
+      - "!backend/app/v3/research_exploration.py"
+      - "!backend/app/v3/substrate/metabase/native_engine.py"
+      - "!backend/app/v3/substrate/metabase/native_models.py"
       - "backend/tests/test_v3_m1_*.py"
       - ".github/workflows/dima-metabase-m1.yml"
   workflow_dispatch:

@@ -105,6 +105,7 @@ async def lifespan(app: FastAPI):
 
     research_store = ResearchSessionStore()
     app.state.research_product = ResearchAskOrchestrator(store=research_store)
+    app.state.research_exploration = None
     if settings.metabase_native_base_url.strip():
         from app.v3.research_native_gateway import (
             NativeResearchMaterialExecutor,
@@ -131,6 +132,19 @@ async def lifespan(app: FastAPI):
                 store=research_store,
                 expected_identity=native_identity,
             ),
+        )
+
+        # P15 consumes sealed P14 occurrences through native Metabase exploration.
+        # It is an internal core-engine service; UI/UX remains gated until P21.
+        from app.v3.research_exploration import (
+            NativeResearchExploration,
+            ResearchExplorationStore,
+        )
+
+        app.state.research_exploration = NativeResearchExploration(
+            research_store=research_store,
+            subject_provider=native_subjects,
+            material_store=ResearchExplorationStore(),
         )
 
     # Zamanlanmış raporlar (ADR-0011): tanım + koşum durumu (last_run) + bildirim HEPSİ

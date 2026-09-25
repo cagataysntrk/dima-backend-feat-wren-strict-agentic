@@ -77,11 +77,14 @@ jobs:
         run: |
           python -m py_compile             app/v3/research.py             app/v3/research_store.py             app/v3/research_product.py             app/v3/research_native_gateway.py             app/v3/security_identity.py             app/v3/execution_identity.py             app/v3/evidence.py             app/v3/substrate/metabase/native_engine.py             app/v3/substrate/metabase/native_models.py             app/v2/models.py             app/routers/ask_v2.py             control_plane/models.py             migrations/versions/c4d9e2a7f160_p14_research_persistence.py             migrations/versions/c6f1a2d9e870_p14_native_gateway.py             tests/test_v3_p14_research.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py             tests/test_v3_p12x_c2_native_engine_bridge.py
 
-      - name: Verify single Alembic head includes P14 durability
+      - name: Verify single Alembic head retains sealed P14 durability
         working-directory: backend
         run: |
           set -euo pipefail
-          python -m alembic heads | grep -q '^c6f1a2d9e870'
+          heads="$(python -m alembic heads)"
+          test "$(printf '%s\n' "$heads" | grep -Ec '^[0-9a-f]+')" -eq 1
+          python -m alembic history | grep -q 'c4d9e2a7f160'
+          python -m alembic history | grep -q 'c6f1a2d9e870'
 
       - name: P14 native-direct focused provider-free Research proof
         working-directory: backend
