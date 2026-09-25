@@ -399,7 +399,7 @@ class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
                     "origin": "USER_MUST",
                     "priority": "MUST",
                     "polarity": "REQUIRED",
-                    "source_surfaces": ["downtime by department"],
+                    "source_surfaces": ["department breakdown"],
                     "semantic_surfaces": [
                         {"surface": "downtime", "kind_hint": "metric"},
                         {"surface": "department", "kind_hint": "dimension"},
@@ -414,7 +414,7 @@ class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
                     "origin": "USER_MUST",
                     "priority": "MUST",
                     "polarity": "REQUIRED",
-                    "source_surfaces": ["downtime relationship department"],
+                    "source_surfaces": ["governed relationship"],
                     "semantic_surfaces": [
                         {"surface": "downtime", "kind_hint": "metric"},
                         {"surface": "department", "kind_hint": "dimension"},
