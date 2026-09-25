@@ -11,6 +11,7 @@ on:
       - "backend/migrations/versions/f6b2e8c4a917_p19_hypothesis_root_cause.py"
       - "backend/tests/test_v3_p19_hypothesis_root_cause.py"
       - "backend/tests/test_v3_p19_provider.py"
+      - "backend/tests/test_v3_p19_autonomous_eval.py"
       - "backend/lab/metabase/p19/**"
       - "backend/belgeler/metabase/predev/P19_HYPOTHESIS_ROOT_CAUSE_PREDEVELOPMENT_REVIEW.md"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
@@ -72,6 +73,9 @@ jobs:
           fi
           if [ -f tests/test_v3_p19_provider.py ]; then
             python -m py_compile tests/test_v3_p19_provider.py
+          fi
+          if [ -f tests/test_v3_p19_autonomous_eval.py ]; then
+            python -m py_compile tests/test_v3_p19_autonomous_eval.py
           fi
           if [ -f lab/metabase/p19/autonomous_canary.py ]; then
             python -m py_compile lab/metabase/p19/autonomous_canary.py
