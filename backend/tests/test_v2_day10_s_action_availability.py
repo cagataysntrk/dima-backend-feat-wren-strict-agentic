@@ -220,3 +220,41 @@ def test_old_evidence_schema_constrains_inspection_to_server_selected_refs():
     assert "inspect_evidence" in actions
     evidence_refs = _enum_values(_property_schema(schema, "evidence_ref"))
     assert evidence_refs == {"evi_old_1", "evi_old_2"}
+
+
+
+def test_tight_revision_headroom_prunes_separate_hypothesis_but_keeps_composite():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            root_states=(_root(),),
+            effective_inspected_verified_evidence_refs=("evi_fresh",),
+            fresh_disclosed_evidence_ref="evi_fresh",
+            fresh_disclosed_verified=True,
+            open_adaptive_directive_count=1,
+            remaining_manager_turns=1,
+        )
+    )
+
+    assert "propose_hypothesis_with_next_test" in profile.available_actions
+    assert "propose_hypothesis" not in profile.available_actions
+    assert profile.reasons_for_unavailable("propose_hypothesis") == (
+        ActionAvailabilityReason.INSUFFICIENT_HEADROOM_FOR_SEPARATE_HYPOTHESIS.value,
+    )
+    assert profile.remaining_manager_turns == 1
+
+
+def test_zero_future_turns_prunes_composite_without_raising_manager_ceiling():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            root_states=(_root(),),
+            effective_inspected_verified_evidence_refs=("evi_fresh",),
+            fresh_disclosed_evidence_ref="evi_fresh",
+            fresh_disclosed_verified=True,
+            remaining_manager_turns=0,
+        )
+    )
+
+    assert "propose_hypothesis_with_next_test" not in profile.available_actions
+    assert profile.reasons_for_unavailable("propose_hypothesis_with_next_test") == (
+        ActionAvailabilityReason.INSUFFICIENT_HEADROOM_FOR_COMPOSITE.value,
+    )
