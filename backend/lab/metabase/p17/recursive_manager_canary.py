@@ -50,4 +50,4 @@ if __name__ == "__main__":
     _verify_exact_git_authorization()
     runpy.run_path(str(AUTONOMOUS), run_name="__main__")
 
-# DMP-DEC-0052 forward family: p17-manager-structured-schema / attempt 2
+# DMP-DEC-0052 forward family: p17-manager-semantic-output / attempt 2
