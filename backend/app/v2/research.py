@@ -389,6 +389,8 @@ class ResearchBriefBuilder:
             source_text: str,
             subject_mentions: tuple[SemanticMention, ...],
             related_mentions: tuple[SemanticMention, ...],
+            ranking=None,
+            comparisons=(),
             require_relationship_sides: bool = False,
         ) -> None:
             nonlocal next_goal_number
@@ -488,6 +490,8 @@ class ResearchBriefBuilder:
                     source_text=source_text,
                     subject_refs=_unique_refs(subject_refs),
                     related_refs=_unique_refs(related_refs),
+                    ranking=ranking,
+                    comparisons=tuple(comparisons),
                     unresolved=tuple(unresolved),
                     status=status,
                 )
@@ -499,6 +503,8 @@ class ResearchBriefBuilder:
                 source_text=goal.text,
                 subject_mentions=goal.subject_mentions,
                 related_mentions=goal.related_mentions,
+                ranking=goal.ranking,
+                comparisons=goal.comparisons,
             )
 
         for relationship in request.relationships:

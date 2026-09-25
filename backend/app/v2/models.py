@@ -1128,6 +1128,10 @@ class ResearchQuestion(FrozenModel):
     source_text: str
     subject_refs: tuple[ResearchSemanticRef, ...] = ()
     related_refs: tuple[ResearchSemanticRef, ...] = ()
+    # Preserve typed operation payloads already accepted by the language owner.
+    # Research never reconstructs ranking/comparison semantics from source_text.
+    ranking: RankingSurface | None = None
+    comparisons: tuple[ComparisonSurface, ...] = ()
     unresolved: tuple[ResearchUnresolvedRef, ...] = ()
     status: ResearchGoalStatus
 

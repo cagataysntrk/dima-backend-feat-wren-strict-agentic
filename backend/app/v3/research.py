@@ -8,6 +8,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.v2.models import ResearchBrief, ResearchBriefStatus
 from app.v3.authority import AcceptedResearchAuthority
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.substrate.metabase.native_engine import NativeEngineBridge
@@ -128,6 +129,9 @@ class ResearchSession(Frozen):
     tenant_binding: str
     principal_subject: str
     objective: str
+    # Immutable snapshot of the already-grounded ResearchBrief accepted at entry.
+    # It is part of the checkpoint fingerprint; resume never reparses old language.
+    accepted_brief: ResearchBrief | None = None
     obligations: tuple[ResearchObligation, ...]
     hypotheses: tuple[Hypothesis, ...] = ()
     evidence_refs: tuple[EvidenceRef, ...] = ()
@@ -144,6 +148,16 @@ class ResearchSession(Frozen):
         _now(self.created_at); _now(self.updated_at)
         ids = [x.obligation_id for x in self.obligations]
         if not ids or len(ids) != len(set(ids)): raise ValueError("invalid Research obligation ids")
+        if self.accepted_brief is not None:
+            brief = self.accepted_brief
+            if brief.status != ResearchBriefStatus.READY_FOR_RESEARCH:
+                raise ValueError("accepted ResearchBrief must be READY_FOR_RESEARCH")
+            if brief.context_version != self.context_version:
+                raise ValueError("accepted ResearchBrief context mismatch")
+            if brief.objective != self.objective:
+                raise ValueError("accepted ResearchBrief objective mismatch")
+            if tuple(brief.must_requirement_ids) != tuple(ids):
+                raise ValueError("accepted ResearchBrief obligation mismatch")
         if any(not set(h.obligation_ids).issubset(ids) for h in self.hypotheses):
             raise ValueError("hypothesis references unknown obligation")
         return self
@@ -200,7 +214,7 @@ class ResearchManager:
         return ResearchSession.model_validate(session.model_copy(update=updates).model_dump(mode="json"))
 
     @classmethod
-    def start(cls,*,authority:AcceptedResearchAuthority,objective,obligation_objectives,tenant_binding,principal_subject,budget=None,now=None,session_id=None):
+    def start(cls,*,authority:AcceptedResearchAuthority,objective,obligation_objectives,tenant_binding,principal_subject,budget=None,now=None,session_id=None,accepted_brief:ResearchBrief|None=None):
         accepted=tuple(authority.obligation_ids)
         if not accepted or set(accepted)!=set(obligation_objectives):
             raise ResearchStateError("P14_RESEARCH_OBLIGATION_AUTHORITY_MISMATCH","objectives must exactly cover accepted obligations")
@@ -210,6 +224,7 @@ class ResearchManager:
             lineage_id=authority.lineage_id, source_message_hash=authority.source_message_hash,
             context_version=authority.context_version, tenant_binding=tenant_binding,
             principal_subject=principal_subject, objective=objective.strip(),
+            accepted_brief=accepted_brief,
             obligations=tuple(ResearchObligation(obligation_id=x,objective=obligation_objectives[x].strip()) for x in accepted),
             budget=budget or ResearchBudget(), created_at=stamp, updated_at=stamp,
         )

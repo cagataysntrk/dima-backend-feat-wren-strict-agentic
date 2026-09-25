@@ -228,6 +228,7 @@ class ResearchAskOrchestrator:
             tenant_binding=tenant,
             principal_subject=subject,
             session_id=self._session_id(authority.contract_id, tenant, subject),
+            accepted_brief=brief,
         )
         return self._store.create(
             session,
@@ -298,6 +299,27 @@ class ResearchAskOrchestrator:
             limitation_detail=limitation_detail,
             resumed_exact_occurrence=resumed_exact_occurrence,
         )
+
+    @staticmethod
+    def accepted_material_question(
+        session: ResearchSession,
+        obligation_id: str,
+    ):
+        brief = session.accepted_brief
+        if brief is None:
+            raise ResearchProductError(
+                "P14_ACCEPTED_RESEARCH_CONTEXT_MISSING",
+                "product Research session has no persisted accepted ResearchBrief",
+            )
+        matches = tuple(
+            item for item in brief.questions if item.goal_id == obligation_id
+        )
+        if len(matches) != 1:
+            raise ResearchProductError(
+                "P14_ACCEPTED_RESEARCH_OBLIGATION_MISMATCH",
+                "accepted ResearchBrief does not contain exactly one matching question",
+            )
+        return matches[0]
 
     def _runtime(self) -> tuple[NativeBridgeFactory, ResearchMaterialExecutor]:
         if self._bridge_factory is None or self._material_executor is None:
@@ -379,6 +401,9 @@ class ResearchAskOrchestrator:
             principal=subject,
         )
         selected = self._select_obligation(session, delegatable, obligation_id)
+        # Prove that material execution consumes the exact accepted Research context
+        # persisted at entry, never a reconstructed interpretation of old language.
+        self.accepted_material_question(session, selected)
         pending = self._store.pending_link(
             session_id=session.session_id,
             obligation_id=selected,

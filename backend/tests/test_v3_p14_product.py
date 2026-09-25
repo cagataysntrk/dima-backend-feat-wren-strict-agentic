@@ -20,6 +20,9 @@ from app.v2.models import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchScope,
+    ResearchSemanticRef,
+    RankingSurface,
+    SemanticTargetKind,
 )
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.research import ObligationState, StoppingStatus
@@ -65,11 +68,27 @@ def _principal() -> Principal:
 
 
 def _brief(two: bool = True) -> ResearchBrief:
+    metric = ResearchSemanticRef(
+        source_mention="satış siparişleri",
+        candidate_id="cand_sales_order_count",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name="Sales Order Count",
+        cube_names=("satis_siparisleri",),
+    )
+    channel = ResearchSemanticRef(
+        source_mention="kanal",
+        candidate_id="cand_sales_order_channel",
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name="Sales Order Channel",
+        cube_names=("satis_siparisleri",),
+    )
     questions = [
         ResearchQuestion(
             goal_id="g1",
             kind=ResearchGoalKind.BREAKDOWN,
             source_text="Haziran satış siparişlerini kanala göre incele.",
+            subject_refs=(metric,),
+            related_refs=(channel,),
             status=ResearchGoalStatus.RESOLVED,
         )
     ]
@@ -77,15 +96,25 @@ def _brief(two: bool = True) -> ResearchBrief:
         questions.append(
             ResearchQuestion(
                 goal_id="g2",
-                kind=ResearchGoalKind.PERFORMANCE,
-                source_text="En belirgin performans sapmasını incele.",
+                kind=ResearchGoalKind.RANKING,
+                source_text="En güçlü iki kanalı sırala.",
+                subject_refs=(metric,),
+                related_refs=(channel,),
+                ranking=RankingSurface(
+                    text="en güçlü iki kanal",
+                    direction="desc",
+                    limit=2,
+                ),
                 status=ResearchGoalStatus.RESOLVED,
             )
         )
     return ResearchBrief(
         brief_id="rb-product-p14",
         objective="Satış performansındaki değişimi kanıtlarla araştır.",
-        scope=ResearchScope(),
+        scope=ResearchScope(
+            semantic_refs=(metric, channel),
+            time_surfaces=("Haziran 2026",),
+        ),
         questions=tuple(questions),
         must_requirement_ids=tuple(item.goal_id for item in questions),
         context_version=CONTEXT,
@@ -271,6 +300,37 @@ def _start(product: ResearchAskOrchestrator, *, two: bool = True):
         request_ref="r-p14-product",
         source_message_hash=hashlib.sha256(b"research request").hexdigest(),
         principal=_principal(),
+    )
+
+
+def test_accepted_research_material_context_survives_restart_without_reparse():
+    engine = _db_engine()
+    product = _product(engine)
+    brief = _brief(two=True)
+    session = product.start_from_brief(
+        brief=brief,
+        request_ref="r-p14-product",
+        source_message_hash=hashlib.sha256(b"research request").hexdigest(),
+        principal=_principal(),
+    )
+    restored = ResearchSessionStore(engine).load(
+        session.session_id,
+        tenant=session.tenant_binding,
+        principal=session.principal_subject,
+    )
+
+    assert restored.accepted_brief == brief
+    assert restored.accepted_brief is not None
+    assert restored.accepted_brief.scope.time_surfaces == ("Haziran 2026",)
+    ranking = product.accepted_material_question(restored, "g2")
+    assert ranking.ranking is not None
+    assert ranking.ranking.direction == "desc"
+    assert ranking.ranking.limit == 2
+    assert tuple(ref.candidate_id for ref in ranking.subject_refs) == (
+        "cand_sales_order_count",
+    )
+    assert tuple(ref.candidate_id for ref in ranking.related_refs) == (
+        "cand_sales_order_channel",
     )
 
 
