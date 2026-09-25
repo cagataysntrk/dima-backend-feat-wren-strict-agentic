@@ -657,10 +657,42 @@ class ManagerActionAvailability:
 
         applicability_snapshot = None
         if context.state_version is not None:
+            initial_ready_ids = {
+                root.root_id
+                for root in roots
+                if root.hypothesis_count == 0 and root.evidence_ready
+            }
+            composite_ready_ids = {
+                root.root_id
+                for root in roots
+                if (
+                    root.hypothesis_count == 0
+                    and root.evidence_ready
+                    and root.feasible_next_test
+                )
+            }
+            actionable_directive_ids = {
+                item.directive_id
+                for item in actionable_dispositions
+            }
+
+            def seed_applicable(seed: ActionScopeSeed) -> bool:
+                if seed.action not in allowed:
+                    return False
+                if seed.action == "resolve_semantics":
+                    return seed.parent_obligation_id in set(semantic_parents)
+                if seed.action == "disposition_research_directive":
+                    return seed.directive_id in actionable_directive_ids
+                if seed.action == "propose_hypothesis":
+                    return seed.parent_obligation_id in initial_ready_ids
+                if seed.action == "propose_hypothesis_with_next_test":
+                    return seed.parent_obligation_id in composite_ready_ids
+                return True
+
             candidate_seeds = tuple(
                 seed
                 for seed in context.scope_seeds
-                if seed.action in allowed
+                if seed_applicable(seed)
             )
             scoped_actions = {seed.action for seed in candidate_seeds}
             for action in tuple(allowed):
