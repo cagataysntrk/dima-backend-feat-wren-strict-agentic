@@ -380,28 +380,32 @@ class ManagerState(StrEnum):
 
 
 class ManagerBudget(FrozenModel):
-    # One budget authority with phase observability plus one global hard ceiling.
-    # Phase counters are useful diagnostics; they never expand the canonical total
-    # Manager allowance.
+    # One budget authority with independent phase ceilings plus an outer safety bound.
+    # A legitimate preacceptance retry must not consume the post-acceptance Research
+    # cognition budget. The outer total remains fail-closed and does not imply normal
+    # runs should consume all eight turns.
     max_total_manager_turns: int = Field(
-        default=6,
+        default=8,
         ge=1,
-        description="Hard ceiling across pre-acceptance + Research Manager turns.",
+        description="Outer safety ceiling across preacceptance + Research cognition.",
     )
     max_preacceptance_turns: int = Field(
         default=4,
         ge=1,
         description=(
-            "Pre-acceptance phase sublimit; two bounded draft attempts may each "
-            "consume one draft and one coverage cognition call. Global total remains 6."
+            "Preacceptance hard ceiling; two bounded draft attempts may each "
+            "consume one draft and one Coverage cognition call."
         ),
     )
     max_tool_calls: int = Field(default=12, ge=1)
     max_data_queries: int = Field(default=8, ge=0, le=12)
     max_manager_turns: int = Field(
-        default=6,
+        default=4,
         ge=1,
-        description="Research-phase sublimit; global total ceiling still applies.",
+        description=(
+            "Post-acceptance Research cognition hard ceiling, independent of "
+            "preacceptance retries; outer total ceiling still applies."
+        ),
     )
 
 
