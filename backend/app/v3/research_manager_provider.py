@@ -151,22 +151,62 @@ class StructuredResearchProposalManager:
         payload["action"] = action
         return ManagerProposal.model_validate(payload)
 
-    def propose(self, snapshot: ResearchManagerSnapshot) -> ManagerProposal:
+    def _propose(
+        self,
+        snapshot: ResearchManagerSnapshot,
+        *,
+        guidance: str | None = None,
+        allowed_intents: tuple[InvestigationIntent, ...] | None = None,
+    ) -> ManagerProposal:
         user = (
             "Choose exactly one next bounded investigation step from this "
             "governed snapshot. Reference only IDs present in the snapshot. "
             "If a new sibling alternative is opened, use a stable branch_key. "
             "Use STOP_BRANCH for one exhausted/contradicted branch and "
-            "STOP_INVESTIGATION only when the whole investigation should end.\n\n"
-            "GOVERNED SNAPSHOT JSON:\n"
+            "STOP_INVESTIGATION only when the whole investigation should end."
+        )
+        if guidance:
+            user += (
+                "\n\nBOUNDARY-SHAPE GUIDANCE (does not supply the analytical "
+                "answer):\n" + guidance.strip()
+            )
+        user += (
+            "\n\nGOVERNED SNAPSHOT JSON:\n"
             + self._snapshot_payload(snapshot)
         )
+        schema = ResearchManagerProposalDraft.model_json_schema()
+        if allowed_intents:
+            schema["properties"]["intent"] = {
+                "type": "string",
+                "enum": [x.value for x in allowed_intents],
+            }
         raw = self._transport.structured_json(
             _SYSTEM,
             user,
-            schema=ResearchManagerProposalDraft.model_json_schema(),
+            schema=schema,
             schema_name=self._schema_name,
         )
         self.call_count += 1
         draft = ResearchManagerProposalDraft.model_validate_json(raw)
+        if allowed_intents and draft.intent not in allowed_intents:
+            raise ValueError(
+                f"manager emitted {draft.intent.value} outside bounded canary intent set"
+            )
         return self._proposal(draft)
+
+    def propose(self, snapshot: ResearchManagerSnapshot) -> ManagerProposal:
+        return self._propose(snapshot)
+
+    def propose_with_guidance(
+        self,
+        snapshot: ResearchManagerSnapshot,
+        *,
+        guidance: str,
+        allowed_intents: tuple[InvestigationIntent, ...] | None = None,
+    ) -> ManagerProposal:
+        """Canary/evaluation seam: constrain authority shape, never the answer."""
+        return self._propose(
+            snapshot,
+            guidance=guidance,
+            allowed_intents=allowed_intents,
+        )
