@@ -1,11 +1,37 @@
 # P17 — RESEARCH MANAGER MATURATION PRE-DEVELOPMENT REVIEW
 
 **Date:** 2026-09-25  
-**Status:** **SEALED / P17 RESEARCH MANAGER MATURATION IMPLEMENTATION AUTHORIZED**  
+**Status:** **SEALED PREDEVELOPMENT / RECURSIVE PROVIDER-FREE GREEN / LIVE RED / P17 NOT SEALED**  
 **Forward authority:** DMP-DEC-0048 + DMP-DEC-0049  
 **Consumes:** P14 Research/Evidence + P15 native material + P16 claims  
 **UI/UX:** NOT AUTHORIZED  
 **Engine change:** NOT AUTHORIZED BY DEFAULT
+
+
+## LIVE CANARY DISPOSITION — 2026-09-25
+
+```text
+recursive provider-free = 36128262857 SUCCESS
+governance              = 36128262891 SUCCESS
+P17 focused             = 29 PASS
+P16                     = 6 PASS
+P15                     = 5 PASS
+P14                     = 17 PASS
+
+one Luna canary         = 36127753645 FAILURE
+manager Luna calls      = 1
+P17 follow-up occurrences before RED = 0
+engine builds           = 0
+Sol calls               = 0
+```
+
+The live RED is `DMP-P17-LIVE-RED-001`: transport schema permitted null
+`expected_information_gain` but deterministic non-STOP `ManagerProposal` did not. The root fix is
+provider-free GREEN and lower authorities remain GREEN.
+
+This does not seal P17. A second paid canary is not authorized by default. P18 remains blocked until
+an explicit supervisor decision authorizes the remaining live-cognition proof and that proof is
+GREEN.
 
 ## 1. Goal
 
