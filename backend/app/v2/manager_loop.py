@@ -1570,6 +1570,17 @@ class ResearchManagerLoop:
                         }
                     )
                     continue
+                if execution.evidence is None:
+                    observations.append(
+                        {
+                            "kind": "deterministic_task_blocked",
+                            "task_id": execution.task.task_id,
+                            "tool_id": execution.contract.tool_id,
+                            "result": self._manager_safe(execution.observation),
+                        }
+                    )
+                    continue
+
                 observations.append(
                     {
                         "kind": "deterministic_task_executed",
@@ -2365,14 +2376,23 @@ class ResearchManagerLoop:
                     manager_result = self._manager_safe(
                         research_execution.observation
                     )
-                    self._emit_progress(
-                        "evidence_verified",
-                        (research_execution.evidence.artifact_id,),
-                    )
-                    if research_execution.evidence.evidence_kind == "relationship_analytics":
+                    if research_execution.evidence is not None:
                         self._emit_progress(
-                            "relationship_checked",
+                            "evidence_verified",
                             (research_execution.evidence.artifact_id,),
+                        )
+                        if (
+                            research_execution.evidence.evidence_kind
+                            == "relationship_analytics"
+                        ):
+                            self._emit_progress(
+                                "relationship_checked",
+                                (research_execution.evidence.artifact_id,),
+                            )
+                    else:
+                        self._emit_progress(
+                            "research_task_blocked",
+                            (research_execution.task.task_id,),
                         )
                 else:
                     result = runtime.call_tool(call, executor=executor)
