@@ -3721,8 +3721,8 @@ METABASE + METABOT
 OWN ANALYTICAL EXECUTION.
 ```
 
-The historical `recursive_manager_canary.py` screenplay is retained only as a deterministic
-scenario / contract lab. Its fixed sequence, fixed branch expectations, exact call-count expectations
+The historical screenplay is retained in `recursive_manager_scenario_lab.py` only as a deterministic
+scenario / contract lab. `recursive_manager_canary.py` is now only the fail-closed compatibility entrypoint. Its fixed sequence, fixed branch expectations, exact call-count expectations
 and fixed depth are **not** an autonomous-cognition oracle.
 
 Certification is split into two layers:
@@ -3798,7 +3798,7 @@ This rule applies beyond P17, including future P19 root-cause reasoning and P21 
 Current implementation evidence before paid certification:
 
 ```text
-old screenplay canary
+historical screenplay (`recursive_manager_scenario_lab.py`)
 = HISTORICAL DETERMINISTIC SCENARIO / CONTRACT LAB
 = SUPERSEDED AS FINAL COGNITION ORACLE
 
