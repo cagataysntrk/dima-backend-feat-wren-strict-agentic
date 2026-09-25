@@ -1298,10 +1298,33 @@ class ResearchManagerLoop:
                     continue
                 if item.status == ObligationStatus.SUPERSEDED:
                     continue
-                semantic_refs = tuple(
+                semantic_rows: list[SemanticActionRef] = [
                     semantic_ref(handle_id)
                     for handle_id in item.semantic_handle_refs
-                )
+                ]
+                seen_parent_aliases = {row.ref for row in semantic_rows}
+                for row in governed_semantic_inventory:
+                    alias = str(row.get("handle_ref") or "")
+                    if not alias or alias in seen_parent_aliases:
+                        continue
+                    accepted_parents = {
+                        str(value)
+                        for value in (row.get("accepted_obligation_ids") or ())
+                    }
+                    if (
+                        str(row.get("parent_obligation_id") or "")
+                        != item.obligation_id
+                        and item.obligation_id not in accepted_parents
+                    ):
+                        continue
+                    semantic_rows.append(
+                        SemanticActionRef(
+                            ref=alias,
+                            kind=str(row.get("target_kind") or "unknown"),
+                        )
+                    )
+                    seen_parent_aliases.add(alias)
+                semantic_refs = tuple(semantic_rows)
                 if item.obligation_id in {root.root_id for root in root_states}:
                     root = next(
                         root
