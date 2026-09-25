@@ -64,14 +64,15 @@ jobs:
         working-directory: backend
         run: python -m py_compile app/v3/business_relationship_policy.py control_plane/models.py migrations/versions/f5a1d7c9e2b4_p18_business_relationship_policy.py tests/test_v3_p18_business_relationship_policy.py
 
-      - name: Verify single Alembic head
+      - name: Verify single Alembic head retains sealed P18 revision
         working-directory: backend
         shell: bash
         run: |
           set -euo pipefail
           python -m alembic heads > /tmp/p18-heads.txt
           test "$(grep -Ec '^[0-9a-f]+' /tmp/p18-heads.txt)" -eq 1
-          grep -q '^f6b2e8c4a917' /tmp/p18-heads.txt
+          python -m alembic history --verbose > /tmp/p18-history.txt
+          grep -q 'Rev: f5a1d7c9e2b4' /tmp/p18-history.txt
 
       - name: P18 focused provider-free proof
         working-directory: backend

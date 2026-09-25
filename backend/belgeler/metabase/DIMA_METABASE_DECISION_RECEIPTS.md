@@ -5787,3 +5787,104 @@ P19/P18/P17/P16/P15/P14 regressions and governance. Engine remains pinned to
 modifications remain zero.
 
 After P20 GREEN, immediately complete P21 DECISION INTELLIGENCE pre-development review only.
+
+
+### DMP-DEC-0056 final closure — P20 SEALED GREEN
+
+date: 2026-09-26
+
+DMP-DEC-0056 architecture is unchanged. This is closure evidence, not a new architecture decision.
+
+```text
+P20 product SHA                        = 46bbc5f22ea18f6be239014750d77fc254508c46
+P20 provider-free                      = 36192492612 SUCCESS
+P20 governance                         = 36192492542 SUCCESS
+Alembic head                           = f7c4a2d8b930
+
+P20 focused                            = 19 PASS
+P19 regression                         = 42 PASS
+P18 regression                         = 24 PASS
+P17 regression                         = 95 PASS
+P16 regression                         = 6 PASS
+P15 regression                         = 5 PASS
+P14 regression                         = 17 PASS
+
+P20 durable record types               = 1
+P20 table                              = p20_report_document
+USER_MUST accounting                   = 100%
+restart/idempotency                    = GREEN
+revision/staleness                     = GREEN
+numeric provenance                     = GREEN
+causal/root-cause publication gate     = GREEN
+P14-P19 immutable                      = GREEN
+
+P20 analytical execution               = 0
+new DimaQueryReceipt writes            = 0
+new Evidence authority writes          = 0
+new claim authority writes             = 0
+new P19 authority writes               = 0
+
+engine SHA                             = cbe313af9ac2d5960f662068e433d328d896fb06
+engine modifications/builds            = 0 / 0
+Metabase core modifications            = 0
+Luna / Sol / C1                        = 0 / 0 / 0
+UI / router                            = 0 / 0
+```
+
+P20 is permanently SEALED. P21 pre-development begins; P21 implementation remains unauthorized.
+
+---
+
+## DMP-DEC-0057 — P21 DECISIONBRIEF BOUNDARY / LEGACY DECISIONRECORD DISPOSITION
+
+date: 2026-09-26
+
+status:
+`RATIFIED PRE-DEVELOPMENT ARCHITECTURE / P21 IMPLEMENTATION NOT AUTHORIZED`
+
+Architecture decision:
+
+```text
+P20 ReportDocument
+= governed factual/report premise boundary
+
+P21 DecisionBrief
+= advisory decision-intelligence artifact
+
+legacy DecisionRecord
+= historical human-adopted-decision compatibility record
+```
+
+The legacy `DecisionRecord` is not repurposed as P21 authority. It binds historical decisions to
+legacy `contract_ids_json` and optional `sablon_json` / Cube replay behavior. Reusing it for an AI
+DecisionBrief would silently reintroduce legacy Query Contract / Cube execution assumptions into the
+new governed decision layer.
+
+Therefore:
+
+```text
+P21 DecisionBrief != legacy DecisionRecord
+P21 recommendation != adopted human decision
+P21 != action execution
+P21 != analytics
+```
+
+The first future P21 vertical, if separately authorized, is bounded to one CURRENT sealed P20 report,
+typed user-declared objective/constraints, typed options/tradeoffs/recommendation, exact P20 premise
+refs, explicit limitations, one deterministic DecisionLegalityGate and at most one new immutable
+DecisionBrief durable record family.
+
+Direct P14/P16/P19 bypass is not part of the first vertical. P21 consumes their truth through P20.
+When P20 lacks a premise, P21 records a limitation or requires a new governed report; it does not
+recalculate analytics or upgrade epistemic certainty.
+
+No model is required for the first authority vertical. A later explicitly authorized model-backed
+proposal subphase may let a model propose options, tradeoffs or a recommendation, but deterministic
+Dima remains the legality/provenance owner and no model output becomes factual authority by itself.
+
+The legacy `DecisionRecord`, `backend/app/decision.py`, existing decision routes and replay behavior
+remain historical compatibility and are not mutated by this decision. A future human-adoption bridge
+requires a separate review because adoption truth and legacy replay semantics must not be conflated.
+
+P21 implementation, live model certification, action execution, workflow automation and UI remain
+unauthorized.

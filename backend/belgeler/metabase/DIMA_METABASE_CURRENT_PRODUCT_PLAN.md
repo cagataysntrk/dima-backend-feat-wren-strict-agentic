@@ -1173,3 +1173,96 @@ P15 Native Metabase Explorations
 ```
 
 This is the forward product roadmap. Do not build another Metabase inside Dima.
+
+
+---
+
+# 2026-09-26 — P20 SEALED — DMP-DEC-0056 / P21 PRE-DEVELOPMENT COMPLETE
+
+Forward status:
+
+```text
+P14 = SEALED
+P15 = SEALED
+P16 = SEALED
+P17 = SEALED
+P18 = SEALED / HARDENED
+P19 = SEALED
+P20 = SEALED
+
+P21 PRE-DEVELOPMENT = COMPLETE
+P21 IMPLEMENTATION = NOT AUTHORIZED
+UI / UX = FORBIDDEN
+```
+
+P20 canonical product candidate:
+
+```text
+46bbc5f22ea18f6be239014750d77fc254508c46
+```
+
+P20 closure:
+
+```text
+provider-free = 36192492612 SUCCESS
+governance    = 36192492542 SUCCESS
+Alembic head  = f7c4a2d8b930
+
+P20 = 19 PASS
+P19 = 42 PASS
+P18 = 24 PASS
+P17 = 95 PASS
+P16 = 6 PASS
+P15 = 5 PASS
+P14 = 17 PASS
+```
+
+P20 owns one durable record family only:
+
+```text
+ReportDocument / p20_report_document
+```
+
+P20 performs no analytics and creates no duplicate receipt/Evidence/claim/root-cause authority.
+USER_MUST accounting, exact numeric provenance, epistemic ceiling preservation, restart idempotency,
+source-set staleness and immutable revisions are provider-free GREEN.
+
+Engine remains frozen:
+
+```text
+cbe313af9ac2d5960f662068e433d328d896fb06
+0.63.18-dima.6
+engine changes/builds = 0 / 0
+```
+
+P20 model calls:
+
+```text
+Luna / Sol / C1 = 0 / 0 / 0
+```
+
+P21 pre-development authority is DMP-DEC-0057.
+
+Critical P21 boundary:
+
+```text
+CURRENT sealed P20 ReportDocument
+→ typed DecisionBrief
+→ deterministic DecisionLegalityGate
+
+DecisionBrief != legacy DecisionRecord
+Recommendation != adopted human decision
+P21 != analytics
+P21 != action execution
+```
+
+Legacy `DecisionRecord` and its Query-Contract/Cube replay semantics remain historical compatibility
+and are not repurposed. No P21 production code was written.
+
+Next bounded objective requires new supervisor authorization:
+
+```text
+provider-free DecisionBrief + DecisionLegalityGate
+one durable DecisionBrief record family max
+no router / no UI / no model required
+```
