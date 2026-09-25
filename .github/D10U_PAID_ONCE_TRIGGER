@@ -1,0 +1,6 @@
+authorized_measurement=CANONICAL_NS4
+max_total_model_calls=20
+product_behavior=24eac2495332f350aa4d350fe1c6b399319fa5a2
+provider_free_closure=c835e7dc4eeb61ab8a80d03c8e1f14d18f82bcd2
+paid_cycle=2
+paid_epoch_reset=authorized
