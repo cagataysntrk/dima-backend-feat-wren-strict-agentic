@@ -23,21 +23,6 @@ AUTONOMOUS = Path(__file__).with_name("autonomous_manager_canary.py")
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
-def _recovery_cycle() -> int:
-    raw = os.environ.get("DIMA_P17_RECOVERY_CYCLE", "1").strip()
-    try:
-        value = int(raw)
-    except ValueError as exc:
-        raise AuthorizationTransportError(
-            "DIMA_P17_RECOVERY_CYCLE must be an integer"
-        ) from exc
-    if value not in {1, 2, 3}:
-        raise AuthorizationTransportError(
-            "DIMA_P17_RECOVERY_CYCLE must be 1, 2, or 3"
-        )
-    return value
-
-
 def _verify_exact_git_authorization() -> None:
     github_sha = os.environ.get("GITHUB_SHA", "").strip()
     github_ref_name = os.environ.get("GITHUB_REF_NAME", "").strip()
@@ -54,7 +39,6 @@ def _verify_exact_git_authorization() -> None:
         REPO_ROOT,
         dispatch_sha=github_sha,
         branch=github_ref_name,
-        recovery_cycle=_recovery_cycle(),
     )
 
 
