@@ -1,41 +1,32 @@
 # DIMA DAY10-S — GOVERNANCE / SEMANTIC SIMPLIFICATION
 
-## LATEST AUTHORITY — PAID_EPOCH_2 RUN #1 RED / ROOT_CAUSE_CYCLE_1 ACTIVE
+## LATEST AUTHORITY — FAMILY A CYCLE 2/3 / ACTIONAPPLICABILITYSNAPSHOT CLOSURE ACTIVE / PAID STOPPED
 
 ```text
 branch                          feat/ask-v2-mvp
 
-tested Product behavior         999d5e28facadd85aefd0d5b47cebec6c3daf4e6
-paid run                        36139969231 = RED
-tested transport SHA            f766162a6e77ede74eb9dbdfbd212bf2c5d124d4
-failure class                   CONTRACT / ARCHITECTURE
-first wrong transition          disposition_research_directive was advertised
-                                with ROOT next-test Evidence outside the accepted
-                                directive parent obligation lineage
+FAILURE FAMILY                  FAM-ACTION-ARG-APPLICABILITY
+Cycle 1/3                       36128949886
+                                ROOT parent + foreign semantic handle
+Cycle 2/3                       36139969231
+                                ADAPT directive parent + foreign Evidence
+Cycle 2 status                  ACTIVE / generalized correlated-scope closure
 
-runtime lineage gate            CORRECT / FAIL-CLOSED
-ROOT_CAUSE                      VERIFIED
-CANDIDATE_CAUSE                 PRESENT
-CONFIRMED_CAUSE                 0
-ADAPT directive                 OPEN
-CompletionGate                  BUDGET_EXHAUSTED
-Product                         PARTIAL
-signed continuation             NOT REACHED
+historical tested Product       999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+local directive fix             2b28f23e984fbe9cfa6486a0832fa2786900de48
+current Product behavior        73c3efcba0df45e09076d02103ee2d3c3bd1c018
+snapshot affected proof         RUNNING / NOT YET FINAL AUTHORITY
+
+ActionApplicabilitySnapshot     VERSIONED VIEW / NOT semantic truth
+runtime defense-in-depth        PRESERVED
+ManagerBudget                   4 / 4 / 8 UNCHANGED
+provider topology               UNCHANGED
 
 PAID_EPOCH_1                    26 / 40 historical CLOSED
 PAID_EPOCH_2                    12 / 40 used
 PAID_EPOCH_2 remaining          28 / 40
-
-ROOT_CAUSE_CYCLE_1              ACTIVE
-current generic-fix owner       ManagerActionAvailability → strict provider schema
-frozen truth/security owners    UNCHANGED
-ManagerBudget                   4 / 4 / 8 UNCHANGED
-provider topology               UNCHANGED
-
-latest Product behavior         2b28f23e984fbe9cfa6486a0832fa2786900de48
-cheap affected proof            RUNNING / NOT YET AUTHORITY
-next paid measurement           ONLY AFTER ALL CHEAP GATES GREEN
-per-run hard maximum            20 provider calls
+paid execution                  STOPPED
+next paid measurement           NOT YET AUTHORIZED
 
 Day8 FINAL                      SEALED
 Day10 FINAL                     OPEN
@@ -43,6 +34,14 @@ Day11                           NOT AUTHORIZED
 DEV80                           NOT AUTHORIZED
 Validation50                    NOT AUTHORIZED
 Hidden50                        NOT AUTHORIZED
+
+Cycle 2 closes only after       correlated audit unresolved=0
+                                + snapshot attack family GREEN
+                                + Day7 affected GREEN
+                                + Day8 affected GREEN
+                                + Day10 affected GREEN
+                                + real-Wren ROOT GREEN
+                                + real-Wren relationship GREEN
 ```
 
 Current-authority rule: this block is the physically discoverable current state.
