@@ -399,8 +399,6 @@ jobs:
             python - <<'PY'
           import ast
           from pathlib import Path
-          from sqlmodel import SQLModel
-          import control_plane.models  # noqa: F401
 
           path = Path("backend/app/v3/business_relationship_policy.py")
           tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -436,11 +434,27 @@ jobs:
           ):
               assert symbol not in source, symbol
 
-          p18_tables = {
-              table.name
-              for table in SQLModel.metadata.tables.values()
-              if table.name.startswith("business_relationship_policy")
-          }
+          models = Path("backend/control_plane/models.py")
+          model_tree = ast.parse(models.read_text(encoding="utf-8"))
+          p18_tables = set()
+          for node in model_tree.body:
+              if not isinstance(node, ast.ClassDef):
+                  continue
+              for item in node.body:
+                  if (
+                      isinstance(item, ast.Assign)
+                      and any(
+                          isinstance(target, ast.Name)
+                          and target.id == "__tablename__"
+                          for target in item.targets
+                      )
+                      and isinstance(item.value, ast.Constant)
+                      and isinstance(item.value.value, str)
+                      and item.value.value.startswith(
+                          "business_relationship_policy"
+                      )
+                  ):
+                      p18_tables.add(item.value.value)
           assert p18_tables == {
               "business_relationship_policy",
               "business_relationship_policy_use",
