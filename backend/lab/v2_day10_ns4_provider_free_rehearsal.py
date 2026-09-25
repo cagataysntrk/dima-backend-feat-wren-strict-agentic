@@ -476,23 +476,45 @@ class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
 
     @staticmethod
     def _schema_actions(schema: dict) -> set[str]:
+        """Read action enums from flat or scoped/discriminated provider schemas."""
+
         values: set[str] = set()
+        defs = schema.get("$defs") or {}
+
+        def resolve(node):
+            if (
+                isinstance(node, dict)
+                and isinstance(node.get("$ref"), str)
+                and node["$ref"].startswith("#/$defs/")
+            ):
+                return defs[node["$ref"].rsplit("/", 1)[-1]]
+            return node
+
+        def collect_action(node):
+            node = resolve(node)
+            if not isinstance(node, dict):
+                return
+            enum = node.get("enum")
+            if isinstance(enum, list):
+                values.update(str(item) for item in enum if item is not None)
+            const = node.get("const")
+            if isinstance(const, str):
+                values.add(const)
 
         def walk(node):
+            node = resolve(node)
             if isinstance(node, dict):
-                enum = node.get("enum")
-                if isinstance(enum, list):
-                    values.update(str(item) for item in enum if item is not None)
-                for value in node.values():
-                    walk(value)
+                properties = node.get("properties")
+                if isinstance(properties, dict) and "action" in properties:
+                    collect_action(properties["action"])
+                for key, value in node.items():
+                    if key != "$defs":
+                        walk(value)
             elif isinstance(node, list):
                 for value in node:
                     walk(value)
 
-        action = (schema.get("properties") or {}).get("action")
-        if isinstance(action, dict) and isinstance(action.get("$ref"), str):
-            action = (schema.get("$defs") or {})[action["$ref"].rsplit("/", 1)[-1]]
-        walk(action)
+        walk(schema)
         return values
 
     def structured_json(self, system, user, *, schema, schema_name):
