@@ -1,5 +1,71 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY OVERRIDE — D10-Q GENERIC TERMINAL PROPAGATION CLOSED / PAID RUN #2 READY
+
+This block supersedes the earlier D10-Q post-run-#1 checkpoint below. Historical REDs remain audit receipts.
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc test HEAD              763e3f2ee95e02e6ab61aa4c49754ce73b23143c
+latest Product behavior        f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+
+D10-Q paid run #1              36091887451 = RED
+run #1 tested SHA              d032757c05500b48e144d1c808c6076e6cbb56f3
+run #1 provider calls          7
+failure class                  CONTRACT / ARCHITECTURE
+
+generic propagation owner      ResearchExecutionOutcome
+terminal success               COMPLETE + VERIFIED Evidence
+terminal blocked               BLOCKED + no Evidence
+silent third terminal          DENY / contract error
+
+affected Day7                  36095271876 = GREEN
+affected Day8                  36095407570 = GREEN
+affected Day10                 36096003671 = GREEN
+
+paid dispatches                1 / 3 used
+provider calls                 7 / 30 used
+remaining calls                23
+run #2 max_total_model_calls   20
+
+paid run #2                    READY / NOT DISPATCHED
+paid workflow                  workflow_dispatch only
+push / marker bridge           ABSENT / FORBIDDEN
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Supervisor review found that the first blocked-relationship fix had not propagated the optional-Evidence
+terminal contract through every Manager consumer. The generic closure is now complete. A single
+`ResearchExecutionOutcome` projection admits exactly two governed Research terminal shapes:
+`COMPLETE + VERIFIED Evidence` or `BLOCKED + no Evidence`. Any other shape fails closed.
+
+The Manager seed path, ROOT_CAUSE bootstrap, hypothesis next-test, single adaptive branch and direct
+Research execution consumers now use that projection. A blocked terminal emits existing blocked
+observation/progress vocabulary, produces no fabricated Evidence and no success-only Evidence events.
+In particular, a blocked adaptive branch is not accounted as `APPLIED`.
+
+Provider-free/high-information proof added:
+- generic success/blocked/no-third-state projection tests;
+- blocked next-test consumer propagation with no SUPPORTS/CONTRADICTS or candidate-cause upgrade;
+- blocked adaptive RELATIONSHIP branch lifecycle with directive remaining OPEN;
+- existing real governed RELATIONSHIP blocked replay remains idempotent and successful relationship
+  execution still requires VERIFIED Evidence + QueryContract.
+
+The production ROOT_CAUSE next-test authority was not widened: RELATIONSHIP remains absent from the
+current advertised ROOT_CAUSE next-test families. CrossDomainJoinGate, SemanticBindingGate,
+EvidenceStore, EpistemicLabelGate, CONFIRMED_CAUSE ceiling, Manager ceiling and provider topology are
+unchanged.
+
+The authoritative next action is D10-Q paid run #2 from the current branch, with
+`max_total_model_calls=20`. Do not rerun paid run #1, do not use the old SHA, and do not introduce a
+push/marker dispatch bridge. If run #2 is GREEN, stop paid testing immediately and seal Day8/Day10
+docs-only. If it is RED, reclassify the first wrong transition before any further change.
+
+
 ## LATEST AUTHORITY OVERRIDE — D10-Q PAID RUN #1 RED / GENERIC LATE-OWNER FIX GREEN
 
 This is the current active Day10 authority. Historical blocks below remain receipts only.
