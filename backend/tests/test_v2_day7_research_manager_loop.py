@@ -10,7 +10,8 @@ from app.v2.manager_executor import (
     GovernedManagerExecutionContext,
     GovernedManagerExecutor,
 )
-from app.v2.manager_loop import ResearchManagerLoop, _post_acceptance_native_schema
+from app.v2.manager_loop import ResearchManagerLoop
+from helpers.manager_action_set_adapter import adapt_legacy_manager_intent
 from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
@@ -83,19 +84,25 @@ class _ResultAwareFakeLLM:
 
         delta = payload.get("CURRENT_RESULT_DELTA")
         if not payload.get("EVIDENCE_REFS"):
-            return {
-                "action": "run_analytics",
-                "obligation_ids": ["U1"],
-                "metric_handles": ["h1"],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "run_analytics",
+                    "obligation_ids": ["U1"],
+                    "metric_handles": ["h1"],
+                },
+            )
 
         if delta and delta.get("inspection_required"):
-            return {
-                "action": "inspect_evidence",
-                "evidence_ref": delta["evidence_ref"],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "inspect_evidence",
+                    "evidence_ref": delta["evidence_ref"],
+                },
+            )
 
-        return {"action": "finish"}
+        return adapt_legacy_manager_intent(payload, {"action": "finish"})
 
 
 class _WouldKeepThinkingAfterZeroRowLLM(_ResultAwareFakeLLM):
@@ -287,21 +294,27 @@ def test_zero_row_verified_evidence_finishes_without_spending_another_manager_tu
     assert finish[-1]["reason"] == "loop_boundary_deterministic_completion_gate"
 
 
-def test_postacceptance_schema_does_not_advertise_propose_acceptance():
-    schema = _post_acceptance_native_schema()
-    encoded = json.dumps(schema, ensure_ascii=False)
-
-    assert '"propose_acceptance"' not in encoded
-    for action in (
-        "resolve_semantics",
-        "propose_branches",
-        "run_analytics",
-        "run_relationship",
-        "inspect_evidence",
-        "request_clarification",
-        "finish",
-    ):
-        assert f'"{action}"' in encoded
+def test_postacceptance_action_set_never_advertises_propose_acceptance():
+    spans, runtime, executor, question, message_id = _accepted_runtime()
+    llm = _ResultAwareFakeLLM()
+    loop = ResearchManagerLoop(
+        llm=llm,
+        source_spans=spans,
+        research_tool_runner=ResearchToolRunner(),
+    )
+    loop.run(
+        question=question,
+        message_id=message_id,
+        request_ref="day7-loop-request",
+        runtime=runtime,
+        executor=executor,
+    )
+    actions = {
+        item["action"]
+        for item in llm.prompts[0]["MANAGER_ACTION_SET"]["action_instances"]
+    }
+    assert "propose_acceptance" not in actions
+    assert "run_analytics" in actions
 
 
 def test_answer_now_after_verified_evidence_pauses_partial_without_completion_laundering():
