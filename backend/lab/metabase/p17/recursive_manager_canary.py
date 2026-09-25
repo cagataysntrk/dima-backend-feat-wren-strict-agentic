@@ -61,3 +61,5 @@ def _verify_exact_git_authorization() -> None:
 if __name__ == "__main__":
     _verify_exact_git_authorization()
     runpy.run_path(str(AUTONOMOUS), run_name="__main__")
+
+# DMP-DEC-0051 Cycle-1 dispatch marker: autonomous-luna-recovery-001
