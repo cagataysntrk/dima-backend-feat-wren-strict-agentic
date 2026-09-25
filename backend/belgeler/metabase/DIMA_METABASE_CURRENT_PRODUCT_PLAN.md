@@ -94,8 +94,9 @@ owner                 = HARNESS / EVALUATION
 = KEEP
 ```
 
-The old `recursive_manager_canary.py` is now a deterministic scenario / contract lab only. It is
-not evidence that one fixed sequence is the unique legal Research trajectory.
+The historical screenplay now lives in `recursive_manager_scenario_lab.py` and is a deterministic
+scenario / contract lab only. `recursive_manager_canary.py` is the fail-closed compatibility
+entrypoint for live transport; neither file defines the autonomous cognition oracle.
 
 The active certification target is:
 
