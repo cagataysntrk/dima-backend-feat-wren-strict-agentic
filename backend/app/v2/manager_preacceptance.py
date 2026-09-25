@@ -250,11 +250,12 @@ Compare USER_MESSAGE against INTENT_DRAFT only for coverage loss:
 - an explicit user exclusion is omitted or represented with the wrong polarity,
 - a research directive/policy explicitly supported by the Day 6.5 contract is omitted.
 
-GROUNDING_SUMMARY is diagnostic context only. It is NOT a semantic veto surface.
-Canonical binding completeness and ambiguity are decided outside Coverage by bounded
-semantic linking plus deterministic capability-required grounding/ContractValidity.
-Never VETO because a semantic surface is unresolved or because you prefer another
-semantic interpretation.
+Coverage runs before semantic grounding. No grounding summary is provided to this
+veto-only auditor. The absence of grounding is neither Evidence nor a semantic failure
+and MUST NOT itself cause VETO. Canonical binding completeness and ambiguity are decided
+outside Coverage by bounded semantic linking plus deterministic capability-required
+grounding/ContractValidity. Never VETO because a semantic surface is unresolved or
+because you prefer another semantic interpretation.
 A research phenomenon/scope phrase (change, anomaly, decline, increase, high/low state,
 or similar wording) does not need its own canonical handle unless capability algebra
 explicitly requires that semantic kind.
@@ -412,14 +413,12 @@ class PreAcceptanceController:
         *,
         question: str,
         draft: IntentDraft,
-        grounding_summary: dict[str, Any],
         conversation: ConversationStateV2 | None,
     ) -> CoverageAudit:
         payload = {
             "USER_MESSAGE": question,
             "CONVERSATION_SURFACE": _conversation_surface_view(conversation),
             "INTENT_DRAFT": draft.model_dump(mode="json"),
-            "GROUNDING_SUMMARY": grounding_summary,
         }
         return self._structured_call(
             system=_COVERAGE_SYSTEM,
@@ -1113,8 +1112,10 @@ class PreAcceptanceController:
                 "name": "FINITE_PRE_ACCEPTANCE",
                 "protocol": [
                     "DRAFT",
-                    "AUTO_GROUND",
+                    "DRAFT_SOURCE_CHECKS",
                     "COVERAGE_VETO",
+                    "AUTO_GROUND",
+                    "MATERIAL_GAP_REPAIR",
                     "CONTRACT_VALIDITY",
                     "ACCEPT_OR_REVISE_OR_CLARIFY",
                 ],
@@ -1232,6 +1233,55 @@ class PreAcceptanceController:
                 )
 
             try:
+                runtime.note_manager_turn(phase="preacceptance")
+                coverage = self._coverage(
+                    question=question,
+                    draft=draft,
+                    conversation=conversation,
+                )
+            except ManagerBudgetError:
+                raise
+            except Exception as exc:
+                observations.append(
+                    {
+                        "kind": "coverage_error",
+                        "attempt": attempt,
+                        "message": str(exc),
+                    }
+                )
+                return FiniteAcceptanceOutcome(
+                    status=FiniteAcceptanceStatus.MODEL_FAILURE,
+                    observations=tuple(observations),
+                )
+
+            observations.append(
+                {
+                    "kind": "coverage_audit",
+                    "attempt": attempt,
+                    "status": coverage.status,
+                    "issues": [
+                        {
+                            "kind": issue.kind.value,
+                            "source_surfaces": list(issue.source_surfaces),
+                            "note": issue.note,
+                        }
+                        for issue in coverage.issues
+                    ],
+                }
+            )
+
+            if coverage.status == "VETO":
+                if attempt < self._max_draft_attempts:
+                    revision_feedback = self._coverage_feedback(coverage)
+                    continue
+                # Coverage is veto-only cognition quality control. It never owns user
+                # clarification truth; deterministic contract/semantic gates do.
+                return FiniteAcceptanceOutcome(
+                    status=FiniteAcceptanceStatus.COGNITION_REJECTED,
+                    observations=tuple(observations),
+                )
+
+            try:
                 grounded, resolution = self._ground(
                     draft=draft,
                     message_id=message_id,
@@ -1342,56 +1392,6 @@ class PreAcceptanceController:
                         status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
                         observations=tuple(observations),
                     )
-
-            try:
-                runtime.note_manager_turn(phase="preacceptance")
-                coverage = self._coverage(
-                    question=question,
-                    draft=draft,
-                    grounding_summary=grounding_summary,
-                    conversation=conversation,
-                )
-            except ManagerBudgetError:
-                raise
-            except Exception as exc:
-                observations.append(
-                    {
-                        "kind": "coverage_error",
-                        "attempt": attempt,
-                        "message": str(exc),
-                    }
-                )
-                return FiniteAcceptanceOutcome(
-                    status=FiniteAcceptanceStatus.MODEL_FAILURE,
-                    observations=tuple(observations),
-                )
-
-            observations.append(
-                {
-                    "kind": "coverage_audit",
-                    "attempt": attempt,
-                    "status": coverage.status,
-                    "issues": [
-                        {
-                            "kind": issue.kind.value,
-                            "source_surfaces": list(issue.source_surfaces),
-                            "note": issue.note,
-                        }
-                        for issue in coverage.issues
-                    ],
-                }
-            )
-
-            if coverage.status == "VETO":
-                if attempt < self._max_draft_attempts:
-                    revision_feedback = self._coverage_feedback(coverage)
-                    continue
-                # Coverage is veto-only cognition quality control. It never owns user
-                # clarification truth; deterministic contract/semantic gates do.
-                return FiniteAcceptanceOutcome(
-                    status=FiniteAcceptanceStatus.COGNITION_REJECTED,
-                    observations=tuple(observations),
-                )
 
             envelope = self._envelope(
                 draft=draft,
