@@ -7,6 +7,7 @@ No chain-of-thought is requested, persisted or returned.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from dataclasses import dataclass
 from enum import StrEnum
@@ -15,6 +16,8 @@ from typing import Any, Callable, Literal
 from pydantic import Field, model_validator
 
 from app.v2.manager_action_availability import (
+    ActionApplicabilitySnapshot,
+    ActionScopeSeed,
     AdaptiveDirectiveDispositionState,
     ManagerActionAvailability,
     ManagerActionAvailabilityContext,
