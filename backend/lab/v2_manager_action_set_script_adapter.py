@@ -3,6 +3,9 @@
 Tests may describe intent using the historical ManagerDecisionTransport shape, but the
 Product only receives the current ManagerActionSet action_ref + cognitive payload.
 This module is lab/test-only and must never be imported by app/v2.
+
+D10-U final provider-free closure deliberately routes all affected gates through this
+shared adapter path; this note is behavior-neutral and records the one-SHA closure receipt.
 """
 
 from __future__ import annotations
