@@ -20,14 +20,25 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
 )
 from app.v2.manager_runtime import ManagerRuntime
-from app.v2.manager_tools import ManagerToolCall, ManagerToolName
+from app.v2.manager_tools import (
+    ManagerRelationshipObservation,
+    ManagerToolCall,
+    ManagerToolName,
+)
 from app.v2.models import ResolvedSemanticRef, SemanticTargetKind, ResearchTask, TenantAnalyticsRuntimeV0
 from app.v2.research_tasks import (
     ResearchTaskLifecycleError,
     ResearchTaskRegistry,
     ResearchTaskTimeoutError,
 )
-from app.v2.research_tools import ResearchTaskKind, ResearchToolRunner
+from app.v2.research_tools import (
+    ResearchExecutionOutcome,
+    ResearchTaskKind,
+    ResearchToolContractError,
+    ResearchToolExecution,
+    ResearchToolRegistry,
+    ResearchToolRunner,
+)
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
@@ -189,6 +200,9 @@ def test_duplicate_delivery_reuses_registry_receipt_and_executes_wren_once():
     )
 
     assert first == second
+    outcome = ResearchExecutionOutcome.project(first)
+    assert outcome.blocked is False
+    assert outcome.require_evidence() is first.evidence
     assert service.query_calls == 1
     assert store.n == 1
     assert runtime.snapshot.data_queries == 1
@@ -398,3 +412,59 @@ def test_blocked_execution_receipt_is_terminal_and_idempotent():
             action_fingerprint="different",
             timeout_ms=15_000,
         )
+
+
+
+def test_research_execution_outcome_accepts_governed_blocked_without_fake_evidence():
+    task = ResearchTask(
+        task_id="seed:blocked-projection",
+        question_id="U_REL",
+        task_kind=ResearchTaskKind.RELATIONSHIP.value,
+        input_refs=("sem_metric", "sem_dimension"),
+        state="blocked",
+    )
+    execution = ResearchToolExecution(
+        task=task,
+        contract=ResearchToolRegistry().spec("wren.relationship").contract,
+        observation=ManagerRelationshipObservation(
+            obligation_id="U_REL",
+            available=False,
+            status="UNSUPPORTED",
+            reason="governed data gap",
+        ),
+        evidence=None,
+        elapsed_ms=0.0,
+    )
+
+    outcome = ResearchExecutionOutcome.project(execution)
+    assert outcome.blocked is True
+    with pytest.raises(ResearchToolContractError, match="no Evidence"):
+        outcome.require_evidence()
+
+
+def test_research_execution_outcome_rejects_silent_third_terminal_state():
+    task = ResearchTask(
+        task_id="seed:malformed-terminal",
+        question_id="U_REL",
+        task_kind=ResearchTaskKind.RELATIONSHIP.value,
+        input_refs=("sem_metric", "sem_dimension"),
+        state="complete",
+    )
+    malformed = ResearchToolExecution(
+        task=task,
+        contract=ResearchToolRegistry().spec("wren.relationship").contract,
+        observation=ManagerRelationshipObservation(
+            obligation_id="U_REL",
+            available=False,
+            status="UNSUPPORTED",
+            reason="malformed terminal for projection proof",
+        ),
+        evidence=None,
+        elapsed_ms=0.0,
+    )
+
+    with pytest.raises(
+        ResearchToolContractError,
+        match="COMPLETE.*VERIFIED Evidence|governed BLOCKED",
+    ):
+        ResearchExecutionOutcome.project(malformed)
