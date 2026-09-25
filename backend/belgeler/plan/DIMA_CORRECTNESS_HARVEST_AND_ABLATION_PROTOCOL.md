@@ -1976,3 +1976,86 @@ hard-coded remaining-call ceiling, and a mandatory cleanup order: remove push tr
 delete the marker. The tested branch is not considered clean until the permanent workflow is again
 `workflow_dispatch`-only. This is operational plumbing, never Product authority.
 
+
+---
+
+## D10-S GOVERNANCE / SEMANTIC SIMPLIFICATION HARVEST
+
+Authority / proof:
+
+```text
+provider-free proof HEAD       0b9c4a676a04cbf547f4d73116f048c319d77aa3
+Product behavior               0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+
+Day7 affected                  36127275608 = GREEN
+Day8 affected                  36126639512 = GREEN
+Day10 focused                  36126639503 = GREEN
+real-Wren root                 GREEN inside Day10
+presentation ownership         GREEN inside Day10
+
+fresh D10-S paid calls         0 / 40
+
+Metabase current source pass   metabase/metabase
+                               2f3fe9904e4addbcbe4d32403d6a7ab2fc471100
+```
+
+**H-145 — MUST_PORT — ONE RESOLVED ACTION-AVAILABILITY OWNER**  
+Model-facing action availability must be a deterministic projection of accepted/runtime state, with
+one owner. The provider schema and post-model runtime validation must consume the same resolved
+availability profile. Prompt guidance is not a policy gate. This mirrors the portable Metabase
+pattern of resolving one profile and using the same resolved profile to construct the visible tool
+surface and the model request.
+
+**H-146 — MUST_PORT — DISCLOSURE IS NOT AN INSPECTION TURN**  
+Fresh VERIFIED Evidence that is already disclosed in the current cognition packet is effective
+inspected context for that turn and must not advertise a redundant `inspect_evidence` action.
+Older VERIFIED Evidence that is attached to the run but not disclosed remains explicitly inspectable.
+Deterministic completion may occur before a later fresh Evidence item is ever disclosed; such
+Evidence must not be falsely marked inspected.
+
+**H-147 — MUST_PORT — DERIVED TASK IDENTITY IS NOT SEMANTIC AUTHORITY**  
+A server-owned derived ResearchTask/obligation does not become an AGENT_DERIVED semantic-expansion
+parent merely because it produced VERIFIED Evidence. ROOT_CAUSE may request semantic expansion only
+when current governed root handle kinds cannot satisfy any material next-test contract. Non-root
+semantic expansion remains available only when current VERIFIED Evidence grounds an accepted parent
+whose `ADAPT_ON_EVIDENCE` directive is still OPEN. This preserves Day7 discovery without reopening
+redundant ROOT rediscovery.
+
+**H-148 — MUST_PORT — ADAPTIVE DIRECTIVE ACCOUNTING IS EXECUTION-TRANSPORT INDEPENDENT**  
+A successful governed AGENT_DERIVED branch must terminally account its matching accepted
+`ADAPT_ON_EVIDENCE` directive whether it executed inline at branch materialization or later through
+ordinary Manager-selected execution. The accounting requires inspected VERIFIED trigger Evidence,
+matching parent/task lineage, COMPLETE task state and VERIFIED result Evidence owned by that task.
+Blocked/failed/foreign work cannot close the directive. CompletionGate must not require an extra
+cognition turn to discover a lifecycle fact the server already owns.
+
+**H-149 — MUST_PORT — ANALYTICAL COMPLETION AND PRESENTATION DELIVERY HAVE DIFFERENT OWNERS**  
+REPORT/TABLE/CHART/EXPLAIN can remain accepted USER_MUST delivery authority without becoming
+Evidence-producing analytical obligations. Analytical CompletionGate may close once analytical
+USER_MUST obligations are VERIFIED, but Product success for a requested presentation still requires
+the presentation/report layer to emit the requested deliverable. This prevents a Research/report
+ownership cycle without silently dropping USER_MUST intent.
+
+**H-150 — SUPERVISOR_REVIEW — PHASE-SEPARATED MANAGER BUDGET**  
+The current implementation uses `preacceptance=4`, `Research=4`, `outer=8`. Provider-free
+canonical topology proves a legitimate revision may consume four preacceptance turns and still need
+four post-acceptance Research cognition turns. Normal paths remain below the outer ceiling. No
+further budget change is authorized. This harvest item is intentionally not marked MUST_PORT until
+the supervisor explicitly ratifies or rejects the 4/4/8 architecture.
+
+**H-151 — SHOULD_PORT — FILTER APPLICABILITY BEFORE COGNITION / MATERIALIZATION**  
+Current Metabase source continues to reinforce a portable sequence: resolve profile/capabilities and
+scope before exposing tools; hydrate applicability before planning; keep planner proposal separate
+from server materialization; distinguish successful terminal output from failed tool output; and
+make terminal/cancel states explicit so stale work does not resurrect. Dima applies the principle to
+typed Manager actions while retaining its own AcceptedTurnContract, UOL, Evidence, semantic and Wren
+owners. No Metabase runtime/code is imported.
+
+D10-S final status at this harvest point:
+
+```text
+provider-free engineering closure   COMPLETE
+final D10-S exit / seal             PENDING BUDGET RATIFICATION
+paid                                NOT AUTHORIZED
+Day11                               NOT AUTHORIZED
+```
