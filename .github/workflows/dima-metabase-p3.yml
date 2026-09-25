@@ -6,6 +6,8 @@ on:
       - feat/dima-metabase-platform
     paths:
       - "backend/app/v3/substrate/metabase/**"
+      - "!backend/app/v3/substrate/metabase/native_engine.py"
+      - "!backend/app/v3/substrate/metabase/native_models.py"
       - "backend/tests/test_v3_p3_metabase_*.py"
       - "backend/pyproject.toml"
       - ".github/workflows/dima-metabase-p3.yml"
