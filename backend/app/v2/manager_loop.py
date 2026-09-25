@@ -14,6 +14,12 @@ from typing import Any, Callable, Literal
 
 from pydantic import Field, model_validator
 
+from app.v2.manager_action_availability import (
+    ManagerActionAvailability,
+    ManagerActionAvailabilityContext,
+    ManagerActionAvailabilityProfile,
+    RootActionState,
+)
 from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
@@ -504,7 +510,13 @@ def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _post_acceptance_native_schema(*, root_cause_enabled: bool = False) -> dict[str, Any]:
+def _post_acceptance_native_schema(
+    *,
+    root_cause_enabled: bool = False,
+    allowed_actions: tuple[str, ...] | None = None,
+    inspectable_evidence_refs: tuple[str, ...] = (),
+    resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",),
+) -> dict[str, Any]:
     """Expose only actions that are legal after AcceptedTurnContract commit.
 
     Pre-acceptance is owned by PreAcceptanceController.  Leaving
@@ -515,29 +527,60 @@ def _post_acceptance_native_schema(*, root_cause_enabled: bool = False) -> dict[
     """
     schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
 
-    def remove_value(node: Any) -> None:
+    allowed = (
+        None if allowed_actions is None else frozenset(str(value) for value in allowed_actions)
+    )
+
+    def narrow(node: Any) -> None:
         if isinstance(node, dict):
             enum_values = node.get("enum")
             if isinstance(enum_values, list):
-                forbidden = {ManagerActionKind.PROPOSE_ACCEPTANCE.value}
-                if not root_cause_enabled:
-                    forbidden.update(
-                        {
-                            ManagerActionKind.PROPOSE_HYPOTHESIS.value,
-                            ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value,
-                            ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value,
-                        }
-                    )
-                node["enum"] = [
-                    value for value in enum_values if value not in forbidden
-                ]
+                action_values = {item.value for item in ManagerActionKind}
+                if any(value in action_values for value in enum_values):
+                    forbidden = {ManagerActionKind.PROPOSE_ACCEPTANCE.value}
+                    if not root_cause_enabled:
+                        forbidden.update(
+                            {
+                                ManagerActionKind.PROPOSE_HYPOTHESIS.value,
+                                ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
+                                ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value,
+                                ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value,
+                            }
+                        )
+                    if allowed is not None:
+                        forbidden.update(action_values - allowed)
+                    node["enum"] = [
+                        value for value in enum_values if value not in forbidden
+                    ]
+                elif set(enum_values).issuperset({"USER_SOURCE", "AGENT_DERIVED"}):
+                    node["enum"] = [
+                        value for value in enum_values if value in set(resolve_provenance)
+                    ]
             for value in node.values():
-                remove_value(value)
+                narrow(value)
         elif isinstance(node, list):
             for value in node:
-                remove_value(value)
+                narrow(value)
 
-    remove_value(schema)
+    narrow(schema)
+
+    # When inspection remains useful because older Evidence is not disclosed in the
+    # current cognition packet, constrain the inspect target to exactly those refs.
+    # This makes current fresh disclosed Evidence impossible to select accidentally.
+    evidence_schema = (schema.get("properties") or {}).get("evidence_ref")
+    if isinstance(evidence_schema, dict) and inspectable_evidence_refs:
+        evidence_schema.clear()
+        evidence_schema.update(
+            {
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "enum": list(dict.fromkeys(inspectable_evidence_refs)),
+                    },
+                    {"type": "null"},
+                ]
+            }
+        )
 
     if root_cause_enabled:
         allowed_next_tests = {
@@ -1008,6 +1051,8 @@ class ResearchManagerLoop:
         research_state: ResearchStateView | None = None,
         ready_tasks: tuple[Any, ...] = (),
         hypothesis_ledgers: dict[str, Any] | None = None,
+        action_availability: ManagerActionAvailabilityProfile | None = None,
+        governed_semantic_inventory: tuple[dict[str, Any], ...] = (),
     ) -> str:
         ledger = runtime.ledger
         ledger_view = []
@@ -1140,8 +1185,21 @@ class ResearchManagerLoop:
             "CURRENT_RESULT_DELTA": (
                 None
                 if research_state is None or research_state.latest_delta is None
-                else research_state.latest_delta.model_dump(mode="json")
+                else {
+                    **research_state.latest_delta.model_dump(mode="json"),
+                    "inspection_required": (
+                        True
+                        if action_availability is None
+                        else action_availability.inspection_required_for_current_delta
+                    ),
+                }
             ),
+            "ACTION_AVAILABILITY": (
+                {}
+                if action_availability is None
+                else action_availability.model_view()
+            ),
+            "GOVERNED_SEMANTIC_INVENTORY": list(governed_semantic_inventory),
             # Diagnostic tail only. It is never the sole Research state authority.
             "RECENT_OBSERVATIONS": observations[-4:],
         }
@@ -1163,7 +1221,18 @@ class ResearchManagerLoop:
         research_state: ResearchStateView | None = None,
         ready_tasks: tuple[Any, ...] = (),
         hypothesis_ledgers: dict[str, Any] | None = None,
+        evidence_store=None,
     ):
+        governed_semantic_inventory = self._governed_semantic_inventory(
+            runtime=runtime,
+            hypothesis_ledgers=hypothesis_ledgers,
+        )
+        availability = self._action_availability(
+            runtime=runtime,
+            research_state=research_state,
+            hypothesis_ledgers=hypothesis_ledgers,
+            evidence_store=evidence_store,
+        )
         user = self._prompt(
             question=question,
             runtime=runtime,
@@ -1173,10 +1242,15 @@ class ResearchManagerLoop:
             research_state=research_state,
             ready_tasks=ready_tasks,
             hypothesis_ledgers=hypothesis_ledgers,
+            action_availability=availability,
+            governed_semantic_inventory=governed_semantic_inventory,
         )
         root_cause_enabled = bool(hypothesis_ledgers)
         schema = _post_acceptance_native_schema(
-            root_cause_enabled=root_cause_enabled
+            root_cause_enabled=root_cause_enabled,
+            allowed_actions=availability.available_actions,
+            inspectable_evidence_refs=availability.inspectable_evidence_refs,
+            resolve_provenance=availability.post_acceptance_resolve_provenance,
         )
         system_prompt = (
             _SYSTEM + _ROOT_CAUSE_SYSTEM_ADDENDUM
@@ -1189,7 +1263,7 @@ class ResearchManagerLoop:
         }
         raw = self._structured(system_prompt, user, **kwargs)
         try:
-            return self._parse_decision(raw)
+            return self._parse_decision(raw), availability
         except Exception as first_error:
             repair_system = (
                 system_prompt
@@ -1206,7 +1280,7 @@ class ResearchManagerLoop:
             )
             repaired = self._structured(repair_system, repair_user, **kwargs)
             try:
-                return self._parse_decision(repaired)
+                return self._parse_decision(repaired), availability
             except Exception as exc:
                 raise RuntimeError(
                     f"RESEARCH_MANAGER structured action invalid after one format retry: {exc}"
