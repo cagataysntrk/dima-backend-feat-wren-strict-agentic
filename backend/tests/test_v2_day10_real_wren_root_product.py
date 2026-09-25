@@ -38,6 +38,7 @@ from app.v2.report_narration import ReportNarrator
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
 from app.v2.research_tasks import ResearchTaskRegistry
 from app.v2.research_tools import ResearchToolRunner, ResearchTaskKind
+from helpers.manager_action_set_adapter import adapt_legacy_manager_intent
 from app.v2.root_cause_orchestration import (
     RootCauseBootstrapPolicy,
     RootCauseBootstrapStatus,
@@ -323,7 +324,7 @@ class _RootResearchLLM:
             self.preacceptance_calls += 1
             return {"status": "PASS", "issues": []}
 
-        if schema_name != "dima_research_manager_action_v1":
+        if schema_name != "dima_research_manager_action_v2":
             raise AssertionError(f"unexpected Research schema: {schema_name}")
 
         self.manager_prompts.append(payload)
@@ -339,83 +340,48 @@ class _RootResearchLLM:
         entries = ledgers[0]["entries"]
 
         if not entries:
-            return {
-                "action": "propose_hypothesis",
-                "hypothesis_parent_obligation_id": "U_ROOT",
-                # Deliberately contains an invented number. It may remain cognition/audit
-                # material but must never surface in canonical Finding/Report prose.
-                "hypothesis_statement": "Arıza sayısını bakım disiplini %27 artırdı.",
-                "hypothesis_semantic_handles": ["h1"],
-                "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
-                "hypothesis_limitations": [],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis",
+                    "hypothesis_parent_obligation_id": "U_ROOT",
+                    # Deliberately contains an invented number. It may remain cognition/audit
+                    # material but must never surface in canonical Finding/Report prose.
+                    "hypothesis_statement": "Arıza sayısını bakım disiplini %27 artırdı.",
+                    "hypothesis_semantic_handles": ["h1"],
+                    "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
+                    "hypothesis_limitations": [],
+                },
+            )
 
         hypothesis = entries[0]
         if not hypothesis["next_test_task_refs"]:
-            return {
-                "action": "propose_hypothesis_next_test",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "next_test_task_kind": "QUERY",
-                "next_test_input_handles": ["h1"],
-                "next_test_trigger_evidence_ref": evidence_refs[0],
-                "next_test_material_reason": (
-                    "Aday açıklamayı ikinci governed metric ölçümüyle sınırla."
-                ),
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_next_test",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "next_test_task_kind": "QUERY",
+                    "next_test_input_handles": ["h1"],
+                    "next_test_trigger_evidence_ref": evidence_refs[0],
+                    "next_test_material_reason": (
+                        "Aday açıklamayı ikinci governed metric ölçümüyle sınırla."
+                    ),
+                },
+            )
 
         if not hypothesis["evidence_links"]:
-            return {
-                "action": "propose_hypothesis_evidence_relation",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "hypothesis_relation_evidence_ref": delta["evidence_ref"],
-                "hypothesis_relation": "SUPPORTS",
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_evidence_relation",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+                    "hypothesis_relation": "SUPPORTS",
+                },
+            )
 
         raise AssertionError("deterministic completion should end before another Manager turn")
-
-
-def _schema_property_values(schema: dict, property_name: str) -> set[str]:
-    found = []
-
-    def resolve(node):
-        if not isinstance(node, dict):
-            return node
-        ref = node.get("$ref")
-        if isinstance(ref, str) and ref.startswith("#/$defs/"):
-            return (schema.get("$defs") or {})[ref.rsplit("/", 1)[-1]]
-        return node
-
-    def walk(node):
-        if isinstance(node, dict):
-            properties = node.get("properties")
-            if isinstance(properties, dict) and property_name in properties:
-                found.append(resolve(properties[property_name]))
-            for value in node.values():
-                walk(value)
-        elif isinstance(node, list):
-            for value in node:
-                walk(value)
-
-    def values(node):
-        node = resolve(node)
-        out = set()
-        if isinstance(node, dict):
-            enum = node.get("enum")
-            if isinstance(enum, list):
-                out.update(str(item) for item in enum if item is not None)
-            const = node.get("const")
-            if isinstance(const, str):
-                out.add(const)
-            for value in node.values():
-                out.update(values(value))
-        elif isinstance(node, list):
-            for value in node:
-                out.update(values(value))
-        return out
-
-    walk(schema)
-    assert found, property_name
-    return values(found[0])
 
 
 class _D10SStateAwareRootLLM(_RootResearchLLM):
@@ -425,10 +391,10 @@ class _D10SStateAwareRootLLM(_RootResearchLLM):
         super().__init__()
         self.actions: list[str] = []
         self.inventory_snapshots: list[tuple[dict, ...]] = []
-        self.availability_snapshots: list[dict] = []
+        self.action_set_snapshots: list[dict] = []
 
     def structured_json(self, system, user, *, schema, schema_name):
-        if schema_name != "dima_research_manager_action_v1":
+        if schema_name != "dima_research_manager_action_v2":
             return super().structured_json(
                 system,
                 user,
@@ -438,17 +404,22 @@ class _D10SStateAwareRootLLM(_RootResearchLLM):
 
         payload = json.loads(user)
         self.manager_prompts.append(payload)
-        actions = _schema_property_values(schema, "action")
+        cards = (
+            (payload.get("MANAGER_ACTION_SET") or {}).get(
+                "action_instances"
+            ) or []
+        )
+        actions = {item.get("action") for item in cards}
         delta = payload["CURRENT_RESULT_DELTA"]
         root_item_payload = next(
             item
             for item in payload["OBLIGATION_LEDGER"]
             if item["obligation_id"] == "U_ROOT"
         )
-        self.availability_snapshots.append(
+        self.action_set_snapshots.append(
             {
                 "actions": sorted(actions),
-                "availability": payload["ACTION_AVAILABILITY"],
+                "action_set": payload["MANAGER_ACTION_SET"],
                 "root_obligation": root_item_payload,
                 "root_next_test_contract": payload["ROOT_CAUSE_NEXT_TEST_CONTRACT"],
                 "hypothesis_state": payload["HYPOTHESIS_LEDGERS"],
@@ -486,33 +457,39 @@ class _D10SStateAwareRootLLM(_RootResearchLLM):
         if not entries:
             assert "propose_hypothesis_with_next_test" in actions
             self.actions.append("propose_hypothesis_with_next_test")
-            return {
-                "action": "propose_hypothesis_with_next_test",
-                "hypothesis_parent_obligation_id": "U_ROOT",
-                "hypothesis_statement": (
-                    "Gerçek Wren sentinel aday açıklaması %27 içerir ama rapora taşınmamalı."
-                ),
-                "hypothesis_semantic_handles": [root_handle],
-                "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
-                "hypothesis_limitations": [],
-                "next_test_task_kind": "QUERY",
-                "next_test_input_handles": [root_handle],
-                "next_test_trigger_evidence_ref": delta["evidence_ref"],
-                "next_test_material_reason": (
-                    "Mevcut governed root metriğini ikinci gerçek Wren ölçümüyle sınırla."
-                ),
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_with_next_test",
+                    "hypothesis_parent_obligation_id": "U_ROOT",
+                    "hypothesis_statement": (
+                        "Gerçek Wren sentinel aday açıklaması %27 içerir ama rapora taşınmamalı."
+                    ),
+                    "hypothesis_semantic_handles": [root_handle],
+                    "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
+                    "hypothesis_limitations": [],
+                    "next_test_task_kind": "QUERY",
+                    "next_test_input_handles": [root_handle],
+                    "next_test_trigger_evidence_ref": delta["evidence_ref"],
+                    "next_test_material_reason": (
+                        "Mevcut governed root metriğini ikinci gerçek Wren ölçümüyle sınırla."
+                    ),
+                },
+            )
 
         assert "propose_hypothesis_with_next_test" not in actions
         assert "propose_hypothesis_evidence_relation" in actions
         hypothesis = entries[0]
         self.actions.append("propose_hypothesis_evidence_relation")
-        return {
-            "action": "propose_hypothesis_evidence_relation",
-            "hypothesis_ref": hypothesis["hypothesis_id"],
-            "hypothesis_relation_evidence_ref": delta["evidence_ref"],
-            "hypothesis_relation": "SUPPORTS",
-        }
+        return adapt_legacy_manager_intent(
+            payload,
+            {
+                "action": "propose_hypothesis_evidence_relation",
+                "hypothesis_ref": hypothesis["hypothesis_id"],
+                "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+                "hypothesis_relation": "SUPPORTS",
+            },
+        )
 
 
 class _NarrationProviderFailure:
@@ -824,10 +801,10 @@ def test_d10_s_real_wren_state_aware_action_profile_reaches_report(
             "D10S_REAL_WREN_DIAGNOSTIC="
             + json.dumps(diagnostic, ensure_ascii=False, sort_keys=True, default=str)
         )
-    assert len(manager.availability_snapshots) == 2, diagnostic
-    second_turn = manager.availability_snapshots[1]
+    assert len(manager.action_set_snapshots) == 2, diagnostic
+    second_turn = manager.action_set_snapshots[1]
     print(
-        "D10S_SECOND_TURN_AVAILABILITY="
+        "D10S_SECOND_TURN_ACTION_SET="
         + json.dumps(
             {
                 **second_turn,
@@ -840,7 +817,7 @@ def test_d10_s_real_wren_state_aware_action_profile_reaches_report(
     )
     assert "resolve_semantics" not in second_turn["actions"], {
         **diagnostic,
-        "second_turn_availability": second_turn,
+        "second_turn_action_set": second_turn,
         "governed_semantic_inventory": manager.inventory_snapshots[1],
     }
     assert response.status == ProductStatus.REPORT, diagnostic
