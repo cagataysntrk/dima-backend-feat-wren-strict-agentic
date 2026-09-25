@@ -92,6 +92,7 @@ class ManagerActionAvailabilityContext:
     fresh_disclosed_evidence_ref: str | None = None
     fresh_disclosed_verified: bool = False
     open_adaptive_directive_count: int = 0
+    semantic_expansion_parent_obligation_ids: tuple[str, ...] | None = None
     remaining_manager_turns: int = 0
 
 
@@ -103,6 +104,7 @@ class ManagerActionAvailabilityProfile:
     inspectable_evidence_refs: tuple[str, ...]
     inspection_required_for_current_delta: bool
     remaining_manager_turns: int
+    resolve_semantics_parent_obligation_ids: tuple[str, ...]
     post_acceptance_resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",)
 
     def allows(self, action: str) -> bool:
@@ -128,6 +130,9 @@ class ManagerActionAvailabilityProfile:
             ),
             "resolve_semantics_provenance": list(
                 self.post_acceptance_resolve_provenance
+            ),
+            "resolve_semantics_parent_obligation_ids": list(
+                self.resolve_semantics_parent_obligation_ids
             ),
             "remaining_manager_turns": self.remaining_manager_turns,
         }
@@ -201,14 +206,27 @@ class ManagerActionAvailability:
                 )
 
         # Post-acceptance USER_SOURCE re-resolution is never a legal cognition option.
-        # The action itself remains only when AGENT_DERIVED expansion is potentially
-        # required by governed state.
+        # AGENT_DERIVED availability is parent-scoped. A feasible ROOT_CAUSE path may
+        # make that ROOT parent ineligible, but it must never hide a legitimate
+        # evidence-grounded non-root expansion surface.
+        semantic_parents = context.semantic_expansion_parent_obligation_ids
+        if semantic_parents is None:
+            if not effective_evidence:
+                semantic_parents = ()
+            elif roots:
+                semantic_parents = tuple(
+                    root.root_id for root in roots if not root.feasible_next_test
+                )
+            else:
+                semantic_parents = ()
+        semantic_parents = tuple(dict.fromkeys(semantic_parents))
+
         if not effective_evidence:
             remove(
                 "resolve_semantics",
                 ActionAvailabilityReason.NO_INSPECTED_VERIFIED_EVIDENCE,
             )
-        elif roots and all(root.feasible_next_test for root in roots):
+        elif not semantic_parents:
             remove(
                 "resolve_semantics",
                 ActionAvailabilityReason.EXISTING_GOVERNED_HANDLES_SATISFY_NEXT_TEST,
@@ -311,4 +329,5 @@ class ManagerActionAvailability:
             ),
             inspection_required_for_current_delta=inspection_required,
             remaining_manager_turns=context.remaining_manager_turns,
+            resolve_semantics_parent_obligation_ids=semantic_parents,
         )
