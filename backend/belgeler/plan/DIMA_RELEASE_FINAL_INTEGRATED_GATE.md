@@ -7,31 +7,35 @@
 
 This document is the release-level timing authority for expensive broad evaluation.
 
-## 0. CURRENT RELEASE STATE — DAY10 / D10-S SEALED / LIVE MEASUREMENT AUTHORIZED
+## 0. CURRENT RELEASE STATE — DAY10 / LIVE #1 RED / GENERIC FIX GREEN
 
 ```text
 primary analytics substrate    WREN
 Metabase execution runtime     REJECTED CURRENT RELEASE
-Day6.5                         CLOSED
-Day7 engineering               GREEN
-Day8 live debt                 OPEN
-Day8 FINAL                     NOT SEALED
-Day9 engineering               GREEN
-Day10 engineering              GREEN
-Day10 FINAL                    OPEN
 
 D10-S provider-free closure    GREEN
 ManagerBudget                  4 / 4 / 8 RATIFIED
 D10-S FINAL                    SEALED
 
+integrated live run #1         36128949886 = RED
+tested Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+class                          CONTRACT / ARCHITECTURE
+
 fresh provider envelope        40
-used                           0 / 40
+used                           12 / 40
+remaining                      28
+second paid run                NOT AUTHORIZED
 
-expected canonical paid calls  13–17
-hard per-run maximum           20
-paid scope                     CANONICAL_NS4
-paid harness                   existing Product harness only
+latest Product behavior        999d5e28facadd85aefd0d5b47cebec6c3daf4e6
 
+post-RED provider-free proofs
+Day10                          36130046060 = GREEN
+Day8                           36129994598 = GREEN
+Day7                           36129994504 = GREEN
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
 Day11                          NOT AUTHORIZED
 DEV80                          NOT AUTHORIZED
 Validation50                   NOT AUTHORIZED
@@ -39,25 +43,48 @@ Hidden50                       NOT AUTHORIZED
 production /ask-v2             OFF
 ```
 
-Permanent release invariant:
+The first integrated live run crossed accepted Research authority, real Wren execution, five VERIFIED
+Evidence artifacts and ReportDocument construction. It returned PARTIAL because ROOT_CAUSE epistemic
+state did not close.
+
+FIRST WRONG TRANSITION:
 
 ```text
-PHASE BUDGET INDEPENDENCE
-
-max_preacceptance_turns = 4
-max_manager_turns       = 4
-max_total_manager_turns = 8
-
-A bounded preacceptance retry must not consume the
-independent bounded Research cognition allowance.
+ROOT parent obl_4
+→ model proposed composite hypothesis/next-test
+→ included h3
+→ h3 belongs to BREAKDOWN parent obl_2
+→ root runtime boundary correctly rejected cross-obligation semantic handle
 ```
 
-The old global-six coupling remains historical and is not a current release contract.
+Classification:
 
-D10-S sealing is docs-only (tests = 0). The next and only currently authorized live action is one
-`CANONICAL_NS4` integrated paid Product measurement with `max_total_model_calls=20`. This single
-measurement re-measures Day8 live debt; do not run a standalone Day8 live test. A GREEN run stops paid
-execution immediately. A RED run requires FIRST WRONG TRANSITION classification before architecture changes.
+```text
+CONTRACT / ARCHITECTURE
+```
+
+The defect was model-facing applicability: root actions were state-aware at the action-name level but
+their semantic/Evidence/hypothesis arguments were not parent-scoped in the strict provider schema.
+
+The bounded generic correction remains inside already-ratified architecture. The existing
+`ManagerActionAvailability` owner now projects ROOT parent IDs, ROOT handle aliases, ROOT Evidence,
+server hypothesis IDs and pending post-test relation refs; the strict schema narrows epistemic action
+arguments from that profile. Runtime boundaries remain defense in depth and retain final authority.
+
+A second adjacent live receipt showed that new ROOT next-test cognition remained advertised while
+fresh VERIFIED post-test Evidence was still awaiting hypothesis relation admission. The same availability
+owner now removes another next-test until that relation is accounted. This is applicability sequencing,
+not causal/semantic truth.
+
+Frozen owners were not changed. No second paid run is authorized by this release state.
+
+Paid transport is clean:
+
+```text
+workflow                       workflow_dispatch only
+workflow blob                  f9ddebd74f8e8349ef6961eebf1d69f2f71acffb
+temporary marker               ABSENT
+```
 
 
 The bridge decision is scoped, not universal:
