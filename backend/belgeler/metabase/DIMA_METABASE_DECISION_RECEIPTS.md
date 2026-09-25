@@ -4211,3 +4211,181 @@ corrected autonomous Luna certification = AUTHORIZED ONCE
 P17                                      = NOT YET SEALED
 P18                                      = BLOCKED
 ```
+
+
+---
+
+## DMP-DEC-0052 — FAILURE-FAMILY-SCOPED RECOVERY BUDGET
+
+date: 2026-09-25
+
+status:
+`RATIFIED FORWARD RECOVERY ACCOUNTING / STRUCTURED-SCHEMA FAMILY ATTEMPT 1 OF 3 ROOT-FIXED PROVIDER-FREE / LIVE RECHECK PENDING / P18 BLOCKED`
+
+Authority stack:
+
+```text
+DMP-DEC-0048 = native-direct analytical ownership
+DMP-DEC-0049 = recursive investigation / P17-P19 split
+DMP-DEC-0050 = trajectory-invariant autonomous certification
+DMP-DEC-0051 = first-wrong-transition / generic-root-fix recovery procedure
+DMP-DEC-0052 = failure-family identity + per-family three-attempt accounting
+```
+
+DMP-DEC-0052 supersedes **only** the phase-wide/global interpretation of the DMP-DEC-0051
+three-attempt counter. It does not alter product architecture, native analytical ownership, P17/P19
+authority, or the DMP-DEC-0050 autonomous cognition contract.
+
+Canonical accounting:
+
+```text
+SAME FIRST-WRONG-TRANSITION OWNER + SAME VIOLATED INVARIANT
+→ SAME FAILURE FAMILY
+→ ATTEMPT COUNTER INCREMENTS UP TO 3
+
+PREVIOUS OWNER/INVARIANT IS ROOT-FIXED AND EXECUTION CROSSES THAT BOUNDARY
+→ DIFFERENT OWNER/INVARIANT FAILS
+→ NEW FAILURE FAMILY
+→ ATTEMPT COUNTER RESETS TO 1 / 3
+
+ARCHITECTURE STOP CONDITION
+→ STOP IMMEDIATELY
+```
+
+Family identity is engineering governance identity, not model output. No fuzzy clustering, embeddings,
+error-string similarity, regex semantic inference, or model-selected family names are allowed.
+
+Current historical family:
+
+```text
+failure_family_id = p17-cert-auth-transport
+authoritative RED = 36137304596
+attempt           = 1 / 3
+status            = CLOSED
+
+first wrong transition:
+valid add-only authorization existed in Git
+→ event projection omitted changed path
+→ old verifier rejected valid authorization
+
+generic closure:
+exact Git commit object
+→ exact single parent
+→ exact parent→dispatch diff-tree status A
+→ append-only receipt verification
+
+provider-free closure = 36139719694 SUCCESS
+```
+
+Current family:
+
+```text
+failure_family_id = p17-manager-structured-schema
+authoritative RED = 36140130559
+dispatch SHA      = b9dea761962268ada6299adca0c355ce14616c99
+attempt           = 1 / 3
+status            = ROOT FIXED PROVIDER-FREE / LIVE RECHECK PENDING
+
+previous boundary that succeeded:
+exact-Git authorization transport
+→ certified engine boot
+→ restricted native principal
+→ base native Metabot
+→ native /api/dataset
+
+first wrong transition:
+P17 Research Manager structured-output request
+→ provider strict-schema validation
+→ properties.proposition lacked portable strict-object additionalProperties=false
+→ provider rejected response_format before an accepted manager proposal
+
+owner:
+P17 MANAGER PROVIDER / STRICT STRUCTURED-OUTPUT SCHEMA
+```
+
+The structured-schema family root-fix direction is accepted:
+
+```text
+transport JSON Schema
+→ recursively normalize object nodes
+→ additionalProperties = false
+→ structurally required declared fields
+→ nullable transport types retained where applicable
+→ provider-unsupported metadata/constraints removed
+→ unreferenced $defs pruned
+
+Pydantic / ManagerProposal
+→ remains deterministic semantic authority
+```
+
+Transport schema normalization may transform JSON Schema syntax only. It must never encode Boyahane,
+June 2026, sales/channel meaning, branch names, prompt phrases, fuzzy matching, morphology, query
+semantics, or causal meaning.
+
+FORM_CLAIM is not removed from product authority. It is excluded only from the bounded P17
+autonomous certification vocabulary because this certification tests recursive investigation
+behavior; claim formation remains a separately governed P16-backed capability.
+
+Forward authorization receipts are failure-family-aware:
+
+```text
+backend/lab/metabase/p17/authorizations/
+<failure_family_id>--attempt-<NNN>.json
+
+required identity:
+decision
+branch
+failure_family_id
+attempt_in_family
+authorization_id
+candidate_product_sha
+dispatch_parent_sha
+provider_free_run_id
+governance_run_id
+model
+max_manager_calls
+sol_budget
+engine_build_budget
+c1_budget
+purpose
+```
+
+Historical
+`backend/lab/metabase/p17/authorizations/autonomous-luna-recovery-001.json`
+remains immutable evidence for `p17-cert-auth-transport / attempt 1` and is never renamed,
+rewritten, deleted/re-added, or reinterpreted as the forward receipt format.
+
+Permanent developer/supervisor rule:
+
+```text
+THREE ATTEMPTS ARE PER FAILURE FAMILY.
+
+WHEN A ROOT-FIXED BOUNDARY IS CROSSED
+AND A DIFFERENT OWNER/INVARIANT FAILS,
+THE NEW FAMILY STARTS AT 1/3.
+
+WHEN THE SAME OWNER/INVARIANT FAILS AGAIN,
+THE SAME FAMILY COUNTER INCREMENTS.
+
+DO NOT CLASSIFY BY ERROR STRING.
+CLASSIFY BY FIRST WRONG TRANSITION + OWNER + INVARIANT.
+```
+
+Current bounded objective:
+
+```text
+document DMP-DEC-0052
+→ family-aware authorization transport provider-free GREEN
+→ strict-schema regression GREEN
+→ trajectory-invariant evaluator GREEN
+→ P17/P16/P15/P14 regressions GREEN
+→ governance GREEN
+→ append p17-manager-structured-schema--attempt-002.json
+→ ONE corrected autonomous Luna certification
+```
+
+If that run reaches the same strict-schema owner/invariant and REDs, the same family becomes attempt
+2 / 3 and one final attempt 3 / 3 may follow only after a new evidenced generic root fix plus
+provider-free proof. If the strict-schema boundary succeeds and a materially different owner/invariant
+fails, the new failure family starts at 1 / 3. Immediate architecture STOP conditions override all
+remaining family attempts.
