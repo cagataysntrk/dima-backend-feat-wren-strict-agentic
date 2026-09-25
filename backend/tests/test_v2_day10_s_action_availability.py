@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.manager_action_set import (
     DirectiveActionState,
     HypothesisActionState,
@@ -443,3 +444,42 @@ def test_grounded_clarification_is_a_bounded_action_without_model_owned_ids():
         "action_ref",
         "clarification_reason",
     }
+
+
+def test_derived_semantic_registry_projection_is_exact_parent_and_evidence_scoped():
+    registry = SemanticHandleRegistry()
+    common = {
+        "tenant_binding": "tenant-A",
+        "context_version": "ctx-A",
+        "target_kind": "dimension",
+        "canonical_target": {"kind": "dimension"},
+        "provenance_type": "AGENT_DERIVED",
+    }
+    wanted = registry.mint_from_resolver(
+        **common,
+        resolver_provenance_id="derived:wanted",
+        parent_obligation_id="P1",
+        trigger_evidence_ref="E1",
+    )
+    registry.mint_from_resolver(
+        **common,
+        resolver_provenance_id="derived:sibling",
+        parent_obligation_id="P2",
+        trigger_evidence_ref="E1",
+    )
+    registry.mint_from_resolver(
+        **common,
+        resolver_provenance_id="derived:other-evidence",
+        parent_obligation_id="P1",
+        trigger_evidence_ref="E2",
+    )
+
+    projected = registry.handles_for_parent(
+        tenant_binding="tenant-A",
+        context_version="ctx-A",
+        parent_obligation_id="P1",
+        trigger_evidence_ref="E1",
+    )
+
+    assert tuple(item.handle_id for item in projected) == (wanted.handle_id,)
+    assert all(item.provenance_type == "AGENT_DERIVED" for item in projected)
