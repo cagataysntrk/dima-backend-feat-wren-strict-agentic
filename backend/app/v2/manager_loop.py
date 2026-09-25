@@ -3273,18 +3273,23 @@ class ResearchManagerLoop:
                                 "status": "VERIFIED",
                             }
                         )
-                    if self._try_deterministic_finish(
-                        runtime=runtime,
-                        task_registry=task_registry,
-                    ):
-                        observations.append(
-                            {
-                                "kind": "finish",
-                                "status": "accepted",
-                                "reason": "deterministic_completion_gate",
-                            }
-                        )
-                        break
+
+                # Completion is deterministic and must be checked after every successful
+                # governed execution, not only inside ROOT_CAUSE orchestration. This
+                # prevents an already-complete non-root run from spending another
+                # probabilistic Research turn merely to propose FINISH.
+                if self._try_deterministic_finish(
+                    runtime=runtime,
+                    task_registry=task_registry,
+                ):
+                    observations.append(
+                        {
+                            "kind": "finish",
+                            "status": "accepted",
+                            "reason": "post_tool_deterministic_completion_gate",
+                        }
+                    )
+                    break
 
                 if (
                     call.name == ManagerToolName.INSPECT_EVIDENCE
