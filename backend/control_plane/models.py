@@ -1294,3 +1294,96 @@ class BusinessRelationshipPolicyUseRecord(SQLModel, table=True):
     )
 
 
+
+
+class HypothesisRecord(SQLModel, table=True):
+    """P19 stable candidate explanation identity; never P16 claim/Evidence truth."""
+
+    __tablename__ = "p19_hypothesis"
+    __table_args__ = (
+        UniqueConstraint(
+            "identity_fingerprint",
+            name="uq_p19_hypothesis_identity_fingerprint",
+        ),
+    )
+
+    hypothesis_id: str = Field(primary_key=True)
+    research_session_id: str = Field(
+        foreign_key="research_session.session_id",
+        index=True,
+    )
+    obligation_id: str = Field(index=True)
+    tenant_binding: str = Field(index=True)
+    semantic_context_version: str = Field(index=True)
+    statement: str = Field(sa_column=Column(Text, nullable=False))
+    identity_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
+class HypothesisGroundingLink(SQLModel, table=True):
+    """Append-only P19 link from one hypothesis to one sealed source identity."""
+
+    __tablename__ = "p19_hypothesis_grounding"
+    __table_args__ = (
+        UniqueConstraint(
+            "link_fingerprint",
+            name="uq_p19_hypothesis_grounding_fingerprint",
+        ),
+    )
+
+    grounding_link_id: str = Field(primary_key=True)
+    hypothesis_id: str = Field(
+        foreign_key="p19_hypothesis.hypothesis_id",
+        index=True,
+    )
+    source_kind: str = Field(index=True)
+    source_ref: str = Field(index=True)
+    source_receipt_id: str | None = Field(default=None, index=True)
+    relation: str = Field(index=True)
+    link_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
+class RootCauseAssessment(SQLModel, table=True):
+    """Immutable P19 aggregate epistemic snapshot; never analytical execution."""
+
+    __tablename__ = "p19_root_cause_assessment"
+    __table_args__ = (
+        UniqueConstraint(
+            "assessment_fingerprint",
+            name="uq_p19_root_cause_assessment_fingerprint",
+        ),
+    )
+
+    assessment_id: str = Field(primary_key=True)
+    research_session_id: str = Field(
+        foreign_key="research_session.session_id",
+        index=True,
+    )
+    obligation_id: str = Field(index=True)
+    tenant_binding: str = Field(index=True)
+    semantic_context_version: str = Field(index=True)
+    candidate_assessments_json: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    root_cause_hypothesis_ids_json: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    aggregate_outcome: str = Field(index=True)
+    limitations_json: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    numeric_provenance_json: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    mediation_annotations_json: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    assessment_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
