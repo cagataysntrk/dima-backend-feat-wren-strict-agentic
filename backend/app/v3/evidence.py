@@ -30,6 +30,7 @@ class DimaQueryReceipt(FrozenModel):
     )
     execution_id: str | None = None
     step_role: Literal["primary", "base", "reference"] | None = None
+    authority_kind: Literal["standard_analytics", "research_material"] = "standard_analytics"
     authority_id: str = Field(min_length=1)
     obligation_ids: tuple[str, ...] = ()
     tenant_id: str | None = None

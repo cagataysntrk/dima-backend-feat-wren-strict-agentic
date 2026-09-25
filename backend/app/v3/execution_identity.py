@@ -470,6 +470,133 @@ class DimaQueryReceiptSealer:
         return "dqr_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
     @classmethod
+    def seal_research_execution(
+        cls,
+        *,
+        authority_id: str,
+        obligation_ids: tuple[str, ...],
+        tenant_binding: str,
+        principal_subject: str,
+        roles: tuple[str, ...],
+        semantic_refs: tuple[str, ...],
+        accepted_context_hash: str,
+        material_scope_hash: str,
+        semantic_context_version: str,
+        execution_artifact: AuthorizedExecutionArtifact,
+        access_snapshot: ExecutionAccessSnapshot | None,
+        runtime: RuntimeIdentity | None,
+        result: ExecutionResultSnapshot,
+        event: ExecutionEventIdentity,
+    ) -> DimaQueryReceipt:
+        """Seal one P14 native occurrence through the existing P5 owner."""
+        if access_snapshot is None:
+            raise ReceiptSealError("ACCESS_SNAPSHOT_REQUIRED", "attested access snapshot required")
+        if runtime is None:
+            raise ReceiptSealError("RUNTIME_IDENTITY_REQUIRED", "exact runtime identity required")
+        if not obligation_ids:
+            raise ReceiptSealError("RESEARCH_OBLIGATION_REQUIRED", "Research obligation required")
+        checks = (
+            ("AUTHORITY_MISMATCH", authority_id, execution_artifact.authority_id),
+            ("PROJECTION_MISMATCH", accepted_context_hash, execution_artifact.projection_hash),
+            ("RESOLVED_INTENT_MISMATCH", material_scope_hash, execution_artifact.resolved_intent_hash),
+            ("SEMANTIC_CONTEXT_MISMATCH", semantic_context_version, execution_artifact.semantic_context_version),
+        )
+        for code, expected, actual in checks:
+            if expected != actual:
+                raise ReceiptSealError(code, f"expected={expected!r} artifact={actual!r}")
+        execution_artifact.assert_intact()
+        if execution_artifact.query_count != 1 or len(execution_artifact.steps) != 1:
+            raise ReceiptSealError("QUERY_RESULT_CARDINALITY_MISMATCH", "P14 seals one occurrence")
+        if access_snapshot.tenant_binding != tenant_binding:
+            raise ReceiptSealError("TENANT_MISMATCH", "Research access tenant mismatch")
+        if access_snapshot.principal_subject != principal_subject:
+            raise ReceiptSealError("PRINCIPAL_MISMATCH", "Research access principal mismatch")
+        if tuple(sorted(access_snapshot.roles)) != tuple(sorted(roles)):
+            raise ReceiptSealError("ROLE_SET_MISMATCH", "Research access roles mismatch")
+        if access_snapshot.semantic_context_version != semantic_context_version:
+            raise ReceiptSealError("ACCESS_SEMANTIC_CONTEXT_MISMATCH", "Research access context mismatch")
+        if tuple(sorted(access_snapshot.source_object_refs)) != tuple(sorted(execution_artifact.resource_entity_ids)):
+            raise ReceiptSealError("SOURCE_RESOURCE_MISMATCH", "Research resource lens mismatch")
+        cls._assert_runtime_matches_artifact(artifact=execution_artifact, runtime=runtime)
+
+        step = execution_artifact.steps[0]
+        step.assert_intact()
+        principal_fingerprint = _sha256_json(
+            {"tenant_binding": tenant_binding, "principal_subject": principal_subject, "roles": sorted(roles)},
+            error_code="PRINCIPAL_NOT_SERIALIZABLE",
+        )
+        receipt_fingerprint = _sha256_json(
+            {
+                "authority_kind": "research_material",
+                "authority_id": authority_id,
+                "obligation_ids": sorted(obligation_ids),
+                "projection_hash": accepted_context_hash,
+                "resolved_intent_hash": material_scope_hash,
+                "canonical_query_fingerprint": step.artifact_fingerprint,
+                "execution_access_fingerprint": access_snapshot.execution_access_fingerprint,
+                "access_attestation_refs": sorted(access_snapshot.attestation_refs),
+                "semantic_context_version": semantic_context_version,
+                "semantic_refs": sorted(semantic_refs),
+                "resource_bindings": sorted(zip(execution_artifact.resource_entity_ids, execution_artifact.resource_fingerprints, strict=True)),
+                "substrate": runtime.substrate,
+                "substrate_runtime_version": runtime.runtime_version,
+                "substrate_image_digest": runtime.image_digest,
+                "engine_repository": runtime.repository,
+                "engine_revision_sha": runtime.revision_sha,
+                "engine_upstream_base_sha": runtime.upstream_base_sha,
+                "engine_runtime_tag": runtime.runtime_tag,
+                "engine_build_identity": runtime.build_identity,
+                "engine_image_identity": runtime.image_identity,
+                "engine_runtime_instance_id": str(runtime.runtime_instance_id),
+                "database_id": runtime.database_id,
+                "result_hash": result.result_hash,
+                "row_count": result.row_count,
+                "step_role": step.role,
+                "warnings": result.warnings,
+                "limitations": result.limitations,
+            },
+            error_code="RECEIPT_CONTENT_NOT_SERIALIZABLE",
+        )
+        return DimaQueryReceipt(
+            receipt_id=cls._receipt_id(receipt_fingerprint=receipt_fingerprint, execution_id=event.execution_id),
+            receipt_fingerprint=receipt_fingerprint,
+            execution_id=event.execution_id,
+            step_role=step.role,
+            authority_kind="research_material",
+            authority_id=authority_id,
+            obligation_ids=obligation_ids,
+            tenant_id=tenant_binding,
+            principal_id=principal_subject,
+            semantic_refs=semantic_refs,
+            projection_hash=accepted_context_hash,
+            resolved_intent_hash=material_scope_hash,
+            canonical_query_fingerprint=step.artifact_fingerprint,
+            canonical_query_representation=step.artifact_representation,
+            principal_fingerprint=principal_fingerprint,
+            execution_access_fingerprint=access_snapshot.execution_access_fingerprint,
+            access_attestation_refs=access_snapshot.attestation_refs,
+            semantic_context_version=semantic_context_version,
+            resource_entity_ids=execution_artifact.resource_entity_ids,
+            resource_fingerprints=execution_artifact.resource_fingerprints,
+            substrate=runtime.substrate,
+            substrate_runtime_version=runtime.runtime_version,
+            substrate_image_digest=runtime.image_digest,
+            engine_repository=runtime.repository,
+            engine_revision_sha=runtime.revision_sha,
+            engine_upstream_base_sha=runtime.upstream_base_sha,
+            engine_runtime_tag=runtime.runtime_tag,
+            engine_build_identity=runtime.build_identity,
+            engine_image_identity=runtime.image_identity,
+            engine_runtime_instance_id=runtime.runtime_instance_id,
+            database_id=runtime.database_id,
+            executed_at=event.executed_at,
+            result_hash=result.result_hash,
+            row_count=result.row_count,
+            warnings=result.warnings,
+            limitations=result.limitations,
+        )
+
+    @classmethod
     def seal_execution(
         cls,
         *,

@@ -344,24 +344,23 @@ class ExecutionAccessSnapshotIssuer:
             )
 
     @staticmethod
-    def _snapshot(
+    def _snapshot_values(
         *,
-        accepted_intent: ResolvedAnalyticsIntent,
+        tenant_binding: str,
+        principal_subject: str,
+        roles: tuple[str, ...],
+        semantic_context_version: str,
         verified_security_facts: VerifiedExecutionSecurityFacts,
     ) -> ExecutionAccessSnapshot:
-        proof_refs = tuple(
-            sorted(
-                {
-                    *verified_security_facts.attestation_refs,
-                    *verified_security_facts.evidence_refs,
-                    verified_security_facts.metabase_subject_ref,
-                }
-            )
-        )
+        proof_refs = tuple(sorted({
+            *verified_security_facts.attestation_refs,
+            *verified_security_facts.evidence_refs,
+            verified_security_facts.metabase_subject_ref,
+        }))
         return ExecutionAccessSnapshot(
-            tenant_binding=accepted_intent.principal.tenant_binding,
-            principal_subject=accepted_intent.principal.principal_subject,
-            roles=tuple(sorted(accepted_intent.principal.roles)),
+            tenant_binding=tenant_binding,
+            principal_subject=principal_subject,
+            roles=tuple(sorted(roles)),
             attribute_policy_digest=verified_security_facts.attribute_policy_digest,
             policy_version=verified_security_facts.policy_version,
             rls_versions=tuple(sorted(verified_security_facts.rls_versions)),
@@ -369,10 +368,25 @@ class ExecutionAccessSnapshotIssuer:
             database_route=verified_security_facts.database_route,
             database_destination=verified_security_facts.database_destination,
             impersonation_role=verified_security_facts.impersonation_role,
-            semantic_context_version=accepted_intent.semantic_context_version,
+            semantic_context_version=semantic_context_version,
             source_object_refs=tuple(sorted(verified_security_facts.source_object_refs)),
             security_parameter_digest=verified_security_facts.security_parameter_digest,
             attestation_refs=proof_refs,
+        )
+
+    @classmethod
+    def _snapshot(
+        cls,
+        *,
+        accepted_intent: ResolvedAnalyticsIntent,
+        verified_security_facts: VerifiedExecutionSecurityFacts,
+    ) -> ExecutionAccessSnapshot:
+        return cls._snapshot_values(
+            tenant_binding=accepted_intent.principal.tenant_binding,
+            principal_subject=accepted_intent.principal.principal_subject,
+            roles=accepted_intent.principal.roles,
+            semantic_context_version=accepted_intent.semantic_context_version,
+            verified_security_facts=verified_security_facts,
         )
 
     @classmethod
@@ -405,6 +419,66 @@ class ExecutionAccessSnapshotIssuer:
         return cls._snapshot(
             accepted_intent=accepted_intent,
             verified_security_facts=verified_security_facts,
+        )
+
+    @classmethod
+    def issue_research_material(
+        cls,
+        *,
+        current_principal: Principal | None,
+        tenant_binding: str,
+        principal_subject: str,
+        accepted_roles: tuple[str, ...],
+        semantic_context_version: str,
+        verified_security_facts: VerifiedExecutionSecurityFacts,
+        expected_source_object_refs: tuple[str, ...],
+    ) -> ExecutionAccessSnapshot:
+        """Issue the existing P5 access identity for thin P14 material provenance."""
+        principal = cls._current_principal(current_principal)
+        if principal.is_superadmin:
+            raise SecurityIdentityError(
+                "P14_NATIVE_SUPERADMIN_ANALYTICS_FORBIDDEN",
+                "P14 Research requires a tenant-bound user principal",
+            )
+        expected_tenant = (
+            f"id:{principal.tenant_id}"
+            if principal.tenant_id is not None
+            else (f"slug:{principal.tenant_slug}" if principal.tenant_slug else "")
+        )
+        if expected_tenant != tenant_binding:
+            raise SecurityIdentityError("P14_NATIVE_TENANT_MISMATCH", "Research tenant mismatch")
+        if principal.user_id != principal_subject:
+            raise SecurityIdentityError("P14_NATIVE_PRINCIPAL_MISMATCH", "Research principal mismatch")
+        if tuple(sorted(principal.roles)) != tuple(sorted(accepted_roles)):
+            raise SecurityIdentityError("P14_NATIVE_ROLE_SET_MISMATCH", "Research role-set mismatch")
+        facts = verified_security_facts
+        if (
+            facts.tenant_binding != tenant_binding
+            or facts.principal_subject != principal_subject
+            or tuple(sorted(facts.roles)) != tuple(sorted(accepted_roles))
+        ):
+            raise SecurityIdentityError(
+                "P14_NATIVE_SECURITY_FACTS_PRINCIPAL_MISMATCH",
+                "verified native security facts belong to another product lens",
+            )
+        if facts.semantic_context_version != semantic_context_version:
+            raise SecurityIdentityError(
+                "P14_NATIVE_SECURITY_FACTS_CONTEXT_MISMATCH",
+                "verified native security facts belong to another semantic context",
+            )
+        if tuple(sorted(facts.source_object_refs)) != tuple(sorted(expected_source_object_refs)):
+            raise SecurityIdentityError(
+                "P14_NATIVE_SOURCE_RESOURCE_MISMATCH",
+                "verified security facts do not cover the exact material resources",
+            )
+        if not facts.metabase_subject_ref.strip():
+            raise SecurityIdentityError("P10_METABASE_SUBJECT_REQUIRED", "verified native subject required")
+        return cls._snapshot_values(
+            tenant_binding=tenant_binding,
+            principal_subject=principal_subject,
+            roles=accepted_roles,
+            semantic_context_version=semantic_context_version,
+            verified_security_facts=facts,
         )
 
     @classmethod

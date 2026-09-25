@@ -102,6 +102,23 @@ class NativeEngineBridge:
         ]
         return states[-1] if states else None
 
+    def current_user(self) -> dict[str, Any]:
+        """Read the native user bound to this exact pass-through session."""
+        try:
+            response = self._client.get("/api/user/current")
+        except httpx.TimeoutException as exc:
+            raise NativeEngineBridgeError("current-user request timed out") from exc
+        except httpx.RequestError as exc:
+            raise NativeEngineBridgeError(f"current-user transport failed: {exc}") from exc
+        if response.status_code != 200:
+            raise NativeEngineBridgeError(
+                f"current-user returned HTTP {response.status_code}: {response.text[:500]}"
+            )
+        body = response.json()
+        if not isinstance(body, dict) or not isinstance(body.get("id"), int):
+            raise NativeEngineBridgeError("current-user response has no numeric user id")
+        return body
+
     def engine_identity(self) -> dict[str, Any]:
         """Read the isolated Dima engine identity seam with this exact session."""
         try:
