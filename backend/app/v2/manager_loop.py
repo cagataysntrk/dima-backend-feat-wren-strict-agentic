@@ -1364,12 +1364,40 @@ class ResearchManagerLoop:
                         parent_obligation_id=item.obligation_id,
                     ):
                         continue
+
+                    # Derived semantic discovery is canonical Resolver/registry state,
+                    # not observation text. Project only exact parent + trigger-Evidence
+                    # handles into this parent/Evidence action card. This preserves
+                    # correlated applicability while making newly legal branch shapes
+                    # visible immediately after governed semantic resolution.
+                    scoped_semantic_refs = list(semantic_refs)
+                    scoped_aliases = {row.ref for row in scoped_semantic_refs}
+                    if self._root_cause_context is not None:
+                        for handle in (
+                            self._root_cause_context.semantic_handles.handles_for_parent(
+                                tenant_binding=self._root_cause_context.tenant_binding,
+                                context_version=self._root_cause_context.context_version,
+                                parent_obligation_id=item.obligation_id,
+                                trigger_evidence_ref=ref,
+                            )
+                        ):
+                            alias = self._handle_alias(handle.handle_id)
+                            if alias in scoped_aliases:
+                                continue
+                            scoped_semantic_refs.append(
+                                SemanticActionRef(
+                                    ref=alias,
+                                    kind=str(handle.target_kind),
+                                )
+                            )
+                            scoped_aliases.add(alias)
+
                     parent_evidence_states.append(
                         ParentEvidenceActionState(
                             parent_obligation_id=item.obligation_id,
                             capability_key=item.capability_key.value,
                             evidence_ref=ref,
-                            semantic_refs=semantic_refs,
+                            semantic_refs=tuple(scoped_semantic_refs),
                             branch_eligible=(
                                 item.obligation_id
                                 in tuple(getattr(evidence, "obligation_ids", ()) or ())
