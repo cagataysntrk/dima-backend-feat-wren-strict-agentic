@@ -382,6 +382,8 @@ class GovernedManagerExecutor:
                 )
 
             if self._relationship is None:
+                if commit_guard is not None:
+                    commit_guard()
                 ledger = self._obligations.block(
                     ledger,
                     validated_args.obligation_id,
@@ -405,6 +407,8 @@ class GovernedManagerExecutor:
             reason = getattr(result, "reason", None)
 
             if not available or not isinstance(artifact, EvidenceArtifact):
+                if commit_guard is not None:
+                    commit_guard()
                 ledger = self._obligations.block(
                     runtime.ledger,
                     validated_args.obligation_id,
