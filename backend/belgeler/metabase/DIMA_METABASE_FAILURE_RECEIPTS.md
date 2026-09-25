@@ -4249,3 +4249,155 @@ P18                   = BLOCKED
 A second paid canary requires an explicit supervisor decision because the directive authorized one
 bounded live run and disallowed repeated paid runs by default.
 
+
+
+---
+
+## DMP-P17-FAMILY-AUTH-TRANSPORT-001 — exact-Git authorization transport
+
+date: 2026-09-25  
+failure_family_id: `p17-cert-auth-transport`  
+attempt_in_family: `1 / 3`  
+authoritative run: `36137304596 = FAILURE`  
+dispatch SHA: `5801ac71ba00867921dec17edff20568dc0fce05`  
+status: `CLOSED / ROOT-FIXED PROVIDER-FREE`
+
+first_wrong_transition:
+
+```text
+authorization receipt was genuinely ADDED in Git
+→ compatibility entrypoint trusted github.event.head_commit.added
+→ event projection omitted the path
+→ valid authorization was rejected before autonomous canary entry
+```
+
+owner:
+`INFRA / EVALUATOR TRANSPORT`
+
+violated_invariant:
+authorization identity must come from immutable Git object truth, not CI event projections.
+
+live_accounting:
+
+```text
+manager Luna calls = 0
+Metabot occurrences = 0
+/api/dataset executions = 0
+Sol calls = 0
+engine builds = 0
+C1 calls = 0
+```
+
+generic_fix:
+exact checked-out dispatch SHA → exact single parent → exact parent→HEAD `git diff-tree
+--name-status` → exactly one new append-only JSON authorization receipt with status `A`.
+
+focused_regression:
+exact added accepted; modified/pre-existing/zero/two/historical delete-readd/wrong identity/budget
+escalation rejected; event `head_commit.added` irrelevant.
+
+provider_free_proof:
+`36139719694 = SUCCESS`
+
+disposition:
+family CLOSED. The next authoritative RED crossed this transport boundary and therefore belongs to a
+different family under DMP-DEC-0052.
+
+---
+
+## DMP-P17-FAMILY-STRUCTURED-SCHEMA-001 — provider strict JSON Schema compatibility
+
+date: 2026-09-25  
+failure_family_id: `p17-manager-structured-schema`  
+attempt_in_family: `1 / 3`  
+authoritative run: `36140130559 = FAILURE`  
+dispatch SHA: `b9dea761962268ada6299adca0c355ce14616c99`  
+status: `ROOT FIXED PROVIDER-FREE / LIVE RECHECK PENDING`
+
+previous_boundary_that_succeeded:
+
+```text
+exact-Git authorization transport
+→ certified dima.6 runtime boot
+→ restricted native principal
+→ base native Metabot analytical occurrence
+→ native /api/dataset execution
+```
+
+first_wrong_transition:
+
+```text
+P17 Research Manager structured-output request
+→ provider validates response_format
+→ nested properties.proposition object lacks
+  additionalProperties=false
+→ provider rejects schema
+→ no accepted ManagerProposal
+```
+
+exact_provider_error:
+
+```text
+Invalid schema for response_format 'dima_p17_research_manager_proposal':
+In context=('properties', 'proposition'),
+'additionalProperties' is required to be supplied and to be false.
+```
+
+owner:
+`P17 MANAGER PROVIDER / STRICT STRUCTURED-OUTPUT SCHEMA`
+
+violated_invariant:
+the transport-facing JSON Schema must recursively satisfy the provider's portable strict-object
+contract while runtime Pydantic/ManagerProposal remains the semantic authority.
+
+authoritative_live_accounting:
+
+```text
+Research Manager provider attempts = 1
+accepted ManagerProposal           = 0
+Metabot analytical occurrences     = 1
+/api/dataset executions            = 1
+P17 recursive follow-up occurrences= 0
+Sol calls                          = 0
+engine builds                      = 0
+C1 calls                           = 0
+```
+
+root_cause:
+Pydantic's generated schema contained nested object structures that were semantically valid for
+runtime validation but not normalized recursively into the provider's strict structured-output
+dialect.
+
+generic_fix:
+`backend/app/v3/research_manager_provider.py::_strict_json_schema(...)` recursively:
+- sets `additionalProperties=false` on object schemas;
+- makes declared fields structurally required while preserving nullable transport representation;
+- removes provider-unsupported non-semantic schema metadata/constraints;
+- prunes unreferenced `$defs`.
+
+Runtime `ResearchManagerProposalDraft` and `ManagerProposal` validation remain semantic authority.
+No business meaning, Boyahane values, branch names, query meaning, regex/fuzzy/morphology, or
+test-specific prompt behavior enters schema normalization.
+
+focused_regression:
+`backend/tests/test_v3_p17_autonomous_provider_schema.py`
+
+provider_free_proof:
+`36141118897 = SUCCESS`
+
+governance_proof:
+`36141118945 = SUCCESS`
+
+current_family_accounting:
+
+```text
+attempt 1 / 3 = authoritative RED, root-fixed provider-free
+attempt 2 / 3 = authorized live recheck after DMP-DEC-0052 family-aware transport seal
+remaining after attempt 2 if same family RED = 1
+```
+
+next_authorization:
+`p17-manager-structured-schema--attempt-002.json`
+
+disposition:
+P17 remains NOT SEALED; P18 remains BLOCKED until autonomous cognition completes GREEN.
