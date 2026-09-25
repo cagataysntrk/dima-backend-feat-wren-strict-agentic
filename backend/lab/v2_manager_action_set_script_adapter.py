@@ -46,6 +46,51 @@ def adapt_legacy_manager_intent(
         if matching:
             cards = matching
 
+    def ledger_capability(obligation_id: str | None) -> str | None:
+        if not obligation_id:
+            return None
+        for item in payload.get("OBLIGATION_LEDGER") or ():
+            if str(item.get("obligation_id")) == str(obligation_id):
+                value = item.get("capability")
+                return str(value) if value is not None else None
+        return None
+
+    if action == "inspect_evidence" and legacy.get("evidence_ref"):
+        requested_ref = str(legacy["evidence_ref"])
+        requested_caps = {
+            str(item.get("capability"))
+            for item in payload.get("OBLIGATION_LEDGER") or ()
+            if requested_ref in set(item.get("evidence_refs") or ())
+            and item.get("capability") is not None
+        }
+        if requested_caps:
+            matching = [
+                row
+                for row in cards
+                if requested_caps.intersection(
+                    set((row.get("context") or {}).get("capabilities") or ())
+                )
+            ]
+            if matching:
+                cards = matching
+
+    if action in {"propose_branches", "resolve_semantics"}:
+        parent_id = (
+            legacy.get("branch_parent_obligation_id")
+            if action == "propose_branches"
+            else legacy.get("semantic_parent_obligation_id")
+        )
+        parent_capability = ledger_capability(parent_id)
+        if parent_capability is not None:
+            matching = [
+                row
+                for row in cards
+                if (row.get("context") or {}).get("parent_capability")
+                == parent_capability
+            ]
+            if matching:
+                cards = matching
+
     if action == "propose_branches":
         requested = {
             str(item.get("capability_key"))
