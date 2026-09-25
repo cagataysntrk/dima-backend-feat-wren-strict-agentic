@@ -2079,3 +2079,637 @@ def test_live_canary_replan_assertion_uses_runtime_selected_parent():
     assert "replan_step.branch_id != selected_parent.branch_id" in replan_slice
     assert "replan_step.branch_id != alt_a_step.branch_id" not in replan_slice
 
+
+
+# --- DMP-DEC-0053: thin investigation language / state-derived legality ---
+
+
+def _dmp0053_service(db, *, max_depth=5, followup=None):
+    store, session, _, lead, claims, claim = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=followup or PersistedFirstFollowup(db),
+        budget=ResearchReasoningBudget(
+            max_reasoning_steps=12,
+            max_followup_native_turns=6,
+            max_counter_evidence_attempts=3,
+            max_depth=max_depth,
+        ),
+        db_engine=db,
+    )
+    return store, session, lead, claims, claim, service
+
+
+def _dmp0053_run(service, session, **proposal_kwargs):
+    return service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(snap, **proposal_kwargs)
+        ),
+    )
+
+
+def test_dmp0053_initial_action_profile_is_state_projection_not_plan():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert snapshot.action_profile.legal_intents == (
+        InvestigationIntent.INVESTIGATE_GAP,
+        InvestigationIntent.STOP_INVESTIGATION,
+    )
+    source = inspect.getsource(manager_module._build_action_profile).lower()
+    for forbidden in (
+        "best",
+        "interestingness",
+        "rank",
+        "score",
+        "winner",
+        "breakdown",
+        "dimension",
+    ):
+        assert forbidden not in source
+
+
+def test_dmp0053_branch_key_on_investigate_gap_rejected_before_persistence():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    before = service._ledger.steps(session.session_id)
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="illegal-root-key",
+            objective_key="root.illegal-key",
+            intent=InvestigationIntent.INVESTIGATE_GAP,
+            branch_key="must-not-mint",
+        )
+    assert exc.value.code == "P17_BRANCH_KEY_FORBIDDEN"
+    assert service._ledger.steps(session.session_id) == before
+
+
+def test_dmp0053_parentless_explore_alternatives_rejected_before_persistence():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="floating-alt",
+            objective_key="alt.floating",
+            intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+            branch_key="floating",
+            target_kind=InvestigationTargetKind.ALTERNATIVE,
+        )
+    assert exc.value.code == "P17_INTENT_NOT_LEGAL_IN_STATE"
+    assert service._ledger.steps(session.session_id) == ()
+
+
+def test_dmp0053_explore_open_parent_mints_one_child_branch():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="root",
+        objective_key="root.gap",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    alt, task = _dmp0053_run(
+        service,
+        session,
+        proposal_id="alt",
+        objective_key="alt.one",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id,
+        branch_key="candidate-one",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    assert task is None
+    assert alt.parent_step_id == root.step_id
+    assert alt.depth == root.depth + 1
+    assert alt.branch_id != root.branch_id
+
+
+def test_dmp0053_deepen_requires_open_parent_forbids_branch_key_and_inherits():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="root",
+        objective_key="root.gap",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    with pytest.raises(ResearchManagerMaturationError) as no_parent:
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="deep-none",
+            objective_key="deep.none",
+            intent=InvestigationIntent.DEEPEN_EXPLANATION,
+        )
+    assert no_parent.value.code == "P17_PARENT_STEP_REQUIRED"
+
+    with pytest.raises(ResearchManagerMaturationError) as keyed:
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="deep-keyed",
+            objective_key="deep.keyed",
+            intent=InvestigationIntent.DEEPEN_EXPLANATION,
+            parent_step_id=root.step_id,
+            branch_key="illegal-new-branch",
+        )
+    assert keyed.value.code == "P17_BRANCH_KEY_FORBIDDEN"
+
+    deep, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="deep-good",
+        objective_key="deep.good",
+        intent=InvestigationIntent.DEEPEN_EXPLANATION,
+        parent_step_id=root.step_id,
+    )
+    assert deep.branch_id == root.branch_id
+    assert deep.depth == root.depth + 1
+
+
+def test_dmp0053_test_candidate_inherits_branch_and_stopped_candidate_rejects():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="root",
+        objective_key="root.gap",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    alt_a, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="alt-a",
+        objective_key="alt.a",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id,
+        branch_key="a",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    alt_b, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="alt-b",
+        objective_key="alt.b",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id,
+        branch_key="b",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    tested_b, task = _dmp0053_run(
+        service,
+        session,
+        proposal_id="test-b",
+        objective_key="test.b",
+        intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+        parent_step_id=alt_b.step_id,
+        target_kind=InvestigationTargetKind.EXPLANATION,
+    )
+    assert task is not None
+    assert tested_b.branch_id == alt_b.branch_id
+
+    stopped_a, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="stop-a",
+        objective_key="stop.a",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=alt_a.step_id,
+    )
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert stopped_a.branch_id in snap.investigation.stopped_branch_ids
+    assert alt_b.branch_id in snap.investigation.open_branch_ids
+
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="test-stopped-a",
+            objective_key="test.stopped.a",
+            intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            parent_step_id=alt_a.step_id,
+        )
+    assert exc.value.code == "P17_PARENT_STEP_NOT_LEGAL"
+
+
+def test_dmp0053_stop_branch_requires_open_parent_and_preserves_sibling():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    with pytest.raises(ResearchManagerMaturationError):
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="stop-floating",
+            objective_key="stop.floating",
+            intent=InvestigationIntent.STOP_BRANCH,
+        )
+
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="root",
+        objective_key="root.gap",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    a, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="a",
+        objective_key="a",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id,
+        branch_key="a",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    b, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="b",
+        objective_key="b",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id,
+        branch_key="b",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    stopped, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="stop-a",
+        objective_key="stop.a",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=a.step_id,
+    )
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert stopped.branch_id == a.branch_id
+    assert a.branch_id in snap.investigation.stopped_branch_ids
+    assert b.branch_id in snap.investigation.open_branch_ids
+
+    with pytest.raises(ResearchManagerMaturationError) as again:
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="stop-a-again",
+            objective_key="stop.a.again",
+            intent=InvestigationIntent.STOP_BRANCH,
+            parent_step_id=a.step_id,
+        )
+    assert again.value.code == "P17_PARENT_STEP_NOT_LEGAL"
+
+
+def test_dmp0053_global_stop_and_replan_never_mint_branch():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="root",
+        objective_key="root.gap",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    replanned, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="replan",
+        objective_key="replan.root",
+        intent=InvestigationIntent.REPLAN,
+        parent_step_id=root.step_id,
+    )
+    assert replanned.branch_id == root.branch_id
+    assert replanned.depth == root.depth
+
+    stopped, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="stop-all",
+        objective_key="stop.all",
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+        parent_step_id=replanned.step_id,
+    )
+    assert stopped.branch_id == root.branch_id
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert snap.terminal_stop_reason == ManagerStopReason.INCONCLUSIVE
+    assert set(snap.investigation.open_branch_ids) == {root.branch_id}
+
+
+def test_dmp0053_early_global_stop_exposes_no_new_open_branch():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    stopped, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="early-stop",
+        objective_key="stop.early",
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+    )
+    assert stopped.stop_scope.value == "INVESTIGATION"
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert snap.investigation.open_branch_ids == ()
+    assert snap.investigation.stopped_branch_ids == ()
+
+
+def test_dmp0053_foreign_obligation_parent_is_rejected():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="root",
+        objective_key="root.gap",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    proposal = recursive_proposal(
+        snap,
+        proposal_id="foreign-obligation",
+        objective_key="foreign.obligation",
+        intent=InvestigationIntent.DEEPEN_EXPLANATION,
+        parent_step_id=root.step_id,
+    ).model_copy(update={"target_parent_obligation": "g2"})
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        manager_module.resolve_investigation_topology(
+            snapshot=snap,
+            proposal=proposal,
+        )
+    assert exc.value.code == "P17_PARENT_STEP_OBLIGATION_MISMATCH"
+
+
+def test_dmp0053_max_depth_exhaustion_rejects_deeper_parent():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db, max_depth=1)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="root",
+        objective_key="root.gap",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    deep, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="depth-one",
+        objective_key="depth.one",
+        intent=InvestigationIntent.DEEPEN_EXPLANATION,
+        parent_step_id=root.step_id,
+    )
+    assert deep.depth == 1
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="depth-two",
+            objective_key="depth.two",
+            intent=InvestigationIntent.DEEPEN_EXPLANATION,
+            parent_step_id=deep.step_id,
+        )
+    assert exc.value.code == "P17_PARENT_STEP_NOT_LEGAL"
+
+
+def test_dmp0053_live_red_structure_replay_rejects_floating_alternative():
+    """Provider-free structural replay of 36149372671; no business literals."""
+
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    parent = None
+    for index in range(3):
+        step, _ = _dmp0053_run(
+            service,
+            session,
+            proposal_id=f"gap-{index}",
+            objective_key=f"gap.{index}",
+            intent=InvestigationIntent.INVESTIGATE_GAP,
+            parent_step_id=(parent.step_id if parent else None),
+        )
+        parent = step
+    _dmp0053_run(
+        service,
+        session,
+        proposal_id="stop-current",
+        objective_key="stop.current",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=parent.step_id,
+    )
+    count_before = len(service._ledger.steps(session.session_id))
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id="floating-after-stop",
+            objective_key="alternative.after.stop",
+            intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+            branch_key="new-candidate",
+            target_kind=InvestigationTargetKind.ALTERNATIVE,
+        )
+    assert exc.value.code == "P17_INTENT_NOT_LEGAL_IN_STATE"
+    assert len(service._ledger.steps(session.session_id)) == count_before
+
+
+def test_dmp0053_thin_material_cognition_view_preserves_raw_p15_record():
+    db = db_engine()
+    store, session, lead, _, _, service = _dmp0053_service(db)
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    view = next(x for x in snap.materials if x.lead_id == lead.lead_id)
+    assert view.native_name == "Native channel exploration"
+    assert not hasattr(view, "material")
+    serialized = snap.model_dump_json()
+    assert '"observations"' not in serialized
+    assert '"dataset_query"' not in serialized
+    assert '"visualization_settings"' not in serialized
+
+    raw = ResearchExplorationStore(db).for_execution_link(
+        lead.execution_link_id
+    )
+    assert raw is not None
+    assert raw.material["observations"][0]["orders"] == 34
+
+
+def test_dmp0053_new_verified_evidence_is_visible_to_later_legal_replan():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    followup = LineagedFollowup(db, store)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=followup,
+        db_engine=db,
+    )
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="evidence-root",
+        objective_key="evidence.root",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    after = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert "evi_" + "2" * 24 in after.evidence_refs
+    replanned, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="evidence-replan",
+        objective_key="evidence.replan",
+        intent=InvestigationIntent.REPLAN,
+        parent_step_id=root.step_id,
+    )
+    assert replanned.branch_id == root.branch_id
+
+
+def test_dmp0053_fake_manager_trajectory_two_alternatives_second_tested():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service, session, proposal_id="r", objective_key="r",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    a, _ = _dmp0053_run(
+        service, session, proposal_id="a", objective_key="a",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id, branch_key="a",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    b, _ = _dmp0053_run(
+        service, session, proposal_id="b", objective_key="b",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id, branch_key="b",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    tested, _ = _dmp0053_run(
+        service, session, proposal_id="tb", objective_key="tb",
+        intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+        parent_step_id=b.step_id,
+    )
+    deep, _ = _dmp0053_run(
+        service, session, proposal_id="db", objective_key="db",
+        intent=InvestigationIntent.DEEPEN_EXPLANATION,
+        parent_step_id=tested.step_id,
+    )
+    _dmp0053_run(
+        service, session, proposal_id="sa", objective_key="sa",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=a.step_id,
+    )
+    _dmp0053_run(
+        service, session, proposal_id="sg", objective_key="sg",
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+        parent_step_id=deep.step_id,
+    )
+    assert tested.branch_id == deep.branch_id == b.branch_id
+
+
+def test_dmp0053_fake_manager_counter_evidence_retains_sibling_until_stop():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service, session, proposal_id="r", objective_key="r",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    a, _ = _dmp0053_run(
+        service, session, proposal_id="a", objective_key="a",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id, branch_key="a",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    b, _ = _dmp0053_run(
+        service, session, proposal_id="b", objective_key="b",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id, branch_key="b",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    counter, _ = _dmp0053_run(
+        service, session, proposal_id="counter", objective_key="counter",
+        intent=InvestigationIntent.SEEK_COUNTER_EVIDENCE,
+        parent_step_id=a.step_id,
+    )
+    mid = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert a.branch_id in mid.investigation.open_branch_ids
+    assert b.branch_id in mid.investigation.open_branch_ids
+    assert counter.branch_id == a.branch_id
+    _dmp0053_run(
+        service, session, proposal_id="stop", objective_key="stop",
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+        parent_step_id=b.step_id,
+    )
+
+
+def test_dmp0053_fake_manager_honest_early_no_gain_stop():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, task = _dmp0053_run(
+        service, session, proposal_id="r", objective_key="r",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    assert task is not None
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    proposal = ManagerProposal(
+        proposal_id="early-no-gain",
+        source_revision=snap.source_revision,
+        target_parent_obligation="g1",
+        action=ManagerAction.STOP,
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+        parent_step_id=root.step_id,
+        target_kind=InvestigationTargetKind.GAP,
+        objective_key="stop.no-gain",
+        rationale="No material information gain remains.",
+        inspected_evidence_refs=snap.evidence_refs,
+        inspected_claim_refs=tuple(x.claim_id for x in snap.claims),
+        inspected_material_refs=snap.material_refs,
+        stop_reason=ManagerStopReason.NO_MEANINGFUL_GAIN,
+    )
+    stopped, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(lambda _: proposal),
+    )
+    assert stopped.stop_reason == ManagerStopReason.NO_MEANINGFUL_GAIN
+    assert service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    ).terminal_stop_reason == ManagerStopReason.NO_MEANINGFUL_GAIN
+
+
+def test_dmp0053_store_persists_resolved_topology_without_reinterpreting_branch_key():
+    source = inspect.getsource(manager_module.ResearchReasoningStore)
+    assert "topology_for" not in source
+    create = inspect.getsource(
+        manager_module.ResearchReasoningStore.create_step
+    )
+    assert "topology: ResolvedInvestigationTopology" in create
+    assert "proposal.branch_key" not in create
