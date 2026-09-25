@@ -15,6 +15,7 @@ from typing import Any, Callable, Literal
 from pydantic import Field, model_validator
 
 from app.v2.manager_action_availability import (
+    AdaptiveDirectiveDispositionState,
     ManagerActionAvailability,
     ManagerActionAvailabilityContext,
     ManagerActionAvailabilityProfile,
@@ -523,6 +524,8 @@ def _post_acceptance_native_schema(
     hypothesis_refs: tuple[str, ...] = (),
     pending_relation_hypothesis_refs: tuple[str, ...] = (),
     pending_relation_evidence_refs: tuple[str, ...] = (),
+    directive_disposition_ids: tuple[str, ...] = (),
+    directive_disposition_evidence_refs: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Expose only actions that are legal after AcceptedTurnContract commit.
 
@@ -636,6 +639,15 @@ def _post_acceptance_native_schema(
                 },
             }
         )
+
+    constrain_nullable_string(
+        "directive_id",
+        directive_disposition_ids,
+    )
+    constrain_nullable_string(
+        "directive_evidence_ref",
+        directive_disposition_evidence_refs,
+    )
 
     if root_cause_enabled:
         constrain_nullable_string(
@@ -1393,6 +1405,45 @@ class ResearchManagerLoop:
                 )
             )
 
+        adaptive_disposition_states: list[AdaptiveDirectiveDispositionState] = []
+        if contract is not None and evidence_store is not None and effective_refs:
+            evidence_by_ref_for_directives = {}
+            for ref in effective_refs:
+                try:
+                    evidence_by_ref_for_directives[ref] = evidence_store.get(ref)
+                except Exception:
+                    continue
+            for directive in contract.research_directives:
+                if (
+                    directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE
+                    or directive.directive_id not in open_dispositions
+                ):
+                    continue
+                eligible_refs = tuple(
+                    ref
+                    for ref in effective_refs
+                    if (
+                        ref in evidence_by_ref_for_directives
+                        and getattr(
+                            evidence_by_ref_for_directives[ref],
+                            "verified",
+                            False,
+                        )
+                        and self._evidence_belongs_to_parent_lineage(
+                            runtime=runtime,
+                            evidence=evidence_by_ref_for_directives[ref],
+                            parent_obligation_id=directive.parent_obligation_id,
+                        )
+                    )
+                )
+                adaptive_disposition_states.append(
+                    AdaptiveDirectiveDispositionState(
+                        directive_id=directive.directive_id,
+                        parent_obligation_id=directive.parent_obligation_id,
+                        eligible_evidence_refs=eligible_refs,
+                    )
+                )
+
         evidence_grounded_parent_ids: list[str] = []
         ledger = runtime.ledger
         if ledger is not None and evidence_store is not None and effective_refs:
@@ -1427,6 +1478,7 @@ class ResearchManagerLoop:
             fresh_disclosed_verified=fresh_verified,
             open_adaptive_directive_count=open_adaptive,
             open_adaptive_parent_obligation_ids=open_adaptive_parent_ids,
+            adaptive_disposition_states=tuple(adaptive_disposition_states),
             evidence_grounded_parent_obligation_ids=tuple(
                 dict.fromkeys(evidence_grounded_parent_ids)
             ),
@@ -1662,6 +1714,14 @@ class ResearchManagerLoop:
             ),
             pending_relation_evidence_refs=(
                 availability.pending_relation_evidence_refs
+            ),
+            directive_disposition_ids=(
+                (availability.directive_disposition_id,)
+                if availability.directive_disposition_id is not None
+                else ()
+            ),
+            directive_disposition_evidence_refs=(
+                availability.directive_disposition_evidence_refs
             ),
         )
         system_prompt = (
