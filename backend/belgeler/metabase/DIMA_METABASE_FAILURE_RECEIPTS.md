@@ -4583,3 +4583,121 @@ next_authorization:
 
 status:
 `ROOT-FIXED PROVIDER-FREE / LIVE ATTEMPT 2 AUTHORIZED`.
+
+
+---
+
+## DMP-P17-FAMILY-INVESTIGATION-LANGUAGE-001 — typed move legality / accidental branch mint
+
+date: 2026-09-25  
+failure_family_id: `p17-investigation-language-legality`  
+attempt_in_family: `1 / 3`  
+authoritative run: `36149372671 = FAILURE`  
+tested SHA: `f514dd53d978c38d27e62c3cf36f6f4da5de5415`  
+status: `ROOT FIX IN DEVELOPMENT / LIVE RECHECK PENDING`
+
+previous_boundaries_that_succeeded:
+
+```text
+family-aware exact-Git authorization
+→ provider strict JSON schema
+→ provider semantic envelope
+→ 8 accepted manager calls
+→ certified dima.6 runtime
+→ native Metabot /api/dataset work
+→ 3 P17 native follow-ups
+→ 4 VERIFIED native occurrences including base
+→ new Evidence reached a later manager turn
+→ bounded termination
+```
+
+first_wrong_transition:
+
+```text
+LLM emits typed proposal
+→ proposal is structurally accepted
+→ current P17 language admits a semantically illegal topology combination
+→ store/topology path can mint branch identity from loosely supplied branch_key
+→ persisted InvestigationGraph is structurally weak
+→ trajectory-invariant evaluator rejects final graph
+```
+
+owner:
+`P17 TYPED INVESTIGATION LANGUAGE`
+
+violated_invariant:
+
+```text
+MODEL CHOOSES WHAT TO INVESTIGATE.
+DETERMINISTIC P17 STATE OWNS WHICH MOVE COMBINATIONS ARE LEGAL.
+branch_key alone never means "create a branch".
+```
+
+authoritative_live_accounting:
+
+```text
+manager calls                    = 8
+native P17 follow-ups            = 3
+VERIFIED native occurrences      = 4 including base
+new Evidence reached later turn  = YES
+bounded termination              = YES
+P14 immutable                    = YES
+P16 sole claim authority         = YES
+native analytics only            = YES
+single receipt family            = YES
+P13 hot path                     = 0
+second native executor           = 0
+Dima Python analytics            = 0
+Wren fallback                    = 0
+raw SQL fallback                 = 0
+admin analytical fallback        = 0
+```
+
+observed_structural_trajectory:
+
+```text
+INVESTIGATE_GAP
+→ INVESTIGATE_GAP
+→ INVESTIGATE_GAP
+→ STOP_BRANCH
+→ parentless EXPLORE_ALTERNATIVES
+→ DEEPEN_EXPLANATION
+→ STOP_BRANCH
+→ STOP_INVESTIGATION
+```
+
+The model exposed the contract gap. It is not classified as a Metabase, Metabot, native execution,
+receipt, P16, P19, or analytical-engine failure.
+
+generic_fix:
+
+```text
+ResearchManagerSnapshot
+→ transient InvestigationActionProfile
+→ legal intents / legal existing parents / branch behavior only
+→ model chooses one move
+→ deterministic resolve_investigation_topology exactly once
+→ ResolvedInvestigationTopology
+→ store persists resolution without branch reinterpretation
+```
+
+Branch opening is intent-semantic. `EXPLORE_ALTERNATIVES` is branch-opening; ordinary gap/deepen/test/
+counter/replan/claim/stop moves cannot mint a branch by supplying a string field. Global stop cannot
+expose a compatibility branch value as a new open branch.
+
+secondary_boundary_cleanup:
+the full persisted P15 native payload was too permissive as the default manager cognition packet.
+This is recorded as design risk, not claimed as the RED root cause. Durable raw P15 material remains
+unchanged; manager cognition receives a thin source-backed provenance/descriptor projection only.
+
+focused_regression:
+- DMP-0053 adversarial legality matrix in `test_v3_p17_research_manager.py`;
+- structural replay of `36149372671` rejects the illegal parentless alternative before persistence;
+- multiple legal fake-manager trajectories remain valid;
+- thin material projection retains raw durable P15 material out of the cognition packet.
+
+next_authorization:
+after provider-free P17/P16/P15/P14 + evaluator + provider schema + governance GREEN, one live
+`p17-investigation-language-legality / attempt 2` is authorized.
+
+P18 remains BLOCKED.
