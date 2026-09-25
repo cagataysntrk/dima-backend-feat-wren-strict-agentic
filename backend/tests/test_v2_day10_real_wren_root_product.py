@@ -780,10 +780,32 @@ def test_d10_s_real_wren_state_aware_action_profile_reaches_report(
     )
 
     assert response.lane == ProductLane.RESEARCH
-    assert response.status == ProductStatus.REPORT
-    assert response.terminal_receipt.verified_complete is True
     result = research_lane.last_result
     assert result is not None
+    diagnostic = {
+        "status": response.status.value,
+        "terminal": response.terminal_receipt.model_dump(mode="json"),
+        "snapshot": result.runtime.snapshot.model_dump(mode="json"),
+        "ledger": [
+            {
+                "id": item.obligation_id,
+                "status": item.status.value,
+                "evidence_refs": list(item.evidence_refs),
+            }
+            for item in result.ledger.items
+        ],
+        "actions": list(manager.actions),
+        "observations": list(result.outcome.observations)[-12:],
+        "findings": [
+            {
+                "label": item.epistemic_label.value,
+                "evidence_refs": list(item.evidence_refs),
+            }
+            for item in result.findings
+        ],
+    }
+    assert response.status == ProductStatus.REPORT, diagnostic
+    assert response.terminal_receipt.verified_complete is True, diagnostic
     assert result.runtime.snapshot.manager_turns <= 6
     assert result.runtime.snapshot.research_manager_turns == 2
     assert manager.actions == [
