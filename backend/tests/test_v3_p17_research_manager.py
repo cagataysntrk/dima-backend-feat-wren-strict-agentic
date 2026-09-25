@@ -302,7 +302,16 @@ class PersistedFirstFollowup:
         self.db = db
         self.calls = 0
 
-    def execute(self, *, session, step, task, principal):
+    def execute(
+        self,
+        *,
+        session,
+        step,
+        task,
+        principal,
+        native_session_token=None,
+    ):
+        del native_session_token
         self.calls += 1
         with Session(self.db) as s:
             step_row = s.get(ResearchReasoningStepRecord, step.step_id)
@@ -318,6 +327,105 @@ class PersistedFirstFollowup:
             native_execution_refs=(f"native:{task.task_id}",),
             material_refs=(f"material:{task.task_id}",),
             evidence_refs=(f"evidence:{task.task_id}",),
+        )
+
+
+class LineagedFollowup:
+    """Provider-free test double that persists a real P17 follow-up occurrence."""
+
+    def __init__(self, db, store):
+        self.db = db
+        self.store = store
+        self.link = None
+        self.lead = None
+
+    def execute(
+        self,
+        *,
+        session,
+        step,
+        task,
+        principal,
+        native_session_token=None,
+    ):
+        del principal, native_session_token
+        request_id = f"p17-test-{step.step_id}-{task.task_id}"
+        conversation = session.native_conversation
+        assert conversation is not None
+        link = self.store.begin_delegation(
+            session=session,
+            obligation_id=task.parent_obligation_id,
+            dima_request_id=request_id,
+            dima_trace_id=request_id + "-trace",
+            native_conversation_id=conversation.conversation_id,
+            execution_kind="P17_FOLLOWUP",
+            reasoning_step_id=step.step_id,
+            investigation_task_id=task.task_id,
+        )
+        query = {
+            "database": 1,
+            "type": "query",
+            "query": {
+                "source-table": 10,
+                "aggregation": [["count"]],
+                "filter": ["=", ["field", 20, None], "Partner"],
+            },
+        }
+        link = self.store.mark_candidate(
+            link.id,
+            native_query_id="p17-followup-query",
+            native_query=query,
+            query_fingerprint=h(query),
+        )
+        self.store.mark_execution_started(
+            link.id,
+            native_subject_ref="metabase-user:7",
+        )
+        result = {
+            "database_id": 1,
+            "row_count": 1,
+            "data": {"rows": [["Partner", 41]]},
+        }
+        self.store.mark_executed(
+            link.id,
+            native_subject_ref="metabase-user:7",
+            runtime_identity={
+                "substrate": "metabase-native",
+                "runtime_version": "v0.63.18-dima.6",
+                "image_digest": "sha256:" + "b" * 64,
+                "database_id": "metabase:1",
+            },
+            result_payload=result,
+            result_hash=h(result),
+            executed_at=STAMP + timedelta(minutes=1),
+        )
+        evidence_id = "evi_" + "2" * 24
+        receipt_id = "dqr_" + "2" * 24
+        link = self.store.mark_verified(
+            link.id,
+            receipt_id=receipt_id,
+            evidence_id=evidence_id,
+        )
+        lead = ResearchExplorationStore(self.db).persist(
+            session_id=session.session_id,
+            obligation_id=task.parent_obligation_id,
+            execution_link_id=link.id,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            query_fingerprint=link.native_query_fingerprint,
+            source_evidence_refs=(evidence_id,),
+            material={
+                "name": "P17 counter-evidence material",
+                "observations": [{"channel": "Partner", "orders": 41}],
+            },
+            now=STAMP + timedelta(minutes=2),
+        )
+        self.link = link
+        self.lead = lead
+        return FollowupResult(
+            native_execution_refs=(str(link.id),),
+            material_refs=(lead.lead_id,),
+            evidence_refs=(evidence_id,),
         )
 
 
@@ -797,3 +905,103 @@ def test_p17_has_no_second_analytics_planner_or_forbidden_analytical_dependencie
     assert imported_roots.isdisjoint(
         {"numpy", "pandas", "scipy", "statistics"}
     )
+
+def test_followup_lineage_preserves_p15_base_and_can_challenge_claim_via_p16():
+    db = db_engine()
+    store, session, base_link, _, claims, claim = setup_state(db)
+    followup = LineagedFollowup(db, store)
+
+    def counter(snapshot):
+        return ManagerProposal(
+            proposal_id="counter-lineage",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation="g1",
+            action=ManagerAction.SEEK_COUNTER_EVIDENCE,
+            objective_key="claim.counter.partner-orders",
+            bounded_objective=(
+                "Check whether Partner can exceed Web in a bounded native slice."
+            ),
+            rationale="Seek a material challenge to the supported channel claim.",
+            inspected_evidence_refs=snapshot.evidence_refs,
+            inspected_claim_refs=(claim.claim_id,),
+            inspected_material_refs=snapshot.material_refs,
+            expected_information_gain=(
+                "Determine whether the current supported claim becomes contested."
+            ),
+            counter_to_claim_id=claim.claim_id,
+        )
+
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=followup,
+        db_engine=db,
+    )
+    step, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(counter),
+    )
+    assert step.status == ReasoningStepStatus.COMPLETED
+    assert task is not None
+    assert followup.link is not None
+    assert followup.link.execution_kind == "P17_FOLLOWUP"
+    assert followup.link.reasoning_step_id == step.step_id
+    assert followup.link.investigation_task_id == task.task_id
+
+    still_base = store.verified_link(
+        session_id=session.session_id,
+        obligation_id="g1",
+    )
+    assert still_base.id == base_link.id
+    assert still_base.execution_kind == "P14_BASE"
+
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert "evi_" + "2" * 24 in snap.evidence_refs
+    assert followup.lead is not None
+    assert followup.lead.lead_id in snap.material_refs
+    material = next(
+        x for x in snap.materials if x.lead_id == followup.lead.lead_id
+    )
+    assert material.material["observations"][0]["orders"] == 41
+
+    contested = claims.link_evidence(
+        session_id=session.session_id,
+        claim_id=claim.claim_id,
+        evidence_id="evi_" + "2" * 24,
+        relation=ClaimEvidenceRelation.CHALLENGES,
+        principal=principal(),
+    )
+    assert contested.epistemic_state == ClaimEpistemicState.CONTESTED
+    assert {x.relation for x in contested.evidence_links} == {
+        ClaimEvidenceRelation.SUPPORTS,
+        ClaimEvidenceRelation.CHALLENGES,
+    }
+
+    restored = store.load(
+        session.session_id,
+        tenant=f"id:{TENANT}",
+        principal=str(USER),
+    )
+    assert restored.obligations[0].state == ObligationState.VERIFIED
+    assert restored.stopping.status.value == "COMPLETE"
+
+
+def test_followup_adapter_delegates_to_shared_occurrence_runner_only():
+    import app.v3.research_followup as followup_module
+
+    source = inspect.getsource(followup_module)
+    assert "NativeResearchOccurrenceRunner" in source
+    assert "self._runner.execute" in source
+    for forbidden in (
+        "execute_dataset(",
+        "bridge.invoke(",
+        "DimaQueryReceiptSealer",
+        "MetabaseProjectionCompiler",
+        "MetabaseCanonicalizer",
+    ):
+        assert forbidden not in source
+
