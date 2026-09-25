@@ -83,7 +83,7 @@ def test_fresh_disclosed_evidence_removes_inspect_and_known_handle_rediscovery()
             fresh_disclosed_evidence_ref="evi_fresh",
             fresh_disclosed_verified=True,
             open_adaptive_directive_count=1,
-            remaining_manager_turns=2,
+            remaining_research_turns=2,
         )
     )
 
@@ -103,7 +103,7 @@ def test_old_undisclosed_uninspected_evidence_keeps_explicit_inspection():
     profile = ManagerActionAvailability.evaluate(
         ManagerActionAvailabilityContext(
             inspectable_old_evidence_refs=("evi_old",),
-            remaining_manager_turns=3,
+            remaining_research_turns=3,
         )
     )
 
@@ -124,7 +124,7 @@ def test_genuine_missing_root_shape_keeps_derived_semantic_expansion_available()
             effective_inspected_verified_evidence_refs=("evi_fresh",),
             fresh_disclosed_evidence_ref="evi_fresh",
             fresh_disclosed_verified=True,
-            remaining_manager_turns=3,
+            remaining_research_turns=3,
         )
     )
 
@@ -141,7 +141,7 @@ def test_no_root_authority_removes_root_only_actions_without_pruning_generic_act
     profile = ManagerActionAvailability.evaluate(
         ManagerActionAvailabilityContext(
             effective_inspected_verified_evidence_refs=("evi_1",),
-            remaining_manager_turns=4,
+            remaining_research_turns=4,
         )
     )
 
@@ -166,7 +166,7 @@ def test_existing_hypothesis_removes_initial_hypothesis_actions_only():
             effective_inspected_verified_evidence_refs=("evi_fresh",),
             fresh_disclosed_evidence_ref="evi_fresh",
             fresh_disclosed_verified=True,
-            remaining_manager_turns=2,
+            remaining_research_turns=2,
         )
     )
 
@@ -183,7 +183,7 @@ def test_strict_schema_matches_runtime_profile_and_never_advertises_user_source_
             effective_inspected_verified_evidence_refs=("evi_fresh",),
             fresh_disclosed_evidence_ref="evi_fresh",
             fresh_disclosed_verified=True,
-            remaining_manager_turns=2,
+            remaining_research_turns=2,
         )
     )
     schema = _post_acceptance_native_schema(
@@ -206,7 +206,7 @@ def test_old_evidence_schema_constrains_inspection_to_server_selected_refs():
     profile = ManagerActionAvailability.evaluate(
         ManagerActionAvailabilityContext(
             inspectable_old_evidence_refs=("evi_old_1", "evi_old_2"),
-            remaining_manager_turns=3,
+            remaining_research_turns=3,
         )
     )
     schema = _post_acceptance_native_schema(
@@ -231,7 +231,7 @@ def test_tight_revision_headroom_prunes_separate_hypothesis_but_keeps_composite(
             fresh_disclosed_evidence_ref="evi_fresh",
             fresh_disclosed_verified=True,
             open_adaptive_directive_count=1,
-            remaining_manager_turns=1,
+            remaining_research_turns=1,
         )
     )
 
@@ -240,7 +240,7 @@ def test_tight_revision_headroom_prunes_separate_hypothesis_but_keeps_composite(
     assert profile.reasons_for_unavailable("propose_hypothesis") == (
         ActionAvailabilityReason.INSUFFICIENT_HEADROOM_FOR_SEPARATE_HYPOTHESIS.value,
     )
-    assert profile.remaining_manager_turns == 1
+    assert profile.remaining_research_turns == 1
 
 
 def test_zero_future_turns_prunes_composite_without_raising_manager_ceiling():
@@ -250,7 +250,7 @@ def test_zero_future_turns_prunes_composite_without_raising_manager_ceiling():
             effective_inspected_verified_evidence_refs=("evi_fresh",),
             fresh_disclosed_evidence_ref="evi_fresh",
             fresh_disclosed_verified=True,
-            remaining_manager_turns=0,
+            remaining_research_turns=0,
         )
     )
 
@@ -269,7 +269,7 @@ def test_root_ready_does_not_hide_nonroot_semantic_expansion_parent():
             fresh_disclosed_verified=True,
             open_adaptive_directive_count=1,
             semantic_expansion_parent_obligation_ids=("U_REL",),
-            remaining_manager_turns=3,
+            remaining_research_turns=3,
         )
     )
 
@@ -303,7 +303,7 @@ def test_no_eligible_semantic_parent_removes_resolve_even_with_root_evidence():
             fresh_disclosed_evidence_ref="evi_root",
             fresh_disclosed_verified=True,
             semantic_expansion_parent_obligation_ids=(),
-            remaining_manager_turns=3,
+            remaining_research_turns=3,
         )
     )
 
