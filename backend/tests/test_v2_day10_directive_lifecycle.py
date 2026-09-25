@@ -325,16 +325,27 @@ def test_action_availability_projects_only_parent_lineage_evidence_for_open_dire
         llm=_NoopLLM(),
         source_spans=SourceSpanRegistry(),
     )
-    profile = loop._action_availability(
+    action_set = loop._action_set(
         runtime=runtime,
+        observations=[],
+        action_frontier={"progress_fingerprint": "prog-directive-lineage"},
         research_state=None,
         hypothesis_ledgers={},
         evidence_store=store,
         research_tasks=(),
+        governed_semantic_inventory=(),
     )
 
-    assert "disposition_research_directive" in profile.available_actions
-    assert profile.directive_disposition_id == "R1"
-    assert profile.directive_disposition_parent_obligation_id == "U1"
-    assert profile.directive_disposition_evidence_refs == ("E1",)
-    assert "E_ROOT" not in profile.directive_disposition_evidence_refs
+    dispositions = [
+        item
+        for item in action_set.action_instances
+        if item.action_kind == "disposition_research_directive"
+    ]
+    assert len(dispositions) == 1
+    assert dispositions[0].binding("directive_id") == "R1"
+    assert dispositions[0].binding("parent_obligation_id") == "U1"
+    assert dispositions[0].binding("evidence_ref") == "E1"
+    assert all(
+        item.binding("evidence_ref") != "E_ROOT"
+        for item in dispositions
+    )
