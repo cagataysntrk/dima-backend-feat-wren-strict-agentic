@@ -1,87 +1,79 @@
 # DIMA + METABASE — CURRENT PRODUCT PLAN OVERLAY
 
-## P18 PERMANENTLY SEALED / HARDENED — P19 PRE-DEVELOPMENT COMPLETE
+## CURRENT P19 AUTHORITY — PROVIDER-FREE GREEN / LIVE CANARY PENDING
 
 ```text
-P18 BUSINESS RELATIONSHIP POLICY
-!=
-METABASE PHYSICAL RELATIONSHIP GRAPH.
+P14 = SEALED
+P15 = SEALED
+P16 = SEALED
+P17 = SEALED
+P18 = SEALED / HARDENED
 
-P18 VALIDATES GOVERNED BUSINESS INTERPRETATION POLICY.
-P18 DOES NOT DISCOVER OR EXECUTE JOINS.
-NO TABLE/FIELD JOIN GRAPH IN DIMA.
-NO RELATIONSHIP SCORING.
-NO FUZZY RELATIONSHIP INFERENCE.
-NO CAUSALITY IN P18.
-
-METABASE + METABOT REMAIN THE ANALYTICAL ENGINE.
+DMP-DEC-0055                       = RATIFIED
+P19 implementation                 = PROVIDER-FREE GREEN
+P19 live canary                    = PENDING
+P19                               = NOT YET SEALED
+P20                               = NOT STARTED
+UI / UX                           = FORBIDDEN UNTIL P21 SEALED
 ```
 
-P18 is frozen at one durable policy authority + one durable policy-use lineage + one transient typed
-requirement. The two final audit hardenings are closed. No P18B/P18C is authorized.
+Permanent boundary:
 
-P19 pre-development review is complete. P19 production implementation has **not** started and is
-**not authorized** by this handoff.
+```text
+METABASE + METABOT = ANALYTICAL ENGINE
+DIMA P19           = EPISTEMIC AUTHORITY
+
+P17 InvestigationGraph != P19 causal structure.
+P18 policy direction       != causal direction.
+CORRELATION                != CAUSE.
+NO LLM NUMERIC CONFIDENCE / CONTRIBUTION / EFFECT / PROBABILITY.
+MULTIPLE MATERIAL CONTRIBUTORS and INCONCLUSIVE are legal terminal outcomes.
+```
 
 ## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
 
-> **FORWARD AUTHORITY.** This block overrides all historical current/next/blocked text below it.
+> **FORWARD AUTHORITY.** This block overrides historical current/next/blocked text below it.
 
 ```text
 branch                                = feat/dima-metabase-platform
-branch HEAD at P18 behavior seal      = a0ec74a56f33993ebde836dc9da4430673d9308f
-P18 product/code candidate            = a0ec74a56f33993ebde836dc9da4430673d9308f
-Alembic head                          = f5a1d7c9e2b4
+branch HEAD before docs repin         = b3247b439d7e5fd94f9d30ee62cfd5190d636693
+current P19 product/code candidate    = d36fc0e82eb62965399cc6540f07e8427bbc7ce0
+P19 provider-free                     = 36182613934 SUCCESS
+governance                            = 36182613920 SUCCESS
 
-sealed P17 product/code candidate     = 3664d3d706d70225323126cbc994b8c2c732aaf4
-P17 live GREEN                        = 36160559037 SUCCESS
-
-P18 final provider-free               = 36178041336 SUCCESS
-P18 final governance                  = 36178041329 SUCCESS
-
-P18 focused                           = 24 PASS
-P17 provider-free regressions         = 95 PASS
-P16 claim-lineage                     = 6 PASS
-P15 native Exploration                = 5 PASS
-P14 native-direct                     = 17 PASS
+P19 focused                           = 25 PASS
+P19 provider/evaluator                = 17 PASS
+P18                                   = 24 PASS
+P17                                   = 95 PASS
+P16                                   = 6 PASS
+P15                                   = 5 PASS
+P14                                   = 17 PASS
 
 engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
 engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
 engine certification                  = 36042062775 SUCCESS
-model calls during P18 hardening      = 0
-Luna / Sol / C1                       = 0 / 0 / 0
-engine builds                         = 0
-Metabase modification                 = 0
+engine changes/builds during P19      = 0 / 0
+Metabase core modification            = 0
+P19 analytical execution              = 0
+Luna / Sol / C1 before live canary    = 0 / 0 / 0
 
-tenant-first implicit resolution      = SEALED
-explicit foreign policy-id rejection  = SEALED
-exact retired-policy use provenance   = SEALED
-historical policy-use immutability    = SEALED
+P19 durable record types              = 3
+HypothesisRecord                      = PRESENT
+HypothesisGroundingLink               = PRESENT
+RootCauseAssessment                   = PRESENT
 
-P14                                   = SEALED
-P15                                   = SEALED
-P16                                   = SEALED
-P17                                   = SEALED
-P18                                   = SEALED / HARDENED
-
-P18 development                       = PERMANENT STOP
-P18B / P18C                           = NOT AUTHORIZED
-P19 pre-development                   = COMPLETE
-P19 implementation                    = NOT AUTHORIZED
-P19 production code                   = NOT STARTED
-UI / UX                               = FORBIDDEN UNTIL P21 SEALED
+next bounded action                    = one DMP-DEC-0055 Luna canary
+max model proposal calls              = 2
+Sol / C1                              = 0 / 0
+P20 implementation                    = NOT AUTHORIZED
 ```
 
 ### CURRENT RETURN POINT
 
-The next permitted action requires supervisor authorization for the minimal P19 implementation
-vertical defined in:
-
-`backend/belgeler/metabase/predev/P19_HYPOTHESIS_ROOT_CAUSE_PREDEVELOPMENT_REVIEW.md`
-
-Do not reopen P18 merely for size/refactoring/polish. Do not build P19 production code until the next
-supervisor decision.
+Complete the single bounded DMP-DEC-0055 Luna epistemic canary. Do not reopen P14-P18 and do not
+redesign the provider-free P19 architecture unless the live canary exposes a concrete first wrong
+transition. On live GREEN, seal P19 and complete **P20 pre-development review only**.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 
