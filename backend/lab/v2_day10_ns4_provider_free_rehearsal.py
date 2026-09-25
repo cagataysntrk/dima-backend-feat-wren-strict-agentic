@@ -23,7 +23,7 @@ import json
 from pathlib import Path
 
 from app.v2.context_provider import ContextProviderV0
-from app.v2.manager_models import ManagerState, ObligationStatus
+from app.v2.manager_models import ManagerCapabilityKey, ManagerState, ObligationStatus
 from app.v2.model_policy import ModelProfile, ModelRole
 from app.v2.models import EpistemicLabel, TenantAnalyticsRuntimeV0
 from app.v2.product_coordinator import ProductCoordinator
