@@ -68,8 +68,16 @@ def test_revision_path_reaches_same_governed_product_within_global_six_turns():
 
     assert receipt["provider_calls"] == 0
     assert receipt["preacceptance_model_calls"] == 4
-    assert receipt["manager_turn_total"] <= 6
+    assert receipt["research_manager_calls"] == 2
+    assert receipt["manager_turn_total"] == 6
     assert receipt["manager_turn_ceiling"] == 6
+    assert tuple(receipt["research_cognition_sequence"]) == (
+        ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
+        ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value,
+    )
+    assert len(receipt["directive_branch_task_refs"]) == 1
+    assert receipt["hypothesis_next_tests"] == 1
+    assert receipt["evidence_relations"] == 1
     assert receipt["completion_gate_final_state"] == "COMPLETED"
     assert receipt["root_status"] == "VERIFIED"
     assert receipt["directive_final_status"] == "APPLIED"
