@@ -13,7 +13,6 @@ from lab.metabase.p17.authorization_transport import (
     EXPECTED_BRANCH,
     EXPECTED_DECISION,
     EXPECTED_MODEL,
-    EXPECTED_PRODUCT_SHA,
     HISTORICAL_RECEIPTS,
     AuthorizationTransportError,
     verify_dispatch_authorization,
@@ -75,7 +74,7 @@ def _receipt(
     failure_family_id: str = CURRENT_FAILURE_FAMILY_ID,
     attempt_in_family: int = CURRENT_ATTEMPT_IN_FAMILY,
     authorization_id: str | None = None,
-    candidate_product_sha: str = EXPECTED_PRODUCT_SHA,
+    candidate_product_sha: str | None = None,
     dispatch_parent_sha: str | None = None,
     branch: str = EXPECTED_BRANCH,
     decision: str = EXPECTED_DECISION,
@@ -94,7 +93,7 @@ def _receipt(
         "failure_family_id": failure_family_id,
         "attempt_in_family": attempt_in_family,
         "authorization_id": authorization_id,
-        "candidate_product_sha": candidate_product_sha,
+        "candidate_product_sha": candidate_product_sha or parent,
         "dispatch_parent_sha": dispatch_parent_sha or parent,
         "provider_free_run_id": 123456789,
         "governance_run_id": 987654321,
@@ -105,7 +104,7 @@ def _receipt(
         "c1_budget": c1_budget,
         "purpose": "bounded autonomous P17 family recovery certification",
         "previous_red_run_id": 36140130559,
-        "root_fix_sha": EXPECTED_PRODUCT_SHA,
+        "root_fix_sha": candidate_product_sha or parent,
     }
 
 
@@ -259,7 +258,7 @@ def test_wrong_family_filename_is_rejected(tmp_path: Path):
         ("branch", "wrong-branch", "branch"),
         ("failure_family_id", "p17-native-analytics", "failure_family_id"),
         ("attempt_in_family", 3, "attempt_in_family"),
-        ("decision", "DMP-DEC-0051", "decision"),
+        ("decision", "DMP-DEC-0052", "decision"),
         ("model", "other-model", "model"),
     ],
 )
@@ -429,3 +428,19 @@ def test_repository_structured_schema_attempt_002_receipt_is_immutable_evidence(
     )
     assert payload["provider_free_run_id"] == 36147150264
     assert payload["previous_red_run_id"] == 36140130559
+
+
+def test_repository_manager_semantic_output_attempt_002_receipt_is_immutable_evidence():
+    path = Path(
+        "lab/metabase/p17/authorizations/"
+        "p17-manager-semantic-output--attempt-002.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["decision"] == "DMP-DEC-0052"
+    assert payload["failure_family_id"] == "p17-manager-semantic-output"
+    assert payload["attempt_in_family"] == 2
+    assert payload["authorization_id"] == (
+        "p17-manager-semantic-output--attempt-002"
+    )
+    assert payload["previous_red_run_id"] == 36147620834
