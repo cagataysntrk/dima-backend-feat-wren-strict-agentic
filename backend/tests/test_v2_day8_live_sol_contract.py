@@ -29,12 +29,11 @@ def test_provider_free_scripted_sentinel_proves_the_live_state_machine():
     result = run_scenario(llm)
 
     assert result["status"] == "pass"
-    assert llm.calls == 5
+    assert llm.calls == 4
     assert result["action_sequence"] == [
         "propose_hypothesis",
         "propose_hypothesis_next_test",
         "run_analytics",
-        "inspect_evidence",
         "propose_hypothesis_evidence_relation",
     ]
     assert result["followup_verified"] is True
@@ -45,20 +44,24 @@ def test_provider_free_scripted_sentinel_proves_the_live_state_machine():
     assert result["synthetic_governed_query_calls"] == 2
     assert result["query_contract_count"] == 2
     assert result["next_test_rejection_count"] == 0
+    assert result["redundant_fresh_inspect_absent"] is True
 
 
-def test_live_harness_rejects_inapplicable_proposal_and_allows_bounded_replan():
+def test_live_harness_hides_inapplicable_next_test_before_cognition():
     llm = ScriptedSentinelLLM(reject_next_test_once=True)
     result = run_scenario(llm)
 
     assert result["status"] == "pass"
-    assert llm.calls == 6
-    assert result["next_test_rejection_count"] == 1
-    assert "TREND" in result["next_test_rejections"][0]
-    assert result["action_sequence"][:3] == [
+    assert llm.calls == 4
+    assert result["next_test_rejection_count"] == 0
+    assert result["next_test_rejections"] == []
+    assert result["inapplicable_next_test_absent"] is True
+    assert result["redundant_fresh_inspect_absent"] is True
+    assert result["action_sequence"] == [
         "propose_hypothesis",
         "propose_hypothesis_next_test",
-        "propose_hypothesis_next_test",
+        "run_analytics",
+        "propose_hypothesis_evidence_relation",
     ]
     assert result["followup_verified"] is True
     assert result["followup_inspected"] is True
