@@ -49,6 +49,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/research_manager.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_followup.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_manager_provider.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/business_relationship_policy.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -370,6 +371,81 @@ jobs:
           fi
           if [ -d backend/lab/metabase/p17/authorizations ]; then
             test -z "$(find backend/lab/metabase/p17/authorizations -type f ! -name '*.json' -print -quit)"
+          fi
+
+      - name: Require sealed P18 minimal relationship policy review
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/business_relationship_policy.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P18_MATERIAL_BUSINESS_RELATIONSHIP_POLICY_PREDEVELOPMENT_REVIEW.md"
+            DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+            test -f "$REVIEW"
+            grep -q "SEALED / DMP-DEC-0054 / P18 MINIMAL IMPLEMENTATION AUTHORIZED" "$REVIEW"
+            grep -q "DMP-DEC-0054 — MINIMAL BUSINESS RELATIONSHIP POLICY AUTHORITY" "$DECISIONS"
+            grep -q "P18 BUSINESS RELATIONSHIP POLICY" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+            grep -q "NO TABLE/FIELD JOIN GRAPH IN DIMA" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+            grep -q "NO RELATIONSHIP SCORING" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+            grep -q "NO FUZZY RELATIONSHIP INFERENCE" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+            grep -q "NO CAUSALITY IN P18" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+          fi
+
+      - name: Guard P18 as policy eligibility only
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/business_relationship_policy.py"
+          if [ -f "$HOT" ]; then
+            python - <<'PY'
+          import ast
+          from pathlib import Path
+          from sqlmodel import SQLModel
+          import control_plane.models  # noqa: F401
+
+          path = Path("backend/app/v3/business_relationship_policy.py")
+          tree = ast.parse(path.read_text(encoding="utf-8"))
+          imports = set()
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Import):
+                  imports.update(alias.name for alias in node.names)
+              elif isinstance(node, ast.ImportFrom):
+                  imports.add(node.module or "")
+          forbidden = (
+              "app.v3.substrate.metabase",
+              "app.v3.research_native_gateway",
+              "app.v3.research_followup",
+              "app.v3.native_execution",
+              "app.wren",
+              "numpy",
+              "pandas",
+              "scipy",
+              "statistics",
+          )
+          bad = sorted(x for x in imports if x.startswith(forbidden))
+          assert not bad, bad
+
+          source = path.read_text(encoding="utf-8")
+          for symbol in (
+              "NativeEngineBridge",
+              "MetabaseAgentClient",
+              "execute_dataset",
+              "explore_adhoc",
+              "attest_native_query",
+              "execute_native_query",
+              "wren_service",
+          ):
+              assert symbol not in source, symbol
+
+          p18_tables = {
+              table.name
+              for table in SQLModel.metadata.tables.values()
+              if table.name.startswith("business_relationship_policy")
+          }
+          assert p18_tables == {
+              "business_relationship_policy",
+              "business_relationship_policy_use",
+          }, p18_tables
+          PY
           fi
 
       - name: Guard active engine consumers against source-build fallback

@@ -1227,3 +1227,70 @@ class ResearchInvestigationTaskRecord(SQLModel, table=True):
     )
     completed_at: datetime | None = None
 
+class BusinessRelationshipPolicyRecord(SQLModel, table=True):
+    """P18 governed business-interpretation policy; never native join metadata."""
+
+    __tablename__ = "business_relationship_policy"
+    __table_args__ = (
+        UniqueConstraint(
+            "policy_fingerprint",
+            name="uq_business_relationship_policy_fingerprint",
+        ),
+    )
+
+    policy_id: str = Field(primary_key=True)
+    tenant_binding: str = Field(index=True)
+    semantic_context_version: str = Field(index=True)
+    policy_key: str = Field(index=True)
+    source_business_ref: str = Field(index=True)
+    target_business_ref: str = Field(index=True)
+    business_relationship_statement: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    applicability_scope_json: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    applicability_scope_fingerprint: str = Field(index=True)
+    policy_fingerprint: str = Field(index=True)
+    provenance_ref: str = Field(index=True)
+    approved_by_subject: str = Field(index=True)
+    status: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    retired_at: datetime | None = None
+
+
+class BusinessRelationshipPolicyUseRecord(SQLModel, table=True):
+    """Immutable P18 lineage for one explicit policy requirement resolution."""
+
+    __tablename__ = "business_relationship_policy_use"
+
+    policy_use_id: str = Field(primary_key=True)
+    research_session_id: str = Field(
+        foreign_key="research_session.session_id",
+        index=True,
+    )
+    obligation_id: str = Field(index=True)
+    claim_id: str = Field(
+        foreign_key="research_claim.claim_id",
+        index=True,
+    )
+    reasoning_step_id: str = Field(
+        foreign_key="research_reasoning_step.step_id",
+        index=True,
+    )
+    requirement_fingerprint: str = Field(index=True)
+    policy_id: str | None = Field(
+        default=None,
+        foreign_key="business_relationship_policy.policy_id",
+        index=True,
+    )
+    policy_fingerprint: str | None = Field(default=None, index=True)
+    resolution_status: str = Field(index=True)
+    limitation_code: str | None = Field(default=None, index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+

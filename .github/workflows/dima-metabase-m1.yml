@@ -15,6 +15,7 @@ on:
       - "!backend/app/v3/research_manager.py"
       - "!backend/app/v3/research_followup.py"
       - "!backend/app/v3/research_manager_provider.py"
+      - "!backend/app/v3/business_relationship_policy.py"
       - "!backend/app/v3/substrate/metabase/native_engine.py"
       - "!backend/app/v3/substrate/metabase/native_models.py"
       - "backend/tests/test_v3_m1_*.py"

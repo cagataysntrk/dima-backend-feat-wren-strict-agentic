@@ -1,0 +1,157 @@
+name: dima-metabase-p18-provider-free
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/business_relationship_policy.py"
+      - "backend/control_plane/models.py"
+      - "backend/migrations/versions/f5a1d7c9e2b4_p18_business_relationship_policy.py"
+      - "backend/tests/test_v3_p18_business_relationship_policy.py"
+      - "backend/belgeler/metabase/predev/P18_MATERIAL_BUSINESS_RELATIONSHIP_POLICY_PREDEVELOPMENT_REVIEW.md"
+      - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+      - "DIMA-METABASE-DURUM.md"
+      - "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
+      - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md"
+      - ".github/workflows/dima-metabase-p18-provider-free.yml"
+      - ".github/workflows/dima-metabase-governance.yml"
+      - ".github/workflows/dima-metabase-m1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p18-provider-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical backend test environment
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Enforce DMP-DEC-0054 minimal P18 boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVIEW="backend/belgeler/metabase/predev/P18_MATERIAL_BUSINESS_RELATIONSHIP_POLICY_PREDEVELOPMENT_REVIEW.md"
+          DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+          HANDOFF="DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
+          grep -q "SEALED / DMP-DEC-0054 / P18 MINIMAL IMPLEMENTATION AUTHORIZED" "$REVIEW"
+          grep -q "DMP-DEC-0054 — MINIMAL BUSINESS RELATIONSHIP POLICY AUTHORITY" "$DECISIONS"
+          grep -q "P18 BUSINESS RELATIONSHIP POLICY" "$HANDOFF"
+          grep -q "NO TABLE/FIELD JOIN GRAPH IN DIMA" "$HANDOFF"
+          grep -q "NO RELATIONSHIP SCORING" "$HANDOFF"
+          grep -q "NO FUZZY RELATIONSHIP INFERENCE" "$HANDOFF"
+          grep -q "NO CAUSALITY IN P18" "$HANDOFF"
+
+      - name: Compile P18 authority slice
+        working-directory: backend
+        run: |
+          python -m py_compile             app/v3/business_relationship_policy.py             control_plane/models.py             migrations/versions/f5a1d7c9e2b4_p18_business_relationship_policy.py             tests/test_v3_p18_business_relationship_policy.py
+
+      - name: Verify single Alembic head includes only two P18 durable tables
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          heads="$(python -m alembic heads)"
+          test "$(printf '%s
+' "$heads" | grep -Ec '^[0-9a-f]+')" -eq 1
+          printf '%s
+' "$heads" | grep -q '^f5a1d7c9e2b4'
+          python - <<'PY'
+          from sqlmodel import SQLModel
+          import control_plane.models  # noqa: F401
+          names = {
+              table.name
+              for table in SQLModel.metadata.tables.values()
+              if table.name.startswith("business_relationship_policy")
+          }
+          assert names == {
+              "business_relationship_policy",
+              "business_relationship_policy_use",
+          }, names
+          PY
+
+      - name: Static proof P18 has no analytical executor or relationship graph
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          p = Path("app/v3/business_relationship_policy.py")
+          tree = ast.parse(p.read_text(encoding="utf-8"))
+          imports = set()
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Import):
+                  imports.update(alias.name for alias in node.names)
+              elif isinstance(node, ast.ImportFrom):
+                  imports.add(node.module or "")
+          forbidden = (
+              "app.v3.substrate.metabase",
+              "app.v3.research_native_gateway",
+              "app.v3.research_followup",
+              "app.v3.native_execution",
+              "app.wren",
+              "numpy",
+              "pandas",
+              "scipy",
+              "statistics",
+          )
+          bad = sorted(x for x in imports if x.startswith(forbidden))
+          assert not bad, bad
+          source = p.read_text(encoding="utf-8")
+          for symbol in (
+              "NativeEngineBridge",
+              "MetabaseAgentClient",
+              "execute_dataset",
+              "explore_adhoc",
+              "attest_native_query",
+              "execute_native_query",
+              "wren_service",
+          ):
+              assert symbol not in source, symbol
+          PY
+
+      - name: P18 focused provider-free proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_p18_business_relationship_policy.py
+
+      - name: P17 provider-free regressions remain GREEN
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_p17_authorization_transport.py             tests/test_v3_p17_autonomous_provider_schema.py             tests/test_v3_p17_autonomous_manager_eval.py             tests/test_v3_p17_research_manager.py
+
+      - name: P16 claim-lineage remains GREEN
+        working-directory: backend
+        run: pytest -q tests/test_v3_p16_claim_lineage.py
+
+      - name: P15 native Exploration remains GREEN
+        working-directory: backend
+        run: pytest -q tests/test_v3_p15_native_exploration.py
+
+      - name: P14 native-direct remains GREEN
+        working-directory: backend
+        run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
+
+      - name: Verify engine identity unchanged and no paid P18 work exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" =             "cbe313af9ac2d5960f662068e433d328d896fb06"
+          ! grep -R -nE 'openai/gpt|openrouter|Luna|Sol|C1'             backend/app/v3/business_relationship_policy.py             backend/tests/test_v3_p18_business_relationship_policy.py
