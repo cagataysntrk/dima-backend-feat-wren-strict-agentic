@@ -1,0 +1,111 @@
+name: dima-metabase-p19-live
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/lab/metabase/p19/autonomous_canary.py"
+      - "backend/lab/metabase/p19/autonomous_eval.py"
+      - "backend/lab/metabase/p19/authorizations/**"
+      - "backend/app/v3/hypothesis_root_cause.py"
+      - "backend/app/v3/hypothesis_root_cause_provider.py"
+      - ".github/workflows/dima-metabase-p19-live.yml"
+
+permissions:
+  contents: read
+
+env:
+  MANAGER_MODEL_IDENTIFIER: openai/gpt-5.6-luna
+  DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+  ENGINE_SHA: cbe313af9ac2d5960f662068e433d328d896fb06
+
+jobs:
+  one-luna-p19-epistemic-canary:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[p19-luna-canary]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: DIMA_OPENROUTER_API_KEY
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Verify one-shot DMP-DEC-0055 authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH="backend/lab/metabase/p19/authorizations/p19-live-001.json"
+          test -f "$AUTH"
+          parent="$(git rev-parse HEAD^)"
+          changed="$(git diff-tree --no-commit-id --name-status -r "$parent" HEAD)"
+          test "$changed" = "$(printf 'A\t%s' "$AUTH")"
+          python - "$AUTH" "$parent" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          parent = sys.argv[2]
+          value = json.loads(path.read_text(encoding="utf-8"))
+          expected = {
+              "decision": "DMP-DEC-0055",
+              "branch": "feat/dima-metabase-platform",
+              "authorization_id": "p19-live-001",
+              "candidate_product_sha": parent,
+              "model": "openai/gpt-5.6-luna",
+              "max_manager_calls": 2,
+              "sol_budget": 0,
+              "c1_budget": 0,
+              "engine_build_budget": 0,
+              "analytical_execution_budget": 0,
+              "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
+          }
+          for key, expected_value in expected.items():
+              assert value.get(key) == expected_value, (key, value.get(key))
+          assert isinstance(value.get("provider_free_run_id"), int)
+          assert value["provider_free_run_id"] > 0
+          assert isinstance(value.get("governance_run_id"), int)
+          assert value["governance_run_id"] > 0
+          PY
+
+      - name: Install focused backend environment
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Require exactly bounded Luna transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DIMA_OPENROUTER_API_KEY"
+          test "$MANAGER_MODEL_IDENTIFIER" = "openai/gpt-5.6-luna"
+          test "$ENGINE_SHA" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "$ENGINE_SHA"
+
+      - name: Run the one bounded Luna P19 epistemic canary
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: |
+          python lab/metabase/p19/autonomous_canary.py \
+            --output lab/metabase/p19/artifacts/P19_AUTONOMOUS_LUNA_CANARY.json \
+            --platform-sha "$GITHUB_SHA" \
+            --engine-sha "$ENGINE_SHA" \
+            --manager-model "$MANAGER_MODEL_IDENTIFIER"
+
+      - name: Upload P19 live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p19-autonomous-luna-${{ github.sha }}
+          path: backend/lab/metabase/p19/artifacts/
+          if-no-files-found: warn
+          retention-days: 30
