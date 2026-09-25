@@ -517,6 +517,12 @@ def _post_acceptance_native_schema(
     inspectable_evidence_refs: tuple[str, ...] = (),
     resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",),
     resolve_semantics_parent_obligation_ids: tuple[str, ...] = (),
+    root_parent_obligation_ids: tuple[str, ...] = (),
+    root_action_handle_refs: tuple[str, ...] = (),
+    root_evidence_refs: tuple[str, ...] = (),
+    hypothesis_refs: tuple[str, ...] = (),
+    pending_relation_hypothesis_refs: tuple[str, ...] = (),
+    pending_relation_evidence_refs: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Expose only actions that are legal after AcceptedTurnContract commit.
 
@@ -600,6 +606,69 @@ def _post_acceptance_native_schema(
                     {"type": "null"},
                 ]
             }
+        )
+
+    def constrain_nullable_string(name: str, values: tuple[str, ...]) -> None:
+        node = (schema.get("properties") or {}).get(name)
+        if not isinstance(node, dict):
+            return
+        node.clear()
+        node.update(
+            {
+                "anyOf": [
+                    {"type": "string", "enum": list(dict.fromkeys(values))},
+                    {"type": "null"},
+                ]
+            }
+        )
+
+    def constrain_string_array(name: str, values: tuple[str, ...]) -> None:
+        node = (schema.get("properties") or {}).get(name)
+        if not isinstance(node, dict):
+            return
+        node.clear()
+        node.update(
+            {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": list(dict.fromkeys(values)),
+                },
+            }
+        )
+
+    if root_cause_enabled:
+        constrain_nullable_string(
+            "hypothesis_parent_obligation_id",
+            root_parent_obligation_ids,
+        )
+        constrain_string_array(
+            "hypothesis_semantic_handles",
+            root_action_handle_refs,
+        )
+        constrain_string_array(
+            "hypothesis_trigger_evidence_refs",
+            root_evidence_refs,
+        )
+        constrain_string_array(
+            "next_test_input_handles",
+            root_action_handle_refs,
+        )
+        constrain_nullable_string(
+            "next_test_trigger_evidence_ref",
+            root_evidence_refs,
+        )
+        constrain_nullable_string(
+            "hypothesis_ref",
+            (
+                pending_relation_hypothesis_refs
+                if pending_relation_hypothesis_refs
+                else hypothesis_refs
+            ),
+        )
+        constrain_nullable_string(
+            "hypothesis_relation_evidence_ref",
+            pending_relation_evidence_refs,
         )
 
     if root_cause_enabled:
@@ -1159,6 +1228,7 @@ class ResearchManagerLoop:
         research_state: ResearchStateView | None,
         hypothesis_ledgers: dict[str, Any] | None,
         evidence_store,
+        research_tasks: tuple[Any, ...] = (),
     ) -> ManagerActionAvailabilityProfile:
         latest = None if research_state is None else research_state.latest_delta
         fresh_ref = None
@@ -1247,14 +1317,58 @@ class ResearchManagerLoop:
                     continue
                 root_evidence.append(ref)
 
+            root_aliases = tuple(
+                self._handle_alias(handle_id)
+                for handle_id in root_item.semantic_handle_refs
+            )
+            task_by_id = {task.task_id: task for task in research_tasks}
+            pending_relation_hypotheses: list[str] = []
+            pending_relation_evidence: list[str] = []
+            for entry in hypothesis_ledger.state.entries:
+                linked = {link.evidence_ref for link in entry.evidence_links}
+                next_test_task_ids = {
+                    task_ref
+                    for task_ref in entry.next_test_task_refs
+                    if (
+                        task_ref in task_by_id
+                        and task_by_id[task_ref].state == "complete"
+                    )
+                }
+                if not next_test_task_ids:
+                    continue
+                for evidence_ref in root_evidence:
+                    if evidence_ref in linked or evidence_store is None:
+                        continue
+                    try:
+                        evidence = evidence_store.get(evidence_ref)
+                    except Exception:
+                        continue
+                    if (
+                        getattr(evidence, "verified", False)
+                        and evidence.task_id in next_test_task_ids
+                    ):
+                        pending_relation_hypotheses.append(entry.hypothesis_id)
+                        pending_relation_evidence.append(evidence_ref)
+
             root_states.append(
                 RootActionState(
                     root_id=root_id,
                     hypothesis_count=len(hypothesis_ledger.state.entries),
                     root_handle_kinds=tuple(dict.fromkeys(kinds)),
                     next_test_required_kind_sets=contracts,
+                    root_handle_refs=tuple(dict.fromkeys(root_aliases)),
+                    hypothesis_refs=tuple(
+                        entry.hypothesis_id
+                        for entry in hypothesis_ledger.state.entries
+                    ),
                     effective_inspected_verified_evidence_refs=tuple(
                         dict.fromkeys(root_evidence)
+                    ),
+                    pending_relation_hypothesis_refs=tuple(
+                        dict.fromkeys(pending_relation_hypotheses)
+                    ),
+                    pending_relation_evidence_refs=tuple(
+                        dict.fromkeys(pending_relation_evidence)
                     ),
                 )
             )
@@ -1516,6 +1630,7 @@ class ResearchManagerLoop:
             research_state=research_state,
             hypothesis_ledgers=hypothesis_ledgers,
             evidence_store=evidence_store,
+            research_tasks=ready_tasks,
         )
         user = self._prompt(
             question=question,
@@ -1537,6 +1652,16 @@ class ResearchManagerLoop:
             resolve_provenance=availability.post_acceptance_resolve_provenance,
             resolve_semantics_parent_obligation_ids=(
                 availability.resolve_semantics_parent_obligation_ids
+            ),
+            root_parent_obligation_ids=availability.root_parent_obligation_ids,
+            root_action_handle_refs=availability.root_action_handle_refs,
+            root_evidence_refs=availability.root_evidence_refs,
+            hypothesis_refs=availability.hypothesis_refs,
+            pending_relation_hypothesis_refs=(
+                availability.pending_relation_hypothesis_refs
+            ),
+            pending_relation_evidence_refs=(
+                availability.pending_relation_evidence_refs
             ),
         )
         system_prompt = (
