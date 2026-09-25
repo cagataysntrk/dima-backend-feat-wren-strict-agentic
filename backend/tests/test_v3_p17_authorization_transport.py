@@ -8,11 +8,13 @@ import pytest
 
 from lab.metabase.p17.authorization_transport import (
     AUTHORIZATION_DIR,
+    CURRENT_ATTEMPT_IN_FAMILY,
+    CURRENT_FAILURE_FAMILY_ID,
     EXPECTED_BRANCH,
     EXPECTED_DECISION,
     EXPECTED_MODEL,
     EXPECTED_PRODUCT_SHA,
-    HISTORICAL_RECEIPT,
+    HISTORICAL_RECEIPTS,
     AuthorizationTransportError,
     verify_dispatch_authorization,
 )
@@ -60,11 +62,19 @@ def _repo(tmp_path: Path) -> tuple[Path, str]:
     return root, base
 
 
+def _name(
+    family: str = CURRENT_FAILURE_FAMILY_ID,
+    attempt: int = CURRENT_ATTEMPT_IN_FAMILY,
+) -> str:
+    return f"{family}--attempt-{attempt:03d}.json"
+
+
 def _receipt(
     parent: str,
     *,
-    authorization_id: str = "autonomous-luna-recovery-001",
-    recovery_cycle: int = 1,
+    failure_family_id: str = CURRENT_FAILURE_FAMILY_ID,
+    attempt_in_family: int = CURRENT_ATTEMPT_IN_FAMILY,
+    authorization_id: str | None = None,
     candidate_product_sha: str = EXPECTED_PRODUCT_SHA,
     dispatch_parent_sha: str | None = None,
     branch: str = EXPECTED_BRANCH,
@@ -75,11 +85,15 @@ def _receipt(
     engine_build_budget: int = 0,
     c1_budget: int = 0,
 ) -> dict:
+    authorization_id = authorization_id or (
+        f"{failure_family_id}--attempt-{attempt_in_family:03d}"
+    )
     return {
         "decision": decision,
         "branch": branch,
+        "failure_family_id": failure_family_id,
+        "attempt_in_family": attempt_in_family,
         "authorization_id": authorization_id,
-        "recovery_cycle": recovery_cycle,
         "candidate_product_sha": candidate_product_sha,
         "dispatch_parent_sha": dispatch_parent_sha or parent,
         "provider_free_run_id": 123456789,
@@ -89,7 +103,9 @@ def _receipt(
         "sol_budget": sol_budget,
         "engine_build_budget": engine_build_budget,
         "c1_budget": c1_budget,
-        "purpose": "bounded autonomous P17 recovery certification",
+        "purpose": "bounded autonomous P17 family recovery certification",
+        "previous_red_run_id": 36140130559,
+        "root_fix_sha": EXPECTED_PRODUCT_SHA,
     }
 
 
@@ -97,26 +113,33 @@ def _add_receipt(
     root: Path,
     parent: str,
     *,
-    name: str = "autonomous-luna-recovery-001.json",
+    name: str | None = None,
     payload: dict | None = None,
 ) -> tuple[str, str]:
-    path = AUTHORIZATION_DIR + name
+    path = AUTHORIZATION_DIR + (name or _name())
     value = payload or _receipt(parent)
     _write(root, path, json.dumps(value, indent=2) + "\n")
     dispatch = _commit(root, "dispatch")
     return dispatch, path
 
 
-def _verify(root: Path, dispatch: str, *, cycle: int = 1):
+def _verify(
+    root: Path,
+    dispatch: str,
+    *,
+    family: str = CURRENT_FAILURE_FAMILY_ID,
+    attempt: int = CURRENT_ATTEMPT_IN_FAMILY,
+):
     return verify_dispatch_authorization(
         root,
         dispatch_sha=dispatch,
         branch=EXPECTED_BRANCH,
-        recovery_cycle=cycle,
+        expected_failure_family_id=family,
+        expected_attempt_in_family=attempt,
     )
 
 
-def test_detects_exactly_one_new_receipt_from_parent_head_git_diff(tmp_path: Path):
+def test_accepts_one_exact_family_aware_added_receipt(tmp_path: Path):
     root, parent = _repo(tmp_path)
     dispatch, path = _add_receipt(root, parent)
 
@@ -124,13 +147,15 @@ def test_detects_exactly_one_new_receipt_from_parent_head_git_diff(tmp_path: Pat
 
     assert verified.path == path
     assert verified.dispatch_parent_sha == parent
-    assert verified.authorization_id == "autonomous-luna-recovery-001"
+    assert verified.failure_family_id == CURRENT_FAILURE_FAMILY_ID
+    assert verified.attempt_in_family == CURRENT_ATTEMPT_IN_FAMILY
+    assert verified.previous_red_run_id == 36140130559
 
 
 def test_modified_receipt_is_rejected(tmp_path: Path):
     root, parent = _repo(tmp_path)
     first, path = _add_receipt(root, parent)
-    payload = _receipt(first, authorization_id="pre-existing")
+    payload = _receipt(first)
     _write(root, path, json.dumps(payload, indent=2) + "\n")
     modified = _commit(root, "modify receipt")
 
@@ -143,7 +168,7 @@ def test_modified_receipt_is_rejected(tmp_path: Path):
 
 def test_pre_existing_receipt_without_new_receipt_is_rejected(tmp_path: Path):
     root, parent = _repo(tmp_path)
-    first, _ = _add_receipt(root, parent)
+    _add_receipt(root, parent)
     _write(root, "note.txt", "unrelated\n")
     dispatch = _commit(root, "no new receipt")
 
@@ -154,13 +179,17 @@ def test_pre_existing_receipt_without_new_receipt_is_rejected(tmp_path: Path):
         _verify(root, dispatch)
 
 
-def test_deleted_readded_historical_receipt_is_rejected(tmp_path: Path):
+@pytest.mark.parametrize("historical_path", sorted(HISTORICAL_RECEIPTS))
+def test_historical_receipt_delete_readd_is_rejected(
+    tmp_path: Path,
+    historical_path: str,
+):
     root, _ = _repo(tmp_path)
-    _write(root, HISTORICAL_RECEIPT, "{}\n")
-    first = _commit(root, "historical receipt")
-    (root / HISTORICAL_RECEIPT).unlink()
+    _write(root, historical_path, "{}\n")
+    _commit(root, "historical receipt")
+    (root / historical_path).unlink()
     _commit(root, "delete historical receipt")
-    _write(root, HISTORICAL_RECEIPT, "{}\n")
+    _write(root, historical_path, "{}\n")
     dispatch = _commit(root, "readd historical receipt")
 
     with pytest.raises(
@@ -185,11 +214,16 @@ def test_zero_new_receipts_is_rejected(tmp_path: Path):
 def test_two_new_receipts_are_rejected(tmp_path: Path):
     root, parent = _repo(tmp_path)
     for index in (1, 2):
+        family = f"family-{index}"
         _write(
             root,
-            AUTHORIZATION_DIR + f"receipt-{index}.json",
+            AUTHORIZATION_DIR + _name(family, 1),
             json.dumps(
-                _receipt(parent, authorization_id=f"receipt-{index}"),
+                _receipt(
+                    parent,
+                    failure_family_id=family,
+                    attempt_in_family=1,
+                ),
                 indent=2,
             )
             + "\n",
@@ -203,13 +237,29 @@ def test_two_new_receipts_are_rejected(tmp_path: Path):
         _verify(root, dispatch)
 
 
+def test_wrong_family_filename_is_rejected(tmp_path: Path):
+    root, parent = _repo(tmp_path)
+    dispatch, _ = _add_receipt(
+        root,
+        parent,
+        name=_name("p17-native-analytics", CURRENT_ATTEMPT_IN_FAMILY),
+    )
+
+    with pytest.raises(
+        AuthorizationTransportError,
+        match="path does not match failure family attempt",
+    ):
+        _verify(root, dispatch)
+
+
 @pytest.mark.parametrize(
     ("field", "value", "error"),
     [
         ("candidate_product_sha", "0" * 40, "candidate_product_sha"),
         ("branch", "wrong-branch", "branch"),
-        ("recovery_cycle", 2, "recovery_cycle"),
-        ("decision", "DMP-DEC-0050", "decision"),
+        ("failure_family_id", "p17-native-analytics", "failure_family_id"),
+        ("attempt_in_family", 3, "attempt_in_family"),
+        ("decision", "DMP-DEC-0051", "decision"),
         ("model", "other-model", "model"),
     ],
 )
@@ -225,7 +275,19 @@ def test_identity_mismatches_are_rejected(
     dispatch, _ = _add_receipt(root, parent, payload=payload)
 
     with pytest.raises(AuthorizationTransportError, match=error):
-        _verify(root, dispatch, cycle=1)
+        _verify(root, dispatch)
+
+
+def test_wrong_authorization_id_is_rejected(tmp_path: Path):
+    root, parent = _repo(tmp_path)
+    payload = _receipt(parent, authorization_id="wrong-id")
+    dispatch, _ = _add_receipt(root, parent, payload=payload)
+
+    with pytest.raises(
+        AuthorizationTransportError,
+        match="authorization_id",
+    ):
+        _verify(root, dispatch)
 
 
 def test_wrong_dispatch_parent_sha_is_rejected(tmp_path: Path):
@@ -264,7 +326,39 @@ def test_budget_escalation_is_rejected(
         _verify(root, dispatch)
 
 
-def test_event_head_commit_added_is_irrelevant_to_authorization_truth():
+@pytest.mark.parametrize("attempt", [0, 4])
+def test_attempt_outside_family_budget_is_rejected(
+    tmp_path: Path,
+    attempt: int,
+):
+    root, _ = _repo(tmp_path)
+    with pytest.raises(
+        AuthorizationTransportError,
+        match="attempt_in_family",
+    ):
+        verify_dispatch_authorization(
+            root,
+            dispatch_sha=_git(root, "rev-parse", "HEAD"),
+            expected_failure_family_id=CURRENT_FAILURE_FAMILY_ID,
+            expected_attempt_in_family=attempt,
+        )
+
+
+def test_non_machine_safe_family_id_is_rejected(tmp_path: Path):
+    root, _ = _repo(tmp_path)
+    with pytest.raises(
+        AuthorizationTransportError,
+        match="machine-safe",
+    ):
+        verify_dispatch_authorization(
+            root,
+            dispatch_sha=_git(root, "rev-parse", "HEAD"),
+            expected_failure_family_id="P17 Manager Schema",
+            expected_attempt_in_family=2,
+        )
+
+
+def test_event_changed_file_projection_is_irrelevant_to_authorization_truth():
     source = Path(
         "lab/metabase/p17/authorization_transport.py"
     ).read_text(encoding="utf-8")
@@ -275,49 +369,12 @@ def test_event_head_commit_added_is_irrelevant_to_authorization_truth():
     assert "cat-file" in source
 
 
-def test_recovery_cycle_is_inferred_from_immutable_receipt_filename(tmp_path: Path):
-    root, parent = _repo(tmp_path)
-    payload = _receipt(
-        parent,
-        authorization_id="autonomous-luna-recovery-002",
-        recovery_cycle=2,
-    )
-    dispatch, path = _add_receipt(
-        root,
-        parent,
-        name="autonomous-luna-recovery-002.json",
-        payload=payload,
-    )
+def test_historical_recovery_001_remains_legacy_not_forward_identity():
+    source = Path(
+        "lab/metabase/p17/authorization_transport.py"
+    ).read_text(encoding="utf-8")
 
-    verified = verify_dispatch_authorization(
-        root,
-        dispatch_sha=dispatch,
-        branch=EXPECTED_BRANCH,
-    )
-
-    assert verified.path == path
-    assert verified.recovery_cycle == 2
-
-
-def test_payload_cycle_must_match_receipt_filename_even_without_external_cycle(
-    tmp_path: Path,
-):
-    root, parent = _repo(tmp_path)
-    payload = _receipt(
-        parent,
-        authorization_id="autonomous-luna-recovery-002",
-        recovery_cycle=1,
-    )
-    dispatch, _ = _add_receipt(
-        root,
-        parent,
-        name="autonomous-luna-recovery-002.json",
-        payload=payload,
-    )
-
-    with pytest.raises(AuthorizationTransportError, match="recovery_cycle"):
-        verify_dispatch_authorization(
-            root,
-            dispatch_sha=dispatch,
-            branch=EXPECTED_BRANCH,
-        )
+    assert "autonomous-luna-recovery-001.json" in source
+    assert "failure_family_id" in source
+    assert "attempt_in_family" in source
+    assert "recovery_cycle" not in source
