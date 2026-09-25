@@ -95,6 +95,7 @@ class TaskActionState:
     trigger_evidence_ref: str | None = None
     ranking_direction: str | None = None
     ranking_limit: int | None = None
+    semantic_context: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -672,7 +673,10 @@ class ManagerActionSetBuilder:
                             "counterpart_handles": dimensions,
                         },
                         reason_codes=("READY_RESEARCH_TASK",),
-                        cognitive_context={"capability": key.value},
+                        cognitive_context={
+                            "capability": key.value,
+                            "semantic_context": list(task.semantic_context),
+                        },
                     )
                 )
                 continue
@@ -727,6 +731,7 @@ class ManagerActionSetBuilder:
                     cognitive_context={
                         "capability": key.value,
                         "task_family": task.task_kind,
+                        "semantic_context": list(task.semantic_context),
                     },
                 )
             )
