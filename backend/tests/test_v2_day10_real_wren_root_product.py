@@ -374,6 +374,132 @@ class _RootResearchLLM:
         raise AssertionError("deterministic completion should end before another Manager turn")
 
 
+def _schema_property_values(schema: dict, property_name: str) -> set[str]:
+    found = []
+
+    def resolve(node):
+        if not isinstance(node, dict):
+            return node
+        ref = node.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/$defs/"):
+            return (schema.get("$defs") or {})[ref.rsplit("/", 1)[-1]]
+        return node
+
+    def walk(node):
+        if isinstance(node, dict):
+            properties = node.get("properties")
+            if isinstance(properties, dict) and property_name in properties:
+                found.append(resolve(properties[property_name]))
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    def values(node):
+        node = resolve(node)
+        out = set()
+        if isinstance(node, dict):
+            enum = node.get("enum")
+            if isinstance(enum, list):
+                out.update(str(item) for item in enum if item is not None)
+            const = node.get("const")
+            if isinstance(const, str):
+                out.add(const)
+            for value in node.values():
+                out.update(values(value))
+        elif isinstance(node, list):
+            for value in node:
+                out.update(values(value))
+        return out
+
+    walk(schema)
+    assert found, property_name
+    return values(found[0])
+
+
+class _D10SStateAwareRootLLM(_RootResearchLLM):
+    """One explicit real-Wren D10-S action-profile sentinel."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.actions: list[str] = []
+        self.inventory_snapshots: list[tuple[dict, ...]] = []
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        if schema_name != "dima_research_manager_action_v1":
+            return super().structured_json(
+                system,
+                user,
+                schema=schema,
+                schema_name=schema_name,
+            )
+
+        payload = json.loads(user)
+        self.manager_prompts.append(payload)
+        actions = _schema_property_values(schema, "action")
+        delta = payload["CURRENT_RESULT_DELTA"]
+        assert delta is not None
+        assert delta["verified"] is True
+        assert delta["disclosed_in_current_prompt"] is True
+        assert delta["inspection_required"] is False
+
+        inventory = tuple(payload["GOVERNED_SEMANTIC_INVENTORY"])
+        self.inventory_snapshots.append(inventory)
+        root_item = next(
+            item
+            for item in payload["OBLIGATION_LEDGER"]
+            if item["obligation_id"] == "U_ROOT"
+        )
+        root_handle = root_item["semantic_handle_refs"][0]
+        root_inventory = [
+            item for item in inventory
+            if root_handle == item["handle_ref"]
+        ]
+        assert len(root_inventory) == 1
+        assert root_inventory[0]["target_kind"] in {"metric", "kpi"}
+
+        # D10-S structural contract: the currently disclosed Evidence does not need
+        # explicit inspection and the already-governed root metric can satisfy QUERY,
+        # so semantic rediscovery is not advertised.
+        assert "inspect_evidence" not in actions
+        assert "resolve_semantics" not in actions
+
+        ledgers = payload["HYPOTHESIS_LEDGERS"]
+        assert len(ledgers) == 1
+        entries = ledgers[0]["entries"]
+        if not entries:
+            assert "propose_hypothesis_with_next_test" in actions
+            self.actions.append("propose_hypothesis_with_next_test")
+            return {
+                "action": "propose_hypothesis_with_next_test",
+                "hypothesis_parent_obligation_id": "U_ROOT",
+                "hypothesis_statement": (
+                    "Gerçek Wren sentinel aday açıklaması %27 içerir ama rapora taşınmamalı."
+                ),
+                "hypothesis_semantic_handles": [root_handle],
+                "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
+                "hypothesis_limitations": [],
+                "next_test_task_kind": "QUERY",
+                "next_test_input_handles": [root_handle],
+                "next_test_trigger_evidence_ref": delta["evidence_ref"],
+                "next_test_material_reason": (
+                    "Mevcut governed root metriğini ikinci gerçek Wren ölçümüyle sınırla."
+                ),
+            }
+
+        assert "propose_hypothesis_with_next_test" not in actions
+        assert "propose_hypothesis_evidence_relation" in actions
+        hypothesis = entries[0]
+        self.actions.append("propose_hypothesis_evidence_relation")
+        return {
+            "action": "propose_hypothesis_evidence_relation",
+            "hypothesis_ref": hypothesis["hypothesis_id"],
+            "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+            "hypothesis_relation": "SUPPORTS",
+        }
+
+
 class _NarrationProviderFailure:
     def structured_json(self, *_args, **_kwargs):
         raise RuntimeError("provider-free deterministic narration fallback")
@@ -569,6 +695,119 @@ def test_product_root_cause_crosses_real_wren_and_finishes_bounded_investigation
     assert result.runtime.snapshot.research_manager_turns == 3
     assert result.runtime.snapshot.manager_turns == 5
     assert response.terminal_receipt.manager_turns == 5
+
+
+def test_d10_s_real_wren_state_aware_action_profile_reaches_report(
+    wren,
+    schema,
+    monkeypatch,
+):
+    """One deterministic real-Wren D10-S sentinel; zero paid/provider calls."""
+    cube = next(item for item in schema["cubes"] if item.get("name") == "bakim")
+    assert "ariza_sayisi" in tuple(cube.get("measures") or ())
+
+    tenant_id = "day10-s-real-wren"
+    tenant_binding = f"id:{tenant_id}"
+    principal = Principal(
+        user_id="day10-s-user",
+        tenant_id=tenant_id,
+        roles=["owner"],
+        tenant_slug="demo-boyahane",
+    )
+    runtime = TenantAnalyticsRuntimeV0(
+        tenant_id=tenant_id,
+        tenant_slug="demo-boyahane",
+        principal_user_id=principal.user_id,
+        roles=tuple(principal.roles),
+        mdl_version=wren.mdl_version,
+        catalog=str(schema.get("catalog") or "wren"),
+        schema_name=str(schema.get("schema_name") or schema.get("schema") or "public"),
+        db_online=True,
+    )
+    service = _CountingWren(wren, schema)
+    context = ProductRequestContext(
+        request_ref="r-day10-s-real-wren",
+        tenant_binding=tenant_binding,
+        principal=principal,
+        tenant_runtime=runtime,
+        service=service,
+        schema=schema,
+        semantic_context=ContextProviderV0().build(service, runtime),
+        contract_store=contracts_module.ContractStore(),
+        session_id="day10-s-session",
+        thread_id="day10-s-thread",
+    )
+    monkeypatch.setattr(contracts_module, "_persist", lambda _row: None)
+
+    manager = _D10SStateAwareRootLLM()
+    research_lane = _CapturingResearchLane(
+        cognition=ResearchCognition(
+            manager_llm=manager,
+            manager_profile=_profile(ModelRole.RESEARCH_MANAGER),
+            semantic_provider=None,
+            semantic_profile=_profile(ModelRole.SEMANTIC_LINKER),
+            temporal_provider=None,
+            temporal_profile=_profile(ModelRole.TEMPORAL_NORMALIZER),
+        )
+    )
+    standard_llm = _TypedResearchStandardLLM()
+    standard_lane = StandardLaneEngine(
+        intent_structured=standard_llm.structured_json,
+        coverage_structured=standard_llm.structured_json,
+        semantic_provider=_StandardSemanticProvider(),
+        temporal_provider=None,
+    )
+    coordinator = ProductCoordinator(
+        standard_lane=standard_lane,
+        standard_model_role="FAST_LANGUAGE",
+        research_lane=research_lane,
+        report_narrator=ReportNarrator(
+            llm=_NarrationProviderFailure(),
+            provider="provider-free",
+            model="provider-free",
+        ),
+    )
+    monkeypatch.setattr(coordinator, "_bind_context", lambda **_kwargs: context)
+
+    response = coordinator.handle(
+        request=object(),
+        body=ProductAskRequest(
+            question="arıza sayısının nedenini araştır. Nedensel kesinlik iddia etme",
+            session_id=context.session_id,
+            thread_id=context.thread_id,
+        ),
+        principal=principal,
+    )
+
+    assert response.lane == ProductLane.RESEARCH
+    assert response.status == ProductStatus.REPORT
+    assert response.terminal_receipt.verified_complete is True
+    result = research_lane.last_result
+    assert result is not None
+    assert result.runtime.snapshot.manager_turns <= 6
+    assert result.runtime.snapshot.research_manager_turns == 2
+    assert manager.actions == [
+        "propose_hypothesis_with_next_test",
+        "propose_hypothesis_evidence_relation",
+    ]
+    assert service.query_calls == 2
+    assert len(result.evidence) == 2
+    assert all(item.verified for item in result.evidence)
+    assert len(result.findings) == 1
+    assert result.findings[0].epistemic_label == EpistemicLabel.CANDIDATE_CAUSE
+    assert not any(
+        item.epistemic_label == EpistemicLabel.CONFIRMED_CAUSE
+        for item in result.findings
+    )
+    assert len(manager.inventory_snapshots) == 2
+    assert manager.inventory_snapshots[1] == manager.inventory_snapshots[0]
+
+    report_text = "\n".join(
+        block.content
+        for section in response.report.report.sections
+        for block in section.blocks
+    )
+    assert "%27" not in report_text
 
 
 def test_d10_n_real_wren_preacceptance_accepts_current_turn_metric_recovery(
