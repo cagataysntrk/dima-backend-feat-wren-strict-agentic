@@ -3925,3 +3925,225 @@ The DMP-DEC-0050 provider-free proof remains GREEN at `36136988379`; governance 
 Per the one-canary RED rule, there is no automatic or second paid dispatch. The transport defect is
 recorded but is not patched-and-rerun under this authority. P17 remains NOT SEALED and P18 remains
 BLOCKED. A future paid autonomous certification attempt requires new supervisor authority.
+
+
+---
+
+## DMP-DEC-0051 — BOUNDED RED RECOVERY / GENERIC ROOT-FIX PROTOCOL
+
+date: 2026-09-25
+
+status:
+`RATIFIED FORWARD RECOVERY GOVERNANCE / RECOVERY CYCLE 1 OF 3 ACTIVE / P17 PRODUCT FROZEN / P18 BLOCKED`
+
+Authority stacking:
+
+```text
+DMP-DEC-0048 = native-direct analytics ownership
+DMP-DEC-0049 = recursive investigation / P17-P19 authority split
+DMP-DEC-0050 = autonomous trajectory-invariant certification
+DMP-DEC-0051 = bounded RED recovery governance
+```
+
+DMP-DEC-0051 changes recovery protocol only. It does not modify product architecture,
+analytical authority, P17/P19 ownership, or the DMP-DEC-0050 autonomous cognition contract.
+
+Permanent rule:
+
+```text
+RED IS EVIDENCE, NOT AN INSTRUCTION TO PATCH.
+
+FIRST WRONG TRANSITION
+→ EXACT OWNER
+→ ROOT CAUSE
+→ GENERIC OWNER-LOCAL FIX
+→ FOCUSED REGRESSION
+→ DETERMINISTIC / PROVIDER-FREE GREEN
+→ MINIMUM CERTIFICATION NEEDED
+
+MAX THREE BOUNDED ROOT-CAUSE RECOVERY CYCLES
+BEFORE SUPERVISOR STOP.
+```
+
+Forbidden recovery behavior:
+
+```text
+NO BLIND RERUNS.
+NO PROMPT-TWEAK RETRIES.
+NO REGEX / FUZZY / MORPH SEMANTIC PATCHES.
+NO HARD-CODED TEST VALUES OR BRANCH A/B BEHAVIOR.
+NO TEST-SPECIFIC PRODUCT QUERY MODIFICATION.
+NO SILENT FALLBACK.
+NO ARCHITECTURE DRIFT.
+DO NOT TUNE A PROBABILISTIC AGENT TO ONE TRAJECTORY.
+```
+
+Generic-fix test:
+
+```text
+Would this fix still be correct if the next legal example had
+different names, values, branches, query shapes, and investigation path?
+
+If NO, it is not a generic fix.
+```
+
+Current recovery counter:
+
+```text
+historical RED-001 / RED-002 = do not consume DMP-0051 budget
+
+36137304596
+= autonomous certification TRANSPORT RED
+= 0 manager Luna calls
+= 0 Metabot occurrences
+= 0 dataset executions
+
+active recovery cycle = 1 / 3
+remaining cycles      = 2 after Cycle 1
+```
+
+Current exact owner:
+
+```text
+INFRA / EVALUATOR TRANSPORT
+```
+
+Current Cycle 1 product freeze:
+
+```text
+DO NOT MODIFY:
+research_manager.py
+research_followup.py
+research_product.py
+research_native_gateway.py
+claim_lineage.py
+research_exploration.py
+Metabase engine
+
+UNLESS NEW EVIDENCE INDEPENDENTLY PROVES PRODUCT OWNERSHIP.
+```
+
+Current Cycle 1 root cause:
+
+```text
+valid receipt really added in Git
+→ compatibility entrypoint trusted github.event.head_commit.added
+→ event projection omitted the path
+→ valid authorization rejected before autonomous canary entry
+```
+
+Generic invariant replacing the faulty transport:
+
+```text
+GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS
+FOR COMMIT / AUTHORIZATION IDENTITY.
+
+dispatch HEAD
+→ exact single parent
+→ exact parent→HEAD git diff-tree
+→ exactly one new JSON receipt under
+  backend/lab/metabase/p17/authorizations/
+→ exact status A
+→ exact immutable receipt fields and bounded budgets
+```
+
+Historical receipt:
+
+```text
+backend/lab/metabase/p17/AUTONOMOUS_LUNA_AUTHORIZATION.json
+= IMMUTABLE HISTORICAL EVIDENCE
+= never delete/re-add to fake append-only authorization
+```
+
+Future authorization receipts are append-only and uniquely named under:
+
+```text
+backend/lab/metabase/p17/authorizations/
+```
+
+Every live recovery dispatch receipt must include at minimum:
+
+```text
+decision
+branch
+authorization_id
+recovery_cycle
+candidate_product_sha
+dispatch_parent_sha
+provider_free_run_id
+governance_run_id
+model
+max_manager_calls
+sol_budget
+engine_build_budget
+c1_budget
+purpose
+```
+
+Commit-message markers may trigger transport but are never authorization truth.
+GitHub event changed-file projections are never authorization truth.
+
+Current Cycle 1 required provider-free regression family:
+
+```text
+exact added receipt accepted
+modified receipt rejected
+pre-existing receipt rejected
+historical delete/re-add rejected
+zero new receipt rejected
+two new receipts rejected
+wrong candidate product SHA rejected
+wrong dispatch parent rejected
+wrong branch rejected
+wrong recovery cycle rejected
+wrong decision rejected
+wrong model rejected
+manager/Sol/engine-build/C1 budget escalation rejected
+event head_commit.added irrelevant
+```
+
+Paid/cognition accounting is split permanently:
+
+```text
+fails before provider/model invocation
+= CERTIFICATION TRANSPORT ATTEMPT
+
+fails after real manager/provider invocation
+= COGNITION / LIVE CERTIFICATION SAMPLE
+```
+
+Cycle progression:
+
+```text
+Cycle 1 RED after a valid corrected live
+→ identify new first wrong transition and owner
+→ generic root fix + provider-free proof
+→ Cycle 2 / 3
+
+Cycle 2 RED
+→ same protocol
+→ Cycle 3 / 3
+
+Cycle 3 unresolved RED
+→ STOP
+→ supervisor
+→ no fourth autonomous attempt
+```
+
+Immediate STOP conditions override the three-cycle right when a proposed fix requires Metabase
+core/driver/QP/Lib changes, P13 hot-path restoration, a new analytical truth owner, a second native
+execution path, a second receipt/Evidence authority, new security/RLS authority, sealed P14
+mutation, cross-tenant access, destructive semantic migration, semantic regex/fuzzy/morph fallback,
+test-specific product behavior, broad paid evaluation, or an owner that remains unknown after
+reasonable inspection.
+
+Current bounded objective:
+
+```text
+finish Cycle 1 exact-Git transport root fix
+→ provider-free GREEN
+→ governance GREEN
+→ ONE corrected autonomous Luna certification
+→ if GREEN: seal P17, then P18 pre-development only
+→ if RED: begin Cycle 2 only from new evidenced root cause
+```
