@@ -804,6 +804,11 @@ def test_d10_s_real_wren_state_aware_action_profile_reaches_report(
             for item in result.findings
         ],
     }
+    if response.status != ProductStatus.REPORT:
+        print(
+            "D10S_REAL_WREN_DIAGNOSTIC="
+            + json.dumps(diagnostic, ensure_ascii=False, sort_keys=True, default=str)
+        )
     assert response.status == ProductStatus.REPORT, diagnostic
     assert response.terminal_receipt.verified_complete is True, diagnostic
     assert result.runtime.snapshot.manager_turns <= 6
