@@ -475,35 +475,84 @@ class ClaimLineageStore:
             claim_id=claim_id,
             principal=principal,
         )
-        refs = tuple(x for x in session.evidence_refs if x.evidence_id == evidence_id)
-        if len(refs) != 1:
+        refs = tuple(
+            x for x in session.evidence_refs if x.evidence_id == evidence_id
+        )
+        if len(refs) > 1:
             raise ClaimLineageError(
                 "P16_EVIDENCE_NOT_IN_SESSION",
                 "Evidence is not uniquely present in the current Research session",
             )
-        evidence_ref = refs[0]
-        if (
-            evidence_ref.obligation_id != claim.obligation_id
-            or evidence_ref.authority_id != session.authority_id
-        ):
-            raise ClaimLineageError(
-                "P16_EVIDENCE_SCOPE_MISMATCH",
-                "Evidence belongs to another obligation or Research authority",
-            )
 
         with Session(self._engine) as db:
-            executions = db.exec(
-                select(ResearchExecutionLink)
-                .where(ResearchExecutionLink.session_id == session_id)
-                .where(ResearchExecutionLink.obligation_id == claim.obligation_id)
-                .where(ResearchExecutionLink.evidence_id == evidence_id)
-                .where(ResearchExecutionLink.receipt_id == evidence_ref.receipt_id)
-                .where(ResearchExecutionLink.status == "VERIFIED")
-            ).all()
-            if len(executions) != 1:
+            if refs:
+                evidence_ref = refs[0]
+                if (
+                    evidence_ref.obligation_id != claim.obligation_id
+                    or evidence_ref.authority_id != session.authority_id
+                ):
+                    raise ClaimLineageError(
+                        "P16_EVIDENCE_SCOPE_MISMATCH",
+                        (
+                            "Evidence belongs to another obligation or "
+                            "Research authority"
+                        ),
+                    )
+                executions = db.exec(
+                    select(ResearchExecutionLink)
+                    .where(ResearchExecutionLink.session_id == session_id)
+                    .where(
+                        ResearchExecutionLink.obligation_id
+                        == claim.obligation_id
+                    )
+                    .where(ResearchExecutionLink.evidence_id == evidence_id)
+                    .where(
+                        ResearchExecutionLink.receipt_id
+                        == evidence_ref.receipt_id
+                    )
+                    .where(ResearchExecutionLink.status == "VERIFIED")
+                ).all()
+                receipt_id = evidence_ref.receipt_id
+            else:
+                executions = db.exec(
+                    select(ResearchExecutionLink)
+                    .where(ResearchExecutionLink.session_id == session_id)
+                    .where(
+                        ResearchExecutionLink.obligation_id
+                        == claim.obligation_id
+                    )
+                    .where(ResearchExecutionLink.evidence_id == evidence_id)
+                    .where(
+                        ResearchExecutionLink.execution_kind
+                        == "P17_FOLLOWUP"
+                    )
+                    .where(ResearchExecutionLink.status == "VERIFIED")
+                ).all()
+                if len(executions) == 1:
+                    candidate = executions[0]
+                    if (
+                        not candidate.receipt_id
+                        or not candidate.reasoning_step_id
+                        or not candidate.investigation_task_id
+                    ):
+                        raise ClaimLineageError(
+                            "P16_EVIDENCE_EXECUTION_PROVENANCE_INVALID",
+                            (
+                                "P17 Evidence lacks receipt/reasoning/task "
+                                "lineage"
+                            ),
+                        )
+                    receipt_id = candidate.receipt_id
+                else:
+                    receipt_id = None
+
+            if len(executions) != 1 or receipt_id is None:
                 raise ClaimLineageError(
                     "P16_EVIDENCE_EXECUTION_PROVENANCE_INVALID",
-                    "Evidence does not resolve to exactly one VERIFIED execution/receipt",
+                    (
+                        "Evidence does not resolve to exactly one VERIFIED "
+                        "execution/receipt"
+                    ),
                 )
             execution = executions[0]
             prior = db.exec(
@@ -527,7 +576,7 @@ class ClaimLineageStore:
                 {
                     "claim_id": claim_id,
                     "evidence_id": evidence_id,
-                    "receipt_id": evidence_ref.receipt_id,
+                    "receipt_id": receipt_id,
                     "execution_link_id": str(execution.id),
                     "relation": relation.value,
                 },
@@ -537,7 +586,7 @@ class ClaimLineageStore:
                     link_id=link_id,
                     claim_id=claim_id,
                     evidence_id=evidence_id,
-                    receipt_id=evidence_ref.receipt_id,
+                    receipt_id=receipt_id,
                     execution_link_id=execution.id,
                     relation=relation.value,
                     created_at=datetime.now(timezone.utc),
