@@ -67,6 +67,7 @@ from app.v2.standard_builder import StandardWorkMode
 from app.v2.standard_lane import StandardLaneEngine
 from app.v2.manager_models import StandardProjection
 from app.v2.model_policy import ModelProfile, ModelRole
+from helpers.manager_action_set_adapter import adapt_legacy_manager_intent
 
 
 def _profile(role: ModelRole) -> ModelProfile:
@@ -900,17 +901,26 @@ def test_old_opaque_evidence_requires_explicit_inspection_while_fresh_delta_auto
             self.calls = 0
 
         def structured_json(self, system, user, **kwargs):
+            import json
+
             self.calls += 1
+            payload = json.loads(user)
             if self.calls == 1:
-                return {
-                    "action": "inspect_evidence",
-                    "evidence_ref": "E_OLD",
-                }
-            return {
-                "action": "request_clarification",
-                "obligation_ids": ["U1"],
-                "clarification_reason": "test stop",
-            }
+                return adapt_legacy_manager_intent(
+                    payload,
+                    {
+                        "action": "inspect_evidence",
+                        "evidence_ref": "E_OLD",
+                    },
+                )
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "request_clarification",
+                    "obligation_ids": ["U1"],
+                    "clarification_reason": "test stop",
+                },
+            )
 
     llm = InspectOldLLM()
     outcome = ResearchManagerLoop(
