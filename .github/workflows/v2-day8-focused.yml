@@ -31,7 +31,9 @@ name: v2-day8-focused
       - "backend/tests/test_v2_day8_manager_root_cause_loop.py"
       - "backend/tests/test_v2_day8_real_wren_root_cause.py"
       - "backend/tests/test_v2_day8_live_sol_contract.py"
-      - "backend/lab/v2_day8_root_cause_live_sol.py"\n      - "backend/lab/v2_certification_oracle.py"\n      - "backend/tests/test_v2_day10_paid_harness_contract.py"
+      - "backend/lab/v2_day8_root_cause_live_sol.py"
+      - "backend/lab/v2_certification_oracle.py"
+      - "backend/tests/test_v2_day10_paid_harness_contract.py"
       - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
       - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
       - "backend/tests/test_v2_day6_5_semantic_linker.py"
@@ -122,3 +124,7 @@ jobs:
       - name: Day8 one real-Wren root-cause sentinel
         working-directory: backend
         run: pytest -q tests/test_v2_day8_real_wren_root_cause.py
+
+      - name: Final certification oracle behavior
+        working-directory: backend
+        run: pytest -q tests/test_v2_day10_paid_harness_contract.py
