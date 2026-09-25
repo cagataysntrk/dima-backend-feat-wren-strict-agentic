@@ -70,6 +70,7 @@ class ParentEvidenceActionState:
     capability_key: str
     evidence_ref: str
     semantic_refs: tuple[SemanticActionRef, ...]
+    branch_eligible: bool = True
 
 
 @dataclass(frozen=True)
@@ -544,7 +545,11 @@ class ManagerActionSetBuilder:
 
             # Branch proposal is a bounded cognition choice over capabilities only.
             # Parent/Evidence/handles remain server-bound.
-            branches = _branch_capabilities(parent.semantic_refs)
+            branches = (
+                _branch_capabilities(parent.semantic_refs)
+                if parent.branch_eligible
+                else ()
+            )
             if branches:
                 branch_caps = [capability for capability, _handles in branches]
                 instances.append(
