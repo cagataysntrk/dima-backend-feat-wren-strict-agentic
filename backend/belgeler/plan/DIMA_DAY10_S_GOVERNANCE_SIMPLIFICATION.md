@@ -1,5 +1,49 @@
 # DIMA DAY10-S — GOVERNANCE / SEMANTIC SIMPLIFICATION
 
+## FINAL AUTHORITY — SEALED
+
+```text
+D10-S provider-free closure = GREEN
+ManagerBudget 4 / 4 / 8     = RATIFIED
+D10-S FINAL                 = SEALED
+seal tests                  = 0
+
+fresh paid envelope         = 0 / 40 used
+next authorized action      = one CANONICAL_NS4 integrated Product live measurement
+hard per-run maximum        = 20
+```
+
+Permanent invariant:
+
+```text
+PHASE BUDGET INDEPENDENCE
+
+A bounded retry in preacceptance must not consume the
+independent bounded Research cognition allowance.
+
+preacceptance <= 4
+Research <= 4
+outer total <= 8
+```
+
+Historical global=6 receipts in this document remain historical and are not rewritten.
+
+Current call-feasibility receipt:
+
+```text
+FAST_LANGUAGE         expected 1      hard cap 2
+RESEARCH_MANAGER      expected 6–10   hard cap 12
+SEMANTIC_LINKER       expected 3      hard cap 3
+TEMPORAL_NORMALIZER   expected 1      hard cap 1
+REPORT_NARRATOR       expected 2      hard cap 2
+
+expected canonical total      13–17
+hard per-run maximum          20
+```
+
+The estimate is descriptive only; no Product behavior was changed to reduce calls.
+
+
 **Date:** 2026-09-25  
 **Branch:** `feat/ask-v2-mvp`  
 **Provider-free closure candidate HEAD:** `0b9c4a676a04cbf547f4d73116f048c319d77aa3`  
