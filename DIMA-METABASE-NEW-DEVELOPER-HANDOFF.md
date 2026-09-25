@@ -41,6 +41,9 @@ typed-adapter root-fix provider-free  = 36128262857 SUCCESS
 typed-adapter root-fix governance     = 36128262891 SUCCESS
 corrected-live harness-fix governance = 36131121548 SUCCESS
 corrected-live harness-fix provider-free = 36131121661 SUCCESS
+DMP-0050 provider-free                = 36136988379 SUCCESS
+DMP-0050 governance                   = 36136988429 SUCCESS
+DMP-0050 trajectory-invariant eval    = 7 PASS
 
 P17 focused recursive regression      = 31 PASS
 P16 claim-lineage regression          = 6 PASS
@@ -77,7 +80,7 @@ P16                                   = SEALED
 P17 bounded-manager foundation        = PROVIDER-FREE GREEN
 P17 recursive authority               = PROVIDER-FREE GREEN
 P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
-P17 autonomous cognition              = OPEN
+P17 autonomous cognition              = PROVIDER-FREE GREEN / ONE LIVE AUTHORIZED
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
@@ -111,14 +114,15 @@ The active certification target is:
 ```text
 P17 recursive product authority       = PROVIDER-FREE GREEN
 P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
-P17 autonomous cognition certification= OPEN
+P17 autonomous cognition certification= PROVIDER-FREE GREEN / ONE LIVE AUTHORIZED
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 ```
 
-Before the single DMP-DEC-0050 paid run, the trajectory-invariant evaluator, autonomous harness,
-P14/P15/P16/P17 deterministic regressions and governance must all be GREEN. The paid autonomous
-Luna run budget after DMP-DEC-0050 is exactly one; Sol, C1 and engine-build counters remain zero.
+The trajectory-invariant evaluator, autonomous harness, P14/P15/P16/P17 deterministic regressions
+and governance are GREEN at provider-free run `36136988379` and governance run `36136988429`.
+Exactly one DMP-DEC-0050 autonomous Luna canary is now authorized and not yet consumed. Sol, C1 and
+engine-build counters remain zero. P18 stays blocked until that autonomous canary is GREEN.
 
 Permanent evaluation governance:
 
