@@ -16,7 +16,7 @@ from app.v2.research_tools import (
 )
 from control_plane.authorize import Principal
 from lab import v2_day10_ns4_provider_free_rehearsal as ns4
-from lab.v2_day10_ns4_provider_free_rehearsal import run_rehearsal
+from lab.v2_day10_ns4_provider_free_rehearsal import run_rehearsal, run_revision_rehearsal
 
 
 def test_ns4_runtime_rehearsal_fits_existing_six_turn_ceiling_without_ceremony():
@@ -61,6 +61,22 @@ def test_ns4_runtime_rehearsal_fits_existing_six_turn_ceiling_without_ceremony()
     assert receipt["report_statement_injection_absent"] is True
     assert receipt["paid_gate_structural_status"] == "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
 
+
+
+def test_revision_path_reaches_same_governed_product_within_global_six_turns():
+    receipt = run_revision_rehearsal()
+
+    assert receipt["provider_calls"] == 0
+    assert receipt["preacceptance_model_calls"] == 4
+    assert receipt["manager_turn_total"] <= 6
+    assert receipt["manager_turn_ceiling"] == 6
+    assert receipt["completion_gate_final_state"] == "COMPLETED"
+    assert receipt["root_status"] == "VERIFIED"
+    assert receipt["directive_final_status"] == "APPLIED"
+    assert receipt["candidate_finding_count"] == 1
+    assert receipt["confirmed_cause_count"] == 0
+    assert receipt["report_statement_injection_absent"] is True
+    assert receipt["paid_gate_structural_status"] == "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
 
 
 class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
