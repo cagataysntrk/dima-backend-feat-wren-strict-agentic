@@ -7,7 +7,7 @@
 
 This document is the release-level timing authority for expensive broad evaluation.
 
-## 0. CURRENT RELEASE STATE — DAY10 / D10-S GOVERNANCE SIMPLIFICATION
+## 0. CURRENT RELEASE STATE — DAY10 / D10-S PROVIDER-FREE CLOSURE
 
 ```text
 primary analytics substrate    WREN
@@ -19,20 +19,28 @@ Day8 FINAL                     NOT SEALED
 Day9 engineering               GREEN
 Day10 engineering              GREEN
 Day10 FINAL                    OPEN
-current phase                  DAY10 / D10-S GOVERNANCE SIMPLIFICATION
+current phase                  DAY10 / D10-S SUPERVISOR BUDGET RATIFICATION
 
-current Product behavior       91721cb3bc01a3737212c7596fd3170c60c0239b
-run #4                         36101471602 = RED / 9 calls
-run #4 tested SHA              5171e6e9891afe97925b95061c730934fa737a73
+pre-doc proof HEAD             0b9c4a676a04cbf547f4d73116f048c319d77aa3
+current Product behavior       0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
 
-historical D10-Q calls         31
-D10-Q                          HARD STOP / CLOSED AS DEBUG LOOP
+Day7 affected                  36127275608 = GREEN
+Day8 affected                  36126639512 = GREEN
+Day10 focused                  36126639503 = GREEN
+D10-S real-Wren root           GREEN
+presentation ownership         GREEN
 
-owner-reset future envelope    40 fresh provider calls
-future-envelope used           0 / 40
-paid execution                 PAUSED DURING D10-S IMPLEMENTATION
+ManagerBudget                  preacceptance=4 / Research=4 / outer=8
+budget ratification            PENDING EXPLICIT SUPERVISOR DECISION
+further budget edits           FORBIDDEN
 
-D10-S                          ACTIVE
+fresh provider envelope        40
+used                           0 / 40
+paid execution                 NOT AUTHORIZED
+
+D10-S provider-free closure    COMPLETE
+D10-S FINAL EXIT / SEAL        PENDING BUDGET RATIFICATION
+
 Day11                          NOT AUTHORIZED
 DEV80                          NOT AUTHORIZED
 Validation50                   NOT AUTHORIZED
@@ -40,17 +48,29 @@ Hidden50                       NOT AUTHORIZED
 production /ask-v2             OFF
 ```
 
-Run #4 is not a Wren, DB, fanout, semantic-truth or security failure. It reached accepted authority,
-four governed Wren query executions and VERIFIED Evidence. The first wrong transition is post-Evidence
-cognition selecting actions the deterministic current state already knows are redundant:
-fresh-disclosed Evidence inspection, then semantic rediscovery of an accepted governed concept.
+D10-S provider-free engineering gates are GREEN. The current remaining release-level gate is
+authority, not a known Product RED: the supervisor must explicitly ratify or reject the current
+phase-separated ManagerBudget contract before D10-S may be called final GREEN/SEALED.
 
-D10-S therefore narrows the Manager action surface from runtime state. It does not weaken or migrate
-truth/security ownership. The model still selects among available actions and runtime validation
-remains defense in depth.
+The current D10-S architecture keeps `ManagerActionAvailability` as the single deterministic
+model-action owner. The same resolved profile filters the provider schema and is checked again at
+runtime. Fresh disclosed Evidence does not create a redundant inspect action; feasible accepted
+ROOT semantics are reused; a server-derived child task does not become semantic authority; and
+evidence-grounded non-root discovery remains possible only under an OPEN accepted
+`ADAPT_ON_EVIDENCE` parent.
 
-No paid/live provider calls are part of D10-S implementation/debugging. Provider-free tests and one
-deterministic real-Wren sentinel own this phase. Historical D10-Q paid receipts remain immutable.
+Day7 preservation is also GREEN: successful governed adaptive branches terminally account the
+directive independent of execution transport, allowing CompletionGate to close at the loop boundary
+without spending a fifth Research cognition turn.
+
+Presentation USER_MUST authority remains accepted but is not treated as a separate analytical
+Evidence requirement. Product presentation/report delivery still owns the requested deliverable.
+
+No D10-S paid calls were consumed. A future paid measurement requires a new explicit supervisor
+authorization and must not be inferred from the fresh 40-call envelope.
+
+Full closure record:
+`backend/belgeler/plan/DIMA_DAY10_S_GOVERNANCE_SIMPLIFICATION.md`.
 
 The bridge decision is scoped, not universal:
 `retained Wren semantics → thin Metabase structured execution` is rejected for this release.
