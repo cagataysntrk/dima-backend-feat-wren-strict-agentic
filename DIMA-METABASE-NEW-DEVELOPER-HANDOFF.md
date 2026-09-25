@@ -30,13 +30,13 @@ GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS FOR AUTHORIZATION IDENTITY.
 
 ```text
 certified product/code checkpoint     = d1bc5291b315ff19c3456d08ff1820e983d85942
-latest evaluator/infra checkpoint     = 7bc8272c9e6de088c6ec33c6d9759474b4d7c809
+latest evaluator/infra checkpoint     = c2d460512469e532dfeac529111ec1d08aa8ae68
 branch                                = feat/dima-metabase-platform
-branch HEAD at recovery snapshot       = 7bc8272c9e6de088c6ec33c6d9759474b4d7c809
+branch HEAD at recovery snapshot       = c2d460512469e532dfeac529111ec1d08aa8ae68
 active recovery cycle                  = 1 / 3
 remaining recovery cycles              = 2 after Cycle 1
-current gate                           = exact-Git authorization transport proof
-next bounded objective                 = provider-free + governance → one corrected Cycle-1 Luna canary
+current gate                           = Cycle-1 corrected autonomous cognition certification
+next bounded objective                 = append recovery-001 receipt → one corrected Cycle-1 Luna canary
 forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051
 
 engine gitlink                        = cbe313af9ac2d5960f662068e433d328d896fb06
@@ -59,6 +59,9 @@ DMP-0050 manager Luna calls           = 0
 DMP-0050 Metabot occurrences          = 0
 DMP-0050 dataset occurrences          = 0
 DMP-0050 live owner                   = INFRA / EVALUATOR TRANSPORT
+DMP-0051 provider-free                = 36139719694 SUCCESS
+DMP-0051 governance                   = 36139719744 SUCCESS
+DMP-0051 exact-Git transport          = 17 PASS
 
 P17 focused recursive regression      = 31 PASS
 P16 claim-lineage regression          = 6 PASS
@@ -96,7 +99,7 @@ P17 bounded-manager foundation        = PROVIDER-FREE GREEN
 P17 recursive authority               = PROVIDER-FREE GREEN
 P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
 P17 autonomous cognition              = NOT YET EXECUTED UNDER VALID TRANSPORT
-P17 current blocker                    = CERTIFICATION TRANSPORT ONLY
+P17 current blocker                    = NONE AT TRANSPORT; LIVE COGNITION PENDING
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
@@ -142,8 +145,8 @@ Run `36137304596` is an autonomous certification **transport RED**, not a cognit
 manager Luna calls, Metabot occurrences and dataset executions were all zero.
 
 DMP-DEC-0051 now governs recovery. Recovery Cycle 1 / 3 is active. The exact-Git owner-local
-transport root fix must first prove the full RED-003 provider-free regression family and governance
-GREEN. After that, exactly one corrected autonomous Luna certification is authorized for Cycle 1.
+transport root fix is provider-free GREEN at `36139719694`; governance is GREEN at
+`36139719744`. Exactly one corrected autonomous Luna certification is now authorized for Cycle 1.
 P18 remains blocked until genuine autonomous cognition is GREEN.
 
 Permanent evaluation governance:
