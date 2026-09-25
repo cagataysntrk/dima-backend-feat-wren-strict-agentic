@@ -5,6 +5,7 @@ name: v2-day8-focused
     branches:
       - feat/ask-v2-mvp
     paths:
+      - "backend/app/fanout.py"
       - "backend/app/v2/models.py"
       - "backend/app/v2/epistemics.py"
       - "backend/app/v2/hypothesis_proposals.py"
