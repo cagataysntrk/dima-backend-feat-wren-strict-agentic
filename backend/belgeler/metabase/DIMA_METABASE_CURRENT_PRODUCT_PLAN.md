@@ -3,30 +3,52 @@
 ## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
 
 > **FORWARD AUTHORITY.** This block overrides any older "current", "next", "blocked", or
-> "immediate work" language later in this living document. Older sections remain historical
-> evidence only unless they explicitly say they are current under DMP-DEC-0048.
+> "immediate work" language later in this living document. Historical sections remain append-only
+> evidence unless they explicitly say they are current under DMP-DEC-0048 + DMP-DEC-0049.
 
 ```text
-current core implementation checkpoint     = 9fa97e041bf51e87518943d010a070cce6b0dcac
-branch                              = feat/dima-metabase-platform
-forward authority                   = DMP-DEC-0048
-engine gitlink                      = cbe313af9ac2d5960f662068e433d328d896fb06
-engine release                      = 0.63.18-dima.6
-engine certification                = 36042062775 SUCCESS
-engine digest                       = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+current product/code checkpoint      = c031a5f139dba5321c823d8c7af1399f1734df71
+branch                               = feat/dima-metabase-platform
+forward authority                    = DMP-DEC-0048 + DMP-DEC-0049
 
-P14 final provider-free             = 36102734433 SUCCESS
-P14 final governance                = 36102734425 SUCCESS
-P15 provider-free seal              = 36103561534 SUCCESS
-P16 provider-free seal              = 36104299903 SUCCESS
-P16/current governance              = 36104299868 SUCCESS
-P14 real native-direct Luna canary  = 36100443464 SUCCESS
-second paid P14 model run           = 0
+engine gitlink                       = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                       = 0.63.18-dima.6
+engine digest                        = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+engine certification                 = 36042062775 SUCCESS
+engine changes/builds during P17     = 0 / 0
 
-CURRENT SEALED PHASES               = P14 + P15 + P16
-CURRENT OPEN PHASE                  = P17 RESEARCH MANAGER MATURATION
-P18                                 = NEXT AFTER P17 GREEN
-UI / UX                             = FORBIDDEN UNTIL P21 SEALED
+current governance                   = 36120611316 SUCCESS
+P17 bounded-manager provider-free    = 36120611264 SUCCESS
+P17 focused regression               = 13 PASS
+P16 claim-lineage regression         = 6 PASS
+P15 native Exploration regression    = 5 PASS
+P14 native-direct regression         = 17 PASS
+
+P14                                  = SEALED
+P15                                  = SEALED
+P16                                  = SEALED
+P17 bounded-manager foundation       = PROVIDER-FREE GREEN
+P17 recursive-investigation closure  = OPEN / NOT SEALED
+P18                                  = BLOCKED UNTIL P17 RECURSIVE SEAL
+UI / UX                              = FORBIDDEN UNTIL P21 SEALED
+```
+
+Permanent forward split:
+
+```text
+METABASE + METABOT = ANALYTICAL ENGINE
+
+DIMA = INVESTIGATION
+     + EPISTEMICS
+     + DECISION BRAIN
+
+DIMA CHOOSES THE NEXT ANALYTICAL QUESTION.
+METABASE ANSWERS IT NATIVELY.
+
+RECURSIVE DEPTH = DIMA.
+ANALYTICAL EXECUTION AT EVERY DEPTH = METABASE.
+
+P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
 ```
 
 Permanent ownership:
