@@ -259,7 +259,20 @@ def test_adaptive_relationship_blocked_terminal_does_not_apply_directive(
             "adaptive_branch_executed",
         }
     )
-    assert blocked_candidates, diagnostic
+    assert blocked_candidates, {
+        "diagnostic": diagnostic,
+        "manager_actions": tuple(manager.actions),
+        "manager_prompts": len(manager.manager_prompts),
+        "runtime_state": result.runtime.snapshot.state.value,
+        "clarification_required": result.outcome.clarification_required,
+        "observation_kinds": tuple(
+            item.get("kind") for item in result.outcome.observations
+        ),
+        "ledger": tuple(
+            (item.obligation_id, item.status.value)
+            for item in result.ledger.items
+        ),
+    }
     blocked = blocked_candidates[0]
     assert blocked["task_id"] == "D_ROOT_REL_BLOCKED"
     assert blocked["result"]["available"] is False
