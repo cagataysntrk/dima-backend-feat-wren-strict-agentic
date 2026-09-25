@@ -1,4 +1,4 @@
-"""Exact-Git, failure-family-aware authorization transport for DMP-DEC-0052.
+"""Exact-Git, failure-family-aware authorization transport for DMP-DEC-0053.
 
 Authorization truth comes from immutable commit objects plus exact parent→HEAD
 change status. GitHub event projections and commit-message semantics are never
@@ -25,13 +25,16 @@ HISTORICAL_RECEIPTS = frozenset(
             "backend/lab/metabase/p17/authorizations/"
             "p17-manager-structured-schema--attempt-002.json"
         ),
+        (
+            "backend/lab/metabase/p17/authorizations/"
+            "p17-manager-semantic-output--attempt-002.json"
+        ),
     }
 )
 EXPECTED_BRANCH = "feat/dima-metabase-platform"
-EXPECTED_DECISION = "DMP-DEC-0052"
-EXPECTED_PRODUCT_SHA = "e6ab0bcf29bcbc17004c045a4391235ebc1fed19"
+EXPECTED_DECISION = "DMP-DEC-0053"
 EXPECTED_MODEL = "openai/gpt-5.6-luna"
-CURRENT_FAILURE_FAMILY_ID = "p17-manager-semantic-output"
+CURRENT_FAILURE_FAMILY_ID = "p17-investigation-language-legality"
 CURRENT_ATTEMPT_IN_FAMILY = 2
 MAX_ATTEMPT_IN_FAMILY = 3
 MAX_MANAGER_CALLS = 8
@@ -295,7 +298,6 @@ def verify_dispatch_authorization(
         "branch": EXPECTED_BRANCH,
         "failure_family_id": expected_failure_family_id,
         "attempt_in_family": expected_attempt_in_family,
-        "candidate_product_sha": EXPECTED_PRODUCT_SHA,
         "dispatch_parent_sha": parent_sha,
         "model": EXPECTED_MODEL,
     }
@@ -304,6 +306,14 @@ def verify_dispatch_authorization(
             raise AuthorizationTransportError(
                 f"authorization mismatch: {key}"
             )
+
+    candidate_product_sha = str(
+        payload.get("candidate_product_sha") or ""
+    ).strip()
+    if candidate_product_sha != parent_sha:
+        raise AuthorizationTransportError(
+            "authorization mismatch: candidate_product_sha"
+        )
 
     authorization_id = str(payload.get("authorization_id") or "").strip()
     expected_authorization_id = (
@@ -354,7 +364,7 @@ def verify_dispatch_authorization(
         authorization_id=authorization_id,
         failure_family_id=expected_failure_family_id,
         attempt_in_family=expected_attempt_in_family,
-        candidate_product_sha=EXPECTED_PRODUCT_SHA,
+        candidate_product_sha=candidate_product_sha,
         dispatch_parent_sha=parent_sha,
         provider_free_run_id=provider_free_run_id,
         governance_run_id=governance_run_id,
