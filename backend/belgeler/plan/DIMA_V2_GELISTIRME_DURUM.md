@@ -1,5 +1,48 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — D10-Q FINAL GENERIC FIX #3 GREEN / FINAL PAID VERIFICATION READY
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc proof HEAD             5db64a5c704c910e860c08b6abc82951f9dd6bbb
+latest Product behavior        91721cb3bc01a3737212c7596fd3170c60c0239b
+
+provider calls                 22 / 40
+remaining                      18
+
+generic fixes                  3 / 3 consumed
+fix #3                         COMPLETE / GREEN
+
+revision path                  4 preacceptance + 2 Research = 6 / 6
+normal G16                     2 preacceptance + 4 Research = 6 / 6
+
+Day7 affected                  36100892648 = GREEN
+Day8 affected                  36100892586 = GREEN
+Day10 affected                 36100939565 = GREEN
+
+paid run #4                    AUTHORIZED / FINAL VERIFICATION
+run #4 max calls               18
+
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Fix #3 moved Coverage VETO before semantic grounding, with zero semantic authority from rejected
+drafts. A provider-free full revision rehearsal then exposed the expected six-turn conflict:
+four preacceptance turns left only two Research cognition turns, while the old ceremony needed four.
+
+The safe generic compaction is one bounded hypothesis+first-next-test proposal followed by the normal
+post-Evidence relation proposal. Server owners remain unchanged: hypothesis ID, ResearchTask ID,
+execution truth and Evidence ID are never model-owned. The composite next test can satisfy a same-root
+ADAPT_ON_EVIDENCE directive only after strict server-side provenance + successful VERIFIED Evidence.
+
+Normal G16 remains unchanged and GREEN. No frozen ceiling was raised.
+
+Next: exactly one final paid Product verification run #4, maximum 18 calls. GREEN seals Day8/Day10;
+RED is HARD STOP with no fourth generic fix.
+
+
 ## 2026-09-25 — D10-Q FINAL GENERIC FIX #3 AUTHORIZED
 
 This is the current authority. The earlier TRUE STOP remains a historical receipt.
