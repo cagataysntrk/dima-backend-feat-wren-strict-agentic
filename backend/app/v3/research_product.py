@@ -1,15 +1,15 @@
 """P14 product Research/Ask orchestration.
 
 This module owns durable Research lifecycle and exact native-occurrence correlation.
-It deliberately delegates analytical construction/execution trust to the existing
-native P13/P10/P5/Evidence owners.
+Metabot + Metabase own analytical cognition/execution; Dima owns Research,
+lineage, receipt/Evidence correlation, and durable resume.
 """
 from __future__ import annotations
 
 import hashlib
 from contextlib import AbstractContextManager
 from datetime import datetime, timezone
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -22,7 +22,7 @@ from app.v3.research import (
     ResearchManager,
     ResearchSession,
 )
-from app.v3.research_store import ResearchSessionStore
+from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import (
     NativeEngineBridge,
     NativeEngineBridgeError,
@@ -78,6 +78,9 @@ class ResearchMaterialExecutor(Protocol):
         bridge: NativeEngineBridge,
         native_conversation_id: UUID,
         native_query_id: str,
+        native_query: dict[str, Any],
+        query_fingerprint: str,
+        execution_link_id: UUID,
     ) -> ResearchMaterialOutcome: ...
 
 
@@ -174,7 +177,7 @@ class ResearchAskOrchestrator:
         bridge_factory: NativeBridgeFactory,
         material_executor: ResearchMaterialExecutor,
     ) -> None:
-        """Install the existing principal-scoped native/P13 owner; never mint auth here."""
+        """Install principal-scoped native Metabot/Metabase runtime; never mint auth here."""
         self._bridge_factory = bridge_factory
         self._material_executor = material_executor
 
@@ -249,24 +252,6 @@ class ResearchAskOrchestrator:
         )
 
     @staticmethod
-    def _query_id(data_parts: tuple[object, ...]) -> str:
-        ids: set[str] = set()
-        for part in data_parts:
-            if not isinstance(part, dict) or part.get("type") != "generated_entity":
-                continue
-            value = part.get("value")
-            query = value.get("query") if isinstance(value, dict) else None
-            query_id = query.get("id") if isinstance(query, dict) else None
-            if query_id:
-                ids.add(str(query_id))
-        if len(ids) != 1:
-            raise ResearchMaterialLimitation(
-                "P14_NATIVE_QUERY_OCCURRENCE_UNRESOLVED",
-                f"expected one generated native query id, observed {sorted(ids)!r}",
-            )
-        return next(iter(ids))
-
-    @staticmethod
     def _response(
         session: ResearchSession,
         *,
@@ -326,7 +311,7 @@ class ResearchAskOrchestrator:
         if self._bridge_factory is None or self._material_executor is None:
             raise ResearchProductRuntimeUnavailable(
                 "P14_NATIVE_RUNTIME_NOT_CONFIGURED",
-                "principal-scoped native bridge/P13 material executor is not installed",
+                "principal-scoped native Metabot/Metabase runtime is not installed",
             )
         return self._bridge_factory, self._material_executor
 
@@ -403,8 +388,6 @@ class ResearchAskOrchestrator:
             principal=subject,
         )
         selected = self._select_obligation(session, delegatable, obligation_id)
-        # Prove that material execution consumes the exact accepted Research context
-        # persisted at entry, never a reconstructed interpretation of old language.
         self.accepted_material_question(session, selected)
         pending = self._store.pending_link(
             session_id=session.session_id,
@@ -430,8 +413,8 @@ class ResearchAskOrchestrator:
                 obligation_id=selected,
                 code="P14_NATIVE_DELEGATION_OUTCOME_UNKNOWN",
                 detail=(
-                    "a native turn was durably delegated but no exact native query occurrence "
-                    "was captured; it is not replayed to avoid duplicate cognition"
+                    "a native turn was durably delegated but no query occurrence was "
+                    "successfully captured; unknown prior cognition is not replayed"
                 ),
                 link_id=pending.id,
             )
@@ -457,44 +440,35 @@ class ResearchAskOrchestrator:
                 native_conversation_id=conversation.conversation_id,
             )
 
-        with bridge_factory.open(
-            principal=principal,
-            session=session,
-            native_session_token=native_session_token,
-        ) as bridge:
-            if pending.native_query_id is None:
-                assert prepared is not None
-                try:
+        try:
+            with bridge_factory.open(
+                principal=principal,
+                session=session,
+                native_session_token=native_session_token,
+            ) as bridge:
+                if pending.native_query_id is None:
+                    assert prepared is not None
                     observation = ResearchManager.invoke_native(
                         prepared,
                         bridge=bridge,
                     )
-                    native_query_id = self._query_id(observation.data_parts)
-                except ResearchMaterialLimitation as exc:
-                    return self._limit(
-                        session=session,
-                        obligation_id=selected,
-                        code=exc.code,
-                        detail=exc.detail,
-                        link_id=pending.id,
+                    produced = bridge.capture_produced_query(observation)
+                    pending = self._store.mark_candidate(
+                        pending.id,
+                        native_query_id=produced.native_query_id,
+                        native_query=produced.query,
+                        query_fingerprint=produced.query_fingerprint,
                     )
-                except NativeEngineBridgeError as exc:
-                    return self._limit(
-                        session=session,
-                        obligation_id=selected,
-                        code="P14_NATIVE_TRANSPORT_FAILED",
-                        detail=str(exc),
-                        link_id=pending.id,
+                    native_query = produced.query
+                    query_fingerprint = produced.query_fingerprint
+                else:
+                    native_query, query_fingerprint = self._store.captured_query(
+                        pending
                     )
-                pending = self._store.mark_candidate(
-                    pending.id,
-                    native_query_id=native_query_id,
-                )
-            else:
-                native_query_id = pending.native_query_id
-                resumed_exact = True
+                    resumed_exact = True
 
-            try:
+                native_query_id = pending.native_query_id
+                assert native_query_id is not None
                 outcome = material_executor.execute(
                     principal=principal,
                     session=session,
@@ -502,15 +476,34 @@ class ResearchAskOrchestrator:
                     bridge=bridge,
                     native_conversation_id=pending.native_conversation_id,
                     native_query_id=native_query_id,
+                    native_query=native_query,
+                    query_fingerprint=query_fingerprint,
+                    execution_link_id=pending.id,
                 )
-            except ResearchMaterialLimitation as exc:
-                return self._limit(
-                    session=session,
-                    obligation_id=selected,
-                    code=exc.code,
-                    detail=exc.detail,
-                    link_id=pending.id,
-                )
+        except ResearchMaterialLimitation as exc:
+            return self._limit(
+                session=session,
+                obligation_id=selected,
+                code=exc.code,
+                detail=exc.detail,
+                link_id=pending.id,
+            )
+        except NativeEngineBridgeError as exc:
+            return self._limit(
+                session=session,
+                obligation_id=selected,
+                code="P14_NATIVE_TRANSPORT_FAILED",
+                detail=str(exc),
+                link_id=pending.id,
+            )
+        except ResearchPersistenceError as exc:
+            return self._limit(
+                session=session,
+                obligation_id=selected,
+                code=exc.code,
+                detail=exc.detail,
+                link_id=pending.id,
+            )
 
         if outcome.native_conversation_id != pending.native_conversation_id:
             raise ResearchProductError(
@@ -520,7 +513,7 @@ class ResearchAskOrchestrator:
         if outcome.native_query_id != native_query_id:
             raise ResearchProductError(
                 "P14_NATIVE_QUERY_CORRELATION_MISMATCH",
-                "material execution returned a different exact native occurrence",
+                "material execution returned a different captured native occurrence",
             )
 
         before = session.revision
@@ -534,7 +527,6 @@ class ResearchAskOrchestrator:
         self._store.save(updated, expected_revision=before)
         self._store.mark_verified(
             pending.id,
-            attestation_id=outcome.attestation_id,
             receipt_id=outcome.receipt.receipt_id,
             evidence_id=outcome.evidence.artifact_id,
         )

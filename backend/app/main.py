@@ -98,16 +98,16 @@ async def lifespan(app: FastAPI):
 
     app.state.contracts = ContractStore()
 
-    # P14 Research state is durable in the existing control-plane DB. Native execution
-    # remains unconfigured here until the principal-scoped P13/P10 owner is installed.
+    # P14 Research state is durable in the control-plane DB. When configured,
+    # ordinary Research uses principal-scoped Metabot + direct Metabase execution.
     from app.v3.research_product import ResearchAskOrchestrator
     from app.v3.research_store import ResearchSessionStore
 
-    app.state.research_product = ResearchAskOrchestrator(store=ResearchSessionStore())
+    research_store = ResearchSessionStore()
+    app.state.research_product = ResearchAskOrchestrator(store=research_store)
     if settings.metabase_native_base_url.strip():
         from app.v3.research_native_gateway import (
             NativeResearchMaterialExecutor,
-            NativeResourceBindingProvider,
             NativeSubjectSessionProvider,
         )
         from app.v3.substrate.metabase.native_models import NativeEngineIdentity
@@ -124,12 +124,11 @@ async def lifespan(app: FastAPI):
             base_url=settings.metabase_native_base_url,
             expected_identity=native_identity,
         )
-        native_resources = NativeResourceBindingProvider()
         app.state.research_product.configure_native_runtime(
             bridge_factory=native_subjects,
             material_executor=NativeResearchMaterialExecutor(
                 subject_provider=native_subjects,
-                resource_provider=native_resources,
+                store=research_store,
                 expected_identity=native_identity,
             ),
         )

@@ -81,7 +81,9 @@ def ask_v2(
                 session_id=body.research_session_id,
                 principal=principal,
                 obligation_id=body.research_obligation_id,
-                native_session_token=request.headers.get("x-metabase-session"),
+                native_session_token=(
+                    getattr(request, "headers", {}) or {}
+                ).get("x-metabase-session"),
             )
         except (
             ResearchPersistenceError,
