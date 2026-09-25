@@ -2446,9 +2446,176 @@ class ResearchManagerLoop:
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
     @staticmethod
-    def _parse_decision(raw: Any) -> ManagerDecisionTransport:
+    def _decision_matches_scope(
+        decision: ManagerDecisionTransport,
+        scope,
+    ) -> bool:
+        action = decision.action.value
+        if action != scope.action:
+            return False
+
+        def subset(values, allowed) -> bool:
+            return set(values or ()).issubset(set(allowed or ()))
+
+        def member(value, allowed) -> bool:
+            return value is not None and str(value) in set(str(x) for x in (allowed or ()))
+
+        if action == ManagerActionKind.RESOLVE_SEMANTICS.value:
+            return (
+                decision.resolve_provenance == "AGENT_DERIVED"
+                and decision.semantic_parent_obligation_id == scope.parent_obligation_id
+                and member(decision.semantic_evidence_ref, scope.evidence_refs)
+            )
+        if action == ManagerActionKind.PROPOSE_BRANCHES.value:
+            return (
+                decision.branch_parent_obligation_id == scope.parent_obligation_id
+                and member(decision.branch_evidence_ref, scope.evidence_refs)
+                and all(
+                    subset(candidate.input_handles, scope.handle_refs)
+                    for candidate in decision.branch_candidates
+                )
+            )
+        if action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE.value:
+            return (
+                decision.directive_id == scope.directive_id
+                and member(decision.directive_evidence_ref, scope.evidence_refs)
+            )
+        if action in {
+            ManagerActionKind.PROPOSE_HYPOTHESIS.value,
+            ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
+        }:
+            if not (
+                decision.hypothesis_parent_obligation_id == scope.parent_obligation_id
+                and subset(decision.hypothesis_semantic_handles, scope.handle_refs)
+                and subset(decision.hypothesis_trigger_evidence_refs, scope.evidence_refs)
+            ):
+                return False
+            if action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value:
+                return (
+                    member(decision.next_test_task_kind.value if decision.next_test_task_kind else None, scope.task_kinds)
+                    and subset(decision.next_test_input_handles, scope.handle_refs)
+                    and member(decision.next_test_trigger_evidence_ref, scope.evidence_refs)
+                )
+            return True
+        if action == ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value:
+            return (
+                decision.hypothesis_ref == scope.hypothesis_ref
+                and member(
+                    decision.hypothesis_relation_evidence_ref,
+                    scope.evidence_refs,
+                )
+            )
+        if action == ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value:
+            return (
+                decision.hypothesis_ref == scope.hypothesis_ref
+                and member(
+                    decision.next_test_task_kind.value if decision.next_test_task_kind else None,
+                    scope.task_kinds,
+                )
+                and subset(decision.next_test_input_handles, scope.handle_refs)
+                and member(decision.next_test_trigger_evidence_ref, scope.evidence_refs)
+            )
+        if action == ManagerActionKind.RUN_ANALYTICS.value:
+            if not (
+                subset(decision.obligation_ids, scope.obligation_ids)
+                and subset(decision.metric_handles, scope.metric_handles)
+                and subset(decision.dimension_handles, scope.dimension_handles)
+                and subset(decision.filter_handles, scope.filter_handles)
+            ):
+                return False
+            if (
+                decision.period_handle is not None
+                and not member(decision.period_handle, scope.period_handles)
+            ):
+                return False
+            if (
+                decision.comparison_handle is not None
+                and not member(decision.comparison_handle, scope.comparison_handles)
+            ):
+                return False
+            if scope.task_id is None:
+                return (
+                    decision.derived_task_id is None
+                    and decision.derived_parent_obligation_id is None
+                    and decision.derived_capability_key is None
+                    and decision.derived_evidence_ref is None
+                )
+            return (
+                decision.derived_task_id == scope.task_id
+                and decision.derived_parent_obligation_id == scope.parent_obligation_id
+                and (
+                    decision.derived_capability_key is not None
+                    and decision.derived_capability_key.value == scope.capability_key
+                )
+                and member(decision.derived_evidence_ref, scope.evidence_refs)
+            )
+        if action == ManagerActionKind.RUN_RELATIONSHIP.value:
+            target = (
+                scope.obligation_ids[0]
+                if scope.obligation_ids
+                else scope.parent_obligation_id
+            )
+            return (
+                decision.relationship_obligation_id == target
+                and subset(decision.focus_handles, scope.focus_handles)
+                and subset(decision.counterpart_handles, scope.counterpart_handles)
+            )
+        if action == ManagerActionKind.INSPECT_EVIDENCE.value:
+            return member(decision.evidence_ref, scope.evidence_refs)
+        if action == ManagerActionKind.REQUEST_CLARIFICATION.value:
+            return subset(decision.obligation_ids, scope.obligation_ids)
+        if action == ManagerActionKind.FINISH.value:
+            return True
+        return False
+
+    @classmethod
+    def _parse_scoped_decision(
+        cls,
+        raw: Any,
+        *,
+        availability: ManagerActionAvailabilityProfile,
+    ) -> tuple[ManagerDecisionTransport, str | None]:
         data = json.loads(raw) if isinstance(raw, str) else raw
-        return ManagerDecisionTransport.model_validate(data)
+        snapshot = availability.applicability_snapshot
+        if snapshot is None:
+            return ManagerDecisionTransport.model_validate(data), None
+        if not isinstance(data, dict):
+            raise ValueError("scoped Manager decision must be an object")
+
+        # Provider-free fake managers written before ActionApplicabilitySnapshot may
+        # still emit the flat transport. Infer a scope only when the existing typed
+        # decision matches exactly one current correlated scope. Real provider schema
+        # is always the envelope form below.
+        if "choice" not in data:
+            decision = ManagerDecisionTransport.model_validate(data)
+            matches = tuple(
+                scope
+                for scope in snapshot.scopes_for(decision.action.value)
+                if cls._decision_matches_scope(decision, scope)
+            )
+            if len(matches) != 1:
+                raise ValueError(
+                    "legacy flat Manager decision does not resolve to exactly one "
+                    f"current applicability scope; matches={len(matches)}"
+                )
+            return decision, matches[0].scope_ref
+
+        if data.get("snapshot_ref") != snapshot.snapshot_ref:
+            raise ValueError("Manager decision references stale applicability snapshot")
+        choice = data.get("choice")
+        if not isinstance(choice, dict):
+            raise ValueError("scoped Manager decision choice must be an object")
+        scope_ref = choice.get("scope_ref")
+        if not isinstance(scope_ref, str):
+            raise ValueError("scoped Manager decision requires scope_ref")
+        scope = snapshot.scope(scope_ref)
+        payload = {key: value for key, value in choice.items() if key != "scope_ref"}
+        decision = ManagerDecisionTransport.model_validate(payload)
+        if not cls._decision_matches_scope(decision, scope):
+            raise ValueError(
+                "Manager decision identity arguments escape selected applicability scope"
+            )
+        return decision, scope_ref
 
     def _decision_with_availability(
         self,
@@ -2473,6 +2640,7 @@ class ResearchManagerLoop:
             hypothesis_ledgers=hypothesis_ledgers,
             evidence_store=evidence_store,
             research_tasks=ready_tasks,
+            governed_semantic_inventory=governed_semantic_inventory,
         )
         user = self._prompt(
             question=question,
@@ -2513,6 +2681,7 @@ class ResearchManagerLoop:
             directive_disposition_evidence_refs=(
                 availability.directive_disposition_evidence_refs
             ),
+            applicability_snapshot=availability.applicability_snapshot,
         )
         system_prompt = (
             _SYSTEM + _ROOT_CAUSE_SYSTEM_ADDENDUM
@@ -2525,7 +2694,11 @@ class ResearchManagerLoop:
         }
         raw = self._structured(system_prompt, user, **kwargs)
         try:
-            return self._parse_decision(raw), availability
+            decision, scope_ref = self._parse_scoped_decision(
+                raw,
+                availability=availability,
+            )
+            return decision, availability, scope_ref
         except Exception as first_error:
             repair_system = (
                 system_prompt
@@ -2542,7 +2715,11 @@ class ResearchManagerLoop:
             )
             repaired = self._structured(repair_system, repair_user, **kwargs)
             try:
-                return self._parse_decision(repaired), availability
+                decision, scope_ref = self._parse_scoped_decision(
+                    repaired,
+                    availability=availability,
+                )
+                return decision, availability, scope_ref
             except Exception as exc:
                 raise RuntimeError(
                     f"RESEARCH_MANAGER structured action invalid after one format retry: {exc}"
