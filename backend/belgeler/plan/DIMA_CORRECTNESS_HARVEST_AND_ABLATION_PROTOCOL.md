@@ -1,3 +1,66 @@
+## LATEST AUTHORITY — PREACCEPTANCE UNIQUE-SCOPE FIX GREEN / ONE PAID INTEGRATED MEASUREMENT AUTHORIZED
+
+```text
+branch                           feat/ask-v2-mvp
+engineering closure SHA          dbf256f9122028fdb5398f360a951a66030a7fe5
+Product behavior                 fde87df46c3fdee986fdf48f4e37884f5b51c395
+
+D10-U PROVIDER-FREE CLOSURE      GREEN / CLOSED
+ManagerActionSet                 SOLE executable projection
+ActionApplicabilitySnapshot      RETIRED
+ManagerActionAvailability        SHIM ONLY
+
+preacceptance failure family     FAM-PREACCEPTANCE-SCOPE-REPAIR-NONDETERMINISM
+Cycle 1 / 3                      PROVIDER-FREE CLOSED
+root fix                         unique full-cover governed scope
+                                 → deterministic server SELECT_SCOPE_GROUP
+genuine ambiguity                → existing bounded cognition
+
+final one-SHA cheap proof        dbf256f9122028fdb5398f360a951a66030a7fe5
+Day7 focused                     36182712251 = GREEN
+Day8 focused                     36182712368 = GREEN
+Day10 focused                    36182712258 = GREEN
+
+real-Wren ROOT                   GREEN
+real-Wren relationship           GREEN
+provider-free canonical NS4      GREEN
+ManagerActionSet attacks         GREEN
+certification oracle             GREEN
+
+latest historical paid           36179726900 = RED
+historical paid stage             PREACCEPTANCE
+PAID_EPOCH_2                     18 / 40 used
+PAID_EPOCH_2 remaining           22 / 40
+next paid                        ONE corrected CANONICAL_NS4 integrated measurement
+max_total_model_calls            20
+same-SHA retry                   FORBIDDEN
+
+Day8 FINAL                       SEALED
+Day10 FINAL                      OPEN / PAID PROOF PENDING
+Day11 / DEV80 / Validation50 /
+Hidden50                         NOT AUTHORIZED
+```
+
+Permanent determinism boundary:
+
+```text
+SERVER-DETERMINED UNIQUENESS
+→ deterministic server materialization
+
+GENUINE SEMANTIC AMBIGUITY
+→ bounded cognition
+
+SAME SHA + SAME AUTHORITY STATE
+must not oscillate between ACCEPT and CLARIFY
+because of bookkeeping-level scope selection.
+
+RETRIEVAL != AUTHORITY
+REPAIR GROUP != PERSISTED AUTHORITY
+SemanticBindingGate remains the sem_* minter.
+```
+
+Historical receipts below remain immutable audit history and do not override this physically first block.
+
 ## LATEST AUTHORITY — D10-U PROVIDER-FREE GREEN / PAID PREACCEPTANCE RED / SCOPE-REPAIR DETERMINISM ACTIVE
 
 ```text
