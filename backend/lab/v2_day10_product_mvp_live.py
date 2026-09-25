@@ -504,8 +504,12 @@ def _hypothesis_authority_receipt(research, structured_outputs) -> list[dict[str
 
 
 def _research_authority_snapshot(research, structured_outputs) -> dict[str, Any]:
-    evidence = tuple(research.evidence or ())
-    ledger = research.ledger
+    evidence = tuple(getattr(research, "evidence", ()) or ())
+    ledger = getattr(research, "ledger", None)
+    contract = getattr(research, "accepted_contract", None)
+    runtime = getattr(research, "runtime", None)
+    snapshot = getattr(runtime, "snapshot", None)
+    outcome = getattr(research, "outcome", None)
     root_items = [
         item
         for item in (getattr(ledger, "items", ()) or ())
@@ -520,8 +524,8 @@ def _research_authority_snapshot(research, structured_outputs) -> dict[str, Any]
                 "parent_obligation_id": item.parent_obligation_id,
                 "condition": _value(item.condition),
             }
-            for item in (research.accepted_contract.research_directives or ())
-        ] if research.accepted_contract is not None else [],
+            for item in (getattr(contract, "research_directives", ()) or ())
+        ] if contract is not None else [],
         "final_directive_dispositions": [
             {
                 "directive_id": item.directive_id,
@@ -532,7 +536,7 @@ def _research_authority_snapshot(research, structured_outputs) -> dict[str, Any]
                 "branch_task_refs": list(item.branch_task_refs),
                 "reason": item.reason,
             }
-            for item in (research.runtime.directive_dispositions or ())
+            for item in (getattr(runtime, "directive_dispositions", ()) or ())
         ],
         "evidence_summaries": [
             {
@@ -566,15 +570,17 @@ def _research_authority_snapshot(research, structured_outputs) -> dict[str, Any]
                 "hypothesis_ref": item.hypothesis_ref,
                 "semantic_handle_refs": list(item.semantic_handle_refs),
             }
-            for item in (research.findings or ())
+            for item in (getattr(research, "findings", ()) or ())
         ],
         "hypotheses": _hypothesis_authority_receipt(research, structured_outputs),
         "inspected_evidence_refs": list(
-            research.runtime.snapshot.inspected_evidence_refs
+            getattr(snapshot, "inspected_evidence_refs", ()) or ()
         ),
-        "completion_gate_state": _value(research.runtime.snapshot.state),
-        "research_terminal_status": _value(research.outcome.terminal_status),
-        "verified_complete": bool(research.outcome.verified_complete),
+        "completion_gate_state": _value(getattr(snapshot, "state", None)),
+        "research_terminal_status": _value(
+            getattr(outcome, "terminal_status", None)
+        ),
+        "verified_complete": bool(getattr(outcome, "verified_complete", False)),
     }
 
 
