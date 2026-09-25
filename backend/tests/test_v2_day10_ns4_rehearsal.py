@@ -172,9 +172,11 @@ class _Run4AvailabilityManager(ns4.ScriptedNS4Manager):
         ]
         assert len(department) == 1, inventory
 
-        # These are the exact two redundant run-#4 choices. They must be impossible
-        # to emit from the provider contract, not merely rejected after cognition.
-        assert ManagerActionKind.INSPECT_EVIDENCE.value not in actions
+        # These are the exact two redundant run-#4 choices. Current fresh Evidence
+        # must be impossible to target for inspection. The action itself may remain when
+        # some older undisclosed VERIFIED Evidence is legitimately inspectable.
+        inspect_refs = _schema_property_enum(schema, "evidence_ref")
+        assert delta["evidence_ref"] not in inspect_refs
         assert ManagerActionKind.RESOLVE_SEMANTICS.value not in actions
 
         ledger = {
