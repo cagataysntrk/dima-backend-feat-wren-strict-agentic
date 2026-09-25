@@ -64,6 +64,9 @@ class ActionAvailabilityReason(StrEnum):
         "INSUFFICIENT_RESEARCH_HEADROOM_FOR_COMPOSITE"
     )
     NO_OPEN_ADAPTIVE_DIRECTIVE = "NO_OPEN_ADAPTIVE_DIRECTIVE"
+    NO_ELIGIBLE_ADAPTIVE_DIRECTIVE_EVIDENCE = (
+        "NO_ELIGIBLE_ADAPTIVE_DIRECTIVE_EVIDENCE"
+    )
 
 
 @dataclass(frozen=True)
@@ -92,6 +95,15 @@ class RootActionState:
 
 
 @dataclass(frozen=True)
+class AdaptiveDirectiveDispositionState:
+    """One accepted OPEN adaptive directive and its Product-validated Evidence domain."""
+
+    directive_id: str
+    parent_obligation_id: str
+    eligible_evidence_refs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class ManagerActionAvailabilityContext:
     root_states: tuple[RootActionState, ...] = ()
     inspectable_old_evidence_refs: tuple[str, ...] = ()
@@ -100,6 +112,7 @@ class ManagerActionAvailabilityContext:
     fresh_disclosed_verified: bool = False
     open_adaptive_directive_count: int = 0
     open_adaptive_parent_obligation_ids: tuple[str, ...] = ()
+    adaptive_disposition_states: tuple[AdaptiveDirectiveDispositionState, ...] = ()
     evidence_grounded_parent_obligation_ids: tuple[str, ...] = ()
     remaining_research_turns: int = 0
 
@@ -119,6 +132,9 @@ class ManagerActionAvailabilityProfile:
     hypothesis_refs: tuple[str, ...]
     pending_relation_hypothesis_refs: tuple[str, ...]
     pending_relation_evidence_refs: tuple[str, ...]
+    directive_disposition_id: str | None = None
+    directive_disposition_parent_obligation_id: str | None = None
+    directive_disposition_evidence_refs: tuple[str, ...] = ()
     post_acceptance_resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",)
 
     def allows(self, action: str) -> bool:
@@ -157,6 +173,19 @@ class ManagerActionAvailabilityProfile:
             ),
             "pending_relation_evidence_refs": list(
                 self.pending_relation_evidence_refs
+            ),
+            "directive_disposition_target": (
+                {
+                    "directive_id": self.directive_disposition_id,
+                    "parent_obligation_id": (
+                        self.directive_disposition_parent_obligation_id
+                    ),
+                    "eligible_evidence_refs": list(
+                        self.directive_disposition_evidence_refs
+                    ),
+                }
+                if self.directive_disposition_id is not None
+                else None
             ),
             "remaining_research_turns": self.remaining_research_turns,
         }
@@ -203,10 +232,23 @@ class ManagerActionAvailability:
                 ActionAvailabilityReason.NO_INSPECTED_VERIFIED_EVIDENCE,
             )
 
+        actionable_dispositions = tuple(
+            item
+            for item in context.adaptive_disposition_states
+            if item.eligible_evidence_refs
+        )
+        selected_disposition = (
+            actionable_dispositions[0] if actionable_dispositions else None
+        )
         if context.open_adaptive_directive_count <= 0:
             remove(
                 "disposition_research_directive",
                 ActionAvailabilityReason.NO_OPEN_ADAPTIVE_DIRECTIVE,
+            )
+        elif selected_disposition is None:
+            remove(
+                "disposition_research_directive",
+                ActionAvailabilityReason.NO_ELIGIBLE_ADAPTIVE_DIRECTIVE_EVIDENCE,
             )
 
         if context.inspectable_old_evidence_refs:
@@ -422,4 +464,19 @@ class ManagerActionAvailability:
             hypothesis_refs=hypothesis_refs,
             pending_relation_hypothesis_refs=pending_relation_hypothesis_refs,
             pending_relation_evidence_refs=pending_relation_evidence_refs,
+            directive_disposition_id=(
+                selected_disposition.directive_id
+                if selected_disposition is not None
+                else None
+            ),
+            directive_disposition_parent_obligation_id=(
+                selected_disposition.parent_obligation_id
+                if selected_disposition is not None
+                else None
+            ),
+            directive_disposition_evidence_refs=(
+                tuple(dict.fromkeys(selected_disposition.eligible_evidence_refs))
+                if selected_disposition is not None
+                else ()
+            ),
         )
