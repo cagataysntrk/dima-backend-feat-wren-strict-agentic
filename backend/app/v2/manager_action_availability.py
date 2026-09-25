@@ -56,6 +56,7 @@ class ActionAvailabilityReason(StrEnum):
     ROOT_HYPOTHESIS_ALREADY_EXISTS = "ROOT_HYPOTHESIS_ALREADY_EXISTS"
     ROOT_HYPOTHESIS_REQUIRED = "ROOT_HYPOTHESIS_REQUIRED"
     ROOT_NEXT_TEST_NOT_FEASIBLE = "ROOT_NEXT_TEST_NOT_FEASIBLE"
+    POST_TEST_EVIDENCE_RELATION_PENDING = "POST_TEST_EVIDENCE_RELATION_PENDING"
     INSUFFICIENT_HEADROOM_FOR_SEPARATE_HYPOTHESIS = (
         "INSUFFICIENT_RESEARCH_HEADROOM_FOR_SEPARATE_HYPOTHESIS"
     )
@@ -71,7 +72,11 @@ class RootActionState:
     hypothesis_count: int
     root_handle_kinds: tuple[str, ...]
     next_test_required_kind_sets: tuple[tuple[str, ...], ...]
+    root_handle_refs: tuple[str, ...] = ()
+    hypothesis_refs: tuple[str, ...] = ()
     effective_inspected_verified_evidence_refs: tuple[str, ...] = ()
+    pending_relation_hypothesis_refs: tuple[str, ...] = ()
+    pending_relation_evidence_refs: tuple[str, ...] = ()
 
     @property
     def feasible_next_test(self) -> bool:
@@ -108,6 +113,12 @@ class ManagerActionAvailabilityProfile:
     inspection_required_for_current_delta: bool
     remaining_research_turns: int
     resolve_semantics_parent_obligation_ids: tuple[str, ...]
+    root_parent_obligation_ids: tuple[str, ...]
+    root_action_handle_refs: tuple[str, ...]
+    root_evidence_refs: tuple[str, ...]
+    hypothesis_refs: tuple[str, ...]
+    pending_relation_hypothesis_refs: tuple[str, ...]
+    pending_relation_evidence_refs: tuple[str, ...]
     post_acceptance_resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",)
 
     def allows(self, action: str) -> bool:
@@ -136,6 +147,16 @@ class ManagerActionAvailabilityProfile:
             ),
             "resolve_semantics_parent_obligation_ids": list(
                 self.resolve_semantics_parent_obligation_ids
+            ),
+            "root_parent_obligation_ids": list(self.root_parent_obligation_ids),
+            "root_action_handle_refs": list(self.root_action_handle_refs),
+            "root_evidence_refs": list(self.root_evidence_refs),
+            "hypothesis_refs": list(self.hypothesis_refs),
+            "pending_relation_hypothesis_refs": list(
+                self.pending_relation_hypothesis_refs
+            ),
+            "pending_relation_evidence_refs": list(
+                self.pending_relation_evidence_refs
             ),
             "remaining_research_turns": self.remaining_research_turns,
         }
@@ -256,6 +277,43 @@ class ManagerActionAvailability:
                 ActionAvailabilityReason.DERIVED_SEMANTIC_EXPANSION_POTENTIALLY_REQUIRED,
             )
 
+        root_parent_ids = tuple(root.root_id for root in roots)
+        root_action_handles = tuple(
+            dict.fromkeys(
+                handle_ref
+                for root in roots
+                for handle_ref in root.root_handle_refs
+            )
+        )
+        root_evidence_refs = tuple(
+            dict.fromkeys(
+                evidence_ref
+                for root in roots
+                for evidence_ref in root.effective_inspected_verified_evidence_refs
+            )
+        )
+        hypothesis_refs = tuple(
+            dict.fromkeys(
+                hypothesis_ref
+                for root in roots
+                for hypothesis_ref in root.hypothesis_refs
+            )
+        )
+        pending_relation_hypothesis_refs = tuple(
+            dict.fromkeys(
+                hypothesis_ref
+                for root in roots
+                for hypothesis_ref in root.pending_relation_hypothesis_refs
+            )
+        )
+        pending_relation_evidence_refs = tuple(
+            dict.fromkeys(
+                evidence_ref
+                for root in roots
+                for evidence_ref in root.pending_relation_evidence_refs
+            )
+        )
+
         if roots:
             initial_ready = tuple(
                 root
@@ -324,6 +382,15 @@ class ManagerActionAvailability:
                     "propose_hypothesis_evidence_relation",
                     ActionAvailabilityReason.ROOT_HYPOTHESIS_REQUIRED,
                 )
+            elif pending_relation_evidence_refs:
+                # A completed governed next-test has produced VERIFIED Evidence that has
+                # not yet been admitted into hypothesis state. Account that epistemic
+                # relation before advertising another next-test; otherwise the next
+                # proposal's trigger is structurally unrelated by existing authority.
+                remove(
+                    "propose_hypothesis_next_test",
+                    ActionAvailabilityReason.POST_TEST_EVIDENCE_RELATION_PENDING,
+                )
 
         inspection_required = not (
             context.fresh_disclosed_evidence_ref is not None
@@ -349,4 +416,10 @@ class ManagerActionAvailability:
             inspection_required_for_current_delta=inspection_required,
             remaining_research_turns=context.remaining_research_turns,
             resolve_semantics_parent_obligation_ids=semantic_parents,
+            root_parent_obligation_ids=root_parent_ids,
+            root_action_handle_refs=root_action_handles,
+            root_evidence_refs=root_evidence_refs,
+            hypothesis_refs=hypothesis_refs,
+            pending_relation_hypothesis_refs=pending_relation_hypothesis_refs,
+            pending_relation_evidence_refs=pending_relation_evidence_refs,
         )
