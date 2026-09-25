@@ -199,11 +199,34 @@ class ResearchSessionStore:
         dima_request_id: str,
         dima_trace_id: str,
         native_conversation_id: uuid.UUID,
+        execution_kind: str = "P14_BASE",
+        reasoning_step_id: str | None = None,
+        investigation_task_id: str | None = None,
     ) -> ResearchExecutionLink:
         now = _now()
+        if execution_kind not in {"P14_BASE", "P17_FOLLOWUP"}:
+            raise ResearchPersistenceError(
+                "RESEARCH_EXECUTION_KIND_INVALID",
+                execution_kind,
+            )
+        if execution_kind == "P14_BASE":
+            if reasoning_step_id is not None or investigation_task_id is not None:
+                raise ResearchPersistenceError(
+                    "P14_BASE_SUBORDINATE_LINEAGE_FORBIDDEN",
+                    "sealed P14 base occurrence cannot carry P17 lineage",
+                )
+        elif not reasoning_step_id or not investigation_task_id:
+            raise ResearchPersistenceError(
+                "P17_FOLLOWUP_LINEAGE_REQUIRED",
+                "P17 follow-up occurrence requires reasoning/task identity",
+            )
+
         link = ResearchExecutionLink(
             session_id=session.session_id,
             obligation_id=obligation_id,
+            execution_kind=execution_kind,
+            reasoning_step_id=reasoning_step_id,
+            investigation_task_id=investigation_task_id,
             dima_request_id=dima_request_id,
             dima_trace_id=dima_trace_id,
             native_conversation_id=native_conversation_id,
@@ -218,6 +241,27 @@ class ResearchSessionStore:
                 )
             ).first()
             if existing is not None:
+                identity = (
+                    existing.session_id,
+                    existing.obligation_id,
+                    existing.execution_kind,
+                    existing.reasoning_step_id,
+                    existing.investigation_task_id,
+                    existing.native_conversation_id,
+                )
+                proposed = (
+                    session.session_id,
+                    obligation_id,
+                    execution_kind,
+                    reasoning_step_id,
+                    investigation_task_id,
+                    native_conversation_id,
+                )
+                if identity != proposed:
+                    raise ResearchPersistenceError(
+                        "RESEARCH_EXECUTION_REQUEST_IDENTITY_CONFLICT",
+                        "existing request id belongs to another Research occurrence",
+                    )
                 return existing
             db.add(link)
             db.commit()
@@ -235,6 +279,7 @@ class ResearchSessionStore:
                 select(ResearchExecutionLink)
                 .where(ResearchExecutionLink.session_id == session_id)
                 .where(ResearchExecutionLink.obligation_id == obligation_id)
+                .where(ResearchExecutionLink.execution_kind == "P14_BASE")
                 .where(
                     ResearchExecutionLink.status.in_(
                         (
@@ -259,6 +304,7 @@ class ResearchSessionStore:
                 select(ResearchExecutionLink)
                 .where(ResearchExecutionLink.session_id == session_id)
                 .where(ResearchExecutionLink.obligation_id == obligation_id)
+                .where(ResearchExecutionLink.execution_kind == "P14_BASE")
                 .where(ResearchExecutionLink.status == "VERIFIED")
             ).all()
         if len(rows) != 1:
@@ -278,6 +324,17 @@ class ResearchSessionStore:
                 "verified P14 occurrence lacks query/receipt/Evidence provenance",
             )
         return link
+
+    def execution_link_for_request(
+        self,
+        dima_request_id: str,
+    ) -> ResearchExecutionLink | None:
+        with Session(self._engine) as db:
+            return db.exec(
+                select(ResearchExecutionLink).where(
+                    ResearchExecutionLink.dima_request_id == dima_request_id
+                )
+            ).first()
 
     def execution_link(self, link_id: uuid.UUID) -> ResearchExecutionLink:
         with Session(self._engine) as db:
