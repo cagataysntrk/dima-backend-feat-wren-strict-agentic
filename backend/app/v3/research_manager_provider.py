@@ -5,6 +5,7 @@ analytics, executes queries, mutates Research authority, or sets P16/P19 truth s
 """
 from __future__ import annotations
 
+import copy
 import json
 from typing import Any, Protocol
 
@@ -117,6 +118,56 @@ Architecture:
 """
 
 
+def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """Normalize Pydantic schema to strict structured-output object semantics."""
+
+    value = copy.deepcopy(schema)
+
+    def visit(node: Any) -> None:
+        if isinstance(node, dict):
+            node.pop("default", None)
+            props = node.get("properties")
+            if isinstance(props, dict):
+                node["additionalProperties"] = False
+                node["required"] = list(props)
+            for child in node.values():
+                visit(child)
+        elif isinstance(node, list):
+            for child in node:
+                visit(child)
+
+    visit(value)
+    return value
+
+
+def _schema_for_intents(
+    intents: tuple[InvestigationIntent, ...] | None,
+) -> dict[str, Any]:
+    schema = ResearchManagerProposalDraft.model_json_schema()
+    if intents:
+        props = schema.get("properties") or {}
+        props["intent"] = {
+            "type": "string",
+            "enum": [x.value for x in intents],
+        }
+        # Canary/eval intent constraints can remove semantically impossible
+        # payload families. This changes only transport shape, never authority.
+        if InvestigationIntent.FORM_CLAIM not in intents:
+            props.pop("claim", None)
+        if InvestigationIntent.SEEK_COUNTER_EVIDENCE not in intents:
+            props.pop("counter_to_claim_id", None)
+        if not any(
+            x
+            in {
+                InvestigationIntent.STOP_BRANCH,
+                InvestigationIntent.STOP_INVESTIGATION,
+            }
+            for x in intents
+        ):
+            props.pop("stop_reason", None)
+    return _strict_json_schema(schema)
+
+
 class StructuredResearchProposalManager:
     """One real model cognition turn -> one validated ManagerProposal."""
 
@@ -174,12 +225,7 @@ class StructuredResearchProposalManager:
             "\n\nGOVERNED SNAPSHOT JSON:\n"
             + self._snapshot_payload(snapshot)
         )
-        schema = ResearchManagerProposalDraft.model_json_schema()
-        if allowed_intents:
-            schema["properties"]["intent"] = {
-                "type": "string",
-                "enum": [x.value for x in allowed_intents],
-            }
+        schema = _schema_for_intents(allowed_intents)
         raw = self._transport.structured_json(
             _SYSTEM,
             user,
