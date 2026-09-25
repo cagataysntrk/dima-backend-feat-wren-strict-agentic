@@ -517,11 +517,10 @@ class ResearchTaskRegistry:
         timeout_ms: int | None = None,
     ) -> object | None:
         current = self.register(task)
-        if current.state in {"cancelled", "failed", "blocked"}:
-            raise ResearchTaskLifecycleError(
-                f"{current.state} ResearchTask cannot execute: {task.task_id}"
-            )
 
+        # A terminal execution may have a canonical receipt (complete or blocked).
+        # Receipt identity wins before terminal-state rejection so duplicate delivery is
+        # idempotent without re-executing the governed tool.
         receipt = self._receipts.get(task.task_id)
         if receipt is not None:
             receipt_tool, receipt_action, result = receipt
@@ -530,6 +529,11 @@ class ResearchTaskRegistry:
                     f"ResearchTask completed with different execution identity: {task.task_id}"
                 )
             return result
+
+        if current.state in {"cancelled", "failed", "blocked"}:
+            raise ResearchTaskLifecycleError(
+                f"{current.state} ResearchTask cannot execute: {task.task_id}"
+            )
 
         inflight = self._inflight.get(task.task_id)
         if inflight is not None:
@@ -619,6 +623,27 @@ class ResearchTaskRegistry:
         self._tasks[task_id] = completed
         self._receipts[task_id] = (tool_id, action_fingerprint, result)
         return completed
+
+    def block_execution(
+        self,
+        *,
+        task_id: str,
+        tool_id: str,
+        action_fingerprint: str,
+        result: object,
+    ) -> ResearchTask:
+        """Commit one fail-closed governed terminal without fabricating Evidence."""
+        self.assert_execution_active(
+            task_id=task_id,
+            tool_id=tool_id,
+            action_fingerprint=action_fingerprint,
+        )
+        current = self.get(task_id)
+        self._inflight.pop(task_id, None)
+        blocked = current.model_copy(update={"state": "blocked"})
+        self._tasks[task_id] = blocked
+        self._receipts[task_id] = (tool_id, action_fingerprint, result)
+        return blocked
 
     def cancel(self, task_id: str) -> ResearchTask:
         current = self.get(task_id)
