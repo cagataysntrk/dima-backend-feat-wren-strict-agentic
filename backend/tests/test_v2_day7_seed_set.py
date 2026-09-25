@@ -326,7 +326,7 @@ def test_research_execution_slice_rejects_obligation_outside_accepted_authority(
     assert any("outside accepted authority" in reason for reason in result.reasons)
 
 
-def test_multi_obligation_loop_uses_seed_set_but_evidence_changes_next_ready_choice():
+def test_multi_obligation_seed_set_uses_deterministic_server_execution_before_cognition():
     spans, runtime, executor, service, store, question, message_id, root_context = (
         _accepted_three_obligation_runtime()
     )
@@ -345,60 +345,32 @@ def test_multi_obligation_loop_uses_seed_set_but_evidence_changes_next_ready_cho
         executor=executor,
     )
 
-    if not outcome.run_finished:
-        trace = {
-            "decisions": llm.decisions,
-            "prompt_states": [
-                {
-                    "turn": idx + 1,
-                    "verified": (
-                        prompt.get("ACCUMULATED_RESEARCH_STATE") or {}
-                    ).get("verified_user_must_ids"),
-                    "delta": prompt.get("CURRENT_RESULT_DELTA"),
-                    "ready_tasks": prompt.get("READY_RESEARCH_TASKS"),
-                    "frontier": prompt.get("ACTION_FRONTIER"),
-                }
-                for idx, prompt in enumerate(llm.prompts)
-            ],
-            "observations": list(outcome.observations),
-            "snapshot": outcome.snapshot.model_dump(mode="json"),
-            "ledger": [
-                {
-                    "id": item.obligation_id,
-                    "status": item.status.value,
-                    "evidence_refs": list(item.evidence_refs),
-                }
-                for item in runtime.ledger.items
-            ],
-            "query_calls": service.query_calls,
-        }
-        raise AssertionError(
-            "D7-SEED-SET TRACE\n"
-            + json.dumps(trace, ensure_ascii=False, indent=2, default=str)
-        )
-
     assert outcome.run_finished is True
     assert outcome.verified_complete is True
 
     seed_observation = next(
-        item for item in outcome.observations if item.get("kind") == "seed_tasks_registered"
+        item
+        for item in outcome.observations
+        if item.get("kind") == "seed_tasks_registered"
     )
     assert seed_observation["considered_obligation_ids"] == ["U1", "U2", "U3"]
     assert seed_observation["ready_task_ids"] == ["seed:U1", "seed:U2", "seed:U3"]
     assert seed_observation["deferred_obligation_ids"] == []
 
     executed = [
-        item["research_task_id"]
+        item["task_id"]
         for item in outcome.observations
-        if item.get("kind") == "tool"
-        and item.get("tool") == "run_analytics"
+        if item.get("kind") == "deterministic_task_executed"
     ]
-    assert executed == ["seed:U1", "seed:U3", "seed:U2"]
+    assert executed == ["seed:U1", "seed:U2", "seed:U3"]
     assert len(service.query_calls) == 3
     assert store.n == 3
 
-    # U1 evidence was explicitly inspected before it changed the next task choice.
-    assert runtime.snapshot.evidence_refs[0] in runtime.snapshot.inspected_evidence_refs
+    # Seed task identity/ordering is server bookkeeping. Once all three accepted
+    # USER_MUST obligations are losslessly executable, no Manager cognition should
+    # be spent selecting among canonical task ids.
+    assert llm.prompts == []
+    assert runtime.snapshot.inspected_evidence_refs == ()
     assert {item.obligation_id for item in runtime.ledger.active_user_must} == {
         "U1",
         "U2",
@@ -408,10 +380,3 @@ def test_multi_obligation_loop_uses_seed_set_but_evidence_changes_next_ready_cho
         item.status.value == "VERIFIED"
         for item in runtime.ledger.active_user_must
     )
-
-    first_prompt = llm.prompts[0]
-    assert [item["task_id"] for item in first_prompt["READY_RESEARCH_TASKS"]] == [
-        "seed:U1",
-        "seed:U2",
-        "seed:U3",
-    ]
