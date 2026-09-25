@@ -548,8 +548,12 @@ class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
         rel_evidence_ref = rel_evidence_refs[0]
         current_delta = payload["CURRENT_RESULT_DELTA"]
         assert current_delta is not None and current_delta["verified"] is True
-        assert "U_ROOT" in tuple(current_delta.get("obligation_ids") or ()), current_delta
-        root_evidence_ref = current_delta["evidence_ref"]
+        if self.root_trigger_evidence_ref is None:
+            assert "U_ROOT" in tuple(
+                current_delta.get("obligation_ids") or ()
+            ), current_delta
+            self.root_trigger_evidence_ref = current_delta["evidence_ref"]
+        root_evidence_ref = self.root_trigger_evidence_ref
         accumulated = payload["ACCUMULATED_RESEARCH_STATE"] or {}
         inspected = set(accumulated.get("inspected_evidence_refs") or ())
         dispositions = {
