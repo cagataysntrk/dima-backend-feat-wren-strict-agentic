@@ -526,3 +526,62 @@ def test_attestation_ref_changes_proof_identity_not_access_lens_identity():
 
     assert first.receipt_fingerprint != second.receipt_fingerprint
     assert first.receipt_id != second.receipt_id
+
+
+def test_research_material_receipt_uses_native_provenance_not_standard_identity():
+    from uuid import UUID
+
+    native_runtime = RuntimeIdentity(
+        substrate="metabase-native",
+        runtime_version="0.63.18-dima.6",
+        image_digest="sha256:" + "9" * 64,
+        database_id="metabase:1",
+        repository="UpcyTech/dima-metabase-engine",
+        revision_sha="cbe313af9ac2d5960f662068e433d328d896fb06",
+        upstream_base_sha="2ba2485c78d7e00a9a25f82c00fc201da71590c4",
+        runtime_tag="0.63.18-dima.6",
+        build_identity=(
+            "github-actions:36042062775:"
+            "cbe313af9ac2d5960f662068e433d328d896fb06"
+        ),
+        image_identity="ghcr.io/upcytech/dima-metabase-engine@sha256:" + "9" * 64,
+        runtime_instance_id=UUID("00000000-0000-4000-8000-000000000999"),
+    )
+    query_fingerprint = "8" * 64
+    receipt = DimaQueryReceiptSealer.seal_research_execution(
+        authority_id="atc_" + "a" * 24,
+        research_session_id="rs_" + "b" * 24,
+        obligation_ids=("g1",),
+        tenant_binding="id:tenant-1",
+        principal_subject="user-1",
+        roles=("analyst",),
+        native_subject_ref="metabase-user:7",
+        native_conversation_id=UUID(
+            "00000000-0000-4000-8000-000000000998"
+        ),
+        native_query_id="native-q-1",
+        native_query_provenance_ref="research-execution-link:x:query",
+        native_result_provenance_ref="research-execution-link:x:result",
+        query_fingerprint=query_fingerprint,
+        semantic_context_version="ctx-research",
+        runtime=native_runtime,
+        result=ExecutionResultSnapshot(
+            payload={
+                "status": "completed",
+                "database_id": 1,
+                "data": {"rows": [[126]], "cols": []},
+            },
+            row_count=1,
+        ),
+        event=ExecutionEventIdentity(
+            execution_id="native-dataset:x",
+            executed_at=datetime(2026, 9, 25, 5, 30, tzinfo=timezone.utc),
+        ),
+    )
+    assert receipt.authority_kind == "research_material"
+    assert receipt.projection_hash is None
+    assert receipt.resolved_intent_hash is None
+    assert receipt.execution_access_fingerprint is None
+    assert receipt.native_subject_ref == "metabase-user:7"
+    assert receipt.native_query_id == "native-q-1"
+    assert receipt.canonical_query_fingerprint == query_fingerprint

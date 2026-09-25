@@ -251,3 +251,95 @@ def test_p13d_transport_executes_only_server_side_occurrence_identity():
     ]
     assert all("/api/dataset" not in path for path, _ in requested)
     assert all("/api/agent/" not in path for path, _ in requested)
+
+
+def test_native_direct_metabot_query_reaches_dataset_unchanged():
+    query = {
+        "database": 1,
+        "type": "query",
+        "query": {
+            "source-table": 10,
+            "aggregation": [["count"]],
+        },
+    }
+    query_id = "native-direct-q1"
+    generated = {
+        "type": "generated_entity",
+        "value": {"query": {"id": query_id, "query": query}},
+    }
+    requested = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["X-Metabase-Session"] == "restricted-session"
+        requested.append(request.url.path)
+        if request.url.path == "/api/session/properties":
+            return httpx.Response(
+                200,
+                json={"version": {"tag": "v0.63.18-dima.0"}},
+            )
+        if request.url.path == "/api/metabot/agent-streaming":
+            return httpx.Response(
+                202,
+                text=(
+                    "2:"
+                    + json.dumps(generated, separators=(",", ":"))
+                    + "\n"
+                    + 'd:{"finishReason":"stop"}\n'
+                ),
+            )
+        if request.url.path == "/api/dataset":
+            assert json.loads(request.content) == query
+            return httpx.Response(
+                202,
+                json={
+                    "status": "completed",
+                    "database_id": 1,
+                    "row_count": 1,
+                    "data": {"rows": [[126]], "cols": []},
+                },
+            )
+        return httpx.Response(599)
+
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="restricted-session",
+        expected_identity=IDENTITY,
+        transport=httpx.MockTransport(handler),
+    ) as bridge:
+        observation = bridge.invoke(req())
+        produced = bridge.capture_produced_query(observation)
+        result = bridge.execute_dataset(produced.query)
+
+    assert produced.native_query_id == query_id
+    assert produced.query == query
+    assert produced.source == "generated_entity"
+    assert result.query_fingerprint == produced.query_fingerprint
+    assert result.payload["data"]["rows"] == [[126]]
+    assert requested == [
+        "/api/session/properties",
+        "/api/metabot/agent-streaming",
+        "/api/dataset",
+    ]
+
+
+def test_native_direct_dataset_permission_failure_stays_native_http_failure():
+    from app.v3.substrate.metabase.native_engine import NativeDatasetExecutionError
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["X-Metabase-Session"] == "restricted-session"
+        assert request.url.path == "/api/dataset"
+        return httpx.Response(
+            403,
+            json={"message": "You do not have permissions to run this query."},
+        )
+
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="restricted-session",
+        expected_identity=IDENTITY,
+        transport=httpx.MockTransport(handler),
+    ) as bridge:
+        with pytest.raises(NativeDatasetExecutionError) as exc:
+            bridge.execute_dataset({"database": 1, "type": "query", "query": {}})
+    assert exc.value.status_code == 403
+    assert "permissions" in exc.value.detail
