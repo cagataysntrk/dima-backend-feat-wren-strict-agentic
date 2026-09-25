@@ -7,6 +7,7 @@ import pytest
 from app.v2.manager_action_set import (
     DirectiveActionState,
     HypothesisActionState,
+    InspectableEvidenceState,
     ManagerActionSetBuilder,
     ManagerActionSetContext,
     NextTestContractState,
@@ -336,11 +337,23 @@ def test_two_genuinely_legal_root_directions_become_two_action_instances():
 def test_action_ref_is_state_bound_and_stale_choice_fails_closed():
     old = _build(
         state_version="prog_N",
-        inspectable_evidence_refs=("E1",),
+        inspectable_evidence=(
+            InspectableEvidenceState(
+                evidence_ref="E1",
+                capability_keys=("performance",),
+                evidence_kind="standard_analytics",
+            ),
+        ),
     )
     current = _build(
         state_version="prog_N_plus_1",
-        inspectable_evidence_refs=("E1",),
+        inspectable_evidence=(
+            InspectableEvidenceState(
+                evidence_ref="E1",
+                capability_keys=("performance",),
+                evidence_kind="standard_analytics",
+            ),
+        ),
     )
     old_ref = _instances(old, "inspect_evidence")[0].action_ref
     with pytest.raises(KeyError, match="unknown ManagerActionSet action_ref"):
