@@ -5,6 +5,7 @@ name: v2-day10-focused
     branches:
       - feat/ask-v2-mvp
     paths:
+      - "backend/app/fanout.py"
       - "backend/app/routers/ask_v2.py"
       - "backend/app/v2/product_models.py"
       - "backend/app/v2/product_control.py"
