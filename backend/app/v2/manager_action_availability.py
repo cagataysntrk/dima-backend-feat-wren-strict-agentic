@@ -94,7 +94,8 @@ class ManagerActionAvailabilityContext:
     fresh_disclosed_evidence_ref: str | None = None
     fresh_disclosed_verified: bool = False
     open_adaptive_directive_count: int = 0
-    semantic_expansion_parent_obligation_ids: tuple[str, ...] | None = None
+    open_adaptive_parent_obligation_ids: tuple[str, ...] = ()
+    evidence_grounded_parent_obligation_ids: tuple[str, ...] = ()
     remaining_research_turns: int = 0
 
 
@@ -208,20 +209,36 @@ class ManagerActionAvailability:
                 )
 
         # Post-acceptance USER_SOURCE re-resolution is never a legal cognition option.
-        # AGENT_DERIVED availability is parent-scoped. A feasible ROOT_CAUSE path may
-        # make that ROOT parent ineligible, but it must never hide a legitimate
-        # evidence-grounded non-root expansion surface.
-        semantic_parents = context.semantic_expansion_parent_obligation_ids
-        if semantic_parents is None:
-            if not effective_evidence:
-                semantic_parents = ()
-            elif roots:
-                semantic_parents = tuple(
-                    root.root_id for root in roots if not root.feasible_next_test
-                )
-            else:
-                semantic_parents = ()
-        semantic_parents = tuple(dict.fromkeys(semantic_parents))
+        # AGENT_DERIVED availability is parent-scoped and policy-owned here:
+        # - an active ROOT parent is eligible only while governed handles cannot satisfy
+        #   any material next-test contract;
+        # - a non-root parent is eligible only when accepted authority still has an OPEN
+        #   ADAPT_ON_EVIDENCE directive for that parent and current VERIFIED Evidence
+        #   belongs to that lineage.
+        # A server-owned derived ResearchTask obligation is therefore never promoted to
+        # semantic authority merely because it produced Evidence.
+        grounded_parent_ids = frozenset(
+            context.evidence_grounded_parent_obligation_ids
+        )
+        open_adaptive_parent_ids = frozenset(
+            context.open_adaptive_parent_obligation_ids
+        )
+        semantic_parent_rows: list[str] = []
+        feasible_root_ids = {
+            root.root_id for root in roots if root.feasible_next_test
+        }
+        for root in roots:
+            if root.evidence_ready and not root.feasible_next_test:
+                semantic_parent_rows.append(root.root_id)
+        semantic_parent_rows.extend(
+            parent_id
+            for parent_id in context.open_adaptive_parent_obligation_ids
+            if (
+                parent_id in grounded_parent_ids
+                and parent_id not in feasible_root_ids
+            )
+        )
+        semantic_parents = tuple(dict.fromkeys(semantic_parent_rows))
 
         if not effective_evidence:
             remove(
