@@ -3559,3 +3559,45 @@ Otherwise continue with bounded P17 recursive closure.
 status:
 `SEALED ARCHITECTURE / DMP-DEC-0048 + DMP-DEC-0049 FORWARD AUTHORITY / P17 RECURSIVE IMPLEMENTATION AUTHORIZED / P18 BLOCKED`.
 
+### DMP-DEC-0049 implementation evidence — recursive provider-free GREEN / live RED
+
+date: 2026-09-25
+
+```text
+certified code checkpoint = d1bc5291b315ff19c3456d08ff1820e983d85942
+governance                = 36128262891 SUCCESS
+recursive provider-free   = 36128262857 SUCCESS
+P17 focused               = 29 PASS
+P16                       = 6 PASS
+P15                       = 5 PASS
+P14                       = 17 PASS
+
+one Luna live canary      = 36127753645 FAILURE
+live canary SHA           = 058a484728965ed8e5ad39bd249e5e88217c1496
+P17 manager Luna calls    = 1
+P17 follow-up occurrences = 0
+Sol calls                 = 0
+engine builds             = 0
+```
+
+The live run did not invalidate DMP-DEC-0049. It failed at the typed manager-adapter boundary before
+the first accepted P17 reasoning step because `expected_information_gain` was nullable in transport
+schema but mandatory in deterministic non-STOP authority.
+
+Root fix:
+`b81b8aaa1ff06faa9cab67511b47b8730d94a8f3` +
+`7035fc7236e9761ace12f1e73b5bfed8403127dc`, certified by
+`36128262857 = SUCCESS`.
+
+Current phase classification:
+
+```text
+P17 recursive authority = PROVIDER-FREE GREEN
+P17 live cognition      = RED / INCOMPLETE
+P17                     = NOT SEALED
+P18                     = BLOCKED
+```
+
+No second paid Luna dispatch is authorized by default. Preserve `DMP-P17-LIVE-RED-001` and require
+an explicit supervisor decision before another paid canary.
+
