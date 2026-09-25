@@ -6,6 +6,7 @@ from typing import Any
 
 from app.v2.manager_action_availability import (
     ActionAvailabilityReason,
+    AdaptiveDirectiveDispositionState,
     ManagerActionAvailability,
     ManagerActionAvailabilityContext,
     RootActionState,
@@ -450,3 +451,152 @@ def test_unlinked_verified_next_test_evidence_requires_relation_before_more_test
     assert _enum_values(
         _property_schema(schema, "hypothesis_relation_evidence_ref")
     ) == {"evi_post"}
+
+
+
+def test_directive_disposition_schema_is_parent_scoped_and_wrong_parent_ref_is_absent():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            effective_inspected_verified_evidence_refs=(
+                "evi_rel",
+                "evi_root",
+            ),
+            open_adaptive_directive_count=1,
+            open_adaptive_parent_obligation_ids=("U_REL",),
+            adaptive_disposition_states=(
+                AdaptiveDirectiveDispositionState(
+                    directive_id="R_REL",
+                    parent_obligation_id="U_REL",
+                    eligible_evidence_refs=("evi_rel",),
+                ),
+            ),
+            remaining_research_turns=1,
+        )
+    )
+
+    assert "disposition_research_directive" in profile.available_actions
+    assert profile.directive_disposition_id == "R_REL"
+    assert profile.directive_disposition_parent_obligation_id == "U_REL"
+    assert profile.directive_disposition_evidence_refs == ("evi_rel",)
+
+    schema = _post_acceptance_native_schema(
+        root_cause_enabled=False,
+        allowed_actions=profile.available_actions,
+        inspectable_evidence_refs=profile.inspectable_evidence_refs,
+        resolve_provenance=profile.post_acceptance_resolve_provenance,
+        directive_disposition_ids=(profile.directive_disposition_id,),
+        directive_disposition_evidence_refs=(
+            profile.directive_disposition_evidence_refs
+        ),
+    )
+
+    assert _enum_values(_property_schema(schema, "directive_id")) == {"R_REL"}
+    evidence_refs = _enum_values(
+        _property_schema(schema, "directive_evidence_ref")
+    )
+    assert evidence_refs == {"evi_rel"}
+    assert "evi_root" not in evidence_refs
+
+
+def test_multiple_open_directives_choose_one_actionable_target_without_cross_product():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            effective_inspected_verified_evidence_refs=("evi_a", "evi_b"),
+            open_adaptive_directive_count=2,
+            adaptive_disposition_states=(
+                AdaptiveDirectiveDispositionState(
+                    directive_id="R_A",
+                    parent_obligation_id="U_A",
+                    eligible_evidence_refs=("evi_a",),
+                ),
+                AdaptiveDirectiveDispositionState(
+                    directive_id="R_B",
+                    parent_obligation_id="U_B",
+                    eligible_evidence_refs=("evi_b",),
+                ),
+            ),
+            remaining_research_turns=2,
+        )
+    )
+
+    # Accepted-contract order selects one structurally actionable target. The model
+    # never receives a directive/evidence cross-product it could combine illegally.
+    assert profile.directive_disposition_id == "R_A"
+    assert profile.directive_disposition_evidence_refs == ("evi_a",)
+    assert "evi_b" not in profile.directive_disposition_evidence_refs
+
+
+def test_first_open_directive_without_evidence_does_not_block_next_actionable_directive():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            effective_inspected_verified_evidence_refs=("evi_b",),
+            open_adaptive_directive_count=2,
+            adaptive_disposition_states=(
+                AdaptiveDirectiveDispositionState(
+                    directive_id="R_A",
+                    parent_obligation_id="U_A",
+                    eligible_evidence_refs=(),
+                ),
+                AdaptiveDirectiveDispositionState(
+                    directive_id="R_B",
+                    parent_obligation_id="U_B",
+                    eligible_evidence_refs=("evi_b",),
+                ),
+            ),
+            remaining_research_turns=2,
+        )
+    )
+
+    assert "disposition_research_directive" in profile.available_actions
+    assert profile.directive_disposition_id == "R_B"
+    assert profile.directive_disposition_evidence_refs == ("evi_b",)
+
+
+def test_open_directive_without_parent_lineage_evidence_is_not_advertised():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            effective_inspected_verified_evidence_refs=("evi_wrong_parent",),
+            open_adaptive_directive_count=1,
+            adaptive_disposition_states=(
+                AdaptiveDirectiveDispositionState(
+                    directive_id="R_REL",
+                    parent_obligation_id="U_REL",
+                    eligible_evidence_refs=(),
+                ),
+            ),
+            remaining_research_turns=1,
+        )
+    )
+
+    assert "disposition_research_directive" not in profile.available_actions
+    assert profile.directive_disposition_id is None
+    assert profile.directive_disposition_evidence_refs == ()
+    assert profile.reasons_for_unavailable("disposition_research_directive") == (
+        ActionAvailabilityReason.NO_ELIGIBLE_ADAPTIVE_DIRECTIVE_EVIDENCE.value,
+    )
+
+
+def test_derived_child_evidence_can_be_exposed_only_after_product_lineage_validation():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            effective_inspected_verified_evidence_refs=("evi_child",),
+            open_adaptive_directive_count=1,
+            adaptive_disposition_states=(
+                AdaptiveDirectiveDispositionState(
+                    directive_id="R_PARENT",
+                    parent_obligation_id="U_PARENT",
+                    eligible_evidence_refs=("evi_child",),
+                ),
+            ),
+            remaining_research_turns=1,
+        )
+    )
+
+    assert profile.directive_disposition_id == "R_PARENT"
+    assert profile.directive_disposition_evidence_refs == ("evi_child",)
+    view = profile.model_view()["directive_disposition_target"]
+    assert view == {
+        "directive_id": "R_PARENT",
+        "parent_obligation_id": "U_PARENT",
+        "eligible_evidence_refs": ["evi_child"],
+    }
