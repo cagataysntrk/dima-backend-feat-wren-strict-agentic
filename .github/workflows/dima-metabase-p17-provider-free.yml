@@ -8,6 +8,8 @@ on:
     paths:
       - "backend/app/v3/research_manager.py"
       - "backend/app/v3/research_manager_provider.py"
+      - "backend/lab/metabase/p17/recursive_manager_canary.py"
+      - ".github/workflows/dima-metabase-p17-recursive-live.yml"
       - "backend/app/v3/research_followup.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/research_store.py"
