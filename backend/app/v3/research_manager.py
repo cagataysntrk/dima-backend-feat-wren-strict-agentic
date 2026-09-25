@@ -1049,7 +1049,8 @@ def _build_action_profile(
         add(
             InvestigationIntent.SEEK_COUNTER_EVIDENCE,
             parents=advancing,
-            behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
+            allow_parentless=not graph.nodes,
+            behavior=InvestigationBranchBehavior.ROOT_OR_INHERIT,
             branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
             depth_delta=1,
         )
@@ -1094,8 +1095,36 @@ def resolve_investigation_topology(
     """Resolve dynamic P17 legality exactly once from state + typed proposal."""
 
     intent = proposal.effective_intent
+    node_by_id = {
+        node.step_id: node for node in snapshot.investigation.nodes
+    }
+    parent = (
+        node_by_id.get(proposal.parent_step_id)
+        if proposal.parent_step_id is not None
+        else None
+    )
     rule = snapshot.action_profile.rule_for(intent)
     if rule is None:
+        depth_advancing = {
+            InvestigationIntent.INVESTIGATE_GAP,
+            InvestigationIntent.EXPLORE_ALTERNATIVES,
+            InvestigationIntent.SEEK_COUNTER_EVIDENCE,
+            InvestigationIntent.DEEPEN_EXPLANATION,
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            InvestigationIntent.FORM_CLAIM,
+        }
+        if (
+            parent is not None
+            and intent in depth_advancing
+            and parent.depth >= snapshot.action_profile.max_depth
+        ):
+            raise ResearchManagerMaturationError(
+                "P17_DEPTH_BUDGET_EXHAUSTED",
+                (
+                    f"parent depth {parent.depth} reached "
+                    f"max_depth={snapshot.action_profile.max_depth}"
+                ),
+            )
         if proposal.parent_step_id is not None:
             raise ResearchManagerMaturationError(
                 "P17_PARENT_STEP_NOT_LEGAL",
@@ -1118,14 +1147,6 @@ def resolve_investigation_topology(
             intent.value,
         )
 
-    node_by_id = {
-        node.step_id: node for node in snapshot.investigation.nodes
-    }
-    parent = (
-        node_by_id.get(proposal.parent_step_id)
-        if proposal.parent_step_id is not None
-        else None
-    )
     if proposal.parent_step_id is None:
         if not rule.allow_parentless:
             raise ResearchManagerMaturationError(
