@@ -367,6 +367,257 @@ class ScriptedNS4Manager:
         )
 
 
+class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
+    """Paid-run topology: relationship-owned adaptive work plus independent ROOT_CAUSE."""
+
+    def __init__(self, *, revision: bool = False) -> None:
+        super().__init__()
+        self._revision = revision
+        self._draft_attempt = 0
+        self._coverage_attempt = 0
+
+    def _canonical_draft(self) -> dict:
+        return {
+            "obligations": [
+                {
+                    "obligation_id": "U_PERF",
+                    "capability_key": "performance",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["downtime"],
+                    "semantic_surfaces": [
+                        {"surface": "downtime", "kind_hint": "metric"},
+                    ],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+                {
+                    "obligation_id": "U_BREAK",
+                    "capability_key": "breakdown",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["downtime by department"],
+                    "semantic_surfaces": [
+                        {"surface": "downtime", "kind_hint": "metric"},
+                        {"surface": "department", "kind_hint": "dimension"},
+                    ],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+                {
+                    "obligation_id": "U_REL",
+                    "capability_key": "relationship",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["downtime relationship department"],
+                    "semantic_surfaces": [
+                        {"surface": "downtime", "kind_hint": "metric"},
+                        {"surface": "department", "kind_hint": "dimension"},
+                    ],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+                {
+                    "obligation_id": "U_ROOT",
+                    "capability_key": "root_cause",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["faults"],
+                    "semantic_surfaces": [
+                        {"surface": "faults", "kind_hint": "metric"},
+                    ],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+                {
+                    "obligation_id": "U_REPORT",
+                    "capability_key": "report",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["management report"],
+                    "semantic_surfaces": [],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+                {
+                    "obligation_id": "X_CAUSAL_CERTAINTY",
+                    "capability_key": "explain",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "EXCLUDED",
+                    "source_surfaces": ["do not claim causal certainty"],
+                    "semantic_surfaces": [],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                },
+            ],
+            "research_directives": [
+                {
+                    "directive_id": "R_ADAPT_REL",
+                    "directive_type": "ADAPT_ON_EVIDENCE",
+                    "parent_obligation_id": "U_REL",
+                    "condition": "MATERIAL_NEW_DIRECTION",
+                    "source_surfaces": ["follow a materially new verified relationship direction"],
+                }
+            ],
+            "control_requests": [],
+        }
+
+    @staticmethod
+    def _schema_actions(schema: dict) -> set[str]:
+        values: set[str] = set()
+
+        def walk(node):
+            if isinstance(node, dict):
+                enum = node.get("enum")
+                if isinstance(enum, list):
+                    values.update(str(item) for item in enum if item is not None)
+                for value in node.values():
+                    walk(value)
+            elif isinstance(node, list):
+                for value in node:
+                    walk(value)
+
+        action = (schema.get("properties") or {}).get("action")
+        if isinstance(action, dict) and isinstance(action.get("$ref"), str):
+            action = (schema.get("$defs") or {})[action["$ref"].rsplit("/", 1)[-1]]
+        walk(action)
+        return values
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        payload = json.loads(user)
+
+        if schema_name == "dima_intent_draft_v1":
+            self.preacceptance_calls += 1
+            self._draft_attempt += 1
+            draft = self._canonical_draft()
+            if self._revision and self._draft_attempt == 1:
+                # Exact failure family: explicit exclusion incorrectly represented as REQUIRED.
+                draft["obligations"][-1]["polarity"] = "REQUIRED"
+            return draft
+
+        if schema_name == "dima_intent_coverage_v1":
+            self.preacceptance_calls += 1
+            self._coverage_attempt += 1
+            if self._revision and self._coverage_attempt == 1:
+                return {
+                    "status": "VETO",
+                    "issues": [
+                        {
+                            "kind": "POLARITY_CONFLICT",
+                            "source_surfaces": ["do not claim causal certainty"],
+                            "note": "explicit exclusion is represented with REQUIRED polarity",
+                        }
+                    ],
+                }
+            return {"status": "PASS", "issues": []}
+
+        if schema_name != "dima_research_manager_action_v1":
+            raise AssertionError(f"unexpected schema {schema_name}")
+
+        self.manager_prompts.append(payload)
+        actions = self._schema_actions(schema)
+        ledger = {item["obligation_id"]: item for item in payload["OBLIGATION_LEDGER"]}
+        inventory = {
+            item["handle_ref"]: item
+            for item in payload["GOVERNED_SEMANTIC_INVENTORY"]
+        }
+        rel_handles = tuple(ledger["U_REL"]["semantic_handle_refs"])
+        rel_metric = next(
+            ref for ref in rel_handles
+            if inventory[ref]["target_kind"] in {"metric", "kpi"}
+        )
+        rel_dimension = next(
+            ref for ref in rel_handles
+            if inventory[ref]["target_kind"] == "dimension"
+        )
+        root_handle = ledger["U_ROOT"]["semantic_handle_refs"][0]
+        rel_evidence_ref = ledger["U_REL"]["evidence_refs"][0]
+        root_evidence_ref = ledger["U_ROOT"]["evidence_refs"][0]
+        accumulated = payload["ACCUMULATED_RESEARCH_STATE"] or {}
+        inspected = set(accumulated.get("inspected_evidence_refs") or ())
+        dispositions = {
+            item["directive_id"]: item["status"]
+            for item in payload["RESEARCH_DIRECTIVE_DISPOSITIONS"]
+        }
+        hypothesis_entries = payload["HYPOTHESIS_LEDGERS"][0]["entries"]
+
+        if rel_evidence_ref not in inspected:
+            assert "inspect_evidence" in actions
+            self.actions.append("inspect_evidence")
+            return {"action": "inspect_evidence", "evidence_ref": rel_evidence_ref}
+
+        if dispositions.get("R_ADAPT_REL") == "OPEN":
+            assert "propose_branches" in actions
+            self.actions.append("propose_branches")
+            return {
+                "action": "propose_branches",
+                "branch_parent_obligation_id": "U_REL",
+                "branch_evidence_ref": rel_evidence_ref,
+                "branch_candidates": [
+                    {
+                        "task_id": "D_REL_BREAK",
+                        "capability_key": "breakdown",
+                        "input_handles": [rel_metric, rel_dimension],
+                        "material_reason": (
+                            "Verified relationship Evidence justifies one bounded "
+                            "department breakdown follow-up."
+                        ),
+                    }
+                ],
+            }
+
+        if not hypothesis_entries:
+            assert root_evidence_ref in inspected
+            assert "propose_hypothesis_with_next_test" in actions
+            self.root_trigger_evidence_ref = root_evidence_ref
+            self.actions.append("propose_hypothesis_with_next_test")
+            return {
+                "action": "propose_hypothesis_with_next_test",
+                "hypothesis_parent_obligation_id": "U_ROOT",
+                "hypothesis_statement": (
+                    "Canonical topology hypothesis contains %27 but report must not."
+                ),
+                "hypothesis_semantic_handles": [root_handle],
+                "hypothesis_trigger_evidence_refs": [root_evidence_ref],
+                "hypothesis_limitations": [],
+                "next_test_task_kind": "QUERY",
+                "next_test_input_handles": [root_handle],
+                "next_test_trigger_evidence_ref": root_evidence_ref,
+                "next_test_material_reason": (
+                    "Test the candidate with one fresh governed root-lineage measurement."
+                ),
+            }
+
+        hypothesis = hypothesis_entries[0]
+        if not hypothesis["evidence_links"]:
+            delta = payload["CURRENT_RESULT_DELTA"]
+            assert delta is not None and delta["verified"] is True
+            assert "propose_hypothesis_evidence_relation" in actions
+            self.actions.append("propose_hypothesis_evidence_relation")
+            return {
+                "action": "propose_hypothesis_evidence_relation",
+                "hypothesis_ref": hypothesis["hypothesis_id"],
+                "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+                "hypothesis_relation": "SUPPORTS",
+            }
+
+        raise AssertionError(
+            "CompletionGate should terminate canonical topology before another Manager turn"
+        )
+
+
 class RevisionNS4Manager(ScriptedNS4Manager):
     """Exact revision family: vetoed polarity draft, corrected draft, then canonical Research."""
 
@@ -512,6 +763,7 @@ def run_rehearsal(
     *,
     manager: ScriptedNS4Manager | None = None,
     question: str | None = None,
+    expected_user_must_ids: tuple[str, ...] = ("U_PERF", "U_REL", "U_ROOT"),
 ) -> dict[str, object]:
     tenant = "g16-tenant"
     service = SyntheticService()
@@ -623,8 +875,11 @@ def run_rehearsal(
         item.obligation_id: item
         for item in result.ledger.active_user_must
     }
-    if set(active) != {"U_PERF", "U_REL", "U_ROOT"}:
-        raise RehearsalError(f"unexpected USER_MUST set: {sorted(active)}")
+    if set(active) != set(expected_user_must_ids):
+        raise RehearsalError(
+            "unexpected USER_MUST set: "
+            f"{sorted(active)} != {sorted(expected_user_must_ids)}"
+        )
     if any(item.status != ObligationStatus.VERIFIED for item in active.values()):
         raise RehearsalError("all canonical USER_MUST obligations must be VERIFIED")
 
@@ -711,7 +966,7 @@ def run_rehearsal(
         "initial_user_must_count": len(active),
         "user_must_families": [
             active[key].capability_key.value.upper()
-            for key in ("U_PERF", "U_REL", "U_ROOT")
+            for key in expected_user_must_ids
         ],
         "preacceptance_model_calls": manager.preacceptance_calls,
         "research_manager_calls": len(manager.manager_prompts),
@@ -756,6 +1011,38 @@ def run_rehearsal(
         ),
     }
 
+
+
+def run_canonical_relationship_topology_rehearsal(
+    *,
+    revision: bool = False,
+) -> dict[str, object]:
+    manager = CanonicalRelationshipTopologyManager(revision=revision)
+    receipt = run_rehearsal(
+        manager=manager,
+        question=(
+            "Research downtime performance and department breakdown; check the governed "
+            "relationship, investigate root cause of faults, follow a materially new "
+            "verified relationship direction, produce a management report, and do not "
+            "claim causal certainty."
+        ),
+        expected_user_must_ids=(
+            "U_PERF",
+            "U_BREAK",
+            "U_REL",
+            "U_ROOT",
+            "U_REPORT",
+        ),
+    )
+    return {
+        **receipt,
+        "contract": (
+            "d10-s-canonical-relationship-revision-v1"
+            if revision
+            else "d10-s-canonical-relationship-clean-v1"
+        ),
+        "adaptive_parent_obligation_id": "U_REL",
+    }
 
 
 def run_revision_rehearsal() -> dict[str, object]:
