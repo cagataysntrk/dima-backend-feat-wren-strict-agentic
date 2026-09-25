@@ -2607,9 +2607,24 @@ class ResearchManagerLoop:
                 if cls._decision_matches_scope(decision, scope)
             )
             if len(matches) != 1:
+                candidates = [
+                    {
+                        "scope_ref": scope.scope_ref,
+                        "action": scope.action,
+                        "parent_obligation_id": scope.parent_obligation_id,
+                        "directive_id": scope.directive_id,
+                        "hypothesis_ref": scope.hypothesis_ref,
+                        "task_id": scope.task_id,
+                        "evidence_refs": list(scope.evidence_refs),
+                        "handle_refs": list(scope.handle_refs),
+                        "task_kinds": list(scope.task_kinds),
+                    }
+                    for scope in snapshot.scopes_for(decision.action.value)
+                ]
                 raise ValueError(
                     "legacy flat Manager decision does not resolve to exactly one "
-                    f"current applicability scope; matches={len(matches)}"
+                    f"current applicability scope; matches={len(matches)}; "
+                    f"action={decision.action.value}; candidates={candidates}"
                 )
             return decision, matches[0].scope_ref
 
