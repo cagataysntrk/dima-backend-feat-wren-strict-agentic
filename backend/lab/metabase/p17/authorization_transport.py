@@ -1,7 +1,8 @@
-"""Exact-Git authorization transport for DMP-DEC-0051 recovery cycles.
+"""Exact-Git, failure-family-aware authorization transport for DMP-DEC-0052.
 
-Authorization truth is derived from immutable commit objects and exact parent→HEAD
-change status. GitHub event changed-file projections are intentionally irrelevant.
+Authorization truth comes from immutable commit objects plus exact parent→HEAD
+change status. GitHub event projections and commit-message semantics are never
+authorization truth.
 """
 from __future__ import annotations
 
@@ -13,13 +14,22 @@ from typing import Callable, Sequence
 
 
 AUTHORIZATION_DIR = "backend/lab/metabase/p17/authorizations/"
-HISTORICAL_RECEIPT = (
-    "backend/lab/metabase/p17/AUTONOMOUS_LUNA_AUTHORIZATION.json"
+HISTORICAL_RECEIPTS = frozenset(
+    {
+        "backend/lab/metabase/p17/AUTONOMOUS_LUNA_AUTHORIZATION.json",
+        (
+            "backend/lab/metabase/p17/authorizations/"
+            "autonomous-luna-recovery-001.json"
+        ),
+    }
 )
 EXPECTED_BRANCH = "feat/dima-metabase-platform"
-EXPECTED_DECISION = "DMP-DEC-0051"
-EXPECTED_PRODUCT_SHA = "d1bc5291b315ff19c3456d08ff1820e983d85942"
+EXPECTED_DECISION = "DMP-DEC-0052"
+EXPECTED_PRODUCT_SHA = "f940a9731be98212b47b44391e28080648c00629"
 EXPECTED_MODEL = "openai/gpt-5.6-luna"
+CURRENT_FAILURE_FAMILY_ID = "p17-manager-structured-schema"
+CURRENT_ATTEMPT_IN_FAMILY = 2
+MAX_ATTEMPT_IN_FAMILY = 3
 MAX_MANAGER_CALLS = 8
 MAX_SOL_CALLS = 0
 MAX_ENGINE_BUILDS = 0
@@ -34,7 +44,8 @@ class AuthorizationTransportError(RuntimeError):
 class AuthorizationReceipt:
     path: str
     authorization_id: str
-    recovery_cycle: int
+    failure_family_id: str
+    attempt_in_family: int
     candidate_product_sha: str
     dispatch_parent_sha: str
     provider_free_run_id: int
@@ -45,6 +56,8 @@ class AuthorizationReceipt:
     engine_build_budget: int
     c1_budget: int
     purpose: str
+    previous_red_run_id: int | None = None
+    root_fix_sha: str | None = None
 
 
 RunGit = Callable[[Sequence[str]], str]
@@ -89,9 +102,6 @@ def _ensure_parent_object(
         return
     except subprocess.CalledProcessError:
         pass
-    # Live checkout is intentionally shallow. Fetch the exact branch to depth 2
-    # so parent/tree objects exist locally; authorization still comes from the
-    # exact parent→HEAD object diff below, never from event metadata.
     git(["fetch", "--no-tags", "--depth=2", "origin", branch])
     try:
         git(["cat-file", "-e", f"{parent_sha}^{{commit}}"])
@@ -174,20 +184,63 @@ def _require_int(payload: dict, key: str) -> int:
     return value
 
 
+def _optional_positive_int(payload: dict, key: str) -> int | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise AuthorizationTransportError(
+            f"authorization field must be a positive integer: {key}"
+        )
+    return value
+
+
+def _machine_safe_family_id(value: str) -> bool:
+    if not value or value[0] == "-" or value[-1] == "-":
+        return False
+    return all(ch.islower() or ch.isdigit() or ch == "-" for ch in value)
+
+
+def _expected_receipt_path(
+    failure_family_id: str,
+    attempt_in_family: int,
+) -> str:
+    if not _machine_safe_family_id(failure_family_id):
+        raise AuthorizationTransportError(
+            "failure_family_id is not machine-safe"
+        )
+    if not 1 <= attempt_in_family <= MAX_ATTEMPT_IN_FAMILY:
+        raise AuthorizationTransportError(
+            "attempt_in_family must be between 1 and 3"
+        )
+    return (
+        AUTHORIZATION_DIR
+        + failure_family_id
+        + "--attempt-"
+        + f"{attempt_in_family:03d}"
+        + ".json"
+    )
+
+
 def verify_dispatch_authorization(
     repo_root: Path,
     *,
     dispatch_sha: str,
     branch: str = EXPECTED_BRANCH,
-    recovery_cycle: int | None = None,
+    expected_failure_family_id: str = CURRENT_FAILURE_FAMILY_ID,
+    expected_attempt_in_family: int = CURRENT_ATTEMPT_IN_FAMILY,
     run_git: RunGit | None = None,
 ) -> AuthorizationReceipt:
-    """Verify one append-only authorization receipt from exact Git history."""
+    """Verify one append-only family-aware receipt from exact Git history."""
 
-    if recovery_cycle is not None and recovery_cycle not in {1, 2, 3}:
-        raise AuthorizationTransportError("recovery_cycle must be 1, 2, or 3")
+    expected_path = _expected_receipt_path(
+        expected_failure_family_id,
+        expected_attempt_in_family,
+    )
     if branch != EXPECTED_BRANCH:
-        raise AuthorizationTransportError("authorization branch is not allowed")
+        raise AuthorizationTransportError(
+            "authorization branch is not allowed"
+        )
 
     git = run_git or _default_git(repo_root)
     head = git(["rev-parse", "HEAD"])
@@ -204,7 +257,7 @@ def verify_dispatch_authorization(
         dispatch_sha=dispatch_sha,
     )
 
-    if any(path == HISTORICAL_RECEIPT for _, path in changes):
+    if any(path in HISTORICAL_RECEIPTS for _, path in changes):
         raise AuthorizationTransportError(
             "historical authorization receipt is immutable"
         )
@@ -227,34 +280,17 @@ def verify_dispatch_authorization(
         raise AuthorizationTransportError(
             "authorization namespace is append-only"
         )
-
-    path = added[0]
-    name = Path(path).name
-    prefix = "autonomous-luna-recovery-"
-    suffix = ".json"
-    if not name.startswith(prefix) or not name.endswith(suffix):
+    if added[0] != expected_path:
         raise AuthorizationTransportError(
-            "authorization receipt filename is not a recovery identity"
+            "authorization receipt path does not match failure family attempt"
         )
-    cycle_token = name[len(prefix) : -len(suffix)]
-    cycle_by_token = {"001": 1, "002": 2, "003": 3}
-    inferred_cycle = cycle_by_token.get(cycle_token)
-    if inferred_cycle is None:
-        raise AuthorizationTransportError(
-            "authorization receipt filename recovery cycle is invalid"
-        )
-    if recovery_cycle is not None and recovery_cycle != inferred_cycle:
-        raise AuthorizationTransportError(
-            "authorization filename does not match expected recovery_cycle"
-        )
-    effective_cycle = inferred_cycle
 
-    payload = _load_receipt(repo_root, path)
-
+    payload = _load_receipt(repo_root, expected_path)
     exact = {
         "decision": EXPECTED_DECISION,
         "branch": EXPECTED_BRANCH,
-        "recovery_cycle": effective_cycle,
+        "failure_family_id": expected_failure_family_id,
+        "attempt_in_family": expected_attempt_in_family,
         "candidate_product_sha": EXPECTED_PRODUCT_SHA,
         "dispatch_parent_sha": parent_sha,
         "model": EXPECTED_MODEL,
@@ -266,8 +302,15 @@ def verify_dispatch_authorization(
             )
 
     authorization_id = str(payload.get("authorization_id") or "").strip()
-    if not authorization_id:
-        raise AuthorizationTransportError("authorization_id is required")
+    expected_authorization_id = (
+        expected_failure_family_id
+        + "--attempt-"
+        + f"{expected_attempt_in_family:03d}"
+    )
+    if authorization_id != expected_authorization_id:
+        raise AuthorizationTransportError(
+            "authorization_id does not match failure family attempt"
+        )
 
     provider_free_run_id = _require_int(payload, "provider_free_run_id")
     governance_run_id = _require_int(payload, "governance_run_id")
@@ -275,6 +318,13 @@ def verify_dispatch_authorization(
     sol_budget = _require_int(payload, "sol_budget")
     engine_build_budget = _require_int(payload, "engine_build_budget")
     c1_budget = _require_int(payload, "c1_budget")
+    previous_red_run_id = _optional_positive_int(
+        payload,
+        "previous_red_run_id",
+    )
+    root_fix_sha = payload.get("root_fix_sha")
+    if root_fix_sha is not None:
+        root_fix_sha = str(root_fix_sha).strip() or None
 
     if provider_free_run_id <= 0 or governance_run_id <= 0:
         raise AuthorizationTransportError(
@@ -291,12 +341,15 @@ def verify_dispatch_authorization(
 
     purpose = str(payload.get("purpose") or "").strip()
     if not purpose:
-        raise AuthorizationTransportError("authorization purpose is required")
+        raise AuthorizationTransportError(
+            "authorization purpose is required"
+        )
 
     return AuthorizationReceipt(
-        path=path,
+        path=expected_path,
         authorization_id=authorization_id,
-        recovery_cycle=effective_cycle,
+        failure_family_id=expected_failure_family_id,
+        attempt_in_family=expected_attempt_in_family,
         candidate_product_sha=EXPECTED_PRODUCT_SHA,
         dispatch_parent_sha=parent_sha,
         provider_free_run_id=provider_free_run_id,
@@ -307,4 +360,6 @@ def verify_dispatch_authorization(
         engine_build_budget=engine_build_budget,
         c1_budget=c1_budget,
         purpose=purpose,
+        previous_red_run_id=previous_red_run_id,
+        root_fix_sha=root_fix_sha,
     )
