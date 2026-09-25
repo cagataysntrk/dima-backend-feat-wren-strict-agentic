@@ -120,6 +120,12 @@ class NumericAnalyticalKind(StrEnum):
     DIRECT_INDIRECT_DECOMPOSITION = "DIRECT_INDIRECT_DECOMPOSITION"
 
 
+class CausalIdentificationKind(StrEnum):
+    NATIVE_CAUSAL_IDENTIFICATION = "NATIVE_CAUSAL_IDENTIFICATION"
+    EXPERIMENTAL = "EXPERIMENTAL"
+    QUASI_EXPERIMENTAL = "QUASI_EXPERIMENTAL"
+
+
 class P19Hypothesis(Frozen):
     hypothesis_id: str = Field(pattern=r"^p19h_[a-f0-9]{24}$")
     research_session_id: str = Field(pattern=r"^rs_[a-f0-9]{24}$")
@@ -161,6 +167,25 @@ class NumericProvenanceRef(Frozen):
         return self
 
 
+class CausalIdentificationRef(Frozen):
+    source_kind: GroundingSourceKind
+    source_ref: str = Field(min_length=1)
+    source_receipt_id: str | None = None
+    source_path: str = Field(min_length=1, max_length=512)
+    identification_kind: CausalIdentificationKind
+
+    @model_validator(mode="after")
+    def sealed_source_only(self):
+        if self.source_kind not in {
+            GroundingSourceKind.P14_EVIDENCE,
+            GroundingSourceKind.P15_MATERIAL,
+        }:
+            raise ValueError(
+                "causal identification must reference P14 Evidence or P15 material"
+            )
+        return self
+
+
 class CandidateAssessment(Frozen):
     hypothesis_id: str = Field(pattern=r"^p19h_[a-f0-9]{24}$")
     grounding_link_ids: tuple[str, ...] = Field(min_length=1)
@@ -176,6 +201,7 @@ class CandidateAssessment(Frozen):
     )
     identification_limitations: tuple[IdentificationLimitation, ...] = ()
     numeric_provenance: tuple[NumericProvenanceRef, ...] = ()
+    causal_identification_refs: tuple[CausalIdentificationRef, ...] = ()
 
     @model_validator(mode="after")
     def coherent(self):
@@ -798,6 +824,37 @@ class HypothesisRootCauseStore:
                 ref.source_path,
             )
 
+    def _validate_causal_identification(
+        self,
+        *,
+        session_id: str,
+        obligation_id: str,
+        ref: CausalIdentificationRef,
+    ) -> None:
+        row = self._source_authority(
+            session_id=session_id,
+            obligation_id=obligation_id,
+            source_kind=ref.source_kind,
+            source_ref=ref.source_ref,
+            source_receipt_id=ref.source_receipt_id,
+        )
+        if ref.source_kind == GroundingSourceKind.P14_EVIDENCE:
+            payload = _json_object(
+                row.native_result_json,
+                code="P19_CAUSAL_IDENTIFICATION_SOURCE_INVALID",
+            )
+        else:
+            payload = _json_object(
+                row.native_payload_json,
+                code="P19_CAUSAL_IDENTIFICATION_SOURCE_INVALID",
+            )
+        value = _path_value(payload, ref.source_path)
+        if value != ref.identification_kind.value:
+            raise P19EpistemicError(
+                "P19_CAUSAL_IDENTIFICATION_SOURCE_MISMATCH",
+                ref.source_path,
+            )
+
     def _p18_status(
         self,
         *,
@@ -960,6 +1017,12 @@ class HypothesisRootCauseStore:
                     obligation_id=draft.obligation_id,
                     ref=numeric,
                 )
+            for causal_ref in candidate.causal_identification_refs:
+                self._validate_causal_identification(
+                    session_id=session.session_id,
+                    obligation_id=draft.obligation_id,
+                    ref=causal_ref,
+                )
 
             if (
                 candidate.causal_qualification
@@ -1071,6 +1134,7 @@ class HypothesisRootCauseStore:
                     not in {EvidenceStrength.STRONG, EvidenceStrength.MODERATE}
                     or candidate.contribution_class == ContributionClass.UNKNOWN
                     or candidate.identification_limitations
+                    or not candidate.causal_identification_refs
                     or not has_supporting_evidence
                     or has_challenge
                 ):
