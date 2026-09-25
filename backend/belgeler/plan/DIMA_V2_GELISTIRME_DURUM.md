@@ -12226,3 +12226,100 @@ ABSTAINS / AMBIGUOUS_SCOPE over exact current-message governed metric sources.
 ```
 
 No additional Product fix or paid measurement is authorized until a new supervisor decision.
+
+
+---
+
+## 2026-09-25 — D10-T CERTIFICATION ORACLE CORRECTION / CURRENT AUTHORITY
+
+Superseding current-authority receipt:
+
+`DIMA_DAY10_T_CERTIFICATION_ORACLE_CORRECTION.md`
+
+Historical D10-H/D10-S/live receipts remain immutable. This note does not rewrite them.
+
+Current classification:
+
+```text
+Product behavior                         999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+Product patch required                   NO
+36135227087 GitHub workflow result       RED (historical / immutable)
+36135227087 Product lifecycle            COMPLETED / VERIFIED_COMPLETE
+36135227087 harness failure              EVAL / HARNESS / FIXTURE
+first wrong transition                   stale path-specific certification oracle
+```
+
+The final/integrated evaluator no longer treats `adaptive_branch_executed`,
+`ADAPTIVE_BRANCH_OPENED`, or `APPLIED` as unconditional lifecycle truth.
+Certification is now owned by accepted typed directive state, final
+`ResearchDirectiveDisposition`, governed Evidence, lineage/provenance and
+CompletionGate.
+
+Valid `ADAPT_ON_EVIDENCE` terminal handling is status-specific:
+
+```text
+APPLIED
+NO_MATERIAL_DIRECTION
+BLOCKED
+OPEN
+```
+
+`NO_MATERIAL_DIRECTION` is valid only with inspected VERIFIED Evidence in the
+accepted directive parent lineage, zero branch refs and a bounded reason.
+`OPEN + VERIFIED_COMPLETE` remains a genuine Product defect. `BLOCKED` remains a
+typed terminal and cannot be relabelled APPLIED.
+
+Day8 historical live debt is now closed from captured authority plus frozen verifier
+invariants:
+
+```text
+accepted ROOT authority
+→ server-owned hypothesis
+→ completed governed next-test task
+→ new VERIFIED post-test Evidence
+→ admitted post-test Evidence relation
+→ ROOT o4 VERIFIED
+→ canonical CANDIDATE_CAUSE
+→ CONFIRMED_CAUSE = 0
+```
+
+The frozen `RootCauseObligationVerifier` cannot write ROOT VERIFIED unless that
+next-test/relation chain exists. The historical ROOT candidate event is emitted only
+after canonical Finding construction succeeds.
+
+Therefore:
+
+```text
+Day8 live debt   CLOSED
+Day8 FINAL       SEALED
+
+Day10 FINAL      OPEN
+```
+
+Day10 remains OPEN because run `36135227087` stopped at the stale first-turn harness
+assertion before the signed report-section continuation ran.
+
+Provider-free correction proof:
+
+```text
+Day10 focused   36138055136 = GREEN
+Day8 affected   36138058114 = GREEN
+paid calls      26 / 40 used
+remaining       14 / 40
+new paid calls  0
+```
+
+Permanent certification rule:
+
+```text
+AUTHORITATIVE STATE > OBSERVATION STRING
+LIFECYCLE CONTRACT > EXECUTION TRAJECTORY
+EVENT != TRUTH
+MODEL ACTION SELECTION != SUCCESSFUL TRANSITION
+SUCCESSFUL TYPED RUNTIME TRANSITION = TRUTH
+MULTIPLE VALID EXECUTION PATHS → SAME LIFECYCLE CERTIFICATION
+HISTORICAL RUNS ARE IMMUTABLE
+```
+
+Transport remains permanent `workflow_dispatch`-only. No paid retry, Day11, DEV80,
+Validation50 or Hidden50 is authorized by this correction.
