@@ -1,5 +1,74 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY OVERRIDE — D10-Q FINAL GENERIC FIX #3 GREEN / PAID RUN #4 READY
+
+This is the current active Day10 authority. Historical TRUE STOP and earlier fix-ready blocks below remain audit receipts.
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc final proof HEAD       5db64a5c704c910e860c08b6abc82951f9dd6bbb
+latest Product behavior        91721cb3bc01a3737212c7596fd3170c60c0239b
+
+paid #1                        36091887451 = RED / 7 calls
+paid #2                        36096707608 = RED / 8 calls
+paid #3                        36098236473 = RED / 7 calls
+
+provider calls                 22 / 40 used
+remaining                      18
+
+generic fixes                  3 / 3 consumed
+generic fix #3                 COMPLETE / GREEN
+final paid verification #4     AUTHORIZED / READY
+run #4 hard max                18
+
+revision preacceptance         4 turns
+revision Research              2 turns
+revision Manager total         6 / 6
+normal G16 Manager total       6 / 6
+
+affected Day7                  36100892648 = GREEN
+affected Day8                  36100892586 = GREEN
+affected Day10                 36100939565 = GREEN
+
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Generic fix #3 is closed under frozen ceilings. Coverage VETO now occurs before semantic materialization;
+a rejected draft creates zero semantic authority and a corrected revision grounds fresh. The exact
+run-#3 failure family is provider-free GREEN.
+
+The full revision-path rehearsal initially proved a real budget conflict:
+
+```text
+preacceptance                  4
+Research available             2
+old Research ceremony          propose_branches
+                               → propose_hypothesis
+                               → BUDGET_EXHAUSTED at 6 / 6
+```
+
+The bounded generic compaction adds one typed `propose_hypothesis_with_next_test` cognition plan.
+The model still owns only proposal content. The server validates/registers the hypothesis, mints its
+ID, validates the first governed next test through the existing `HypothesisNextTestBoundary`, mints
+the ResearchTask ID and executes through the existing trust plane. Evidence relation remains a
+separate cognition step after VERIFIED Evidence exists.
+
+A composite next test may account same-root `ADAPT_ON_EVIDENCE` only after deterministic lineage
+proves same root, same inspected VERIFIED trigger Evidence, server-derived child task and successful
+VERIFIED result Evidence. BLOCKED/failed work cannot account the directive.
+
+Normal G16 remains unchanged at 2 preacceptance + 4 Research = 6/6. Revision recovery now reaches the
+same governed Product result at 4 + 2 = 6/6. Manager ceiling, SEMANTIC_LINKER ceiling, provider topology,
+SemanticBindingGate, UOL, Wren truth, CrossDomainJoinGate, Evidence ownership and EpistemicLabelGate
+are unchanged.
+
+Next action is the one authorized FINAL verification paid run #4 with a hard 18-call ceiling. Use the
+owner-authorized temporary marker transport only for this run, then restore the workflow to
+`workflow_dispatch`-only before deleting the marker. If run #4 is RED, HARD STOP: no fix #4.
+
+
 ## LATEST AUTHORITY OVERRIDE — D10-Q FINAL GENERIC FIX #3 AUTHORIZED
 
 This block supersedes only the prior D10-Q TRUE STOP as current authority. Historical TRUE STOP and all paid RED receipts below remain untouched.
