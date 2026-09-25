@@ -21,6 +21,10 @@ name: v2-day8-focused
       - "backend/app/v2/root_cause_orchestration.py"
       - "backend/app/v2/manager_loop.py"
       - "backend/app/v2/manager_action_availability.py"
+      - "backend/app/v2/manager_action_set.py"
+      - "backend/app/v2/authority_invariants.py"
+      - "backend/lab/v2_manager_action_set_script_adapter.py"
+      - "backend/tests/helpers/manager_action_set_adapter.py"
       - "backend/app/v2/manager_lab.py"
       - "backend/app/v2/research_tasks.py"
       - "backend/tests/test_v2_day8_hypothesis_ledger.py"
@@ -64,7 +68,7 @@ jobs:
 
       - name: Compile Day8 epistemic slice
         working-directory: backend
-        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py app/v2/root_cause_orchestration.py app/v2/manager_loop.py app/v2/manager_lab.py app/v2/manager_preacceptance.py app/v2/manager_semantics.py app/v2/semantic_linker.py app/v2/semantic_retriever.py lab/v2_day8_root_cause_live_sol.py
+        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py app/v2/root_cause_orchestration.py app/v2/manager_loop.py app/v2/manager_action_set.py app/v2/authority_invariants.py app/v2/manager_lab.py app/v2/manager_preacceptance.py app/v2/manager_semantics.py app/v2/semantic_linker.py app/v2/semantic_retriever.py lab/v2_day8_root_cause_live_sol.py
 
       - name: Day8 capability execution-mode attacks
         working-directory: backend
