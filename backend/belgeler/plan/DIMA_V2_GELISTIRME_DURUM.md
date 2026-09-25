@@ -1,42 +1,47 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
-## 2026-09-24 — D10-Q DETERMINISTIC + REAL-WREN GREEN / PAID READY
+## 2026-09-25 — D10-Q PAID RUN #1 RED / POST-FIX GREEN
 
 ```text
 branch                         feat/ask-v2-mvp
-Product behavior SHA           4e9f7a32561ff8f4ebaf95f61e36316453677802
-final test-only candidate      16d9bdc89141a4685616ad10094699185744995b
+current pre-doc HEAD           ca2f8fadea893142e74f9d9ccafd18ded1ae77c6
+latest Product behavior        05f69a67320809767501d2fdcb0522ad9df48309
 
-Day10                          36056867465 = GREEN
-Day8                           36056867485 = GREEN
-Day7                           36056867709 = GREEN
-D10-Q real-Wren                36056672128 = GREEN
+paid run #1                    36091887451 = RED
+tested SHA                     d032757c05500b48e144d1c808c6076e6cbb56f3
+provider calls                 7
+classification                 CONTRACT / ARCHITECTURE
 
-D10-Q paid                     NOT YET DISPATCHED
-paid dispatch budget           0 / 3
-new provider-call budget       0 / 30
+post-fix Day10                 36092568445 = GREEN
+post-fix Day8                  36092568435 = GREEN
+post-fix Day7                  36092641195 = GREEN
+
+paid dispatch budget           1 / 3 used
+new provider calls             7 / 30 used
+remaining                      23
+run #2 max input               20
 
 Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
 Day10 FINAL                    OPEN
+current phase                  DAY10 / D10-Q PAID CLOSURE
 Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
 ```
 
+First wrong transition: the governed relationship executor returned its legitimate fail-closed
+`UNSUPPORTED` terminal with no Evidence, while `ResearchToolRunner` incorrectly treated every
+relationship output as evidence-bearing and raised `returned no evidence reference`.
 
-Higher-authority override: D10-Q may use at most 3 paid dispatches. The cumulative
-new-provider-call budget remains 30. This override changes no Product architecture,
-provider topology, Manager ceiling, authority owner, semantic algebra, Wren truth,
-security boundary, or test-economy rule. Each RED must still produce a material generic
-fix and a new Product behavior SHA before another paid dispatch.
+Generic Product fix: unavailable relationship output is a typed blocked ResearchTask terminal,
+recorded idempotently with zero fabricated Evidence. The relationship blocked-UOL commit is behind
+the same lifecycle commit guard used for cancellation/deadline safety. Evidence remains mandatory
+for successful relationship execution.
 
-D10-Q explicit multi-metric scope groups are provider-free and real-Wren certified. Scope groups are
-ephemeral cognition context only; accepted truth remains exact source refs, fresh SemanticBindingGate
-handles, semantic receipts and AcceptedTurnContract. Multi-metric ROOT_CAUSE is accepted without a
-single-primary-metric rule and boots losslessly into the existing PERFORMANCE / QUERY execution shape.
-
-The paid workflow remains permanently manual-dispatch-only. No push bridge or marker may be added.
-The next release action is the first D10-Q canonical paid Product measurement under the authorized
-2-dispatch / 30-new-provider-call envelope.
-
+D10-Q semantic repair remains frozen and live-proven: run #1 reached
+`SELECT_SCOPE_GROUP g1` before the later relationship failure. The next authorized action is paid
+run #2 on the new Product behavior, subject to the remaining 23-call cumulative envelope and the
+20-call per-run ceiling.
 
 ## 2026-09-24 — D10-P TRUE STOP / D10-Q ACTIVE
 
