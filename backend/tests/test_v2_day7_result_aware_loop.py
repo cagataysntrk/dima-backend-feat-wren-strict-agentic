@@ -141,8 +141,6 @@ class _AdaptiveFakeLLM:
                     "action": "resolve_semantics",
                     "resolve_provenance": "AGENT_DERIVED",
                     "target_kind_hints": ["dimension"],
-                    "semantic_parent_obligation_id": "U1",
-                    "semantic_evidence_ref": delta["evidence_ref"],
                     "semantic_proposal": "bölge",
                 },
             )
@@ -163,25 +161,17 @@ class _AdaptiveFakeLLM:
                 payload,
                 {
                     "action": "propose_branches",
-                    "branch_parent_obligation_id": "U1",
-                    "branch_evidence_ref": delta["evidence_ref"],
                     "branch_candidates": [
                         {
-                            "task_id": "legacy-D1",
                             "capability_key": "breakdown",
-                            "input_handles": ["h1", resolved_dimension],
                             "material_reason": "regional breakdown is evidence-grounded",
                         },
                         {
-                            "task_id": "legacy-D2",
                             "capability_key": "performance",
-                            "input_handles": ["h1"],
                             "material_reason": "bounded metric re-check candidate",
                         },
                         {
-                            "task_id": "legacy-D3",
                             "capability_key": "ranking",
-                            "input_handles": ["h1", resolved_dimension],
                             "material_reason": "ranked regional follow-up candidate",
                         },
                     ],
@@ -189,21 +179,12 @@ class _AdaptiveFakeLLM:
             )
 
         if len(payload.get("EVIDENCE_REFS") or []) == 1 and ready:
-            selected = next(
-                item for item in ready if item["task_kind"] == "BREAKDOWN"
-            )
+            assert any(item["task_kind"] == "BREAKDOWN" for item in ready)
             return adapt_legacy_manager_intent(
                 payload,
                 {
                     "action": "run_analytics",
-                    "obligation_ids": ["U1"],
-                    "metric_handles": ["h1"],
-                    "dimension_handles": [resolved_dimension],
-                    "derived_task_id": selected["task_id"],
-                    "derived_parent_obligation_id": selected["parent_obligation_id"],
                     "derived_capability_key": "breakdown",
-                    "derived_evidence_ref": selected["trigger_evidence_ref"],
-                    "derived_reason": "execute one READY bounded branch",
                 },
             )
 
@@ -435,20 +416,27 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     )
 
     parent = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
-    child = next(item for item in runtime.ledger.items if item.obligation_id == "D1")
+    verified_breakdown_children = [
+        item
+        for item in runtime.ledger.items
+        if item.origin == ObligationOrigin.AGENT_DERIVED
+        and item.parent_obligation_id == "U1"
+        and item.capability_key == ManagerCapabilityKey.BREAKDOWN
+        and item.status == ObligationStatus.VERIFIED
+    ]
+    assert len(verified_breakdown_children) == 1
+    child = verified_breakdown_children[0]
     assert parent.origin == ObligationOrigin.USER_MUST
     assert parent.status == ObligationStatus.VERIFIED
-    assert child.origin == ObligationOrigin.AGENT_DERIVED
-    assert child.parent_obligation_id == "U1"
-    assert child.capability_key == ManagerCapabilityKey.BREAKDOWN
-    assert child.status == ObligationStatus.VERIFIED
+    assert child.obligation_id.startswith("branch_")
+    assert child.obligation_id not in {"D1", "D2", "D3", "legacy-D1", "legacy-D2", "legacy-D3"}
 
     task_ids = [
         item.get("research_task_id")
         for item in outcome.observations
         if item.get("kind") == "tool" and item.get("research_task_id")
     ]
-    assert task_ids == ["seed:U1", "D1"]
+    assert task_ids == ["seed:U1", child.obligation_id]
 
     # The second decision was grounded in actual bounded first-result content.
     first_inspection_prompt = llm.prompts[1]
@@ -462,7 +450,11 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert fanout["result"]["classification"] == "UNKNOWN"
     assert fanout["result"]["strategy"] == "CONSERVATIVE_BOUNDED"
     assert fanout["result"]["allowed_children"] == 2
-    assert fanout["result"]["selected_task_ids"] == ["D1", "D2"]
+    selected_task_ids = fanout["result"]["selected_task_ids"]
+    assert len(selected_task_ids) == 2
+    assert len(set(selected_task_ids)) == 2
+    assert all(task_id.startswith("branch_") for task_id in selected_task_ids)
+    assert child.obligation_id in selected_task_ids
 
     # Fanout registration is cognition-only; one selected READY branch executes.
     # The accepted ADAPT_ON_EVIDENCE directive is lifecycle-accounted by successful
@@ -471,11 +463,11 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert len(llm.prompts) == 4
     disposition = runtime.directive_disposition("R_ADAPT_U1")
     assert disposition.status == ResearchDirectiveDispositionStatus.APPLIED
-    assert disposition.branch_task_refs == ("D1",)
+    assert disposition.branch_task_refs == (child.obligation_id,)
     assert disposition.evidence_ref == runtime.snapshot.evidence_refs[0]
     assert any(
         item.get("kind") == "research_directive_accounted"
-        and item.get("task_id") == "D1"
+        and item.get("task_id") == child.obligation_id
         and item.get("execution_path") == "manager_selected_derived_task"
         for item in outcome.observations
     )
