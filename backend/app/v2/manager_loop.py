@@ -1259,16 +1259,27 @@ class ResearchManagerLoop:
                 )
             )
 
-        open_adaptive = sum(
-            item.status == ResearchDirectiveDispositionStatus.OPEN
+        open_dispositions = {
+            item.directive_id
             for item in runtime.directive_dispositions
-        )
-
-        root_feasible = {
-            root.root_id for root in root_states if root.feasible_next_test
+            if item.status == ResearchDirectiveDispositionStatus.OPEN
         }
+        open_adaptive = len(open_dispositions)
+        contract = runtime.accepted_contract
+        open_adaptive_parent_ids: tuple[str, ...] = ()
+        if contract is not None:
+            open_adaptive_parent_ids = tuple(
+                dict.fromkeys(
+                    item.parent_obligation_id
+                    for item in contract.research_directives
+                    if (
+                        item.directive_type == ResearchDirectiveType.ADAPT_ON_EVIDENCE
+                        and item.directive_id in open_dispositions
+                    )
+                )
+            )
 
-        semantic_expansion_parents: list[str] = []
+        evidence_grounded_parent_ids: list[str] = []
         ledger = runtime.ledger
         if ledger is not None and evidence_store is not None and effective_refs:
             evidence_by_ref = {}
@@ -1282,10 +1293,6 @@ class ResearchManagerLoop:
                     continue
                 if item.status == ObligationStatus.SUPERSEDED:
                     continue
-                if item.obligation_id in root_feasible:
-                    # A ROOT parent with a currently feasible governed next-test shape
-                    # is deterministically ineligible for semantic rediscovery.
-                    continue
                 if not any(
                     getattr(evidence, "verified", False)
                     and self._evidence_belongs_to_parent_lineage(
@@ -1296,10 +1303,7 @@ class ResearchManagerLoop:
                     for evidence in evidence_by_ref.values()
                 ):
                     continue
-                # Conservative rule: evidence-grounded non-root work remains eligible
-                # unless deterministic governed state proves it redundant/inapplicable.
-                # Availability does not infer which concept is missing.
-                semantic_expansion_parents.append(item.obligation_id)
+                evidence_grounded_parent_ids.append(item.obligation_id)
 
         context = ManagerActionAvailabilityContext(
             root_states=tuple(root_states),
@@ -1308,8 +1312,9 @@ class ResearchManagerLoop:
             fresh_disclosed_evidence_ref=fresh_ref,
             fresh_disclosed_verified=fresh_verified,
             open_adaptive_directive_count=open_adaptive,
-            semantic_expansion_parent_obligation_ids=tuple(
-                dict.fromkeys(semantic_expansion_parents)
+            open_adaptive_parent_obligation_ids=open_adaptive_parent_ids,
+            evidence_grounded_parent_obligation_ids=tuple(
+                dict.fromkeys(evidence_grounded_parent_ids)
             ),
             remaining_research_turns=max(
                 runtime.budget.max_manager_turns
