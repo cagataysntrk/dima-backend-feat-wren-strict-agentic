@@ -4863,3 +4863,48 @@ final governance = 36166506443 SUCCESS
 
 paid/model calls: `0`  
 engine builds: `0`
+
+
+---
+
+## DMP-P18-FAMILY-PREDEV-SEAL-MARKER-001 — final seal preserved authorization marker
+
+date: 2026-09-25  
+failure_family_id: `p18-governance-predev-seal-marker`  
+attempt_in_family: `1 / 3`  
+authoritative run: `36166994637 = FAILURE`  
+tested SHA: `a246b1f42783ac9cc960ac45834f53c33afe870d`  
+status: `CLOSED`
+
+first_wrong_transition:
+
+```text
+P18 final living-doc seal
+→ pre-development status changed from implementation-authorized wording to final GREEN wording
+→ governance still required the exact historical authorization marker
+→ Require sealed P18 minimal relationship policy review failed
+```
+
+owner:
+`GOVERNANCE / PREDEVELOPMENT STATUS COMPATIBILITY`
+
+root_cause:
+the final status correctly expressed P18 GREEN but stopped containing the exact authorization marker
+used by the static governance contract. Product code, migration, provider-free behavior and P18
+authority were not the failing owner.
+
+generic_fix:
+retain both facts in one status line:
+
+```text
+SEALED / DMP-DEC-0054 /
+P18 MINIMAL IMPLEMENTATION AUTHORIZED /
+P18 GREEN / IMPLEMENTATION COMPLETE /
+P19 PRE-DEVELOPMENT READY
+```
+
+This keeps historical authorization evidence machine-visible while making final P18 state explicit.
+
+paid/model calls: `0`  
+engine builds: `0`  
+P18 product change: `0`
