@@ -248,6 +248,37 @@ class ResearchSessionStore:
                 .order_by(ResearchExecutionLink.created_at.desc())
             ).first()
 
+    def verified_link(
+        self,
+        *,
+        session_id: str,
+        obligation_id: str,
+    ) -> ResearchExecutionLink:
+        with Session(self._engine) as db:
+            rows = db.exec(
+                select(ResearchExecutionLink)
+                .where(ResearchExecutionLink.session_id == session_id)
+                .where(ResearchExecutionLink.obligation_id == obligation_id)
+                .where(ResearchExecutionLink.status == "VERIFIED")
+            ).all()
+        if len(rows) != 1:
+            raise ResearchPersistenceError(
+                "P15_VERIFIED_NATIVE_OCCURRENCE_REQUIRED",
+                "P15 exploration requires exactly one VERIFIED P14 native occurrence",
+            )
+        link = rows[0]
+        if (
+            not link.native_query_id
+            or not link.native_query_fingerprint
+            or not link.evidence_id
+            or not link.receipt_id
+        ):
+            raise ResearchPersistenceError(
+                "P15_VERIFIED_NATIVE_PROVENANCE_INCOMPLETE",
+                "verified P14 occurrence lacks query/receipt/Evidence provenance",
+            )
+        return link
+
     def execution_link(self, link_id: uuid.UUID) -> ResearchExecutionLink:
         with Session(self._engine) as db:
             link = db.get(ResearchExecutionLink, link_id)
