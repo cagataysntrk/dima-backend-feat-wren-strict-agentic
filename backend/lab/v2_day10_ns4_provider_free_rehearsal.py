@@ -773,6 +773,7 @@ def run_rehearsal(
     manager: ScriptedNS4Manager | None = None,
     question: str | None = None,
     expected_user_must_ids: tuple[str, ...] = ("U_PERF", "U_REL", "U_ROOT"),
+    allow_old_evidence_inspection: bool = False,
 ) -> dict[str, object]:
     tenant = "g16-tenant"
     service = SyntheticService()
@@ -969,11 +970,16 @@ def run_rehearsal(
     execution_control = {
         "run_analytics",
         "run_relationship",
-        "inspect_evidence",
         "finish",
     }
+    if not allow_old_evidence_inspection:
+        execution_control.add("inspect_evidence")
     if any(action in execution_control for action in cognition_sequence):
-        raise RehearsalError("execution-control cognition remains in G16 sequence")
+        raise RehearsalError("unexpected execution-control cognition remains")
+    if allow_old_evidence_inspection and explicit_inspects != 1:
+        raise RehearsalError(
+            "canonical relationship topology requires exactly one governed old-Evidence inspection"
+        )
 
     dispositions = result.runtime.directive_dispositions
     if len(dispositions) != 1:
@@ -1074,6 +1080,7 @@ def run_canonical_relationship_topology_rehearsal(
             "U_ROOT",
             "U_REPORT",
         ),
+        allow_old_evidence_inspection=True,
     )
     return {
         **receipt,
