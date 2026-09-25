@@ -57,6 +57,7 @@ class TurnObservation:
     intent: str
     target_kind: str
     objective_key: str
+    resolved_topology_valid: bool = True
     stop_reason: str | None = None
     stop_scope: str | None = None
     before_evidence_refs: tuple[str, ...] = ()
@@ -131,28 +132,22 @@ def _candidate_turns(
 
 
 def _lineage_is_legal(turns: tuple[TurnObservation, ...]) -> bool:
+    """Check persisted referential lineage, not parallel branch semantics.
+
+    Dynamic branch/depth legality is owned by Dima's state-derived P17 resolver.
+    The evaluator consumes that resolved topology and verifies that its parent
+    references form a valid observed trajectory.
+    """
     prior: dict[str, TurnObservation] = {}
     for turn in turns:
-        if turn.parent_step_id is None:
-            if turn.depth != 0:
-                return False
-        else:
-            parent = prior.get(turn.parent_step_id)
-            if parent is None:
-                return False
-            expected_depth = (
-                parent.depth
-                if turn.intent in STOP_INTENTS
-                else parent.depth + 1
-            )
-            if turn.depth != expected_depth:
-                return False
-            if (
-                turn.intent != "EXPLORE_ALTERNATIVES"
-                and turn.branch_id != parent.branch_id
-            ):
-                return False
+        if not turn.resolved_topology_valid:
+            return False
         if turn.step_id in prior:
+            return False
+        if (
+            turn.parent_step_id is not None
+            and turn.parent_step_id not in prior
+        ):
             return False
         prior[turn.step_id] = turn
     return True
@@ -291,6 +286,9 @@ def evaluate_autonomous_canary(
             turn.intent in LEGAL_AUTONOMOUS_INTENTS
             for turn in turns
             if turn.manager_called
+        ),
+        "resolved_topology_authority": all(
+            turn.resolved_topology_valid for turn in turns
         ),
         "trajectory_lineage_legal": _lineage_is_legal(turns),
         "materially_distinct_alternatives_considered": (
