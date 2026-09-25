@@ -27,6 +27,7 @@ from app.v3.substrate.metabase.native_engine import (
     NativeEngineBridge,
     NativeEngineBridgeError,
 )
+from app.v3.substrate.metabase.native_models import NativeEngineRequest
 from control_plane.authorize import Principal
 
 
@@ -99,6 +100,100 @@ class ResearchAskResponse(Frozen):
     limitation_code: str | None = None
     limitation_detail: str | None = None
     resumed_exact_occurrence: bool = False
+
+
+class NativeResearchOccurrenceResult(Frozen):
+    execution_link_id: UUID
+    native_query_id: str = Field(min_length=1)
+    outcome: ResearchMaterialOutcome
+    resumed_exact_occurrence: bool = False
+
+
+class NativeResearchOccurrenceRunner:
+    """Single native Metabot -> exact query -> dataset/receipt/Evidence occurrence path."""
+
+    def __init__(
+        self,
+        *,
+        store: ResearchSessionStore,
+        bridge_factory: NativeBridgeFactory,
+        material_executor: ResearchMaterialExecutor,
+    ) -> None:
+        self._store = store
+        self._bridges = bridge_factory
+        self._materials = material_executor
+
+    def execute(
+        self,
+        *,
+        session: ResearchSession,
+        principal: Principal,
+        obligation_id: str,
+        link,
+        request: NativeEngineRequest | None,
+        native_session_token: str | None,
+    ) -> NativeResearchOccurrenceResult:
+        resumed_exact = False
+        with self._bridges.open(
+            principal=principal,
+            session=session,
+            native_session_token=native_session_token,
+        ) as bridge:
+            if link.native_query_id is None:
+                if request is None:
+                    raise ResearchPersistenceError(
+                        "P14_NATIVE_DELEGATION_OUTCOME_UNKNOWN",
+                        (
+                            "a native turn was durably delegated but no query occurrence "
+                            "was captured; unknown prior cognition is not replayed"
+                        ),
+                    )
+                observation = bridge.invoke(request)
+                produced = bridge.capture_produced_query(observation)
+                link = self._store.mark_candidate(
+                    link.id,
+                    native_query_id=produced.native_query_id,
+                    native_query=produced.query,
+                    query_fingerprint=produced.query_fingerprint,
+                )
+                native_query = produced.query
+                query_fingerprint = produced.query_fingerprint
+            else:
+                native_query, query_fingerprint = self._store.captured_query(
+                    link
+                )
+                resumed_exact = True
+
+            native_query_id = link.native_query_id
+            assert native_query_id is not None
+            outcome = self._materials.execute(
+                principal=principal,
+                session=session,
+                obligation_id=obligation_id,
+                bridge=bridge,
+                native_conversation_id=link.native_conversation_id,
+                native_query_id=native_query_id,
+                native_query=native_query,
+                query_fingerprint=query_fingerprint,
+                execution_link_id=link.id,
+            )
+
+        if outcome.native_conversation_id != link.native_conversation_id:
+            raise ResearchProductError(
+                "P14_NATIVE_CONVERSATION_CORRELATION_MISMATCH",
+                "material execution returned a different native conversation",
+            )
+        if outcome.native_query_id != native_query_id:
+            raise ResearchProductError(
+                "P14_NATIVE_QUERY_CORRELATION_MISMATCH",
+                "material execution returned a different captured native occurrence",
+            )
+        return NativeResearchOccurrenceResult(
+            execution_link_id=link.id,
+            native_query_id=native_query_id,
+            outcome=outcome,
+            resumed_exact_occurrence=resumed_exact,
+        )
 
 
 class ResearchBriefAuthoritySealer:
@@ -440,46 +535,20 @@ class ResearchAskOrchestrator:
                 native_conversation_id=conversation.conversation_id,
             )
 
+        runner = NativeResearchOccurrenceRunner(
+            store=self._store,
+            bridge_factory=bridge_factory,
+            material_executor=material_executor,
+        )
         try:
-            with bridge_factory.open(
-                principal=principal,
+            occurrence = runner.execute(
                 session=session,
+                principal=principal,
+                obligation_id=selected,
+                link=pending,
+                request=(prepared.request if prepared is not None else None),
                 native_session_token=native_session_token,
-            ) as bridge:
-                if pending.native_query_id is None:
-                    assert prepared is not None
-                    observation = ResearchManager.invoke_native(
-                        prepared,
-                        bridge=bridge,
-                    )
-                    produced = bridge.capture_produced_query(observation)
-                    pending = self._store.mark_candidate(
-                        pending.id,
-                        native_query_id=produced.native_query_id,
-                        native_query=produced.query,
-                        query_fingerprint=produced.query_fingerprint,
-                    )
-                    native_query = produced.query
-                    query_fingerprint = produced.query_fingerprint
-                else:
-                    native_query, query_fingerprint = self._store.captured_query(
-                        pending
-                    )
-                    resumed_exact = True
-
-                native_query_id = pending.native_query_id
-                assert native_query_id is not None
-                outcome = material_executor.execute(
-                    principal=principal,
-                    session=session,
-                    obligation_id=selected,
-                    bridge=bridge,
-                    native_conversation_id=pending.native_conversation_id,
-                    native_query_id=native_query_id,
-                    native_query=native_query,
-                    query_fingerprint=query_fingerprint,
-                    execution_link_id=pending.id,
-                )
+            )
         except ResearchMaterialLimitation as exc:
             return self._limit(
                 session=session,
@@ -505,16 +574,12 @@ class ResearchAskOrchestrator:
                 link_id=pending.id,
             )
 
-        if outcome.native_conversation_id != pending.native_conversation_id:
-            raise ResearchProductError(
-                "P14_NATIVE_CONVERSATION_CORRELATION_MISMATCH",
-                "material execution returned a different native conversation",
-            )
-        if outcome.native_query_id != native_query_id:
-            raise ResearchProductError(
-                "P14_NATIVE_QUERY_CORRELATION_MISMATCH",
-                "material execution returned a different captured native occurrence",
-            )
+        pending = self._store.execution_link(
+            occurrence.execution_link_id
+        )
+        outcome = occurrence.outcome
+        native_query_id = occurrence.native_query_id
+        resumed_exact = occurrence.resumed_exact_occurrence
 
         before = session.revision
         updated = ResearchManager.admit_receipted_evidence(
