@@ -1,5 +1,168 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY OVERRIDE — D10-Q TRUE STOP / THREE PAID MEASUREMENTS CONSUMED
+
+This is the current active Day10 authority. Historical D10-Q blocks below remain audit receipts only.
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc cleanup HEAD           8b1352f42c2265cd67515211985ad8d535878c21
+
+latest Product runtime behavior
+                               f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+fanout build-owner fix         1c9f48ce0649cecd459f1a1d67d09778997f05f3
+paid-harness fixture fix       c1f3a7411ced6f1dee761cf19871422e83f67874
+final deterministic candidate  9569fdee8de40473244e8ff3934f6686e2164f20
+
+D10-Q paid run #1              36091887451 = RED / 7 calls
+tested SHA                     d032757c05500b48e144d1c808c6076e6cbb56f3
+class                          CONTRACT / ARCHITECTURE
+
+D10-Q paid run #2              36096707608 = RED / 8 calls
+tested SHA                     ecf1e6ca670a43fb9e465fd496b55c274dcff45b
+class                          EVAL / HARNESS / FIXTURE
+
+D10-Q paid run #3              36098236473 = RED / 7 calls
+tested SHA                     7b6c4a1e0342be7eacfbfa014000a2a02d970d41
+class                          MODEL_COGNITION
+
+paid measurements              3 / 3 CONSUMED
+provider calls                 22 / 30 used
+unused provider-call headroom  8
+additional paid authority      NONE / TRUE STOP
+
+Day7 final affected            36097782266 = GREEN
+Day8 final affected            36097782272 = GREEN
+Day10 final affected           36097782328 = GREEN
+
+paid workflow blob             f9ddebd74f8e8349ef6961eebf1d69f2f71acffb
+paid workflow trigger          workflow_dispatch only
+temporary run-3 marker         ABSENT
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN / NOT SEALED
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+### Run #2 first wrong transition
+
+Run #2 reached accepted Research authority, executed four real Wren queries and produced four
+VERIFIED Evidence artifacts. The governed RELATIONSHIP later terminated
+`BLOCKED_DATA_GAP` because `ariza_kayitlari_makineler` carried a fanout proof that was not bound
+to the exact current MDL.
+
+The relationship gate was correct to fail closed. The first wrong owner was the canonical paid
+fixture/build lifecycle: a clean runner compiled the current Wren project but reused the derived
+`target/fanout_certificate.json` without refreshing it against that compiled MDL.
+
+Classification:
+
+```text
+EVAL / HARNESS / FIXTURE
+```
+
+Generic fix:
+- `app.fanout` now exposes one reusable current-MDL certification/refresh owner;
+- the paid harness refreshes the derived fanout artifact before Product/provider execution;
+- `WrenService.schema()` remains read-only with respect to fanout measurement, so the 2×COUNT per
+  relationship build cost was not moved onto the Product hot path;
+- CrossDomainJoinGate freshness/fail-closed semantics are unchanged;
+- the exact canonical paid relationship `ariza_kayitlari_makineler` was independently measured
+  against the real current DB/MDL and proved `HEALTHY`.
+
+Final affected proof at candidate `9569fdee...`:
+- Day7 `36097782266 = GREEN`, including CrossDomainJoinGate attacks and fanout-MDL freshness;
+- Day8 `36097782272 = GREEN`;
+- Day10 `36097782328 = GREEN`, including the exact paid-relationship current-MDL health proof.
+
+### Run #3 transport and cleanup
+
+The repository owner explicitly authorized one temporary push transport because the connected GitHub
+tool could not issue `workflow_dispatch`. The temporary route was constrained to:
+- branch `feat/ask-v2-mvp`;
+- marker path `.github/D10Q_PAID_RUN3_TRIGGER`;
+- canonical scope only;
+- hard `max_total_model_calls=15`, exactly the remaining D10-Q call envelope before run #3.
+
+The marker commit `7b6c4a1e...` triggered exactly one paid run, `36098236473`.
+
+Immediately after the paid step completed, regardless of RED:
+- the paid workflow was restored to exact blob `f9ddebd...` / `workflow_dispatch` only;
+- the marker was deleted;
+- no cleanup-triggered paid run was created.
+
+### Run #3 first wrong transition
+
+Run #3 never reached acceptance or Wren execution:
+
+```text
+Wren cube_sql_calls   0
+Wren dry_plan_calls   0
+Wren query_calls      0
+accepted contract     NONE
+ledger                NONE
+preacceptance         GROUNDING_FAILURE
+```
+
+Provider calls by role:
+
+```text
+FAST_LANGUAGE         1
+RESEARCH_MANAGER      3
+SEMANTIC_LINKER       3
+TEMPORAL_NORMALIZER   0
+REPORT_NARRATOR       0
+total                 7
+```
+
+The first Research draft attached the explicit exclusion
+`Nedensel kesinlik iddia etme.` to a REQUIRED report obligation. The typed Coverage audit correctly
+returned `VETO / POLARITY_CONFLICT`. This was not resolver truth or authority failure.
+
+The second Research draft corrected the mistake by keeping the report REQUIRED and representing the
+same source as a separate `EXCLUDED explain` obligation. However, the first attempt had already used
+all three bounded SEMANTIC_LINKER calls: two semantic-link batches plus the single semantic
+decomposition repair. Re-grounding the corrected second draft therefore failed *before forwarding a
+fourth semantic-provider call* with:
+
+```text
+PaidBudgetExceeded:
+SEMANTIC_LINKER paid-call ceiling exhausted (3/3)
+```
+
+Classification of the first wrong transition:
+
+```text
+MODEL_COGNITION
+Research draft polarity error
+→ correct deterministic Coverage VETO
+→ corrected second draft
+→ frozen semantic-role budget exhausted before re-grounding
+```
+
+Do not weaken Coverage, reinterpret the exclusion as REQUIRED, force semantic selection, increase the
+frozen role/provider ceiling, or bypass the grounding lifecycle to make this run green.
+
+### TRUE STOP
+
+D10-Q has consumed all three authorized paid measurements. Although 8 of the 30 provider-call budget
+remain unused, the dispatch/measurement ceiling is independently exhausted.
+
+Therefore:
+- no fourth paid run;
+- no stochastic reassurance retry;
+- no further Product/runtime repair under current D10-Q authority;
+- Day8 remains OPEN / NOT SEALED;
+- Day10 remains OPEN / NOT SEALED;
+- Day11 remains unauthorized.
+
+Return to supervisor for a new authority decision. The unresolved P0 is now a bounded
+`MODEL_COGNITION` failure in Research preacceptance polarity representation interacting with the
+already-frozen semantic-role call ceiling.
+
+
 ## LATEST AUTHORITY OVERRIDE — D10-Q GENERIC TERMINAL PROPAGATION CLOSED / PAID RUN #2 READY
 
 This block supersedes the earlier D10-Q post-run-#1 checkpoint below. Historical REDs remain audit receipts.
