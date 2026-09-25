@@ -36,6 +36,7 @@ from app.v2.research_tools import ResearchToolRunner
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
+from helpers.manager_action_set_adapter import adapt_legacy_manager_intent
 
 
 class _AdaptiveService:
@@ -102,11 +103,14 @@ class _AdaptiveFakeLLM:
         recent = payload.get("RECENT_OBSERVATIONS") or []
 
         if not payload.get("EVIDENCE_REFS"):
-            return {
-                "action": "run_analytics",
-                "obligation_ids": ["U1"],
-                "metric_handles": ["h1"],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "run_analytics",
+                    "obligation_ids": ["U1"],
+                    "metric_handles": ["h1"],
+                },
+            )
 
         if (
             delta
@@ -114,10 +118,13 @@ class _AdaptiveFakeLLM:
             and not delta.get("disclosed_in_current_prompt")
             and len(payload.get("EVIDENCE_REFS") or []) == 1
         ):
-            return {
-                "action": "inspect_evidence",
-                "evidence_ref": delta["evidence_ref"],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "inspect_evidence",
+                    "evidence_ref": delta["evidence_ref"],
+                },
+            )
 
         resolved_dimension = None
         for observation in reversed(recent):
@@ -132,14 +139,17 @@ class _AdaptiveFakeLLM:
 
         # After inspecting the first evidence, discover one evidence-grounded dimension.
         if len(payload.get("EVIDENCE_REFS") or []) == 1 and resolved_dimension is None:
-            return {
-                "action": "resolve_semantics",
-                "resolve_provenance": "AGENT_DERIVED",
-                "target_kind_hints": ["dimension"],
-                "semantic_parent_obligation_id": "U1",
-                "semantic_evidence_ref": delta["evidence_ref"],
-                "semantic_proposal": "bölge",
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "resolve_semantics",
+                    "resolve_provenance": "AGENT_DERIVED",
+                    "target_kind_hints": ["dimension"],
+                    "semantic_parent_obligation_id": "U1",
+                    "semantic_evidence_ref": delta["evidence_ref"],
+                    "semantic_proposal": "bölge",
+                },
+            )
 
         ready = payload.get("READY_RESEARCH_TASKS") or []
         fanout_registered = any(
@@ -153,48 +163,56 @@ class _AdaptiveFakeLLM:
             and not fanout_registered
             and not ready
         ):
-            return {
-                "action": "propose_branches",
-                "branch_parent_obligation_id": "U1",
-                "branch_evidence_ref": delta["evidence_ref"],
-                "branch_candidates": [
-                    {
-                        "task_id": "D1",
-                        "capability_key": "breakdown",
-                        "input_handles": ["h1", resolved_dimension],
-                        "material_reason": "regional breakdown is evidence-grounded",
-                    },
-                    {
-                        "task_id": "D2",
-                        "capability_key": "performance",
-                        "input_handles": ["h1"],
-                        "material_reason": "bounded metric re-check candidate",
-                    },
-                    {
-                        "task_id": "D3",
-                        "capability_key": "ranking",
-                        "input_handles": ["h1", resolved_dimension],
-                        "material_reason": "ranked regional follow-up candidate",
-                    },
-                ],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_branches",
+                    "branch_parent_obligation_id": "U1",
+                    "branch_evidence_ref": delta["evidence_ref"],
+                    "branch_candidates": [
+                        {
+                            "task_id": "legacy-D1",
+                            "capability_key": "breakdown",
+                            "input_handles": ["h1", resolved_dimension],
+                            "material_reason": "regional breakdown is evidence-grounded",
+                        },
+                        {
+                            "task_id": "legacy-D2",
+                            "capability_key": "performance",
+                            "input_handles": ["h1"],
+                            "material_reason": "bounded metric re-check candidate",
+                        },
+                        {
+                            "task_id": "legacy-D3",
+                            "capability_key": "ranking",
+                            "input_handles": ["h1", resolved_dimension],
+                            "material_reason": "ranked regional follow-up candidate",
+                        },
+                    ],
+                },
+            )
 
         if len(payload.get("EVIDENCE_REFS") or []) == 1 and ready:
-            selected = next(item for item in ready if item["task_id"] == "D1")
-            return {
-                "action": "run_analytics",
-                "obligation_ids": ["U1"],
-                "metric_handles": ["h1"],
-                "dimension_handles": [resolved_dimension],
-                "derived_task_id": selected["task_id"],
-                "derived_parent_obligation_id": selected["parent_obligation_id"],
-                "derived_capability_key": "breakdown",
-                "derived_evidence_ref": selected["trigger_evidence_ref"],
-                "derived_reason": "execute one READY bounded branch",
-            }
+            selected = next(
+                item for item in ready if item["task_kind"] == "BREAKDOWN"
+            )
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "run_analytics",
+                    "obligation_ids": ["U1"],
+                    "metric_handles": ["h1"],
+                    "dimension_handles": [resolved_dimension],
+                    "derived_task_id": selected["task_id"],
+                    "derived_parent_obligation_id": selected["parent_obligation_id"],
+                    "derived_capability_key": "breakdown",
+                    "derived_evidence_ref": selected["trigger_evidence_ref"],
+                    "derived_reason": "execute one READY bounded branch",
+                },
+            )
 
         # Second verified evidence needs no further branch for this canonical case.
-        return {"action": "finish"}
+        return adapt_legacy_manager_intent(payload, {"action": "finish"})
 
 
 def _context() -> BoundedSemanticContextV0:
