@@ -295,7 +295,9 @@ def test_day7_canonical_budget_has_one_runtime_truth():
     budget = ManagerBudget()
     assert budget.max_data_queries == 8
     assert budget.max_tool_calls == 12
-    assert budget.max_manager_turns == 6
+    assert budget.max_preacceptance_turns == 4
+    assert budget.max_manager_turns == 4
+    assert budget.max_total_manager_turns == 8
 
     with pytest.raises(Exception):
         ManagerBudget(max_data_queries=13)
