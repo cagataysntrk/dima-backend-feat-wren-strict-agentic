@@ -1,3 +1,49 @@
+## LATEST AUTHORITY — D10-U MANAGERACTIONSET COMPRESSION / EMERGENCY CLOSURE SUPERVISOR STOP
+
+```text
+branch                           feat/ask-v2-mvp
+engineering HEAD                 5edae54067da1c072055b426778d6ee2cc26b684
+Product behavior                 6fff55dc9ccfb279ae1352c8df7c39f0fbb275c2
+
+ManagerActionSet                 SOLE executable-action projection
+ManagerActionAvailability        HISTORICAL IMPORT SHIM ONLY
+ActionApplicabilitySnapshot      RETIRED / HISTORICAL EXPERIMENT
+
+Day10 focused                    36169420156 = GREEN
+Day8 focused                     36169420104 = GREEN
+Day7 focused                     36169941022 = RED
+Day7 first failing step          Result-aware adaptive loop
+
+FAM-CONTROL-PLANE-PROJECTION-DIVERGENCE
+  Cycle 2 root fix               exact parent + trigger-Evidence derived semantic projection
+  status                         engineering fix GREEN on Day8/Day10; Day7 closure pending
+
+FAM-SCRIPTED-MANAGER-TRANSPORT-MIGRATION
+  family authority               3 / 3 cycles exhausted
+  remaining RED                  stale fixture cognition-count oracle
+  observed cognition turns       3
+  stale expected turns           4
+  runtime path before assertion  VERIFIED_COMPLETE / 2 queries / server-owned derived child
+  status                         SUPERVISOR STOP REQUIRED
+
+PAID_EPOCH_2                     12 / 40 used
+PAID_EPOCH_2 remaining           28 / 40
+paid execution                   PAUSED / NOT RUN
+Day8 FINAL                       SEALED
+Day10 FINAL                      OPEN
+Day11 / DEV80 / Validation50 /
+Hidden50                         NOT AUTHORIZED
+```
+
+Current remaining assertion is historical transport/lifecycle debt, not a demonstrated
+truth-plane failure: deterministic USER_SEED execution no longer consumes a Manager
+cognition turn, so the canonical adaptive path reaches completion in three cognition
+turns (resolve derived semantics -> propose bounded branches -> select the READY
+BREAKDOWN branch). No fourth reassurance/finish cognition is required.
+
+**DO NOT** patch this assertion or run paid measurement without new supervisor authority,
+because the same fixture-migration family has exhausted its 3/3 cycle allowance.
+
 # DIMA V2 GELİŞTİRME DURUMU
 
 ## LATEST AUTHORITY — FAMILY A CYCLE 2/3 / ACTIONAPPLICABILITYSNAPSHOT CLOSURE ACTIVE / PAID STOPPED
