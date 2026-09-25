@@ -278,13 +278,26 @@ class StructuredP19AssessmentManager:
             raise ValueError(
                 "model assessment must preserve the complete hypothesis set"
             )
+        challenge_ids = {
+            item.hypothesis.hypothesis_id: {
+                link.grounding_link_id
+                for link in item.groundings
+                if link.relation.value == "CHALLENGES"
+            }
+            for item in snapshot.hypotheses
+        }
         for candidate in draft.candidates:
-            for grounding_id in candidate.grounding_link_ids:
+            selected = set(candidate.grounding_link_ids)
+            for grounding_id in selected:
                 owner = known_groundings.get(grounding_id)
                 if owner != candidate.hypothesis_id:
                     raise ValueError(
                         "model assessment used unknown/foreign grounding"
                     )
+            if not challenge_ids[candidate.hypothesis_id].issubset(selected):
+                raise ValueError(
+                    "model assessment cannot hide governed challenge grounding"
+                )
 
         return RootCauseAssessmentDraft(
             research_session_id=snapshot.research_session_id,
