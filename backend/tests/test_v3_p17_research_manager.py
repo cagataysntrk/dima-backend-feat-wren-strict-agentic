@@ -1841,6 +1841,8 @@ def test_live_manager_schema_is_strict_transport_safe():
     assert "stop_reason" not in props
     assert "ProposedClaimDraft" not in (schema.get("$defs") or {})
     assert "ClaimFreshness" not in (schema.get("$defs") or {})
+    assert props["bounded_objective"] == {"type": "string"}
+    assert props["expected_information_gain"] == {"type": "string"}
 
 def test_live_manager_guidance_constrains_identity_not_analytical_answer():
     from app.v3.research_manager_provider import (
@@ -1911,4 +1913,42 @@ def test_live_manager_guidance_constrains_identity_not_analytical_answer():
     )
     assert proposal.action == ManagerAction.RECORD_INVESTIGATION
     assert proposal.branch_key == "candidate-alpha"
+
+def test_live_manager_draft_rejects_null_information_gain_before_authority_mapping():
+    from app.v3.research_manager_provider import ResearchManagerProposalDraft
+
+    with pytest.raises(
+        ValueError,
+        match="expected_information_gain",
+    ):
+        ResearchManagerProposalDraft.model_validate(
+            {
+                "proposal_id": "live-null-ig",
+                "source_revision": 1,
+                "target_parent_obligation": "g1",
+                "intent": "INVESTIGATE_GAP",
+                "target_kind": "GAP",
+                "objective_key": "gap.null-ig",
+                "bounded_objective": "Investigate the observed gap.",
+                "rationale": "A bounded next question is needed.",
+                "expected_information_gain": None,
+            }
+        )
+
+
+def test_live_stop_draft_requires_explicit_stop_reason():
+    from app.v3.research_manager_provider import ResearchManagerProposalDraft
+
+    with pytest.raises(ValueError, match="stop_reason"):
+        ResearchManagerProposalDraft.model_validate(
+            {
+                "proposal_id": "live-stop-no-reason",
+                "source_revision": 1,
+                "target_parent_obligation": "g1",
+                "intent": "STOP_INVESTIGATION",
+                "target_kind": "GAP",
+                "objective_key": "stop.no-reason",
+                "rationale": "Stop was requested.",
+            }
+        )
 
