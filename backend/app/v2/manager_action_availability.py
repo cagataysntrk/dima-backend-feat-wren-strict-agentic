@@ -289,8 +289,13 @@ def _snapshot(
     seeds: tuple[ActionScopeSeed, ...],
 ) -> ActionApplicabilitySnapshot:
     scopes = tuple(
-        _scope_from_seed(state_version=state_version, seed=seed)
-        for seed in seeds
+        sorted(
+            (
+                _scope_from_seed(state_version=state_version, seed=seed)
+                for seed in seeds
+            ),
+            key=lambda item: (item.action, item.scope_ref),
+        )
     )
     canonical = json.dumps(
         {
