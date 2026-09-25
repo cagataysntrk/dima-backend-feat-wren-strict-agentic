@@ -1761,8 +1761,29 @@ class ResearchManagerLoop:
                 )
             )
             root_aliases = tuple(
-                self._handle_alias(handle_id)
-                for handle_id in root_authoritative_handle_ids
+                dict.fromkeys(
+                    (
+                        *(
+                            self._handle_alias(handle_id)
+                            for handle_id in root_authoritative_handle_ids
+                        ),
+                        *(
+                            str(row.get("handle_ref"))
+                            for row in governed_semantic_inventory
+                            if row.get("handle_ref")
+                            and (
+                                str(row.get("parent_obligation_id") or "") == root_id
+                                or root_id
+                                in {
+                                    str(value)
+                                    for value in (
+                                        row.get("accepted_obligation_ids") or ()
+                                    )
+                                }
+                            )
+                        ),
+                    )
+                )
             )
             task_by_id = {task.task_id: task for task in research_tasks}
             pending_relation_hypotheses: list[str] = []
