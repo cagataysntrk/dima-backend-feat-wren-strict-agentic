@@ -23,6 +23,17 @@ DEEPENING_INTENTS = {
     "SEEK_COUNTER_EVIDENCE",
     "REPLAN",
 }
+LEGAL_AUTONOMOUS_INTENTS = {
+    "INVESTIGATE_GAP",
+    "EXPLORE_ALTERNATIVES",
+    "SEEK_COUNTER_EVIDENCE",
+    "DEEPEN_EXPLANATION",
+    "TEST_DISCRIMINATING_EVIDENCE",
+    "REPLAN",
+    "STOP_BRANCH",
+    "STOP_INVESTIGATION",
+}
+
 NO_GAIN_STOPS = {
     "NO_MEANINGFUL_GAIN",
     "NO_NEW_EVIDENCE",
@@ -275,6 +286,11 @@ def evaluate_autonomous_canary(
                 for turn in turns
                 if turn.manager_called
             )
+        ),
+        "legal_autonomous_intent_vocabulary": all(
+            turn.intent in LEGAL_AUTONOMOUS_INTENTS
+            for turn in turns
+            if turn.manager_called
         ),
         "trajectory_lineage_legal": _lineage_is_legal(turns),
         "materially_distinct_alternatives_considered": (
