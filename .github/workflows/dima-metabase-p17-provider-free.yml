@@ -1,4 +1,4 @@
-# DMP-DEC-0052 semantic-output family root-fix closure. Paid cognition remains separately bounded. Seal candidate v2.
+# DMP-DEC-0053 investigation-language legality closure. Paid cognition remains separately bounded.
 # Closure candidate includes portable strict live-manager schema and compiled canary harness.
 # Final pre-paid candidate also locks model-owned branch selection with deterministic topology identity.
 # Post-live-RED closure verifies the typed nullability root fix without another paid run.
@@ -81,6 +81,8 @@ jobs:
           grep -q "DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION" "$DECISIONS"
           grep -q "DMP-DEC-0051 — BOUNDED RED RECOVERY" "$DECISIONS"
           grep -q "DMP-DEC-0052 — FAILURE-FAMILY-SCOPED RECOVERY BUDGET" "$DECISIONS"
+          grep -q "DMP-DEC-0053 — THIN INVESTIGATION LANGUAGE" "$DECISIONS"
+          grep -q "P17 IS AN INVESTIGATION LANGUAGE" "$DECISIONS"
           grep -q "A PROBABILISTIC INVESTIGATOR" "$DECISIONS"
           HOT=(
             "backend/app/v3/research_manager.py"
@@ -96,6 +98,10 @@ jobs:
           grep -q "SEEK_COUNTER_EVIDENCE" backend/app/v3/research_manager.py
           grep -q "NO_PROGRESS" backend/app/v3/research_manager.py
           grep -q "ResearchReasoningStepRecord" backend/app/v3/research_manager.py
+          grep -q "class InvestigationActionProfile" backend/app/v3/research_manager.py
+          grep -q "def resolve_investigation_topology" backend/app/v3/research_manager.py
+          grep -q "class MaterialCognitionView" backend/app/v3/research_manager.py
+          ! grep -q "def topology_for" backend/app/v3/research_manager.py
           grep -q "NativeResearchOccurrenceRunner" backend/app/v3/research_followup.py
           ! grep -nE 'execute_dataset[[:space:]]*\(|bridge\.invoke[[:space:]]*\(' backend/app/v3/research_followup.py
 
@@ -113,9 +119,9 @@ jobs:
           grep -q 'evaluate_autonomous_canary' backend/lab/metabase/p17/autonomous_manager_canary.py
           grep -qi 'trajectory-invariant' backend/lab/metabase/p17/autonomous_eval.py
           grep -q 'diff-tree' backend/lab/metabase/p17/authorization_transport.py
-          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-manager-semantic-output"' backend/lab/metabase/p17/authorization_transport.py
+          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-investigation-language-legality"' backend/lab/metabase/p17/authorization_transport.py
           grep -q 'CURRENT_ATTEMPT_IN_FAMILY = 2' backend/lab/metabase/p17/authorization_transport.py
-          grep -q 'EXPECTED_DECISION = "DMP-DEC-0052"' backend/lab/metabase/p17/authorization_transport.py
+          grep -q 'EXPECTED_DECISION = "DMP-DEC-0053"' backend/lab/metabase/p17/authorization_transport.py
           grep -q 'cat-file' backend/lab/metabase/p17/authorization_transport.py
           ! grep -nE 'GITHUB_EVENT_PATH|head_commit' backend/lab/metabase/p17/authorization_transport.py
           ! grep -nE 'GITHUB_EVENT_PATH|head_commit' backend/lab/metabase/p17/recursive_manager_canary.py
@@ -154,11 +160,11 @@ jobs:
           test "$(printf '%s\n' "$heads" | grep -Ec '^[0-9a-f]+')" -eq 1
           printf '%s\n' "$heads" | grep -q '^f3c9d6e2a814'
 
-      - name: DMP-DEC-0052 family-aware exact-Git authorization proof
+      - name: DMP-DEC-0053 family-aware exact-Git authorization proof
         working-directory: backend
         run: pytest -q tests/test_v3_p17_authorization_transport.py
 
-      - name: Manager semantic-output family generic regression
+      - name: Provider strict-schema and semantic-envelope regression
         working-directory: backend
         run: pytest -q tests/test_v3_p17_autonomous_provider_schema.py
 
@@ -166,7 +172,7 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v3_p17_autonomous_manager_eval.py
 
-      - name: P17 focused provider-free reasoning proof
+      - name: P17 legality, adversarial topology, fake-manager, and reasoning proof
         working-directory: backend
         run: pytest -q tests/test_v3_p17_research_manager.py
 
