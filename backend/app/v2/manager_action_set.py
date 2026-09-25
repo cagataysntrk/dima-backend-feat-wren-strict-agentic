@@ -74,6 +74,14 @@ class ParentEvidenceActionState:
 
 
 @dataclass(frozen=True)
+class InspectableEvidenceState:
+    evidence_ref: str
+    capability_keys: tuple[str, ...] = ()
+    evidence_kind: str | None = None
+    lifecycle_relevance: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class TaskActionState:
     task_id: str
     question_id: str
@@ -94,7 +102,7 @@ class ManagerActionSetContext:
     directive_states: tuple[DirectiveActionState, ...] = ()
     parent_evidence_states: tuple[ParentEvidenceActionState, ...] = ()
     ready_tasks: tuple[TaskActionState, ...] = ()
-    inspectable_evidence_refs: tuple[str, ...] = ()
+    inspectable_evidence: tuple[InspectableEvidenceState, ...] = ()
     fresh_disclosed_evidence_ref: str | None = None
     fresh_disclosed_verified: bool = False
     remaining_research_turns: int = 0
@@ -696,13 +704,18 @@ class ManagerActionSetBuilder:
                 )
             )
 
-        for evidence_ref in context.inspectable_evidence_refs:
+        for evidence in context.inspectable_evidence:
             instances.append(
                 _instance(
                     state_version=state_version,
                     action_kind="inspect_evidence",
-                    bindings={"evidence_ref": evidence_ref},
+                    bindings={"evidence_ref": evidence.evidence_ref},
                     reason_codes=("UNDISCLOSED_VERIFIED_EVIDENCE",),
+                    cognitive_context={
+                        "capabilities": list(evidence.capability_keys),
+                        "evidence_kind": evidence.evidence_kind,
+                        "lifecycle_relevance": list(evidence.lifecycle_relevance),
+                    },
                 )
             )
 
