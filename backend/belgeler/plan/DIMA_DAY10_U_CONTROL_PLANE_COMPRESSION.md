@@ -1,3 +1,144 @@
+## LATEST AUTHORITY — D10-U PROVIDER-FREE SEALED / PAID RUN 36179726900 RED / SUPERVISOR TRIPWIRE
+
+```text
+branch                           feat/ask-v2-mvp
+Product behavior                 6fff55dc9ccfb279ae1352c8df7c39f0fbb275c2
+backend/app diff after Product   ZERO
+
+D10-U PROVIDER-FREE CLOSURE      GREEN / SEALED
+final one-SHA cheap proof        a0b1be2e7b80e5928fa108a82c143f8002ee9c71
+Day7 focused                     36178896617 = GREEN
+Day8 focused                     36178896568 = GREEN
+Day10 focused                    36178896533 = GREEN
+
+paid integrated run              36179726900 = RED
+paid tested SHA                  b158135aed14e64eb12737b55907ffc17918b65b
+scope                             CANONICAL_NS4
+paid provider calls               6
+Wren cube_sql / dry_plan / query  0 / 0 / 0
+Product lane/status               RESEARCH / CLARIFY
+accepted contract                 NONE
+CompletionGate verified           FALSE
+
+PAID_EPOCH_2                      18 / 40 used
+PAID_EPOCH_2 remaining            22 / 40
+
+paid workflow permanent blob      f9ddebd74f8e8349ef6961eebf1d69f2f71acffb
+paid workflow permanent state     workflow_dispatch only
+temporary marker                  ABSENT
+same-SHA retry                    FORBIDDEN
+paid execution                    STOPPED
+
+Day8 FINAL                        SEALED
+Day10 FINAL                       OPEN
+Day11 / DEV80 / Validation50 /
+Hidden50                          NOT AUTHORIZED
+```
+
+### Paid RED — FIRST WRONG TRANSITION
+
+```text
+classification
+MODEL_COGNITION
+
+failure family
+FAM-PREACCEPTANCE-SEMANTIC-SURFACE-COGNITION
+Cycle 1 / 3
+
+first material wrong transition
+RESEARCH_MANAGER dima_intent_draft_v1
+→ ROOT_CAUSE obligation emitted
+  semantic surface = "gözlenen bozulma"
+  kind_hint        = metric
+
+violated draft invariant
+semantic_surfaces identify only material tenant semantic concepts
+that runtime should ground; abstract research/referent wording must
+not be promoted into tenant semantic truth merely to satisfy a required kind.
+
+downstream safety behavior
+Semantic Linker
+→ NO_MATCH
+
+decomposition repair
+→ exactly one governed current-message joint metric scope group was available
+→ model returned ABSTAIN / AMBIGUOUS_SCOPE
+
+SemanticBindingGate / finite preacceptance
+→ correctly failed closed
+→ CLARIFICATION_REQUIRED
+
+Wren / Evidence / ROOT lifecycle
+→ NOT REACHED
+```
+
+Corroborating receipt:
+
+```text
+provider calls
+FAST_LANGUAGE       1
+RESEARCH_MANAGER    2
+SEMANTIC_LINKER     3
+TEMPORAL_NORMALIZER 0
+REPORT_NARRATOR     0
+TOTAL               6
+
+FAST_LANGUAGE draft also proposed
+ROOT semantic "gözlenen bozulma" as metric.
+
+Research coverage audit
+PASS
+
+Current-turn governed metric scope available to decomposition repair:
+- Makine duruşları
+- arıza sayısı
+
+The existing D10-Q provider-free/real-Wren authority already proves that
+a single explicit joint scope group can legally mint fresh ROOT-owned
+handles when cognition selects that group.
+```
+
+### Frozen-owner tripwire
+
+Do **not** implement any of these without new supervisor authority:
+
+```text
+- server-side auto-selection of the sole semantic repair scope group
+  (would move semantic-scope choice from bounded cognition toward deterministic authority)
+
+- provider/prompt/model topology changes
+
+- semantic fuzzy/regex/phrase rules
+
+- lowering the paid canonical scenario to avoid the ambiguity
+
+- ManagerBudget or paid role-cap expansion
+
+- same-SHA stochastic retry
+```
+
+Potential generic recovery directions requiring supervisor selection:
+
+```text
+A. Keep current fail-closed CLARIFY as correct Product behavior and
+   revise the paid success oracle/canonical scenario contract.
+
+B. Add a bounded typed preacceptance revision path after semantic-repair
+   abstention, while preserving 4-turn preacceptance budget and semantic
+   authority. This requires explicit call-economy/topology design because
+   current SEMANTIC_LINKER paid hard cap is 3 and was fully consumed.
+
+C. Change semantic-repair authority so a unique governed scope group can
+   be selected deterministically under a new explicit invariant.
+   This is a semantic-authority policy change and is NOT authorized here.
+```
+
+No Product patch has been applied for this paid RED. D10-U compressed
+ManagerActionSet architecture remains current and healthy; this RED occurs
+before AcceptedTurnContract, ActionSet, Wren, Evidence, or ROOT execution.
+
+Historical authority blocks below remain immutable audit receipts.
+
 ## LATEST AUTHORITY — D10-U PROVIDER-FREE GREEN / PAID INTEGRATED MEASUREMENT AUTHORIZED
 
 ```text
