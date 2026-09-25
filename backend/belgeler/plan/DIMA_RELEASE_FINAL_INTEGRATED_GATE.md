@@ -7,7 +7,7 @@
 
 This document is the release-level timing authority for expensive broad evaluation.
 
-## 0. CURRENT RELEASE STATE — DAY10 / D10-Q FINAL PAID VERIFICATION
+## 0. CURRENT RELEASE STATE — DAY10 / D10-S GOVERNANCE SIMPLIFICATION
 
 ```text
 primary analytics substrate    WREN
@@ -19,25 +19,20 @@ Day8 FINAL                     NOT SEALED
 Day9 engineering               GREEN
 Day10 engineering              GREEN
 Day10 FINAL                    OPEN
-current phase                  DAY10 / D10-Q FINAL PAID VERIFICATION
+current phase                  DAY10 / D10-S GOVERNANCE SIMPLIFICATION
 
-latest Product behavior        91721cb3bc01a3737212c7596fd3170c60c0239b
-final provider-free proof HEAD 5db64a5c704c910e860c08b6abc82951f9dd6bbb
+current Product behavior       91721cb3bc01a3737212c7596fd3170c60c0239b
+run #4                         36101471602 = RED / 9 calls
+run #4 tested SHA              5171e6e9891afe97925b95061c730934fa737a73
 
-provider calls                 22 / 40 used
-remaining                      18
-generic fixes                  3 / 3 consumed
-final generic fix              GREEN
+historical D10-Q calls         31
+D10-Q                          HARD STOP / CLOSED AS DEBUG LOOP
 
-revision Manager path          4 preacceptance + 2 Research = 6 / 6
-normal G16 Manager path        2 preacceptance + 4 Research = 6 / 6
+owner-reset future envelope    40 fresh provider calls
+future-envelope used           0 / 40
+paid execution                 PAUSED DURING D10-S IMPLEMENTATION
 
-affected Day7                  36100892648 = GREEN
-affected Day8                  36100892586 = GREEN
-affected Day10                 36100939565 = GREEN
-
-final paid run #4              AUTHORIZED / READY
-run #4 hard ceiling            18
+D10-S                          ACTIVE
 Day11                          NOT AUTHORIZED
 DEV80                          NOT AUTHORIZED
 Validation50                   NOT AUTHORIZED
@@ -45,17 +40,17 @@ Hidden50                       NOT AUTHORIZED
 production /ask-v2             OFF
 ```
 
-Final generic fix #3 is certified provider-free. Coverage vetoes invalid drafts before semantic
-materialization; rejected drafts carry no semantic authority into revisions. The recovered revision
-path fits the existing six-turn Manager ceiling through one bounded server-materialized composite
-ROOT_CAUSE plan and one post-Evidence relation cognition turn. Normal G16 remains unchanged.
+Run #4 is not a Wren, DB, fanout, semantic-truth or security failure. It reached accepted authority,
+four governed Wren query executions and VERIFIED Evidence. The first wrong transition is post-Evidence
+cognition selecting actions the deterministic current state already knows are redundant:
+fresh-disclosed Evidence inspection, then semantic rediscovery of an accepted governed concept.
 
-No frozen truth/security/cognition ceiling was raised. The one remaining release action is final
-paid Product verification run #4 with maximum 18 provider calls. GREEN seals Day8/Day10; RED is a
-hard stop with no further generic fix.
+D10-S therefore narrows the Manager action surface from runtime state. It does not weaken or migrate
+truth/security ownership. The model still selects among available actions and runtime validation
+remains defense in depth.
 
-The owner-authorized push/marker bridge is temporary CI transport only. Permanent release state must
-return to `workflow_dispatch`-only before the tested branch is considered clean.
+No paid/live provider calls are part of D10-S implementation/debugging. Provider-free tests and one
+deterministic real-Wren sentinel own this phase. Historical D10-Q paid receipts remain immutable.
 
 The bridge decision is scoped, not universal:
 `retained Wren semantics → thin Metabase structured execution` is rejected for this release.
