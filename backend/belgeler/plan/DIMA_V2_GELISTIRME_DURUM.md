@@ -1,5 +1,53 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — D10-S PROVIDER-FREE CLOSURE COMPLETE / EXIT PENDING BUDGET RATIFICATION
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc proof HEAD             0b9c4a676a04cbf547f4d73116f048c319d77aa3
+latest Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+
+Day7 affected                  36127275608 = GREEN
+Day8 affected                  36126639512 = GREEN
+Day10 focused                  36126639503 = GREEN
+real-Wren root sentinel        GREEN
+presentation ownership         GREEN
+
+ManagerBudget                  pre=4 / Research=4 / outer=8
+budget decision                SUPERVISOR RATIFICATION PENDING
+further budget edits           HOLD
+
+fresh provider envelope        40
+used                           0 / 40
+paid                           PAUSED / NOT AUTHORIZED HERE
+
+D10-S provider-free closure    COMPLETE
+D10-S final exit               NOT SEALED
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+D10-S closed two typed architecture failures without changing frozen truth/security owners.
+
+First, the post-Evidence action surface was narrowed from governed runtime state. A server-owned
+ROOT next-test child no longer becomes semantic authority merely because its result is VERIFIED.
+ROOT reuses feasible accepted handles; non-root semantic expansion remains possible only for an
+evidence-grounded accepted parent whose `ADAPT_ON_EVIDENCE` directive is still OPEN.
+
+Second, successful adaptive branch execution now accounts the accepted directive independently of
+whether the branch ran inline or through a later Manager-selected execution. This restored the sealed
+Day7 lifecycle and allowed deterministic CompletionGate to close before an unnecessary fifth turn.
+
+Presentation USER_MUST authority remains accepted, while analytical completion does not require
+presentation-only Evidence. Product report delivery remains a separate required owner.
+
+Current upstream Metabase source pass: `2f3fe9904e4addbcbe4d32403d6a7ab2fc471100`.
+Only architecture patterns were harvested; no Metabase runtime/code was imported.
+
+Full D10-S record: `DIMA_DAY10_S_GOVERNANCE_SIMPLIFICATION.md`.
+
+
 ## 2026-09-25 — D10-S GOVERNANCE / SEMANTIC SIMPLIFICATION ACTIVE
 
 ```text
