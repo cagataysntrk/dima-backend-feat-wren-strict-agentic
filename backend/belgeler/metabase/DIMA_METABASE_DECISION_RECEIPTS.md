@@ -4147,3 +4147,67 @@ finish Cycle 1 exact-Git transport root fix
 → if GREEN: seal P17, then P18 pre-development only
 → if RED: begin Cycle 2 only from new evidenced root cause
 ```
+
+
+### DMP-DEC-0051 Cycle 1 transport root-fix proof — GREEN
+
+date: 2026-09-25
+
+```text
+root-fix/seal candidate      = c2d460512469e532dfeac529111ec1d08aa8ae68
+provider-free run            = 36139719694 SUCCESS
+governance run               = 36139719744 SUCCESS
+
+exact-Git transport tests    = 17 PASS
+trajectory-invariant eval    = 7 PASS
+P17 deterministic            = 31 PASS
+P16 claim-lineage            = 6 PASS
+P15 native Exploration       = 5 PASS
+P14 native-direct            = 17 PASS
+
+product behavior changes     = 0
+engine changes/builds        = 0 / 0
+Sol                          = 0
+C1                           = 0
+```
+
+Cycle 1 first wrong transition and owner remain:
+
+```text
+valid authorization really added
+→ CI event projection omitted changed path
+→ old verifier rejected valid receipt
+
+owner = INFRA / EVALUATOR TRANSPORT
+```
+
+Generic fix:
+
+```text
+backend/lab/metabase/p17/authorization_transport.py
+→ exact checked-out HEAD identity
+→ exact single parent from commit object
+→ shallow parent object fetched from exact certified branch when necessary
+→ exact parent→HEAD git diff-tree name-status
+→ exactly one new JSON receipt under append-only authorizations/
+→ exact status A
+→ immutable decision / branch / cycle / product SHA / parent SHA / model
+→ bounded manager / Sol / engine / C1 budgets
+→ historical receipt immutable
+→ event changed-file projections ignored
+```
+
+Focused regression proves: exact added receipt accepted; modified, pre-existing, historical
+delete/re-add, zero, two, wrong product SHA, wrong parent, wrong branch, wrong cycle, wrong decision,
+wrong model, and every budget escalation are rejected. The verifier source contains no
+`GITHUB_EVENT_PATH` or `head_commit` dependency.
+
+Disposition:
+
+```text
+Recovery Cycle 1 / 3 transport root fix = GREEN
+remaining recovery cycles               = 2
+corrected autonomous Luna certification = AUTHORIZED ONCE
+P17                                      = NOT YET SEALED
+P18                                      = BLOCKED
+```
