@@ -5,6 +5,8 @@ from __future__ import annotations
 import copy
 import json
 
+import pytest
+
 from app import contracts as contracts_module
 from app import fanout
 from app.wren_service import WrenService
@@ -35,7 +37,7 @@ from app.v2.relationship_adapter import (
     GovernedRelationshipAdapter,
     GovernedRelationshipExecutionContext,
 )
-from app.v2.research_tasks import ResearchTaskRegistry
+from app.v2.research_tasks import ResearchTaskLifecycleError, ResearchTaskRegistry
 from app.v2.research_tools import ResearchToolRunner
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
@@ -461,4 +463,119 @@ def test_stale_fanout_proof_causes_zero_relationship_execution(
         if item.obligation_id == "U_REL"
     )
     assert obligation.status == ObligationStatus.BLOCKED_DATA_GAP
+    assert obligation.evidence_refs == ()
+
+
+def test_stale_fanout_runner_returns_blocked_terminal_without_fake_evidence(
+    wren,
+    monkeypatch,
+):
+    schema = _current_certified_schema(wren)
+    relationship = next(
+        item
+        for item in schema["relationships"]
+        if item.get("name") == "makine_duruslari_makineler"
+    )
+    relationship["fanout_proof"] = {
+        **relationship["fanout_proof"],
+        "status": "MDL_MISMATCH",
+        "certified": "olculmedi",
+        "certificate_mdl_version": "stale-mdl",
+    }
+    relationship["certified"] = "olculmedi"
+
+    principal, service, _, runtime, executor, task, call = (
+        _accepted_relationship_runtime(wren, schema, monkeypatch)
+    )
+    registry = ResearchTaskRegistry()
+
+    result = ResearchToolRunner().execute(
+        task=task,
+        tool_id="wren.relationship",
+        call=call,
+        runtime=runtime,
+        executor=executor,
+        principal=principal,
+        task_registry=registry,
+    )
+
+    assert result.task.state == "blocked"
+    assert result.evidence is None
+    assert result.observation.available is False
+    assert result.observation.status == "UNSUPPORTED"
+    assert registry.get(task.task_id).state == "blocked"
+    assert service.query_calls == 0
+    assert executor.evidence_store.count == 0
+    assert runtime.snapshot.evidence_refs == ()
+
+    obligation = next(
+        item for item in runtime.ledger.items
+        if item.obligation_id == "U_REL"
+    )
+    assert obligation.status == ObligationStatus.BLOCKED_DATA_GAP
+    assert obligation.evidence_refs == ()
+
+    # Duplicate delivery is idempotent and cannot re-enter the governed executor.
+    again = ResearchToolRunner().execute(
+        task=task,
+        tool_id="wren.relationship",
+        call=call,
+        runtime=runtime,
+        executor=executor,
+        principal=principal,
+        task_registry=registry,
+    )
+    assert again is result
+    assert service.query_calls == 0
+
+
+def test_cancelled_relationship_cannot_commit_blocked_ledger_state(
+    wren,
+    monkeypatch,
+):
+    schema = _current_certified_schema(wren)
+    relationship = next(
+        item
+        for item in schema["relationships"]
+        if item.get("name") == "makine_duruslari_makineler"
+    )
+    relationship["fanout_proof"] = {
+        **relationship["fanout_proof"],
+        "status": "MDL_MISMATCH",
+        "certified": "olculmedi",
+        "certificate_mdl_version": "stale-mdl",
+    }
+    relationship["certified"] = "olculmedi"
+
+    principal, service, _, runtime, executor, task, call = (
+        _accepted_relationship_runtime(wren, schema, monkeypatch)
+    )
+    registry = ResearchTaskRegistry()
+
+    with pytest.raises(ResearchTaskLifecycleError, match="cancelled"):
+        ResearchToolRunner().execute(
+            task=task,
+            tool_id="wren.relationship",
+            call=call,
+            runtime=runtime,
+            executor=executor,
+            principal=principal,
+            task_registry=registry,
+            cancel_check=lambda: True,
+        )
+
+    assert registry.get(task.task_id).state == "cancelled"
+    assert service.query_calls == 0
+    assert executor.evidence_store.count == 0
+    assert runtime.snapshot.evidence_refs == ()
+
+    obligation = next(
+        item for item in runtime.ledger.items
+        if item.obligation_id == "U_REL"
+    )
+    assert obligation.status in {
+        ObligationStatus.ACCEPTED,
+        ObligationStatus.READY,
+        ObligationStatus.IN_PROGRESS,
+    }
     assert obligation.evidence_refs == ()
