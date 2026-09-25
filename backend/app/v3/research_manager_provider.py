@@ -12,6 +12,7 @@ from typing import Any, Protocol
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.v3.research_manager import (
+    InvestigationBranchKeyPolicy,
     InvestigationIntent,
     InvestigationTargetKind,
     ManagerAction,
@@ -335,19 +336,15 @@ def _schema_for_intents(
     if not effective:
         raise ValueError("at least one live intent is required")
 
-    grouped: dict[str, list[InvestigationIntent]] = {}
+    variants = []
     for intent in effective:
         if intent not in _ACTION_FOR_INTENT:
             raise ValueError(
                 f"unsupported P17 live intent: {intent.value}"
             )
-        grouped.setdefault(_semantic_family(intent), []).append(intent)
-
-    variants = [
-        _variant_schema(raw, tuple(grouped[name]))
-        for name in ("regular", "counter", "claim", "stop")
-        if name in grouped
-    ]
+        # One variant per legal move lets the provider see the state-derived
+        # parent/branch contract without becoming final authority.
+        variants.append(_variant_schema(raw, (intent,)))
     if len(variants) == 1:
         schema = variants[0]
         schema["$defs"] = copy.deepcopy(raw.get("$defs") or {})
@@ -406,6 +403,24 @@ def _draft_payload_from_transport(
     return proposal
 
 
+def _parent_schema(
+    *,
+    legal_parent_step_ids: tuple[str, ...],
+    allow_parentless: bool,
+) -> dict[str, Any]:
+    ids = list(legal_parent_step_ids)
+    if allow_parentless and not ids:
+        return {"type": "null"}
+    if not allow_parentless:
+        return {"type": "string", "enum": ids}
+    return {
+        "anyOf": [
+            {"type": "null"},
+            {"type": "string", "enum": ids},
+        ]
+    }
+
+
 class StructuredResearchProposalManager:
     """One real model cognition turn -> one validated ManagerProposal."""
 
@@ -452,7 +467,9 @@ class StructuredResearchProposalManager:
         user = (
             "Choose exactly one next bounded investigation step from this "
             "governed snapshot. Reference only IDs present in the snapshot. "
-            "If a new sibling alternative is opened, use a stable branch_key. "
+            "Choose only an intent/parent/branch-key combination exposed by "
+            "the state-derived action_profile. branch_key never creates a "
+            "branch unless that legal move explicitly requires it. "
             "Use STOP_BRANCH for one exhausted/contradicted branch and "
             "STOP_INVESTIGATION only when the whole investigation should end."
         )
@@ -465,9 +482,35 @@ class StructuredResearchProposalManager:
             "\n\nGOVERNED SNAPSHOT JSON:\n"
             + self._snapshot_payload(snapshot)
         )
-        schema = _schema_for_intents(allowed_intents)
+        state_legal = snapshot.action_profile.legal_intents
+        effective_intents = (
+            tuple(
+                intent
+                for intent in allowed_intents
+                if intent in state_legal
+            )
+            if allowed_intents is not None
+            else state_legal
+        )
+        if not effective_intents:
+            raise ValueError(
+                "no state-legal P17 intent remains in the requested vocabulary"
+            )
+
+        schema = _schema_for_intents(effective_intents)
         property_maps = _schema_property_maps(schema)
         for props in property_maps:
+            intent_values = props["intent"].get("enum") or []
+            if len(intent_values) != 1:
+                raise ValueError(
+                    "state-derived provider variant must represent one intent"
+                )
+            intent = InvestigationIntent(intent_values[0])
+            rule = snapshot.action_profile.rule_for(intent)
+            if rule is None:
+                raise ValueError(
+                    f"missing action-profile rule for {intent.value}"
+                )
             props["source_revision"] = {
                 "type": "integer",
                 "enum": [snapshot.source_revision],
@@ -478,35 +521,65 @@ class StructuredResearchProposalManager:
                     x.obligation_id for x in snapshot.parent_obligations
                 ],
             }
-        if allowed_parent_step_ids is not None:
-            values = list(allowed_parent_step_ids)
-            for props in property_maps:
-                if values == [None]:
-                    props["parent_step_id"] = {"type": "null"}
-                elif all(isinstance(x, str) for x in values):
-                    props["parent_step_id"] = {
-                        "type": "string",
-                        "enum": values,
-                    }
-                else:
-                    props["parent_step_id"] = {
-                        "anyOf": [
-                            {"type": "null"},
-                            {
-                                "type": "string",
-                                "enum": [
-                                    x for x in values if x is not None
-                                ],
-                            },
-                        ]
-                    }
-        if branch_key_mode in {"null", "string"}:
-            for props in property_maps:
-                props["branch_key"] = {"type": branch_key_mode}
-        elif branch_key_mode is not None:
-            raise ValueError(
-                f"unknown branch_key_mode: {branch_key_mode}"
+            props["parent_step_id"] = _parent_schema(
+                legal_parent_step_ids=rule.legal_parent_step_ids,
+                allow_parentless=rule.allow_parentless,
             )
+            props["branch_key"] = (
+                {"type": "string"}
+                if rule.branch_key_policy
+                == InvestigationBranchKeyPolicy.REQUIRED
+                else {"type": "null"}
+            )
+        if allowed_parent_step_ids is not None:
+            requested = set(allowed_parent_step_ids)
+            for props in property_maps:
+                intent = InvestigationIntent(props["intent"]["enum"][0])
+                rule = snapshot.action_profile.rule_for(intent)
+                assert rule is not None
+                legal = set(rule.legal_parent_step_ids)
+                if rule.allow_parentless:
+                    legal.add(None)
+                narrowed = tuple(
+                    value
+                    for value in allowed_parent_step_ids
+                    if value in legal
+                )
+                if set(narrowed) != requested:
+                    raise ValueError(
+                        "provider parent constraint cannot broaden action-profile legality"
+                    )
+                props["parent_step_id"] = _parent_schema(
+                    legal_parent_step_ids=tuple(
+                        x for x in narrowed if isinstance(x, str)
+                    ),
+                    allow_parentless=None in narrowed,
+                )
+        if branch_key_mode is not None:
+            expected = (
+                "string"
+                if all(
+                    snapshot.action_profile.rule_for(
+                        InvestigationIntent(props["intent"]["enum"][0])
+                    ).branch_key_policy
+                    == InvestigationBranchKeyPolicy.REQUIRED
+                    for props in property_maps
+                )
+                else "null"
+                if all(
+                    snapshot.action_profile.rule_for(
+                        InvestigationIntent(props["intent"]["enum"][0])
+                    ).branch_key_policy
+                    == InvestigationBranchKeyPolicy.FORBIDDEN
+                    for props in property_maps
+                )
+                else None
+            )
+            if branch_key_mode != expected:
+                raise ValueError(
+                    "provider branch-key constraint cannot broaden action-profile legality"
+                )
+
         raw = self._transport.structured_json(
             _SYSTEM,
             user,
@@ -517,10 +590,9 @@ class StructuredResearchProposalManager:
         draft = ResearchManagerProposalDraft.model_validate(
             _draft_payload_from_transport(raw, schema)
         )
-        if allowed_intents and draft.intent not in allowed_intents:
+        if draft.intent not in effective_intents:
             raise ValueError(
-                f"manager emitted {draft.intent.value} outside bounded canary intent set"
-            )
+                f"manager emitted {draft.intent.value} outside state-legal bounded intent set"            )
         return self._proposal(draft)
 
     def propose(self, snapshot: ResearchManagerSnapshot) -> ManagerProposal:
@@ -532,11 +604,11 @@ class StructuredResearchProposalManager:
         *,
         allowed_intents: tuple[InvestigationIntent, ...],
     ) -> ManagerProposal:
-        """Constrain only the legal intent vocabulary, never investigation content.
+        """Narrow certification vocabulary inside state-derived move legality.
 
-        This seam is for autonomous certification/product surfaces whose authority
-        already excludes some payload families. It supplies no guidance, parent,
-        branch, target, or trajectory choice to the model.
+        The state action profile owns dynamic legality. This seam can only remove
+        intents from that legal set; it never selects a parent, branch, target,
+        business explanation, or trajectory.
         """
         if not allowed_intents:
             raise ValueError("allowed_intents must not be empty")
