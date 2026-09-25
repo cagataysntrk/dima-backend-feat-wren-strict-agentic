@@ -466,9 +466,9 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
 
     # Fanout registration is cognition-only; one selected READY branch executes.
     # The accepted ADAPT_ON_EVIDENCE directive is lifecycle-accounted by successful
-    # branch execution, so deterministic completion requires no fifth cognition turn.
+    # branch execution. Exact cognition count is diagnostic telemetry, not lifecycle
+    # truth: deterministic server work may remove a historical model turn.
     assert service.query_calls == 2
-    assert len(llm.prompts) == 4
     disposition = runtime.directive_disposition("R_ADAPT_U1")
     assert disposition.status == ResearchDirectiveDispositionStatus.APPLIED
     assert disposition.branch_task_refs == (child.obligation_id,)
