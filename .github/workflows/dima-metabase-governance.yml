@@ -277,8 +277,10 @@ jobs:
             grep -q "DMP-DEC-0049 — RECURSIVE INVESTIGATION" "$DECISIONS"
             grep -q "DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION" "$DECISIONS"
             grep -q "DMP-DEC-0051 — BOUNDED RED RECOVERY" "$DECISIONS"
-          grep -q "DMP-DEC-0052 — FAILURE-FAMILY-SCOPED RECOVERY BUDGET" "$DECISIONS"
+            grep -q "DMP-DEC-0052 — FAILURE-FAMILY-SCOPED RECOVERY BUDGET" "$DECISIONS"
+            grep -q "DMP-DEC-0053 — THIN INVESTIGATION LANGUAGE" "$DECISIONS"
             grep -q "P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+            grep -q "MODEL CHOOSES AMONG LEGAL MOVES" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
             grep -q "DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
           fi
 
@@ -310,9 +312,13 @@ jobs:
           done
           grep -q "SEEK_COUNTER_EVIDENCE" backend/app/v3/research_manager.py
           grep -q "ResearchReasoningStepRecord" backend/app/v3/research_manager.py
+          grep -q "class InvestigationActionProfile" backend/app/v3/research_manager.py
+          grep -q "def resolve_investigation_topology" backend/app/v3/research_manager.py
+          grep -q "class MaterialCognitionView" backend/app/v3/research_manager.py
+          ! grep -q "def topology_for" backend/app/v3/research_manager.py
           grep -q "NativeResearchOccurrenceRunner" backend/app/v3/research_followup.py
 
-      - name: Guard DMP-DEC-0050/0051 autonomous certification and recovery transport
+      - name: Guard DMP-DEC-0050 through 0053 autonomous certification and legality
         shell: bash
         run: |
           set -euo pipefail
@@ -332,6 +338,8 @@ jobs:
           test -f backend/tests/test_v3_p17_autonomous_provider_schema.py
           grep -q "DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION" "$DECISIONS"
           grep -q "DMP-DEC-0051 — BOUNDED RED RECOVERY" "$DECISIONS"
+          grep -q "DMP-DEC-0052 — FAILURE-FAMILY-SCOPED RECOVERY BUDGET" "$DECISIONS"
+          grep -q "DMP-DEC-0053 — THIN INVESTIGATION LANGUAGE" "$DECISIONS"
           grep -q "A TEST ORACLE MUST NOT BE" "$DECISIONS"
           grep -q "GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS" "$DECISIONS"
           grep -q "Historical deterministic P17 scenario / contract lab" "$SCENARIO"
@@ -344,9 +352,9 @@ jobs:
           grep -q "diff-tree" "$AUTH"
           grep -q "cat-file" "$AUTH"
           grep -q "authorizations/" "$AUTH"
-          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-manager-semantic-output"' "$AUTH"
+          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-investigation-language-legality"' "$AUTH"
           grep -q 'CURRENT_ATTEMPT_IN_FAMILY = 2' "$AUTH"
-          grep -q 'EXPECTED_DECISION = "DMP-DEC-0052"' "$AUTH"
+          grep -q 'EXPECTED_DECISION = "DMP-DEC-0053"' "$AUTH"
           grep -q 'failure_family_id' "$AUTH"
           grep -q 'attempt_in_family' "$AUTH"
           ! grep -nE 'recovery_cycle' "$AUTH"
