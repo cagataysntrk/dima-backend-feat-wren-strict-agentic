@@ -122,30 +122,47 @@ def _brief(two: bool = True) -> ResearchBrief:
     )
 
 
-def _receipt(session, obligation_id: str, suffix: str) -> DimaQueryReceipt:
+def _receipt(
+    session,
+    obligation_id: str,
+    suffix: str,
+    *,
+    native_conversation_id: UUID,
+    native_query_id: str,
+    query_fingerprint: str,
+    execution_link_id,
+) -> DimaQueryReceipt:
     return DimaQueryReceipt(
         receipt_id="dqr_" + suffix * 24,
         receipt_fingerprint=suffix * 64,
-        execution_id=f"exec-{obligation_id}-{suffix}",
+        execution_id=f"native-dataset:{execution_link_id}",
         step_role="primary",
-        authority_id="asa_" + "a" * 24,
+        authority_kind="research_material",
+        authority_id=session.authority_id,
         obligation_ids=(obligation_id,),
         tenant_id=session.tenant_binding,
         principal_id=session.principal_subject,
-        semantic_refs=("handle.sales_order_count",),
-        projection_hash="b" * 64,
-        resolved_intent_hash="c" * 64,
-        canonical_query_fingerprint="d" * 64,
-        canonical_query_representation={
-            "lib/type": "mbql/query",
-            "stages": [],
-        },
+        semantic_refs=(),
+        projection_hash=None,
+        resolved_intent_hash=None,
+        research_session_id=session.session_id,
+        native_subject_ref="metabase-user:7",
+        native_conversation_id=native_conversation_id,
+        native_query_id=native_query_id,
+        native_query_provenance_ref=(
+            f"research-execution-link:{execution_link_id}:query"
+        ),
+        native_result_provenance_ref=(
+            f"research-execution-link:{execution_link_id}:result"
+        ),
+        canonical_query_fingerprint=query_fingerprint,
+        canonical_query_representation=None,
         principal_fingerprint="e" * 64,
-        execution_access_fingerprint="f" * 64,
-        access_attestation_refs=("attestation:p14:product",),
+        execution_access_fingerprint=None,
+        access_attestation_refs=(),
         semantic_context_version=session.context_version,
-        resource_entity_ids=("boyahane:satis_siparisleri",),
-        resource_fingerprints=("1" * 64,),
+        resource_entity_ids=(),
+        resource_fingerprints=(),
         substrate="metabase-native",
         substrate_runtime_version=RUNTIME_TAG,
         substrate_image_digest="sha256:" + "2" * 64,
@@ -202,9 +219,19 @@ class BridgeFactory:
                     session.native_conversation.conversation_id
                 )
                 self.query_ids.append(query_id)
+                native_query = {
+                    "database": 1,
+                    "type": "query",
+                    "query": {"source-table": 10},
+                }
                 generated = {
                     "type": "generated_entity",
-                    "value": {"query": {"id": query_id}},
+                    "value": {
+                        "query": {
+                            "id": query_id,
+                            "query": native_query,
+                        }
+                    },
                 }
                 return httpx.Response(
                     202,
@@ -240,7 +267,7 @@ class MaterialExecutor:
     ) -> None:
         self.crash_once = crash_once
         self.limit_first = limit_first
-        self.calls: list[tuple[str, str]] = []
+        self.calls: list[tuple[str, str, dict, str]] = []
 
     def execute(
         self,
@@ -251,9 +278,19 @@ class MaterialExecutor:
         bridge,
         native_conversation_id,
         native_query_id,
+        native_query,
+        query_fingerprint,
+        execution_link_id,
     ) -> ResearchMaterialOutcome:
         del principal, bridge
-        self.calls.append((obligation_id, native_query_id))
+        self.calls.append(
+            (
+                obligation_id,
+                native_query_id,
+                native_query,
+                query_fingerprint,
+            )
+        )
         if self.crash_once:
             self.crash_once = False
             raise RuntimeError(
@@ -262,13 +299,18 @@ class MaterialExecutor:
         if self.limit_first and obligation_id == "g1":
             raise ResearchMaterialLimitation(
                 "NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED",
-                (
-                    "captured native representation is not supported by the "
-                    "current compatibility seam"
-                ),
+                "captured native representation is unavailable",
             )
         suffix = "4" if obligation_id == "g1" else "5"
-        receipt = _receipt(session, obligation_id, suffix)
+        receipt = _receipt(
+            session,
+            obligation_id,
+            suffix,
+            native_conversation_id=native_conversation_id,
+            native_query_id=native_query_id,
+            query_fingerprint=query_fingerprint,
+            execution_link_id=execution_link_id,
+        )
         evidence = EvidenceArtifact(
             artifact_id="evi_" + suffix * 24,
             authority_id=receipt.authority_id,
@@ -281,11 +323,10 @@ class MaterialExecutor:
         return ResearchMaterialOutcome(
             native_conversation_id=native_conversation_id,
             native_query_id=native_query_id,
-            attestation_id="attestation:p14:product",
+            attestation_id=None,
             receipt=receipt,
             evidence=evidence,
         )
-
 
 def _product(engine, factory=None, executor=None):
     return ResearchAskOrchestrator(
@@ -371,6 +412,12 @@ def test_product_research_runs_native_turn_and_persists_receipted_evidence():
 
     assert factory.metabot_posts == 1
     assert response.native_query_id == factory.query_ids[0]
+    assert executor.calls[0][2] == {
+        "database": 1,
+        "type": "query",
+        "query": {"source-table": 10},
+    }
+    assert len(executor.calls[0][3]) == 64
     assert response.receipt_id is not None
     assert response.evidence_id is not None
     assert restored.obligations[0].state == ObligationState.VERIFIED

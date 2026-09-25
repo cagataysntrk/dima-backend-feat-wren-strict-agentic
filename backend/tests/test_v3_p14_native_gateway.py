@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+from datetime import datetime, timezone
 from uuid import UUID
 
 import pytest
@@ -20,27 +21,20 @@ from app.v2.models import (
     ResearchSemanticRef,
     SemanticTargetKind,
 )
-from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research import ObligationState, ResearchManager
 from app.v3.research_native_gateway import (
-    BASIC_NATIVE,
     NativeResearchMaterialExecutor,
-    NativeResourceBindingProvider,
     NativeSubjectSessionProvider,
 )
 from app.v3.research_product import ResearchAskOrchestrator, ResearchMaterialLimitation
 from app.v3.research_store import ResearchSessionStore
+from app.v3.substrate.metabase.native_engine import NativeDatasetExecutionError
 from app.v3.substrate.metabase.native_models import (
+    NativeDatasetExecutionObservation,
     NativeEngineIdentity,
-    NativeExactOccurrenceExecutionObservation,
 )
 from control_plane.authorize import Principal
-from control_plane.models import (
-    NativeResourceBinding,
-    NativeSubjectBinding,
-    Tenant,
-    User,
-)
+from control_plane.models import NativeSubjectBinding, Tenant, User
 
 
 ENGINE_SHA = "cbe313af9ac2d5960f662068e433d328d896fb06"
@@ -52,11 +46,18 @@ IMAGE = f"ghcr.io/upcytech/dima-metabase-engine@{DIGEST}"
 INSTANCE = UUID("00000000-0000-4000-8000-000000000777")
 TENANT = UUID("00000000-0000-4000-8000-000000000701")
 USER = UUID("00000000-0000-4000-8000-000000000702")
-CONTEXT = "ctx-p14-native-gateway-v1"
+CONTEXT = "ctx-p14-native-direct-v1"
+STAMP = datetime(2026, 9, 25, 5, 0, tzinfo=timezone.utc)
 
 
 def h(value) -> str:
-    raw = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    raw = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
@@ -75,7 +76,7 @@ def principal() -> Principal:
         user_id=str(USER),
         tenant_id=str(TENANT),
         roles=["analyst"],
-        tenant_slug="native-gateway",
+        tenant_slug="native-direct",
     )
 
 
@@ -88,6 +89,18 @@ def expected_identity() -> NativeEngineIdentity:
         build_identity=BUILD,
         runtime_image_identity=IMAGE,
     )
+
+
+def identity_payload() -> dict:
+    return {
+        "repository": "UpcyTech/dima-metabase-engine",
+        "revision_sha": ENGINE_SHA,
+        "upstream_base_sha": UPSTREAM_SHA,
+        "runtime_tag": TAG,
+        "build_identity": BUILD,
+        "image_identity": IMAGE,
+        "runtime_instance_id": str(INSTANCE),
+    }
 
 
 def brief() -> ResearchBrief:
@@ -114,7 +127,7 @@ def brief() -> ResearchBrief:
         status=ResearchGoalStatus.RESOLVED,
     )
     return ResearchBrief(
-        brief_id="rb-p14-native-gateway",
+        brief_id="rb-p14-native-direct",
         objective=q.source_text,
         scope=ResearchScope(
             semantic_refs=(metric, channel),
@@ -129,13 +142,21 @@ def brief() -> ResearchBrief:
 
 def seed(engine):
     with Session(engine) as db:
-        db.add(Tenant(id=TENANT, slug="native-gateway", name="Native Gateway"))
+        db.add(
+            Tenant(
+                id=TENANT,
+                slug="native-direct",
+                name="Native Direct",
+                created_at=STAMP,
+            )
+        )
         db.add(
             User(
                 id=USER,
                 tenant_id=TENANT,
                 email="p14-native@example.test",
-                password_hash="not-used-by-native-gateway",
+                password_hash="not-used",
+                created_at=STAMP,
             )
         )
         db.commit()
@@ -144,190 +165,105 @@ def seed(engine):
                 tenant_id=TENANT,
                 dima_user_id=USER,
                 metabase_user_id=7,
-                security_profile=BASIC_NATIVE,
-                policy_version="p14-basic-native-v1",
+                # Transitional columns intentionally remain non-authoritative metadata.
+                security_profile="legacy-metadata",
+                policy_version="legacy-metadata",
                 approved_by_user_id=USER,
             )
-        )
-        db.add_all(
-            [
-                NativeResourceBinding(
-                    tenant_id=TENANT,
-                    semantic_context_version=CONTEXT,
-                    candidate_id="cand_sales_order_count",
-                    candidate_kind="metric",
-                    semantic_id="metric.sales_order_count",
-                    canonical_name="Sales Order Count",
-                    locator_kind="table",
-                    metabase_database_id=1,
-                    metabase_table_id=10,
-                    resource_entity_id="native:table:sales-orders",
-                    resource_fingerprint=h({"db": 1, "table": 10, "version": "v1"}),
-                    resource_version="v1",
-                ),
-                NativeResourceBinding(
-                    tenant_id=TENANT,
-                    semantic_context_version=CONTEXT,
-                    candidate_id="cand_sales_order_channel",
-                    candidate_kind="dimension",
-                    semantic_id="dimension.sales_order_channel",
-                    canonical_name="Sales Order Channel",
-                    locator_kind="field",
-                    metabase_database_id=1,
-                    metabase_table_id=10,
-                    metabase_field_id=20,
-                    resource_entity_id="native:field:sales-channel",
-                    resource_fingerprint=h({"db": 1, "table": 10, "field": 20, "version": "v1"}),
-                    resource_version="v1",
-                ),
-            ]
         )
         db.commit()
 
 
-def research_session(engine):
-    product = ResearchAskOrchestrator(store=ResearchSessionStore(engine))
-    return product.start_from_brief(
+def session_and_link(engine):
+    store = ResearchSessionStore(engine)
+    product = ResearchAskOrchestrator(store=store)
+    session = product.start_from_brief(
         brief=brief(),
-        request_ref="p14-native-gateway-test",
-        source_message_hash=hashlib.sha256(b"native gateway").hexdigest(),
+        request_ref="p14-native-direct-test",
+        source_message_hash=hashlib.sha256(b"native direct").hexdigest(),
         principal=principal(),
     )
-
-
-def attestation(conversation_id, query_id="native-query-1"):
-    pmbql = {
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id="g1",
+    )
+    session = store.save(
+        prepared.session,
+        expected_revision=session.revision,
+    )
+    assert session.native_conversation is not None
+    link = store.begin_delegation(
+        session=session,
+        obligation_id="g1",
+        dima_request_id=prepared.request.dima_request_id,
+        dima_trace_id=prepared.request.dima_trace_id,
+        native_conversation_id=session.native_conversation.conversation_id,
+    )
+    query = {
         "database": 1,
         "type": "query",
         "query": {
             "source-table": 10,
             "aggregation": [["count"]],
             "breakout": [["field", 20, None]],
-            "filter": [">=", ["field", 30, None], "2026-06-01"],
         },
     }
-    fp = h(pmbql)
-    return NativeAttestationEnvelope.model_validate(
-        {
-            "exact_serialized_pmbql": pmbql,
-            "manifest": {
-                "attestation_id": "att-p14-native-1",
-                "native_conversation_id": str(conversation_id),
-                "native_assistant_message_id": 101,
-                "native_tool_call_id": "tool-p14-1",
-                "native_query_id": query_id,
-                "producer_tool": "construct_notebook_query",
-                "exact_pmbql_fingerprint": fp,
-                "database_id": 1,
-                "primary_source_table_id": 10,
-                "referenced_source_table_ids": [10],
-                "aggregation_count": 1,
-                "aggregations": [
-                    {
-                        "operator": "count",
-                        "argument_kind": "all",
-                        "referenced_field_ids": [],
-                        "distinct": False,
-                    }
-                ],
-                "native_metric_references": [],
-                "breakout_count": 1,
-                "breakouts": [
-                    {
-                        "stage_number": 0,
-                        "breakout_index": 0,
-                        "field_id": 20,
-                        "field_type": "type/Text",
-                        "temporal_unit": None,
-                    }
-                ],
-                "material_filter_count": 1,
-                "non_temporal_filter_count": 0,
-                "temporal_predicates": [
-                    {
-                        "time_field_id": 30,
-                        "operator": ">=",
-                        "lower_bound": "2026-06-01",
-                        "upper_bound": "2026-07-01",
-                        "lower_inclusive": True,
-                        "upper_inclusive": False,
-                        "field_temporal_type": "type/DateTime",
-                        "temporal_unit": "month",
-                    }
-                ],
-                "textual_equality_predicates": [],
-                "explicit_join_count": 0,
-                "implicit_join_count": 0,
-                "implicit_joined_table_ids": [],
-                "order_by_count": 0,
-                "order_bys": [],
-                "limit": None,
-                "stage_count": 1,
-                "material_query_count": 1,
-                "authenticated_metabase_subject": 7,
-                "validation_provenance": {
-                    "producer_structured_output": "PASSED",
-                    "pmbql_schema": "PASSED",
-                    "producer_query_id_match": "PASSED",
-                    "producer_state_match": "PASSED",
-                },
-                "permission_provenance": {
-                    "current_metabase_user_id": 7,
-                    "permission_check": "PASSED",
-                    "checked_source_table_ids": [10],
-                },
-                "runtime_identity": {
-                    "repository": "UpcyTech/dima-metabase-engine",
-                    "revision_sha": ENGINE_SHA,
-                    "upstream_base_sha": UPSTREAM_SHA,
-                    "runtime_tag": TAG,
-                    "build_identity": BUILD,
-                    "image_identity": IMAGE,
-                    "runtime_instance_id": str(INSTANCE),
-                },
-            },
-        }
+    link = store.mark_candidate(
+        link.id,
+        native_query_id="native-query-1",
+        native_query=query,
+        query_fingerprint=h(query),
     )
+    return store, session, link, query
 
 
 class MaterialBridge:
-    def __init__(self, envelope, *, mutate_execution=False):
-        self.envelope = envelope
-        self.mutate_execution = mutate_execution
+    def __init__(self, *, forbidden=False, fail_on_execute=False):
+        self.calls = []
+        self.forbidden = forbidden
+        self.fail_on_execute = fail_on_execute
 
-    def attest_native_query(self, *, conversation_id, native_query_id):
-        assert conversation_id == self.envelope.manifest.native_conversation_id
-        assert native_query_id == self.envelope.manifest.native_query_id
-        return self.envelope.model_dump(mode="json")
-
-    def execute_native_query(
-        self,
-        *,
-        conversation_id,
-        native_query_id,
-        expected_pmbql_fingerprint,
-        expected_attestation_id,
-    ):
-        manifest = self.envelope.manifest
-        return NativeExactOccurrenceExecutionObservation(
-            status_code=200,
+    def execute_dataset(self, query):
+        if self.fail_on_execute:
+            raise AssertionError("persisted EXECUTED occurrence was executed twice")
+        self.calls.append(query)
+        if self.forbidden:
+            raise NativeDatasetExecutionError(
+                status_code=403,
+                detail="You do not have permissions to run this query.",
+            )
+        return NativeDatasetExecutionObservation(
+            status_code=202,
             latency_ms=3,
-            native_conversation_id=conversation_id,
-            native_query_id=native_query_id,
-            attestation_id=expected_attestation_id,
-            executed_pmbql_fingerprint=(
-                "0" * 64 if self.mutate_execution else expected_pmbql_fingerprint
-            ),
-            runtime_identity=manifest.runtime_identity.model_dump(mode="json"),
-            payload={"data": {"rows": [["Web", 4]], "cols": []}},
-            attestation=self.envelope.model_dump(mode="json"),
+            query_fingerprint=h(query),
+            payload={
+                "status": "completed",
+                "database_id": 1,
+                "row_count": 1,
+                "data": {"rows": [["Web", 4]], "cols": []},
+            },
         )
 
+    def engine_identity(self):
+        return identity_payload()
 
-def test_subject_provider_binds_explicit_user_and_rejects_wrong_or_admin_session(monkeypatch):
+
+def test_new_p14_binding_timestamp_is_timezone_aware_and_metadata_is_not_permission_truth():
     engine = db_engine()
     seed(engine)
-    session = research_session(engine)
+    with Session(engine) as db:
+        binding = db.exec(select(NativeSubjectBinding)).one()
+        assert binding.created_at.tzinfo is not None
+        assert binding.updated_at.tzinfo is not None
+        assert binding.security_profile == "legacy-metadata"
+        assert binding.policy_version == "legacy-metadata"
+
+
+def test_subject_provider_correlates_exact_user_and_rejects_wrong_admin_or_missing_session(monkeypatch):
+    engine = db_engine()
+    seed(engine)
+    store, session, _, _ = session_and_link(engine)
+    del store
     state = {"id": 7, "is_superuser": False}
 
     class FakeBridge:
@@ -338,15 +274,7 @@ def test_subject_provider_binds_explicit_user_and_rejects_wrong_or_admin_session
             return dict(state)
 
         def engine_identity(self):
-            return {
-                "repository": "UpcyTech/dima-metabase-engine",
-                "revision_sha": ENGINE_SHA,
-                "upstream_base_sha": UPSTREAM_SHA,
-                "runtime_tag": TAG,
-                "build_identity": BUILD,
-                "image_identity": IMAGE,
-                "runtime_instance_id": str(INSTANCE),
-            }
+            return identity_payload()
 
         def close(self):
             pass
@@ -385,60 +313,55 @@ def test_subject_provider_binds_explicit_user_and_rejects_wrong_or_admin_session
             pass
     assert admin.value.code == "P14_NATIVE_ADMIN_SESSION_FORBIDDEN"
 
-
-def test_missing_binding_or_pass_through_session_fails_closed(monkeypatch):
-    engine = db_engine()
-    seed(engine)
-    session = research_session(engine)
-    provider = NativeSubjectSessionProvider(
-        base_url="http://native.test",
-        expected_identity=expected_identity(),
-        db_engine=engine,
-    )
-    with Session(engine) as db:
-        row = db.exec(select(NativeSubjectBinding)).first()
-        assert row is not None
-        row.enabled = False
-        db.add(row)
-        db.commit()
+    state.update(id=7, is_superuser=False)
     with pytest.raises(ResearchMaterialLimitation) as missing:
-        provider.binding_for(principal=principal(), session=session)
-    assert missing.value.code == "P14_NATIVE_SUBJECT_BINDING_MISSING"
+        with provider.open(
+            principal=principal(),
+            session=session,
+            native_session_token=None,
+        ):
+            pass
+    assert missing.value.code == "P14_NATIVE_SESSION_REQUIRED"
 
 
-def test_material_executor_seals_same_occurrence_receipt_and_verified_evidence_without_month_parser():
+def test_direct_native_result_seals_one_research_receipt_without_resource_or_operator_authority():
     engine = db_engine()
     seed(engine)
-    session = research_session(engine)
+    store, session, link, query = session_and_link(engine)
     subjects = NativeSubjectSessionProvider(
         base_url="http://native.test",
         expected_identity=expected_identity(),
         db_engine=engine,
     )
+    bridge = MaterialBridge()
     executor = NativeResearchMaterialExecutor(
         subject_provider=subjects,
-        resource_provider=NativeResourceBindingProvider(db_engine=engine),
+        store=store,
         expected_identity=expected_identity(),
     )
-    conversation = UUID("00000000-0000-4000-8000-000000000799")
-    envelope = attestation(conversation)
     outcome = executor.execute(
         principal=principal(),
         session=session,
         obligation_id="g1",
-        bridge=MaterialBridge(envelope),
-        native_conversation_id=conversation,
-        native_query_id=envelope.manifest.native_query_id,
+        bridge=bridge,
+        native_conversation_id=link.native_conversation_id,
+        native_query_id=link.native_query_id,
+        native_query=query,
+        query_fingerprint=link.native_query_fingerprint,
+        execution_link_id=link.id,
     )
 
+    assert bridge.calls == [query]
     assert outcome.receipt.authority_kind == "research_material"
-    assert outcome.receipt.canonical_query_fingerprint == envelope.manifest.exact_pmbql_fingerprint
-    assert outcome.receipt.execution_access_fingerprint
-    assert set(outcome.receipt.resource_entity_ids) == {
-        "native:table:sales-orders",
-        "native:field:sales-channel",
-    }
+    assert outcome.receipt.projection_hash is None
+    assert outcome.receipt.resolved_intent_hash is None
+    assert outcome.receipt.execution_access_fingerprint is None
+    assert outcome.receipt.native_subject_ref == "metabase-user:7"
+    assert outcome.receipt.native_query_id == "native-query-1"
+    assert outcome.receipt.canonical_query_fingerprint == h(query)
+    assert outcome.receipt.resource_entity_ids == ()
     assert outcome.evidence.verified
+
     updated = ResearchManager.admit_receipted_evidence(
         session,
         obligation_id="g1",
@@ -448,50 +371,11 @@ def test_material_executor_seals_same_occurrence_receipt_and_verified_evidence_w
     )
     assert updated.obligations[0].state == ObligationState.VERIFIED
 
-    source = inspect.getsource(gateway_module)
-    for forbidden in (
-        "TemporalBindingEngine",
-        "resolve_period",
-        "ResolvedAnalyticsIntent",
-        "import re",
-        "MetabaseProjectionCompiler",
-        "MetabaseCanonicalizer",
-    ):
-        assert forbidden not in source
-    assert session.accepted_brief is not None
-    assert session.accepted_brief.scope.time_surfaces == ("Haziran 2026",)
 
-
-def test_wrong_or_stale_resource_binding_fails_before_execution():
+def test_native_permission_denial_remains_native_failure():
     engine = db_engine()
     seed(engine)
-    session = research_session(engine)
-    envelope = attestation(UUID("00000000-0000-4000-8000-000000000798"))
-    with Session(engine) as db:
-        row = db.exec(
-            select(NativeResourceBinding).where(
-                NativeResourceBinding.candidate_id == "cand_sales_order_channel"
-            )
-        ).first()
-        assert row is not None
-        row.metabase_field_id = 999
-        db.add(row)
-        db.commit()
-    provider = NativeResourceBindingProvider(db_engine=engine)
-    with pytest.raises(ResearchMaterialLimitation) as exc:
-        provider.resolve(
-            principal=principal(),
-            session=session,
-            obligation_id="g1",
-            manifest=envelope.manifest,
-        )
-    assert exc.value.code == "P14_NATIVE_RESOURCE_LOCATOR_MISMATCH"
-
-
-def test_native_occurrence_mutation_hard_fails_and_unsealed_receipt_cannot_promote_evidence():
-    engine = db_engine()
-    seed(engine)
-    session = research_session(engine)
+    store, session, link, query = session_and_link(engine)
     subjects = NativeSubjectSessionProvider(
         base_url="http://native.test",
         expected_identity=expected_identity(),
@@ -499,36 +383,88 @@ def test_native_occurrence_mutation_hard_fails_and_unsealed_receipt_cannot_promo
     )
     executor = NativeResearchMaterialExecutor(
         subject_provider=subjects,
-        resource_provider=NativeResourceBindingProvider(db_engine=engine),
+        store=store,
         expected_identity=expected_identity(),
     )
-    conversation = UUID("00000000-0000-4000-8000-000000000797")
-    envelope = attestation(conversation)
-    with pytest.raises(ResearchMaterialLimitation) as mutated:
+    with pytest.raises(ResearchMaterialLimitation) as exc:
         executor.execute(
             principal=principal(),
             session=session,
             obligation_id="g1",
-            bridge=MaterialBridge(envelope, mutate_execution=True),
-            native_conversation_id=conversation,
-            native_query_id=envelope.manifest.native_query_id,
+            bridge=MaterialBridge(forbidden=True),
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
         )
-    assert mutated.value.code == "P14_NATIVE_EXECUTION_FINGERPRINT_MISMATCH"
+    assert exc.value.code == "P14_NATIVE_DATASET_HTTP_403"
+    assert "permissions" in exc.value.detail
 
-    outcome = executor.execute(
+
+def test_executed_occurrence_resumes_from_durable_result_without_second_dataset_call():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    first_bridge = MaterialBridge()
+    first = executor.execute(
         principal=principal(),
         session=session,
         obligation_id="g1",
-        bridge=MaterialBridge(envelope),
-        native_conversation_id=conversation,
-        native_query_id=envelope.manifest.native_query_id,
+        bridge=first_bridge,
+        native_conversation_id=link.native_conversation_id,
+        native_query_id=link.native_query_id,
+        native_query=query,
+        query_fingerprint=link.native_query_fingerprint,
+        execution_link_id=link.id,
     )
-    unsealed = outcome.receipt.model_copy(update={"receipt_fingerprint": None})
-    with pytest.raises(Exception, match="P14_RECEIPT_EXECUTION_IDENTITY_INCOMPLETE"):
-        ResearchManager.admit_receipted_evidence(
-            session,
-            obligation_id="g1",
-            receipt=unsealed,
-            evidence=outcome.evidence,
-            satisfies_obligation=True,
-        )
+    persisted = store.execution_link(link.id)
+    assert persisted.status == "EXECUTED"
+    assert persisted.native_result_json is not None
+
+    second = executor.execute(
+        principal=principal(),
+        session=session,
+        obligation_id="g1",
+        bridge=MaterialBridge(fail_on_execute=True),
+        native_conversation_id=link.native_conversation_id,
+        native_query_id=link.native_query_id,
+        native_query=query,
+        query_fingerprint=link.native_query_fingerprint,
+        execution_link_id=link.id,
+    )
+    assert first.receipt.receipt_id == second.receipt.receipt_id
+    assert first.receipt.result_hash == second.receipt.result_hash
+    assert len(first_bridge.calls) == 1
+
+
+def test_gateway_has_no_p13_p10_operator_or_resource_authority():
+    source = inspect.getsource(gateway_module)
+    for forbidden in (
+        "NativeAttestationEnvelope",
+        "NativeExecutionManifest",
+        "AuthorizedExecutionArtifact",
+        "ExecutionAccessSnapshotIssuer",
+        "VerifiedExecutionSecurityFacts",
+        "NativeResourceBindingProvider",
+        "attest_native_query",
+        "execute_native_query",
+        "_field_ids",
+        "_assert_locator",
+        "ResolvedAnalyticsIntent",
+        "TemporalBindingEngine",
+        "MetabaseProjectionCompiler",
+        "MetabaseCanonicalizer",
+    ):
+        assert forbidden not in source
+    assert "execute_dataset" in source
