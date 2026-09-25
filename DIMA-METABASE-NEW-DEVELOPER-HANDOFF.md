@@ -3,8 +3,8 @@
 ## NON-NEGOTIABLE CURRENT RULES
 
 ```text
-DO NOT MODIFY METABASE CORE.
-DO NOT REOPEN P13/P14/P15/P16.
+DO NOT MODIFY METABASE CORE BY DEFAULT.
+DO NOT REOPEN P13/P14/P15/P16/P17.
 DO NOT BUILD ANALYTICS IN DIMA.
 METABASE + METABOT = ANALYTICAL ENGINE.
 DIMA = INVESTIGATION / EPISTEMICS / DECISION BRAIN.
@@ -13,23 +13,17 @@ METABASE ANSWERS IT NATIVELY.
 RECURSIVE DEPTH = DIMA.
 ANALYTICAL EXECUTION AT EVERY DEPTH = METABASE.
 P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
-NO UI/UX BEFORE P21.
+MODEL CHOOSES AMONG LEGAL MOVES.
 DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY.
-CERTIFY AUTONOMOUS AGENTS BY AUTHORITY / SAFETY / OUTCOME INVARIANTS.
-RED IS EVIDENCE, NOT AN INSTRUCTION TO PATCH.
-THREE ATTEMPTS ARE PER FAILURE FAMILY.
-CLASSIFY BY FIRST WRONG TRANSITION + OWNER + INVARIANT.
-GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS FOR AUTHORIZATION IDENTITY.
+NO UI/UX BEFORE P21.
+P18 PREDEVELOPMENT ONLY; IMPLEMENTATION NOT STARTED.
 ```
 
-## DMP-DEC-0053 — PERMANENT P17 BOUNDARY
+## P17 SEALED — DMP-DEC-0053
 
 ```text
 P17 IS AN INVESTIGATION LANGUAGE,
 NOT AN ANALYTICS ENGINE.
-
-AUTONOMY DOES NOT MEAN
-EVERY FIELD COMBINATION IS LEGAL.
 
 MODEL CHOOSES AMONG LEGAL MOVES.
 DIMA OWNS MOVE LEGALITY.
@@ -43,26 +37,20 @@ P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
 
 RAW NATIVE MATERIAL IS DURABLE.
 MANAGER COGNITION PACKET IS A THIN PROJECTION.
-
-DO NOT BUILD A PLANNER
-TO FIX A LEGALITY PROBLEM.
 ```
 
-Legality is a pure state projection. `InvestigationActionProfile` exposes legal moves **now**;
-it does not score, rank, plan, pick a branch winner, choose an analytical dimension, summarize native
-results, or choose the next correct trajectory. Luna chooses among legal moves. Metabot/Metabase
-perform all analytical execution.
+`InvestigationActionProfile` is a pure state projection of legal moves now. It is not a planner,
+ranker, interestingness engine, dimension selector or business-answer oracle.
 
 ## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
 
 > **FORWARD AUTHORITY.** This block overrides older current/next/blocked language. Historical
-> receipts remain append-only. Recovery accounting is failure-family-scoped.
+> receipts remain append-only.
 
 ```text
 branch                                = feat/dima-metabase-platform
-branch HEAD before living-doc repin   = 69237bae627dc4342bf91fa3c87ba4d69b6532e8
-sealed lower/core behavior checkpoint = d1bc5291b315ff19c3456d08ff1820e983d85942
-current P17 legality code candidate    = c5de2b41f00e67cd3b141610aa3a057bf8057e0d
+sealed P17 product/code candidate     = 3664d3d706d70225323126cbc994b8c2c732aaf4
+live dispatch / receipt-only SHA      = 5595544fcd94f5250961b5ac3a158a1a9c02e9fb
 forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051 + DMP-DEC-0052 + DMP-DEC-0053
 
 engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
@@ -71,108 +59,67 @@ engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e7
 engine certification                  = 36042062775 SUCCESS
 engine changes/builds                 = 0 / 0
 
-latest autonomous live                = 36149372671 FAILURE
-latest live tested SHA                = f514dd53d978c38d27e62c3cf36f6f4da5de5415
-latest live manager calls             = 8
-latest live native P17 follow-ups     = 3
-latest live VERIFIED occurrences      = 4 including base
-new Evidence reached later turn       = YES
-bounded termination                   = YES
-P14 immutable                         = YES
+P17 provider-free                     = 36158440330 SUCCESS
+P17 governance                        = 36158440319 SUCCESS
+dispatch governance                   = 36160559032 SUCCESS
+P17 autonomous live                   = 36160559037 SUCCESS
+artifact id                           = 10875785534
+artifact digest                       = sha256:65e4df9c5676a31ff3eee987ca3cd6d2f2ec66ef4243888da1980bc4b7fc6829
+
+family-aware authorization            = 30 PASS
+provider strict schema/envelope       = 8 PASS
+trajectory-invariant evaluator        = 8 PASS
+P17 legality/reasoning/adversarial    = 49 PASS
+P16 claim-lineage                     = 6 PASS
+P15 native Exploration                = 5 PASS
+P14 native-direct                     = 17 PASS
+
+live manager Luna calls               = 8
+live native P17 follow-ups            = 3
+live VERIFIED native occurrences      = 4 including base
+live max observed depth               = 3
+live terminal stop                    = NO_NEW_EVIDENCE
+new Evidence reached later manager    = YES
+distinct alternatives considered      = YES
+candidate received native test        = YES
+branch outcome                        = one stopped / one retained
+
+P14 authority immutable               = YES
 P16 sole claim authority              = YES
 native analytics only                 = YES
+follow-up lineage valid               = YES
 single receipt family                 = YES
 P13 hot path                          = 0
 second native executor                = 0
+second receipt family                 = 0
+second claim authority                = 0
+P19 truth promotion                   = 0
 Dima Python analytics                 = 0
-Wren/raw-SQL/admin fallback           = 0
+Wren/raw-SQL/admin fallback           = 0 / 0 / 0
+Sol / C1 / engine builds              = 0 / 0 / 0
 
-closed family                         = p17-cert-auth-transport
-closed family RED                     = 36137304596 / attempt 1
-
-closed family                         = p17-manager-structured-schema
-boundary crossed                      = 36147620834
-
-closed family                         = p17-manager-semantic-output
-boundary crossed                      = 36149372671
-
-current failure family                = p17-investigation-language-legality
-current authoritative RED             = 36149372671
-attempt in current family             = 1 / 3
-remaining attempts in same family     = 2
-current family owner                  = P17 TYPED INVESTIGATION LANGUAGE
-current family status                 = ROOT FIX IN PROVIDER-FREE CERTIFICATION
-
-next authorization                    = p17-investigation-language-legality--attempt-002.json
-next paid run                         = NOT UNTIL FULL DMP-0053 DETERMINISTIC SEAL IS GREEN
+p17-cert-auth-transport               = CLOSED
+p17-manager-structured-schema         = CLOSED
+p17-manager-semantic-output           = CLOSED
+p17-investigation-language-legality   = CLOSED AT ATTEMPT 2 GREEN
 
 P14                                   = SEALED
 P15                                   = SEALED
 P16                                   = SEALED
-P17 analytical/native substrate       = GREEN
-P17 typed investigation legality      = ROOT FIX IN PROVIDER-FREE CERTIFICATION
-P17 autonomous cognition              = LIVE RED / NOT SEALED
-P17 overall                           = NOT SEALED
-P18                                   = BLOCKED
+P17                                   = SEALED
+P18                                   = PREDEVELOPMENT REVIEW COMPLETE
+P18 implementation                    = NOT STARTED / NOT AUTHORIZED BY THIS HANDOFF
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 ```
 
-### CURRENT P17 GATE — DMP-DEC-0053
+### CURRENT PHASE GATE
 
-The latest live crossed authorization, provider strict-schema, provider semantic-output, native
-Metabot execution, native Evidence lineage and bounded termination. The active defect is therefore
-not Metabase and not a provider-schema family.
+P17 is closed. No additional P17 Luna rerun, engine build, P13 reopen, analytical fallback,
+planner layer or trajectory-specific patch is authorized.
 
-```text
-first wrong transition:
-typed manager proposal accepted
-→ P17 language admitted an illegal topology combination
-→ branch identity could be minted from loose branch_key presence
-→ structurally weak InvestigationGraph persisted
-→ trajectory-invariant evaluator rejected the graph
-
-owner:
-P17 TYPED INVESTIGATION LANGUAGE
-```
-
-Current root correction:
-
-```text
-ResearchManagerSnapshot
-→ InvestigationActionProfile
-→ Luna chooses one state-legal move
-→ resolve_investigation_topology ONCE
-→ ResolvedInvestigationTopology
-→ validation / persistence / execution / evaluation consume that authority
-```
-
-The durable store no longer interprets `branch_key` as branch authority. Only a branch-opening
-`EXPLORE_ALTERNATIVES` move may mint a child branch. Root gap, deepening, testing,
-counter-Evidence, replan, claim and stop moves cannot mint a branch from a string field.
-
-The cognition packet is also narrowed without touching durable P15 truth: raw native exploration
-payload remains stored, while the manager sees source-backed provenance plus verbatim native
-descriptors only. No Python analytics or summarization was added.
-
-Before any paid Luna run the following must all be GREEN:
-
-```text
-InvestigationActionProfile tests
-adversarial topology matrix
-multiple fake-manager legal trajectories
-trajectory-invariant evaluator
-thin cognition projection
-provider strict-schema/semantic envelope
-existing P17 regressions
-P16
-P15
-P14
-governance
-engine SHA unchanged
-```
-
-Only after that seal is one `p17-investigation-language-legality / attempt 2` Luna run authorized.
-P18 remains blocked.
+The only completed forward work after the P17 seal is the P18 material-business-relationship
+pre-development review. P18 implementation has not started. The next developer/supervisor must use
+that review as the implementation gate rather than extending P17.
 
 ### DMP-DEC-0050 AUTONOMOUS LIVE RETURN — RED / INFRA TRANSPORT
 

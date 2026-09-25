@@ -4471,7 +4471,7 @@ failure_family_id: `p17-manager-semantic-output`
 attempt_in_family: `1 / 3`  
 authoritative run: `36147620834 = FAILURE`  
 dispatch SHA: `c1324ba3ab41f362a272e5a45be7c2da4735fe57`  
-status: `ROOT FIX IN DEVELOPMENT / LIVE RECHECK PENDING`
+status: `CLOSED / ATTEMPT 2 GREEN / P17 SEALED`
 
 previous_boundary_that_succeeded:
 
@@ -4701,3 +4701,41 @@ after provider-free P17/P16/P15/P14 + evaluator + provider schema + governance G
 `p17-investigation-language-legality / attempt 2` is authorized.
 
 P18 remains BLOCKED.
+
+
+### DMP-P17-FAMILY-INVESTIGATION-LANGUAGE-001 closure — attempt 2 GREEN
+
+date: 2026-09-25
+
+```text
+failure_family_id = p17-investigation-language-legality
+attempt 1 / 3     = 36149372671 FAILURE
+attempt 2 / 3     = 36160559037 SUCCESS
+status            = CLOSED
+```
+
+The generic DMP-DEC-0053 correction crossed the prior first-wrong-transition boundary. The live
+autonomous path accepted only state-legal move shapes, produced a legal resolved topology, preserved
+branch semantics, fed new VERIFIED Evidence into later cognition, considered distinct alternatives,
+executed native analytical tests through Metabase, and stopped boundedly with `NO_NEW_EVIDENCE`.
+
+Seal evidence:
+
+```text
+provider-free                         = 36158440330 SUCCESS
+governance                            = 36158440319 SUCCESS
+dispatch governance                   = 36160559032 SUCCESS
+live                                  = 36160559037 SUCCESS
+
+manager calls                         = 8
+native P17 follow-ups                 = 3
+VERIFIED native occurrences           = 4 including base
+max depth                             = 3
+Sol / C1 / engine builds              = 0 / 0 / 0
+P13 hot-path / second executor        = 0 / 0
+Dima Python analytics                 = 0
+Wren / raw SQL / admin fallback       = 0 / 0 / 0
+```
+
+No further Luna recovery attempt is authorized or needed for this closed family.
+P17 is SEALED. P18 may proceed only through its pre-development review at this handoff.

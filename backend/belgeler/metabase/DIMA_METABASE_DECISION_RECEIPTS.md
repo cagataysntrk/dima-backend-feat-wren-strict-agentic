@@ -4559,7 +4559,7 @@ that new family starts at 1 / 3.
 date: 2026-09-25
 
 status:
-`RATIFIED FORWARD P17 CORRECTION / PROVIDER-FREE IMPLEMENTATION IN PROGRESS / LIVE ATTEMPT 2 PENDING / P18 BLOCKED`
+`SEALED / P17 FINAL GREEN / INVESTIGATION-LANGUAGE LEGALITY FAMILY CLOSED / P18 PREDEVELOPMENT ONLY`
 
 Authority stack:
 
@@ -4791,3 +4791,100 @@ MANAGER COGNITION PACKET IS A THIN PROJECTION.
 DO NOT BUILD A PLANNER
 TO FIX A LEGALITY PROBLEM.
 ```
+
+
+### DMP-DEC-0053 final seal — GREEN
+
+date: 2026-09-25
+
+Canonical identities:
+
+```text
+sealed P17 product/code candidate     = 3664d3d706d70225323126cbc994b8c2c732aaf4
+live dispatch / receipt-only SHA      = 5595544fcd94f5250961b5ac3a158a1a9c02e9fb
+authorization receipt                 = p17-investigation-language-legality--attempt-002.json
+
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                        = 0.63.18-dima.6
+engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+engine certification                  = 36042062775 SUCCESS
+engine changes/builds during closure  = 0 / 0
+```
+
+Deterministic seal:
+
+```text
+provider-free                         = 36158440330 SUCCESS
+governance                            = 36158440319 SUCCESS
+
+family-aware exact-Git auth tests     = 30 PASS
+provider strict schema/envelope       = 8 PASS
+trajectory-invariant evaluator        = 8 PASS
+P17 legality/reasoning/adversarial    = 49 PASS
+P16 claim-lineage                     = 6 PASS
+P15 native Exploration                = 5 PASS
+P14 native-direct                     = 17 PASS
+```
+
+Authorized live certification:
+
+```text
+failure_family_id                     = p17-investigation-language-legality
+attempt_in_family                     = 2 / 3
+run                                   = 36160559037 SUCCESS
+dispatch governance                   = 36160559032 SUCCESS
+artifact                              = p17-recursive-luna-5595544fcd94f5250961b5ac3a158a1a9c02e9fb
+artifact id                           = 10875785534
+artifact digest                       = sha256:65e4df9c5676a31ff3eee987ca3cd6d2f2ec66ef4243888da1980bc4b7fc6829
+
+manager calls                         = 8
+native P17 follow-ups                 = 3
+VERIFIED native occurrences           = 4 including P14 base
+max observed depth                    = 3
+terminal stop                         = NO_NEW_EVIDENCE
+new Evidence fed to later manager     = YES
+materially distinct alternatives      = YES
+candidate native analytical test      = YES
+alternative outcome                   = one stopped / one retained
+
+P14 authority immutable               = YES
+P16 sole claim authority              = YES
+native analytics only                 = YES
+follow-up lineage valid               = YES
+single receipt family                 = YES
+P13 hot-path attestation              = 0
+second native executor                = 0
+second receipt family                 = 0
+second claim authority                = 0
+P19 truth promotion                   = 0
+Dima Python analytics                 = 0
+Wren fallback                         = 0
+raw-SQL fallback                      = 0
+admin analytical fallback             = 0
+Sol                                   = 0
+C1                                    = 0
+engine builds                         = 0
+```
+
+All trajectory-invariant gates were GREEN, including:
+real autonomous manager path, legal intent vocabulary, resolved-topology authority,
+legal lineage, distinct alternatives, native analytical testing, Evidence feedback into later
+manager state, later choice after new Evidence, branch outcome, meaningful recursive depth or
+supported stop, bounded reasoning, bounded native follow-ups and bounded termination.
+
+Failure-family state:
+
+```text
+p17-cert-auth-transport               = CLOSED
+p17-manager-structured-schema         = CLOSED
+p17-manager-semantic-output           = CLOSED
+p17-investigation-language-legality   = CLOSED AT ATTEMPT 2 GREEN
+
+P17                                    = SEALED
+P18                                    = PREDEVELOPMENT REVIEW ONLY
+P18 implementation                     = NOT STARTED / NOT AUTHORIZED BY THIS SEAL
+UI / UX                                = FORBIDDEN UNTIL P21 SEALED
+```
+
+This seals the P17 boundary without creating a deterministic planner, second analytical authority,
+second receipt family, P19 causal authority, engine fork, Wren/raw-SQL fallback or Python analytics.

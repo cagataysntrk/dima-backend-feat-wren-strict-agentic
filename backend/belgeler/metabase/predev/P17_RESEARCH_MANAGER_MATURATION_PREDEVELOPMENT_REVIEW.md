@@ -1,14 +1,52 @@
 # P17 — RESEARCH MANAGER MATURATION PRE-DEVELOPMENT REVIEW
 
 **Date:** 2026-09-25  
-**Status:** **SEALED / P17 RESEARCH MANAGER MATURATION IMPLEMENTATION AUTHORIZED / RECURSIVE PROVIDER-FREE GREEN / LIVE RED / P17 NOT SEALED**  
-**Forward authority:** DMP-DEC-0048 + DMP-DEC-0049  
+**Status:** **SEALED / P17 FINAL GREEN / RECURSIVE AUTONOMOUS CERTIFICATION GREEN**  
+**Forward authority:** DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051 + DMP-DEC-0052 + DMP-DEC-0053  
 **Consumes:** P14 Research/Evidence + P15 native material + P16 claims  
 **UI/UX:** NOT AUTHORIZED  
 **Engine change:** NOT AUTHORIZED BY DEFAULT
 
 
-## LIVE CANARY DISPOSITION — 2026-09-25
+## FINAL P17 SEAL — DMP-DEC-0053
+
+This section is current authority and overrides the historical RED disposition below.
+
+```text
+sealed product/code candidate          = 3664d3d706d70225323126cbc994b8c2c732aaf4
+provider-free                           = 36158440330 SUCCESS
+governance                              = 36158440319 SUCCESS
+live dispatch SHA                       = 5595544fcd94f5250961b5ac3a158a1a9c02e9fb
+live                                    = 36160559037 SUCCESS
+dispatch governance                     = 36160559032 SUCCESS
+
+family-aware authorization              = 30 PASS
+provider schema/envelope                = 8 PASS
+trajectory evaluator                    = 8 PASS
+P17 legality/reasoning                  = 49 PASS
+P16                                     = 6 PASS
+P15                                     = 5 PASS
+P14                                     = 17 PASS
+
+manager Luna calls                      = 8
+native P17 follow-ups                   = 3
+VERIFIED native occurrences             = 4 including base
+max observed depth                      = 3
+terminal stop                           = NO_NEW_EVIDENCE
+Sol / C1 / engine builds                = 0 / 0 / 0
+```
+
+All DMP-DEC-0050 trajectory-invariant gates are GREEN. DMP-DEC-0053 is the final P17 legality
+boundary: the model chooses what to investigate from a state-derived legal move set; deterministic
+Dima resolves topology exactly once; Metabase/Metabot own every analytical execution.
+
+```text
+P17 = SEALED
+P18 = PREDEVELOPMENT REVIEW ONLY
+P18 IMPLEMENTATION = NOT STARTED
+```
+
+## HISTORICAL EARLY LIVE CANARY DISPOSITION — 2026-09-25
 
 ```text
 recursive provider-free = 36128262857 SUCCESS
