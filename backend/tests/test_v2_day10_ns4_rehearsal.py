@@ -322,7 +322,7 @@ class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
     """Use the canonical NS4 authority, but choose one governed RELATIONSHIP branch."""
 
     def structured_json(self, system, user, *, schema, schema_name):
-        if schema_name != "dima_research_manager_action_v1":
+        if schema_name != "dima_research_manager_action_v2":
             return super().structured_json(
                 system,
                 user,
