@@ -1687,31 +1687,56 @@ class ResearchManagerLoop:
                         )
 
         # READY ResearchTask identity is server-owned. Project one correlated execution
-        # scope per pending task from the same binding validator used by execution.
+        # scope per pending task from accepted ledger identity + already-governed handle
+        # metadata. Final execution still revalidates through _scheduled_binding and the
+        # existing tool/runtime gates.
+        inventory_by_alias = {
+            str(row.get("handle_ref")): row
+            for row in governed_semantic_inventory
+            if row.get("handle_ref")
+        }
+        ledger_by_id = {
+            item.obligation_id: item
+            for item in (ledger.items if ledger is not None else ())
+        }
         for task in research_tasks:
             if getattr(task, "state", None) != "pending":
                 continue
+            obligation_id = (
+                task.question_id
+                if task.origin == "USER_SEED"
+                else task.parent_obligation_id
+            )
+            if obligation_id is None:
+                continue
+            obligation = ledger_by_id.get(obligation_id)
+            if obligation is None:
+                continue
             try:
-                capability_override = None
-                if task.origin == "AGENT_DERIVED":
-                    capability_override = self._research_tasks.capability_for_task_kind(
+                capability_key = (
+                    obligation.capability_key
+                    if task.origin == "USER_SEED"
+                    else self._research_tasks.capability_for_task_kind(
                         ResearchTaskKind(task.task_kind)
                     )
-                obligation, binding = self._scheduled_binding(
-                    runtime=runtime,
-                    task=task,
-                    capability_key=capability_override,
                 )
             except Exception:
                 continue
 
-            def aliases(kind: str) -> tuple[str, ...]:
-                return tuple(
-                    self._handle_alias(handle_id)
-                    for handle_id in binding.refs(kind)
-                )
+            task_aliases = tuple(
+                self._handle_alias(handle_id)
+                for handle_id in task.input_refs
+            )
+            by_kind: dict[str, list[str]] = {}
+            for alias in task_aliases:
+                row = inventory_by_alias.get(alias) or {}
+                kind = normalized_kind.get(str(row.get("target_kind") or ""))
+                if kind:
+                    by_kind.setdefault(kind, []).append(alias)
 
-            capability_key = binding.spec.key
+            def aliases(kind: str) -> tuple[str, ...]:
+                return tuple(dict.fromkeys(by_kind.get(kind, ())))
+
             if capability_key == ManagerCapabilityKey.RELATIONSHIP:
                 focus = aliases("metric")
                 counterpart = aliases("dimension")
@@ -1757,10 +1782,7 @@ class ResearchManagerLoop:
                         and task.trigger_evidence_ref is not None
                         else ()
                     ),
-                    handle_refs=tuple(
-                        self._handle_alias(handle_id)
-                        for handle_id in task.input_refs
-                    ),
+                    handle_refs=task_aliases,
                     metric_handles=metric,
                     dimension_handles=aliases("dimension"),
                     filter_handles=aliases("filter"),
