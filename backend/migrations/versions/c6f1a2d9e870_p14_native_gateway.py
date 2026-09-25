@@ -15,6 +15,41 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
+    op.add_column(
+        "research_execution_link",
+        sa.Column("native_query_json", sa.Text(), nullable=True),
+    )
+    op.add_column(
+        "research_execution_link",
+        sa.Column("native_query_fingerprint", sa.String(), nullable=True),
+    )
+    op.add_column(
+        "research_execution_link",
+        sa.Column("native_subject_ref", sa.String(), nullable=True),
+    )
+    op.add_column(
+        "research_execution_link",
+        sa.Column("runtime_identity_json", sa.Text(), nullable=True),
+    )
+    op.add_column(
+        "research_execution_link",
+        sa.Column("result_hash", sa.String(), nullable=True),
+    )
+    op.add_column(
+        "research_execution_link",
+        sa.Column("executed_at", sa.DateTime(timezone=True), nullable=True),
+    )
+    op.create_index(
+        op.f("ix_research_execution_link_native_query_fingerprint"),
+        "research_execution_link",
+        ["native_query_fingerprint"],
+    )
+    op.create_index(
+        op.f("ix_research_execution_link_result_hash"),
+        "research_execution_link",
+        ["result_hash"],
+    )
+
     op.create_table(
         "native_subject_binding",
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -74,3 +109,20 @@ def downgrade() -> None:
     for column in ("enabled", "metabase_user_id", "dima_user_id", "tenant_id"):
         op.drop_index(op.f(f"ix_native_subject_binding_{column}"), table_name="native_subject_binding")
     op.drop_table("native_subject_binding")
+    op.drop_index(
+        op.f("ix_research_execution_link_result_hash"),
+        table_name="research_execution_link",
+    )
+    op.drop_index(
+        op.f("ix_research_execution_link_native_query_fingerprint"),
+        table_name="research_execution_link",
+    )
+    for column in (
+        "executed_at",
+        "result_hash",
+        "runtime_identity_json",
+        "native_subject_ref",
+        "native_query_fingerprint",
+        "native_query_json",
+    ):
+        op.drop_column("research_execution_link", column)

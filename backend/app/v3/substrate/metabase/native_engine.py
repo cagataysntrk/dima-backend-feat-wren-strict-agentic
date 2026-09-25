@@ -5,6 +5,7 @@ planning, semantic resolution, Agent API fallback, Wren fallback, or raw SQL exe
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from typing import Any
@@ -13,9 +14,11 @@ from uuid import UUID
 import httpx
 
 from app.v3.substrate.metabase.native_models import (
+    NativeDatasetExecutionObservation,
     NativeEngineIdentity,
     NativeExactOccurrenceExecutionObservation,
     NativeEngineObservation,
+    NativeProducedQuery,
     NativeEngineRequest,
     NativeStreamEvent,
 )
@@ -27,6 +30,15 @@ class NativeEngineBridgeError(RuntimeError):
 
 class NativeEngineIdentityMismatch(NativeEngineBridgeError):
     pass
+
+
+class NativeDatasetExecutionError(NativeEngineBridgeError):
+    def __init__(self, *, status_code: int, detail: str) -> None:
+        super().__init__(
+            f"native dataset execution returned HTTP {status_code}: {detail}"
+        )
+        self.status_code = status_code
+        self.detail = detail
 
 
 class NativeEngineStreamError(NativeEngineBridgeError):
@@ -138,6 +150,123 @@ class NativeEngineBridge:
         if not isinstance(body, dict):
             raise NativeEngineBridgeError("engine identity response is not an object")
         return body
+
+    @staticmethod
+    def _query_fingerprint(query: dict[str, Any]) -> str:
+        try:
+            raw = json.dumps(
+                query,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+        except (TypeError, ValueError) as exc:
+            raise NativeEngineBridgeError(
+                "native produced query is not deterministic JSON"
+            ) from exc
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def capture_produced_query(
+        cls,
+        observation: NativeEngineObservation,
+    ) -> NativeProducedQuery:
+        """Capture the query Metabot actually emitted; never reconstruct it.
+
+        Pinned Metabot's generated_entity data part embeds the executable legacy
+        dataset_query. The conversation state is a source-backed fallback only when
+        no generated_entity query was emitted.
+        """
+
+        generated: list[tuple[str, dict[str, Any]]] = []
+        for part in observation.data_parts:
+            if not isinstance(part, dict) or part.get("type") != "generated_entity":
+                continue
+            value = part.get("value")
+            query_ref = value.get("query") if isinstance(value, dict) else None
+            if not isinstance(query_ref, dict):
+                continue
+            query_id = query_ref.get("id")
+            query = query_ref.get("query")
+            if isinstance(query_id, str) and query_id.strip() and isinstance(query, dict):
+                generated.append((query_id, query))
+
+        if generated:
+            by_id: dict[str, dict[str, Any]] = {}
+            for query_id, query in generated:
+                prior = by_id.get(query_id)
+                if prior is not None and prior != query:
+                    raise NativeEngineBridgeError(
+                        "Metabot stream emitted conflicting payloads for one native query id"
+                    )
+                by_id[query_id] = query
+            if len(by_id) != 1:
+                raise NativeEngineBridgeError(
+                    "expected exactly one generated native query occurrence"
+                )
+            query_id, query = next(iter(by_id.items()))
+            return NativeProducedQuery(
+                native_query_id=query_id,
+                query=query,
+                query_fingerprint=cls._query_fingerprint(query),
+                source="generated_entity",
+            )
+
+        state = observation.final_state or {}
+        queries = state.get("queries") if isinstance(state, dict) else None
+        if isinstance(queries, dict):
+            candidates = [
+                (str(query_id), query)
+                for query_id, query in queries.items()
+                if str(query_id).strip() and isinstance(query, dict)
+            ]
+            if len(candidates) == 1:
+                query_id, query = candidates[0]
+                return NativeProducedQuery(
+                    native_query_id=query_id,
+                    query=query,
+                    query_fingerprint=cls._query_fingerprint(query),
+                    source="state",
+                )
+
+        raise NativeEngineBridgeError(
+            "native Metabot turn did not expose exactly one executable query payload"
+        )
+
+    def execute_dataset(
+        self,
+        query: dict[str, Any],
+    ) -> NativeDatasetExecutionObservation:
+        """Execute the captured Metabot query unchanged through native /api/dataset."""
+
+        fingerprint = self._query_fingerprint(query)
+        started = time.monotonic()
+        try:
+            response = self._client.post("/api/dataset", json=query)
+        except httpx.TimeoutException as exc:
+            raise NativeEngineBridgeError("native dataset execution timed out") from exc
+        except httpx.RequestError as exc:
+            raise NativeEngineBridgeError(
+                f"native dataset execution transport failed: {exc}"
+            ) from exc
+        latency_ms = max(0, int((time.monotonic() - started) * 1000))
+        if response.status_code < 200 or response.status_code >= 300:
+            raise NativeDatasetExecutionError(
+                status_code=response.status_code,
+                detail=response.text[:1000],
+            )
+        body = response.json()
+        if not isinstance(body, dict):
+            raise NativeEngineBridgeError(
+                "native dataset execution response is not an object"
+            )
+        return NativeDatasetExecutionObservation(
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+            query_fingerprint=fingerprint,
+            payload=body,
+        )
 
     def attest_native_query(
         self,

@@ -5,7 +5,7 @@ execution authorization, QueryReceipt, or Evidence contracts.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -78,3 +78,25 @@ class NativeExactOccurrenceExecutionObservation(BaseModel):
     runtime_identity: dict[str, Any]
     payload: dict[str, Any]
     attestation: dict[str, Any]
+
+
+class NativeProducedQuery(BaseModel):
+    """Exact executable query representation emitted by the native Metabot stream."""
+
+    model_config = ConfigDict(frozen=True)
+
+    native_query_id: str = Field(min_length=1)
+    query: dict[str, Any]
+    query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    source: Literal["generated_entity", "state"]
+
+
+class NativeDatasetExecutionObservation(BaseModel):
+    """Transport-only observation for direct native Metabase dataset execution."""
+
+    model_config = ConfigDict(frozen=True)
+
+    status_code: int
+    latency_ms: int = Field(ge=0)
+    query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    payload: dict[str, Any]

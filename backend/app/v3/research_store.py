@@ -6,6 +6,7 @@ or Evidence promotion.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
 from datetime import datetime, timezone
@@ -32,6 +33,23 @@ def _now() -> datetime:
 def _checkpoint_payload(session: ResearchSession) -> tuple[str, str]:
     checkpoint = ResearchManager.checkpoint(session)
     return checkpoint.model_dump_json(), checkpoint.fingerprint
+
+
+def _query_payload(query: dict) -> tuple[str, str]:
+    try:
+        raw = json.dumps(
+            query,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ResearchPersistenceError(
+            "P14_NATIVE_QUERY_NOT_CANONICAL_JSON",
+            "captured native query is not deterministic JSON",
+        ) from exc
+    return raw, hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 class ResearchSessionStore:
@@ -246,26 +264,79 @@ class ResearchSessionStore:
         link_id: uuid.UUID,
         *,
         native_query_id: str,
+        native_query: dict,
+        query_fingerprint: str,
     ) -> ResearchExecutionLink:
+        raw, observed = _query_payload(native_query)
+        if observed != query_fingerprint:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_QUERY_FINGERPRINT_MISMATCH",
+                "captured query payload differs from its claimed fingerprint",
+            )
         return self._update_link(
             link_id,
             native_query_id=native_query_id,
+            native_query_json=raw,
+            native_query_fingerprint=query_fingerprint,
             status="CANDIDATE_CAPTURED",
         )
+
+    @staticmethod
+    def captured_query(link: ResearchExecutionLink) -> tuple[dict, str]:
+        if not link.native_query_json or not link.native_query_fingerprint:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_QUERY_PAYLOAD_MISSING",
+                "captured native occurrence has no durable executable query payload",
+            )
+        try:
+            query = json.loads(link.native_query_json)
+        except json.JSONDecodeError as exc:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_QUERY_PAYLOAD_INVALID",
+                "persisted native query payload is invalid JSON",
+            ) from exc
+        if not isinstance(query, dict):
+            raise ResearchPersistenceError(
+                "P14_NATIVE_QUERY_PAYLOAD_INVALID",
+                "persisted native query payload is not an object",
+            )
+        _, observed = _query_payload(query)
+        if observed != link.native_query_fingerprint:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_QUERY_FINGERPRINT_MISMATCH",
+                "persisted native query payload changed after capture",
+            )
+        return query, observed
 
     def mark_verified(
         self,
         link_id: uuid.UUID,
         *,
-        attestation_id: str | None,
         receipt_id: str,
         evidence_id: str,
+        native_subject_ref: str,
+        runtime_identity: dict,
+        result_hash: str,
+        executed_at: datetime,
+        attestation_id: str | None = None,
     ) -> ResearchExecutionLink:
+        runtime_json = json.dumps(
+            runtime_identity,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+            default=str,
+        )
         return self._update_link(
             link_id,
             attestation_id=attestation_id,
             receipt_id=receipt_id,
             evidence_id=evidence_id,
+            native_subject_ref=native_subject_ref,
+            runtime_identity_json=runtime_json,
+            result_hash=result_hash,
+            executed_at=executed_at,
             status="VERIFIED",
         )
 

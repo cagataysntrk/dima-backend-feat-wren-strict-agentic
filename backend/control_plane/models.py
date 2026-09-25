@@ -603,8 +603,12 @@ class NativeSubjectBinding(SQLModel, table=True):
     policy_version: str
     approved_by_user_id: uuid.UUID = Field(foreign_key="app_user.id")
     enabled: bool = Field(default=True, index=True)
-    created_at: datetime = Field(default_factory=_now)
-    updated_at: datetime = Field(default_factory=_now)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
 
 class NativeResourceBinding(SQLModel, table=True):
@@ -634,8 +638,12 @@ class NativeResourceBinding(SQLModel, table=True):
     resource_fingerprint: str = Field(index=True)
     resource_version: str
     enabled: bool = Field(default=True, index=True)
-    created_at: datetime = Field(default_factory=_now)
-    updated_at: datetime = Field(default_factory=_now)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
 
 class ResearchExecutionLink(SQLModel, table=True):
@@ -656,6 +664,18 @@ class ResearchExecutionLink(SQLModel, table=True):
     dima_trace_id: str
     native_conversation_id: uuid.UUID
     native_query_id: str | None = Field(default=None, index=True)
+    native_query_json: str | None = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
+    native_query_fingerprint: str | None = Field(default=None, index=True)
+    native_subject_ref: str | None = None
+    runtime_identity_json: str | None = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
+    result_hash: str | None = Field(default=None, index=True)
+    executed_at: datetime | None = None
     attestation_id: str | None = None
     status: str = Field(default="DELEGATED", index=True)
     receipt_id: str | None = Field(default=None, index=True)
