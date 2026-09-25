@@ -660,6 +660,17 @@ class ResearchExecutionLink(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
     session_id: str = Field(foreign_key="research_session.session_id", index=True)
     obligation_id: str = Field(index=True)
+    execution_kind: str = Field(default="P14_BASE", index=True)
+    reasoning_step_id: str | None = Field(
+        default=None,
+        foreign_key="research_reasoning_step.step_id",
+        index=True,
+    )
+    investigation_task_id: str | None = Field(
+        default=None,
+        foreign_key="research_investigation_task.task_id",
+        index=True,
+    )
     dima_request_id: str = Field(index=True)
     dima_trace_id: str
     native_conversation_id: uuid.UUID
