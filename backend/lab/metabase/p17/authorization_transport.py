@@ -21,13 +21,17 @@ HISTORICAL_RECEIPTS = frozenset(
             "backend/lab/metabase/p17/authorizations/"
             "autonomous-luna-recovery-001.json"
         ),
+        (
+            "backend/lab/metabase/p17/authorizations/"
+            "p17-manager-structured-schema--attempt-002.json"
+        ),
     }
 )
 EXPECTED_BRANCH = "feat/dima-metabase-platform"
 EXPECTED_DECISION = "DMP-DEC-0052"
-EXPECTED_PRODUCT_SHA = "f940a9731be98212b47b44391e28080648c00629"
+EXPECTED_PRODUCT_SHA = "e6ab0bcf29bcbc17004c045a4391235ebc1fed19"
 EXPECTED_MODEL = "openai/gpt-5.6-luna"
-CURRENT_FAILURE_FAMILY_ID = "p17-manager-structured-schema"
+CURRENT_FAILURE_FAMILY_ID = "p17-manager-semantic-output"
 CURRENT_ATTEMPT_IN_FAMILY = 2
 MAX_ATTEMPT_IN_FAMILY = 3
 MAX_MANAGER_CALLS = 8
