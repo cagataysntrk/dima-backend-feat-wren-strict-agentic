@@ -91,11 +91,19 @@ def test_revision_path_reaches_same_governed_product_within_global_six_turns():
 def _schema_property_enum(schema, property_name):
     found = []
 
+    def resolve(node):
+        if not isinstance(node, dict):
+            return node
+        ref = node.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/$defs/"):
+            return (schema.get("$defs") or {})[ref.rsplit("/", 1)[-1]]
+        return node
+
     def walk(node):
         if isinstance(node, dict):
             properties = node.get("properties")
             if isinstance(properties, dict) and property_name in properties:
-                found.append(properties[property_name])
+                found.append(resolve(properties[property_name]))
             for value in node.values():
                 walk(value)
         elif isinstance(node, list):
@@ -103,6 +111,7 @@ def _schema_property_enum(schema, property_name):
                 walk(value)
 
     def values(node):
+        node = resolve(node)
         out = set()
         if isinstance(node, dict):
             enum = node.get("enum")
