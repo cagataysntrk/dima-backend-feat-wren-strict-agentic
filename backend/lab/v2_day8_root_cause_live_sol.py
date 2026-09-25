@@ -283,9 +283,14 @@ class ScriptedSentinelLLM:
                 },
             )
 
-        if delta and not delta.get("inspected"):
-            assert delta.get("disclosed_in_current_prompt") is True
-            assert delta.get("inspection_required") is False
+        if delta:
+            # The harness mirrors production bookkeeping by marking freshly disclosed
+            # VERIFIED Evidence inspected before the epistemic mutation turn.  Whether
+            # the delta is observed just before or just after that bookkeeping edge,
+            # the current ActionSet must not advertise a redundant inspect action.
+            if not delta.get("inspected"):
+                assert delta.get("disclosed_in_current_prompt") is True
+                assert delta.get("inspection_required") is False
             advertised_actions = {
                 item.get("action")
                 for item in (
