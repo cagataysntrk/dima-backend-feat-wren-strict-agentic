@@ -1802,3 +1802,32 @@ def test_structured_live_manager_cannot_emit_legacy_intent():
             transport=LegacyTransport()
         ).propose(snapshot)
 
+def test_live_manager_schema_is_strict_transport_safe():
+    from app.v3.research_manager_provider import _schema_for_intents
+
+    schema = _schema_for_intents(
+        (InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,)
+    )
+
+    def walk(node):
+        if isinstance(node, dict):
+            assert "default" not in node
+            props = node.get("properties")
+            if isinstance(props, dict):
+                assert node.get("additionalProperties") is False
+                assert set(node.get("required") or ()) == set(props)
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(schema)
+    props = schema["properties"]
+    assert props["intent"]["enum"] == [
+        "TEST_DISCRIMINATING_EVIDENCE"
+    ]
+    assert "claim" not in props
+    assert "counter_to_claim_id" not in props
+    assert "stop_reason" not in props
+
