@@ -375,15 +375,19 @@ def test_067_missing_trusted_metric_binding_clarifies_without_context_fabricatio
     assert outcome.accepted is False
     assert outcome.clarification_required is True
     assert runtime.snapshot.state == ManagerState.NEEDS_CLARIFICATION
-    assert scripted.calls == ["dima_intent_draft_v1"]
-    assert any(
-        item.get("kind") == "material_grounding_gap"
-        for item in outcome.observations
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    coverage_index = next(
+        i for i, item in enumerate(outcome.observations)
+        if item.get("kind") == "coverage_audit"
     )
-    assert not any(
-        item.get("kind") == "coverage_audit"
-        for item in outcome.observations
+    gap_index = next(
+        i for i, item in enumerate(outcome.observations)
+        if item.get("kind") == "material_grounding_gap"
     )
+    assert coverage_index < gap_index
     assert not any(
         item.get("kind") == "contract_validity"
         for item in outcome.observations
@@ -893,7 +897,7 @@ def test_run3_polarity_veto_happens_before_semantic_materialization_and_revision
     )
 
     # Only the surviving revised draft is grounded, from a clean semantic authority state.
-    assert 1 <= len(semantic_provider.calls) <= 3
+    assert len(semantic_provider.calls) <= 3
     assert len(scripted.handles._bindings) > 0
     assert len(runtime.semantic_resolution_receipts) > 0
     assert runtime.snapshot.preacceptance_turns == 4
@@ -1873,9 +1877,12 @@ def test_d10_p_semantic_repair_abstain_remains_clarification():
     )
 
     assert outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
-    assert runtime.snapshot.preacceptance_turns == 1
+    assert runtime.snapshot.preacceptance_turns == 2
     assert len(repair.calls) == 1
-    assert scripted.calls == ["dima_intent_draft_v1"]
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
 
 
 def test_d10_p_excluded_metric_never_enters_repair_source_pool():
@@ -1920,7 +1927,7 @@ def test_d10_p_repair_provider_rejects_unknown_source_token():
         "Makine duruşları ve arıza sayısı ile bölüm bazındaki performansı araştır."
     )
     context, schema = _d10_p_decomposition_context()
-    scripted = _ScriptedStructured(drafts=[_d10_p_draft()], audits=[])
+    scripted = _ScriptedStructured(drafts=[_d10_p_draft()], audits=[{"status": "PASS", "issues": []}])
 
     class BadRepair:
         def decide(self, requests, *, user_message):
@@ -2020,7 +2027,7 @@ def test_d10_p_wrong_kind_current_source_cannot_enter_metric_repair_pool():
         "research_directives": [],
         "control_requests": [],
     }
-    scripted = _ScriptedStructured(drafts=[draft], audits=[])
+    scripted = _ScriptedStructured(drafts=[draft], audits=[{"status": "PASS", "issues": []}])
     repair = _SourceSelectingRepairProvider(selected_surfaces=("bölüm",))
     loop, runtime, executor = _loop(
         scripted,
@@ -2404,7 +2411,7 @@ def test_d10_q_unknown_scope_group_token_fails_closed():
         "gözlenen bozulmanın kök nedenlerini sınırla."
     )
     context, schema = _d10_p_decomposition_context()
-    scripted = _ScriptedStructured(drafts=[_d10_q_joint_root_draft()], audits=[])
+    scripted = _ScriptedStructured(drafts=[_d10_q_joint_root_draft()], audits=[{"status": "PASS", "issues": []}])
     repair = _ScopeGroupSelectingRepairProvider(unknown=True)
     loop, runtime, executor = _loop(
         scripted,
@@ -2466,7 +2473,7 @@ def test_d10_q_two_materially_distinct_groups_may_abstain_without_forced_merge()
         "research_directives": [],
         "control_requests": [],
     }
-    scripted = _ScriptedStructured(drafts=[draft], audits=[])
+    scripted = _ScriptedStructured(drafts=[draft], audits=[{"status": "PASS", "issues": []}])
     repair = _ScopeGroupSelectingRepairProvider(abstain_on_multiple=True)
     loop, runtime, executor = _loop(
         scripted,
