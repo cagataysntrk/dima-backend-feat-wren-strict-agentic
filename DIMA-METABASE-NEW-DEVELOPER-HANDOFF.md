@@ -16,6 +16,9 @@ P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
 NO UI/UX BEFORE P21.
 DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY.
 CERTIFY AUTONOMOUS AGENTS BY AUTHORITY / SAFETY / OUTCOME INVARIANTS.
+RED IS EVIDENCE, NOT AN INSTRUCTION TO PATCH.
+MAX THREE BOUNDED ROOT-CAUSE RECOVERY CYCLES BEFORE SUPERVISOR STOP.
+GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS FOR AUTHORIZATION IDENTITY.
 ```
 
 
@@ -23,13 +26,18 @@ CERTIFY AUTONOMOUS AGENTS BY AUTHORITY / SAFETY / OUTCOME INVARIANTS.
 
 > **FORWARD AUTHORITY.** This block overrides any older "current", "next", "blocked", or
 > "immediate work" language later in this living document. Historical sections remain append-only
-> evidence unless they explicitly say they are current under DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050.
+> evidence unless they explicitly say they are current under DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051.
 
 ```text
 certified product/code checkpoint     = d1bc5291b315ff19c3456d08ff1820e983d85942
-latest non-doc branch checkpoint      = 5801ac71ba00867921dec17edff20568dc0fce05
+latest evaluator/infra checkpoint     = 7bc8272c9e6de088c6ec33c6d9759474b4d7c809
 branch                                = feat/dima-metabase-platform
-forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050
+branch HEAD at recovery snapshot       = 7bc8272c9e6de088c6ec33c6d9759474b4d7c809
+active recovery cycle                  = 1 / 3
+remaining recovery cycles              = 2 after Cycle 1
+current gate                           = exact-Git authorization transport proof
+next bounded objective                 = provider-free + governance → one corrected Cycle-1 Luna canary
+forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051
 
 engine gitlink                        = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
@@ -87,13 +95,14 @@ P16                                   = SEALED
 P17 bounded-manager foundation        = PROVIDER-FREE GREEN
 P17 recursive authority               = PROVIDER-FREE GREEN
 P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
-P17 autonomous cognition              = LIVE RED / INFRA TRANSPORT / NOT SEALED
+P17 autonomous cognition              = NOT YET EXECUTED UNDER VALID TRANSPORT
+P17 current blocker                    = CERTIFICATION TRANSPORT ONLY
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 ```
 
-### CURRENT P17 GATE — DMP-DEC-0050
+### CURRENT P17 GATE — DMP-DEC-0050 + DMP-DEC-0051
 
 DMP-DEC-0050 supersedes the historical screenplay as the **final cognition certification oracle**.
 It does not supersede DMP-DEC-0048 native-direct ownership or DMP-DEC-0049 recursive/P17-P19
@@ -129,9 +138,13 @@ P18                                   = BLOCKED
 
 The trajectory-invariant evaluator, autonomous harness, P14/P15/P16/P17 deterministic regressions
 and governance are GREEN at provider-free run `36136988379` and governance run `36136988429`.
-The one authorized autonomous certification dispatch was consumed by `36137304596` and returned
-RED at the fail-closed authorization transport before any Luna manager call. No second paid dispatch
-is authorized. P18 remains blocked.
+Run `36137304596` is an autonomous certification **transport RED**, not a cognition sample:
+manager Luna calls, Metabot occurrences and dataset executions were all zero.
+
+DMP-DEC-0051 now governs recovery. Recovery Cycle 1 / 3 is active. The exact-Git owner-local
+transport root fix must first prove the full RED-003 provider-free regression family and governance
+GREEN. After that, exactly one corrected autonomous Luna certification is authorized for Cycle 1.
+P18 remains blocked until genuine autonomous cognition is GREEN.
 
 Permanent evaluation governance:
 
@@ -183,9 +196,34 @@ This RED does not invalidate P17 provider-free recursive authority or the DMP-DE
 trajectory-invariant evaluator. It is not a manager-cognition, structured-output, state-machine,
 native-analytics, lineage, or Metabase-engine failure.
 
-Per DMP-DEC-0050, **no second paid dispatch is authorized**. P17 remains **NOT SEALED** and P18
-remains **BLOCKED**. A future paid autonomous certification attempt requires new supervisor
-authority.
+The historical DMP-DEC-0050 one-shot stop rule is superseded for recovery procedure by
+DMP-DEC-0051. P17 remains **NOT SEALED** and P18 remains **BLOCKED**, but Cycle 1 / 3 may continue
+after exact-Git transport provider-free proof and governance are GREEN.
+
+### DMP-DEC-0051 PERMANENT RECOVERY RULES
+
+```text
+RED IS EVIDENCE, NOT AN INSTRUCTION TO PATCH.
+
+FIRST WRONG TRANSITION → OWNER → ROOT CAUSE → GENERIC FIX.
+
+MAX THREE BOUNDED RECOVERY CYCLES BEFORE SUPERVISOR STOP.
+
+NO BLIND RERUNS.
+NO REGEX / FUZZY / MORPH SEMANTIC PATCHES.
+NO TEST-SPECIFIC PRODUCT BEHAVIOR.
+DO NOT TUNE A PROBABILISTIC AGENT TO ONE TRAJECTORY.
+
+GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS
+FOR COMMIT/AUTHORIZATION IDENTITY.
+
+METABASE + METABOT = ANALYTICAL ENGINE.
+DIMA = INVESTIGATION / EPISTEMICS / DECISION BRAIN.
+```
+
+Current Cycle 1 owner is `INFRA / EVALUATOR TRANSPORT`. Product behavior is frozen. The historical
+`AUTONOMOUS_LUNA_AUTHORIZATION.json` remains immutable evidence; new recovery receipts are
+append-only under `backend/lab/metabase/p17/authorizations/`.
 
 Permanent forward split:
 
