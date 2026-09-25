@@ -1,5 +1,47 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — INTEGRATED LIVE #1 RED / PROVIDER-FREE ROOT FIX GREEN
+
+```text
+D10-S FINAL                    SEALED
+ManagerBudget                  4 / 4 / 8 RATIFIED
+
+integrated live                36128949886 = RED
+tested SHA                     674ac1aed68ea42ea67bedb0660298e95c9f86c7
+tested Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+
+class                          CONTRACT / ARCHITECTURE
+first wrong transition         ROOT action carried h3 from BREAKDOWN parent
+                               into ROOT_CAUSE parent obl_4
+
+fresh paid calls               12 / 40
+remaining                      28
+second paid run                NOT AUTHORIZED
+
+latest Product behavior        999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+
+Day10 provider-free            36130046060 = GREEN
+Day8 affected                  36129994598 = GREEN
+Day7 affected                  36129994504 = GREEN
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Live #1 crossed accepted Research authority, real Wren execution, five VERIFIED Evidence artifacts and report construction. It did not complete ROOT_CAUSE epistemic accounting, so Product correctly returned PARTIAL and no signed continuation was attempted.
+
+The first wrong transition was not Wren or resolver truth. The model-facing ROOT action schema allowed semantic aliases from unrelated accepted obligations. Runtime correctly rejected that proposal.
+
+The bounded generic correction keeps all frozen owners unchanged and moves parent-scoped argument applicability into the existing D10-S owner:
+`ManagerActionAvailability → strict provider schema → model → runtime validation`.
+
+It also serializes a pending governed post-test Evidence relation before advertising another ROOT next-test. This is applicability/order, not causal truth.
+
+No additional paid execution is authorized by this status.
+
+
 ## 2026-09-25 — D10-S FINAL SEALED / INTEGRATED LIVE MEASUREMENT AUTHORIZED
 
 ```text
