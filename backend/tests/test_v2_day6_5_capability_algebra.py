@@ -39,6 +39,7 @@ def _handle(
     candidate_id: str,
     kind: str,
     canonical_name: str,
+    cube_names: tuple[str, ...] = ("Sales",),
 ):
     target_kind = SemanticTargetKind(kind)
     return registry.mint_from_resolver(
@@ -50,7 +51,7 @@ def _handle(
             candidate_id=candidate_id,
             target_kind=target_kind,
             canonical_name=canonical_name,
-            cube_names=("Sales",),
+            cube_names=cube_names,
         ),
     )
 
@@ -113,6 +114,88 @@ def test_performance_with_dimension_is_invalid_atomic_contract():
         "performance contains forbidden semantic kinds: dimension" in reason
         for reason in result.reasons
     )
+
+
+def test_required_standard_performance_rejects_cross_cube_semantic_shape():
+    _, source_hash, source, handles, gate = _setup(
+        "gelir ve üretkenliği birlikte incele"
+    )
+    revenue = _handle(
+        handles,
+        candidate_id="metric-cross-sales",
+        kind="metric",
+        canonical_name="Sales.revenue",
+        cube_names=("Sales",),
+    )
+    productivity = _handle(
+        handles,
+        candidate_id="metric-cross-production",
+        kind="metric",
+        canonical_name="Production.productivity",
+        cube_names=("Production",),
+    )
+
+    result = gate.evaluate(
+        envelope=_envelope(
+            source_hash,
+            CandidateObligation(
+                obligation_id="U_CROSS",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(source.source_ref,),
+                semantic_handle_refs=(
+                    revenue.handle_id,
+                    productivity.handle_id,
+                ),
+            ),
+        ),
+        tenant_binding=TENANT,
+        context_version=CONTEXT,
+    )
+
+    assert result.status.value == "REJECTED"
+    assert any(
+        "required STANDARD semantic handles must resolve to exactly one common governed cube"
+        in reason
+        for reason in result.reasons
+    )
+
+
+def test_required_standard_performance_accepts_multiple_metrics_on_one_cube():
+    _, source_hash, source, handles, gate = _setup(
+        "gelir ve siparişi birlikte incele"
+    )
+    revenue = _handle(
+        handles,
+        candidate_id="metric-same-sales-a",
+        kind="metric",
+        canonical_name="Sales.revenue",
+        cube_names=("Sales",),
+    )
+    orders = _handle(
+        handles,
+        candidate_id="metric-same-sales-b",
+        kind="metric",
+        canonical_name="Sales.orders",
+        cube_names=("Sales",),
+    )
+
+    result = gate.evaluate(
+        envelope=_envelope(
+            source_hash,
+            CandidateObligation(
+                obligation_id="U_SAME",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                source_refs=(source.source_ref,),
+                semantic_handle_refs=(revenue.handle_id, orders.handle_id),
+            ),
+        ),
+        tenant_binding=TENANT,
+        context_version=CONTEXT,
+    )
+
+    assert result.status.value == "ACCEPTED"
 
 
 def test_performance_required_and_breakdown_excluded_is_valid_when_not_requested():
