@@ -255,39 +255,49 @@ class NativeResearchExploration:
             "P15 exploration requires an explicit tenant binding",
         )
 
-    def explore(
+    def _explore_verified_link(
         self,
         *,
-        session_id: str,
-        obligation_id: str,
+        session,
+        link,
         principal: Principal,
         native_session_token: str | None,
+        require_base_evidence_membership: bool,
     ) -> ResearchLead:
-        session = self._research.load(
-            session_id,
-            tenant=self._tenant(principal),
-            principal=str(principal.user_id),
+        obligation = ResearchManager.obligation(
+            session,
+            link.obligation_id,
         )
-        obligation = ResearchManager.obligation(session, obligation_id)
         if obligation.state != ObligationState.VERIFIED:
             raise ResearchExplorationError(
                 "P15_VERIFIED_RESEARCH_OBLIGATION_REQUIRED",
-                "P15 exploration consumes a VERIFIED P14 Research obligation",
+                "P15 exploration consumes a VERIFIED Research obligation",
             )
-        try:
-            link = self._research.verified_link(
-                session_id=session_id,
-                obligation_id=obligation_id,
+        if link.status != "VERIFIED":
+            raise ResearchExplorationError(
+                "P15_VERIFIED_NATIVE_OCCURRENCE_REQUIRED",
+                "native exploration requires a VERIFIED occurrence",
             )
-        except ResearchPersistenceError as exc:
-            raise ResearchExplorationError(exc.code, exc.detail) from exc
         if (
-            link.evidence_id is None
-            or link.evidence_id not in obligation.evidence_refs
+            not link.native_query_id
+            or not link.native_query_fingerprint
+            or not link.evidence_id
+            or not link.receipt_id
+        ):
+            raise ResearchExplorationError(
+                "P15_VERIFIED_NATIVE_PROVENANCE_INCOMPLETE",
+                "verified occurrence lacks query/receipt/Evidence provenance",
+            )
+        if (
+            require_base_evidence_membership
+            and link.evidence_id not in obligation.evidence_refs
         ):
             raise ResearchExplorationError(
                 "P15_SOURCE_EVIDENCE_MISMATCH",
-                "verified P14 occurrence is not linked to the Research obligation Evidence",
+                (
+                    "verified P14 base occurrence is not linked to the "
+                    "Research obligation Evidence"
+                ),
             )
 
         existing = self._materials.for_execution_link(link.id)
@@ -323,12 +333,89 @@ class NativeResearchExploration:
                 "native exploration did not consume exact captured query A",
             )
         return self._materials.persist(
-            session_id=session_id,
-            obligation_id=obligation_id,
+            session_id=session.session_id,
+            obligation_id=link.obligation_id,
             execution_link_id=link.id,
             native_conversation_id=link.native_conversation_id,
             native_query_id=link.native_query_id,
             query_fingerprint=fingerprint,
             source_evidence_refs=(link.evidence_id,),
             material=observation.payload,
+        )
+
+    def explore(
+        self,
+        *,
+        session_id: str,
+        obligation_id: str,
+        principal: Principal,
+        native_session_token: str | None,
+    ) -> ResearchLead:
+        session = self._research.load(
+            session_id,
+            tenant=self._tenant(principal),
+            principal=str(principal.user_id),
+        )
+        obligation = ResearchManager.obligation(session, obligation_id)
+        if obligation.state != ObligationState.VERIFIED:
+            raise ResearchExplorationError(
+                "P15_VERIFIED_RESEARCH_OBLIGATION_REQUIRED",
+                "P15 exploration consumes a VERIFIED P14 Research obligation",
+            )
+        try:
+            link = self._research.verified_link(
+                session_id=session_id,
+                obligation_id=obligation_id,
+            )
+        except ResearchPersistenceError as exc:
+            raise ResearchExplorationError(exc.code, exc.detail) from exc
+        if link.execution_kind != "P14_BASE":
+            raise ResearchExplorationError(
+                "P15_BASE_OCCURRENCE_KIND_INVALID",
+                "sealed P15 base lookup resolved a non-base occurrence",
+            )
+        return self._explore_verified_link(
+            session=session,
+            link=link,
+            principal=principal,
+            native_session_token=native_session_token,
+            require_base_evidence_membership=True,
+        )
+
+    def explore_followup(
+        self,
+        *,
+        session_id: str,
+        execution_link_id: uuid.UUID,
+        principal: Principal,
+        native_session_token: str | None,
+    ) -> ResearchLead:
+        """Explore one explicit P17 follow-up without changing P15 base lookup."""
+
+        session = self._research.load(
+            session_id,
+            tenant=self._tenant(principal),
+            principal=str(principal.user_id),
+        )
+        link = self._research.execution_link(execution_link_id)
+        if link.session_id != session.session_id:
+            raise ResearchExplorationError(
+                "P15_FOLLOWUP_SESSION_MISMATCH",
+                "follow-up occurrence belongs to another Research session",
+            )
+        if (
+            link.execution_kind != "P17_FOLLOWUP"
+            or not link.reasoning_step_id
+            or not link.investigation_task_id
+        ):
+            raise ResearchExplorationError(
+                "P15_FOLLOWUP_LINEAGE_INVALID",
+                "P17 follow-up must carry reasoning/task identity",
+            )
+        return self._explore_verified_link(
+            session=session,
+            link=link,
+            principal=principal,
+            native_session_token=native_session_token,
+            require_base_evidence_membership=False,
         )
