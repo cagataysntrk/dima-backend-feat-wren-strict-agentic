@@ -16,6 +16,7 @@ from app.v2.research_tools import (
 )
 from control_plane.authorize import Principal
 from lab import v2_day10_ns4_provider_free_rehearsal as ns4
+from helpers.manager_action_set_adapter import adapt_legacy_manager_intent
 from lab.v2_day10_ns4_provider_free_rehearsal import (
     run_canonical_relationship_topology_rehearsal,
     run_rehearsal,
@@ -190,7 +191,7 @@ class _Run4AvailabilityManager(ns4.ScriptedNS4Manager):
         self.action_snapshots = []
 
     def structured_json(self, system, user, *, schema, schema_name):
-        if schema_name != "dima_research_manager_action_v1":
+        if schema_name != "dima_research_manager_action_v2":
             return super().structured_json(
                 system,
                 user,
@@ -201,7 +202,12 @@ class _Run4AvailabilityManager(ns4.ScriptedNS4Manager):
         payload = json.loads(user)
         self.manager_prompts.append(payload)
         self.research_calls += 1
-        actions = _schema_property_enum(schema, "action")
+        cards = (
+            (payload.get("MANAGER_ACTION_SET") or {}).get(
+                "action_instances"
+            ) or []
+        )
+        actions = {item.get("action") for item in cards}
         self.action_snapshots.append(actions)
 
         delta = payload["CURRENT_RESULT_DELTA"]
@@ -220,19 +226,18 @@ class _Run4AvailabilityManager(ns4.ScriptedNS4Manager):
         ]
         assert len(department) == 1, inventory
 
-        # These are the exact two redundant run-#4 choices. Current fresh Evidence
-        # must be impossible to target for inspection. The action itself may remain when
-        # some older undisclosed VERIFIED Evidence is legitimately inspectable.
-        inspect_refs = _schema_property_enum(schema, "evidence_ref")
-        assert delta["evidence_ref"] not in inspect_refs
-        # D10-S parent-scoped availability may keep AGENT_DERIVED semantics for
-        # unrelated evidence-grounded obligations. The exact run-4 bug is that the
-        # already-satisfied ROOT parent must not be an eligible semantic parent.
-        semantic_parents = _schema_property_enum(
-            schema,
-            "semantic_parent_obligation_id",
+        # Canonical server identities are not model/provider fields anymore.
+        # The fresh disclosed Evidence is therefore impossible to echo as an inspect
+        # target, and already-satisfied ROOT semantic expansion is absent by bounded
+        # capability context rather than by a second ID enum.
+        encoded_cards = json.dumps(cards, sort_keys=True)
+        assert delta["evidence_ref"] not in encoded_cards
+        assert all(
+            (item.get("context") or {}).get("parent_capability")
+            != "root_cause"
+            for item in cards
+            if item.get("action") == "resolve_semantics"
         )
-        assert "U_ROOT" not in semantic_parents
 
         ledger = {
             item["obligation_id"]: item
@@ -245,33 +250,39 @@ class _Run4AvailabilityManager(ns4.ScriptedNS4Manager):
             assert ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value in actions
             self.root_trigger_evidence_ref = delta["evidence_ref"]
             self.actions.append("propose_hypothesis_with_next_test")
-            return {
-                "action": "propose_hypothesis_with_next_test",
-                "hypothesis_parent_obligation_id": "U_ROOT",
-                "hypothesis_statement": (
-                    "Provider-free run-4 replay hypothesis contains %27 but report must not."
-                ),
-                "hypothesis_semantic_handles": [root_handle],
-                "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
-                "hypothesis_limitations": [],
-                "next_test_task_kind": "QUERY",
-                "next_test_input_handles": [root_handle],
-                "next_test_trigger_evidence_ref": delta["evidence_ref"],
-                "next_test_material_reason": (
-                    "Use current governed root identity for one material next test."
-                ),
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_with_next_test",
+                    "hypothesis_parent_obligation_id": "U_ROOT",
+                    "hypothesis_statement": (
+                        "Provider-free run-4 replay hypothesis contains %27 but report must not."
+                    ),
+                    "hypothesis_semantic_handles": [root_handle],
+                    "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
+                    "hypothesis_limitations": [],
+                    "next_test_task_kind": "QUERY",
+                    "next_test_input_handles": [root_handle],
+                    "next_test_trigger_evidence_ref": delta["evidence_ref"],
+                    "next_test_material_reason": (
+                        "Use current governed root identity for one material next test."
+                    ),
+                },
+            )
 
         assert ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value not in actions
         assert ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value in actions
         hypothesis = hypotheses[0]
         self.actions.append("propose_hypothesis_evidence_relation")
-        return {
-            "action": "propose_hypothesis_evidence_relation",
-            "hypothesis_ref": hypothesis["hypothesis_id"],
-            "hypothesis_relation_evidence_ref": delta["evidence_ref"],
-            "hypothesis_relation": "SUPPORTS",
-        }
+        return adapt_legacy_manager_intent(
+            payload,
+            {
+                "action": "propose_hypothesis_evidence_relation",
+                "hypothesis_ref": hypothesis["hypothesis_id"],
+                "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+                "hypothesis_relation": "SUPPORTS",
+            },
+        )
 
 
 def test_run4_failure_family_bad_actions_are_absent_and_governed_root_path_completes():
@@ -328,14 +339,17 @@ class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
         ):
             self.manager_prompts.append(payload)
             self.actions.append("request_clarification")
-            return {
-                "action": "request_clarification",
-                "obligation_ids": ["U_ROOT"],
-                "clarification_reason": (
-                    "The governed adaptive relationship branch is blocked; "
-                    "no successful analytical branch result exists."
-                ),
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "request_clarification",
+                    "obligation_ids": ["U_ROOT"],
+                    "clarification_reason": (
+                        "The governed adaptive relationship branch is blocked; "
+                        "no successful analytical branch result exists."
+                    ),
+                },
+            )
 
         if self.manager_prompts:
             return super().structured_json(
@@ -359,40 +373,47 @@ class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
         assert delta is not None and delta["verified"] is True
         self.root_trigger_evidence_ref = delta["evidence_ref"]
 
-        snapshot = (
-            (payload.get("ACTION_AVAILABILITY") or {})
-            .get("applicability_snapshot")
-            or {}
+        cards = (
+            (payload.get("MANAGER_ACTION_SET") or {}).get(
+                "action_instances"
+            ) or []
         )
-        root_branch_scopes = [
+        root_branch_cards = [
             item
-            for item in snapshot.get("scopes", [])
+            for item in cards
             if item.get("action") == "propose_branches"
-            and item.get("parent_obligation_id") == "U_ROOT"
+            and (item.get("context") or {}).get("parent_capability")
+            == "root_cause"
         ]
-        assert root_branch_scopes, snapshot
+        assert root_branch_cards, cards
         assert all(
-            department_handle not in tuple(item.get("eligible_handle_refs") or ())
-            for item in root_branch_scopes
-        ), root_branch_scopes
-        assert all(
-            root_handle in tuple(item.get("eligible_handle_refs") or ())
-            for item in root_branch_scopes
-        ), root_branch_scopes
+            "relationship"
+            not in set(
+                (item.get("context") or {}).get(
+                    "capability_choices"
+                ) or ()
+            )
+            for item in root_branch_cards
+        ), root_branch_cards
+        encoded_cards = json.dumps(root_branch_cards, sort_keys=True)
+        assert department_handle not in encoded_cards
+        assert root_handle not in encoded_cards
 
         # The old test deliberately mixed U_ROOT with a U_REL handle and expected a
         # late runtime block. Correlated applicability now removes that illegal
         # identity join before cognition, so the scripted manager takes a legal
         # fail-closed clarification path instead.
         self.actions.append("request_clarification")
-        return {
-            "action": "request_clarification",
-            "obligation_ids": ["U_ROOT"],
-            "clarification_reason": (
-                "No current U_ROOT applicability scope admits the sibling "
-                "relationship dimension."
-            ),
-        }
+        return adapt_legacy_manager_intent(
+            payload,
+            {
+                "action": "request_clarification",
+                "obligation_ids": ["U_ROOT"],
+                "clarification_reason": (
+                    "No current ROOT action admits the sibling relationship dimension."
+                ),
+            },
+        )
 
 
 def test_cross_parent_relationship_branch_is_absent_before_cognition_and_never_applies_directive(
