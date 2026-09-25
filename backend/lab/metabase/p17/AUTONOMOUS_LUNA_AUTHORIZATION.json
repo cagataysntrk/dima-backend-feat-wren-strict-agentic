@@ -1,0 +1,13 @@
+{
+  "schema_version": "dmp_dec_0050_autonomous_luna_authorization_v1",
+  "decision": "DMP-DEC-0050",
+  "branch": "feat/dima-metabase-platform",
+  "candidate_sha": "adb12dcd166eac27859533b12c7f9ebcead19402",
+  "provider_free_run_id": 36136988379,
+  "governance_run_id": 36137211105,
+  "max_paid_runs_after_dmp_0050": 1,
+  "sol_calls": 0,
+  "engine_builds": 0,
+  "c1_calls": 0,
+  "purpose": "one trajectory-invariant autonomous P17 Luna cognition canary"
+}

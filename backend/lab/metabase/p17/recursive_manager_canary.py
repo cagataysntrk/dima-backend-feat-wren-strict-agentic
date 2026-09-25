@@ -64,3 +64,5 @@ def _verify_one_shot_authorization() -> None:
 if __name__ == "__main__":
     _verify_one_shot_authorization()
     runpy.run_path(str(AUTONOMOUS), run_name="__main__")
+
+# DMP-DEC-0050 one-shot transport marker: autonomous-luna-001
