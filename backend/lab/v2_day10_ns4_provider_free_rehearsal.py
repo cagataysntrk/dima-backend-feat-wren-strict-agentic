@@ -543,8 +543,13 @@ class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
             if inventory[ref]["target_kind"] == "dimension"
         )
         root_handle = ledger["U_ROOT"]["semantic_handle_refs"][0]
-        rel_evidence_ref = ledger["U_REL"]["evidence_refs"][0]
-        root_evidence_ref = ledger["U_ROOT"]["evidence_refs"][0]
+        rel_evidence_refs = tuple(ledger["U_REL"]["evidence_refs"])
+        assert rel_evidence_refs, ledger["U_REL"]
+        rel_evidence_ref = rel_evidence_refs[0]
+        current_delta = payload["CURRENT_RESULT_DELTA"]
+        assert current_delta is not None and current_delta["verified"] is True
+        assert "U_ROOT" in tuple(current_delta.get("obligation_ids") or ()), current_delta
+        root_evidence_ref = current_delta["evidence_ref"]
         accumulated = payload["ACCUMULATED_RESEARCH_STATE"] or {}
         inspected = set(accumulated.get("inspected_evidence_refs") or ())
         dispositions = {
