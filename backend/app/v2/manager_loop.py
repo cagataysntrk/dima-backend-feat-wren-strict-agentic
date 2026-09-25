@@ -1412,6 +1412,22 @@ class ResearchManagerLoop:
                 if owner is not None:
                     ranking_direction = owner.ranking_direction
                     ranking_limit = owner.ranking_limit
+            task_semantic_refs = tuple(
+                semantic_ref(handle_id)
+                for handle_id in task.input_refs
+            )
+            source_context: list[str] = []
+            by_alias = {
+                str(row.get("handle_ref")): row
+                for row in governed_semantic_inventory
+                if row.get("handle_ref")
+            }
+            for semantic in task_semantic_refs:
+                row = by_alias.get(semantic.ref) or {}
+                for surface in row.get("source_surfaces") or ():
+                    value = str(surface).strip()
+                    if value and value not in source_context:
+                        source_context.append(value)
             ready_task_states.append(
                 TaskActionState(
                     task_id=task.task_id,
@@ -1419,14 +1435,12 @@ class ResearchManagerLoop:
                     task_kind=task.task_kind,
                     capability_key=capability.value,
                     origin=task.origin,
-                    semantic_refs=tuple(
-                        semantic_ref(handle_id)
-                        for handle_id in task.input_refs
-                    ),
+                    semantic_refs=task_semantic_refs,
                     parent_obligation_id=task.parent_obligation_id,
                     trigger_evidence_ref=task.trigger_evidence_ref,
                     ranking_direction=ranking_direction,
                     ranking_limit=ranking_limit,
+                    semantic_context=tuple(source_context),
                 )
             )
 
