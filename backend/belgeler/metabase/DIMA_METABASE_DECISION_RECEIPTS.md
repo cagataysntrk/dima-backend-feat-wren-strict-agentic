@@ -4389,3 +4389,50 @@ If that run reaches the same strict-schema owner/invariant and REDs, the same fa
 provider-free proof. If the strict-schema boundary succeeds and a materially different owner/invariant
 fails, the new failure family starts at 1 / 3. Immediate architecture STOP conditions override all
 remaining family attempts.
+
+
+### DMP-DEC-0052 provider-free family seal — GREEN
+
+date: 2026-09-25
+
+```text
+sealed lower/core behavior checkpoint = d1bc5291b315ff19c3456d08ff1820e983d85942
+current P17 provider candidate         = f940a9731be98212b47b44391e28080648c00629
+family-aware seal candidate            = c50f3e8a08e35d0846eb5e06432e45fd47e3082e
+
+provider-free                          = 36147150264 SUCCESS
+governance                             = 36147150224 SUCCESS
+
+family-aware exact-Git authorization  = 26 PASS
+structured-schema regression           = 3 PASS
+trajectory-invariant evaluator         = 7 PASS
+P17 reasoning                          = 31 PASS
+P16 claim lineage                      = 6 PASS
+P15 native Exploration                 = 5 PASS
+P14 native-direct                      = 17 PASS
+
+engine changes/builds                  = 0 / 0
+Sol                                    = 0
+C1                                     = 0
+```
+
+Current failure-family accounting:
+
+```text
+previous family = p17-cert-auth-transport
+attempt         = 1 / 3
+status          = CLOSED
+
+current family  = p17-manager-structured-schema
+authoritative RED = 36140130559
+attempt         = 1 / 3
+status          = ROOT-FIXED PROVIDER-FREE / LIVE RECHECK PENDING
+
+next live authorization
+= p17-manager-structured-schema / attempt 2
+```
+
+Exactly one corrected autonomous Luna certification is authorized under DMP-DEC-0052 after an
+append-only V2 receipt is added. The receipt must identify
+`failure_family_id=p17-manager-structured-schema` and `attempt_in_family=2`; commit-message
+markers can trigger the workflow but cannot establish authorization truth.
