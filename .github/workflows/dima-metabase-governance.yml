@@ -431,6 +431,8 @@ jobs:
               "attest_native_query",
               "execute_native_query",
               "wren_service",
+              "NativeResourceBinding",
+              "relationships.yml",
           ):
               assert symbol not in source, symbol
 
