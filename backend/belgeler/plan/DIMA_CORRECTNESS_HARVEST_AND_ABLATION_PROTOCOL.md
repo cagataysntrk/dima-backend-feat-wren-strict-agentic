@@ -1,5 +1,38 @@
 # DIMA — CORRECTNESS HARVEST & ORCHESTRATION ABLATION PROTOCOL
 
+## LATEST AUTHORITY — DAY8 SEALED / CERTIFICATION ORACLE GREEN / DAY10 CORRECTED TWO-TURN MEASUREMENT AUTHORIZED
+
+```text
+branch                          feat/ask-v2-mvp
+Product behavior                999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+backend/app/** diff              ZERO
+
+Day8 FINAL                      SEALED
+Day10 FINAL                     OPEN
+certification oracle            GREEN
+
+old run 36135227087             historical RED / EVAL-HARNESS-FIXTURE
+
+PAID_EPOCH_1                    26 / 40 historical CLOSED
+PAID_EPOCH_2                    0 / 40 fresh
+PAID_EPOCH_2 remaining          40 / 40
+
+next authorized measurement     ONE corrected CANONICAL_NS4 full two-turn run
+per-run hard maximum            20 provider calls
+
+ManagerBudget                   4 / 4 / 8 RATIFIED / UNCHANGED
+provider topology               UNCHANGED
+
+Day11                           NOT AUTHORIZED
+DEV80                           NOT AUTHORIZED
+Validation50                    NOT AUTHORIZED
+Hidden50                        NOT AUTHORIZED
+```
+
+Current-authority rule: the block above is the physically discoverable current state.
+Historical receipts below remain immutable audit history and do not override it.
+
+
 **Status:** ACTIVE DAY7 portability / comparative-evidence authority  
 **Branch:** `feat/ask-v2-mvp`  
 **Created after:** D7-SEED-SET root-fix GREEN  
