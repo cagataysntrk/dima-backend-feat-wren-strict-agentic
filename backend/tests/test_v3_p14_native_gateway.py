@@ -495,3 +495,41 @@ def test_p14_native_direct_transport_correctness_frozen_oracle_sentinel():
         ["Web", 27],
     ]
     assert channel_counts(rows) == FROZEN_BOYAHANE_CHANNEL_COUNTS
+
+
+def test_execution_started_unknown_outcome_never_blind_retries_dataset():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    store.mark_execution_started(
+        link.id,
+        native_subject_ref="metabase-user:7",
+    )
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    bridge = MaterialBridge(fail_on_execute=True)
+
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+
+    assert exc.value.code == "P14_NATIVE_EXECUTION_OUTCOME_UNKNOWN"
+    assert bridge.calls == []
+    assert store.execution_link(link.id).status == "EXECUTION_STARTED"

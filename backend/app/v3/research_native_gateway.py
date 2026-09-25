@@ -249,6 +249,15 @@ class NativeResearchMaterialExecutor:
                 "execution link belongs to another Research obligation",
             )
 
+        if link.status == "EXECUTION_STARTED":
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_EXECUTION_OUTCOME_UNKNOWN",
+                (
+                    "native execution was durably started but no result was persisted; "
+                    "blind retry is forbidden"
+                ),
+            )
+
         if link.status == "EXECUTED":
             (
                 result_payload,
@@ -273,6 +282,15 @@ class NativeResearchMaterialExecutor:
                 )
             runtime = RuntimeIdentity.model_validate(runtime_payload)
         else:
+            if link.status != "CANDIDATE_CAPTURED":
+                raise ResearchMaterialLimitation(
+                    "P14_NATIVE_EXECUTION_STATE_INVALID",
+                    f"native execution cannot start from {link.status}",
+                )
+            self._store.mark_execution_started(
+                execution_link_id,
+                native_subject_ref=native_subject_ref,
+            )
             try:
                 observed = bridge.execute_dataset(native_query)
             except NativeDatasetExecutionError as exc:

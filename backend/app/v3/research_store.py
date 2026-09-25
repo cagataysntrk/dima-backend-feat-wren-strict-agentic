@@ -237,7 +237,12 @@ class ResearchSessionStore:
                 .where(ResearchExecutionLink.obligation_id == obligation_id)
                 .where(
                     ResearchExecutionLink.status.in_(
-                        ("DELEGATED", "CANDIDATE_CAPTURED", "EXECUTED")
+                        (
+                            "DELEGATED",
+                            "CANDIDATE_CAPTURED",
+                            "EXECUTION_STARTED",
+                            "EXECUTED",
+                        )
                     )
                 )
                 .order_by(ResearchExecutionLink.created_at.desc())
@@ -317,6 +322,34 @@ class ResearchSessionStore:
                 "persisted native query payload changed after capture",
             )
         return query, observed
+
+    def mark_execution_started(
+        self,
+        link_id: uuid.UUID,
+        *,
+        native_subject_ref: str,
+    ) -> ResearchExecutionLink:
+        """Durably cross the no-blind-retry boundary before native execution.
+
+        Once this state is persisted, a process loss leaves an unknown remote outcome.
+        Resume must limit/recover explicitly rather than submit the same query again.
+        """
+        link = self.execution_link(link_id)
+        if link.status != "CANDIDATE_CAPTURED":
+            raise ResearchPersistenceError(
+                "P14_NATIVE_EXECUTION_START_STATE_INVALID",
+                f"cannot start native execution from {link.status}",
+            )
+        if not native_subject_ref.strip():
+            raise ResearchPersistenceError(
+                "P14_NATIVE_SUBJECT_REQUIRED",
+                "native execution start requires the exact correlated subject",
+            )
+        return self._update_link(
+            link_id,
+            native_subject_ref=native_subject_ref,
+            status="EXECUTION_STARTED",
+        )
 
     def mark_executed(
         self,
