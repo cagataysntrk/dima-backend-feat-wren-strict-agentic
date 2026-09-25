@@ -3901,3 +3901,30 @@ that is an explicit architecture decision and remains STOPPED until supervisor a
 
 status:
 `RETURN POINT B / P14 PRODUCTION NATIVE RUNTIME NOT GREEN / P15 NOT STARTED`.
+---
+
+## Follow-up to DMP-P14-RUNTIME-STOP-001 — DMP-DEC-0047 reclassification
+
+The original STOP remains valid historical evidence: the developer correctly refused to invent an
+admin session, identity broker, temporal parser or fixture-backed production binding.
+
+Subsequent architecture review reclassifies its three listed blockers:
+
+```text
+principal/native subject-session owner
+→ REMAINS OPEN / REAL DEPLOYMENT SEAM
+
+current engine-resource/security binding provider
+→ REMAINS OPEN / REAL DEPLOYMENT SEAM
+
+absolute named-month exact P13 temporal authority
+→ REMOVED AS GENERIC P14 RUNTIME BLOCKER
+```
+
+The temporal reclassification follows the current ownership rule that Metabase/Metabot own native
+temporal/query analytical semantics while Dima owns Research objective, product business policy and
+claim-lineage Evidence.
+
+Do not delete or rewrite DMP-P14-RUNTIME-STOP-001. This follow-up records why one part of that STOP is
+no longer forward implementation authority.
+

@@ -3102,3 +3102,36 @@ P15                                  = NOT STARTED
 This is a genuine supervisor Return Point B. Do not run the P14 provider-free seal or a Luna canary
 until an existing production owner is identified/authorized for the missing identity/security/binding
 boundary and the accepted temporal authority can reach P13 without reinterpretation.
+---
+
+## 2026-09-25 — P14 runtime STOP reclassified by DMP-DEC-0047
+
+Audit of `abc7bff31e46047cc81b89dbccf99bbf459a26de`, DMP-DEC-0044/current product ownership,
+the external architecture analysis and read-only `feat/ask-v2-mvp` patterns found that the previous
+P14 runtime STOP bundled one obsolete P13-era requirement with two real deployment seams.
+
+Reclassification:
+
+```text
+accepted named-month → exact P13 ResolvedPeriod before Research
+= NOT A GENERIC P14 BLOCKER
+
+Dima Principal → exact Metabase subject/session
+= REAL THIN DEPLOYMENT SEAM
+
+Dima concept/context → current Metabase resource/security binding
+= REAL THIN DEPLOYMENT SEAM
+```
+
+Metabase/Metabot own ordinary temporal/query analytical semantics. P14 must not create a shadow
+temporal planner or compile each Research obligation back into full P13 operator semantics.
+
+Ask-v2 remains reference only. Its useful patterns are principal pass-through and durable/idempotent
+Research lifecycle; its Wren-specific planner/cube/temporal ownership is not imported.
+
+Current next action:
+implement the two thin production providers and bind the existing P14 Research material flow to native
+Metabot/exact-occurrence/P5 Evidence without a second analytics/security/temporal authority.
+
+P15 remains NOT STARTED until one real P14 production runtime/canary boundary exists.
+

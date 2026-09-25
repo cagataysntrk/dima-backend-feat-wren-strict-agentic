@@ -2820,3 +2820,154 @@ status:
 
 Next phase:
 `P15 NATIVE METABASE EXPLORATIONS INTEGRATION` is next and is not started by this decision receipt.
+---
+
+## DMP-DEC-0047 — Thin Native Analytics Gateway; P14 temporal-gate reclassification
+
+date: 2026-09-25
+
+context:
+DMP-P14-RUNTIME-STOP-001 correctly stopped production wiring rather than inventing a shared admin
+session, a second security authority, fixture-backed production truth or a new temporal parser.
+A follow-up architecture audit compared that STOP against DMP-DEC-0044/current product ownership and
+the read-only `feat/ask-v2-mvp` patterns.
+
+The earlier STOP mixed one obsolete P13-era requirement with two real deployment seams.
+
+### Decision
+
+```text
+METABASE + METABOT
+= analytical definition / temporal-query semantics / query cognition / execution owner
+
+DIMA
+= business ontology + exact engine-resource mapping
++ product principal/policy binding
++ Research / claim-lineage Evidence / Findings / Decision / Action / Memory
+```
+
+P13 remains a sealed trust/provenance baseline. P14 MUST NOT recreate full
+`ResolvedAnalyticsIntent` / operator-by-operator analytical authority for every Research obligation.
+
+### Reclassified blocker — absolute named-month temporal authority
+
+The requirement:
+
+```text
+Research "Haziran 2026"
+→ Dima must independently mint exact ResolvedPeriod bounds
+→ only then native Research may execute
+```
+
+is REMOVED as a generic P14 production-runtime prerequisite.
+
+Reason:
+- DMP-DEC-0044 already assigns native temporal/query mechanics to Metabase/Metabot;
+- forcing Research to create a second absolute-month temporal owner would restart P13 operator
+  generalization and create a shadow analytical engine;
+- accepted Research context still preserves the user's temporal surface/objective for lineage;
+- native Metabot may interpret that temporal analytical request using its native cognition;
+- Dima records the actual engine resource, executed native occurrence, observed scope/result,
+  principal, receipt and Evidence lineage;
+- explicit company/sector fiscal-calendar policy or unresolved material business ambiguity remains
+  Dima-owned and must fail closed when genuinely material.
+
+Therefore P14 must NOT add a generic absolute-month parser, second temporal planner or old-prompt
+reparse merely to satisfy P13's historical Standard shape.
+
+### Real deployment seam 1 — principal to native subject/session
+
+A production binding is still required between:
+
+```text
+authenticated Dima Principal
+→ exact effective Metabase native subject/session
+```
+
+This is a thin integration/provider seam, NOT a new identity authority.
+
+It may:
+- resolve an already-configured/native Metabase user/session for the authenticated Dima principal;
+- carry tenant/principal correlation and expected native subject identity;
+- use native Metabase authentication/session/SSO mechanisms.
+
+It may NOT:
+- decide data permissions independently of Metabase/DB;
+- invent a Dima RLS engine;
+- use shared admin/global analytical sessions;
+- silently downgrade to a service user;
+- create a second product authentication authority.
+
+Before implementation, inspect pinned Metabase authentication/session surfaces and existing product
+deployment configuration. Prefer pass-through/native session binding over a custom identity broker.
+
+### Real deployment seam 2 — business concept/resource binding
+
+Production Research still needs a truthful mapping:
+
+```text
+Dima business concept/context
+→ exact current Metabase Metric / Model / field / resource identity
+```
+
+This must reuse existing P9/P10/P13 persisted contracts and current native resource facts where
+available. It must NOT duplicate Metabase analytical formulas or promote Boyahane lab fixtures as
+production truth.
+
+`DimaSemanticSpec` remains a sealed compatibility asset, but new native work treats it as business
+ontology / engine-resource mapping rather than a second analytical-definition store.
+
+### Research execution contract after this decision
+
+```text
+accepted Research obligation
+→ native Metabot conversation/session
+→ native analytical cognition
+→ exact native material occurrence
+→ thin Native Analytics Gateway checks:
+     principal/native-subject correlation
+     exact engine-resource mapping when materially required
+     exact occurrence/runtime identity
+     unresolved material business-policy ambiguity
+→ native Metabase execution
+→ existing P5 QueryReceipt
+→ claim-lineage Evidence
+→ Research state
+```
+
+The gateway does NOT interpret every filter/order/breakout/temporal primitive.
+
+`VERIFIED` Evidence proves claim lineage, principal/resource/runtime provenance and absence of
+unresolved material business ambiguity. It does not mean Dima independently reimplemented and
+reproved every internal Metabase operator.
+
+### Ask-v2 reference policy
+
+`feat/ask-v2-mvp` remains READ ONLY.
+
+Useful patterns that may be adopted conceptually:
+- principal is passed through to substrate execution rather than replaced by a second identity owner;
+- Research task/obligation lifecycle is durable and idempotent;
+- failure is obligation-scoped and independent work may continue;
+- accepted typed context is persisted rather than reconstructed on resume.
+
+Do NOT import:
+- Wren cube/planner semantics;
+- Wren-specific SQL/query contracts;
+- legacy temporal ownership merely because that branch contains a temporal subsystem;
+- any second analytical planner.
+
+### P14/P15 gate
+
+P14 production runtime is now blocked only on the real native-subject/session and current
+engine-resource/security binding seams. Absolute named-month P13 authority is not a generic blocker.
+
+After those thin seams are provider-free GREEN, run one bounded real native Research canary if it can
+change a product decision. P15 remains gated until that P14 runtime/canary boundary is real.
+
+No engine change, dima.7, P13 reopening, Luna/Sol/C1 run or native-core patch is authorized by this
+decision.
+
+status:
+`SEALED / P14 THIN NATIVE GATEWAY AUTHORIZED / TEMPORAL SHADOW-AUTHORITY BLOCKER REMOVED`.
+

@@ -511,3 +511,100 @@ semantic, security or receipt authority, return to supervisor before implementat
 
 No P14 provider-free seal was run after these partial runtime changes; only governance is GREEN.
 No Luna/Sol/C1/live canary was run.
+---
+
+# 2026-09-25 — CURRENT TAKEOVER OVERRIDE — DMP-DEC-0047
+
+This section supersedes the temporal part of the previous `DMP-P14-RUNTIME-STOP-001` handoff.
+
+Current Platform checkpoint before this docs decision:
+
+```text
+abc7bff31e46047cc81b89dbccf99bbf459a26de
+```
+
+Engine remains:
+
+```text
+cbe313af9ac2d5960f662068e433d328d896fb06
+0.63.18-dima.6
+36042062775 SUCCESS
+sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+```
+
+Do not restart P13. Do not repair P13D comparison now.
+
+P14 accepted-context durability is already implemented:
+- exact accepted `ResearchBrief` persists in the Research checkpoint;
+- resolver-proven refs survive resume;
+- ranking/comparison typed payloads participate in authority identity;
+- no old-prompt reparse.
+
+## Important reclassification
+
+Ordinary named-month temporal language is NO LONGER a generic P14 production blocker.
+
+Do NOT create:
+- absolute-month parser;
+- second temporal planner;
+- P13 `ResolvedPeriod` compiler for every Research task.
+
+Metabase/Metabot own native temporal analytical mechanics. Dima preserves the accepted Research
+objective and later records the exact executed scope/result in claim-lineage Evidence.
+
+## Actual work now
+
+Build only these two production seams:
+
+```text
+A. NativeSubjectSessionProvider
+   Dima Principal
+   → exact native Metabase subject/session
+
+B. NativeResourceBindingProvider
+   Dima business concept/context
+   → exact current Metabase resource identity/version/security lens
+```
+
+Names are conceptual; reuse existing code/contracts if an owner already exists.
+
+Neither provider is allowed to become a new authority.
+
+A must reuse native Metabase authentication/session/security and never use shared admin/service-user
+analytical fallback.
+
+B must reuse P9/P10/P13/current native facts and must not duplicate Metric/Model formulas or hard-code
+Boyahane fixtures.
+
+Then wire existing P14 `ResearchMaterialExecutor` through the thin native gateway:
+
+```text
+Research obligation
+→ native Metabot
+→ exact occurrence
+→ material principal/resource/runtime checks
+→ native execution
+→ P5 QueryReceipt
+→ Evidence
+→ Research state
+```
+
+Do not force each Research task back through a full operator-by-operator P13 semantic interpreter.
+
+`feat/ask-v2-mvp` is READ ONLY and may be inspected only for patterns:
+principal pass-through, durable/idempotent task lifecycle, obligation-scoped failure and resume.
+Do not copy Wren planner/cube/SQL/temporal ownership.
+
+Default budgets until those seams are GREEN:
+
+```text
+engine build = 0
+Luna         = 0
+Sol          = 0
+C1           = 0
+```
+
+Return after:
+- the thin native production gateway + real Research material flow is provider-free GREEN; or
+- a genuine native auth/resource-binding architectural STOP.
+

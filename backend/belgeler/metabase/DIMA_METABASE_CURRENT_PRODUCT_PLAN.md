@@ -523,3 +523,74 @@ P15                           = NOT STARTED
 
 Do not add a new identity broker, temporal parser/planner, security issuer or fixture-backed
 production truth to make the gate pass.
+---
+
+## 20. 2026-09-25 — P14 thin native gateway correction (DMP-DEC-0047)
+
+DMP-DEC-0047 supersedes the temporal portion of the prior production-runtime STOP.
+
+The current P14 rule is:
+
+```text
+Research does not compile every accepted analytical surface into a second P13 operator contract.
+
+Research preserves WHAT the user/company needs investigated.
+Metabot/Metabase own HOW native analytics interprets and executes ordinary analytical mechanics.
+Dima owns the thin material boundary around principal, engine-resource mapping, provenance,
+claim-lineage Evidence and product-level business policy.
+```
+
+### Removed generic gate
+
+An ordinary accepted surface such as `Haziran 2026` does not require Dima to create a second generic
+absolute-month temporal authority before Metabot may work.
+
+Do not build a new absolute-month parser/planner for P14. Do not reparse old prompts on resume.
+Company-specific fiscal calendars or other genuinely material business time policy remain Dima-owned.
+
+### Remaining real production seams
+
+1. **Native subject/session binding**
+
+```text
+Dima Principal → exact effective Metabase subject/session
+```
+
+Implement only as a thin provider around native Metabase auth/session capability. No shared admin,
+global service analytical user, duplicate RLS engine or new identity authority.
+
+2. **Current engine-resource/security binding**
+
+```text
+Dima business concept/context → exact current Metabase resource identity/version
+```
+
+Reuse P9/P10/P13 mappings/current native resource facts. Do not duplicate Metabase Metric/Model
+formulas and do not promote lab fixture mappings to production truth.
+
+### P14 material execution target
+
+```text
+Research obligation
+→ native Metabot
+→ exact native occurrence
+→ thin material gateway
+→ native execution
+→ P5 QueryReceipt
+→ claim-lineage Evidence
+→ Research state
+```
+
+P13 exact-occurrence/runtime/receipt lessons remain inherited. P13 operator-by-operator semantic
+generalization remains STOPPED.
+
+The next developer objective is to implement the two thin production providers above and wire the
+existing `ResearchMaterialExecutor` to the native occurrence path without reconstructing a full
+analytical planner or temporal interpreter.
+
+Reference-only `feat/ask-v2-mvp` may be inspected for principal pass-through, idempotent Research
+task lifecycle and durable obligation patterns. No merge/cherry-pick and no Wren planner/temporal
+ownership import.
+
+P15 remains after one real P14 native runtime/canary boundary.
+
