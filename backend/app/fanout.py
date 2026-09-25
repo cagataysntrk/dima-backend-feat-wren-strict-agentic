@@ -331,7 +331,7 @@ def certify_wren_service(svc) -> dict:
 
 
 def refresh_wren_service_certificate(svc) -> tuple[Path, dict]:
-    """Atomically refresh the derived fanout artifact for one compiled Wren service."""
+    """Refresh the derived fanout artifact for one compiled Wren service."""
     certificate = certify_wren_service(svc)
     return yaz(svc.project_dir, certificate), certificate
 
