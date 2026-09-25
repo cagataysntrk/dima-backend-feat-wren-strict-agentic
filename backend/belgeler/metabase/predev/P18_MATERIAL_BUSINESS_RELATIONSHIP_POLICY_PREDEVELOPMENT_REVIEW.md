@@ -1,11 +1,11 @@
 # P18 — MATERIAL BUSINESS RELATIONSHIP POLICY PRE-DEVELOPMENT REVIEW
 
 **Date:** 2026-09-25  
-**Status:** **PRE-DEVELOPMENT REVIEW COMPLETE / IMPLEMENTATION NOT STARTED / IMPLEMENTATION NOT AUTHORIZED BY THIS HANDOFF**  
-**Forward authority:** DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0053  
+**Status:** **SEALED / DMP-DEC-0054 / P18 MINIMAL IMPLEMENTATION AUTHORIZED / PROVIDER-FREE ONLY**  
+**Forward authority:** DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0053 + DMP-DEC-0054  
 **Consumes:** P14 Evidence + P15 native Research material + P16 claim lineage + P17 sealed investigation state  
 **Engine change:** NOT AUTHORIZED / NOT REQUIRED BY DEFAULT  
-**Model/live run:** NOT AUTHORIZED / NOT REQUIRED BY DEFAULT  
+**Model/live run:** FORBIDDEN FOR P18 v1 — Luna/Sol/C1 = 0  
 **UI/UX:** NOT AUTHORIZED
 
 ## 1. Purpose
@@ -264,3 +264,51 @@ NEXT ACTION = SUPERVISOR AUTHORIZATION / IMPLEMENTATION DIRECTIVE
 ```
 
 No P18 production code, model, migration, engine change or UI change is part of this handoff.
+
+
+## DMP-DEC-0054 IMPLEMENTATION AUTHORIZATION ADDENDUM
+
+This addendum supersedes this review's previous implementation-not-authorized stop point.
+
+Authorized P18 v1 surface:
+
+```text
+backend/app/v3/business_relationship_policy.py
+backend/control_plane/models.py
+one Alembic migration
+backend/tests/test_v3_p18_business_relationship_policy.py
+.github/workflows/dima-metabase-p18-provider-free.yml
+governance/docs
+```
+
+Maximum durable P18 tables:
+
+```text
+business_relationship_policy
+business_relationship_policy_use
+```
+
+No requirement table, relationship node/edge graph, join-path registry, scoring table or policy rule
+DSL is authorized.
+
+The implementation must use exact deterministic canonical JSON identity, exact scope equality, ACTIVE
+versus RETIRED lifecycle, explicit sealed P16/P17 references, immutable/idempotent policy-use lineage
+and a thin downstream eligibility result.
+
+The implementation must not parse free text to discover relationship requirements and must not import
+native analytical execution, Wren, raw-SQL analytics, MBQL/query planning, P13 re-execution, Metabase
+join metadata or P19 causal/root-cause authority.
+
+Current authorized completion target:
+
+```text
+DMP-DEC-0054 recorded
+→ minimal two-table P18 vertical
+→ focused P18 provider-free GREEN
+→ P17/P16/P15/P14 regressions GREEN
+→ governance GREEN
+→ engine unchanged
+→ model calls 0
+→ P18 SEALED
+→ STOP before P19 implementation
+```

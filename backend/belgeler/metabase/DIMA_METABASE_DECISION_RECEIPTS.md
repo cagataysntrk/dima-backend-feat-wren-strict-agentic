@@ -4888,3 +4888,303 @@ UI / UX                                = FORBIDDEN UNTIL P21 SEALED
 
 This seals the P17 boundary without creating a deterministic planner, second analytical authority,
 second receipt family, P19 causal authority, engine fork, Wren/raw-SQL fallback or Python analytics.
+
+
+---
+
+## DMP-DEC-0054 — MINIMAL BUSINESS RELATIONSHIP POLICY AUTHORITY
+
+date: 2026-09-25
+
+status:
+`RATIFIED / P18 MINIMAL IMPLEMENTATION AUTHORIZED / PROVIDER-FREE ONLY / P19 BLOCKED`
+
+Current sealed input:
+
+```text
+branch                              = feat/dima-metabase-platform
+branch HEAD at authorization        = bb1dfeb449e51b49c0824c3d21686b180ca9b689
+sealed P17 product/code candidate   = 3664d3d706d70225323126cbc994b8c2c732aaf4
+P17 provider-free                   = 36158440330 SUCCESS
+P17 autonomous live                 = 36160559037 SUCCESS
+P17 final governance                = 36161654602 SUCCESS
+
+engine SHA                          = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                      = 0.63.18-dima.6
+engine digest                       = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+```
+
+Permanent ownership:
+
+```text
+METABASE + METABOT
+= native metadata
++ physical relationships / FK semantics
++ joins / join paths
++ query planning / repair
++ MBQL / Query Processor
++ permissions / execution
++ analytical cognition
+
+DIMA P18
+= MATERIAL BUSINESS INTERPRETATION POLICY
+```
+
+Permanent boundary:
+
+```text
+P18 BUSINESS RELATIONSHIP POLICY
+!=
+METABASE PHYSICAL RELATIONSHIP GRAPH
+
+P18 MAY GOVERN INTERPRETATION ELIGIBILITY.
+P18 MAY NOT GOVERN ANALYTICAL EXECUTION.
+```
+
+P18 v1 has exactly three conceptual surfaces:
+
+```text
+1 durable BusinessRelationshipPolicy authority
+1 durable BusinessRelationshipPolicyUse lineage
+1 transient RelationshipPolicyRequirement gate
+```
+
+No third P18 durable authority table is authorized.
+
+### BusinessRelationshipPolicy
+
+Minimum governed meaning:
+
+```text
+policy_id
+tenant_binding
+semantic_context_version
+policy_key
+source_business_ref
+target_business_ref
+business_relationship_statement
+applicability_scope_json
+applicability_scope_fingerprint
+policy_fingerprint
+provenance_ref
+approved_by_subject
+status = ACTIVE | RETIRED
+created_at
+retired_at
+```
+
+`policy_key` is an exact governed business-policy identifier. It is not a relationship ontology.
+P18 must not introduce HAS_MANY/BELONGS_TO/cardinality/join-type semantics.
+
+Absolutely forbidden in the P18 policy record:
+
+```text
+metabase_table_id
+metabase_field_id
+foreign_key_field_id
+source_column
+target_column
+join_condition
+join_type
+preferred_join
+join_path
+cardinality
+MBQL
+SQL
+```
+
+`source_business_ref` and `target_business_ref` are Dima business-context identities only.
+
+Policy lifecycle is deliberately minimal:
+
+```text
+ACTIVE
+RETIRED
+```
+
+Only ACTIVE may satisfy a required policy. No arbitrary TTL exists. Current applicability is exact
+authority identity: tenant + semantic context + exact canonical scope + policy fingerprint + ACTIVE.
+
+### RelationshipPolicyRequirement
+
+This is a transient typed input contract, never a database table.
+
+```text
+research_session_id
+obligation_id
+claim_id
+reasoning_step_id
+policy_key
+source_business_ref
+target_business_ref
+semantic_context_version
+applicability_scope
+required
+```
+
+P18 never discovers requirements from claim text or free prose. No LLM classifier, regex, fuzzy
+matching, morphology or embedding similarity is authorized. The caller supplies the explicit typed
+requirement; P18 validates and resolves it.
+
+Requirement validation references sealed authorities:
+
+```text
+ResearchSession
+ResearchClaimRecord
+ResearchReasoningStepRecord
+```
+
+and proves same session / obligation / tenant / semantic context without copying claim text, P17
+objective/topology, P14 Evidence payload or P15 native material into P18 records.
+
+### BusinessRelationshipPolicyUse
+
+One durable lineage owner represents both satisfied and blocked resolution:
+
+```text
+policy_use_id
+research_session_id
+obligation_id
+claim_id
+reasoning_step_id
+requirement_fingerprint
+policy_id nullable
+policy_fingerprint nullable
+resolution_status
+limitation_code nullable
+created_at
+```
+
+It is lineage only. It is not Evidence, not a DimaQueryReceipt and not a claim.
+
+Allowed first resolution states:
+
+```text
+NOT_REQUIRED
+SATISFIED
+BLOCKED_MISSING
+BLOCKED_RETIRED
+BLOCKED_TENANT
+BLOCKED_CONTEXT
+BLOCKED_SCOPE
+```
+
+No probabilistic relationship score exists.
+
+Exact resolver contract:
+
+```text
+typed requirement
+→ load sealed P16/P17 context
+→ validate tenant/context/obligation
+→ exact policy key/business refs
+→ exact scope + lifecycle
+→ persist one immutable policy-use lineage
+→ return thin eligibility decision
+```
+
+`required=false` returns NOT_REQUIRED without policy lookup. `required=true` requires exact ACTIVE
+same-tenant / same-context / same-key / same business refs / same-scope authority. Missing or invalid
+required policy fails closed and records explicit blocked lineage.
+
+Historical policy-use lineage is immutable. A policy retirement/context change creates a new
+resolution; old use never silently satisfies new authority.
+
+### Downstream result
+
+P18 returns only:
+
+```text
+required
+eligible
+resolution_status
+policy_use_id
+policy_id if satisfied
+limitation_code if blocked
+```
+
+P18 never mutates P16 claim epistemic state and never creates Evidence or a new receipt family.
+
+### Forbidden execution/dependencies
+
+P18 production code must have:
+
+```text
+NativeEngineBridge calls = 0
+/api/dataset calls       = 0
+Metabot calls            = 0
+analytical SQL           = 0
+MBQL generation          = 0
+Wren calls               = 0
+Agent API calls          = 0
+Dima analytical scoring  = 0
+P19 causal state writes  = 0
+```
+
+Persistence SQL generated by SQLModel for the two P18 records is allowed.
+
+`NativeResourceBinding` remains native-resource mapping and must not become P18 policy authority.
+Historical `relationships.yml` is not imported or treated as P18 production truth.
+
+### Fingerprints
+
+Policy fingerprint is deterministic canonical JSON over:
+
+```text
+tenant_binding
+semantic_context_version
+policy_key
+source_business_ref
+target_business_ref
+business_relationship_statement
+canonical applicability scope
+provenance_ref
+```
+
+Requirement fingerprint is deterministic canonical JSON over exact governed inputs:
+
+```text
+research authority/session
+obligation
+claim id
+reasoning step id
+policy key
+source/target business refs
+semantic context
+canonical scope
+required flag
+```
+
+No free-form model rationale participates.
+
+### Provider-free exit gate
+
+P18 closes only after:
+
+```text
+P18 focused GREEN
+P17 provider-free regression GREEN
+P16 claim-lineage GREEN
+P15 native Exploration GREEN
+P14 native-direct GREEN
+governance GREEN
+
+Luna = 0
+Sol = 0
+C1 = 0
+engine build = 0
+Metabase modification = 0
+```
+
+P17 Luna must not be rerun for P18.
+
+After P18 GREEN:
+
+```text
+P18 = SEALED
+P18 development = STOP
+P19 = PRE-DEVELOPMENT AUTHORIZATION REQUIRED
+```
+
+No P18B/P18C, relationship graph platform, policy DSL, ontology framework, UI/UX or P19 causal
+implementation is authorized by DMP-DEC-0054.

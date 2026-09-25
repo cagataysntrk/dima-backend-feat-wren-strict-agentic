@@ -1,5 +1,46 @@
 # DIMA + METABASE — LIVING STATUS
 
+## DMP-DEC-0054 — CURRENT P18 AUTHORITY
+
+```text
+branch                                = feat/dima-metabase-platform
+branch HEAD at authorization          = bb1dfeb449e51b49c0824c3d21686b180ca9b689
+sealed P17 product/code candidate     = 3664d3d706d70225323126cbc994b8c2c732aaf4
+P17 live GREEN receipt                = 36160559037 SUCCESS
+P18 implementation candidate          = PENDING
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                        = 0.63.18-dima.6
+engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+model calls                           = 0
+engine builds                         = 0
+
+P17                                   = SEALED
+P18 implementation                    = AUTHORIZED NOW
+P18                                   = OPEN / PROVIDER-FREE
+P19                                   = NOT AUTHORIZED
+UI / UX                               = FORBIDDEN
+```
+
+```text
+P18 BUSINESS RELATIONSHIP POLICY
+!=
+METABASE PHYSICAL RELATIONSHIP GRAPH.
+
+P18 VALIDATES GOVERNED BUSINESS INTERPRETATION POLICY.
+P18 DOES NOT DISCOVER OR EXECUTE JOINS.
+NO TABLE/FIELD JOIN GRAPH IN DIMA.
+NO RELATIONSHIP SCORING.
+NO FUZZY RELATIONSHIP INFERENCE.
+NO CAUSALITY IN P18.
+METABASE + METABOT REMAIN THE ANALYTICAL ENGINE.
+```
+
+P18 v1 is deliberately bounded to one durable policy authority, one durable policy-use lineage and
+one transient typed requirement. No additional P18 authority store is permitted without a new
+supervisor decision.
+
+## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
+
 ## P17 SEALED — DMP-DEC-0053
 
 ```text
