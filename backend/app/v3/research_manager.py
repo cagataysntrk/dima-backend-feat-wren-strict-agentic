@@ -42,6 +42,7 @@ class ResearchManagerMaturationError(RuntimeError):
 
 
 class ManagerAction(StrEnum):
+    RECORD_INVESTIGATION = "RECORD_INVESTIGATION"
     EXPLORE_NATIVE = "EXPLORE_NATIVE"
     FORM_CLAIM = "FORM_CLAIM"
     SEEK_COUNTER_EVIDENCE = "SEEK_COUNTER_EVIDENCE"
@@ -164,6 +165,7 @@ class ManagerProposal(Frozen):
         if self.intent is not None:
             return self.intent
         return {
+            ManagerAction.RECORD_INVESTIGATION: InvestigationIntent.REPLAN,
             ManagerAction.EXPLORE_NATIVE: InvestigationIntent.INVESTIGATE_GAP,
             ManagerAction.FORM_CLAIM: InvestigationIntent.FORM_CLAIM,
             ManagerAction.SEEK_COUNTER_EVIDENCE: (
@@ -176,12 +178,14 @@ class ManagerProposal(Frozen):
     def coherent(self):
         intent = self.effective_intent
         compatible = {
-            ManagerAction.EXPLORE_NATIVE: {
-                InvestigationIntent.INVESTIGATE_GAP,
+            ManagerAction.RECORD_INVESTIGATION: {
                 InvestigationIntent.EXPLORE_ALTERNATIVES,
                 InvestigationIntent.DEEPEN_EXPLANATION,
-                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
                 InvestigationIntent.REPLAN,
+            },
+            ManagerAction.EXPLORE_NATIVE: {
+                InvestigationIntent.INVESTIGATE_GAP,
+                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
             },
             ManagerAction.FORM_CLAIM: {InvestigationIntent.FORM_CLAIM},
             ManagerAction.SEEK_COUNTER_EVIDENCE: {
@@ -1474,6 +1478,12 @@ class ResearchInvestigationManager:
             raise ResearchManagerMaturationError(
                 "P17_PENDING_STEP_REVISION_DRIFT",
                 step.step_id,
+            )
+
+        if proposal.action == ManagerAction.RECORD_INVESTIGATION:
+            return (
+                self._ledger.complete_step(step.step_id),
+                None,
             )
 
         if proposal.action == ManagerAction.FORM_CLAIM:
