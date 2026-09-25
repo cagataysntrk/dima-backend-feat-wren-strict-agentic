@@ -189,6 +189,41 @@ paid calls      0 / 40 fresh envelope
 
 ManagerBudget is currently implemented as 4 preacceptance / 4 Research / 8 outer, but that architecture remains explicitly pending supervisor ratification. No further budget change or paid measurement is authorized by this Harvest entry.
 
+
+### 4.2 RATIFIED PHASE-BUDGET INDEPENDENCE
+
+Permanent invariant:
+
+```text
+PHASE BUDGET INDEPENDENCE
+
+A bounded retry in preacceptance must not consume the
+independent bounded Research cognition allowance.
+
+max_preacceptance_turns = 4
+max_manager_turns       = 4
+max_total_manager_turns = 8
+```
+
+Classification: `MUST_PORT` for the current Research architecture unless a future supervisor explicitly
+changes the budget contract. The historical global-six coupling is `DO_NOT_RESTORE` under current
+authority.
+
+Proof basis: provider-free canonical revision topology showed legitimate preacceptance retry can consume
+four cognition turns before bounded Research work begins. Independent phase ceilings preserve the Research
+allowance while the outer eight-turn ceiling remains fail-closed.
+
+D10-S status after ratification:
+
+```text
+provider-free closure  GREEN
+ManagerBudget 4/4/8    RATIFIED
+D10-S FINAL            SEALED
+seal tests             0
+fresh paid envelope    0 / 40
+```
+
+
 ---
 
 ## 5. FREE_COGNITION vs GOVERNED_ORCHESTRATION — SHADOW ABLATION
