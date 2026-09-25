@@ -693,6 +693,45 @@ class ResearchExecutionLink(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_now)
 
 
+class ResearchExplorationMaterial(SQLModel, table=True):
+    """Durable P15 native exploration material bound to one sealed P14 occurrence.
+
+    This record stores provenance/material only. It is not an analytics definition,
+    interestingness score owner, query planner, or claim/finding.
+    """
+
+    __tablename__ = "research_exploration_material"
+    __table_args__ = (
+        UniqueConstraint(
+            "execution_link_id",
+            name="uq_research_exploration_material_execution_link",
+        ),
+    )
+
+    lead_id: str = Field(primary_key=True)
+    session_id: str = Field(foreign_key="research_session.session_id", index=True)
+    obligation_id: str = Field(index=True)
+    execution_link_id: uuid.UUID = Field(
+        foreign_key="research_execution_link.id",
+        index=True,
+    )
+    native_conversation_id: uuid.UUID
+    native_query_id: str = Field(index=True)
+    query_fingerprint: str = Field(index=True)
+    source_evidence_refs_json: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    exploration_kind: str = Field(index=True)
+    native_payload_json: str = Field(
+        sa_column=Column(Text, nullable=False),
+    )
+    payload_fingerprint: str = Field(index=True)
+    epistemic_state: str = Field(default="RESEARCH_MATERIAL", index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
 class MetrikSahipligi(SQLModel, table=True):
     """FAZ 2.2b — bir **çakışan terimin** sahibi hangi cube'dur.
 

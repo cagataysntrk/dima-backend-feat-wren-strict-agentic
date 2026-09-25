@@ -100,3 +100,16 @@ class NativeDatasetExecutionObservation(BaseModel):
     latency_ms: int = Field(ge=0)
     query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     payload: dict[str, Any]
+
+
+
+class NativeExplorationObservation(BaseModel):
+    """Transport-only observation for native Metabase exploration material."""
+
+    model_config = ConfigDict(frozen=True)
+
+    status_code: int
+    latency_ms: int = Field(ge=0)
+    exploration_kind: Literal["automagic_adhoc"] = "automagic_adhoc"
+    query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    payload: dict[str, Any]

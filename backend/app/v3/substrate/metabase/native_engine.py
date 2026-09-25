@@ -5,9 +5,11 @@ planning, semantic resolution, Agent API fallback, Wren fallback, or raw SQL exe
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import time
+from urllib.parse import quote_plus
 from typing import Any
 from uuid import UUID
 
@@ -16,6 +18,7 @@ import httpx
 from app.v3.substrate.metabase.native_models import (
     NativeDatasetExecutionObservation,
     NativeEngineIdentity,
+    NativeExplorationObservation,
     NativeExactOccurrenceExecutionObservation,
     NativeEngineObservation,
     NativeProducedQuery,
@@ -36,6 +39,15 @@ class NativeDatasetExecutionError(NativeEngineBridgeError):
     def __init__(self, *, status_code: int, detail: str) -> None:
         super().__init__(
             f"native dataset execution returned HTTP {status_code}: {detail}"
+        )
+        self.status_code = status_code
+        self.detail = detail
+
+
+class NativeExplorationError(NativeEngineBridgeError):
+    def __init__(self, *, status_code: int, detail: str) -> None:
+        super().__init__(
+            f"native exploration returned HTTP {status_code}: {detail}"
         )
         self.status_code = status_code
         self.detail = detail
@@ -262,6 +274,62 @@ class NativeEngineBridge:
                 "native dataset execution response is not an object"
             )
         return NativeDatasetExecutionObservation(
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+            query_fingerprint=fingerprint,
+            payload=body,
+        )
+
+    @staticmethod
+    def _automagic_adhoc_path(query: dict[str, Any]) -> str:
+        """Encode one captured dataset query for Metabase's native X-Ray route.
+
+        This is transport encoding only: JSON -> UTF-8 -> base64 -> form encoding.
+        It performs no query planning, normalization, repair, or semantic rewrite.
+        """
+        try:
+            raw = json.dumps(
+                query,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ).encode("utf-8")
+        except (TypeError, ValueError) as exc:
+            raise NativeEngineBridgeError(
+                "native exploration query is not deterministic JSON"
+            ) from exc
+        encoded = quote_plus(base64.b64encode(raw).decode("ascii"), safe="")
+        return f"/api/automagic-dashboards/adhoc/{encoded}"
+
+    def explore_adhoc(
+        self,
+        query: dict[str, Any],
+    ) -> NativeExplorationObservation:
+        """Delegate exact captured query A to native Metabase X-Ray/automagic analysis."""
+        fingerprint = self._query_fingerprint(query)
+        path = self._automagic_adhoc_path(query)
+        started = time.monotonic()
+        try:
+            response = self._client.get(path)
+        except httpx.TimeoutException as exc:
+            raise NativeEngineBridgeError("native exploration timed out") from exc
+        except httpx.RequestError as exc:
+            raise NativeEngineBridgeError(
+                f"native exploration transport failed: {exc}"
+            ) from exc
+        latency_ms = max(0, int((time.monotonic() - started) * 1000))
+        if response.status_code < 200 or response.status_code >= 300:
+            raise NativeExplorationError(
+                status_code=response.status_code,
+                detail=response.text[:1000],
+            )
+        body = response.json()
+        if not isinstance(body, dict):
+            raise NativeEngineBridgeError(
+                "native exploration response is not an object"
+            )
+        return NativeExplorationObservation(
             status_code=response.status_code,
             latency_ms=latency_ms,
             query_fingerprint=fingerprint,
