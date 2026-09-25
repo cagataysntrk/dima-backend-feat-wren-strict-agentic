@@ -5418,3 +5418,195 @@ P19 implementation = NOT AUTHORIZED
 ```
 
 No DMP-DEC-0055 is created by these P18 hardenings.
+
+
+---
+
+## DMP-DEC-0055 — MINIMAL HYPOTHESIS / ROOT-CAUSE EPISTEMIC AUTHORITY
+
+date: 2026-09-25
+
+status:
+`RATIFIED / P19 MINIMAL IMPLEMENTATION AUTHORIZED / PROVIDER-FREE FIRST / ONE BOUNDED LUNA CANARY AFTER DETERMINISTIC GREEN`
+
+Forward authority:
+
+```text
+P14-P18 = SEALED / DO NOT REOPEN
+P19 = HYPOTHESIS / ROOT-CAUSE EPISTEMIC AUTHORITY
+Metabase + Metabot = analytical engine
+```
+
+P19 is bounded to exactly three durable record types:
+
+```text
+HypothesisRecord
+HypothesisGroundingLink
+RootCauseAssessment
+```
+
+No case table is authorized. `ResearchSession + obligation_id` remains case identity.
+No causal-edge/path/graph/score table is authorized.
+
+Permanent distinctions:
+
+```text
+P19 hypothesis != P16 claim
+P19 hypothesis != Evidence
+P19 hypothesis != causal truth
+P17 InvestigationGraph != P19 causal graph
+P18 policy direction != causal direction
+association/correlation != cause
+contribution != evidence strength
+leading/root cause != contribution class
+```
+
+Grounding source vocabulary is closed to governed existing identities:
+
+```text
+P14 Evidence + receipt provenance
+P15 Research material
+P16 claim
+P17 reasoning step
+P18 policy-use
+```
+
+Grounding relation vocabulary:
+
+```text
+SUPPORTS
+CHALLENGES
+CONTEXT
+INSUFFICIENT
+```
+
+P19 never creates a second receipt, Evidence owner, claim authority, native executor, query planner,
+physical relationship graph, knowledge graph, causal DAG, Bayesian network or causal-discovery engine.
+
+Candidate disposition:
+
+```text
+OPEN
+RETAINED
+WEAKENED
+REJECTED
+```
+
+Candidate epistemic class:
+
+```text
+ASSOCIATION
+CONTRIBUTION
+CANDIDATE_CAUSE
+COMPETING_HYPOTHESIS
+```
+
+Contribution axis:
+
+```text
+DOMINANT
+MATERIAL
+SECONDARY
+LOW
+UNKNOWN
+```
+
+Evidence-strength axis:
+
+```text
+STRONG
+MODERATE
+WEAK
+INSUFFICIENT
+CONTRADICTED
+```
+
+Contribution and evidence strength remain independent axes.
+
+Aggregate assessment outcomes:
+
+```text
+IN_PROGRESS
+ROOT_CAUSE_ESTABLISHED
+MULTIPLE_MATERIAL_CONTRIBUTORS
+NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED
+```
+
+`NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED` is a successful terminal epistemic outcome.
+
+Causal promotion is deterministic and fail-closed. A root-cause conclusion is illegal when materially
+missing supporting Evidence, counter-Evidence/insufficiency consideration, competing alternatives,
+same case/context authority, required P18 eligibility, causal-identification sufficiency, fatal
+contradiction resolution, or governed numeric provenance for numeric assertions.
+
+The first P19 vertical does not need to manufacture a root cause. If governed sources support only
+association/contribution, the correct terminal result is multiple contributors or no defensible root
+cause.
+
+Numeric rule:
+
+```text
+LLM numeric confidence/contribution/effect/probability = FORBIDDEN
+native/statistical numeric output = reference only
+Dima recomputation = FORBIDDEN
+```
+
+P19 may persist exact source/path provenance for governed native numeric values; it does not
+recompute them as P19 truth.
+
+Mediation is assessment-local annotation only. Without an explicit native direct/indirect
+decomposition source, mediated factors must not be promoted as independently additive contributors.
+Record identification limitation and fail closed rather than invent path mathematics.
+
+Model/deterministic split:
+
+```text
+MODEL MAY PROPOSE:
+candidate explanation
+qualitative interpretation
+qualitative evidence strength
+qualitative contribution class
+remaining alternative
+missing discriminating Evidence
+
+DETERMINISTIC DIMA OWNS:
+identity
+source legality
+tenant/session/context/obligation
+legal enums
+P18 eligibility
+state promotion
+numeric provenance
+causal-promotion gate
+assessment idempotency
+terminal legality
+```
+
+Provider-free proof precedes any paid run. After full P19 + P18/P17/P16/P15/P14 regressions and
+governance are GREEN, exactly one bounded Luna P19 canary is authorized without another supervisor
+round-trip. The canary is trajectory-invariant and cannot require a predetermined winning
+hypothesis. Sol = 0. Engine build = 0. Metabase modification = 0.
+
+Failure recovery continues under DMP-DEC-0052: first wrong transition → owner → root cause → generic
+fix → focused proof; max three attempts per failure family; a different owner/invariant after a
+crossed fixed boundary starts a new family at 1/3. No blind reruns or
+regex/fuzzy/morph/test-specific semantic patches.
+
+P19 exit:
+
+```text
+one Research case
++ multiple hypotheses
++ governed source lineage
++ support/challenge visibility
++ P18 eligibility where applicable
+→ immutable RootCauseAssessment
+→ one legal aggregate outcome
+→ analytical execution = 0
+→ duplicate authority = 0
+→ engine changes = 0
+```
+
+After P19 GREEN:
+P19 = SEALED, living docs receive exact SHA/run evidence, then P20 REPORTDOCUMENT pre-development
+review is completed. P20 implementation/UI is not authorized by DMP-DEC-0055.
