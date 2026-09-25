@@ -35,6 +35,12 @@ NO CAUSALITY IN P18.
 METABASE + METABOT REMAIN THE ANALYTICAL ENGINE.
 ```
 
+Permanent retained P17 rule:
+
+```text
+DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY.
+```
+
 P18 v1 is deliberately bounded to one durable policy authority, one durable policy-use lineage and
 one transient typed requirement. No additional P18 authority store is permitted without a new
 supervisor decision.
