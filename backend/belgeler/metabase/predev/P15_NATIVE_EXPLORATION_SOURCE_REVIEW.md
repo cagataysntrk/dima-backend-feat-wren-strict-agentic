@@ -247,3 +247,21 @@ second analytics authority        = 0
 ```
 
 Then P16 claim-lineage implementation starts immediately.
+
+
+---
+
+## Implementation seal evidence
+
+```text
+tested SHA          = c529f28d34712d149f1c3c1e594a413974c37130
+provider-free       = 36103561534 SUCCESS
+engine changes      = 0
+model calls         = 0
+analytical copies   = 0
+```
+
+The provider-free gate also re-ran sealed P14 native-direct regressions successfully.
+
+Status after implementation:
+`SEALED / P15 NATIVE EXPLORATION GREEN / P16 CLAIM-LINEAGE NEXT`.

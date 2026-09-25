@@ -1,0 +1,186 @@
+# P17 — RESEARCH MANAGER MATURATION PRE-DEVELOPMENT REVIEW
+
+**Date:** 2026-09-25  
+**Status:** **SEALED / P17 RESEARCH MANAGER MATURATION IMPLEMENTATION AUTHORIZED**  
+**Forward authority:** DMP-DEC-0048  
+**Consumes:** P14 Research/Evidence + P15 native material + P16 claims  
+**UI/UX:** NOT AUTHORIZED  
+**Engine change:** NOT AUTHORIZED BY DEFAULT
+
+## 1. Goal
+
+P17 turns the durable Research ledger into a bounded agentic investigation loop.
+
+The manager's job is not to perform analytics. It reasons about:
+
+```text
+what remains unresolved
+what Evidence/claims exist
+what contradiction matters
+what bounded investigation should happen next
+when to seek counter-evidence
+when to stop
+```
+
+Metabase/Metabot remain the analytical owners.
+
+## 2. Permanent split
+
+LLM/Research Manager may propose the next investigative step.
+
+Deterministic Dima code owns:
+- ResearchSession identity and revision;
+- obligation identity/state;
+- claim/Evidence eligibility;
+- allowed proposal types and transitions;
+- budget accounting;
+- no-progress detection;
+- counter-evidence requirement markers;
+- stopping/completion;
+- durable restart.
+
+Forbidden deterministic replacement:
+
+```text
+if trend then breakdown
+if breakdown then segment
+if segment then compare
+```
+
+P17 must not become a hand-written analytics strategy tree.
+
+## 3. Typed manager proposal
+
+The initial bounded proposal contract should support a small set of Research actions, conceptually:
+
+```text
+EXPLORE_NATIVE
+FORM_CLAIM
+SEEK_COUNTER_EVIDENCE
+STOP
+```
+
+A proposal must carry:
+- proposal id / source Research revision;
+- target obligation;
+- action;
+- rationale;
+- bounded objective or claim target where relevant;
+- Evidence/claim refs inspected;
+- expected information gain or explicit gap;
+- stop reason where relevant.
+
+The deterministic layer validates references and action preconditions. It does not decide which
+analytical operator to run.
+
+## 4. Durable reasoning step
+
+Every accepted manager proposal must become a durable reasoning-step record before any subsequent
+external/native/model action.
+
+Minimum identity:
+
+```text
+step_id
+research_session_id
+source_revision
+target obligation
+proposal/action
+rationale
+inspected Evidence refs
+inspected claim refs
+gap/objective
+status
+result refs
+created_at / completed_at
+```
+
+Restart resumes from the durable step; it does not reinterpret original user authority.
+
+## 5. No-progress
+
+P17 needs explicit no-progress detection that is independent of prose quality.
+
+Examples of deterministic no-progress signals:
+- same normalized bounded proposal identity repeats without new Evidence/claim material;
+- manager proposes a step already completed against the same authority/revision inputs;
+- budget is exhausted;
+- all material obligations are terminal;
+- repeated counter-evidence attempt yields no eligible new material.
+
+No-progress handling may stop or mark an explicit limitation. It must not silently loop.
+
+## 6. Counter-evidence
+
+For material claims/hypotheses, P17 must be able to request a counter-evidence step.
+
+Research cannot close an important conclusion merely because confirming Evidence exists.
+
+Allowed final epistemic outcomes include:
+
+```text
+SUPPORTED
+CHALLENGED
+CONTESTED
+INCONCLUSIVE
+INSUFFICIENT_EVIDENCE
+```
+
+No forced answer.
+
+## 7. Provider-free first slice
+
+Provider-free implementation should use a scripted/fake manager that emits typed proposals and prove:
+1. current Research/Evidence/claim snapshot is the proposal input;
+2. invalid refs/actions fail closed;
+3. accepted proposal is persisted before follow-on work;
+4. budget is consumed deterministically;
+5. duplicate/no-progress proposal is detected;
+6. counter-evidence proposal is first-class;
+7. STOP proposal creates explicit stopping rationale;
+8. restart restores reasoning step without reparsing original user language;
+9. no analytical operator/parser/scorer is implemented in P17.
+
+This proves the state machine/authority boundary, not LLM quality.
+
+## 8. Live cognition gate
+
+A single bounded Luna Research Manager canary is allowed only after provider-free GREEN if actual
+manager cognition is a decision-changing uncertainty.
+
+No broad corpus. No Sol by default.
+
+The canary should prove one coherent case:
+
+```text
+objective
+→ multiple obligations/material
+→ inspect Evidence/claims
+→ identify gap
+→ propose bounded next step
+→ counter-evidence attempt
+→ replan or stop
+```
+
+The live model proposes investigation. It must not become analytical truth owner.
+
+## 9. P17 exit
+
+P17 closes when one coherent Research case proves:
+
+```text
+initial objective
+→ obligations
+→ native work/material
+→ Evidence/claims
+→ gap identification
+→ durable proposal
+→ replan
+→ counter-evidence attempt
+→ bounded completion / explicit inconclusive stop
+```
+
+with restart durability and no giant deterministic analytics strategy engine.
+
+Then P18 may add only materially business-specific relationship policy; physical join mechanics remain
+native Metabase-owned.

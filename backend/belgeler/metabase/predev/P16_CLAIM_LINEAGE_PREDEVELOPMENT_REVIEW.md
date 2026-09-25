@@ -184,3 +184,21 @@ native executions/results
 is durable, inspectable and restart-safe.
 
 Then P17 Research Manager maturation consumes this claim/evidence authority.
+
+
+---
+
+## Implementation seal evidence
+
+```text
+tested SHA          = 9fa97e041bf51e87518943d010a070cce6b0dcac
+provider-free       = 36104299903 SUCCESS
+governance          = 36104299868 SUCCESS
+engine changes      = 0
+model calls         = 0
+```
+
+The same gate re-ran P15 native Exploration and P14 native-direct regressions successfully.
+
+Status after implementation:
+`SEALED / P16 CLAIM-LINEAGE GREEN / P17 RESEARCH MANAGER MATURATION NEXT`.
