@@ -76,6 +76,52 @@ class ResearchToolContractError(RuntimeError):
     pass
 
 
+@dataclass(frozen=True)
+class ResearchExecutionOutcome:
+    """Generic terminal projection for governed Research execution.
+
+    Consumers must not infer success merely because a tool returned. Exactly two
+    terminal shapes are admissible here:
+
+    - COMPLETE with VERIFIED Evidence
+    - BLOCKED with no Evidence
+
+    Any third shape is a contract violation and fails closed.
+    """
+
+    execution: ResearchToolExecution
+    blocked: bool
+
+    @classmethod
+    def project(cls, execution: ResearchToolExecution) -> "ResearchExecutionOutcome":
+        evidence = execution.evidence
+        if evidence is not None:
+            if execution.task.state != "complete":
+                raise ResearchToolContractError(
+                    "Research execution with Evidence must be COMPLETE"
+                )
+            if not evidence.verified:
+                raise ResearchToolContractError(
+                    "Research execution success requires VERIFIED Evidence"
+                )
+            return cls(execution=execution, blocked=False)
+
+        if execution.task.state == "blocked":
+            return cls(execution=execution, blocked=True)
+
+        raise ResearchToolContractError(
+            "Research execution must terminate as COMPLETE + VERIFIED Evidence "
+            "or governed BLOCKED + no Evidence"
+        )
+
+    def require_evidence(self) -> EvidenceArtifact:
+        if self.blocked or self.execution.evidence is None:
+            raise ResearchToolContractError(
+                "governed BLOCKED Research execution has no Evidence"
+            )
+        return self.execution.evidence
+
+
 class ResearchToolRegistry:
     """Closed Day 7 tool registry.
 
