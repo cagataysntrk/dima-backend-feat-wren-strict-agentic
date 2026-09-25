@@ -115,7 +115,70 @@ def certify_adaptive_lifecycle(
             diagnostic_observation_kinds=observation_kinds,
         )
 
+    reason = getattr(disposition, "reason", None)
+    if not isinstance(reason, str) or not reason.strip():
+        errors.append("terminal ADAPT disposition lacks bounded reason")
+
     evidence_by_ref = _evidence_index(evidence_items)
+
+    if status == "BLOCKED":
+        if branch_task_refs:
+            errors.append("BLOCKED disposition cannot carry branch_task_refs")
+        parent = next(
+            (
+                item
+                for item in getattr(ledger, "items", ())
+                if str(getattr(item, "obligation_id", "")) == str(parent_id)
+            ),
+            None,
+        )
+        parent_status = _value(getattr(parent, "status", None))
+        if parent_status not in {
+            "BLOCKED_DATA_GAP",
+            "LIMITED",
+            "UNSUPPORTED",
+        }:
+            errors.append(
+                "BLOCKED disposition requires authoritative partial-terminal parent"
+            )
+        if product_verified_complete:
+            errors.append(
+                "BLOCKED adaptive lifecycle cannot certify VERIFIED_COMPLETE Product"
+            )
+
+        if evidence_ref is not None:
+            evidence = evidence_by_ref.get(str(evidence_ref))
+            if evidence is None:
+                errors.append("BLOCKED disposition references missing Evidence")
+            else:
+                if not bool(getattr(evidence, "verified", False)):
+                    errors.append("BLOCKED disposition Evidence is not VERIFIED")
+                if not evidence_belongs_to_parent_lineage(
+                    ledger=ledger,
+                    evidence=evidence,
+                    parent_obligation_id=str(parent_id),
+                ):
+                    errors.append(
+                        "BLOCKED disposition Evidence is outside parent lineage"
+                    )
+
+        return AdaptiveLifecycleCertification(
+            valid=not errors,
+            lifecycle_outcome=(
+                "VALID_PRODUCT_TERMINAL" if not errors else "INVALID"
+            ),
+            certification_coverage=(
+                "CERTIFICATION_COVERAGE_INCOMPLETE"
+                if not errors
+                else "INCOMPLETE"
+            ),
+            disposition_status=status,
+            evidence_ref=evidence_ref,
+            branch_task_refs=branch_task_refs,
+            errors=tuple(errors),
+            diagnostic_observation_kinds=observation_kinds,
+        )
+
     evidence = evidence_by_ref.get(str(evidence_ref)) if evidence_ref else None
     if evidence_ref is None:
         errors.append("terminal ADAPT disposition lacks governed Evidence ref")
@@ -130,10 +193,6 @@ def certify_adaptive_lifecycle(
             parent_obligation_id=str(parent_id),
         ):
             errors.append("terminal ADAPT disposition Evidence is outside parent lineage")
-
-    reason = getattr(disposition, "reason", None)
-    if not isinstance(reason, str) or not reason.strip():
-        errors.append("terminal ADAPT disposition lacks bounded reason")
 
     if status == "APPLIED":
         if not branch_task_refs:
@@ -186,22 +245,6 @@ def certify_adaptive_lifecycle(
             valid=not errors,
             lifecycle_outcome="VALIDLY_ACCOUNTED" if not errors else "INVALID",
             certification_coverage="COMPLETE" if not errors else "INCOMPLETE",
-            disposition_status=status,
-            evidence_ref=evidence_ref,
-            branch_task_refs=branch_task_refs,
-            errors=tuple(errors),
-            diagnostic_observation_kinds=observation_kinds,
-        )
-
-    if status == "BLOCKED":
-        return AdaptiveLifecycleCertification(
-            valid=not errors,
-            lifecycle_outcome="VALID_PRODUCT_TERMINAL" if not errors else "INVALID",
-            certification_coverage=(
-                "CERTIFICATION_COVERAGE_INCOMPLETE"
-                if not errors
-                else "INCOMPLETE"
-            ),
             disposition_status=status,
             evidence_ref=evidence_ref,
             branch_task_refs=branch_task_refs,
