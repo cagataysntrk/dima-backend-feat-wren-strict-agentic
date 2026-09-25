@@ -353,6 +353,48 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
         executor=executor,
     )
 
+    if not outcome.run_finished:
+        directive_dispositions = [
+            item.model_dump(mode="json")
+            for item in runtime.directive_dispositions
+        ]
+        task_rows = [
+            {
+                "task_id": item.task_id,
+                "state": item.state,
+                "parent_obligation_id": item.parent_obligation_id,
+                "trigger_evidence_ref": item.trigger_evidence_ref,
+            }
+            for item in getattr(outcome, "research_tasks", ())
+        ]
+        print(
+            "DAY7_RESULT_AWARE_DIAGNOSTIC="
+            + json.dumps(
+                {
+                    "actions": [
+                        prompt.get("ACTION_AVAILABILITY", {})
+                        for prompt in llm.prompts
+                    ],
+                    "preacceptance_turns": runtime.snapshot.preacceptance_turns,
+                    "research_turns": runtime.snapshot.research_manager_turns,
+                    "manager_turns": runtime.snapshot.manager_turns,
+                    "tool_calls": runtime.snapshot.tool_calls,
+                    "data_queries": runtime.snapshot.data_queries,
+                    "evidence_refs": list(runtime.snapshot.evidence_refs),
+                    "inspected_refs": list(runtime.snapshot.inspected_evidence_refs),
+                    "directive_dispositions": directive_dispositions,
+                    "tasks": task_rows,
+                    "observations": list(outcome.observations),
+                    "state": runtime.snapshot.state.value,
+                    "terminal_status": runtime.snapshot.terminal_status,
+                    "run_finished": outcome.run_finished,
+                    "verified_complete": outcome.verified_complete,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                default=str,
+            )
+        )
     assert outcome.run_finished is True
     assert outcome.verified_complete is True
     assert service.query_calls == 2
