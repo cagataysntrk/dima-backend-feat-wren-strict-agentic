@@ -24,148 +24,111 @@ GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS FOR AUTHORIZATION IDENTITY.
 
 ## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
 
-> **FORWARD AUTHORITY.** This block overrides any older "current", "next", "blocked", or
-> "immediate work" language later in this living document. Historical sections remain append-only
-> evidence unless they explicitly say they are current under DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051.
+> **FORWARD AUTHORITY.** This block overrides older current/next/blocked language. Historical
+> evidence remains append-only. Recovery accounting is failure-family-scoped under DMP-DEC-0052.
 
 ```text
-certified product/code checkpoint     = d1bc5291b315ff19c3456d08ff1820e983d85942
-latest evaluator/infra checkpoint     = c2d460512469e532dfeac529111ec1d08aa8ae68
 branch                                = feat/dima-metabase-platform
-branch HEAD at recovery snapshot       = c2d460512469e532dfeac529111ec1d08aa8ae68
-active recovery cycle                  = 1 / 3
-remaining recovery cycles              = 2 after Cycle 1
-current gate                           = Cycle-1 corrected autonomous cognition certification
-next bounded objective                 = append recovery-001 receipt → one corrected Cycle-1 Luna canary
-forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051
+branch HEAD at this snapshot          = ab2cdfb5061859096bc13ba0ee68b1c72ae7420b
+sealed lower/core behavior checkpoint = d1bc5291b315ff19c3456d08ff1820e983d85942
+current P17 provider candidate         = f940a9731be98212b47b44391e28080648c00629
+latest evaluator/infra seal candidate = c50f3e8a08e35d0846eb5e06432e45fd47e3082e
+forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051 + DMP-DEC-0052
 
 engine gitlink                        = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
 engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
 engine certification                  = 36042062775 SUCCESS
-engine changes/builds during P17      = 0 / 0
+engine changes/builds during recovery = 0 / 0
 
-typed-adapter root-fix provider-free  = 36128262857 SUCCESS
-typed-adapter root-fix governance     = 36128262891 SUCCESS
-corrected-live harness-fix governance = 36131121548 SUCCESS
-corrected-live harness-fix provider-free = 36131121661 SUCCESS
-DMP-0050 provider-free                = 36136988379 SUCCESS
-DMP-0050 governance                   = 36136988429 SUCCESS
-DMP-0050 trajectory-invariant eval    = 7 PASS
-DMP-0050 autonomous dispatch          = 36137304596 FAILURE
-DMP-0050 dispatch governance          = 36137304653 SUCCESS
-DMP-0050 dispatch commit              = 5801ac71ba00867921dec17edff20568dc0fce05
-DMP-0050 manager Luna calls           = 0
-DMP-0050 Metabot occurrences          = 0
-DMP-0050 dataset occurrences          = 0
-DMP-0050 live owner                   = INFRA / EVALUATOR TRANSPORT
-DMP-0051 provider-free                = 36139719694 SUCCESS
-DMP-0051 governance                   = 36139719744 SUCCESS
-DMP-0051 exact-Git transport          = 17 PASS
+DMP-0052 provider-free                = 36147150264 SUCCESS
+DMP-0052 governance                   = 36147150224 SUCCESS
+family-aware exact-Git auth           = 26 PASS
+structured-schema regression          = 3 PASS
+trajectory-invariant evaluator        = 7 PASS
+P17 reasoning                         = 31 PASS
+P16 claim-lineage                     = 6 PASS
+P15 native Exploration                = 5 PASS
+P14 native-direct                     = 17 PASS
 
-P17 focused recursive regression      = 31 PASS
-P16 claim-lineage regression          = 6 PASS
-P15 native Exploration regression     = 5 PASS
-P14 native-direct regression          = 17 PASS
+previous failure family               = P17_CERT_AUTHORIZATION_TRANSPORT
+previous family attempt               = 1 / 3
+previous family status                = CLOSED
 
-failed Luna live runs                 = 2
-successful Luna live runs             = 0
-manager Luna calls total              = 8
-Metabot analytical occurrences total  = 4
+current failure family                = P17_MANAGER_STRUCTURED_OUTPUT_SCHEMA
+current authoritative RED             = 36140130559 FAILURE
+current RED dispatch SHA              = b9dea761962268ada6299adca0c355ce14616c99
+attempt in current family             = 1 / 3
+remaining attempts in same family     = 2
+current family status                 = ROOT-FIXED PROVIDER-FREE / LIVE RECHECK PENDING
+
+current RED manager provider attempts = 1
+current RED accepted manager proposal = 0
+current RED Metabot occurrences       = 1
+current RED /api/dataset executions   = 1
 Sol calls                             = 0
+C1 calls                              = 0
 
-live RED #1                           = 36127753645 FAILURE
-live RED #1 platform SHA              = 058a484728965ed8e5ad39bd249e5e88217c1496
-live RED #1 manager calls             = 1
-live RED #1 Metabot occurrences       = 1
-live RED #1 P17 follow-up occurrences = 0
-live RED #1 owner                     = TYPED ADAPTER / STRUCTURED-OUTPUT CONTRACT
-
-corrected live RED #2                 = 36130479544 FAILURE
-corrected live platform SHA           = db30b352b6c2cc469074145e714483ca25c99474
-corrected live manager calls          = 7
-corrected live Metabot occurrences    = 3
-corrected live P17 follow-ups          = 2
-corrected live owner                  = HARNESS / INFRA
-
-live RED #1 root fix                  = b81b8aaa1ff06faa9cab67511b47b8730d94a8f3
-live RED #1 regression                = 7035fc7236e9761ace12f1e73b5bfed8403127dc
-corrected live harness root fix       = 80e1c96593e12fd7b23973f949057ef9604ce5c4
+next authorization                    = p17-manager-structured-schema--attempt-002.json
+next bounded objective                = one autonomous Luna certification for family attempt 2
 
 P14                                   = SEALED
 P15                                   = SEALED
 P16                                   = SEALED
-P17 bounded-manager foundation        = PROVIDER-FREE GREEN
-P17 recursive authority               = PROVIDER-FREE GREEN
-P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
-P17 autonomous cognition              = NOT YET EXECUTED UNDER VALID TRANSPORT
-P17 current blocker                    = NONE AT TRANSPORT; LIVE COGNITION PENDING
+P17 deterministic authority           = GREEN
+P17 recursive investigation           = GREEN
+P17 trajectory-invariant evaluator    = GREEN
+P17 autonomous cognition              = LIVE RECHECK PENDING
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 ```
 
-### CURRENT P17 GATE — DMP-DEC-0050 + DMP-DEC-0051
+### CURRENT P17 GATE — DMP-DEC-0052
 
-DMP-DEC-0050 supersedes the historical screenplay as the **final cognition certification oracle**.
-It does not supersede DMP-DEC-0048 native-direct ownership or DMP-DEC-0049 recursive/P17-P19
-ownership.
+The authorization-transport family is closed. Run `36140130559` crossed that boundary, booted the
+certified engine, completed one base native Metabot occurrence and one native `/api/dataset`
+execution, then failed at the P17 Research Manager provider's strict structured-output schema
+validation before an accepted manager proposal.
 
-Historical live evidence remains append-only:
-
-```text
-DMP-P17-LIVE-RED-001 = 36127753645
-owner                 = TYPED ADAPTER / STRUCTURED-OUTPUT CONTRACT
-
-DMP-P17-LIVE-RED-002 = 36130479544
-owner                 = HARNESS / EVALUATION
-
-80e1c96593e12fd7b23973f949057ef9604ce5c4
-= real RED-002 runtime-selected-parent continuity fix
-= KEEP
-```
-
-The historical screenplay now lives in `recursive_manager_scenario_lab.py` and is a deterministic
-scenario / contract lab only. `recursive_manager_canary.py` is the fail-closed compatibility
-entrypoint for live transport; neither file defines the autonomous cognition oracle.
-
-The active certification target is:
+Current family identity:
 
 ```text
-P17 recursive product authority       = PROVIDER-FREE GREEN
-P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
-P17 autonomous cognition certification= LIVE RED / INFRA TRANSPORT / NOT SEALED
-P17 overall                           = NOT SEALED
-P18                                   = BLOCKED
+failure_family_id = p17-manager-structured-schema
+attempt 1 / 3     = RED / ROOT-FIXED PROVIDER-FREE
+attempt 2 / 3     = AUTHORIZED LIVE RECHECK
 ```
 
-The trajectory-invariant evaluator, autonomous harness, P14/P15/P16/P17 deterministic regressions
-and governance are GREEN at provider-free run `36136988379` and governance run `36136988429`.
-Run `36137304596` is an autonomous certification **transport RED**, not a cognition sample:
-manager Luna calls, Metabot occurrences and dataset executions were all zero.
+The generic root fix is the recursive transport-schema normalizer
+`research_manager_provider.py::_strict_json_schema(...)`. It changes provider-facing JSON Schema
+syntax only. Runtime Pydantic and `ManagerProposal` remain semantic authority. No business
+semantics, Boyahane values, branch names, regex/fuzzy/morphology logic, query rewriting, P13
+restoration, second executor, second receipt family, or engine modification is introduced.
 
-DMP-DEC-0051 now governs recovery. Recovery Cycle 1 / 3 is active. The exact-Git owner-local
-transport root fix is provider-free GREEN at `36139719694`; governance is GREEN at
-`36139719744`. Exactly one corrected autonomous Luna certification is now authorized for Cycle 1.
-P18 remains blocked until genuine autonomous cognition is GREEN.
-
-Permanent evaluation governance:
+Permanent recovery rule:
 
 ```text
-DO NOT TUNE PRODUCT BEHAVIOR
-TO ONE PROBABILISTIC TEST TRAJECTORY.
+THREE ATTEMPTS ARE PER FAILURE FAMILY.
 
-CERTIFY AUTONOMOUS AGENTS
-BY AUTHORITY / SAFETY / OUTCOME INVARIANTS,
-NOT ONE EXPECTED SEQUENCE.
+SAME FIRST-WRONG-TRANSITION OWNER + SAME VIOLATED INVARIANT
+→ SAME FAMILY
+→ INCREMENT UP TO 3.
 
-A TEST ORACLE MUST NOT BE
-NARROWER THAN THE PRODUCT AUTHORITY
-UNLESS IT IS EXPLICITLY A SCENARIO TEST.
+ROOT-FIXED BOUNDARY CROSSED + DIFFERENT OWNER/INVARIANT FAILS
+→ NEW FAMILY
+→ START AT 1 / 3.
+
+DO NOT CLASSIFY BY ERROR STRING.
+CLASSIFY BY FIRST WRONG TRANSITION + OWNER + INVARIANT.
+
+GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS
+FOR COMMIT / AUTHORIZATION IDENTITY.
 ```
 
-Harness sets the rules. Research Manager chooses the path. Metabase does the analysis. Dima records
-what the Evidence changed.
+Historical `authorizations/autonomous-luna-recovery-001.json` remains immutable evidence for the
+closed transport family. Forward paid receipts use
+`<failure_family_id>--attempt-<NNN>.json`.
+
 
 ### DMP-DEC-0050 AUTONOMOUS LIVE RETURN — RED / INFRA TRANSPORT
 
