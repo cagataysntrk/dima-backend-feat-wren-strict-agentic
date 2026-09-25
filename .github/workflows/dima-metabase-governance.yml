@@ -47,6 +47,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/claim_lineage.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_manager.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_followup.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/research_manager_provider.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -282,6 +283,7 @@ jobs:
           set -euo pipefail
           HOT=(
             "backend/app/v3/research_manager.py"
+            "backend/app/v3/research_manager_provider.py"
             "backend/app/v3/research_followup.py"
           )
           FORBIDDEN='NativeStandardTrustOrchestrator|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer|attest_native_query[[:space:]]*\(|execute_native_query[[:space:]]*\(|app\.wren|wren_service|MetabaseAgentClient'
