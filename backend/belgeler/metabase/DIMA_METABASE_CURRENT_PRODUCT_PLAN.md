@@ -7,7 +7,7 @@
 > evidence only unless they explicitly say they are current under DMP-DEC-0048.
 
 ```text
-authoritative implementation checkpoint = 01140b059318b2487b002a0c94f989fd693ce6f2
+current core implementation checkpoint     = 9fa97e041bf51e87518943d010a070cce6b0dcac
 branch                              = feat/dima-metabase-platform
 forward authority                   = DMP-DEC-0048
 engine gitlink                      = cbe313af9ac2d5960f662068e433d328d896fb06
@@ -17,12 +17,15 @@ engine digest                       = sha256:40e9a44be49904de3ddf12d4683c768e709
 
 P14 final provider-free             = 36102734433 SUCCESS
 P14 final governance                = 36102734425 SUCCESS
+P15 provider-free seal              = 36103561534 SUCCESS
+P16 provider-free seal              = 36104299903 SUCCESS
+P16/current governance              = 36104299868 SUCCESS
 P14 real native-direct Luna canary  = 36100443464 SUCCESS
 second paid P14 model run           = 0
 
-CURRENT SEALED PHASE                = P14 NATIVE-DIRECT RESEARCH
-CURRENT OPEN PHASE                  = P15 NATIVE METABASE EXPLORATION
-P16                                 = NEXT AFTER P15 GREEN
+CURRENT SEALED PHASES               = P14 + P15 + P16
+CURRENT OPEN PHASE                  = P17 RESEARCH MANAGER MATURATION
+P18                                 = NEXT AFTER P17 GREEN
 UI / UX                             = FORBIDDEN UNTIL P21 SEALED
 ```
 
@@ -84,9 +87,9 @@ P13 remains sealed beside the product path as a **CERTIFICATION / DEBUG / FORENS
 
 ```text
 P14 Research                  SEALED
-→ P15 native Exploration      OPEN NOW
-→ P16 claim-lineage Evidence
-→ P17 Research reasoning
+→ P15 native Exploration      SEALED
+→ P16 claim-lineage Evidence  SEALED
+→ P17 Research reasoning      OPEN NOW
 → P18 material business relationship policy
 → P19 Hypothesis / Root Cause
 → P20 ReportDocument
@@ -97,15 +100,44 @@ P14 Research                  SEALED
 Every phase consumes the authority produced below it. No disconnected subsystem and no parallel truth
 owner.
 
-### Next bounded objective — P15
+### Next bounded objective — P17
 
-Use pinned native Metabase capability. Current source audit identifies the first provider-free vertical
-as the native X-Ray / automagic ad-hoc analysis surface over the exact P14-captured query, under the
-same authenticated native subject. Dima may persist only Research-material provenance/lead identity.
+P17 matures the existing durable Research ledger into an agentic bounded investigation loop. It
+consumes the already-sealed P14/P15/P16 authority chain:
 
-P15 must not implement Python interestingness, variants, Top-N, temporal exploration, query repair,
-join planning, or an analytical scorer. Native "interesting" output remains **RESEARCH_MATERIAL**;
-it is not a VERIFIED Dima claim. P16 owns claim/Evidence promotion.
+```text
+ResearchSession + obligations
++ P15 Research material
++ P14 Evidence
++ P16 claims / support-challenge lineage
+→ Research Manager proposes the next bounded step
+→ deterministic Dima layer validates/records the transition
+```
+
+The Research Manager may propose:
+- inspect current Evidence/claims;
+- identify a gap;
+- request a bounded native analytical/exploration step;
+- form or refine an explicit claim;
+- seek counter-evidence;
+- stop with a supported/challenged/inconclusive/insufficient result.
+
+Deterministic Dima code owns only:
+- allowed state transitions;
+- obligation and claim identity;
+- Evidence eligibility;
+- budgets;
+- no-progress detection;
+- completion/stopping rules;
+- restart durability.
+
+Do **not** build a giant deterministic analytics state machine such as
+`if trend → breakdown → segment → compare`. The LLM/Research Manager proposes investigative steps;
+Metabase remains analytical owner. Counter-evidence is first-class and no forced answer is required.
+
+Start provider-free with a typed manager-proposal contract and scripted/fake manager tests. Use one
+bounded Luna canary only if actual manager cognition cannot be resolved provider-free and changes the
+decision. No Sol by default. No UI/UX before P21.
 
 ### Current STOP conditions
 
