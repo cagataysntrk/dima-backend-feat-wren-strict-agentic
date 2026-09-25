@@ -548,6 +548,9 @@ class ManagerActionSetBuilder:
                             "target_kind_hint": _TARGET_KIND,
                         },
                         reason_codes=("DERIVED_SEMANTIC_EXPANSION_EXECUTABLE",),
+                        cognitive_context={
+                            "parent_capability": parent.capability_key,
+                        },
                     )
                 )
 
@@ -595,6 +598,7 @@ class ManagerActionSetBuilder:
                         },
                         reason_codes=("EVIDENCE_GROUNDED_BRANCH_EXECUTABLE",),
                         cognitive_context={
+                            "parent_capability": parent.capability_key,
                             "capability_choices": branch_caps,
                         },
                     )
