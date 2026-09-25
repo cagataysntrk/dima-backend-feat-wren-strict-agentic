@@ -167,6 +167,40 @@ def test_verified_scalar_evidence_projects_to_kpi_without_semantic_guessing():
     assert metric not in block.content
 
 
+def test_required_report_is_delivery_authority_not_separate_evidence_requirement():
+    registry, metric, _ = _handles()
+    evidence = _execution_evidence("E_REPORT", "U_ANALYTICAL", metric, value=42.0)
+    ledger = UserObligationLedger(
+        lineage_id=LINEAGE,
+        version=1,
+        items=(
+            _item("U_ANALYTICAL", ManagerCapabilityKey.PERFORMANCE, (metric,)),
+            _item(
+                "U_REPORT",
+                ManagerCapabilityKey.REPORT,
+                (),
+                status=ObligationStatus.ACCEPTED,
+            ),
+        ),
+    )
+
+    projection = ResearchReportProjector(
+        semantic_handles=registry,
+        tenant_binding=TENANT,
+        context_version=CTX,
+    ).project(
+        ledger=ledger,
+        evidence=(evidence,),
+        findings=(),
+    )
+
+    assert projection.status == ResearchReportProjectionStatus.COMPLETE
+    assert projection.request is not None
+    assert projection.request.title == "Araştırma Raporu"
+    assert projection.omitted_evidence_refs == ()
+    assert not any("U_REPORT" in issue for issue in projection.issues)
+
+
 def test_relationship_evidence_stays_noncausal_and_uses_comparison_artifact():
     registry, metric, dimension = _handles()
     evidence = EvidenceArtifact(
