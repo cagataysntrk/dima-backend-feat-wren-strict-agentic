@@ -4549,3 +4549,37 @@ focused_regression_candidate:
 next_requirement:
 provider-free semantic-envelope regression + trajectory evaluator + P17/P16/P15/P14 regression +
 governance GREEN before any live recheck.
+
+
+### DMP-P17-FAMILY-MANAGER-SEMANTIC-OUTPUT-001 provider-free closure
+
+date: 2026-09-25
+
+```text
+failure_family_id          = p17-manager-semantic-output
+attempt_in_family          = 1 / 3
+authoritative RED          = 36147620834
+root-fix provider SHA      = e6ab0bcf29bcbc17004c045a4391235ebc1fed19
+provider-free seal HEAD    = 16ee4881f8399044fb7c30168484ff21063a7fd6
+provider-free              = 36148929202 SUCCESS
+governance                 = 36148929211 SUCCESS
+
+authorization tests        = 28 PASS
+semantic-output tests      = 8 PASS
+trajectory evaluator       = 7 PASS
+P17                        = 31 PASS
+P16                        = 6 PASS
+P15                        = 5 PASS
+P14                        = 17 PASS
+```
+
+A first provider-free seal attempt failed only because two historical fake provider fixtures returned
+the old flat transport shape. Owner: TEST FIXTURE / EVAL ORACLE. The product transport was not given
+a compatibility fallback; the fixtures were updated to emit the schema they were handed. This
+deterministic development failure does not consume a live family attempt.
+
+next_authorization:
+`p17-manager-semantic-output--attempt-002.json`
+
+status:
+`ROOT-FIXED PROVIDER-FREE / LIVE ATTEMPT 2 AUTHORIZED`.
