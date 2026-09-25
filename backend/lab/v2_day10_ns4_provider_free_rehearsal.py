@@ -1012,6 +1012,11 @@ def run_rehearsal(
         "manager_turn_headroom": (
             result.runtime.budget.max_total_manager_turns - snapshot.manager_turns
         ),
+        "research_manager_turn_ceiling": result.runtime.budget.max_manager_turns,
+        "research_manager_turn_headroom": (
+            result.runtime.budget.max_manager_turns
+            - snapshot.research_manager_turns
+        ),
         "deterministic_task_executions": service.query_calls,
         "deterministic_query_transitions": service.query_calls,
         "synthetic_query_calls": service.query_calls,
@@ -1110,7 +1115,11 @@ def main() -> int:
     if receipt["research_manager_calls"] != 4:
         raise SystemExit("canonical rehearsal Research cognition count drifted")
     if receipt["manager_turn_total"] != 6:
-        raise SystemExit("canonical rehearsal no longer fits exact six-turn ceiling")
+        raise SystemExit("legacy same-root rehearsal no longer uses six total turns")
+    if receipt["manager_turn_ceiling"] != 8:
+        raise SystemExit("phase-separated outer Manager ceiling drifted")
+    if receipt["research_manager_turn_ceiling"] != 4:
+        raise SystemExit("phase-separated Research Manager ceiling drifted")
     if receipt["deterministic_task_executions"] != 5:
         raise SystemExit("canonical rehearsal deterministic task count drifted")
     if receipt["redundant_fresh_inspect_turns"] != 0:
