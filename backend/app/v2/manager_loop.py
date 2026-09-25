@@ -2176,7 +2176,7 @@ class ResearchManagerLoop:
                 evidence_store=getattr(executor, "evidence_store", None),
             )
             try:
-                decision = self._decision(
+                decision, availability = self._decision(
                     question=question,
                     runtime=runtime,
                     observations=observations,
@@ -2185,6 +2185,13 @@ class ResearchManagerLoop:
                     research_state=research_state,
                     ready_tasks=task_registry.tasks,
                     hypothesis_ledgers=root_cause_ledgers,
+                    evidence_store=getattr(executor, "evidence_store", None),
+                )
+                observations.append(
+                    {
+                        "kind": "manager_action_availability",
+                        **availability.model_view(),
+                    }
                 )
                 latest_delta = research_state.latest_delta
                 if (
@@ -2206,6 +2213,29 @@ class ResearchManagerLoop:
                 break
 
             progress_before = frontier.progress(runtime)
+            if not availability.allows(decision.action.value):
+                reasons = availability.reasons_for_unavailable(
+                    decision.action.value
+                )
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": "Manager action is unavailable in current governed state",
+                        "reason_codes": list(reasons),
+                    }
+                )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={
+                        "rejected": "manager_action_unavailable",
+                        "reason_codes": list(reasons),
+                    },
+                )
+                continue
+
             if frontier.blocked(progress=progress_before, action=decision):
                 observations.append(
                     {
