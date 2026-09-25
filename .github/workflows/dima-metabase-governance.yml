@@ -50,6 +50,8 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/research_followup.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_manager_provider.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/business_relationship_policy.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/hypothesis_root_cause.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/hypothesis_root_cause_provider.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -461,6 +463,100 @@ jobs:
               "business_relationship_policy",
               "business_relationship_policy_use",
           }, p18_tables
+          PY
+          fi
+
+      - name: Require sealed P19 hypothesis/root-cause review
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/hypothesis_root_cause.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P19_HYPOTHESIS_ROOT_CAUSE_PREDEVELOPMENT_REVIEW.md"
+            DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+            test -f "$REVIEW"
+            grep -q "DMP-DEC-0055" "$REVIEW"
+            grep -q "P19 MINIMAL IMPLEMENTATION AUTHORIZED" "$REVIEW"
+            grep -q "DMP-DEC-0055 — MINIMAL HYPOTHESIS / ROOT-CAUSE EPISTEMIC AUTHORITY" "$DECISIONS"
+            grep -q "P17 InvestigationGraph != P19 causal" "$REVIEW"
+            grep -q "P18 business-policy direction != causal direction" "$REVIEW"
+            grep -q "NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED" "$REVIEW"
+          fi
+
+      - name: Guard P19 as epistemic-only authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/hypothesis_root_cause.py"
+          if [ -f "$HOT" ]; then
+            python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          path = Path("backend/app/v3/hypothesis_root_cause.py")
+          source = path.read_text(encoding="utf-8")
+          tree = ast.parse(source)
+          imports = set()
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Import):
+                  imports.update(alias.name for alias in node.names)
+              elif isinstance(node, ast.ImportFrom):
+                  imports.add(node.module or "")
+          forbidden = (
+              "app.v3.substrate.metabase",
+              "app.v3.research_native_gateway",
+              "app.v3.research_followup",
+              "app.v3.native_execution",
+              "app.wren",
+              "numpy",
+              "pandas",
+              "scipy",
+              "statistics",
+          )
+          bad = sorted(x for x in imports if x.startswith(forbidden))
+          assert not bad, bad
+
+          for symbol in (
+              "NativeEngineBridge",
+              "MetabaseAgentClient",
+              "execute_dataset",
+              "explore_adhoc",
+              "attest_native_query",
+              "execute_native_query",
+              "wren_service",
+              "InvestigationGraph",
+              "ResearchManager.add_hypothesis",
+              "HypothesisState",
+              "DimaQueryReceipt(",
+              "EvidenceArtifact(",
+              "causal_probability",
+              "confidence_percent",
+          ):
+              assert symbol not in source, symbol
+
+          models = Path("backend/control_plane/models.py")
+          model_tree = ast.parse(models.read_text(encoding="utf-8"))
+          tables = set()
+          for node in model_tree.body:
+              if not isinstance(node, ast.ClassDef):
+                  continue
+              for item in node.body:
+                  if (
+                      isinstance(item, ast.Assign)
+                      and any(
+                          isinstance(target, ast.Name)
+                          and target.id == "__tablename__"
+                          for target in item.targets
+                      )
+                      and isinstance(item.value, ast.Constant)
+                      and isinstance(item.value.value, str)
+                      and item.value.value.startswith("p19_")
+                  ):
+                      tables.add(item.value.value)
+          assert tables == {
+              "p19_hypothesis",
+              "p19_hypothesis_grounding",
+              "p19_root_cause_assessment",
+          }, tables
           PY
           fi
 
