@@ -1,5 +1,51 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — D10-S PROVIDER-FREE CLOSURE COMPLETE / FINAL EXIT PENDING BUDGET RATIFICATION
+
+```text
+branch                         feat/ask-v2-mvp
+provider-free proof HEAD       0b9c4a676a04cbf547f4d73116f048c319d77aa3
+latest Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+D10-S closure doc              DIMA_DAY10_S_GOVERNANCE_SIMPLIFICATION.md
+
+Day7 affected                  36127275608 = GREEN
+Day8 affected                  36126639512 = GREEN
+Day10 focused                  36126639503 = GREEN
+real-Wren D10-S root           GREEN inside 36126639503
+presentation ownership         GREEN inside 36126639503
+
+ManagerBudget
+preacceptance                  4
+Research                       4
+outer                          8
+budget authority               EXPLICIT SUPERVISOR RATIFICATION PENDING
+further budget changes         FORBIDDEN
+
+fresh provider-call envelope   40
+used                           0 / 40
+paid execution                 NOT AUTHORIZED
+
+D10-S provider-free closure    COMPLETE
+D10-S FINAL EXIT / SEAL        PENDING BUDGET RATIFICATION
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+Final D10-S first-wrong-transition repairs:
+
+- Day10: server-owned ROOT next-test child ResearchTask was incorrectly eligible as a semantic-expansion parent after producing VERIFIED Evidence. Typed parent-state policy now keeps ROOT semantic rediscovery unavailable while accepted governed handles still satisfy a material next-test contract; non-root accepted OPEN ADAPT_ON_EVIDENCE parents remain eligible.
+- Day7: a successful later-selected AGENT_DERIVED branch produced VERIFIED Evidence but did not account the matching accepted ADAPT_ON_EVIDENCE directive. Directive accounting is now execution-transport independent and requires inspected VERIFIED trigger lineage + completed derived task + VERIFIED result Evidence.
+- Presentation capabilities remain accepted USER_MUST authority but are not analytical Evidence-producing completion blockers; Product presentation/report delivery remains mandatory at the Product layer.
+- Loop-boundary deterministic completion remains after cancel/Answer-Now checks and before another Research cognition turn.
+- No paid provider call was used.
+
+Current upstream reference pass: `metabase/metabase@2f3fe9904e4addbcbe4d32403d6a7ab2fc471100`. Harvested principles only; no Metabase runtime/code imported.
+
+The only open D10-S exit gate is explicit supervisor ratification or rejection of the current 4 / 4 / 8 ManagerBudget architecture. Until that authority arrives: no further budget change, no paid measurement, no Day11.
+
+
 ## 2026-09-25 — D10-S PROVIDER-FREE CLOSURE COMPLETE / EXIT PENDING BUDGET RATIFICATION
 
 ```text
