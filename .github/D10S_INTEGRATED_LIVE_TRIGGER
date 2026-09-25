@@ -1,0 +1,4 @@
+D10-S integrated canonical live measurement
+scope=CANONICAL_NS4
+max_total_model_calls=20
+fresh_owner_envelope=40
