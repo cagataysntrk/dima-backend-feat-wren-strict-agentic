@@ -195,6 +195,7 @@ jobs:
             ".github/workflows/dima-metabase-p13b-semantic-availability.yml"
             ".github/workflows/dima-metabase-p13c-integration.yml"
             ".github/workflows/dima-metabase-p13c-live.yml"
+            ".github/workflows/dima-metabase-p14-native-direct-live.yml"
           )
           for workflow in "${ACTIVE[@]}"; do
             test -f "$workflow"

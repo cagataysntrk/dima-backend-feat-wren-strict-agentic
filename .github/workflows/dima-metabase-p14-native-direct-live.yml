@@ -1,0 +1,193 @@
+name: dima-metabase-p14-native-direct-live
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - ".github/workflows/dima-metabase-p14-native-direct-live.yml"
+      - "backend/lab/metabase/p14/native_direct_research_canary.py"
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  BOYAHANE_SHA: f0c4a6b053ead52ca2eac80002c448323dc34a35
+  MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
+  DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+  MB_ADMIN_EMAIL: admin@p14-native-direct.local
+  MB_RESTRICTED_EMAIL: restricted@p14-native-direct.local
+  MB_RESTRICTED_GROUP: Dima P14 Native Direct Restricted
+
+jobs:
+  one-luna-research-canary:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[p14-luna-canary]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    environment: DIMA_OPENROUTER_API_KEY
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: platform
+          fetch-depth: 1
+
+      - uses: actions/checkout@v4
+        with:
+          repository: cagataysntrk/metabase-boyahane
+          ref: ${{ env.BOYAHANE_SHA }}
+          path: boyahane
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Derive ephemeral credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="${GITHUB_SHA:0:12}"
+          {
+            echo "MB_ADMIN_PASSWORD=Adm-${S}-Aa1!"
+            echo "MB_RESTRICTED_PASSWORD=Res-${S}-Aa1!"
+            echo "PG_OWNER_PASSWORD=PgO-${S}-Aa1!"
+            echo "BOYAHANE_READONLY_PASSWORD=PgR-${S}-Aa1!"
+            echo "MB_APP_PASSWORD=MbA-${S}-Aa1!"
+          } >> "$GITHUB_ENV"
+
+      - name: Load exact certified engine runtime lock
+        working-directory: platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
+          python backend/lab/metabase/scripts/engine_runtime_lock.py \
+            --lock backend/lab/metabase/engine_runtime_lock.json \
+            --gitlink-sha "$GITLINK_SHA" \
+            --github-env "$GITHUB_ENV" \
+            --print-json
+
+      - name: Pull exact certified dima.6 digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ENGINE_SHA" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$CERTIFICATION_RUN_ID" = "36042062775"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.6"
+          docker pull "$IMMUTABLE_IMAGE_REF"
+          docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" \
+            | grep -Fx "$IMMUTABLE_IMAGE_REF"
+
+      - name: Install focused P14 live environment
+        working-directory: platform/backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install "duckdb==1.4.3" "psycopg[binary]==3.3.3"
+
+      - name: Require exactly one Luna credential
+        shell: bash
+        run: test -n "$DIMA_OPENROUTER_API_KEY"
+
+      - name: Start live databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create dima-p14-native-direct
+          PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
+          docker run -d --name analytics-db --network dima-p14-native-direct --network-alias analytics-db -p 127.0.0.1:55450:5432 \
+            -e POSTGRES_DB=boyahane -e POSTGRES_USER=boyahane_owner -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
+          docker run -d --name app-db --network dima-p14-native-direct --network-alias app-db \
+            -e POSTGRES_DB=metabase_p14_native -e POSTGRES_USER=metabase_app -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
+          for n in analytics-db app-db; do
+            for i in $(seq 1 90); do
+              docker exec "$n" pg_isready >/dev/null 2>&1 && break
+              sleep 2
+              test "$i" -lt 90
+            done
+          done
+
+      - name: Import frozen Boyahane fixture
+        env:
+          SOURCE_DATABASE: ${{ github.workspace }}/boyahane/data/boyahane.duckdb
+          PGHOST: 127.0.0.1
+          PGPORT: "55450"
+          PGDATABASE: boyahane
+          PGUSER: boyahane_owner
+          PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
+          BOYAHANE_READONLY_PASSWORD: ${{ env.BOYAHANE_READONLY_PASSWORD }}
+        run: python boyahane/importer/import_boyahane.py
+
+      - name: Start exact pulled dima.6 engine with Luna
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name mb-p14-native --network dima-p14-native-direct -p 127.0.0.1:3321:3000 \
+            -e MB_DB_TYPE=postgres -e MB_DB_HOST=app-db -e MB_DB_PORT=5432 \
+            -e MB_DB_DBNAME=metabase_p14_native -e MB_DB_USER=metabase_app -e MB_DB_PASS="$MB_APP_PASSWORD" \
+            -e MB_AI_FEATURES_ENABLED=true -e MB_METABOT_ENABLED=true -e MB_AGENT_API_ENABLED=true \
+            -e MB_LOAD_SAMPLE_CONTENT=false -e MB_MCP_EXECUTE_SQL_ENABLED=false \
+            -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY" \
+            -e MB_LLM_METABOT_PROVIDER="$MODEL_IDENTIFIER" \
+            -e DIMA_ENGINE_REPOSITORY=UpcyTech/dima-metabase-engine \
+            -e DIMA_ENGINE_REVISION_SHA="$ENGINE_SHA" \
+            -e DIMA_ENGINE_UPSTREAM_BASE_SHA="$UPSTREAM_BASE_SHA" \
+            -e DIMA_ENGINE_RUNTIME_TAG="$RUNTIME_TAG" \
+            -e DIMA_ENGINE_BUILD_IDENTITY="$BUILD_IDENTITY" \
+            -e DIMA_ENGINE_IMAGE_IDENTITY="$REGISTRY_DIGEST" \
+            "$IMMUTABLE_IMAGE_REF"
+
+      - name: Bootstrap restricted analytical principal
+        working-directory: platform/backend
+        env:
+          METABASE_URL: http://127.0.0.1:3321
+          MB_SITE_NAME: Dima P14 Native Direct
+          ANALYTICS_DB_NAME: boyahane
+          ANALYTICS_DB_USER: metabase_boyahane
+          ANALYTICS_DB_PASSWORD: ${{ env.BOYAHANE_READONLY_PASSWORD }}
+          PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+          MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
+        run: python lab/metabase/scripts/bootstrap.py
+
+      - name: Run the one Luna P14 native-direct Research canary
+        working-directory: platform/backend
+        env:
+          PYTHONPATH: .
+        run: |
+          python lab/metabase/p14/native_direct_research_canary.py \
+            --base-url http://127.0.0.1:3321 \
+            --email "$MB_RESTRICTED_EMAIL" \
+            --password "$MB_RESTRICTED_PASSWORD" \
+            --output lab/metabase/p14/artifacts/P14_NATIVE_DIRECT_LUNA_CANARY.json \
+            --engine-sha "$ENGINE_SHA" \
+            --upstream-sha "$UPSTREAM_BASE_SHA" \
+            --runtime-tag "$RUNTIME_TAG" \
+            --runtime-image-digest "$REGISTRY_DIGEST" \
+            --build-identity "$BUILD_IDENTITY" \
+            --image-identity "$REGISTRY_DIGEST" \
+            --model-identifier "$MODEL_IDENTIFIER" \
+            --platform-sha "$GITHUB_SHA"
+
+      - name: Upload P14 live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p14-native-direct-luna-${{ github.sha }}
+          path: platform/backend/lab/metabase/p14/artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Runtime logs
+        if: failure()
+        run: docker logs --tail=1000 mb-p14-native || true
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker rm -f mb-p14-native analytics-db app-db 2>/dev/null || true
+          docker network rm dima-p14-native-direct 2>/dev/null || true
+
