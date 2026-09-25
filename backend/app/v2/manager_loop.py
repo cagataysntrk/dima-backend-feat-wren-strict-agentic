@@ -759,9 +759,16 @@ def _post_acceptance_native_schema(
             for name in array_identity_fields:
                 set_array_values(props, name, ())
             if "branch_candidates" in props:
+                empty_candidate = copy.deepcopy(
+                    shared_defs.get("ManagerBranchCandidateProposal") or {}
+                )
+                if not empty_candidate:
+                    raise RuntimeError(
+                        "strict Manager schema missing ManagerBranchCandidateProposal"
+                    )
                 props["branch_candidates"] = {
                     "type": "array",
-                    "items": {"type": "object"},
+                    "items": empty_candidate,
                     "maxItems": 0,
                 }
 
@@ -1139,6 +1146,12 @@ Rules:
 - Every derived branch must cite parent obligation + inspected evidence.
 - ACTION_AVAILABILITY is the server-resolved cognition surface for this turn. Choose only from
   available_actions. unavailable_actions/reason_codes are deterministic telemetry, not semantic truth.
+- ACTION_AVAILABILITY.applicability_snapshot is a versioned VIEW over current authoritative state.
+  Select exactly one advertised scope_ref for the chosen action. Do not reconstruct, mix, or transfer
+  parent/Evidence/hypothesis/task/semantic identities across scopes. The strict provider schema hydrates
+  the correlated server-known identity domain; choose only the bounded cognition/content still exposed.
+- Echo the exact snapshot_ref required by the strict schema. Stale/unknown snapshot or scope identity
+  fails closed and is never execution authority.
 - CURRENT_RESULT_DELTA with disclosed_in_current_prompt=true is already visible in this cognition call.
   When inspection_required=false, do NOT spend inspect_evidence on that fresh Evidence; after a
   successful structured response the runtime records it as inspected before applying the action.
@@ -2739,7 +2752,7 @@ class ResearchManagerLoop:
         evidence_store=None,
     ):
         """Compatibility decision surface; production loop also consumes availability."""
-        decision, _availability = self._decision_with_availability(
+        decision, _availability, _scope_ref = self._decision_with_availability(
             question=question,
             runtime=runtime,
             observations=observations,
@@ -3510,7 +3523,7 @@ class ResearchManagerLoop:
                 evidence_store=getattr(executor, "evidence_store", None),
             )
             try:
-                decision, availability = self._decision_with_availability(
+                decision, availability, selected_scope_ref = self._decision_with_availability(
                     question=question,
                     runtime=runtime,
                     observations=observations,
@@ -3524,9 +3537,103 @@ class ResearchManagerLoop:
                 observations.append(
                     {
                         "kind": "manager_action_availability",
+                        "selected_scope_ref": selected_scope_ref,
                         **availability.model_view(),
                     }
                 )
+
+                # Stale applicability is fail-closed. Reproject from the SAME current
+                # authoritative owners after cognition and before any decision-driven
+                # mutation. Provider latency cannot authorize execution against an old
+                # identity join.
+                current_inventory = self._governed_semantic_inventory(
+                    runtime=runtime,
+                    hypothesis_ledgers=root_cause_ledgers,
+                )
+                current_availability = self._action_availability(
+                    runtime=runtime,
+                    research_state=research_state,
+                    hypothesis_ledgers=root_cause_ledgers,
+                    evidence_store=getattr(executor, "evidence_store", None),
+                    research_tasks=task_registry.tasks,
+                    governed_semantic_inventory=current_inventory,
+                )
+                selected_snapshot = availability.applicability_snapshot
+                current_snapshot = current_availability.applicability_snapshot
+                if (
+                    selected_snapshot is None
+                    or current_snapshot is None
+                    or selected_snapshot.snapshot_ref != current_snapshot.snapshot_ref
+                    or selected_scope_ref is None
+                ):
+                    observations.append(
+                        {
+                            "kind": "stale_applicability_snapshot",
+                            "action": decision.action.value,
+                            "selected_scope_ref": selected_scope_ref,
+                            "selected_snapshot_ref": (
+                                None
+                                if selected_snapshot is None
+                                else selected_snapshot.snapshot_ref
+                            ),
+                            "current_snapshot_ref": (
+                                None
+                                if current_snapshot is None
+                                else current_snapshot.snapshot_ref
+                            ),
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=frontier.progress(runtime),
+                        action=decision,
+                        runtime=runtime,
+                        result={"rejected": "stale_applicability_snapshot"},
+                    )
+                    continue
+                try:
+                    current_scope = current_snapshot.scope(selected_scope_ref)
+                except KeyError:
+                    observations.append(
+                        {
+                            "kind": "stale_applicability_snapshot",
+                            "action": decision.action.value,
+                            "selected_scope_ref": selected_scope_ref,
+                            "selected_snapshot_ref": selected_snapshot.snapshot_ref,
+                            "current_snapshot_ref": current_snapshot.snapshot_ref,
+                            "reason": "scope_missing_from_current_snapshot",
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=frontier.progress(runtime),
+                        action=decision,
+                        runtime=runtime,
+                        result={"rejected": "unknown_or_stale_scope"},
+                    )
+                    continue
+                if (
+                    current_scope.action != decision.action.value
+                    or not self._decision_matches_scope(decision, current_scope)
+                ):
+                    observations.append(
+                        {
+                            "kind": "tool_rejected",
+                            "action": decision.action.value,
+                            "selected_scope_ref": selected_scope_ref,
+                            "message": (
+                                "Manager decision no longer matches current correlated "
+                                "applicability scope"
+                            ),
+                            "reason_codes": ["ACTION_SCOPE_MISMATCH"],
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=frontier.progress(runtime),
+                        action=decision,
+                        runtime=runtime,
+                        result={"rejected": "action_scope_mismatch"},
+                    )
+                    continue
+
                 latest_delta = research_state.latest_delta
                 if (
                     latest_delta is not None
