@@ -72,6 +72,7 @@ def test_d10_s_exact_canonical_relationship_parent_clean_path_fits_global_six():
 
     assert receipt["provider_calls"] == 0
     assert receipt["adaptive_parent_obligation_id"] == "U_REL"
+    assert "REPORT" in tuple(receipt["user_must_families"])
     assert receipt["preacceptance_model_calls"] == 2
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 6
