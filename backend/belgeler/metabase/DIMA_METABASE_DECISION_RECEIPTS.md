@@ -5300,3 +5300,54 @@ P19 = PRE-DEVELOPMENT AUTHORIZATION REQUIRED
 P19 implementation = NOT AUTHORIZED
 UI / UX = FORBIDDEN UNTIL P21 SEALED
 ```
+
+
+### DMP-DEC-0054 surgical hardening implementation receipt — P18 final-seal candidate
+
+date: 2026-09-25
+
+This is an implementation-hardening receipt under DMP-DEC-0054. It is **not** a new architecture
+decision and does not change P18 ownership.
+
+Hardening A — tenant-first implicit resolution:
+
+```text
+implicit resolve(policy_key)
+→ current tenant + policy_key first
+→ no same-tenant row = BLOCKED_MISSING
+→ foreign-tenant similarly keyed rows are not scanned to produce an existence signal
+
+explicit load_policy(policy_id)
+→ exact object access
+→ foreign tenant = P18_POLICY_TENANT_MISMATCH
+```
+
+Hardening B — exact retired-policy lineage:
+
+```text
+exact tenant/context/ref/scope RETIRED authority
+→ BLOCKED_RETIRED
+→ eligible = false
+→ P18_RELATIONSHIP_POLICY_RETIRED
+→ policy-use lineage stores exact retired policy_id + policy_fingerprint
+
+ambiguous/non-exact blocked paths
+→ no arbitrary policy id attached
+```
+
+Historical policy-use rows remain immutable; no migration, table or column change is required.
+
+Change boundary:
+
+```text
+new P18 tables                         = 0
+new P18 columns                        = 0
+Metabase modifications                = 0
+engine modifications/builds           = 0 / 0
+Luna / Sol / C1                       = 0 / 0 / 0
+analytical execution in P18           = 0
+P19 implementation                    = 0
+```
+
+Final hardening provider-free/governance run IDs are appended only after the deterministic matrix is
+GREEN. P18 remains DMP-DEC-0054; no DMP-DEC-0055 is created.

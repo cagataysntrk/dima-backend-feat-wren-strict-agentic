@@ -409,7 +409,7 @@ def test_required_missing_policy_persists_blocked_lineage():
     assert use.limitation_code == "P18_RELATIONSHIP_POLICY_MISSING"
 
 
-def test_retired_exact_policy_blocks_new_resolution():
+def test_retired_exact_policy_blocks_and_preserves_exact_failed_authority():
     db = db_engine()
     state = make_state(db)
     policy = create_policy(state)
@@ -422,6 +422,11 @@ def test_retired_exact_policy_blocks_new_resolution():
         requirement=requirement(state),
         principal=state["principal"],
     )
+    use = state["p18"].load_use(
+        session_id=state["session"].session_id,
+        policy_use_id=decision.policy_use_id,
+        principal=state["principal"],
+    )
 
     assert retired.status == BusinessRelationshipPolicyStatus.RETIRED
     assert (
@@ -429,6 +434,12 @@ def test_retired_exact_policy_blocks_new_resolution():
         == RelationshipPolicyResolutionStatus.BLOCKED_RETIRED
     )
     assert decision.eligible is False
+    # Blocked outward decisions still expose no policy authority; immutable
+    # lineage records the exact retired policy that failed lifecycle eligibility.
+    assert decision.policy_id is None
+    assert use.policy_id == retired.policy_id
+    assert use.policy_fingerprint == retired.policy_fingerprint
+    assert use.limitation_code == "P18_RELATIONSHIP_POLICY_RETIRED"
 
 
 def test_not_required_returns_without_policy_lookup():
@@ -449,7 +460,7 @@ def test_not_required_returns_without_policy_lookup():
         assert s.exec(select(BusinessRelationshipPolicyRecord)).all() == []
 
 
-def test_foreign_tenant_policy_is_distinguished_and_blocked():
+def test_foreign_tenant_same_key_is_invisible_to_implicit_resolution():
     db = db_engine()
     state = make_state(db)
     foreign = principal(OTHER_TENANT, OTHER_USER, "p18-other")
@@ -459,13 +470,28 @@ def test_foreign_tenant_policy_is_distinguished_and_blocked():
         requirement=requirement(state),
         principal=state["principal"],
     )
+
     assert (
         decision.resolution_status
-        == RelationshipPolicyResolutionStatus.BLOCKED_TENANT
+        == RelationshipPolicyResolutionStatus.BLOCKED_MISSING
     )
-    assert decision.limitation_code == (
-        "P18_RELATIONSHIP_POLICY_TENANT_MISMATCH"
-    )
+    assert decision.limitation_code == "P18_RELATIONSHIP_POLICY_MISSING"
+    assert decision.policy_id is None
+
+
+def test_explicit_foreign_policy_id_load_fails_closed_with_tenant_mismatch():
+    db = db_engine()
+    state = make_state(db)
+    foreign = principal(OTHER_TENANT, OTHER_USER, "p18-other")
+    foreign_policy = create_policy(state, principal_override=foreign)
+
+    with pytest.raises(BusinessRelationshipPolicyError) as exc:
+        state["p18"].load_policy(
+            policy_id=foreign_policy.policy_id,
+            principal=state["principal"],
+        )
+
+    assert exc.value.code == "P18_POLICY_TENANT_MISMATCH"
 
 
 def test_wrong_policy_context_is_distinguished_and_blocked():

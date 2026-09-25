@@ -653,12 +653,13 @@ class BusinessRelationshipPolicyStore:
         status: RelationshipPolicyResolutionStatus,
         limitation_code: str,
         now: datetime | None,
+        exact_failed_policy: BusinessRelationshipPolicy | None = None,
     ) -> RelationshipPolicyDecision:
         use = self._persist_use(
             requirement=requirement,
             requirement_fingerprint=requirement_fingerprint,
             resolution_status=status,
-            policy=None,
+            policy=exact_failed_policy,
             limitation_code=limitation_code,
             now=now,
         )
@@ -714,8 +715,16 @@ class BusinessRelationshipPolicyStore:
         tenant = session.tenant_binding
 
         with Session(self._engine) as db:
+            # Tenant is the first implicit resolution boundary. Ordinary
+            # business-key lookup never scans another tenant merely to reveal
+            # that a similarly keyed policy exists there.
             keyed = db.exec(
-                select(BusinessRelationshipPolicyRecord).where(
+                select(BusinessRelationshipPolicyRecord)
+                .where(
+                    BusinessRelationshipPolicyRecord.tenant_binding
+                    == tenant
+                )
+                .where(
                     BusinessRelationshipPolicyRecord.policy_key
                     == requirement.policy_key
                 )
@@ -740,26 +749,14 @@ class BusinessRelationshipPolicyStore:
             raise BusinessRelationshipPolicyError(
                 "P18_POLICY_BUSINESS_REF_MISMATCH",
                 (
-                    "policy key exists but does not govern the explicit "
-                    "source/target business refs"
+                    "same-tenant policy key exists but does not govern the "
+                    "explicit source/target business refs"
                 ),
-            )
-
-        tenant_matched = tuple(
-            row for row in ref_matched if row.tenant_binding == tenant
-        )
-        if not tenant_matched:
-            return self._blocked(
-                requirement=requirement,
-                requirement_fingerprint=requirement_fingerprint,
-                status=RelationshipPolicyResolutionStatus.BLOCKED_TENANT,
-                limitation_code="P18_RELATIONSHIP_POLICY_TENANT_MISMATCH",
-                now=now,
             )
 
         context_matched = tuple(
             row
-            for row in tenant_matched
+            for row in ref_matched
             if row.semantic_context_version
             == requirement.semantic_context_version
         )
@@ -821,12 +818,21 @@ class BusinessRelationshipPolicyStore:
             if row.status == BusinessRelationshipPolicyStatus.RETIRED.value
         )
         if retired:
+            # Only one exact retired authority may be attached to blocked
+            # lineage. Multiple retired historical meanings remain a blocked
+            # lifecycle outcome but are not collapsed into one arbitrary id.
+            exact_retired = (
+                self._hydrate_policy(retired[0])
+                if len(retired) == 1
+                else None
+            )
             return self._blocked(
                 requirement=requirement,
                 requirement_fingerprint=requirement_fingerprint,
                 status=RelationshipPolicyResolutionStatus.BLOCKED_RETIRED,
                 limitation_code="P18_RELATIONSHIP_POLICY_RETIRED",
                 now=now,
+                exact_failed_policy=exact_retired,
             )
 
         raise BusinessRelationshipPolicyError(
