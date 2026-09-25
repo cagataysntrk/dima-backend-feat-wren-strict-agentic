@@ -392,8 +392,8 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
             "DAY7_RESULT_AWARE_DIAGNOSTIC="
             + json.dumps(
                 {
-                    "actions": [
-                        prompt.get("ACTION_AVAILABILITY", {})
+                    "action_sets": [
+                        prompt.get("MANAGER_ACTION_SET", {})
                         for prompt in llm.prompts
                     ],
                     "preacceptance_turns": runtime.snapshot.preacceptance_turns,
