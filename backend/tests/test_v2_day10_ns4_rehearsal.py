@@ -106,16 +106,11 @@ class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
             item["obligation_id"]: item
             for item in payload["OBLIGATION_LEDGER"]
         }
-        catalog = {
-            item["handle_ref"]: item
-            for item in payload["SEMANTIC_HANDLE_CATALOG"]
-        }
         root_handle = ledger["U_ROOT"]["semantic_handle_refs"][0]
-        department_handle = next(
-            ref
-            for ref in ledger["U_REL"]["semantic_handle_refs"]
-            if catalog[ref]["target_kind"] == "dimension"
-        )
+        # Scripted NS4 U_REL is declared as [downtime metric, department dimension].
+        # Ledger projection preserves that accepted semantic-handle order; unlike the
+        # ROOT_CAUSE semantic catalog, it also exposes the non-root U_REL aliases.
+        department_handle = ledger["U_REL"]["semantic_handle_refs"][1]
         delta = payload["CURRENT_RESULT_DELTA"]
         assert delta is not None and delta["verified"] is True
         self.root_trigger_evidence_ref = delta["evidence_ref"]
@@ -259,20 +254,7 @@ def test_adaptive_relationship_blocked_terminal_does_not_apply_directive(
             "adaptive_branch_executed",
         }
     )
-    assert blocked_candidates, {
-        "diagnostic": diagnostic,
-        "manager_actions": tuple(manager.actions),
-        "manager_prompts": len(manager.manager_prompts),
-        "runtime_state": result.runtime.snapshot.state.value,
-        "clarification_required": result.outcome.clarification_required,
-        "observation_kinds": tuple(
-            item.get("kind") for item in result.outcome.observations
-        ),
-        "ledger": tuple(
-            (item.obligation_id, item.status.value)
-            for item in result.ledger.items
-        ),
-    }
+    assert blocked_candidates, diagnostic
     blocked = blocked_candidates[0]
     assert blocked["task_id"] == "D_ROOT_REL_BLOCKED"
     assert blocked["result"]["available"] is False
