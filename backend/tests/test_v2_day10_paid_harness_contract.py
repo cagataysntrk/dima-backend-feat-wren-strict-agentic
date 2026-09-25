@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.v2.manager_loop import ResearchManagerLoop
 from app.v2.manager_models import (
     ManagerCapabilityKey,
     ObligationLedgerItem,
@@ -27,6 +28,7 @@ from app.v2.models import EvidenceArtifact
 from lab.v2_certification_oracle import (
     certify_adaptive_lifecycle,
     certify_day8_root_live_debt,
+    evidence_belongs_to_parent_lineage,
 )
 from app.v2.product_models import ProductLane, ProductStatus
 from app.v2.standard_lane import StandardLaneStatus
@@ -657,3 +659,118 @@ def test_day8_root_live_debt_oracle_does_not_require_adaptive_branch_trajectory(
     assert certification.next_test_evidence_ref == "E2"
     assert certification.confirmed_cause_count == 0
     assert "adaptive_branch_executed" not in certification.diagnostic_observation_kinds
+
+
+
+def _lineage_parity_ledger():
+    src = "src_" + "9" * 24
+    return UserObligationLedger(
+        lineage_id="atl-lineage-parity",
+        version=1,
+        items=(
+            ObligationLedgerItem(
+                obligation_id="U_PARENT",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=(src,),
+                introduced_in_version=1,
+            ),
+            ObligationLedgerItem(
+                obligation_id="U_CHILD",
+                capability_key=ManagerCapabilityKey.BREAKDOWN,
+                origin=ObligationOrigin.AGENT_DERIVED,
+                parent_obligation_id="U_PARENT",
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=(src,),
+                introduced_in_version=1,
+            ),
+            ObligationLedgerItem(
+                obligation_id="U_GRANDCHILD",
+                capability_key=ManagerCapabilityKey.COMPARE,
+                origin=ObligationOrigin.AGENT_DERIVED,
+                parent_obligation_id="U_CHILD",
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=(src,),
+                introduced_in_version=1,
+            ),
+            ObligationLedgerItem(
+                obligation_id="U_SIBLING",
+                capability_key=ManagerCapabilityKey.RELATIONSHIP,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=(src,),
+                introduced_in_version=1,
+            ),
+            ObligationLedgerItem(
+                obligation_id="U_OTHER_PARENT",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=(src,),
+                introduced_in_version=1,
+            ),
+            ObligationLedgerItem(
+                obligation_id="U_OTHER_CHILD",
+                capability_key=ManagerCapabilityKey.BREAKDOWN,
+                origin=ObligationOrigin.AGENT_DERIVED,
+                parent_obligation_id="U_OTHER_PARENT",
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=(src,),
+                introduced_in_version=1,
+            ),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("family", "evidence_obligation_ids", "expected"),
+    (
+        ("direct_parent", ("U_PARENT",), True),
+        ("derived_child", ("U_CHILD",), True),
+        ("multi_level_child", ("U_GRANDCHILD",), True),
+        ("unrelated_sibling", ("U_SIBLING",), False),
+        ("unknown_obligation", ("U_UNKNOWN",), False),
+        ("wrong_parent", ("U_OTHER_CHILD",), False),
+    ),
+)
+def test_eval_parent_lineage_mirror_has_exact_product_parity(
+    family, evidence_obligation_ids, expected
+):
+    ledger = _lineage_parity_ledger()
+    evidence = EvidenceArtifact(
+        artifact_id=f"E_PARITY_{family}",
+        task_id=f"T_PARITY_{family}",
+        obligation_ids=evidence_obligation_ids,
+        query_contract_refs=("QC_PARITY",),
+        evidence_kind="standard_analytics",
+        verified=True,
+    )
+    runtime = SimpleNamespace(ledger=ledger)
+
+    product_answer = ResearchManagerLoop._evidence_belongs_to_parent_lineage(
+        runtime=runtime,
+        evidence=evidence,
+        parent_obligation_id="U_PARENT",
+    )
+    eval_answer = evidence_belongs_to_parent_lineage(
+        ledger=ledger,
+        evidence=evidence,
+        parent_obligation_id="U_PARENT",
+    )
+
+    assert product_answer is expected
+    assert eval_answer is expected
+    assert eval_answer is product_answer
