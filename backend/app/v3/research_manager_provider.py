@@ -235,35 +235,175 @@ def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
     return value
 
 
+_STOP_INTENTS = {
+    InvestigationIntent.STOP_BRANCH,
+    InvestigationIntent.STOP_INVESTIGATION,
+}
+_COMMON_TRANSPORT_FIELDS = (
+    "proposal_id",
+    "source_revision",
+    "target_parent_obligation",
+    "intent",
+    "parent_step_id",
+    "branch_key",
+    "target_kind",
+    "target_ref",
+    "objective_key",
+    "rationale",
+    "inspected_evidence_refs",
+    "inspected_claim_refs",
+    "inspected_material_refs",
+)
+
+
+def _semantic_family(intent: InvestigationIntent) -> str:
+    if intent in _STOP_INTENTS:
+        return "stop"
+    if intent == InvestigationIntent.SEEK_COUNTER_EVIDENCE:
+        return "counter"
+    if intent == InvestigationIntent.FORM_CLAIM:
+        return "claim"
+    return "regular"
+
+
+def _non_null_schema(node: dict[str, Any]) -> dict[str, Any]:
+    choices = node.get("anyOf")
+    if isinstance(choices, list):
+        non_null = [
+            copy.deepcopy(choice)
+            for choice in choices
+            if not (
+                isinstance(choice, dict)
+                and choice.get("type") == "null"
+            )
+        ]
+        if len(non_null) == 1:
+            return non_null[0]
+    return copy.deepcopy(node)
+
+
+def _variant_schema(
+    raw_schema: dict[str, Any],
+    intents: tuple[InvestigationIntent, ...],
+) -> dict[str, Any]:
+    props = raw_schema.get("properties") or {}
+    family = {_semantic_family(intent) for intent in intents}
+    if len(family) != 1:
+        raise ValueError("transport variant must contain one semantic family")
+    family_name = next(iter(family))
+
+    selected = {
+        key: copy.deepcopy(props[key])
+        for key in _COMMON_TRANSPORT_FIELDS
+    }
+    selected["intent"] = {
+        "type": "string",
+        "enum": [intent.value for intent in intents],
+    }
+
+    if family_name == "stop":
+        selected["stop_reason"] = _non_null_schema(
+            props["stop_reason"]
+        )
+    else:
+        selected["bounded_objective"] = {"type": "string"}
+        selected["expected_information_gain"] = {"type": "string"}
+        if family_name == "counter":
+            selected["counter_to_claim_id"] = {"type": "string"}
+        elif family_name == "claim":
+            selected["claim"] = _non_null_schema(props["claim"])
+
+    return {
+        "type": "object",
+        "properties": selected,
+    }
+
+
 def _schema_for_intents(
     intents: tuple[InvestigationIntent, ...] | None,
 ) -> dict[str, Any]:
-    schema = ResearchManagerProposalDraft.model_json_schema()
-    if intents:
-        props = schema.get("properties") or {}
-        props["intent"] = {
-            "type": "string",
-            "enum": [x.value for x in intents],
-        }
-        # Canary/eval intent constraints can remove semantically impossible
-        # payload families. This changes only transport shape, never authority.
-        if InvestigationIntent.FORM_CLAIM not in intents:
-            props.pop("claim", None)
-        if InvestigationIntent.SEEK_COUNTER_EVIDENCE not in intents:
-            props.pop("counter_to_claim_id", None)
-        stop_intents = {
-            InvestigationIntent.STOP_BRANCH,
-            InvestigationIntent.STOP_INVESTIGATION,
-        }
-        if all(x not in stop_intents for x in intents):
-            props.pop("stop_reason", None)
-            # Align transport truth with deterministic ManagerProposal
-            # semantics: a live non-STOP proposal cannot choose null here.
-            props["bounded_objective"] = {"type": "string"}
-            props["expected_information_gain"] = {"type": "string"}
-        if intents == (InvestigationIntent.SEEK_COUNTER_EVIDENCE,):
-            props["counter_to_claim_id"] = {"type": "string"}
+    """Build provider schema without weakening Pydantic semantic authority.
+
+    A flat schema is sufficient when every permitted intent has the same
+    conditional payload requirements. Mixed semantic families use one nested
+    discriminated transport envelope so invalid cross-field combinations are
+    not representable merely because nullable Pydantic fields share one model.
+    """
+
+    raw = ResearchManagerProposalDraft.model_json_schema()
+    effective = intents or tuple(_ACTION_FOR_INTENT)
+    if not effective:
+        raise ValueError("at least one live intent is required")
+
+    grouped: dict[str, list[InvestigationIntent]] = {}
+    for intent in effective:
+        if intent not in _ACTION_FOR_INTENT:
+            raise ValueError(
+                f"unsupported P17 live intent: {intent.value}"
+            )
+        grouped.setdefault(_semantic_family(intent), []).append(intent)
+
+    variants = [
+        _variant_schema(raw, tuple(grouped[name]))
+        for name in ("regular", "counter", "claim", "stop")
+        if name in grouped
+    ]
+    if len(variants) == 1:
+        schema = variants[0]
+        schema["$defs"] = copy.deepcopy(raw.get("$defs") or {})
+        return _strict_json_schema(schema)
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "proposal": {
+                "anyOf": variants,
+            }
+        },
+        "$defs": copy.deepcopy(raw.get("$defs") or {}),
+    }
     return _strict_json_schema(schema)
+
+
+def _schema_property_maps(
+    schema: dict[str, Any],
+) -> tuple[dict[str, Any], ...]:
+    props = schema.get("properties") or {}
+    proposal = props.get("proposal")
+    if isinstance(proposal, dict):
+        variants = proposal.get("anyOf")
+        if isinstance(variants, list):
+            maps = tuple(
+                variant["properties"]
+                for variant in variants
+                if isinstance(variant, dict)
+                and isinstance(variant.get("properties"), dict)
+            )
+            if len(maps) != len(variants):
+                raise ValueError(
+                    "invalid semantic transport envelope"
+                )
+            return maps
+    return (props,)
+
+
+def _draft_payload_from_transport(
+    raw: str,
+    schema: dict[str, Any],
+) -> dict[str, Any]:
+    decoded = json.loads(raw)
+    if not isinstance(decoded, dict):
+        raise ValueError("manager structured output must be an object")
+    if "proposal" not in (schema.get("properties") or {}):
+        return decoded
+    if set(decoded) != {"proposal"}:
+        raise ValueError(
+            "semantic transport envelope must contain only proposal"
+        )
+    proposal = decoded.get("proposal")
+    if not isinstance(proposal, dict):
+        raise ValueError("semantic transport proposal must be an object")
+    return proposal
 
 
 class StructuredResearchProposalManager:
@@ -326,40 +466,43 @@ class StructuredResearchProposalManager:
             + self._snapshot_payload(snapshot)
         )
         schema = _schema_for_intents(allowed_intents)
-        props = schema["properties"]
-        props["source_revision"] = {
-            "type": "integer",
-            "enum": [snapshot.source_revision],
-        }
-        props["target_parent_obligation"] = {
-            "type": "string",
-            "enum": [
-                x.obligation_id for x in snapshot.parent_obligations
-            ],
-        }
+        property_maps = _schema_property_maps(schema)
+        for props in property_maps:
+            props["source_revision"] = {
+                "type": "integer",
+                "enum": [snapshot.source_revision],
+            }
+            props["target_parent_obligation"] = {
+                "type": "string",
+                "enum": [
+                    x.obligation_id for x in snapshot.parent_obligations
+                ],
+            }
         if allowed_parent_step_ids is not None:
             values = list(allowed_parent_step_ids)
-            if values == [None]:
-                props["parent_step_id"] = {"type": "null"}
-            elif all(isinstance(x, str) for x in values):
-                props["parent_step_id"] = {
-                    "type": "string",
-                    "enum": values,
-                }
-            else:
-                props["parent_step_id"] = {
-                    "anyOf": [
-                        {"type": "null"},
-                        {
-                            "type": "string",
-                            "enum": [x for x in values if x is not None],
-                        },
-                    ]
-                }
-        if branch_key_mode == "null":
-            props["branch_key"] = {"type": "null"}
-        elif branch_key_mode == "string":
-            props["branch_key"] = {"type": "string"}
+            for props in property_maps:
+                if values == [None]:
+                    props["parent_step_id"] = {"type": "null"}
+                elif all(isinstance(x, str) for x in values):
+                    props["parent_step_id"] = {
+                        "type": "string",
+                        "enum": values,
+                    }
+                else:
+                    props["parent_step_id"] = {
+                        "anyOf": [
+                            {"type": "null"},
+                            {
+                                "type": "string",
+                                "enum": [
+                                    x for x in values if x is not None
+                                ],
+                            },
+                        ]
+                    }
+        if branch_key_mode in {"null", "string"}:
+            for props in property_maps:
+                props["branch_key"] = {"type": branch_key_mode}
         elif branch_key_mode is not None:
             raise ValueError(
                 f"unknown branch_key_mode: {branch_key_mode}"
@@ -371,7 +514,9 @@ class StructuredResearchProposalManager:
             schema_name=self._schema_name,
         )
         self.call_count += 1
-        draft = ResearchManagerProposalDraft.model_validate_json(raw)
+        draft = ResearchManagerProposalDraft.model_validate(
+            _draft_payload_from_transport(raw, schema)
+        )
         if allowed_intents and draft.intent not in allowed_intents:
             raise ValueError(
                 f"manager emitted {draft.intent.value} outside bounded canary intent set"
