@@ -48,6 +48,35 @@ class ManagerAction(StrEnum):
     STOP = "STOP"
 
 
+class InvestigationIntent(StrEnum):
+    """Investigation semantics; these are never analytical operators."""
+
+    LEGACY = "LEGACY"
+    INVESTIGATE_GAP = "INVESTIGATE_GAP"
+    EXPLORE_ALTERNATIVES = "EXPLORE_ALTERNATIVES"
+    SEEK_COUNTER_EVIDENCE = "SEEK_COUNTER_EVIDENCE"
+    DEEPEN_EXPLANATION = "DEEPEN_EXPLANATION"
+    TEST_DISCRIMINATING_EVIDENCE = "TEST_DISCRIMINATING_EVIDENCE"
+    REPLAN = "REPLAN"
+    FORM_CLAIM = "FORM_CLAIM"
+    STOP_BRANCH = "STOP_BRANCH"
+    STOP_INVESTIGATION = "STOP_INVESTIGATION"
+
+
+class InvestigationTargetKind(StrEnum):
+    QUESTION = "QUESTION"
+    GAP = "GAP"
+    CLAIM = "CLAIM"
+    EFFECT = "EFFECT"
+    EXPLANATION = "EXPLANATION"
+    ALTERNATIVE = "ALTERNATIVE"
+
+
+class StopScope(StrEnum):
+    BRANCH = "BRANCH"
+    INVESTIGATION = "INVESTIGATION"
+
+
 class ManagerStopReason(StrEnum):
     OBJECTIVE_SATISFIED = "OBJECTIVE_SATISFIED"
     INCONCLUSIVE = "INCONCLUSIVE"
@@ -55,6 +84,13 @@ class ManagerStopReason(StrEnum):
     BUDGET_EXHAUSTED = "BUDGET_EXHAUSTED"
     NO_PROGRESS = "NO_PROGRESS"
     BLOCKED = "BLOCKED"
+    NO_NEW_EVIDENCE = "NO_NEW_EVIDENCE"
+    NO_MEANINGFUL_GAIN = "NO_MEANINGFUL_GAIN"
+    DATA_UNAVAILABLE = "DATA_UNAVAILABLE"
+    CONTRADICTED = "CONTRADICTED"
+    OUT_OF_SCOPE = "OUT_OF_SCOPE"
+    ROOT_EXTERNAL_TO_AVAILABLE_DATA = "ROOT_EXTERNAL_TO_AVAILABLE_DATA"
+    CAUSAL_IDENTIFICATION_LIMIT = "CAUSAL_IDENTIFICATION_LIMIT"
 
 
 class ReasoningStepStatus(StrEnum):
@@ -71,9 +107,10 @@ class InvestigationTaskStatus(StrEnum):
 
 
 class ResearchReasoningBudget(Frozen):
-    max_reasoning_steps: int = Field(default=8, ge=1, le=64)
-    max_followup_native_turns: int = Field(default=4, ge=0, le=32)
-    max_counter_evidence_attempts: int = Field(default=2, ge=0, le=16)
+    max_reasoning_steps: int = Field(default=16, ge=1, le=128)
+    max_followup_native_turns: int = Field(default=8, ge=0, le=64)
+    max_counter_evidence_attempts: int = Field(default=4, ge=0, le=32)
+    max_depth: int = Field(default=5, ge=0, le=16)
 
 
 class ProposedClaimDraft(Frozen):
@@ -98,6 +135,17 @@ class ManagerProposal(Frozen):
     source_revision: int = Field(ge=1)
     target_parent_obligation: str = Field(min_length=1)
     action: ManagerAction
+    intent: InvestigationIntent | None = None
+    parent_step_id: str | None = Field(
+        default=None,
+        pattern=r"^rrs_[a-f0-9]{24}$",
+    )
+    branch_key: str | None = Field(
+        default=None,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+    )
+    target_kind: InvestigationTargetKind = InvestigationTargetKind.GAP
+    target_ref: str | None = Field(default=None, max_length=512)
     # Stable manager-supplied identity for the bounded investigative target.
     # This, rather than free-form prose, participates in no-progress identity.
     objective_key: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
@@ -111,8 +159,52 @@ class ManagerProposal(Frozen):
     counter_to_claim_id: str | None = None
     claim: ProposedClaimDraft | None = None
 
+    @property
+    def effective_intent(self) -> InvestigationIntent:
+        if self.intent is not None:
+            return self.intent
+        return {
+            ManagerAction.EXPLORE_NATIVE: InvestigationIntent.INVESTIGATE_GAP,
+            ManagerAction.FORM_CLAIM: InvestigationIntent.FORM_CLAIM,
+            ManagerAction.SEEK_COUNTER_EVIDENCE: (
+                InvestigationIntent.SEEK_COUNTER_EVIDENCE
+            ),
+            ManagerAction.STOP: InvestigationIntent.STOP_INVESTIGATION,
+        }[self.action]
+
     @model_validator(mode="after")
     def coherent(self):
+        intent = self.effective_intent
+        compatible = {
+            ManagerAction.EXPLORE_NATIVE: {
+                InvestigationIntent.INVESTIGATE_GAP,
+                InvestigationIntent.EXPLORE_ALTERNATIVES,
+                InvestigationIntent.DEEPEN_EXPLANATION,
+                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+                InvestigationIntent.REPLAN,
+            },
+            ManagerAction.FORM_CLAIM: {InvestigationIntent.FORM_CLAIM},
+            ManagerAction.SEEK_COUNTER_EVIDENCE: {
+                InvestigationIntent.SEEK_COUNTER_EVIDENCE
+            },
+            ManagerAction.STOP: {
+                InvestigationIntent.STOP_BRANCH,
+                InvestigationIntent.STOP_INVESTIGATION,
+            },
+        }
+        if intent not in compatible[self.action]:
+            raise ValueError(
+                f"{intent.value} is incompatible with {self.action.value}"
+            )
+        if intent in {
+            InvestigationIntent.DEEPEN_EXPLANATION,
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            InvestigationIntent.STOP_BRANCH,
+        } and self.parent_step_id is None:
+            raise ValueError(
+                f"{intent.value} requires parent_step_id"
+            )
+
         for name, refs in (
             ("Evidence", self.inspected_evidence_refs),
             ("claim", self.inspected_claim_refs),
@@ -155,6 +247,44 @@ class ManagerProposal(Frozen):
         return self
 
 
+class ResolvedInvestigationTopology(Frozen):
+    parent_step_id: str | None
+    depth: int = Field(ge=0)
+    branch_id: str = Field(min_length=1)
+    intent: InvestigationIntent
+    target_kind: InvestigationTargetKind
+    target_ref: str | None = None
+    stop_scope: StopScope | None = None
+
+
+class InvestigationNodeView(Frozen):
+    step_id: str
+    parent_step_id: str | None
+    root_obligation_id: str
+    depth: int = Field(ge=0)
+    branch_id: str
+    intent: InvestigationIntent
+    target_kind: InvestigationTargetKind
+    target_ref: str | None
+    objective_key: str
+    bounded_objective: str | None
+    status: ReasoningStepStatus
+    evidence_refs: tuple[str, ...] = ()
+    counter_evidence_refs: tuple[str, ...] = ()
+    native_material_refs: tuple[str, ...] = ()
+    child_step_ids: tuple[str, ...] = ()
+    stop_reason: ManagerStopReason | None = None
+    stop_scope: StopScope | None = None
+
+
+class InvestigationGraph(Frozen):
+    nodes: tuple[InvestigationNodeView, ...]
+    root_step_ids: tuple[str, ...]
+    open_branch_ids: tuple[str, ...]
+    stopped_branch_ids: tuple[str, ...]
+    max_observed_depth: int = Field(ge=0)
+
+
 class ParentObligationView(Frozen):
     obligation_id: str
     objective: str
@@ -191,6 +321,7 @@ class ResearchManagerSnapshot(Frozen):
     material_refs: tuple[str, ...]
     materials: tuple[MaterialView, ...]
     claims: tuple[ClaimView, ...]
+    investigation: InvestigationGraph
     limitation_refs: tuple[str, ...]
     completed_reasoning_steps: tuple[str, ...]
     pending_reasoning_steps: tuple[str, ...]
@@ -213,6 +344,13 @@ class ResearchReasoningStep(Frozen):
     source_revision: int
     source_snapshot_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     parent_obligation_id: str
+    parent_step_id: str | None = None
+    depth: int = Field(ge=0)
+    branch_id: str
+    intent: InvestigationIntent
+    target_kind: InvestigationTargetKind
+    target_ref: str | None = None
+    stop_scope: StopScope | None = None
     proposal_id: str
     action: ManagerAction
     objective_key: str
