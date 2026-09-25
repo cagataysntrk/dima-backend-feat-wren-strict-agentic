@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from app import fanout
 
 
@@ -106,3 +108,65 @@ def test_real_wren_schema_exposes_version_bound_fanout_receipts(wren):
         if proof["status"] == "HEALTHY":
             assert proof["certificate_mdl_version"] == wren.mdl_version
             assert proof["measured_at"]
+
+
+
+def test_refresh_wren_service_certificate_replaces_stale_build_artifact(
+    tmp_path,
+    monkeypatch,
+):
+    (tmp_path / "relationships.yml").write_text(
+        """
+relationships:
+  - name: orders_customer
+    models: [orders, customer]
+    joinType: MANY_TO_ONE
+    condition: orders.customer_id = customer.id
+""".lstrip(),
+        encoding="utf-8",
+    )
+    fanout.yaz(tmp_path, _certificate(mdl_version="mdl-stale", healthy=True))
+
+    class FakeService:
+        project_dir = tmp_path
+        mdl_version = "mdl-current"
+
+        @staticmethod
+        def _physical_name(model):
+            return f"main.{model['name']}"
+
+        @staticmethod
+        def _mdl_bytes():
+            return json.dumps(
+                {
+                    "models": [
+                        {"name": "orders"},
+                        {"name": "customer"},
+                    ]
+                }
+            ).encode("utf-8")
+
+    def measured_query(sql):
+        if "left join" in sql.lower():
+            return [(3, 3)]
+        return [(2, 2, 0)]
+
+    monkeypatch.setattr(
+        fanout,
+        "konnektor_sorgu",
+        lambda _service: measured_query,
+    )
+
+    path, certificate = fanout.refresh_wren_service_certificate(FakeService())
+    assert path == tmp_path / "target" / fanout.SERTIFIKA_DOSYASI
+    assert certificate["mdl_version"] == "mdl-current"
+
+    persisted = json.loads(path.read_text(encoding="utf-8"))
+    assert persisted["mdl_version"] == "mdl-current"
+    proof = fanout.kanit(
+        persisted,
+        "orders_customer",
+        current_mdl_version="mdl-current",
+    )
+    assert proof["status"] == "HEALTHY"
+    assert proof["certified"] == "olculdu:saglikli"
