@@ -137,6 +137,12 @@ class ResearchDirectiveDisposition(FrozenModel):
             if self.evidence_ref is not None or self.branch_task_refs or self.reason is not None:
                 raise ValueError("OPEN directive disposition cannot carry accounting proof")
             return self
+        if self.status == ResearchDirectiveDispositionStatus.BLOCKED:
+            if self.branch_task_refs:
+                raise ValueError("BLOCKED directive disposition cannot carry branch task refs")
+            if not isinstance(self.reason, str) or not self.reason.strip():
+                raise ValueError("BLOCKED directive disposition requires bounded reason")
+            return self
         if self.evidence_ref is None:
             raise ValueError("terminal directive disposition requires governed Evidence ref")
         if (

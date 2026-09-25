@@ -19,6 +19,7 @@ from app.v2.manager_models import (
     ManagerBudget,
     ManagerRunSnapshot,
     ManagerState,
+    ObligationStatus,
     ResearchDirectiveDisposition,
     ResearchDirectiveDispositionStatus,
     ResearchDirectiveType,
@@ -132,7 +133,7 @@ class ManagerRuntime:
         *,
         directive_id: str,
         status: ResearchDirectiveDispositionStatus,
-        evidence_ref: str,
+        evidence_ref: str | None,
         branch_task_refs: tuple[str, ...] = (),
         reason: str | None = None,
     ) -> ResearchDirectiveDisposition:
@@ -154,6 +155,31 @@ class ManagerRuntime:
             raise ManagerStateError(
                 "only ADAPT_ON_EVIDENCE has completion-relevant disposition"
             )
+        if status == ResearchDirectiveDispositionStatus.BLOCKED:
+            if self._ledger is None:
+                raise ManagerStateError(
+                    "BLOCKED directive accounting requires accepted obligation ledger"
+                )
+            parent = next(
+                (
+                    item
+                    for item in self._ledger.items
+                    if item.obligation_id == directive.parent_obligation_id
+                ),
+                None,
+            )
+            if parent is None:
+                raise ManagerStateError(
+                    "BLOCKED directive parent obligation is absent from accepted ledger"
+                )
+            if parent.status not in {
+                ObligationStatus.BLOCKED_DATA_GAP,
+                ObligationStatus.LIMITED,
+                ObligationStatus.UNSUPPORTED,
+            }:
+                raise ManagerStateError(
+                    "BLOCKED directive requires authoritative partial-terminal parent"
+                )
         current = self.directive_disposition(directive_id)
         if current.status != ResearchDirectiveDispositionStatus.OPEN:
             candidate = ResearchDirectiveDisposition(

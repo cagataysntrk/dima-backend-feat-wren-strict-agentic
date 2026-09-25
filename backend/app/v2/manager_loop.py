@@ -833,6 +833,51 @@ class ResearchManagerLoop:
         )
 
     @staticmethod
+    def _reconcile_blocked_research_directives(
+        *,
+        runtime: ManagerRuntime,
+    ) -> tuple[str, ...]:
+        """Account ADAPT policy from authoritative partial-terminal parent state.
+
+        BLOCKED is not model cognition and does not manufacture Evidence. CompletionGate
+        remains the sole owner of VERIFIED_COMPLETE versus PARTIAL.
+        """
+        contract = runtime.accepted_contract
+        ledger = runtime.ledger
+        if contract is None or ledger is None:
+            return ()
+
+        parent_by_id = {
+            item.obligation_id: item for item in ledger.items
+        }
+        reconciled: list[str] = []
+        for directive in contract.research_directives:
+            if directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE:
+                continue
+            current = runtime.directive_disposition(directive.directive_id)
+            if current.status != ResearchDirectiveDispositionStatus.OPEN:
+                continue
+            parent = parent_by_id.get(directive.parent_obligation_id)
+            if parent is None or parent.status not in {
+                ObligationStatus.BLOCKED_DATA_GAP,
+                ObligationStatus.LIMITED,
+                ObligationStatus.UNSUPPORTED,
+            }:
+                continue
+            runtime.account_research_directive(
+                directive_id=directive.directive_id,
+                status=ResearchDirectiveDispositionStatus.BLOCKED,
+                evidence_ref=None,
+                branch_task_refs=(),
+                reason=(
+                    "authoritative parent obligation is terminal partial: "
+                    f"{parent.status.value}"
+                ),
+            )
+            reconciled.append(directive.directive_id)
+        return tuple(reconciled)
+
+    @staticmethod
     def _try_deterministic_finish(
         *,
         runtime: ManagerRuntime,
@@ -2787,6 +2832,20 @@ class ResearchManagerLoop:
                 )
                 answer_now_requested = True
                 break
+
+            # Completion-relevant ADAPT policy follows durable ledger truth. A
+            # partial-terminal parent deterministically closes its dependent directive
+            # as BLOCKED before another cognition turn is spent.
+            blocked_directives = self._reconcile_blocked_research_directives(
+                runtime=runtime,
+            )
+            if blocked_directives:
+                observations.append(
+                    {
+                        "kind": "research_directive_blocked_reconciled",
+                        "directive_ids": list(blocked_directives),
+                    }
+                )
 
             # CompletionGate is deterministic and is checked at the loop boundary,
             # after user controls but before spending another cognition turn. A fresh
