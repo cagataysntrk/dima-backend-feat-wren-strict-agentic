@@ -1,15 +1,16 @@
 # P19 — HYPOTHESIS / ROOT CAUSE PRE-DEVELOPMENT REVIEW
 
 **Date:** 2026-09-25  
-**Status:** **PRE-DEVELOPMENT COMPLETE / IMPLEMENTATION NOT AUTHORIZED / PRODUCTION CODE NOT STARTED**  
+**Status:** **SEALED REVIEW / DMP-DEC-0055 / P19 MINIMAL IMPLEMENTATION AUTHORIZED / PRODUCTION CODE STARTING**  
 **Authority consumed:** sealed P14 + P15 + P16 + P17 + permanently sealed/hardened P18  
 **Engine:** `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`  
 **Paid work in this review:** Luna = 0 / Sol = 0 / C1 = 0  
 **Engine build/modification:** 0 / 0  
 **UI/UX:** NOT AUTHORIZED
 
-> This review defines the smallest forward epistemic boundary. It does not authorize P19 code,
-> migrations, model calls, engine patches, UI, or a generic causal platform.
+> This review defines the smallest forward epistemic boundary. DMP-DEC-0055 now authorizes the
+> minimal P19 code/migration/provider-free vertical and one bounded Luna canary only after deterministic
+> GREEN. Engine patches, UI, generic causal platforms, Sol and local analytics remain unauthorized.
 
 ## 1. What P19 owns
 
@@ -519,9 +520,9 @@ arbitrary causal path DSL
 A need for real statistical computation is not automatically a Dima implementation requirement:
 audit native Metabase first and return to supervisor before any `DIMA_OWNS` computation.
 
-## 16. Recommended first implementation boundary — NOT AUTHORIZED YET
+## 16. Authorized first implementation boundary — DMP-DEC-0055
 
-If the supervisor authorizes implementation, the recommended first slice is:
+DMP-DEC-0055 authorizes exactly this first slice:
 
 ```text
 sealed ResearchSession + obligation
@@ -551,8 +552,8 @@ P17 = SEALED
 P18 = PERMANENTLY SEALED / HARDENED
 
 P19 PRE-DEVELOPMENT = COMPLETE
-P19 IMPLEMENTATION = NOT AUTHORIZED
-P19 PRODUCTION CODE = NOT STARTED
+P19 IMPLEMENTATION = AUTHORIZED BY DMP-DEC-0055
+P19 PRODUCTION CODE = STARTING
 
 Luna / Sol / C1 = 0 / 0 / 0
 engine build = 0
@@ -560,5 +561,5 @@ Metabase modification = 0
 UI / UX = FORBIDDEN UNTIL P21 SEALED
 ```
 
-No DMP-DEC-0055 is ratified by this review. The next supervisor directive may ratify the minimal P19
-implementation authority and its exact durable schema after reviewing this pre-development contract.
+DMP-DEC-0055 is now ratified and this review is the implementation contract. P19 must remain within
+its three-record durable boundary and provider-free-first certification protocol.
