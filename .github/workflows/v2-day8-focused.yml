@@ -20,6 +20,7 @@ name: v2-day8-focused
       - "backend/app/v2/representability.py"
       - "backend/app/v2/root_cause_orchestration.py"
       - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/manager_action_availability.py"
       - "backend/app/v2/manager_lab.py"
       - "backend/app/v2/research_tasks.py"
       - "backend/tests/test_v2_day8_hypothesis_ledger.py"
