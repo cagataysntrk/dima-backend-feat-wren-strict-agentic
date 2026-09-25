@@ -174,7 +174,10 @@ def _schema_property_enum(schema, property_name):
 
     walk(schema)
     assert found, property_name
-    return values(found[0])
+    merged: set[str] = set()
+    for node in found:
+        merged.update(values(node))
+    return merged
 
 
 class _Run4AvailabilityManager(ns4.ScriptedNS4Manager):
