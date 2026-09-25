@@ -26,14 +26,22 @@ from app.v2.manager_models import (
     UserIntentEnvelope,
 )
 from app.v2.manager_runtime import ManagerRuntime
-from app.v2.manager_tools import ManagerToolCall, ManagerToolName
+from app.v2.manager_tools import (
+    ManagerRelationshipObservation,
+    ManagerToolCall,
+    ManagerToolName,
+)
 from app.v2.models import (
     EpistemicLabel,
     ResolvedSemanticRef,
     SemanticTargetKind,
     TenantAnalyticsRuntimeV0,
 )
-from app.v2.research_tools import ResearchToolRunner
+from app.v2.research_tools import (
+    ResearchToolExecution,
+    ResearchToolRegistry,
+    ResearchToolRunner,
+)
 from app.v2.root_cause_orchestration import RootCauseLoopContext
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
@@ -148,6 +156,35 @@ class _RootCauseFakeLLM:
                 "from observational support."
             ),
         }
+
+
+class _BlockedNextTestLLM(_RootCauseFakeLLM):
+    """Stop after the generic next-test consumer observes a governed BLOCKED terminal."""
+
+    def structured_json(self, system, user, **kwargs):
+        payload = json.loads(user)
+        recent = payload.get("RECENT_OBSERVATIONS") or []
+        blocked = next(
+            (
+                item
+                for item in recent
+                if item.get("kind") == "deterministic_task_blocked"
+                and isinstance(item.get("result"), dict)
+                and item["result"].get("hypothesis_id")
+            ),
+            None,
+        )
+        if blocked is not None:
+            self.prompts.append(payload)
+            return {
+                "action": "request_clarification",
+                "obligation_ids": ["U_ROOT"],
+                "clarification_reason": (
+                    "Governed next test is blocked; no Evidence exists to support "
+                    "or contradict the hypothesis."
+                ),
+            }
+        return super().structured_json(system, user, **kwargs)
 
 
 def _accepted_root_runtime():
@@ -377,3 +414,111 @@ def test_root_cause_loop_bootstraps_executes_next_test_and_completes_bounded_inv
 
     # Canonical relation/finding assertions above own final epistemic truth.
     # The last cognition packet may precede deterministic relation reconciliation.
+
+
+
+def test_blocked_next_test_terminal_does_not_crash_or_create_epistemic_evidence(
+    monkeypatch,
+):
+    (
+        spans,
+        handles,
+        runtime,
+        executor,
+        service,
+        contracts,
+        question,
+        message_id,
+        tenant,
+        context_version,
+    ) = _accepted_root_runtime()
+
+    llm = _BlockedNextTestLLM()
+    loop = ResearchManagerLoop(
+        llm=llm,
+        source_spans=spans,
+        research_tool_runner=ResearchToolRunner(),
+        root_cause_context=RootCauseLoopContext(
+            semantic_handles=handles,
+            tenant_binding=tenant,
+            context_version=context_version,
+        ),
+    )
+    real_execute = loop._execute_scheduled_task
+    execution_count = 0
+
+    def _execute_with_blocked_next_test(**kwargs):
+        nonlocal execution_count
+        execution_count += 1
+        if execution_count == 1:
+            return real_execute(**kwargs)
+
+        task = kwargs["task"]
+        registry = kwargs["task_registry"]
+        fingerprint = f"test-governed-blocked:{task.task_id}"
+        assert registry.begin_execution(
+            task=task,
+            tool_id="wren.relationship",
+            action_fingerprint=fingerprint,
+            timeout_ms=15_000,
+        ) is None
+        execution = ResearchToolExecution(
+            task=task.model_copy(update={"state": "blocked"}),
+            contract=ResearchToolRegistry().spec("wren.relationship").contract,
+            observation=ManagerRelationshipObservation(
+                obligation_id="U_ROOT",
+                available=False,
+                status="UNSUPPORTED",
+                reason="provider-free governed blocked terminal",
+            ),
+            evidence=None,
+            elapsed_ms=0.0,
+        )
+        registry.block_execution(
+            task_id=task.task_id,
+            tool_id="wren.relationship",
+            action_fingerprint=fingerprint,
+            result=execution,
+        )
+        return execution
+
+    monkeypatch.setattr(loop, "_execute_scheduled_task", _execute_with_blocked_next_test)
+    outcome = loop.run(
+        question=question,
+        message_id=message_id,
+        request_ref="day8-loop-request",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    blocked = next(
+        item
+        for item in outcome.observations
+        if item.get("kind") == "deterministic_task_blocked"
+        and isinstance(item.get("result"), dict)
+        and item["result"].get("hypothesis_id")
+    )
+    assert blocked["result"]["state"] == "blocked"
+    assert blocked["result"]["evidence_ref"] is None
+    assert service.query_calls == 1
+    assert contracts.n == 1
+    assert len(runtime.snapshot.evidence_refs) == 1
+    assert not any(
+        item.get("kind") == "hypothesis_next_test_executed"
+        for item in outcome.observations
+    )
+    assert not any(
+        item.get("kind") == "hypothesis_relation_admitted"
+        for item in outcome.observations
+    )
+    assert outcome.findings == ()
+    assert not any(
+        finding.epistemic_label == EpistemicLabel.CANDIDATE_CAUSE
+        for finding in outcome.findings
+    )
+
+    # Production authority remains frozen: RELATIONSHIP is still not advertised as
+    # a ROOT_CAUSE next-test family. The real governed RELATIONSHIP blocked terminal
+    # is proven separately by the Day7 relationship vertical.
+    native = _post_acceptance_native_schema(root_cause_enabled=True)
+    assert "RELATIONSHIP" not in native["$defs"]["ResearchTaskKind"]["enum"]
