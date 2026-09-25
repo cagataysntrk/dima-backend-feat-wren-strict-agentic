@@ -1154,6 +1154,26 @@ def resolve_investigation_topology(
                 intent.value,
             )
     else:
+        depth_advancing = {
+            InvestigationIntent.INVESTIGATE_GAP,
+            InvestigationIntent.EXPLORE_ALTERNATIVES,
+            InvestigationIntent.SEEK_COUNTER_EVIDENCE,
+            InvestigationIntent.DEEPEN_EXPLANATION,
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            InvestigationIntent.FORM_CLAIM,
+        }
+        if (
+            parent is not None
+            and intent in depth_advancing
+            and parent.depth >= snapshot.action_profile.max_depth
+        ):
+            raise ResearchManagerMaturationError(
+                "P17_DEPTH_BUDGET_EXHAUSTED",
+                (
+                    f"parent depth {parent.depth} reached "
+                    f"max_depth={snapshot.action_profile.max_depth}"
+                ),
+            )
         if (
             parent is None
             or proposal.parent_step_id not in rule.legal_parent_step_ids
