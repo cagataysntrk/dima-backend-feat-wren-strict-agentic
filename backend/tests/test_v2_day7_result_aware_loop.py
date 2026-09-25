@@ -33,6 +33,7 @@ from app.v2.models import (
     TenantAnalyticsRuntimeV0,
 )
 from app.v2.research_tools import ResearchToolRunner
+from app.v2.root_cause_orchestration import RootCauseLoopContext
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
@@ -103,13 +104,8 @@ class _AdaptiveFakeLLM:
         recent = payload.get("RECENT_OBSERVATIONS") or []
 
         if not payload.get("EVIDENCE_REFS"):
-            return adapt_legacy_manager_intent(
-                payload,
-                {
-                    "action": "run_analytics",
-                    "obligation_ids": ["U1"],
-                    "metric_handles": ["h1"],
-                },
+            raise AssertionError(
+                "deterministic seed execution did not occur before first cognition"
             )
 
         if (
@@ -359,11 +355,17 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
         executor=executor,
     )
 
+    root_context = RootCauseLoopContext(
+        semantic_handles=handles,
+        tenant_binding=tenant,
+        context_version=context.context_version.version,
+    )
     llm = _AdaptiveFakeLLM()
     outcome = ResearchManagerLoop(
         llm=llm,
         source_spans=spans,
         research_tool_runner=ResearchToolRunner(),
+        root_cause_context=root_context,
     ).run(
         question=question,
         message_id="day7-adaptive-turn",
