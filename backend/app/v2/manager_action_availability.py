@@ -57,9 +57,11 @@ class ActionAvailabilityReason(StrEnum):
     ROOT_HYPOTHESIS_REQUIRED = "ROOT_HYPOTHESIS_REQUIRED"
     ROOT_NEXT_TEST_NOT_FEASIBLE = "ROOT_NEXT_TEST_NOT_FEASIBLE"
     INSUFFICIENT_HEADROOM_FOR_SEPARATE_HYPOTHESIS = (
-        "INSUFFICIENT_HEADROOM_FOR_SEPARATE_HYPOTHESIS"
+        "INSUFFICIENT_RESEARCH_HEADROOM_FOR_SEPARATE_HYPOTHESIS"
     )
-    INSUFFICIENT_HEADROOM_FOR_COMPOSITE = "INSUFFICIENT_HEADROOM_FOR_COMPOSITE"
+    INSUFFICIENT_HEADROOM_FOR_COMPOSITE = (
+        "INSUFFICIENT_RESEARCH_HEADROOM_FOR_COMPOSITE"
+    )
     NO_OPEN_ADAPTIVE_DIRECTIVE = "NO_OPEN_ADAPTIVE_DIRECTIVE"
 
 
@@ -93,7 +95,7 @@ class ManagerActionAvailabilityContext:
     fresh_disclosed_verified: bool = False
     open_adaptive_directive_count: int = 0
     semantic_expansion_parent_obligation_ids: tuple[str, ...] | None = None
-    remaining_manager_turns: int = 0
+    remaining_research_turns: int = 0
 
 
 @dataclass(frozen=True)
@@ -103,7 +105,7 @@ class ManagerActionAvailabilityProfile:
     available_reasons: tuple[tuple[str, tuple[str, ...]], ...]
     inspectable_evidence_refs: tuple[str, ...]
     inspection_required_for_current_delta: bool
-    remaining_manager_turns: int
+    remaining_research_turns: int
     resolve_semantics_parent_obligation_ids: tuple[str, ...]
     post_acceptance_resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",)
 
@@ -134,7 +136,7 @@ class ManagerActionAvailabilityProfile:
             "resolve_semantics_parent_obligation_ids": list(
                 self.resolve_semantics_parent_obligation_ids
             ),
-            "remaining_manager_turns": self.remaining_manager_turns,
+            "remaining_research_turns": self.remaining_research_turns,
         }
 
 
@@ -273,7 +275,7 @@ class ManagerActionAvailability:
                         "propose_hypothesis_with_next_test",
                         ActionAvailabilityReason.ROOT_NEXT_TEST_NOT_FEASIBLE,
                     )
-            elif context.remaining_manager_turns < 1:
+            elif context.remaining_research_turns < 1:
                 remove(
                     "propose_hypothesis_with_next_test",
                     ActionAvailabilityReason.INSUFFICIENT_HEADROOM_FOR_COMPOSITE,
@@ -288,7 +290,7 @@ class ManagerActionAvailability:
                 # composite proposal is the only bounded architecture that can still
                 # reach Evidence relation without raising the frozen Manager ceiling.
                 if (
-                    context.remaining_manager_turns < 2
+                    context.remaining_research_turns < 2
                     and "propose_hypothesis" in allowed
                 ):
                     remove(
@@ -328,6 +330,6 @@ class ManagerActionAvailability:
                 dict.fromkeys(context.inspectable_old_evidence_refs)
             ),
             inspection_required_for_current_delta=inspection_required,
-            remaining_manager_turns=context.remaining_manager_turns,
+            remaining_research_turns=context.remaining_research_turns,
             resolve_semantics_parent_obligation_ids=semantic_parents,
         )
