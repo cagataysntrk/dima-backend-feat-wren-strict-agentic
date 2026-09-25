@@ -2520,7 +2520,7 @@ def test_dmp0053_max_depth_exhaustion_rejects_deeper_parent():
             intent=InvestigationIntent.DEEPEN_EXPLANATION,
             parent_step_id=deep.step_id,
         )
-    assert exc.value.code == "P17_PARENT_STEP_NOT_LEGAL"
+    assert exc.value.code == "P17_DEPTH_BUDGET_EXHAUSTED"
 
 
 def test_dmp0053_live_red_structure_replay_rejects_floating_alternative():
