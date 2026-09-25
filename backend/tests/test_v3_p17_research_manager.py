@@ -1607,3 +1607,94 @@ def test_recursive_vocabulary_contains_no_causal_or_contribution_authority():
     )
     assert not any(token in source.lower() for token in forbidden)
 
+def test_child_depth_reuses_p15_material_and_single_p16_claim_authority():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    followup = LineagedFollowup(db, store)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=followup,
+        db_engine=db,
+    )
+
+    root, root_task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="material-root",
+                objective_key="material.root",
+                intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+                branch_key="material-root",
+                target_kind=InvestigationTargetKind.ALTERNATIVE,
+                target_ref="candidate-root",
+            )
+        ),
+    )
+    assert root_task is None
+    assert root.depth == 0
+
+    child, child_task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="material-child",
+                objective_key="material.child.test",
+                intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+                parent_step_id=root.step_id,
+                target_kind=InvestigationTargetKind.EXPLANATION,
+                target_ref="partner-orders",
+            )
+        ),
+    )
+    assert child_task is not None
+    assert child.depth == 1
+    assert followup.lead is not None
+    assert followup.link is not None
+    assert followup.link.execution_kind == "P17_FOLLOWUP"
+
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    node = next(
+        x for x in snap.investigation.nodes if x.step_id == child.step_id
+    )
+    assert followup.lead.lead_id in node.native_material_refs
+    assert followup.lead.lead_id in snap.material_refs
+
+    claim = claims.create_claim(
+        session_id=session.session_id,
+        obligation_id="g1",
+        principal=principal(),
+        claim_text=(
+            "Partner kanalı child-depth native material içinde 41 sipariş gösteriyor."
+        ),
+        proposition={
+            "subject": "channel:Partner",
+            "predicate": "has_order_count",
+            "object": 41,
+        },
+        scope={
+            "period": "P17 recursive child material",
+            "population": "sales_orders",
+        },
+        freshness=freshness(),
+        origin_material_refs=(followup.lead.lead_id,),
+    )
+    assert claim.epistemic_state == ClaimEpistemicState.PROPOSED
+
+    supported = claims.link_evidence(
+        session_id=session.session_id,
+        claim_id=claim.claim_id,
+        evidence_id="evi_" + "2" * 24,
+        relation=ClaimEvidenceRelation.SUPPORTS,
+        principal=principal(),
+    )
+    assert supported.epistemic_state == ClaimEpistemicState.SUPPORTED
+    assert supported.origin_material_refs == (followup.lead.lead_id,)
+
