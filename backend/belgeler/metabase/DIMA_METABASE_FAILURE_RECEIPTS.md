@@ -4436,3 +4436,116 @@ If that run crosses provider schema validation and a materially different owner/
 structured-schema family closes at the crossed boundary and the new family starts at `1 / 3`. If
 provider strict-schema compatibility fails again under the same invariant, the structured-schema
 family becomes `attempt 2 / 3 = RED`.
+
+
+---
+
+## DMP-P17-FAMILY-STRUCTURED-SCHEMA-002 — boundary crossed / family CLOSED
+
+date: 2026-09-25  
+failure_family_id: `p17-manager-structured-schema`  
+attempt_in_family: `2 / 3`  
+authoritative run: `36147620834 = FAILURE`  
+dispatch SHA: `c1324ba3ab41f362a272e5a45be7c2da4735fe57`  
+status: `CLOSED AT CROSSED BOUNDARY / RED BELONGS TO NEW FAMILY`
+
+The provider accepted the strict response schema and the Luna call completed successfully. Therefore
+the `p17-manager-structured-schema` owner/invariant did **not** fail again.
+
+crossed_boundary:
+
+```text
+family-aware exact-Git authorization = PASS
+provider response_format validation  = PASS
+OpenRouter Luna structured call       = SUCCESS
+```
+
+Per DMP-DEC-0052, the next failure is not structured-schema attempt 2. It begins a new family.
+
+---
+
+## DMP-P17-FAMILY-MANAGER-SEMANTIC-OUTPUT-001 — conditional proposal payload mismatch
+
+date: 2026-09-25  
+failure_family_id: `p17-manager-semantic-output`  
+attempt_in_family: `1 / 3`  
+authoritative run: `36147620834 = FAILURE`  
+dispatch SHA: `c1324ba3ab41f362a272e5a45be7c2da4735fe57`  
+status: `ROOT FIX IN DEVELOPMENT / LIVE RECHECK PENDING`
+
+previous_boundary_that_succeeded:
+
+```text
+exact-Git family-aware authorization
+→ certified dima.6 runtime
+→ restricted native principal
+→ base native Metabot
+→ native /api/dataset
+→ provider strict response_format validation
+→ Luna structured-output call SUCCESS
+```
+
+first_wrong_transition:
+
+```text
+provider-valid structured JSON returned
+→ ResearchManagerProposalDraft.model_validate(...)
+→ non-STOP intent carries no usable expected_information_gain
+→ deterministic Pydantic semantic authority rejects draft
+→ no accepted ManagerProposal / no accepted P17 turn
+```
+
+exact_error:
+
+```text
+Value error:
+live non-STOP intent requires expected_information_gain
+```
+
+owner:
+`P17 MANAGER OUTPUT SEMANTIC CONTRACT / PROVIDER ADAPTER REPRESENTATION`
+
+violated_invariant:
+when one autonomous call may choose among intents with different conditional payload requirements,
+the provider-facing representation must make the selected intent's required semantic fields
+structurally representable without weakening runtime Pydantic authority.
+
+live_accounting:
+
+```text
+Research Manager Luna provider calls  = 1 SUCCESS
+accepted ManagerProposal              = 0
+accepted P17 turns                    = 0
+Metabot analytical occurrences       = 1
+/api/dataset executions               = 1
+P17 recursive follow-up occurrences   = 0
+Sol calls                             = 0
+engine builds                         = 0
+C1 calls                              = 0
+```
+
+root_cause:
+a single flat Pydantic-derived transport object represented STOP and non-STOP/counter/claim payload
+families together. Fields that are semantically mandatory only for some intents therefore remained
+nullable in the mixed provider schema. The provider correctly accepted the schema and the model
+returned a schema-valid payload that deterministic Pydantic semantics correctly rejected.
+
+generic_fix_direction:
+encode mixed conditional payload requirements in a strict nested transport envelope with distinct
+object variants for regular non-STOP, counter-Evidence, claim, and STOP semantic families. Each
+variant exposes only the fields legal for that family. The adapter unwraps the transport envelope and
+runs the unchanged `ResearchManagerProposalDraft` / `ManagerProposal` semantic validation.
+
+This is transport representation, not business logic. No prompt phrase matching, Boyahane value,
+branch identity, fuzzy/regex/morph semantic inference, analytical query rewrite, or fallback is
+introduced.
+
+root_fix_candidate:
+`e6ab0bcf29bcbc17004c045a4391235ebc1fed19`
+
+focused_regression_candidate:
+`c005c7c7f51707f1ecf73b01b043b962d4c4da83`
+
+next_requirement:
+provider-free semantic-envelope regression + trajectory evaluator + P17/P16/P15/P14 regression +
+governance GREEN before any live recheck.
