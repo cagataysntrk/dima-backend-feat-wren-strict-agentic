@@ -190,6 +190,7 @@ class CapabilityBindingValidator:
         # by the ordinary forbidden-kind/parameter checks below.
         by_kind: dict[str, list[str]] = {}
         effect_by_kind: dict[str, list[str]] = {}
+        standard_cube_sets: list[frozenset[str]] = []
         for handle_id in item.semantic_handle_refs:
             try:
                 handle = self._handles.validate(
@@ -216,6 +217,26 @@ class CapabilityBindingValidator:
             effect_by_kind.setdefault(normalized, []).append(
                 str(handle.resolver_provenance_id)
             )
+
+            if (
+                spec.lane == ManagerCapabilityLane.STANDARD
+                and item.polarity == ObligationPolarity.REQUIRED
+                and normalized in {"metric", "dimension", "filter"}
+            ):
+                binding = self._handles.binding_for_execution(
+                    handle_id,
+                    tenant_binding=tenant_binding,
+                    context_version=context_version,
+                )
+                cubes = frozenset(
+                    str(value)
+                    for value in tuple(
+                        getattr(binding.canonical_target, "cube_names", ()) or ()
+                    )
+                    if str(value)
+                )
+                if cubes:
+                    standard_cube_sets.append(cubes)
 
         normalized_by_kind = {
             kind: tuple(dict.fromkeys(refs))
@@ -246,6 +267,17 @@ class CapabilityBindingValidator:
                 f"{item.obligation_id}: {item.capability_key.value} contains forbidden semantic kinds: "
                 + ", ".join(sorted(forbidden_kinds))
             )
+
+        if standard_cube_sets:
+            common_cubes = set(standard_cube_sets[0])
+            for cubes in standard_cube_sets[1:]:
+                common_cubes.intersection_update(cubes)
+            if len(common_cubes) != 1:
+                reasons.append(
+                    f"{item.obligation_id}: {item.capability_key.value} required STANDARD "
+                    "semantic handles must resolve to exactly one common governed cube; "
+                    f"candidates={sorted(common_cubes)}"
+                )
 
         params = self._provided_params(item)
         present_params = set(params)
