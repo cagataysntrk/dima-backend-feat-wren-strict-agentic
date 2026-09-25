@@ -436,6 +436,42 @@ class RevisionNS4Manager(ScriptedNS4Manager):
                 }
             return {"status": "PASS", "issues": []}
 
+        if schema_name == "dima_research_manager_action_v1":
+            payload = json.loads(user)
+            hypothesis_entries = payload["HYPOTHESIS_LEDGERS"][0]["entries"]
+            if not hypothesis_entries:
+                self.manager_prompts.append(payload)
+                ledger = {
+                    item["obligation_id"]: item
+                    for item in payload["OBLIGATION_LEDGER"]
+                }
+                root_handle = ledger["U_ROOT"]["semantic_handle_refs"][0]
+                delta = payload["CURRENT_RESULT_DELTA"]
+                assert delta is not None and delta["verified"] is True
+                assert delta["disclosed_in_current_prompt"] is True
+                assert "U_ROOT" in tuple(delta.get("obligation_ids") or ()), delta
+                self.root_trigger_evidence_ref = delta["evidence_ref"]
+                self.actions.append("propose_hypothesis_with_next_test")
+                return {
+                    "action": "propose_hypothesis_with_next_test",
+                    "hypothesis_parent_obligation_id": "U_ROOT",
+                    "hypothesis_statement": (
+                        "Provider-free revision hypothesis contains %27 but report must not."
+                    ),
+                    "hypothesis_semantic_handles": [root_handle],
+                    "hypothesis_trigger_evidence_refs": [
+                        self.root_trigger_evidence_ref
+                    ],
+                    "hypothesis_limitations": [],
+                    "next_test_task_kind": "QUERY",
+                    "next_test_input_handles": [root_handle],
+                    "next_test_trigger_evidence_ref": self.root_trigger_evidence_ref,
+                    "next_test_material_reason": (
+                        "Use the same inspected root Evidence to form the first "
+                        "server-governed material hypothesis test."
+                    ),
+                }
+
         return super().structured_json(
             system,
             user,
