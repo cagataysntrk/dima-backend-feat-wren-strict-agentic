@@ -1,5 +1,74 @@
 # DIMA DAY10-S — GOVERNANCE / SEMANTIC SIMPLIFICATION
 
+## POST-SEAL INTEGRATED LIVE RECEIPT — RED / BOUNDED IMPLEMENTATION CORRECTION GREEN
+
+D10-S itself remains SEALED. This receipt does not reopen the ratified 4 / 4 / 8 budget or any
+frozen truth/security owner.
+
+```text
+integrated live run            36128949886 = RED
+tested Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+provider calls                 12
+Wren query calls               5
+Product                        PARTIAL
+
+fresh owner envelope           12 / 40 used
+remaining                      28
+additional paid run            NOT AUTHORIZED
+```
+
+First wrong transition:
+
+```text
+ROOT obl_4
+→ composite epistemic action
+→ h3 included
+→ h3 is governed under BREAKDOWN obl_2
+→ HypothesisLedger rejects cross-obligation semantic authority
+```
+
+The runtime rejection was correct. The missing pre-cognition applicability was in the D10-S action
+surface: action names were filtered, but ROOT epistemic argument domains were still broader than the
+selected ROOT parent.
+
+Post-seal bounded implementation correction:
+
+```text
+runtime state
+→ ManagerActionAvailability
+→ ROOT parent/handle/Evidence/hypothesis applicability
+→ strict provider argument schema
+→ model
+→ unchanged runtime trust boundaries
+```
+
+Additionally:
+
+```text
+completed governed next-test
+→ fresh VERIFIED Evidence
+→ relation not yet admitted
+→ another next-test is not advertised
+→ evidence relation must be accounted first
+```
+
+Provider-free proof:
+
+```text
+Day10  36130046060 = GREEN
+Day8   36129994598 = GREEN
+Day7   36129994504 = GREEN
+```
+
+Latest Product behavior after this implementation correction:
+
+```text
+999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+```
+
+No second integrated paid measurement is authorized by this document.
+
+
 ## FINAL AUTHORITY — SEALED
 
 ```text
