@@ -378,3 +378,34 @@ def test_historical_recovery_001_remains_legacy_not_forward_identity():
     assert "failure_family_id" in source
     assert "attempt_in_family" in source
     assert "recovery_cycle" not in source
+
+
+def test_repository_historical_recovery_001_receipt_is_unchanged_legacy_evidence():
+    path = Path(
+        "lab/metabase/p17/authorizations/autonomous-luna-recovery-001.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload == {
+        "decision": "DMP-DEC-0051",
+        "branch": "feat/dima-metabase-platform",
+        "authorization_id": "autonomous-luna-recovery-001",
+        "recovery_cycle": 1,
+        "candidate_product_sha": (
+            "d1bc5291b315ff19c3456d08ff1820e983d85942"
+        ),
+        "dispatch_parent_sha": (
+            "6e3f6ae55f4a4db1211f8f49d259dd3522d14a62"
+        ),
+        "provider_free_run_id": 36139719694,
+        "governance_run_id": 36140014952,
+        "model": "openai/gpt-5.6-luna",
+        "max_manager_calls": 8,
+        "sol_budget": 0,
+        "engine_build_budget": 0,
+        "c1_budget": 0,
+        "purpose": (
+            "Recovery Cycle 1 corrected trajectory-invariant autonomous "
+            "P17 cognition certification"
+        ),
+    }
