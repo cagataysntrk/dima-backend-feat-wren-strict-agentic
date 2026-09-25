@@ -1,5 +1,59 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — D10-S FINAL SEALED / INTEGRATED LIVE MEASUREMENT AUTHORIZED
+
+```text
+branch                         feat/ask-v2-mvp
+provider-free proof HEAD       0b9c4a676a04cbf547f4d73116f048c319d77aa3
+latest Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+
+D10-S provider-free closure    GREEN
+ManagerBudget                  4 / 4 / 8 RATIFIED
+D10-S FINAL                    SEALED
+
+fresh provider envelope        40
+used                           0 / 40
+
+expected canonical paid calls  13–17
+hard per-run maximum           20
+scope                          CANONICAL_NS4
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Permanent phase-budget contract:
+
+```text
+max_preacceptance_turns = 4
+max_manager_turns       = 4
+max_total_manager_turns = 8
+
+bounded preacceptance retry cost MUST NOT consume
+the independent bounded Research cognition allowance.
+```
+
+The old global-six coupling is historical only and must not be restored.
+
+Call-feasibility from current topology, without Product changes:
+
+```text
+role                  expected canonical     hard role cap
+FAST_LANGUAGE         1                      2
+RESEARCH_MANAGER      6–10                   12
+SEMANTIC_LINKER       3                      3
+TEMPORAL_NORMALIZER   1                      1
+REPORT_NARRATOR       2                      2
+
+expected total        13–17
+hard run cap          20
+```
+
+D10-S seal itself is docs-only: tests = 0.
+
+
 ## 2026-09-25 — D10-S PROVIDER-FREE CLOSURE COMPLETE / FINAL EXIT PENDING BUDGET RATIFICATION
 
 ```text
