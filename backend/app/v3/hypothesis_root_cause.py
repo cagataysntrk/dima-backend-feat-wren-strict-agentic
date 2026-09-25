@@ -678,13 +678,22 @@ class HypothesisRootCauseStore:
             principal=principal,
         )
         source = _clean(source_ref, code="P19_SOURCE_REF_REQUIRED")
-        self._source_authority(
+        authority = self._source_authority(
             session_id=hypothesis.research_session_id,
             obligation_id=hypothesis.obligation_id,
             source_kind=source_kind,
             source_ref=source,
             source_receipt_id=source_receipt_id,
         )
+        if source_kind == GroundingSourceKind.P16_CLAIM and (
+            authority.tenant_binding != hypothesis.tenant_binding
+            or authority.semantic_context_version
+            != hypothesis.semantic_context_version
+        ):
+            raise P19EpistemicError(
+                "P19_CLAIM_SOURCE_CONTEXT_MISMATCH",
+                source,
+            )
         identity = {
             "hypothesis_id": hypothesis.hypothesis_id,
             "source_kind": source_kind.value,
