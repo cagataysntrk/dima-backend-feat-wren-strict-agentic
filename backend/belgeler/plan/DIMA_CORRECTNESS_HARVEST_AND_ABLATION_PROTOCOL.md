@@ -1867,3 +1867,47 @@ prohibited even when the local tool surface cannot dispatch Actions.
 - No new authority store, block model, root metric selector, Manager turn or semantic owner was
   introduced.
 
+
+
+---
+
+## D10-Q RUN #1 HARVEST — GOVERNED BLOCKED TOOL TERMINALS
+
+Paid evidence:
+
+```text
+run                         36091887451
+tested SHA                  d032757c05500b48e144d1c808c6076e6cbb56f3
+result                      RED
+provider calls              7
+first wrong transition      relationship UNSUPPORTED terminal
+                            → ResearchToolRunner required evidence_ref
+failure class               CONTRACT / ARCHITECTURE
+
+generic Product fix         05f69a67320809767501d2fdcb0522ad9df48309
+post-fix Day10              36092568445 = GREEN
+post-fix Day8               36092568435 = GREEN
+post-fix Day7               36092641195 = GREEN
+```
+
+**H-138 — MUST_PORT**  
+A governed tool's explicit fail-closed unavailable/blocked terminal is not an evidence-bearing
+success and must not be converted into either a fabricated EvidenceArtifact or an execution
+exception merely because the success contract carries Evidence. Task lifecycle must represent the
+blocked terminal explicitly.
+
+**H-139 — MUST_PORT**  
+Blocked-task state commits are subject to the same cancellation/deadline atomic commit boundary as
+Evidence/UOL verification. A cancelled or expired task may not commit BLOCKED_DATA_GAP after the
+lifecycle owner has revoked the execution lease.
+
+**H-140 — SHOULD_PORT**  
+Terminal ResearchTask receipts include governed blocked outcomes as well as successful executions so
+duplicate delivery is idempotent and cannot re-enter the tool after a completed fail-closed result.
+A replay with a different execution identity remains rejected.
+
+These invariants do not weaken Evidence ownership. Successful `wren.relationship` still requires
+VERIFIED `relationship_analytics` Evidence with QueryContract provenance; only the already-declared
+`ManagerRelationshipObservation(available=False, status=UNSUPPORTED, evidence_ref=None)` path is
+represented as a blocked terminal.
+
