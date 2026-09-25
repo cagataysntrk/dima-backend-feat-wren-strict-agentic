@@ -1161,6 +1161,17 @@ class ResearchReasoningStepRecord(SQLModel, table=True):
     source_revision: int = Field(index=True)
     source_snapshot_fingerprint: str = Field(index=True)
     parent_obligation_id: str = Field(index=True)
+    parent_step_id: str | None = Field(
+        default=None,
+        foreign_key="research_reasoning_step.step_id",
+        index=True,
+    )
+    depth: int = Field(default=0, index=True)
+    branch_id: str = Field(default="legacy-root", index=True)
+    intent: str = Field(default="LEGACY", index=True)
+    target_kind: str = Field(default="GAP", index=True)
+    target_ref: str | None = Field(default=None, index=True)
+    stop_scope: str | None = Field(default=None, index=True)
     proposal_id: str = Field(index=True)
     proposal_json: str = Field(sa_column=Column(Text, nullable=False))
     action: str = Field(index=True)
