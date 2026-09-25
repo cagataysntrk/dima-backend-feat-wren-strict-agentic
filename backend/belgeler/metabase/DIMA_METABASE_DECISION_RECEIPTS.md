@@ -3108,3 +3108,110 @@ The six RED tests are not authority to preserve the thick gateway. Architecture 
 
 status:
 `SEALED ARCHITECTURE / NATIVE-DIRECT P14 AUTHORIZED / P13 CERTIFICATION MICROSCOPE / CURRENT IMPLEMENTATION NOT YET SEALED`.
+
+
+---
+
+## DMP-DEC-0048 — IMPLEMENTATION / P14 FINAL SEAL EVIDENCE
+
+date: 2026-09-25
+
+This is implementation evidence under the existing DMP-DEC-0048 authority. It is **not** a new
+architecture decision and does not create DMP-DEC-0049.
+
+Final implementation checkpoint before documentation-only overlays:
+
+```text
+Platform code SHA                  = 01140b059318b2487b002a0c94f989fd693ce6f2
+engine gitlink                     = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                     = 0.63.18-dima.6
+engine certification               = 36042062775 SUCCESS
+final P14 governance               = 36102734425 SUCCESS
+final P14 provider-free seal       = 36102734433 SUCCESS
+real native-direct Luna canary     = 36100443464 SUCCESS
+second paid P14 model run          = 0
+```
+
+The final P14 seal proves the DMP-DEC-0048 production contract:
+
+```text
+Metabot produces query A
+→ Dima captures A exactly
+→ A + fingerprint are durable
+→ same principal-scoped Metabase client executes A through /api/dataset
+→ result/runtime/native subject are durable
+→ one DimaQueryReceipt(authority_kind=research_material)
+→ Evidence
+→ Research obligation
+```
+
+Final durability hardening closes the remote-call crash window:
+
+```text
+CANDIDATE_CAPTURED
+→ persist EXECUTION_STARTED
+→ only then call /api/dataset
+
+EXECUTION_STARTED without persisted result
+→ outcome UNKNOWN
+→ NO blind retry
+→ explicit limitation/recovery
+
+EXECUTED with persisted result
+→ resume persisted result
+→ same deterministic receipt
+→ NO second /api/dataset
+```
+
+Transport-correctness closure reuses the already-paid live artifact from run
+`36100443464`. The future canary now asserts the frozen Boyahane result:
+
+```text
+Mevcut Müşteri = 34
+Web             = 27
+Fuar            = 22
+Saha Ziyareti   = 22
+Referans        = 21
+```
+
+No second Luna run was made merely to add the sentinel.
+
+Final ownership proof:
+
+```text
+P13 attestation hot-path calls     = 0
+P13 re-execution hot-path calls    = 0
+P10 synthetic Research access path = 0
+operator-level Dima MBQL proof     = 0
+Wren fallback                      = 0
+raw SQL fallback                   = 0
+Agent API analytical fallback      = 0
+admin/service analytical fallback  = 0
+second receipt family              = 0
+second analytics authority         = 0
+second security authority          = 0
+engine changes/builds              = 0
+```
+
+P13 remains SEALED as certification/debug/forensics machinery beside the product path.
+
+Final phase status:
+
+```text
+P14 FOUNDATION                    = GREEN / SEALED
+P14 PRODUCT RESEARCH              = GREEN / SEALED
+P14 ACCEPTED CONTEXT DURABILITY   = GREEN / SEALED
+P14 PRINCIPAL-SCOPED SESSION      = GREEN / SEALED
+P14 NATIVE-DIRECT EXECUTION       = GREEN / SEALED
+P14 SINGLE RECEIPT / EVIDENCE     = GREEN / SEALED
+P14 RESTART / IDEMPOTENCY         = GREEN / SEALED
+P14 LIVE NATIVE CANARY            = GREEN / SEALED
+P14 TRANSPORT CORRECTNESS         = GREEN / SEALED
+P14                              = CLOSED
+P15 NATIVE METABASE EXPLORATION   = AUTHORIZED / NEXT
+```
+
+Do not reopen P14 as P14B/P14C. Do not restore thick-gateway/P13 middleware.
+
+status:
+`SEALED IMPLEMENTATION / P14 CLOSED / DMP-DEC-0048 FORWARD AUTHORITY / P15 NEXT`.

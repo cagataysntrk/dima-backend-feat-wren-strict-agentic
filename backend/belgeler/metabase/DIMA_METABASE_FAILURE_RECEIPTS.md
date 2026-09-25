@@ -3992,3 +3992,93 @@ control-plane timestamps in this slice.
 
 status:
 `ARCHITECTURE RECLASSIFIED / OLD P14 GATEWAY NOT TO BE SEALED / NATIVE-DIRECT REFACTOR AUTHORIZED`.
+
+
+---
+
+## DMP-P14-RUNTIME-STOP-001 — CURRENT DISPOSITION
+
+current disposition: `CLOSED / HISTORICAL / SUPERSEDED BY DMP-DEC-0048`
+
+The receipt remains append-only evidence of the earlier architectural dead end. Its temporal/P13
+material-authority framing is **not** a current production blocker and must not be used to resurrect
+the thick P13/P10 gateway.
+
+Current authority is DMP-DEC-0048. P14 production uses native-direct Metabot + Metabase execution,
+with Dima owning principal correlation, durable occurrence/result provenance, one receipt family and
+Research/Evidence lineage.
+
+Closure evidence:
+
+```text
+final code checkpoint     = 01140b059318b2487b002a0c94f989fd693ce6f2
+governance                = 36102734425 SUCCESS
+provider-free             = 36102734433 SUCCESS
+live native-direct canary = 36100443464 SUCCESS
+```
+
+No action remains on this historical STOP.
+
+---
+
+## DMP-P14-DURABILITY-RED-002 — unknown native execution outcome could have been blindly retried
+
+opened_at: 2026-09-25  
+closed_at: 2026-09-25  
+classification: `P14 DURABILITY / REMOTE SIDE-EFFECT UNCERTAINTY / IDEMPOTENCY`
+
+### Failure
+
+After query A had been captured, the earlier executor called `/api/dataset` while the durable link
+still said `CANDIDATE_CAPTURED`. If the process died after Metabase accepted/executed the request
+but before Dima persisted the result, restart could not distinguish "never executed" from "executed
+but result not recorded" and could submit A again.
+
+This violated the final P14 invariant:
+
+```text
+unknown execution outcome
+→ NO BLIND RETRY
+```
+
+### Root cause
+
+There was no durable pre-call transition separating a safe-to-start candidate from an execution whose
+remote outcome might already exist.
+
+### Generic fix
+
+Code checkpoint:
+`01140b059318b2487b002a0c94f989fd693ce6f2`
+
+The state machine now persists:
+
+```text
+CANDIDATE_CAPTURED
+→ EXECUTION_STARTED
+→ remote /api/dataset
+→ EXECUTED
+→ VERIFIED
+```
+
+Rules:
+- `EXECUTION_STARTED` is written before the remote call.
+- restart from `EXECUTION_STARTED` never calls dataset again;
+- it returns `P14_NATIVE_EXECUTION_OUTCOME_UNKNOWN` and enters explicit limitation/recovery;
+- restart from `EXECUTED` uses the persisted result and recreates the same deterministic receipt;
+- only `CANDIDATE_CAPTURED` may begin a new native execution.
+
+Provider-free regression explicitly proves the unknown-outcome state does not call
+`execute_dataset`.
+
+### Verification
+
+```text
+governance            = 36102734425 SUCCESS
+P14 provider-free     = 36102734433 SUCCESS
+new paid model calls  = 0
+engine builds         = 0
+```
+
+status:
+`CLOSED / ROOT CAUSE FIXED / NO-BLIND-RETRY INVARIANT SEALED`.
