@@ -1370,7 +1370,12 @@ def test_source_truth_narrowed_candidate_set_including_truth_reuses_without_cogn
 
     second, selections = fx.adapter._resolve_regular_once(
         entries=[(source_ref, "Shared Axis", "dimension", "U2")],
-        args=ResolveSemanticsArgs(provenance="USER_SOURCE"),
+        args=ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(source_ref,),
+            source_obligation_ids=("U2",),
+            target_kind_hints=("dimension",),
+        ),
         linker=narrowed,
         discovery_pass="test_narrowed_include",
         source_truth_by_key=source_truth,
@@ -1421,7 +1426,12 @@ def test_source_truth_narrowed_candidate_set_excluding_truth_fails_closed_withou
 
     second, selections = fx.adapter._resolve_regular_once(
         entries=[(source_ref, "Shared Axis", "dimension", "U2")],
-        args=ResolveSemanticsArgs(provenance="USER_SOURCE"),
+        args=ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(source_ref,),
+            source_obligation_ids=("U2",),
+            target_kind_hints=("dimension",),
+        ),
         linker=narrowed,
         discovery_pass="test_narrowed_exclude",
         source_truth_by_key=source_truth,
