@@ -1410,7 +1410,7 @@ class ResearchManagerLoop:
         data = json.loads(raw) if isinstance(raw, str) else raw
         return ManagerDecisionTransport.model_validate(data)
 
-    def _decision(
+    def _decision_with_availability(
         self,
         *,
         question: str,
@@ -1485,6 +1485,33 @@ class ResearchManagerLoop:
                 raise RuntimeError(
                     f"RESEARCH_MANAGER structured action invalid after one format retry: {exc}"
                 ) from exc
+
+    def _decision(
+        self,
+        *,
+        question: str,
+        runtime: ManagerRuntime,
+        observations,
+        conversation: ConversationStateV2 | None = None,
+        action_frontier: dict[str, Any] | None = None,
+        research_state: ResearchStateView | None = None,
+        ready_tasks: tuple[Any, ...] = (),
+        hypothesis_ledgers: dict[str, Any] | None = None,
+        evidence_store=None,
+    ):
+        """Compatibility decision surface; production loop also consumes availability."""
+        decision, _availability = self._decision_with_availability(
+            question=question,
+            runtime=runtime,
+            observations=observations,
+            conversation=conversation,
+            action_frontier=action_frontier,
+            research_state=research_state,
+            ready_tasks=ready_tasks,
+            hypothesis_ledgers=hypothesis_ledgers,
+            evidence_store=evidence_store,
+        )
+        return decision
 
     def _source_refs(self, *, message_id: str, surfaces: tuple[str, ...]) -> tuple[str, ...]:
         return tuple(
@@ -2176,7 +2203,7 @@ class ResearchManagerLoop:
                 evidence_store=getattr(executor, "evidence_store", None),
             )
             try:
-                decision, availability = self._decision(
+                decision, availability = self._decision_with_availability(
                     question=question,
                     runtime=runtime,
                     observations=observations,
