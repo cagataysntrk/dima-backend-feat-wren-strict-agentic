@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""One real Luna P17 recursive-investigation canary.
+"""Historical deterministic P17 scenario / contract lab.
 
-This is a bounded behavioral canary, not a corpus/eval. Luna chooses typed
-investigation content; deterministic harness guidance constrains only the authority
-shape required by DMP-DEC-0049.
+This scripted trajectory is retained as DMP-DEC-0049 contract evidence only.
+It is not an autonomous cognition certification oracle under DMP-DEC-0050.
+Turn-level guidance is intentional here because this file tests one scenario.
 """
 from __future__ import annotations
 
