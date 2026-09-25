@@ -37,6 +37,7 @@ from app.v2.manager_runtime import (
 from app.v2.models import EvidenceArtifact
 from app.v2.research_tasks import ResearchTaskRegistry
 from app.v2.source_spans import SourceSpanRegistry
+from lab.v2_certification_oracle import certify_adaptive_lifecycle
 
 
 def _runtime_with_directive(
@@ -349,3 +350,181 @@ def test_action_availability_projects_only_parent_lineage_evidence_for_open_dire
         item.binding("evidence_ref") != "E_ROOT"
         for item in dispositions
     )
+
+
+def _set_parent_terminal(
+    runtime: ManagerRuntime,
+    status: ObligationStatus,
+    *,
+    evidence_refs: tuple[str, ...] = (),
+):
+    item = runtime.ledger.items[0]
+    runtime._ledger = runtime.ledger.model_copy(
+        update={
+            "items": (
+                item.model_copy(
+                    update={
+                        "status": status,
+                        "evidence_refs": evidence_refs,
+                    }
+                ),
+            )
+        }
+    )
+    runtime._snapshot = runtime.snapshot.model_copy(
+        update={
+            "evidence_refs": evidence_refs,
+            "inspected_evidence_refs": evidence_refs,
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        ObligationStatus.BLOCKED_DATA_GAP,
+        ObligationStatus.LIMITED,
+        ObligationStatus.UNSUPPORTED,
+    ],
+)
+def test_partial_terminal_parent_reconciles_adapt_to_blocked_without_evidence_or_model(
+    status,
+):
+    runtime, _store = _runtime_with_directive(
+        ResearchDirectiveType.ADAPT_ON_EVIDENCE
+    )
+    _set_parent_terminal(runtime, status)
+
+    reconciled = ResearchManagerLoop._reconcile_blocked_research_directives(
+        runtime=runtime,
+    )
+
+    assert reconciled == ("R1",)
+    disposition = runtime.directive_disposition("R1")
+    assert disposition.status == ResearchDirectiveDispositionStatus.BLOCKED
+    assert disposition.evidence_ref is None
+    assert disposition.branch_task_refs == ()
+    assert status.value in disposition.reason
+
+    assert ResearchManagerLoop._try_deterministic_finish(
+        runtime=runtime,
+        task_registry=ResearchTaskRegistry(),
+    ) is True
+    assert runtime.snapshot.state == ManagerState.COMPLETED
+    assert runtime.snapshot.terminal_status.value == "PARTIAL"
+
+
+@pytest.mark.parametrize(
+    "status",
+    [ObligationStatus.VERIFIED, ObligationStatus.ACCEPTED],
+)
+def test_nonpartial_parent_cannot_auto_block_adapt_directive(status):
+    runtime, _store = _runtime_with_directive(
+        ResearchDirectiveType.ADAPT_ON_EVIDENCE
+    )
+    _set_parent_terminal(
+        runtime,
+        status,
+        evidence_refs=("E1",) if status == ObligationStatus.VERIFIED else (),
+    )
+
+    assert ResearchManagerLoop._reconcile_blocked_research_directives(
+        runtime=runtime,
+    ) == ()
+    assert (
+        runtime.directive_disposition("R1").status
+        == ResearchDirectiveDispositionStatus.OPEN
+    )
+    with pytest.raises(
+        ManagerStateError,
+        match="authoritative partial-terminal parent",
+    ):
+        runtime.account_research_directive(
+            directive_id="R1",
+            status=ResearchDirectiveDispositionStatus.BLOCKED,
+            evidence_ref=None,
+            branch_task_refs=(),
+            reason="not-authoritative-block",
+        )
+
+
+def test_blocked_disposition_shape_allows_no_evidence_only_with_reason_and_no_branches():
+    valid = ResearchDirectiveDisposition(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.BLOCKED,
+        evidence_ref=None,
+        branch_task_refs=(),
+        reason="authoritative parent terminal partial",
+    )
+    assert valid.evidence_ref is None
+
+    with pytest.raises(ValueError, match="bounded reason"):
+        ResearchDirectiveDisposition(
+            directive_id="R1",
+            directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+            parent_obligation_id="U1",
+            status=ResearchDirectiveDispositionStatus.BLOCKED,
+            evidence_ref=None,
+            branch_task_refs=(),
+            reason=None,
+        )
+    with pytest.raises(ValueError, match="branch task refs"):
+        ResearchDirectiveDisposition(
+            directive_id="R1",
+            directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+            parent_obligation_id="U1",
+            status=ResearchDirectiveDispositionStatus.BLOCKED,
+            evidence_ref=None,
+            branch_task_refs=("D1",),
+            reason="blocked",
+        )
+
+
+def test_blocked_certification_accepts_authoritative_partial_parent_without_evidence():
+    runtime, _store = _runtime_with_directive(
+        ResearchDirectiveType.ADAPT_ON_EVIDENCE
+    )
+    _set_parent_terminal(runtime, ObligationStatus.BLOCKED_DATA_GAP)
+    ResearchManagerLoop._reconcile_blocked_research_directives(runtime=runtime)
+    directive = runtime.accepted_contract.research_directives[0]
+    disposition = runtime.directive_disposition("R1")
+
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(),
+        ledger=runtime.ledger,
+        inspected_evidence_refs=(),
+        product_verified_complete=False,
+    )
+
+    assert certification.valid is True
+    assert certification.lifecycle_outcome == "VALID_PRODUCT_TERMINAL"
+    assert (
+        certification.certification_coverage
+        == "CERTIFICATION_COVERAGE_INCOMPLETE"
+    )
+    assert certification.evidence_ref is None
+
+
+def test_blocked_certification_can_never_greenwash_verified_complete():
+    runtime, _store = _runtime_with_directive(
+        ResearchDirectiveType.ADAPT_ON_EVIDENCE
+    )
+    _set_parent_terminal(runtime, ObligationStatus.LIMITED)
+    ResearchManagerLoop._reconcile_blocked_research_directives(runtime=runtime)
+
+    certification = certify_adaptive_lifecycle(
+        directive=runtime.accepted_contract.research_directives[0],
+        disposition=runtime.directive_disposition("R1"),
+        evidence_items=(),
+        ledger=runtime.ledger,
+        inspected_evidence_refs=(),
+        product_verified_complete=True,
+    )
+
+    assert certification.valid is False
+    assert certification.lifecycle_outcome == "INVALID"
+    assert any("VERIFIED_COMPLETE" in item for item in certification.errors)
