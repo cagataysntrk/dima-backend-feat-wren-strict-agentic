@@ -8,13 +8,20 @@ on:
       - "backend/app/v3/research.py"
       - "backend/app/v3/research_store.py"
       - "backend/app/v3/research_product.py"
+      - "backend/app/v3/research_native_gateway.py"
+      - "backend/app/v3/security_identity.py"
+      - "backend/app/v3/execution_identity.py"
+      - "backend/app/v3/evidence.py"
+      - "backend/app/v3/substrate/metabase/native_engine.py"
       - "backend/app/v2/models.py"
       - "backend/app/routers/ask_v2.py"
       - "backend/app/main.py"
       - "backend/control_plane/models.py"
       - "backend/migrations/versions/c4d9e2a7f160_p14_research_persistence.py"
+      - "backend/migrations/versions/c6f1a2d9e870_p14_native_gateway.py"
       - "backend/tests/test_v3_p14_research.py"
       - "backend/tests/test_v3_p14_product.py"
+      - "backend/tests/test_v3_p14_native_gateway.py"
       - ".github/workflows/dima-metabase-p14-provider-free.yml"
   workflow_dispatch:
 
@@ -52,9 +59,10 @@ jobs:
           HOT=(
             "backend/app/v3/research.py"
             "backend/app/v3/research_product.py"
+            "backend/app/v3/research_native_gateway.py"
           )
           for file in "${HOT[@]}"; do
-            if grep -nE 'app\.v3\.substrate\.metabase\.(compiler|canonical|execution_adapter)|app\.wren|wren_service|MetabaseAgentClient' "$file"; then
+            if grep -nE 'app\.v3\.substrate\.metabase\.(compiler|canonical|execution_adapter)|app\.v3\.native_standard\.trust|app\.v3\.analytics_contract|app\.v2\.temporal(_intent)?|app\.wren|wren_service|MetabaseAgentClient|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer' "$file"; then
               echo "P14 Research product introduced a legacy/duplicate analytical dependency" >&2
               exit 1
             fi
@@ -64,18 +72,18 @@ jobs:
       - name: Compile P14 Research product slice
         working-directory: backend
         run: |
-          python -m py_compile             app/v3/research.py             app/v3/research_store.py             app/v3/research_product.py             app/v2/models.py             app/routers/ask_v2.py             control_plane/models.py             migrations/versions/c4d9e2a7f160_p14_research_persistence.py             tests/test_v3_p14_research.py             tests/test_v3_p14_product.py
+          python -m py_compile             app/v3/research.py             app/v3/research_store.py             app/v3/research_product.py             app/v3/research_native_gateway.py             app/v3/security_identity.py             app/v3/execution_identity.py             app/v3/evidence.py             app/v3/substrate/metabase/native_engine.py             app/v2/models.py             app/routers/ask_v2.py             control_plane/models.py             migrations/versions/c4d9e2a7f160_p14_research_persistence.py             migrations/versions/c6f1a2d9e870_p14_native_gateway.py             tests/test_v3_p14_research.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py
 
       - name: Verify single Alembic head includes P14 durability
         working-directory: backend
         run: |
           set -euo pipefail
-          python -m alembic heads | grep -q '^c4d9e2a7f160'
+          python -m alembic heads | grep -q '^c6f1a2d9e870'
 
       - name: P14 focused provider-free Research proof
         working-directory: backend
         run: |
-          pytest -q             tests/test_v3_p14_research.py             tests/test_v3_p14_product.py
+          pytest -q             tests/test_v3_p14_research.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py
 
       - name: Existing trust/receipt regressions remain authoritative
         working-directory: backend
