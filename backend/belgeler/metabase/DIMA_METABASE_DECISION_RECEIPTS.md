@@ -5725,3 +5725,65 @@ P20 implementation = NOT AUTHORIZED
 P21 = NOT STARTED
 UI / UX = FORBIDDEN UNTIL P21 SEALED
 ```
+
+
+---
+
+## DMP-DEC-0056 — MINIMAL REPORTDOCUMENT / PUBLICATION LEGALITY AUTHORITY
+
+date: 2026-09-26
+
+status:
+`RATIFIED / P20 MINIMAL IMPLEMENTATION AUTHORIZED / PROVIDER-FREE FIRST`
+
+Forward authority:
+
+```text
+P14-P19 = SEALED / READ-ONLY INPUT AUTHORITY
+P20     = GOVERNED REPORT SYNTHESIS / PUBLICATION LEGALITY
+P21     = NOT IMPLEMENTATION-AUTHORIZED
+UI/UX   = FORBIDDEN
+```
+
+P20 is authorized for exactly one durable record family:
+
+```text
+ReportDocument
+```
+
+The first vertical is bounded to:
+
+```text
+sealed ResearchSession
++ accepted USER_MUST obligation set
++ exact governed source identities/fingerprints
++ typed ReportStatement / CoverageEntry / ReportLimitation
+→ deterministic ReportClaimGate
+→ complete USER_MUST accounting
+→ immutable/versioned ReportDocument
+```
+
+Permanent constraints:
+
+```text
+P20 != analytics
+P20 != semantic discovery
+P20 != causal discovery
+P20 != P16 claim truth
+P20 != P19 epistemic truth
+P20 != P21 recommendation/action
+```
+
+High-risk NUMERIC / CAUSAL / ROOT_CAUSE / CONTRIBUTION publication is typed before the gate and is
+rendered deterministically from exact governed upstream authority. Free-text regex/fuzzy/morph/model
+self-certification is forbidden.
+
+No new report-section, report-claim, citation-edge, report-source, report-graph or report-limitation
+table is authorized. No router, UI or model is required for this first vertical.
+
+Provider-free proof must precede sealing. One canonical affected closure must include P20 plus
+P19/P18/P17/P16/P15/P14 regressions and governance. Engine remains pinned to
+`cbe313af9ac2d5960f662068e433d328d896fb06`; engine builds/modifications and Metabase core
+modifications remain zero.
+
+After P20 GREEN, immediately complete P21 DECISION INTELLIGENCE pre-development review only.

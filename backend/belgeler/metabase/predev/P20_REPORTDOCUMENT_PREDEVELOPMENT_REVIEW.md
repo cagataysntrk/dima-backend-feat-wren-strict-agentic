@@ -1,7 +1,7 @@
 # P20 — REPORTDOCUMENT / CLAIM-TO-EVIDENCE SYNTHESIS PRE-DEVELOPMENT REVIEW
 
 **Date:** 2026-09-25  
-**Status:** **PRE-DEVELOPMENT REVIEW COMPLETE / IMPLEMENTATION NOT AUTHORIZED**  
+**Status:** **PRE-DEVELOPMENT REVIEW COMPLETE / DMP-DEC-0056 MINIMAL IMPLEMENTATION AUTHORIZED / PROVIDER-FREE FIRST**  
 **Consumes:** sealed P14 + P15 + P16 + P17 + P18 + P19 authority  
 **Production code in this directive:** 0  
 **Tables/migrations in this directive:** 0  
@@ -437,3 +437,28 @@ UI / UX = FORBIDDEN UNTIL P21 SEALED
 
 This review is the complete requested P20 pre-development output. It contains no production P20 code,
 table, migration, model dispatch or UI work.
+
+
+## 21. DMP-DEC-0056 implementation authorization
+
+Supervisor authority on 2026-09-26 authorizes exactly the minimal provider-free vertical already
+defined by this review. The design boundary is unchanged:
+
+```text
+one sealed ResearchSession
++ accepted USER_MUST obligations
++ governed P14/P16/P19 identities
++ exact source provenance
++ explicit limitations
+→ typed ReportDraft
+→ deterministic ReportClaimGate
+→ USER_MUST accounting = 100%
+→ one immutable/versioned ReportDocument
+→ restart/idempotency proof
+```
+
+Authorization does not open a router, UI, model-backed prose, analytical execution, a second
+Evidence/claim/root-cause authority, or any engine/Metabase core modification.
+
+After deterministic GREEN, P20 may be sealed and P21 DECISION INTELLIGENCE pre-development review
+must begin immediately. P21 implementation remains unauthorized.

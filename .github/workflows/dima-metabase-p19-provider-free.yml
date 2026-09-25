@@ -85,14 +85,15 @@ jobs:
             python -m py_compile lab/metabase/p19/autonomous_eval.py
           fi
 
-      - name: Verify single Alembic head
+      - name: Verify single Alembic head retains sealed P19 revision
         working-directory: backend
         shell: bash
         run: |
           set -euo pipefail
           python -m alembic heads > /tmp/p19-heads.txt
           test "$(grep -Ec '^[0-9a-f]+' /tmp/p19-heads.txt)" -eq 1
-          grep -q '^f6b2e8c4a917' /tmp/p19-heads.txt
+          python -m alembic history --verbose > /tmp/p19-history.txt
+          grep -q 'Rev: f6b2e8c4a917' /tmp/p19-history.txt
 
       - name: Guard P19 as epistemic authority only
         shell: bash

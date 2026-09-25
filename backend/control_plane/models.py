@@ -1387,3 +1387,46 @@ class RootCauseAssessment(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+
+
+
+class ReportDocumentRecord(SQLModel, table=True):
+    """Immutable P20 governed-report snapshot; references upstream truth without owning it."""
+
+    __tablename__ = "p20_report_document"
+    __table_args__ = (
+        UniqueConstraint(
+            "research_session_id",
+            "report_key",
+            "revision",
+            name="uq_p20_report_document_revision",
+        ),
+        UniqueConstraint(
+            "report_fingerprint",
+            name="uq_p20_report_document_fingerprint",
+        ),
+    )
+
+    report_id: str = Field(primary_key=True)
+    research_session_id: str = Field(
+        foreign_key="research_session.session_id",
+        index=True,
+    )
+    tenant_binding: str = Field(index=True)
+    semantic_context_version: str = Field(index=True)
+    report_key: str = Field(index=True)
+    revision: int = Field(ge=1, index=True)
+    parent_report_id: str | None = Field(
+        default=None,
+        foreign_key="p20_report_document.report_id",
+        index=True,
+    )
+    coverage_json: str = Field(sa_column=Column(Text, nullable=False))
+    statements_json: str = Field(sa_column=Column(Text, nullable=False))
+    source_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    limitations_json: str = Field(sa_column=Column(Text, nullable=False))
+    source_set_fingerprint: str = Field(index=True)
+    report_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

@@ -52,6 +52,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/business_relationship_policy.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/hypothesis_root_cause.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/hypothesis_root_cause_provider.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/report_document.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -650,4 +651,90 @@ jobs:
               --lock "$LOCK" \
               --gitlink-sha "$GITLINK_SHA" \
               --print-json
+          fi
+
+
+      - name: Require authorized P20 ReportDocument review
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/report_document.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P20_REPORTDOCUMENT_PREDEVELOPMENT_REVIEW.md"
+            DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+            test -f "$REVIEW"
+            grep -q "DMP-DEC-0056" "$REVIEW"
+            grep -q "MINIMAL IMPLEMENTATION AUTHORIZED" "$REVIEW"
+            grep -q "DMP-DEC-0056 — MINIMAL REPORTDOCUMENT / PUBLICATION LEGALITY AUTHORITY" "$DECISIONS"
+          fi
+
+      - name: Guard P20 as one-table publication authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/report_document.py"
+          if [ -f "$HOT" ]; then
+            python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          path = Path("backend/app/v3/report_document.py")
+          source = path.read_text(encoding="utf-8")
+          tree = ast.parse(source)
+          imports = set()
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Import):
+                  imports.update(alias.name for alias in node.names)
+              elif isinstance(node, ast.ImportFrom):
+                  imports.add(node.module or "")
+
+          forbidden = (
+              "app.v3.substrate.metabase",
+              "app.v3.research_native_gateway",
+              "app.v3.research_followup",
+              "app.v3.native_execution",
+              "app.wren",
+              "numpy",
+              "pandas",
+              "scipy",
+              "statistics",
+          )
+          bad = sorted(name for name in imports if name.startswith(forbidden))
+          assert not bad, bad
+          for symbol in (
+              "NativeEngineBridge",
+              "MetabaseAgentClient",
+              "execute_dataset",
+              "explore_adhoc",
+              "attest_native_query",
+              "execute_native_query",
+              "wren_service",
+              "DimaQueryReceipt(",
+              "EvidenceArtifact(",
+              "ResearchClaimRecord(",
+              "RootCauseAssessmentRecord(",
+              ".assess(",
+          ):
+              assert symbol not in source, symbol
+
+          models = Path("backend/control_plane/models.py")
+          model_tree = ast.parse(models.read_text(encoding="utf-8"))
+          tables = set()
+          for node in model_tree.body:
+              if not isinstance(node, ast.ClassDef):
+                  continue
+              for item in node.body:
+                  if (
+                      isinstance(item, ast.Assign)
+                      and any(
+                          isinstance(target, ast.Name)
+                          and target.id == "__tablename__"
+                          for target in item.targets
+                      )
+                      and isinstance(item.value, ast.Constant)
+                      and isinstance(item.value.value, str)
+                      and item.value.value.startswith("p20_")
+                  ):
+                      tables.add(item.value.value)
+          assert tables == {"p20_report_document"}, tables
+          PY
           fi
