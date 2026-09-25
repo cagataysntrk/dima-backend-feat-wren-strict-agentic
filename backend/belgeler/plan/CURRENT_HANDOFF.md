@@ -1,5 +1,77 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY — D10-S PROVIDER-FREE CLOSURE COMPLETE / BUDGET RATIFICATION PENDING
+
+This is the current active authority. All older D10-S and D10-Q blocks below remain historical audit receipts.
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc proof HEAD             0b9c4a676a04cbf547f4d73116f048c319d77aa3
+latest Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+D10-S closure document         DIMA_DAY10_S_GOVERNANCE_SIMPLIFICATION.md
+
+Day7 affected                  36127275608 = GREEN
+Day8 affected                  36126639512 = GREEN
+Day10 focused                  36126639503 = GREEN
+D10-S real-Wren root           GREEN inside 36126639503
+presentation ownership         GREEN inside 36126639503
+
+ManagerBudget
+preacceptance                  4
+Research                       4
+outer                          8
+budget authority               EXPLICIT SUPERVISOR RATIFICATION PENDING
+further budget changes         FORBIDDEN
+
+fresh provider-call envelope   40
+used                           0 / 40
+paid execution                 NOT AUTHORIZED BY THIS CLOSURE
+
+Metabase source pass           metabase/metabase@2f3fe9904e4addbcbe4d32403d6a7ab2fc471100
+
+D10-S provider-free closure    COMPLETE
+D10-S FINAL EXIT / SEAL        PENDING BUDGET RATIFICATION
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+The two active supervisor REDs were classified before repair:
+
+```text
+Day10
+server-owned ROOT next-test child rt_*
+→ incorrectly promoted to semantic-expansion parent
+→ resolve_semantics re-advertised despite feasible accepted root metric
+class = CONTRACT / ARCHITECTURE
+
+Day7
+successful later-selected AGENT_DERIVED branch
+→ VERIFIED Evidence
+→ accepted ADAPT_ON_EVIDENCE remained OPEN
+→ CompletionGate could not close
+→ fifth cognition collided with Research 4-turn cap
+class = CONTRACT / ARCHITECTURE
+```
+
+Final D10-S architecture:
+- `ManagerActionAvailability` remains the single model-action availability owner.
+- Provider schema and runtime validation derive from the same resolved availability state.
+- Fresh disclosed VERIFIED Evidence is not re-inspected.
+- Post-acceptance USER_SOURCE semantic resolution remains unavailable.
+- ROOT semantic expansion is offered only when governed root handles cannot satisfy a material next-test contract.
+- Non-root semantic expansion remains available only for an evidence-grounded accepted parent with OPEN `ADAPT_ON_EVIDENCE`.
+- A derived ResearchTask child never becomes semantic authority merely because it produced Evidence.
+- Successful governed adaptive branches account their directive independent of execution transport.
+- Blocked/failed branches cannot account a directive.
+- Loop-boundary deterministic completion remains before another Research cognition turn.
+- Presentation USER_MUST authority is retained while analytical CompletionGate excludes presentation-only Evidence requirements.
+
+No paid call was consumed. Do not start another paid measurement and do not begin Day11 without new supervisor authority.
+
+
 ## LATEST AUTHORITY OVERRIDE — D10-S GOVERNANCE / SEMANTIC SIMPLIFICATION ACTIVE
 
 This is the current active authority. Historical D10-Q READY / TRUE STOP / paid-budget blocks below are audit receipts only and remain unchanged.
