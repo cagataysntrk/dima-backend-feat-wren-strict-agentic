@@ -25,6 +25,7 @@ NO UI/UX BEFORE P21.
 
 ```text
 certified product/code checkpoint     = d1bc5291b315ff19c3456d08ff1820e983d85942
+latest non-doc branch checkpoint      = 80e1c96593e12fd7b23973f949057ef9604ce5c4
 branch                                = feat/dima-metabase-platform
 forward authority                     = DMP-DEC-0048 + DMP-DEC-0049
 
@@ -34,49 +35,89 @@ engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e7
 engine certification                  = 36042062775 SUCCESS
 engine changes/builds during P17      = 0 / 0
 
-post-live-root-fix governance         = 36128262891 SUCCESS
-P17 recursive provider-free           = 36128262857 SUCCESS
-P17 focused recursive regression      = 29 PASS
+typed-adapter root-fix provider-free  = 36128262857 SUCCESS
+typed-adapter root-fix governance     = 36128262891 SUCCESS
+corrected-live harness-fix governance = 36131121548 SUCCESS
+corrected-live harness-fix provider-free = 36131121661 SUCCESS
+
+P17 focused recursive regression      = 31 PASS
 P16 claim-lineage regression          = 6 PASS
 P15 native Exploration regression     = 5 PASS
 P14 native-direct regression          = 17 PASS
 
-one authorized Luna live canary       = 36127753645 FAILURE
-live canary platform SHA              = 058a484728965ed8e5ad39bd249e5e88217c1496
-live canary dispatch count            = 1
-P17 manager Luna calls before RED     = 1
-base Metabot OpenRouter request events= 10
-P17 recursive follow-up occurrences   = 0
+failed Luna live runs                 = 2
+successful Luna live runs             = 0
+manager Luna calls total              = 8
+Metabot analytical occurrences total  = 4
 Sol calls                             = 0
 
-live RED root cause                   = typed adapter nullability mismatch
-root-fix code                         = b81b8aaa1ff06faa9cab67511b47b8730d94a8f3
-root-fix regression                   = 7035fc7236e9761ace12f1e73b5bfed8403127dc
+live RED #1                           = 36127753645 FAILURE
+live RED #1 platform SHA              = 058a484728965ed8e5ad39bd249e5e88217c1496
+live RED #1 manager calls             = 1
+live RED #1 Metabot occurrences       = 1
+live RED #1 P17 follow-up occurrences = 0
+live RED #1 owner                     = TYPED ADAPTER / STRUCTURED-OUTPUT CONTRACT
+
+corrected live RED #2                 = 36130479544 FAILURE
+corrected live platform SHA           = db30b352b6c2cc469074145e714483ca25c99474
+corrected live manager calls          = 7
+corrected live Metabot occurrences    = 3
+corrected live P17 follow-ups          = 2
+corrected live owner                  = HARNESS / INFRA
+
+live RED #1 root fix                  = b81b8aaa1ff06faa9cab67511b47b8730d94a8f3
+live RED #1 regression                = 7035fc7236e9761ace12f1e73b5bfed8403127dc
+corrected live harness root fix       = 80e1c96593e12fd7b23973f949057ef9604ce5c4
 
 P14                                   = SEALED
 P15                                   = SEALED
 P16                                   = SEALED
 P17 bounded-manager foundation        = PROVIDER-FREE GREEN
 P17 recursive authority               = PROVIDER-FREE GREEN
-P17 live cognition evidence           = RED / INCOMPLETE
+P17 real recursive cognition          = LIVE RED / NOT SEALED
 P17 overall                           = NOT SEALED
-P18                                   = BLOCKED UNTIL P17 LIVE SEAL
+P18                                   = BLOCKED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 ```
 
 ### CURRENT P17 GATE
 
-The only authorized paid Luna canary has been consumed. It failed before the first accepted P17
-reasoning step was persisted because the live draft schema allowed
-`expected_information_gain = null` while deterministic `ManagerProposal` correctly forbids it for
-non-STOP proposals.
+Two supervisor-authorized Luna live runs are append-only evidence.
 
-That adapter-contract defect is root-fixed and fully provider-free GREEN. It did **not** require an
-engine patch, P13 reopening, a second executor, a second receipt family, a second claim authority, or
-Dima-owned analytics.
+The first run, `36127753645`, failed before the first accepted durable P17 reasoning step because
+the structured-output transport allowed `expected_information_gain = null` while deterministic
+non-STOP `ManagerProposal` authority forbids it. That typed-adapter defect was root-fixed by
+`b81b8aaa1ff06faa9cab67511b47b8730d94a8f3` +
+`7035fc7236e9761ace12f1e73b5bfed8403127dc` and certified provider-free by
+`36128262857 = SUCCESS`.
 
-Do not mark P17 SEALED and do not begin P18. Do not dispatch another paid Luna canary without an
-explicit supervisor decision. The append-only evidence is `DMP-P17-LIVE-RED-001`.
+The corrected run, `36130479544`, passed environment/runtime/bootstrap, produced seven valid
+Research Manager Luna proposals, executed three native Metabot analytical occurrences in total
+(base + two P17 follow-ups), produced the required native Evidence path, preserved sibling branches,
+stopped the unselected sibling, deepened the manager-selected branch, and reached REPLAN. It then
+failed in the canary harness because the post-REPLAN assertion compared the runtime-selected branch
+against hard-coded `alt_a_step.branch_id` instead of `selected_parent.branch_id`.
+
+Classification:
+
+```text
+HARNESS / INFRA RED
+NOT manager cognition RED
+NOT P17 state-machine RED
+NOT Metabot analytics RED
+NOT Metabase runtime RED
+```
+
+The harness-only root fix is `80e1c96593e12fd7b23973f949057ef9604ce5c4`.
+Provider-free proof is `36131121661 = SUCCESS`; governance is
+`36131121548 = SUCCESS`.
+
+P17 is **NOT SEALED** because there is still no successful corrected live cognition receipt.
+P18 remains **BLOCKED**. No third paid Luna run is authorized. Return to supervisor before any
+additional live dispatch or P18 implementation.
+
+Append-only evidence:
+`DMP-P17-LIVE-RED-001` and `DMP-P17-LIVE-RED-002`.
 
 Permanent forward split:
 

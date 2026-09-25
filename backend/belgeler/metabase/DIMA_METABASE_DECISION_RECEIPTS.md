@@ -3601,3 +3601,87 @@ P18                     = BLOCKED
 No second paid Luna dispatch is authorized by default. Preserve `DMP-P17-LIVE-RED-001` and require
 an explicit supervisor decision before another paid canary.
 
+### DMP-DEC-0049 corrected live evidence — RED / HARNESS-ASSERTION
+
+date: 2026-09-25
+
+The supervisor-authorized corrected one-shot Luna canary was:
+
+```text
+run                         = 36130479544 FAILURE
+platform SHA                = db30b352b6c2cc469074145e714483ca25c99474
+certified product/code      = d1bc5291b315ff19c3456d08ff1820e983d85942
+manager Luna calls          = 7
+Metabot analytical runs     = 3
+P17_FOLLOWUP occurrences    = 2
+Sol calls                   = 0
+engine builds               = 0
+```
+
+The run progressed beyond the typed-adapter boundary that caused
+`DMP-P17-LIVE-RED-001`. The manager opened/retained sibling alternatives, selected a material
+branch, executed native analytical follow-up through the shared P17/P14 occurrence path, produced
+Evidence, stopped the unselected sibling, deepened the selected branch, and reached REPLAN.
+
+First wrong transition:
+
+```text
+accepted REPLAN branch identity
+→ harness compared replan_step.branch_id to alt_a_step.branch_id
+→ Luna had legitimately selected the other sibling
+→ RuntimeError: REPLAN lost candidate A branch identity
+```
+
+Exact owner:
+
+```text
+HARNESS / INFRA
+```
+
+This is not a manager-cognition, P17-state-machine, Metabot-analytics, or Metabase-runtime failure.
+
+Root fix:
+
+```text
+80e1c96593e12fd7b23973f949057ef9604ce5c4
+```
+
+The canary now compares REPLAN against the runtime `selected_parent.branch_id`. A provider-free
+regression explicitly proves sibling-B selection → native discriminating test → deepen → REPLAN
+preserves branch identity, and statically guards against reintroducing candidate-A hard coding.
+
+Proof:
+
+```text
+governance      = 36131121548 SUCCESS
+provider-free   = 36131121661 SUCCESS
+P17             = 31 PASS
+P16             = 6 PASS
+P15             = 5 PASS
+P14             = 17 PASS
+live rerun      = NOT AUTHORIZED / NOT DISPATCHED
+```
+
+Paid/live accounting across both append-only P17 attempts:
+
+```text
+failed Luna live runs       = 2
+successful Luna live runs   = 0
+manager Luna calls          = 8  # 1 + 7
+Metabot analytical runs     = 4  # 1 + 3
+Sol calls                   = 0
+engine builds               = 0
+```
+
+Phase status remains:
+
+```text
+P17 recursive authority = PROVIDER-FREE GREEN
+P17 live cognition      = RED / INCOMPLETE
+P17                     = NOT SEALED
+P18                     = BLOCKED
+```
+
+No third paid Luna canary is authorized. Return to supervisor with
+`DMP-P17-LIVE-RED-002`; do not begin P18 implementation.
+
