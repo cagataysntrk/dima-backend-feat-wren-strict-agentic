@@ -85,6 +85,7 @@ from app.v2.research_tasks import ResearchTaskRegistry
 from app.v2.research_tools import ResearchToolRunner
 from app.v2.root_cause_orchestration import (
     HypothesisNextTestBoundary,
+    RootCauseLoopContext,
     RootCauseBootstrapPolicy,
     RootCauseBootstrapStatus,
     RootCauseOrchestrationError,
@@ -597,6 +598,7 @@ def _decide(
         ),
         ready_tasks=fixture.registry.tasks,
         hypothesis_ledgers={"U_ROOT": fixture.ledger},
+        evidence_store=fixture.executor.evidence_store,
     )
 
 
@@ -606,6 +608,11 @@ def run_scenario(manager_llm) -> dict[str, Any]:
         llm=manager_llm,
         source_spans=fixture.spans,
         research_tool_runner=fixture.runner,
+        root_cause_context=RootCauseLoopContext(
+            semantic_handles=fixture.handles,
+            tenant_binding=fixture.tenant,
+            context_version=fixture.context_version,
+        ),
     )
     observations: list[dict[str, Any]] = []
     action_sequence: list[str] = []
