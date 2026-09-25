@@ -732,6 +732,59 @@ class ResearchExplorationMaterial(SQLModel, table=True):
     )
 
 
+class ResearchClaimRecord(SQLModel, table=True):
+    """Durable P16 claim identity; no analytical truth computation lives here."""
+
+    __tablename__ = "research_claim"
+
+    claim_id: str = Field(primary_key=True)
+    session_id: str = Field(foreign_key="research_session.session_id", index=True)
+    obligation_id: str = Field(index=True)
+    tenant_binding: str = Field(index=True)
+    principal_subject: str = Field(index=True)
+    semantic_context_version: str = Field(index=True)
+    claim_text: str = Field(sa_column=Column(Text, nullable=False))
+    proposition_json: str = Field(sa_column=Column(Text, nullable=False))
+    scope_json: str = Field(sa_column=Column(Text, nullable=False))
+    freshness_json: str = Field(sa_column=Column(Text, nullable=False))
+    origin_material_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    epistemic_state: str = Field(default="PROPOSED", index=True)
+    limitations_json: str = Field(sa_column=Column(Text, nullable=False))
+    claim_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
+class ClaimEvidenceLinkRecord(SQLModel, table=True):
+    """Immutable P16 edge from one claim to one eligible P14 Evidence identity."""
+
+    __tablename__ = "claim_evidence_link"
+    __table_args__ = (
+        UniqueConstraint(
+            "claim_id",
+            "evidence_id",
+            name="uq_claim_evidence_link_claim_evidence",
+        ),
+    )
+
+    link_id: str = Field(primary_key=True)
+    claim_id: str = Field(foreign_key="research_claim.claim_id", index=True)
+    evidence_id: str = Field(index=True)
+    receipt_id: str = Field(index=True)
+    execution_link_id: uuid.UUID = Field(
+        foreign_key="research_execution_link.id",
+        index=True,
+    )
+    relation: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
 class MetrikSahipligi(SQLModel, table=True):
     """FAZ 2.2b — bir **çakışan terimin** sahibi hangi cube'dur.
 
