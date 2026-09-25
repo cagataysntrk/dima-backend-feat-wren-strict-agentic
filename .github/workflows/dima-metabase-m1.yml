@@ -11,6 +11,7 @@ on:
       - "!backend/app/v3/research_product.py"
       - "!backend/app/v3/research_native_gateway.py"
       - "!backend/app/v3/research_exploration.py"
+      - "!backend/app/v3/claim_lineage.py"
       - "!backend/app/v3/substrate/metabase/native_engine.py"
       - "!backend/app/v3/substrate/metabase/native_models.py"
       - "backend/tests/test_v3_m1_*.py"
@@ -24,7 +25,7 @@ jobs:
   m1-contract-and-wren-parity:
     # P14 has its own provider-free seal. This one-off guard prevents the workflow-file
     # correction commit itself from replaying the historical M1 source-isolation gate.
-    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[p14-ci]')
+    if: github.event_name == 'workflow_dispatch' || (!contains(github.event.head_commit.message, '[p14-ci]') && !contains(github.event.head_commit.message, '[product-ci]'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
