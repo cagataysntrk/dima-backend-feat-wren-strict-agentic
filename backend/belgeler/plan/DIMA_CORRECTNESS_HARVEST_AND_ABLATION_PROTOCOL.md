@@ -2682,3 +2682,49 @@ Cycle 2  stale model-owned branch identity expectations
 Cycle 3  stale deterministic-seed observation / cognition-trajectory assumptions
 status   3/3 exhausted; supervisor STOP before any further same-family patch
 ```
+
+
+---
+
+## PREACCEPTANCE UNIQUE-SCOPE DETERMINISM HARVEST
+
+Authority receipt:
+
+```text
+failure family                    FAM-PREACCEPTANCE-SCOPE-REPAIR-NONDETERMINISM
+Cycle 1/3                         provider-free CLOSED
+historical RED                    36179726900
+historical counterexample         36128949886
+Product behavior                  fde87df46c3fdee986fdf48f4e37884f5b51c395
+one-SHA closure                   dbf256f9122028fdb5398f360a951a66030a7fe5
+Day7                              36182712251 = GREEN
+Day8                              36182712368 = GREEN
+Day10                             36182712258 = GREEN
+```
+
+**H-165 — MUST_PORT — DETERMINISM BOUNDARY**  
+If governed server state already determines exactly one admissible semantic scope, LLM
+cognition must not decide whether that scope exists. Server-known uniqueness is
+bookkeeping/control-plane determinism, not a semantic judgment.
+
+**H-166 — MUST_PORT — COGNITION IS FOR MATERIAL AMBIGUITY**  
+Zero scopes, multiple materially distinct scopes, one partial-cover scope with extra
+eligible concepts, sensitive/wrong-kind/old-turn candidates, or failed atomic
+revalidation remain bounded-cognition / clarification cases. Deterministic closure
+must not broaden into heuristic semantic choice.
+
+**H-167 — MUST_PORT — SAME AUTHORITY STATE MUST NOT OSCILLATE**  
+Same SHA + same authoritative state must not alternate between ACCEPT and CLARIFY
+because a provider happened to select or abstain from a uniquely determined repair
+scope.
+
+**H-168 — MUST_PORT — REPAIR CONTEXT IS NOT AUTHORITY**  
+Retrieval != authority. Repair scope group != persisted authority. Source truth may be
+reused, but target semantic identity is freshly minted by SemanticBindingGate under the
+target obligation. No source sem_* identity is copied across parents.
+
+**H-169 — MUST_PORT — PARTITION BEFORE COGNITION**  
+Repair batches are partitioned into deterministic unique-full-cover requests and
+cognition-required requests. Only the latter reach the structured provider. Both paths
+merge by exact gap_ref and traverse the same member revalidation and BindingGate
+authority path.
