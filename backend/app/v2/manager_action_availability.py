@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+import hashlib
+import json
 
 
 POST_ACCEPTANCE_ACTIONS = (
@@ -67,6 +69,7 @@ class ActionAvailabilityReason(StrEnum):
     NO_ELIGIBLE_ADAPTIVE_DIRECTIVE_EVIDENCE = (
         "NO_ELIGIBLE_ADAPTIVE_DIRECTIVE_EVIDENCE"
     )
+    NO_APPLICABLE_SCOPE = "NO_APPLICABLE_SCOPE"
 
 
 @dataclass(frozen=True)
@@ -104,8 +107,215 @@ class AdaptiveDirectiveDispositionState:
 
 
 @dataclass(frozen=True)
+class ActionScopeSeed:
+    """Authority-projected correlated identity domain for one model action.
+
+    Seeds contain no language interpretation and grant no authority. They are direct
+    projections of identities already owned by AcceptedTurnContract/UOL/Evidence/
+    ResearchTask/Hypothesis/SemanticHandle runtime owners. ManagerActionAvailability
+    decides whether the action is currently advertisable and mints the versioned
+    model-facing scope.
+    """
+
+    action: str
+    parent_obligation_id: str | None = None
+    directive_id: str | None = None
+    hypothesis_ref: str | None = None
+    task_id: str | None = None
+    capability_key: str | None = None
+    obligation_ids: tuple[str, ...] = ()
+    evidence_refs: tuple[str, ...] = ()
+    handle_refs: tuple[str, ...] = ()
+    task_kinds: tuple[str, ...] = ()
+    metric_handles: tuple[str, ...] = ()
+    dimension_handles: tuple[str, ...] = ()
+    filter_handles: tuple[str, ...] = ()
+    period_handles: tuple[str, ...] = ()
+    comparison_handles: tuple[str, ...] = ()
+    focus_handles: tuple[str, ...] = ()
+    counterpart_handles: tuple[str, ...] = ()
+    ranking_direction: str | None = None
+    ranking_limit: int | None = None
+    reason_codes: tuple[str, ...] = ()
+
+    def payload(self) -> dict[str, object]:
+        return {
+            "action": self.action,
+            "parent_obligation_id": self.parent_obligation_id,
+            "directive_id": self.directive_id,
+            "hypothesis_ref": self.hypothesis_ref,
+            "task_id": self.task_id,
+            "capability_key": self.capability_key,
+            "obligation_ids": list(self.obligation_ids),
+            "evidence_refs": list(self.evidence_refs),
+            "handle_refs": list(self.handle_refs),
+            "task_kinds": list(self.task_kinds),
+            "metric_handles": list(self.metric_handles),
+            "dimension_handles": list(self.dimension_handles),
+            "filter_handles": list(self.filter_handles),
+            "period_handles": list(self.period_handles),
+            "comparison_handles": list(self.comparison_handles),
+            "focus_handles": list(self.focus_handles),
+            "counterpart_handles": list(self.counterpart_handles),
+            "ranking_direction": self.ranking_direction,
+            "ranking_limit": self.ranking_limit,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class ActionApplicabilityScope:
+    """One server-minted correlated model-facing applicability scope."""
+
+    scope_ref: str
+    state_version: str
+    action: str
+    parent_obligation_id: str | None = None
+    directive_id: str | None = None
+    hypothesis_ref: str | None = None
+    task_id: str | None = None
+    capability_key: str | None = None
+    obligation_ids: tuple[str, ...] = ()
+    evidence_refs: tuple[str, ...] = ()
+    handle_refs: tuple[str, ...] = ()
+    task_kinds: tuple[str, ...] = ()
+    metric_handles: tuple[str, ...] = ()
+    dimension_handles: tuple[str, ...] = ()
+    filter_handles: tuple[str, ...] = ()
+    period_handles: tuple[str, ...] = ()
+    comparison_handles: tuple[str, ...] = ()
+    focus_handles: tuple[str, ...] = ()
+    counterpart_handles: tuple[str, ...] = ()
+    ranking_direction: str | None = None
+    ranking_limit: int | None = None
+    reason_codes: tuple[str, ...] = ()
+
+    def model_view(self) -> dict[str, object]:
+        return {
+            "scope_ref": self.scope_ref,
+            "action": self.action,
+            "state_version": self.state_version,
+            "parent_obligation_id": self.parent_obligation_id,
+            "directive_id": self.directive_id,
+            "hypothesis_ref": self.hypothesis_ref,
+            "task_id": self.task_id,
+            "capability_key": self.capability_key,
+            "obligation_ids": list(self.obligation_ids),
+            "eligible_evidence_refs": list(self.evidence_refs),
+            "eligible_handle_refs": list(self.handle_refs),
+            "eligible_task_kinds": list(self.task_kinds),
+            "metric_handles": list(self.metric_handles),
+            "dimension_handles": list(self.dimension_handles),
+            "filter_handles": list(self.filter_handles),
+            "period_handles": list(self.period_handles),
+            "comparison_handles": list(self.comparison_handles),
+            "focus_handles": list(self.focus_handles),
+            "counterpart_handles": list(self.counterpart_handles),
+            "ranking_direction": self.ranking_direction,
+            "ranking_limit": self.ranking_limit,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class ActionApplicabilitySnapshot:
+    """Versioned VIEW over current applicability; never a semantic authority."""
+
+    snapshot_ref: str
+    state_version: str
+    scopes: tuple[ActionApplicabilityScope, ...]
+
+    def scope(self, scope_ref: str) -> ActionApplicabilityScope:
+        matches = tuple(item for item in self.scopes if item.scope_ref == scope_ref)
+        if len(matches) != 1:
+            raise KeyError(f"unknown applicability scope: {scope_ref}")
+        return matches[0]
+
+    def scopes_for(self, action: str) -> tuple[ActionApplicabilityScope, ...]:
+        return tuple(item for item in self.scopes if item.action == action)
+
+    def model_view(self) -> dict[str, object]:
+        return {
+            "snapshot_ref": self.snapshot_ref,
+            "state_version": self.state_version,
+            "scopes": [item.model_view() for item in self.scopes],
+        }
+
+
+def _scope_from_seed(
+    *,
+    state_version: str,
+    seed: ActionScopeSeed,
+) -> ActionApplicabilityScope:
+    canonical = json.dumps(
+        {
+            "state_version": state_version,
+            **seed.payload(),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    scope_ref = "aps_" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:24]
+    return ActionApplicabilityScope(
+        scope_ref=scope_ref,
+        state_version=state_version,
+        action=seed.action,
+        parent_obligation_id=seed.parent_obligation_id,
+        directive_id=seed.directive_id,
+        hypothesis_ref=seed.hypothesis_ref,
+        task_id=seed.task_id,
+        capability_key=seed.capability_key,
+        obligation_ids=tuple(dict.fromkeys(seed.obligation_ids)),
+        evidence_refs=tuple(dict.fromkeys(seed.evidence_refs)),
+        handle_refs=tuple(dict.fromkeys(seed.handle_refs)),
+        task_kinds=tuple(dict.fromkeys(seed.task_kinds)),
+        metric_handles=tuple(dict.fromkeys(seed.metric_handles)),
+        dimension_handles=tuple(dict.fromkeys(seed.dimension_handles)),
+        filter_handles=tuple(dict.fromkeys(seed.filter_handles)),
+        period_handles=tuple(dict.fromkeys(seed.period_handles)),
+        comparison_handles=tuple(dict.fromkeys(seed.comparison_handles)),
+        focus_handles=tuple(dict.fromkeys(seed.focus_handles)),
+        counterpart_handles=tuple(dict.fromkeys(seed.counterpart_handles)),
+        ranking_direction=seed.ranking_direction,
+        ranking_limit=seed.ranking_limit,
+        reason_codes=tuple(dict.fromkeys(seed.reason_codes)),
+    )
+
+
+def _snapshot(
+    *,
+    state_version: str,
+    seeds: tuple[ActionScopeSeed, ...],
+) -> ActionApplicabilitySnapshot:
+    scopes = tuple(
+        _scope_from_seed(state_version=state_version, seed=seed)
+        for seed in seeds
+    )
+    canonical = json.dumps(
+        {
+            "state_version": state_version,
+            "scope_refs": [item.scope_ref for item in scopes],
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    snapshot_ref = (
+        "apsnap_" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:24]
+    )
+    return ActionApplicabilitySnapshot(
+        snapshot_ref=snapshot_ref,
+        state_version=state_version,
+        scopes=scopes,
+    )
+
+
+@dataclass(frozen=True)
 class ManagerActionAvailabilityContext:
     root_states: tuple[RootActionState, ...] = ()
+    state_version: str | None = None
+    scope_seeds: tuple[ActionScopeSeed, ...] = ()
     inspectable_old_evidence_refs: tuple[str, ...] = ()
     effective_inspected_verified_evidence_refs: tuple[str, ...] = ()
     fresh_disclosed_evidence_ref: str | None = None
@@ -136,6 +346,7 @@ class ManagerActionAvailabilityProfile:
     directive_disposition_parent_obligation_id: str | None = None
     directive_disposition_evidence_refs: tuple[str, ...] = ()
     post_acceptance_resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",)
+    applicability_snapshot: ActionApplicabilitySnapshot | None = None
 
     def allows(self, action: str) -> bool:
         return action in self.available_actions
@@ -188,6 +399,11 @@ class ManagerActionAvailabilityProfile:
                 else None
             ),
             "remaining_research_turns": self.remaining_research_turns,
+            "applicability_snapshot": (
+                None
+                if self.applicability_snapshot is None
+                else self.applicability_snapshot.model_view()
+            ),
         }
 
 
@@ -439,6 +655,27 @@ class ManagerActionAvailability:
             and context.fresh_disclosed_verified
         )
 
+        applicability_snapshot = None
+        if context.state_version is not None:
+            candidate_seeds = tuple(
+                seed
+                for seed in context.scope_seeds
+                if seed.action in allowed
+            )
+            scoped_actions = {seed.action for seed in candidate_seeds}
+            for action in tuple(allowed):
+                if action not in scoped_actions:
+                    remove(action, ActionAvailabilityReason.NO_APPLICABLE_SCOPE)
+            candidate_seeds = tuple(
+                seed
+                for seed in candidate_seeds
+                if seed.action in allowed
+            )
+            applicability_snapshot = _snapshot(
+                state_version=context.state_version,
+                seeds=candidate_seeds,
+            )
+
         return ManagerActionAvailabilityProfile(
             available_actions=tuple(
                 action for action in POST_ACCEPTANCE_ACTIONS if action in allowed
@@ -479,4 +716,5 @@ class ManagerActionAvailability:
                 if selected_disposition is not None
                 else ()
             ),
+            applicability_snapshot=applicability_snapshot,
         )
