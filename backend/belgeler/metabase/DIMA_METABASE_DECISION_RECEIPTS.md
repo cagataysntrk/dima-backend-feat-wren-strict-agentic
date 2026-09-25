@@ -3694,7 +3694,7 @@ No third paid Luna canary is authorized. Return to supervisor with
 date: 2026-09-25
 
 status:
-`RATIFIED FORWARD DECISION / PROVIDER-FREE GREEN / ONE AUTONOMOUS LUNA CANARY AUTHORIZED / P18 BLOCKED`
+`RATIFIED FORWARD DECISION / PROVIDER-FREE GREEN / AUTONOMOUS LIVE RED — INFRA TRANSPORT / P17 NOT SEALED / P18 BLOCKED / NO SECOND PAID DISPATCH AUTHORIZED`
 
 DMP-DEC-0048 remains the native-direct analytical authority.
 DMP-DEC-0049 remains the recursive-investigation and P17/P19 ownership authority.
@@ -3870,3 +3870,58 @@ All prerequisites for the one DMP-DEC-0050 autonomous Luna canary are now GREEN.
 canary remains superseded as the final cognition oracle. The authorized paid run must use the new
 trajectory-invariant evaluator and autonomous manager path; no second paid run is authorized if it
 returns RED.
+
+
+### DMP-DEC-0050 autonomous live evidence — RED / INFRA TRANSPORT
+
+date: 2026-09-25
+
+```text
+authorization candidate       = adb12dcd166eac27859533b12c7f9ebcead19402
+authorization/dispatch commit = 5801ac71ba00867921dec17edff20568dc0fce05
+autonomous workflow run       = 36137304596 FAILURE
+dispatch governance           = 36137304653 SUCCESS
+
+manager Luna calls            = 0
+Metabot agent occurrences     = 0
+/api/dataset occurrences      = 0
+Sol calls                     = 0
+engine builds                 = 0
+C1 calls                      = 0
+```
+
+The authorization commit itself is correct and append-only diff evidence proves:
+
+```text
+backend/lab/metabase/p17/AUTONOMOUS_LUNA_AUTHORIZATION.json
+= ADDED
+
+backend/lab/metabase/p17/recursive_manager_canary.py
+= MODIFIED only with the transport marker
+```
+
+First wrong transition:
+
+```text
+valid add-only authorization commit existed
+→ compatibility entrypoint read GitHub push event
+→ entrypoint required the authorization path in head_commit.added
+→ this Actions push event did not expose that path through head_commit.added
+→ RuntimeError: paid autonomous canary requires add-only authorization receipt
+→ autonomous_manager_canary.py was never entered
+→ 0 Luna manager calls / 0 Metabot / 0 dataset
+```
+
+Exact owner:
+
+```text
+INFRA / EVALUATOR TRANSPORT
+```
+
+This is **not** evidence of MANAGER COGNITION, STRUCTURED OUTPUT, DETERMINISTIC AUTHORITY,
+STATE MACHINE, NATIVE ANALYTICS, LINEAGE, Metabase engine, or P17 recursive-product failure.
+The DMP-DEC-0050 provider-free proof remains GREEN at `36136988379`; governance remains GREEN.
+
+Per the one-canary RED rule, there is no automatic or second paid dispatch. The transport defect is
+recorded but is not patched-and-rerun under this authority. P17 remains NOT SEALED and P18 remains
+BLOCKED. A future paid autonomous certification attempt requires new supervisor authority.
