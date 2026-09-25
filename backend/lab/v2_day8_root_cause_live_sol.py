@@ -743,9 +743,18 @@ def run_scenario(manager_llm) -> dict[str, Any]:
         }
     )
 
-    # 4) Fresh VERIFIED result is disclosed directly to cognition. Production marks
-    # that exact Evidence inspected server-side after the scoped decision and before
-    # epistemic mutation; it does not spend another cognition turn on inspect_evidence.
+    # 4) Mirror the production loop boundary exactly. The freshly produced VERIFIED
+    # Evidence is disclosed in the current cognition packet and Product records that
+    # exact ref as inspected before applying the selected epistemic mutation. This is
+    # deterministic server bookkeeping, not a separate Manager cognition turn.
+    if second.evidence.artifact_id not in fixture.runtime.snapshot.inspected_evidence_refs:
+        fixture.runtime.mark_evidence_inspected(second.evidence.artifact_id)
+        observations.append(
+            {
+                "kind": "fresh_evidence_disclosed",
+                "evidence_ref": second.evidence.artifact_id,
+            }
+        )
     d4 = _decide(loop=loop, fixture=fixture, observations=observations)
     action_sequence.append(d4.action.value)
     if d4.action != ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION:
@@ -756,14 +765,6 @@ def run_scenario(manager_llm) -> dict[str, Any]:
     if d4.hypothesis_relation_evidence_ref != second.evidence.artifact_id:
         raise LiveBehaviorFailure(
             "epistemic relation did not use the fresh follow-up Evidence"
-        )
-    if second.evidence.artifact_id not in fixture.runtime.snapshot.inspected_evidence_refs:
-        fixture.runtime.mark_evidence_inspected(second.evidence.artifact_id)
-        observations.append(
-            {
-                "kind": "fresh_evidence_disclosed",
-                "evidence_ref": second.evidence.artifact_id,
-            }
         )
     updated = HypothesisProposalBoundary(ledger=fixture.ledger).attach_relation(
         HypothesisEvidenceRelationProposal(
