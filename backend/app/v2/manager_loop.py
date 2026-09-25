@@ -2235,6 +2235,27 @@ class ResearchManagerLoop:
                             "evidence_ref": latest_delta.evidence_ref,
                         }
                     )
+                    if _zero_row_completion_candidate(
+                        runtime=runtime,
+                        evidence_store=getattr(executor, "evidence_store", None),
+                        task_registry=task_registry,
+                    ):
+                        try:
+                            runtime.finish()
+                            observations.append(
+                                {
+                                    "kind": "finish",
+                                    "status": "accepted",
+                                    "reason": (
+                                        "fresh_disclosed_zero_row_no_material_branch"
+                                    ),
+                                }
+                            )
+                            break
+                        except ManagerStateError:
+                            # CompletionGate remains final authority. If the ledger or
+                            # directive state is not complete, continue bounded cognition.
+                            pass
             except Exception as exc:
                 observations.append({"kind": "model_error", "message": str(exc)})
                 break
