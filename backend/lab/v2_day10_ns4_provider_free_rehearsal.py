@@ -967,6 +967,20 @@ def run_rehearsal(
         if item.get("kind") == "tool"
         and item.get("tool") == "inspect_evidence"
     )
+    fresh_disclosed_refs = {
+        str(item.get("evidence_ref"))
+        for item in observations
+        if item.get("kind") == "fresh_evidence_disclosed"
+        and item.get("evidence_ref")
+    }
+    redundant_fresh_inspects = sum(
+        1
+        for item in observations
+        if item.get("kind") == "tool"
+        and item.get("tool") == "inspect_evidence"
+        and str((item.get("result") or {}).get("artifact_id"))
+        in fresh_disclosed_refs
+    )
     execution_control = {
         "run_analytics",
         "run_relationship",
@@ -1029,7 +1043,7 @@ def run_rehearsal(
         "actual_wren_queries_in_rehearsal": 0,
         "fresh_evidence_disclosures": fresh_disclosures,
         "explicit_old_evidence_inspections": explicit_inspects,
-        "redundant_fresh_inspect_turns": explicit_inspects,
+        "redundant_fresh_inspect_turns": redundant_fresh_inspects,
         "redundant_manager_execution_control_turns": 0,
         "hypotheses": 1,
         "hypothesis_next_tests": 1,
@@ -1053,7 +1067,11 @@ def run_rehearsal(
         "paid_gate_structural_status": (
             "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
             if snapshot.manager_turns <= result.runtime.budget.max_total_manager_turns
-            and explicit_inspects == 0
+            and redundant_fresh_inspects == 0
+            and (
+                explicit_inspects == 0
+                or (allow_old_evidence_inspection and explicit_inspects == 1)
+            )
             else "BLOCKED"
         ),
     }
