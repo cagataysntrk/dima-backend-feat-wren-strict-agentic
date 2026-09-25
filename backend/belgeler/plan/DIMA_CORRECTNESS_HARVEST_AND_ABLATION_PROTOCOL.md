@@ -2436,3 +2436,48 @@ DEV80            NOT AUTHORIZED
 Validation50     NOT AUTHORIZED
 Hidden50         NOT AUTHORIZED
 ```
+
+
+---
+
+## PAID_EPOCH_2 PRE-MEASUREMENT RECURRENCE HARVEST
+
+**H-159 — MUST_PORT — EVAL MIRROR REQUIRES PRODUCT PARITY PROOF**  
+Evaluation may project a frozen Product authority invariant, but duplicated invariant
+logic is not independently authoritative. Before a mirrored invariant can decide a
+final gate, representative provider-free parity families must prove Product and eval
+return the same result. Current parent-lineage parity families are: direct parent,
+derived child, multi-level child, unrelated sibling, unknown obligation and
+wrong-parent Evidence. If mirror complexity grows, STOP and extract one pure shared
+invariant rather than allowing Product truth and certification truth to evolve
+independently.
+
+**H-160 — MUST_PORT — CURRENT AUTHORITY MUST BE PHYSICALLY FIRST**  
+Living authority documents must expose one explicit latest-authority block at the top.
+Appending a newer block beneath stale sections labelled current is insufficient.
+Historical receipts remain immutable; top placement disambiguates authority without
+rewriting history.
+
+**H-161 — SHOULD_PORT — STALE CERTIFICATION STATE MUST NOT MASQUERADE AS CURRENT**  
+A cached or historical certification snapshot is diagnostic history unless its state
+version/lineage matches the authority being certified. Persistence/resume work must
+carry this into Day14: stale state cannot be presented as current authority while a
+newer transition is in flight or committed.
+
+**H-162 — MUST_PORT — OPTIONAL VARIANT FAILURE IS NOT CANONICAL FAILURE**  
+An optional diagnostic/exploratory variant may fail without invalidating a valid
+canonical path for the same required obligation. Conversely, failure of the required
+canonical obligation must never be hidden as optional. Certification must distinguish
+diagnostic path coverage from required authority invariants.
+
+**H-163 — MUST_PORT — CI TRANSPORT FAILURE IS A SEPARATE FAILURE CLASS**  
+Workflow syntax/transport failure is not Product failure. Paid workflow hygiene must
+prove dispatch-only transport, one bounded job, no matrix, exact scope/confirmation,
+hard call ceiling and no temporary marker before expensive execution. If workflow
+syntax is edited, YAML/shape proof is required before dispatch.
+
+**H-164 — MUST_PORT — PAID BUDGET IS EVIDENCE BUDGET, NOT RETRY BUDGET**  
+A same-SHA RED is never rerun hoping for stochastic improvement. Paid remeasurement
+requires a distinct first-wrong-transition investigation and either a generic
+engineering correction or a proven evaluator correction, followed by cheap affected
+proof. Owner epoch ceilings and per-run harness ceilings are separate authorities.
