@@ -1257,6 +1257,85 @@ def test_malformed_excluded_business_obligation_revises_before_grounding():
 
 
 
+def test_cross_cube_standard_contract_revises_to_executable_obligations_within_budget():
+    question = "net geliri ve üretkenlik durumunu birlikte incele"
+    cross_cube = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_COMBINED",
+                capability="performance",
+                source_surfaces=("net geliri ve üretkenlik durumunu birlikte incele",),
+                semantic_surfaces=(
+                    ("net geliri", "metric"),
+                    ("üretkenlik", "metric"),
+                ),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    executable = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_SALES",
+                capability="performance",
+                source_surfaces=("net geliri",),
+                semantic_surfaces=(("net geliri", "metric"),),
+            ),
+            _obligation(
+                obligation_id="U_PRODUCTION",
+                capability="performance",
+                source_surfaces=("üretkenlik",),
+                semantic_surfaces=(("üretkenlik", "metric"),),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[cross_cube, executable],
+        audits=[
+            {"status": "PASS", "issues": []},
+            {"status": "PASS", "issues": []},
+        ],
+    )
+    loop, runtime, executor = _loop(scripted)
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-standard-cube-revision",
+        request_ref="req-standard-cube-revision",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is True
+    assert outcome.clarification_required is False
+    assert runtime.snapshot.preacceptance_turns == 4
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    rejected = next(
+        item
+        for item in outcome.observations
+        if item.get("kind") == "contract_validity"
+        and item.get("status") == "REJECTED"
+    )
+    assert any(
+        "required STANDARD semantic handles must resolve to exactly one common governed cube"
+        in reason
+        for reason in rejected["reasons"]
+    )
+    assert runtime.ledger is not None
+    accepted = {
+        item.obligation_id: item for item in runtime.ledger.active_user_must
+    }
+    assert set(accepted) == {"U_SALES", "U_PRODUCTION"}
+
+
 def test_preacceptance_and_research_turn_budgets_are_separate():
     runtime = ManagerRuntime(
         request_ref="phase-budget-separation",
