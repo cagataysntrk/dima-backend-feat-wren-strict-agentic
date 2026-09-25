@@ -596,15 +596,30 @@ def test_same_material_identity_with_reworded_proposal_stops_as_no_progress():
         db_engine=db,
     )
 
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="root",
+                objective_key="channel-gap.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
     service.run_one(
         session_id=session.session_id,
         principal=principal(),
         manager=ScriptedManager(
-            lambda snap: explore_proposal(
+            lambda snap: recursive_proposal(
                 snap,
                 proposal_id="first",
+                objective_key="channel-gap.same-deepening",
+                intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                parent_step_id=root.step_id,
                 rationale="first wording",
-                wording="Inspect the channel gap.",
+                wording="Inspect the same bounded explanation.",
             )
         ),
     )
@@ -613,13 +628,14 @@ def test_same_material_identity_with_reworded_proposal_stops_as_no_progress():
         session_id=session.session_id,
         principal=principal(),
         manager=ScriptedManager(
-            lambda snap: explore_proposal(
+            lambda snap: recursive_proposal(
                 snap,
                 proposal_id="second",
+                objective_key="channel-gap.same-deepening",
+                intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                parent_step_id=root.step_id,
                 rationale="completely different prose",
-                wording=(
-                    "Take another look at the same unresolved gap."
-                ),
+                wording="Different prose, identical governed investigation identity.",
             )
         ),
     )
@@ -627,7 +643,6 @@ def test_same_material_identity_with_reworded_proposal_stops_as_no_progress():
     assert step.status == ReasoningStepStatus.NO_PROGRESS
     assert step.stop_reason == ManagerStopReason.NO_PROGRESS
     assert followup.calls == 1
-
 
 def test_pending_step_resumes_after_restart_without_another_manager_turn():
     db = db_engine()
@@ -727,6 +742,24 @@ def test_counter_evidence_is_first_class_child_task():
 def test_form_claim_creates_only_p16_proposed_claim():
     db = db_engine()
     store, session, _, lead, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="claim-root",
+                objective_key="claim.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
 
     def form(snapshot):
         return ManagerProposal(
@@ -734,6 +767,8 @@ def test_form_claim_creates_only_p16_proposed_claim():
             source_revision=snapshot.source_revision,
             target_parent_obligation="g1",
             action=ManagerAction.FORM_CLAIM,
+            intent=InvestigationIntent.FORM_CLAIM,
+            parent_step_id=root.step_id,
             objective_key="claim.form.channel-share",
             bounded_objective=(
                 "Form a bounded claim from existing native material."
@@ -767,11 +802,6 @@ def test_form_claim_creates_only_p16_proposed_claim():
             ),
         )
 
-    service = ResearchInvestigationManager(
-        research_store=store,
-        claim_store=claims,
-        db_engine=db,
-    )
     step, task = service.run_one(
         session_id=session.session_id,
         principal=principal(),
@@ -779,6 +809,7 @@ def test_form_claim_creates_only_p16_proposed_claim():
     )
     assert task is None
     assert step.status == ReasoningStepStatus.COMPLETED
+    assert step.branch_id == root.branch_id
     assert len(step.result_refs) == 1
 
     created = claims.load_claim(
@@ -788,7 +819,6 @@ def test_form_claim_creates_only_p16_proposed_claim():
     )
     assert created.epistemic_state == ClaimEpistemicState.PROPOSED
     assert created.evidence_links == ()
-
 
 def test_stop_is_durable_and_does_not_force_a_result():
     db = db_engine()
@@ -2118,10 +2148,11 @@ def test_dmp0053_initial_action_profile_is_state_projection_not_plan():
         session_id=session.session_id,
         principal=principal(),
     )
-    assert snapshot.action_profile.legal_intents == (
+    assert set(snapshot.action_profile.legal_intents) == {
         InvestigationIntent.INVESTIGATE_GAP,
+        InvestigationIntent.SEEK_COUNTER_EVIDENCE,
         InvestigationIntent.STOP_INVESTIGATION,
-    )
+    }
     source = inspect.getsource(manager_module._build_action_profile).lower()
     for forbidden in (
         "best",
