@@ -177,8 +177,9 @@ class BridgeFactory:
         *,
         principal,
         session,
+        native_session_token=None,
     ) -> AbstractContextManager[NativeEngineBridge]:
-        del principal
+        del principal, native_session_token
         query_id = f"native-{session.session_id}-{self.metabot_posts + 1}"
 
         def handler(request: httpx.Request) -> httpx.Response:
