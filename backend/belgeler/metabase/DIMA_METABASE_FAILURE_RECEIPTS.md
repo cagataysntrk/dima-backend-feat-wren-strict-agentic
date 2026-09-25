@@ -4124,3 +4124,128 @@ Governance now asserts those exclusions. P15's real gate
 
 Do not use the historical P3/M1 failures to reopen Wren parity, P3 Agent client work, P13 middleware,
 or any earlier architecture.
+
+---
+
+## DMP-P17-LIVE-RED-001 — first bounded Luna recursive canary stopped at proposal contract boundary
+
+date: 2026-09-25  
+live run: `36127753645 = FAILURE`  
+platform SHA: `058a484728965ed8e5ad39bd249e5e88217c1496`  
+classification: `P17 LIVE MANAGER ADAPTER CONTRACT / NOT ENGINE / NOT ANALYTICS AUTHORITY`  
+status: `ROOT CAUSE FIXED PROVIDER-FREE / LIVE EVIDENCE STILL RED / NO SECOND PAID RUN AUTHORIZED`
+
+### What succeeded before the RED
+
+The one authorized P17 Luna canary booted the exact certified engine:
+
+```text
+engine SHA       = cbe313af9ac2d5960f662068e433d328d896fb06
+runtime           = v0.63.18-dima.6
+digest            = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+engine build      = 0
+restricted user   = bootstrapped
+frozen Boyahane   = imported
+```
+
+The P14 base native Research occurrence completed through native Metabot → exact query →
+`/api/dataset` → engine identity → P15 native Exploration. Runtime logs show one dataset call and
+one automagic Exploration call. No P13 attestation/re-execution path was introduced.
+
+### First wrong transition
+
+The first P17 Research Manager structured-output request itself succeeded:
+
+```text
+openrouter / openai/gpt-5.6-luna = SUCCESS
+manager cognition calls completed = 1
+```
+
+But the returned typed draft carried:
+
+```text
+expected_information_gain = null
+```
+
+The transport schema still allowed `string | null` because the Pydantic draft field was optional,
+while deterministic `ManagerProposal` correctly requires a non-empty
+`expected_information_gain` for every non-STOP proposal.
+
+The exact failure therefore occurred before the accepted P17 proposal was persisted and before a
+P17 recursive native follow-up was launched:
+
+```text
+ResearchManagerProposalDraft
+→ deterministic action mapping
+→ ManagerProposal.model_validate(...)
+→ RED
+
+Value error:
+non-STOP proposal requires expected_information_gain
+```
+
+### Root cause
+
+The live transport contract and the deterministic authority contract were not isomorphic.
+
+This was not:
+- a Metabase/Metabot analytical failure;
+- an engine/QP/Lib/driver failure;
+- a need for P13;
+- a need for a second executor/receipt/claim authority;
+- a causal/P19 failure;
+- evidence that Dima must compute analytics.
+
+It was a typed adapter schema nullability defect.
+
+### Generic root fix
+
+The live manager adapter now makes the semantic contract explicit in two layers:
+
+1. `ResearchManagerProposalDraft` validates live intent semantics before authority mapping.
+2. For bounded live non-STOP intent schemas, both fields are transport-required non-null strings:
+
+```text
+bounded_objective          : string
+expected_information_gain : string
+```
+
+STOP intents require an explicit `stop_reason`.
+
+The deterministic `ManagerProposal` contract remains unchanged and fail-closed.
+
+Provider-free regression now proves:
+- null information gain is rejected;
+- STOP without stop reason is rejected;
+- live structured schema exposes non-null string requirements;
+- lower P17/P16/P15/P14 authorities remain unchanged.
+
+### Paid-call accounting
+
+This one canary dispatch is the only P17 live canary run authorized/executed so far.
+
+Observed before failure:
+- P17 Python Research Manager OpenRouter successes: `1`;
+- base Metabot internal OpenRouter request events in runtime log: `10`;
+- P17 recursive follow-up native occurrences: `0`;
+- Sol calls: `0`;
+- engine builds: `0`.
+
+The Metabot request-event count reflects the internal tool-using native agent turn; it is kept
+separate from the P17 Research Manager cognition-call count.
+
+### Disposition
+
+Do not rerun the paid Luna canary by default. First seal the root fix provider-free and preserve this
+RED evidence. P17 remains:
+
+```text
+recursive authority = PROVIDER-FREE only
+live cognition       = RED / INCOMPLETE
+P17                   = NOT SEALED
+P18                   = BLOCKED
+```
+
+A second paid canary requires an explicit supervisor decision because the directive authorized one
+bounded live run and disallowed repeated paid runs by default.
+
