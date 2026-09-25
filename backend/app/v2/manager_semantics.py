@@ -31,6 +31,7 @@ from app.v2.semantic_linker import (
     SemanticBindingGate,
     SemanticCandidateDecisionProvider,
     SemanticCandidateGenerator,
+    SemanticDecompositionRepairChoice,
     SemanticDecompositionRepairProvider,
     SemanticDecompositionRepairRequest,
     SemanticRepairScopeGroupCard,
@@ -565,6 +566,25 @@ class ManagerSemanticResolutionAdapter:
         handle, binding = next(iter(unique.values()))
         return span, handle, binding
 
+    @staticmethod
+    def _deterministic_unique_scope_group(
+        *,
+        eligible_tokens: set[str],
+        group_members: dict[str, tuple[str, ...]],
+    ) -> str | None:
+        """Return the sole full-cover scope group, otherwise require cognition.
+
+        This is control-plane determinism only. Eligibility has already been
+        established by governed source validation; semantic authority is still minted
+        later by SemanticBindingGate under the target obligation.
+        """
+        if not eligible_tokens or len(group_members) != 1:
+            return None
+        group_token, members = next(iter(group_members.items()))
+        if set(members) != set(eligible_tokens):
+            return None
+        return group_token
+
     def _resolve_decomposition_repair(
         self,
         args: ResolveSemanticsArgs,
@@ -572,9 +592,6 @@ class ManagerSemanticResolutionAdapter:
     ) -> ManagerSemanticResolutionResult:
         if runtime is None:
             raise ValueError("semantic decomposition repair requires ManagerRuntime")
-        if self._semantic_decomposition_repair_provider is None:
-            return ManagerSemanticResolutionResult()
-
         gap_spans = [
             self._source_spans.validate(ref)
             for gap in args.decomposition_repair_gaps
@@ -691,16 +708,41 @@ class ManagerSemanticResolutionAdapter:
         if not requests:
             return ManagerSemanticResolutionResult()
 
-        decision = self._semantic_decomposition_repair_provider.decide(
-            tuple(requests),
-            user_message=user_message,
-        )
-        choices = {item.gap_ref: item for item in decision.choices}
-        expected = {item.gap_ref for item in requests}
-        if set(choices) != expected:
-            raise ValueError(
-                "semantic decomposition repair response gap refs do not match batch"
+        deterministic_choices: dict[str, SemanticDecompositionRepairChoice] = {}
+        cognition_requests: list[SemanticDecompositionRepairRequest] = []
+        for request in requests:
+            group_token = self._deterministic_unique_scope_group(
+                eligible_tokens=allowed_tokens_by_gap[request.gap_ref],
+                group_members=allowed_groups_by_gap[request.gap_ref],
             )
+            if group_token is None:
+                cognition_requests.append(request)
+                continue
+            deterministic_choices[request.gap_ref] = (
+                SemanticDecompositionRepairChoice(
+                    gap_ref=request.gap_ref,
+                    decision="SELECT_SCOPE_GROUP",
+                    selected_source_tokens=(),
+                    selected_group_token=group_token,
+                    reason="SOURCE_SUPPORTS_SCOPE",
+                )
+            )
+
+        choices = dict(deterministic_choices)
+        if cognition_requests and self._semantic_decomposition_repair_provider is not None:
+            decision = self._semantic_decomposition_repair_provider.decide(
+                tuple(cognition_requests),
+                user_message=user_message,
+            )
+            cognition_choices = {
+                item.gap_ref: item for item in decision.choices
+            }
+            expected = {item.gap_ref for item in cognition_requests}
+            if set(cognition_choices) != expected:
+                raise ValueError(
+                    "semantic decomposition repair response gap refs do not match cognition batch"
+                )
+            choices.update(cognition_choices)
 
         gap_by_ref = {
             gap.gap_ref: gap for gap in args.decomposition_repair_gaps
@@ -709,7 +751,9 @@ class ManagerSemanticResolutionAdapter:
         diagnostic_choices: list[dict[str, Any]] = []
 
         for request in requests:
-            choice = choices[request.gap_ref]
+            choice = choices.get(request.gap_ref)
+            if choice is None:
+                continue
             selected = tuple(dict.fromkeys(choice.selected_source_tokens))
             selected_group_token = choice.selected_group_token
 
@@ -776,6 +820,11 @@ class ManagerSemanticResolutionAdapter:
                         for item in request.available_scope_groups
                     ],
                     "decision": choice.decision,
+                    "decision_owner": (
+                        "SERVER_DETERMINISTIC_UNIQUE_SCOPE"
+                        if request.gap_ref in deterministic_choices
+                        else "BOUNDED_COGNITION"
+                    ),
                     "selected_source_tokens": list(selected),
                     "selected_group_token": selected_group_token,
                     "reason": choice.reason,
