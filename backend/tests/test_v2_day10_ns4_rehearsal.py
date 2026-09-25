@@ -87,6 +87,160 @@ def test_revision_path_reaches_same_governed_product_within_global_six_turns():
     assert receipt["paid_gate_structural_status"] == "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
 
 
+
+def _schema_property_enum(schema, property_name):
+    found = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            properties = node.get("properties")
+            if isinstance(properties, dict) and property_name in properties:
+                found.append(properties[property_name])
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    def values(node):
+        out = set()
+        if isinstance(node, dict):
+            enum = node.get("enum")
+            if isinstance(enum, list):
+                out.update(str(item) for item in enum if item is not None)
+            const = node.get("const")
+            if isinstance(const, str):
+                out.add(const)
+            for value in node.values():
+                out.update(values(value))
+        elif isinstance(node, list):
+            for value in node:
+                out.update(values(value))
+        return out
+
+    walk(schema)
+    assert found, property_name
+    return values(found[0])
+
+
+class _Run4AvailabilityManager(ns4.ScriptedNS4Manager):
+    """Replay run #4 bad choices and prove they are absent from cognition surface."""
+
+    def __init__(self):
+        super().__init__()
+        self.research_calls = 0
+        self.inventory_snapshots = []
+        self.action_snapshots = []
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        if schema_name != "dima_research_manager_action_v1":
+            return super().structured_json(
+                system,
+                user,
+                schema=schema,
+                schema_name=schema_name,
+            )
+
+        payload = json.loads(user)
+        self.manager_prompts.append(payload)
+        self.research_calls += 1
+        actions = _schema_property_enum(schema, "action")
+        self.action_snapshots.append(actions)
+
+        delta = payload["CURRENT_RESULT_DELTA"]
+        assert delta is not None
+        assert delta["verified"] is True
+        assert delta["disclosed_in_current_prompt"] is True
+        assert delta["inspection_required"] is False
+
+        inventory = tuple(payload["GOVERNED_SEMANTIC_INVENTORY"])
+        self.inventory_snapshots.append(inventory)
+        department = [
+            item
+            for item in inventory
+            if item["target_kind"] == "dimension"
+            and "department" in tuple(item.get("source_surfaces") or ())
+        ]
+        assert len(department) == 1, inventory
+
+        # These are the exact two redundant run-#4 choices. They must be impossible
+        # to emit from the provider contract, not merely rejected after cognition.
+        assert ManagerActionKind.INSPECT_EVIDENCE.value not in actions
+        assert ManagerActionKind.RESOLVE_SEMANTICS.value not in actions
+
+        ledger = {
+            item["obligation_id"]: item
+            for item in payload["OBLIGATION_LEDGER"]
+        }
+        root_handle = ledger["U_ROOT"]["semantic_handle_refs"][0]
+        hypotheses = payload["HYPOTHESIS_LEDGERS"][0]["entries"]
+
+        if not hypotheses:
+            assert ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value in actions
+            self.root_trigger_evidence_ref = delta["evidence_ref"]
+            self.actions.append("propose_hypothesis_with_next_test")
+            return {
+                "action": "propose_hypothesis_with_next_test",
+                "hypothesis_parent_obligation_id": "U_ROOT",
+                "hypothesis_statement": (
+                    "Provider-free run-4 replay hypothesis contains %27 but report must not."
+                ),
+                "hypothesis_semantic_handles": [root_handle],
+                "hypothesis_trigger_evidence_refs": [delta["evidence_ref"]],
+                "hypothesis_limitations": [],
+                "next_test_task_kind": "QUERY",
+                "next_test_input_handles": [root_handle],
+                "next_test_trigger_evidence_ref": delta["evidence_ref"],
+                "next_test_material_reason": (
+                    "Use current governed root identity for one material next test."
+                ),
+            }
+
+        assert ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value not in actions
+        assert ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value in actions
+        hypothesis = hypotheses[0]
+        self.actions.append("propose_hypothesis_evidence_relation")
+        return {
+            "action": "propose_hypothesis_evidence_relation",
+            "hypothesis_ref": hypothesis["hypothesis_id"],
+            "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+            "hypothesis_relation": "SUPPORTS",
+        }
+
+
+def test_run4_failure_family_bad_actions_are_absent_and_governed_root_path_completes():
+    manager = _Run4AvailabilityManager()
+    receipt = run_rehearsal(manager=manager)
+
+    assert receipt["provider_calls"] == 0
+    assert manager.research_calls == 2
+    assert receipt["research_manager_calls"] == 2
+    assert receipt["manager_turn_total"] <= 6
+    assert receipt["completion_gate_final_state"] == "COMPLETED"
+    assert receipt["root_status"] == "VERIFIED"
+    assert receipt["candidate_finding_count"] == 1
+    assert receipt["confirmed_cause_count"] == 0
+    assert receipt["report_statement_injection_absent"] is True
+    assert receipt["directive_final_status"] == "APPLIED"
+
+    # Existing accepted department identity is conserved across both cognition turns.
+    assert len(manager.inventory_snapshots) == 2
+    first_department = next(
+        item
+        for item in manager.inventory_snapshots[0]
+        if item["target_kind"] == "dimension"
+        and "department" in tuple(item.get("source_surfaces") or ())
+    )
+    second_department = next(
+        item
+        for item in manager.inventory_snapshots[1]
+        if item["target_kind"] == "dimension"
+        and "department" in tuple(item.get("source_surfaces") or ())
+    )
+    assert second_department["handle_ref"] == first_department["handle_ref"]
+    assert len(manager.inventory_snapshots[1]) == len(manager.inventory_snapshots[0])
+
+
 class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
     """Use the canonical NS4 authority, but choose one governed RELATIONSHIP branch."""
 
