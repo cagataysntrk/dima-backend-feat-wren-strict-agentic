@@ -761,7 +761,64 @@ def test_p18_production_module_has_no_analytical_or_causal_dependency():
         "attest_native_query",
         "execute_native_query",
         "wren_service",
+        "NativeResourceBinding",
+        "relationships.yml",
         "causal_confidence",
         "root_cause",
     ):
         assert forbidden not in source
+
+
+
+def test_retired_meaning_can_be_replaced_by_new_fingerprint_authority():
+    db = db_engine()
+    state = make_state(db)
+    old = create_policy(state)
+    first = state["p18"].resolve(
+        requirement=requirement(state),
+        principal=state["principal"],
+    )
+    state["p18"].retire_policy(
+        policy_id=old.policy_id,
+        principal=state["principal"],
+    )
+    new = create_policy(
+        state,
+        statement=(
+            "Updated governed customer attribution policy for the same "
+            "exact business scope."
+        ),
+        provenance="policy-manual:p18-v2",
+    )
+    second = state["p18"].resolve(
+        requirement=requirement(state),
+        principal=state["principal"],
+    )
+
+    assert new.policy_id != old.policy_id
+    assert new.policy_fingerprint != old.policy_fingerprint
+    assert (
+        second.resolution_status
+        == RelationshipPolicyResolutionStatus.SATISFIED
+    )
+    assert second.policy_id == new.policy_id
+    assert first.policy_use_id != second.policy_use_id
+
+
+def test_claim_and_reasoning_obligation_mismatch_is_rejected():
+    db = db_engine()
+    state = make_state(
+        db,
+        obligations=("g1", "g2"),
+        claim_obligation="g2",
+        step_obligation="g1",
+    )
+
+    with pytest.raises(
+        BusinessRelationshipPolicyError,
+        match="P18_CLAIM_OBLIGATION_MISMATCH",
+    ):
+        state["p18"].resolve(
+            requirement=requirement(state, obligation="g1"),
+            principal=state["principal"],
+        )
