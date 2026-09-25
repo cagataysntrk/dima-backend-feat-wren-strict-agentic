@@ -36,6 +36,7 @@ from app.v2.manager_runtime import (
 )
 from app.v2.models import EvidenceArtifact
 from app.v2.research_tasks import ResearchTaskRegistry
+from app.v2.source_spans import SourceSpanRegistry
 
 
 def _runtime_with_directive(
@@ -289,3 +290,51 @@ def test_research_phase_has_its_own_four_turn_hard_cap():
     with pytest.raises(ManagerBudgetError, match="research Manager turn budget exhausted"):
         runtime.note_manager_turn(phase="research")
     assert runtime.snapshot.state == ManagerState.BUDGET_EXHAUSTED
+
+
+
+def test_action_availability_projects_only_parent_lineage_evidence_for_open_directive():
+    runtime, store = _runtime_with_directive(
+        ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        evidence_obligation="U1",
+        inspected=True,
+    )
+    store.put(
+        EvidenceArtifact(
+            artifact_id="E_ROOT",
+            task_id="seed:U_FOREIGN",
+            obligation_ids=("U_FOREIGN",),
+            query_contract_refs=("QC_ROOT",),
+            evidence_kind="standard_analytics",
+            verified=True,
+            payload={"executions": ()},
+        )
+    )
+    runtime._snapshot = runtime.snapshot.model_copy(
+        update={
+            "evidence_refs": ("E1", "E_ROOT"),
+            "inspected_evidence_refs": ("E1", "E_ROOT"),
+        }
+    )
+
+    class _NoopLLM:
+        def structured_json(self, *args, **kwargs):
+            raise AssertionError("availability projection must not call provider")
+
+    loop = ResearchManagerLoop(
+        llm=_NoopLLM(),
+        source_spans=SourceSpanRegistry(),
+    )
+    profile = loop._action_availability(
+        runtime=runtime,
+        research_state=None,
+        hypothesis_ledgers={},
+        evidence_store=store,
+        research_tasks=(),
+    )
+
+    assert "disposition_research_directive" in profile.available_actions
+    assert profile.directive_disposition_id == "R1"
+    assert profile.directive_disposition_parent_obligation_id == "U1"
+    assert profile.directive_disposition_evidence_refs == ("E1",)
+    assert "E_ROOT" not in profile.directive_disposition_evidence_refs
