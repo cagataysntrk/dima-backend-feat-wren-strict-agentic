@@ -27,6 +27,7 @@ from app.v2.models import (
     TenantAnalyticsRuntimeV0,
 )
 from app.v2.research_tools import ResearchToolRunner
+from app.v2.root_cause_orchestration import RootCauseLoopContext
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
@@ -112,21 +113,24 @@ class _WouldKeepThinkingAfterZeroRowLLM(_ResultAwareFakeLLM):
 
         delta = payload.get("CURRENT_RESULT_DELTA")
         if not payload.get("EVIDENCE_REFS"):
-            return {
-                "action": "run_analytics",
-                "obligation_ids": ["U1"],
-                "metric_handles": ["h1"],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "run_analytics",
+                    "obligation_ids": ["U1"],
+                    "metric_handles": ["h1"],
+                },
+            )
         if delta and delta.get("inspection_required"):
-            return {
-                "action": "inspect_evidence",
-                "evidence_ref": delta["evidence_ref"],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "inspect_evidence",
+                    "evidence_ref": delta["evidence_ref"],
+                },
+            )
 
-        # The cognition turn must return so the runtime can atomically persist the
-        # already-disclosed fresh Evidence as inspected. The deterministic zero-row
-        # CompletionGate runs before this proposed action is applied.
-        return {"action": "finish"}
+        return adapt_legacy_manager_intent(payload, {"action": "finish"})
 
 
 def _accepted_runtime(service=None):
@@ -211,16 +215,28 @@ def _accepted_runtime(service=None):
         ),
         executor=executor,
     )
-    return spans, runtime, executor, question, message_id
+    return (
+        spans,
+        runtime,
+        executor,
+        question,
+        message_id,
+        RootCauseLoopContext(
+            semantic_handles=handles,
+            tenant_binding=tenant,
+            context_version=context_version,
+        ),
+    )
 
 
 def test_manager_loop_contract_mode_finishes_without_redundant_delta_cognition():
-    spans, runtime, executor, question, message_id = _accepted_runtime()
+    spans, runtime, executor, question, message_id, root_context = _accepted_runtime()
     llm = _ResultAwareFakeLLM()
     loop = ResearchManagerLoop(
         llm=llm,
         source_spans=spans,
         research_tool_runner=ResearchToolRunner(),
+        root_cause_context=root_context,
     )
 
     outcome = loop.run(
@@ -236,32 +252,21 @@ def test_manager_loop_contract_mode_finishes_without_redundant_delta_cognition()
     assert runtime.snapshot.inspected_evidence_refs == ()
     assert runtime.snapshot.latest_evidence_ref in runtime.snapshot.evidence_refs
 
-    tool_observations = [
-        item for item in outcome.observations if item.get("kind") == "tool"
-    ]
-    analytics = next(
-        item for item in tool_observations if item.get("tool") == "run_analytics"
-    )
-    assert analytics["research_task_id"] == "seed:U1"
-
-    assert not any(
-        item.get("tool") == "inspect_evidence"
-        for item in tool_observations
-    )
-    assert not any(
-        item.get("kind") == "fresh_evidence_disclosed"
+    deterministic = [
+        item
         for item in outcome.observations
-    )
+        if item.get("kind") == "deterministic_task_executed"
+    ]
+    assert [item["task_id"] for item in deterministic] == ["seed:U1"]
 
-    # Once the only analytical USER_MUST is deterministically VERIFIED, the run
-    # completes at the next user-control-safe loop boundary. No second cognition is
-    # spent merely to disclose Evidence to a model that has no remaining decision.
-    assert len(llm.prompts) == 1
-    assert llm.prompts[0]["CURRENT_RESULT_DELTA"] is None
-
+    # Canonical seed identity and semantic wiring are server-owned. Once that task
+    # produces VERIFIED Evidence and satisfies U1, CompletionGate closes at the loop
+    # boundary without spending a post-acceptance cognition turn.
+    assert llm.prompts == []
+    assert runtime.snapshot.research_manager_turns == 0
 
 def test_zero_row_verified_evidence_finishes_without_spending_another_manager_turn():
-    spans, runtime, executor, question, message_id = _accepted_runtime(
+    spans, runtime, executor, question, message_id, root_context = _accepted_runtime(
         service=_ZeroRowSyntheticService()
     )
     llm = _WouldKeepThinkingAfterZeroRowLLM()
@@ -269,6 +274,7 @@ def test_zero_row_verified_evidence_finishes_without_spending_another_manager_tu
         llm=llm,
         source_spans=spans,
         research_tool_runner=ResearchToolRunner(),
+        root_cause_context=root_context,
     )
 
     outcome = loop.run(
@@ -281,10 +287,10 @@ def test_zero_row_verified_evidence_finishes_without_spending_another_manager_tu
 
     assert outcome.run_finished is True
     assert outcome.verified_complete is True
-    assert runtime.snapshot.manager_turns == 1
+    assert runtime.snapshot.research_manager_turns == 0
     assert runtime.snapshot.data_queries == 1
     assert runtime.snapshot.inspected_evidence_refs == ()
-    assert len(llm.prompts) == 1
+    assert llm.prompts == []
 
     finish = [
         item
@@ -293,37 +299,44 @@ def test_zero_row_verified_evidence_finishes_without_spending_another_manager_tu
     ]
     assert finish[-1]["reason"] == "loop_boundary_deterministic_completion_gate"
 
-
-def test_postacceptance_action_set_never_advertises_propose_acceptance():
-    spans, runtime, executor, question, message_id = _accepted_runtime()
+def test_server_executable_seed_does_not_spend_cognition_reconstructing_task_identity():
+    spans, runtime, executor, question, message_id, root_context = _accepted_runtime()
     llm = _ResultAwareFakeLLM()
     loop = ResearchManagerLoop(
         llm=llm,
         source_spans=spans,
         research_tool_runner=ResearchToolRunner(),
+        root_cause_context=root_context,
     )
-    loop.run(
+    outcome = loop.run(
         question=question,
         message_id=message_id,
         request_ref="day7-loop-request",
         runtime=runtime,
         executor=executor,
     )
-    actions = {
-        item["action"]
-        for item in llm.prompts[0]["MANAGER_ACTION_SET"]["action_instances"]
-    }
-    assert "propose_acceptance" not in actions
-    assert "run_analytics" in actions
 
+    assert outcome.verified_complete is True
+    assert llm.prompts == []
+    assert not any(
+        item.get("kind") == "tool"
+        and item.get("tool") == "propose_acceptance"
+        for item in outcome.observations
+    )
+    assert [
+        item["task_id"]
+        for item in outcome.observations
+        if item.get("kind") == "deterministic_task_executed"
+    ] == ["seed:U1"]
 
 def test_answer_now_after_verified_evidence_pauses_partial_without_completion_laundering():
-    spans, runtime, executor, question, message_id = _accepted_runtime()
+    spans, runtime, executor, question, message_id, root_context = _accepted_runtime()
     llm = _ResultAwareFakeLLM()
     loop = ResearchManagerLoop(
         llm=llm,
         source_spans=spans,
         research_tool_runner=ResearchToolRunner(),
+        root_cause_context=root_context,
         answer_now_check=lambda: bool(runtime.snapshot.evidence_refs),
     )
 
@@ -345,6 +358,6 @@ def test_answer_now_after_verified_evidence_pauses_partial_without_completion_la
     # The governed analytics adapter legitimately VERIFIED U1 from real Evidence before
     # the user control fired. ANSWER_NOW itself must not run CompletionGate/finish.
     assert runtime.ledger.active_user_must[0].status.value == "VERIFIED"
-    assert len(llm.prompts) == 1
+    assert llm.prompts == []
     assert any(item.get("kind") == "answer_now" for item in outcome.observations)
     assert not any(item.get("kind") == "finish" for item in outcome.observations)
