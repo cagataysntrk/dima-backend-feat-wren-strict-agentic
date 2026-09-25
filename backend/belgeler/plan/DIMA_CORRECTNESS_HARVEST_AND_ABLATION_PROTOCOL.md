@@ -224,6 +224,81 @@ fresh paid envelope    0 / 40
 ```
 
 
+
+### 4.3 PARENT-SCOPED ACTION ARGUMENT APPLICABILITY
+
+Permanent invariant:
+
+```text
+capability/action applicability
+MUST include argument-domain applicability
+before cognition
+
+not only:
+which action?
+
+also:
+which parent?
+which governed handles?
+which Evidence?
+which server-owned hypothesis?
+```
+
+The integrated live receipt `36128949886` proved that action-name filtering alone is insufficient.
+A ROOT action was legal, but the model was allowed to populate it with `h3`, a governed handle owned
+by another accepted obligation. Runtime correctly rejected it, but a Research turn was already spent.
+
+Current Dima rule:
+
+```text
+governed runtime state
+→ ManagerActionAvailability
+→ parent-scoped argument domains
+→ strict model schema
+→ cognition
+→ runtime validation
+```
+
+For ROOT epistemic actions this includes server-known:
+- ROOT parent obligation IDs;
+- ROOT semantic handle aliases;
+- ROOT Evidence refs;
+- hypothesis IDs;
+- pending post-test Evidence relation refs.
+
+A completed next-test with fresh VERIFIED Evidence that has not yet been admitted into hypothesis state
+creates a relation-accounting phase. Another next-test is not advertised until the relation is admitted.
+
+Classification: `MUST_PORT` as a bounded applicability/orchestration invariant. It does not move semantic
+truth, causal truth or Evidence authority into `ManagerActionAvailability`; existing runtime gates remain
+authoritative.
+
+Metabase reference analogue remains:
+
+```text
+resolved profile/state
+→ capability filtering
+→ scope filtering
+→ actual model tool/action surface
+
+applicability
+before
+materialization / execution
+```
+
+Current proof:
+
+```text
+live first wrong transition    36128949886 = CONTRACT / ARCHITECTURE
+generic Product correction     999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+Day10                          36130046060 = GREEN
+Day8                           36129994598 = GREEN
+Day7                           36129994504 = GREEN
+paid envelope                  12 / 40 used
+second paid run                NOT AUTHORIZED
+```
+
+
 ---
 
 ## 5. FREE_COGNITION vs GOVERNED_ORCHESTRATION — SHADOW ABLATION
