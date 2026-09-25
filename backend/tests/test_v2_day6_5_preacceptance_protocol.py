@@ -774,7 +774,133 @@ def test_explicit_semantic_binding_preserves_excluded_target_provenance():
     assert span.exact_surface == "bölge"
 
 
-def test_material_grounding_gap_clarifies_before_coverage_audit():
+def test_run3_polarity_veto_happens_before_semantic_materialization_and_revision_grounds_fresh():
+    question = "net geliri göster; üretkenlik kullanma"
+    drafts = [
+        {
+            "obligations": [
+                _obligation(
+                    obligation_id="U_PERF",
+                    capability="performance",
+                    source_surfaces=("net geliri",),
+                    semantic_surfaces=(("net geliri", "metric"),),
+                ),
+                _obligation(
+                    obligation_id="X_PROD",
+                    capability="performance",
+                    source_surfaces=("üretkenlik kullanma",),
+                    semantic_surfaces=(("üretkenlik", "metric"),),
+                    polarity="REQUIRED",
+                ),
+            ],
+            "research_directives": [],
+            "control_requests": [],
+        },
+        {
+            "obligations": [
+                _obligation(
+                    obligation_id="U_PERF",
+                    capability="performance",
+                    source_surfaces=("net geliri",),
+                    semantic_surfaces=(("net geliri", "metric"),),
+                ),
+                _obligation(
+                    obligation_id="X_PROD",
+                    capability="performance",
+                    source_surfaces=("üretkenlik kullanma",),
+                    semantic_surfaces=(("üretkenlik", "metric"),),
+                    polarity="EXCLUDED",
+                ),
+            ],
+            "research_directives": [],
+            "control_requests": [],
+        },
+    ]
+    audits = [
+        {
+            "status": "VETO",
+            "issues": [
+                {
+                    "kind": "POLARITY_CONFLICT",
+                    "source_surfaces": ["üretkenlik kullanma"],
+                    "note": "explicit exclusion is represented with REQUIRED polarity",
+                }
+            ],
+        },
+        {"status": "PASS", "issues": []},
+    ]
+
+    class ProbeStructured(_ScriptedStructured):
+        def __init__(self):
+            super().__init__(drafts=drafts, audits=audits)
+            self.handles = None
+            self.runtime = None
+            self.semantic_provider = None
+            self.coverage_snapshots = []
+
+        def structured_json(self, system, user, *, schema, schema_name):
+            if schema_name == "dima_intent_coverage_v1":
+                payload = json.loads(user)
+                self.coverage_snapshots.append(
+                    {
+                        "handle_count": len(self.handles._bindings),
+                        "receipt_count": len(self.runtime.semantic_resolution_receipts),
+                        "semantic_calls": len(self.semantic_provider.calls),
+                        "payload": payload,
+                    }
+                )
+            return super().structured_json(
+                system,
+                user,
+                schema=schema,
+                schema_name=schema_name,
+            )
+
+    scripted = ProbeStructured()
+    semantic_provider = _SingleCandidateSemanticProvider()
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=semantic_provider,
+    )
+    scripted.handles = executor._acceptance._semantic_handles
+    scripted.runtime = runtime
+    scripted.semantic_provider = semantic_provider
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-run3-polarity-revision",
+        request_ref="req-run3-polarity-revision",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.accepted is True
+    assert outcome.status == FiniteAcceptanceStatus.ACCEPTED
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    assert len(scripted.coverage_snapshots) == 2
+    assert all(item["handle_count"] == 0 for item in scripted.coverage_snapshots)
+    assert all(item["receipt_count"] == 0 for item in scripted.coverage_snapshots)
+    assert all(item["semantic_calls"] == 0 for item in scripted.coverage_snapshots)
+    assert all(
+        "GROUNDING_SUMMARY" not in item["payload"]
+        for item in scripted.coverage_snapshots
+    )
+
+    # Only the surviving revised draft is grounded, from a clean semantic authority state.
+    assert 1 <= len(semantic_provider.calls) <= 3
+    assert len(scripted.handles._bindings) > 0
+    assert len(runtime.semantic_resolution_receipts) > 0
+    assert runtime.snapshot.preacceptance_turns == 4
+    assert runtime.snapshot.manager_turns == 4
+
+
+def test_material_grounding_gap_clarifies_after_precoverage_pass():
     question = "peki bölgelere göre?"
     scripted = _ScriptedStructured(
         drafts=[
@@ -791,7 +917,7 @@ def test_material_grounding_gap_clarifies_before_coverage_audit():
                 "control_requests": [],
             }
         ],
-        audits=[],
+        audits=[{"status": "PASS", "issues": []}],
     )
     conversation = ConversationStateV2(
         has_prior_analytical_request=True,
@@ -812,11 +938,20 @@ def test_material_grounding_gap_clarifies_before_coverage_audit():
 
     assert outcome.accepted is False
     assert outcome.clarification_required is True
-    assert scripted.calls == ["dima_intent_draft_v1"]
-    gap = next(
-        item for item in outcome.observations
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    coverage_index = next(
+        i for i, item in enumerate(outcome.observations)
+        if item.get("kind") == "coverage_audit"
+    )
+    gap_index = next(
+        i for i, item in enumerate(outcome.observations)
         if item.get("kind") == "material_grounding_gap"
     )
+    assert coverage_index < gap_index
+    gap = outcome.observations[gap_index]
     assert gap["gaps"][0]["missing_required_kinds"] == ["metric"]
 
 
@@ -893,7 +1028,7 @@ def test_relationship_incomplete_metric_only_authority_stops_before_acceptance()
                 "control_requests": [],
             }
         ],
-        audits=[],
+        audits=[{"status": "PASS", "issues": []}],
     )
     loop, runtime, executor = _loop(scripted)
     outcome = loop.understand(
@@ -911,7 +1046,10 @@ def test_relationship_incomplete_metric_only_authority_stops_before_acceptance()
     assert runtime.snapshot.accepted_contract_id is None
     assert runtime.snapshot.data_queries == 0
     assert runtime.snapshot.evidence_refs == ()
-    assert scripted.calls == ["dima_intent_draft_v1"]
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
 
     gap = next(
         item for item in outcome.observations
@@ -1714,7 +1852,7 @@ def test_d10_p_semantic_repair_abstain_remains_clarification():
     context, schema = _d10_p_decomposition_context()
     scripted = _ScriptedStructured(
         drafts=[_d10_p_draft()],
-        audits=[],
+        audits=[{"status": "PASS", "issues": []}],
     )
     repair = _SourceSelectingRepairProvider(abstain=True)
     loop, runtime, executor = _loop(
