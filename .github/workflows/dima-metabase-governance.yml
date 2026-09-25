@@ -275,7 +275,9 @@ jobs:
             grep -q "SEALED / P17 RESEARCH MANAGER MATURATION IMPLEMENTATION AUTHORIZED" "$REVIEW"
             grep -q "DMP-DEC-0048" "$REVIEW"
             grep -q "DMP-DEC-0049 — RECURSIVE INVESTIGATION" "$DECISIONS"
+            grep -q "DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION" "$DECISIONS"
             grep -q "P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
+            grep -q "DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY" DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md
           fi
 
       - name: Guard P17 from becoming a second analytics planner
@@ -307,6 +309,38 @@ jobs:
           grep -q "SEEK_COUNTER_EVIDENCE" backend/app/v3/research_manager.py
           grep -q "ResearchReasoningStepRecord" backend/app/v3/research_manager.py
           grep -q "NativeResearchOccurrenceRunner" backend/app/v3/research_followup.py
+
+      - name: Guard DMP-DEC-0050 autonomous certification from screenplay coupling
+        shell: bash
+        run: |
+          set -euo pipefail
+          DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+          AUTO="backend/lab/metabase/p17/autonomous_manager_canary.py"
+          EVAL="backend/lab/metabase/p17/autonomous_eval.py"
+          ENTRY="backend/lab/metabase/p17/recursive_manager_canary.py"
+          SCENARIO="backend/lab/metabase/p17/recursive_manager_scenario_lab.py"
+          test -f "$AUTO"
+          test -f "$EVAL"
+          test -f "$ENTRY"
+          test -f "$SCENARIO"
+          test -f backend/tests/test_v3_p17_autonomous_manager_eval.py
+          grep -q "DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION" "$DECISIONS"
+          grep -q "A TEST ORACLE MUST NOT BE" "$DECISIONS"
+          grep -q "Historical deterministic P17 scenario / contract lab" "$SCENARIO"
+          grep -q "provider.propose(snapshot)" "$AUTO"
+          ! grep -nE 'propose_with_guidance|GuidedTurn' "$AUTO"
+          grep -q "evaluate_autonomous_canary" "$AUTO"
+          grep -q "add-only authorization receipt" "$ENTRY"
+          grep -q "AUTONOMOUS_LUNA_AUTHORIZATION.json" "$ENTRY"
+          for file in "$AUTO" "$EVAL"; do
+            ! grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$file"
+            ! grep -nE 'app\.wren|wren_service|MetabaseAgentClient|NativeStandardTrustOrchestrator' "$file"
+          done
+          ! grep -nE 'execute_dataset[[:space:]]*\(|bridge\.invoke[[:space:]]*\(' "$AUTO"
+          if [ -f backend/lab/metabase/p17/AUTONOMOUS_LUNA_AUTHORIZATION.json ]; then
+            grep -q '"decision": "DMP-DEC-0050"' backend/lab/metabase/p17/AUTONOMOUS_LUNA_AUTHORIZATION.json
+            grep -q '"max_paid_runs_after_dmp_0050": 1' backend/lab/metabase/p17/AUTONOMOUS_LUNA_AUTHORIZATION.json
+          fi
 
       - name: Guard active engine consumers against source-build fallback
         shell: bash
