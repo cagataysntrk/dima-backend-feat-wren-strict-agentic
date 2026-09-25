@@ -67,7 +67,7 @@ class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
     """Use the canonical NS4 authority, but choose one governed RELATIONSHIP branch."""
 
     def structured_json(self, system, user, *, schema, schema_name):
-        if schema_name != "dima_research_manager_action_v1" or self.manager_prompts:
+        if schema_name != "dima_research_manager_action_v1":
             return super().structured_json(
                 system,
                 user,
@@ -76,6 +76,31 @@ class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
             )
 
         payload = json.loads(user)
+        recent = payload.get("RECENT_OBSERVATIONS") or []
+        if any(
+            item.get("kind") == "deterministic_task_blocked"
+            and item.get("context") == "adaptive_branch"
+            for item in recent
+        ):
+            self.manager_prompts.append(payload)
+            self.actions.append("request_clarification")
+            return {
+                "action": "request_clarification",
+                "obligation_ids": ["U_ROOT"],
+                "clarification_reason": (
+                    "The governed adaptive relationship branch is blocked; "
+                    "no successful analytical branch result exists."
+                ),
+            }
+
+        if self.manager_prompts:
+            return super().structured_json(
+                system,
+                user,
+                schema=schema,
+                schema_name=schema_name,
+            )
+
         self.manager_prompts.append(payload)
         ledger = {
             item["obligation_id"]: item
@@ -215,11 +240,6 @@ def test_adaptive_relationship_blocked_terminal_does_not_apply_directive(
             thread_id=context.thread_id,
         ),
         progress_callback=lambda kind, refs: progress.append((kind, refs)),
-        answer_now_check=lambda: any(
-            item.get("kind") == "deterministic_task_blocked"
-            and item.get("context") == "adaptive_branch"
-            for item in ()
-        ),
     )
 
     blocked = next(
