@@ -45,6 +45,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/research_native_gateway.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_exploration.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/claim_lineage.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/research_manager.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -257,6 +258,40 @@ jobs:
             grep -q 'CONTEXTUALIZES' "$HOT"
             grep -q 'INSUFFICIENT' "$HOT"
             ! grep -nE 'confidence(_score)?[[:space:]]*[:=]' "$HOT"
+          fi
+
+      - name: Require sealed P17 Research Manager review
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/research_manager.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/P17_RESEARCH_MANAGER_MATURATION_PREDEVELOPMENT_REVIEW.md"
+            test -f "$REVIEW"
+            grep -q "SEALED / P17 RESEARCH MANAGER MATURATION IMPLEMENTATION AUTHORIZED" "$REVIEW"
+            grep -q "DMP-DEC-0048" "$REVIEW"
+          fi
+
+      - name: Guard P17 from becoming a second analytics planner
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/research_manager.py"
+          if [ -f "$HOT" ]; then
+            FORBIDDEN='NativeStandardTrustOrchestrator|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer|attest_native_query[[:space:]]*\(|execute_native_query[[:space:]]*\(|app\.wren|wren_service|MetabaseAgentClient'
+            if grep -nE "$FORBIDDEN" "$HOT"; then
+              echo "P17 reintroduced a forbidden analytical/security authority" >&2
+              exit 1
+            fi
+            if grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$HOT"; then
+              echo "P17 introduced a Python analytical primitive library" >&2
+              exit 1
+            fi
+            if grep -nE '(breakdown|trend|rank|compare)[[:space:]]*\(' "$HOT"; then
+              echo "P17 introduced deterministic analytical strategy operators" >&2
+              exit 1
+            fi
+            grep -q "SEEK_COUNTER_EVIDENCE" "$HOT"
+            grep -q "ResearchReasoningStepRecord" "$HOT"
           fi
 
       - name: Guard active engine consumers against source-build fallback
