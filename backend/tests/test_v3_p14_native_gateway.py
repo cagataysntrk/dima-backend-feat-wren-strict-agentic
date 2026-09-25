@@ -39,10 +39,10 @@ from control_plane.models import NativeSubjectBinding, Tenant, User
 
 ENGINE_SHA = "cbe313af9ac2d5960f662068e433d328d896fb06"
 UPSTREAM_SHA = "2ba2485c78d7e00a9a25f82c00fc201da71590c4"
-TAG = "0.63.18-dima.6"
+TAG = "v0.63.18-dima.6"
 DIGEST = "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
 BUILD = f"github-actions:36042062775:{ENGINE_SHA}"
-IMAGE = f"ghcr.io/upcytech/dima-metabase-engine@{DIGEST}"
+IMAGE = DIGEST
 INSTANCE = UUID("00000000-0000-4000-8000-000000000777")
 TENANT = UUID("00000000-0000-4000-8000-000000000701")
 USER = UUID("00000000-0000-4000-8000-000000000702")
@@ -468,3 +468,15 @@ def test_gateway_has_no_p13_p10_operator_or_resource_authority():
     ):
         assert forbidden not in source
     assert "execute_dataset" in source
+
+
+def test_p14_runtime_defaults_match_certified_engine_lock_identity():
+    from app.config import Settings
+
+    fields = Settings.model_fields
+    assert fields["metabase_engine_sha"].default == ENGINE_SHA
+    assert fields["metabase_engine_upstream_sha"].default == UPSTREAM_SHA
+    assert fields["metabase_engine_runtime_tag"].default == TAG
+    assert fields["metabase_engine_image_digest"].default == DIGEST
+    assert fields["metabase_engine_image_identity"].default == DIGEST
+    assert fields["metabase_engine_build_identity"].default == BUILD

@@ -17,6 +17,7 @@ on:
       - "backend/app/v2/models.py"
       - "backend/app/routers/ask_v2.py"
       - "backend/app/main.py"
+      - "backend/app/config.py"
       - "backend/control_plane/models.py"
       - "backend/migrations/versions/c4d9e2a7f160_p14_research_persistence.py"
       - "backend/migrations/versions/c6f1a2d9e870_p14_native_gateway.py"
