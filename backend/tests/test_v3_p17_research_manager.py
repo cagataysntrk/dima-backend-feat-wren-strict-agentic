@@ -1698,3 +1698,107 @@ def test_child_depth_reuses_p15_material_and_single_p16_claim_authority():
     assert supported.epistemic_state == ClaimEpistemicState.SUPPORTED
     assert supported.origin_material_refs == (followup.lead.lead_id,)
 
+def test_structured_live_manager_adapter_is_typed_provider_free():
+    from app.v3.research_manager_provider import (
+        StructuredResearchProposalManager,
+    )
+
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    snapshot = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        db_engine=db,
+    ).snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+
+    class FakeStructured:
+        calls = 0
+
+        def structured_json(
+            self,
+            system,
+            user,
+            *,
+            schema,
+            schema_name,
+        ):
+            self.calls += 1
+            assert "METABASE + METABOT = analytical engine" in system
+            assert "GOVERNED SNAPSHOT JSON" in user
+            assert schema_name == "dima_p17_research_manager_proposal"
+            assert schema["type"] == "object"
+            return json.dumps(
+                {
+                    "proposal_id": "live-fake-1",
+                    "source_revision": snapshot.source_revision,
+                    "target_parent_obligation": "g1",
+                    "intent": "EXPLORE_ALTERNATIVES",
+                    "branch_key": "candidate-web",
+                    "target_kind": "ALTERNATIVE",
+                    "target_ref": "web-conversion",
+                    "objective_key": "live.candidate.web",
+                    "bounded_objective": (
+                        "Investigate whether Web conversion is a material branch."
+                    ),
+                    "rationale": "This is an untested bounded alternative.",
+                    "inspected_evidence_refs": list(snapshot.evidence_refs),
+                    "inspected_claim_refs": [
+                        x.claim_id for x in snapshot.claims
+                    ],
+                    "inspected_material_refs": list(snapshot.material_refs),
+                    "expected_information_gain": (
+                        "It may distinguish a channel-specific explanation."
+                    ),
+                }
+            )
+
+    transport = FakeStructured()
+    manager = StructuredResearchProposalManager(transport=transport)
+    proposal = manager.propose(snapshot)
+    assert transport.calls == 1
+    assert manager.call_count == 1
+    assert proposal.intent == InvestigationIntent.EXPLORE_ALTERNATIVES
+    assert proposal.action == ManagerAction.RECORD_INVESTIGATION
+    assert proposal.branch_key == "candidate-web"
+
+
+def test_structured_live_manager_cannot_emit_legacy_intent():
+    from app.v3.research_manager_provider import (
+        StructuredResearchProposalManager,
+    )
+
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    snapshot = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        db_engine=db,
+    ).snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+
+    class LegacyTransport:
+        def structured_json(self, *args, **kwargs):
+            return json.dumps(
+                {
+                    "proposal_id": "legacy-not-allowed",
+                    "source_revision": snapshot.source_revision,
+                    "target_parent_obligation": "g1",
+                    "intent": "LEGACY",
+                    "target_kind": "GAP",
+                    "objective_key": "legacy.bad",
+                    "bounded_objective": "bad",
+                    "rationale": "bad",
+                    "expected_information_gain": "bad",
+                }
+            )
+
+    with pytest.raises(ValueError, match="LEGACY"):
+        StructuredResearchProposalManager(
+            transport=LegacyTransport()
+        ).propose(snapshot)
+
