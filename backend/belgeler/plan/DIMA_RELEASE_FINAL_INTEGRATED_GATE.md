@@ -7,7 +7,7 @@
 
 This document is the release-level timing authority for expensive broad evaluation.
 
-## 0. CURRENT RELEASE STATE — DAY10 / D10-S PROVIDER-FREE CLOSURE
+## 0. CURRENT RELEASE STATE — DAY10 / D10-S SEALED / LIVE MEASUREMENT AUTHORIZED
 
 ```text
 primary analytics substrate    WREN
@@ -19,27 +19,19 @@ Day8 FINAL                     NOT SEALED
 Day9 engineering               GREEN
 Day10 engineering              GREEN
 Day10 FINAL                    OPEN
-current phase                  DAY10 / D10-S AUTHORITY HOLD
 
-provider-free proof HEAD       0b9c4a676a04cbf547f4d73116f048c319d77aa3
-current Product behavior       0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
-
-Day7 affected                  36127275608 = GREEN
-Day8 affected                  36126639512 = GREEN
-Day10 focused                  36126639503 = GREEN
-real-Wren D10-S root           GREEN inside 36126639503
-presentation ownership         GREEN inside 36126639503
-
-ManagerBudget                  preacceptance=4 / Research=4 / outer=8
-budget ratification            PENDING EXPLICIT SUPERVISOR DECISION
-further budget changes         FORBIDDEN
+D10-S provider-free closure    GREEN
+ManagerBudget                  4 / 4 / 8 RATIFIED
+D10-S FINAL                    SEALED
 
 fresh provider envelope        40
 used                           0 / 40
-paid execution                 NOT AUTHORIZED
 
-D10-S provider-free closure    COMPLETE
-D10-S FINAL EXIT / SEAL        PENDING BUDGET RATIFICATION
+expected canonical paid calls  13–17
+hard per-run maximum           20
+paid scope                     CANONICAL_NS4
+paid harness                   existing Product harness only
+
 Day11                          NOT AUTHORIZED
 DEV80                          NOT AUTHORIZED
 Validation50                   NOT AUTHORIZED
@@ -47,23 +39,26 @@ Hidden50                       NOT AUTHORIZED
 production /ask-v2             OFF
 ```
 
-D10-S provider-free engineering gates are complete. The state-aware Manager action surface is derived
-from typed governed runtime state through one `ManagerActionAvailability` owner; provider schema and
-runtime validation use the same resolved profile. Fresh disclosed Evidence is not re-inspected,
-feasible accepted ROOT semantics are reused instead of rediscovered, and legitimate non-root
-evidence-grounded semantic discovery remains available under accepted OPEN ADAPT_ON_EVIDENCE parents.
+Permanent release invariant:
 
-Day7 sealed behavior is preserved after repairing transport-independent directive accounting for
-successful governed adaptive branches. Presentation USER_MUST authority remains accepted while
-analytical completion excludes presentation-only Evidence requirements; Product/report delivery owns
-the actual presentation artifact.
+```text
+PHASE BUDGET INDEPENDENCE
 
-No paid/live provider call was consumed in D10-S. The only open D10-S exit authority is explicit
-supervisor ratification or rejection of the current 4 / 4 / 8 ManagerBudget architecture. Until then,
-do not start a paid measurement, Day11, DEV80, Validation50 or Hidden50.
+max_preacceptance_turns = 4
+max_manager_turns       = 4
+max_total_manager_turns = 8
 
-Current Metabase reference source: `metabase/metabase@2f3fe9904e4addbcbe4d32403d6a7ab2fc471100`.
-Only reference patterns were harvested; Metabase remains outside the current release execution runtime.
+A bounded preacceptance retry must not consume the
+independent bounded Research cognition allowance.
+```
+
+The old global-six coupling remains historical and is not a current release contract.
+
+D10-S sealing is docs-only (tests = 0). The next and only currently authorized live action is one
+`CANONICAL_NS4` integrated paid Product measurement with `max_total_model_calls=20`. This single
+measurement re-measures Day8 live debt; do not run a standalone Day8 live test. A GREEN run stops paid
+execution immediately. A RED run requires FIRST WRONG TRANSITION classification before architecture changes.
+
 
 The bridge decision is scoped, not universal:
 `retained Wren semantics → thin Metabase structured execution` is rejected for this release.
