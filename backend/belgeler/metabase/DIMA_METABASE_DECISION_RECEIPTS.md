@@ -3283,3 +3283,279 @@ P17 = AUTHORIZED / OPEN
 
 The next owner is P17 Research Manager maturation. It consumes P14/P15/P16; it must not invent a
 parallel analytics or claim authority.
+
+---
+
+## DMP-DEC-0049 — RECURSIVE INVESTIGATION / ANALYTICAL DELEGATION / P17-P19 AUTHORITY SPLIT
+
+date: 2026-09-25
+
+### Decision
+
+DMP-DEC-0048 remains authoritative for native-direct analytical ownership, the sealed P13
+certification/debug/forensics role, Metabase analytical authority, the single
+`DimaQueryReceipt` family, and Evidence provenance.
+
+DMP-DEC-0049 extends forward authority for recursive investigation, multi-branch investigation
+topology, multi-factor explanation boundaries, the P17/P19 split, and analytical-delegation
+invariants.
+
+Permanent architecture:
+
+```text
+METABASE + METABOT
+= ANALYTICAL ENGINE
+
+DIMA
+= INVESTIGATION
++ EPISTEMICS
++ DECISION BRAIN
+```
+
+Permanent invariant 1:
+
+```text
+DIMA NEVER COMPUTES AN ANALYTICAL ANSWER
+THAT METABASE CAN NATIVELY COMPUTE.
+
+DIMA DECIDES WHICH ANALYTICAL QUESTION
+SHOULD BE ASKED NEXT
+AND HOW THE RESULTING EVIDENCE
+CHANGES THE INVESTIGATION STATE.
+```
+
+Permanent invariant 2:
+
+```text
+RECURSIVE DEPTH BELONGS TO DIMA.
+
+ANALYTICAL DEPTH EXECUTION
+BELONGS TO METABASE.
+```
+
+These invariants bind P17 through P21.
+
+### P17 authority: investigation topology, not causal truth
+
+P17 owns durable investigation topology and orchestration:
+
+```text
+question
+observed gap
+candidate explanation to investigate
+test target
+child question
+Evidence
+counter-Evidence
+branch stop
+investigation stop
+```
+
+A parent→child investigation edge means only:
+
+```text
+WE CHOSE TO INVESTIGATE DEEPER
+```
+
+It does not assert causal truth. P17 must not introduce root-cause ranking, causal confidence,
+causal scoring, contribution attribution, direct/indirect effect calculation, Bayesian
+probabilities, causal-path strength, or causal-graph inference.
+
+P17 may decide:
+
+```text
+what explanation should be investigated
+which branch matters
+which alternative remains untested
+what Evidence could falsify a claim/explanation
+whether a branch should deepen
+whether a branch should stop
+whether the investigation should stop
+```
+
+All analytical fulfillment at every recursive depth remains Metabot/Metabase-owned.
+
+### Durable topology rule
+
+The existing P17 reasoning/task ledger remains the truth store. Recursive investigation extends that
+ledger minimally with parent/depth/branch/target identity. Any `InvestigationGraph` is a projection
+of durable ledger state, never a second persistence authority and never a generic graph engine.
+
+Accepted P14 obligations remain immutable. Recursive nodes are subordinate P17 state.
+
+### Recursive intent semantics
+
+P17 may evolve its bounded investigation vocabulary toward:
+
+```text
+INVESTIGATE_GAP
+EXPLORE_ALTERNATIVES
+SEEK_COUNTER_EVIDENCE
+DEEPEN_EXPLANATION
+TEST_DISCRIMINATING_EVIDENCE
+REPLAN
+STOP_BRANCH
+STOP_INVESTIGATION
+```
+
+These are investigation intents, not analytical operators. Existing persisted P17 action values may
+remain as compatibility representation. No destructive action-enum migration is required merely for
+renaming.
+
+Example:
+
+```text
+DEEPEN_EXPLANATION
+= create a child investigation question about the current explanation
+!= decomposition()
+```
+
+### Multi-branch / recursion / stopping
+
+P17 must preserve multiple candidate branches. It must not collapse alternatives into a single
+winner. Sibling branches may deepen, stop, remain unresolved, or be contradicted independently.
+
+Recursive depth is bounded and configurable. Default policy may use `max_depth = 5`, but depth is a
+budget, never a target.
+
+Branch-local stopping is distinct from investigation-global stopping. Branch outcomes may include:
+
+```text
+NO_NEW_EVIDENCE
+NO_MEANINGFUL_GAIN
+DATA_UNAVAILABLE
+CONTRADICTED
+OUT_OF_SCOPE
+ROOT_EXTERNAL_TO_AVAILABLE_DATA
+BUDGET_EXHAUSTED
+CAUSAL_IDENTIFICATION_LIMIT
+```
+
+No branch is forced deeper merely because budget remains.
+
+Expected information gain may remain typed qualitative/model rationale. P17 must not invent numeric
+information-gain/confidence scores without a real measured/statistical quantity.
+
+### P17 native analytical delegation
+
+Every recursive node requiring analytics must reuse the same sealed native-direct occurrence path.
+
+```text
+P14_BASE != P17_FOLLOWUP
+
+P17_FOLLOWUP
+→ NativeResearchOccurrenceRunner
+→ principal-scoped Metabot/Metabase
+→ exact captured query
+→ one native execution
+→ one DimaQueryReceipt family
+→ Evidence
+```
+
+No second native executor, receipt family, analytical authority, or security authority is permitted.
+
+P15 native Exploration may be reused at any recursive depth, but remains `RESEARCH_MATERIAL`.
+
+P16 remains the single claim↔Evidence lineage authority at every depth. P17 must not create
+`P17Claim`, `RootCauseClaim`, or `RecursiveClaim` as parallel truth owners.
+
+### P19 future authority boundary — locked now, implemented later
+
+P19, not P17, owns causal/contribution epistemics.
+
+Permanent distinction:
+
+```text
+LEADING CAUSE != CONTRIBUTION
+```
+
+A real change may have multiple material contributors. P19 must not be designed as winner-takes-all
+root-cause selection.
+
+Future P19 interpretation uses two separate axes:
+
+```text
+AXIS 1 — EFFECT / CONTRIBUTION
+DOMINANT | MATERIAL | SECONDARY | LOW | UNKNOWN
+
+AXIS 2 — EVIDENCE STRENGTH
+STRONG | MODERATE | WEAK | INSUFFICIENT | CONTRADICTED
+```
+
+These are qualitative epistemic states, not LLM confidence probabilities.
+
+If contribution is quantitatively measurable, Dima asks the analytical question and native
+Metabase capability performs/supplies the analytical computation wherever possible:
+
+```text
+USE_NATIVE
+→ COMPOSE_NATIVE
+→ WRAP_NATIVE
+→ HOOK_NATIVE
+→ DIMA_OWNS
+```
+
+`DIMA_OWNS` is last resort and requires supervisor review.
+
+P19 must preserve enough path identity to distinguish direct from indirect/mediated contribution and
+avoid double counting. P17 must not implement that math.
+
+### Auditable investigation trace
+
+The product-level trace is factual system activity, not hidden model chain-of-thought. It should be
+derivable from durable authority objects:
+
+```text
+ResearchReasoningStep
+ResearchInvestigationTask
+native occurrence
+Evidence
+P16 claim lineage
+future P19 hypothesis state
+```
+
+Permissible trace facts include what question was investigated, which branch opened, which native
+work occurred, which Evidence was produced, which branch stopped/deepened, and what remains
+unresolved.
+
+Do not persist hidden LLM chain-of-thought.
+
+### Engine / phase boundary
+
+Pinned engine remains:
+
+```text
+cbe313af9ac2d5960f662068e433d328d896fb06
+0.63.18-dima.6
+sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+```
+
+No Metabot/QP/Lib/driver patch, engine build, or dima.7 is authorized during P17 recursive closure.
+
+P18 remains blocked until P17 recursive authority is provider-free GREEN and one bounded real Luna
+recursive-investigation canary is GREEN. P19 is not authorized for implementation by this decision;
+only its future authority boundary is locked.
+
+UI/UX remains forbidden until P21 is sealed.
+
+### STOP conditions
+
+Stop for supervisor if recursive closure appears to require any of:
+
+- an analytics algorithm in Dima;
+- Metabot/QP/Lib/driver/core engine modification;
+- a new analytical truth owner;
+- a second Evidence/claim authority;
+- a second native execution path;
+- mutation of accepted P14 obligations;
+- P17 causal/root-cause truth decisions;
+- invented numeric contribution/confidence without analytical/statistical evidence;
+- cross-branch Evidence leakage/misbinding;
+- destructive migration;
+- broad paid evaluation.
+
+Otherwise continue with bounded P17 recursive closure.
+
+status:
+`SEALED ARCHITECTURE / DMP-DEC-0048 + DMP-DEC-0049 FORWARD AUTHORITY / P17 RECURSIVE IMPLEMENTATION AUTHORIZED / P18 BLOCKED`.
+
