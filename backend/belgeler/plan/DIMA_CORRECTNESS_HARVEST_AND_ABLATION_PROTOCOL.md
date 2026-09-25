@@ -2542,3 +2542,66 @@ A same-SHA RED is never rerun hoping for stochastic improvement. Paid remeasurem
 requires a distinct first-wrong-transition investigation and either a generic
 engineering correction or a proven evaluator correction, followed by cheap affected
 proof. Owner epoch ceilings and per-run harness ceilings are separate authorities.
+
+
+---
+
+## D10-U EMERGENCY HARVEST — CONTROL-PLANE COMPRESSION
+
+**H-165 — MUST_PORT — ONE AUTHORITY MUST NOT BE RECONSTRUCTED IN MULTIPLE CONTROL-PLANE LAYERS**  
+Historical chain:
+
+```text
+wide model argument domains
+→ illegal cross-parent identity combinations
+→ snapshot/scope correlation ceremony
+→ duplicated executable-action projections
+→ projection divergence
+→ legal actions disappeared
+→ D10-U one ManagerActionSet
+→ opaque action_ref + server hydration
+```
+
+Permanent conclusion:
+
+```text
+SECURITY CEREMONY CAN BECOME A CORRECTNESS RISK
+WHEN THE SAME AUTHORITY IS RECONSTRUCTED IN MULTIPLE LAYERS.
+```
+
+**H-166 — MUST_PORT — TESTS MIGRATE TO PRODUCT ARCHITECTURE; PRODUCT DOES NOT REGRESS TO HISTORICAL TEST TRANSPORT**  
+Provider-free scripted managers may express bounded cognition intent, but canonical
+task/Evidence/parent/directive/semantic identities remain server-owned. The shared test
+adapter must select an existing legal ActionInstance and fail closed when no matching
+card exists; it must never manufacture an old transport shape or force Product to
+reintroduce obsolete compatibility behavior.
+
+**H-167 — MUST_PORT — DERIVED SEMANTIC APPLICABILITY MUST FOLLOW EXACT AUTHORITY LINEAGE**  
+A successfully governed AGENT_DERIVED semantic handle becomes executable-action input
+only through exact tenant + context + parent obligation + trigger-Evidence lineage.
+Sibling-parent or wrong-Evidence derived handles remain invisible. Canonical semantic
+targets remain Resolver/registry-owned; ManagerActionSet consumes only opaque handle
+metadata.
+
+**H-168 — SHOULD_PORT — GENERIC SEMANTIC EXECUTION CONTEXT NAMING DEBT IS POST-DAY10 ONLY**  
+Generic deterministic Research scheduling currently receives semantic registry,
+tenant and context-version authority through `RootCauseLoopContext`. Production wiring
+is correct; the name is coupling debt, not a current correctness defect. A future
+`SemanticExecutionContext` extraction/rename is allowed only after Day10 and only if it
+reduces coupling without changing authority.
+
+**Emergency family receipts**
+
+```text
+FAM-CONTROL-PLANE-PROJECTION-DIVERGENCE
+Cycle 1  legal ROOT action hidden by duplicated projection
+Cycle 2  governed derived semantic handle absent from parent ActionSet projection
+owner    ManagerActionSet authoritative-state projection
+fix      exact parent + trigger-Evidence derived semantic registry projection
+
+FAM-SCRIPTED-MANAGER-TRANSPORT-MIGRATION
+Cycle 1  missing production semantic context + obsolete model-selected USER_SEED
+Cycle 2  stale model-owned branch identity expectations
+Cycle 3  stale deterministic-seed observation / cognition-trajectory assumptions
+status   3/3 exhausted; supervisor STOP before any further same-family patch
+```
