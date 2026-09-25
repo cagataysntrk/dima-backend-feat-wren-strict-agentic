@@ -3694,7 +3694,7 @@ No third paid Luna canary is authorized. Return to supervisor with
 date: 2026-09-25
 
 status:
-`RATIFIED FORWARD DECISION / PROVIDER-FREE CERTIFICATION IMPLEMENTATION IN PROGRESS / P18 BLOCKED`
+`RATIFIED FORWARD DECISION / PROVIDER-FREE GREEN / ONE AUTONOMOUS LUNA CANARY AUTHORIZED / P18 BLOCKED`
 
 DMP-DEC-0048 remains the native-direct analytical authority.
 DMP-DEC-0049 remains the recursive-investigation and P17/P19 ownership authority.
@@ -3838,3 +3838,35 @@ That one Luna run is authorized only after the new evaluator, autonomous harness
 P14/P15/P16/P17 regressions, and governance are GREEN. If it is RED, stop with the first wrong
 transition and exact owner classification. If it is GREEN, seal P17 and authorize only the P18
 material-business-relationship pre-development review; do not begin P18 product implementation.
+
+
+### DMP-DEC-0050 provider-free evidence — GREEN
+
+date: 2026-09-25
+
+```text
+certification candidate     = dfa8392b6cb1617b4bf8893484ea648a30823bec
+provider-free run           = 36136988379 SUCCESS
+governance run              = 36136988429 SUCCESS
+
+trajectory-invariant eval   = 7 PASS
+P17 deterministic           = 31 PASS
+P16 claim-lineage           = 6 PASS
+P15 native Exploration      = 5 PASS
+P14 native-direct           = 17 PASS
+
+engine change/build         = 0 / 0
+Sol                         = 0
+C1                          = 0
+paid Luna after DMP-0050    = 0 / 1
+```
+
+The first provider-free DMP-DEC-0050 candidate `ff38ab8ad30fbe011e126c73f9905795deed9d8c`
+failed only in a case-sensitive CI label guard before compile/tests. Owner: `EVALUATOR / CI GUARD`.
+The generic guard fix is `dfa8392b6cb1617b4bf8893484ea648a30823bec`; no product behavior,
+manager prompt, analytical authority or engine code changed.
+
+All prerequisites for the one DMP-DEC-0050 autonomous Luna canary are now GREEN. The screenplay
+canary remains superseded as the final cognition oracle. The authorized paid run must use the new
+trajectory-invariant evaluator and autonomous manager path; no second paid run is authorized if it
+returns RED.
