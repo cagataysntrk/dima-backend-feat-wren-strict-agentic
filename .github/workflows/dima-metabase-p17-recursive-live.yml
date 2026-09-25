@@ -1,4 +1,7 @@
-# AUTHORIZED ONE-SHOT: provider-free 36127584644 + governance 36127584694 GREEN.
+# AUTHORIZED CORRECTED ONE-SHOT.
+# Root-fix candidate: d1bc5291b315ff19c3456d08ff1820e983d85942.
+# Provider-free: 36128262857 SUCCESS. Current governance: 36128767992 SUCCESS.
+# First live RED 36127753645 remains append-only evidence; no automatic third run.
 name: dima-metabase-p17-recursive-live
 
 on:
