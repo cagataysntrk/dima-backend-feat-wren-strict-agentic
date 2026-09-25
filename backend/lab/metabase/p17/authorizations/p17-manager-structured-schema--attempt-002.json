@@ -1,0 +1,19 @@
+{
+  "decision": "DMP-DEC-0052",
+  "branch": "feat/dima-metabase-platform",
+  "failure_family_id": "p17-manager-structured-schema",
+  "attempt_in_family": 2,
+  "authorization_id": "p17-manager-structured-schema--attempt-002",
+  "candidate_product_sha": "f940a9731be98212b47b44391e28080648c00629",
+  "dispatch_parent_sha": "2532477e78debd6c52c80d7096a5cd1d0e3a273f",
+  "provider_free_run_id": 36147150264,
+  "governance_run_id": 36147538622,
+  "model": "openai/gpt-5.6-luna",
+  "max_manager_calls": 8,
+  "sol_budget": 0,
+  "engine_build_budget": 0,
+  "c1_budget": 0,
+  "purpose": "DMP-DEC-0052 corrected autonomous P17 cognition certification for structured-schema family attempt 2",
+  "previous_red_run_id": 36140130559,
+  "root_fix_sha": "f940a9731be98212b47b44391e28080648c00629"
+}
