@@ -1,3 +1,4 @@
+# FINAL_PROVIDER_FREE_CANDIDATE: source-truth + blocked-lifecycle closure trigger.
 """Test import facade for the shared provider-free ManagerActionSet adapter."""
 
 from lab.v2_manager_action_set_script_adapter import (  # noqa: F401
