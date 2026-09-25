@@ -691,7 +691,7 @@ def _lineage_parity_ledger():
             ),
             ObligationLedgerItem(
                 obligation_id="U_GRANDCHILD",
-                capability_key=ManagerCapabilityKey.COMPARE,
+                capability_key=ManagerCapabilityKey.COMPARISON,
                 origin=ObligationOrigin.AGENT_DERIVED,
                 parent_obligation_id="U_CHILD",
                 priority=ObligationPriority.MUST,
