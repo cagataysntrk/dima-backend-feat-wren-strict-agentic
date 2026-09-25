@@ -273,3 +273,51 @@ def test_event_head_commit_added_is_irrelevant_to_authorization_truth():
     assert "head_commit" not in source
     assert "diff-tree" in source
     assert "cat-file" in source
+
+
+def test_recovery_cycle_is_inferred_from_immutable_receipt_filename(tmp_path: Path):
+    root, parent = _repo(tmp_path)
+    payload = _receipt(
+        parent,
+        authorization_id="autonomous-luna-recovery-002",
+        recovery_cycle=2,
+    )
+    dispatch, path = _add_receipt(
+        root,
+        parent,
+        name="autonomous-luna-recovery-002.json",
+        payload=payload,
+    )
+
+    verified = verify_dispatch_authorization(
+        root,
+        dispatch_sha=dispatch,
+        branch=EXPECTED_BRANCH,
+    )
+
+    assert verified.path == path
+    assert verified.recovery_cycle == 2
+
+
+def test_payload_cycle_must_match_receipt_filename_even_without_external_cycle(
+    tmp_path: Path,
+):
+    root, parent = _repo(tmp_path)
+    payload = _receipt(
+        parent,
+        authorization_id="autonomous-luna-recovery-002",
+        recovery_cycle=1,
+    )
+    dispatch, _ = _add_receipt(
+        root,
+        parent,
+        name="autonomous-luna-recovery-002.json",
+        payload=payload,
+    )
+
+    with pytest.raises(AuthorizationTransportError, match="recovery_cycle"):
+        verify_dispatch_authorization(
+            root,
+            dispatch_sha=dispatch,
+            branch=EXPECTED_BRANCH,
+        )
