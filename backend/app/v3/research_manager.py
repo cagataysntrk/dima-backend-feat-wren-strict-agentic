@@ -200,22 +200,6 @@ class ManagerProposal(Frozen):
             raise ValueError(
                 f"{intent.value} is incompatible with {self.action.value}"
             )
-        if intent in {
-            InvestigationIntent.DEEPEN_EXPLANATION,
-            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
-            InvestigationIntent.STOP_BRANCH,
-        } and self.parent_step_id is None:
-            raise ValueError(
-                f"{intent.value} requires parent_step_id"
-            )
-        if (
-            intent == InvestigationIntent.EXPLORE_ALTERNATIVES
-            and self.branch_key is None
-        ):
-            raise ValueError(
-                "EXPLORE_ALTERNATIVES requires branch_key"
-            )
-
         for name, refs in (
             ("Evidence", self.inspected_evidence_refs),
             ("claim", self.inspected_claim_refs),
@@ -268,6 +252,47 @@ class ResolvedInvestigationTopology(Frozen):
     stop_scope: StopScope | None = None
 
 
+class InvestigationBranchBehavior(StrEnum):
+    ROOT_OR_INHERIT = "ROOT_OR_INHERIT"
+    OPEN_CHILD_BRANCH = "OPEN_CHILD_BRANCH"
+    INHERIT_BRANCH = "INHERIT_BRANCH"
+    GLOBAL_CONTROL = "GLOBAL_CONTROL"
+
+
+class InvestigationBranchKeyPolicy(StrEnum):
+    REQUIRED = "REQUIRED"
+    FORBIDDEN = "FORBIDDEN"
+
+
+class InvestigationActionRule(Frozen):
+    intent: InvestigationIntent
+    legal_parent_step_ids: tuple[str, ...] = ()
+    allow_parentless: bool = False
+    branch_behavior: InvestigationBranchBehavior
+    branch_key_policy: InvestigationBranchKeyPolicy
+    depth_delta: int = Field(default=0, ge=0, le=1)
+
+
+class InvestigationActionProfile(Frozen):
+    """Pure state projection of legal P17 moves; never a next-step planner."""
+
+    rules: tuple[InvestigationActionRule, ...]
+    max_depth: int = Field(ge=0)
+
+    @property
+    def legal_intents(self) -> tuple[InvestigationIntent, ...]:
+        return tuple(rule.intent for rule in self.rules)
+
+    def rule_for(
+        self,
+        intent: InvestigationIntent,
+    ) -> InvestigationActionRule | None:
+        return next(
+            (rule for rule in self.rules if rule.intent == intent),
+            None,
+        )
+
+
 class InvestigationNodeView(Frozen):
     step_id: str
     parent_step_id: str | None
@@ -314,12 +339,28 @@ class ClaimView(Frozen):
     limitations: tuple[str, ...] = ()
 
 
-class MaterialView(Frozen):
+class NativeDashcardCognitionView(Frozen):
+    dashcard_id: str | int | None = None
+    card_id: str | int | None = None
+    title: str | None = None
+
+
+class MaterialCognitionView(Frozen):
+    """Thin read projection over durable P15 material; never a second truth copy."""
+
     lead_id: str
     obligation_id: str
+    execution_link_id: str
+    native_conversation_id: str
+    native_query_id: str
+    query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     material_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     source_evidence_refs: tuple[str, ...]
-    material: dict[str, Any]
+    exploration_kind: str
+    native_name: str | None = None
+    native_title: str | None = None
+    native_description: str | None = None
+    dashcards: tuple[NativeDashcardCognitionView, ...] = ()
 
 
 class ResearchManagerSnapshot(Frozen):
@@ -330,7 +371,8 @@ class ResearchManagerSnapshot(Frozen):
     parent_obligations: tuple[ParentObligationView, ...]
     evidence_refs: tuple[str, ...]
     material_refs: tuple[str, ...]
-    materials: tuple[MaterialView, ...]
+    materials: tuple[MaterialCognitionView, ...]
+    action_profile: InvestigationActionProfile
     claims: tuple[ClaimView, ...]
     investigation: InvestigationGraph
     limitation_refs: tuple[str, ...]
@@ -621,10 +663,6 @@ class ResearchReasoningStore:
             )
         return self._task(rows[0]) if rows else None
 
-    @staticmethod
-    def _branch_id(seed: str) -> str:
-        return "ibr_" + hashlib.sha256(seed.encode("utf-8")).hexdigest()[:20]
-
     def step(self, step_id: str) -> ResearchReasoningStep:
         with Session(self._engine) as db:
             record = db.get(ResearchReasoningStepRecord, step_id)
@@ -635,73 +673,13 @@ class ResearchReasoningStore:
                 )
         return self._step(record)
 
-    def topology_for(
-        self,
-        *,
-        session: ResearchSession,
-        proposal: ManagerProposal,
-    ) -> ResolvedInvestigationTopology:
-        intent = proposal.effective_intent
-        parent = None
-        if proposal.parent_step_id is not None:
-            parent = self.step(proposal.parent_step_id)
-            if parent.research_session_id != session.session_id:
-                raise ResearchManagerMaturationError(
-                    "P17_PARENT_STEP_SESSION_MISMATCH",
-                    proposal.parent_step_id,
-                )
-            if parent.parent_obligation_id != proposal.target_parent_obligation:
-                raise ResearchManagerMaturationError(
-                    "P17_PARENT_STEP_OBLIGATION_MISMATCH",
-                    proposal.parent_step_id,
-                )
-
-        if parent is None:
-            depth = 0
-            seed = (
-                f"{session.session_id}|{proposal.target_parent_obligation}|"
-                f"{proposal.branch_key or proposal.objective_key}"
-            )
-            branch_id = self._branch_id(seed)
-        else:
-            depth = (
-                parent.depth
-                if intent
-                in {
-                    InvestigationIntent.STOP_BRANCH,
-                    InvestigationIntent.STOP_INVESTIGATION,
-                }
-                else parent.depth + 1
-            )
-            if proposal.branch_key:
-                branch_id = self._branch_id(
-                    f"{session.session_id}|{parent.step_id}|{proposal.branch_key}"
-                )
-            else:
-                branch_id = parent.branch_id
-
-        stop_scope = None
-        if intent == InvestigationIntent.STOP_BRANCH:
-            stop_scope = StopScope.BRANCH
-        elif intent == InvestigationIntent.STOP_INVESTIGATION:
-            stop_scope = StopScope.INVESTIGATION
-
-        return ResolvedInvestigationTopology(
-            parent_step_id=proposal.parent_step_id,
-            depth=depth,
-            branch_id=branch_id,
-            intent=intent,
-            target_kind=proposal.target_kind,
-            target_ref=proposal.target_ref,
-            stop_scope=stop_scope,
-        )
-
     def create_step(
         self,
         *,
         session: ResearchSession,
         snapshot: ResearchManagerSnapshot,
         proposal: ManagerProposal,
+        topology: ResolvedInvestigationTopology,
         proposal_fingerprint: str,
         status: ReasoningStepStatus = ReasoningStepStatus.PENDING,
         stop_reason: ManagerStopReason | None = None,
@@ -724,10 +702,6 @@ class ResearchReasoningStore:
         result_json, _ = _json(
             [],
             code="P17_RESULT_REFS_NOT_CANONICAL",
-        )
-        topology = self.topology_for(
-            session=session,
-            proposal=proposal,
         )
         record = ResearchReasoningStepRecord(
             step_id=_id("rrs_"),
@@ -908,7 +882,11 @@ def _project_investigation_graph(
         if step.parent_step_id is not None:
             children.setdefault(step.parent_step_id, []).append(step.step_id)
 
-    branch_ids = {x.branch_id for x in steps}
+    branch_ids = {
+        x.branch_id
+        for x in steps
+        if x.stop_scope != StopScope.INVESTIGATION
+    }
     stopped_branches: set[str] = set()
     nodes = []
     for step in steps:
@@ -958,6 +936,279 @@ def _project_investigation_graph(
         open_branch_ids=tuple(sorted(branch_ids - stopped_branches)),
         stopped_branch_ids=tuple(sorted(stopped_branches)),
         max_observed_depth=max((x.depth for x in steps), default=0),
+    )
+
+
+def _open_investigation_nodes(
+    graph: InvestigationGraph,
+) -> tuple[InvestigationNodeView, ...]:
+    open_branches = set(graph.open_branch_ids)
+    return tuple(
+        node
+        for node in graph.nodes
+        if node.branch_id in open_branches
+        and node.stop_scope != StopScope.INVESTIGATION
+    )
+
+
+def _build_action_profile(
+    *,
+    graph: InvestigationGraph,
+    claims: tuple[ClaimView, ...],
+    materials: tuple[MaterialCognitionView, ...],
+    remaining_followup_native_turns: int,
+    remaining_counter_evidence_attempts: int,
+    max_depth: int,
+) -> InvestigationActionProfile:
+    """Project legal moves from current state without choosing among them."""
+
+    open_nodes = _open_investigation_nodes(graph)
+    advancing = tuple(
+        node.step_id for node in open_nodes if node.depth < max_depth
+    )
+    open_ids = tuple(node.step_id for node in open_nodes)
+    candidate_branches = {
+        node.branch_id
+        for node in graph.nodes
+        if node.intent == InvestigationIntent.EXPLORE_ALTERNATIVES
+    }
+    candidate_advancing = tuple(
+        node.step_id
+        for node in open_nodes
+        if node.branch_id in candidate_branches
+        and node.depth < max_depth
+    )
+    rules: list[InvestigationActionRule] = []
+
+    def add(
+        intent: InvestigationIntent,
+        *,
+        parents: tuple[str, ...] = (),
+        allow_parentless: bool = False,
+        behavior: InvestigationBranchBehavior,
+        branch_key: InvestigationBranchKeyPolicy,
+        depth_delta: int = 0,
+    ) -> None:
+        if not allow_parentless and not parents:
+            return
+        rules.append(
+            InvestigationActionRule(
+                intent=intent,
+                legal_parent_step_ids=parents,
+                allow_parentless=allow_parentless,
+                branch_behavior=behavior,
+                branch_key_policy=branch_key,
+                depth_delta=depth_delta,
+            )
+        )
+
+    if remaining_followup_native_turns > 0:
+        add(
+            InvestigationIntent.INVESTIGATE_GAP,
+            parents=advancing if graph.nodes else (),
+            allow_parentless=not graph.nodes,
+            behavior=InvestigationBranchBehavior.ROOT_OR_INHERIT,
+            branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
+            depth_delta=1,
+        )
+
+    add(
+        InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parents=advancing,
+        behavior=InvestigationBranchBehavior.OPEN_CHILD_BRANCH,
+        branch_key=InvestigationBranchKeyPolicy.REQUIRED,
+        depth_delta=1,
+    )
+    add(
+        InvestigationIntent.DEEPEN_EXPLANATION,
+        parents=advancing,
+        behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
+        branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
+        depth_delta=1,
+    )
+    if remaining_followup_native_turns > 0:
+        add(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            parents=candidate_advancing,
+            behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
+            branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
+            depth_delta=1,
+        )
+    add(
+        InvestigationIntent.REPLAN,
+        parents=open_ids,
+        behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
+        branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
+        depth_delta=0,
+    )
+    if (
+        claims
+        and remaining_followup_native_turns > 0
+        and remaining_counter_evidence_attempts > 0
+    ):
+        add(
+            InvestigationIntent.SEEK_COUNTER_EVIDENCE,
+            parents=advancing,
+            behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
+            branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
+            depth_delta=1,
+        )
+    if materials:
+        add(
+            InvestigationIntent.FORM_CLAIM,
+            parents=advancing,
+            behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
+            branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
+            depth_delta=1,
+        )
+    add(
+        InvestigationIntent.STOP_BRANCH,
+        parents=open_ids,
+        behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
+        branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
+        depth_delta=0,
+    )
+    add(
+        InvestigationIntent.STOP_INVESTIGATION,
+        parents=open_ids,
+        allow_parentless=True,
+        behavior=InvestigationBranchBehavior.GLOBAL_CONTROL,
+        branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
+        depth_delta=0,
+    )
+    return InvestigationActionProfile(
+        rules=tuple(rules),
+        max_depth=max_depth,
+    )
+
+
+def _branch_id(seed: str) -> str:
+    return "ibr_" + hashlib.sha256(seed.encode("utf-8")).hexdigest()[:20]
+
+
+def resolve_investigation_topology(
+    *,
+    snapshot: ResearchManagerSnapshot,
+    proposal: ManagerProposal,
+) -> ResolvedInvestigationTopology:
+    """Resolve dynamic P17 legality exactly once from state + typed proposal."""
+
+    intent = proposal.effective_intent
+    rule = snapshot.action_profile.rule_for(intent)
+    if rule is None:
+        raise ResearchManagerMaturationError(
+            "P17_INTENT_NOT_LEGAL_IN_STATE",
+            intent.value,
+        )
+
+    if rule.branch_key_policy == InvestigationBranchKeyPolicy.REQUIRED:
+        if proposal.branch_key is None:
+            raise ResearchManagerMaturationError(
+                "P17_BRANCH_KEY_REQUIRED",
+                intent.value,
+            )
+    elif proposal.branch_key is not None:
+        raise ResearchManagerMaturationError(
+            "P17_BRANCH_KEY_FORBIDDEN",
+            intent.value,
+        )
+
+    node_by_id = {
+        node.step_id: node for node in snapshot.investigation.nodes
+    }
+    parent = (
+        node_by_id.get(proposal.parent_step_id)
+        if proposal.parent_step_id is not None
+        else None
+    )
+    if proposal.parent_step_id is None:
+        if not rule.allow_parentless:
+            raise ResearchManagerMaturationError(
+                "P17_PARENT_STEP_REQUIRED",
+                intent.value,
+            )
+    else:
+        if (
+            parent is None
+            or proposal.parent_step_id not in rule.legal_parent_step_ids
+        ):
+            raise ResearchManagerMaturationError(
+                "P17_PARENT_STEP_NOT_LEGAL",
+                proposal.parent_step_id,
+            )
+        if (
+            parent.root_obligation_id
+            != proposal.target_parent_obligation
+        ):
+            raise ResearchManagerMaturationError(
+                "P17_PARENT_STEP_OBLIGATION_MISMATCH",
+                proposal.parent_step_id,
+            )
+
+    if rule.branch_behavior == InvestigationBranchBehavior.ROOT_OR_INHERIT:
+        if parent is None:
+            depth = 0
+            branch_id = _branch_id(
+                f"{snapshot.research_session_id}|"
+                f"{proposal.target_parent_obligation}|root"
+            )
+        else:
+            depth = parent.depth + rule.depth_delta
+            branch_id = parent.branch_id
+    elif rule.branch_behavior == InvestigationBranchBehavior.OPEN_CHILD_BRANCH:
+        assert parent is not None
+        assert proposal.branch_key is not None
+        depth = parent.depth + rule.depth_delta
+        branch_id = _branch_id(
+            f"{snapshot.research_session_id}|"
+            f"{parent.step_id}|{proposal.branch_key}"
+        )
+    elif rule.branch_behavior == InvestigationBranchBehavior.INHERIT_BRANCH:
+        assert parent is not None
+        depth = parent.depth + rule.depth_delta
+        branch_id = parent.branch_id
+    else:
+        # Global control is not an investigation branch. A compatibility branch
+        # value is persisted only because the existing row contract requires it.
+        depth = parent.depth if parent is not None else 0
+        if parent is not None:
+            branch_id = parent.branch_id
+        else:
+            roots = [
+                node
+                for node in snapshot.investigation.nodes
+                if node.parent_step_id is None
+                and node.stop_scope != StopScope.INVESTIGATION
+            ]
+            branch_id = (
+                roots[0].branch_id
+                if roots
+                else _branch_id(
+                    f"{snapshot.research_session_id}|"
+                    f"{proposal.target_parent_obligation}|global-control"
+                )
+            )
+
+    if depth > snapshot.action_profile.max_depth:
+        raise ResearchManagerMaturationError(
+            "P17_DEPTH_BUDGET_EXHAUSTED",
+            f"resolved depth {depth} exceeds max depth",
+        )
+
+    stop_scope = None
+    if intent == InvestigationIntent.STOP_BRANCH:
+        stop_scope = StopScope.BRANCH
+    elif intent == InvestigationIntent.STOP_INVESTIGATION:
+        stop_scope = StopScope.INVESTIGATION
+
+    return ResolvedInvestigationTopology(
+        parent_step_id=proposal.parent_step_id,
+        depth=depth,
+        branch_id=branch_id,
+        intent=intent,
+        target_kind=proposal.target_kind,
+        target_ref=proposal.target_ref,
+        stop_scope=stop_scope,
     )
 
 
@@ -1108,13 +1359,50 @@ class ResearchInvestigationManager:
                     "P17_MATERIAL_PERSISTENCE_INVALID",
                     row.lead_id,
                 )
+
+            def text_field(key: str) -> str | None:
+                value = payload.get(key)
+                return value if isinstance(value, str) else None
+
+            dashcards = []
+            raw_dashcards = payload.get("dashcards")
+            if isinstance(raw_dashcards, list):
+                for item in raw_dashcards:
+                    if not isinstance(item, dict):
+                        continue
+                    dashcard_id = item.get("id")
+                    card_id = item.get("card_id")
+                    title = item.get("title")
+                    if not isinstance(title, str):
+                        name = item.get("name")
+                        title = name if isinstance(name, str) else None
+                    if not isinstance(dashcard_id, (str, int)):
+                        dashcard_id = None
+                    if not isinstance(card_id, (str, int)):
+                        card_id = None
+                    dashcards.append(
+                        NativeDashcardCognitionView(
+                            dashcard_id=dashcard_id,
+                            card_id=card_id,
+                            title=title,
+                        )
+                    )
+
             materials.append(
-                MaterialView(
+                MaterialCognitionView(
                     lead_id=row.lead_id,
                     obligation_id=row.obligation_id,
+                    execution_link_id=str(row.execution_link_id),
+                    native_conversation_id=str(row.native_conversation_id),
+                    native_query_id=row.native_query_id,
+                    query_fingerprint=row.query_fingerprint,
                     material_fingerprint=row.payload_fingerprint,
                     source_evidence_refs=tuple(source_refs),
-                    material=payload,
+                    exploration_kind=row.exploration_kind,
+                    native_name=text_field("name"),
+                    native_title=text_field("title"),
+                    native_description=text_field("description"),
+                    dashcards=tuple(dashcards),
                 )
             )
 
@@ -1141,6 +1429,28 @@ class ResearchInvestigationManager:
         graph = _project_investigation_graph(
             steps=steps,
             tasks=tasks,
+        )
+        remaining_reasoning_steps = max(
+            0,
+            self._budget.max_reasoning_steps - len(steps),
+        )
+        remaining_followup_native_turns = max(
+            0,
+            self._budget.max_followup_native_turns - followups,
+        )
+        remaining_counter_evidence_attempts = max(
+            0,
+            self._budget.max_counter_evidence_attempts - counters,
+        )
+        action_profile = _build_action_profile(
+            graph=graph,
+            claims=claims,
+            materials=tuple(materials),
+            remaining_followup_native_turns=remaining_followup_native_turns,
+            remaining_counter_evidence_attempts=(
+                remaining_counter_evidence_attempts
+            ),
+            max_depth=self._budget.max_depth,
         )
         terminal = next(
             (
@@ -1192,22 +1502,16 @@ class ResearchInvestigationManager:
             materials=tuple(materials),
             claims=claims,
             investigation=graph,
+            action_profile=action_profile,
             limitation_refs=tuple(
                 sorted(x.limitation_id for x in session.limitations)
             ),
             completed_reasoning_steps=completed,
             pending_reasoning_steps=pending,
-            remaining_reasoning_steps=max(
-                0,
-                self._budget.max_reasoning_steps - len(steps),
-            ),
-            remaining_followup_native_turns=max(
-                0,
-                self._budget.max_followup_native_turns - followups,
-            ),
-            remaining_counter_evidence_attempts=max(
-                0,
-                self._budget.max_counter_evidence_attempts - counters,
+            remaining_reasoning_steps=remaining_reasoning_steps,
+            remaining_followup_native_turns=remaining_followup_native_turns,
+            remaining_counter_evidence_attempts=(
+                remaining_counter_evidence_attempts
             ),
             terminal_stop_reason=terminal,
         )
@@ -1267,6 +1571,7 @@ class ResearchInvestigationManager:
         session: ResearchSession,
         snapshot: ResearchManagerSnapshot,
         proposal: ManagerProposal,
+        topology: ResolvedInvestigationTopology,
     ) -> None:
         if proposal.source_revision != session.revision:
             raise ResearchManagerMaturationError(
@@ -1288,10 +1593,6 @@ class ResearchInvestigationManager:
                 proposal.target_parent_obligation,
             )
 
-        topology = self._ledger.topology_for(
-            session=session,
-            proposal=proposal,
-        )
         if topology.depth > self._budget.max_depth:
             raise ResearchManagerMaturationError(
                 "P17_DEPTH_BUDGET_EXHAUSTED",
@@ -1455,10 +1756,15 @@ class ResearchInvestigationManager:
             stop_reason=reason,
         )
         fingerprint = self._fingerprint(session, proposal)
+        topology = resolve_investigation_topology(
+            snapshot=snapshot,
+            proposal=proposal,
+        )
         return self._ledger.create_step(
             session=session,
             snapshot=snapshot,
             proposal=proposal,
+            topology=topology,
             proposal_fingerprint=fingerprint,
             status=(
                 ReasoningStepStatus.NO_PROGRESS
@@ -1615,10 +1921,15 @@ class ResearchInvestigationManager:
             )
 
         proposal = manager.propose(snapshot)
+        topology = resolve_investigation_topology(
+            snapshot=snapshot,
+            proposal=proposal,
+        )
         self._validate(
             session=session,
             snapshot=snapshot,
             proposal=proposal,
+            topology=topology,
         )
         fingerprint = self._fingerprint(session, proposal)
         prior = self._ledger.prior_fingerprint(
@@ -1630,6 +1941,7 @@ class ResearchInvestigationManager:
                 session=session,
                 snapshot=snapshot,
                 proposal=proposal,
+                topology=topology,
                 proposal_fingerprint=fingerprint,
                 status=ReasoningStepStatus.NO_PROGRESS,
                 stop_reason=ManagerStopReason.NO_PROGRESS,
@@ -1642,6 +1954,7 @@ class ResearchInvestigationManager:
                 session=session,
                 snapshot=snapshot,
                 proposal=proposal,
+                topology=topology,
                 proposal_fingerprint=fingerprint,
                 status=ReasoningStepStatus.STOPPED,
                 stop_reason=proposal.stop_reason,
@@ -1698,6 +2011,7 @@ class ResearchInvestigationManager:
             session=session,
             snapshot=snapshot,
             proposal=proposal,
+            topology=topology,
             proposal_fingerprint=fingerprint,
         )
         return self._resume_pending(
