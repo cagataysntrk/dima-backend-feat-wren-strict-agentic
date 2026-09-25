@@ -16,7 +16,11 @@ from app.v2.research_tools import (
 )
 from control_plane.authorize import Principal
 from lab import v2_day10_ns4_provider_free_rehearsal as ns4
-from lab.v2_day10_ns4_provider_free_rehearsal import run_rehearsal, run_revision_rehearsal
+from lab.v2_day10_ns4_provider_free_rehearsal import (
+    run_canonical_relationship_topology_rehearsal,
+    run_rehearsal,
+    run_revision_rehearsal,
+)
 
 
 def test_ns4_runtime_rehearsal_fits_existing_six_turn_ceiling_without_ceremony():
@@ -61,6 +65,22 @@ def test_ns4_runtime_rehearsal_fits_existing_six_turn_ceiling_without_ceremony()
     assert receipt["report_statement_injection_absent"] is True
     assert receipt["paid_gate_structural_status"] == "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
 
+
+
+def test_d10_s_exact_canonical_relationship_parent_clean_path_fits_global_six():
+    receipt = run_canonical_relationship_topology_rehearsal(revision=False)
+
+    assert receipt["provider_calls"] == 0
+    assert receipt["adaptive_parent_obligation_id"] == "U_REL"
+    assert receipt["preacceptance_model_calls"] == 2
+    assert receipt["research_manager_calls"] == 4
+    assert receipt["manager_turn_total"] == 6
+    assert receipt["manager_turn_ceiling"] == 6
+    assert receipt["completion_gate_final_state"] == "COMPLETED"
+    assert receipt["directive_final_status"] == "APPLIED"
+    assert receipt["root_status"] == "VERIFIED"
+    assert receipt["confirmed_cause_count"] == 0
+    assert receipt["paid_gate_structural_status"] == "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
 
 
 def test_revision_path_reaches_same_governed_product_within_global_six_turns():
