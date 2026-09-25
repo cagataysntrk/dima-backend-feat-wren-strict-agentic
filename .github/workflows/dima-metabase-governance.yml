@@ -344,7 +344,7 @@ jobs:
           grep -q "diff-tree" "$AUTH"
           grep -q "cat-file" "$AUTH"
           grep -q "authorizations/" "$AUTH"
-          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-manager-structured-schema"' "$AUTH"
+          grep -q 'CURRENT_FAILURE_FAMILY_ID = "p17-manager-semantic-output"' "$AUTH"
           grep -q 'CURRENT_ATTEMPT_IN_FAMILY = 2' "$AUTH"
           grep -q 'EXPECTED_DECISION = "DMP-DEC-0052"' "$AUTH"
           grep -q 'failure_family_id' "$AUTH"
