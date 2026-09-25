@@ -63,7 +63,6 @@ from app.v2.manager_loop import (
     ManagerDecisionTransport,
     ResearchManagerLoop,
     _SYSTEM,
-    _post_acceptance_native_schema,
 )
 from app.v2.manager_models import (
     CandidateObligation,
@@ -181,25 +180,61 @@ class AutoInspectResearchToolRunner(ResearchToolRunner):
 
 
 def _free_action_schema() -> dict[str, Any]:
-    schema = copy.deepcopy(_post_acceptance_native_schema())
+    """Ablation-local alternative schema; never a Product compatibility surface.
 
-    def remove_inspect(node: Any) -> None:
+    D10-U removed the historical Product helper that built a post-acceptance transport
+    schema.  This FREE_COGNITION arm is an explicit experimental alternative, so its
+    transport contract is owned here instead of importing a private Product parser/schema.
+    """
+
+    schema = copy.deepcopy(ManagerDecisionTransport.model_json_schema())
+
+    def normalize(node: Any) -> None:
         if isinstance(node, dict):
-            values = node.get("enum")
-            if isinstance(values, list) and ManagerActionKind.INSPECT_EVIDENCE.value in values:
-                node["enum"] = [
-                    value
-                    for value in values
-                    if value != ManagerActionKind.INSPECT_EVIDENCE.value
-                ]
+            node.pop("default", None)
+            if node.get("type") == "object" or "properties" in node:
+                properties = node.get("properties") or {}
+                node["required"] = list(properties.keys())
+                node["additionalProperties"] = False
             for value in node.values():
-                remove_inspect(value)
+                normalize(value)
         elif isinstance(node, list):
             for value in node:
-                remove_inspect(value)
+                normalize(value)
 
-    remove_inspect(schema)
+    normalize(schema)
+
+    forbidden = {
+        ManagerActionKind.PROPOSE_ACCEPTANCE.value,
+        ManagerActionKind.INSPECT_EVIDENCE.value,
+        ManagerActionKind.PROPOSE_HYPOTHESIS.value,
+        ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
+        ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value,
+        ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value,
+    }
+
+    def narrow(node: Any) -> None:
+        if isinstance(node, dict):
+            values = node.get("enum")
+            if isinstance(values, list):
+                action_values = {item.value for item in ManagerActionKind}
+                if any(value in action_values for value in values):
+                    node["enum"] = [
+                        value for value in values if value not in forbidden
+                    ]
+            for value in node.values():
+                narrow(value)
+        elif isinstance(node, list):
+            for value in node:
+                narrow(value)
+
+    narrow(schema)
     return schema
+
+
+def _parse_free_decision(raw: Any) -> ManagerDecisionTransport:
+    data = json.loads(raw) if isinstance(raw, str) else raw
+    return ManagerDecisionTransport.model_validate(data)
 
 
 _FREE_SYSTEM = _SYSTEM.replace(
@@ -244,7 +279,7 @@ class FreeCognitionLoop(ResearchManagerLoop):
         }
         raw = self._structured(_FREE_SYSTEM, user, **kwargs)
         try:
-            return self._parse_decision(raw)
+            return _parse_free_decision(raw)
         except Exception as first_error:
             repair_system = (
                 _FREE_SYSTEM
@@ -260,7 +295,7 @@ class FreeCognitionLoop(ResearchManagerLoop):
                 + str(first_error)[:1200]
             )
             repaired = self._structured(repair_system, repair_user, **kwargs)
-            return self._parse_decision(repaired)
+            return _parse_free_decision(repaired)
 
 
 def _runtime_identity(principal: Principal, service) -> TenantAnalyticsRuntimeV0:
