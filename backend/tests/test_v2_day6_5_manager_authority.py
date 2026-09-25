@@ -269,6 +269,108 @@ def test_partial_and_verified_complete_are_distinct():
     assert result.terminal == ResearchRunTerminal.VERIFIED_COMPLETE
 
 
+def test_completion_gate_keeps_presentation_authority_but_does_not_wait_on_delivery():
+    source = ("src_" + "1" * 24,)
+    analytical = ObligationLedgerItem(
+        obligation_id="U_ANALYTICAL",
+        capability_key=ManagerCapabilityKey.RELATIONSHIP,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.VERIFIED,
+        source_refs=source,
+        evidence_refs=("E1",),
+        introduced_in_version=1,
+    )
+    report = ObligationLedgerItem(
+        obligation_id="U_REPORT",
+        capability_key=ManagerCapabilityKey.REPORT,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=source,
+        introduced_in_version=1,
+    )
+    ledger = UserObligationLedger(
+        lineage_id="presentation-split",
+        version=1,
+        items=(analytical, report),
+    )
+
+    result = CompletionGate().evaluate(ledger)
+
+    assert result.allowed is True
+    assert result.terminal == ResearchRunTerminal.VERIFIED_COMPLETE
+    # Authority conservation: CompletionGate is only a projection; it does not
+    # mutate/drop the report deliverable from the accepted ledger.
+    assert next(
+        item for item in ledger.items if item.obligation_id == "U_REPORT"
+    ).status == ObligationStatus.ACCEPTED
+
+
+def test_completion_gate_does_not_claim_research_complete_for_presentation_only_request():
+    report = ObligationLedgerItem(
+        obligation_id="U_REPORT",
+        capability_key=ManagerCapabilityKey.REPORT,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=("src_" + "1" * 24,),
+        introduced_in_version=1,
+    )
+    result = CompletionGate().evaluate(
+        UserObligationLedger(
+            lineage_id="presentation-only",
+            version=1,
+            items=(report,),
+        )
+    )
+
+    assert result.allowed is False
+    assert result.terminal == ResearchRunTerminal.FAILED
+    assert result.reasons == (
+        "no completion-relevant analytical USER_MUST obligation",
+    )
+
+
+def test_nonterminal_analytical_user_must_still_blocks_even_with_report_deliverable():
+    source = ("src_" + "1" * 24,)
+    analytical = ObligationLedgerItem(
+        obligation_id="U_ANALYTICAL",
+        capability_key=ManagerCapabilityKey.RELATIONSHIP,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=source,
+        introduced_in_version=1,
+    )
+    report = ObligationLedgerItem(
+        obligation_id="U_REPORT",
+        capability_key=ManagerCapabilityKey.REPORT,
+        origin=ObligationOrigin.USER_MUST,
+        priority=ObligationPriority.MUST,
+        polarity=ObligationPolarity.REQUIRED,
+        status=ObligationStatus.ACCEPTED,
+        source_refs=source,
+        introduced_in_version=1,
+    )
+    result = CompletionGate().evaluate(
+        UserObligationLedger(
+            lineage_id="presentation-plus-open-analysis",
+            version=1,
+            items=(analytical, report),
+        )
+    )
+
+    assert result.allowed is False
+    assert result.terminal is None
+    assert "U_ANALYTICAL" in result.reasons[0]
+    assert "U_REPORT" not in result.reasons[0]
+
+
 def test_repair_supersedes_and_preserves_unrelated_obligations():
     spans = SourceSpanRegistry()
     handles = SemanticHandleRegistry()
