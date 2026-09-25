@@ -8,7 +8,7 @@
 
 ```text
 certified product/code checkpoint     = d1bc5291b315ff19c3456d08ff1820e983d85942
-latest non-doc branch checkpoint      = 80e1c96593e12fd7b23973f949057ef9604ce5c4
+latest non-doc branch checkpoint      = 5801ac71ba00867921dec17edff20568dc0fce05
 branch                                = feat/dima-metabase-platform
 forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050
 
@@ -25,6 +25,13 @@ corrected-live harness-fix provider-free = 36131121661 SUCCESS
 DMP-0050 provider-free                = 36136988379 SUCCESS
 DMP-0050 governance                   = 36136988429 SUCCESS
 DMP-0050 trajectory-invariant eval    = 7 PASS
+DMP-0050 autonomous dispatch          = 36137304596 FAILURE
+DMP-0050 dispatch governance          = 36137304653 SUCCESS
+DMP-0050 dispatch commit              = 5801ac71ba00867921dec17edff20568dc0fce05
+DMP-0050 manager Luna calls           = 0
+DMP-0050 Metabot occurrences          = 0
+DMP-0050 dataset occurrences          = 0
+DMP-0050 live owner                   = INFRA / EVALUATOR TRANSPORT
 
 P17 focused recursive regression      = 31 PASS
 P16 claim-lineage regression          = 6 PASS
@@ -61,7 +68,7 @@ P16                                   = SEALED
 P17 bounded-manager foundation        = PROVIDER-FREE GREEN
 P17 recursive authority               = PROVIDER-FREE GREEN
 P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
-P17 autonomous cognition              = PROVIDER-FREE GREEN / ONE LIVE AUTHORIZED
+P17 autonomous cognition              = LIVE RED / INFRA TRANSPORT / NOT SEALED
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
@@ -95,15 +102,16 @@ The active certification target is:
 ```text
 P17 recursive product authority       = PROVIDER-FREE GREEN
 P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
-P17 autonomous cognition certification= PROVIDER-FREE GREEN / ONE LIVE AUTHORIZED
+P17 autonomous cognition certification= LIVE RED / INFRA TRANSPORT / NOT SEALED
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 ```
 
 The trajectory-invariant evaluator, autonomous harness, P14/P15/P16/P17 deterministic regressions
 and governance are GREEN at provider-free run `36136988379` and governance run `36136988429`.
-Exactly one DMP-DEC-0050 autonomous Luna canary is now authorized and not yet consumed. Sol, C1 and
-engine-build counters remain zero. P18 stays blocked until that autonomous canary is GREEN.
+The one authorized autonomous certification dispatch was consumed by `36137304596` and returned
+RED at the fail-closed authorization transport before any Luna manager call. No second paid dispatch
+is authorized. P18 remains blocked.
 
 Permanent evaluation governance:
 
@@ -122,6 +130,42 @@ UNLESS IT IS EXPLICITLY A SCENARIO TEST.
 
 Harness sets the rules. Research Manager chooses the path. Metabase does the analysis. Dima records
 what the Evidence changed.
+
+### DMP-DEC-0050 AUTONOMOUS LIVE RETURN — RED / INFRA TRANSPORT
+
+The one authorized DMP-DEC-0050 certification dispatch was `36137304596 = FAILURE`.
+It did not enter manager cognition. The authorization commit
+`5801ac71ba00867921dec17edff20568dc0fce05` genuinely **added**
+`AUTONOMOUS_LUNA_AUTHORIZATION.json` and modified only the compatibility entrypoint transport
+marker. The entrypoint then required that added path to appear in the GitHub push event's
+`head_commit.added` field; this Actions event did not surface the path there, so the fail-closed
+transport rejected the dispatch before `autonomous_manager_canary.py` was entered.
+
+```text
+first wrong transition:
+valid add-only authorization commit
+→ event-field-based add-only check
+→ authorization path not observed in head_commit.added
+→ RuntimeError before autonomous canary entry
+
+owner:
+INFRA / EVALUATOR TRANSPORT
+
+manager Luna calls        = 0
+Metabot occurrences       = 0
+/api/dataset occurrences  = 0
+Sol                       = 0
+engine builds             = 0
+C1                        = 0
+```
+
+This RED does not invalidate P17 provider-free recursive authority or the DMP-DEC-0050
+trajectory-invariant evaluator. It is not a manager-cognition, structured-output, state-machine,
+native-analytics, lineage, or Metabase-engine failure.
+
+Per DMP-DEC-0050, **no second paid dispatch is authorized**. P17 remains **NOT SEALED** and P18
+remains **BLOCKED**. A future paid autonomous certification attempt requires new supervisor
+authority.
 
 Permanent forward split:
 
