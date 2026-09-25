@@ -154,6 +154,7 @@ class NumericProvenanceRef(Frozen):
     source_receipt_id: str | None = None
     source_path: str = Field(min_length=1, max_length=512)
     analytical_kind: NumericAnalyticalKind
+    analytical_kind_path: str | None = Field(default=None, max_length=512)
 
     @model_validator(mode="after")
     def native_numeric_only(self):
@@ -163,6 +164,14 @@ class NumericProvenanceRef(Frozen):
         }:
             raise ValueError(
                 "numeric provenance must reference P14 Evidence or P15 native material"
+            )
+        if (
+            self.analytical_kind
+            == NumericAnalyticalKind.DIRECT_INDIRECT_DECOMPOSITION
+            and not self.analytical_kind_path
+        ):
+            raise ValueError(
+                "direct/indirect decomposition requires exact source kind marker"
             )
         return self
 
@@ -543,7 +552,20 @@ class HypothesisRootCauseStore:
                     "P19_HYPOTHESIS_TENANT_MISMATCH",
                     hypothesis_id,
                 )
-            return self._hydrate_hypothesis(row)
+            hypothesis = self._hydrate_hypothesis(row)
+        session = self._session(
+            hypothesis.research_session_id,
+            principal,
+        )
+        if (
+            session.context_version != hypothesis.semantic_context_version
+            or session.tenant_binding != hypothesis.tenant_binding
+        ):
+            raise P19EpistemicError(
+                "P19_HYPOTHESIS_CONTEXT_MISMATCH",
+                hypothesis_id,
+            )
+        return hypothesis
 
     def _source_authority(
         self,
@@ -832,6 +854,17 @@ class HypothesisRootCauseStore:
                 "P19_NUMERIC_SOURCE_NOT_NUMERIC",
                 ref.source_path,
             )
+        if (
+            ref.analytical_kind
+            == NumericAnalyticalKind.DIRECT_INDIRECT_DECOMPOSITION
+        ):
+            assert ref.analytical_kind_path is not None
+            marker = _path_value(payload, ref.analytical_kind_path)
+            if marker != ref.analytical_kind.value:
+                raise P19EpistemicError(
+                    "P19_NUMERIC_ANALYTICAL_KIND_MISMATCH",
+                    ref.analytical_kind_path,
+                )
 
     def _validate_causal_identification(
         self,
@@ -1326,4 +1359,17 @@ class HypothesisRootCauseStore:
                     "P19_ASSESSMENT_TENANT_MISMATCH",
                     assessment_id,
                 )
-            return self._hydrate_assessment(row)
+            assessment = self._hydrate_assessment(row)
+        session = self._session(
+            assessment.research_session_id,
+            principal,
+        )
+        if (
+            session.context_version != assessment.semantic_context_version
+            or session.tenant_binding != assessment.tenant_binding
+        ):
+            raise P19EpistemicError(
+                "P19_ASSESSMENT_CONTEXT_MISMATCH",
+                assessment_id,
+            )
+        return assessment
