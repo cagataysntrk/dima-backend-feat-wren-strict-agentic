@@ -107,9 +107,9 @@ class InvestigationTaskStatus(StrEnum):
 
 
 class ResearchReasoningBudget(Frozen):
-    max_reasoning_steps: int = Field(default=16, ge=1, le=128)
-    max_followup_native_turns: int = Field(default=8, ge=0, le=64)
-    max_counter_evidence_attempts: int = Field(default=4, ge=0, le=32)
+    max_reasoning_steps: int = Field(default=8, ge=1, le=64)
+    max_followup_native_turns: int = Field(default=4, ge=0, le=32)
+    max_counter_evidence_attempts: int = Field(default=2, ge=0, le=16)
     max_depth: int = Field(default=5, ge=0, le=16)
 
 
