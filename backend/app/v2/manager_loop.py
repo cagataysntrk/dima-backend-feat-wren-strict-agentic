@@ -1216,8 +1216,21 @@ class ResearchManagerLoop:
                 )
             except StopIteration:
                 continue
-            kinds: list[str] = []
+            # Accepted semantic bindings are the most stable structural type proof
+            # for USER_SOURCE authority. Hypothesis lifecycle mutations must not make
+            # an already-governed ROOT shape appear semantically unknown. Fall back to
+            # handle metadata only for governed refs that are not source-bound here.
+            kinds: list[str] = [
+                str(binding.target_kind)
+                for binding in root_item.semantic_bindings
+                if str(binding.target_kind)
+            ]
+            bound_ids = {
+                binding.handle_id for binding in root_item.semantic_bindings
+            }
             for handle_id in root_item.semantic_handle_refs:
+                if handle_id in bound_ids:
+                    continue
                 try:
                     metadata = hypothesis_ledger.semantic_handle_metadata(handle_id)
                 except Exception:
