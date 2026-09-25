@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed compatibility entrypoint for DMP-DEC-0052 family recovery.
+"""Fail-closed compatibility entrypoint for DMP-DEC-0053 family recovery.
 
 Historical screenplay logic lives in recursive_manager_scenario_lab.py.
 This entrypoint only verifies one append-only recovery authorization receipt
@@ -30,11 +30,11 @@ def _verify_exact_git_authorization() -> None:
     github_ref_name = os.environ.get("GITHUB_REF_NAME", "").strip()
     if not github_sha:
         raise AuthorizationTransportError(
-            "DMP-DEC-0052 live entrypoint requires GITHUB_SHA"
+            "DMP-DEC-0053 live entrypoint requires GITHUB_SHA"
         )
     if github_ref_name != "feat/dima-metabase-platform":
         raise AuthorizationTransportError(
-            "DMP-DEC-0052 live entrypoint requires the certified branch"
+            "DMP-DEC-0053 live entrypoint requires the certified branch"
         )
 
     verify_dispatch_authorization(
@@ -50,4 +50,4 @@ if __name__ == "__main__":
     _verify_exact_git_authorization()
     runpy.run_path(str(AUTONOMOUS), run_name="__main__")
 
-# DMP-DEC-0052 forward family: p17-manager-semantic-output / attempt 2
+# DMP-DEC-0053 forward family: p17-investigation-language-legality / attempt 2
