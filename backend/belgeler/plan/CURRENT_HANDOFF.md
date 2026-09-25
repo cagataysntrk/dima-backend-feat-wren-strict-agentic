@@ -1,5 +1,72 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY OVERRIDE — D10-S GOVERNANCE / SEMANTIC SIMPLIFICATION ACTIVE
+
+This is the current active authority. Historical D10-Q READY / TRUE STOP / paid-budget blocks below are audit receipts only and remain unchanged.
+
+```text
+branch                         feat/ask-v2-mvp
+authority reconciliation HEAD 0461a8cc613254f40a4dee69d55528747d672045
+current Product behavior       91721cb3bc01a3737212c7596fd3170c60c0239b
+
+paid run #1                    36091887451 = RED / 7 calls
+paid run #2                    36096707608 = RED / 8 calls
+paid run #3                    36098236473 = RED / 7 calls
+paid run #4                    36101471602 = RED / 9 calls
+run #4 tested SHA              5171e6e9891afe97925b95061c730934fa737a73
+
+historical D10-Q calls         31
+D10-Q                          HARD STOP / CLOSED AS DEBUG LOOP
+
+owner-reset future envelope    40 fresh provider calls
+future-envelope used           0 / 40
+D10-S paid execution           PAUSED during implementation
+
+D10-S                          ACTIVE
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Binding run-#4 first-wrong-transition family:
+
+```text
+real accepted authority
+→ real Wren Evidence
+→ fresh CURRENT_RESULT_DELTA disclosed
+→ cognition nevertheless selects inspect_evidence
+→ next cognition selects AGENT_DERIVED resolve_semantics for already-governed "bölüm"
+→ PARTIAL
+
+MODEL_COGNITION
++
+OVER-BROAD ACTION SURFACE
++
+REDUNDANT GOVERNANCE CEREMONY
+```
+
+D10-S is not generic fix #4. It is a bounded architecture simplification interlude. The immediate owner is the model-facing action surface, not Wren truth, Evidence truth, semantic binding truth or security.
+
+Current D10-S invariant:
+
+```text
+deterministically unnecessary / inapplicable action
+→ MUST NOT be advertised to cognition
+
+runtime state
+→ ManagerActionAvailability
+→ allowed action set
+→ strict provider schema
+→ LLM chooses one
+→ runtime validates again
+```
+
+Fresh disclosed Evidence must not advertise inspect_evidence for that Evidence. Post-acceptance USER_SOURCE semantic resolution must not be advertised. AGENT_DERIVED semantic expansion is available only when current governed inventory cannot satisfy the material next-test need and inspected VERIFIED Evidence grounds a genuinely new derived concept.
+
+No paid/live provider calls are authorized or needed for D10-S implementation/debugging. Provider-free and deterministic real-Wren only. The owner-reset 40-call envelope remains untouched unless a later explicit measurement gate is opened.
+
+
 ## LATEST AUTHORITY OVERRIDE — D10-Q FINAL GENERIC FIX #3 GREEN / PAID RUN #4 READY
 
 This is the current active Day10 authority. Historical TRUE STOP and earlier fix-ready blocks below remain audit receipts.
