@@ -23,7 +23,7 @@ from lab.v2_day10_ns4_provider_free_rehearsal import (
 )
 
 
-def test_ns4_runtime_rehearsal_fits_existing_six_turn_ceiling_without_ceremony():
+def test_ns4_runtime_rehearsal_uses_six_turns_within_phase_separated_outer_ceiling():
     receipt = run_rehearsal()
 
     assert receipt["provider_calls"] == 0
@@ -36,8 +36,8 @@ def test_ns4_runtime_rehearsal_fits_existing_six_turn_ceiling_without_ceremony()
     assert receipt["preacceptance_model_calls"] == 2
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 6
-    assert receipt["manager_turn_ceiling"] == 6
-    assert receipt["manager_turn_headroom"] == 0
+    assert receipt["manager_turn_ceiling"] == 8
+    assert receipt["manager_turn_headroom"] == 2
 
     assert receipt["deterministic_task_executions"] == 5
     assert receipt["synthetic_query_calls"] == 5
@@ -67,7 +67,7 @@ def test_ns4_runtime_rehearsal_fits_existing_six_turn_ceiling_without_ceremony()
 
 
 
-def test_d10_s_exact_canonical_relationship_parent_clean_path_fits_global_six():
+def test_d10_s_exact_canonical_relationship_parent_clean_path_uses_six_total_turns():
     receipt = run_canonical_relationship_topology_rehearsal(revision=False)
 
     assert receipt["provider_calls"] == 0
@@ -76,7 +76,7 @@ def test_d10_s_exact_canonical_relationship_parent_clean_path_fits_global_six():
     assert receipt["preacceptance_model_calls"] == 2
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 6
-    assert receipt["manager_turn_ceiling"] == 6
+    assert receipt["manager_turn_ceiling"] == 8
     assert receipt["completion_gate_final_state"] == "COMPLETED"
     assert receipt["directive_final_status"] == "APPLIED"
     assert receipt["root_status"] == "VERIFIED"
@@ -93,20 +93,21 @@ def test_d10_s_exact_canonical_relationship_parent_revision_path_completes():
     assert receipt["preacceptance_model_calls"] == 4
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 8
+    assert receipt["manager_turn_ceiling"] == 8
     assert receipt["completion_gate_final_state"] == "COMPLETED"
     assert receipt["directive_final_status"] == "APPLIED"
     assert receipt["root_status"] == "VERIFIED"
     assert receipt["confirmed_cause_count"] == 0
 
 
-def test_revision_path_reaches_same_governed_product_within_global_six_turns():
+def test_same_root_revision_path_remains_efficient_under_phase_separation():
     receipt = run_revision_rehearsal()
 
     assert receipt["provider_calls"] == 0
     assert receipt["preacceptance_model_calls"] == 4
     assert receipt["research_manager_calls"] == 2
     assert receipt["manager_turn_total"] == 6
-    assert receipt["manager_turn_ceiling"] == 6
+    assert receipt["manager_turn_ceiling"] == 8
     assert tuple(receipt["research_cognition_sequence"]) == (
         ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
         ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value,
