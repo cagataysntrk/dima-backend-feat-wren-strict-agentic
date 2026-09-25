@@ -89,7 +89,7 @@ class _ResultAwareFakeLLM:
                 "metric_handles": ["h1"],
             }
 
-        if delta and not delta.get("inspected"):
+        if delta and delta.get("inspection_required"):
             return {
                 "action": "inspect_evidence",
                 "evidence_ref": delta["evidence_ref"],
@@ -110,7 +110,7 @@ class _WouldKeepThinkingAfterZeroRowLLM(_ResultAwareFakeLLM):
                 "obligation_ids": ["U1"],
                 "metric_handles": ["h1"],
             }
-        if delta and not delta.get("inspected"):
+        if delta and delta.get("inspection_required"):
             return {
                 "action": "inspect_evidence",
                 "evidence_ref": delta["evidence_ref"],
@@ -236,16 +236,20 @@ def test_manager_loop_contract_mode_materializes_task_observes_delta_and_finishe
     )
     assert analytics["research_task_id"] == "seed:U1"
 
-    inspect = next(
-        item for item in tool_observations if item.get("tool") == "inspect_evidence"
+    assert not any(
+        item.get("tool") == "inspect_evidence"
+        for item in tool_observations
     )
-    assert inspect["research_task_id"] is None
+    assert any(
+        item.get("kind") == "fresh_evidence_disclosed"
+        for item in outcome.observations
+    )
 
-    assert len(llm.prompts) == 3
+    assert len(llm.prompts) == 2
     assert llm.prompts[0]["CURRENT_RESULT_DELTA"] is None
     assert llm.prompts[1]["CURRENT_RESULT_DELTA"]["verified"] is True
     assert llm.prompts[1]["CURRENT_RESULT_DELTA"]["inspected"] is False
-    assert llm.prompts[2]["CURRENT_RESULT_DELTA"]["inspected"] is True
+    assert llm.prompts[1]["CURRENT_RESULT_DELTA"]["inspection_required"] is False
 
     # Accumulated state does not smuggle the latest delta back into the same bucket.
     assert llm.prompts[1]["ACCUMULATED_RESEARCH_STATE"]["latest_delta"] is None
@@ -282,7 +286,7 @@ def test_zero_row_inspected_evidence_finishes_without_spending_another_manager_t
         for item in outcome.observations
         if item.get("kind") == "finish"
     ]
-    assert finish[-1]["reason"] == "inspected_zero_row_no_material_branch"
+    assert finish[-1]["reason"] == "fresh_disclosed_zero_row_no_material_branch"
 
 
 def test_postacceptance_schema_does_not_advertise_propose_acceptance():
