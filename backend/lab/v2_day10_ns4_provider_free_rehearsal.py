@@ -367,6 +367,83 @@ class ScriptedNS4Manager:
         )
 
 
+class RevisionNS4Manager(ScriptedNS4Manager):
+    """Exact revision family: vetoed polarity draft, corrected draft, then canonical Research."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._draft_attempt = 0
+        self._coverage_attempt = 0
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        if schema_name == "dima_intent_draft_v1":
+            draft = super().structured_json(
+                system,
+                user,
+                schema=schema,
+                schema_name=schema_name,
+            )
+            self._draft_attempt += 1
+            if self._draft_attempt == 1:
+                # Same failure FAMILY as paid run #3: an explicit exclusion is attached
+                # to REQUIRED authority. Coverage must reject this before any grounding.
+                for obligation in draft["obligations"]:
+                    if obligation["obligation_id"] == "U_ROOT":
+                        obligation["source_surfaces"].append(
+                            "Nedensel kesinlik iddia etme"
+                        )
+                        break
+                return draft
+
+            draft["obligations"].append(
+                {
+                    "obligation_id": "X_CAUSAL_CERTAINTY",
+                    "capability_key": "explain",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "EXCLUDED",
+                    "source_surfaces": ["Nedensel kesinlik iddia etme"],
+                    "semantic_surfaces": [],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                }
+            )
+            return draft
+
+        if schema_name == "dima_intent_coverage_v1":
+            # Preserve the same finite cognition count as production: one Coverage call
+            # per draft. Attempt 1 is rejected; attempt 2 survives to fresh grounding.
+            super().structured_json(
+                system,
+                user,
+                schema=schema,
+                schema_name=schema_name,
+            )
+            self._coverage_attempt += 1
+            if self._coverage_attempt == 1:
+                return {
+                    "status": "VETO",
+                    "issues": [
+                        {
+                            "kind": "POLARITY_CONFLICT",
+                            "source_surfaces": ["Nedensel kesinlik iddia etme"],
+                            "note": (
+                                "Explicit exclusion is attached to REQUIRED authority."
+                            ),
+                        }
+                    ],
+                }
+            return {"status": "PASS", "issues": []}
+
+        return super().structured_json(
+            system,
+            user,
+            schema=schema,
+            schema_name=schema_name,
+        )
+
+
 class NarrationFailure:
     def __init__(self) -> None:
         self.calls = 0
@@ -395,7 +472,11 @@ def profile(role: ModelRole) -> ModelProfile:
     )
 
 
-def run_rehearsal() -> dict[str, object]:
+def run_rehearsal(
+    *,
+    manager: ScriptedNS4Manager | None = None,
+    question: str | None = None,
+) -> dict[str, object]:
     tenant = "g16-tenant"
     service = SyntheticService()
     principal = Principal(
@@ -428,7 +509,7 @@ def run_rehearsal() -> dict[str, object]:
         thread_id="g16-thread",
     )
 
-    manager = ScriptedNS4Manager()
+    manager = manager or ScriptedNS4Manager()
     research_lane = CapturingResearchLane(
         cognition=ResearchCognition(
             manager_llm=manager,
@@ -456,7 +537,7 @@ def run_rehearsal() -> dict[str, object]:
     response = coordinator.handle(
         request=object(),
         body=ProductAskRequest(
-            question=(
+            question=question or (
                 "Research downtime performance, its governed relationship with department, "
                 "and investigate the root cause of faults; doğrulanmış sonuçlar yeni bir maddi "
                 "kırılıma işaret ederse onu takip et"
@@ -612,6 +693,19 @@ def run_rehearsal() -> dict[str, object]:
             else "BLOCKED"
         ),
     }
+
+
+
+def run_revision_rehearsal() -> dict[str, object]:
+    receipt = run_rehearsal(
+        manager=RevisionNS4Manager(),
+        question=(
+            "Research downtime performance, its governed relationship with department, "
+            "and investigate the root cause of faults; doğrulanmış sonuçlar yeni bir maddi "
+            "kırılıma işaret ederse onu takip et. Nedensel kesinlik iddia etme"
+        ),
+    )
+    return {**receipt, "contract": "d10-final-revision-path-provider-free-v1"}
 
 
 def main() -> int:
