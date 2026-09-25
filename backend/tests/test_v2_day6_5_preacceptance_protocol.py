@@ -2250,6 +2250,17 @@ def test_d10_p_ambiguous_exact_never_enters_decomposition_repair():
 
 # D10-Q: explicit multi-concept scope groups are cognition context, never authority.
 
+class _FailIfRepairProvider:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def decide(self, requests, *, user_message):
+        self.calls += 1
+        raise AssertionError(
+            "unique full-cover governed scope must bypass repair cognition"
+        )
+
+
 class _ScopeGroupSelectingRepairProvider:
     def __init__(self, *, unknown=False, abstain_on_multiple=False) -> None:
         self.unknown = unknown
@@ -2330,7 +2341,7 @@ def test_d10_q_joint_scope_group_mints_fresh_root_owned_handles():
         drafts=[_d10_q_joint_root_draft()],
         audits=[{"status": "PASS", "issues": []}],
     )
-    repair = _ScopeGroupSelectingRepairProvider()
+    repair = _FailIfRepairProvider()
     loop, runtime, executor = _loop(
         scripted,
         semantic_provider=_SingleCandidateSemanticProvider(),
@@ -2349,13 +2360,7 @@ def test_d10_q_joint_scope_group_mints_fresh_root_owned_handles():
     )
 
     assert outcome.accepted is True
-    request = repair.calls[0][0][0]
-    assert request.obligation_id == "U_ROOT"
-    assert request.missing_kind == "metric"
-    assert len(request.available_scope_groups) == 1
-    group = request.available_scope_groups[0]
-    assert len(group.member_source_tokens) == 2
-    assert group.supporting_capabilities == ("performance",)
+    assert repair.calls == 0
 
     items = {item.obligation_id: item for item in runtime.ledger.items}
     scope_handles = set(items["U_SCOPE"].semantic_handle_refs)
@@ -2411,7 +2416,20 @@ def test_d10_q_unknown_scope_group_token_fails_closed():
         "gözlenen bozulmanın kök nedenlerini sınırla."
     )
     context, schema = _d10_p_decomposition_context()
-    scripted = _ScriptedStructured(drafts=[_d10_q_joint_root_draft()], audits=[{"status": "PASS", "issues": []}])
+    draft = _d10_q_joint_root_draft()
+    draft["obligations"].insert(
+        1,
+        _obligation(
+            obligation_id="U_EXTRA",
+            capability="performance",
+            source_surfaces=("ortalama duruş",),
+            semantic_surfaces=(("ortalama duruş", "metric"),),
+        ),
+    )
+    scripted = _ScriptedStructured(
+        drafts=[draft],
+        audits=[{"status": "PASS", "issues": []}],
+    )
     repair = _ScopeGroupSelectingRepairProvider(unknown=True)
     loop, runtime, executor = _loop(
         scripted,
@@ -2503,6 +2521,158 @@ def test_d10_q_two_materially_distinct_groups_may_abstain_without_forced_merge()
         tuple(group.member_source_tokens)
         for group in request.available_scope_groups
     }) == 2
+
+
+def test_d10_q_unique_full_cover_classifier_is_permutation_invariant():
+    classify = ManagerSemanticResolutionAdapter._deterministic_unique_scope_group
+
+    assert classify(
+        eligible_tokens={"s1", "s2"},
+        group_members={"g1": ("s1", "s2")},
+    ) == "g1"
+    assert classify(
+        eligible_tokens={"s2", "s1"},
+        group_members={"g1": ("s2", "s1")},
+    ) == "g1"
+
+
+def test_d10_q_one_group_plus_extra_eligible_source_requires_cognition():
+    question = (
+        "Makine duruşları ve arıza sayısı birlikte incelensin; "
+        "ortalama duruş ayrıca izlensin; performans sorununun nedenlerini sınırla."
+    )
+    context, schema = _d10_p_decomposition_context()
+    draft = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_SCOPE",
+                capability="performance",
+                source_surfaces=("Makine duruşları ve arıza sayısı",),
+                semantic_surfaces=(
+                    ("Makine duruşları", "metric"),
+                    ("arıza sayısı", "metric"),
+                ),
+            ),
+            _obligation(
+                obligation_id="U_EXTRA",
+                capability="performance",
+                source_surfaces=("ortalama duruş",),
+                semantic_surfaces=(("ortalama duruş", "metric"),),
+            ),
+            _obligation(
+                obligation_id="U_ROOT",
+                capability="root_cause",
+                source_surfaces=("performans sorununun nedenlerini sınırla",),
+                semantic_surfaces=(("performans sorunu", "metric"),),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[draft],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    repair = _ScopeGroupSelectingRepairProvider()
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=repair,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+
+    loop.understand(
+        question=question,
+        message_id="turn-d10-q-partial-cover",
+        request_ref="req-d10-q-partial-cover",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert len(repair.calls) == 1
+    request = repair.calls[0][0][0]
+    assert len(request.available_scope_groups) == 1
+    group_members = set(request.available_scope_groups[0].member_source_tokens)
+    eligible = {
+        item.source_token for item in request.available_user_source_concepts
+    }
+    assert group_members < eligible
+
+
+def test_d10_q_alternate_surface_unique_scope_is_server_deterministic():
+    question = (
+        "Makine duruşları ile arıza sayısını beraber değerlendir; "
+        "operasyon sorununa neden olan etkenleri araştır."
+    )
+    context, schema = _d10_p_decomposition_context()
+    draft = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_SCOPE",
+                capability="performance",
+                source_surfaces=("Makine duruşları ile arıza sayısı",),
+                semantic_surfaces=(
+                    ("Makine duruşları", "metric"),
+                    ("arıza sayısı", "metric"),
+                ),
+            ),
+            _obligation(
+                obligation_id="U_ROOT",
+                capability="root_cause",
+                source_surfaces=("operasyon sorununa neden olan etkenleri araştır",),
+                semantic_surfaces=(("operasyon sorunu", "metric"),),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    repair = _FailIfRepairProvider()
+    scripted = _ScriptedStructured(
+        drafts=[draft],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=_SingleCandidateSemanticProvider(),
+        semantic_repair_provider=repair,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-d10-q-alt-surface",
+        request_ref="req-d10-q-alt-surface",
+        runtime=runtime,
+        executor=executor,
+        conversation=ConversationStateV2(),
+    )
+
+    assert outcome.accepted is True
+    assert repair.calls == 0
+    root = {
+        item.obligation_id: item for item in runtime.ledger.items
+    }["U_ROOT"]
+    root_metrics = [
+        ref
+        for ref in root.semantic_handle_refs
+        if executor._semantic_resolution._handles.validate(
+            ref,
+            tenant_binding="tenant-stabilized",
+            context_version=context.context_version.version,
+        ).target_kind in {"metric", "kpi"}
+    ]
+    assert len(root_metrics) == 2
+    assert {
+        executor._semantic_resolution._handles.validate(
+            ref,
+            tenant_binding="tenant-stabilized",
+            context_version=context.context_version.version,
+        ).parent_obligation_id
+        for ref in root_metrics
+    } == {"U_ROOT"}
 
 
 def test_d10_q_scope_group_generation_is_permutation_stable_and_excludes_excluded():
