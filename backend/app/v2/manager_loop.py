@@ -1040,6 +1040,206 @@ class ResearchManagerLoop:
     def _decode_handles(self, refs: tuple[str, ...]) -> tuple[str, ...]:
         return tuple(self._decode_handle(ref) for ref in refs)
 
+    def _governed_semantic_inventory(
+        self,
+        *,
+        runtime: ManagerRuntime,
+        hypothesis_ledgers: dict[str, Any] | None,
+    ) -> tuple[dict[str, Any], ...]:
+        """Project existing governed identities; never mint or reinterpret semantics."""
+        rows: dict[str, dict[str, Any]] = {}
+        ledger = runtime.ledger
+        if ledger is not None:
+            for item in ledger.items:
+                for binding in item.semantic_bindings:
+                    alias = self._handle_alias(binding.handle_id)
+                    try:
+                        surface = self._source_spans.validate(
+                            binding.source_ref
+                        ).exact_surface
+                    except Exception:
+                        surface = None
+                    row = rows.setdefault(
+                        binding.handle_id,
+                        {
+                            "handle_ref": alias,
+                            "target_kind": binding.target_kind,
+                            "provenance_type": "USER_SOURCE",
+                            "parent_obligation_id": item.obligation_id,
+                            "source_surfaces": [],
+                            "accepted_obligation_ids": [],
+                        },
+                    )
+                    if surface and surface not in row["source_surfaces"]:
+                        row["source_surfaces"].append(surface)
+                    if item.obligation_id not in row["accepted_obligation_ids"]:
+                        row["accepted_obligation_ids"].append(item.obligation_id)
+
+        for root_id, hypothesis_ledger in sorted(
+            (hypothesis_ledgers or {}).items()
+        ):
+            refs: list[str] = []
+            try:
+                root_item = next(
+                    item
+                    for item in hypothesis_ledger.obligation_ledger.items
+                    if item.obligation_id == root_id
+                )
+                refs.extend(root_item.semantic_handle_refs)
+            except StopIteration:
+                pass
+            for entry in hypothesis_ledger.state.entries:
+                refs.extend(entry.semantic_handle_refs)
+            for handle_id in dict.fromkeys(refs):
+                try:
+                    metadata = hypothesis_ledger.semantic_handle_metadata(handle_id)
+                except Exception:
+                    continue
+                row = rows.setdefault(
+                    handle_id,
+                    {
+                        "handle_ref": self._handle_alias(handle_id),
+                        "target_kind": metadata.get("target_kind"),
+                        "provenance_type": metadata.get("provenance_type"),
+                        "parent_obligation_id": metadata.get("parent_obligation_id"),
+                        "source_surfaces": [],
+                        "accepted_obligation_ids": [],
+                    },
+                )
+                if (
+                    metadata.get("parent_obligation_id")
+                    and metadata.get("parent_obligation_id")
+                    not in row["accepted_obligation_ids"]
+                ):
+                    row["accepted_obligation_ids"].append(
+                        metadata.get("parent_obligation_id")
+                    )
+
+        return tuple(
+            {
+                **row,
+                "source_surfaces": list(row["source_surfaces"]),
+                "accepted_obligation_ids": list(row["accepted_obligation_ids"]),
+            }
+            for _handle_id, row in sorted(
+                rows.items(),
+                key=lambda item: item[1]["handle_ref"],
+            )
+        )
+
+    def _action_availability(
+        self,
+        *,
+        runtime: ManagerRuntime,
+        research_state: ResearchStateView | None,
+        hypothesis_ledgers: dict[str, Any] | None,
+        evidence_store,
+    ) -> ManagerActionAvailabilityProfile:
+        latest = None if research_state is None else research_state.latest_delta
+        fresh_ref = None
+        fresh_verified = False
+        if (
+            latest is not None
+            and latest.availability.value == "AVAILABLE"
+            and latest.disclosed_in_current_prompt
+            and latest.verified is True
+        ):
+            fresh_ref = latest.evidence_ref
+            fresh_verified = True
+
+        inspected_verified: list[str] = []
+        for ref in runtime.snapshot.inspected_evidence_refs:
+            if ref not in runtime.snapshot.evidence_refs or evidence_store is None:
+                continue
+            try:
+                evidence = evidence_store.get(ref)
+            except Exception:
+                continue
+            if getattr(evidence, "verified", False):
+                inspected_verified.append(ref)
+        if fresh_ref is not None:
+            inspected_verified.append(fresh_ref)
+        effective_refs = tuple(dict.fromkeys(inspected_verified))
+
+        inspectable_old: list[str] = []
+        if evidence_store is not None:
+            for ref in runtime.snapshot.evidence_refs:
+                if ref in runtime.snapshot.inspected_evidence_refs:
+                    continue
+                if ref == fresh_ref:
+                    continue
+                try:
+                    evidence = evidence_store.get(ref)
+                except Exception:
+                    continue
+                if getattr(evidence, "verified", False):
+                    inspectable_old.append(ref)
+
+        contracts = tuple(
+            tuple(str(kind) for kind in row.get("required_semantic_kinds", ()))
+            for row in root_cause_next_test_contract(capabilities=self._capabilities)
+        )
+        root_states: list[RootActionState] = []
+        for root_id, hypothesis_ledger in sorted(
+            (hypothesis_ledgers or {}).items()
+        ):
+            try:
+                root_item = next(
+                    item
+                    for item in hypothesis_ledger.obligation_ledger.items
+                    if item.obligation_id == root_id
+                )
+            except StopIteration:
+                continue
+            kinds: list[str] = []
+            for handle_id in root_item.semantic_handle_refs:
+                try:
+                    metadata = hypothesis_ledger.semantic_handle_metadata(handle_id)
+                except Exception:
+                    continue
+                kind = str(metadata.get("target_kind") or "")
+                if kind:
+                    kinds.append(kind)
+
+            root_evidence: list[str] = []
+            for ref in effective_refs:
+                try:
+                    hypothesis_ledger.validated_evidence(ref)
+                except Exception:
+                    continue
+                root_evidence.append(ref)
+
+            root_states.append(
+                RootActionState(
+                    root_id=root_id,
+                    hypothesis_count=len(hypothesis_ledger.state.entries),
+                    root_handle_kinds=tuple(dict.fromkeys(kinds)),
+                    next_test_required_kind_sets=contracts,
+                    effective_inspected_verified_evidence_refs=tuple(
+                        dict.fromkeys(root_evidence)
+                    ),
+                )
+            )
+
+        open_adaptive = sum(
+            item.status == ResearchDirectiveDispositionStatus.OPEN
+            for item in runtime.directive_dispositions
+        )
+        context = ManagerActionAvailabilityContext(
+            root_states=tuple(root_states),
+            inspectable_old_evidence_refs=tuple(dict.fromkeys(inspectable_old)),
+            effective_inspected_verified_evidence_refs=effective_refs,
+            fresh_disclosed_evidence_ref=fresh_ref,
+            fresh_disclosed_verified=fresh_verified,
+            open_adaptive_directive_count=open_adaptive,
+            remaining_manager_turns=max(
+                runtime.budget.max_total_manager_turns
+                - runtime.snapshot.manager_turns,
+                0,
+            ),
+        )
+        return ManagerActionAvailability.evaluate(context)
+
     def _prompt(
         self,
         *,
