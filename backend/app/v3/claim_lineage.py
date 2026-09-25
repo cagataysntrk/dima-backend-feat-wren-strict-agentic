@@ -528,6 +528,14 @@ class ClaimLineageStore:
                     )
                     .where(ResearchExecutionLink.status == "VERIFIED")
                 ).all()
+                if not executions:
+                    raise ClaimLineageError(
+                        "P16_EVIDENCE_NOT_IN_SESSION",
+                        (
+                            "Evidence is not uniquely present in the current "
+                            "Research session"
+                        ),
+                    )
                 if len(executions) == 1:
                     candidate = executions[0]
                     if (
