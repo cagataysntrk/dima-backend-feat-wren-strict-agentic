@@ -7,26 +7,42 @@
 
 This document is the release-level timing authority for expensive broad evaluation.
 
-## 0. CURRENT RELEASE STATE — DAY6.5 CLOSED
+## 0. CURRENT RELEASE STATE — DAY10 / D10-Q PAID CLOSURE
 
 ```text
-J1 / provider topology          RESOLVED
-D65-SI                         FINAL GREEN / SEALED
-M0E-DEEP-DELTA                 FINAL GREEN / SEALED
-Metabase bridge                RESOLVED NEGATIVE
 primary analytics substrate    WREN
 Metabase execution runtime     REJECTED CURRENT RELEASE
 Day6.5                         CLOSED
-current phase                  DAY7 / P10 RESULT-AWARE RESEARCH LOOP
+Day7 engineering               GREEN
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day9 engineering               GREEN
+Day10 engineering              GREEN
+Day10 FINAL                    OPEN
+current phase                  DAY10 / D10-Q PAID CLOSURE
+
+D10-Q paid run #1              36091887451 = RED
+latest Product behavior        05f69a67320809767501d2fdcb0522ad9df48309
+post-fix Day10                 36092568445 = GREEN
+post-fix Day8                  36092568435 = GREEN
+post-fix Day7                  36092641195 = GREEN
+
+paid dispatches                1 / 3 used
+new provider calls             7 / 30 used
+remaining provider calls       23
+
+Day11                          NOT AUTHORIZED
+DEV80                          NOT AUTHORIZED
+Validation50                   NOT AUTHORIZED
+Hidden50                       NOT AUTHORIZED
 production /ask-v2             OFF
-DEV80                          NOT STARTED / FORBIDDEN NOW
 ```
 
 The bridge decision is scoped, not universal:
 `retained Wren semantics → thin Metabase structured execution` is rejected for this release.
 Metabase workspace/product/reference work remains available later.
 
-Current release sequence:
+Release sequence (historical roadmap; current phase is Day10):
 
 ```text
 Day7
@@ -72,7 +88,7 @@ DEV80 = FINAL BROAD ENGINEERING GATE
 It runs only after all architecture-changing and correctness-sensitive backend work for
 this release is complete and the final integrated candidate is frozen.
 
-## 2. Current proven baseline
+## 2. Historical Day6.5 proven baseline
 
 ```text
 Day6.5 product checkpoint             dd5c16bbe444b6d9183faea9e9937be11260f394
