@@ -7,7 +7,7 @@
 
 This document is the release-level timing authority for expensive broad evaluation.
 
-## 0. CURRENT RELEASE STATE — DAY10 / D10-Q PAID CLOSURE
+## 0. CURRENT RELEASE STATE — DAY10 / D10-Q FINAL GENERIC FIX
 
 ```text
 primary analytics substrate    WREN
@@ -19,17 +19,24 @@ Day8 FINAL                     NOT SEALED
 Day9 engineering               GREEN
 Day10 engineering              GREEN
 Day10 FINAL                    OPEN
-current phase                  DAY10 / D10-Q PAID CLOSURE
+current phase                  DAY10 / D10-Q FINAL GENERIC FIX
 
-D10-Q paid run #1              36091887451 = RED
-latest Product behavior        05f69a67320809767501d2fdcb0522ad9df48309
-post-fix Day10                 36092568445 = GREEN
-post-fix Day8                  36092568435 = GREEN
-post-fix Day7                  36092641195 = GREEN
+current runtime Product        f3c303a881b5891b14756bb8014fd6b4ef98b2fd
 
-paid dispatches                1 / 3 used
-new provider calls             7 / 30 used
-remaining provider calls       23
+D10-Q paid run #1              36091887451 = RED / 7 calls
+D10-Q paid run #2              36096707608 = RED / 8 calls
+D10-Q paid run #3              36098236473 = RED / 7 calls
+
+provider calls                 22 / 40 used
+remaining provider calls       18
+
+generic fixes                  2 / 3 used
+generic fix #3                 AUTHORIZED / FINAL
+final verification run #4      CONDITIONAL / AFTER FIX #3 PROOF
+run #4 max calls               18
+
+first-wrong-transition family  MODEL_COGNITION
+                               + PREACCEPTANCE EXECUTION ORDER / BUDGET INTERACTION
 
 Day11                          NOT AUTHORIZED
 DEV80                          NOT AUTHORIZED
@@ -37,6 +44,29 @@ Validation50                   NOT AUTHORIZED
 Hidden50                       NOT AUTHORIZED
 production /ask-v2             OFF
 ```
+
+Current binding correction order:
+
+```text
+DRAFT
+→ deterministic draft/source checks
+→ COVERAGE_VETO
+→ AUTO_GROUND
+→ material-gap/decomposition repair
+→ CONTRACT_VALIDITY
+```
+
+Coverage remains veto-only cognition. It gains no semantic truth/handle authority and rejected drafts
+must not donate semantic handles or receipts to revisions. Frozen ceilings remain
+`SEMANTIC_LINKER=3` and Manager global `=6`.
+
+Final paid verification remains forbidden until one provider-free full revision-path rehearsal proves
+the Product can reach its governed report within the six-turn Manager ceiling, normal G16 stays GREEN,
+and affected Day7/Day8/Day10 gates are GREEN.
+
+Historical TRUE STOP wording in phase-local documents remains an audit receipt and is superseded only
+as current authority by the owner override above. This release-gate reconciliation itself is docs-only
+and requires no test.
 
 The bridge decision is scoped, not universal:
 `retained Wren semantics → thin Metabase structured execution` is rejected for this release.
