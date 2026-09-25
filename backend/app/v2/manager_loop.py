@@ -1186,14 +1186,27 @@ class ResearchManagerLoop:
                 seen_aliases.add(alias)
 
             root_evidence: list[str] = []
+            root_next_test_evidence: list[str] = []
+            task_by_id = {task.task_id: task for task in research_tasks}
             for ref in effective_refs:
                 try:
-                    hypothesis_ledger.validated_evidence(ref)
+                    evidence = hypothesis_ledger.validated_evidence(ref)
                 except Exception:
                     continue
                 root_evidence.append(ref)
+                parent_task = task_by_id.get(
+                    getattr(evidence, "task_id", None)
+                )
+                if (
+                    root_id
+                    in tuple(getattr(evidence, "obligation_ids", ()) or ())
+                    and parent_task is not None
+                    and parent_task.state == "complete"
+                    and parent_task.question_id == root_id
+                ):
+                    root_next_test_evidence.append(ref)
 
-            task_by_id = {task.task_id: task for task in research_tasks}
+
             hypotheses: list[HypothesisActionState] = []
             for entry in hypothesis_ledger.state.entries:
                 entry_refs: list[SemanticActionRef] = []
@@ -1208,6 +1221,11 @@ class ResearchManagerLoop:
                         )
                     )
                     if ref in set(root_evidence)
+                )
+                next_test_admissible = tuple(
+                    ref
+                    for ref in admissible
+                    if ref in set(root_next_test_evidence)
                 )
                 linked = {link.evidence_ref for link in entry.evidence_links}
                 complete_next_tests = {
@@ -1237,6 +1255,7 @@ class ResearchManagerLoop:
                         hypothesis_ref=entry.hypothesis_id,
                         semantic_refs=tuple(dict.fromkeys(entry_refs)),
                         admissible_evidence_refs=admissible,
+                        next_test_evidence_refs=next_test_admissible,
                         pending_relation_evidence_refs=tuple(dict.fromkeys(pending)),
                     )
                 )
@@ -1246,6 +1265,9 @@ class ResearchManagerLoop:
                     root_id=root_id,
                     semantic_refs=tuple(root_refs),
                     evidence_refs=tuple(dict.fromkeys(root_evidence)),
+                    next_test_evidence_refs=tuple(
+                        dict.fromkeys(root_next_test_evidence)
+                    ),
                     hypotheses=tuple(hypotheses),
                     next_test_contracts=contract_rows,
                 )
