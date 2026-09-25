@@ -476,6 +476,17 @@ class ResearchReasoningStore:
             source_revision=record.source_revision,
             source_snapshot_fingerprint=record.source_snapshot_fingerprint,
             parent_obligation_id=record.parent_obligation_id,
+            parent_step_id=record.parent_step_id,
+            depth=record.depth,
+            branch_id=record.branch_id,
+            intent=InvestigationIntent(record.intent),
+            target_kind=InvestigationTargetKind(record.target_kind),
+            target_ref=record.target_ref,
+            stop_scope=(
+                StopScope(record.stop_scope)
+                if record.stop_scope is not None
+                else None
+            ),
             proposal_id=record.proposal_id,
             action=ManagerAction(record.action),
             objective_key=record.objective_key,
@@ -599,6 +610,77 @@ class ResearchReasoningStore:
             )
         return self._task(rows[0]) if rows else None
 
+    @staticmethod
+    def _branch_id(seed: str) -> str:
+        return "ibr_" + hashlib.sha256(seed.encode("utf-8")).hexdigest()[:20]
+
+    def step(self, step_id: str) -> ResearchReasoningStep:
+        with Session(self._engine) as db:
+            record = db.get(ResearchReasoningStepRecord, step_id)
+            if record is None:
+                raise ResearchManagerMaturationError(
+                    "P17_STEP_NOT_FOUND",
+                    step_id,
+                )
+        return self._step(record)
+
+    def topology_for(
+        self,
+        *,
+        session: ResearchSession,
+        proposal: ManagerProposal,
+    ) -> ResolvedInvestigationTopology:
+        intent = proposal.effective_intent
+        parent = None
+        if proposal.parent_step_id is not None:
+            parent = self.step(proposal.parent_step_id)
+            if parent.research_session_id != session.session_id:
+                raise ResearchManagerMaturationError(
+                    "P17_PARENT_STEP_SESSION_MISMATCH",
+                    proposal.parent_step_id,
+                )
+            if parent.parent_obligation_id != proposal.target_parent_obligation:
+                raise ResearchManagerMaturationError(
+                    "P17_PARENT_STEP_OBLIGATION_MISMATCH",
+                    proposal.parent_step_id,
+                )
+
+        if parent is None:
+            depth = 0
+            seed = (
+                f"{session.session_id}|{proposal.target_parent_obligation}|"
+                f"{proposal.branch_key or proposal.objective_key}"
+            )
+            branch_id = self._branch_id(seed)
+        else:
+            depth = (
+                parent.depth
+                if intent == InvestigationIntent.STOP_BRANCH
+                else parent.depth + 1
+            )
+            if proposal.branch_key:
+                branch_id = self._branch_id(
+                    f"{session.session_id}|{parent.step_id}|{proposal.branch_key}"
+                )
+            else:
+                branch_id = parent.branch_id
+
+        stop_scope = None
+        if intent == InvestigationIntent.STOP_BRANCH:
+            stop_scope = StopScope.BRANCH
+        elif intent == InvestigationIntent.STOP_INVESTIGATION:
+            stop_scope = StopScope.INVESTIGATION
+
+        return ResolvedInvestigationTopology(
+            parent_step_id=proposal.parent_step_id,
+            depth=depth,
+            branch_id=branch_id,
+            intent=intent,
+            target_kind=proposal.target_kind,
+            target_ref=proposal.target_ref,
+            stop_scope=stop_scope,
+        )
+
     def create_step(
         self,
         *,
@@ -627,12 +709,23 @@ class ResearchReasoningStore:
             [],
             code="P17_RESULT_REFS_NOT_CANONICAL",
         )
+        topology = self.topology_for(
+            session=session,
+            proposal=proposal,
+        )
         record = ResearchReasoningStepRecord(
             step_id=_id("rrs_"),
             session_id=session.session_id,
             source_revision=proposal.source_revision,
             source_snapshot_fingerprint=snapshot.fingerprint,
             parent_obligation_id=proposal.target_parent_obligation,
+            parent_step_id=topology.parent_step_id,
+            depth=topology.depth,
+            branch_id=topology.branch_id,
+            intent=topology.intent.value,
+            target_kind=topology.target_kind.value,
+            target_ref=topology.target_ref,
+            stop_scope=topology.stop_scope.value if topology.stop_scope else None,
             proposal_id=proposal.proposal_id,
             proposal_json=proposal.model_dump_json(),
             action=proposal.action.value,
