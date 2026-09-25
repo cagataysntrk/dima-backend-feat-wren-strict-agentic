@@ -228,6 +228,9 @@ def make_state(
         "data": {"rows": [["Web", 34], ["Partner", 12]]},
         "statistics": {
             "association": 0.72,
+        },
+        "decomposition": {
+            "kind": "DIRECT_INDIRECT_DECOMPOSITION",
             "direct_effect": 0.31,
             "indirect_effect": 0.14,
         },
@@ -1071,8 +1074,9 @@ def test_native_direct_indirect_decomposition_can_remove_double_count_block():
         source_kind=GroundingSourceKind.P14_EVIDENCE,
         source_ref=state["evidence_id"],
         source_receipt_id=state["receipt_id"],
-        source_path="statistics.direct_effect",
+        source_path="decomposition.direct_effect",
         analytical_kind=NumericAnalyticalKind.DIRECT_INDIRECT_DECOMPOSITION,
+        analytical_kind_path="decomposition.kind",
     )
     assessment = state["p19"].assess(
         draft=RootCauseAssessmentDraft(
