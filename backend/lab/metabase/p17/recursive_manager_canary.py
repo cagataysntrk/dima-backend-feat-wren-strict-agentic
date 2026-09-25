@@ -606,8 +606,10 @@ def main() -> int:
     )
     records.append(replanned)
     replan_step = replanned["_step"]
-    if replan_step.branch_id != alt_a_step.branch_id:
-        raise RuntimeError("REPLAN lost candidate A branch identity")
+    if replan_step.branch_id != selected_parent.branch_id:
+        raise RuntimeError(
+            "REPLAN lost manager-selected branch identity"
+        )
 
     final_stop = stage(
         service=service,

@@ -1952,3 +1952,139 @@ def test_live_stop_draft_requires_explicit_stop_reason():
             }
         )
 
+def test_replan_continues_manager_selected_second_sibling_branch():
+    """Regression for corrected-live HARNESS RED: selection may be sibling B."""
+
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        budget=ResearchReasoningBudget(
+            max_reasoning_steps=10,
+            max_followup_native_turns=4,
+            max_counter_evidence_attempts=2,
+            max_depth=5,
+        ),
+        db_engine=db,
+    )
+
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="selected-b-root",
+                objective_key="selected-b.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+    alt_a, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="selected-b-alt-a",
+                objective_key="selected-b.alt-a",
+                intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+                parent_step_id=root.step_id,
+                branch_key="candidate-a",
+                target_kind=InvestigationTargetKind.ALTERNATIVE,
+                target_ref="candidate-a",
+            )
+        ),
+    )
+    alt_b, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="selected-b-alt-b",
+                objective_key="selected-b.alt-b",
+                intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+                parent_step_id=root.step_id,
+                branch_key="candidate-b",
+                target_kind=InvestigationTargetKind.ALTERNATIVE,
+                target_ref="candidate-b",
+            )
+        ),
+    )
+    assert alt_a.branch_id != alt_b.branch_id
+
+    tested_b, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="selected-b-test",
+                objective_key="selected-b.test",
+                intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+                parent_step_id=alt_b.step_id,
+                target_kind=InvestigationTargetKind.EXPLANATION,
+                target_ref="candidate-b",
+            )
+        ),
+    )
+    assert task is not None
+    assert tested_b.branch_id == alt_b.branch_id
+
+    deep_b, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="selected-b-deepen",
+                objective_key="selected-b.deepen",
+                intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                parent_step_id=tested_b.step_id,
+                target_kind=InvestigationTargetKind.EXPLANATION,
+                target_ref="candidate-b-child",
+            )
+        ),
+    )
+    assert deep_b.branch_id == alt_b.branch_id
+
+    replan_b, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="selected-b-replan",
+                objective_key="selected-b.replan",
+                intent=InvestigationIntent.REPLAN,
+                parent_step_id=deep_b.step_id,
+                target_kind=InvestigationTargetKind.QUESTION,
+                target_ref="candidate-b-next",
+            )
+        ),
+    )
+    assert replan_b.branch_id == alt_b.branch_id
+    assert replan_b.branch_id != alt_a.branch_id
+
+
+def test_live_canary_replan_assertion_uses_runtime_selected_parent():
+    """Provider-free guard against reintroducing candidate-A hard coding."""
+
+    from pathlib import Path
+
+    source = (
+        Path(__file__).parents[1]
+        / "lab"
+        / "metabase"
+        / "p17"
+        / "recursive_manager_canary.py"
+    ).read_text(encoding="utf-8")
+    start = source.index("    replanned = stage(")
+    end = source.index("    final_stop = stage(", start)
+    replan_slice = source[start:end]
+    assert "replan_step.branch_id != selected_parent.branch_id" in replan_slice
+    assert "replan_step.branch_id != alt_a_step.branch_id" not in replan_slice
+
