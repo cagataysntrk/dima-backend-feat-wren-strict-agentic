@@ -587,6 +587,57 @@ class ResearchSessionRecord(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_now)
 
 
+class NativeSubjectBinding(SQLModel, table=True):
+    """Explicit Dima-user to native Metabase subject correlation; never a credential."""
+
+    __tablename__ = "native_subject_binding"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "dima_user_id", name="uq_native_subject_binding_dima_user"),
+        UniqueConstraint("tenant_id", "metabase_user_id", name="uq_native_subject_binding_metabase_user"),
+    )
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    tenant_id: uuid.UUID = Field(foreign_key="tenant.id", index=True)
+    dima_user_id: uuid.UUID = Field(foreign_key="app_user.id", index=True)
+    metabase_user_id: int = Field(index=True, ge=1)
+    security_profile: str
+    policy_version: str
+    approved_by_user_id: uuid.UUID = Field(foreign_key="app_user.id")
+    enabled: bool = Field(default=True, index=True)
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+class NativeResourceBinding(SQLModel, table=True):
+    """Business-context to exact native resource locator/version mapping only."""
+
+    __tablename__ = "native_resource_binding"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "semantic_context_version", "candidate_id", "candidate_kind",
+            name="uq_native_resource_binding_candidate",
+        ),
+    )
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    tenant_id: uuid.UUID = Field(foreign_key="tenant.id", index=True)
+    semantic_context_version: str = Field(index=True)
+    candidate_id: str = Field(index=True)
+    candidate_kind: str
+    semantic_id: str = Field(index=True)
+    canonical_name: str
+    locator_kind: str
+    metabase_database_id: int = Field(ge=1)
+    metabase_table_id: int | None = Field(default=None, ge=1)
+    metabase_field_id: int | None = Field(default=None, ge=1)
+    metabase_metric_id: int | None = Field(default=None, ge=1)
+    metabase_entity_id: str | None = None
+    resource_entity_id: str = Field(index=True)
+    resource_fingerprint: str = Field(index=True)
+    resource_version: str
+    enabled: bool = Field(default=True, index=True)
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
 class ResearchExecutionLink(SQLModel, table=True):
     """Durable correlation from a Research obligation to one native occurrence."""
 
