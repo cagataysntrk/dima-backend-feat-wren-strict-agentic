@@ -170,7 +170,7 @@ def test_ablation_dry_run_receipt_declares_scope_and_cost_before_provider_use():
         "selected_cases": 2,
         "arms": ["FREE_COGNITION", "GOVERNED_ORCHESTRATION"],
         "maximum_loop_records": 4,
-        "configured_manager_hard_turn_cap": 6,
+        "configured_manager_hard_turn_cap": 8,
         "model_calls_budget": 20,
         "provider_requests_made": 0,
     }
