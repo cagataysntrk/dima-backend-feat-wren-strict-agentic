@@ -16,6 +16,8 @@ from app.v2.manager_models import (
     ManagerCapabilityKey,
     ObligationOrigin,
     ObligationStatus,
+    ResearchDirective,
+    ResearchDirectiveType,
     UserIntentEnvelope,
 )
 from app.v2.manager_runtime import ManagerRuntime
@@ -235,6 +237,10 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
         message_id="day7-adaptive-turn",
         surface="net gelir",
     )
+    adaptive_span = spans.mint_exact(
+        message_id="day7-adaptive-turn",
+        surface="sonuç başka yere işaret ederse incele",
+    )
 
     handles = SemanticHandleRegistry()
     semantic = ManagerSemanticResolutionAdapter(
@@ -315,6 +321,14 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
                 origin=ObligationOrigin.USER_MUST,
                 source_refs=(metric_span.source_ref,),
                 semantic_handle_refs=(metric_handle,),
+            ),
+        ),
+        research_directives=(
+            ResearchDirective(
+                directive_id="R_ADAPT_U1",
+                directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+                parent_obligation_id="U1",
+                source_refs=(adaptive_span.source_ref,),
             ),
         ),
     )
