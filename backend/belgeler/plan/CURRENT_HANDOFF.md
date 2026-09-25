@@ -1,5 +1,68 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY — D10-S FINAL SEALED / ONE INTEGRATED LIVE MEASUREMENT AUTHORIZED
+
+This is the current active authority. Older D10-S / D10-Q blocks remain historical receipts and MUST NOT be rewritten.
+
+```text
+branch                         feat/ask-v2-mvp
+provider-free proof HEAD       0b9c4a676a04cbf547f4d73116f048c319d77aa3
+latest Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+
+D10-S provider-free closure    GREEN
+ManagerBudget                  4 / 4 / 8 RATIFIED
+D10-S FINAL                    SEALED
+
+PHASE BUDGET INDEPENDENCE
+preacceptance                  <= 4
+Research cognition             <= 4
+outer total                    <= 8
+old global-six coupling        FORBIDDEN
+
+fresh provider envelope        40
+used                           0 / 40
+
+call-feasibility
+FAST_LANGUAGE expected         1
+RESEARCH_MANAGER expected      6–10
+SEMANTIC_LINKER expected       3
+TEMPORAL_NORMALIZER expected   1
+REPORT_NARRATOR expected       2
+expected canonical total       13–17
+hard per-run maximum           20
+
+role hard caps
+FAST / RM / SEM / TEMP / NARR  2 / 12 / 3 / 1 / 2
+
+next authorized action         ONE CANONICAL_NS4 integrated paid Product run
+max_total_model_calls          20
+paid harness                   existing v2_day10_product_mvp_live.py only
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+Permanent invariant:
+
+```text
+PHASE BUDGET INDEPENDENCE
+
+A bounded retry in preacceptance must not consume the
+independent bounded Research cognition allowance.
+
+preacceptance <= 4
+Research <= 4
+outer total <= 8
+```
+
+D10-S sealing is docs-only: tests = 0. Historical global=6 receipts below remain historical.
+
+The authorized integrated paid Product run is also the Day8 live-debt re-measurement. No standalone Day8 live test is authorized. If it is GREEN, paid execution stops immediately and Day8/Day10 may be sealed docs-only. If RED, classify FIRST WRONG TRANSITION before any frozen-owner change.
+
+
 ## LATEST AUTHORITY — D10-S PROVIDER-FREE CLOSURE COMPLETE / BUDGET RATIFICATION PENDING
 
 This is the current active authority. All older D10-S and D10-Q blocks below remain historical audit receipts.
