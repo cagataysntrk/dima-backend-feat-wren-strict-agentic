@@ -1,7 +1,7 @@
 # P18 — MATERIAL BUSINESS RELATIONSHIP POLICY PRE-DEVELOPMENT REVIEW
 
 **Date:** 2026-09-25  
-**Status:** **SEALED / DMP-DEC-0054 / P18 MINIMAL IMPLEMENTATION AUTHORIZED / P18 GREEN / IMPLEMENTATION COMPLETE / P19 PRE-DEVELOPMENT READY**  
+**Status:** **SEALED / DMP-DEC-0054 / P18 PERMANENTLY HARDENED / IMPLEMENTATION COMPLETE / P19 PRE-DEVELOPMENT AUTHORIZED**  
 **Forward authority:** DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0053 + DMP-DEC-0054  
 **Consumes:** P14 Evidence + P15 native Research material + P16 claim lineage + P17 sealed investigation state  
 **Engine change:** NOT AUTHORIZED / NOT REQUIRED BY DEFAULT  
@@ -358,4 +358,43 @@ P18 DEVELOPMENT = STOP
 P18B / P18C = NOT AUTHORIZED
 P19 = PRE-DEVELOPMENT AUTHORIZATION REQUIRED
 P19 IMPLEMENTATION = NOT AUTHORIZED
+```
+
+
+## 13. Final surgical hardening seal
+
+The final P18 audit hardening is complete.
+
+```text
+product/code candidate                 = a0ec74a56f33993ebde836dc9da4430673d9308f
+provider-free                          = 36178041336 SUCCESS
+governance                             = 36178041329 SUCCESS
+
+P18 focused                            = 24 PASS
+P17 regressions                        = 95 PASS
+P16                                    = 6 PASS
+P15                                    = 5 PASS
+P14                                    = 17 PASS
+
+engine                                 = cbe313af9ac2d5960f662068e433d328d896fb06
+model calls                            = 0
+engine builds                          = 0
+Metabase modifications                 = 0
+```
+
+Two final audit properties are now explicit:
+
+1. Implicit `policy_key` resolution is tenant-first and cannot reveal foreign-tenant existence.
+   Explicit `load_policy(policy_id)` remains fail-closed with `P18_POLICY_TENANT_MISMATCH`.
+2. A uniquely exact RETIRED policy remains ineligible but its exact policy id/fingerprint is
+   preserved in the new BLOCKED_RETIRED policy-use lineage. Missing/context/scope/ambiguous failures
+   do not receive an arbitrary policy reference.
+
+Historical SATISFIED/BLOCKED use rows remain immutable.
+
+```text
+P18 = PERMANENTLY SEALED
+P18 further polishing = STOP
+P19 pre-development = AUTHORIZED
+P19 production implementation = NOT AUTHORIZED
 ```

@@ -1,6 +1,6 @@
 # DIMA + METABASE — LIVING STATUS
 
-## P18 SEALED — DMP-DEC-0054
+## P18 PERMANENTLY SEALED / HARDENED — P19 PRE-DEVELOPMENT COMPLETE
 
 ```text
 P18 BUSINESS RELATIONSHIP POLICY
@@ -17,9 +17,11 @@ NO CAUSALITY IN P18.
 METABASE + METABOT REMAIN THE ANALYTICAL ENGINE.
 ```
 
-P18 v1 is permanently bounded to one durable policy authority,
-one durable policy-use lineage and one transient typed requirement.
-No P18B/P18C, relationship graph platform, policy DSL or ontology framework is authorized.
+P18 is frozen at one durable policy authority + one durable policy-use lineage + one transient typed
+requirement. The two final audit hardenings are closed. No P18B/P18C is authorized.
+
+P19 pre-development review is complete. P19 production implementation has **not** started and is
+**not authorized** by this handoff.
 
 ## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
 
@@ -27,17 +29,17 @@ No P18B/P18C, relationship graph platform, policy DSL or ontology framework is a
 
 ```text
 branch                                = feat/dima-metabase-platform
-P18 product/code candidate            = fdf15611e7f0aa57e80f75fe7f8630d8434a2af3
-P18 integrated seal candidate         = ce56a7c478393d5656824b0f9715263bb837756c
+branch HEAD at P18 behavior seal      = a0ec74a56f33993ebde836dc9da4430673d9308f
+P18 product/code candidate            = a0ec74a56f33993ebde836dc9da4430673d9308f
 Alembic head                          = f5a1d7c9e2b4
 
 sealed P17 product/code candidate     = 3664d3d706d70225323126cbc994b8c2c732aaf4
 P17 live GREEN                        = 36160559037 SUCCESS
 
-P18 provider-free                     = 36166506385 SUCCESS
-P18 governance                        = 36166506443 SUCCESS
+P18 final provider-free               = 36178041336 SUCCESS
+P18 final governance                  = 36178041329 SUCCESS
 
-P18 focused                           = 23 PASS
+P18 focused                           = 24 PASS
 P17 provider-free regressions         = 95 PASS
 P16 claim-lineage                     = 6 PASS
 P15 native Exploration                = 5 PASS
@@ -47,37 +49,39 @@ engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
 engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
 engine certification                  = 36042062775 SUCCESS
-model calls                           = 0
+model calls during P18 hardening      = 0
 Luna / Sol / C1                       = 0 / 0 / 0
 engine builds                         = 0
 Metabase modification                 = 0
+
+tenant-first implicit resolution      = SEALED
+explicit foreign policy-id rejection  = SEALED
+exact retired-policy use provenance   = SEALED
+historical policy-use immutability    = SEALED
 
 P14                                   = SEALED
 P15                                   = SEALED
 P16                                   = SEALED
 P17                                   = SEALED
-P18                                   = SEALED
+P18                                   = SEALED / HARDENED
 
-P18 development                       = STOP
+P18 development                       = PERMANENT STOP
 P18B / P18C                           = NOT AUTHORIZED
-P19                                   = PRE-DEVELOPMENT AUTHORIZATION REQUIRED
+P19 pre-development                   = COMPLETE
 P19 implementation                    = NOT AUTHORIZED
+P19 production code                   = NOT STARTED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 ```
 
 ### CURRENT RETURN POINT
 
-P18 is complete. Do not extend it with a relationship graph, physical/native join metadata,
-relationship scoring, fuzzy inference, policy DSL, ontology framework or P19 causal semantics.
+The next permitted action requires supervisor authorization for the minimal P19 implementation
+vertical defined in:
 
-The next permitted product step requires a new supervisor decision for:
+`backend/belgeler/metabase/predev/P19_HYPOTHESIS_ROOT_CAUSE_PREDEVELOPMENT_REVIEW.md`
 
-```text
-P19 HYPOTHESIS / ROOT CAUSE
-PRE-DEVELOPMENT AUTHORIZATION
-```
-
-No P19 implementation has been started.
+Do not reopen P18 merely for size/refactoring/polish. Do not build P19 production code until the next
+supervisor decision.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 

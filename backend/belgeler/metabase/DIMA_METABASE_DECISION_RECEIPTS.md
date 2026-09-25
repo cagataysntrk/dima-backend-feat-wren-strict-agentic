@@ -5351,3 +5351,70 @@ P19 implementation                    = 0
 
 Final hardening provider-free/governance run IDs are appended only after the deterministic matrix is
 GREEN. P18 remains DMP-DEC-0054; no DMP-DEC-0055 is created.
+
+
+### DMP-DEC-0054 surgical hardening final seal — GREEN
+
+date: 2026-09-25
+
+This receipt closes the two audit hardenings without changing DMP-DEC-0054 ownership.
+
+```text
+P18 product/code candidate             = a0ec74a56f33993ebde836dc9da4430673d9308f
+Alembic head                           = f5a1d7c9e2b4
+
+P18 final provider-free                = 36178041336 SUCCESS
+P18 final governance                   = 36178041329 SUCCESS
+
+P18 focused                            = 24 PASS
+P17 provider-free regressions          = 95 PASS
+P16 claim-lineage                      = 6 PASS
+P15 native Exploration                 = 5 PASS
+P14 native-direct                      = 17 PASS
+
+engine SHA                             = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                         = 0.63.18-dima.6
+engine builds                          = 0
+Metabase modification                  = 0
+model calls                            = 0
+Luna / Sol / C1                        = 0 / 0 / 0
+```
+
+Hardening A is sealed:
+
+```text
+implicit business-key resolution
+→ current tenant + policy_key first
+→ no same-tenant policy = BLOCKED_MISSING
+
+foreign tenant similarly keyed policy
+→ not scanned as an existence oracle
+
+explicit foreign policy_id load
+→ P18_POLICY_TENANT_MISMATCH
+```
+
+Hardening B is sealed:
+
+```text
+one exact RETIRED tenant/context/ref/scope policy
+→ BLOCKED_RETIRED
+→ eligible = false
+→ exact retired policy_id/fingerprint retained in immutable policy-use lineage
+
+ambiguous/non-exact blocked outcome
+→ no arbitrary policy authority attached
+```
+
+No historical policy-use row was rewritten. No table, column, migration, relationship ontology,
+join registry, analytical executor, Evidence owner, receipt family or causal authority was added.
+
+```text
+P18 = PERMANENTLY SEALED / HARDENED
+P18 development = STOP
+P18B / P18C = NOT AUTHORIZED
+P19 = PRE-DEVELOPMENT AUTHORIZED
+P19 implementation = NOT AUTHORIZED
+```
+
+No DMP-DEC-0055 is created by these P18 hardenings.
