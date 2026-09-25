@@ -12,6 +12,7 @@ Legacy SemanticResolver may remain for non-Manager compatibility paths, but this
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Callable
 
 from app.v2.manager_models import SemanticHandle
@@ -25,6 +26,7 @@ from app.v2.models import (
 )
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
+    BoundedSemanticSelection,
     GovernedCurrentTurnCandidateGenerator,
     GovernedSiblingScopeCandidateGenerator,
     CandidateSet,
@@ -285,28 +287,18 @@ class ManagerSemanticResolutionAdapter:
         args: ResolveSemanticsArgs,
         linker: BoundedSemanticLinker | None = None,
         discovery_pass: str = "pass1",
-    ) -> tuple[ManagerSemanticResolutionResult, tuple]:
+        source_truth_by_key: dict[
+            tuple[str, str], BoundedSemanticSelection
+        ] | None = None,
+    ) -> tuple[ManagerSemanticResolutionResult, tuple[BoundedSemanticSelection, ...]]:
         active_linker = linker or self._semantic_linker
-        requests = tuple(
-            (
-                f"link:{index}:{owner_id or 'ungrouped'}:{source_ref or 'derived'}",
-                text,
-                hint,
-            )
-            for index, (source_ref, text, hint, owner_id) in enumerate(entries)
+        source_truth = (
+            source_truth_by_key
+            if args.provenance == "USER_SOURCE"
+            and source_truth_by_key is not None
+            else {}
         )
-        diagnostic_metadata = {
-            request_id: {
-                "owner_obligation_id": owner_id,
-                "source_ref": source_ref,
-                "discovery_pass": discovery_pass,
-            }
-            for request_id, (source_ref, _, _, owner_id) in zip(
-                (item[0] for item in requests),
-                entries,
-                strict=True,
-            )
-        }
+
         decision_context: str | None = None
         source_contexts = {
             self._source_spans.message_text_for(source_ref)
@@ -316,25 +308,168 @@ class ManagerSemanticResolutionAdapter:
         if len(source_contexts) == 1:
             decision_context = next(iter(source_contexts))
 
-        selections = active_linker.resolve(
-            requests,
-            provenance_type=args.provenance,
-            decision_context=decision_context,
-            parent_obligation_id=args.parent_obligation_id,
-            trigger_evidence_ref=args.evidence_ref,
-            diagnostic_metadata=diagnostic_metadata,
-        )
+        grouped_entries: dict[
+            tuple[str, str], list[tuple[str | None, str, str, str | None]]
+        ] = {}
+        standalone: list[
+            tuple[int, tuple[str | None, str, str, str | None]]
+        ] = []
+        for index, entry in enumerate(entries):
+            source_ref, _text, kind_hint, _owner_id = entry
+            if args.provenance == "USER_SOURCE" and source_ref is not None:
+                key = (source_ref, self._normalized_target_kind(kind_hint))
+                grouped_entries.setdefault(key, []).append(entry)
+            else:
+                standalone.append((index, entry))
+
+        selection_by_source_key: dict[
+            tuple[str, str], BoundedSemanticSelection
+        ] = {}
+        request_key_by_id: dict[str, tuple[str, str]] = {}
+        cognition_requests: list[tuple[str, str, str]] = []
+        diagnostic_metadata: dict[str, dict[str, Any]] = {}
+
+        for key in sorted(grouped_entries):
+            source_ref, normalized_kind = key
+            members = grouped_entries[key]
+            representative = members[0]
+            _ref, text, kind_hint, _owner = representative
+            request_id = f"link:source:{source_ref}:{normalized_kind}"
+            owners = tuple(
+                sorted(
+                    {
+                        owner_id
+                        for _r, _t, _k, owner_id in members
+                        if owner_id is not None
+                    }
+                )
+            )
+
+            existing = source_truth.get(key)
+            if existing is not None and existing.binding is not None:
+                candidate_set = active_linker.preview_candidate_set(
+                    request_id=request_id,
+                    surface=text,
+                    kind_hint=kind_hint,
+                    decision_context=decision_context,
+                )
+                candidate_ids = tuple(
+                    item.card.candidate_id for item in candidate_set.bindings
+                )
+                candidate_id = existing.binding.card.candidate_id
+                current_binding = candidate_set.binding(candidate_id)
+                if current_binding is not None:
+                    reused = replace(
+                        existing,
+                        request_id=request_id,
+                        surface=text,
+                        binding=current_binding,
+                        candidate_ids=candidate_ids,
+                        reason="SOURCE_TRUTH_REUSED",
+                    )
+                    selection_by_source_key[key] = reused
+                    source_truth[key] = reused
+                    if self._semantic_diagnostic_sink is not None:
+                        self._semantic_diagnostic_sink(
+                            {
+                                "kind": "semantic_source_truth_reuse",
+                                "source_ref": source_ref,
+                                "kind_hint": normalized_kind,
+                                "owner_obligation_ids": list(owners),
+                                "discovery_pass": discovery_pass,
+                                "candidate_ids": list(candidate_ids),
+                                "candidate_id": candidate_id,
+                                "status": "BOUND",
+                            }
+                        )
+                    continue
+
+                conflict = BoundedSemanticSelection(
+                    request_id=request_id,
+                    surface=text,
+                    status="SOURCE_TRUTH_CONTEXT_CONFLICT",
+                    mode="NONE",
+                    reason=(
+                        "existing canonical source truth is absent from the current "
+                        "governed candidate universe"
+                    ),
+                    candidate_ids=candidate_ids,
+                )
+                selection_by_source_key[key] = conflict
+                if self._semantic_diagnostic_sink is not None:
+                    self._semantic_diagnostic_sink(
+                        {
+                            "kind": "semantic_source_truth_context_conflict",
+                            "source_ref": source_ref,
+                            "kind_hint": normalized_kind,
+                            "owner_obligation_ids": list(owners),
+                            "discovery_pass": discovery_pass,
+                            "candidate_ids": list(candidate_ids),
+                            "canonical_candidate_id": candidate_id,
+                            "status": "SOURCE_TRUTH_CONTEXT_CONFLICT",
+                        }
+                    )
+                continue
+
+            cognition_requests.append((request_id, text, kind_hint))
+            request_key_by_id[request_id] = key
+            diagnostic_metadata[request_id] = {
+                "owner_obligation_ids": list(owners),
+                "source_ref": source_ref,
+                "source_truth_key_kind": normalized_kind,
+                "discovery_pass": discovery_pass,
+            }
+
+        standalone_request_ids: dict[int, str] = {}
+        for index, (original_index, entry) in enumerate(standalone):
+            source_ref, text, kind_hint, owner_id = entry
+            request_id = (
+                f"link:standalone:{original_index}:{source_ref or 'derived'}"
+            )
+            standalone_request_ids[original_index] = request_id
+            cognition_requests.append((request_id, text, kind_hint))
+            diagnostic_metadata[request_id] = {
+                "owner_obligation_id": owner_id,
+                "source_ref": source_ref,
+                "discovery_pass": discovery_pass,
+            }
+
+        selection_by_request_id: dict[str, BoundedSemanticSelection] = {}
+        if cognition_requests:
+            fresh = active_linker.resolve(
+                tuple(cognition_requests),
+                provenance_type=args.provenance,
+                decision_context=decision_context,
+                parent_obligation_id=args.parent_obligation_id,
+                trigger_evidence_ref=args.evidence_ref,
+                diagnostic_metadata=diagnostic_metadata,
+            )
+            selection_by_request_id = {
+                selection.request_id: selection for selection in fresh
+            }
+            for request_id, key in request_key_by_id.items():
+                selection = selection_by_request_id[request_id]
+                selection_by_source_key[key] = selection
+                if selection.status == "BOUND" and selection.binding is not None:
+                    source_truth[key] = selection
 
         resolved: list[ManagerResolvedSemantic] = []
         unresolved_source_refs: list[str] = []
         unresolved_semantics: list[ManagerUnresolvedSemantic] = []
         unresolved_proposals: list[str] = []
+        ordered_selections: list[BoundedSemanticSelection] = []
 
-        for (source_ref, proposal_text, kind_hint, owner_id), selection in zip(
-            entries,
-            selections,
-            strict=True,
-        ):
+        for original_index, entry in enumerate(entries):
+            source_ref, proposal_text, kind_hint, owner_id = entry
+            if args.provenance == "USER_SOURCE" and source_ref is not None:
+                key = (source_ref, self._normalized_target_kind(kind_hint))
+                selection = selection_by_source_key[key]
+            else:
+                selection = selection_by_request_id[
+                    standalone_request_ids[original_index]
+                ]
+            ordered_selections.append(selection)
+
             if selection.status != "BOUND":
                 if source_ref:
                     unresolved_source_refs.append(source_ref)
@@ -379,7 +514,7 @@ class ManagerSemanticResolutionAdapter:
                 unresolved_proposals=tuple(dict.fromkeys(unresolved_proposals)),
                 clarification=None,
             ),
-            tuple(selections),
+            tuple(ordered_selections),
         )
 
     def _resolve_regular(
@@ -916,6 +1051,13 @@ class ManagerSemanticResolutionAdapter:
                         (source_ref, span.exact_surface, hint, owner_id)
                     )
 
+            # One exact current-message source has one canonical source truth per
+            # semantic kind for this resolution invocation. Owner authority remains
+            # separately minted by BindingGate.
+            source_truth_by_key: dict[
+                tuple[str, str], BoundedSemanticSelection
+            ] = {}
+
             # Pass 1 is the existing bounded semantic path. It remains the owner whenever
             # it has candidates, ambiguity, linker abstention/unavailability, or a
             # globally exhaustive gap. Sibling-scope recovery is RETRIEVAL_MISS only.
@@ -923,6 +1065,7 @@ class ManagerSemanticResolutionAdapter:
                 pass1_result, pass1_selections = self._resolve_regular_once(
                     entries=regular,
                     args=args,
+                    source_truth_by_key=source_truth_by_key,
                 )
                 recovered: list[ManagerResolvedSemantic] = list(
                     pass1_result.resolved
@@ -951,7 +1094,8 @@ class ManagerSemanticResolutionAdapter:
                                 entry
                             )
 
-                    for owner_id, missed_entries in misses_by_owner.items():
+                    for owner_id in sorted(misses_by_owner):
+                        missed_entries = misses_by_owner[owner_id]
                         scope = self._coherent_sibling_scope(
                             resolved=pass1_result.resolved,
                             owner_id=owner_id,
@@ -973,6 +1117,7 @@ class ManagerSemanticResolutionAdapter:
                             args=args,
                             linker=scoped_linker,
                             discovery_pass="same_owner_sibling_scope",
+                            source_truth_by_key=source_truth_by_key,
                         )
                         recovered.extend(fallback_result.resolved)
                         for entry, selection in zip(
@@ -1066,6 +1211,7 @@ class ManagerSemanticResolutionAdapter:
                         args=args,
                         linker=current_turn_linker,
                         discovery_pass="current_turn_applicability",
+                        source_truth_by_key=source_truth_by_key,
                     )
                     recovered.extend(current_turn_result.resolved)
                     for entry, selection in zip(

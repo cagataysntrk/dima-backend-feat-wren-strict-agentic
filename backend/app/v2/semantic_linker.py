@@ -318,6 +318,7 @@ class BoundedSemanticSelection:
         "CANDIDATE_SET_TOO_BROAD",
         "RETRIEVAL_MISS",
         "LINKER_UNAVAILABLE",
+        "SOURCE_TRUTH_CONTEXT_CONFLICT",
     ]
     binding: CatalogCandidateBinding | None = None
     mode: Literal["EXACT", "LINKER", "NONE"] = "NONE"
@@ -1007,6 +1008,22 @@ class BoundedSemanticLinker:
         self._binding_gate = binding_gate
         self._provider = provider
         self._diagnostic_sink = diagnostic_sink
+
+    def preview_candidate_set(
+        self,
+        *,
+        request_id: str,
+        surface: str,
+        kind_hint: str,
+        decision_context: str | None = None,
+    ) -> CandidateSet:
+        """Return the current bounded governed candidate universe without cognition."""
+        return self._generator.generate(
+            request_id=request_id,
+            surface=surface,
+            kind_hint=kind_hint,
+            decision_context=decision_context,
+        )
 
     def resolve(
         self,
