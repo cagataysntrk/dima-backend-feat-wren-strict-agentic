@@ -1254,23 +1254,6 @@ class ResearchManagerLoop:
         root_feasible = {
             root.root_id for root in root_states if root.feasible_next_test
         }
-        root_ids = {root.root_id for root in root_states}
-        open_adaptive_parent_ids: set[str] = set()
-        contract = runtime.accepted_contract
-        if contract is not None:
-            open_dispositions = {
-                item.directive_id
-                for item in runtime.directive_dispositions
-                if item.status == ResearchDirectiveDispositionStatus.OPEN
-            }
-            open_adaptive_parent_ids = {
-                item.parent_obligation_id
-                for item in contract.research_directives
-                if (
-                    item.directive_type == ResearchDirectiveType.ADAPT_ON_EVIDENCE
-                    and item.directive_id in open_dispositions
-                )
-            }
 
         semantic_expansion_parents: list[str] = []
         ledger = runtime.ledger
@@ -1287,13 +1270,8 @@ class ResearchManagerLoop:
                 if item.status == ObligationStatus.SUPERSEDED:
                     continue
                 if item.obligation_id in root_feasible:
-                    continue
-                if (
-                    item.obligation_id not in root_ids
-                    and item.obligation_id not in open_adaptive_parent_ids
-                ):
-                    # Non-root semantic expansion is useful only when current accepted
-                    # policy explicitly leaves evidence-driven work open under that parent.
+                    # A ROOT parent with a currently feasible governed next-test shape
+                    # is deterministically ineligible for semantic rediscovery.
                     continue
                 if not any(
                     getattr(evidence, "verified", False)
@@ -1305,6 +1283,9 @@ class ResearchManagerLoop:
                     for evidence in evidence_by_ref.values()
                 ):
                     continue
+                # Conservative rule: evidence-grounded non-root work remains eligible
+                # unless deterministic governed state proves it redundant/inapplicable.
+                # Availability does not infer which concept is missing.
                 semantic_expansion_parents.append(item.obligation_id)
 
         context = ManagerActionAvailabilityContext(
