@@ -11,6 +11,7 @@ on:
       - "!backend/lab/metabase/p13b/**"
       - "!backend/lab/metabase/p13c/**"
       - "!backend/lab/metabase/p13d/**"
+      - "!backend/lab/metabase/p14/**"
   workflow_dispatch:
 
 permissions:
