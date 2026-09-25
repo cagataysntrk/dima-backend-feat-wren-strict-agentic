@@ -355,3 +355,46 @@ def test_success_just_before_deadline_commits_once_and_completes():
 
     obligation = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
     assert obligation.status == ObligationStatus.VERIFIED
+
+
+def test_blocked_execution_receipt_is_terminal_and_idempotent():
+    registry = ResearchTaskRegistry()
+    task = ResearchTask(
+        task_id="seed:blocked",
+        question_id="U_BLOCK",
+        task_kind=ResearchTaskKind.RELATIONSHIP.value,
+        input_refs=("sem_x", "sem_y"),
+    )
+    fingerprint = "fp-blocked"
+    assert registry.begin_execution(
+        task=task,
+        tool_id="wren.relationship",
+        action_fingerprint=fingerprint,
+        timeout_ms=15_000,
+    ) is None
+
+    receipt = {"status": "UNSUPPORTED", "reason": "governed data gap"}
+    blocked = registry.block_execution(
+        task_id=task.task_id,
+        tool_id="wren.relationship",
+        action_fingerprint=fingerprint,
+        result=receipt,
+    )
+    assert blocked.state == "blocked"
+
+    replay = registry.begin_execution(
+        task=task,
+        tool_id="wren.relationship",
+        action_fingerprint=fingerprint,
+        timeout_ms=15_000,
+    )
+    assert replay is receipt
+    assert registry.get(task.task_id).state == "blocked"
+
+    with pytest.raises(ResearchTaskLifecycleError, match="different execution identity"):
+        registry.begin_execution(
+            task=task,
+            tool_id="wren.relationship",
+            action_fingerprint="different",
+            timeout_ms=15_000,
+        )
