@@ -1,3 +1,108 @@
+## LATEST AUTHORITY — D10-U PROVIDER-FREE GREEN / PAID INTEGRATED MEASUREMENT AUTHORIZED
+
+```text
+branch                           feat/ask-v2-mvp
+final engineering proof SHA      a0b1be2e7b80e5928fa108a82c143f8002ee9c71
+Product behavior                 6fff55dc9ccfb279ae1352c8df7c39f0fbb275c2
+backend/app diff after Product   ZERO
+
+D10-U PROVIDER-FREE CLOSURE      GREEN
+
+Day7 focused                     36178896617 = GREEN
+Day8 focused                     36178896568 = GREEN
+Day10 focused                    36178896533 = GREEN
+
+real-Wren ROOT                   GREEN
+real-Wren relationship           GREEN
+provider-free canonical NS4      GREEN
+ManagerActionSet attacks         GREEN
+stale/invented action_ref        FAIL CLOSED
+derived semantic lineage         GREEN
+certification oracle             GREEN
+
+ManagerActionSet                 SOLE executable-action projection
+ManagerActionAvailability        HISTORICAL IMPORT SHIM ONLY
+ActionApplicabilitySnapshot      RETIRED / HISTORICAL EXPERIMENT
+Product compatibility parser     0
+
+FAM-CONTROL-PLANE-PROJECTION-DIVERGENCE
+  Cycle 1                        duplicated projections hid legal ROOT action
+  Cycle 2                        governed derived semantic lineage absent from exact ActionSet
+  status                         CLOSED
+
+FAM-SCRIPTED-MANAGER-TRANSPORT-MIGRATION
+  Cycles 1-3                     historical fake-manager transport/identity migration
+  status                         EXHAUSTED / CLOSED / NO CYCLE 4
+
+FAM-CERTIFICATION-TRAJECTORY-DRIFT
+  Cycle 1                        historical adaptive_branch_executed universal-oracle drift
+  Cycle 2                        exact cognition count promoted to correctness truth
+  status                         CLOSED
+
+FAM-ABLATION-HARNESS-ARCHITECTURE-DRIFT
+  Cycle 1                        ablation imported retired private Product schema helper
+  owner                          lab/test harness
+  root fix                       ablation-local alternative schema/parser; Product helper NOT restored
+  status                         CLOSED
+
+PAID_EPOCH_2                     12 / 40 used
+PAID_EPOCH_2 remaining           28 / 40
+next paid measurement            ONE corrected CANONICAL_NS4 integrated run
+per-run hard ceiling             20 provider calls
+same-SHA retry                   FORBIDDEN
+
+Day8 FINAL                       SEALED
+Day10 FINAL                      OPEN / PAID PROOF PENDING
+Day11 / DEV80 / Validation50 /
+Hidden50                         NOT AUTHORIZED
+```
+
+Permanent harvest:
+
+```text
+AUTHORITATIVE STATE > OBSERVATION STRING
+LIFECYCLE CONTRACT > EXECUTION TRAJECTORY
+EVENT != TRUTH
+
+DO NOT ASSERT EXACT COGNITION COUNT
+AS CORRECTNESS TRUTH
+UNLESS TURN COUNT ITSELF IS THE CONTRACT UNDER TEST.
+
+DETERMINISTIC SERVER WORK MAY REMOVE
+A HISTORICAL MODEL TURN
+WITHOUT CHANGING PRODUCT SEMANTICS.
+
+TESTS MUST MIGRATE TO PRODUCT ARCHITECTURE.
+PRODUCT MUST NOT MIGRATE BACKWARD TO SATISFY HISTORICAL TEST TRANSPORT.
+
+SECURITY CEREMONY CAN BECOME A CORRECTNESS RISK
+WHEN THE SAME AUTHORITY IS RECONSTRUCTED IN MULTIPLE LAYERS.
+```
+
+Current architecture remains:
+
+```text
+authoritative Product state
+→ ONE ManagerActionSet
+→ ActionInstance[]
+→ action_ref + bounded cognition
+→ server-owned hydration
+→ recompute/revalidate
+→ existing runtime authority gates
+→ Wren
+→ Evidence
+→ next ManagerActionSet
+```
+
+Bounded technical-debt note only: generic deterministic Research scheduling currently
+receives semantic registry / tenant / context-version through `RootCauseLoopContext`.
+Production supplies it correctly; this is **not** a current correctness defect. A
+post-Day10 `SemanticExecutionContext` rename/extraction may be considered only as a
+separate measured simplification.
+
+Historical authority blocks below remain immutable audit receipts and do not override
+this physically topmost authority.
+
 ## LATEST AUTHORITY — D10-U MANAGERACTIONSET COMPRESSION / EMERGENCY CLOSURE SUPERVISOR STOP
 
 ```text
