@@ -46,6 +46,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/research_exploration.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/claim_lineage.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_manager.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/research_followup.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -275,24 +276,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          HOT="backend/app/v3/research_manager.py"
-          if [ -f "$HOT" ]; then
-            FORBIDDEN='NativeStandardTrustOrchestrator|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer|attest_native_query[[:space:]]*\(|execute_native_query[[:space:]]*\(|app\.wren|wren_service|MetabaseAgentClient'
-            if grep -nE "$FORBIDDEN" "$HOT"; then
-              echo "P17 reintroduced a forbidden analytical/security authority" >&2
-              exit 1
+          HOT=(
+            "backend/app/v3/research_manager.py"
+            "backend/app/v3/research_followup.py"
+          )
+          FORBIDDEN='NativeStandardTrustOrchestrator|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer|attest_native_query[[:space:]]*\(|execute_native_query[[:space:]]*\(|app\.wren|wren_service|MetabaseAgentClient'
+          for file in "${HOT[@]}"; do
+            if [ -f "$file" ]; then
+              if grep -nE "$FORBIDDEN" "$file"; then
+                echo "P17 reintroduced a forbidden analytical/security authority: $file" >&2
+                exit 1
+              fi
+              if grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$file"; then
+                echo "P17 introduced a Python analytical primitive library: $file" >&2
+                exit 1
+              fi
+              if grep -nE '(breakdown|trend|rank|compare)[[:space:]]*\(' "$file"; then
+                echo "P17 introduced deterministic analytical strategy operators: $file" >&2
+                exit 1
+              fi
             fi
-            if grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$HOT"; then
-              echo "P17 introduced a Python analytical primitive library" >&2
-              exit 1
-            fi
-            if grep -nE '(breakdown|trend|rank|compare)[[:space:]]*\(' "$HOT"; then
-              echo "P17 introduced deterministic analytical strategy operators" >&2
-              exit 1
-            fi
-            grep -q "SEEK_COUNTER_EVIDENCE" "$HOT"
-            grep -q "ResearchReasoningStepRecord" "$HOT"
-          fi
+          done
+          grep -q "SEEK_COUNTER_EVIDENCE" backend/app/v3/research_manager.py
+          grep -q "ResearchReasoningStepRecord" backend/app/v3/research_manager.py
+          grep -q "NativeResearchOccurrenceRunner" backend/app/v3/research_followup.py
 
       - name: Guard active engine consumers against source-build fallback
         shell: bash
