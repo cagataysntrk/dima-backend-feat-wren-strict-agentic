@@ -1752,9 +1752,17 @@ class ResearchManagerLoop:
                     continue
                 root_evidence.append(ref)
 
+            root_authoritative_handle_ids = tuple(
+                dict.fromkeys(
+                    (
+                        *(binding.handle_id for binding in root_item.semantic_bindings),
+                        *root_item.semantic_handle_refs,
+                    )
+                )
+            )
             root_aliases = tuple(
                 self._handle_alias(handle_id)
-                for handle_id in root_item.semantic_handle_refs
+                for handle_id in root_authoritative_handle_ids
             )
             task_by_id = {task.task_id: task for task in research_tasks}
             pending_relation_hypotheses: list[str] = []
