@@ -1,5 +1,50 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — D10-Q FINAL GENERIC FIX #3 AUTHORIZED
+
+This is the current authority. The earlier TRUE STOP remains a historical receipt.
+
+```text
+branch                         feat/ask-v2-mvp
+authority reconciliation HEAD ec8e533a52e921d13364a1f879afd5aa1dbfecfc
+current runtime Product        f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+
+provider calls                 22 / 40
+remaining                      18
+
+generic fixes used             2 / 3
+generic fix #3                 AUTHORIZED / FINAL
+verification paid run #4       CONDITIONAL AUTHORITY
+run #4 max calls               18
+
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Final generic fix scope is bounded to the run-#3 first-wrong-transition family:
+`MODEL_COGNITION + PREACCEPTANCE EXECUTION ORDER / BUDGET INTERACTION`.
+
+Required finite order:
+
+```text
+draft
+→ deterministic draft/source checks
+→ Coverage VETO
+→ fresh semantic grounding only for a surviving draft
+→ material-gap/decomposition repair
+→ contract validity
+```
+
+A rejected draft may not consume or donate semantic authority. Frozen ceilings remain:
+`SEMANTIC_LINKER=3`, Manager global `=6`. Full revision-path feasibility must be proven
+provider-free within six Manager turns before final paid verification.
+
+Historical run #1/#2/#3 receipts and prior TRUE STOP text remain below unchanged.
+
+Docs-only authority reconciliation: NO TEST.
+
+
 ## 2026-09-25 — D10-Q TRUE STOP / PAID RUN #3 RED
 
 ```text
