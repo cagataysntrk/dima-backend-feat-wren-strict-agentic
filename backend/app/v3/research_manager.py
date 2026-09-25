@@ -666,7 +666,11 @@ class ResearchReasoningStore:
         else:
             depth = (
                 parent.depth
-                if intent == InvestigationIntent.STOP_BRANCH
+                if intent
+                in {
+                    InvestigationIntent.STOP_BRANCH,
+                    InvestigationIntent.STOP_INVESTIGATION,
+                }
                 else parent.depth + 1
             )
             if proposal.branch_key:
