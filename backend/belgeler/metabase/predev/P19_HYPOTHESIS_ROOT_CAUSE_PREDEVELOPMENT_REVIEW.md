@@ -34,7 +34,7 @@ Permanent boundary:
 METABASE COMPUTES ANALYTICS.
 DIMA P19 GOVERNS WHAT THOSE RESULTS JUSTIFY EPISTEMICALLY.
 
-P17 InvestigationGraph != P19 causal/contribution structure.
+P17 InvestigationGraph != P19 causal graph / contribution structure.
 P18 business-policy direction != causal direction.
 P16 claim state != P19 hypothesis state.
 ```
