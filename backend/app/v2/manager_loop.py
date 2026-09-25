@@ -64,7 +64,10 @@ from app.v2.research_tasks import (
     ResearchTaskRegistry,
     ResearchTaskService,
 )
-from app.v2.research_tools import ResearchToolRunner
+from app.v2.research_tools import (
+    ResearchExecutionOutcome,
+    ResearchToolRunner,
+)
 from app.v2.research_scheduler import (
     DeterministicResearchScheduler,
     ResearchTaskInvocationCompileError,
@@ -1570,7 +1573,8 @@ class ResearchManagerLoop:
                         }
                     )
                     continue
-                if execution.evidence is None:
+                execution_outcome = ResearchExecutionOutcome.project(execution)
+                if execution_outcome.blocked:
                     observations.append(
                         {
                             "kind": "deterministic_task_blocked",
@@ -1579,24 +1583,29 @@ class ResearchManagerLoop:
                             "result": self._manager_safe(execution.observation),
                         }
                     )
+                    self._emit_progress(
+                        "research_task_blocked",
+                        (execution.task.task_id,),
+                    )
                     continue
 
+                evidence = execution_outcome.require_evidence()
                 observations.append(
                     {
                         "kind": "deterministic_task_executed",
                         "task_id": execution.task.task_id,
                         "tool_id": execution.contract.tool_id,
-                        "evidence_ref": execution.evidence.artifact_id,
+                        "evidence_ref": evidence.artifact_id,
                     }
                 )
                 self._emit_progress(
                     "evidence_verified",
-                    (execution.evidence.artifact_id,),
+                    (evidence.artifact_id,),
                 )
-                if execution.evidence.evidence_kind == "relationship_analytics":
+                if evidence.evidence_kind == "relationship_analytics":
                     self._emit_progress(
                         "relationship_checked",
-                        (execution.evidence.artifact_id,),
+                        (evidence.artifact_id,),
                     )
 
             if (
@@ -1674,18 +1683,39 @@ class ResearchManagerLoop:
                                 task=bootstrap.task,
                                 capability_key=bootstrap.selected_capability,
                             )
-                            observations.append(
-                                {
-                                    "kind": "root_cause_bootstrap_executed",
-                                    "task_id": execution.task.task_id,
-                                    "tool_id": execution.contract.tool_id,
-                                    "evidence_ref": execution.evidence.artifact_id,
-                                }
+                            execution_outcome = ResearchExecutionOutcome.project(
+                                execution
                             )
-                            self._emit_progress(
-                                "evidence_verified",
-                                (execution.evidence.artifact_id,),
-                            )
+                            if execution_outcome.blocked:
+                                observations.append(
+                                    {
+                                        "kind": "deterministic_task_blocked",
+                                        "task_id": execution.task.task_id,
+                                        "tool_id": execution.contract.tool_id,
+                                        "context": "root_cause_bootstrap",
+                                        "result": self._manager_safe(
+                                            execution.observation
+                                        ),
+                                    }
+                                )
+                                self._emit_progress(
+                                    "research_task_blocked",
+                                    (execution.task.task_id,),
+                                )
+                            else:
+                                evidence = execution_outcome.require_evidence()
+                                observations.append(
+                                    {
+                                        "kind": "root_cause_bootstrap_executed",
+                                        "task_id": execution.task.task_id,
+                                        "tool_id": execution.contract.tool_id,
+                                        "evidence_ref": evidence.artifact_id,
+                                    }
+                                )
+                                self._emit_progress(
+                                    "evidence_verified",
+                                    (evidence.artifact_id,),
+                                )
                         except ResearchTaskInvocationCompileError as exc:
                             observations.append(
                                 {
@@ -2013,20 +2043,37 @@ class ResearchManagerLoop:
                             ranking_direction=decision.next_test_ranking_direction,
                             ranking_limit=decision.next_test_ranking_limit,
                         )
+                        execution_outcome = ResearchExecutionOutcome.project(
+                            execution
+                        )
                         result_view = {
                             "hypothesis_id": decision.hypothesis_ref,
                             "task_id": execution.task.task_id,
                             "task_kind": execution.task.task_kind,
                             "state": execution.task.state,
                             "trigger_evidence_ref": execution.task.trigger_evidence_ref,
-                            "evidence_ref": execution.evidence.artifact_id,
+                            "evidence_ref": None,
                             "tool_id": execution.contract.tool_id,
                         }
-                        self._emit_progress(
-                            "evidence_verified",
-                            (execution.evidence.artifact_id,),
-                        )
-                        observation_kind = "hypothesis_next_test_executed"
+                        if execution_outcome.blocked:
+                            observation_kind = "deterministic_task_blocked"
+                            self._emit_progress(
+                                "research_task_blocked",
+                                (execution.task.task_id,),
+                            )
+                        else:
+                            evidence = execution_outcome.require_evidence()
+                            result_view["evidence_ref"] = evidence.artifact_id
+                            self._emit_progress(
+                                "evidence_verified",
+                                (evidence.artifact_id,),
+                            )
+                            if evidence.evidence_kind == "relationship_analytics":
+                                self._emit_progress(
+                                    "relationship_checked",
+                                    (evidence.artifact_id,),
+                                )
+                            observation_kind = "hypothesis_next_test_executed"
 
                     observations.append(
                         {
@@ -2204,39 +2251,79 @@ class ResearchManagerLoop:
                                 task=selected_task,
                                 capability_key=selected_candidate.capability_key,
                             )
-                            result_view["deterministic_execution"] = {
-                                "task_id": scheduled.task.task_id,
-                                "tool_id": scheduled.contract.tool_id,
-                                "evidence_ref": scheduled.evidence.artifact_id,
-                            }
-                            observations.append(
-                                {
-                                    "kind": "adaptive_branch_executed",
+                            execution_outcome = ResearchExecutionOutcome.project(
+                                scheduled
+                            )
+                            if execution_outcome.blocked:
+                                result_view["deterministic_execution"] = {
                                     "task_id": scheduled.task.task_id,
                                     "tool_id": scheduled.contract.tool_id,
-                                    "evidence_ref": scheduled.evidence.artifact_id,
+                                    "state": scheduled.task.state,
+                                    "evidence_ref": None,
                                 }
-                            )
-                            self._emit_progress(
-                                "evidence_verified",
-                                (scheduled.evidence.artifact_id,),
-                            )
-                            contract = runtime.accepted_contract
-                            if contract is not None:
-                                for directive in contract.research_directives:
-                                    if (
-                                        directive.directive_type
-                                        == ResearchDirectiveType.ADAPT_ON_EVIDENCE
-                                        and directive.parent_obligation_id
-                                        == decision.branch_parent_obligation_id
-                                    ):
-                                        runtime.account_research_directive(
-                                            directive_id=directive.directive_id,
-                                            status=ResearchDirectiveDispositionStatus.APPLIED,
-                                            evidence_ref=str(decision.branch_evidence_ref),
-                                            branch_task_refs=(scheduled.task.task_id,),
-                                            reason="governed material branch executed and accounted",
-                                        )
+                                observations.append(
+                                    {
+                                        "kind": "deterministic_task_blocked",
+                                        "task_id": scheduled.task.task_id,
+                                        "tool_id": scheduled.contract.tool_id,
+                                        "context": "adaptive_branch",
+                                        "result": self._manager_safe(
+                                            scheduled.observation
+                                        ),
+                                    }
+                                )
+                                self._emit_progress(
+                                    "research_task_blocked",
+                                    (scheduled.task.task_id,),
+                                )
+                            else:
+                                evidence = execution_outcome.require_evidence()
+                                result_view["deterministic_execution"] = {
+                                    "task_id": scheduled.task.task_id,
+                                    "tool_id": scheduled.contract.tool_id,
+                                    "state": scheduled.task.state,
+                                    "evidence_ref": evidence.artifact_id,
+                                }
+                                observations.append(
+                                    {
+                                        "kind": "adaptive_branch_executed",
+                                        "task_id": scheduled.task.task_id,
+                                        "tool_id": scheduled.contract.tool_id,
+                                        "evidence_ref": evidence.artifact_id,
+                                    }
+                                )
+                                self._emit_progress(
+                                    "evidence_verified",
+                                    (evidence.artifact_id,),
+                                )
+                                if evidence.evidence_kind == "relationship_analytics":
+                                    self._emit_progress(
+                                        "relationship_checked",
+                                        (evidence.artifact_id,),
+                                    )
+                                contract = runtime.accepted_contract
+                                if contract is not None:
+                                    for directive in contract.research_directives:
+                                        if (
+                                            directive.directive_type
+                                            == ResearchDirectiveType.ADAPT_ON_EVIDENCE
+                                            and directive.parent_obligation_id
+                                            == decision.branch_parent_obligation_id
+                                        ):
+                                            runtime.account_research_directive(
+                                                directive_id=directive.directive_id,
+                                                status=ResearchDirectiveDispositionStatus.APPLIED,
+                                                evidence_ref=str(
+                                                    decision.branch_evidence_ref
+                                                ),
+                                                branch_task_refs=(
+                                                    scheduled.task.task_id,
+                                                ),
+                                                reason=(
+                                                    "governed material branch "
+                                                    "executed and accounted"
+                                                ),
+                                            )
                         except ResearchTaskInvocationCompileError as exc:
                             observations.append(
                                 {
@@ -2376,24 +2463,25 @@ class ResearchManagerLoop:
                     manager_result = self._manager_safe(
                         research_execution.observation
                     )
-                    if research_execution.evidence is not None:
-                        self._emit_progress(
-                            "evidence_verified",
-                            (research_execution.evidence.artifact_id,),
-                        )
-                        if (
-                            research_execution.evidence.evidence_kind
-                            == "relationship_analytics"
-                        ):
-                            self._emit_progress(
-                                "relationship_checked",
-                                (research_execution.evidence.artifact_id,),
-                            )
-                    else:
+                    execution_outcome = ResearchExecutionOutcome.project(
+                        research_execution
+                    )
+                    if execution_outcome.blocked:
                         self._emit_progress(
                             "research_task_blocked",
                             (research_execution.task.task_id,),
                         )
+                    else:
+                        evidence = execution_outcome.require_evidence()
+                        self._emit_progress(
+                            "evidence_verified",
+                            (evidence.artifact_id,),
+                        )
+                        if evidence.evidence_kind == "relationship_analytics":
+                            self._emit_progress(
+                                "relationship_checked",
+                                (evidence.artifact_id,),
+                            )
                 else:
                     result = runtime.call_tool(call, executor=executor)
                     manager_result = self._manager_safe(result.tool_result)
