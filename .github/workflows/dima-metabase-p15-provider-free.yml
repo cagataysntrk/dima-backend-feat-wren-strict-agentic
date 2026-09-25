@@ -73,13 +73,13 @@ jobs:
             migrations/versions/c7e5a9d2b610_p15_native_exploration.py \
             tests/test_v3_p15_native_exploration.py
 
-      - name: Verify single Alembic head includes P15 material durability
+      - name: Verify single Alembic head retains sealed P15 material durability
         working-directory: backend
         run: |
           set -euo pipefail
           heads="$(python -m alembic heads)"
           test "$(printf '%s\n' "$heads" | grep -Ec '^[0-9a-f]+')" -eq 1
-          printf '%s\n' "$heads" | grep -q '^c7e5a9d2b610'
+          python -m alembic history | grep -q 'c7e5a9d2b610'
 
       - name: P15 focused provider-free native Exploration proof
         working-directory: backend

@@ -105,6 +105,11 @@ async def lifespan(app: FastAPI):
 
     research_store = ResearchSessionStore()
     app.state.research_product = ResearchAskOrchestrator(store=research_store)
+
+    # P16 claim/Evidence lineage is deterministic core authority consumed later by P17.
+    from app.v3.claim_lineage import ClaimLineageStore
+
+    app.state.claim_lineage = ClaimLineageStore(research_store=research_store)
     app.state.research_exploration = None
     if settings.metabase_native_base_url.strip():
         from app.v3.research_native_gateway import (
