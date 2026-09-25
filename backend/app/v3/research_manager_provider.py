@@ -119,13 +119,31 @@ Architecture:
 
 
 def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
-    """Normalize Pydantic schema to strict structured-output object semantics."""
+    """Normalize Pydantic schema to portable strict structured-output semantics.
+
+    Runtime Pydantic validation remains authoritative for field constraints. The
+    transport schema intentionally keeps only the portable structural subset.
+    """
 
     value = copy.deepcopy(schema)
+    unsupported = {
+        "default",
+        "title",
+        "description",
+        "minLength",
+        "maxLength",
+        "pattern",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "format",
+    }
 
     def visit(node: Any) -> None:
         if isinstance(node, dict):
-            node.pop("default", None)
+            for key in unsupported:
+                node.pop(key, None)
             props = node.get("properties")
             if isinstance(props, dict):
                 node["additionalProperties"] = False
@@ -137,6 +155,43 @@ def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
                 visit(child)
 
     visit(value)
+
+    defs = value.get("$defs")
+    if isinstance(defs, dict):
+        referenced: set[str] = set()
+
+        def collect(node: Any) -> None:
+            if isinstance(node, dict):
+                ref = node.get("$ref")
+                if (
+                    isinstance(ref, str)
+                    and ref.startswith("#/$defs/")
+                ):
+                    referenced.add(ref.removeprefix("#/$defs/"))
+                for key, child in node.items():
+                    if key != "$defs":
+                        collect(child)
+            elif isinstance(node, list):
+                for child in node:
+                    collect(child)
+
+        collect(value)
+        pending = list(referenced)
+        while pending:
+            name = pending.pop()
+            definition = defs.get(name)
+            if definition is None:
+                continue
+            before = set(referenced)
+            collect(definition)
+            pending.extend(sorted(referenced - before))
+        value["$defs"] = {
+            name: definition
+            for name, definition in defs.items()
+            if name in referenced
+        }
+        if not value["$defs"]:
+            value.pop("$defs", None)
     return value
 
 
