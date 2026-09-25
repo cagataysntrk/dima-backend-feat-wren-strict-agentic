@@ -485,42 +485,59 @@ def main() -> int:
         session_id=baseline.session_id,
         principal=principal,
         token=token,
-        name="discriminating-native-test-a",
+        name="manager-selected-discriminating-native-test",
         intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
         guidance=(
-            f"Choose candidate A by continuing EXACT parent_step_id "
-            f"{alt_a_step.step_id}; omit branch_key so the same branch identity "
-            "continues. Ask one bounded native analytical question whose result "
-            "could discriminate this candidate using only available Metabase "
-            "semantics. Do not compute the answer yourself."
+            "Choose WHICH ONE of the two currently open candidate branches is "
+            "more useful to test next. parent_step_id MUST be exactly one of "
+            f"{alt_a_step.step_id} or {alt_b_step.step_id}; omit branch_key so "
+            "the selected branch identity continues. Ask one bounded native "
+            "analytical question whose result could discriminate that candidate "
+            "using only available Metabase semantics. Do not compute the answer "
+            "yourself and do not rank a causal winner."
         ),
     )
     records.append(tested)
     tested_step = tested["_step"]
-    if tested_step.branch_id != alt_a_step.branch_id:
-        raise RuntimeError("native test escaped candidate A branch")
+    by_step = {
+        alt_a_step.step_id: alt_a_step,
+        alt_b_step.step_id: alt_b_step,
+    }
+    selected_parent = by_step.get(tested_step.parent_step_id or "")
+    if selected_parent is None:
+        raise RuntimeError(
+            "manager did not select one of the two candidate branches for testing"
+        )
+    if tested_step.branch_id != selected_parent.branch_id:
+        raise RuntimeError("native test escaped manager-selected candidate branch")
     if tested["_task"] is None or not tested["evidence_refs"]:
         raise RuntimeError("discriminating native test produced no Evidence")
 
-    stopped_b = stage(
+    sibling = (
+        alt_b_step if selected_parent.step_id == alt_a_step.step_id else alt_a_step
+    )
+    stopped_sibling = stage(
         service=service,
         provider=manager,
         session_id=baseline.session_id,
         principal=principal,
         token=token,
-        name="stop-candidate-b",
+        name="stop-untested-sibling",
         intent=InvestigationIntent.STOP_BRANCH,
         guidance=(
-            f"Stop only candidate B at parent_step_id {alt_b_step.step_id}. "
-            "Use a branch-local stop reason supported by the current investigation "
-            "state (for example no meaningful gain/data unavailable/out of scope). "
-            "Do not stop the whole investigation and do not invent causal truth."
+            f"Stop only the unselected sibling candidate at parent_step_id "
+            f"{sibling.step_id}. Use a branch-local stop reason supported by the "
+            "current bounded canary state. Do not stop the whole investigation "
+            "and do not invent causal truth."
         ),
     )
-    records.append(stopped_b)
-    stopped_b_step = stopped_b["_step"]
-    if stopped_b_step.stop_scope is None or stopped_b_step.stop_scope.value != "BRANCH":
-        raise RuntimeError("candidate B was not stopped branch-locally")
+    records.append(stopped_sibling)
+    stopped_sibling_step = stopped_sibling["_step"]
+    if (
+        stopped_sibling_step.stop_scope is None
+        or stopped_sibling_step.stop_scope.value != "BRANCH"
+    ):
+        raise RuntimeError("unselected sibling was not stopped branch-locally")
 
     deepened = stage(
         service=service,
@@ -528,20 +545,20 @@ def main() -> int:
         session_id=baseline.session_id,
         principal=principal,
         token=token,
-        name="deepen-candidate-a",
+        name="deepen-manager-selected-branch",
         intent=InvestigationIntent.DEEPEN_EXPLANATION,
         guidance=(
             f"After inspecting the newly produced Evidence/material, create a "
             f"child investigation question under parent_step_id "
-            f"{tested_step.step_id}. Omit branch_key to stay on candidate A. "
-            "The child asks what should be investigated deeper; it must not "
-            "calculate an analytical or causal answer."
+            f"{tested_step.step_id}. Omit branch_key to stay on the selected "
+            "candidate branch. The child asks what should be investigated "
+            "deeper; it must not calculate an analytical or causal answer."
         ),
     )
     records.append(deepened)
     deep_step = deepened["_step"]
-    if deep_step.branch_id != alt_a_step.branch_id:
-        raise RuntimeError("deepened node escaped candidate A branch")
+    if deep_step.branch_id != selected_parent.branch_id:
+        raise RuntimeError("deepened node escaped manager-selected branch")
     if deep_step.depth <= tested_step.depth:
         raise RuntimeError("DEEPEN_EXPLANATION did not increase depth")
 
@@ -638,8 +655,15 @@ def main() -> int:
             and alt_a_step.branch_id != alt_b_step.branch_id
         ),
         "native_discriminating_test": bool(tested["evidence_refs"]),
+        "manager_selected_material_branch": (
+            tested_step.parent_step_id
+            in {alt_a_step.step_id, alt_b_step.step_id}
+        ),
         "branch_local_stop": (
-            alt_b_step.branch_id in graph.stopped_branch_ids
+            sibling.branch_id in graph.stopped_branch_ids
+        ),
+        "selected_branch_remains_open": (
+            selected_parent.branch_id in graph.open_branch_ids
         ),
         "deeper_same_branch": (
             deep_step.depth > tested_step.depth
