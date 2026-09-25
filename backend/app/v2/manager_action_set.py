@@ -54,9 +54,9 @@ class RootActionState:
     root_id: str
     semantic_refs: tuple[SemanticActionRef, ...]
     evidence_refs: tuple[str, ...]
-    next_test_evidence_refs: tuple[str, ...]
     hypotheses: tuple[HypothesisActionState, ...]
     next_test_contracts: tuple[NextTestContractState, ...]
+    next_test_evidence_refs: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
