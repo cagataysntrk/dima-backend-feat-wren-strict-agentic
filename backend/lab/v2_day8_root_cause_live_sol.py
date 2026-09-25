@@ -92,6 +92,7 @@ from app.v2.root_cause_orchestration import (
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
+from lab.v2_manager_action_set_script_adapter import adapt_legacy_manager_intent
 
 
 class LiveBudgetExceeded(RuntimeError):
@@ -202,7 +203,6 @@ class ScriptedSentinelLLM:
     def structured_json(self, _system, user, **_kwargs):
         self.calls += 1
         payload = json.loads(user)
-        schema = _kwargs.get("schema") or {}
         ledgers = payload.get("HYPOTHESIS_LEDGERS") or []
         entries = ledgers[0]["entries"] if ledgers else []
         ready = payload.get("READY_RESEARCH_TASKS") or []
@@ -210,18 +210,21 @@ class ScriptedSentinelLLM:
 
         if not entries:
             evidence_refs = payload.get("EVIDENCE_REFS") or []
-            return {
-                "action": "propose_hypothesis",
-                "hypothesis_parent_obligation_id": "U_ROOT",
-                "hypothesis_statement": (
-                    "Gözlenen düşüşün ölçüm seviyesindeki devamlılığı aday açıklama olabilir."
-                ),
-                "hypothesis_semantic_handles": ["h1"],
-                "hypothesis_trigger_evidence_refs": [evidence_refs[-1]],
-                "hypothesis_limitations": [
-                    "Gözlemsel analitik sonuç tek başına nedenselliği doğrulamaz."
-                ],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis",
+                    "hypothesis_parent_obligation_id": "U_ROOT",
+                    "hypothesis_statement": (
+                        "Gözlenen düşüşün ölçüm seviyesindeki devamlılığı aday açıklama olabilir."
+                    ),
+                    "hypothesis_semantic_handles": ["h1"],
+                    "hypothesis_trigger_evidence_refs": [evidence_refs[-1]],
+                    "hypothesis_limitations": [
+                        "Gözlemsel analitik sonuç tek başına nedenselliği doğrulamaz."
+                    ],
+                },
+            )
 
         hypothesis = entries[0]
         if not hypothesis.get("next_test_task_refs"):
@@ -236,43 +239,60 @@ class ScriptedSentinelLLM:
                 and not rejected
             ):
                 self._rejected_next_test_sent = True
-                advertised = self._schema_property_values(
-                    schema,
-                    "next_test_task_kind",
-                )
+                cards = (
+                    payload.get("MANAGER_ACTION_SET") or {}
+                ).get("action_instances") or []
+                advertised = {
+                    (item.get("context") or {}).get("task_family")
+                    for item in cards
+                    if item.get("action") == "propose_hypothesis_next_test"
+                }
                 assert "QUERY" in advertised, advertised
                 assert "TREND" not in advertised, advertised
                 self.inapplicable_next_test_absent = True
             task_kind = "QUERY"
-            return {
-                "action": "propose_hypothesis_next_test",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "next_test_task_kind": task_kind,
-                "next_test_input_handles": ["h1"],
-                "next_test_trigger_evidence_ref": hypothesis["trigger_evidence_refs"][-1],
-                "next_test_material_reason": (
-                    "Aday açıklamayı aynı governed metric üzerinde ayrı bir gözlemsel "
-                    "ölçümle sınamak."
-                ),
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_next_test",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "next_test_task_kind": task_kind,
+                    "next_test_input_handles": ["h1"],
+                    "next_test_trigger_evidence_ref": hypothesis["trigger_evidence_refs"][-1],
+                    "next_test_material_reason": (
+                        "Aday açıklamayı aynı governed metric üzerinde ayrı bir gözlemsel "
+                        "ölçümle sınamak."
+                    ),
+                },
+            )
 
         if ready:
             task = ready[0]
-            return {
-                "action": "run_analytics",
-                "obligation_ids": ["U_ROOT"],
-                "metric_handles": ["h1"],
-                "derived_task_id": task["task_id"],
-                "derived_parent_obligation_id": "U_ROOT",
-                "derived_capability_key": "performance",
-                "derived_evidence_ref": task["trigger_evidence_ref"],
-                "derived_reason": "Materialized hypothesis next testini yürüt.",
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "run_analytics",
+                    "obligation_ids": ["U_ROOT"],
+                    "metric_handles": ["h1"],
+                    "derived_task_id": task["task_id"],
+                    "derived_parent_obligation_id": "U_ROOT",
+                    "derived_capability_key": "performance",
+                    "derived_evidence_ref": task["trigger_evidence_ref"],
+                    "derived_reason": "Materialized hypothesis next testini yürüt.",
+                },
+            )
 
         if delta and not delta.get("inspected"):
             assert delta.get("disclosed_in_current_prompt") is True
             assert delta.get("inspection_required") is False
-            advertised_actions = self._schema_property_values(schema, "action")
+            advertised_actions = {
+                item.get("action")
+                for item in (
+                    (payload.get("MANAGER_ACTION_SET") or {}).get(
+                        "action_instances"
+                    ) or []
+                )
+            }
             assert "inspect_evidence" not in advertised_actions, advertised_actions
             self.redundant_fresh_inspect_absent = True
 
@@ -280,12 +300,15 @@ class ScriptedSentinelLLM:
             assert delta is not None
             assert delta.get("verified") is True
             assert delta.get("disclosed_in_current_prompt") is True
-            return {
-                "action": "propose_hypothesis_evidence_relation",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "hypothesis_relation_evidence_ref": delta["evidence_ref"],
-                "hypothesis_relation": "SUPPORTS",
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_evidence_relation",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+                    "hypothesis_relation": "SUPPORTS",
+                },
+            )
 
         raise AssertionError("scripted sentinel received an unexpected sixth cognition step")
 
