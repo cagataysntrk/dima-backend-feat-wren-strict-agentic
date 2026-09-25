@@ -1867,6 +1867,68 @@ class ResearchManagerLoop:
             cancel_check=self._cancel_check,
         )
 
+    def _account_successful_adaptive_branch(
+        self,
+        *,
+        runtime: ManagerRuntime,
+        evidence_store,
+        task,
+        result_evidence,
+    ) -> tuple[str, ...]:
+        """Account one successful governed AGENT_DERIVED branch exactly once.
+
+        This is lifecycle accounting, not cognition. A branch can satisfy an accepted
+        ADAPT_ON_EVIDENCE directive regardless of whether it was auto-executed at
+        materialization time or selected later through RUN_ANALYTICS/RUN_RELATIONSHIP.
+        Blocked/failed work, foreign lineage, uninspected trigger Evidence, or a task
+        without successful VERIFIED result Evidence can never close the directive.
+        """
+        contract = runtime.accepted_contract
+        if contract is None or task.origin != "AGENT_DERIVED":
+            return ()
+        trigger_ref = task.trigger_evidence_ref
+        parent_id = task.parent_obligation_id
+        if not trigger_ref or not parent_id or task.state != "complete":
+            return ()
+
+        trigger = evidence_store.get(trigger_ref)
+        if (
+            not trigger.verified
+            or trigger_ref not in runtime.snapshot.inspected_evidence_refs
+            or task.parent_task_id != trigger.task_id
+        ):
+            return ()
+        if (
+            result_evidence is None
+            or not result_evidence.verified
+            or result_evidence.task_id != task.task_id
+        ):
+            return ()
+
+        accounted: list[str] = []
+        for directive in contract.research_directives:
+            if (
+                directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE
+                or directive.parent_obligation_id != parent_id
+            ):
+                continue
+            current = runtime.directive_disposition(directive.directive_id)
+            if current.status != ResearchDirectiveDispositionStatus.OPEN:
+                continue
+            runtime.account_research_directive(
+                directive_id=directive.directive_id,
+                status=ResearchDirectiveDispositionStatus.APPLIED,
+                evidence_ref=trigger_ref,
+                branch_task_refs=(task.task_id,),
+                reason=(
+                    "governed material branch executed with VERIFIED Evidence "
+                    "and accounted independent of execution transport"
+                ),
+            )
+            accounted.append(directive.directive_id)
+        return tuple(accounted)
+
+
     def _account_root_next_test_as_adaptive_branch(
         self,
         *,
@@ -3086,29 +3148,23 @@ class ResearchManagerLoop:
                                         "relationship_checked",
                                         (evidence.artifact_id,),
                                     )
-                                contract = runtime.accepted_contract
-                                if contract is not None:
-                                    for directive in contract.research_directives:
-                                        if (
-                                            directive.directive_type
-                                            == ResearchDirectiveType.ADAPT_ON_EVIDENCE
-                                            and directive.parent_obligation_id
-                                            == decision.branch_parent_obligation_id
-                                        ):
-                                            runtime.account_research_directive(
-                                                directive_id=directive.directive_id,
-                                                status=ResearchDirectiveDispositionStatus.APPLIED,
-                                                evidence_ref=str(
-                                                    decision.branch_evidence_ref
-                                                ),
-                                                branch_task_refs=(
-                                                    scheduled.task.task_id,
-                                                ),
-                                                reason=(
-                                                    "governed material branch "
-                                                    "executed and accounted"
-                                                ),
-                                            )
+                                accounted_directives = (
+                                    self._account_successful_adaptive_branch(
+                                        runtime=runtime,
+                                        evidence_store=executor.evidence_store,
+                                        task=scheduled.task,
+                                        result_evidence=evidence,
+                                    )
+                                )
+                                if accounted_directives:
+                                    observations.append(
+                                        {
+                                            "kind": "research_directive_accounted",
+                                            "directive_ids": list(accounted_directives),
+                                            "task_id": scheduled.task.task_id,
+                                            "execution_path": "inline_adaptive_branch",
+                                        }
+                                    )
                         except ResearchTaskInvocationCompileError as exc:
                             observations.append(
                                 {
@@ -3266,6 +3322,23 @@ class ResearchManagerLoop:
                             self._emit_progress(
                                 "relationship_checked",
                                 (evidence.artifact_id,),
+                            )
+                        accounted_directives = (
+                            self._account_successful_adaptive_branch(
+                                runtime=runtime,
+                                evidence_store=executor.evidence_store,
+                                task=research_execution.task,
+                                result_evidence=evidence,
+                            )
+                        )
+                        if accounted_directives:
+                            observations.append(
+                                {
+                                    "kind": "research_directive_accounted",
+                                    "directive_ids": list(accounted_directives),
+                                    "task_id": research_execution.task.task_id,
+                                    "execution_path": "manager_selected_derived_task",
+                                }
                             )
                 else:
                     result = runtime.call_tool(call, executor=executor)
