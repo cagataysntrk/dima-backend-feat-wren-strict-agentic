@@ -1096,6 +1096,11 @@ def resolve_investigation_topology(
     intent = proposal.effective_intent
     rule = snapshot.action_profile.rule_for(intent)
     if rule is None:
+        if proposal.parent_step_id is not None:
+            raise ResearchManagerMaturationError(
+                "P17_PARENT_STEP_NOT_LEGAL",
+                proposal.parent_step_id,
+            )
         raise ResearchManagerMaturationError(
             "P17_INTENT_NOT_LEGAL_IN_STATE",
             intent.value,
