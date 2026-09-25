@@ -877,6 +877,70 @@ class ResearchReasoningStore:
         return self._step(record) if record is not None else None
 
 
+def _project_investigation_graph(
+    *,
+    steps: tuple[ResearchReasoningStep, ...],
+    tasks: tuple[ResearchInvestigationTask, ...],
+) -> InvestigationGraph:
+    task_by_step = {x.reasoning_step_id: x for x in tasks}
+    children: dict[str, list[str]] = {}
+    for step in steps:
+        if step.parent_step_id is not None:
+            children.setdefault(step.parent_step_id, []).append(step.step_id)
+
+    branch_ids = {x.branch_id for x in steps}
+    stopped_branches: set[str] = set()
+    nodes = []
+    for step in steps:
+        task = task_by_step.get(step.step_id)
+        evidence = task.evidence_refs if task is not None else ()
+        materials = task.material_refs if task is not None else ()
+        counter = (
+            evidence
+            if step.intent == InvestigationIntent.SEEK_COUNTER_EVIDENCE
+            else ()
+        )
+        if (
+            step.stop_scope == StopScope.BRANCH
+            or (
+                step.status == ReasoningStepStatus.NO_PROGRESS
+                and step.intent != InvestigationIntent.LEGACY
+            )
+        ):
+            stopped_branches.add(step.branch_id)
+        nodes.append(
+            InvestigationNodeView(
+                step_id=step.step_id,
+                parent_step_id=step.parent_step_id,
+                root_obligation_id=step.parent_obligation_id,
+                depth=step.depth,
+                branch_id=step.branch_id,
+                intent=step.intent,
+                target_kind=step.target_kind,
+                target_ref=step.target_ref,
+                objective_key=step.objective_key,
+                bounded_objective=step.bounded_objective,
+                status=step.status,
+                evidence_refs=evidence,
+                counter_evidence_refs=counter,
+                native_material_refs=materials,
+                child_step_ids=tuple(sorted(children.get(step.step_id, ()))),
+                stop_reason=step.stop_reason,
+                stop_scope=step.stop_scope,
+            )
+        )
+
+    return InvestigationGraph(
+        nodes=tuple(nodes),
+        root_step_ids=tuple(
+            x.step_id for x in steps if x.parent_step_id is None
+        ),
+        open_branch_ids=tuple(sorted(branch_ids - stopped_branches)),
+        stopped_branch_ids=tuple(sorted(stopped_branches)),
+        max_observed_depth=max((x.depth for x in steps), default=0),
+    )
+
+
 class ResearchInvestigationManager:
     """Validate, persist, and execute one bounded P17 investigation transition."""
 
@@ -1054,6 +1118,10 @@ class ResearchInvestigationManager:
         counters = sum(
             1 for x in tasks if x.counter_to_claim_id is not None
         )
+        graph = _project_investigation_graph(
+            steps=steps,
+            tasks=tasks,
+        )
         terminal = next(
             (
                 x.stop_reason
@@ -1063,6 +1131,13 @@ class ResearchInvestigationManager:
                     ReasoningStepStatus.STOPPED,
                     ReasoningStepStatus.NO_PROGRESS,
                 }
+                and (
+                    x.stop_scope == StopScope.INVESTIGATION
+                    or (
+                        x.intent == InvestigationIntent.LEGACY
+                        and x.stop_scope is None
+                    )
+                )
             ),
             None,
         )
@@ -1096,6 +1171,7 @@ class ResearchInvestigationManager:
             ),
             materials=tuple(materials),
             claims=claims,
+            investigation=graph,
             limitation_refs=tuple(
                 sorted(x.limitation_id for x in session.limitations)
             ),
@@ -1136,6 +1212,11 @@ class ResearchInvestigationManager:
             "research_authority_id": session.authority_id,
             "research_session_id": session.session_id,
             "parent_obligation_id": proposal.target_parent_obligation,
+            "parent_step_id": proposal.parent_step_id,
+            "branch_key": proposal.branch_key,
+            "intent": proposal.effective_intent.value,
+            "target_kind": proposal.target_kind.value,
+            "target_ref": proposal.target_ref,
             "action": proposal.action.value,
             # objective_key is the normalized bounded target identity.
             # rationale/bounded_objective prose is intentionally excluded.
