@@ -2290,3 +2290,116 @@ final D10-S exit / seal             PENDING BUDGET RATIFICATION
 paid                                NOT AUTHORIZED
 Day11                               NOT AUTHORIZED
 ```
+
+
+---
+
+## D10-T CERTIFICATION ORACLE CORRECTION HARVEST
+
+Authority / proof:
+
+```text
+Product behavior                 999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+historical live run              36135227087 = RED (immutable)
+Product lifecycle in that run    VERIFIED_COMPLETE
+first wrong transition           EVAL / HARNESS / FIXTURE
+Day10 provider-free              36138055136 = GREEN
+Day8 affected                    36138058114 = GREEN
+Day8 live debt                   CLOSED
+Day8 FINAL                       SEALED
+Day10 FINAL                      OPEN
+paid used                        26 / 40
+paid remaining                   14 / 40
+new paid calls                   0
+Metabase source reference        2f3fe9904e4addbcbe4d32403d6a7ab2fc471100
+```
+
+**H-152 — MUST_PORT — AUTHORITATIVE STATE OUTRANKS OBSERVATION STRINGS**  
+Final/integrated certification must derive pass/fail from typed authority state,
+provenance invariants and safety invariants. Observation/event names are diagnostic
+telemetry. A diagnostic event may corroborate a transition but cannot independently
+own final GREEN/RED when typed state exists.
+
+**H-153 — MUST_PORT — LIFECYCLE CONTRACT OUTRANKS ONE EXECUTION TRAJECTORY**  
+A conditional lifecycle with multiple valid terminal paths must be certified by its
+typed terminal contract, not by one historically observed path. For
+`ADAPT_ON_EVIDENCE`, `APPLIED`, `NO_MATERIAL_DIRECTION`, `BLOCKED` and
+`OPEN` retain distinct semantics. Final certification validates each status against
+its own Evidence/accounting contract. It must never manufacture work merely to obtain
+the path an evaluator expected.
+
+**H-154 — MUST_PORT — SUCCESSFUL TYPED TRANSITION, NOT MODEL ACTION SELECTION, IS TRUTH**  
+A model selecting an action is only an attempted cognition decision. Schema-valid
+output is not proof that the runtime transition succeeded. Certification must inspect
+the admitted runtime result. This follows the same portable distinction observed in
+Metabase: a terminal tool outcome is owned by successful tool execution, not by the
+attempted call.
+
+**H-155 — MUST_PORT — FINAL ROOT PROOF IS PROVENANCE-BASED**  
+Day8 ROOT certification requires accepted ROOT authority, a server-owned hypothesis,
+a completed governed next-test task, new VERIFIED post-test Evidence, an admitted
+typed hypothesis-Evidence relation, ROOT obligation reconciliation,
+`CANDIDATE_CAUSE`, and `CONFIRMED_CAUSE=0`. An adaptive-branch event is not part
+of this ROOT lifecycle definition.
+
+**H-156 — MUST_PORT — PATH-SPECIFIC TESTS AND FINAL CERTIFICATION ARE DIFFERENT CLASSES**  
+A rehearsal whose explicit purpose is to prove one path may require that exact
+trajectory. Example: provider-free APPLIED adaptive-branch rehearsal may assert
+`adaptive_branch_executed`, `APPLIED`, and branch task refs. A final/integrated
+certification may require an exact trajectory only when its explicit certification
+contract says the path itself is the target. Do not weaken focused path tests to fix a
+final oracle.
+
+**H-157 — SHOULD_PORT — FAILURE ARTIFACTS SHOULD PRESERVE AUTHORITATIVE STATE**  
+Future paid failure receipts should preserve accepted directives, final dispositions,
+Evidence summary/provenance, final USER_MUST ledger state, ROOT state, canonical
+findings, server-owned hypothesis/next-test/relation receipts, Product terminal and
+CompletionGate outcome. Raw rows/SQL are not required for this purpose. Historical
+artifacts are never retroactively fabricated.
+
+**H-158 — MUST_PORT — HISTORICAL RUN RESULTS ARE IMMUTABLE**  
+An evaluator correction creates a new offline classification receipt; it does not
+rewrite the historical CI result. Thus `36135227087` remains GitHub RED while its
+Product execution is separately classified as authoritative lifecycle completion and
+its harness failure as `EVAL / HARNESS / FIXTURE`.
+
+Permanent oracle constitution:
+
+```text
+AUTHORITATIVE STATE > OBSERVATION STRING
+LIFECYCLE CONTRACT > EXECUTION TRAJECTORY
+EVENT != TRUTH
+MODEL ACTION SELECTION != SUCCESSFUL TRANSITION
+SUCCESSFUL TYPED RUNTIME TRANSITION = TRUTH
+
+MULTIPLE VALID EXECUTION PATHS
+must converge to the same lifecycle certification.
+
+HISTORICAL RUNS ARE IMMUTABLE.
+Oracle corrections create a new classification receipt;
+they do not rewrite the old run result.
+```
+
+Metabase parallel retained as architecture reference only:
+
+```text
+resolved state/profile → capability filtering → scope filtering → model surface
+attempted tool         != successful tool transition
+applicability          → before materialization
+durable terminal state → completion owner
+```
+
+No Metabase runtime code is imported.
+
+Current boundary:
+
+```text
+Day8 FINAL       SEALED
+Day10 FINAL      OPEN
+paid             STOPPED
+remaining paid   14 / 40
+Day11            NOT AUTHORIZED
+DEV80            NOT AUTHORIZED
+Validation50     NOT AUTHORIZED
+Hidden50         NOT AUTHORIZED
+```
