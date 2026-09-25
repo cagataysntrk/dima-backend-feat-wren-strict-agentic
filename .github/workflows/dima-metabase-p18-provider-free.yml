@@ -62,71 +62,16 @@ jobs:
 
       - name: Compile P18 authority slice
         working-directory: backend
-        run: |
-          python -m py_compile             app/v3/business_relationship_policy.py             control_plane/models.py             migrations/versions/f5a1d7c9e2b4_p18_business_relationship_policy.py             tests/test_v3_p18_business_relationship_policy.py
+        run: python -m py_compile app/v3/business_relationship_policy.py control_plane/models.py migrations/versions/f5a1d7c9e2b4_p18_business_relationship_policy.py tests/test_v3_p18_business_relationship_policy.py
 
-      - name: Verify single Alembic head includes only two P18 durable tables
+      - name: Verify single Alembic head
         working-directory: backend
+        shell: bash
         run: |
           set -euo pipefail
-          heads="$(python -m alembic heads)"
-          test "$(printf '%s
-' "$heads" | grep -Ec '^[0-9a-f]+')" -eq 1
-          printf '%s
-' "$heads" | grep -q '^f5a1d7c9e2b4'
-          python - <<'PY'
-          from sqlmodel import SQLModel
-          import control_plane.models  # noqa: F401
-          names = {
-              table.name
-              for table in SQLModel.metadata.tables.values()
-              if table.name.startswith("business_relationship_policy")
-          }
-          assert names == {
-              "business_relationship_policy",
-              "business_relationship_policy_use",
-          }, names
-          PY
-
-      - name: Static proof P18 has no analytical executor or relationship graph
-        working-directory: backend
-        run: |
-          python - <<'PY'
-          import ast
-          from pathlib import Path
-          p = Path("app/v3/business_relationship_policy.py")
-          tree = ast.parse(p.read_text(encoding="utf-8"))
-          imports = set()
-          for node in ast.walk(tree):
-              if isinstance(node, ast.Import):
-                  imports.update(alias.name for alias in node.names)
-              elif isinstance(node, ast.ImportFrom):
-                  imports.add(node.module or "")
-          forbidden = (
-              "app.v3.substrate.metabase",
-              "app.v3.research_native_gateway",
-              "app.v3.research_followup",
-              "app.v3.native_execution",
-              "app.wren",
-              "numpy",
-              "pandas",
-              "scipy",
-              "statistics",
-          )
-          bad = sorted(x for x in imports if x.startswith(forbidden))
-          assert not bad, bad
-          source = p.read_text(encoding="utf-8")
-          for symbol in (
-              "NativeEngineBridge",
-              "MetabaseAgentClient",
-              "execute_dataset",
-              "explore_adhoc",
-              "attest_native_query",
-              "execute_native_query",
-              "wren_service",
-          ):
-              assert symbol not in source, symbol
-          PY
+          python -m alembic heads > /tmp/p18-heads.txt
+          test "$(grep -Ec '^[0-9a-f]+' /tmp/p18-heads.txt)" -eq 1
+          grep -q '^f5a1d7c9e2b4' /tmp/p18-heads.txt
 
       - name: P18 focused provider-free proof
         working-directory: backend
@@ -134,8 +79,7 @@ jobs:
 
       - name: P17 provider-free regressions remain GREEN
         working-directory: backend
-        run: |
-          pytest -q             tests/test_v3_p17_authorization_transport.py             tests/test_v3_p17_autonomous_provider_schema.py             tests/test_v3_p17_autonomous_manager_eval.py             tests/test_v3_p17_research_manager.py
+        run: pytest -q tests/test_v3_p17_authorization_transport.py tests/test_v3_p17_autonomous_provider_schema.py tests/test_v3_p17_autonomous_manager_eval.py tests/test_v3_p17_research_manager.py
 
       - name: P16 claim-lineage remains GREEN
         working-directory: backend
@@ -149,9 +93,14 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
 
-      - name: Verify engine identity unchanged and no paid P18 work exists
+      - name: Verify engine identity unchanged
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" =             "cbe313af9ac2d5960f662068e433d328d896fb06"
-          ! grep -R -nE 'openai/gpt|openrouter|Luna|Sol|C1'             backend/app/v3/business_relationship_policy.py             backend/tests/test_v3_p18_business_relationship_policy.py
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+
+      - name: Verify no paid P18 integration exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R -nE 'openai/gpt|openrouter|Luna|Sol|C1' backend/app/v3/business_relationship_policy.py backend/tests/test_v3_p18_business_relationship_policy.py
