@@ -58,7 +58,7 @@ def test_autonomous_mixed_vocabulary_uses_strict_semantic_envelope():
     assert set(schema["properties"]) == {"proposal"}
     assert schema["additionalProperties"] is False
     assert schema["required"] == ["proposal"]
-    assert len(_variants(schema)) == 3
+    assert len(_variants(schema)) == len(AUTONOMOUS_INTENTS)
     _assert_provider_strict_objects(schema)
 
     serialized = json.dumps(schema, sort_keys=True)
@@ -103,10 +103,7 @@ def test_stop_variant_requires_stop_reason_without_non_stop_payload():
     )
     props = stop["properties"]
 
-    assert props["intent"]["enum"] == [
-        "STOP_BRANCH",
-        "STOP_INVESTIGATION",
-    ]
+    assert props["intent"]["enum"] == ["STOP_INVESTIGATION"]
     assert "stop_reason" in props
     assert "bounded_objective" not in props
     assert "expected_information_gain" not in props
