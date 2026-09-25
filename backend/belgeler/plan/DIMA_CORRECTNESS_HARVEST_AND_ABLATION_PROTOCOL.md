@@ -299,6 +299,49 @@ second paid run                NOT AUTHORIZED
 ```
 
 
+
+### 4.4 ARCHITECTURE RISK NOTE — KEEP ACTION AVAILABILITY AS A PROJECTION
+
+The integrated live RED proved that action-name filtering alone is insufficient: argument applicability
+must also be projected before cognition. The bounded correction is valid because it still projects only
+already-governed runtime facts.
+
+Permanent anti-thickening rule:
+
+```text
+ManagerActionAvailability MAY:
+- project runtime-known action applicability
+- project parent-scoped opaque IDs/aliases already owned elsewhere
+- remove impossible actions/arguments before cognition
+
+ManagerActionAvailability MUST NOT:
+- mint semantic identity
+- decide analytical truth
+- infer causal truth
+- create Evidence
+- mutate UserObligationLedger
+- replace HypothesisLedger / RootCauseOrchestration
+- become a second CompletionGate
+```
+
+If future live failures require repeated domain-specific special cases inside this projection, do not
+continue adding case branches. Escalate to supervisor and consider an explicit typed
+`ActionApplicabilitySnapshot` owned by the existing domain boundary and consumed by
+`ManagerActionAvailability`. The current correction does not yet require that redesign.
+
+Current incident classification:
+
+```text
+run                            36128949886
+class                          CONTRACT / ARCHITECTURE
+first wrong transition         ROOT action arguments were not parent-scoped
+fix owner                      existing ManagerActionAvailability projection
+frozen truth owners changed    NO
+post-fix provider-free         Day7/Day8/Day10 GREEN
+second paid measurement        NOT AUTHORIZED
+```
+
+
 ---
 
 ## 5. FREE_COGNITION vs GOVERNED_ORCHESTRATION — SHADOW ABLATION
