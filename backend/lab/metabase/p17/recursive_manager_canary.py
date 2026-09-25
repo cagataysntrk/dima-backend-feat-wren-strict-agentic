@@ -186,16 +186,22 @@ class GuidedTurn:
         provider: StructuredResearchProposalManager,
         guidance: str,
         intent: InvestigationIntent,
+        allowed_parent_step_ids: tuple[str | None, ...] | None = None,
+        branch_key_mode: str | None = None,
     ) -> None:
         self._provider = provider
         self._guidance = guidance
         self._intent = intent
+        self._allowed_parent_step_ids = allowed_parent_step_ids
+        self._branch_key_mode = branch_key_mode
 
     def propose(self, snapshot):
         return self._provider.propose_with_guidance(
             snapshot,
             guidance=self._guidance,
             allowed_intents=(self._intent,),
+            allowed_parent_step_ids=self._allowed_parent_step_ids,
+            branch_key_mode=self._branch_key_mode,
         )
 
 
@@ -209,6 +215,8 @@ def stage(
     name: str,
     intent: InvestigationIntent,
     guidance: str,
+    allowed_parent_step_ids: tuple[str | None, ...] | None = None,
+    branch_key_mode: str | None = None,
 ):
     before = service.snapshot(
         session_id=session_id,
@@ -221,6 +229,8 @@ def stage(
             provider=provider,
             guidance=guidance,
             intent=intent,
+            allowed_parent_step_ids=allowed_parent_step_ids,
+            branch_key_mode=branch_key_mode,
         ),
         native_session_token=token,
     )
@@ -428,6 +438,8 @@ def main() -> int:
             "answer natively using the current Research scope. Do not assert "
             "a cause and do not invent fields."
         ),
+        allowed_parent_step_ids=(None,),
+        branch_key_mode="null",
     )
     records.append(root)
     root_step = root["_step"]
@@ -451,6 +463,8 @@ def main() -> int:
             "scope, but do not claim it is causal and do not execute analytics "
             "in this topology-only step."
         ),
+        allowed_parent_step_ids=(root_step.step_id,),
+        branch_key_mode="string",
     )
     records.append(alt_a)
     alt_a_step = alt_a["_step"]
@@ -471,6 +485,8 @@ def main() -> int:
             "stable branch_key from existing alternatives. Preserve both "
             "alternatives; do not rank a winner and do not assert causality."
         ),
+        allowed_parent_step_ids=(root_step.step_id,),
+        branch_key_mode="string",
     )
     records.append(alt_b)
     alt_b_step = alt_b["_step"]
@@ -496,6 +512,11 @@ def main() -> int:
             "using only available Metabase semantics. Do not compute the answer "
             "yourself and do not rank a causal winner."
         ),
+        allowed_parent_step_ids=(
+            alt_a_step.step_id,
+            alt_b_step.step_id,
+        ),
+        branch_key_mode="null",
     )
     records.append(tested)
     tested_step = tested["_step"]
@@ -530,6 +551,8 @@ def main() -> int:
             "current bounded canary state. Do not stop the whole investigation "
             "and do not invent causal truth."
         ),
+        allowed_parent_step_ids=(sibling.step_id,),
+        branch_key_mode="null",
     )
     records.append(stopped_sibling)
     stopped_sibling_step = stopped_sibling["_step"]
@@ -554,6 +577,8 @@ def main() -> int:
             "candidate branch. The child asks what should be investigated "
             "deeper; it must not calculate an analytical or causal answer."
         ),
+        allowed_parent_step_ids=(tested_step.step_id,),
+        branch_key_mode="null",
     )
     records.append(deepened)
     deep_step = deepened["_step"]
@@ -576,6 +601,8 @@ def main() -> int:
             "Record the next bounded investigation target only; do not execute or "
             "compute analytics in this REPLAN step."
         ),
+        allowed_parent_step_ids=(deep_step.step_id,),
+        branch_key_mode="null",
     )
     records.append(replanned)
     replan_step = replanned["_step"]
@@ -596,6 +623,8 @@ def main() -> int:
             "(objective satisfied, inconclusive, insufficient evidence, or another "
             "typed reason supported by the snapshot). Do not force a root cause."
         ),
+        allowed_parent_step_ids=(replan_step.step_id,),
+        branch_key_mode="null",
     )
     records.append(final_stop)
 
