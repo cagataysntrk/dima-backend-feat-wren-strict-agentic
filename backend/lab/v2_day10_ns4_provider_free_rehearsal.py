@@ -551,8 +551,25 @@ def run_rehearsal(
     if result is None:
         raise RehearsalError("Research result missing")
     if response.lane != ProductLane.RESEARCH or response.status != ProductStatus.REPORT:
+        diagnostic = None
+        if result is not None:
+            snapshot = result.runtime.snapshot
+            diagnostic = {
+                "runtime_state": snapshot.state.value,
+                "manager_turn_total": snapshot.manager_turns,
+                "preacceptance_turns": snapshot.preacceptance_turns,
+                "research_manager_turns": snapshot.research_manager_turns,
+                "manager_turn_ceiling": result.runtime.budget.max_total_manager_turns,
+                "manager_actions": list(manager.actions),
+                "terminal_status": (
+                    result.outcome.terminal_status.value
+                    if result.outcome.terminal_status is not None
+                    else None
+                ),
+            }
         raise RehearsalError(
-            f"canonical rehearsal did not complete as report: {response.status.value}"
+            "canonical rehearsal did not complete as report: "
+            f"{response.status.value}; diagnostic={diagnostic}"
         )
     if not result.verified_complete or result.runtime.snapshot.state != ManagerState.COMPLETED:
         raise RehearsalError("CompletionGate did not terminate canonical rehearsal")
