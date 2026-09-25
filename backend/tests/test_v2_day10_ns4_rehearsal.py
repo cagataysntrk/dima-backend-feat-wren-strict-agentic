@@ -197,7 +197,14 @@ class _Run4AvailabilityManager(ns4.ScriptedNS4Manager):
         # some older undisclosed VERIFIED Evidence is legitimately inspectable.
         inspect_refs = _schema_property_enum(schema, "evidence_ref")
         assert delta["evidence_ref"] not in inspect_refs
-        assert ManagerActionKind.RESOLVE_SEMANTICS.value not in actions
+        # D10-S parent-scoped availability may keep AGENT_DERIVED semantics for
+        # unrelated evidence-grounded obligations. The exact run-4 bug is that the
+        # already-satisfied ROOT parent must not be an eligible semantic parent.
+        semantic_parents = _schema_property_enum(
+            schema,
+            "semantic_parent_obligation_id",
+        )
+        assert "U_ROOT" not in semantic_parents
 
         ledger = {
             item["obligation_id"]: item
