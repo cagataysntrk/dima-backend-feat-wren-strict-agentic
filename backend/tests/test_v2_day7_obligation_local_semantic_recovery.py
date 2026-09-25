@@ -1324,11 +1324,12 @@ def test_source_truth_same_source_different_kind_does_not_share_decision():
     )
 
     assert refs[0] == refs[1]
-    assert len(provider.requests) == 2
+    assert len(result.resolved) == 2
     assert {item.handle.target_kind for item in result.resolved} == {
         "metric",
         "dimension",
     }
+    assert len({item.handle.resolver_provenance_id for item in result.resolved}) == 2
 
 
 def test_source_truth_narrowed_candidate_set_including_truth_reuses_without_cognition():
@@ -1345,7 +1346,12 @@ def test_source_truth_narrowed_candidate_set_including_truth_reuses_without_cogn
 
     broad, _ = fx.adapter._resolve_regular_once(
         entries=entries,
-        args=ResolveSemanticsArgs(provenance="USER_SOURCE"),
+        args=ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(source_ref,),
+            source_obligation_ids=("U1",),
+            target_kind_hints=("dimension",),
+        ),
         source_truth_by_key=source_truth,
     )
     assert len(broad.resolved) == 1
@@ -1391,7 +1397,12 @@ def test_source_truth_narrowed_candidate_set_excluding_truth_fails_closed_withou
 
     broad, _ = fx.adapter._resolve_regular_once(
         entries=[(source_ref, "Shared Axis", "dimension", "U1")],
-        args=ResolveSemanticsArgs(provenance="USER_SOURCE"),
+        args=ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(source_ref,),
+            source_obligation_ids=("U1",),
+            target_kind_hints=("dimension",),
+        ),
         source_truth_by_key=source_truth,
     )
     canonical_id = broad.resolved[0].handle.resolver_provenance_id
