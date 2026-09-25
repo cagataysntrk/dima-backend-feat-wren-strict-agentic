@@ -7,7 +7,6 @@ No chain-of-thought is requested, persisted or returned.
 from __future__ import annotations
 
 import copy
-import hashlib
 import json
 from dataclasses import dataclass
 from enum import StrEnum
@@ -15,14 +14,18 @@ from typing import Any, Callable, Literal
 
 from pydantic import Field, model_validator
 
-from app.v2.manager_action_availability import (
-    ActionApplicabilitySnapshot,
-    ActionScopeSeed,
-    AdaptiveDirectiveDispositionState,
-    ManagerActionAvailability,
-    ManagerActionAvailabilityContext,
-    ManagerActionAvailabilityProfile,
+from app.v2.authority_invariants import evidence_belongs_to_parent_lineage
+from app.v2.manager_action_set import (
+    DirectiveActionState,
+    HypothesisActionState,
+    ManagerActionSet,
+    ManagerActionSetBuilder,
+    ManagerActionSetContext,
+    NextTestContractState,
+    ParentEvidenceActionState,
     RootActionState,
+    SemanticActionRef,
+    TaskActionState,
 )
 from app.v2.manager_models import (
     CandidateObligation,
@@ -514,612 +517,6 @@ def _strict_native_schema(schema: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _post_acceptance_native_schema(
-    *,
-    root_cause_enabled: bool = False,
-    allowed_actions: tuple[str, ...] | None = None,
-    inspectable_evidence_refs: tuple[str, ...] = (),
-    resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",),
-    resolve_semantics_parent_obligation_ids: tuple[str, ...] = (),
-    root_parent_obligation_ids: tuple[str, ...] = (),
-    root_action_handle_refs: tuple[str, ...] = (),
-    root_evidence_refs: tuple[str, ...] = (),
-    hypothesis_refs: tuple[str, ...] = (),
-    pending_relation_hypothesis_refs: tuple[str, ...] = (),
-    pending_relation_evidence_refs: tuple[str, ...] = (),
-    directive_disposition_ids: tuple[str, ...] = (),
-    directive_disposition_evidence_refs: tuple[str, ...] = (),
-    applicability_snapshot: ActionApplicabilitySnapshot | None = None,
-) -> dict[str, Any]:
-    """Expose only actions that are legal after AcceptedTurnContract commit.
-
-    Pre-acceptance is owned by PreAcceptanceController.  Leaving
-    propose_acceptance in the post-acceptance provider schema creates a deterministic
-    dead end: the model can select an action the runtime must reject.  Runtime policy
-    remains defense-in-depth; this function narrows only the advertised cognition
-    surface.
-    """
-    schema = _strict_native_schema(ManagerDecisionTransport.model_json_schema())
-
-    allowed = (
-        None if allowed_actions is None else frozenset(str(value) for value in allowed_actions)
-    )
-
-    def narrow(node: Any) -> None:
-        if isinstance(node, dict):
-            enum_values = node.get("enum")
-            if isinstance(enum_values, list):
-                action_values = {item.value for item in ManagerActionKind}
-                if any(value in action_values for value in enum_values):
-                    forbidden = {ManagerActionKind.PROPOSE_ACCEPTANCE.value}
-                    if not root_cause_enabled:
-                        forbidden.update(
-                            {
-                                ManagerActionKind.PROPOSE_HYPOTHESIS.value,
-                                ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
-                                ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value,
-                                ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value,
-                            }
-                        )
-                    if allowed is not None:
-                        forbidden.update(action_values - allowed)
-                    node["enum"] = [
-                        value for value in enum_values if value not in forbidden
-                    ]
-                elif set(enum_values).issuperset({"USER_SOURCE", "AGENT_DERIVED"}):
-                    node["enum"] = [
-                        value for value in enum_values if value in set(resolve_provenance)
-                    ]
-            for value in node.values():
-                narrow(value)
-        elif isinstance(node, list):
-            for value in node:
-                narrow(value)
-
-    narrow(schema)
-
-    if applicability_snapshot is not None:
-        if not applicability_snapshot.scopes:
-            raise RuntimeError(
-                "post-acceptance applicability snapshot has no model-visible scopes"
-            )
-
-        shared_defs = copy.deepcopy(schema.get("$defs") or {})
-        base_choice = copy.deepcopy(schema)
-        base_choice.pop("$defs", None)
-
-        scalar_identity_fields = (
-            "temporal_anchor_handle",
-            "base_period_handle",
-            "semantic_parent_obligation_id",
-            "semantic_evidence_ref",
-            "branch_parent_obligation_id",
-            "branch_evidence_ref",
-            "directive_id",
-            "directive_evidence_ref",
-            "hypothesis_parent_obligation_id",
-            "hypothesis_ref",
-            "hypothesis_relation_evidence_ref",
-            "next_test_task_kind",
-            "next_test_trigger_evidence_ref",
-            "period_handle",
-            "comparison_handle",
-            "derived_task_id",
-            "derived_parent_obligation_id",
-            "derived_capability_key",
-            "derived_evidence_ref",
-            "relationship_obligation_id",
-            "evidence_ref",
-        )
-        array_identity_fields = (
-            "hypothesis_semantic_handles",
-            "hypothesis_trigger_evidence_refs",
-            "next_test_input_handles",
-            "obligation_ids",
-            "metric_handles",
-            "dimension_handles",
-            "filter_handles",
-            "focus_handles",
-            "counterpart_handles",
-        )
-
-        def set_null(props: dict[str, Any], name: str) -> None:
-            if name in props:
-                props[name] = {"type": "null"}
-
-        def set_scalar_values(
-            props: dict[str, Any],
-            name: str,
-            values: tuple[str, ...],
-            *,
-            nullable: bool = False,
-        ) -> None:
-            if name not in props:
-                return
-            deduped = tuple(dict.fromkeys(str(value) for value in values))
-            if not deduped:
-                set_null(props, name)
-                return
-            value_schema: dict[str, Any] = {
-                "type": "string",
-                "enum": list(deduped),
-            }
-            props[name] = (
-                {"anyOf": [value_schema, {"type": "null"}]}
-                if nullable
-                else value_schema
-            )
-
-        def set_array_values(
-            props: dict[str, Any],
-            name: str,
-            values: tuple[str, ...],
-            *,
-            required_nonempty: bool = False,
-        ) -> None:
-            if name not in props:
-                return
-            deduped = tuple(dict.fromkeys(str(value) for value in values))
-            if not deduped:
-                props[name] = {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "maxItems": 0,
-                }
-                return
-            node: dict[str, Any] = {
-                "type": "array",
-                "items": {
-                    "type": "string",
-                    "enum": list(deduped),
-                },
-            }
-            if required_nonempty:
-                node["minItems"] = 1
-            props[name] = node
-
-        def set_exact_string(
-            props: dict[str, Any],
-            name: str,
-            value: str | None,
-        ) -> None:
-            if value is None:
-                set_null(props, name)
-            else:
-                set_scalar_values(props, name, (value,))
-
-        def set_exact_int_or_null(
-            props: dict[str, Any],
-            name: str,
-            value: int | None,
-        ) -> None:
-            if name not in props:
-                return
-            props[name] = (
-                {"type": "null"}
-                if value is None
-                else {"type": "integer", "enum": [int(value)]}
-            )
-
-        def scoped_branch_candidates(
-            props: dict[str, Any],
-            handle_refs: tuple[str, ...],
-        ) -> None:
-            if "branch_candidates" not in props:
-                return
-            candidate_def = copy.deepcopy(
-                shared_defs.get("ManagerBranchCandidateProposal") or {}
-            )
-            if not candidate_def:
-                raise RuntimeError(
-                    "strict Manager schema missing ManagerBranchCandidateProposal"
-                )
-            candidate_props = candidate_def.get("properties") or {}
-            input_node = candidate_props.get("input_handles")
-            if isinstance(input_node, dict):
-                input_node.clear()
-                input_node.update(
-                    {
-                        "type": "array",
-                        "minItems": 1,
-                        "items": {
-                            "type": "string",
-                            "enum": list(dict.fromkeys(handle_refs)),
-                        },
-                    }
-                )
-            props["branch_candidates"] = {
-                "type": "array",
-                "minItems": 1,
-                "maxItems": 12,
-                "items": candidate_def,
-            }
-
-        choice_variants: list[dict[str, Any]] = []
-        for scope in applicability_snapshot.scopes:
-            variant = copy.deepcopy(base_choice)
-            props = variant.get("properties") or {}
-            required = list(variant.get("required") or ())
-
-            props["scope_ref"] = {
-                "type": "string",
-                "enum": [scope.scope_ref],
-            }
-            if "scope_ref" not in required:
-                required.append("scope_ref")
-            variant["required"] = required
-
-            props["action"] = {
-                "type": "string",
-                "enum": [scope.action],
-            }
-
-            for name in scalar_identity_fields:
-                set_null(props, name)
-            for name in array_identity_fields:
-                set_array_values(props, name, ())
-            if "branch_candidates" in props:
-                empty_candidate = copy.deepcopy(
-                    shared_defs.get("ManagerBranchCandidateProposal") or {}
-                )
-                if not empty_candidate:
-                    raise RuntimeError(
-                        "strict Manager schema missing ManagerBranchCandidateProposal"
-                    )
-                props["branch_candidates"] = {
-                    "type": "array",
-                    "items": empty_candidate,
-                    "maxItems": 0,
-                }
-
-            action = scope.action
-            if action == ManagerActionKind.RESOLVE_SEMANTICS.value:
-                set_exact_string(
-                    props,
-                    "semantic_parent_obligation_id",
-                    scope.parent_obligation_id,
-                )
-                set_scalar_values(
-                    props,
-                    "semantic_evidence_ref",
-                    scope.evidence_refs,
-                )
-            elif action == ManagerActionKind.PROPOSE_BRANCHES.value:
-                set_exact_string(
-                    props,
-                    "branch_parent_obligation_id",
-                    scope.parent_obligation_id,
-                )
-                set_scalar_values(
-                    props,
-                    "branch_evidence_ref",
-                    scope.evidence_refs,
-                )
-                scoped_branch_candidates(props, scope.handle_refs)
-            elif action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE.value:
-                set_exact_string(props, "directive_id", scope.directive_id)
-                set_scalar_values(
-                    props,
-                    "directive_evidence_ref",
-                    scope.evidence_refs,
-                )
-            elif action in {
-                ManagerActionKind.PROPOSE_HYPOTHESIS.value,
-                ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
-            }:
-                set_exact_string(
-                    props,
-                    "hypothesis_parent_obligation_id",
-                    scope.parent_obligation_id,
-                )
-                set_array_values(
-                    props,
-                    "hypothesis_semantic_handles",
-                    scope.handle_refs,
-                    required_nonempty=True,
-                )
-                set_array_values(
-                    props,
-                    "hypothesis_trigger_evidence_refs",
-                    scope.evidence_refs,
-                    required_nonempty=True,
-                )
-                if action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value:
-                    set_scalar_values(
-                        props,
-                        "next_test_task_kind",
-                        scope.task_kinds,
-                    )
-                    set_array_values(
-                        props,
-                        "next_test_input_handles",
-                        scope.handle_refs,
-                        required_nonempty=True,
-                    )
-                    set_scalar_values(
-                        props,
-                        "next_test_trigger_evidence_ref",
-                        scope.evidence_refs,
-                    )
-            elif action == ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value:
-                set_exact_string(props, "hypothesis_ref", scope.hypothesis_ref)
-                set_scalar_values(
-                    props,
-                    "hypothesis_relation_evidence_ref",
-                    scope.evidence_refs,
-                )
-            elif action == ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value:
-                set_exact_string(props, "hypothesis_ref", scope.hypothesis_ref)
-                set_scalar_values(
-                    props,
-                    "next_test_task_kind",
-                    scope.task_kinds,
-                )
-                set_array_values(
-                    props,
-                    "next_test_input_handles",
-                    scope.handle_refs,
-                    required_nonempty=True,
-                )
-                set_scalar_values(
-                    props,
-                    "next_test_trigger_evidence_ref",
-                    scope.evidence_refs,
-                )
-            elif action == ManagerActionKind.RUN_ANALYTICS.value:
-                set_array_values(
-                    props,
-                    "obligation_ids",
-                    scope.obligation_ids,
-                    required_nonempty=True,
-                )
-                set_array_values(
-                    props,
-                    "metric_handles",
-                    scope.metric_handles,
-                    required_nonempty=True,
-                )
-                set_array_values(
-                    props,
-                    "dimension_handles",
-                    scope.dimension_handles,
-                )
-                set_array_values(
-                    props,
-                    "filter_handles",
-                    scope.filter_handles,
-                )
-                if scope.period_handles:
-                    set_scalar_values(
-                        props,
-                        "period_handle",
-                        scope.period_handles,
-                        nullable=True,
-                    )
-                if scope.comparison_handles:
-                    set_scalar_values(
-                        props,
-                        "comparison_handle",
-                        scope.comparison_handles,
-                        nullable=True,
-                    )
-                if scope.task_id is not None:
-                    set_exact_string(props, "derived_task_id", scope.task_id)
-                    set_exact_string(
-                        props,
-                        "derived_parent_obligation_id",
-                        scope.parent_obligation_id,
-                    )
-                    set_exact_string(
-                        props,
-                        "derived_capability_key",
-                        scope.capability_key,
-                    )
-                    set_scalar_values(
-                        props,
-                        "derived_evidence_ref",
-                        scope.evidence_refs,
-                    )
-                if scope.ranking_direction is not None:
-                    set_exact_string(
-                        props,
-                        "ranking_direction",
-                        scope.ranking_direction,
-                    )
-                if scope.ranking_limit is not None:
-                    set_exact_int_or_null(
-                        props,
-                        "limit",
-                        scope.ranking_limit,
-                    )
-            elif action == ManagerActionKind.RUN_RELATIONSHIP.value:
-                set_exact_string(
-                    props,
-                    "relationship_obligation_id",
-                    (
-                        scope.obligation_ids[0]
-                        if scope.obligation_ids
-                        else scope.parent_obligation_id
-                    ),
-                )
-                set_array_values(
-                    props,
-                    "focus_handles",
-                    scope.focus_handles,
-                    required_nonempty=True,
-                )
-                set_array_values(
-                    props,
-                    "counterpart_handles",
-                    scope.counterpart_handles,
-                    required_nonempty=True,
-                )
-            elif action == ManagerActionKind.INSPECT_EVIDENCE.value:
-                set_scalar_values(props, "evidence_ref", scope.evidence_refs)
-            elif action == ManagerActionKind.REQUEST_CLARIFICATION.value:
-                set_array_values(
-                    props,
-                    "obligation_ids",
-                    scope.obligation_ids,
-                )
-            elif action == ManagerActionKind.FINISH.value:
-                pass
-            else:
-                raise RuntimeError(
-                    f"unsupported scoped post-acceptance action: {action}"
-                )
-
-            choice_variants.append(variant)
-
-        return {
-            "type": "object",
-            "properties": {
-                "snapshot_ref": {
-                    "type": "string",
-                    "enum": [applicability_snapshot.snapshot_ref],
-                },
-                "choice": {
-                    "anyOf": choice_variants,
-                },
-            },
-            "required": ["snapshot_ref", "choice"],
-            "additionalProperties": False,
-            "$defs": shared_defs,
-        }
-
-    # When inspection remains useful because older Evidence is not disclosed in the
-    # current cognition packet, constrain the inspect target to exactly those refs.
-    # This makes current fresh disclosed Evidence impossible to select accidentally.
-    evidence_schema = (schema.get("properties") or {}).get("evidence_ref")
-    if isinstance(evidence_schema, dict) and inspectable_evidence_refs:
-        evidence_schema.clear()
-        evidence_schema.update(
-            {
-                "anyOf": [
-                    {
-                        "type": "string",
-                        "enum": list(dict.fromkeys(inspectable_evidence_refs)),
-                    },
-                    {"type": "null"},
-                ]
-            }
-        )
-
-    semantic_parent_schema = (schema.get("properties") or {}).get(
-        "semantic_parent_obligation_id"
-    )
-    if isinstance(semantic_parent_schema, dict):
-        semantic_parent_schema.clear()
-        semantic_parent_schema.update(
-            {
-                "anyOf": [
-                    {
-                        "type": "string",
-                        "enum": list(
-                            dict.fromkeys(resolve_semantics_parent_obligation_ids)
-                        ),
-                    },
-                    {"type": "null"},
-                ]
-            }
-        )
-
-    def constrain_nullable_string(name: str, values: tuple[str, ...]) -> None:
-        node = (schema.get("properties") or {}).get(name)
-        if not isinstance(node, dict):
-            return
-        node.clear()
-        node.update(
-            {
-                "anyOf": [
-                    {"type": "string", "enum": list(dict.fromkeys(values))},
-                    {"type": "null"},
-                ]
-            }
-        )
-
-    def constrain_string_array(name: str, values: tuple[str, ...]) -> None:
-        node = (schema.get("properties") or {}).get(name)
-        if not isinstance(node, dict):
-            return
-        node.clear()
-        node.update(
-            {
-                "type": "array",
-                "items": {
-                    "type": "string",
-                    "enum": list(dict.fromkeys(values)),
-                },
-            }
-        )
-
-    constrain_nullable_string(
-        "directive_id",
-        directive_disposition_ids,
-    )
-    constrain_nullable_string(
-        "directive_evidence_ref",
-        directive_disposition_evidence_refs,
-    )
-
-    if root_cause_enabled:
-        constrain_nullable_string(
-            "hypothesis_parent_obligation_id",
-            root_parent_obligation_ids,
-        )
-        constrain_string_array(
-            "hypothesis_semantic_handles",
-            root_action_handle_refs,
-        )
-        constrain_string_array(
-            "hypothesis_trigger_evidence_refs",
-            root_evidence_refs,
-        )
-        constrain_string_array(
-            "next_test_input_handles",
-            root_action_handle_refs,
-        )
-        constrain_nullable_string(
-            "next_test_trigger_evidence_ref",
-            root_evidence_refs,
-        )
-        constrain_nullable_string(
-            "hypothesis_ref",
-            (
-                pending_relation_hypothesis_refs
-                if pending_relation_hypothesis_refs
-                else hypothesis_refs
-            ),
-        )
-        constrain_nullable_string(
-            "hypothesis_relation_evidence_ref",
-            pending_relation_evidence_refs,
-        )
-
-    if root_cause_enabled:
-        allowed_next_tests = {
-            item.value for item in root_cause_next_test_task_kinds()
-        }
-        task_kind_schema = (schema.get("$defs") or {}).get("ResearchTaskKind")
-        if not isinstance(task_kind_schema, dict) or not isinstance(
-            task_kind_schema.get("enum"), list
-        ):
-            raise RuntimeError(
-                "strict Manager schema missing ResearchTaskKind enum for Day8"
-            )
-        task_kind_schema["enum"] = [
-            value
-            for value in task_kind_schema["enum"]
-            if value in allowed_next_tests
-        ]
-        if not task_kind_schema["enum"]:
-            raise RuntimeError(
-                "Day8 provider schema has no admissible ROOT_CAUSE next-test task kind"
-            )
-
-    return schema
-
-
 _SYSTEM = """You are Dima's bounded post-acceptance RESEARCH_MANAGER.
 
 AcceptedTurnContract is already the only semantic authority. Use typed governed tools to
@@ -1144,14 +541,9 @@ Rules:
 - propose_branches registers bounded typed candidates only; it NEVER executes data work.
 - Every derived run_analytics must select a task already listed in READY_RESEARCH_TASKS.
 - Every derived branch must cite parent obligation + inspected evidence.
-- ACTION_AVAILABILITY is the server-resolved cognition surface for this turn. Choose only from
-  available_actions. unavailable_actions/reason_codes are deterministic telemetry, not semantic truth.
-- ACTION_AVAILABILITY.applicability_snapshot is a versioned VIEW over current authoritative state.
-  Select exactly one advertised scope_ref for the chosen action. Do not reconstruct, mix, or transfer
-  parent/Evidence/hypothesis/task/semantic identities across scopes. The strict provider schema hydrates
-  the correlated server-known identity domain; choose only the bounded cognition/content still exposed.
-- Echo the exact snapshot_ref required by the strict schema. Stale/unknown snapshot or scope identity
-  fails closed and is never execution authority.
+- MANAGER_ACTION_SET is the single server-resolved executable cognition surface for this turn.
+  Choose exactly one opaque action_ref from action_instances. Do not echo or reconstruct parent,
+  Evidence, semantic-handle, hypothesis, task, or directive identities; the server hydrates them.
 - CURRENT_RESULT_DELTA with disclosed_in_current_prompt=true is already visible in this cognition call.
   When inspection_required=false, do NOT spend inspect_evidence on that fresh Evidence; after a
   successful structured response the runtime records it as inspected before applying the action.
@@ -1176,8 +568,9 @@ DAY8 ROOT_CAUSE RULES:
 - Trigger Evidence does NOT become SUPPORTS automatically.
 - SUPPORTS/CONTRADICTS requires propose_hypothesis_evidence_relation explicitly, including after a
   composite hypothesis+next-test action. Executing a next test never creates an evidence relation.
-- propose_hypothesis_next_test and the composite first next test select a task_kind ONLY from
-  ROOT_CAUSE_NEXT_TEST_CONTRACT and use existing h* inputs only.
+- propose_hypothesis_next_test and the composite first next test select an opaque action_ref.
+  The server binds the legal task kind, existing governed inputs and trigger Evidence; the model
+  supplies only the genuinely cognitive hypothesis/relation/reasoning fields exposed by that card.
 - ROOT_CAUSE_NEXT_TEST_CONTRACT maps each advertised task kind to its existing DIRECT capability and required semantic shape; do not invent a missing shape.
 - h* aliases are opaque identities. Use SEMANTIC_HANDLE_CATALOG for their governed target_kind/provenance; never re-resolve an already-known handle merely to rediscover its type.
 - Before AGENT_DERIVED resolve_semantics, check whether a material next test can already be formed from ROOT_CAUSE_NEXT_TEST_CONTRACT + SEMANTIC_HANDLE_CATALOG. Prefer existing governed handles; semantic expansion is for a materially missing concept grounded in inspected Evidence, not a default exploration step.
@@ -1372,22 +765,12 @@ class ResearchManagerLoop:
         evidence,
         parent_obligation_id: str,
     ) -> bool:
-        ledger = runtime.ledger
-        if ledger is None:
-            return False
-        by_id = {item.obligation_id: item for item in ledger.items}
-        for obligation_id in evidence.obligation_ids:
-            current = obligation_id
-            seen: set[str] = set()
-            while current not in seen:
-                if current == parent_obligation_id:
-                    return True
-                seen.add(current)
-                item = by_id.get(current)
-                if item is None or item.parent_obligation_id is None:
-                    break
-                current = item.parent_obligation_id
-        return False
+        return evidence_belongs_to_parent_lineage(
+            ledger=runtime.ledger,
+            evidence=evidence,
+            parent_obligation_id=parent_obligation_id,
+        )
+
 
     @classmethod
     def _admit_no_material_direction(
@@ -1652,16 +1035,18 @@ class ResearchManagerLoop:
             )
         )
 
-    def _action_availability(
+    def _action_set(
         self,
         *,
         runtime: ManagerRuntime,
+        observations: list[dict[str, Any]],
+        action_frontier: dict[str, Any] | None,
         research_state: ResearchStateView | None,
         hypothesis_ledgers: dict[str, Any] | None,
         evidence_store,
         research_tasks: tuple[Any, ...] = (),
         governed_semantic_inventory: tuple[dict[str, Any], ...] = (),
-    ) -> ManagerActionAvailabilityProfile:
+    ) -> ManagerActionSet:
         latest = None if research_state is None else research_state.latest_delta
         fresh_ref = None
         fresh_verified = False
@@ -1691,9 +1076,7 @@ class ResearchManagerLoop:
         inspectable_old: list[str] = []
         if evidence_store is not None:
             for ref in runtime.snapshot.evidence_refs:
-                if ref in runtime.snapshot.inspected_evidence_refs:
-                    continue
-                if ref == fresh_ref:
+                if ref in runtime.snapshot.inspected_evidence_refs or ref == fresh_ref:
                     continue
                 try:
                     evidence = evidence_store.get(ref)
@@ -1702,17 +1085,58 @@ class ResearchManagerLoop:
                 if getattr(evidence, "verified", False):
                     inspectable_old.append(ref)
 
-        contract_rows = root_cause_next_test_contract(
-            capabilities=self._capabilities
+        inventory_by_alias = {
+            str(row.get("handle_ref")): row
+            for row in governed_semantic_inventory
+            if row.get("handle_ref")
+        }
+        ledger = runtime.ledger
+
+        def semantic_ref(handle_id: str, *, fallback_kind: str | None = None):
+            alias = self._handle_alias(handle_id)
+            kind = fallback_kind
+            if kind is None and ledger is not None:
+                for item in ledger.items:
+                    for binding in item.semantic_bindings:
+                        if binding.handle_id == handle_id:
+                            kind = str(binding.target_kind)
+                            break
+                    if kind is not None:
+                        break
+            if kind is None and self._root_cause_context is not None:
+                try:
+                    handle = self._root_cause_context.semantic_handles.validate(
+                        handle_id,
+                        tenant_binding=self._root_cause_context.tenant_binding,
+                        context_version=self._root_cause_context.context_version,
+                    )
+                    kind = str(handle.target_kind)
+                except Exception:
+                    pass
+            if kind is None:
+                row = inventory_by_alias.get(alias) or {}
+                kind = str(row.get("target_kind") or "unknown")
+            return SemanticActionRef(ref=alias, kind=str(kind))
+
+        contract_rows = tuple(
+            NextTestContractState(
+                task_kind=str(row["task_kind"]),
+                capability_key=str(row["capability"]),
+                required_kinds=tuple(
+                    str(value) for value in row.get("required_semantic_kinds", ())
+                ),
+                allowed_kinds=tuple(
+                    str(value) for value in row.get("allowed_semantic_kinds", ())
+                ),
+                required_params=tuple(
+                    str(value) for value in row.get("required_operation_params", ())
+                ),
+            )
+            for row in root_cause_next_test_contract(capabilities=self._capabilities)
         )
-        contracts = tuple(
-            tuple(str(kind) for kind in row.get("required_semantic_kinds", ()))
-            for row in contract_rows
-        )
+
         root_states: list[RootActionState] = []
-        for root_id, hypothesis_ledger in sorted(
-            (hypothesis_ledgers or {}).items()
-        ):
+        for root_id, hypothesis_ledger in sorted((hypothesis_ledgers or {}).items()):
             try:
                 root_item = next(
                     item
@@ -1721,28 +1145,44 @@ class ResearchManagerLoop:
                 )
             except StopIteration:
                 continue
-            # Accepted semantic bindings are the most stable structural type proof
-            # for USER_SOURCE authority. Hypothesis lifecycle mutations must not make
-            # an already-governed ROOT shape appear semantically unknown. Fall back to
-            # handle metadata only for governed refs that are not source-bound here.
-            kinds: list[str] = [
-                str(binding.target_kind)
-                for binding in root_item.semantic_bindings
-                if str(binding.target_kind)
-            ]
-            bound_ids = {
-                binding.handle_id for binding in root_item.semantic_bindings
-            }
+
+            root_refs: list[SemanticActionRef] = []
+            seen_aliases: set[str] = set()
+            for binding in root_item.semantic_bindings:
+                ref = semantic_ref(
+                    binding.handle_id,
+                    fallback_kind=str(binding.target_kind),
+                )
+                if ref.ref not in seen_aliases:
+                    root_refs.append(ref)
+                    seen_aliases.add(ref.ref)
             for handle_id in root_item.semantic_handle_refs:
-                if handle_id in bound_ids:
+                ref = semantic_ref(handle_id)
+                if ref.ref not in seen_aliases:
+                    root_refs.append(ref)
+                    seen_aliases.add(ref.ref)
+            # Governed derived semantic expansion already bound to this ROOT is Product
+            # authority too; preserve it without reconstructing identity joins in schema.
+            for row in governed_semantic_inventory:
+                alias = str(row.get("handle_ref") or "")
+                if not alias or alias in seen_aliases:
                     continue
-                try:
-                    metadata = hypothesis_ledger.semantic_handle_metadata(handle_id)
-                except Exception:
+                parents = {
+                    str(value)
+                    for value in (row.get("accepted_obligation_ids") or ())
+                }
+                if (
+                    str(row.get("parent_obligation_id") or "") != root_id
+                    and root_id not in parents
+                ):
                     continue
-                kind = str(metadata.get("target_kind") or "")
-                if kind:
-                    kinds.append(kind)
+                root_refs.append(
+                    SemanticActionRef(
+                        ref=alias,
+                        kind=str(row.get("target_kind") or "unknown"),
+                    )
+                )
+                seen_aliases.add(alias)
 
             root_evidence: list[str] = []
             for ref in effective_refs:
@@ -1752,45 +1192,24 @@ class ResearchManagerLoop:
                     continue
                 root_evidence.append(ref)
 
-            root_authoritative_handle_ids = tuple(
-                dict.fromkeys(
-                    (
-                        *(binding.handle_id for binding in root_item.semantic_bindings),
-                        *root_item.semantic_handle_refs,
-                    )
-                )
-            )
-            root_aliases = tuple(
-                dict.fromkeys(
-                    (
-                        *(
-                            self._handle_alias(handle_id)
-                            for handle_id in root_authoritative_handle_ids
-                        ),
-                        *(
-                            str(row.get("handle_ref"))
-                            for row in governed_semantic_inventory
-                            if row.get("handle_ref")
-                            and (
-                                str(row.get("parent_obligation_id") or "") == root_id
-                                or root_id
-                                in {
-                                    str(value)
-                                    for value in (
-                                        row.get("accepted_obligation_ids") or ()
-                                    )
-                                }
-                            )
-                        ),
-                    )
-                )
-            )
             task_by_id = {task.task_id: task for task in research_tasks}
-            pending_relation_hypotheses: list[str] = []
-            pending_relation_evidence: list[str] = []
+            hypotheses: list[HypothesisActionState] = []
             for entry in hypothesis_ledger.state.entries:
+                entry_refs: list[SemanticActionRef] = []
+                for handle_id in entry.semantic_handle_refs:
+                    entry_refs.append(semantic_ref(handle_id))
+                admissible = tuple(
+                    ref
+                    for ref in dict.fromkeys(
+                        (
+                            *entry.trigger_evidence_refs,
+                            *(link.evidence_ref for link in entry.evidence_links),
+                        )
+                    )
+                    if ref in set(root_evidence)
+                )
                 linked = {link.evidence_ref for link in entry.evidence_links}
-                next_test_task_ids = {
+                complete_next_tests = {
                     task_ref
                     for task_ref in entry.next_test_task_refs
                     if (
@@ -1798,42 +1217,36 @@ class ResearchManagerLoop:
                         and task_by_id[task_ref].state == "complete"
                     )
                 }
-                if not next_test_task_ids:
-                    continue
-                for evidence_ref in root_evidence:
-                    if evidence_ref in linked or evidence_store is None:
-                        continue
-                    try:
-                        evidence = evidence_store.get(evidence_ref)
-                    except Exception:
-                        continue
-                    if (
-                        getattr(evidence, "verified", False)
-                        and evidence.task_id in next_test_task_ids
-                    ):
-                        pending_relation_hypotheses.append(entry.hypothesis_id)
-                        pending_relation_evidence.append(evidence_ref)
+                pending: list[str] = []
+                if complete_next_tests and evidence_store is not None:
+                    for evidence_ref in root_evidence:
+                        if evidence_ref in linked:
+                            continue
+                        try:
+                            evidence = evidence_store.get(evidence_ref)
+                        except Exception:
+                            continue
+                        if (
+                            getattr(evidence, "verified", False)
+                            and evidence.task_id in complete_next_tests
+                        ):
+                            pending.append(evidence_ref)
+                hypotheses.append(
+                    HypothesisActionState(
+                        hypothesis_ref=entry.hypothesis_id,
+                        semantic_refs=tuple(dict.fromkeys(entry_refs)),
+                        admissible_evidence_refs=admissible,
+                        pending_relation_evidence_refs=tuple(dict.fromkeys(pending)),
+                    )
+                )
 
             root_states.append(
                 RootActionState(
                     root_id=root_id,
-                    hypothesis_count=len(hypothesis_ledger.state.entries),
-                    root_handle_kinds=tuple(dict.fromkeys(kinds)),
-                    next_test_required_kind_sets=contracts,
-                    root_handle_refs=tuple(dict.fromkeys(root_aliases)),
-                    hypothesis_refs=tuple(
-                        entry.hypothesis_id
-                        for entry in hypothesis_ledger.state.entries
-                    ),
-                    effective_inspected_verified_evidence_refs=tuple(
-                        dict.fromkeys(root_evidence)
-                    ),
-                    pending_relation_hypothesis_refs=tuple(
-                        dict.fromkeys(pending_relation_hypotheses)
-                    ),
-                    pending_relation_evidence_refs=tuple(
-                        dict.fromkeys(pending_relation_evidence)
-                    ),
+                    semantic_refs=tuple(root_refs),
+                    evidence_refs=tuple(dict.fromkeys(root_evidence)),
+                    hypotheses=tuple(hypotheses),
+                    next_test_contracts=contract_rows,
                 )
             )
 
@@ -1842,485 +1255,157 @@ class ResearchManagerLoop:
             for item in runtime.directive_dispositions
             if item.status == ResearchDirectiveDispositionStatus.OPEN
         }
-        open_adaptive = len(open_dispositions)
+        directive_states: list[DirectiveActionState] = []
         contract = runtime.accepted_contract
-        open_adaptive_parent_ids: tuple[str, ...] = ()
-        if contract is not None:
-            open_adaptive_parent_ids = tuple(
-                dict.fromkeys(
-                    item.parent_obligation_id
-                    for item in contract.research_directives
-                    if (
-                        item.directive_type == ResearchDirectiveType.ADAPT_ON_EVIDENCE
-                        and item.directive_id in open_dispositions
-                    )
-                )
-            )
-
-        adaptive_disposition_states: list[AdaptiveDirectiveDispositionState] = []
-        if contract is not None and evidence_store is not None and effective_refs:
-            evidence_by_ref_for_directives = {}
+        evidence_by_ref: dict[str, Any] = {}
+        if evidence_store is not None:
             for ref in effective_refs:
                 try:
-                    evidence_by_ref_for_directives[ref] = evidence_store.get(ref)
+                    evidence_by_ref[ref] = evidence_store.get(ref)
                 except Exception:
                     continue
+        if contract is not None:
             for directive in contract.research_directives:
                 if (
                     directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE
                     or directive.directive_id not in open_dispositions
                 ):
                     continue
-                eligible_refs = tuple(
+                eligible = tuple(
                     ref
-                    for ref in effective_refs
+                    for ref, evidence in evidence_by_ref.items()
                     if (
-                        ref in evidence_by_ref_for_directives
-                        and getattr(
-                            evidence_by_ref_for_directives[ref],
-                            "verified",
-                            False,
-                        )
-                        and self._evidence_belongs_to_parent_lineage(
-                            runtime=runtime,
-                            evidence=evidence_by_ref_for_directives[ref],
+                        getattr(evidence, "verified", False)
+                        and evidence_belongs_to_parent_lineage(
+                            ledger=runtime.ledger,
+                            evidence=evidence,
                             parent_obligation_id=directive.parent_obligation_id,
                         )
                     )
                 )
-                adaptive_disposition_states.append(
-                    AdaptiveDirectiveDispositionState(
+                directive_states.append(
+                    DirectiveActionState(
                         directive_id=directive.directive_id,
                         parent_obligation_id=directive.parent_obligation_id,
-                        eligible_evidence_refs=eligible_refs,
+                        eligible_evidence_refs=eligible,
                     )
                 )
 
-        evidence_grounded_parent_ids: list[str] = []
-        evidence_grounded_refs_by_parent: dict[str, tuple[str, ...]] = {}
-        ledger = runtime.ledger
-        if ledger is not None and evidence_store is not None and effective_refs:
-            evidence_by_ref = {}
-            for ref in effective_refs:
-                try:
-                    evidence_by_ref[ref] = evidence_store.get(ref)
-                except Exception:
-                    continue
+        parent_evidence_states: list[ParentEvidenceActionState] = []
+        if ledger is not None:
             for item in ledger.items:
                 if item.polarity != ObligationPolarity.REQUIRED:
                     continue
                 if item.status == ObligationStatus.SUPERSEDED:
                     continue
-                eligible_refs = tuple(
-                    ref
-                    for ref, evidence in evidence_by_ref.items()
-                    if getattr(evidence, "verified", False)
-                    and self._evidence_belongs_to_parent_lineage(
-                        runtime=runtime,
+                semantic_refs = tuple(
+                    semantic_ref(handle_id)
+                    for handle_id in item.semantic_handle_refs
+                )
+                if item.obligation_id in {root.root_id for root in root_states}:
+                    root = next(
+                        root
+                        for root in root_states
+                        if root.root_id == item.obligation_id
+                    )
+                    semantic_refs = root.semantic_refs
+                for ref, evidence in evidence_by_ref.items():
+                    if not getattr(evidence, "verified", False):
+                        continue
+                    if not evidence_belongs_to_parent_lineage(
+                        ledger=ledger,
                         evidence=evidence,
                         parent_obligation_id=item.obligation_id,
-                    )
-                )
-                if not eligible_refs:
-                    continue
-                evidence_grounded_parent_ids.append(item.obligation_id)
-                evidence_grounded_refs_by_parent[item.obligation_id] = tuple(
-                    dict.fromkeys(eligible_refs)
-                )
-
-        # Build correlated identity candidates strictly from existing authoritative
-        # owners. ManagerActionAvailability remains the sole owner deciding which of
-        # these candidates is visible to cognition and mints scope/snapshot identity.
-        normalized_kind = {
-            "metric": "metric",
-            "kpi": "metric",
-            "dimension": "dimension",
-            "entity_value": "filter",
-            "filter": "filter",
-            "period": "period",
-            "time": "period",
-            "comparison": "comparison",
-        }
-        handles_by_parent: dict[str, list[str]] = {}
-        handles_by_parent_kind: dict[str, dict[str, list[str]]] = {}
-        for row in governed_semantic_inventory:
-            handle_ref = str(row.get("handle_ref") or "")
-            if not handle_ref:
-                continue
-            parents = list(row.get("accepted_obligation_ids") or ())
-            explicit_parent = row.get("parent_obligation_id")
-            if explicit_parent is not None:
-                parents.append(str(explicit_parent))
-            kind = normalized_kind.get(str(row.get("target_kind") or ""))
-            for parent_id in dict.fromkeys(str(value) for value in parents if value):
-                handles_by_parent.setdefault(parent_id, []).append(handle_ref)
-                if kind:
-                    handles_by_parent_kind.setdefault(parent_id, {}).setdefault(
-                        kind, []
-                    ).append(handle_ref)
-
-        scope_seeds: list[ActionScopeSeed] = []
-
-        for ref in inspectable_old:
-            scope_seeds.append(
-                ActionScopeSeed(
-                    action=ManagerActionKind.INSPECT_EVIDENCE.value,
-                    evidence_refs=(ref,),
-                    reason_codes=("INSPECTABLE_CURRENT_RUN_EVIDENCE",),
-                )
-            )
-
-        # Clarification and finish are identity-light but still receive server-minted
-        # scopes so every advertised action belongs to one snapshot lineage.
-        accepted_obligation_ids = tuple(
-            item.obligation_id
-            for item in (ledger.items if ledger is not None else ())
-            if item.status != ObligationStatus.SUPERSEDED
-        )
-        scope_seeds.append(
-            ActionScopeSeed(
-                action=ManagerActionKind.REQUEST_CLARIFICATION.value,
-                obligation_ids=accepted_obligation_ids,
-                reason_codes=("ACCEPTED_AUTHORITY_SCOPE",),
-            )
-        )
-        scope_seeds.append(
-            ActionScopeSeed(
-                action=ManagerActionKind.FINISH.value,
-                reason_codes=("COMPLETION_GATE_REVALIDATES",),
-            )
-        )
-
-        for parent_id, refs in sorted(evidence_grounded_refs_by_parent.items()):
-            parent_handles = tuple(
-                dict.fromkeys(handles_by_parent.get(parent_id, ()))
-            )
-            scope_seeds.append(
-                ActionScopeSeed(
-                    action=ManagerActionKind.RESOLVE_SEMANTICS.value,
-                    parent_obligation_id=parent_id,
-                    evidence_refs=refs,
-                    reason_codes=("EVIDENCE_GROUNDED_PARENT",),
-                )
-            )
-            if parent_handles:
-                scope_seeds.append(
-                    ActionScopeSeed(
-                        action=ManagerActionKind.PROPOSE_BRANCHES.value,
-                        parent_obligation_id=parent_id,
-                        evidence_refs=refs,
-                        handle_refs=parent_handles,
-                        reason_codes=("EVIDENCE_GROUNDED_PARENT",),
-                    )
-                )
-
-        for disposition in adaptive_disposition_states:
-            if not disposition.eligible_evidence_refs:
-                continue
-            scope_seeds.append(
-                ActionScopeSeed(
-                    action=ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE.value,
-                    parent_obligation_id=disposition.parent_obligation_id,
-                    directive_id=disposition.directive_id,
-                    evidence_refs=disposition.eligible_evidence_refs,
-                    reason_codes=("OPEN_ADAPTIVE_DIRECTIVE",),
-                )
-            )
-
-        root_by_id = {item.root_id: item for item in root_states}
-        task_by_id = {task.task_id: task for task in research_tasks}
-        for root_id, root in sorted(root_by_id.items()):
-            root_handles = tuple(dict.fromkeys(root.root_handle_refs))
-            root_evidence = tuple(
-                dict.fromkeys(root.effective_inspected_verified_evidence_refs)
-            )
-            available_kinds = frozenset(root.root_handle_kinds)
-            feasible_task_kinds = tuple(
-                str(row.get("task_kind"))
-                for row in contract_rows
-                if frozenset(
-                    str(kind)
-                    for kind in row.get("required_semantic_kinds", ())
-                ).issubset(available_kinds)
-            )
-
-            if root.hypothesis_count == 0 and root_evidence and root_handles:
-                scope_seeds.append(
-                    ActionScopeSeed(
-                        action=ManagerActionKind.PROPOSE_HYPOTHESIS.value,
-                        parent_obligation_id=root_id,
-                        evidence_refs=root_evidence,
-                        handle_refs=root_handles,
-                        reason_codes=("ROOT_INITIAL_HYPOTHESIS",),
-                    )
-                )
-                if feasible_task_kinds:
-                    scope_seeds.append(
-                        ActionScopeSeed(
-                            action=(
-                                ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value
-                            ),
-                            parent_obligation_id=root_id,
-                            evidence_refs=root_evidence,
-                            handle_refs=root_handles,
-                            task_kinds=feasible_task_kinds,
-                            reason_codes=("ROOT_COMPOSITE_NEXT_TEST",),
+                    ):
+                        continue
+                    parent_evidence_states.append(
+                        ParentEvidenceActionState(
+                            parent_obligation_id=item.obligation_id,
+                            capability_key=item.capability_key.value,
+                            evidence_ref=ref,
+                            semantic_refs=semantic_refs,
                         )
                     )
 
-            hypothesis_ledger = (hypothesis_ledgers or {}).get(root_id)
-            if hypothesis_ledger is not None:
-                for entry in hypothesis_ledger.state.entries:
-                    admissible_evidence = tuple(
-                        ref
-                        for ref in root_evidence
-                        if ref in {
-                            *entry.trigger_evidence_refs,
-                            *(link.evidence_ref for link in entry.evidence_links),
-                        }
-                    )
-                    if admissible_evidence and root_handles and feasible_task_kinds:
-                        scope_seeds.append(
-                            ActionScopeSeed(
-                                action=ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value,
-                                parent_obligation_id=root_id,
-                                hypothesis_ref=entry.hypothesis_id,
-                                evidence_refs=admissible_evidence,
-                                handle_refs=root_handles,
-                                task_kinds=feasible_task_kinds,
-                                reason_codes=("ROOT_EXISTING_HYPOTHESIS",),
-                            )
-                        )
-
-                    linked = {link.evidence_ref for link in entry.evidence_links}
-                    completed_next_test_ids = {
-                        task_ref
-                        for task_ref in entry.next_test_task_refs
-                        if (
-                            task_ref in task_by_id
-                            and task_by_id[task_ref].state == "complete"
-                        )
-                    }
-                    pending_refs: list[str] = []
-                    if evidence_store is not None:
-                        for evidence_ref in root_evidence:
-                            if (
-                                evidence_ref in linked
-                                or not completed_next_test_ids
-                            ):
-                                continue
-                            try:
-                                evidence = evidence_store.get(evidence_ref)
-                            except Exception:
-                                continue
-                            if (
-                                getattr(evidence, "verified", False)
-                                and evidence.task_id in completed_next_test_ids
-                            ):
-                                pending_refs.append(evidence_ref)
-                    if pending_refs:
-                        scope_seeds.append(
-                            ActionScopeSeed(
-                                action=(
-                                    ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value
-                                ),
-                                parent_obligation_id=root_id,
-                                hypothesis_ref=entry.hypothesis_id,
-                                evidence_refs=tuple(dict.fromkeys(pending_refs)),
-                                reason_codes=("ROOT_POST_TEST_RELATION_PENDING",),
-                            )
-                        )
-
-        # READY ResearchTask identity is server-owned. Project one correlated execution
-        # scope per pending task from accepted ledger identity + already-governed handle
-        # metadata. Final execution still revalidates through _scheduled_binding and the
-        # existing tool/runtime gates.
-        inventory_by_alias = {
-            str(row.get("handle_ref")): row
-            for row in governed_semantic_inventory
-            if row.get("handle_ref")
-        }
-        ledger_by_id = {
-            item.obligation_id: item
-            for item in (ledger.items if ledger is not None else ())
-        }
+        ready_task_states: list[TaskActionState] = []
         for task in research_tasks:
-            if getattr(task, "state", None) != "pending":
-                continue
-            obligation_id = (
-                task.question_id
-                if task.origin == "USER_SEED"
-                else task.parent_obligation_id
-            )
-            if obligation_id is None:
-                continue
-            obligation = ledger_by_id.get(obligation_id)
-            if obligation is None:
+            if task.state != "pending":
                 continue
             try:
-                capability_key = (
-                    obligation.capability_key
-                    if task.origin == "USER_SEED"
-                    else self._research_tasks.capability_for_task_kind(
-                        ResearchTaskKind(task.task_kind)
-                    )
+                capability = self._research_tasks.capability_for_task_kind(
+                    ResearchTaskKind(task.task_kind)
                 )
             except Exception:
                 continue
-
-            task_aliases = tuple(
-                self._handle_alias(handle_id)
-                for handle_id in task.input_refs
-            )
-            by_kind: dict[str, list[str]] = {}
-            for alias in task_aliases:
-                row = inventory_by_alias.get(alias) or {}
-                kind = normalized_kind.get(str(row.get("target_kind") or ""))
-                if kind:
-                    by_kind.setdefault(kind, []).append(alias)
-
-            def aliases(kind: str) -> tuple[str, ...]:
-                return tuple(dict.fromkeys(by_kind.get(kind, ())))
-
-            if capability_key == ManagerCapabilityKey.RELATIONSHIP:
-                focus = aliases("metric")
-                counterpart = aliases("dimension")
-                if focus and counterpart:
-                    scope_seeds.append(
-                        ActionScopeSeed(
-                            action=ManagerActionKind.RUN_RELATIONSHIP.value,
-                            parent_obligation_id=obligation.obligation_id,
-                            task_id=task.task_id,
-                            capability_key=capability_key.value,
-                            obligation_ids=(obligation.obligation_id,),
-                            evidence_refs=(
-                                (task.trigger_evidence_ref,)
-                                if task.trigger_evidence_ref is not None
-                                else ()
-                            ),
-                            focus_handles=focus,
-                            counterpart_handles=counterpart,
-                            reason_codes=("READY_RESEARCH_TASK",),
-                        )
-                    )
-                continue
-
-            metric = aliases("metric")
-            if not metric:
-                continue
-            scope_seeds.append(
-                ActionScopeSeed(
-                    action=ManagerActionKind.RUN_ANALYTICS.value,
-                    parent_obligation_id=(
-                        task.parent_obligation_id
-                        if task.origin == "AGENT_DERIVED"
-                        else obligation.obligation_id
+            ranking_direction = None
+            ranking_limit = None
+            if ledger is not None:
+                owner_id = (
+                    task.question_id
+                    if task.origin == "USER_SEED"
+                    else task.parent_obligation_id
+                )
+                owner = next(
+                    (
+                        item
+                        for item in ledger.items
+                        if item.obligation_id == owner_id
                     ),
-                    task_id=(
-                        task.task_id if task.origin == "AGENT_DERIVED" else None
+                    None,
+                )
+                if owner is not None:
+                    ranking_direction = owner.ranking_direction
+                    ranking_limit = owner.ranking_limit
+            ready_task_states.append(
+                TaskActionState(
+                    task_id=task.task_id,
+                    question_id=task.question_id,
+                    task_kind=task.task_kind,
+                    capability_key=capability.value,
+                    origin=task.origin,
+                    semantic_refs=tuple(
+                        semantic_ref(handle_id)
+                        for handle_id in task.input_refs
                     ),
-                    capability_key=capability_key.value,
-                    obligation_ids=(obligation.obligation_id,),
-                    evidence_refs=(
-                        (task.trigger_evidence_ref,)
-                        if task.origin == "AGENT_DERIVED"
-                        and task.trigger_evidence_ref is not None
-                        else ()
-                    ),
-                    handle_refs=task_aliases,
-                    metric_handles=metric,
-                    dimension_handles=aliases("dimension"),
-                    filter_handles=aliases("filter"),
-                    period_handles=aliases("period"),
-                    comparison_handles=aliases("comparison"),
-                    ranking_direction=getattr(obligation, "ranking_direction", None),
-                    ranking_limit=getattr(obligation, "ranking_limit", None),
-                    reason_codes=("READY_RESEARCH_TASK",),
+                    parent_obligation_id=task.parent_obligation_id,
+                    trigger_evidence_ref=task.trigger_evidence_ref,
+                    ranking_direction=ranking_direction,
+                    ranking_limit=ranking_limit,
                 )
             )
 
-        state_payload = {
-            "run_id": runtime.snapshot.run_id,
-            "manager_state": runtime.snapshot.state.value,
-            "accepted_contract_id": runtime.snapshot.accepted_contract_id,
-            "lineage_id": runtime.snapshot.lineage_id,
-            "ledger_version": getattr(ledger, "version", None),
-            "manager_turns": runtime.snapshot.manager_turns,
-            "research_manager_turns": runtime.snapshot.research_manager_turns,
-            "evidence_refs": list(runtime.snapshot.evidence_refs),
-            "effective_evidence_refs": list(effective_refs),
-            "directive_dispositions": [
-                item.model_dump(mode="json")
-                for item in runtime.directive_dispositions
-            ],
-            "tasks": [
-                {
-                    "task_id": task.task_id,
-                    "state": task.state,
-                    "origin": task.origin,
-                    "parent_obligation_id": task.parent_obligation_id,
-                    "trigger_evidence_ref": task.trigger_evidence_ref,
-                    "input_refs": list(task.input_refs),
-                }
-                for task in research_tasks
-            ],
-            "hypotheses": [
-                {
-                    "root_id": root_id,
-                    "entries": [
-                        {
-                            "hypothesis_id": entry.hypothesis_id,
-                            "status": entry.status.value,
-                            "evidence_links": [
-                                {
-                                    "evidence_ref": link.evidence_ref,
-                                    "relation": link.relation.value,
-                                }
-                                for link in entry.evidence_links
-                            ],
-                            "next_test_task_refs": list(entry.next_test_task_refs),
-                        }
-                        for entry in hypothesis_ledger.state.entries
-                    ],
-                }
-                for root_id, hypothesis_ledger in sorted(
-                    (hypothesis_ledgers or {}).items()
-                )
-            ],
-        }
-        state_version = (
-            "apsv_"
-            + hashlib.sha256(
-                json.dumps(
-                    state_payload,
-                    ensure_ascii=False,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                ).encode("utf-8")
-            ).hexdigest()[:24]
+        active_obligation_ids = (
+            tuple(item.obligation_id for item in ledger.active_user_must)
+            if ledger is not None
+            else ()
         )
-
-        context = ManagerActionAvailabilityContext(
-            root_states=tuple(root_states),
+        state_version = str(
+            (action_frontier or {}).get("progress_fingerprint")
+            or runtime.snapshot.accepted_contract_id
+            or runtime.snapshot.run_id
+        )
+        context = ManagerActionSetContext(
             state_version=state_version,
-            scope_seeds=tuple(scope_seeds),
-            inspectable_old_evidence_refs=tuple(dict.fromkeys(inspectable_old)),
-            effective_inspected_verified_evidence_refs=effective_refs,
+            root_states=tuple(root_states),
+            directive_states=tuple(directive_states),
+            parent_evidence_states=tuple(parent_evidence_states),
+            ready_tasks=tuple(ready_task_states),
+            inspectable_evidence_refs=tuple(dict.fromkeys(inspectable_old)),
             fresh_disclosed_evidence_ref=fresh_ref,
             fresh_disclosed_verified=fresh_verified,
-            open_adaptive_directive_count=open_adaptive,
-            open_adaptive_parent_obligation_ids=open_adaptive_parent_ids,
-            adaptive_disposition_states=tuple(adaptive_disposition_states),
-            evidence_grounded_parent_obligation_ids=tuple(
-                dict.fromkeys(evidence_grounded_parent_ids)
-            ),
             remaining_research_turns=max(
                 runtime.budget.max_manager_turns
                 - runtime.snapshot.research_manager_turns,
                 0,
             ),
+            clarification_obligation_ids=active_obligation_ids,
+            clarification_grounded=_clarification_has_governed_grounding(
+                observations,
+                accepted_contract_present=runtime.accepted_contract is not None,
+            ),
         )
-        return ManagerActionAvailability.evaluate(context)
+        return ManagerActionSetBuilder.build(context)
+
 
     def _prompt(
         self,
@@ -2333,7 +1418,7 @@ class ResearchManagerLoop:
         research_state: ResearchStateView | None = None,
         ready_tasks: tuple[Any, ...] = (),
         hypothesis_ledgers: dict[str, Any] | None = None,
-        action_availability: ManagerActionAvailabilityProfile | None = None,
+        action_set: ManagerActionSet | None = None,
         governed_semantic_inventory: tuple[dict[str, Any], ...] = (),
     ) -> str:
         ledger = runtime.ledger
@@ -2471,15 +1556,18 @@ class ResearchManagerLoop:
                     **research_state.latest_delta.model_dump(mode="json"),
                     "inspection_required": (
                         True
-                        if action_availability is None
-                        else action_availability.inspection_required_for_current_delta
+                        if action_set is None
+                        else not bool(
+                            research_state.latest_delta.disclosed_in_current_prompt
+                            and research_state.latest_delta.verified is True
+                        )
                     ),
                 }
             ),
-            "ACTION_AVAILABILITY": (
+            "MANAGER_ACTION_SET": (
                 {}
-                if action_availability is None
-                else action_availability.model_view()
+                if action_set is None
+                else action_set.model_view()
             ),
             "GOVERNED_SEMANTIC_INVENTORY": list(governed_semantic_inventory),
             # Diagnostic tail only. It is never the sole Research state authority.
@@ -2488,193 +1576,214 @@ class ResearchManagerLoop:
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
     @staticmethod
-    def _decision_matches_scope(
-        decision: ManagerDecisionTransport,
-        scope,
-    ) -> bool:
-        action = decision.action.value
-        if action != scope.action:
-            return False
+    def _branch_task_id(
+        *,
+        action_ref: str,
+        index: int,
+        capability_key: str,
+    ) -> str:
+        import hashlib
 
-        def subset(values, allowed) -> bool:
-            return set(values or ()).issubset(set(allowed or ()))
+        raw = f"{action_ref}|{index}|{capability_key}".encode("utf-8")
+        return "branch_" + hashlib.sha256(raw).hexdigest()[:24]
 
-        def member(value, allowed) -> bool:
-            return value is not None and str(value) in set(str(x) for x in (allowed or ()))
+    def _hydrate_action_choice(
+        self,
+        *,
+        action_instance,
+        payload: dict[str, Any],
+    ) -> ManagerDecisionTransport:
+        action = ManagerActionKind(action_instance.action_kind)
+        bindings = dict(action_instance.bindings)
 
-        if action == ManagerActionKind.RESOLVE_SEMANTICS.value:
-            return (
-                decision.resolve_provenance == "AGENT_DERIVED"
-                and decision.semantic_parent_obligation_id == scope.parent_obligation_id
-                and member(decision.semantic_evidence_ref, scope.evidence_refs)
+        if action == ManagerActionKind.RESOLVE_SEMANTICS:
+            return ManagerDecisionTransport(
+                action=action,
+                resolve_provenance="AGENT_DERIVED",
+                target_kind_hints=(payload["target_kind_hint"],),
+                semantic_parent_obligation_id=bindings["parent_obligation_id"],
+                semantic_evidence_ref=bindings["evidence_ref"],
+                semantic_proposal=payload["semantic_proposal"],
             )
-        if action == ManagerActionKind.PROPOSE_BRANCHES.value:
-            return (
-                decision.branch_parent_obligation_id == scope.parent_obligation_id
-                and member(decision.branch_evidence_ref, scope.evidence_refs)
-                and all(
-                    subset(candidate.input_handles, scope.handle_refs)
-                    for candidate in decision.branch_candidates
+        if action == ManagerActionKind.PROPOSE_BRANCHES:
+            handles_by_capability = dict(
+                bindings["branch_handles_by_capability"]
+            )
+            candidates = []
+            seen_caps: set[str] = set()
+            for index, item in enumerate(payload["branch_candidates"]):
+                capability = str(item["capability_key"])
+                if capability in seen_caps:
+                    raise ValueError(
+                        "branch candidate capability must be unique in one action"
+                    )
+                seen_caps.add(capability)
+                handles = handles_by_capability.get(capability)
+                if not handles:
+                    raise ValueError(
+                        "branch candidate capability is not executable in selected action"
+                    )
+                candidates.append(
+                    ManagerBranchCandidateProposal(
+                        task_id=self._branch_task_id(
+                            action_ref=action_instance.action_ref,
+                            index=index,
+                            capability_key=capability,
+                        ),
+                        capability_key=ManagerCapabilityKey(capability),
+                        input_handles=tuple(handles),
+                        material_reason=str(item["material_reason"]),
+                    )
                 )
+            return ManagerDecisionTransport(
+                action=action,
+                branch_parent_obligation_id=bindings["parent_obligation_id"],
+                branch_evidence_ref=bindings["evidence_ref"],
+                branch_candidates=tuple(candidates),
             )
-        if action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE.value:
-            return (
-                decision.directive_id == scope.directive_id
-                and member(decision.directive_evidence_ref, scope.evidence_refs)
+        if action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE:
+            return ManagerDecisionTransport(
+                action=action,
+                directive_id=bindings["directive_id"],
+                directive_evidence_ref=bindings["evidence_ref"],
+                directive_disposition="NO_MATERIAL_DIRECTION",
+                directive_reason=payload["directive_reason"],
             )
         if action in {
-            ManagerActionKind.PROPOSE_HYPOTHESIS.value,
-            ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
+            ManagerActionKind.PROPOSE_HYPOTHESIS,
+            ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST,
         }:
-            if not (
-                decision.hypothesis_parent_obligation_id == scope.parent_obligation_id
-                and subset(decision.hypothesis_semantic_handles, scope.handle_refs)
-                and subset(decision.hypothesis_trigger_evidence_refs, scope.evidence_refs)
-            ):
-                return False
-            if action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value:
-                return (
-                    member(decision.next_test_task_kind.value if decision.next_test_task_kind else None, scope.task_kinds)
-                    and subset(decision.next_test_input_handles, scope.handle_refs)
-                    and member(decision.next_test_trigger_evidence_ref, scope.evidence_refs)
-                )
-            return True
-        if action == ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value:
-            return (
-                decision.hypothesis_ref == scope.hypothesis_ref
-                and member(
-                    decision.hypothesis_relation_evidence_ref,
-                    scope.evidence_refs,
-                )
-            )
-        if action == ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST.value:
-            return (
-                decision.hypothesis_ref == scope.hypothesis_ref
-                and member(
-                    decision.next_test_task_kind.value if decision.next_test_task_kind else None,
-                    scope.task_kinds,
-                )
-                and subset(decision.next_test_input_handles, scope.handle_refs)
-                and member(decision.next_test_trigger_evidence_ref, scope.evidence_refs)
-            )
-        if action == ManagerActionKind.RUN_ANALYTICS.value:
-            if not (
-                subset(decision.obligation_ids, scope.obligation_ids)
-                and subset(decision.metric_handles, scope.metric_handles)
-                and subset(decision.dimension_handles, scope.dimension_handles)
-                and subset(decision.filter_handles, scope.filter_handles)
-            ):
-                return False
-            if (
-                decision.period_handle is not None
-                and not member(decision.period_handle, scope.period_handles)
-            ):
-                return False
-            if (
-                decision.comparison_handle is not None
-                and not member(decision.comparison_handle, scope.comparison_handles)
-            ):
-                return False
-            if scope.task_id is None:
-                return (
-                    decision.derived_task_id is None
-                    and decision.derived_parent_obligation_id is None
-                    and decision.derived_capability_key is None
-                    and decision.derived_evidence_ref is None
-                )
-            return (
-                decision.derived_task_id == scope.task_id
-                and decision.derived_parent_obligation_id == scope.parent_obligation_id
-                and (
-                    decision.derived_capability_key is not None
-                    and decision.derived_capability_key.value == scope.capability_key
-                )
-                and member(decision.derived_evidence_ref, scope.evidence_refs)
-            )
-        if action == ManagerActionKind.RUN_RELATIONSHIP.value:
-            target = (
-                scope.obligation_ids[0]
-                if scope.obligation_ids
-                else scope.parent_obligation_id
-            )
-            return (
-                decision.relationship_obligation_id == target
-                and subset(decision.focus_handles, scope.focus_handles)
-                and subset(decision.counterpart_handles, scope.counterpart_handles)
-            )
-        if action == ManagerActionKind.INSPECT_EVIDENCE.value:
-            return member(decision.evidence_ref, scope.evidence_refs)
-        if action == ManagerActionKind.REQUEST_CLARIFICATION.value:
-            return subset(decision.obligation_ids, scope.obligation_ids)
-        if action == ManagerActionKind.FINISH.value:
-            return True
-        return False
-
-    @classmethod
-    def _parse_scoped_decision(
-        cls,
-        raw: Any,
-        *,
-        availability: ManagerActionAvailabilityProfile,
-    ) -> tuple[ManagerDecisionTransport, str | None]:
-        data = json.loads(raw) if isinstance(raw, str) else raw
-        snapshot = availability.applicability_snapshot
-        if snapshot is None:
-            return ManagerDecisionTransport.model_validate(data), None
-        if not isinstance(data, dict):
-            raise ValueError("scoped Manager decision must be an object")
-
-        # Provider-free fake managers written before ActionApplicabilitySnapshot may
-        # still emit the flat transport. Infer a scope only when the existing typed
-        # decision matches exactly one current correlated scope. Real provider schema
-        # is always the envelope form below.
-        if "choice" not in data:
-            decision = ManagerDecisionTransport.model_validate(data)
-            matches = tuple(
-                scope
-                for scope in snapshot.scopes_for(decision.action.value)
-                if cls._decision_matches_scope(decision, scope)
-            )
-            if len(matches) != 1:
-                candidates = [
+            kwargs: dict[str, Any] = {
+                "action": action,
+                "hypothesis_parent_obligation_id": bindings[
+                    "parent_obligation_id"
+                ],
+                "hypothesis_statement": payload["hypothesis_statement"],
+                "hypothesis_semantic_handles": tuple(
+                    bindings["semantic_handles"]
+                ),
+                "hypothesis_trigger_evidence_refs": (
+                    bindings["trigger_evidence_ref"],
+                ),
+                "hypothesis_limitations": tuple(
+                    payload["hypothesis_limitations"]
+                ),
+            }
+            if action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST:
+                kwargs.update(
                     {
-                        "scope_ref": scope.scope_ref,
-                        "action": scope.action,
-                        "parent_obligation_id": scope.parent_obligation_id,
-                        "directive_id": scope.directive_id,
-                        "hypothesis_ref": scope.hypothesis_ref,
-                        "task_id": scope.task_id,
-                        "evidence_refs": list(scope.evidence_refs),
-                        "handle_refs": list(scope.handle_refs),
-                        "task_kinds": list(scope.task_kinds),
+                        "next_test_task_kind": ResearchTaskKind(
+                            bindings["next_test_task_kind"]
+                        ),
+                        "next_test_input_handles": tuple(
+                            bindings["next_test_input_handles"]
+                        ),
+                        "next_test_trigger_evidence_ref": bindings[
+                            "trigger_evidence_ref"
+                        ],
+                        "next_test_material_reason": payload[
+                            "next_test_material_reason"
+                        ],
+                        "next_test_ranking_direction": payload[
+                            "next_test_ranking_direction"
+                        ],
+                        "next_test_ranking_limit": payload[
+                            "next_test_ranking_limit"
+                        ],
                     }
-                    for scope in snapshot.scopes_for(decision.action.value)
-                ]
-                raise ValueError(
-                    "legacy flat Manager decision does not resolve to exactly one "
-                    f"current applicability scope; matches={len(matches)}; "
-                    f"action={decision.action.value}; candidates={candidates}"
                 )
-            return decision, matches[0].scope_ref
-
-        if data.get("snapshot_ref") != snapshot.snapshot_ref:
-            raise ValueError("Manager decision references stale applicability snapshot")
-        choice = data.get("choice")
-        if not isinstance(choice, dict):
-            raise ValueError("scoped Manager decision choice must be an object")
-        scope_ref = choice.get("scope_ref")
-        if not isinstance(scope_ref, str):
-            raise ValueError("scoped Manager decision requires scope_ref")
-        scope = snapshot.scope(scope_ref)
-        payload = {key: value for key, value in choice.items() if key != "scope_ref"}
-        decision = ManagerDecisionTransport.model_validate(payload)
-        if not cls._decision_matches_scope(decision, scope):
-            raise ValueError(
-                "Manager decision identity arguments escape selected applicability scope"
+            return ManagerDecisionTransport(**kwargs)
+        if action == ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION:
+            return ManagerDecisionTransport(
+                action=action,
+                hypothesis_ref=bindings["hypothesis_ref"],
+                hypothesis_relation_evidence_ref=bindings["evidence_ref"],
+                hypothesis_relation=HypothesisEvidenceRelation(
+                    payload["hypothesis_relation"]
+                ),
             )
-        return decision, scope_ref
+        if action == ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST:
+            return ManagerDecisionTransport(
+                action=action,
+                hypothesis_ref=bindings["hypothesis_ref"],
+                next_test_task_kind=ResearchTaskKind(
+                    bindings["next_test_task_kind"]
+                ),
+                next_test_input_handles=tuple(
+                    bindings["next_test_input_handles"]
+                ),
+                next_test_trigger_evidence_ref=bindings[
+                    "trigger_evidence_ref"
+                ],
+                next_test_material_reason=payload[
+                    "next_test_material_reason"
+                ],
+                next_test_ranking_direction=payload[
+                    "next_test_ranking_direction"
+                ],
+                next_test_ranking_limit=payload[
+                    "next_test_ranking_limit"
+                ],
+            )
+        if action == ManagerActionKind.RUN_ANALYTICS:
+            ranking_direction = bindings.get("ranking_direction")
+            ranking_limit = bindings.get("ranking_limit")
+            if "ranking_direction" in payload:
+                ranking_direction = payload["ranking_direction"]
+                ranking_limit = payload["ranking_limit"]
+            return ManagerDecisionTransport(
+                action=action,
+                obligation_ids=tuple(bindings["obligation_ids"]),
+                metric_handles=tuple(bindings.get("metric_handles") or ()),
+                dimension_handles=tuple(
+                    bindings.get("dimension_handles") or ()
+                ),
+                filter_handles=tuple(bindings.get("filter_handles") or ()),
+                period_handle=bindings.get("period_handle"),
+                comparison_handle=bindings.get("comparison_handle"),
+                ranking_direction=ranking_direction,
+                limit=ranking_limit,
+                derived_task_id=bindings.get("derived_task_id"),
+                derived_parent_obligation_id=bindings.get(
+                    "derived_parent_obligation_id"
+                ),
+                derived_capability_key=(
+                    ManagerCapabilityKey(bindings["derived_capability_key"])
+                    if bindings.get("derived_capability_key")
+                    else None
+                ),
+                derived_evidence_ref=bindings.get("derived_evidence_ref"),
+                derived_reason=(
+                    "server-hydrated READY ResearchTask execution"
+                    if bindings.get("derived_task_id")
+                    else None
+                ),
+            )
+        if action == ManagerActionKind.RUN_RELATIONSHIP:
+            return ManagerDecisionTransport(
+                action=action,
+                relationship_obligation_id=bindings["obligation_id"],
+                focus_handles=tuple(bindings["focus_handles"]),
+                counterpart_handles=tuple(bindings["counterpart_handles"]),
+            )
+        if action == ManagerActionKind.INSPECT_EVIDENCE:
+            return ManagerDecisionTransport(
+                action=action,
+                evidence_ref=bindings["evidence_ref"],
+            )
+        if action == ManagerActionKind.REQUEST_CLARIFICATION:
+            return ManagerDecisionTransport(
+                action=action,
+                obligation_ids=tuple(bindings["obligation_ids"]),
+                clarification_reason=payload["clarification_reason"],
+            )
+        if action == ManagerActionKind.FINISH:
+            return ManagerDecisionTransport(action=action)
+        raise RuntimeError(
+            f"unsupported ManagerActionSet action: {action_instance.action_kind}"
+        )
 
-    def _decision_with_availability(
+    def _decision_with_action_set(
         self,
         *,
         question: str,
@@ -2691,8 +1800,10 @@ class ResearchManagerLoop:
             runtime=runtime,
             hypothesis_ledgers=hypothesis_ledgers,
         )
-        availability = self._action_availability(
+        action_set = self._action_set(
             runtime=runtime,
+            observations=observations,
+            action_frontier=action_frontier,
             research_state=research_state,
             hypothesis_ledgers=hypothesis_ledgers,
             evidence_store=evidence_store,
@@ -2708,79 +1819,69 @@ class ResearchManagerLoop:
             research_state=research_state,
             ready_tasks=ready_tasks,
             hypothesis_ledgers=hypothesis_ledgers,
-            action_availability=availability,
+            action_set=action_set,
             governed_semantic_inventory=governed_semantic_inventory,
         )
         root_cause_enabled = bool(hypothesis_ledgers)
-        schema = _post_acceptance_native_schema(
-            root_cause_enabled=root_cause_enabled,
-            allowed_actions=availability.available_actions,
-            inspectable_evidence_refs=availability.inspectable_evidence_refs,
-            resolve_provenance=availability.post_acceptance_resolve_provenance,
-            resolve_semantics_parent_obligation_ids=(
-                availability.resolve_semantics_parent_obligation_ids
-            ),
-            root_parent_obligation_ids=availability.root_parent_obligation_ids,
-            root_action_handle_refs=availability.root_action_handle_refs,
-            root_evidence_refs=availability.root_evidence_refs,
-            hypothesis_refs=availability.hypothesis_refs,
-            pending_relation_hypothesis_refs=(
-                availability.pending_relation_hypothesis_refs
-            ),
-            pending_relation_evidence_refs=(
-                availability.pending_relation_evidence_refs
-            ),
-            directive_disposition_ids=(
-                (availability.directive_disposition_id,)
-                if availability.directive_disposition_id is not None
-                else ()
-            ),
-            directive_disposition_evidence_refs=(
-                availability.directive_disposition_evidence_refs
-            ),
-            applicability_snapshot=availability.applicability_snapshot,
-        )
         system_prompt = (
             _SYSTEM + _ROOT_CAUSE_SYSTEM_ADDENDUM
             if root_cause_enabled
             else _SYSTEM
         )
         kwargs = {
-            "schema": schema,
-            "schema_name": "dima_research_manager_action_v1",
+            "schema": action_set.provider_schema(),
+            "schema_name": "dima_research_manager_action_v2",
         }
         raw = self._structured(system_prompt, user, **kwargs)
         try:
-            decision, scope_ref = self._parse_scoped_decision(
-                raw,
-                availability=availability,
+            instance, payload = action_set.resolve_choice(raw)
+            return (
+                self._hydrate_action_choice(
+                    action_instance=instance,
+                    payload=payload,
+                ),
+                action_set,
+                instance.action_ref,
             )
-            return decision, availability, scope_ref
         except Exception as first_error:
             repair_system = (
                 system_prompt
-                + "\n\nFORMAT_REPAIR_ONLY: Previous output failed the application schema. "
-                  "Keep the SAME next action and semantic decision. Only fill/fix schema "
-                  "fields. Do not add/remove obligations, change polarity, or choose another tool."
+                + "\n\nFORMAT_REPAIR_ONLY: Previous output failed the current "
+                  "ManagerActionSet schema. Keep the SAME action_ref and cognitive "
+                  "decision. Only repair fields required by that action card."
             )
             repair_user = (
                 user
                 + "\n\nPREVIOUS_INVALID_OUTPUT:\n"
-                + (raw if isinstance(raw, str) else json.dumps(raw, ensure_ascii=False))
+                + (
+                    raw
+                    if isinstance(raw, str)
+                    else json.dumps(raw, ensure_ascii=False)
+                )
                 + "\n\nFORMAT_ERROR:\n"
                 + str(first_error)[:1200]
             )
-            repaired = self._structured(repair_system, repair_user, **kwargs)
+            repaired = self._structured(
+                repair_system,
+                repair_user,
+                **kwargs,
+            )
             try:
-                decision, scope_ref = self._parse_scoped_decision(
-                    repaired,
-                    availability=availability,
+                instance, payload = action_set.resolve_choice(repaired)
+                return (
+                    self._hydrate_action_choice(
+                        action_instance=instance,
+                        payload=payload,
+                    ),
+                    action_set,
+                    instance.action_ref,
                 )
-                return decision, availability, scope_ref
             except Exception as exc:
                 raise RuntimeError(
-                    f"RESEARCH_MANAGER structured action invalid after one format retry: {exc}"
+                    "RESEARCH_MANAGER ActionSet output invalid after one format retry: "
+                    f"{exc}"
                 ) from exc
+
 
     def _decision(
         self,
@@ -2795,8 +1896,7 @@ class ResearchManagerLoop:
         hypothesis_ledgers: dict[str, Any] | None = None,
         evidence_store=None,
     ):
-        """Compatibility decision surface; production loop also consumes availability."""
-        decision, _availability, _scope_ref = self._decision_with_availability(
+        decision, _action_set, _action_ref = self._decision_with_action_set(
             question=question,
             runtime=runtime,
             observations=observations,
@@ -2808,6 +1908,7 @@ class ResearchManagerLoop:
             evidence_store=evidence_store,
         )
         return decision
+
 
     def _source_refs(self, *, message_id: str, surfaces: tuple[str, ...]) -> tuple[str, ...]:
         return tuple(
@@ -3567,7 +2668,7 @@ class ResearchManagerLoop:
                 evidence_store=getattr(executor, "evidence_store", None),
             )
             try:
-                decision, availability, selected_scope_ref = self._decision_with_availability(
+                decision, action_set, selected_action_ref = self._decision_with_action_set(
                     question=question,
                     runtime=runtime,
                     observations=observations,
@@ -3580,104 +2681,10 @@ class ResearchManagerLoop:
                 )
                 observations.append(
                     {
-                        "kind": "manager_action_availability",
-                        "selected_scope_ref": selected_scope_ref,
-                        **availability.model_view(),
+                        "kind": "manager_action_set",
+                        **action_set.model_view(),
                     }
                 )
-
-                # Stale applicability is fail-closed. Reproject from the SAME current
-                # authoritative owners after cognition and before any decision-driven
-                # mutation. Provider latency cannot authorize execution against an old
-                # identity join.
-                current_inventory = self._governed_semantic_inventory(
-                    runtime=runtime,
-                    hypothesis_ledgers=root_cause_ledgers,
-                )
-                current_availability = self._action_availability(
-                    runtime=runtime,
-                    research_state=research_state,
-                    hypothesis_ledgers=root_cause_ledgers,
-                    evidence_store=getattr(executor, "evidence_store", None),
-                    research_tasks=task_registry.tasks,
-                    governed_semantic_inventory=current_inventory,
-                )
-                selected_snapshot = availability.applicability_snapshot
-                current_snapshot = current_availability.applicability_snapshot
-                if (
-                    selected_snapshot is None
-                    or current_snapshot is None
-                    or selected_snapshot.snapshot_ref != current_snapshot.snapshot_ref
-                    or selected_scope_ref is None
-                ):
-                    observations.append(
-                        {
-                            "kind": "stale_applicability_snapshot",
-                            "action": decision.action.value,
-                            "selected_scope_ref": selected_scope_ref,
-                            "selected_snapshot_ref": (
-                                None
-                                if selected_snapshot is None
-                                else selected_snapshot.snapshot_ref
-                            ),
-                            "current_snapshot_ref": (
-                                None
-                                if current_snapshot is None
-                                else current_snapshot.snapshot_ref
-                            ),
-                        }
-                    )
-                    frontier.observe(
-                        progress_before=frontier.progress(runtime),
-                        action=decision,
-                        runtime=runtime,
-                        result={"rejected": "stale_applicability_snapshot"},
-                    )
-                    continue
-                try:
-                    current_scope = current_snapshot.scope(selected_scope_ref)
-                except KeyError:
-                    observations.append(
-                        {
-                            "kind": "stale_applicability_snapshot",
-                            "action": decision.action.value,
-                            "selected_scope_ref": selected_scope_ref,
-                            "selected_snapshot_ref": selected_snapshot.snapshot_ref,
-                            "current_snapshot_ref": current_snapshot.snapshot_ref,
-                            "reason": "scope_missing_from_current_snapshot",
-                        }
-                    )
-                    frontier.observe(
-                        progress_before=frontier.progress(runtime),
-                        action=decision,
-                        runtime=runtime,
-                        result={"rejected": "unknown_or_stale_scope"},
-                    )
-                    continue
-                if (
-                    current_scope.action != decision.action.value
-                    or not self._decision_matches_scope(decision, current_scope)
-                ):
-                    observations.append(
-                        {
-                            "kind": "tool_rejected",
-                            "action": decision.action.value,
-                            "selected_scope_ref": selected_scope_ref,
-                            "message": (
-                                "Manager decision no longer matches current correlated "
-                                "applicability scope"
-                            ),
-                            "reason_codes": ["ACTION_SCOPE_MISMATCH"],
-                        }
-                    )
-                    frontier.observe(
-                        progress_before=frontier.progress(runtime),
-                        action=decision,
-                        runtime=runtime,
-                        result={"rejected": "action_scope_mismatch"},
-                    )
-                    continue
-
                 latest_delta = research_state.latest_delta
                 if (
                     latest_delta is not None
@@ -3718,61 +2725,39 @@ class ResearchManagerLoop:
                 observations.append({"kind": "model_error", "message": str(exc)})
                 break
 
-            progress_before = frontier.progress(runtime)
-            if not availability.allows(decision.action.value):
-                reasons = availability.reasons_for_unavailable(
-                    decision.action.value
-                )
+            current_action_set = self._action_set(
+                runtime=runtime,
+                observations=observations,
+                action_frontier=frontier.view(runtime),
+                research_state=research_state,
+                hypothesis_ledgers=root_cause_ledgers,
+                evidence_store=getattr(executor, "evidence_store", None),
+                research_tasks=task_registry.tasks,
+                governed_semantic_inventory=self._governed_semantic_inventory(
+                    runtime=runtime,
+                    hypothesis_ledgers=root_cause_ledgers,
+                ),
+            )
+            try:
+                current_action_set.by_ref(selected_action_ref)
+            except KeyError:
                 observations.append(
                     {
                         "kind": "tool_rejected",
                         "action": decision.action.value,
-                        "message": "Manager action is unavailable in current governed state",
-                        "reason_codes": list(reasons),
+                        "message": "stale or unknown ManagerActionSet action_ref",
+                        "reason_codes": ["STALE_ACTION_REF"],
                     }
                 )
                 frontier.observe(
-                    progress_before=progress_before,
+                    progress_before=frontier.progress(runtime),
                     action=decision,
                     runtime=runtime,
-                    result={
-                        "rejected": "manager_action_unavailable",
-                        "reason_codes": list(reasons),
-                    },
+                    result={"rejected": "stale_action_ref"},
                 )
                 continue
 
-            if (
-                decision.action == ManagerActionKind.RESOLVE_SEMANTICS
-                and decision.resolve_provenance == "AGENT_DERIVED"
-                and decision.semantic_parent_obligation_id
-                not in availability.resolve_semantics_parent_obligation_ids
-            ):
-                observations.append(
-                    {
-                        "kind": "tool_rejected",
-                        "action": decision.action.value,
-                        "message": (
-                            "AGENT_DERIVED semantic parent is unavailable in current "
-                            "governed action profile"
-                        ),
-                        "reason_codes": [
-                            "SEMANTIC_PARENT_NOT_AVAILABLE"
-                        ],
-                    }
-                )
-                frontier.observe(
-                    progress_before=progress_before,
-                    action=decision,
-                    runtime=runtime,
-                    result={
-                        "rejected": "semantic_parent_unavailable",
-                        "parent_obligation_id": (
-                            decision.semantic_parent_obligation_id
-                        ),
-                    },
-                )
-                continue
+            progress_before = frontier.progress(runtime)
 
             if frontier.blocked(progress=progress_before, action=decision):
                 observations.append(
