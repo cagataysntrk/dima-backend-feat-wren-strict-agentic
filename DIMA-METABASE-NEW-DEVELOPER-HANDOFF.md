@@ -14,6 +14,8 @@ RECURSIVE DEPTH = DIMA.
 ANALYTICAL EXECUTION AT EVERY DEPTH = METABASE.
 P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
 NO UI/UX BEFORE P21.
+DO NOT TUNE PRODUCT BEHAVIOR TO ONE PROBABILISTIC TEST TRAJECTORY.
+CERTIFY AUTONOMOUS AGENTS BY AUTHORITY / SAFETY / OUTCOME INVARIANTS.
 ```
 
 
@@ -21,13 +23,13 @@ NO UI/UX BEFORE P21.
 
 > **FORWARD AUTHORITY.** This block overrides any older "current", "next", "blocked", or
 > "immediate work" language later in this living document. Historical sections remain append-only
-> evidence unless they explicitly say they are current under DMP-DEC-0048 + DMP-DEC-0049.
+> evidence unless they explicitly say they are current under DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050.
 
 ```text
 certified product/code checkpoint     = d1bc5291b315ff19c3456d08ff1820e983d85942
 latest non-doc branch checkpoint      = 80e1c96593e12fd7b23973f949057ef9604ce5c4
 branch                                = feat/dima-metabase-platform
-forward authority                     = DMP-DEC-0048 + DMP-DEC-0049
+forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050
 
 engine gitlink                        = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
@@ -74,50 +76,67 @@ P15                                   = SEALED
 P16                                   = SEALED
 P17 bounded-manager foundation        = PROVIDER-FREE GREEN
 P17 recursive authority               = PROVIDER-FREE GREEN
-P17 real recursive cognition          = LIVE RED / NOT SEALED
+P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
+P17 autonomous cognition              = OPEN
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 ```
 
-### CURRENT P17 GATE
+### CURRENT P17 GATE — DMP-DEC-0050
 
-Two supervisor-authorized Luna live runs are append-only evidence.
+DMP-DEC-0050 supersedes the historical screenplay as the **final cognition certification oracle**.
+It does not supersede DMP-DEC-0048 native-direct ownership or DMP-DEC-0049 recursive/P17-P19
+ownership.
 
-The first run, `36127753645`, failed before the first accepted durable P17 reasoning step because
-the structured-output transport allowed `expected_information_gain = null` while deterministic
-non-STOP `ManagerProposal` authority forbids it. That typed-adapter defect was root-fixed by
-`b81b8aaa1ff06faa9cab67511b47b8730d94a8f3` +
-`7035fc7236e9761ace12f1e73b5bfed8403127dc` and certified provider-free by
-`36128262857 = SUCCESS`.
-
-The corrected run, `36130479544`, passed environment/runtime/bootstrap, produced seven valid
-Research Manager Luna proposals, executed three native Metabot analytical occurrences in total
-(base + two P17 follow-ups), produced the required native Evidence path, preserved sibling branches,
-stopped the unselected sibling, deepened the manager-selected branch, and reached REPLAN. It then
-failed in the canary harness because the post-REPLAN assertion compared the runtime-selected branch
-against hard-coded `alt_a_step.branch_id` instead of `selected_parent.branch_id`.
-
-Classification:
+Historical live evidence remains append-only:
 
 ```text
-HARNESS / INFRA RED
-NOT manager cognition RED
-NOT P17 state-machine RED
-NOT Metabot analytics RED
-NOT Metabase runtime RED
+DMP-P17-LIVE-RED-001 = 36127753645
+owner                 = TYPED ADAPTER / STRUCTURED-OUTPUT CONTRACT
+
+DMP-P17-LIVE-RED-002 = 36130479544
+owner                 = HARNESS / EVALUATION
+
+80e1c96593e12fd7b23973f949057ef9604ce5c4
+= real RED-002 runtime-selected-parent continuity fix
+= KEEP
 ```
 
-The harness-only root fix is `80e1c96593e12fd7b23973f949057ef9604ce5c4`.
-Provider-free proof is `36131121661 = SUCCESS`; governance is
-`36131121548 = SUCCESS`.
+The old `recursive_manager_canary.py` is now a deterministic scenario / contract lab only. It is
+not evidence that one fixed sequence is the unique legal Research trajectory.
 
-P17 is **NOT SEALED** because there is still no successful corrected live cognition receipt.
-P18 remains **BLOCKED**. No third paid Luna run is authorized. Return to supervisor before any
-additional live dispatch or P18 implementation.
+The active certification target is:
 
-Append-only evidence:
-`DMP-P17-LIVE-RED-001` and `DMP-P17-LIVE-RED-002`.
+```text
+P17 recursive product authority       = PROVIDER-FREE GREEN
+P17 live screenplay certification     = SUPERSEDED AS FINAL COGNITION ORACLE
+P17 autonomous cognition certification= OPEN
+P17 overall                           = NOT SEALED
+P18                                   = BLOCKED
+```
+
+Before the single DMP-DEC-0050 paid run, the trajectory-invariant evaluator, autonomous harness,
+P14/P15/P16/P17 deterministic regressions and governance must all be GREEN. The paid autonomous
+Luna run budget after DMP-DEC-0050 is exactly one; Sol, C1 and engine-build counters remain zero.
+
+Permanent evaluation governance:
+
+```text
+DO NOT TUNE PRODUCT BEHAVIOR
+TO ONE PROBABILISTIC TEST TRAJECTORY.
+
+CERTIFY AUTONOMOUS AGENTS
+BY AUTHORITY / SAFETY / OUTCOME INVARIANTS,
+NOT ONE EXPECTED SEQUENCE.
+
+A TEST ORACLE MUST NOT BE
+NARROWER THAN THE PRODUCT AUTHORITY
+UNLESS IT IS EXPLICITLY A SCENARIO TEST.
+```
+
+Harness sets the rules. Research Manager chooses the path. Metabase does the analysis. Dima records
+what the Evidence changed.
 
 Permanent forward split:
 
