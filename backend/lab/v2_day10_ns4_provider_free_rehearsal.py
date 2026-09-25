@@ -889,8 +889,32 @@ def run_rehearsal(
             "unexpected USER_MUST set: "
             f"{sorted(active)} != {sorted(expected_user_must_ids)}"
         )
-    if any(item.status != ObligationStatus.VERIFIED for item in active.values()):
-        raise RehearsalError("all canonical USER_MUST obligations must be VERIFIED")
+    presentation_ids = {
+        obligation_id
+        for obligation_id, item in active.items()
+        if item.capability_key in {
+            ManagerCapabilityKey.REPORT,
+            ManagerCapabilityKey.TABLE,
+            ManagerCapabilityKey.CHART,
+            ManagerCapabilityKey.EXPLAIN,
+        }
+    }
+    analytical_ids = set(active) - presentation_ids
+    if any(
+        active[obligation_id].status != ObligationStatus.VERIFIED
+        for obligation_id in analytical_ids
+    ):
+        raise RehearsalError(
+            "all canonical analytical USER_MUST obligations must be VERIFIED"
+        )
+    if any(
+        active[obligation_id].status
+        not in {ObligationStatus.ACCEPTED, ObligationStatus.VERIFIED}
+        for obligation_id in presentation_ids
+    ):
+        raise RehearsalError(
+            "presentation USER_MUST must remain accepted delivery authority"
+        )
 
     observations = tuple(result.outcome.observations)
     kinds = [str(item.get("kind")) for item in observations if isinstance(item, dict)]
@@ -973,6 +997,9 @@ def run_rehearsal(
         "directive_accounting_evidence_ref": directive.evidence_ref,
         "directive_branch_task_refs": list(directive.branch_task_refs),
         "initial_user_must_count": len(active),
+        "analytical_user_must_ids": sorted(analytical_ids),
+        "presentation_user_must_ids": sorted(presentation_ids),
+        "presentation_delivery_requested": bool(presentation_ids),
         "user_must_families": [
             active[key].capability_key.value.upper()
             for key in expected_user_must_ids
