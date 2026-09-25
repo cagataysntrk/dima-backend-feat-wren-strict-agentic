@@ -18,6 +18,7 @@ from app.v2.authority_invariants import evidence_belongs_to_parent_lineage
 from app.v2.manager_action_set import (
     DirectiveActionState,
     HypothesisActionState,
+    InspectableEvidenceState,
     ManagerActionSet,
     ManagerActionSetBuilder,
     ManagerActionSetContext,
@@ -1350,6 +1351,12 @@ class ResearchManagerLoop:
                             branch_eligible=(
                                 item.obligation_id
                                 in tuple(getattr(evidence, "obligation_ids", ()) or ())
+                                and any(
+                                    task.task_id == getattr(evidence, "task_id", None)
+                                    and task.state == "complete"
+                                    and task.question_id == item.obligation_id
+                                    for task in research_tasks
+                                )
                             ),
                         )
                     )
@@ -1411,13 +1418,64 @@ class ResearchManagerLoop:
             or runtime.snapshot.accepted_contract_id
             or runtime.snapshot.run_id
         )
+        inspectable_states: list[InspectableEvidenceState] = []
+        directive_parent_ids = {
+            item.parent_obligation_id for item in directive_states
+        }
+        for ref in dict.fromkeys(inspectable_old):
+            if evidence_store is None:
+                continue
+            try:
+                evidence = evidence_store.get(ref)
+            except Exception:
+                continue
+            capability_keys: list[str] = []
+            lifecycle_relevance: list[str] = []
+            if ledger is not None:
+                for item in ledger.items:
+                    if item.obligation_id in tuple(
+                        getattr(evidence, "obligation_ids", ()) or ()
+                    ):
+                        capability_keys.append(item.capability_key.value)
+                    if (
+                        item.obligation_id in directive_parent_ids
+                        and evidence_belongs_to_parent_lineage(
+                            ledger=ledger,
+                            evidence=evidence,
+                            parent_obligation_id=item.obligation_id,
+                        )
+                    ):
+                        lifecycle_relevance.append("OPEN_ADAPTIVE_DIRECTIVE")
+                    if (
+                        item.capability_key == ManagerCapabilityKey.ROOT_CAUSE
+                        and evidence_belongs_to_parent_lineage(
+                            ledger=ledger,
+                            evidence=evidence,
+                            parent_obligation_id=item.obligation_id,
+                        )
+                    ):
+                        lifecycle_relevance.append("ACTIVE_ROOT")
+            inspectable_states.append(
+                InspectableEvidenceState(
+                    evidence_ref=ref,
+                    capability_keys=tuple(dict.fromkeys(capability_keys)),
+                    evidence_kind=str(
+                        getattr(evidence, "evidence_kind", "") or ""
+                    )
+                    or None,
+                    lifecycle_relevance=tuple(
+                        dict.fromkeys(lifecycle_relevance)
+                    ),
+                )
+            )
+
         context = ManagerActionSetContext(
             state_version=state_version,
             root_states=tuple(root_states),
             directive_states=tuple(directive_states),
             parent_evidence_states=tuple(parent_evidence_states),
             ready_tasks=tuple(ready_task_states),
-            inspectable_evidence_refs=tuple(dict.fromkeys(inspectable_old)),
+            inspectable_evidence=tuple(inspectable_states),
             fresh_disclosed_evidence_ref=fresh_ref,
             fresh_disclosed_verified=fresh_verified,
             remaining_research_turns=max(
