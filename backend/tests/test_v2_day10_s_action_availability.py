@@ -79,6 +79,7 @@ def test_root_bootstrap_exposes_composite_action_directly_from_real_precondition
                 root_id="R1",
                 semantic_refs=(_metric("h9"), _metric("h10")),
                 evidence_refs=("E_ROOT",),
+                next_test_evidence_refs=("E_ROOT",),
                 hypotheses=(),
                 next_test_contracts=(_query(),),
             ),
@@ -119,6 +120,7 @@ def test_root_composite_is_absent_when_required_semantic_shape_is_missing():
                 root_id="R1",
                 semantic_refs=(_metric("h9"),),
                 evidence_refs=("E_ROOT",),
+                next_test_evidence_refs=("E_ROOT",),
                 hypotheses=(),
                 next_test_contracts=(_breakdown(),),
             ),
@@ -134,6 +136,7 @@ def test_multi_root_never_produces_cross_parent_handle_or_evidence_combinations(
                 root_id="R1",
                 semantic_refs=(_metric("h_r1"),),
                 evidence_refs=("E_R1",),
+                next_test_evidence_refs=("E_R1",),
                 hypotheses=(),
                 next_test_contracts=(_query(),),
             ),
@@ -141,6 +144,7 @@ def test_multi_root_never_produces_cross_parent_handle_or_evidence_combinations(
                 root_id="R2",
                 semantic_refs=(_metric("h_r2"),),
                 evidence_refs=("E_R2",),
+                next_test_evidence_refs=("E_R2",),
                 hypotheses=(),
                 next_test_contracts=(_query(),),
             ),
@@ -321,6 +325,7 @@ def test_two_genuinely_legal_root_directions_become_two_action_instances():
             _comparison("C"),
         ),
         evidence_refs=("E",),
+                next_test_evidence_refs=("E",),
         hypotheses=(),
         next_test_contracts=(_query(), _breakdown(), _compare()),
     )
@@ -370,7 +375,13 @@ def test_invented_action_ref_fails_closed():
 
 def test_choice_cannot_escape_selected_action_cognitive_contract():
     action_set = _build(
-        inspectable_evidence_refs=("E1",),
+        inspectable_evidence=(
+            InspectableEvidenceState(
+                evidence_ref="E1",
+                capability_keys=("performance",),
+                evidence_kind="standard_analytics",
+            ),
+        ),
     )
     instance = _instances(action_set, "inspect_evidence")[0]
     with pytest.raises(ValueError, match="cognitive payload"):
