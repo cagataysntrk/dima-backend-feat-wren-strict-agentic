@@ -71,9 +71,49 @@ class ResearchManagerProposalDraft(_Frozen):
     claim: ProposedClaimDraft | None = None
 
     @model_validator(mode="after")
-    def no_legacy_intent(self):
+    def coherent_live_semantics(self):
         if self.intent == InvestigationIntent.LEGACY:
             raise ValueError("live manager cannot emit LEGACY intent")
+
+        stop_intents = {
+            InvestigationIntent.STOP_BRANCH,
+            InvestigationIntent.STOP_INVESTIGATION,
+        }
+        if self.intent in stop_intents:
+            if self.stop_reason is None:
+                raise ValueError("live STOP intent requires stop_reason")
+            return self
+
+        if (
+            not self.bounded_objective
+            or not self.bounded_objective.strip()
+        ):
+            raise ValueError(
+                "live non-STOP intent requires bounded_objective"
+            )
+        if (
+            not self.expected_information_gain
+            or not self.expected_information_gain.strip()
+        ):
+            raise ValueError(
+                "live non-STOP intent requires expected_information_gain"
+            )
+        if self.stop_reason is not None:
+            raise ValueError(
+                "live non-STOP intent cannot carry stop_reason"
+            )
+        if (
+            self.intent == InvestigationIntent.SEEK_COUNTER_EVIDENCE
+            and not self.counter_to_claim_id
+        ):
+            raise ValueError(
+                "live SEEK_COUNTER_EVIDENCE requires counter_to_claim_id"
+            )
+        if (
+            self.intent == InvestigationIntent.FORM_CLAIM
+            and self.claim is None
+        ):
+            raise ValueError("live FORM_CLAIM requires claim")
         return self
 
 
@@ -211,15 +251,18 @@ def _schema_for_intents(
             props.pop("claim", None)
         if InvestigationIntent.SEEK_COUNTER_EVIDENCE not in intents:
             props.pop("counter_to_claim_id", None)
-        if not any(
-            x
-            in {
-                InvestigationIntent.STOP_BRANCH,
-                InvestigationIntent.STOP_INVESTIGATION,
-            }
-            for x in intents
-        ):
+        stop_intents = {
+            InvestigationIntent.STOP_BRANCH,
+            InvestigationIntent.STOP_INVESTIGATION,
+        }
+        if all(x not in stop_intents for x in intents):
             props.pop("stop_reason", None)
+            # Align transport truth with deterministic ManagerProposal
+            # semantics: a live non-STOP proposal cannot choose null here.
+            props["bounded_objective"] = {"type": "string"}
+            props["expected_information_gain"] = {"type": "string"}
+        if intents == (InvestigationIntent.SEEK_COUNTER_EVIDENCE,):
+            props["counter_to_claim_id"] = {"type": "string"}
     return _strict_json_schema(schema)
 
 
