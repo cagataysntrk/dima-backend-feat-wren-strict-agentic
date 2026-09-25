@@ -8,7 +8,26 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.v2.manager_models import SemanticResolutionReceipt
+from app.v2.manager_models import (
+    ManagerCapabilityKey,
+    ObligationLedgerItem,
+    ObligationOrigin,
+    ObligationPolarity,
+    ObligationPriority,
+    ObligationStatus,
+    ResearchDirective,
+    ResearchDirectiveCondition,
+    ResearchDirectiveDisposition,
+    ResearchDirectiveDispositionStatus,
+    ResearchDirectiveType,
+    SemanticResolutionReceipt,
+    UserObligationLedger,
+)
+from app.v2.models import EvidenceArtifact
+from lab.v2_certification_oracle import (
+    certify_adaptive_lifecycle,
+    certify_day8_root_live_debt,
+)
 from app.v2.product_models import ProductLane, ProductStatus
 from app.v2.standard_lane import StandardLaneStatus
 from lab import v2_day10_product_mvp_live as paid
@@ -82,20 +101,11 @@ def test_workflow_is_manual_only_single_job_and_explicit_scope():
     assert "workers" not in text.lower()
 
 
-def test_paid_harness_requires_final_root_directive_and_turn_contracts():
-    source = inspect.getsource(paid.run_paid)
-
+def test_paid_harness_uses_authoritative_lifecycle_oracles():
     assert "doğrulanmış sonuçlar yeni bir maddi" in paid.INITIAL_QUESTION
-    assert '"adaptive_branch_executed"' in source
-    assert "ProductEventKind.RELATIONSHIP_CHECKED" in source
-    assert '"ADAPT_ON_EVIDENCE"' in source
-    assert '"APPLIED"' in source
-    assert "directive_accounting_evidence_ref" in source
-    assert "directive_branch_task_refs" in source
-    assert "initial_turn_ref" in source
-    assert "continuation_turn_ref" in source
-    assert "confirmed_cause_count != 0" in source
-    assert "initial_evidence < 4" in source
+    assert paid.certify_adaptive_lifecycle is certify_adaptive_lifecycle
+    assert paid.certify_day8_root_live_debt is certify_day8_root_live_debt
+    assert paid.MAX_PRODUCT_TURNS == 2
 
 @pytest.mark.parametrize(
     ("product_status", "standard_status"),
@@ -309,3 +319,341 @@ def test_paid_failure_artifact_contract_includes_diagnostics():
     assert '"diagnostics": getattr(exc, "diagnostics", {})' in source
     assert "CapturingStandardLane" in inspect.getsource(paid._build_product)
 
+
+
+# ---------------------------------------------------------------------------
+# Final/integrated certification oracle behavior. These cases intentionally do
+# not assert one model/event trajectory; they certify typed lifecycle state.
+# ---------------------------------------------------------------------------
+
+
+def _adaptive_authority(*, trigger_verified=True, trigger_obligation="U1", branch_task="D1"):
+    directive = ResearchDirective(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        condition=ResearchDirectiveCondition.MATERIAL_NEW_DIRECTION,
+        source_refs=("src_" + "1" * 24,),
+    )
+    ledger = UserObligationLedger(
+        lineage_id="atl-oracle",
+        version=1,
+        items=(
+            ObligationLedgerItem(
+                obligation_id="U1",
+                capability_key=ManagerCapabilityKey.ROOT_CAUSE,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=("src_" + "1" * 24,),
+                evidence_refs=("E1",),
+                introduced_in_version=1,
+            ),
+        ),
+    )
+    trigger = EvidenceArtifact(
+        artifact_id="E1",
+        task_id="seed:U1",
+        obligation_ids=(trigger_obligation,),
+        query_contract_refs=("QC1",),
+        evidence_kind="standard_analytics",
+        verified=trigger_verified,
+    )
+    branch = EvidenceArtifact(
+        artifact_id="E2",
+        task_id=branch_task,
+        obligation_ids=("U1",),
+        query_contract_refs=("QC2",),
+        evidence_kind="standard_analytics",
+        verified=True,
+    )
+    return directive, ledger, trigger, branch
+
+
+@pytest.mark.parametrize("branch_task", ("D_INLINE", "D_MANAGER_SELECTED"))
+def test_adaptive_applied_valid_for_multiple_execution_transports(branch_task):
+    directive, ledger, trigger, branch = _adaptive_authority(branch_task=branch_task)
+    disposition = ResearchDirectiveDisposition(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.APPLIED,
+        evidence_ref="E1",
+        branch_task_refs=(branch_task,),
+        reason="governed material branch completed",
+    )
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger, branch),
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+        diagnostic_observations=(),
+    )
+    assert certification.valid is True
+    assert certification.lifecycle_outcome == "VALIDLY_ACCOUNTED"
+    assert certification.certification_coverage == "COMPLETE"
+
+
+def test_adaptive_no_material_direction_with_inspected_verified_parent_evidence_passes():
+    directive, ledger, trigger, _ = _adaptive_authority()
+    disposition = ResearchDirectiveDisposition(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
+        evidence_ref="E1",
+        reason="Verified evidence exposes no new material governed direction.",
+    )
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger,),
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+    )
+    assert certification.valid is True
+    assert certification.branch_task_refs == ()
+    assert certification.lifecycle_outcome == "VALIDLY_ACCOUNTED"
+
+
+def test_adaptive_open_plus_verified_complete_is_genuine_failure():
+    directive, ledger, trigger, _ = _adaptive_authority()
+    disposition = ResearchDirectiveDisposition(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.OPEN,
+    )
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger,),
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+    )
+    assert certification.valid is False
+    assert any("remained OPEN" in item for item in certification.errors)
+
+
+def test_adaptive_applied_without_branch_refs_fails_even_if_shape_is_untyped():
+    directive, ledger, trigger, _ = _adaptive_authority()
+    disposition = SimpleNamespace(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.APPLIED,
+        evidence_ref="E1",
+        branch_task_refs=(),
+        reason="invalid missing branch accounting",
+    )
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger,),
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+    )
+    assert certification.valid is False
+    assert "APPLIED disposition lacks branch_task_refs" in certification.errors
+
+
+@pytest.mark.parametrize("include_result,result_verified", ((False, True), (True, False)))
+def test_adaptive_applied_missing_or_unverified_result_evidence_fails(
+    include_result, result_verified
+):
+    directive, ledger, trigger, branch = _adaptive_authority()
+    if not result_verified:
+        branch = branch.model_copy(update={"verified": False})
+    disposition = ResearchDirectiveDisposition(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.APPLIED,
+        evidence_ref="E1",
+        branch_task_refs=("D1",),
+        reason="branch accounting",
+    )
+    items = (trigger, branch) if include_result else (trigger,)
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=items,
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+    )
+    assert certification.valid is False
+
+
+def test_adaptive_no_material_direction_with_branch_refs_fails():
+    directive, ledger, trigger, branch = _adaptive_authority()
+    disposition = SimpleNamespace(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
+        evidence_ref="E1",
+        branch_task_refs=("D1",),
+        reason="invalid branch refs",
+    )
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger, branch),
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+    )
+    assert certification.valid is False
+    assert "NO_MATERIAL_DIRECTION cannot carry branch_task_refs" in certification.errors
+
+
+@pytest.mark.parametrize(
+    ("trigger_verified", "trigger_obligation", "inspected"),
+    (
+        (False, "U1", ("E1",)),
+        (True, "U_FOREIGN", ("E1",)),
+        (True, "U1", ()),
+    ),
+)
+def test_adaptive_no_material_direction_rejects_bad_evidence_provenance(
+    trigger_verified, trigger_obligation, inspected
+):
+    directive, ledger, trigger, _ = _adaptive_authority(
+        trigger_verified=trigger_verified,
+        trigger_obligation=trigger_obligation,
+    )
+    disposition = ResearchDirectiveDisposition(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
+        evidence_ref="E1",
+        reason="bounded reason",
+    )
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger,),
+        ledger=ledger,
+        inspected_evidence_refs=inspected,
+        product_verified_complete=True,
+    )
+    assert certification.valid is False
+
+
+def test_adaptive_blocked_is_typed_product_terminal_not_fake_applied():
+    directive, ledger, trigger, _ = _adaptive_authority()
+    disposition = ResearchDirectiveDisposition(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.BLOCKED,
+        evidence_ref="E1",
+        reason="governed downstream branch is unavailable",
+    )
+    certification = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger,),
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+    )
+    assert certification.valid is True
+    assert certification.lifecycle_outcome == "VALID_PRODUCT_TERMINAL"
+    assert certification.certification_coverage == "CERTIFICATION_COVERAGE_INCOMPLETE"
+    assert certification.disposition_status == "BLOCKED"
+
+
+def test_adaptive_diagnostic_event_names_do_not_change_authoritative_verdict():
+    directive, ledger, trigger, _ = _adaptive_authority()
+    disposition = ResearchDirectiveDisposition(
+        directive_id="R1",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
+        evidence_ref="E1",
+        reason="no material new direction",
+    )
+    without_events = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger,),
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+        diagnostic_observations=(),
+    )
+    with_path_events = certify_adaptive_lifecycle(
+        directive=directive,
+        disposition=disposition,
+        evidence_items=(trigger,),
+        ledger=ledger,
+        inspected_evidence_refs=("E1",),
+        product_verified_complete=True,
+        diagnostic_observations=(
+            {"kind": "adaptive_branch_executed"},
+            {"kind": "adaptive_branch_opened"},
+        ),
+    )
+    assert without_events.valid == with_path_events.valid
+    assert without_events.lifecycle_outcome == with_path_events.lifecycle_outcome
+    assert without_events.certification_coverage == with_path_events.certification_coverage
+
+
+def test_day8_root_live_debt_oracle_does_not_require_adaptive_branch_trajectory():
+    directive, ledger, bootstrap, next_test = _adaptive_authority(branch_task="D_NEXT")
+    accepted_contract = SimpleNamespace(
+        obligation_ids=("U1",),
+        research_directives=(directive,),
+    )
+    finding = SimpleNamespace(
+        finding_id="F1",
+        parent_obligation_id="U1",
+        epistemic_label=SimpleNamespace(value="CANDIDATE_CAUSE"),
+        evidence_refs=("E2",),
+        hypothesis_ref="H1",
+    )
+    observations = (
+        {
+            "kind": "hypothesis_registered",
+            "result": {"hypothesis_id": "H1", "parent_obligation_id": "U1"},
+        },
+        {
+            "kind": "hypothesis_next_test_executed",
+            "result": {
+                "hypothesis_id": "H1",
+                "task_id": "D_NEXT",
+                "evidence_ref": "E2",
+            },
+        },
+        {
+            "kind": "hypothesis_relation_admitted",
+            "result": {
+                "hypothesis_id": "H1",
+                "evidence_links": [
+                    {"evidence_ref": "E2", "relation": "SUPPORTS"}
+                ],
+            },
+        },
+    )
+    certification = certify_day8_root_live_debt(
+        accepted_contract=accepted_contract,
+        ledger=ledger,
+        evidence_items=(bootstrap, next_test),
+        findings=(finding,),
+        observations=observations,
+    )
+    assert certification.valid is True
+    assert certification.root_obligation_id == "U1"
+    assert certification.hypothesis_ref == "H1"
+    assert certification.next_test_evidence_ref == "E2"
+    assert certification.confirmed_cause_count == 0
+    assert "adaptive_branch_executed" not in certification.diagnostic_observation_kinds
