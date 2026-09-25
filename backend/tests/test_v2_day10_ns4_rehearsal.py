@@ -84,6 +84,21 @@ def test_d10_s_exact_canonical_relationship_parent_clean_path_fits_global_six():
     assert receipt["paid_gate_structural_status"] == "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
 
 
+def test_d10_s_exact_canonical_relationship_parent_revision_path_completes():
+    receipt = run_canonical_relationship_topology_rehearsal(revision=True)
+
+    assert receipt["provider_calls"] == 0
+    assert receipt["adaptive_parent_obligation_id"] == "U_REL"
+    assert "REPORT" in tuple(receipt["user_must_families"])
+    assert receipt["preacceptance_model_calls"] == 4
+    assert receipt["research_manager_calls"] == 4
+    assert receipt["manager_turn_total"] == 8
+    assert receipt["completion_gate_final_state"] == "COMPLETED"
+    assert receipt["directive_final_status"] == "APPLIED"
+    assert receipt["root_status"] == "VERIFIED"
+    assert receipt["confirmed_cause_count"] == 0
+
+
 def test_revision_path_reaches_same_governed_product_within_global_six_turns():
     receipt = run_revision_rehearsal()
 
