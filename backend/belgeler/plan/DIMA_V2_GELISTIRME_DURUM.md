@@ -1,5 +1,59 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — D10-Q GENERIC TERMINAL PROPAGATION CLOSED / PAID RUN #2 READY
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc test HEAD              763e3f2ee95e02e6ab61aa4c49754ce73b23143c
+latest Product behavior        f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+
+paid run #1                    36091887451 = RED
+run #1 tested SHA              d032757c05500b48e144d1c808c6076e6cbb56f3
+run #1 calls                   7
+
+terminal propagation
+COMPLETE                       VERIFIED Evidence required
+BLOCKED                        no Evidence; typed terminal receipt
+other                          contract error
+
+Day7 affected                  36095271876 = GREEN
+Day8 affected                  36095407570 = GREEN
+Day10 affected                 36096003671 = GREEN
+
+dispatches used                1 / 3
+provider calls used            7 / 30
+remaining calls                23
+run #2 ceiling                 20
+
+paid run #2                    READY / NOT DISPATCHED
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Supervisor propagation review is closed generically. `ResearchExecutionOutcome` is the single
+projection owner for Research terminal consumption. Seed, ROOT_CAUSE bootstrap, hypothesis next-test,
+adaptive single-branch and direct Research consumers distinguish successful Evidence-bearing
+execution from governed BLOCKED execution. BLOCKED never fabricates Evidence, never emits
+`evidence_verified` / `relationship_checked`, and cannot mark an adaptive directive `APPLIED`
+merely because execution was attempted.
+
+Focused proof includes the generic no-third-state contract, blocked next-test behavior, blocked
+adaptive RELATIONSHIP behavior and idempotent blocked replay. The production ROOT_CAUSE next-test
+contract was deliberately not broadened to RELATIONSHIP; frozen semantic/trust owners remain
+unchanged.
+
+The intermediate REDs while authoring the new adaptive test were provider-free EVAL/HARNESS
+diagnostics only; they did not alter Product behavior or consume the D10-Q paid envelope. Final
+affected Day10 run `36096003671` is GREEN through provider-free Product tests, semantic attacks,
+multi-metric real-Wren RELATIONSHIP regression, real-Wren ROOT_CAUSE Product micro-gate and G16
+provider-free cognition receipt.
+
+Next authorized action: D10-Q paid run #2 through the unchanged manual
+`v2-day10-product-mvp-paid-once.yml` workflow with `max_total_model_calls=20`. No same-SHA rerun,
+no push/marker bridge, no Day11.
+
+
 ## 2026-09-25 — D10-Q PAID RUN #1 RED / POST-FIX GREEN
 
 ```text
