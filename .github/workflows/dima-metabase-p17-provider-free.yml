@@ -104,7 +104,7 @@ jobs:
           ! grep -nE 'propose_with_guidance|GuidedTurn' backend/lab/metabase/p17/autonomous_manager_canary.py
           grep -q 'provider.propose(snapshot)' backend/lab/metabase/p17/autonomous_manager_canary.py
           grep -q 'evaluate_autonomous_canary' backend/lab/metabase/p17/autonomous_manager_canary.py
-          grep -q 'trajectory-invariant' backend/lab/metabase/p17/autonomous_eval.py
+          grep -qi 'trajectory-invariant' backend/lab/metabase/p17/autonomous_eval.py
 
       - name: Compile P17 reasoning slice
         working-directory: backend
