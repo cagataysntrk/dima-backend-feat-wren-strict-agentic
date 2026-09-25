@@ -295,34 +295,63 @@ def konnektor_sorgu(svc) -> Sorgu:
     return _q
 
 
+def certify_wren_service(svc) -> dict:
+    """Measure the compiled Wren project's declared relationships against current MDL.
+
+    This is an explicit build/preflight operation. It never runs from `schema()` and
+    therefore does not move the 2×COUNT-per-relationship cost onto the Product hot path.
+    The returned certificate is not authority until ordinary consumers bind it to the
+    exact current `mdl_version`.
+    """
+    import yaml
+
+    proje = Path(svc.project_dir)
+    rels_f = proje / "relationships.yml"
+    if not rels_f.exists():
+        raise FileNotFoundError(f"relationships.yml yok: {rels_f}")
+    rels = (
+        yaml.safe_load(rels_f.read_text(encoding="utf-8")) or {}
+    ).get("relationships") or []
+
+    mdl = json.loads(svc._mdl_bytes())
+    # Keep physical-name ownership in WrenService/the service implementation instead of
+    # duplicating tableReference rules here.
+    fiziksel = {
+        model.get("name"): svc._physical_name(model)
+        for model in (mdl.get("models") or [])
+        if model.get("name")
+    }
+    return certify(
+        rels,
+        konnektor_sorgu(svc),
+        tablolar=set(fiziksel),
+        nitelikli=lambda table: fiziksel.get(table, f"main.{table}"),
+        mdl_version=svc.mdl_version,
+    )
+
+
+def refresh_wren_service_certificate(svc) -> tuple[Path, dict]:
+    """Atomically refresh the derived fanout artifact for one compiled Wren service."""
+    certificate = certify_wren_service(svc)
+    return yaz(svc.project_dir, certificate), certificate
+
+
 def _cli() -> int:
     """`python -m app.fanout [proje_dizini]` → sertifikayı üretir ve özetini basar."""
     import sys
-
-    import yaml
 
     from app.config import get_settings
     from app.wren_service import WrenService
 
     s = get_settings()
     proje = Path(sys.argv[1]) if len(sys.argv) > 1 else s.resolved_project_dir()
-    rels_f = Path(proje) / "relationships.yml"
-    if not rels_f.exists():
-        print(f"relationships.yml yok: {rels_f}")
-        return 1
-    rels = (yaml.safe_load(rels_f.read_text(encoding="utf-8")) or {}).get("relationships") or []
     svc = WrenService(project_dir=proje, datasource=s.datasource,
                       connection_info=s.connection_dict())
-    # MDL'de bildirilen modeller = ölçülebilir tablo evreni. Sertifika bunun DIŞINDAKİ bir
-    # tabloya dokunan ilişkiyi `atlandi` diye kaydeder — sessizce düşürmez.
-    import json as _json
-
-    mdl = _json.loads(svc._mdl_bytes())
-    fiziksel = {m.get("name"): WrenService._physical_name(m) for m in (mdl.get("models") or [])}
-    sert = certify(rels, konnektor_sorgu(svc), tablolar=set(fiziksel),
-                   nitelikli=lambda t: fiziksel.get(t, f"main.{t}"),
-                   mdl_version=svc.mdl_version)
-    hedef = yaz(proje, sert)
+    try:
+        hedef, sert = refresh_wren_service_certificate(svc)
+    except FileNotFoundError as exc:
+        print(str(exc))
+        return 1
     kayit = sert["relationships"]
     olculdu = [k for k in kayit.values() if k.get("durum") == "olculdu"]
     riskli = [a for a, k in kayit.items() if k.get("durum") == "olculdu" and not k.get("saglikli")]
