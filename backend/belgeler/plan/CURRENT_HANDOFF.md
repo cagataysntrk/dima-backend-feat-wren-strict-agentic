@@ -1,37 +1,54 @@
 # CURRENT HANDOFF
 
-## LATEST AUTHORITY OVERRIDE — D10-Q DETERMINISTIC + REAL-WREN GREEN / PAID READY
+## LATEST AUTHORITY OVERRIDE — D10-Q PAID RUN #1 RED / GENERIC LATE-OWNER FIX GREEN
 
-This is the current active Day10 authority. Historical blocks below are receipts only.
+This is the current active Day10 authority. Historical blocks below remain receipts only.
 
 ```text
 branch                         feat/ask-v2-mvp
-Product behavior SHA           4e9f7a32561ff8f4ebaf95f61e36316453677802
-final test-only candidate      16d9bdc89141a4685616ad10094699185744995b
+current pre-doc HEAD           ca2f8fadea893142e74f9d9ccafd18ded1ae77c6
+latest Product behavior        05f69a67320809767501d2fdcb0522ad9df48309
+final test-only candidate      ca2f8fadea893142e74f9d9ccafd18ded1ae77c6
 
-Day10 final candidate          36056867465 = GREEN
-Day8 final candidate           36056867485 = GREEN
-Day7 final candidate           36056867709 = GREEN
-Day10 real-Wren proof          36056672128 = GREEN
+D10-Q paid run #1              36091887451 = RED
+tested SHA                     d032757c05500b48e144d1c808c6076e6cbb56f3
+run #1 provider calls          7
+failure class                  CONTRACT / ARCHITECTURE
+first wrong transition         valid relationship UNSUPPORTED terminal
+                               → ResearchToolRunner demanded Evidence ref
 
-scope-group repair             GREEN
-multi-metric ROOT_CAUSE        GREEN
-real Wren / QueryContract      GREEN
-VERIFIED Evidence              GREEN
-Manager ceiling                6 unchanged
-SemanticBindingGate owner      unchanged
-CONFIRMED_CAUSE                0
+generic fix                    typed blocked ResearchTask terminal
+                               + atomic commit guard
+                               + no fabricated Evidence
 
-D10-Q paid envelope            0 / 2 dispatches used
-D10-Q new provider calls       0 / 30 used
-paid workflow                  workflow_dispatch only
-temporary push bridge          FORBIDDEN / ABSENT
+post-fix Day10                 36092568445 = GREEN
+post-fix Day8                  36092568435 = GREEN
+post-fix Day7                  36092641195 = GREEN
 
-Day8 live debt                 OPEN pending paid integrated Product proof
-Day10 FINAL                    OPEN pending paid integrated Product proof
+D10-Q paid dispatches          1 / 3 used
+D10-Q new provider calls       7 / 30 used
+remaining provider calls       23
+next run max_total_model_calls 20
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
 Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
 ```
 
+Run #1 also proved D10-Q semantic scope repair live: typed-direct routing reached Research,
+`SELECT_SCOPE_GROUP g1` was produced, coverage passed, and real Wren execution began. Semantic
+decomposition is therefore not the first wrong owner for this RED.
+
+The late-owner fix preserves the existing trust plane. A governed relationship may terminate
+fail-closed as `UNSUPPORTED / BLOCKED_DATA_GAP` with zero Evidence. The ResearchToolRunner now
+records that typed terminal as a blocked ResearchTask receipt instead of throwing solely because
+`evidence_ref` is absent. Successful relationship execution still requires VERIFIED Evidence and
+QueryContract. Cancellation/deadline commit guards run before blocked UOL state may be committed.
+
+No same-SHA paid rerun is authorized. Paid run #2 is eligible only from the new Product behavior
+after the post-fix GREEN receipts and remaining-budget check above.
 
 ### Higher-authority paid-envelope override
 
