@@ -311,7 +311,7 @@ jobs:
           grep -q "ResearchReasoningStepRecord" backend/app/v3/research_manager.py
           grep -q "NativeResearchOccurrenceRunner" backend/app/v3/research_followup.py
 
-      - name: Guard DMP-DEC-0050 autonomous certification from screenplay coupling
+      - name: Guard DMP-DEC-0050/0051 autonomous certification and recovery transport
         shell: bash
         run: |
           set -euo pipefail
@@ -319,27 +319,29 @@ jobs:
           AUTO="backend/lab/metabase/p17/autonomous_manager_canary.py"
           EVAL="backend/lab/metabase/p17/autonomous_eval.py"
           ENTRY="backend/lab/metabase/p17/recursive_manager_canary.py"
+          AUTH="backend/lab/metabase/p17/authorization_transport.py"
           SCENARIO="backend/lab/metabase/p17/recursive_manager_scenario_lab.py"
           test -f "$AUTO"
           test -f "$EVAL"
           test -f "$ENTRY"
+          test -f "$AUTH"
           test -f "$SCENARIO"
           test -f backend/tests/test_v3_p17_autonomous_manager_eval.py
+          test -f backend/tests/test_v3_p17_authorization_transport.py
           grep -q "DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION" "$DECISIONS"
+          grep -q "DMP-DEC-0051 — BOUNDED RED RECOVERY" "$DECISIONS"
           grep -q "A TEST ORACLE MUST NOT BE" "$DECISIONS"
+          grep -q "GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS" "$DECISIONS"
           grep -q "Historical deterministic P17 scenario / contract lab" "$SCENARIO"
           grep -q "provider.propose(snapshot)" "$AUTO"
           ! grep -nE 'propose_with_guidance|GuidedTurn' "$AUTO"
           grep -q "evaluate_autonomous_canary" "$AUTO"
           grep -q "verify_dispatch_authorization" "$ENTRY"
           ! grep -nE 'GITHUB_EVENT_PATH|head_commit' "$ENTRY"
-          test -f backend/lab/metabase/p17/authorization_transport.py
-          test -f backend/tests/test_v3_p17_authorization_transport.py
-          grep -q "diff-tree" backend/lab/metabase/p17/authorization_transport.py
-          grep -q "cat-file" backend/lab/metabase/p17/authorization_transport.py
-          grep -q "authorizations/" backend/lab/metabase/p17/authorization_transport.py
-          ! grep -nE 'GITHUB_EVENT_PATH|head_commit' backend/lab/metabase/p17/authorization_transport.py
-          grep -q "GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS" "$DECISIONS"
+          grep -q "diff-tree" "$AUTH"
+          grep -q "cat-file" "$AUTH"
+          grep -q "authorizations/" "$AUTH"
+          ! grep -nE 'GITHUB_EVENT_PATH|head_commit' "$AUTH"
           for file in "$AUTO" "$EVAL"; do
             ! grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$file"
             ! grep -nE 'app\.wren|wren_service|MetabaseAgentClient|NativeStandardTrustOrchestrator' "$file"
@@ -350,50 +352,7 @@ jobs:
             grep -q '"max_paid_runs_after_dmp_0050": 1' backend/lab/metabase/p17/AUTONOMOUS_LUNA_AUTHORIZATION.json
           fi
           if [ -d backend/lab/metabase/p17/authorizations ]; then
-            find backend/lab/metabase/p17/authorizations -type f ! -name '*.json' -print -quit | grep -q '^
-      - name: Guard active engine consumers against source-build fallback
-        shell: bash
-        run: |
-          set -euo pipefail
-          ACTIVE=(
-            ".github/workflows/dima-metabase-p13b-semantic-availability.yml"
-            ".github/workflows/dima-metabase-p13c-integration.yml"
-            ".github/workflows/dima-metabase-p13c-live.yml"
-            ".github/workflows/dima-metabase-p14-native-direct-live.yml"
-          )
-          for workflow in "${ACTIVE[@]}"; do
-            test -f "$workflow"
-            if grep -nE 'docker[[:space:]]+(build|buildx[[:space:]]+build)' "$workflow"; then
-              echo "active Platform engine consumer source-builds the engine: $workflow" >&2
-              exit 1
-            fi
-            grep -q 'engine_runtime_lock.json' "$workflow"
-            grep -q 'IMMUTABLE_IMAGE_REF' "$workflow"
-            grep -q 'docker pull "\$IMMUTABLE_IMAGE_REF"' "$workflow"
-            if grep -nE 'dima-metabase-engine:(latest|main|dima\.)' "$workflow"; then
-              echo "moving/human tag consumed as runtime authority: $workflow" >&2
-              exit 1
-            fi
-          done
-
-      - name: Validate Dima engine runtime lock when pinned
-        shell: bash
-        run: |
-          set -euo pipefail
-          LOCK="backend/lab/metabase/engine_runtime_lock.json"
-          if [ -f "$LOCK" ]; then
-            test -f backend/lab/metabase/scripts/engine_runtime_lock.py
-            GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
-            python backend/lab/metabase/scripts/engine_runtime_lock.py \
-              --lock "$LOCK" \
-              --gitlink-sha "$GITLINK_SHA" \
-              --print-json
-          fi
-
- || {
-              echo "non-JSON file found in P17 authorization namespace" >&2
-              exit 1
-            }
+            test -z "$(find backend/lab/metabase/p17/authorizations -type f ! -name '*.json' -print -quit)"
           fi
 
       - name: Guard active engine consumers against source-build fallback
@@ -434,4 +393,3 @@ jobs:
               --gitlink-sha "$GITLINK_SHA" \
               --print-json
           fi
-
