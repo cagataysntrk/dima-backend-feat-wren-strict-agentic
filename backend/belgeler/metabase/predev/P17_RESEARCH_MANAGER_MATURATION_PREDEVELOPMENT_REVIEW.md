@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-25  
 **Status:** **SEALED / P17 RESEARCH MANAGER MATURATION IMPLEMENTATION AUTHORIZED**  
-**Forward authority:** DMP-DEC-0048  
+**Forward authority:** DMP-DEC-0048 + DMP-DEC-0049  
 **Consumes:** P14 Research/Evidence + P15 native material + P16 claims  
 **UI/UX:** NOT AUTHORIZED  
 **Engine change:** NOT AUTHORIZED BY DEFAULT
@@ -184,3 +184,34 @@ with restart durability and no giant deterministic analytics strategy engine.
 
 Then P18 may add only materially business-specific relationship policy; physical join mechanics remain
 native Metabase-owned.
+
+---
+
+## RECURSIVE INVESTIGATION AUTHORITY ADDENDUM — DMP-DEC-0049
+
+The bounded P17 foundation is provider-free GREEN, but P17 is not sealed until recursive
+investigation topology and one bounded real Luna cognition canary are GREEN.
+
+The existing `ResearchReasoningStep`, `ResearchInvestigationTask`, proposal-before-action,
+no-progress, budget, counter-evidence, `P17_FOLLOWUP`, shared
+`NativeResearchOccurrenceRunner`, P15 material reuse, P16 lineage reuse, single receipt family,
+and restart durability are preserved.
+
+Recursive implementation must add only minimal investigation topology to the existing durable
+ledger. Any InvestigationGraph is a projection, not a second truth store. Parent→child means "we
+chose to investigate deeper", never causal truth. P19 remains the future causal/contribution owner.
+
+At every depth:
+
+```text
+Dima chooses WHAT analytical question to investigate next
+→ Metabot/Metabase perform native analytical work
+→ Dima records what the resulting Evidence changed
+```
+
+P18 remains blocked until recursive provider-free proof and the single decision-changing Luna P17
+canary are GREEN.
+
+status:
+`SEALED PREDEVELOPMENT + RECURSIVE ADDENDUM / P17 RECURSIVE IMPLEMENTATION AUTHORIZED / P18 BLOCKED`.
+
