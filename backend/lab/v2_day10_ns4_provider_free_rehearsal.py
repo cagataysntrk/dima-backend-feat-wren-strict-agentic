@@ -597,6 +597,15 @@ def run_rehearsal(
                 "research_manager_turns": snapshot.research_manager_turns,
                 "manager_turn_ceiling": result.runtime.budget.max_total_manager_turns,
                 "manager_actions": list(manager.actions),
+                "diagnostic_observations": [
+                    item
+                    for item in result.outcome.observations
+                    if item.get("kind") in {
+                        "model_error",
+                        "tool_rejected",
+                        "manager_action_availability",
+                    }
+                ][-6:],
                 "terminal_status": (
                     result.outcome.terminal_status.value
                     if result.outcome.terminal_status is not None
