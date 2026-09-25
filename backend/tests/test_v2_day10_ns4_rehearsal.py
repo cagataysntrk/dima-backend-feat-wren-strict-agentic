@@ -36,8 +36,6 @@ def test_ns4_runtime_rehearsal_uses_six_turns_within_phase_separated_outer_ceili
     assert receipt["preacceptance_model_calls"] == 2
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 6
-    assert receipt["explicit_old_evidence_inspections"] == 1
-    assert receipt["redundant_fresh_inspect_turns"] == 0
     assert receipt["manager_turn_ceiling"] == 8
     assert receipt["manager_turn_headroom"] == 2
 
@@ -78,6 +76,10 @@ def test_d10_s_exact_canonical_relationship_parent_clean_path_uses_six_total_tur
     assert receipt["preacceptance_model_calls"] == 2
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 6
+    assert receipt["explicit_old_evidence_inspections"] == 1
+    assert receipt["redundant_fresh_inspect_turns"] == 0
+    assert receipt["presentation_user_must_ids"] == ["U_REPORT"]
+    assert receipt["presentation_delivery_requested"] is True
     assert receipt["manager_turn_ceiling"] == 8
     assert receipt["completion_gate_final_state"] == "COMPLETED"
     assert receipt["directive_final_status"] == "APPLIED"
@@ -97,6 +99,8 @@ def test_d10_s_exact_canonical_relationship_parent_revision_path_completes():
     assert receipt["manager_turn_total"] == 8
     assert receipt["explicit_old_evidence_inspections"] == 1
     assert receipt["redundant_fresh_inspect_turns"] == 0
+    assert receipt["presentation_user_must_ids"] == ["U_REPORT"]
+    assert receipt["presentation_delivery_requested"] is True
     assert receipt["manager_turn_ceiling"] == 8
     assert receipt["completion_gate_final_state"] == "COMPLETED"
     assert receipt["directive_final_status"] == "APPLIED"
