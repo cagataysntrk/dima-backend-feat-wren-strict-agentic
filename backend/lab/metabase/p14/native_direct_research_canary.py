@@ -45,6 +45,30 @@ USER_ID = UUID("00000000-0000-4000-8000-000000001402")
 CONTEXT = "ctx-p14-native-direct-live-v1"
 STAMP = datetime(2026, 9, 25, 6, 0, tzinfo=timezone.utc)
 
+# DMP-DEC-0048 transport-correctness sentinel. This oracle was already observed
+# in live run 36100443464; adding the assertion must not trigger another paid run.
+FROZEN_BOYAHANE_CHANNEL_COUNTS = {
+    "Mevcut Müşteri": 34,
+    "Web": 27,
+    "Fuar": 22,
+    "Saha Ziyareti": 22,
+    "Referans": 21,
+}
+
+
+def channel_counts(rows: list) -> dict[str, int]:
+    output: dict[str, int] = {}
+    for row in rows:
+        if (
+            not isinstance(row, (list, tuple))
+            or len(row) < 2
+            or not isinstance(row[0], str)
+            or not isinstance(row[1], int)
+        ):
+            raise RuntimeError("native channel result has unexpected shape")
+        output[row[0]] = row[1]
+    return output
+
 
 def login(base_url: str, email: str, password: str) -> tuple[str, dict]:
     response = httpx.post(
@@ -277,6 +301,12 @@ def main() -> int:
             raise RuntimeError(
                 f"{link.obligation_id} native execution returned no material rows"
             )
+        observed_counts = channel_counts(rows)
+        if observed_counts != FROZEN_BOYAHANE_CHANNEL_COUNTS:
+            raise RuntimeError(
+                "native-direct transport result drifted from the frozen Boyahane oracle: "
+                f"{observed_counts!r}"
+            )
         executions.append(
             {
                 "obligation_id": link.obligation_id,
@@ -289,6 +319,7 @@ def main() -> int:
                 "evidence_id": link.evidence_id,
                 "query_database": query.get("database"),
                 "row_count": len(rows),
+                "channel_counts": observed_counts,
                 "sample_rows": rows[:5],
             }
         )

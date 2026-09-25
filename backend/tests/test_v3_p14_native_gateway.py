@@ -35,6 +35,10 @@ from app.v3.substrate.metabase.native_models import (
 )
 from control_plane.authorize import Principal
 from control_plane.models import NativeSubjectBinding, Tenant, User
+from lab.metabase.p14.native_direct_research_canary import (
+    FROZEN_BOYAHANE_CHANNEL_COUNTS,
+    channel_counts,
+)
 
 
 ENGINE_SHA = "cbe313af9ac2d5960f662068e433d328d896fb06"
@@ -480,3 +484,14 @@ def test_p14_runtime_defaults_match_certified_engine_lock_identity():
     assert fields["metabase_engine_image_digest"].default == DIGEST
     assert fields["metabase_engine_image_identity"].default == DIGEST
     assert fields["metabase_engine_build_identity"].default == BUILD
+
+
+def test_p14_native_direct_transport_correctness_frozen_oracle_sentinel():
+    rows = [
+        ["Referans", 21],
+        ["Mevcut Müşteri", 34],
+        ["Saha Ziyareti", 22],
+        ["Fuar", 22],
+        ["Web", 27],
+    ]
+    assert channel_counts(rows) == FROZEN_BOYAHANE_CHANNEL_COUNTS
