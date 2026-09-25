@@ -1842,3 +1842,73 @@ def test_live_manager_schema_is_strict_transport_safe():
     assert "ProposedClaimDraft" not in (schema.get("$defs") or {})
     assert "ClaimFreshness" not in (schema.get("$defs") or {})
 
+def test_live_manager_guidance_constrains_identity_not_analytical_answer():
+    from app.v3.research_manager_provider import (
+        StructuredResearchProposalManager,
+    )
+
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    snapshot = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        db_engine=db,
+    ).snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+
+    class StructuralTransport:
+        def structured_json(
+            self,
+            system,
+            user,
+            *,
+            schema,
+            schema_name,
+        ):
+            props = schema["properties"]
+            assert props["source_revision"]["enum"] == [
+                snapshot.source_revision
+            ]
+            assert props["target_parent_obligation"]["enum"] == ["g1"]
+            assert props["parent_step_id"] == {"type": "null"}
+            assert props["branch_key"] == {"type": "string"}
+            return json.dumps(
+                {
+                    "proposal_id": "structural-1",
+                    "source_revision": snapshot.source_revision,
+                    "target_parent_obligation": "g1",
+                    "intent": "EXPLORE_ALTERNATIVES",
+                    "parent_step_id": None,
+                    "branch_key": "candidate-alpha",
+                    "target_kind": "ALTERNATIVE",
+                    "target_ref": "candidate-alpha",
+                    "objective_key": "candidate.alpha",
+                    "bounded_objective": (
+                        "Investigate candidate alpha without computing analytics."
+                    ),
+                    "rationale": "Candidate alpha remains untested.",
+                    "inspected_evidence_refs": list(snapshot.evidence_refs),
+                    "inspected_claim_refs": [
+                        x.claim_id for x in snapshot.claims
+                    ],
+                    "inspected_material_refs": list(snapshot.material_refs),
+                    "expected_information_gain": (
+                        "It could distinguish an alternative explanation."
+                    ),
+                }
+            )
+
+    proposal = StructuredResearchProposalManager(
+        transport=StructuralTransport()
+    ).propose_with_guidance(
+        snapshot,
+        guidance="Open one candidate branch.",
+        allowed_intents=(InvestigationIntent.EXPLORE_ALTERNATIVES,),
+        allowed_parent_step_ids=(None,),
+        branch_key_mode="string",
+    )
+    assert proposal.action == ManagerAction.RECORD_INVESTIGATION
+    assert proposal.branch_key == "candidate-alpha"
+
