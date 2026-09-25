@@ -329,7 +329,14 @@ def test_paid_failure_artifact_contract_includes_diagnostics():
 # ---------------------------------------------------------------------------
 
 
-def _adaptive_authority(*, trigger_verified=True, trigger_obligation="U1", branch_task="D1"):
+def _adaptive_authority(
+    *,
+    trigger_verified=True,
+    trigger_obligation="U1",
+    branch_task="D1",
+    parent_status=ObligationStatus.VERIFIED,
+    parent_evidence_refs=("E1",),
+):
     directive = ResearchDirective(
         directive_id="R1",
         directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
@@ -347,9 +354,9 @@ def _adaptive_authority(*, trigger_verified=True, trigger_obligation="U1", branc
                 origin=ObligationOrigin.USER_MUST,
                 priority=ObligationPriority.MUST,
                 polarity=ObligationPolarity.REQUIRED,
-                status=ObligationStatus.VERIFIED,
+                status=parent_status,
                 source_refs=("src_" + "1" * 24,),
-                evidence_refs=("E1",),
+                evidence_refs=tuple(parent_evidence_refs),
                 introduced_in_version=1,
             ),
         ),
@@ -551,27 +558,31 @@ def test_adaptive_no_material_direction_rejects_bad_evidence_provenance(
 
 
 def test_adaptive_blocked_is_typed_product_terminal_not_fake_applied():
-    directive, ledger, trigger, _ = _adaptive_authority()
+    directive, ledger, _trigger, _ = _adaptive_authority(
+        parent_status=ObligationStatus.BLOCKED_DATA_GAP,
+        parent_evidence_refs=(),
+    )
     disposition = ResearchDirectiveDisposition(
         directive_id="R1",
         directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
         parent_obligation_id="U1",
         status=ResearchDirectiveDispositionStatus.BLOCKED,
-        evidence_ref="E1",
-        reason="governed downstream branch is unavailable",
+        evidence_ref=None,
+        reason="authoritative parent is blocked by governed data gap",
     )
     certification = certify_adaptive_lifecycle(
         directive=directive,
         disposition=disposition,
-        evidence_items=(trigger,),
+        evidence_items=(),
         ledger=ledger,
-        inspected_evidence_refs=("E1",),
-        product_verified_complete=True,
+        inspected_evidence_refs=(),
+        product_verified_complete=False,
     )
     assert certification.valid is True
     assert certification.lifecycle_outcome == "VALID_PRODUCT_TERMINAL"
     assert certification.certification_coverage == "CERTIFICATION_COVERAGE_INCOMPLETE"
     assert certification.disposition_status == "BLOCKED"
+    assert certification.evidence_ref is None
 
 
 def test_adaptive_diagnostic_event_names_do_not_change_authoritative_verdict():
