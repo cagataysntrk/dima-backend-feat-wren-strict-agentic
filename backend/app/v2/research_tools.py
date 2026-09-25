@@ -68,7 +68,7 @@ class ResearchToolExecution:
     task: ResearchTask
     contract: ResearchToolContract
     observation: FrozenModel
-    evidence: EvidenceArtifact
+    evidence: EvidenceArtifact | None
     elapsed_ms: float
 
 
@@ -573,6 +573,36 @@ class ResearchToolRunner:
             value=step.tool_result,
         )
         evidence_ref = getattr(observation, "evidence_ref", None)
+
+        # RELATIONSHIP has an explicit fail-closed terminal shape in the governed
+        # executor: unavailable/UNSUPPORTED blocks its USER_MUST obligation and returns
+        # no Evidence. That is not a malformed tool response and must not be laundered
+        # into synthetic Evidence merely to satisfy the Research runner contract.
+        if (
+            isinstance(observation, ManagerRelationshipObservation)
+            and not observation.available
+        ):
+            execution = ResearchToolExecution(
+                task=task.model_copy(update={"state": "blocked"}),
+                contract=spec.contract,
+                observation=observation,
+                evidence=None,
+                elapsed_ms=elapsed_ms,
+            )
+            try:
+                active_registry.block_execution(
+                    task_id=task.task_id,
+                    tool_id=tool_id,
+                    action_fingerprint=delivery_fingerprint,
+                    result=execution,
+                )
+            except Exception:
+                current = active_registry.get(task.task_id)
+                if current.state not in {"cancelled", "failed", "blocked"}:
+                    active_registry.fail(task.task_id)
+                raise
+            return execution
+
         if not evidence_ref:
             raise ResearchToolContractError(
                 f"Research tool {tool_id} returned no evidence reference"
