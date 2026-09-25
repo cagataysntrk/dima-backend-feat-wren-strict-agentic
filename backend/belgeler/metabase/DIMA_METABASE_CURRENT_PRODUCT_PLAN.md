@@ -594,3 +594,185 @@ ownership import.
 
 P15 remains after one real P14 native runtime/canary boundary.
 
+
+
+---
+
+## 21. 2026-09-25 — DMP-DEC-0048 forward architecture: native-direct Research execution
+
+DMP-DEC-0048 supersedes DMP-DEC-0047 as forward implementation authority.
+DMP-DEC-0047 remains historical/transitional evidence and is not deleted.
+
+### Permanent ownership
+
+```text
+METABASE + METABOT
+= ANALYTICAL TRUTH
++ ANALYTICAL EXECUTION
+
+DIMA
+= BUSINESS ONTOLOGY
++ RESEARCH
++ EVIDENCE / CLAIM LINEAGE
++ HYPOTHESIS
++ ROOT CAUSE
++ DECISION
++ ACTION
++ OUTCOME
++ MEMORY
+```
+
+Permanent rule:
+
+```text
+METABASE PROVES THE ANALYSIS.
+DIMA PROVES THE LINEAGE AND DECISION CONTEXT.
+```
+
+### P13 role cutover
+
+P13 is preserved and remains SEALED, but its forward role is now **CERTIFICATION MICROSCOPE**:
+release/certification, benchmark diagnostics, incident investigation, forensic audit,
+silent-wrong investigation and high-risk compatibility analysis.
+
+P13 attestation and P13 exact-occurrence re-execution are **not mandatory production middleware**
+for ordinary Research. Do not extend P13 operator grammar and do not remove its historical code/tests.
+
+### P14 production hot path
+
+```text
+USER
+→ DIMA Research
+→ ResearchSession / obligation
+→ authenticated principal-scoped native Metabot session
+→ METABOT
+→ native query A
+→ METABASE native execution under the SAME authenticated subject
+→ native result
+→ ONE DimaQueryReceipt
+→ Evidence
+→ Research state
+→ user-facing answer / chart / insight
+```
+
+There is exactly one analytics execution.
+
+Forbidden forward pattern:
+
+```text
+Metabot
+→ Dima attestation
+→ Dima re-certifies analytical semantics
+→ Dima re-authorizes query grammar
+→ Metabase executes again
+```
+
+### Native execution invariant
+
+Capture the query representation Metabot actually produced and submit that exact representation to
+the pinned Metabase native execution path, preferably `POST /api/dataset` if pinned-source proof
+confirms compatibility.
+
+No Dima compiler, canonicalizer, MBQL parser, temporal parser, ranking/filter/breakout validator,
+query normalization layer, alternative query B, Wren/raw-SQL fallback, or second analytics planner.
+
+### Security seam
+
+`NativeSubjectBinding` may remain only as explicit Dima-principal ↔ native Metabase-subject
+**identity correlation**.
+
+At runtime:
+
+```text
+presented principal-scoped Metabase session
+→ /api/user/current
+→ exact correlated native subject
+```
+
+Metabase remains permission authority. Shared admin session, global analytical service account and
+admin fallback are forbidden.
+
+`security_profile` / `policy_version`, if retained temporarily for compatibility, are
+non-authoritative metadata and must not be used to manufacture Metabase permission truth.
+
+### Resource mapping seam
+
+Dima may keep useful business-concept → native Metric/Model/resource mappings for ontology,
+provenance and discovery context. Generic P14 Research must not require a mapping row for every
+native query and must not inspect MBQL operators to prove the mapped resource before native execution.
+
+### P10/P5 cut
+
+Generic Research must not manufacture
+`VerifiedExecutionSecurityFacts → ExecutionAccessSnapshot` merely to duplicate authenticated
+Metabase enforcement.
+
+Keep **one** `DimaQueryReceipt` family. For `authority_kind=research_material`, widen the existing
+receipt contract cleanly so Research-native receipts record Research authority/session, obligation,
+Dima principal, native subject, conversation/query identity, query fingerprint, runtime/database,
+result hash/row count and optional naturally available resource refs.
+
+Do not stuff Research hashes into Standard-only `projection_hash` or
+`resolved_intent_hash` fields. Standard receipt semantics remain unchanged.
+
+### Evidence meaning
+
+For native Research, `EvidenceState.VERIFIED` means:
+- native execution occurred;
+- authenticated native subject is known;
+- execution/result provenance is intact;
+- the single receipt is intact;
+- Research obligation linkage is intact;
+- no unresolved Dima-owned business-policy ambiguity remains.
+
+It does **not** mean Dima independently re-proved COUNT/ranking/temporal/filter/breakout semantics.
+
+### Current unsealed slice
+
+At `3dc544b95c05044e35c6903b720a6ddb824e9b37`:
+
+```text
+governance                 = 36095837229 SUCCESS
+P14 provider-free          = 36095837211 FAILURE
+focused result             = 13 PASS / 6 FAIL
+slice status               = NOT SEALED
+```
+
+Do not repair/seal the current thick gateway as-is. Refactor it downward first:
+remove/bypass mandatory P13 attestation/re-execution, AuthorizedExecutionArtifact synthesis,
+P10 access-snapshot synthesis and operator-level NativeExecutionManifest/resource validation.
+
+### Immediate P14 execution order
+
+1. source-backed provider-free proof of the exact Metabot-produced query representation;
+2. durably capture query A in the existing `ResearchExecutionLink` without creating an analytical
+   definition store;
+3. add the smallest native bridge transport: same authenticated client → exact query A →
+   native Metabase dataset execution;
+4. keep only principal/native-subject correlation and occurrence/result/runtime provenance;
+5. cleanly widen the one receipt family for `research_material`;
+6. fix legitimate focused owner bugs, including timezone-aware defaults on **new P14 binding rows**;
+7. run one focused provider-free P14 seal + P5 receipt regression;
+8. if provider-free cannot prove query-representation compatibility, use at most one deterministic
+   no-model native probe;
+9. after provider-free GREEN, run one Luna Research canary only;
+10. then close P14 and immediately continue P15 Native Metabase Explorations.
+
+No P13 live, C1, Sol, engine build/certification, historical M1/M2 or broad corpus in this cut.
+
+### Roadmap after P14
+
+```text
+P15 Native Metabase Explorations
+→ P16 claim-lineage Evidence
+→ P17 Research maturation
+→ P18 material relationships
+→ P19 Hypothesis / Root Cause
+→ P20 Report
+→ P21 Decision Intelligence
+→ Action
+→ Outcome
+→ Memory
+```
+
+This is the forward product roadmap. Do not build another Metabase inside Dima.

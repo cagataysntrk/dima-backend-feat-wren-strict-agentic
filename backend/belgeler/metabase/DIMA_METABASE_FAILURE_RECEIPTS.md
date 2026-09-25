@@ -3928,3 +3928,67 @@ claim-lineage Evidence.
 Do not delete or rewrite DMP-P14-RUNTIME-STOP-001. This follow-up records why one part of that STOP is
 no longer forward implementation authority.
 
+
+
+---
+
+## DMP-P14-GATEWAY-RED-002 — DMP-DEC-0048 architecture cut after transitional gateway RED
+
+date: 2026-09-25
+
+observed checkpoint:
+
+```text
+HEAD               = 3dc544b95c05044e35c6903b720a6ddb824e9b37
+governance         = 36095837229 SUCCESS
+P14 provider-free  = 36095837211 FAILURE
+focused            = 13 PASS / 6 FAIL
+```
+
+The failed slice is **not sealed**.
+
+Failure details:
+- one focused router test fixture omitted `request.headers`;
+- five native-gateway tests hit timezone-naive control-plane timestamp defaults under UTC-aware
+  storage.
+
+These are real test/owner issues, but they are not the primary reason to continue the existing
+gateway design.
+
+Architecture review found the transitional gateway still made ordinary P14 Research depend on too
+much certification machinery:
+- P13 native-query attestation;
+- P13 exact-occurrence re-execution endpoint;
+- NativeExecutionManifest operator/resource inspection;
+- AuthorizedExecutionArtifact synthesis;
+- synthetic P10 `VerifiedExecutionSecurityFacts → ExecutionAccessSnapshot`;
+- required resource-binding validation before native execution;
+- Research hashes stuffed into Standard-named receipt fields.
+
+DMP-DEC-0048 therefore cuts forward architecture before test repair.
+
+Historical classification:
+
+```text
+DMP-DEC-0047
+= transitional thin-gateway correction
+= temporal shadow-authority blocker correctly removed
+= still too thick for ordinary production Research
+
+DMP-DEC-0048
+= final native-direct production execution ownership
+```
+
+Forward correction:
+capture Metabot-produced query A → direct same-session native Metabase execution → one widened
+DimaQueryReceipt → Evidence/Research lineage.
+
+Do not delete DMP-DEC-0047 or the failed-run evidence. Do not patch the old gateway merely to turn
+36095837211 green.
+
+Timezone correction scope:
+new P14 binding row defaults become timezone-aware. Do not globally refactor all legacy
+control-plane timestamps in this slice.
+
+status:
+`ARCHITECTURE RECLASSIFIED / OLD P14 GATEWAY NOT TO BE SEALED / NATIVE-DIRECT REFACTOR AUTHORIZED`.

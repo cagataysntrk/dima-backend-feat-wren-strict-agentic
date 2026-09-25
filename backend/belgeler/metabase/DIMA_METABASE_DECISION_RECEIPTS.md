@@ -2971,3 +2971,140 @@ decision.
 status:
 `SEALED / P14 THIN NATIVE GATEWAY AUTHORIZED / TEMPORAL SHADOW-AUTHORITY BLOCKER REMOVED`.
 
+
+
+---
+
+## DMP-DEC-0048 — Native Direct Execution / P13 Certification Microscope Cutover
+
+date: 2026-09-25
+
+supersedes forward authority:
+`DMP-DEC-0047` for ordinary production Research execution.
+
+DMP-DEC-0047 remains append-only historical evidence and is reclassified as a transitional
+thin-gateway correction that removed the temporal shadow-authority error but still carried too much
+P13/P10 machinery into the ordinary P14 hot path.
+
+### Binding decision
+
+```text
+METABASE + METABOT
+= ANALYTICAL TRUTH + ANALYTICAL EXECUTION
+
+DIMA
+= BUSINESS ONTOLOGY
++ RESEARCH
++ EVIDENCE / CLAIM LINEAGE
++ HYPOTHESIS
++ ROOT CAUSE
++ DECISION
++ ACTION
++ OUTCOME
++ MEMORY
+```
+
+```text
+METABASE PROVES THE ANALYSIS.
+DIMA PROVES THE LINEAGE AND DECISION CONTEXT.
+```
+
+### P13
+
+P13 is not deleted and its sealed history is not rewritten.
+
+Forward role:
+`CERTIFICATION MICROSCOPE`.
+
+Allowed:
+release/certification, benchmark diagnostics, incidents, forensics, silent-wrong investigation and
+high-risk compatibility analysis.
+
+Not allowed as mandatory ordinary Research middleware:
+`/api/dima/engine/v1/native-query-attestation` and
+`/api/dima/engine/v1/native-query-execution`.
+
+No P13 operator-grammar extension.
+
+### Production execution contract
+
+```text
+Research obligation
+→ same principal-scoped authenticated native Metabot session
+→ Metabot produces query A
+→ capture query A exactly
+→ same authenticated Metabase client
+→ native dataset execution of query A
+→ native result
+→ one DimaQueryReceipt
+→ Evidence
+→ Research state
+```
+
+Exactly one analytical execution. Dima neither rewrites query A nor creates query B.
+
+Metabase owns query validation/repair, permissions, metadata resolution, MBQL, QP, drivers and
+execution.
+
+### Principal/security decision
+
+`NativeSubjectBinding` is identity correlation only.
+Runtime must verify the presented native session with `/api/user/current`.
+
+Metabase remains permission authority.
+
+Forbidden:
+shared admin analytical session, global analytical service user, admin fallback and Dima-built
+shadow RLS/permission truth.
+
+Existing `security_profile` / `policy_version` columns may remain temporarily as
+non-authoritative compatibility metadata; no cosmetic migration churn is required.
+
+### Resource mapping decision
+
+Dima resource mappings may support business ontology/provenance/discovery, but they are not an
+operator-level authorization system and are not required for every ordinary native Research query.
+
+Generic P14 hot path must not inspect aggregation/temporal/filter/breakout/order-by structure to
+decide whether Metabase may execute its own native query.
+
+### P10 decision
+
+Generic P14 Research no longer requires
+`ExecutionAccessSnapshotIssuer.issue_research_material()`.
+
+Authenticated Metabase execution is the native permission enforcement owner. Add Dima-specific
+security checks only when they represent real product policy not owned by Metabase/database.
+
+### Receipt decision
+
+There remains exactly one receipt family: `DimaQueryReceipt`.
+
+For `authority_kind=research_material`, the single receipt contract is widened conditionally to
+native Research provenance. Research does not pretend to own Standard `projection_hash` or
+`resolved_intent_hash` semantics.
+
+Standard receipt behavior remains unchanged and must remain regression-GREEN.
+
+### Evidence decision
+
+Native Research `VERIFIED` means verified execution/subject/result/receipt/obligation lineage, not
+Dima re-certification of native analytical operator semantics. Receipted native result is Evidence;
+claim-level maturation remains P16+.
+
+### Current state at decision
+
+```text
+Platform HEAD before 0048 = 3dc544b95c05044e35c6903b720a6ddb824e9b37
+governance                 = 36095837229 SUCCESS
+P14 provider-free          = 36095837211 FAILURE
+focused                    = 13 PASS / 6 FAIL
+engine                     = cbe313af9ac2d5960f662068e433d328d896fb06
+release                    = 0.63.18-dima.6
+engine certification       = 36042062775 SUCCESS
+```
+
+The six RED tests are not authority to preserve the thick gateway. Architecture is cut first.
+
+status:
+`SEALED ARCHITECTURE / NATIVE-DIRECT P14 AUTHORIZED / P13 CERTIFICATION MICROSCOPE / CURRENT IMPLEMENTATION NOT YET SEALED`.

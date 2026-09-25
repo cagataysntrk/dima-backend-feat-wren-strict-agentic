@@ -3135,3 +3135,66 @@ Metabot/exact-occurrence/P5 Evidence without a second analytics/security/tempora
 
 P15 remains NOT STARTED until one real P14 production runtime/canary boundary exists.
 
+
+
+---
+
+# 2026-09-25 — DMP-DEC-0048 CURRENT EXECUTION STATUS
+
+Forward authority is now DMP-DEC-0048. DMP-DEC-0047 is transitional/history only.
+
+Current checkpoint before refactor:
+
+```text
+HEAD                      = 3dc544b95c05044e35c6903b720a6ddb824e9b37
+governance                = 36095837229 SUCCESS
+P14 provider-free         = 36095837211 FAILURE
+focused tests             = 13 PASS / 6 FAIL
+P14 native-direct         = IN PROGRESS / NOT SEALED
+P15                       = NOT STARTED
+engine change/build       = 0 / 0
+Luna / Sol / C1           = 0 / 0 / 0
+```
+
+The current 523-LOC-style thick gateway is not the target and must not be patched to preserve its
+architecture.
+
+Forward production path:
+
+```text
+ResearchSession / obligation
+→ principal-scoped native Metabot
+→ exact Metabot-produced query A
+→ direct native Metabase execution under same subject
+→ native result
+→ one DimaQueryReceipt
+→ Evidence
+→ Research state / user output
+```
+
+Mandatory removals/bypasses from generic P14 hot path:
+- P13 attestation as mandatory middleware;
+- P13 Dima re-execution endpoint as mandatory middleware;
+- operator-level NativeExecutionManifest semantic inspection;
+- AuthorizedExecutionArtifact synthesis only to satisfy historical P13 shape;
+- synthetic P10 `VerifiedExecutionSecurityFacts → ExecutionAccessSnapshot`;
+- required NativeResourceBinding row for every ordinary query;
+- Dima MBQL/operator/time/filter/ranking/breakout revalidation.
+
+Keep:
+- durable Research lifecycle and accepted brief;
+- no old-prompt reparse;
+- explicit Dima principal ↔ native subject correlation;
+- same principal-scoped native session;
+- exact native query occurrence capture and restart;
+- native runtime/result provenance;
+- one receipt family;
+- Evidence/Research linkage;
+- obligation-scoped failure isolation.
+
+Current RED classification:
+- `SimpleNamespace.headers` = focused test harness issue;
+- timezone-naive timestamps = legitimate owner bug; fix new P14 binding defaults timezone-aware
+  without global legacy timestamp refactor.
+
+But fix these only in the native-direct refactor, not by sealing the obsolete thick gateway.

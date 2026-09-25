@@ -608,3 +608,78 @@ Return after:
 - the thin native production gateway + real Research material flow is provider-free GREEN; or
 - a genuine native auth/resource-binding architectural STOP.
 
+
+
+---
+
+# 2026-09-25 — CURRENT TAKEOVER OVERRIDE — DMP-DEC-0048
+
+This is the forward implementation authority. It supersedes the ordinary-Research execution model in
+DMP-DEC-0047 while preserving all sealed history.
+
+Do not restart P13 and do not make P13 ordinary product middleware.
+
+Current state:
+
+```text
+HEAD               = 3dc544b95c05044e35c6903b720a6ddb824e9b37
+governance         = 36095837229 SUCCESS
+P14 provider-free  = 36095837211 FAILURE (13 PASS / 6 FAIL)
+engine             = cbe313af9ac2d5960f662068e433d328d896fb06
+release            = 0.63.18-dima.6
+P14                = NOT SEALED
+P15                = NOT STARTED
+```
+
+## Product ownership
+
+```text
+METABASE + METABOT = ANALYTICAL TRUTH + EXECUTION
+DIMA               = ONTOLOGY + RESEARCH + LINEAGE + DECISION SYSTEM
+```
+
+P13 = **CERTIFICATION MICROSCOPE**, not mandatory request middleware.
+
+## What to build now
+
+1. Prove from pinned source/tests where the exact Metabot-produced query representation already lives.
+   Prefer capture, never reconstruction.
+2. Persist enough of query A in existing `ResearchExecutionLink` to resume it without another
+   Metabot turn.
+3. Add the smallest direct transport to existing `NativeEngineBridge`:
+   same authenticated client → exact query A → native `/api/dataset` execution.
+4. Keep `NativeSubjectBinding` only as explicit identity correlation and verify
+   `/api/user/current`; Metabase owns permission decisions.
+5. Bypass/remove mandatory P13 attestation/re-execution, P10 synthetic access facts and operator-level
+   resource/MBQL inspection from ordinary Research.
+6. Widen the **one** `DimaQueryReceipt` contract cleanly for `research_material`. Do not fake
+   Standard projection/resolved-intent hashes.
+7. Evidence means receipted native execution/result lineage; it does not mean Dima re-proved native
+   COUNT/ranking/temporal/filter/breakout semantics.
+8. Fix focused test harness and timezone-aware defaults for new P14 binding rows.
+9. Run one focused provider-free seal + P5 receipt regressions.
+10. Only if necessary, one deterministic no-model native compatibility probe.
+11. After GREEN, one Luna Research canary. No automatic second paid run.
+12. If the canary is GREEN, P14 is done; immediately move to P15 Native Metabase Explorations.
+
+## Never do
+
+- shared admin/global service analytical session;
+- admin fallback;
+- second planner/compiler/canonicalizer;
+- Dima MBQL parser or query normalization layer;
+- Wren/raw SQL/Agent API fallback;
+- mandatory `attest_native_query()` / `execute_native_query()` in production Research;
+- mandatory NativeResourceBinding row for each native query;
+- second RLS/security authority;
+- second receipt family;
+- P13 grammar expansion;
+- engine/Metabot/QP/Lib/driver patch unless a genuine STOP is proven.
+
+## Stop only for a real architectural condition
+
+Stop if principal-scoped native auth cannot be maintained, Metabot query A cannot reach an existing
+native Metabase execution route unchanged without engine/core modification, direct execution loses
+tenant/security enforcement, or a duplicate analytics/security/receipt authority becomes necessary.
+
+Otherwise keep building product.
