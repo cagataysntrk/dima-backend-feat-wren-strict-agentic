@@ -36,6 +36,7 @@ def test_ns4_runtime_rehearsal_uses_six_turns_within_phase_separated_outer_ceili
     assert receipt["preacceptance_model_calls"] == 2
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 6
+    assert receipt["explicit_old_evidence_inspections"] == 1
     assert receipt["manager_turn_ceiling"] == 8
     assert receipt["manager_turn_headroom"] == 2
 
@@ -93,6 +94,7 @@ def test_d10_s_exact_canonical_relationship_parent_revision_path_completes():
     assert receipt["preacceptance_model_calls"] == 4
     assert receipt["research_manager_calls"] == 4
     assert receipt["manager_turn_total"] == 8
+    assert receipt["explicit_old_evidence_inspections"] == 1
     assert receipt["manager_turn_ceiling"] == 8
     assert receipt["completion_gate_final_state"] == "COMPLETED"
     assert receipt["directive_final_status"] == "APPLIED"
