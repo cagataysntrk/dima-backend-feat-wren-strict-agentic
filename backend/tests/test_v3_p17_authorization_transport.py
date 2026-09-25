@@ -409,3 +409,23 @@ def test_repository_historical_recovery_001_receipt_is_unchanged_legacy_evidence
             "P17 cognition certification"
         ),
     }
+
+
+def test_repository_structured_schema_attempt_002_receipt_is_immutable_evidence():
+    path = Path(
+        "lab/metabase/p17/authorizations/"
+        "p17-manager-structured-schema--attempt-002.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["decision"] == "DMP-DEC-0052"
+    assert payload["failure_family_id"] == "p17-manager-structured-schema"
+    assert payload["attempt_in_family"] == 2
+    assert payload["authorization_id"] == (
+        "p17-manager-structured-schema--attempt-002"
+    )
+    assert payload["candidate_product_sha"] == (
+        "f940a9731be98212b47b44391e28080648c00629"
+    )
+    assert payload["provider_free_run_id"] == 36147150264
+    assert payload["previous_red_run_id"] == 36140130559
