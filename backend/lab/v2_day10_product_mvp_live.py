@@ -38,6 +38,7 @@ os.environ.setdefault("DIMA_VQR_EMBEDDER", "off")
 os.environ.setdefault("DIMA_SCHEDULER_ENABLED", "false")
 os.environ.setdefault("DIMA_INTERACTION_LOG", "false")
 
+from app import fanout
 from app.config import get_settings
 from app.contracts import ContractStore
 from app.llm import build_generator
@@ -107,6 +108,7 @@ _CAPTURED_DIAGNOSTIC_SCHEMAS = {
     "dima_standard_coverage_v1",
     "dima_intent_draft_v1",
     "dima_intent_coverage_v1",
+    "dima_research_manager_action_v1",
     "dima_bounded_semantic_link_v1",
     "dima_semantic_decomposition_repair_v1",
 }
@@ -590,6 +592,17 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         datasource=settings.datasource,
         connection_info=settings.connection_dict(),
     )
+
+    # Canonical paid runners start from a clean checkout while the compiled Wren tree
+    # is derived at runtime. Fanout proof is likewise a derived build artifact and must
+    # be measured against that exact compiled MDL before Product execution. This uses
+    # zero LLM/provider calls and preserves CrossDomainJoinGate's fail-closed semantics.
+    _, refreshed_fanout = fanout.refresh_wren_service_certificate(inner)
+    if refreshed_fanout.get("mdl_version") != inner.mdl_version:
+        raise PaidHarnessError(
+            "current-MDL fanout certificate refresh produced mismatched version"
+        )
+
     service = CountingWren(inner)
     budget = RoleCallBudget(
         max_total=max_total_model_calls,
