@@ -516,6 +516,7 @@ def _post_acceptance_native_schema(
     allowed_actions: tuple[str, ...] | None = None,
     inspectable_evidence_refs: tuple[str, ...] = (),
     resolve_provenance: tuple[str, ...] = ("AGENT_DERIVED",),
+    resolve_semantics_parent_obligation_ids: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Expose only actions that are legal after AcceptedTurnContract commit.
 
@@ -576,6 +577,25 @@ def _post_acceptance_native_schema(
                     {
                         "type": "string",
                         "enum": list(dict.fromkeys(inspectable_evidence_refs)),
+                    },
+                    {"type": "null"},
+                ]
+            }
+        )
+
+    semantic_parent_schema = (schema.get("properties") or {}).get(
+        "semantic_parent_obligation_id"
+    )
+    if isinstance(semantic_parent_schema, dict):
+        semantic_parent_schema.clear()
+        semantic_parent_schema.update(
+            {
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "enum": list(
+                            dict.fromkeys(resolve_semantics_parent_obligation_ids)
+                        ),
                     },
                     {"type": "null"},
                 ]
@@ -1230,6 +1250,38 @@ class ResearchManagerLoop:
             item.status == ResearchDirectiveDispositionStatus.OPEN
             for item in runtime.directive_dispositions
         )
+
+        root_feasible = {
+            root.root_id for root in root_states if root.feasible_next_test
+        }
+        semantic_expansion_parents: list[str] = []
+        ledger = runtime.ledger
+        if ledger is not None and evidence_store is not None and effective_refs:
+            evidence_by_ref = {}
+            for ref in effective_refs:
+                try:
+                    evidence_by_ref[ref] = evidence_store.get(ref)
+                except Exception:
+                    continue
+            for item in ledger.items:
+                if item.polarity != ObligationPolarity.REQUIRED:
+                    continue
+                if item.status == ObligationStatus.SUPERSEDED:
+                    continue
+                if item.obligation_id in root_feasible:
+                    continue
+                if not any(
+                    getattr(evidence, "verified", False)
+                    and self._evidence_belongs_to_parent_lineage(
+                        runtime=runtime,
+                        evidence=evidence,
+                        parent_obligation_id=item.obligation_id,
+                    )
+                    for evidence in evidence_by_ref.values()
+                ):
+                    continue
+                semantic_expansion_parents.append(item.obligation_id)
+
         context = ManagerActionAvailabilityContext(
             root_states=tuple(root_states),
             inspectable_old_evidence_refs=tuple(dict.fromkeys(inspectable_old)),
@@ -1237,6 +1289,9 @@ class ResearchManagerLoop:
             fresh_disclosed_evidence_ref=fresh_ref,
             fresh_disclosed_verified=fresh_verified,
             open_adaptive_directive_count=open_adaptive,
+            semantic_expansion_parent_obligation_ids=tuple(
+                dict.fromkeys(semantic_expansion_parents)
+            ),
             remaining_manager_turns=max(
                 runtime.budget.max_total_manager_turns
                 - runtime.snapshot.manager_turns,
@@ -1456,6 +1511,9 @@ class ResearchManagerLoop:
             allowed_actions=availability.available_actions,
             inspectable_evidence_refs=availability.inspectable_evidence_refs,
             resolve_provenance=availability.post_acceptance_resolve_provenance,
+            resolve_semantics_parent_obligation_ids=(
+                availability.resolve_semantics_parent_obligation_ids
+            ),
         )
         system_prompt = (
             _SYSTEM + _ROOT_CAUSE_SYSTEM_ADDENDUM
@@ -2285,6 +2343,38 @@ class ResearchManagerLoop:
                     result={
                         "rejected": "manager_action_unavailable",
                         "reason_codes": list(reasons),
+                    },
+                )
+                continue
+
+            if (
+                decision.action == ManagerActionKind.RESOLVE_SEMANTICS
+                and decision.resolve_provenance == "AGENT_DERIVED"
+                and decision.semantic_parent_obligation_id
+                not in availability.resolve_semantics_parent_obligation_ids
+            ):
+                observations.append(
+                    {
+                        "kind": "tool_rejected",
+                        "action": decision.action.value,
+                        "message": (
+                            "AGENT_DERIVED semantic parent is unavailable in current "
+                            "governed action profile"
+                        ),
+                        "reason_codes": [
+                            "SEMANTIC_PARENT_NOT_AVAILABLE"
+                        ],
+                    }
+                )
+                frontier.observe(
+                    progress_before=progress_before,
+                    action=decision,
+                    runtime=runtime,
+                    result={
+                        "rejected": "semantic_parent_unavailable",
+                        "parent_obligation_id": (
+                            decision.semantic_parent_obligation_id
+                        ),
                     },
                 )
                 continue
