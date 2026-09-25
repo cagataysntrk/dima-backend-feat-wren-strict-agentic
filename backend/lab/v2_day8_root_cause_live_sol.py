@@ -151,10 +151,58 @@ class ScriptedSentinelLLM:
         self.calls = 0
         self.reject_next_test_once = reject_next_test_once
         self._rejected_next_test_sent = False
+        self.inapplicable_next_test_absent = False
+        self.redundant_fresh_inspect_absent = False
+
+    @staticmethod
+    def _schema_property_values(schema: dict, property_name: str) -> set[str]:
+        values: set[str] = set()
+        defs = schema.get("$defs") or {}
+
+        def resolve(node):
+            if (
+                isinstance(node, dict)
+                and isinstance(node.get("$ref"), str)
+                and node["$ref"].startswith("#/$defs/")
+            ):
+                return defs[node["$ref"].rsplit("/", 1)[-1]]
+            return node
+
+        def walk(node):
+            node = resolve(node)
+            if isinstance(node, dict):
+                props = node.get("properties") or {}
+                if property_name in props:
+                    collect(props[property_name])
+                for key, value in node.items():
+                    if key != "$defs":
+                        walk(value)
+            elif isinstance(node, list):
+                for value in node:
+                    walk(value)
+
+        def collect(node):
+            node = resolve(node)
+            if isinstance(node, dict):
+                enum = node.get("enum")
+                if isinstance(enum, list):
+                    values.update(str(item) for item in enum if item is not None)
+                const = node.get("const")
+                if isinstance(const, str):
+                    values.add(const)
+                for value in node.values():
+                    collect(value)
+            elif isinstance(node, list):
+                for value in node:
+                    collect(value)
+
+        walk(schema)
+        return values
 
     def structured_json(self, _system, user, **_kwargs):
         self.calls += 1
         payload = json.loads(user)
+        schema = _kwargs.get("schema") or {}
         ledgers = payload.get("HYPOTHESIS_LEDGERS") or []
         entries = ledgers[0]["entries"] if ledgers else []
         ready = payload.get("READY_RESEARCH_TASKS") or []
@@ -188,9 +236,14 @@ class ScriptedSentinelLLM:
                 and not rejected
             ):
                 self._rejected_next_test_sent = True
-                task_kind = "TREND"
-            else:
-                task_kind = "QUERY"
+                advertised = self._schema_property_values(
+                    schema,
+                    "next_test_task_kind",
+                )
+                assert "QUERY" in advertised, advertised
+                assert "TREND" not in advertised, advertised
+                self.inapplicable_next_test_absent = True
+            task_kind = "QUERY"
             return {
                 "action": "propose_hypothesis_next_test",
                 "hypothesis_ref": hypothesis["hypothesis_id"],
@@ -217,13 +270,16 @@ class ScriptedSentinelLLM:
             }
 
         if delta and not delta.get("inspected"):
-            return {
-                "action": "inspect_evidence",
-                "evidence_ref": delta["evidence_ref"],
-            }
+            assert delta.get("disclosed_in_current_prompt") is True
+            assert delta.get("inspection_required") is False
+            advertised_actions = self._schema_property_values(schema, "action")
+            assert "inspect_evidence" not in advertised_actions, advertised_actions
+            self.redundant_fresh_inspect_absent = True
 
         if not hypothesis.get("evidence_links"):
-            assert delta is not None and delta.get("inspected")
+            assert delta is not None
+            assert delta.get("verified") is True
+            assert delta.get("disclosed_in_current_prompt") is True
             return {
                 "action": "propose_hypothesis_evidence_relation",
                 "hypothesis_ref": hypothesis["hypothesis_id"],
@@ -664,45 +720,33 @@ def run_scenario(manager_llm) -> dict[str, Any]:
         }
     )
 
-    # 4) VERIFIED result must be inspected before epistemic use.
+    # 4) Fresh VERIFIED result is disclosed directly to cognition. Production marks
+    # that exact Evidence inspected server-side after the scoped decision and before
+    # epistemic mutation; it does not spend another cognition turn on inspect_evidence.
     d4 = _decide(loop=loop, fixture=fixture, observations=observations)
     action_sequence.append(d4.action.value)
-    if d4.action != ManagerActionKind.INSPECT_EVIDENCE:
+    if d4.action != ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION:
         raise LiveBehaviorFailure(
-            f"expected inspect_evidence fourth, got {d4.action.value}"
+            "expected propose_hypothesis_evidence_relation fourth, "
+            f"got {d4.action.value}"
         )
-    if d4.evidence_ref != second.evidence.artifact_id:
-        raise LiveBehaviorFailure("model inspected a stale/non-follow-up Evidence artifact")
-    inspect_call = loop._compile_tool(
-        decision=d4,
-        message_id=fixture.message_id,
-        source_hash="0" * 64,
-        request_ref=fixture.request_ref,
-        runtime=fixture.runtime,
-    )
-    fixture.runtime.call_tool(inspect_call, executor=fixture.executor)
-    observations.append(
-        {
-            "kind": "evidence_inspected",
-            "evidence_ref": second.evidence.artifact_id,
-        }
-    )
-
-    # 5) Only after inspection may cognition propose SUPPORTS/CONTRADICTS.
-    d5 = _decide(loop=loop, fixture=fixture, observations=observations)
-    action_sequence.append(d5.action.value)
-    if d5.action != ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION:
+    if d4.hypothesis_relation_evidence_ref != second.evidence.artifact_id:
         raise LiveBehaviorFailure(
-            "expected propose_hypothesis_evidence_relation fifth, "
-            f"got {d5.action.value}"
+            "epistemic relation did not use the fresh follow-up Evidence"
         )
-    if d5.hypothesis_relation_evidence_ref != second.evidence.artifact_id:
-        raise LiveBehaviorFailure("epistemic relation did not use the inspected follow-up Evidence")
+    if second.evidence.artifact_id not in fixture.runtime.snapshot.inspected_evidence_refs:
+        fixture.runtime.mark_evidence_inspected(second.evidence.artifact_id)
+        observations.append(
+            {
+                "kind": "fresh_evidence_disclosed",
+                "evidence_ref": second.evidence.artifact_id,
+            }
+        )
     updated = HypothesisProposalBoundary(ledger=fixture.ledger).attach_relation(
         HypothesisEvidenceRelationProposal(
-            hypothesis_ref=d5.hypothesis_ref,
-            evidence_ref=d5.hypothesis_relation_evidence_ref,
-            relation=d5.hypothesis_relation,
+            hypothesis_ref=d4.hypothesis_ref,
+            evidence_ref=d4.hypothesis_relation_evidence_ref,
+            relation=d4.hypothesis_relation,
         )
     )
 
@@ -737,6 +781,12 @@ def run_scenario(manager_llm) -> dict[str, Any]:
         "action_sequence": action_sequence,
         "next_test_rejections": next_test_rejections,
         "next_test_rejection_count": len(next_test_rejections),
+        "inapplicable_next_test_absent": bool(
+            getattr(manager_llm, "inapplicable_next_test_absent", False)
+        ),
+        "redundant_fresh_inspect_absent": bool(
+            getattr(manager_llm, "redundant_fresh_inspect_absent", False)
+        ),
         "initial_evidence_ref": fixture.initial_evidence_ref,
         "followup_evidence_ref": second.evidence.artifact_id,
         "followup_verified": second.evidence.verified,
@@ -744,7 +794,7 @@ def run_scenario(manager_llm) -> dict[str, Any]:
             second.evidence.artifact_id
             in fixture.runtime.snapshot.inspected_evidence_refs
         ),
-        "relation": d5.hypothesis_relation.value,
+        "relation": d4.hypothesis_relation.value,
         "candidate_cause_allowed": candidate.allowed,
         "confirmed_cause_allowed": confirmed.allowed,
         "confirmed_cause_code": confirmed.code.value,
