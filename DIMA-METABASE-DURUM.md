@@ -7,31 +7,59 @@
 > evidence unless they explicitly say they are current under DMP-DEC-0048 + DMP-DEC-0049.
 
 ```text
-current product/code checkpoint      = c031a5f139dba5321c823d8c7af1399f1734df71
-branch                               = feat/dima-metabase-platform
-forward authority                    = DMP-DEC-0048 + DMP-DEC-0049
+certified product/code checkpoint     = d1bc5291b315ff19c3456d08ff1820e983d85942
+branch                                = feat/dima-metabase-platform
+forward authority                     = DMP-DEC-0048 + DMP-DEC-0049
 
-engine gitlink                       = cbe313af9ac2d5960f662068e433d328d896fb06
-engine release                       = 0.63.18-dima.6
-engine digest                        = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
-engine certification                 = 36042062775 SUCCESS
-engine changes/builds during P17     = 0 / 0
+engine gitlink                        = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                        = 0.63.18-dima.6
+engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+engine certification                  = 36042062775 SUCCESS
+engine changes/builds during P17      = 0 / 0
 
-current governance                   = 36120611316 SUCCESS
-P17 bounded-manager provider-free    = 36120611264 SUCCESS
-P17 focused regression               = 13 PASS
-P16 claim-lineage regression         = 6 PASS
-P15 native Exploration regression    = 5 PASS
-P14 native-direct regression         = 17 PASS
+post-live-root-fix governance         = 36128262891 SUCCESS
+P17 recursive provider-free           = 36128262857 SUCCESS
+P17 focused recursive regression      = 29 PASS
+P16 claim-lineage regression          = 6 PASS
+P15 native Exploration regression     = 5 PASS
+P14 native-direct regression          = 17 PASS
 
-P14                                  = SEALED
-P15                                  = SEALED
-P16                                  = SEALED
-P17 bounded-manager foundation       = PROVIDER-FREE GREEN
-P17 recursive-investigation closure  = OPEN / NOT SEALED
-P18                                  = BLOCKED UNTIL P17 RECURSIVE SEAL
-UI / UX                              = FORBIDDEN UNTIL P21 SEALED
+one authorized Luna live canary       = 36127753645 FAILURE
+live canary platform SHA              = 058a484728965ed8e5ad39bd249e5e88217c1496
+live canary dispatch count            = 1
+P17 manager Luna calls before RED     = 1
+base Metabot OpenRouter request events= 10
+P17 recursive follow-up occurrences   = 0
+Sol calls                             = 0
+
+live RED root cause                   = typed adapter nullability mismatch
+root-fix code                         = b81b8aaa1ff06faa9cab67511b47b8730d94a8f3
+root-fix regression                   = 7035fc7236e9761ace12f1e73b5bfed8403127dc
+
+P14                                   = SEALED
+P15                                   = SEALED
+P16                                   = SEALED
+P17 bounded-manager foundation        = PROVIDER-FREE GREEN
+P17 recursive authority               = PROVIDER-FREE GREEN
+P17 live cognition evidence           = RED / INCOMPLETE
+P17 overall                           = NOT SEALED
+P18                                   = BLOCKED UNTIL P17 LIVE SEAL
+UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 ```
+
+### CURRENT P17 GATE
+
+The only authorized paid Luna canary has been consumed. It failed before the first accepted P17
+reasoning step was persisted because the live draft schema allowed
+`expected_information_gain = null` while deterministic `ManagerProposal` correctly forbids it for
+non-STOP proposals.
+
+That adapter-contract defect is root-fixed and fully provider-free GREEN. It did **not** require an
+engine patch, P13 reopening, a second executor, a second receipt family, a second claim authority, or
+Dima-owned analytics.
+
+Do not mark P17 SEALED and do not begin P18. Do not dispatch another paid Luna canary without an
+explicit supervisor decision. The append-only evidence is `DMP-P17-LIVE-RED-001`.
 
 Permanent forward split:
 
