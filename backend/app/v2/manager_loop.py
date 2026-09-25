@@ -97,6 +97,7 @@ class ManagerActionKind(StrEnum):
     PROPOSE_BRANCHES = "propose_branches"
     DISPOSITION_RESEARCH_DIRECTIVE = "disposition_research_directive"
     PROPOSE_HYPOTHESIS = "propose_hypothesis"
+    PROPOSE_HYPOTHESIS_WITH_NEXT_TEST = "propose_hypothesis_with_next_test"
     PROPOSE_HYPOTHESIS_EVIDENCE_RELATION = "propose_hypothesis_evidence_relation"
     PROPOSE_HYPOTHESIS_NEXT_TEST = "propose_hypothesis_next_test"
     RUN_ANALYTICS = "run_analytics"
@@ -284,7 +285,10 @@ class ManagerDecisionTransport(FrozenModel):
                     "directive disposition requires directive_id + evidence_ref + "
                     "NO_MATERIAL_DIRECTION + bounded reason"
                 )
-        elif self.action == ManagerActionKind.PROPOSE_HYPOTHESIS:
+        elif self.action in {
+            ManagerActionKind.PROPOSE_HYPOTHESIS,
+            ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST,
+        }:
             if (
                 not self.hypothesis_parent_obligation_id
                 or not self.hypothesis_statement
@@ -292,9 +296,33 @@ class ManagerDecisionTransport(FrozenModel):
                 or not self.hypothesis_trigger_evidence_refs
             ):
                 raise ValueError(
-                    "propose_hypothesis root obligation + statement + semantic handles "
+                    "hypothesis proposal root obligation + statement + semantic handles "
                     "+ trigger evidence gerektirir"
                 )
+            if self.action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST:
+                if (
+                    self.next_test_task_kind is None
+                    or not self.next_test_input_handles
+                    or not self.next_test_trigger_evidence_ref
+                    or not self.next_test_material_reason
+                ):
+                    raise ValueError(
+                        "composite hypothesis proposal requires first governed next-test "
+                        "kind + inputs + trigger evidence + material reason"
+                    )
+                if (
+                    self.next_test_trigger_evidence_ref
+                    not in self.hypothesis_trigger_evidence_refs
+                ):
+                    raise ValueError(
+                        "composite next-test trigger must also trigger the proposed hypothesis"
+                    )
+                if (self.next_test_ranking_direction is None) != (
+                    self.next_test_ranking_limit is None
+                ):
+                    raise ValueError(
+                        "next-test ranking direction + limit birlikte verilmelidir"
+                    )
         elif self.action == ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION:
             if (
                 not self.hypothesis_ref
@@ -371,7 +399,10 @@ class ManagerDecisionTransport(FrozenModel):
             self.hypothesis_trigger_evidence_refs,
             self.hypothesis_limitations,
         )
-        if self.action != ManagerActionKind.PROPOSE_HYPOTHESIS and any(
+        if self.action not in {
+            ManagerActionKind.PROPOSE_HYPOTHESIS,
+            ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST,
+        } and any(
             value not in (None, (), []) for value in hypothesis_register_values
         ):
             raise ValueError(
@@ -398,7 +429,10 @@ class ManagerDecisionTransport(FrozenModel):
             self.next_test_ranking_direction,
             self.next_test_ranking_limit,
         )
-        if self.action != ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST and any(
+        if self.action not in {
+            ManagerActionKind.PROPOSE_HYPOTHESIS_NEXT_TEST,
+            ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST,
+        } and any(
             value not in (None, (), []) for value in next_test_values
         ):
             raise ValueError(
@@ -545,7 +579,11 @@ Rules:
 - AGENT_DERIVED semantic discovery requires accepted parent + inspected verified evidence.
 - Rejected attempts leave no semantic authority to merge.
 - run_analytics/run_relationship may reference only accepted/derived obligation IDs.
-- Evidence-grounded executable branches MUST first be proposed with propose_branches.
+- Evidence-grounded executable branches MUST first be proposed with propose_branches, EXCEPT the
+  first ROOT_CAUSE next test carried by propose_hypothesis_with_next_test. That composite action is
+  still only a bounded cognition plan: the server validates the hypothesis, mints its ID, validates
+  the next test through HypothesisNextTestBoundary, mints the ResearchTask ID and executes through
+  the existing trust plane.
 - propose_branches registers bounded typed candidates only; it NEVER executes data work.
 - Every derived run_analytics must select a task already listed in READY_RESEARCH_TASKS.
 - Every derived branch must cite parent obligation + inspected evidence.
@@ -564,9 +602,14 @@ _ROOT_CAUSE_SYSTEM_ADDENDUM = """
 DAY8 ROOT_CAUSE RULES:
 - Hypotheses are cognition proposals, never Evidence or canonical semantic truth.
 - propose_hypothesis may use only runtime-issued h* aliases and current VERIFIED inspected Evidence.
+- propose_hypothesis_with_next_test is allowed only when one current inspected VERIFIED Evidence item
+  can ground BOTH a new hypothesis and its first material governed next test. Never provide a
+  hypothesis ID or ResearchTask ID for this action; server identity owners remain authoritative.
 - Trigger Evidence does NOT become SUPPORTS automatically.
-- SUPPORTS/CONTRADICTS requires propose_hypothesis_evidence_relation explicitly.
-- propose_hypothesis_next_test selects a task_kind ONLY from ROOT_CAUSE_NEXT_TEST_CONTRACT and uses existing h* inputs only.
+- SUPPORTS/CONTRADICTS requires propose_hypothesis_evidence_relation explicitly, including after a
+  composite hypothesis+next-test action. Executing a next test never creates an evidence relation.
+- propose_hypothesis_next_test and the composite first next test select a task_kind ONLY from
+  ROOT_CAUSE_NEXT_TEST_CONTRACT and use existing h* inputs only.
 - ROOT_CAUSE_NEXT_TEST_CONTRACT maps each advertised task kind to its existing DIRECT capability and required semantic shape; do not invent a missing shape.
 - h* aliases are opaque identities. Use SEMANTIC_HANDLE_CATALOG for their governed target_kind/provenance; never re-resolve an already-known handle merely to rediscover its type.
 - Before AGENT_DERIVED resolve_semantics, check whether a material next test can already be formed from ROOT_CAUSE_NEXT_TEST_CONTRACT + SEMANTIC_HANDLE_CATALOG. Prefer existing governed handles; semantic expansion is for a materially missing concept grounded in inspected Evidence, not a default exploration step.
@@ -1436,6 +1479,79 @@ class ResearchManagerLoop:
             cancel_check=self._cancel_check,
         )
 
+    def _account_root_next_test_as_adaptive_branch(
+        self,
+        *,
+        runtime: ManagerRuntime,
+        evidence_store,
+        task,
+        root_obligation_id: str,
+        trigger_evidence_ref: str,
+        result_evidence,
+    ) -> tuple[str, ...]:
+        """Account only a proven same-root successful next test as ADAPT_ON_EVIDENCE.
+
+        The directive contract is not relaxed here.  The candidate task must already be
+        a server-materialized AGENT_DERIVED child under the same ROOT_CAUSE obligation,
+        directly descended from the inspected VERIFIED trigger Evidence's task, and its
+        own execution must have produced VERIFIED Evidence.  A blocked/failed task can
+        never close the directive.
+        """
+        contract = runtime.accepted_contract
+        if contract is None:
+            return ()
+        trigger = evidence_store.get(trigger_evidence_ref)
+        if not trigger.verified:
+            raise RootCauseOrchestrationError(
+                "adaptive root next-test trigger must be VERIFIED Evidence"
+            )
+        if trigger_evidence_ref not in runtime.snapshot.inspected_evidence_refs:
+            raise RootCauseOrchestrationError(
+                "adaptive root next-test trigger must be inspected"
+            )
+        if (
+            task.origin != "AGENT_DERIVED"
+            or task.parent_obligation_id != root_obligation_id
+            or task.trigger_evidence_ref != trigger_evidence_ref
+            or task.parent_task_id != trigger.task_id
+            or task.state != "complete"
+        ):
+            raise RootCauseOrchestrationError(
+                "root next-test provenance is not equivalent to a governed material branch"
+            )
+        if (
+            result_evidence is None
+            or not result_evidence.verified
+            or result_evidence.task_id != task.task_id
+        ):
+            raise RootCauseOrchestrationError(
+                "adaptive root next-test requires successful VERIFIED result Evidence"
+            )
+
+        accounted: list[str] = []
+        for directive in contract.research_directives:
+            if (
+                directive.directive_type != ResearchDirectiveType.ADAPT_ON_EVIDENCE
+                or directive.parent_obligation_id != root_obligation_id
+            ):
+                continue
+            current = runtime.directive_disposition(directive.directive_id)
+            if current.status != ResearchDirectiveDispositionStatus.OPEN:
+                continue
+            runtime.account_research_directive(
+                directive_id=directive.directive_id,
+                status=ResearchDirectiveDispositionStatus.APPLIED,
+                evidence_ref=trigger_evidence_ref,
+                branch_task_refs=(task.task_id,),
+                reason=(
+                    "same-root governed hypothesis next test executed with "
+                    "verified Evidence and accounted as material adaptive branch"
+                ),
+            )
+            accounted.append(directive.directive_id)
+        return tuple(accounted)
+
+
     def understand(
         self,
         *,
@@ -1936,6 +2052,198 @@ class ResearchManagerLoop:
                     runtime=runtime,
                     result={"rejected": "clarification_ungrounded"},
                 )
+                continue
+
+            if decision.action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST:
+                try:
+                    if not root_cause_ledgers:
+                        raise RootCauseOrchestrationError(
+                            "Day8 composite epistemic action requires active ROOT_CAUSE authority"
+                        )
+                    root_id = str(decision.hypothesis_parent_obligation_id)
+                    ledger = root_cause_ledgers[root_id]
+                    hypothesis = HypothesisProposalBoundary(
+                        ledger=ledger
+                    ).register(
+                        HypothesisProposal(
+                            statement=decision.hypothesis_statement,
+                            semantic_handle_refs=self._decode_handles(
+                                decision.hypothesis_semantic_handles
+                            ),
+                            trigger_evidence_refs=decision.hypothesis_trigger_evidence_refs,
+                            limitations=decision.hypothesis_limitations,
+                        )
+                    )
+                    observations.append(
+                        {
+                            "kind": "hypothesis_registered",
+                            "result": {
+                                "hypothesis_id": hypothesis.hypothesis_id,
+                                "parent_obligation_id": hypothesis.parent_obligation_id,
+                                "status": hypothesis.status.value,
+                                "trigger_evidence_refs": list(
+                                    hypothesis.trigger_evidence_refs
+                                ),
+                                "composite_plan": True,
+                            },
+                        }
+                    )
+
+                    next_test_proposal = HypothesisNextTestProposal(
+                        hypothesis_ref=hypothesis.hypothesis_id,
+                        task_kind=decision.next_test_task_kind,
+                        input_refs=self._decode_handles(
+                            decision.next_test_input_handles
+                        ),
+                        trigger_evidence_ref=decision.next_test_trigger_evidence_ref,
+                        material_reason=decision.next_test_material_reason,
+                        ranking_direction=decision.next_test_ranking_direction,
+                        ranking_limit=decision.next_test_ranking_limit,
+                    )
+                    task = HypothesisNextTestBoundary(
+                        ledger=ledger,
+                        runtime=runtime,
+                        evidence_store=executor.evidence_store,
+                        semantic_handles=self._root_cause_context.semantic_handles,
+                        task_registry=task_registry,
+                        tenant_binding=self._root_cause_context.tenant_binding,
+                        context_version=self._root_cause_context.context_version,
+                        task_service=self._research_tasks,
+                        capabilities=self._capabilities,
+                    ).materialize(next_test_proposal)
+                    capability = self._research_tasks.capability_for_task_kind(
+                        next_test_proposal.task_kind
+                    )
+                    execution = self._execute_scheduled_task(
+                        runtime=runtime,
+                        executor=executor,
+                        task_registry=task_registry,
+                        task=task,
+                        capability_key=capability,
+                        ranking_direction=decision.next_test_ranking_direction,
+                        ranking_limit=decision.next_test_ranking_limit,
+                    )
+                    execution_outcome = ResearchExecutionOutcome.project(execution)
+                    result_view = {
+                        "hypothesis_id": hypothesis.hypothesis_id,
+                        "task_id": execution.task.task_id,
+                        "task_kind": execution.task.task_kind,
+                        "state": execution.task.state,
+                        "trigger_evidence_ref": execution.task.trigger_evidence_ref,
+                        "evidence_ref": None,
+                        "tool_id": execution.contract.tool_id,
+                    }
+                    if execution_outcome.blocked:
+                        observations.append(
+                            {
+                                "kind": "deterministic_task_blocked",
+                                "task_id": execution.task.task_id,
+                                "tool_id": execution.contract.tool_id,
+                                "context": "hypothesis_composite_next_test",
+                                "result": self._manager_safe(execution.observation),
+                            }
+                        )
+                        self._emit_progress(
+                            "research_task_blocked",
+                            (execution.task.task_id,),
+                        )
+                    else:
+                        evidence = execution_outcome.require_evidence()
+                        result_view["evidence_ref"] = evidence.artifact_id
+                        observations.append(
+                            {
+                                "kind": "hypothesis_next_test_executed",
+                                "result": result_view,
+                                "composite_plan": True,
+                            }
+                        )
+                        self._emit_progress(
+                            "evidence_verified",
+                            (evidence.artifact_id,),
+                        )
+                        if evidence.evidence_kind == "relationship_analytics":
+                            self._emit_progress(
+                                "relationship_checked",
+                                (evidence.artifact_id,),
+                            )
+                        accounted = self._account_root_next_test_as_adaptive_branch(
+                            runtime=runtime,
+                            evidence_store=executor.evidence_store,
+                            task=execution.task,
+                            root_obligation_id=root_id,
+                            trigger_evidence_ref=str(
+                                decision.next_test_trigger_evidence_ref
+                            ),
+                            result_evidence=evidence,
+                        )
+                        if accounted:
+                            observations.append(
+                                {
+                                    "kind": "adaptive_branch_executed",
+                                    "task_id": execution.task.task_id,
+                                    "evidence_ref": evidence.artifact_id,
+                                    "source": "hypothesis_next_test",
+                                    "directive_ids": list(accounted),
+                                }
+                            )
+                            self._emit_progress(
+                                "adaptive_branch_opened",
+                                (execution.task.task_id,),
+                            )
+
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result=result_view,
+                    )
+                    root_changed = self._reconcile_root_obligations(
+                        runtime=runtime,
+                        root_cause_ledgers=root_cause_ledgers,
+                        task_registry=task_registry,
+                    )
+                    if root_changed:
+                        observations.append(
+                            {
+                                "kind": "root_cause_obligation_reconciled",
+                                "status": "VERIFIED",
+                            }
+                        )
+                    if self._try_deterministic_finish(
+                        runtime=runtime,
+                        task_registry=task_registry,
+                    ):
+                        observations.append(
+                            {
+                                "kind": "finish",
+                                "status": "accepted",
+                                "reason": "deterministic_completion_gate",
+                            }
+                        )
+                        break
+                except (
+                    HypothesisProposalError,
+                    RootCauseOrchestrationError,
+                    ResearchTaskInvocationCompileError,
+                    KeyError,
+                    ValueError,
+                ) as exc:
+                    observations.append(
+                        {
+                            "kind": "tool_rejected",
+                            "action": decision.action.value,
+                            "message": str(exc),
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result={
+                            "root_cause_composite_error": type(exc).__name__,
+                            "message": str(exc),
+                        },
+                    )
                 continue
 
             if decision.action in {
