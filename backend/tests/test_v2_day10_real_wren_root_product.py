@@ -1464,11 +1464,9 @@ def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_ev
         "dima_intent_draft_v1",
         "dima_intent_coverage_v1",
     ]
-    assert len(repair.calls) == 1
-    request = repair.calls[0][0][0]
-    assert request.obligation_id == "U_ROOT"
-    assert len(request.available_scope_groups) == 1
-    assert len(request.available_scope_groups[0].member_source_tokens) == 2
+    # Unique full-cover governed scope is server-deterministic; the repair
+    # cognition provider must not arbitrate whether this scope exists.
+    assert repair.calls == []
 
     items = {item.obligation_id: item for item in runtime.ledger.items}
     scope_metric_handles = tuple(
