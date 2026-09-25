@@ -16,7 +16,6 @@ from app.v2.manager_models import (
     ManagerCapabilityKey,
     ObligationOrigin,
     RepresentabilityDecision,
-    SemanticBindingRef,
     StandardProjection,
     UserIntentEnvelope,
 )
@@ -207,13 +206,6 @@ def _accepted_three_obligation_runtime():
                 origin=ObligationOrigin.USER_MUST,
                 source_refs=(refs[idx - 1].source_ref,),
                 semantic_handle_refs=(metric_handles[idx - 1].handle_id,),
-                semantic_bindings=(
-                    SemanticBindingRef(
-                        source_ref=refs[idx - 1].source_ref,
-                        handle_id=metric_handles[idx - 1].handle_id,
-                        target_kind="metric",
-                    ),
-                ),
             )
             for idx in range(1, 4)
         ),
