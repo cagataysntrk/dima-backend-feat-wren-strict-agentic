@@ -1,17 +1,47 @@
 # DIMA + METABASE — LIVING STATUS
 
+## DMP-DEC-0053 — PERMANENT P17 BOUNDARY
+
+```text
+P17 IS AN INVESTIGATION LANGUAGE,
+NOT AN ANALYTICS ENGINE.
+
+AUTONOMY DOES NOT MEAN
+EVERY FIELD COMBINATION IS LEGAL.
+
+MODEL CHOOSES AMONG LEGAL MOVES.
+DIMA OWNS MOVE LEGALITY.
+METABASE OWNS ANALYTICAL EXECUTION.
+
+BRANCH IDENTITY IS CREATED
+BY INVESTIGATION SEMANTICS,
+NOT BY THE PRESENCE OF A STRING FIELD.
+
+P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
+
+RAW NATIVE MATERIAL IS DURABLE.
+MANAGER COGNITION PACKET IS A THIN PROJECTION.
+
+DO NOT BUILD A PLANNER
+TO FIX A LEGALITY PROBLEM.
+```
+
+Legality is a pure state projection. `InvestigationActionProfile` exposes legal moves **now**;
+it does not score, rank, plan, pick a branch winner, choose an analytical dimension, summarize native
+results, or choose the next correct trajectory. Luna chooses among legal moves. Metabot/Metabase
+perform all analytical execution.
+
 ## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
 
 > **FORWARD AUTHORITY.** This block overrides older current/next/blocked language. Historical
-> evidence remains append-only. Recovery accounting is failure-family-scoped under DMP-DEC-0052.
+> receipts remain append-only. Recovery accounting is failure-family-scoped.
 
 ```text
 branch                                = feat/dima-metabase-platform
-authority-content checkpoint          = f8d0b15865e3932a63cfbcfeff37d52b182d498b
+branch HEAD before living-doc repin   = 69237bae627dc4342bf91fa3c87ba4d69b6532e8
 sealed lower/core behavior checkpoint = d1bc5291b315ff19c3456d08ff1820e983d85942
-current P17 provider candidate         = e6ab0bcf29bcbc17004c045a4391235ebc1fed19
-latest deterministic seal candidate   = 16ee4881f8399044fb7c30168484ff21063a7fd6
-forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051 + DMP-DEC-0052
+current P17 legality code candidate    = c5de2b41f00e67cd3b141610aa3a057bf8057e0d
+forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051 + DMP-DEC-0052 + DMP-DEC-0053
 
 engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
@@ -19,109 +49,108 @@ engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e7
 engine certification                  = 36042062775 SUCCESS
 engine changes/builds                 = 0 / 0
 
-semantic-output provider-free         = 36148929202 SUCCESS
-semantic-output governance            = 36148929211 SUCCESS
-family-aware authorization            = 28 PASS
-semantic-output envelope              = 8 PASS
-trajectory-invariant evaluator        = 7 PASS
-P17 reasoning                         = 31 PASS
-P16 claim-lineage                     = 6 PASS
-P15 native Exploration                = 5 PASS
-P14 native-direct                     = 17 PASS
+latest autonomous live                = 36149372671 FAILURE
+latest live tested SHA                = f514dd53d978c38d27e62c3cf36f6f4da5de5415
+latest live manager calls             = 8
+latest live native P17 follow-ups     = 3
+latest live VERIFIED occurrences      = 4 including base
+new Evidence reached later turn       = YES
+bounded termination                   = YES
+P14 immutable                         = YES
+P16 sole claim authority              = YES
+native analytics only                 = YES
+single receipt family                 = YES
+P13 hot path                          = 0
+second native executor                = 0
+Dima Python analytics                 = 0
+Wren/raw-SQL/admin fallback           = 0
 
-closed family                         = P17_CERT_AUTHORIZATION_TRANSPORT
-closed family authoritative RED       = 36137304596
-closed family attempt                 = 1 / 3
+closed family                         = p17-cert-auth-transport
+closed family RED                     = 36137304596 / attempt 1
 
-closed family                         = P17_MANAGER_STRUCTURED_OUTPUT_SCHEMA
-closed family RED #1                  = 36140130559
-closed family boundary-cross run      = 36147620834
+closed family                         = p17-manager-structured-schema
+boundary crossed                      = 36147620834
 
-current failure family                = P17_MANAGER_SEMANTIC_OUTPUT
-current authoritative RED             = 36147620834 FAILURE
-current RED dispatch SHA              = c1324ba3ab41f362a272e5a45be7c2da4735fe57
+closed family                         = p17-manager-semantic-output
+boundary crossed                      = 36149372671
+
+current failure family                = p17-investigation-language-legality
+current authoritative RED             = 36149372671
 attempt in current family             = 1 / 3
 remaining attempts in same family     = 2
-current family status                 = ROOT-FIXED PROVIDER-FREE / LIVE RECHECK PENDING
+current family owner                  = P17 TYPED INVESTIGATION LANGUAGE
+current family status                 = ROOT FIX IN PROVIDER-FREE CERTIFICATION
 
-current RED manager Luna calls        = 1 SUCCESS
-current RED accepted manager proposal = 0
-current RED accepted P17 turns        = 0
-current RED Metabot occurrences       = 1
-current RED /api/dataset executions   = 1
-Sol calls                             = 0
-C1 calls                              = 0
-
-next authorization                    = p17-manager-semantic-output--attempt-002.json
-next bounded objective                = one autonomous Luna certification for semantic-output attempt 2
+next authorization                    = p17-investigation-language-legality--attempt-002.json
+next paid run                         = NOT UNTIL FULL DMP-0053 DETERMINISTIC SEAL IS GREEN
 
 P14                                   = SEALED
 P15                                   = SEALED
 P16                                   = SEALED
-P17 deterministic authority           = GREEN
-P17 recursive investigation           = GREEN
-P17 trajectory-invariant evaluator    = GREEN
-P17 autonomous cognition              = LIVE RECHECK PENDING
+P17 analytical/native substrate       = GREEN
+P17 typed investigation legality      = ROOT FIX IN PROVIDER-FREE CERTIFICATION
+P17 autonomous cognition              = LIVE RED / NOT SEALED
 P17 overall                           = NOT SEALED
 P18                                   = BLOCKED
 UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 ```
 
-### CURRENT P17 GATE — DMP-DEC-0052
+### CURRENT P17 GATE — DMP-DEC-0053
 
-The authorization-transport family is CLOSED. The structured-schema family is also CLOSED:
-run `36147620834` crossed provider strict-schema validation and completed a real Luna structured
-call successfully.
-
-That run then failed at a materially different boundary:
+The latest live crossed authorization, provider strict-schema, provider semantic-output, native
+Metabot execution, native Evidence lineage and bounded termination. The active defect is therefore
+not Metabase and not a provider-schema family.
 
 ```text
-provider-valid structured JSON
-→ ResearchManagerProposalDraft Pydantic validation
-→ non-STOP proposal lacked usable expected_information_gain
-→ no accepted ManagerProposal
+first wrong transition:
+typed manager proposal accepted
+→ P17 language admitted an illegal topology combination
+→ branch identity could be minted from loose branch_key presence
+→ structurally weak InvestigationGraph persisted
+→ trajectory-invariant evaluator rejected the graph
+
+owner:
+P17 TYPED INVESTIGATION LANGUAGE
 ```
 
-Therefore the active family is:
+Current root correction:
 
 ```text
-failure_family_id = p17-manager-semantic-output
-attempt 1 / 3     = RED / ROOT-FIXED PROVIDER-FREE
-attempt 2 / 3     = AUTHORIZED LIVE RECHECK
+ResearchManagerSnapshot
+→ InvestigationActionProfile
+→ Luna chooses one state-legal move
+→ resolve_investigation_topology ONCE
+→ ResolvedInvestigationTopology
+→ validation / persistence / execution / evaluation consume that authority
 ```
 
-The generic fix is a strict provider-facing semantic transport envelope with separate structural
-variants for regular non-STOP, counter-Evidence, claim, and STOP payload families. It does **not**
-choose the investigation path. Luna still chooses among the bounded legal P17 intents. The adapter
-unwraps only transport representation and then applies unchanged Pydantic / ManagerProposal
-semantic authority.
+The durable store no longer interprets `branch_key` as branch authority. Only a branch-opening
+`EXPLORE_ALTERNATIVES` move may mint a child branch. Root gap, deepening, testing,
+counter-Evidence, replan, claim and stop moves cannot mint a branch from a string field.
 
-FORM_CLAIM remains a product capability and P16-backed authority; it is excluded only from this
-bounded P17 recursive-investigation certification vocabulary.
+The cognition packet is also narrowed without touching durable P15 truth: raw native exploration
+payload remains stored, while the manager sees source-backed provenance plus verbatim native
+descriptors only. No Python analytics or summarization was added.
 
-Permanent recovery rule:
+Before any paid Luna run the following must all be GREEN:
 
 ```text
-THREE ATTEMPTS ARE PER FAILURE FAMILY.
-
-SAME FIRST-WRONG-TRANSITION OWNER + SAME VIOLATED INVARIANT
-→ SAME FAMILY
-→ INCREMENT UP TO 3.
-
-ROOT-FIXED BOUNDARY CROSSED + DIFFERENT OWNER/INVARIANT FAILS
-→ NEW FAMILY
-→ START AT 1 / 3.
-
-DO NOT CLASSIFY BY ERROR STRING.
-CLASSIFY BY FIRST WRONG TRANSITION + OWNER + INVARIANT.
-
-GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS
-FOR COMMIT / AUTHORIZATION IDENTITY.
+InvestigationActionProfile tests
+adversarial topology matrix
+multiple fake-manager legal trajectories
+trajectory-invariant evaluator
+thin cognition projection
+provider strict-schema/semantic envelope
+existing P17 regressions
+P16
+P15
+P14
+governance
+engine SHA unchanged
 ```
 
-Historical authorization receipts remain immutable. Forward paid receipts use
-`<failure_family_id>--attempt-<NNN>.json`.
-
+Only after that seal is one `p17-investigation-language-legality / attempt 2` Luna run authorized.
+P18 remains blocked.
 
 ### DMP-DEC-0050 AUTONOMOUS LIVE RETURN — RED / INFRA TRANSPORT
 
