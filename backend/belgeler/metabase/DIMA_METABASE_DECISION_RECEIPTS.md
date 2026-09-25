@@ -4500,3 +4500,53 @@ Current focused regression candidate:
 
 No live retry is authorized until this new family is provider-free GREEN with the trajectory
 evaluator, P17/P16/P15/P14 regressions and governance.
+
+
+### DMP-DEC-0052 semantic-output family provider-free seal — GREEN
+
+date: 2026-09-25
+
+```text
+root-fix provider candidate            = e6ab0bcf29bcbc17004c045a4391235ebc1fed19
+provider-free seal HEAD                = 16ee4881f8399044fb7c30168484ff21063a7fd6
+provider-free                           = 36148929202 SUCCESS
+governance                              = 36148929211 SUCCESS
+
+family-aware authorization              = 28 PASS
+manager semantic-output envelope        = 8 PASS
+trajectory-invariant evaluator          = 7 PASS
+P17 reasoning                           = 31 PASS
+P16 claim lineage                       = 6 PASS
+P15 native Exploration                  = 5 PASS
+P14 native-direct                       = 17 PASS
+
+engine changes/builds                   = 0 / 0
+Sol                                     = 0
+C1                                      = 0
+```
+
+Failure-family state:
+
+```text
+p17-cert-auth-transport
+= CLOSED
+
+p17-manager-structured-schema
+= CLOSED after provider schema boundary was crossed
+
+p17-manager-semantic-output
+authoritative RED = 36147620834
+attempt 1 / 3     = ROOT-FIXED PROVIDER-FREE
+attempt 2 / 3     = AUTHORIZED LIVE RECHECK
+```
+
+The generic correction is a provider-facing strict semantic envelope that represents conditional
+payload families without selecting an investigation trajectory. The model still chooses the legal
+intent/path. The adapter unwraps representation and delegates semantic truth to unchanged Pydantic /
+ManagerProposal validation. FORM_CLAIM remains a product capability; it is merely outside this
+bounded P17 recursive-investigation certification vocabulary.
+
+Exactly one live attempt 2 is authorized after an append-only
+`p17-manager-semantic-output--attempt-002.json` receipt. If the same owner/invariant fails, this
+family becomes attempt 2 / 3 RED. If this boundary is crossed and a different owner/invariant fails,
+that new family starts at 1 / 3.
