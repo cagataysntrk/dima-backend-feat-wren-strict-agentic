@@ -1730,30 +1730,31 @@ def test_structured_live_manager_adapter_is_typed_provider_free():
             assert "GOVERNED SNAPSHOT JSON" in user
             assert schema_name == "dima_p17_research_manager_proposal"
             assert schema["type"] == "object"
-            return json.dumps(
-                {
-                    "proposal_id": "live-fake-1",
-                    "source_revision": snapshot.source_revision,
-                    "target_parent_obligation": "g1",
-                    "intent": "EXPLORE_ALTERNATIVES",
-                    "branch_key": "candidate-web",
-                    "target_kind": "ALTERNATIVE",
-                    "target_ref": "web-conversion",
-                    "objective_key": "live.candidate.web",
-                    "bounded_objective": (
-                        "Investigate whether Web conversion is a material branch."
-                    ),
-                    "rationale": "This is an untested bounded alternative.",
-                    "inspected_evidence_refs": list(snapshot.evidence_refs),
-                    "inspected_claim_refs": [
-                        x.claim_id for x in snapshot.claims
-                    ],
-                    "inspected_material_refs": list(snapshot.material_refs),
-                    "expected_information_gain": (
-                        "It may distinguish a channel-specific explanation."
-                    ),
-                }
-            )
+            payload = {
+                "proposal_id": "live-fake-1",
+                "source_revision": snapshot.source_revision,
+                "target_parent_obligation": "g1",
+                "intent": "EXPLORE_ALTERNATIVES",
+                "parent_step_id": None,
+                "branch_key": "candidate-web",
+                "target_kind": "ALTERNATIVE",
+                "target_ref": "web-conversion",
+                "objective_key": "live.candidate.web",
+                "bounded_objective": (
+                    "Investigate whether Web conversion is a material branch."
+                ),
+                "rationale": "This is an untested bounded alternative.",
+                "inspected_evidence_refs": list(snapshot.evidence_refs),
+                "inspected_claim_refs": [
+                    x.claim_id for x in snapshot.claims
+                ],
+                "inspected_material_refs": list(snapshot.material_refs),
+                "expected_information_gain": (
+                    "It may distinguish a channel-specific explanation."
+                ),
+            }
+            assert set(schema["properties"]) == {"proposal"}
+            return json.dumps({"proposal": payload})
 
     transport = FakeStructured()
     manager = StructuredResearchProposalManager(transport=transport)
@@ -1783,19 +1784,26 @@ def test_structured_live_manager_cannot_emit_legacy_intent():
 
     class LegacyTransport:
         def structured_json(self, *args, **kwargs):
-            return json.dumps(
-                {
-                    "proposal_id": "legacy-not-allowed",
-                    "source_revision": snapshot.source_revision,
-                    "target_parent_obligation": "g1",
-                    "intent": "LEGACY",
-                    "target_kind": "GAP",
-                    "objective_key": "legacy.bad",
-                    "bounded_objective": "bad",
-                    "rationale": "bad",
-                    "expected_information_gain": "bad",
-                }
-            )
+            schema = kwargs["schema"]
+            payload = {
+                "proposal_id": "legacy-not-allowed",
+                "source_revision": snapshot.source_revision,
+                "target_parent_obligation": "g1",
+                "intent": "LEGACY",
+                "parent_step_id": None,
+                "branch_key": None,
+                "target_kind": "GAP",
+                "target_ref": None,
+                "objective_key": "legacy.bad",
+                "bounded_objective": "bad",
+                "rationale": "bad",
+                "inspected_evidence_refs": [],
+                "inspected_claim_refs": [],
+                "inspected_material_refs": [],
+                "expected_information_gain": "bad",
+            }
+            assert set(schema["properties"]) == {"proposal"}
+            return json.dumps({"proposal": payload})
 
     with pytest.raises(ValueError, match="LEGACY"):
         StructuredResearchProposalManager(
