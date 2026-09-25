@@ -29,6 +29,7 @@ from app.v2.models import (
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.semantic_linker import (
     BoundedSemanticLinker,
+    GovernedCurrentTurnCandidateGenerator,
     GovernedSiblingScopeCandidateGenerator,
     SemanticBindingGate,
     SemanticCandidateGenerator,
@@ -1075,3 +1076,383 @@ def test_current_turn_scope_candidates_remain_discovery_until_fresh_binding_gate
     )
     assert recovery["selection"]["status"] == "BOUND"
     assert recovery["candidate_count"] == 2
+
+
+# D10-V: one exact current-message source truth, multiple fresh owner authorities.
+
+def _source_truth_context():
+    context = BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-source-truth",
+            mdl_version="mdl-source-truth",
+            compact_catalog_builder_version="d10-v",
+            business_rules_hash="1" * 64,
+            prompt_context_policy_version="d10-v",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="alpha_cube",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="dual_metric_a",
+                        display="Dual Concept",
+                        synonyms=("Dual Concept",),
+                    ),
+                ),
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="shared_axis_a",
+                        display="Shared Axis",
+                        synonyms=("Shared Axis",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="dual_dimension_a",
+                        display="Dual Concept",
+                        synonyms=("Dual Concept",),
+                    ),
+                ),
+            ),
+            CompactCubeContextV0(
+                canonical_name="beta_cube",
+                dimensions=(
+                    CompactSemanticFieldV0(
+                        canonical_name="shared_axis_b",
+                        display="Shared Axis",
+                        synonyms=("Shared Axis",),
+                    ),
+                ),
+            ),
+        ),
+    )
+    schema = {
+        "models": [],
+        "cubes": [
+            {
+                "name": "alpha_cube",
+                "measures": ["dual_metric_a"],
+                "measure_synonyms": {"dual_metric_a": ["Dual Concept"]},
+                "dimensions": ["shared_axis_a", "dual_dimension_a"],
+                "dimension_labels": {
+                    "shared_axis_a": "Shared Axis",
+                    "dual_dimension_a": "Dual Concept",
+                },
+                "dimension_synonyms": {
+                    "shared_axis_a": ["Shared Axis"],
+                    "dual_dimension_a": ["Dual Concept"],
+                },
+                "dimension_values": {},
+            },
+            {
+                "name": "beta_cube",
+                "measures": [],
+                "dimensions": ["shared_axis_b"],
+                "dimension_labels": {"shared_axis_b": "Shared Axis"},
+                "dimension_synonyms": {"shared_axis_b": ["Shared Axis"]},
+                "dimension_values": {},
+            },
+        ],
+        "company_vocabulary": [],
+    }
+    return context, schema
+
+
+class _DivergesIfAskedAgain:
+    """Would choose a different canonical candidate on a second identical request."""
+
+    def __init__(self):
+        self.requests = []
+
+    def decide(self, requests):
+        choices = []
+        for request in requests:
+            self.requests.append(request)
+            index = len(self.requests) - 1
+            candidate = request.candidates[0 if index == 0 else -1]
+            choices.append(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="SELECT",
+                    candidate_id=candidate.candidate_id,
+                )
+            )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
+class _SelectCandidate:
+    def __init__(self, candidate_id: str):
+        self.candidate_id = candidate_id
+        self.calls = 0
+
+    def decide(self, requests):
+        self.calls += 1
+        return SemanticLinkBatchDecision(
+            choices=tuple(
+                SemanticLinkChoice(
+                    request_id=request.request_id,
+                    decision="SELECT",
+                    candidate_id=self.candidate_id,
+                )
+                for request in requests
+            )
+        )
+
+
+def _source_truth_fixture(provider):
+    context, schema = _source_truth_context()
+    return _fixture(
+        context=context,
+        schema=schema,
+        provider=provider,
+    )
+
+
+def test_source_truth_same_exact_source_two_owners_uses_one_cognition_and_fresh_edges():
+    provider = _DivergesIfAskedAgain()
+    fx = _source_truth_fixture(provider)
+
+    result, refs = _resolve(
+        fx,
+        text="Shared Axis is the governed axis for both analyses.",
+        entries=(
+            ("U_BREAKDOWN", "Shared Axis", "dimension"),
+            ("U_RELATIONSHIP", "Shared Axis", "dimension"),
+        ),
+        message_id="turn-source-truth-two-owner",
+    )
+
+    assert refs[0] == refs[1]
+    assert len(provider.requests) == 1
+    resolved = _resolved_canonicals(fx, result)
+    assert resolved[("U_BREAKDOWN", refs[0])] == resolved[
+        ("U_RELATIONSHIP", refs[1])
+    ]
+    handles = {item.owner_id: item.handle for item in result.resolved}
+    assert handles["U_BREAKDOWN"].parent_obligation_id == "U_BREAKDOWN"
+    assert handles["U_RELATIONSHIP"].parent_obligation_id == "U_RELATIONSHIP"
+    assert handles["U_BREAKDOWN"].handle_id != handles["U_RELATIONSHIP"].handle_id
+
+
+def test_source_truth_three_owners_share_truth_not_authority():
+    provider = _DivergesIfAskedAgain()
+    fx = _source_truth_fixture(provider)
+
+    result, refs = _resolve(
+        fx,
+        text="Shared Axis drives performance breakdown and relationship analyses.",
+        entries=(
+            ("U_PERFORMANCE", "Shared Axis", "dimension"),
+            ("U_BREAKDOWN", "Shared Axis", "dimension"),
+            ("U_RELATIONSHIP", "Shared Axis", "dimension"),
+        ),
+        message_id="turn-source-truth-three-owner",
+    )
+
+    assert len(set(refs)) == 1
+    assert len(provider.requests) == 1
+    resolved = _resolved_canonicals(fx, result)
+    assert len(set(resolved.values())) == 1
+    assert {
+        item.handle.parent_obligation_id for item in result.resolved
+    } == {"U_PERFORMANCE", "U_BREAKDOWN", "U_RELATIONSHIP"}
+    assert len({item.handle.handle_id for item in result.resolved}) == 3
+
+
+def test_source_truth_owner_order_permutation_does_not_change_canonical_truth():
+    outputs = []
+    for owners in (
+        ("U_BREAKDOWN", "U_RELATIONSHIP"),
+        ("U_RELATIONSHIP", "U_BREAKDOWN"),
+    ):
+        provider = _DivergesIfAskedAgain()
+        fx = _source_truth_fixture(provider)
+        result, refs = _resolve(
+            fx,
+            text="Shared Axis is reused by both owner obligations.",
+            entries=tuple((owner, "Shared Axis", "dimension") for owner in owners),
+            message_id=f"turn-source-order-{owners[0]}",
+        )
+        outputs.append(
+            {
+                _resolved_canonicals(fx, result)[(owner, refs[index])]
+                for index, owner in enumerate(owners)
+            }
+        )
+        assert len(provider.requests) == 1
+    assert outputs[0] == outputs[1]
+    assert len(outputs[0]) == 1
+
+
+def test_source_truth_same_label_different_source_refs_do_not_share_decision():
+    provider = _DivergesIfAskedAgain()
+    fx = _source_truth_fixture(provider)
+    message_id = "turn-source-label-not-identity"
+    text = "Shared Axis then Shared Axis."
+    fx.spans.register_message(message_id=message_id, text=text)
+    first = fx.spans.mint_exact(
+        message_id=message_id, surface="Shared Axis", occurrence=0
+    ).source_ref
+    second = fx.spans.mint_exact(
+        message_id=message_id, surface="Shared Axis", occurrence=1
+    ).source_ref
+    assert first != second
+
+    result = fx.adapter.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(first, second),
+            source_obligation_ids=("U1", "U2"),
+            target_kind_hints=("dimension", "dimension"),
+        )
+    )
+
+    assert len(provider.requests) == 2
+    assert len(result.resolved) == 2
+
+
+def test_source_truth_same_source_different_kind_does_not_share_decision():
+    provider = _DivergesIfAskedAgain()
+    fx = _source_truth_fixture(provider)
+
+    result, refs = _resolve(
+        fx,
+        text="Dual Concept is intentionally typed two different ways.",
+        entries=(
+            ("U_METRIC", "Dual Concept", "metric"),
+            ("U_DIMENSION", "Dual Concept", "dimension"),
+        ),
+        message_id="turn-source-kind-separation",
+    )
+
+    assert refs[0] == refs[1]
+    assert len(provider.requests) == 2
+    assert {item.handle.target_kind for item in result.resolved} == {
+        "metric",
+        "dimension",
+    }
+
+
+def test_source_truth_narrowed_candidate_set_including_truth_reuses_without_cognition():
+    provider = _DivergesIfAskedAgain()
+    fx = _source_truth_fixture(provider)
+    message_id = "turn-source-truth-narrow-include"
+    text = "Shared Axis is the current source."
+    fx.spans.register_message(message_id=message_id, text=text)
+    source_ref = fx.spans.mint_exact(
+        message_id=message_id, surface="Shared Axis"
+    ).source_ref
+    entries = [(source_ref, "Shared Axis", "dimension", "U1")]
+    source_truth = {}
+
+    broad, _ = fx.adapter._resolve_regular_once(
+        entries=entries,
+        args=ResolveSemanticsArgs(provenance="USER_SOURCE"),
+        source_truth_by_key=source_truth,
+    )
+    assert len(broad.resolved) == 1
+    assert len(provider.requests) == 1
+    canonical_id = broad.resolved[0].handle.resolver_provenance_id
+    governed = fx.adapter._candidate_generator._governed_candidates("dimension")
+    chosen = next(
+        item for item in governed if item.card.candidate_id == canonical_id
+    )
+    forbidden = _ForbiddenProvider()
+    narrowed = BoundedSemanticLinker(
+        generator=GovernedCurrentTurnCandidateGenerator(bindings=(chosen,)),
+        binding_gate=fx.adapter._binding_gate,
+        provider=forbidden,
+    )
+
+    second, selections = fx.adapter._resolve_regular_once(
+        entries=[(source_ref, "Shared Axis", "dimension", "U2")],
+        args=ResolveSemanticsArgs(provenance="USER_SOURCE"),
+        linker=narrowed,
+        discovery_pass="test_narrowed_include",
+        source_truth_by_key=source_truth,
+    )
+
+    assert selections[0].status == "BOUND"
+    assert selections[0].reason == "SOURCE_TRUTH_REUSED"
+    assert len(second.resolved) == 1
+    assert forbidden.calls == 0
+    assert second.resolved[0].handle.resolver_provenance_id == canonical_id
+    assert second.resolved[0].handle.parent_obligation_id == "U2"
+
+
+def test_source_truth_narrowed_candidate_set_excluding_truth_fails_closed_without_remap():
+    provider = _DivergesIfAskedAgain()
+    fx = _source_truth_fixture(provider)
+    message_id = "turn-source-truth-narrow-exclude"
+    text = "Shared Axis is the current source."
+    fx.spans.register_message(message_id=message_id, text=text)
+    source_ref = fx.spans.mint_exact(
+        message_id=message_id, surface="Shared Axis"
+    ).source_ref
+    source_truth = {}
+
+    broad, _ = fx.adapter._resolve_regular_once(
+        entries=[(source_ref, "Shared Axis", "dimension", "U1")],
+        args=ResolveSemanticsArgs(provenance="USER_SOURCE"),
+        source_truth_by_key=source_truth,
+    )
+    canonical_id = broad.resolved[0].handle.resolver_provenance_id
+    governed = fx.adapter._candidate_generator._governed_candidates("dimension")
+    other = next(
+        item for item in governed
+        if item.card.candidate_id != canonical_id
+        and item.card.label == "Shared Axis"
+    )
+    forbidden = _ForbiddenProvider()
+    narrowed = BoundedSemanticLinker(
+        generator=GovernedCurrentTurnCandidateGenerator(bindings=(other,)),
+        binding_gate=fx.adapter._binding_gate,
+        provider=forbidden,
+    )
+
+    second, selections = fx.adapter._resolve_regular_once(
+        entries=[(source_ref, "Shared Axis", "dimension", "U2")],
+        args=ResolveSemanticsArgs(provenance="USER_SOURCE"),
+        linker=narrowed,
+        discovery_pass="test_narrowed_exclude",
+        source_truth_by_key=source_truth,
+    )
+
+    assert selections[0].status == "SOURCE_TRUTH_CONTEXT_CONFLICT"
+    assert second.resolved == ()
+    assert second.unresolved_source_refs == (source_ref,)
+    assert forbidden.calls == 0
+
+
+def test_source_truth_candidate_order_permutation_keeps_selected_identity():
+    context, schema = _source_truth_context()
+    generator = SemanticCandidateGenerator(
+        semantic_context=context,
+        schema=schema,
+    )
+    candidates = tuple(
+        item
+        for item in generator._governed_candidates("dimension")
+        if item.card.label == "Shared Axis"
+    )
+    assert len(candidates) == 2
+    selected_id = min(item.card.candidate_id for item in candidates)
+
+    outcomes = []
+    for bindings in (candidates, tuple(reversed(candidates))):
+        handles = SemanticHandleRegistry()
+        provider = _SelectCandidate(selected_id)
+        linker = BoundedSemanticLinker(
+            generator=GovernedCurrentTurnCandidateGenerator(bindings=bindings),
+            binding_gate=SemanticBindingGate(
+                semantic_handles=handles,
+                tenant_binding=TENANT,
+                context_version=context.context_version.version,
+            ),
+            provider=provider,
+        )
+        selection = linker.resolve(
+            (("source-order", "Shared Axis", "dimension"),),
+            provenance_type="USER_SOURCE",
+            decision_context="Shared Axis with immutable surrounding context",
+        )[0]
+        outcomes.append(selection.binding.card.candidate_id)
+    assert outcomes == [selected_id, selected_id]
