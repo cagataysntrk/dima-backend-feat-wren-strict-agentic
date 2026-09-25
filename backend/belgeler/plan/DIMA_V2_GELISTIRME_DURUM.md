@@ -1,5 +1,126 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — D10-Q TRUE STOP / PAID RUN #3 RED
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc cleanup HEAD           8b1352f42c2265cd67515211985ad8d535878c21
+
+latest Product runtime         f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+fanout build fix               1c9f48ce0649cecd459f1a1d67d09778997f05f3
+paid fixture fix               c1f3a7411ced6f1dee761cf19871422e83f67874
+deterministic candidate        9569fdee8de40473244e8ff3934f6686e2164f20
+
+paid #1                        36091887451 = RED / 7 calls
+paid #2                        36096707608 = RED / 8 calls
+paid #3                        36098236473 = RED / 7 calls
+
+paid #3 tested SHA             7b6c4a1e0342be7eacfbfa014000a2a02d970d41
+paid #3 class                  MODEL_COGNITION
+
+measurements                   3 / 3 CONSUMED
+provider calls                 22 / 30
+nominal unused calls           8
+additional paid authority      NONE
+
+final affected Day7            36097782266 = GREEN
+final affected Day8            36097782272 = GREEN
+final affected Day10           36097782328 = GREEN
+
+paid workflow                  workflow_dispatch only
+paid workflow blob             f9ddebd74f8e8349ef6961eebf1d69f2f71acffb
+temporary trigger marker       ABSENT
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN / NOT SEALED
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+### Paid run #2
+
+Run #2's first wrong transition was stale derived fanout state in the canonical paid fixture, not
+relationship truth. The Product had already produced four VERIFIED Evidence artifacts when
+`ariza_kayitlari_makineler` was blocked because its fanout certificate was not bound to the exact
+current MDL.
+
+Classification: `EVAL / HARNESS / FIXTURE`.
+
+The generic correction keeps fanout measurement in the existing build-artifact owner:
+`app.fanout` can now refresh a certificate for one compiled Wren service, and the paid harness does
+so before Product/provider execution. The Product hot path still never silently re-measures fanout.
+
+The exact canonical paid relationship was then measured against the real current DB/MDL and proved
+`HEALTHY`. Frozen CrossDomainJoinGate freshness semantics remained intact.
+
+Final deterministic certification before run #3:
+- Day7 `36097782266 = GREEN`;
+- Day8 `36097782272 = GREEN`;
+- Day10 `36097782328 = GREEN`.
+
+### Paid run #3
+
+Run #3 used the owner-authorized temporary marker/push transport with a hard call ceiling of 15. It
+consumed 7 provider calls:
+
+```text
+FAST_LANGUAGE         1
+RESEARCH_MANAGER      3
+SEMANTIC_LINKER       3
+TEMPORAL_NORMALIZER   0
+REPORT_NARRATOR       0
+```
+
+It failed entirely in Research preacceptance:
+
+```text
+accepted contract     NONE
+ledger                NONE
+Wren query calls      0
+preacceptance status  GROUNDING_FAILURE
+Product terminal      FAILED
+```
+
+First wrong transition:
+
+1. Research draft #1 attached `Nedensel kesinlik iddia etme.` to a REQUIRED report obligation.
+2. Typed Coverage correctly emitted `VETO / POLARITY_CONFLICT`.
+3. Research draft #2 corrected the source to a separate `EXCLUDED explain` obligation.
+4. Re-grounding could not issue another semantic-provider call because the bounded role budget was
+   already `SEMANTIC_LINKER 3/3`.
+5. The budget guard rejected the call before provider forwarding.
+
+Classification: `MODEL_COGNITION`.
+
+This is not a reason to weaken Coverage, SemanticBindingGate, grounding, exclusion polarity, or the
+frozen provider/model/role ceilings.
+
+### Temporary trigger cleanup
+
+The temporary paid push path was removed immediately after run #3:
+- workflow restored to exact blob `f9ddebd...`;
+- workflow is again `workflow_dispatch` only;
+- `.github/D10Q_PAID_RUN3_TRIGGER` is absent;
+- no cleanup-triggered paid measurement occurred.
+
+### Current authority
+
+D10-Q is at TRUE STOP because the independent measurement ceiling, not the call ceiling, is
+exhausted. The remaining 8 calls do not authorize another paid run.
+
+No additional Product/runtime fix or paid measurement is authorized. Return to supervisor with the
+unresolved first-wrong-transition family:
+
+```text
+MODEL_COGNITION
+Research preacceptance polarity representation
+interacting with the frozen SEMANTIC_LINKER 3-call ceiling
+```
+
+Day8 and Day10 remain unsealed. Day11 remains unauthorized.
+
+
 ## 2026-09-25 — D10-Q GENERIC TERMINAL PROPAGATION CLOSED / PAID RUN #2 READY
 
 ```text
