@@ -7,7 +7,7 @@
 
 This document is the release-level timing authority for expensive broad evaluation.
 
-## 0. CURRENT RELEASE STATE — DAY10 / D10-Q FINAL GENERIC FIX
+## 0. CURRENT RELEASE STATE — DAY10 / D10-Q FINAL PAID VERIFICATION
 
 ```text
 primary analytics substrate    WREN
@@ -19,25 +19,25 @@ Day8 FINAL                     NOT SEALED
 Day9 engineering               GREEN
 Day10 engineering              GREEN
 Day10 FINAL                    OPEN
-current phase                  DAY10 / D10-Q FINAL GENERIC FIX
+current phase                  DAY10 / D10-Q FINAL PAID VERIFICATION
 
-current runtime Product        f3c303a881b5891b14756bb8014fd6b4ef98b2fd
-
-D10-Q paid run #1              36091887451 = RED / 7 calls
-D10-Q paid run #2              36096707608 = RED / 8 calls
-D10-Q paid run #3              36098236473 = RED / 7 calls
+latest Product behavior        91721cb3bc01a3737212c7596fd3170c60c0239b
+final provider-free proof HEAD 5db64a5c704c910e860c08b6abc82951f9dd6bbb
 
 provider calls                 22 / 40 used
-remaining provider calls       18
+remaining                      18
+generic fixes                  3 / 3 consumed
+final generic fix              GREEN
 
-generic fixes                  2 / 3 used
-generic fix #3                 AUTHORIZED / FINAL
-final verification run #4      CONDITIONAL / AFTER FIX #3 PROOF
-run #4 max calls               18
+revision Manager path          4 preacceptance + 2 Research = 6 / 6
+normal G16 Manager path        2 preacceptance + 4 Research = 6 / 6
 
-first-wrong-transition family  MODEL_COGNITION
-                               + PREACCEPTANCE EXECUTION ORDER / BUDGET INTERACTION
+affected Day7                  36100892648 = GREEN
+affected Day8                  36100892586 = GREEN
+affected Day10                 36100939565 = GREEN
 
+final paid run #4              AUTHORIZED / READY
+run #4 hard ceiling            18
 Day11                          NOT AUTHORIZED
 DEV80                          NOT AUTHORIZED
 Validation50                   NOT AUTHORIZED
@@ -45,28 +45,17 @@ Hidden50                       NOT AUTHORIZED
 production /ask-v2             OFF
 ```
 
-Current binding correction order:
+Final generic fix #3 is certified provider-free. Coverage vetoes invalid drafts before semantic
+materialization; rejected drafts carry no semantic authority into revisions. The recovered revision
+path fits the existing six-turn Manager ceiling through one bounded server-materialized composite
+ROOT_CAUSE plan and one post-Evidence relation cognition turn. Normal G16 remains unchanged.
 
-```text
-DRAFT
-→ deterministic draft/source checks
-→ COVERAGE_VETO
-→ AUTO_GROUND
-→ material-gap/decomposition repair
-→ CONTRACT_VALIDITY
-```
+No frozen truth/security/cognition ceiling was raised. The one remaining release action is final
+paid Product verification run #4 with maximum 18 provider calls. GREEN seals Day8/Day10; RED is a
+hard stop with no further generic fix.
 
-Coverage remains veto-only cognition. It gains no semantic truth/handle authority and rejected drafts
-must not donate semantic handles or receipts to revisions. Frozen ceilings remain
-`SEMANTIC_LINKER=3` and Manager global `=6`.
-
-Final paid verification remains forbidden until one provider-free full revision-path rehearsal proves
-the Product can reach its governed report within the six-turn Manager ceiling, normal G16 stays GREEN,
-and affected Day7/Day8/Day10 gates are GREEN.
-
-Historical TRUE STOP wording in phase-local documents remains an audit receipt and is superseded only
-as current authority by the owner override above. This release-gate reconciliation itself is docs-only
-and requires no test.
+The owner-authorized push/marker bridge is temporary CI transport only. Permanent release state must
+return to `workflow_dispatch`-only before the tested branch is considered clean.
 
 The bridge decision is scoped, not universal:
 `retained Wren semantics → thin Metabase structured execution` is rejected for this release.
