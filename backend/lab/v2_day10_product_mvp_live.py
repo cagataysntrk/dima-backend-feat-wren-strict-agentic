@@ -14,7 +14,7 @@ import argparse
 import json
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -66,6 +66,10 @@ from app.v2.standard_lane import StandardLaneEngine
 from app.v2.temporal_intent import StructuredTemporalNormalizationProvider
 from app.wren_service import WrenService
 from control_plane.authorize import Principal
+from lab.v2_certification_oracle import (
+    certify_adaptive_lifecycle,
+    certify_day8_root_live_debt,
+)
 
 
 SCOPE = "CANONICAL_NS4"
@@ -433,6 +437,147 @@ def _value(value: Any) -> Any:
     return getattr(value, "value", value)
 
 
+def _hypothesis_authority_receipt(research, structured_outputs) -> list[dict[str, Any]]:
+    """Eval-only projection of server-owned hypothesis transitions plus model proposals."""
+
+    observations = tuple(research.outcome.observations or ())
+    proposal_outputs = [
+        item.get("validated_output") or {}
+        for item in structured_outputs
+        if item.get("schema_name") == "dima_research_manager_action_v1"
+        and isinstance(item.get("validated_output"), dict)
+        and str((item.get("validated_output") or {}).get("action", "")).startswith(
+            "propose_hypothesis"
+        )
+    ]
+    registered = [
+        item.get("result") or {}
+        for item in observations
+        if isinstance(item, dict) and item.get("kind") == "hypothesis_registered"
+    ]
+    next_tests = [
+        item.get("result") or {}
+        for item in observations
+        if isinstance(item, dict) and item.get("kind") == "hypothesis_next_test_executed"
+    ]
+    relations = [
+        item.get("result") or {}
+        for item in observations
+        if isinstance(item, dict) and item.get("kind") == "hypothesis_relation_admitted"
+    ]
+
+    receipts: list[dict[str, Any]] = []
+    for index, row in enumerate(registered):
+        hypothesis_id = row.get("hypothesis_id")
+        parent_id = row.get("parent_obligation_id")
+        proposal = next(
+            (
+                item
+                for item in proposal_outputs
+                if item.get("hypothesis_parent_obligation_id") == parent_id
+            ),
+            proposal_outputs[index] if index < len(proposal_outputs) else {},
+        )
+        receipts.append(
+            {
+                "hypothesis_id": hypothesis_id,
+                "parent_obligation_id": parent_id,
+                "semantic_handles": list(
+                    proposal.get("hypothesis_semantic_handles") or ()
+                ),
+                "trigger_evidence_refs": list(
+                    proposal.get("hypothesis_trigger_evidence_refs") or ()
+                ),
+                "next_tests": [
+                    _json_safe(item)
+                    for item in next_tests
+                    if item.get("hypothesis_id") == hypothesis_id
+                ],
+                "evidence_relations": [
+                    _json_safe(item)
+                    for item in relations
+                    if item.get("hypothesis_id") == hypothesis_id
+                ],
+            }
+        )
+    return receipts
+
+
+def _research_authority_snapshot(research, structured_outputs) -> dict[str, Any]:
+    evidence = tuple(research.evidence or ())
+    ledger = research.ledger
+    root_items = [
+        item
+        for item in (getattr(ledger, "items", ()) or ())
+        if _value(getattr(item, "capability_key", None)) == "root_cause"
+        and _value(getattr(item, "origin", None)) == "USER_MUST"
+    ]
+    return {
+        "accepted_directives": [
+            {
+                "directive_id": item.directive_id,
+                "type": _value(item.directive_type),
+                "parent_obligation_id": item.parent_obligation_id,
+                "condition": _value(item.condition),
+            }
+            for item in (research.accepted_contract.research_directives or ())
+        ] if research.accepted_contract is not None else [],
+        "final_directive_dispositions": [
+            {
+                "directive_id": item.directive_id,
+                "type": _value(item.directive_type),
+                "parent_obligation_id": item.parent_obligation_id,
+                "status": _value(item.status),
+                "evidence_ref": item.evidence_ref,
+                "branch_task_refs": list(item.branch_task_refs),
+                "reason": item.reason,
+            }
+            for item in (research.runtime.directive_dispositions or ())
+        ],
+        "evidence_summaries": [
+            {
+                "artifact_id": item.artifact_id,
+                "task_id": item.task_id,
+                "obligation_ids": list(item.obligation_ids),
+                "verified": item.verified,
+                "query_contract_refs": list(item.query_contract_refs),
+                "evidence_kind": item.evidence_kind,
+            }
+            for item in evidence
+        ],
+        "user_must_ledger_states": [
+            {
+                "obligation_id": item.obligation_id,
+                "capability_key": _value(item.capability_key),
+                "status": _value(item.status),
+                "evidence_refs": list(item.evidence_refs),
+                "verdict": item.verdict,
+                "blocker": item.blocker,
+            }
+            for item in (getattr(ledger, "active_user_must", ()) or ())
+        ],
+        "root_obligations": [_json_safe(item) for item in root_items],
+        "canonical_findings": [
+            {
+                "finding_id": item.finding_id,
+                "parent_obligation_id": item.parent_obligation_id,
+                "epistemic_label": _value(item.epistemic_label),
+                "evidence_refs": list(item.evidence_refs),
+                "hypothesis_ref": item.hypothesis_ref,
+                "semantic_handle_refs": list(item.semantic_handle_refs),
+            }
+            for item in (research.findings or ())
+        ],
+        "hypotheses": _hypothesis_authority_receipt(research, structured_outputs),
+        "inspected_evidence_refs": list(
+            research.runtime.snapshot.inspected_evidence_refs
+        ),
+        "completion_gate_state": _value(research.runtime.snapshot.state),
+        "research_terminal_status": _value(research.outcome.terminal_status),
+        "verified_complete": bool(research.outcome.verified_complete),
+    }
+
+
 def _diagnostic_snapshot(
     *,
     product,
@@ -452,6 +597,9 @@ def _diagnostic_snapshot(
             "turn_ref": getattr(product, "turn_ref", None),
             "terminal_status": getattr(product_receipt, "terminal_status", None),
             "terminal_reasons": list(getattr(product_receipt, "reasons", ()) or ()),
+            "completion_gate_verified": bool(
+                getattr(product_receipt, "verified_complete", False)
+            ),
             "events": [
                 _json_safe(item)
                 for item in (getattr(product, "events", ()) or ())
@@ -494,10 +642,20 @@ def _diagnostic_snapshot(
                     "contract_validity",
                     "draft_source_contract",
                     "grounding_error",
+                    "hypothesis_registered",
+                    "hypothesis_next_test_executed",
+                    "hypothesis_relation_admitted",
+                    "root_cause_obligation_reconciled",
+                    "research_directive_disposition",
+                    "adaptive_branch_executed",
+                    "tool_rejected",
                 }
             ],
             "accepted_contract": _json_safe(research.accepted_contract),
             "ledger": _json_safe(research.ledger),
+            "authority_state": _research_authority_snapshot(
+                research, structured_outputs
+            ),
             "semantic_resolution_receipts": [
                 _json_safe(item)
                 for item in research.runtime.semantic_resolution_receipts
@@ -698,46 +856,36 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         _fail("canonical report contains no ROOT_CAUSE block")
 
     observations = tuple(initial_research.outcome.observations)
-    observation_kinds = {
-        str(item.get("kind"))
-        for item in observations
-        if isinstance(item, dict)
-    }
-    required_root_chain = {
-        "adaptive_branch_executed",
-        "hypothesis_registered",
-        "hypothesis_next_test_executed",
-        "hypothesis_relation_admitted",
-        "root_cause_obligation_reconciled",
-    }
-    missing_root_chain = required_root_chain - observation_kinds
-    if missing_root_chain:
+    day8_certification = certify_day8_root_live_debt(
+        accepted_contract=initial_research.accepted_contract,
+        ledger=initial_research.ledger,
+        evidence_items=initial_research.evidence,
+        findings=initial_research.findings,
+        observations=observations,
+    )
+    if not day8_certification.valid:
         _fail(
-            "integrated Day8 root debt was not genuinely exercised: "
-            + ", ".join(sorted(missing_root_chain))
-        )
-    if not initial_research.findings:
-        _fail("integrated root path produced no canonical Finding")
-    if not any(
-        finding.epistemic_label.value == "CANDIDATE_CAUSE"
-        for finding in initial_research.findings
-    ):
-        _fail("integrated root path produced no CANDIDATE_CAUSE Finding")
-    root_items = [
-        item
-        for item in initial_research.ledger.active_user_must
-        if item.capability_key.value == "root_cause"
-    ]
-    if len(root_items) != 1 or root_items[0].status.value != "VERIFIED":
-        _fail(
-            "ROOT_CAUSE USER_MUST is not terminal/accounted as bounded investigation"
+            "integrated Day8 ROOT lifecycle certification failed: "
+            + "; ".join(day8_certification.errors)
         )
 
-    event_kinds = {item.kind for item in initial.events}
-    if ProductEventKind.ADAPTIVE_BRANCH_OPENED not in event_kinds:
-        _fail("canonical paid scenario did not execute adaptive branch")
-    if ProductEventKind.RELATIONSHIP_CHECKED not in event_kinds:
-        _fail("canonical paid scenario did not execute relationship analysis")
+    relationship_items = [
+        item
+        for item in initial_research.ledger.active_user_must
+        if item.capability_key.value == "relationship"
+    ]
+    evidence_by_ref = {
+        item.artifact_id: item for item in initial_research.evidence
+    }
+    if len(relationship_items) != 1 or relationship_items[0].status.value != "VERIFIED":
+        _fail("RELATIONSHIP USER_MUST is not VERIFIED")
+    if not any(
+        evidence_by_ref.get(ref) is not None
+        and evidence_by_ref[ref].verified
+        and evidence_by_ref[ref].evidence_kind == "relationship_analytics"
+        for ref in relationship_items[0].evidence_refs
+    ):
+        _fail("RELATIONSHIP USER_MUST lacks VERIFIED relationship Evidence")
 
     accepted_adapt = [
         item
@@ -754,13 +902,26 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
             f"got {len(accepted_adapt)}"
         )
     adapt_disposition = dispositions.get(accepted_adapt[0].directive_id)
-    if adapt_disposition is None or adapt_disposition.status.value != "APPLIED":
+    adaptive_certification = certify_adaptive_lifecycle(
+        directive=accepted_adapt[0],
+        disposition=adapt_disposition,
+        evidence_items=initial_research.evidence,
+        ledger=initial_research.ledger,
+        inspected_evidence_refs=(
+            initial_research.runtime.snapshot.inspected_evidence_refs
+        ),
+        product_verified_complete=initial.terminal_receipt.verified_complete,
+        diagnostic_observations=observations,
+    )
+    if not adaptive_certification.valid:
         _fail(
-            "canonical paid adaptive directive was not accounted by governed branch"
+            "ADAPT lifecycle certification failed: "
+            + "; ".join(adaptive_certification.errors)
         )
-    if not adapt_disposition.evidence_ref or not adapt_disposition.branch_task_refs:
+    if adaptive_certification.certification_coverage != "COMPLETE":
         _fail(
-            "canonical paid adaptive directive lacks Evidence/branch accounting proof"
+            "ADAPT lifecycle is Product-valid but integrated certification coverage "
+            f"is incomplete: {adaptive_certification.lifecycle_outcome}"
         )
 
     try:
@@ -848,6 +1009,8 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
         "directive_final_status": adapt_disposition.status.value,
         "directive_accounting_evidence_ref": adapt_disposition.evidence_ref,
         "directive_branch_task_refs": list(adapt_disposition.branch_task_refs),
+        "adaptive_lifecycle_certification": asdict(adaptive_certification),
+        "day8_root_live_debt_certification": asdict(day8_certification),
         "initial_evidence_count": initial_evidence,
         "initial_artifact_count": initial_artifacts,
         "initial_report_ref": initial.report.report.report_id,
@@ -868,8 +1031,10 @@ def run_paid(*, scope: str, max_total_model_calls: int) -> dict[str, Any]:
             "total_ms": total_ms,
         },
         "slo_note": "single observed sample; not a p95 estimate",
-        "day8_live_debt_exercised": True,
-        "root_chain_observations": sorted(required_root_chain),
+        "day8_live_debt_exercised": day8_certification.valid,
+        "root_chain_observations": list(
+            day8_certification.diagnostic_observation_kinds
+        ),
         "confirmed_cause_count": confirmed_cause_count,
     }
 
