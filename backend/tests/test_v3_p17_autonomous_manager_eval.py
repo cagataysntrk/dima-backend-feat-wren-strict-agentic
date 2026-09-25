@@ -229,16 +229,31 @@ def test_trajectory_invariant_evaluator_accepts_short_no_gain_stop():
     assert result.details["observed_max_depth"] == 1
 
 
-def test_cross_branch_parent_mismatch_is_red():
+def test_resolver_rejected_topology_is_red_without_parallel_semantic_replay():
+    turns = list(_trajectory_a())
+    bad = turns[3].to_dict()
+    bad["resolved_topology_valid"] = False
+    turns[3] = TurnObservation(**bad)
+
+    result = evaluate_autonomous_canary(_observation(tuple(turns)))
+
+    assert result.status == "RED"
+    assert result.gates["resolved_topology_authority"] is False
+    assert result.gates["trajectory_lineage_legal"] is False
+
+
+def test_evaluator_does_not_reinterpret_branch_semantics_after_resolver_acceptance():
     turns = list(_trajectory_a())
     turns[3] = _turn(
-        3, "test-b", parent="b", branch="a", depth=2,
+        3, "test-b", parent="b", branch="a", depth=99,
         intent="TEST_DISCRIMINATING_EVIDENCE", objective="test.b",
         before_evidence=("e0",), native=("n1",), evidence=("e1",),
     )
+
     result = evaluate_autonomous_canary(_observation(tuple(turns)))
-    assert result.status == "RED"
-    assert result.gates["trajectory_lineage_legal"] is False
+
+    assert result.gates["resolved_topology_authority"] is True
+    assert result.gates["trajectory_lineage_legal"] is True
 
 
 def test_p19_causal_truth_promotion_is_red():
