@@ -358,25 +358,44 @@ class _BlockedRelationshipBranchManager(ns4.ScriptedNS4Manager):
         delta = payload["CURRENT_RESULT_DELTA"]
         assert delta is not None and delta["verified"] is True
         self.root_trigger_evidence_ref = delta["evidence_ref"]
-        self.actions.append("propose_branches")
+
+        snapshot = (
+            (payload.get("ACTION_AVAILABILITY") or {})
+            .get("applicability_snapshot")
+            or {}
+        )
+        root_branch_scopes = [
+            item
+            for item in snapshot.get("scopes", [])
+            if item.get("action") == "propose_branches"
+            and item.get("parent_obligation_id") == "U_ROOT"
+        ]
+        assert root_branch_scopes, snapshot
+        assert all(
+            department_handle not in tuple(item.get("eligible_handle_refs") or ())
+            for item in root_branch_scopes
+        ), root_branch_scopes
+        assert all(
+            root_handle in tuple(item.get("eligible_handle_refs") or ())
+            for item in root_branch_scopes
+        ), root_branch_scopes
+
+        # The old test deliberately mixed U_ROOT with a U_REL handle and expected a
+        # late runtime block. Correlated applicability now removes that illegal
+        # identity join before cognition, so the scripted manager takes a legal
+        # fail-closed clarification path instead.
+        self.actions.append("request_clarification")
         return {
-            "action": "propose_branches",
-            "branch_parent_obligation_id": "U_ROOT",
-            "branch_evidence_ref": delta["evidence_ref"],
-            "branch_candidates": [
-                {
-                    "task_id": "D_ROOT_REL_BLOCKED",
-                    "capability_key": "relationship",
-                    "input_handles": [root_handle, department_handle],
-                    "material_reason": (
-                        "Test one governed relationship direction without inventing Evidence."
-                    ),
-                }
-            ],
+            "action": "request_clarification",
+            "obligation_ids": ["U_ROOT"],
+            "clarification_reason": (
+                "No current U_ROOT applicability scope admits the sibling "
+                "relationship dimension."
+            ),
         }
 
 
-def test_adaptive_relationship_blocked_terminal_does_not_apply_directive(
+def test_cross_parent_relationship_branch_is_absent_before_cognition_and_never_applies_directive(
     monkeypatch,
 ):
     tenant = "g16-blocked-tenant"
@@ -481,38 +500,20 @@ def test_adaptive_relationship_blocked_terminal_does_not_apply_directive(
         progress_callback=lambda kind, refs: progress.append((kind, refs)),
     )
 
-    blocked_candidates = [
-        item
-        for item in result.outcome.observations
-        if item.get("kind") == "deterministic_task_blocked"
-        and item.get("context") == "adaptive_branch"
-    ]
-    diagnostic = tuple(
-        item
-        for item in result.outcome.observations
-        if item.get("kind") in {
-            "fanout_registered",
-            "tool_rejected",
-            "deterministic_schedule_deferred",
-            "deterministic_task_blocked",
-            "adaptive_branch_executed",
-        }
-    )
-    assert blocked_candidates, diagnostic
-    blocked = blocked_candidates[0]
-    assert blocked["task_id"] == "D_ROOT_REL_BLOCKED"
-    assert blocked["result"]["available"] is False
-    assert blocked["result"]["status"] == "UNSUPPORTED"
+    assert manager.actions == ["request_clarification"]
     assert not any(
-        item.get("kind") == "adaptive_branch_executed"
-        and item.get("task_id") == "D_ROOT_REL_BLOCKED"
+        item.get("task_id") == "D_ROOT_REL_BLOCKED"
         for item in result.outcome.observations
     )
     assert all(
         evidence.task_id != "D_ROOT_REL_BLOCKED"
         for evidence in result.evidence
     )
-    assert ("research_task_blocked", ("D_ROOT_REL_BLOCKED",)) in progress
+    assert ("research_task_blocked", ("D_ROOT_REL_BLOCKED",)) not in progress
+    assert not any(
+        item.status.value == "APPLIED"
+        for item in result.runtime.directive_dispositions
+    )
 
     directive = next(
         item
