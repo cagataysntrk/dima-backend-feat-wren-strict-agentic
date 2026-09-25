@@ -968,7 +968,8 @@ def test_followup_lineage_preserves_p15_base_and_can_challenge_claim_via_p16():
     material = next(
         x for x in snap.materials if x.lead_id == followup.lead.lead_id
     )
-    assert material.material["observations"][0]["orders"] == 41
+    assert material.native_name == "P17 counter-evidence material"
+    assert not hasattr(material, "material")
 
     contested = claims.link_evidence(
         session_id=session.session_id,
@@ -1580,7 +1581,7 @@ def test_cross_session_parent_expansion_fails_closed():
                 )
             ),
         )
-    assert exc.value.code == "P17_PARENT_STEP_SESSION_MISMATCH"
+    assert exc.value.code == "P17_PARENT_STEP_NOT_LEGAL"
 
 
 def test_recursive_vocabulary_contains_no_causal_or_contribution_authority():
@@ -1610,11 +1611,10 @@ def test_recursive_vocabulary_contains_no_causal_or_contribution_authority():
 def test_child_depth_reuses_p15_material_and_single_p16_claim_authority():
     db = db_engine()
     store, session, _, _, claims, _ = setup_state(db)
-    followup = LineagedFollowup(db, store)
     service = ResearchInvestigationManager(
         research_store=store,
         claim_store=claims,
-        followup_executor=followup,
+        followup_executor=PersistedFirstFollowup(db),
         db_engine=db,
     )
 
@@ -1624,18 +1624,37 @@ def test_child_depth_reuses_p15_material_and_single_p16_claim_authority():
         manager=ScriptedManager(
             lambda snap: recursive_proposal(
                 snap,
-                proposal_id="material-root",
-                objective_key="material.root",
+                proposal_id="material-root-gap",
+                objective_key="material.root.gap",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+    assert root_task is not None
+    assert root.depth == 0
+
+    candidate, candidate_task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="material-candidate",
+                objective_key="material.candidate",
                 intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
-                branch_key="material-root",
+                parent_step_id=root.step_id,
+                branch_key="material-candidate",
                 target_kind=InvestigationTargetKind.ALTERNATIVE,
                 target_ref="candidate-root",
             )
         ),
     )
-    assert root_task is None
-    assert root.depth == 0
+    assert candidate_task is None
+    assert candidate.depth == 1
+    assert candidate.branch_id != root.branch_id
 
+    followup = LineagedFollowup(db, store)
+    service._followup = followup
     child, child_task = service.run_one(
         session_id=session.session_id,
         principal=principal(),
@@ -1645,14 +1664,15 @@ def test_child_depth_reuses_p15_material_and_single_p16_claim_authority():
                 proposal_id="material-child",
                 objective_key="material.child.test",
                 intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
-                parent_step_id=root.step_id,
+                parent_step_id=candidate.step_id,
                 target_kind=InvestigationTargetKind.EXPLANATION,
                 target_ref="partner-orders",
             )
         ),
     )
     assert child_task is not None
-    assert child.depth == 1
+    assert child.depth == 2
+    assert child.branch_id == candidate.branch_id
     assert followup.lead is not None
     assert followup.link is not None
     assert followup.link.execution_kind == "P17_FOLLOWUP"
@@ -1734,16 +1754,16 @@ def test_structured_live_manager_adapter_is_typed_provider_free():
                 "proposal_id": "live-fake-1",
                 "source_revision": snapshot.source_revision,
                 "target_parent_obligation": "g1",
-                "intent": "EXPLORE_ALTERNATIVES",
+                "intent": "INVESTIGATE_GAP",
                 "parent_step_id": None,
-                "branch_key": "candidate-web",
-                "target_kind": "ALTERNATIVE",
-                "target_ref": "web-conversion",
-                "objective_key": "live.candidate.web",
+                "branch_key": None,
+                "target_kind": "GAP",
+                "target_ref": "observed-gap",
+                "objective_key": "live.gap.root",
                 "bounded_objective": (
-                    "Investigate whether Web conversion is a material branch."
+                    "Investigate the unresolved bounded gap."
                 ),
-                "rationale": "This is an untested bounded alternative.",
+                "rationale": "The root gap remains unresolved.",
                 "inspected_evidence_refs": list(snapshot.evidence_refs),
                 "inspected_claim_refs": [
                     x.claim_id for x in snapshot.claims
@@ -1761,9 +1781,9 @@ def test_structured_live_manager_adapter_is_typed_provider_free():
     proposal = manager.propose(snapshot)
     assert transport.calls == 1
     assert manager.call_count == 1
-    assert proposal.intent == InvestigationIntent.EXPLORE_ALTERNATIVES
-    assert proposal.action == ManagerAction.RECORD_INVESTIGATION
-    assert proposal.branch_key == "candidate-web"
+    assert proposal.intent == InvestigationIntent.INVESTIGATE_GAP
+    assert proposal.action == ManagerAction.EXPLORE_NATIVE
+    assert proposal.branch_key is None
 
 
 def test_structured_live_manager_cannot_emit_legacy_intent():
@@ -1852,7 +1872,7 @@ def test_live_manager_schema_is_strict_transport_safe():
     assert props["bounded_objective"] == {"type": "string"}
     assert props["expected_information_gain"] == {"type": "string"}
 
-def test_live_manager_guidance_constrains_identity_not_analytical_answer():
+def test_live_manager_guidance_cannot_broaden_state_derived_legality():
     from app.v3.research_manager_provider import (
         StructuredResearchProposalManager,
     )
@@ -1868,59 +1888,22 @@ def test_live_manager_guidance_constrains_identity_not_analytical_answer():
         principal=principal(),
     )
 
-    class StructuralTransport:
-        def structured_json(
-            self,
-            system,
-            user,
-            *,
-            schema,
-            schema_name,
-        ):
-            props = schema["properties"]
-            assert props["source_revision"]["enum"] == [
-                snapshot.source_revision
-            ]
-            assert props["target_parent_obligation"]["enum"] == ["g1"]
-            assert props["parent_step_id"] == {"type": "null"}
-            assert props["branch_key"] == {"type": "string"}
-            return json.dumps(
-                {
-                    "proposal_id": "structural-1",
-                    "source_revision": snapshot.source_revision,
-                    "target_parent_obligation": "g1",
-                    "intent": "EXPLORE_ALTERNATIVES",
-                    "parent_step_id": None,
-                    "branch_key": "candidate-alpha",
-                    "target_kind": "ALTERNATIVE",
-                    "target_ref": "candidate-alpha",
-                    "objective_key": "candidate.alpha",
-                    "bounded_objective": (
-                        "Investigate candidate alpha without computing analytics."
-                    ),
-                    "rationale": "Candidate alpha remains untested.",
-                    "inspected_evidence_refs": list(snapshot.evidence_refs),
-                    "inspected_claim_refs": [
-                        x.claim_id for x in snapshot.claims
-                    ],
-                    "inspected_material_refs": list(snapshot.material_refs),
-                    "expected_information_gain": (
-                        "It could distinguish an alternative explanation."
-                    ),
-                }
+    class NeverTransport:
+        def structured_json(self, *args, **kwargs):
+            raise AssertionError(
+                "illegal screenplay constraint must fail before provider call"
             )
 
-    proposal = StructuredResearchProposalManager(
-        transport=StructuralTransport()
-    ).propose_with_guidance(
-        snapshot,
-        guidance="Open one candidate branch.",
-        allowed_intents=(InvestigationIntent.EXPLORE_ALTERNATIVES,),
-        allowed_parent_step_ids=(None,),
-        branch_key_mode="string",
-    )
-    assert proposal.action == ManagerAction.RECORD_INVESTIGATION
-    assert proposal.branch_key == "candidate-alpha"
+    with pytest.raises(ValueError, match="no state-legal"):
+        StructuredResearchProposalManager(
+            transport=NeverTransport()
+        ).propose_with_guidance(
+            snapshot,
+            guidance="Open one candidate branch.",
+            allowed_intents=(InvestigationIntent.EXPLORE_ALTERNATIVES,),
+            allowed_parent_step_ids=(None,),
+            branch_key_mode="string",
+        )
 
 def test_live_manager_draft_rejects_null_information_gain_before_authority_mapping():
     from app.v3.research_manager_provider import ResearchManagerProposalDraft
