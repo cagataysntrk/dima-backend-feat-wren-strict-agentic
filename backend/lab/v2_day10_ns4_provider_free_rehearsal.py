@@ -922,7 +922,7 @@ def run_rehearsal(
                     if item.get("kind") in {
                         "model_error",
                         "tool_rejected",
-                        "manager_action_availability",
+                        "manager_action_set",
                     }
                 ][-6:],
                 "terminal_status": (
