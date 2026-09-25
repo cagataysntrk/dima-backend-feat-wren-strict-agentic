@@ -258,3 +258,55 @@ def test_zero_future_turns_prunes_composite_without_raising_manager_ceiling():
     assert profile.reasons_for_unavailable("propose_hypothesis_with_next_test") == (
         ActionAvailabilityReason.INSUFFICIENT_HEADROOM_FOR_COMPOSITE.value,
     )
+
+
+def test_root_ready_does_not_hide_nonroot_semantic_expansion_parent():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            root_states=(_root(),),
+            effective_inspected_verified_evidence_refs=("evi_root", "evi_rel"),
+            fresh_disclosed_evidence_ref="evi_root",
+            fresh_disclosed_verified=True,
+            open_adaptive_directive_count=1,
+            semantic_expansion_parent_obligation_ids=("U_REL",),
+            remaining_manager_turns=3,
+        )
+    )
+
+    assert "resolve_semantics" in profile.available_actions
+    assert profile.resolve_semantics_parent_obligation_ids == ("U_REL",)
+    assert "U_ROOT" not in profile.resolve_semantics_parent_obligation_ids
+
+    schema = _post_acceptance_native_schema(
+        root_cause_enabled=True,
+        allowed_actions=profile.available_actions,
+        inspectable_evidence_refs=profile.inspectable_evidence_refs,
+        resolve_provenance=profile.post_acceptance_resolve_provenance,
+        resolve_semantics_parent_obligation_ids=(
+            profile.resolve_semantics_parent_obligation_ids
+        ),
+    )
+    actions = _enum_values(_property_schema(schema, "action"))
+    parents = _enum_values(
+        _property_schema(schema, "semantic_parent_obligation_id")
+    )
+
+    assert "resolve_semantics" in actions
+    assert parents == {"U_REL"}
+
+
+def test_no_eligible_semantic_parent_removes_resolve_even_with_root_evidence():
+    profile = ManagerActionAvailability.evaluate(
+        ManagerActionAvailabilityContext(
+            root_states=(_root(),),
+            effective_inspected_verified_evidence_refs=("evi_root",),
+            fresh_disclosed_evidence_ref="evi_root",
+            fresh_disclosed_verified=True,
+            semantic_expansion_parent_obligation_ids=(),
+            remaining_manager_turns=3,
+        )
+    )
+
+    assert "resolve_semantics" not in profile.available_actions
+    assert profile.resolve_semantics_parent_obligation_ids == ()
+
