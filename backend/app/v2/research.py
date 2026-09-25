@@ -554,6 +554,15 @@ class ResearchBriefBuilder:
                     "status": question.status.value,
                     "subject_ids": [ref.candidate_id for ref in question.subject_refs],
                     "related_ids": [ref.candidate_id for ref in question.related_refs],
+                    "ranking": (
+                        question.ranking.model_dump(mode="json")
+                        if question.ranking is not None
+                        else None
+                    ),
+                    "comparisons": [
+                        item.model_dump(mode="json")
+                        for item in question.comparisons
+                    ],
                     "unresolved": [
                         {
                             "surface": item.source_mention,
