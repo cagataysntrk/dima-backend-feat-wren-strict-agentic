@@ -37,6 +37,7 @@ from app.v2.report_narration import ReportNarrator
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
 from app.v2.standard_lane import StandardLaneOutcome, StandardLaneStatus
 from control_plane.authorize import Principal
+from lab.v2_manager_action_set_script_adapter import adapt_legacy_manager_intent
 
 
 MDL_VERSION = "mdl-d10-g16-ns4-v1"
@@ -284,7 +285,7 @@ class ScriptedNS4Manager:
             self.preacceptance_calls += 1
             return {"status": "PASS", "issues": []}
 
-        if schema_name != "dima_research_manager_action_v1":
+        if schema_name != "dima_research_manager_action_v2":
             raise AssertionError(f"unexpected schema {schema_name}")
 
         self.manager_prompts.append(payload)
@@ -308,59 +309,71 @@ class ScriptedNS4Manager:
             assert "U_ROOT" in tuple(delta.get("obligation_ids") or ()), delta
             self.root_trigger_evidence_ref = delta["evidence_ref"]
             self.actions.append("propose_branches")
-            return {
-                "action": "propose_branches",
-                "branch_parent_obligation_id": "U_ROOT",
-                "branch_evidence_ref": delta["evidence_ref"],
-                "branch_candidates": [
-                    {
-                        "task_id": "D_ROOT_RECHECK",
-                        "capability_key": "performance",
-                        "input_handles": [root_handle],
-                        "material_reason": (
-                            "Fresh root-lineage result justifies one bounded metric re-check."
-                        ),
-                    }
-                ],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_branches",
+                    "branch_parent_obligation_id": "U_ROOT",
+                    "branch_evidence_ref": delta["evidence_ref"],
+                    "branch_candidates": [
+                        {
+                            "task_id": "legacy-root-recheck",
+                            "capability_key": "performance",
+                            "input_handles": [root_handle],
+                            "material_reason": (
+                                "Fresh root-lineage result justifies one bounded metric re-check."
+                            ),
+                        }
+                    ],
+                },
+            )
 
         if not hypothesis_entries:
             self.actions.append("propose_hypothesis")
-            return {
-                "action": "propose_hypothesis",
-                "hypothesis_parent_obligation_id": "U_ROOT",
-                "hypothesis_statement": (
-                    "Provider-free audit hypothesis contains %27 but report must not."
-                ),
-                "hypothesis_semantic_handles": [root_handle],
-                "hypothesis_trigger_evidence_refs": [
-                    self.root_trigger_evidence_ref
-                ],
-                "hypothesis_limitations": [],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis",
+                    "hypothesis_parent_obligation_id": "U_ROOT",
+                    "hypothesis_statement": (
+                        "Provider-free audit hypothesis contains %27 but report must not."
+                    ),
+                    "hypothesis_semantic_handles": [root_handle],
+                    "hypothesis_trigger_evidence_refs": [
+                        self.root_trigger_evidence_ref
+                    ],
+                    "hypothesis_limitations": [],
+                },
+            )
 
         hypothesis = hypothesis_entries[0]
         if not hypothesis["next_test_task_refs"]:
             self.actions.append("propose_hypothesis_next_test")
-            return {
-                "action": "propose_hypothesis_next_test",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "next_test_task_kind": "QUERY",
-                "next_test_input_handles": [root_handle],
-                "next_test_trigger_evidence_ref": self.root_trigger_evidence_ref,
-                "next_test_material_reason": (
-                    "Test the candidate against a fresh governed root-lineage measurement."
-                ),
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_next_test",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "next_test_task_kind": "QUERY",
+                    "next_test_input_handles": [root_handle],
+                    "next_test_trigger_evidence_ref": self.root_trigger_evidence_ref,
+                    "next_test_material_reason": (
+                        "Test the candidate against a fresh governed root-lineage measurement."
+                    ),
+                },
+            )
 
         if not hypothesis["evidence_links"]:
             self.actions.append("propose_hypothesis_evidence_relation")
-            return {
-                "action": "propose_hypothesis_evidence_relation",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "hypothesis_relation_evidence_ref": delta["evidence_ref"],
-                "hypothesis_relation": "SUPPORTS",
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_evidence_relation",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+                    "hypothesis_relation": "SUPPORTS",
+                },
+            )
 
         raise AssertionError(
             "CompletionGate should terminate before execution-control/FINISH cognition"
@@ -545,11 +558,18 @@ class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
                 }
             return {"status": "PASS", "issues": []}
 
-        if schema_name != "dima_research_manager_action_v1":
+        if schema_name != "dima_research_manager_action_v2":
             raise AssertionError(f"unexpected schema {schema_name}")
 
         self.manager_prompts.append(payload)
-        actions = self._schema_actions(schema)
+        actions = {
+            item.get("action")
+            for item in (
+                (payload.get("MANAGER_ACTION_SET") or {}).get(
+                    "action_instances"
+                ) or []
+            )
+        }
         ledger = {item["obligation_id"]: item for item in payload["OBLIGATION_LEDGER"]}
         inventory = {
             item["handle_ref"]: item
@@ -587,49 +607,58 @@ class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
         if rel_evidence_ref not in inspected:
             assert "inspect_evidence" in actions
             self.actions.append("inspect_evidence")
-            return {"action": "inspect_evidence", "evidence_ref": rel_evidence_ref}
+            return adapt_legacy_manager_intent(
+                payload,
+                {"action": "inspect_evidence", "evidence_ref": rel_evidence_ref},
+            )
 
         if dispositions.get("R_ADAPT_REL") == "OPEN":
             assert "propose_branches" in actions
             self.actions.append("propose_branches")
-            return {
-                "action": "propose_branches",
-                "branch_parent_obligation_id": "U_REL",
-                "branch_evidence_ref": rel_evidence_ref,
-                "branch_candidates": [
-                    {
-                        "task_id": "D_REL_BREAK",
-                        "capability_key": "breakdown",
-                        "input_handles": [rel_metric, rel_dimension],
-                        "material_reason": (
-                            "Verified relationship Evidence justifies one bounded "
-                            "department breakdown follow-up."
-                        ),
-                    }
-                ],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_branches",
+                    "branch_parent_obligation_id": "U_REL",
+                    "branch_evidence_ref": rel_evidence_ref,
+                    "branch_candidates": [
+                        {
+                            "task_id": "legacy-rel-break",
+                            "capability_key": "breakdown",
+                            "input_handles": [rel_metric, rel_dimension],
+                            "material_reason": (
+                                "Verified relationship Evidence justifies one bounded "
+                                "department breakdown follow-up."
+                            ),
+                        }
+                    ],
+                },
+            )
 
         if not hypothesis_entries:
             assert root_evidence_ref in inspected
             assert "propose_hypothesis_with_next_test" in actions
             self.root_trigger_evidence_ref = root_evidence_ref
             self.actions.append("propose_hypothesis_with_next_test")
-            return {
-                "action": "propose_hypothesis_with_next_test",
-                "hypothesis_parent_obligation_id": "U_ROOT",
-                "hypothesis_statement": (
-                    "Canonical topology hypothesis contains %27 but report must not."
-                ),
-                "hypothesis_semantic_handles": [root_handle],
-                "hypothesis_trigger_evidence_refs": [root_evidence_ref],
-                "hypothesis_limitations": [],
-                "next_test_task_kind": "QUERY",
-                "next_test_input_handles": [root_handle],
-                "next_test_trigger_evidence_ref": root_evidence_ref,
-                "next_test_material_reason": (
-                    "Test the candidate with one fresh governed root-lineage measurement."
-                ),
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_with_next_test",
+                    "hypothesis_parent_obligation_id": "U_ROOT",
+                    "hypothesis_statement": (
+                        "Canonical topology hypothesis contains %27 but report must not."
+                    ),
+                    "hypothesis_semantic_handles": [root_handle],
+                    "hypothesis_trigger_evidence_refs": [root_evidence_ref],
+                    "hypothesis_limitations": [],
+                    "next_test_task_kind": "QUERY",
+                    "next_test_input_handles": [root_handle],
+                    "next_test_trigger_evidence_ref": root_evidence_ref,
+                    "next_test_material_reason": (
+                        "Test the candidate with one fresh governed root-lineage measurement."
+                    ),
+                },
+            )
 
         hypothesis = hypothesis_entries[0]
         if not hypothesis["evidence_links"]:
@@ -637,12 +666,15 @@ class CanonicalRelationshipTopologyManager(ScriptedNS4Manager):
             assert delta is not None and delta["verified"] is True
             assert "propose_hypothesis_evidence_relation" in actions
             self.actions.append("propose_hypothesis_evidence_relation")
-            return {
-                "action": "propose_hypothesis_evidence_relation",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "hypothesis_relation_evidence_ref": delta["evidence_ref"],
-                "hypothesis_relation": "SUPPORTS",
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_evidence_relation",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "hypothesis_relation_evidence_ref": delta["evidence_ref"],
+                    "hypothesis_relation": "SUPPORTS",
+                },
+            )
 
         raise AssertionError(
             "CompletionGate should terminate canonical topology before another Manager turn"
@@ -718,7 +750,7 @@ class RevisionNS4Manager(ScriptedNS4Manager):
                 }
             return {"status": "PASS", "issues": []}
 
-        if schema_name == "dima_research_manager_action_v1":
+        if schema_name == "dima_research_manager_action_v2":
             payload = json.loads(user)
             hypothesis_entries = payload["HYPOTHESIS_LEDGERS"][0]["entries"]
             if not hypothesis_entries:
@@ -734,25 +766,28 @@ class RevisionNS4Manager(ScriptedNS4Manager):
                 assert "U_ROOT" in tuple(delta.get("obligation_ids") or ()), delta
                 self.root_trigger_evidence_ref = delta["evidence_ref"]
                 self.actions.append("propose_hypothesis_with_next_test")
-                return {
-                    "action": "propose_hypothesis_with_next_test",
-                    "hypothesis_parent_obligation_id": "U_ROOT",
-                    "hypothesis_statement": (
-                        "Provider-free revision hypothesis contains %27 but report must not."
-                    ),
-                    "hypothesis_semantic_handles": [root_handle],
-                    "hypothesis_trigger_evidence_refs": [
-                        self.root_trigger_evidence_ref
-                    ],
-                    "hypothesis_limitations": [],
-                    "next_test_task_kind": "QUERY",
-                    "next_test_input_handles": [root_handle],
-                    "next_test_trigger_evidence_ref": self.root_trigger_evidence_ref,
-                    "next_test_material_reason": (
-                        "Use the same inspected root Evidence to form the first "
-                        "server-governed material hypothesis test."
-                    ),
-                }
+                return adapt_legacy_manager_intent(
+                    payload,
+                    {
+                        "action": "propose_hypothesis_with_next_test",
+                        "hypothesis_parent_obligation_id": "U_ROOT",
+                        "hypothesis_statement": (
+                            "Provider-free revision hypothesis contains %27 but report must not."
+                        ),
+                        "hypothesis_semantic_handles": [root_handle],
+                        "hypothesis_trigger_evidence_refs": [
+                            self.root_trigger_evidence_ref
+                        ],
+                        "hypothesis_limitations": [],
+                        "next_test_task_kind": "QUERY",
+                        "next_test_input_handles": [root_handle],
+                        "next_test_trigger_evidence_ref": self.root_trigger_evidence_ref,
+                        "next_test_material_reason": (
+                            "Use the same inspected root Evidence to form the first "
+                            "server-governed material hypothesis test."
+                        ),
+                    },
+                )
 
         return super().structured_json(
             system,
