@@ -630,10 +630,13 @@ Rules:
 - propose_branches registers bounded typed candidates only; it NEVER executes data work.
 - Every derived run_analytics must select a task already listed in READY_RESEARCH_TASKS.
 - Every derived branch must cite parent obligation + inspected evidence.
+- ACTION_AVAILABILITY is the server-resolved cognition surface for this turn. Choose only from
+  available_actions. unavailable_actions/reason_codes are deterministic telemetry, not semantic truth.
 - CURRENT_RESULT_DELTA with disclosed_in_current_prompt=true is already visible in this cognition call.
-  Do NOT spend inspect_evidence on that same fresh Evidence; after a successful structured response
-  the runtime records it as inspected. Explicit inspect_evidence remains for older accumulated
-  Evidence whose bounded payload is not present in CURRENT_RESULT_DELTA.
+  When inspection_required=false, do NOT spend inspect_evidence on that fresh Evidence; after a
+  successful structured response the runtime records it as inspected before applying the action.
+  Explicit inspect_evidence remains only for server-listed older Evidence whose bounded payload is
+  not present in CURRENT_RESULT_DELTA.
 - Follow ACTION_FRONTIER. Never repeat an exact action listed in blocked_exact_actions.
 - Semantic ambiguity is Resolver authority; do not guess canonical truth.
 - finish is only a proposal; deterministic CompletionGate decides completion truth.
@@ -644,9 +647,11 @@ Rules:
 _ROOT_CAUSE_SYSTEM_ADDENDUM = """
 DAY8 ROOT_CAUSE RULES:
 - Hypotheses are cognition proposals, never Evidence or canonical semantic truth.
-- propose_hypothesis may use only runtime-issued h* aliases and current VERIFIED inspected Evidence.
-- propose_hypothesis_with_next_test is allowed only when one current inspected VERIFIED Evidence item
-  can ground BOTH a new hypothesis and its first material governed next test. Never provide a
+- propose_hypothesis may use only runtime-issued h* aliases and current VERIFIED cognition-available
+  Evidence: either persisted inspected Evidence or a fresh CURRENT_RESULT_DELTA with
+  inspection_required=false. Runtime admission remains authoritative.
+- propose_hypothesis_with_next_test is allowed only when one such current VERIFIED Evidence item can
+  ground BOTH a new hypothesis and its first material governed next test. Never provide a
   hypothesis ID or ResearchTask ID for this action; server identity owners remain authoritative.
 - Trigger Evidence does NOT become SUPPORTS automatically.
 - SUPPORTS/CONTRADICTS requires propose_hypothesis_evidence_relation explicitly, including after a
