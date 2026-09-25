@@ -1,5 +1,38 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
+## 2026-09-25 — D10-S GOVERNANCE / SEMANTIC SIMPLIFICATION ACTIVE
+
+```text
+branch                         feat/ask-v2-mvp
+authority reconciliation HEAD 0461a8cc613254f40a4dee69d55528747d672045
+current Product behavior       91721cb3bc01a3737212c7596fd3170c60c0239b
+
+run #4                         36101471602 = RED / 9 calls
+tested SHA                     5171e6e9891afe97925b95061c730934fa737a73
+
+historical D10-Q calls         31
+D10-Q                          HARD STOP / CLOSED AS DEBUG LOOP
+
+owner-reset future envelope    40 fresh calls
+future-envelope used           0 / 40
+paid execution                 PAUSED during D10-S implementation
+
+D10-S                          ACTIVE
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Run #4 proves preacceptance, accepted authority, fanout, CrossDomainJoinGate, multi-metric ROOT_CAUSE and real Wren execution are not the current fault owner. Four Wren query executions produced governed Evidence before the failure.
+
+The current first-wrong-transition family is an over-broad Manager action surface:
+fresh Evidence was already disclosed but inspect_evidence remained selectable; then cognition attempted AGENT_DERIVED semantic rediscovery of an accepted governed dimension already present in current authority.
+
+D10-S introduces one deterministic action-availability owner and derives the model schema from the same runtime state that runtime validation uses. This phase removes ceremony only; frozen truth/security owners remain unchanged.
+
+Implementation/debugging uses zero paid provider calls. Historical paid receipts remain below unchanged.
+
+
 ## 2026-09-25 — D10-Q FINAL GENERIC FIX #3 GREEN / FINAL PAID VERIFICATION READY
 
 ```text
