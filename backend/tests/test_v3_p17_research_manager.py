@@ -1811,7 +1811,16 @@ def test_live_manager_schema_is_strict_transport_safe():
 
     def walk(node):
         if isinstance(node, dict):
-            assert "default" not in node
+            for forbidden_key in (
+                "default",
+                "minLength",
+                "maxLength",
+                "pattern",
+                "minimum",
+                "maximum",
+                "format",
+            ):
+                assert forbidden_key not in node
             props = node.get("properties")
             if isinstance(props, dict):
                 assert node.get("additionalProperties") is False
@@ -1830,4 +1839,6 @@ def test_live_manager_schema_is_strict_transport_safe():
     assert "claim" not in props
     assert "counter_to_claim_id" not in props
     assert "stop_reason" not in props
+    assert "ProposedClaimDraft" not in (schema.get("$defs") or {})
+    assert "ClaimFreshness" not in (schema.get("$defs") or {})
 
