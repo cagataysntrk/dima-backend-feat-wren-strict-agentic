@@ -13,6 +13,8 @@ import json
 import pytest
 
 from app import contracts as contracts_module
+from app import fanout
+from app.wren_service import WrenService
 from app.v2.acceptance import IntentAcceptanceGate
 from app.v2.context_provider import ContextProviderV0
 from app.v2.manager_core_adapter import ManagerCoreAnalyticsAdapter
@@ -1290,3 +1292,34 @@ def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_ev
         item.get("kind") == "semantic_decomposition_repair"
         for item in diagnostics
     )
+
+
+
+def test_d10_q_paid_relationship_is_currently_measured_healthy(wren):
+    """Provider-free preflight for the exact relationship selected by paid D10-Q."""
+    schema = copy.deepcopy(wren.schema())
+    relationship = next(
+        item
+        for item in schema["relationships"]
+        if item.get("name") == "ariza_kayitlari_makineler"
+    )
+    raw_mdl = json.loads(wren._mdl_bytes())
+    physical = {
+        model.get("name"): WrenService._physical_name(model)
+        for model in raw_mdl.get("models", [])
+        if model.get("name")
+    }
+    certificate = fanout.certify(
+        [relationship],
+        fanout.konnektor_sorgu(wren),
+        tablolar=set(physical),
+        nitelikli=lambda name: physical.get(name, f"main.{name}"),
+        mdl_version=wren.mdl_version,
+    )
+    proof = fanout.kanit(
+        certificate,
+        relationship["name"],
+        current_mdl_version=wren.mdl_version,
+    )
+    assert proof["status"] == "HEALTHY", proof
+    assert proof["certificate_mdl_version"] == wren.mdl_version
