@@ -31,6 +31,8 @@ from app.v3.research import EvidenceRef, ObligationState, ResearchManager
 from app.v3.research_exploration import ResearchExplorationStore
 from app.v3.research_manager import (
     FollowupResult,
+    InvestigationIntent,
+    InvestigationTargetKind,
     ManagerAction,
     ManagerProposal,
     ManagerStopReason,
@@ -1004,4 +1006,597 @@ def test_followup_adapter_delegates_to_shared_occurrence_runner_only():
         "MetabaseCanonicalizer",
     ):
         assert forbidden not in source
+
+def recursive_proposal(
+    snapshot,
+    *,
+    proposal_id,
+    objective_key,
+    intent,
+    parent_step_id=None,
+    branch_key=None,
+    target_kind=InvestigationTargetKind.GAP,
+    target_ref=None,
+    rationale="bounded recursive investigation",
+    wording="Investigate the bounded recursive question.",
+):
+    action = (
+        ManagerAction.SEEK_COUNTER_EVIDENCE
+        if intent == InvestigationIntent.SEEK_COUNTER_EVIDENCE
+        else ManagerAction.STOP
+        if intent
+        in {
+            InvestigationIntent.STOP_BRANCH,
+            InvestigationIntent.STOP_INVESTIGATION,
+        }
+        else ManagerAction.EXPLORE_NATIVE
+    )
+    kwargs = dict(
+        proposal_id=proposal_id,
+        source_revision=snapshot.source_revision,
+        target_parent_obligation="g1",
+        action=action,
+        intent=intent,
+        parent_step_id=parent_step_id,
+        branch_key=branch_key,
+        target_kind=target_kind,
+        target_ref=target_ref,
+        objective_key=objective_key,
+        bounded_objective=(
+            None
+            if action == ManagerAction.STOP
+            else wording
+        ),
+        rationale=rationale,
+        inspected_evidence_refs=snapshot.evidence_refs,
+        inspected_claim_refs=tuple(x.claim_id for x in snapshot.claims),
+        inspected_material_refs=snapshot.material_refs,
+        expected_information_gain=(
+            None
+            if action == ManagerAction.STOP
+            else "A bounded branch may materially change the investigation."
+        ),
+        stop_reason=(
+            ManagerStopReason.NO_MEANINGFUL_GAIN
+            if intent == InvestigationIntent.STOP_BRANCH
+            else ManagerStopReason.INCONCLUSIVE
+            if intent == InvestigationIntent.STOP_INVESTIGATION
+            else None
+        ),
+    )
+    if intent == InvestigationIntent.SEEK_COUNTER_EVIDENCE:
+        claim = snapshot.claims[0]
+        kwargs["counter_to_claim_id"] = claim.claim_id
+        kwargs["target_kind"] = InvestigationTargetKind.CLAIM
+        kwargs["target_ref"] = claim.claim_id
+    return ManagerProposal(**kwargs)
+
+
+def test_recursive_root_child_and_restart_reconstruct_exact_topology():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    followup = PersistedFirstFollowup(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=followup,
+        db_engine=db,
+    )
+
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="root-gap",
+                objective_key="orders.issue",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+                target_kind=InvestigationTargetKind.EFFECT,
+                target_ref="orders-down",
+            )
+        ),
+    )
+    child, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="child-explanation",
+                objective_key="orders.issue.web",
+                intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                parent_step_id=root.step_id,
+                target_kind=InvestigationTargetKind.EXPLANATION,
+                target_ref="web-orders-down",
+            )
+        ),
+    )
+
+    assert root.parent_step_id is None
+    assert root.depth == 0
+    assert child.parent_step_id == root.step_id
+    assert child.depth == 1
+    assert child.branch_id == root.branch_id
+
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    root_node = next(
+        x for x in snap.investigation.nodes if x.step_id == root.step_id
+    )
+    child_node = next(
+        x for x in snap.investigation.nodes if x.step_id == child.step_id
+    )
+    assert root_node.child_step_ids == (child.step_id,)
+    assert child_node.parent_step_id == root.step_id
+    assert snap.investigation.max_observed_depth == 1
+
+    restarted_store = ResearchSessionStore(db)
+    restarted = ResearchInvestigationManager(
+        research_store=restarted_store,
+        claim_store=ClaimLineageStore(
+            research_store=restarted_store,
+            db_engine=db,
+        ),
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    restored = restarted.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert restored.investigation == snap.investigation
+
+
+def test_multiple_sibling_branches_and_branch_local_stop_preserve_other_branch():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="root-multi",
+                objective_key="orders.multi",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+
+    branch_a, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="alt-a",
+                objective_key="orders.alt.web",
+                intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+                parent_step_id=root.step_id,
+                branch_key="web-conversion",
+                target_kind=InvestigationTargetKind.ALTERNATIVE,
+                target_ref="web-conversion",
+            )
+        ),
+    )
+    branch_b, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="alt-b",
+                objective_key="orders.alt.inventory",
+                intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+                parent_step_id=root.step_id,
+                branch_key="inventory",
+                target_kind=InvestigationTargetKind.ALTERNATIVE,
+                target_ref="inventory",
+            )
+        ),
+    )
+    assert branch_a.branch_id != branch_b.branch_id
+    assert branch_a.parent_step_id == branch_b.parent_step_id == root.step_id
+
+    stopped, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="stop-a",
+                objective_key="orders.alt.web.stop",
+                intent=InvestigationIntent.STOP_BRANCH,
+                parent_step_id=branch_a.step_id,
+                target_kind=InvestigationTargetKind.ALTERNATIVE,
+                target_ref="web-conversion",
+            )
+        ),
+    )
+    assert task is None
+    assert stopped.stop_scope.value == "BRANCH"
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert branch_a.branch_id in snap.investigation.stopped_branch_ids
+    assert branch_b.branch_id in snap.investigation.open_branch_ids
+    assert snap.terminal_stop_reason is None
+
+    deeper_b, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="deepen-b",
+                objective_key="orders.alt.inventory.deep",
+                intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                parent_step_id=branch_b.step_id,
+                target_kind=InvestigationTargetKind.EXPLANATION,
+                target_ref="inventory-availability",
+            )
+        ),
+    )
+    assert deeper_b.branch_id == branch_b.branch_id
+    assert deeper_b.depth == branch_b.depth + 1
+
+
+def test_global_stop_is_distinct_from_branch_stop_and_blocks_future_manager_turns():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="root-global",
+                objective_key="orders.global",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+    stopped, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="global-stop",
+                objective_key="investigation.stop",
+                intent=InvestigationIntent.STOP_INVESTIGATION,
+                parent_step_id=root.step_id,
+            )
+        ),
+    )
+    assert stopped.stop_scope.value == "INVESTIGATION"
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert snap.terminal_stop_reason == ManagerStopReason.INCONCLUSIVE
+
+    never = NeverCalledManager()
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=never,
+        )
+    assert exc.value.code == "P17_INVESTIGATION_TERMINAL"
+    assert never.calls == 0
+
+
+def test_recursive_depth_budget_is_bounded_and_not_a_target():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        budget=ResearchReasoningBudget(
+            max_reasoning_steps=12,
+            max_followup_native_turns=12,
+            max_counter_evidence_attempts=4,
+            max_depth=1,
+        ),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="depth-root",
+                objective_key="depth.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+    child, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="depth-child",
+                objective_key="depth.child",
+                intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                parent_step_id=root.step_id,
+            )
+        ),
+    )
+    assert child.depth == 1
+
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=ScriptedManager(
+                lambda snap: recursive_proposal(
+                    snap,
+                    proposal_id="depth-grandchild",
+                    objective_key="depth.grandchild",
+                    intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                    parent_step_id=child.step_id,
+                )
+            ),
+        )
+    assert exc.value.code == "P17_DEPTH_BUDGET_EXHAUSTED"
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert snap.investigation.max_observed_depth == 1
+
+
+def test_child_counter_evidence_is_first_class_in_graph_projection():
+    db = db_engine()
+    store, session, _, _, claims, claim = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="counter-root",
+                objective_key="counter.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+    counter, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="counter-child",
+                objective_key="counter.child",
+                intent=InvestigationIntent.SEEK_COUNTER_EVIDENCE,
+                parent_step_id=root.step_id,
+                target_ref=claim.claim_id,
+            )
+        ),
+    )
+    assert task is not None
+    node = next(
+        x
+        for x in service.snapshot(
+            session_id=session.session_id,
+            principal=principal(),
+        ).investigation.nodes
+        if x.step_id == counter.step_id
+    )
+    assert node.counter_evidence_refs == task.evidence_refs
+    assert node.target_kind == InvestigationTargetKind.CLAIM
+
+
+def test_replan_is_investigation_semantics_and_never_mutates_p14_authority():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    baseline = store.load(
+        session.session_id,
+        tenant=f"id:{TENANT}",
+        principal=str(USER),
+    )
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="replan-root",
+                objective_key="replan.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+    replanned, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="replan-child",
+                objective_key="replan.next-question",
+                intent=InvestigationIntent.REPLAN,
+                parent_step_id=root.step_id,
+                target_kind=InvestigationTargetKind.QUESTION,
+                target_ref="next-question",
+            )
+        ),
+    )
+    assert replanned.intent == InvestigationIntent.REPLAN
+    restored = store.load(
+        session.session_id,
+        tenant=f"id:{TENANT}",
+        principal=str(USER),
+    )
+    assert restored.obligations == baseline.obligations
+    assert restored.stopping == baseline.stopping
+    assert restored.fingerprint == baseline.fingerprint
+
+
+def test_same_recursive_proposal_without_new_material_becomes_branch_no_progress():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="np-root",
+                objective_key="np.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+    first, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="np-first",
+                objective_key="np.same",
+                intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                parent_step_id=root.step_id,
+                rationale="first prose",
+                wording="First phrasing of the same bounded question.",
+            )
+        ),
+    )
+    repeated, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="np-second",
+                objective_key="np.same",
+                intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                parent_step_id=root.step_id,
+                rationale="different prose",
+                wording="Different words, same normalized investigation identity.",
+            )
+        ),
+    )
+    assert task is None
+    assert repeated.status == ReasoningStepStatus.NO_PROGRESS
+    assert repeated.stop_reason == ManagerStopReason.NO_PROGRESS
+    assert repeated.stop_scope.value == "BRANCH"
+    assert repeated.branch_id == first.branch_id
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert first.branch_id in snap.investigation.stopped_branch_ids
+    assert snap.terminal_stop_reason is None
+
+
+def test_cross_session_parent_expansion_fails_closed():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="scope-root",
+                objective_key="scope.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+
+    second = ResearchAskOrchestrator(store=store).start_from_brief(
+        brief=brief().model_copy(update={"brief_id": "rb-p17-second"}),
+        request_ref="p17-second",
+        source_message_hash=hashlib.sha256(b"p17-second").hexdigest(),
+        principal=principal(),
+    )
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=second.session_id,
+            principal=principal(),
+            manager=ScriptedManager(
+                lambda snap: recursive_proposal(
+                    snap,
+                    proposal_id="scope-child",
+                    objective_key="scope.child",
+                    intent=InvestigationIntent.DEEPEN_EXPLANATION,
+                    parent_step_id=root.step_id,
+                )
+            ),
+        )
+    assert exc.value.code == "P17_PARENT_STEP_SESSION_MISMATCH"
+
+
+def test_recursive_vocabulary_contains_no_causal_or_contribution_authority():
+    assert {
+        InvestigationIntent.INVESTIGATE_GAP,
+        InvestigationIntent.EXPLORE_ALTERNATIVES,
+        InvestigationIntent.SEEK_COUNTER_EVIDENCE,
+        InvestigationIntent.DEEPEN_EXPLANATION,
+        InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+        InvestigationIntent.REPLAN,
+        InvestigationIntent.STOP_BRANCH,
+        InvestigationIntent.STOP_INVESTIGATION,
+    }.issubset(set(InvestigationIntent))
+
+    source = inspect.getsource(manager_module)
+    forbidden = (
+        "causal_confidence",
+        "causal_score",
+        "direct_effect",
+        "indirect_effect",
+        "path_strength",
+        "bayesian",
+        "contribution_calculator",
+    )
+    assert not any(token in source.lower() for token in forbidden)
 
