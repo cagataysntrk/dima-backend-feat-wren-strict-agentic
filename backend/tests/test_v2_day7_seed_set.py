@@ -28,6 +28,7 @@ from app.v2.research_tools import ResearchToolRunner
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
+from helpers.manager_action_set_adapter import adapt_legacy_manager_intent
 
 
 class _SeedService:
@@ -77,9 +78,9 @@ class _EvidenceResponsiveLLM:
         self.prompts: list[dict] = []
         self.decisions: list[dict] = []
 
-    def _emit(self, value: dict):
+    def _emit(self, payload: dict, value: dict):
         self.decisions.append(value)
-        return value
+        return adapt_legacy_manager_intent(payload, value)
 
     def structured_json(self, system, user, **kwargs):
         payload = json.loads(user)
@@ -93,7 +94,7 @@ class _EvidenceResponsiveLLM:
         delta = payload.get("CURRENT_RESULT_DELTA")
 
         if "U1" not in verified:
-            return self._emit({
+            return self._emit(payload, {
                 "action": "run_analytics",
                 "obligation_ids": ["U1"],
                 "metric_handles": ["h1"],
@@ -108,18 +109,18 @@ class _EvidenceResponsiveLLM:
 
         # Disclosed U1 result changes the next choice: U3 before U2.
         if "U3" not in verified:
-            return self._emit({
+            return self._emit(payload, {
                 "action": "run_analytics",
                 "obligation_ids": ["U3"],
                 "metric_handles": ["h3"],
             })
         if "U2" not in verified:
-            return self._emit({
+            return self._emit(payload, {
                 "action": "run_analytics",
                 "obligation_ids": ["U2"],
                 "metric_handles": ["h2"],
             })
-        return self._emit({"action": "finish"})
+        return self._emit(payload, {"action": "finish"})
 
 
 def _accepted_three_obligation_runtime():
