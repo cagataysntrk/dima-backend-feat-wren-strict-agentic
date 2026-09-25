@@ -1,4 +1,4 @@
-"""P14 Research state. Analytics stay on native P13 -> P10 -> P5 -> Evidence."""
+"""P14 Research state. Analytics stay native-direct: Metabot/Metabase -> one receipt -> Evidence."""
 from __future__ import annotations
 
 import hashlib, json
