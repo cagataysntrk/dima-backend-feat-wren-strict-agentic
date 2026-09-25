@@ -328,12 +328,14 @@ jobs:
           test -f "$SCENARIO"
           test -f backend/tests/test_v3_p17_autonomous_manager_eval.py
           test -f backend/tests/test_v3_p17_authorization_transport.py
+          test -f backend/tests/test_v3_p17_autonomous_provider_schema.py
           grep -q "DMP-DEC-0050 — AUTONOMOUS RESEARCH MANAGER CERTIFICATION" "$DECISIONS"
           grep -q "DMP-DEC-0051 — BOUNDED RED RECOVERY" "$DECISIONS"
           grep -q "A TEST ORACLE MUST NOT BE" "$DECISIONS"
           grep -q "GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS" "$DECISIONS"
           grep -q "Historical deterministic P17 scenario / contract lab" "$SCENARIO"
-          grep -q "provider.propose(snapshot)" "$AUTO"
+          grep -q "propose_with_constraints" "$AUTO"
+          grep -q "allowed_intents=LEGAL_AUTONOMOUS_INTENTS" "$AUTO"
           ! grep -nE 'propose_with_guidance|GuidedTurn' "$AUTO"
           grep -q "evaluate_autonomous_canary" "$AUTO"
           grep -q "verify_dispatch_authorization" "$ENTRY"
