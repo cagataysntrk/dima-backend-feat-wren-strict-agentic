@@ -23,6 +23,7 @@ from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
 from control_plane.models import (
     ResearchClaimRecord,
+    ResearchExecutionLink,
     ResearchExplorationMaterial,
     ResearchInvestigationTaskRecord,
     ResearchReasoningStepRecord,
@@ -163,9 +164,21 @@ class ParentObligationView(Frozen):
 class ClaimView(Frozen):
     claim_id: str
     obligation_id: str
+    claim_text: str
+    proposition: dict[str, Any]
+    scope: dict[str, Any]
     epistemic_state: str
     origin_material_refs: tuple[str, ...] = ()
     evidence_relations: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+
+
+class MaterialView(Frozen):
+    lead_id: str
+    obligation_id: str
+    material_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    source_evidence_refs: tuple[str, ...]
+    material: dict[str, Any]
 
 
 class ResearchManagerSnapshot(Frozen):
@@ -176,6 +189,7 @@ class ResearchManagerSnapshot(Frozen):
     parent_obligations: tuple[ParentObligationView, ...]
     evidence_refs: tuple[str, ...]
     material_refs: tuple[str, ...]
+    materials: tuple[MaterialView, ...]
     claims: tuple[ClaimView, ...]
     limitation_refs: tuple[str, ...]
     completed_reasoning_steps: tuple[str, ...]
@@ -250,6 +264,7 @@ class ResearchFollowupExecutor(Protocol):
         step: ResearchReasoningStep,
         task: ResearchInvestigationTask,
         principal: Principal,
+        native_session_token: str | None,
     ) -> FollowupResult: ...
 
 
@@ -705,11 +720,15 @@ class ResearchInvestigationManager:
                 ClaimView(
                     claim_id=claim.claim_id,
                     obligation_id=claim.obligation_id,
+                    claim_text=claim.claim_text,
+                    proposition=claim.proposition,
+                    scope=claim.scope,
                     epistemic_state=claim.epistemic_state.value,
                     origin_material_refs=claim.origin_material_refs,
                     evidence_relations=tuple(
                         x.relation.value for x in claim.evidence_links
                     ),
+                    limitations=claim.limitations,
                 )
             )
         return tuple(views)
@@ -741,6 +760,47 @@ class ResearchInvestigationManager:
                         ResearchExplorationMaterial.lead_id,
                     )
                 ).all()
+            )
+            followup_rows = tuple(
+                db.exec(
+                    select(ResearchExecutionLink)
+                    .where(ResearchExecutionLink.session_id == session.session_id)
+                    .where(ResearchExecutionLink.execution_kind == "P17_FOLLOWUP")
+                    .where(ResearchExecutionLink.status == "VERIFIED")
+                    .order_by(
+                        ResearchExecutionLink.created_at,
+                        ResearchExecutionLink.id,
+                    )
+                ).all()
+            )
+
+        materials = []
+        for row in material_rows:
+            try:
+                source_refs = json.loads(row.source_evidence_refs_json)
+                payload = json.loads(row.native_payload_json)
+            except json.JSONDecodeError as exc:
+                raise ResearchManagerMaturationError(
+                    "P17_MATERIAL_PERSISTENCE_INVALID",
+                    row.lead_id,
+                ) from exc
+            if (
+                not isinstance(source_refs, list)
+                or any(not isinstance(x, str) for x in source_refs)
+                or not isinstance(payload, dict)
+            ):
+                raise ResearchManagerMaturationError(
+                    "P17_MATERIAL_PERSISTENCE_INVALID",
+                    row.lead_id,
+                )
+            materials.append(
+                MaterialView(
+                    lead_id=row.lead_id,
+                    obligation_id=row.obligation_id,
+                    material_fingerprint=row.payload_fingerprint,
+                    source_evidence_refs=tuple(source_refs),
+                    material=payload,
+                )
             )
 
         claims = self._claim_views(session, principal)
@@ -789,11 +849,21 @@ class ResearchInvestigationManager:
                 for x in session.obligations
             ),
             evidence_refs=tuple(
-                sorted(x.evidence_id for x in session.evidence_refs)
+                sorted(
+                    {
+                        *(x.evidence_id for x in session.evidence_refs),
+                        *(
+                            x.evidence_id
+                            for x in followup_rows
+                            if x.evidence_id is not None
+                        ),
+                    }
+                )
             ),
             material_refs=tuple(
                 sorted(x.lead_id for x in material_rows)
             ),
+            materials=tuple(materials),
             claims=claims,
             limitation_refs=tuple(
                 sorted(x.limitation_id for x in session.limitations)
@@ -886,11 +956,19 @@ class ResearchInvestigationManager:
                 proposal.target_parent_obligation,
             )
 
-        evidence_by_id = {
-            x.evidence_id: x for x in session.evidence_refs
+        evidence_scope = {
+            x.evidence_id: x.obligation_id for x in session.evidence_refs
         }
         claim_by_id = {x.claim_id: x for x in snapshot.claims}
         with Session(self._engine) as db:
+            followup_rows = tuple(
+                db.exec(
+                    select(ResearchExecutionLink)
+                    .where(ResearchExecutionLink.session_id == session.session_id)
+                    .where(ResearchExecutionLink.execution_kind == "P17_FOLLOWUP")
+                    .where(ResearchExecutionLink.status == "VERIFIED")
+                ).all()
+            )
             material_rows = tuple(
                 db.exec(
                     select(ResearchExplorationMaterial)
@@ -904,16 +982,35 @@ class ResearchInvestigationManager:
                     )
                 ).all()
             )
+        for link in followup_rows:
+            if (
+                link.evidence_id is None
+                or link.receipt_id is None
+                or not link.reasoning_step_id
+                or not link.investigation_task_id
+            ):
+                raise ResearchManagerMaturationError(
+                    "P17_FOLLOWUP_EVIDENCE_LINEAGE_INVALID",
+                    str(link.id),
+                )
+            prior = evidence_scope.get(link.evidence_id)
+            if prior is not None and prior != link.obligation_id:
+                raise ResearchManagerMaturationError(
+                    "P17_EVIDENCE_ID_SCOPE_CONFLICT",
+                    link.evidence_id,
+                )
+            evidence_scope[link.evidence_id] = link.obligation_id
+
         material_by_id = {x.lead_id: x for x in material_rows}
 
         for evidence_id in proposal.inspected_evidence_refs:
-            ref = evidence_by_id.get(evidence_id)
-            if ref is None:
+            obligation_id = evidence_scope.get(evidence_id)
+            if obligation_id is None:
                 raise ResearchManagerMaturationError(
                     "P17_EVIDENCE_REF_UNKNOWN",
                     evidence_id,
                 )
-            if ref.obligation_id != proposal.target_parent_obligation:
+            if obligation_id != proposal.target_parent_obligation:
                 raise ResearchManagerMaturationError(
                     "P17_EVIDENCE_REF_SCOPE_MISMATCH",
                     evidence_id,
@@ -1023,6 +1120,7 @@ class ResearchInvestigationManager:
         snapshot: ResearchManagerSnapshot,
         step: ResearchReasoningStep,
         principal: Principal,
+        native_session_token: str | None,
     ) -> tuple[ResearchReasoningStep, ResearchInvestigationTask | None]:
         proposal = self._ledger.proposal(step.step_id)
         if proposal.source_revision != session.revision:
@@ -1080,6 +1178,7 @@ class ResearchInvestigationManager:
                 step=step,
                 task=task,
                 principal=principal,
+                native_session_token=native_session_token,
             )
             task = self._ledger.complete_task(
                 task.task_id,
@@ -1109,6 +1208,7 @@ class ResearchInvestigationManager:
         session_id: str,
         principal: Principal,
         manager: ResearchProposalManager,
+        native_session_token: str | None = None,
     ) -> tuple[ResearchReasoningStep, ResearchInvestigationTask | None]:
         session = self._session(session_id, principal)
         snapshot = self.snapshot(
@@ -1139,6 +1239,7 @@ class ResearchInvestigationManager:
                 snapshot=snapshot,
                 step=pending,
                 principal=principal,
+                native_session_token=native_session_token,
             )
 
         if snapshot.remaining_reasoning_steps == 0:
@@ -1242,4 +1343,5 @@ class ResearchInvestigationManager:
             snapshot=snapshot,
             step=step,
             principal=principal,
+            native_session_token=native_session_token,
         )
