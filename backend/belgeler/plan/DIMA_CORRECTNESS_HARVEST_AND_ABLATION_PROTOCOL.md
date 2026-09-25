@@ -1911,3 +1911,68 @@ VERIFIED `relationship_analytics` Evidence with QueryContract provenance; only t
 `ManagerRelationshipObservation(available=False, status=UNSUPPORTED, evidence_ref=None)` path is
 represented as a blocked terminal.
 
+
+
+---
+
+## D10-Q FINAL GENERIC FIX #3 HARVEST — VETO-FIRST REVISION FEASIBILITY
+
+Authority / proof:
+
+```text
+Metabase upstream inspected    metabase/metabase
+                               fc5cf5c4695ec0d3e9e8d0735c61f20e72147ede
+
+Product behavior               91721cb3bc01a3737212c7596fd3170c60c0239b
+
+revision preacceptance         4 turns
+revision Research cognition    2 turns
+revision global Manager        6 / 6
+
+normal G16 preacceptance       2 turns
+normal G16 Research cognition  4 turns
+normal G16 global Manager      6 / 6
+
+affected Day7                  36100892648 = GREEN
+affected Day8                  36100892586 = GREEN
+affected Day10                 36100939565 = GREEN
+```
+
+Metabase's current agent/exploration surfaces reaffirmed three portable architecture patterns only:
+failed terminal tool output is distinct from successful terminal output; applicability is hydrated
+and validated before planning/materialization; and planner cognition proposes a bounded plan while
+the server validates and materializes it. No Metabase runtime or code was imported.
+
+**H-141 — MUST_PORT — VETO BEFORE MATERIALIZATION**  
+A veto-only cognition gate that does not depend on semantic truth must reject an invalid draft before
+expensive semantic authority materialization. A Coverage-rejected draft consumes zero semantic-linker
+calls, mints zero semantic handles and creates zero semantic receipts.
+
+**H-142 — MUST_PORT — REJECTED DRAFT NON-CARRYOVER**  
+A rejected intent draft may not donate semantic handles, semantic receipts or any other accepted
+authority to its revision. A surviving revision grounds fresh through the ordinary SemanticBinding
+and acceptance path.
+
+**H-143 — MUST_PORT — RETRY-BUDGET FEASIBILITY**  
+A bounded revision path is not valid merely because preacceptance can recover. The recovered path
+must still fit the downstream global cognition budget required by the Product contract. When the
+revision consumed four preacceptance turns, the unmodified four-turn Research ceremony correctly
+hit the six-turn global ceiling after only `propose_branches → propose_hypothesis`. The accepted
+generic compaction is one bounded `propose_hypothesis_with_next_test` cognition plan followed by
+one evidence-relation turn. The server still mints hypothesis/ResearchTask identities, validates the
+next test through `HypothesisNextTestBoundary`, executes through the existing trust plane, and
+admits SUPPORTS/CONTRADICTS only after real VERIFIED Evidence exists.
+
+A successful composite next test can account an active same-root `ADAPT_ON_EVIDENCE` directive
+only when deterministic provenance proves all of: AGENT_DERIVED task, same ROOT_CAUSE parent,
+same inspected VERIFIED trigger Evidence, parent-task lineage, COMPLETE task, and VERIFIED result
+Evidence owned by that task. A blocked/failed next test cannot close the directive.
+
+**H-144 — MUST_PORT — EPHEMERAL PAID TRANSPORT**  
+Manual dispatch remains the permanent paid-certification mode. H-137 remains the default rule:
+no push bridge is part of the release architecture. A temporary push/marker transport is admissible
+only under explicit higher-owner authorization, with one branch/path-scoped marker, an independently
+hard-coded remaining-call ceiling, and a mandatory cleanup order: remove push transport first, then
+delete the marker. The tested branch is not considered clean until the permanent workflow is again
+`workflow_dispatch`-only. This is operational plumbing, never Product authority.
+
