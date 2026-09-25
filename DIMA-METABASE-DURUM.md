@@ -7,48 +7,53 @@
 
 ```text
 branch                                = feat/dima-metabase-platform
-branch HEAD at this snapshot          = ab2cdfb5061859096bc13ba0ee68b1c72ae7420b
+authority-content checkpoint          = f8d0b15865e3932a63cfbcfeff37d52b182d498b
 sealed lower/core behavior checkpoint = d1bc5291b315ff19c3456d08ff1820e983d85942
-current P17 provider candidate         = f940a9731be98212b47b44391e28080648c00629
-latest evaluator/infra seal candidate = c50f3e8a08e35d0846eb5e06432e45fd47e3082e
+current P17 provider candidate         = e6ab0bcf29bcbc17004c045a4391235ebc1fed19
+latest deterministic seal candidate   = 16ee4881f8399044fb7c30168484ff21063a7fd6
 forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051 + DMP-DEC-0052
 
-engine gitlink                        = cbe313af9ac2d5960f662068e433d328d896fb06
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
 engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
 engine certification                  = 36042062775 SUCCESS
-engine changes/builds during recovery = 0 / 0
+engine changes/builds                 = 0 / 0
 
-DMP-0052 provider-free                = 36147150264 SUCCESS
-DMP-0052 governance                   = 36147150224 SUCCESS
-family-aware exact-Git auth           = 26 PASS
-structured-schema regression          = 3 PASS
+semantic-output provider-free         = 36148929202 SUCCESS
+semantic-output governance            = 36148929211 SUCCESS
+family-aware authorization            = 28 PASS
+semantic-output envelope              = 8 PASS
 trajectory-invariant evaluator        = 7 PASS
 P17 reasoning                         = 31 PASS
 P16 claim-lineage                     = 6 PASS
 P15 native Exploration                = 5 PASS
 P14 native-direct                     = 17 PASS
 
-previous failure family               = P17_CERT_AUTHORIZATION_TRANSPORT
-previous family attempt               = 1 / 3
-previous family status                = CLOSED
+closed family                         = P17_CERT_AUTHORIZATION_TRANSPORT
+closed family authoritative RED       = 36137304596
+closed family attempt                 = 1 / 3
 
-current failure family                = P17_MANAGER_STRUCTURED_OUTPUT_SCHEMA
-current authoritative RED             = 36140130559 FAILURE
-current RED dispatch SHA              = b9dea761962268ada6299adca0c355ce14616c99
+closed family                         = P17_MANAGER_STRUCTURED_OUTPUT_SCHEMA
+closed family RED #1                  = 36140130559
+closed family boundary-cross run      = 36147620834
+
+current failure family                = P17_MANAGER_SEMANTIC_OUTPUT
+current authoritative RED             = 36147620834 FAILURE
+current RED dispatch SHA              = c1324ba3ab41f362a272e5a45be7c2da4735fe57
 attempt in current family             = 1 / 3
 remaining attempts in same family     = 2
 current family status                 = ROOT-FIXED PROVIDER-FREE / LIVE RECHECK PENDING
 
-current RED manager provider attempts = 1
+current RED manager Luna calls        = 1 SUCCESS
 current RED accepted manager proposal = 0
+current RED accepted P17 turns        = 0
 current RED Metabot occurrences       = 1
 current RED /api/dataset executions   = 1
 Sol calls                             = 0
 C1 calls                              = 0
 
-next authorization                    = p17-manager-structured-schema--attempt-002.json
-next bounded objective                = one autonomous Luna certification for family attempt 2
+next authorization                    = p17-manager-semantic-output--attempt-002.json
+next bounded objective                = one autonomous Luna certification for semantic-output attempt 2
 
 P14                                   = SEALED
 P15                                   = SEALED
@@ -64,24 +69,35 @@ UI / UX                               = FORBIDDEN UNTIL P21 SEALED
 
 ### CURRENT P17 GATE — DMP-DEC-0052
 
-The authorization-transport family is closed. Run `36140130559` crossed that boundary, booted the
-certified engine, completed one base native Metabot occurrence and one native `/api/dataset`
-execution, then failed at the P17 Research Manager provider's strict structured-output schema
-validation before an accepted manager proposal.
+The authorization-transport family is CLOSED. The structured-schema family is also CLOSED:
+run `36147620834` crossed provider strict-schema validation and completed a real Luna structured
+call successfully.
 
-Current family identity:
+That run then failed at a materially different boundary:
 
 ```text
-failure_family_id = p17-manager-structured-schema
+provider-valid structured JSON
+→ ResearchManagerProposalDraft Pydantic validation
+→ non-STOP proposal lacked usable expected_information_gain
+→ no accepted ManagerProposal
+```
+
+Therefore the active family is:
+
+```text
+failure_family_id = p17-manager-semantic-output
 attempt 1 / 3     = RED / ROOT-FIXED PROVIDER-FREE
 attempt 2 / 3     = AUTHORIZED LIVE RECHECK
 ```
 
-The generic root fix is the recursive transport-schema normalizer
-`research_manager_provider.py::_strict_json_schema(...)`. It changes provider-facing JSON Schema
-syntax only. Runtime Pydantic and `ManagerProposal` remain semantic authority. No business
-semantics, Boyahane values, branch names, regex/fuzzy/morphology logic, query rewriting, P13
-restoration, second executor, second receipt family, or engine modification is introduced.
+The generic fix is a strict provider-facing semantic transport envelope with separate structural
+variants for regular non-STOP, counter-Evidence, claim, and STOP payload families. It does **not**
+choose the investigation path. Luna still chooses among the bounded legal P17 intents. The adapter
+unwraps only transport representation and then applies unchanged Pydantic / ManagerProposal
+semantic authority.
+
+FORM_CLAIM remains a product capability and P16-backed authority; it is excluded only from this
+bounded P17 recursive-investigation certification vocabulary.
 
 Permanent recovery rule:
 
@@ -103,8 +119,7 @@ GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS
 FOR COMMIT / AUTHORIZATION IDENTITY.
 ```
 
-Historical `authorizations/autonomous-luna-recovery-001.json` remains immutable evidence for the
-closed transport family. Forward paid receipts use
+Historical authorization receipts remain immutable. Forward paid receipts use
 `<failure_family_id>--attempt-<NNN>.json`.
 
 
