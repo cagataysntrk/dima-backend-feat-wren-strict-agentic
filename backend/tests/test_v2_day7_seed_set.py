@@ -16,6 +16,7 @@ from app.v2.manager_models import (
     ManagerCapabilityKey,
     ObligationOrigin,
     RepresentabilityDecision,
+    SemanticBindingRef,
     StandardProjection,
     UserIntentEnvelope,
 )
@@ -25,6 +26,7 @@ from app.v2.models import ResolvedSemanticRef, SemanticTargetKind, TenantAnalyti
 from app.v2.representability import RepresentabilityGate
 from app.v2.research_tasks import ResearchTaskRegistry, ResearchTaskService
 from app.v2.research_tools import ResearchToolRunner
+from app.v2.root_cause_orchestration import RootCauseLoopContext
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
@@ -205,6 +207,13 @@ def _accepted_three_obligation_runtime():
                 origin=ObligationOrigin.USER_MUST,
                 source_refs=(refs[idx - 1].source_ref,),
                 semantic_handle_refs=(metric_handles[idx - 1].handle_id,),
+                semantic_bindings=(
+                    SemanticBindingRef(
+                        source_ref=refs[idx - 1].source_ref,
+                        handle_id=metric_handles[idx - 1].handle_id,
+                        target_kind="metric",
+                    ),
+                ),
             )
             for idx in range(1, 4)
         ),
@@ -224,11 +233,16 @@ def _accepted_three_obligation_runtime():
         store,
         question,
         message_id,
+        RootCauseLoopContext(
+            semantic_handles=handles,
+            tenant_binding=tenant,
+            context_version=context_version,
+        ),
     )
 
 
 def test_initial_seed_set_projects_all_three_user_must_without_execution():
-    _, runtime, _, service, _, _, _ = _accepted_three_obligation_runtime()
+    _, runtime, _, service, _, _, _, _ = _accepted_three_obligation_runtime()
     registry = ResearchTaskRegistry()
     runner = ResearchToolRunner()
 
@@ -251,7 +265,7 @@ def test_initial_seed_set_projects_all_three_user_must_without_execution():
 
 
 def test_research_execution_slice_is_lossless_without_weakening_whole_contract_proof():
-    _, runtime, _, _, _, _, _ = _accepted_three_obligation_runtime()
+    _, runtime, _, _, _, _, _, _ = _accepted_three_obligation_runtime()
     u1 = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
     projection = StandardProjection(
         obligation_ids=("U1",),
@@ -280,7 +294,7 @@ def test_research_execution_slice_is_lossless_without_weakening_whole_contract_p
 
 
 def test_research_execution_slice_cannot_launder_another_obligations_semantic_binding():
-    _, runtime, _, _, _, _, _ = _accepted_three_obligation_runtime()
+    _, runtime, _, _, _, _, _, _ = _accepted_three_obligation_runtime()
     u2 = next(item for item in runtime.ledger.items if item.obligation_id == "U2")
     forged = StandardProjection(
         obligation_ids=("U1",),
@@ -302,7 +316,7 @@ def test_research_execution_slice_cannot_launder_another_obligations_semantic_bi
 
 
 def test_research_execution_slice_rejects_obligation_outside_accepted_authority():
-    _, runtime, _, _, _, _, _ = _accepted_three_obligation_runtime()
+    _, runtime, _, _, _, _, _, _ = _accepted_three_obligation_runtime()
     u1 = next(item for item in runtime.ledger.items if item.obligation_id == "U1")
     projection = StandardProjection(
         obligation_ids=("U999",),
@@ -321,7 +335,7 @@ def test_research_execution_slice_rejects_obligation_outside_accepted_authority(
 
 
 def test_multi_obligation_loop_uses_seed_set_but_evidence_changes_next_ready_choice():
-    spans, runtime, executor, service, store, question, message_id = (
+    spans, runtime, executor, service, store, question, message_id, root_context = (
         _accepted_three_obligation_runtime()
     )
     llm = _EvidenceResponsiveLLM()
@@ -330,6 +344,7 @@ def test_multi_obligation_loop_uses_seed_set_but_evidence_changes_next_ready_cho
         llm=llm,
         source_spans=spans,
         research_tool_runner=ResearchToolRunner(),
+        root_cause_context=root_context,
     ).run(
         question=question,
         message_id=message_id,
