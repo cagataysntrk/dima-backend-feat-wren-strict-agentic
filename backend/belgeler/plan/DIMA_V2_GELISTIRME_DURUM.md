@@ -1,35 +1,51 @@
 # DIMA V2 GELİŞTİRME DURUMU
 
-## LATEST AUTHORITY — DAY8 SEALED / CERTIFICATION ORACLE GREEN / DAY10 CORRECTED TWO-TURN MEASUREMENT AUTHORIZED
+## LATEST AUTHORITY — PAID_EPOCH_2 RUN #1 RED / ROOT_CAUSE_CYCLE_1 ACTIVE
 
 ```text
 branch                          feat/ask-v2-mvp
-Product behavior                999d5e28facadd85aefd0d5b47cebec6c3daf4e6
-backend/app/** diff              ZERO
+
+tested Product behavior         999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+paid run                        36139969231 = RED
+tested transport SHA            f766162a6e77ede74eb9dbdfbd212bf2c5d124d4
+failure class                   CONTRACT / ARCHITECTURE
+first wrong transition          disposition_research_directive was advertised
+                                with ROOT next-test Evidence outside the accepted
+                                directive parent obligation lineage
+
+runtime lineage gate            CORRECT / FAIL-CLOSED
+ROOT_CAUSE                      VERIFIED
+CANDIDATE_CAUSE                 PRESENT
+CONFIRMED_CAUSE                 0
+ADAPT directive                 OPEN
+CompletionGate                  BUDGET_EXHAUSTED
+Product                         PARTIAL
+signed continuation             NOT REACHED
+
+PAID_EPOCH_1                    26 / 40 historical CLOSED
+PAID_EPOCH_2                    12 / 40 used
+PAID_EPOCH_2 remaining          28 / 40
+
+ROOT_CAUSE_CYCLE_1              ACTIVE
+current generic-fix owner       ManagerActionAvailability → strict provider schema
+frozen truth/security owners    UNCHANGED
+ManagerBudget                   4 / 4 / 8 UNCHANGED
+provider topology               UNCHANGED
+
+latest Product behavior         2b28f23e984fbe9cfa6486a0832fa2786900de48
+cheap affected proof            RUNNING / NOT YET AUTHORITY
+next paid measurement           ONLY AFTER ALL CHEAP GATES GREEN
+per-run hard maximum            20 provider calls
 
 Day8 FINAL                      SEALED
 Day10 FINAL                     OPEN
-certification oracle            GREEN
-
-old run 36135227087             historical RED / EVAL-HARNESS-FIXTURE
-
-PAID_EPOCH_1                    26 / 40 historical CLOSED
-PAID_EPOCH_2                    0 / 40 fresh
-PAID_EPOCH_2 remaining          40 / 40
-
-next authorized measurement     ONE corrected CANONICAL_NS4 full two-turn run
-per-run hard maximum            20 provider calls
-
-ManagerBudget                   4 / 4 / 8 RATIFIED / UNCHANGED
-provider topology               UNCHANGED
-
 Day11                           NOT AUTHORIZED
 DEV80                           NOT AUTHORIZED
 Validation50                    NOT AUTHORIZED
 Hidden50                        NOT AUTHORIZED
 ```
 
-Current-authority rule: the block above is the physically discoverable current state.
+Current-authority rule: this block is the physically discoverable current state.
 Historical receipts below remain immutable audit history and do not override it.
 
 
