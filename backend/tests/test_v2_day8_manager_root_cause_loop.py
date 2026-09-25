@@ -14,10 +14,7 @@ from app.v2.manager_executor import (
     GovernedManagerExecutionContext,
     GovernedManagerExecutor,
 )
-from app.v2.manager_loop import (
-    ResearchManagerLoop,
-    _post_acceptance_native_schema,
-)
+from app.v2.manager_loop import ResearchManagerLoop
 from app.v2.manager_models import (
     CandidateObligation,
     ManagerCapabilityKey,
@@ -42,10 +39,14 @@ from app.v2.research_tools import (
     ResearchToolRegistry,
     ResearchToolRunner,
 )
-from app.v2.root_cause_orchestration import RootCauseLoopContext
+from app.v2.root_cause_orchestration import (
+    RootCauseLoopContext,
+    root_cause_next_test_contract,
+)
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.source_spans import SourceSpanRegistry
 from control_plane.authorize import Principal
+from helpers.manager_action_set_adapter import adapt_legacy_manager_intent
 
 
 class _Service:
@@ -100,11 +101,14 @@ class _RootCauseFakeLLM:
         if not evidence_refs:
             assert len(ready) == 1
             assert ready[0]["task_kind"] == "QUERY"
-            return {
-                "action": "run_analytics",
-                "obligation_ids": ["U_ROOT"],
-                "metric_handles": ["h1"],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "run_analytics",
+                    "obligation_ids": ["U_ROOT"],
+                    "metric_handles": ["h1"],
+                },
+            )
 
         latest = payload.get("CURRENT_RESULT_DELTA")
         if (
@@ -112,50 +116,65 @@ class _RootCauseFakeLLM:
             and not latest.get("inspected")
             and not latest.get("disclosed_in_current_prompt")
         ):
-            return {
-                "action": "inspect_evidence",
-                "evidence_ref": latest["evidence_ref"],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "inspect_evidence",
+                    "evidence_ref": latest["evidence_ref"],
+                },
+            )
 
         if not entries:
-            return {
-                "action": "propose_hypothesis",
-                "hypothesis_parent_obligation_id": "U_ROOT",
-                "hypothesis_statement": "Aday açıklama gözlemsel olarak sınanmalıdır.",
-                "hypothesis_semantic_handles": ["h1"],
-                "hypothesis_trigger_evidence_refs": [evidence_refs[0]],
-                "hypothesis_limitations": ["Gözlemsel kanıt nedenselliği doğrulamaz."],
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis",
+                    "hypothesis_parent_obligation_id": "U_ROOT",
+                    "hypothesis_statement": "Aday açıklama gözlemsel olarak sınanmalıdır.",
+                    "hypothesis_semantic_handles": ["h1"],
+                    "hypothesis_trigger_evidence_refs": [evidence_refs[0]],
+                    "hypothesis_limitations": ["Gözlemsel kanıt nedenselliği doğrulamaz."],
+                },
+            )
 
         hypothesis = entries[0]
         if not hypothesis.get("next_test_task_refs"):
-            return {
-                "action": "propose_hypothesis_next_test",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "next_test_task_kind": "QUERY",
-                "next_test_input_handles": ["h1"],
-                "next_test_trigger_evidence_ref": evidence_refs[0],
-                "next_test_material_reason": "Aday açıklamayı bir gözlemsel tekrar ölçümle sınırla.",
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_next_test",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "next_test_task_kind": "QUERY",
+                    "next_test_input_handles": ["h1"],
+                    "next_test_trigger_evidence_ref": evidence_refs[0],
+                    "next_test_material_reason": "Aday açıklamayı bir gözlemsel tekrar ölçümle sınırla.",
+                },
+            )
 
         if not hypothesis.get("evidence_links"):
             assert latest is not None
             assert latest["evidence_ref"] != evidence_refs[0]
-            return {
-                "action": "propose_hypothesis_evidence_relation",
-                "hypothesis_ref": hypothesis["hypothesis_id"],
-                "hypothesis_relation_evidence_ref": latest["evidence_ref"],
-                "hypothesis_relation": "SUPPORTS",
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "propose_hypothesis_evidence_relation",
+                    "hypothesis_ref": hypothesis["hypothesis_id"],
+                    "hypothesis_relation_evidence_ref": latest["evidence_ref"],
+                    "hypothesis_relation": "SUPPORTS",
+                },
+            )
 
-        return {
-            "action": "request_clarification",
-            "obligation_ids": ["U_ROOT"],
-            "clarification_reason": (
-                "Day8 ROOT_CAUSE completion truth is intentionally not auto-promoted "
-                "from observational support."
-            ),
-        }
+        return adapt_legacy_manager_intent(
+            payload,
+            {
+                "action": "request_clarification",
+                "obligation_ids": ["U_ROOT"],
+                "clarification_reason": (
+                    "Day8 ROOT_CAUSE completion truth is intentionally not auto-promoted "
+                    "from observational support."
+                ),
+            },
+        )
 
 
 class _BlockedNextTestLLM(_RootCauseFakeLLM):
@@ -176,14 +195,17 @@ class _BlockedNextTestLLM(_RootCauseFakeLLM):
         )
         if blocked is not None:
             self.prompts.append(payload)
-            return {
-                "action": "request_clarification",
-                "obligation_ids": ["U_ROOT"],
-                "clarification_reason": (
-                    "Governed next test is blocked; no Evidence exists to support "
-                    "or contradict the hypothesis."
-                ),
-            }
+            return adapt_legacy_manager_intent(
+                payload,
+                {
+                    "action": "request_clarification",
+                    "obligation_ids": ["U_ROOT"],
+                    "clarification_reason": (
+                        "Governed next test is blocked; no Evidence exists to support "
+                        "or contradict the hypothesis."
+                    ),
+                },
+            )
         return super().structured_json(system, user, **kwargs)
 
 
@@ -286,23 +308,19 @@ def _accepted_root_runtime():
     )
 
 
-def test_day8_actions_are_not_advertised_without_root_cause_context():
-    old_schema = json.dumps(_post_acceptance_native_schema(), ensure_ascii=False)
-    assert '"propose_hypothesis"' not in old_schema
-    assert '"propose_hypothesis_evidence_relation"' not in old_schema
-    assert '"propose_hypothesis_next_test"' not in old_schema
-
-    d8_native = _post_acceptance_native_schema(root_cause_enabled=True)
-    d8_schema = json.dumps(d8_native, ensure_ascii=False)
-    assert '"propose_hypothesis"' in d8_schema
-    assert '"propose_hypothesis_evidence_relation"' in d8_schema
-    assert '"propose_hypothesis_next_test"' in d8_schema
-    assert d8_native["$defs"]["ResearchTaskKind"]["enum"] == [
-        "QUERY",
-        "COMPARE",
-        "BREAKDOWN",
-        "RANK",
+def test_day8_root_next_test_contract_remains_bounded_to_governed_direct_families():
+    rows = {
+        row["task_kind"]: row
+        for row in root_cause_next_test_contract()
+    }
+    assert set(rows) == {"QUERY", "COMPARE", "BREAKDOWN", "RANK"}
+    assert rows["QUERY"]["required_semantic_kinds"] == ["metric"]
+    assert rows["BREAKDOWN"]["required_semantic_kinds"] == [
+        "dimension",
+        "metric",
     ]
+    assert "RELATIONSHIP" not in rows
+    assert "CONTRIBUTION" not in rows
 
 
 def test_root_cause_loop_bootstraps_executes_next_test_and_completes_bounded_investigation():
@@ -517,8 +535,9 @@ def test_blocked_next_test_terminal_does_not_crash_or_create_epistemic_evidence(
         for finding in outcome.findings
     )
 
-    # Production authority remains frozen: RELATIONSHIP is still not advertised as
-    # a ROOT_CAUSE next-test family. The real governed RELATIONSHIP blocked terminal
-    # is proven separately by the Day7 relationship vertical.
-    native = _post_acceptance_native_schema(root_cause_enabled=True)
-    assert "RELATIONSHIP" not in native["$defs"]["ResearchTaskKind"]["enum"]
+    # Production authority remains frozen: RELATIONSHIP is still not a
+    # ROOT_CAUSE next-test family. This reads the real contract owner directly.
+    task_kinds = {
+        row["task_kind"] for row in root_cause_next_test_contract()
+    }
+    assert "RELATIONSHIP" not in task_kinds
