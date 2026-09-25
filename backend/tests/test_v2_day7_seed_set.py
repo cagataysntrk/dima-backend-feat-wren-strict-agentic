@@ -98,17 +98,15 @@ class _EvidenceResponsiveLLM:
                 "obligation_ids": ["U1"],
                 "metric_handles": ["h1"],
             })
-        if (
-            delta
-            and delta.get("obligation_ids") == ["U1"]
-            and not delta.get("inspected")
-        ):
-            return self._emit({
-                "action": "inspect_evidence",
-                "evidence_ref": delta["evidence_ref"],
-            })
+        if delta and delta.get("obligation_ids") == ["U1"]:
+            # Fresh VERIFIED bounded payload is already disclosed in this cognition
+            # turn, so ActionApplicabilitySnapshot intentionally omits a redundant
+            # inspect_evidence scope. The disclosed result may still change the next
+            # cognition choice before runtime records it as inspected.
+            assert delta.get("disclosed_in_current_prompt") is True
+            assert delta.get("inspection_required") is False
 
-        # Inspected U1 result changes the next choice: U3 before U2.
+        # Disclosed U1 result changes the next choice: U3 before U2.
         if "U3" not in verified:
             return self._emit({
                 "action": "run_analytics",
