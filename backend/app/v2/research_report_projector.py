@@ -14,6 +14,10 @@ from typing import Iterable
 
 from pydantic import Field
 
+from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
+    ManagerCapabilityRegistry,
+)
 from app.v2.manager_models import (
     ManagerCapabilityKey,
     ObligationStatus,
@@ -101,10 +105,12 @@ class ResearchReportProjector:
         semantic_handles: SemanticHandleRegistry,
         tenant_binding: str,
         context_version: str,
+        capabilities: ManagerCapabilityRegistry | None = None,
     ) -> None:
         self._handles = semantic_handles
         self._tenant = tenant_binding
         self._context = context_version
+        self._capabilities = capabilities or ManagerCapabilityRegistry()
 
     def project(
         self,
@@ -123,9 +129,27 @@ class ResearchReportProjector:
                 ),
             )
         evidence_by_id = {item.artifact_id: item for item in verified}
-        active = ledger.active_user_must
+        # Presentation USER_MUST authority remains in the accepted ledger, but it is
+        # not an Evidence-producing analytical obligation. REPORT delivery is fulfilled
+        # by the ReportDocument built from the completed analytical projection below.
+        # Keeping presentation items out of Evidence completeness prevents a circular
+        # requirement (Research cannot produce the report before Product projection).
+        active = tuple(
+            item
+            for item in ledger.active_user_must
+            if self._capabilities.get(item.capability_key).execution_mode
+            != ManagerCapabilityExecutionMode.PRESENTATION
+        )
+        presentation = tuple(
+            item
+            for item in ledger.active_user_must
+            if self._capabilities.get(item.capability_key).execution_mode
+            == ManagerCapabilityExecutionMode.PRESENTATION
+        )
         active_by_id = {item.obligation_id: item for item in active}
         issues: list[str] = []
+        if not active:
+            issues.append("research report has no analytical USER_MUST authority")
 
         artifacts = tuple(self._artifact(item) for item in verified)
         artifact_by_evidence = {
@@ -343,13 +367,21 @@ class ResearchReportProjector:
                 "CAVEAT bölümleri tamamlanmamış USER_MUST çalışmalarını gösterir."
             )
 
+        requested_report = any(
+            item.capability_key == ManagerCapabilityKey.REPORT
+            for item in presentation
+        )
         return ResearchReportProjection(
             status=ResearchReportProjectionStatus.COMPLETE,
             request=ReportBuildRequest(
                 title=(
                     "Araştırma Raporu — Kısmi"
                     if allow_partial
-                    else "Araştırma Raporu"
+                    else (
+                        "Araştırma Raporu"
+                        if requested_report or sections
+                        else "Araştırma Sonuçları"
+                    )
                 ),
                 sections=tuple(sections),
                 limitations=_unique(report_limitations),
