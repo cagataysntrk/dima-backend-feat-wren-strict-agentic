@@ -4550,3 +4550,244 @@ Exactly one live attempt 2 is authorized after an append-only
 `p17-manager-semantic-output--attempt-002.json` receipt. If the same owner/invariant fails, this
 family becomes attempt 2 / 3 RED. If this boundary is crossed and a different owner/invariant fails,
 that new family starts at 1 / 3.
+
+
+---
+
+## DMP-DEC-0053 — THIN INVESTIGATION LANGUAGE / STATE-DERIVED LEGALITY / MINIMUM COGNITION PACKET
+
+date: 2026-09-25
+
+status:
+`RATIFIED FORWARD P17 CORRECTION / PROVIDER-FREE IMPLEMENTATION IN PROGRESS / LIVE ATTEMPT 2 PENDING / P18 BLOCKED`
+
+Authority stack:
+
+```text
+DMP-DEC-0048 = native-direct analytical ownership
+DMP-DEC-0049 = recursive investigation / P17-P19 split
+DMP-DEC-0050 = trajectory-invariant autonomous certification
+DMP-DEC-0051 = first-wrong-transition / generic-root-fix procedure
+DMP-DEC-0052 = failure-family identity + per-family recovery budget
+DMP-DEC-0053 = thin investigation language + state-derived legality + minimum cognition packet
+```
+
+Permanent boundary:
+
+```text
+THE MODEL CHOOSES WHAT TO INVESTIGATE.
+
+THE DETERMINISTIC P17 DOMAIN DECIDES
+WHICH INVESTIGATION MOVES ARE LEGAL
+IN THE CURRENT STATE.
+
+METABASE EXECUTES ALL ANALYTICAL WORK.
+
+LEGALITY != PLANNING.
+```
+
+The latest autonomous run `36149372671` crossed authorization, provider schema, provider semantic
+output, native Metabot execution and Evidence feedback. Its failure is therefore a new family:
+
+```text
+failure_family_id = p17-investigation-language-legality
+attempt_in_family = 1 / 3
+
+owner = P17 TYPED INVESTIGATION LANGUAGE
+```
+
+First wrong transition:
+
+```text
+typed proposal accepted
+→ loosely legal field combination reached topology interpretation
+→ branch identity could be minted from branch_key rather than move semantics
+→ structurally weak investigation graph persisted
+→ trajectory-invariant evaluator rejected final graph
+```
+
+DMP-DEC-0053 closes prior provider/schema families for the current execution boundary. It does not
+reopen P13/P14/P15/P16, Metabot, Query Processor, Lib, drivers, native permissions, native execution,
+receipt architecture, or the certified dima.6 engine.
+
+### Single dynamic-legality owner
+
+Target flow:
+
+```text
+ResearchManagerSnapshot
+→ InvestigationActionProfile
+→ model chooses one typed proposal
+→ resolve_investigation_topology ONCE
+→ ResolvedInvestigationTopology
+→ validation / persistence / execution / evaluation consume that resolution
+```
+
+`InvestigationActionProfile` is a transient pure state projection. It may expose legal intents,
+legal existing parent IDs, open/stopped branch state, depth/budgets, branch-opening versus
+branch-inheriting behavior and global-control semantics. It must not score, rank, choose an
+explanation, choose an analytical dimension, select a winner, or plan the next sequence.
+
+Branch identity is semantic, not field-driven:
+
+```text
+EXPLORE_ALTERNATIVES
+→ existing open parent required
+→ branch_key required
+→ exactly one new child branch
+
+INVESTIGATE_GAP
+→ parentless only for root investigation
+→ otherwise inherits existing parent branch
+→ branch_key forbidden
+
+DEEPEN_EXPLANATION
+TEST_DISCRIMINATING_EVIDENCE
+SEEK_COUNTER_EVIDENCE
+REPLAN
+FORM_CLAIM
+STOP_BRANCH
+→ branch_key forbidden
+→ no branch mint
+→ inherit an already legal branch context
+
+STOP_INVESTIGATION
+→ global terminal
+→ branch_key forbidden
+→ compatibility branch storage must not expose a newly opened branch
+```
+
+The SQL/store layer persists `ResolvedInvestigationTopology`; it does not independently reinterpret
+`branch_key`, depth, parent or stop semantics.
+
+### Provider schema role
+
+Provider JSON Schema is assistance, not authority. It may receive the legal intent vocabulary,
+legal parent IDs and branch-key behavior derived from `InvestigationActionProfile`. It cannot
+broaden those legal moves. Final deterministic resolution after model output remains authoritative.
+
+No screenplay is permitted. The profile returns **legal options now**, never the next correct option.
+
+### Thin cognition packet
+
+Durable P15 `native_payload_json` remains unchanged and remains the raw native material authority.
+The manager snapshot now receives only a source-backed read projection:
+
+```text
+lead_id
+obligation_id
+execution_link_id
+native_conversation_id
+native_query_id
+query_fingerprint
+material_fingerprint
+source Evidence refs
+exploration_kind
+verbatim native name/title/description when present
+verbatim dashcard/card identifiers and titles when present
+```
+
+The default cognition packet does not carry the full nested dataset_query,
+visualization_settings, dashboard-template internals, X-Ray metadata graph or other native analytical
+implementation machinery. No Python summarizer, interestingness, ranking, chart scoring, keyword
+extraction, fuzzy condensation or LLM pre-summary is introduced.
+
+### Evaluator ownership
+
+The autonomous evaluator continues to require alternative consideration, native testing, Evidence
+feedback, branch outcome, recursive progress/justified stop, single native executor/receipt family,
+P16 sole claim authority, P14 immutability and bounded termination. Dynamic branch/depth legality is
+not independently reinterpreted by the evaluator; it consumes topology already resolved by the
+single deterministic P17 legality owner.
+
+### Current live evidence
+
+```text
+run                              = 36149372671 FAILURE
+manager calls                    = 8
+native P17 follow-ups            = 3
+VERIFIED native occurrences      = 4 including base
+new Evidence reached later turn  = YES
+bounded termination              = YES
+P14 immutable                    = YES
+P16 sole claim authority         = YES
+native analytics only            = YES
+single receipt family            = YES
+P13 hot path                     = 0
+second native executor           = 0
+Dima Python analytics            = 0
+Wren/raw-SQL/admin fallback      = 0
+```
+
+Observed structural trajectory is retained only as adversarial regression evidence:
+
+```text
+INVESTIGATE_GAP
+→ INVESTIGATE_GAP
+→ INVESTIGATE_GAP
+→ STOP_BRANCH
+→ parentless EXPLORE_ALTERNATIVES
+→ DEEPEN_EXPLANATION
+→ STOP_BRANCH
+→ STOP_INVESTIGATION
+```
+
+No objective names or business literals are encoded into the fix.
+
+### Exit gate
+
+Before the next paid run:
+
+```text
+InvestigationActionProfile tests
+adversarial topology matrix
+multiple fake-manager legal trajectories
+trajectory-invariant evaluator
+thin cognition projection tests
+existing P17 regressions
+P16
+P15
+P14
+governance
+exact unchanged engine identity
+= ALL GREEN
+```
+
+Then exactly one live Luna run is authorized for:
+
+```text
+failure_family_id = p17-investigation-language-legality
+attempt_in_family = 2
+```
+
+If GREEN, P17 is sealed and P18 material-business-relationship **pre-development review only** starts.
+If the same legality owner/invariant fails, the family becomes attempt 2 / 3 and one final generic
+root-fix attempt may follow after provider-free proof. If execution crosses this boundary and a
+different owner/invariant fails, the new family begins at 1 / 3. Architecture STOP conditions
+continue to override all remaining attempts.
+
+Permanent lesson:
+
+```text
+P17 IS AN INVESTIGATION LANGUAGE,
+NOT AN ANALYTICS ENGINE.
+
+AUTONOMY DOES NOT MEAN
+EVERY FIELD COMBINATION IS LEGAL.
+
+MODEL CHOOSES AMONG LEGAL MOVES.
+DIMA OWNS MOVE LEGALITY.
+METABASE OWNS ANALYTICAL EXECUTION.
+
+BRANCH IDENTITY IS CREATED
+BY INVESTIGATION SEMANTICS,
+NOT BY THE PRESENCE OF A STRING FIELD.
+
+P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
+
+RAW NATIVE MATERIAL IS DURABLE.
+MANAGER COGNITION PACKET IS A THIN PROJECTION.
+
+DO NOT BUILD A PLANNER
+TO FIX A LEGALITY PROBLEM.
+```
