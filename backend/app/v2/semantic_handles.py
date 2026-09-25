@@ -159,6 +159,42 @@ class SemanticHandleRegistry:
             raise ValueError("stale-context semantic handle")
         return handle
 
+    def handles_for_parent(
+        self,
+        *,
+        tenant_binding: str,
+        context_version: str,
+        parent_obligation_id: str,
+        trigger_evidence_ref: str | None = None,
+        provenance_type: str = "AGENT_DERIVED",
+    ) -> tuple[SemanticHandle, ...]:
+        """Project existing opaque handle metadata for one exact authority lineage.
+
+        This is a read-only registry query. It never mints semantics and never exposes
+        canonical targets. Tenant/context, parent obligation, provenance and optional
+        trigger Evidence are exact-match filters so sibling/foreign derived handles
+        cannot enter the same executable action surface.
+        """
+
+        rows: list[SemanticHandle] = []
+        for binding in self._bindings.values():
+            handle = binding.handle
+            if handle.tenant_binding != tenant_binding:
+                continue
+            if handle.context_version != context_version:
+                continue
+            if handle.parent_obligation_id != parent_obligation_id:
+                continue
+            if handle.provenance_type != provenance_type:
+                continue
+            if (
+                trigger_evidence_ref is not None
+                and handle.trigger_evidence_ref != trigger_evidence_ref
+            ):
+                continue
+            rows.append(handle)
+        return tuple(sorted(rows, key=lambda item: item.handle_id))
+
     def binding_for_execution(
         self,
         handle_id: str,
