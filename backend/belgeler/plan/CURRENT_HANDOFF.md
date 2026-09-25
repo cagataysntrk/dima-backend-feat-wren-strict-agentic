@@ -1,5 +1,68 @@
 # CURRENT HANDOFF
 
+## LATEST AUTHORITY OVERRIDE — D10-Q FINAL GENERIC FIX #3 AUTHORIZED
+
+This block supersedes only the prior D10-Q TRUE STOP as current authority. Historical TRUE STOP and all paid RED receipts below remain untouched.
+
+```text
+branch                         feat/ask-v2-mvp
+authority reconciliation HEAD ec8e533a52e921d13364a1f879afd5aa1dbfecfc
+current runtime Product        f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+
+paid run #1                    36091887451 = RED / 7 calls
+paid run #2                    36096707608 = RED / 8 calls
+paid run #3                    36098236473 = RED / 7 calls
+
+provider calls                 22 / 40
+remaining provider calls       18
+
+generic fixes                  2 / 3 consumed
+generic fix #3                 AUTHORIZED / FINAL
+paid verification run #4       AUTHORIZED ONLY AFTER FIX #3 PROOF
+run #4 max provider calls      18
+
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+Binding current first-wrong-transition family:
+
+```text
+MODEL_COGNITION
++
+PREACCEPTANCE EXECUTION ORDER / BUDGET INTERACTION
+
+draft #1 polarity error
+→ Coverage VETO / POLARITY_CONFLICT
+→ corrected draft #2
+→ re-grounding attempted after SEMANTIC_LINKER 3/3 already consumed
+→ PaidBudgetExceeded before fourth semantic call
+```
+
+Authorized final generic direction:
+
+```text
+DRAFT
+→ deterministic draft/source checks
+→ COVERAGE_VETO
+→ AUTO_GROUND
+→ material-gap/decomposition repair
+→ CONTRACT_VALIDITY
+```
+
+Coverage remains veto-only cognition and gains no semantic, rewrite, polarity-mutation, handle-minting or obligation-creation authority. Rejected drafts donate no semantic handles/receipts to their revisions. Frozen ceilings remain SEMANTIC_LINKER=3 and Manager global=6.
+
+Before paid run #4, provider-free proof must establish:
+- VETO'd attempt uses zero semantic calls/handles/receipts;
+- corrected revision grounds fresh within the existing semantic ceiling;
+- one full revision-path Product rehearsal reaches ReportDocument within Manager total <= 6;
+- normal G16 and affected Day7/Day8/Day10 gates remain GREEN.
+
+This reconciliation is docs-only; no test is required for the authority edit itself.
+
+
 ## LATEST AUTHORITY OVERRIDE — D10-Q TRUE STOP / THREE PAID MEASUREMENTS CONSUMED
 
 This is the current active Day10 authority. Historical D10-Q blocks below remain audit receipts only.
