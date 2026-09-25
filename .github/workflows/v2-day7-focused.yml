@@ -23,6 +23,7 @@ name: v2-day7-focused
       - "backend/app/v2/manager_runtime.py"
       - "backend/app/v2/manager_models.py"
       - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/manager_action_availability.py"
       - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
       - "backend/app/v2/manager_preacceptance.py"
       - "backend/app/v2/manager_policy.py"
