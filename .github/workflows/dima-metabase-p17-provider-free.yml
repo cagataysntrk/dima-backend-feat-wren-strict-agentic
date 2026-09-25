@@ -6,9 +6,15 @@ on:
       - feat/dima-metabase-platform
     paths:
       - "backend/app/v3/research_manager.py"
+      - "backend/app/v3/research_followup.py"
+      - "backend/app/v3/research_product.py"
+      - "backend/app/v3/research_store.py"
+      - "backend/app/v3/research_exploration.py"
+      - "backend/app/v3/claim_lineage.py"
       - "backend/app/v3/research.py"
       - "backend/control_plane/models.py"
       - "backend/migrations/versions/d9f6a1c3e742_p17_research_reasoning.py"
+      - "backend/migrations/versions/e1a7b4c9d305_p17_followup_execution_lineage.py"
       - "backend/tests/test_v3_p17_research_manager.py"
       - "backend/tests/test_v3_p16_claim_lineage.py"
       - "backend/tests/test_v3_p15_native_exploration.py"
@@ -52,26 +58,36 @@ jobs:
           set -euo pipefail
           REVIEW="backend/belgeler/metabase/predev/P17_RESEARCH_MANAGER_MATURATION_PREDEVELOPMENT_REVIEW.md"
           grep -q "SEALED / P17 RESEARCH MANAGER MATURATION IMPLEMENTATION AUTHORIZED" "$REVIEW"
-          HOT="backend/app/v3/research_manager.py"
+          HOT=(
+            "backend/app/v3/research_manager.py"
+            "backend/app/v3/research_followup.py"
+          )
           FORBIDDEN='NativeStandardTrustOrchestrator|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer|attest_native_query[[:space:]]*\(|execute_native_query[[:space:]]*\(|app\.wren|wren_service|MetabaseAgentClient'
-          ! grep -nE "$FORBIDDEN" "$HOT"
-          ! grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$HOT"
-          ! grep -nE '(breakdown|trend|rank|compare)[[:space:]]*\(' "$HOT"
-          grep -q "SEEK_COUNTER_EVIDENCE" "$HOT"
-          grep -q "NO_PROGRESS" "$HOT"
-          grep -q "ResearchReasoningStepRecord" "$HOT"
+          for file in "${HOT[@]}"; do
+            ! grep -nE "$FORBIDDEN" "$file"
+            ! grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$file"
+            ! grep -nE '(breakdown|trend|rank|compare)[[:space:]]*\(' "$file"
+          done
+          grep -q "SEEK_COUNTER_EVIDENCE" backend/app/v3/research_manager.py
+          grep -q "NO_PROGRESS" backend/app/v3/research_manager.py
+          grep -q "ResearchReasoningStepRecord" backend/app/v3/research_manager.py
+          grep -q "NativeResearchOccurrenceRunner" backend/app/v3/research_followup.py
+          ! grep -nE 'execute_dataset[[:space:]]*\(|bridge\.invoke[[:space:]]*\(' backend/app/v3/research_followup.py
 
       - name: Compile P17 reasoning slice
         working-directory: backend
         run: |
           python -m py_compile \
             app/v3/research_manager.py \
+            app/v3/research_followup.py \
+            app/v3/research_product.py \
             app/v3/research.py \
             app/v3/research_store.py \
             app/v3/research_exploration.py \
             app/v3/claim_lineage.py \
             control_plane/models.py \
             migrations/versions/d9f6a1c3e742_p17_research_reasoning.py \
+            migrations/versions/e1a7b4c9d305_p17_followup_execution_lineage.py \
             tests/test_v3_p17_research_manager.py
 
       - name: Verify single Alembic head includes P17 durability
@@ -80,7 +96,7 @@ jobs:
           set -euo pipefail
           heads="$(python -m alembic heads)"
           test "$(printf '%s\n' "$heads" | grep -Ec '^[0-9a-f]+')" -eq 1
-          printf '%s\n' "$heads" | grep -q '^d9f6a1c3e742'
+          printf '%s\n' "$heads" | grep -q '^e1a7b4c9d305'
 
       - name: P17 focused provider-free reasoning proof
         working-directory: backend
@@ -96,4 +112,4 @@ jobs:
 
       - name: P14 native-direct authority remains GREEN
         working-directory: backend
-        run: pytest -q tests/test_v3_p14_native_gateway.py
+        run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
