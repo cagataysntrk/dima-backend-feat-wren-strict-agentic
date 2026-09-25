@@ -431,12 +431,20 @@ def test_result_aware_loop_observes_verified_evidence_and_executes_bounded_secon
     assert child.obligation_id.startswith("branch_")
     assert child.obligation_id not in {"D1", "D2", "D3", "legacy-D1", "legacy-D2", "legacy-D3"}
 
-    task_ids = [
+    seed_execution = next(
+        item
+        for item in outcome.observations
+        if item.get("kind") == "deterministic_task_executed"
+    )
+    assert seed_execution["task_id"] == "seed:U1"
+    assert seed_execution["evidence_ref"] == runtime.snapshot.evidence_refs[0]
+
+    manager_selected_task_ids = [
         item.get("research_task_id")
         for item in outcome.observations
         if item.get("kind") == "tool" and item.get("research_task_id")
     ]
-    assert task_ids == ["seed:U1", child.obligation_id]
+    assert manager_selected_task_ids == [child.obligation_id]
 
     # The second decision was grounded in actual bounded first-result content.
     first_inspection_prompt = llm.prompts[1]
