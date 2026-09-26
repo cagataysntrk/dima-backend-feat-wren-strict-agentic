@@ -112,6 +112,8 @@ def _runtime(
         accepted_contract=SimpleNamespace(research_directives=tuple(directives)),
         directive_dispositions=(),
         snapshot=SimpleNamespace(
+            accepted_contract_id="atc-goal-quarantine",
+            run_id="mgr-goal-quarantine",
             inspected_evidence_refs=(),
             evidence_refs=(),
             research_manager_turns=0,
