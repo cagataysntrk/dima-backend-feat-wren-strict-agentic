@@ -44,7 +44,11 @@ from app.v2.manager_models import (
     SemanticBindingRef,
     UserIntentEnvelope,
 )
-from app.v2.manager_policy import ManagerCapabilityRegistry
+from app.v2.completion import CompletionGapReceipt, CompletionGate
+from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
+    ManagerCapabilityRegistry,
+)
 from app.v2.capability_bindings import CapabilityBindingValidator
 from app.v2.manager_preacceptance import (
     FiniteAcceptanceStatus,
@@ -561,6 +565,7 @@ class ManagerLoopOutcome:
     research_tasks: tuple[ResearchTask, ...] = ()
     hypothesis_states: tuple[HypothesisLedgerState, ...] = ()
     directive_dispositions: tuple[ResearchDirectiveDisposition, ...] = ()
+    completion_gap_receipt: CompletionGapReceipt | None = None
     cancelled: bool = False
     answer_now_requested: bool = False
 
@@ -995,6 +1000,114 @@ class ResearchManagerLoop:
             return True
         except ManagerStateError:
             return False
+
+    def _completion_gap_receipt(
+        self,
+        *,
+        runtime: ManagerRuntime,
+        task_registry: ResearchTaskRegistry,
+        root_cause_ledgers: dict[str, Any],
+    ) -> CompletionGapReceipt | None:
+        """Project deterministic non-completion facts without reasoning text."""
+
+        if (
+            runtime.snapshot.terminal_status
+            == ResearchRunTerminal.VERIFIED_COMPLETE
+        ):
+            return None
+
+        ledger = runtime.ledger
+        unfulfilled: list[str] = []
+        gate_reasons: tuple[str, ...] = ()
+        if ledger is not None:
+            for item in ledger.active_user_must:
+                spec = self._capabilities.get(item.capability_key)
+                if spec.execution_mode == ManagerCapabilityExecutionMode.PRESENTATION:
+                    continue
+                if item.status != ObligationStatus.VERIFIED:
+                    unfulfilled.append(item.obligation_id)
+            gate_reasons = CompletionGate(
+                capabilities=self._capabilities
+            ).evaluate(ledger).reasons
+
+        terminal_directive_statuses = {
+            ResearchDirectiveDispositionStatus.APPLIED,
+            ResearchDirectiveDispositionStatus.NO_MATERIAL_DIRECTION,
+            ResearchDirectiveDispositionStatus.BLOCKED,
+        }
+        unresolved_directives = tuple(
+            f"{item.directive_id}:{item.status.value}"
+            for item in runtime.directive_dispositions
+            if item.status not in terminal_directive_statuses
+        )
+
+        open_hypotheses: list[str] = []
+        next_test_gaps: list[str] = []
+        for root_id, hypothesis_ledger in sorted(root_cause_ledgers.items()):
+            for entry in hypothesis_ledger.state.entries:
+                if entry.status == HypothesisStatus.OPEN:
+                    open_hypotheses.append(entry.hypothesis_id)
+                    next_test_gaps.append(
+                        f"{root_id}:{entry.hypothesis_id}:OPEN_HYPOTHESIS"
+                    )
+                for task_ref in entry.next_test_task_refs:
+                    try:
+                        task = task_registry.get(task_ref)
+                    except Exception:
+                        next_test_gaps.append(
+                            f"{entry.hypothesis_id}:{task_ref}:TASK_MISSING"
+                        )
+                        continue
+                    if task.state not in {"complete", "blocked", "failed", "cancelled"}:
+                        next_test_gaps.append(
+                            f"{entry.hypothesis_id}:{task_ref}:{task.state.upper()}"
+                        )
+
+        pending_concrete = tuple(
+            task.task_id
+            for task in task_registry.tasks
+            if task.origin in {"USER_SEED", "GOAL_DERIVED"}
+            and task.state in {"pending", "running"}
+        )
+        failed_or_blocked = tuple(
+            task.task_id
+            for task in task_registry.tasks
+            if task.state in {"failed", "blocked", "cancelled"}
+        )
+        for task_id in pending_concrete:
+            next_test_gaps.append(f"{task_id}:CONCRETE_TASK_NOT_TERMINAL")
+        for directive in unresolved_directives:
+            next_test_gaps.append(f"{directive}:DIRECTIVE_NOT_ACCOUNTED")
+
+        predicates: list[str] = []
+        if unfulfilled:
+            predicates.append("LEDGER_ANALYTICAL_USER_MUST_NOT_VERIFIED")
+        if pending_concrete:
+            predicates.append("CONCRETE_RESEARCH_TASK_NOT_TERMINAL")
+        if unresolved_directives:
+            predicates.append("ADAPTIVE_DIRECTIVE_NOT_ACCOUNTED")
+        if open_hypotheses:
+            predicates.append("ROOT_HYPOTHESIS_OPEN")
+        if gate_reasons:
+            predicates.append("COMPLETION_GATE_NOT_ALLOWED")
+
+        return CompletionGapReceipt(
+            unfulfilled_user_must_ids=tuple(dict.fromkeys(unfulfilled)),
+            unresolved_directives=unresolved_directives,
+            open_hypothesis_ids=tuple(dict.fromkeys(open_hypotheses)),
+            required_next_test_or_accounting_gaps=tuple(
+                dict.fromkeys(next_test_gaps)
+            ),
+            failed_or_blocked_task_ids=failed_or_blocked,
+            remaining_research_turns=max(
+                runtime.budget.max_manager_turns
+                - runtime.snapshot.research_manager_turns,
+                0,
+            ),
+            remaining_query_budget=runtime.remaining_data_queries,
+            completion_gate_reasons=gate_reasons,
+            missing_completion_predicates=tuple(dict.fromkeys(predicates)),
+        )
 
     @staticmethod
     def _reconcile_root_obligations(
@@ -4499,6 +4612,12 @@ class ResearchManagerLoop:
                         }
                     )
 
+        completion_gap_receipt = self._completion_gap_receipt(
+            runtime=runtime,
+            task_registry=task_registry,
+            root_cause_ledgers=root_cause_ledgers,
+        )
+
         return ManagerLoopOutcome(
             snapshot=runtime.snapshot,
             run_finished=runtime.snapshot.state == ManagerState.COMPLETED,
@@ -4518,6 +4637,7 @@ class ResearchManagerLoop:
                 for _root_id, ledger in sorted(root_cause_ledgers.items())
             ),
             directive_dispositions=runtime.directive_dispositions,
+            completion_gap_receipt=completion_gap_receipt,
             cancelled=cancelled,
             answer_now_requested=answer_now_requested,
         )
