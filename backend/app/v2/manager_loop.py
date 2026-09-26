@@ -2680,26 +2680,15 @@ class ResearchManagerLoop:
                 "parent_obligation_id": parent_id,
             }
 
-        admissible_surfaces: list[str] = []
-        for scope_item in runtime.ledger.active_user_must:
-            if (
-                scope_item.polarity != ObligationPolarity.REQUIRED
-                or self._capabilities.get(
-                    scope_item.capability_key
-                ).execution_mode
-                == ManagerCapabilityExecutionMode.PRESENTATION
-            ):
+        admitted_spans = []
+        for source_ref in self._goal_admitted_source_refs(
+            runtime=runtime,
+            parent_obligation_id=parent_id,
+        ):
+            try:
+                admitted_spans.append(self._source_spans.validate(source_ref))
+            except Exception:
                 continue
-            for source_ref in scope_item.source_refs:
-                try:
-                    span = self._source_spans.validate(source_ref)
-                except Exception:
-                    continue
-                if span.message_id != message_id:
-                    continue
-                value = str(span.exact_surface)
-                if value not in admissible_surfaces:
-                    admissible_surfaces.append(value)
 
         proposed = tuple(decision.goal_task_semantic_surfaces)
         if not proposed:
@@ -2713,13 +2702,6 @@ class ResearchManagerLoop:
         hints: list[str] = []
         for item in proposed:
             surface = str(item.surface)
-            if not any(surface in admitted for admitted in admissible_surfaces):
-                return None, {
-                    "kind": "goal_task_materialization_rejected",
-                    "reason": "task semantic surface is outside accepted current-contract analytical source lineage",
-                    "parent_obligation_id": parent_id,
-                    "surface": surface,
-                }
             if item.kind_hint == "unknown":
                 return None, {
                     "kind": "goal_task_materialization_rejected",
@@ -2727,20 +2709,61 @@ class ResearchManagerLoop:
                     "parent_obligation_id": parent_id,
                     "surface": surface,
                 }
-            try:
-                ref = self._source_spans.mint_exact(
-                    message_id=message_id,
-                    surface=surface,
-                ).source_ref
-            except Exception as exc:
+
+            candidate_refs: list[str] = []
+            for admitted in admitted_spans:
+                if surface not in str(admitted.exact_surface):
+                    continue
+                try:
+                    exact = self._source_spans.mint_exact(
+                        message_id=admitted.message_id,
+                        surface=surface,
+                    ).source_ref
+                except Exception:
+                    continue
+                candidate_refs.append(exact)
+            candidate_refs = list(dict.fromkeys(candidate_refs))
+            if len(candidate_refs) != 1:
                 return None, {
                     "kind": "goal_task_materialization_rejected",
-                    "reason": f"exact task source invalid: {exc}",
+                    "reason": (
+                        "task semantic surface lacks one exact parent/typed-directive "
+                        "source authority"
+                    ),
                     "parent_obligation_id": parent_id,
                     "surface": surface,
+                    "candidate_source_count": len(candidate_refs),
                 }
-            refs.append(ref)
+            refs.append(candidate_refs[0])
             hints.append(item.kind_hint)
+
+        if runtime.accepted_contract is None:
+            return None, {
+                "kind": "goal_task_materialization_rejected",
+                "reason": "accepted contract unavailable for deterministic child identity",
+                "parent_obligation_id": parent_id,
+            }
+
+        import hashlib
+        task_identity = {
+            "accepted_contract_id": runtime.accepted_contract.contract_id,
+            "parent_obligation_id": parent_id,
+            "capability": capability.value,
+            "semantic_requests": sorted(
+                f"{source_ref}:{kind_hint}"
+                for source_ref, kind_hint in zip(refs, hints, strict=True)
+            ),
+            "ranking_direction": decision.goal_task_ranking_direction,
+            "ranking_limit": decision.goal_task_ranking_limit,
+        }
+        task_id = "goal_" + hashlib.sha256(
+            json.dumps(
+                task_identity,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()[:24]
 
         step = runtime.call_tool(
             ManagerToolCall(
@@ -2748,7 +2771,7 @@ class ResearchManagerLoop:
                 args={
                     "provenance": "USER_SOURCE",
                     "source_refs": tuple(refs),
-                    "source_obligation_ids": tuple(parent_id for _ in refs),
+                    "source_obligation_ids": tuple(task_id for _ in refs),
                     "target_kind_hints": tuple(hints),
                     "temporal_anchor_handle": None,
                     "base_period_handle": None,
@@ -2812,12 +2835,6 @@ class ResearchManagerLoop:
                 "reasons": list(validation.reasons),
             }
 
-        import hashlib
-        payload = (
-            f"{runtime.snapshot.run_id}|{action_ref}|{parent_id}|{capability.value}|"
-            + "|".join(sorted(handles))
-        )
-        task_id = "goal_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
         task = self._research_tasks.materialize_goal_task(
             runtime=runtime,
             parent_obligation_id=parent_id,
@@ -2907,10 +2924,10 @@ class ResearchManagerLoop:
                 )
                 if (
                     handle.provenance_type != "USER_SOURCE"
-                    or handle.parent_obligation_id != obligation_id
+                    or handle.parent_obligation_id != task.task_id
                 ):
                     raise ResearchTaskInvocationCompileError(
-                        "goal-derived task semantic authority must be current-goal USER_SOURCE"
+                        "goal-derived task semantic authority must be fresh task-owned USER_SOURCE"
                     )
 
         validator = CapabilityBindingValidator(
