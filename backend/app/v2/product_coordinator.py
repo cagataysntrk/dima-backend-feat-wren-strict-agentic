@@ -30,6 +30,12 @@ from app.v2.product_models import (
     VersionedReport,
     mint_product_turn_ref,
 )
+from app.v2.persistence import (
+    CheckpointScope,
+    DurableCheckpointStore,
+    restore_research_context,
+    state_from_research_result,
+)
 from app.v2.product_events import ProductEventSink
 from app.v2.research_lane import ResearchLaneResult, ResearchLaneService
 from app.v2.research_report_projector import (
@@ -43,6 +49,7 @@ from app.v2.report_builder import (
 )
 from app.v2.report_narration import ReportNarrator
 from app.v2.report_continuation import (
+    MissingReportContinuationContextError,
     ReportContextRegistry,
     ReportSectionContinuationSigner,
     StaleReportContinuationError,
@@ -139,6 +146,7 @@ class ProductCoordinator:
         report_contexts: ReportContextRegistry | None = None,
         continuation_signer: ReportSectionContinuationSigner | None = None,
         authority_registry: AcceptedAuthorityRegistry | None = None,
+        checkpoint_store: DurableCheckpointStore | None = None,
     ) -> None:
         self._authority_registry = authority_registry or AcceptedAuthorityRegistry()
         self._standard_lane = standard_lane
@@ -146,6 +154,7 @@ class ProductCoordinator:
         self._research_lane = research_lane
         self._report_narrator = report_narrator
         self._report_contexts = report_contexts or ReportContextRegistry()
+        self._checkpoint_store = checkpoint_store
         self._continuation_signer = continuation_signer or ReportSectionContinuationSigner(
             signing_key=derive_hmac_key("v2-report-section-continuation-v1")
         )
@@ -153,6 +162,81 @@ class ProductCoordinator:
             self._standard_lane.bind_authority_registry(self._authority_registry)
         if self._research_lane is not None:
             self._research_lane.bind_authority_registry(self._authority_registry)
+
+    @staticmethod
+    def _checkpoint_scope(
+        *,
+        context: ProductRequestContext,
+        lineage_id: str,
+    ) -> CheckpointScope:
+        principal_subject = str(
+            getattr(context.principal, "user_id", "") or ""
+        )
+        return CheckpointScope(
+            tenant_binding=context.tenant_binding,
+            principal_subject=principal_subject,
+            session_id=context.session_id,
+            thread_id=context.thread_id,
+            context_version=context.semantic_context.context_version.version,
+            lineage_id=lineage_id,
+        )
+
+    def _rehydrate_continuation_entry(
+        self,
+        *,
+        payload,
+        context: ProductRequestContext,
+    ):
+        if self._checkpoint_store is None:
+            raise MissingReportContinuationContextError(
+                "report continuation context missing; durable store unavailable"
+            )
+        scope = self._checkpoint_scope(
+            context=context,
+            lineage_id=payload.lineage_ref,
+        )
+        checkpoint = self._checkpoint_store.load(scope)
+        if checkpoint is None:
+            raise MissingReportContinuationContextError(
+                "report continuation durable checkpoint missing"
+            )
+        prior = restore_research_context(checkpoint)
+        versioned = next(
+            (
+                item
+                for item in checkpoint.state.reports
+                if item.report.report_id == payload.report_id
+            ),
+            None,
+        )
+        if versioned is None:
+            raise MissingReportContinuationContextError(
+                "signed report is absent from durable checkpoint"
+            )
+        if versioned.source_run_ref != payload.source_run_ref:
+            raise StaleReportContinuationError(
+                "signed report source run does not match durable checkpoint"
+            )
+        self._report_contexts.register(
+            report=versioned.report,
+            research_result=prior,
+            principal_subject=scope.principal_subject,
+            tenant_binding=scope.tenant_binding,
+            context_version=scope.context_version,
+            session_id=scope.session_id,
+            thread_id=scope.thread_id,
+            source_run_ref=versioned.source_run_ref,
+            lineage_ref=scope.lineage_id,
+            report_version=versioned.version,
+        )
+        return self._report_contexts.resolve(
+            payload,
+            principal_subject=scope.principal_subject,
+            tenant_binding=scope.tenant_binding,
+            context_version=scope.context_version,
+            session_id=scope.session_id,
+            thread_id=scope.thread_id,
+        )
 
     def _ensure_standard_lane(self) -> None:
         if self._standard_lane is None:
@@ -245,14 +329,20 @@ class ProductCoordinator:
                 thread_id=body.thread_id,
             )
             principal_subject = str(getattr(context.principal, "user_id", "") or "")
-            entry = self._report_contexts.resolve(
-                payload,
-                principal_subject=principal_subject,
-                tenant_binding=context.tenant_binding,
-                context_version=context.semantic_context.context_version.version,
-                session_id=body.session_id,
-                thread_id=body.thread_id,
-            )
+            try:
+                entry = self._report_contexts.resolve(
+                    payload,
+                    principal_subject=principal_subject,
+                    tenant_binding=context.tenant_binding,
+                    context_version=context.semantic_context.context_version.version,
+                    session_id=body.session_id,
+                    thread_id=body.thread_id,
+                )
+            except MissingReportContinuationContextError:
+                entry = self._rehydrate_continuation_entry(
+                    payload=payload,
+                    context=context,
+                )
             continuation_authority = continuation_analytical_authority(entry)
 
             sink.emit(
@@ -285,11 +375,12 @@ class ProductCoordinator:
                     transition_ref=f"continuation:{kind}:" + "|".join(refs),
                 )
 
+            continuation_state = continuation_conversation(entry)
             research = self._research_lane.continue_run(
                 context=context,
                 body=body,
                 prior=entry.research_result,
-                conversation=continuation_conversation(entry),
+                conversation=continuation_state,
                 section_scope_refs=entry.section.semantic_scope,
                 context_scope_by_kind=continuation_scope_by_kind(entry),
                 allowed_continuation_parent_refs=(
@@ -305,6 +396,7 @@ class ProductCoordinator:
                 sink=sink,
                 report_version=entry.report_version + 1,
                 supersedes_report_ref=entry.report.report_id,
+                conversation=continuation_state,
             )
 
         self._ensure_standard_lane()
@@ -383,6 +475,7 @@ class ProductCoordinator:
                 sink=sink,
                 report_version=1,
                 supersedes_report_ref=None,
+                conversation=body.conversation,
             )
 
         if standard.status == StandardLaneStatus.CLARIFICATION_REQUIRED:
@@ -495,6 +588,7 @@ class ProductCoordinator:
         sink: ProductEventSink,
         report_version: int,
         supersedes_report_ref: str | None,
+        conversation=None,
     ) -> ProductResponse:
         snapshot = result.runtime.snapshot
         evidence = tuple(_product_evidence(item) for item in result.evidence)
@@ -640,6 +734,49 @@ class ProductCoordinator:
         )
 
         principal_subject = str(getattr(context.principal, "user_id", "") or "")
+        versioned_report = VersionedReport(
+            version=report_version,
+            report=build.report,
+            supersedes_report_ref=supersedes_report_ref,
+            source_run_ref=snapshot.run_id,
+        )
+        if self._checkpoint_store is not None:
+            scope = self._checkpoint_scope(
+                context=context,
+                lineage_id=result.accepted_contract.lineage_id,
+            )
+            prior_checkpoint = self._checkpoint_store.load(scope)
+            prior_reports = (
+                ()
+                if prior_checkpoint is None
+                else prior_checkpoint.state.reports
+            )
+            reports_by_id = {
+                item.report.report_id: item
+                for item in prior_reports
+            }
+            reports_by_id[versioned_report.report.report_id] = versioned_report
+            durable_state = state_from_research_result(
+                result=result,
+                scope=scope,
+                reports=tuple(
+                    sorted(
+                        reports_by_id.values(),
+                        key=lambda item: item.version,
+                    )
+                ),
+                conversation=conversation,
+            )
+            self._checkpoint_store.commit(
+                scope=scope,
+                state=durable_state,
+                expected_revision=(
+                    0
+                    if prior_checkpoint is None
+                    else prior_checkpoint.revision
+                ),
+            )
+
         self._report_contexts.register(
             report=build.report,
             research_result=result,
@@ -681,12 +818,7 @@ class ProductCoordinator:
             artifact_refs=tuple(
                 item.artifact_id for item in projection.artifacts
             ),
-            report=VersionedReport(
-                version=report_version,
-                report=build.report,
-                supersedes_report_ref=supersedes_report_ref,
-                source_run_ref=snapshot.run_id,
-            ),
+            report=versioned_report,
             narration=overlay,
             limitations=tuple(
                 dict.fromkeys(
