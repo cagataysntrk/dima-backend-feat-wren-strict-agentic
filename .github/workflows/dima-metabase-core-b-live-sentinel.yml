@@ -1,0 +1,194 @@
+name: dima-metabase-core-b-live-sentinel
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - ".github/workflows/dima-metabase-core-b-live-sentinel.yml"
+      - "backend/lab/metabase/core_b/live_sentinel.py"
+      - "backend/lab/metabase/core_b/authorizations/**"
+      - "backend/eval/core_b/askv2_matched_20_cases.json"
+      - "backend/lab/metabase/core_b/fixtures/**"
+      - "backend/lab/metabase/core_b/runtime/**"
+      - "backend/app/v3/research_intake.py"
+      - "backend/app/v3/structured_transport.py"
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+  METABOT_MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
+  DIMA_COGNITION_MODEL: openai/gpt-5.6-luna
+  MB_ADMIN_EMAIL: admin@core-b-sentinel.local
+  MB_RESTRICTED_EMAIL: restricted@core-b-sentinel.local
+  MB_RESTRICTED_GROUP: Dima Core B Sentinel Restricted
+
+jobs:
+  small-real-sentinel:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[core-b-sentinel-live]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: DIMA_OPENROUTER_API_KEY
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify bounded append-only live authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH="backend/lab/metabase/core_b/authorizations/small-sentinel-001.json"
+          test -f "$AUTH"
+          python - "$AUTH" "$(git rev-parse HEAD^)" <<'PY'
+          import json,sys
+          from pathlib import Path
+          p=Path(sys.argv[1]); parent=sys.argv[2]
+          value=json.loads(p.read_text(encoding="utf-8"))
+          assert value["mode"]=="small_sentinel"
+          assert value["candidate_product_sha"]==parent
+          assert value["provider_free_run_id"]==36244360672
+          assert value["governance_run_id"]==36244360639
+          assert value["max_observable_model_boundary_units"]==30
+          assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert value["model_topology"]=={
+            "research_intake":"openai/gpt-5.6-luna",
+            "metabot":"openrouter/openai/gpt-5.6-luna",
+          }
+          PY
+          test -n "$DIMA_OPENROUTER_API_KEY"
+
+      - name: Derive ephemeral credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="${GITHUB_SHA:0:12}"
+          {
+            echo "MB_ADMIN_PASSWORD=Adm-${S}-Aa1!"
+            echo "MB_RESTRICTED_PASSWORD=Res-${S}-Aa1!"
+            echo "PG_OWNER_PASSWORD=PgO-${S}-Aa1!"
+            echo "CORE_B_READONLY_PASSWORD=PgR-${S}-Aa1!"
+            echo "MB_APP_PASSWORD=MbA-${S}-Aa1!"
+          } >> "$GITHUB_ENV"
+
+      - name: Load exact certified engine runtime lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
+          python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"             --print-json
+
+      - name: Pull exact certified dima.6 digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ENGINE_SHA" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$CERTIFICATION_RUN_ID" = "36042062775"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.6"
+          docker pull "$IMMUTABLE_IMAGE_REF"
+          docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF"             | grep -Fx "$IMMUTABLE_IMAGE_REF"
+
+      - name: Install live campaign environment
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install "psycopg[binary]==3.3.3"
+
+      - name: Start neutral live databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create dima-core-b-sentinel
+          PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
+          docker run -d --name analytics-db --network dima-core-b-sentinel --network-alias analytics-db -p 127.0.0.1:55461:5432             -e POSTGRES_DB=core_b_neutral -e POSTGRES_USER=core_b_owner -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
+          docker run -d --name app-db --network dima-core-b-sentinel --network-alias app-db             -e POSTGRES_DB=metabase_core_b -e POSTGRES_USER=metabase_app -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
+          for n in analytics-db app-db; do
+            for i in $(seq 1 90); do
+              docker exec "$n" pg_isready >/dev/null 2>&1 && break
+              sleep 2
+              test "$i" -lt 90
+            done
+          done
+
+      - name: Seed substrate-neutral fixture
+        working-directory: backend
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "55461"
+          PGDATABASE: core_b_neutral
+          PGUSER: core_b_owner
+          PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
+          CORE_B_READONLY_USER: core_b_readonly
+          CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+        run: |
+          python lab/metabase/core_b/runtime/seed_fixture.py             --fixture lab/metabase/core_b/fixtures/machine_operations.json
+
+      - name: Start exact dima.6 engine with sealed Luna topology
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name mb-core-b-sentinel --network dima-core-b-sentinel -p 127.0.0.1:3361:3000             -e MB_DB_TYPE=postgres -e MB_DB_HOST=app-db -e MB_DB_PORT=5432             -e MB_DB_DBNAME=metabase_core_b -e MB_DB_USER=metabase_app -e MB_DB_PASS="$MB_APP_PASSWORD"             -e MB_AI_FEATURES_ENABLED=true -e MB_METABOT_ENABLED=true -e MB_AGENT_API_ENABLED=true             -e MB_LOAD_SAMPLE_CONTENT=false -e MB_MCP_EXECUTE_SQL_ENABLED=false             -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY"             -e MB_LLM_METABOT_PROVIDER="$METABOT_MODEL_IDENTIFIER"             -e DIMA_ENGINE_REPOSITORY=UpcyTech/dima-metabase-engine             -e DIMA_ENGINE_REVISION_SHA="$ENGINE_SHA"             -e DIMA_ENGINE_UPSTREAM_BASE_SHA="$UPSTREAM_BASE_SHA"             -e DIMA_ENGINE_RUNTIME_TAG="$RUNTIME_TAG"             -e DIMA_ENGINE_BUILD_IDENTITY="$BUILD_IDENTITY"             -e DIMA_ENGINE_IMAGE_IDENTITY="$REGISTRY_DIGEST"             "$IMMUTABLE_IMAGE_REF"
+
+      - name: Bootstrap restricted analytical principal
+        working-directory: backend
+        env:
+          METABASE_URL: http://127.0.0.1:3361
+          MB_SITE_NAME: Dima Core B Sentinel
+          ANALYTICS_DB_NAME: core_b_neutral
+          ANALYTICS_DB_USER: core_b_readonly
+          ANALYTICS_DB_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+          MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
+        run: python lab/metabase/core_b/runtime/bootstrap.py
+
+      - name: Run bounded small real sentinel
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: |
+          mkdir -p eval/core_b/artifacts
+          python lab/metabase/core_b/live_sentinel.py             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --manifest eval/core_b/askv2_matched_20_cases.json             --output eval/core_b/artifacts/small_live_sentinel.json             --control-db eval/core_b/artifacts/small_live_sentinel.db             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --platform-sha "$GITHUB_SHA"
+
+      - name: Hard prohibitions
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e backend/eval/DEV80
+          test ! -e backend/eval/Validation50
+          test ! -e backend/eval/Hidden50
+          ! grep -R -nE 'openai/gpt-5\.6-sol|C1' backend/lab/metabase/core_b/live_sentinel.py
+          ! grep -R -n 'action:execute' backend/app
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-b-small-live-sentinel-${{ github.run_id }}
+          path: |
+            backend/eval/core_b/artifacts/small_live_sentinel.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Runtime logs
+        if: failure()
+        run: docker logs --tail=1500 mb-core-b-sentinel || true
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker rm -f mb-core-b-sentinel analytics-db app-db 2>/dev/null || true
+          docker network rm dima-core-b-sentinel 2>/dev/null || true
