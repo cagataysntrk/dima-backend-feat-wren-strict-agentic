@@ -1,0 +1,7 @@
+scope=DEVELOPMENT_REHEARSAL
+real_llm=true
+real_wren=true
+max_total_model_calls=180
+DEV80=false
+Validation50=false
+Hidden50=false
