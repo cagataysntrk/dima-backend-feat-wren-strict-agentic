@@ -8,6 +8,7 @@ may conflict, merge, or compile into a Core projection.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 from app.v2.manager_models import (
@@ -68,6 +69,19 @@ class CapabilityBindingResult:
         return self.binding is not None and not self.reasons
 
 
+class ResearchGoalExecutionDisposition(StrEnum):
+    EXECUTABLE_NOW = "EXECUTABLE_NOW"
+    MATERIALIZATION_REQUIRED = "MATERIALIZATION_REQUIRED"
+    INVALID = "INVALID"
+
+
+@dataclass(frozen=True)
+class ResearchGoalExecutionClassification:
+    disposition: ResearchGoalExecutionDisposition
+    binding: CapabilityBinding | None = None
+    reasons: tuple[str, ...] = ()
+
+
 class CapabilityBindingValidator:
     """Validate one obligation against its registered semantic algebra."""
 
@@ -90,6 +104,57 @@ class CapabilityBindingValidator:
     ) -> None:
         self._handles = semantic_handles
         self._capabilities = capabilities or ManagerCapabilityRegistry()
+
+    def classify_research_goal_execution(
+        self,
+        item: BoundObligation,
+        *,
+        tenant_binding: str,
+        context_version: str,
+        goal_authority_eligible: bool,
+    ) -> ResearchGoalExecutionClassification:
+        """Classify one accepted analytical need without changing authority.
+
+        Normal capability validation always wins. Only when that exact executable
+        contract is incomplete may a typed Research-goal authority use the optional
+        late-materialization seam.
+        """
+
+        direct = self.validate(
+            item,
+            tenant_binding=tenant_binding,
+            context_version=context_version,
+            research_goal_authority=False,
+        )
+        if direct.valid:
+            return ResearchGoalExecutionClassification(
+                disposition=ResearchGoalExecutionDisposition.EXECUTABLE_NOW,
+                binding=direct.binding,
+            )
+
+        if goal_authority_eligible:
+            goal = self.validate(
+                item,
+                tenant_binding=tenant_binding,
+                context_version=context_version,
+                research_goal_authority=True,
+            )
+            if goal.valid:
+                return ResearchGoalExecutionClassification(
+                    disposition=(
+                        ResearchGoalExecutionDisposition.MATERIALIZATION_REQUIRED
+                    ),
+                    reasons=direct.reasons,
+                )
+            return ResearchGoalExecutionClassification(
+                disposition=ResearchGoalExecutionDisposition.INVALID,
+                reasons=goal.reasons,
+            )
+
+        return ResearchGoalExecutionClassification(
+            disposition=ResearchGoalExecutionDisposition.INVALID,
+            reasons=direct.reasons,
+        )
 
     @staticmethod
     def _provided_params(item: BoundObligation) -> dict[str, str]:
