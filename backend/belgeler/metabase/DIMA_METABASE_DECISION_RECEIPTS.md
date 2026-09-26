@@ -5990,3 +5990,44 @@ P21 is permanently SEALED as an advisory DecisionBrief authority.
 
 This closure does not authorize a human-adoption write path, Action execution, workflow automation,
 model-backed recommendation generation or UI/UX. The next boundary is architecture review only.
+
+
+---
+
+## DMP-DEC-0058 — MINIMAL HUMAN ADOPTION AUTHORITY
+
+date: 2026-09-26
+
+status:
+`RATIFIED / MINIMAL PROVIDER-FREE IMPLEMENTATION AUTHORIZED`
+
+```text
+P21 DecisionBrief = advisory system decision intelligence
+DecisionAdoptionRecord = what one authenticated authorized human decided
+Action Authorization = separate future permission for an exact side effect
+Action Execution = separate future exact side effect
+Outcome = later governed observation
+
+RECOMMENDATION != ADOPTION
+ADOPTION != ACTION AUTHORIZATION
+ACTION AUTHORIZATION != EXECUTION
+EXECUTION SUCCESS != BUSINESS OUTCOME
+```
+
+Authorized vertical:
+
+```text
+CURRENT DecisionBrief
++ authenticated Principal
++ decision:adopt capability
++ exact source fingerprint
++ typed ACCEPTED / REJECTED / MODIFIED / DEFERRED
++ exact existing option ids
++ human rationale / human conditions
+→ deterministic AdoptionLegalityGate
+→ one immutable DecisionAdoptionRecord
+```
+
+Exactly one new durable family is authorized. Legacy DecisionRecord remains frozen historical
+compatibility. ActionPlan, ActionAuthorization, Action execution, external side effects, analytics,
+P14-P21 mutation, router/UI, model dependency and engine/Metabase-core changes remain forbidden.

@@ -1482,3 +1482,27 @@ class DecisionBriefRecord(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+
+
+
+class DecisionAdoptionRecord(SQLModel, table=True):
+    """Immutable modern human-adoption truth for one exact P21 DecisionBrief."""
+
+    __tablename__ = "decision_adoption"
+    __table_args__ = (
+        UniqueConstraint("adoption_fingerprint", name="uq_decision_adoption_fingerprint"),
+    )
+
+    adoption_id: str = Field(primary_key=True)
+    decision_brief_id: str = Field(foreign_key="p21_decision_brief.decision_brief_id", index=True)
+    source_brief_fingerprint: str = Field(index=True)
+    tenant_binding: str = Field(index=True)
+    actor_user_id: str = Field(index=True)
+    actor_authorization_context_json: str = Field(sa_column=Column(Text, nullable=False))
+    disposition: str = Field(index=True)
+    selected_option_ids_json: str = Field(sa_column=Column(Text, nullable=False))
+    human_rationale: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    human_conditions_json: str = Field(sa_column=Column(Text, nullable=False))
+    supersedes_adoption_id: str | None = Field(default=None, foreign_key="decision_adoption.adoption_id", index=True)
+    recorded_at: datetime = Field(index=True)
+    adoption_fingerprint: str = Field(index=True)

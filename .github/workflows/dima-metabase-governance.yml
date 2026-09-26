@@ -54,6 +54,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/hypothesis_root_cause_provider.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/report_document.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/decision_intelligence.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/decision_adoption.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -818,6 +819,68 @@ jobs:
           PY
 
             test ! -f backend/app/routers/decision_intelligence.py
+            test ! -f backend/app/v3/action.py
+            ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' "$HOT"
+          fi
+
+
+      - name: Require DMP-DEC-0058 Human Adoption authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/decision_adoption.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/POST_P21_HUMAN_ADOPTION_ACTION_BOUNDARY_PREDEVELOPMENT_REVIEW.md"
+            DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+            grep -q "DMP-DEC-0058" "$REVIEW"
+            grep -q "MINIMAL PROVIDER-FREE IMPLEMENTATION AUTHORIZED" "$REVIEW"
+            grep -q "DMP-DEC-0058 — MINIMAL HUMAN ADOPTION AUTHORITY" "$DECISIONS"
+            grep -q '"decision:adopt": 1' backend/control_plane/authorize.py
+          fi
+
+      - name: Guard Human Adoption as one-table no-side-effect authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/decision_adoption.py"
+          if [ -f "$HOT" ]; then
+            python - <<'PY'
+          import ast
+          from pathlib import Path
+          source = Path("backend/app/v3/decision_adoption.py").read_text(encoding="utf-8")
+          tree = ast.parse(source)
+          imports = set()
+          imported = set()
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Import):
+                  imports.update(alias.name for alias in node.names)
+              elif isinstance(node, ast.ImportFrom):
+                  imports.add(node.module or "")
+                  imported.update(alias.name for alias in node.names)
+          forbidden = (
+              "app.v3.substrate.metabase","app.v3.research","app.v3.claim_lineage",
+              "app.v3.hypothesis_root_cause","app.v3.business_relationship_policy",
+              "app.v3.action","app.wren","numpy","pandas","scipy","statistics",
+          )
+          assert not any(name.startswith(forbidden) for name in imports)
+          assert "DecisionRecord" not in imported
+          assert "DecisionBriefRecord" not in imported
+          models = Path("backend/control_plane/models.py")
+          mt = ast.parse(models.read_text(encoding="utf-8"))
+          tables = set()
+          for node in mt.body:
+              if not isinstance(node, ast.ClassDef):
+                  continue
+              for item in node.body:
+                  if (
+                      isinstance(item, ast.Assign)
+                      and any(isinstance(target, ast.Name) and target.id == "__tablename__" for target in item.targets)
+                      and isinstance(item.value, ast.Constant)
+                      and item.value.value == "decision_adoption"
+                  ):
+                      tables.add(item.value.value)
+          assert tables == {"decision_adoption"}, tables
+          PY
+            test ! -f backend/app/routers/decision_adoption.py
             test ! -f backend/app/v3/action.py
             ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' "$HOT"
           fi

@@ -488,3 +488,32 @@ UI/UX                           = NOT AUTHORIZED
 ```
 
 Return to supervisor before implementing adoption or Action.
+
+
+## 24. DMP-DEC-0058 lifecycle — Human Adoption implementation authorization
+
+The historical review status above remains the state at the time this review completed. Supervisor
+authority on 2026-09-26 ratifies:
+
+```text
+DMP-DEC-0058
+MINIMAL HUMAN ADOPTION AUTHORITY
+
+RATIFIED /
+MINIMAL PROVIDER-FREE IMPLEMENTATION AUTHORIZED
+```
+
+Implementation contract:
+
+```text
+CURRENT DecisionBrief
++ authenticated Principal
++ decision:adopt = analyst+
++ exact brief fingerprint
++ typed adoption disposition
++ exact existing option ids
+→ AdoptionLegalityGate
+→ one immutable DecisionAdoptionRecord
+```
+
+No Action implementation is authorized by DMP-DEC-0058.

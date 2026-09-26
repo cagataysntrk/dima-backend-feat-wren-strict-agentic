@@ -85,6 +85,8 @@ _ACTION_MIN_RANK = {
     # kategorik olarak daha ağırdır.
     "decision:read": 0,
     "decision:write": 1,
+    # DMP-DEC-0058 — Human Adoption truth; no side-effect authority.
+    "decision:adopt": 1,
     # ── FAZ 1.3 · AJAN ARAÇ AKSİYONLARI (2026-08-04) ────────────────────────────
     # Ölçüldü: 15 aracın **15'i** `query:run` taşıyordu → `izinli_araclar()` ya 15'ini
     # döndürüyor ya hiçbirini. §11.2'nin *"ajan kullanıcının yetkisini AŞAMAZ"* değişmezi
