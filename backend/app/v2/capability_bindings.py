@@ -252,12 +252,20 @@ class CapabilityBindingValidator:
 
         if research_goal_authority:
             if (
-                spec.lane != ManagerCapabilityLane.RESEARCH
+                spec.lane not in {
+                    ManagerCapabilityLane.STANDARD,
+                    ManagerCapabilityLane.RESEARCH,
+                }
+                or spec.execution_mode
+                not in {
+                    ManagerCapabilityExecutionMode.DIRECT,
+                    ManagerCapabilityExecutionMode.ORCHESTRATED,
+                }
                 or item.polarity != ObligationPolarity.REQUIRED
             ):
                 reasons.append(
                     f"{item.obligation_id}: research_goal_authority is valid only for "
-                    "REQUIRED Research-lane obligations"
+                    "REQUIRED analytical obligations"
                 )
             required_kinds = frozenset()
         else:
