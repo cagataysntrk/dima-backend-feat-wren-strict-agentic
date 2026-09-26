@@ -26,8 +26,13 @@ from app.v2.manager_models import (
 )
 from app.v2.manager_preacceptance import (
     CoverageAudit,
+    CoverageIssue,
+    CoverageIssueKind,
+    DraftControlRequest,
+    DraftResearchDirective,
     FiniteAcceptanceStatus,
     IntentDraft,
+    IntentDraftObligation,
     PreAcceptanceController,
 )
 from app.v2.manager_progress import DynamicActionFrontier
@@ -3082,3 +3087,226 @@ def test_d10_q_repair_scope_group_args_reject_foreign_member():
                 ),
             ),
         )
+
+
+def test_coverage_source_ownership_rejects_control_promotion_and_duplicate_directive_veto():
+    spans = SourceSpanRegistry()
+    message_id = "coverage-owner-turn"
+    question = (
+        "Create the report. Use governed runtime scope if more analysis is useful. "
+        "Keep the prior artifact immutable."
+    )
+    spans.register_message(message_id=message_id, text=question)
+    controller = PreAcceptanceController(
+        structured=lambda *args, **kwargs: {},
+        source_spans=spans,
+        signed_section_continuation=True,
+        allowed_continuation_parent_refs=("U_PRIOR",),
+    )
+    draft = IntentDraft(
+        obligations=(
+            IntentDraftObligation(
+                obligation_id="U_REPORT",
+                capability_key=ManagerCapabilityKey.REPORT,
+                origin="USER_MUST",
+                priority="MUST",
+                polarity="REQUIRED",
+                source_surfaces=("Create the report",),
+            ),
+        ),
+        research_directives=(
+            DraftResearchDirective(
+                directive_id="D_BROADEN",
+                directive_type="BROADEN_WITHIN_BUDGET",
+                parent_scope="SIGNED_SECTION_ANALYTICAL_AUTHORITY",
+                parent_obligation_id=None,
+                condition="WITHIN_SYSTEM_BUDGET",
+                source_surfaces=(
+                    "Use governed runtime scope if more analysis is useful",
+                ),
+            ),
+        ),
+        control_requests=(
+            DraftControlRequest(
+                request_id="C_IMMUTABLE",
+                category="NON_AUTHORITATIVE_CONTROL_REQUEST",
+                source_surfaces=("Keep the prior artifact immutable",),
+            ),
+        ),
+    )
+    raw = CoverageAudit(
+        status="VETO",
+        issues=(
+            CoverageIssue(
+                kind=CoverageIssueKind.POLARITY_CONFLICT,
+                source_surfaces=("Keep the prior artifact immutable",),
+                note="control-only source was incorrectly promoted into business polarity",
+            ),
+            CoverageIssue(
+                kind=CoverageIssueKind.UNMODELED_DIRECTIVE,
+                source_surfaces=("governed runtime scope if more analysis is useful",),
+                note="subspan is already owned by the declared research directive",
+            ),
+        ),
+    )
+
+    effective, dropped = controller._enforce_coverage_source_ownership(
+        draft=draft,
+        audit=raw,
+        message_id=message_id,
+    )
+
+    assert effective.status == "PASS"
+    assert effective.issues == ()
+    assert {issue.kind for issue in dropped} == {
+        CoverageIssueKind.POLARITY_CONFLICT,
+        CoverageIssueKind.UNMODELED_DIRECTIVE,
+    }
+
+
+def test_coverage_source_ownership_keeps_genuine_uncovered_business_source():
+    spans = SourceSpanRegistry()
+    message_id = "coverage-uncovered-turn"
+    question = "Create the report and compare the regional result."
+    spans.register_message(message_id=message_id, text=question)
+    controller = PreAcceptanceController(
+        structured=lambda *args, **kwargs: {},
+        source_spans=spans,
+    )
+    draft = IntentDraft(
+        obligations=(
+            IntentDraftObligation(
+                obligation_id="U_REPORT",
+                capability_key=ManagerCapabilityKey.REPORT,
+                origin="USER_MUST",
+                priority="MUST",
+                polarity="REQUIRED",
+                source_surfaces=("Create the report",),
+            ),
+        ),
+    )
+    raw = CoverageAudit(
+        status="VETO",
+        issues=(
+            CoverageIssue(
+                kind=CoverageIssueKind.UNCOVERED_SOURCE,
+                source_surfaces=("compare the regional result",),
+                note="material requested business result is not represented",
+            ),
+        ),
+    )
+
+    effective, dropped = controller._enforce_coverage_source_ownership(
+        draft=draft,
+        audit=raw,
+        message_id=message_id,
+    )
+
+    assert effective.status == "VETO"
+    assert effective.issues == raw.issues
+    assert dropped == ()
+
+
+def test_coverage_source_ownership_keeps_business_polarity_veto():
+    spans = SourceSpanRegistry()
+    message_id = "coverage-polarity-turn"
+    question = "Create the report but exclude the regional comparison."
+    spans.register_message(message_id=message_id, text=question)
+    controller = PreAcceptanceController(
+        structured=lambda *args, **kwargs: {},
+        source_spans=spans,
+    )
+    draft = IntentDraft(
+        obligations=(
+            IntentDraftObligation(
+                obligation_id="U_REPORT",
+                capability_key=ManagerCapabilityKey.REPORT,
+                origin="USER_MUST",
+                priority="MUST",
+                polarity="REQUIRED",
+                source_surfaces=("Create the report",),
+            ),
+            IntentDraftObligation(
+                obligation_id="U_EXCLUDE",
+                capability_key=ManagerCapabilityKey.COMPARISON,
+                origin="USER_MUST",
+                priority="MUST",
+                polarity="REQUIRED",
+                source_surfaces=("exclude the regional comparison",),
+            ),
+        ),
+    )
+    raw = CoverageAudit(
+        status="VETO",
+        issues=(
+            CoverageIssue(
+                kind=CoverageIssueKind.POLARITY_CONFLICT,
+                source_surfaces=("exclude the regional comparison",),
+                note="business source is represented with the wrong polarity",
+            ),
+        ),
+    )
+
+    effective, dropped = controller._enforce_coverage_source_ownership(
+        draft=draft,
+        audit=raw,
+        message_id=message_id,
+    )
+
+    assert effective.status == "VETO"
+    assert effective.issues == raw.issues
+    assert dropped == ()
+
+
+def test_coverage_source_ownership_drops_only_invalid_issues_in_mixed_audit():
+    spans = SourceSpanRegistry()
+    message_id = "coverage-mixed-turn"
+    question = (
+        "Create the report. Keep the prior artifact immutable. "
+        "Also compare the regional result."
+    )
+    spans.register_message(message_id=message_id, text=question)
+    controller = PreAcceptanceController(
+        structured=lambda *args, **kwargs: {},
+        source_spans=spans,
+    )
+    draft = IntentDraft(
+        obligations=(
+            IntentDraftObligation(
+                obligation_id="U_REPORT",
+                capability_key=ManagerCapabilityKey.REPORT,
+                origin="USER_MUST",
+                priority="MUST",
+                polarity="REQUIRED",
+                source_surfaces=("Create the report",),
+            ),
+        ),
+        control_requests=(
+            DraftControlRequest(
+                request_id="C_IMMUTABLE",
+                category="NON_AUTHORITATIVE_CONTROL_REQUEST",
+                source_surfaces=("Keep the prior artifact immutable",),
+            ),
+        ),
+    )
+    invalid = CoverageIssue(
+        kind=CoverageIssueKind.POLARITY_CONFLICT,
+        source_surfaces=("Keep the prior artifact immutable",),
+        note="control source must not become business polarity",
+    )
+    valid = CoverageIssue(
+        kind=CoverageIssueKind.UNCOVERED_SOURCE,
+        source_surfaces=("compare the regional result",),
+        note="material requested business result is not represented",
+    )
+    raw = CoverageAudit(status="VETO", issues=(invalid, valid))
+
+    effective, dropped = controller._enforce_coverage_source_ownership(
+        draft=draft,
+        audit=raw,
+        message_id=message_id,
+    )
+
+    assert effective.status == "VETO"
+    assert effective.issues == (valid,)
+    assert dropped == (invalid,)
