@@ -17,10 +17,10 @@ def _principal(role: str) -> Principal:
 
 
 def test_role_capabilities_are_monotonic_and_action_execute_absent():
-    viewer=permissions_for(_principal("viewer"))
-    analyst=permissions_for(_principal("analyst"))
-    admin=permissions_for(_principal("admin"))
-    owner=permissions_for(_principal("owner"))
+    viewer=set(permissions_for(_principal("viewer")))
+    analyst=set(permissions_for(_principal("analyst")))
+    admin=set(permissions_for(_principal("admin")))
+    owner=set(permissions_for(_principal("owner")))
     assert viewer <= analyst <= admin <= owner
     for perms in (viewer,analyst,admin,owner):
         assert "action:execute" not in perms
