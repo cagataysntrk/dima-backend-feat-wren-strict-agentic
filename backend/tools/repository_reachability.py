@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Deterministic Python source reachability for canonical repository cleanup."""
+"""Deterministic source reachability/classification for canonical cleanup."""
 from __future__ import annotations
 
 import argparse
 import ast
 import json
-from collections import defaultdict, deque
+from collections import deque
 from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parents[1]
@@ -32,10 +32,30 @@ CANONICAL_ROOTS = (
     "control_plane.db",
 )
 
-FINAL_CERT_PATH_HINTS = (
-    "tests/test_v3_",
+FINAL_CERT_ROOTS = (
+    "app.v3.action_connectors.resend_email",
+    "app.v3.core_a.ux_foundations",
+    "app.v3.entity_value_gate",
+    "app.v3.hypothesis_root_cause_provider",
+    "app.v3.native_standard",
+    "app.v3.research_followup",
+    "app.v3.research_manager_provider",
+    "app.v3.resource_provisioning",
+    "app.v3.resource_transport",
+    "app.v3.security_identity",
+    "app.v3.semantic_equivalence",
+    "app.v3.semantic_import",
+    "app.v3.substrate.base",
+    "app.v3.substrate.metabase.adapter",
+    "app.v3.substrate.metabase.execution_adapter",
+    "app.v3.substrate.metabase.p3a_fixture",
+    "app.v3.substrate.metabase.p3a_models",
+    "app.v3.substrate.metabase.p3a_preflight",
+)
+
+EXTRA_TEST_FILES = (
     "tests/test_repository_hygiene.py",
-    "eval/core_b/",
+    "tests/test_v3_control_plane_security.py",
 )
 
 
@@ -49,17 +69,14 @@ def module_for(path: Path) -> str | None:
     return ".".join(parts)
 
 
-def discover_modules() -> tuple[dict[str, Path], dict[Path, str]]:
-    by_module: dict[str, Path] = {}
-    by_path: dict[Path, str] = {}
+def discover_modules() -> dict[str, Path]:
+    out: dict[str, Path] = {}
     for root in PACKAGE_ROOTS:
         for path in (BACKEND / root).rglob("*.py"):
             module = module_for(path)
-            if not module:
-                continue
-            by_module[module] = path
-            by_path[path] = module
-    return by_module, by_path
+            if module:
+                out[module] = path
+    return out
 
 
 def resolve_from(current: str, node: ast.ImportFrom) -> str | None:
@@ -82,16 +99,12 @@ def imports_for(module: str, path: Path, known: set[str]) -> tuple[set[str], lis
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                name = alias.name
-                if name in known:
-                    deps.add(name)
-                else:
-                    pieces = name.split(".")
-                    for cut in range(len(pieces) - 1, 0, -1):
-                        candidate = ".".join(pieces[:cut])
-                        if candidate in known:
-                            deps.add(candidate)
-                            break
+                pieces = alias.name.split(".")
+                for cut in range(len(pieces), 0, -1):
+                    candidate = ".".join(pieces[:cut])
+                    if candidate in known:
+                        deps.add(candidate)
+                        break
         elif isinstance(node, ast.ImportFrom):
             base = resolve_from(module, node)
             if not base:
@@ -99,16 +112,14 @@ def imports_for(module: str, path: Path, known: set[str]) -> tuple[set[str], lis
             if base in known:
                 deps.add(base)
             for alias in node.names:
-                candidate = f"{base}.{alias.name}" if base else alias.name
+                candidate = f"{base}.{alias.name}"
                 if candidate in known:
                     deps.add(candidate)
         elif isinstance(node, ast.Call):
-            target = node.func
-            name = None
-            if isinstance(target, ast.Name):
-                name = target.id
-            elif isinstance(target, ast.Attribute):
-                name = target.attr
+            fn = node.func
+            name = fn.id if isinstance(fn, ast.Name) else (
+                fn.attr if isinstance(fn, ast.Attribute) else None
+            )
             if name in {"__import__", "import_module"}:
                 value = None
                 if node.args and isinstance(node.args[0], ast.Constant):
@@ -117,12 +128,53 @@ def imports_for(module: str, path: Path, known: set[str]) -> tuple[set[str], lis
     return deps, dynamic
 
 
+def closure(roots: set[str], graph: dict[str, set[str]]) -> set[str]:
+    reached: set[str] = set()
+    queue = deque(sorted(roots))
+    while queue:
+        module = queue.popleft()
+        if module in reached:
+            continue
+        reached.add(module)
+        queue.extend(sorted(graph.get(module, ()) - reached))
+    return reached
+
+
+def retained_test_roots(known: set[str]) -> set[str]:
+    paths = sorted((BACKEND / "tests").glob("test_v3_*.py"))
+    paths.extend(BACKEND / item for item in EXTRA_TEST_FILES)
+    roots: set[str] = set()
+    for path in paths:
+        if not path.exists():
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    pieces = alias.name.split(".")
+                    for cut in range(len(pieces), 0, -1):
+                        candidate = ".".join(pieces[:cut])
+                        if candidate in known:
+                            roots.add(candidate)
+                            break
+            elif isinstance(node, ast.ImportFrom):
+                if not node.module:
+                    continue
+                if node.module in known:
+                    roots.add(node.module)
+                for alias in node.names:
+                    candidate = f"{node.module}.{alias.name}"
+                    if candidate in known:
+                        roots.add(candidate)
+    return roots
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    modules, _ = discover_modules()
+    modules = discover_modules()
     known = set(modules)
     graph: dict[str, set[str]] = {}
     dynamic: dict[str, list[str]] = {}
@@ -132,47 +184,58 @@ def main() -> None:
         if dyn:
             dynamic[module] = dyn
 
-    missing_roots = sorted(root for root in CANONICAL_ROOTS if root not in known)
-    if missing_roots:
-        raise SystemExit(f"missing canonical roots: {missing_roots}")
+    missing_canonical = sorted(root for root in CANONICAL_ROOTS if root not in known)
+    missing_final = sorted(root for root in FINAL_CERT_ROOTS if root not in known)
+    if missing_canonical or missing_final:
+        raise SystemExit(
+            f"missing roots: canonical={missing_canonical} final_cert={missing_final}"
+        )
 
-    reachable: set[str] = set()
-    queue = deque(CANONICAL_ROOTS)
-    while queue:
-        module = queue.popleft()
-        if module in reachable:
-            continue
-        reachable.add(module)
-        queue.extend(sorted(graph.get(module, ()) - reachable))
+    canonical = closure(set(CANONICAL_ROOTS), graph)
+    final_cert = closure(set(FINAL_CERT_ROOTS), graph) - canonical
+    test_roots = retained_test_roots(known)
+    test_only = closure(test_roots, graph) - canonical - final_cert
+    classified = canonical | final_cert | test_only
+    legacy = sorted(known - classified)
 
-    all_modules = set(modules)
-    legacy = sorted(all_modules - reachable)
     unresolved_dynamic = {
         module: values
         for module, values in dynamic.items()
-        if module in reachable
+        if module in classified
     }
 
     result = {
         "canonical_roots": list(CANONICAL_ROOTS),
-        "canonical_reachable": sorted(reachable),
+        "final_cert_roots": list(FINAL_CERT_ROOTS),
+        "test_roots": sorted(test_roots),
+        "canonical_reachable": sorted(canonical),
+        "final_cert_required": sorted(final_cert),
+        "test_only_required": sorted(test_only),
         "legacy_unreachable": legacy,
         "unresolved_dynamic_import": unresolved_dynamic,
         "counts": {
-            "all_modules": len(all_modules),
-            "canonical_reachable": len(reachable),
+            "all_modules": len(known),
+            "canonical_reachable": len(canonical),
+            "final_cert_required": len(final_cert),
+            "test_only_required": len(test_only),
             "legacy_unreachable": len(legacy),
         },
     }
+
     if args.json:
         print(json.dumps(result, indent=2, sort_keys=True))
-    else:
-        for key in ("canonical_reachable", "legacy_unreachable"):
-            print(f"[{key}]")
-            for item in result[key]:
-                print(item)
-        print("[unresolved_dynamic_import]")
-        print(json.dumps(unresolved_dynamic, indent=2, sort_keys=True))
+        return
+    for key in (
+        "canonical_reachable",
+        "final_cert_required",
+        "test_only_required",
+        "legacy_unreachable",
+    ):
+        print(f"[{key}]")
+        for item in result[key]:
+            print(item)
+    print("[unresolved_dynamic_import]")
+    print(json.dumps(unresolved_dynamic, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":
