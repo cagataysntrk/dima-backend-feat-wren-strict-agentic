@@ -131,14 +131,14 @@ class FakeResearch:
         obligations = [
             SimpleNamespace(
                 obligation_id=item.goal_id,
-                state=ObligationState.PENDING,
+                state=ObligationState.READY,
             )
             for item in brief.questions
         ]
         obligations.extend(
             SimpleNamespace(
                 obligation_id=item.requirement_id,
-                state=ObligationState.PENDING,
+                state=ObligationState.READY,
             )
             for item in brief.deliverables
         )
