@@ -7,8 +7,11 @@ name: v2-day14-persistence
     paths:
       - "backend/app/v2/persistence.py"
       - "backend/app/v2/semantic_handles.py"
+      - "backend/app/v2/manager_runtime.py"
       - "backend/app/v2/manager_loop.py"
       - "backend/app/v2/research_tasks.py"
+      - "backend/app/v2/product_coordinator.py"
+      - "backend/app/v2/report_continuation.py"
       - "backend/tests/test_v2_day14_persistence_resume.py"
       - ".github/workflows/v2-day14-persistence.yml"
   workflow_dispatch:
