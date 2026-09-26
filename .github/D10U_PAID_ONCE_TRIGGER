@@ -1,0 +1,7 @@
+authorized_measurement=CANONICAL_NS4
+max_total_model_calls=20
+product_behavior=cb597892a9c50322c6ce2b39e17f11a3abd21006
+provider_free_closure=9df508ad9a1cf21ff97540b6977cb97aa1865cf6
+failure_family=FAM-ADAPT-DIRECTIVE-COMPLETION-STARVATION
+failure_family_cycle=1
+paid_epoch_new=1
