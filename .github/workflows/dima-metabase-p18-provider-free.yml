@@ -11,12 +11,7 @@ on:
       - "backend/tests/test_v3_p18_business_relationship_policy.py"
       - "backend/belgeler/metabase/predev/P18_MATERIAL_BUSINESS_RELATIONSHIP_POLICY_PREDEVELOPMENT_REVIEW.md"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
-      - "DIMA-METABASE-DURUM.md"
-      - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md"
-      - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md"
       - ".github/workflows/dima-metabase-p18-provider-free.yml"
-      - ".github/workflows/dima-metabase-governance.yml"
-      - ".github/workflows/dima-metabase-m1.yml"
   workflow_dispatch:
 
 permissions:
@@ -51,14 +46,12 @@ jobs:
           set -euo pipefail
           REVIEW="backend/belgeler/metabase/predev/P18_MATERIAL_BUSINESS_RELATIONSHIP_POLICY_PREDEVELOPMENT_REVIEW.md"
           DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
-          HANDOFF="backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md"
           grep -q "SEALED / DMP-DEC-0054 / P18 MINIMAL IMPLEMENTATION AUTHORIZED" "$REVIEW"
           grep -q "DMP-DEC-0054 — MINIMAL BUSINESS RELATIONSHIP POLICY AUTHORITY" "$DECISIONS"
-          grep -q "P18 BUSINESS RELATIONSHIP POLICY" "$HANDOFF"
-          grep -q "NO TABLE/FIELD JOIN GRAPH IN DIMA" "$HANDOFF"
-          grep -q "NO RELATIONSHIP SCORING" "$HANDOFF"
-          grep -q "NO FUZZY RELATIONSHIP INFERENCE" "$HANDOFF"
-          grep -q "NO CAUSALITY IN P18" "$HANDOFF"
+          grep -q "NO TABLE/FIELD JOIN GRAPH IN DIMA" "$REVIEW"
+          grep -q "NO RELATIONSHIP SCORING" "$REVIEW"
+          grep -q "NO FUZZY RELATIONSHIP INFERENCE" "$REVIEW"
+          grep -q "NO CAUSALITY IN P18" "$REVIEW"
 
       - name: Compile P18 authority slice
         working-directory: backend

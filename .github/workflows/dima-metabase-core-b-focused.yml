@@ -81,4 +81,4 @@ jobs:
           test ! -d frontend
           test ! -d ui
           test ! -d web
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
