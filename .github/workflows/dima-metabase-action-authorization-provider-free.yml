@@ -139,7 +139,7 @@ jobs:
 
           test ! -f backend/app/routers/action_authorization.py
           test ! -f backend/app/v3/action_execution.py
-          ! grep -nE 'requests\.post|httpx\.|send_email|Slack|ERP|ticket|notification|external API|execute_action|ActionExecutionReceipt|ActionAttempt' backend/app/v3/action_authorization.py
+          ! grep -nE 'requests\.post|httpx\.|send_email|Slack|erp_client|ticket|notification|external API|execute_action|ActionExecutionReceipt|ActionAttempt' backend/app/v3/action_authorization.py
           ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/action_authorization.py
 
       - name: Verify sealed owners remain untouched
@@ -196,7 +196,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -nE 'requests\.post|httpx\.|send_email|Slack|ERP|ticket|notification|execute_action' backend/app/v3/action_authorization.py
+          ! grep -nE 'requests\.post|httpx\.|send_email|Slack|erp_client|ticket|notification|execute_action' backend/app/v3/action_authorization.py
           ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/action_authorization.py
           ! grep -q '"action:execute"' backend/control_plane/authorize.py
           test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"

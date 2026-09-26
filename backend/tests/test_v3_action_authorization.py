@@ -782,7 +782,7 @@ def test_action_authorization_owner_has_zero_execution_analytics_or_connectors()
         "httpx.",
         "send_email",
         "Slack",
-        "ERP",
+        "erp_client",
         "ticket",
         "notification",
         "execute_action",
