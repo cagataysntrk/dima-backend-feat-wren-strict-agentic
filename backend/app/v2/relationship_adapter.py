@@ -160,6 +160,8 @@ class GovernedRelationshipAdapter:
                 allowed_obligation_ids={args.obligation_id},
                 provenance_extra={
                     "kind": "cross_domain_relationship",
+                    "research_run_id": runtime.snapshot.run_id,
+                    "requested_capabilities": [obligation.capability_key.value],
                     "facts": facts.facts.model_dump(mode="json"),
                     "gate_decision": facts.gate_decision.model_dump(mode="json"),
                     "pair_facts": [
