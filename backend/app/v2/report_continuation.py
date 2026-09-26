@@ -51,6 +51,10 @@ class StaleReportContinuationError(ReportContinuationError):
     pass
 
 
+class MissingReportContinuationContextError(StaleReportContinuationError):
+    """Ephemeral registry miss that may be rehydrated from durable canonical state."""
+
+
 class ReportContinuationNotAdmissibleError(ReportContinuationError):
     pass
 
@@ -515,7 +519,7 @@ class ReportContextRegistry:
     ) -> ReportContextEntry:
         entry = self._entries.get(payload.followup_context_ref)
         if entry is None:
-            raise StaleReportContinuationError(
+            raise MissingReportContinuationContextError(
                 "report continuation context missing; rebind required"
             )
         if not principal_subject:
