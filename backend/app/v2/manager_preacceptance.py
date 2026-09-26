@@ -1094,13 +1094,22 @@ class PreAcceptanceController:
     ) -> tuple[dict[str, Any], ...]:
         """Find missing capability-required bindings; optional extra surfaces do not block."""
         gaps: list[dict[str, Any]] = []
+        research_goal_parent_ids = {
+            directive.parent_obligation_id
+            for directive in draft.research_directives
+            if directive.parent_scope == "CURRENT_OBLIGATION"
+            and directive.parent_obligation_id is not None
+        }
         for obligation in draft.obligations:
             spec = self._capabilities.get(obligation.capability_key)
             required = (
                 frozenset()
                 if (
                     obligation.polarity == ObligationPolarity.REQUIRED
-                    and spec.lane == ManagerCapabilityLane.RESEARCH
+                    and (
+                        spec.lane == ManagerCapabilityLane.RESEARCH
+                        or obligation.obligation_id in research_goal_parent_ids
+                    )
                 )
                 else (
                     spec.required_kinds
