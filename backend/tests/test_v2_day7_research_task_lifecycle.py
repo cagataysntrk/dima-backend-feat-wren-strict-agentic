@@ -301,3 +301,70 @@ def test_day7_canonical_budget_has_one_runtime_truth():
 
     with pytest.raises(Exception):
         ManagerBudget(max_data_queries=13)
+
+
+def test_goal_derived_task_requires_concrete_governed_semantics_and_preserves_parent():
+    runtime, metric_handle, _ = _accepted_runtime()
+    tasks = ResearchTaskService()
+    before = runtime.ledger
+
+    with pytest.raises(
+        ResearchTaskMaterializationError,
+        match="requires governed executable semantic refs",
+    ):
+        tasks.materialize_goal_task(
+            runtime=runtime,
+            parent_obligation_id="U1",
+            capability_key=ManagerCapabilityKey.PERFORMANCE,
+            task_id="G_EMPTY",
+            input_refs=(),
+        )
+
+    task = tasks.materialize_goal_task(
+        runtime=runtime,
+        parent_obligation_id="U1",
+        capability_key=ManagerCapabilityKey.PERFORMANCE,
+        task_id="G1",
+        input_refs=(metric_handle,),
+    )
+
+    assert task.origin == "GOAL_DERIVED"
+    assert task.question_id == "U1"
+    assert task.parent_obligation_id == "U1"
+    assert task.parent_task_id is None
+    assert task.trigger_evidence_ref is None
+    assert task.input_refs == (metric_handle,)
+    assert runtime.ledger == before
+
+
+def test_non_root_goal_cannot_silently_change_analytical_capability_family():
+    runtime, metric_handle, dimension_handle = _accepted_runtime()
+
+    with pytest.raises(
+        ResearchTaskMaterializationError,
+        match="cannot change accepted capability family",
+    ):
+        ResearchTaskService().materialize_goal_task(
+            runtime=runtime,
+            parent_obligation_id="U1",
+            capability_key=ManagerCapabilityKey.BREAKDOWN,
+            task_id="G_BREAKDOWN",
+            input_refs=(metric_handle, dimension_handle),
+        )
+
+
+def test_goal_derived_task_never_carries_evidence_derived_provenance():
+    runtime, metric_handle, _ = _accepted_runtime()
+
+    task = ResearchTaskService().materialize_goal_task(
+        runtime=runtime,
+        parent_obligation_id="U1",
+        capability_key=ManagerCapabilityKey.PERFORMANCE,
+        task_id="G_PROVENANCE",
+        input_refs=(metric_handle,),
+    )
+
+    assert task.origin == "GOAL_DERIVED"
+    assert task.branch_depth == 0
+    assert task.parent_task_id is None
+    assert task.trigger_evidence_ref is None
