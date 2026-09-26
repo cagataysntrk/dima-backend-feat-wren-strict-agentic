@@ -3310,3 +3310,208 @@ def test_coverage_source_ownership_drops_only_invalid_issues_in_mixed_audit():
     assert effective.status == "VETO"
     assert effective.issues == (valid,)
     assert dropped == (invalid,)
+
+
+class _RevisionSourceTruthProvider:
+    """Select once, then deliberately diverge if identical source cognition repeats."""
+
+    def __init__(self) -> None:
+        self.calls = []
+
+    def decide(self, requests):
+        self.calls.append(requests)
+        choices = []
+        seen_before = sum(len(batch) for batch in self.calls[:-1])
+        for index, request in enumerate(requests):
+            if request.surface == "Makine duruşları" and seen_before + index == 0:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="SELECT",
+                        candidate_id=request.candidates[0].candidate_id,
+                    )
+                )
+            else:
+                choices.append(
+                    SemanticLinkChoice(
+                        request_id=request.request_id,
+                        decision="ABSTAIN",
+                        reason="AMBIGUOUS",
+                    )
+                )
+        return SemanticLinkBatchDecision(choices=tuple(choices))
+
+
+def _revision_source_truth_context():
+    context = BoundedSemanticContextV0(
+        context_version=ContextVersionV0(
+            version="ctx-revision-source-truth",
+            mdl_version="mdl-revision-source-truth",
+            compact_catalog_builder_version="revision-source-truth",
+            business_rules_hash="8" * 64,
+            prompt_context_policy_version="revision-source-truth",
+        ),
+        cubes=(
+            CompactCubeContextV0(
+                canonical_name="maintenance",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="downtime_minutes",
+                        display="Toplam duruş dakikası",
+                        synonyms=("Makine duruşları",),
+                    ),
+                    CompactSemanticFieldV0(
+                        canonical_name="idle_minutes",
+                        display="Boşta kalma dakikası",
+                        synonyms=("Makine duruşları",),
+                    ),
+                ),
+            ),
+            CompactCubeContextV0(
+                canonical_name="quality",
+                measures=(
+                    CompactSemanticFieldV0(
+                        canonical_name="failure_count",
+                        display="arıza sayısı",
+                        synonyms=("arıza sayısı",),
+                    ),
+                ),
+            ),
+        ),
+    )
+    schema = {
+        "models": [],
+        "cubes": [
+            {
+                "name": "maintenance",
+                "measures": ["downtime_minutes", "idle_minutes"],
+                "measure_synonyms": {
+                    "downtime_minutes": ["Makine duruşları"],
+                    "idle_minutes": ["Makine duruşları"],
+                },
+                "dimensions": [],
+                "dimension_labels": {},
+                "dimension_synonyms": {},
+                "dimension_values": {},
+                "time_dimensions": [],
+            },
+            {
+                "name": "quality",
+                "measures": ["failure_count"],
+                "measure_synonyms": {
+                    "failure_count": ["arıza sayısı"],
+                },
+                "dimensions": [],
+                "dimension_labels": {},
+                "dimension_synonyms": {},
+                "dimension_values": {},
+                "time_dimensions": [],
+            },
+        ],
+        "kpis": [],
+        "relationships": [],
+        "business_rules": "",
+        "db_online": True,
+    }
+    return context, schema
+
+
+def test_revision_source_truth_survives_cross_cube_contract_revision_without_recognition():
+    question = "Makine duruşları ve arıza sayısı performansını incele"
+    first = {
+        "obligations": [
+            _obligation(
+                obligation_id="obl_performance_metrics",
+                capability="performance",
+                source_surfaces=(question,),
+                semantic_surfaces=(
+                    ("Makine duruşları", "metric"),
+                    ("arıza sayısı", "metric"),
+                ),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    revised = {
+        "obligations": [
+            _obligation(
+                obligation_id="obl_machine_downtime",
+                capability="performance",
+                source_surfaces=("Makine duruşları",),
+                semantic_surfaces=(("Makine duruşları", "metric"),),
+            ),
+            _obligation(
+                obligation_id="obl_failure_count",
+                capability="performance",
+                source_surfaces=("arıza sayısı",),
+                semantic_surfaces=(("arıza sayısı", "metric"),),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[first, revised],
+        audits=[
+            {"status": "PASS", "issues": []},
+            {"status": "PASS", "issues": []},
+        ],
+    )
+    provider = _RevisionSourceTruthProvider()
+    diagnostics = []
+    context, schema = _revision_source_truth_context()
+    loop, runtime, executor = _loop(
+        scripted,
+        semantic_provider=provider,
+        semantic_diagnostic_sink=diagnostics.append,
+        semantic_context=context,
+        semantic_schema=schema,
+    )
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-paid-shape-source-truth",
+        request_ref="req-paid-shape-source-truth",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is True
+    assert runtime.ledger is not None
+    assert {
+        item.obligation_id for item in runtime.ledger.active_user_must
+    } == {"obl_machine_downtime", "obl_failure_count"}
+
+    # The ambiguous current-message source is cognized once. Attempt 2 must reuse
+    # its canonical candidate and mint fresh owner authority instead of re-rolling.
+    surface_requests = [
+        request
+        for batch in provider.calls
+        for request in batch
+        if request.surface == "Makine duruşları"
+    ]
+    assert len(surface_requests) == 1
+    reuse = [
+        item
+        for item in diagnostics
+        if item.get("kind") == "semantic_source_truth_reuse"
+        and item.get("source_ref")
+    ]
+    assert reuse
+    assert any(
+        "obl_machine_downtime" in tuple(item.get("owner_obligation_ids") or ())
+        for item in reuse
+    )
+
+    rejected = next(
+        item
+        for item in outcome.observations
+        if item.get("kind") == "contract_validity"
+        and item.get("status") == "REJECTED"
+    )
+    assert any(
+        "required STANDARD semantic handles must resolve to exactly one common governed cube"
+        in reason
+        for reason in rejected["reasons"]
+    )
