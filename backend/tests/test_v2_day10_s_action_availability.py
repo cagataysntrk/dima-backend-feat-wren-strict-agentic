@@ -2,9 +2,27 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
-from app.v2.manager_loop import ResearchManagerLoop
+from app.v2.manager_loop import ManagerActionKind, ResearchManagerLoop
+from app.v2.manager_models import (
+    ManagerCapabilityKey,
+    ManagerState,
+    ObligationLedgerItem,
+    ObligationOrigin,
+    ObligationPolarity,
+    ObligationPriority,
+    ObligationStatus,
+    UserObligationLedger,
+)
+from app.v2.manager_tools import ManagerToolRegistry
+from app.v2.models import EvidenceArtifact, ResearchTask
+from app.v2.research_tasks import (
+    DerivedResearchTaskProposal,
+    ResearchTaskService,
+)
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.manager_action_set import (
     DirectiveActionState,
@@ -30,6 +48,53 @@ def _dimension(ref: str) -> SemanticActionRef:
 
 def _comparison(ref: str) -> SemanticActionRef:
     return SemanticActionRef(ref=ref, kind="comparison")
+
+
+def _filter(ref: str) -> SemanticActionRef:
+    return SemanticActionRef(ref=ref, kind="filter")
+
+
+def _period(ref: str) -> SemanticActionRef:
+    return SemanticActionRef(ref=ref, kind="period")
+
+
+def _hydration_loop(*aliases: str) -> ResearchManagerLoop:
+    loop = object.__new__(ResearchManagerLoop)
+    loop._handle_by_alias = {
+        alias: f"sem_{index:024x}"
+        for index, alias in enumerate(aliases, start=1)
+    }
+    return loop
+
+
+def _hydrate_compile_validate(
+    *,
+    action_set,
+    action_kind: str,
+    aliases: tuple[str, ...],
+    payload: dict | None = None,
+):
+    rows = _instances(action_set, action_kind)
+    assert len(rows) == 1
+    instance = rows[0]
+    loop = _hydration_loop(*aliases)
+    decision = loop._hydrate_action_choice(
+        action_instance=instance,
+        payload=payload or {},
+    )
+    call = loop._compile_tool(
+        decision=decision,
+        message_id="turn-parity",
+        source_hash="0" * 64,
+        request_ref="req-parity",
+        runtime=None,
+    )
+    validated = ManagerToolRegistry().validate(
+        call,
+        state=ManagerState.CONTRACT_ACCEPTED,
+        has_accepted_contract=True,
+    )
+    return instance, decision, call, validated, loop
 
 
 def _query() -> NextTestContractState:
@@ -82,6 +147,393 @@ def _instances(action_set, action: str):
     return tuple(
         item for item in action_set.action_instances if item.action_kind == action
     )
+
+
+
+def test_direct_actionset_materializability_positive_matrix_reaches_existing_tool_contract():
+    cases = (
+        (
+            TaskActionState(
+                task_id="T_PERF",
+                question_id="U_PERF",
+                task_kind="QUERY",
+                capability_key="performance",
+                origin="USER_SEED",
+                semantic_refs=(
+                    _metric("h_m"),
+                    _filter("h_f"),
+                    _period("h_p"),
+                ),
+            ),
+            "run_analytics",
+            ("h_m", "h_f", "h_p"),
+        ),
+        (
+            TaskActionState(
+                task_id="T_BREAK",
+                question_id="U_BREAK",
+                task_kind="BREAKDOWN",
+                capability_key="breakdown",
+                origin="USER_SEED",
+                semantic_refs=(
+                    _metric("h_m"),
+                    _dimension("h_d"),
+                    _filter("h_f"),
+                    _period("h_p"),
+                ),
+            ),
+            "run_analytics",
+            ("h_m", "h_d", "h_f", "h_p"),
+        ),
+        (
+            TaskActionState(
+                task_id="T_RANK",
+                question_id="U_RANK",
+                task_kind="RANK",
+                capability_key="ranking",
+                origin="USER_SEED",
+                semantic_refs=(_metric("h_m"), _dimension("h_d")),
+                ranking_direction="desc",
+                ranking_limit=5,
+            ),
+            "run_analytics",
+            ("h_m", "h_d"),
+        ),
+        (
+            TaskActionState(
+                task_id="T_COMPARE",
+                question_id="U_COMPARE",
+                task_kind="COMPARE",
+                capability_key="comparison",
+                origin="USER_SEED",
+                semantic_refs=(
+                    _metric("h_m"),
+                    _comparison("h_c"),
+                    _period("h_p"),
+                    _filter("h_f"),
+                ),
+            ),
+            "run_analytics",
+            ("h_m", "h_c", "h_p", "h_f"),
+        ),
+        (
+            TaskActionState(
+                task_id="T_REL",
+                question_id="U_REL",
+                task_kind="RELATIONSHIP",
+                capability_key="relationship",
+                origin="USER_SEED",
+                semantic_refs=(_metric("h_m"), _dimension("h_d")),
+            ),
+            "run_relationship",
+            ("h_m", "h_d"),
+        ),
+    )
+
+    for task, action_kind, aliases in cases:
+        action_set = _build(ready_tasks=(task,))
+        instance, decision, _call, validated, _loop = _hydrate_compile_validate(
+            action_set=action_set,
+            action_kind=action_kind,
+            aliases=aliases,
+        )
+        assert instance.reason_codes == ("READY_RESEARCH_TASK",)
+        assert decision.research_task_id == task.task_id
+        assert validated.research_task_id == task.task_id
+
+        if action_kind == "run_analytics":
+            assert validated.metric_handles
+            if task.capability_key in {"breakdown", "ranking"}:
+                assert validated.dimension_handles
+            if task.capability_key == "ranking":
+                assert validated.ranking_direction == "desc"
+                assert validated.limit == 5
+            if task.capability_key == "comparison":
+                assert validated.comparison_handle is not None
+        else:
+            assert validated.focus_handles
+            assert len(validated.counterpart_handles) == 1
+
+
+@pytest.mark.parametrize(
+    ("task", "action_kind"),
+    (
+        (
+            TaskActionState(
+                task_id="BAD_RANK_NO_DIM",
+                question_id="U",
+                task_kind="RANK",
+                capability_key="ranking",
+                origin="USER_SEED",
+                semantic_refs=(_metric("h_m"),),
+                ranking_direction="desc",
+                ranking_limit=5,
+            ),
+            "run_analytics",
+        ),
+        (
+            TaskActionState(
+                task_id="BAD_RANK_MULTI_METRIC",
+                question_id="U",
+                task_kind="RANK",
+                capability_key="ranking",
+                origin="USER_SEED",
+                semantic_refs=(
+                    _metric("h_m1"),
+                    _metric("h_m2"),
+                    _dimension("h_d"),
+                ),
+                ranking_direction="desc",
+                ranking_limit=5,
+            ),
+            "run_analytics",
+        ),
+        (
+            TaskActionState(
+                task_id="BAD_REL_NO_DIM",
+                question_id="U",
+                task_kind="RELATIONSHIP",
+                capability_key="relationship",
+                origin="USER_SEED",
+                semantic_refs=(_metric("h_m"),),
+            ),
+            "run_relationship",
+        ),
+        (
+            TaskActionState(
+                task_id="BAD_REL_MULTI_DIM",
+                question_id="U",
+                task_kind="RELATIONSHIP",
+                capability_key="relationship",
+                origin="USER_SEED",
+                semantic_refs=(
+                    _metric("h_m"),
+                    _dimension("h_d1"),
+                    _dimension("h_d2"),
+                ),
+            ),
+            "run_relationship",
+        ),
+        (
+            TaskActionState(
+                task_id="BAD_COMPARE_NONE",
+                question_id="U",
+                task_kind="COMPARE",
+                capability_key="comparison",
+                origin="USER_SEED",
+                semantic_refs=(_metric("h_m"),),
+            ),
+            "run_analytics",
+        ),
+        (
+            TaskActionState(
+                task_id="BAD_COMPARE_MULTI",
+                question_id="U",
+                task_kind="COMPARE",
+                capability_key="comparison",
+                origin="USER_SEED",
+                semantic_refs=(
+                    _metric("h_m"),
+                    _comparison("h_c1"),
+                    _comparison("h_c2"),
+                ),
+            ),
+            "run_analytics",
+        ),
+        (
+            TaskActionState(
+                task_id="BAD_TEMPORAL_MULTI",
+                question_id="U",
+                task_kind="QUERY",
+                capability_key="performance",
+                origin="USER_SEED",
+                semantic_refs=(
+                    _metric("h_m"),
+                    _period("h_p1"),
+                    _period("h_p2"),
+                ),
+            ),
+            "run_analytics",
+        ),
+    ),
+)
+def test_direct_actionset_negative_materializability_matrix_is_never_exposed(
+    task,
+    action_kind,
+):
+    action_set = _build(ready_tasks=(task,))
+    assert not _instances(action_set, action_kind)
+
+
+def test_ready_derived_analytics_hydration_is_lossless_across_all_bound_identity():
+    task = TaskActionState(
+        task_id="T_DERIVED_COMPARE",
+        question_id="P_COMPARE",
+        task_kind="COMPARE",
+        capability_key="comparison",
+        origin="AGENT_DERIVED",
+        semantic_refs=(
+            _metric("h_m"),
+            _filter("h_f"),
+            _period("h_p"),
+            _comparison("h_c"),
+        ),
+        parent_obligation_id="P_COMPARE",
+        trigger_evidence_ref="E_COMPARE",
+    )
+    action_set = _build(ready_tasks=(task,))
+    instance, decision, _call, validated, _loop = _hydrate_compile_validate(
+        action_set=action_set,
+        action_kind="run_analytics",
+        aliases=("h_m", "h_f", "h_p", "h_c"),
+    )
+
+    assert instance.binding("research_task_id") == task.task_id
+    assert decision.research_task_id == task.task_id
+    assert validated.research_task_id == task.task_id
+    assert validated.derived_task_id == task.task_id
+    assert validated.derived_parent_obligation_id == "P_COMPARE"
+    assert validated.derived_capability_key == ManagerCapabilityKey.COMPARISON
+    assert validated.derived_evidence_ref == "E_COMPARE"
+    assert validated.metric_handles
+    assert validated.filter_handles
+    assert validated.period_handle is not None
+    assert validated.comparison_handle is not None
+
+
+def test_adaptive_branch_hydration_materializes_through_real_research_task_service():
+    action_set = _build(
+        parent_evidence_states=(
+            ParentEvidenceActionState(
+                "P1",
+                "performance",
+                "E1",
+                (_metric("h_m"), _dimension("h_d")),
+            ),
+        ),
+    )
+    branch = _instances(action_set, "propose_branches")
+    assert len(branch) == 1
+    instance = branch[0]
+    loop = _hydration_loop("h_m", "h_d")
+    decision = loop._hydrate_action_choice(
+        action_instance=instance,
+        payload={
+            "branch_candidates": (
+                {
+                    "capability_key": "breakdown",
+                    "material_reason": "Verified Evidence supports one bounded breakdown.",
+                },
+            ),
+        },
+    )
+    assert decision.branch_parent_obligation_id == "P1"
+    assert decision.branch_evidence_ref == "E1"
+    assert len(decision.branch_candidates) == 1
+    candidate = decision.branch_candidates[0]
+
+    parent_task = ResearchTask(
+        task_id="seed:P1",
+        question_id="P1",
+        task_kind="QUERY",
+        input_refs=("sem_parent",),
+        origin="USER_SEED",
+        state="complete",
+    )
+    evidence = EvidenceArtifact(
+        artifact_id="E1",
+        task_id=parent_task.task_id,
+        obligation_ids=("P1",),
+        query_contract_refs=("QC1",),
+        evidence_kind="standard_analytics",
+        verified=True,
+    )
+    ledger = UserObligationLedger(
+        lineage_id="L1",
+        version=1,
+        items=(
+            ObligationLedgerItem(
+                obligation_id="P1",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=("SRC1",),
+                semantic_handle_refs=("sem_parent",),
+                evidence_refs=("E1",),
+                introduced_in_version=1,
+            ),
+        ),
+    )
+    runtime = SimpleNamespace(
+        ledger=ledger,
+        snapshot=SimpleNamespace(
+            evidence_refs=("E1",),
+            inspected_evidence_refs=("E1",),
+        ),
+    )
+    store = SimpleNamespace(get=lambda ref: evidence if ref == "E1" else None)
+    proposal = DerivedResearchTaskProposal(
+        task_id=candidate.task_id,
+        task_kind=ResearchTaskService.task_kind_for_capability(
+            candidate.capability_key
+        ),
+        parent_task_id=parent_task.task_id,
+        parent_obligation_id=decision.branch_parent_obligation_id,
+        trigger_evidence_ref=decision.branch_evidence_ref,
+        input_refs=loop._decode_handles(candidate.input_handles),
+        material_reason=candidate.material_reason,
+    )
+    materialized = ResearchTaskService().materialize_derived(
+        runtime=runtime,
+        evidence_store=store,
+        parent_task=parent_task,
+        proposal=proposal,
+    )
+
+    assert materialized.task_id == candidate.task_id
+    assert materialized.parent_obligation_id == "P1"
+    assert materialized.trigger_evidence_ref == "E1"
+    assert materialized.input_refs == (
+        loop._handle_by_alias["h_m"],
+        loop._handle_by_alias["h_d"],
+    )
+
+
+def test_root_next_test_action_hydration_preserves_parent_trigger_and_inputs():
+    action_set = _build(
+        root_states=(
+            RootActionState(
+                root_id="R1",
+                semantic_refs=(_metric("h_m"), _dimension("h_d")),
+                evidence_refs=("E_ROOT",),
+                next_test_evidence_refs=("E_ROOT",),
+                hypotheses=(),
+                next_test_contracts=(_breakdown(),),
+            ),
+        ),
+    )
+    rows = _instances(action_set, "propose_hypothesis_with_next_test")
+    assert len(rows) == 1
+    instance = rows[0]
+    loop = _hydration_loop("h_m", "h_d")
+    decision = loop._hydrate_action_choice(
+        action_instance=instance,
+        payload={
+            "hypothesis_statement": "One bounded candidate explanation.",
+            "hypothesis_limitations": (),
+            "next_test_material_reason": "Test with one governed breakdown.",
+            "next_test_ranking_direction": None,
+            "next_test_ranking_limit": None,
+        },
+    )
+
+    assert decision.action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST
+    assert decision.hypothesis_parent_obligation_id == "R1"
+    assert decision.hypothesis_trigger_evidence_refs == ("E_ROOT",)
+    assert decision.next_test_trigger_evidence_ref == "E_ROOT"
+    assert decision.next_test_input_handles == ("h_m", "h_d")
 
 
 def test_root_bootstrap_exposes_composite_action_directly_from_real_preconditions():
