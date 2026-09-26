@@ -17,6 +17,7 @@ from pydantic import Field, model_validator
 from app.v2.authority_invariants import evidence_belongs_to_parent_lineage
 from app.v2.manager_action_set import (
     DirectiveActionState,
+    GoalTaskActionState,
     HypothesisActionState,
     InspectableEvidenceState,
     ManagerActionSet,
@@ -112,6 +113,7 @@ class ManagerActionKind(StrEnum):
     RESOLVE_SEMANTICS = "resolve_semantics"
     PROPOSE_ACCEPTANCE = "propose_acceptance"
     PROPOSE_BRANCHES = "propose_branches"
+    PROPOSE_GOAL_TASK = "propose_goal_task"
     DISPOSITION_RESEARCH_DIRECTIVE = "disposition_research_directive"
     PROPOSE_HYPOTHESIS = "propose_hypothesis"
     PROPOSE_HYPOTHESIS_WITH_NEXT_TEST = "propose_hypothesis_with_next_test"
@@ -174,6 +176,13 @@ class ManagerBranchCandidateProposal(FrozenModel):
     material_reason: str = Field(min_length=1, max_length=500)
 
 
+class ManagerGoalTaskSemanticProposal(FrozenModel):
+    surface: str = Field(min_length=1, max_length=240)
+    kind_hint: Literal[
+        "metric", "dimension", "filter", "time", "comparison", "unknown"
+    ]
+
+
 class ManagerDecisionTransport(FrozenModel):
     action: ManagerActionKind
 
@@ -209,6 +218,13 @@ class ManagerDecisionTransport(FrozenModel):
         default=(),
         max_length=12,
     )
+
+    goal_parent_obligation_id: str | None = None
+    goal_task_capability: ManagerCapabilityKey | None = None
+    goal_task_semantic_surfaces: tuple[ManagerGoalTaskSemanticProposal, ...] = ()
+    goal_task_material_reason: str | None = Field(default=None, min_length=1, max_length=500)
+    goal_task_ranking_direction: Literal["asc", "desc"] | None = None
+    goal_task_ranking_limit: int | None = Field(default=None, ge=1, le=1000)
 
     directive_id: str | None = None
     directive_evidence_ref: str | None = None
@@ -297,6 +313,22 @@ class ManagerDecisionTransport(FrozenModel):
             ):
                 raise ValueError(
                     "propose_branches parent obligation + evidence + candidates gerektirir"
+                )
+        elif self.action == ManagerActionKind.PROPOSE_GOAL_TASK:
+            if (
+                not self.goal_parent_obligation_id
+                or self.goal_task_capability is None
+                or not self.goal_task_semantic_surfaces
+                or not self.goal_task_material_reason
+            ):
+                raise ValueError(
+                    "goal task proposal requires parent + capability + exact semantic surfaces + reason"
+                )
+            if (self.goal_task_ranking_direction is None) != (
+                self.goal_task_ranking_limit is None
+            ):
+                raise ValueError(
+                    "goal task ranking direction + limit must be supplied together"
                 )
         elif self.action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE:
             if (
@@ -402,6 +434,21 @@ class ManagerDecisionTransport(FrozenModel):
             or bool(self.branch_candidates)
         ):
             raise ValueError("branch fields are valid only for propose_branches")
+
+        goal_values = (
+            self.goal_parent_obligation_id,
+            self.goal_task_capability,
+            self.goal_task_semantic_surfaces,
+            self.goal_task_material_reason,
+            self.goal_task_ranking_direction,
+            self.goal_task_ranking_limit,
+        )
+        if self.action != ManagerActionKind.PROPOSE_GOAL_TASK and any(
+            value not in (None, (), []) for value in goal_values
+        ):
+            raise ValueError(
+                "goal task fields are valid only for propose_goal_task"
+            )
 
         directive_values = (
             self.directive_id,
