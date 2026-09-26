@@ -109,7 +109,8 @@ def test_current_product_plan_has_no_forward_wren_bakeoff():
     text=(BACKEND/"belgeler"/"metabase"/"DIMA_METABASE_CURRENT_PRODUCT_PLAN.md").read_text(encoding="utf-8")
     current=text.split("## HISTORICAL / SUPERSEDED",1)[0]
     assert "Wren-vs-Platform bake-off" not in current
-    assert "DEV80 is not run" in current
+    normalized = " ".join(current.split())
+    assert "DEV80 is not run" in normalized
 
 
 def test_active_docs_do_not_reference_deleted_current_paths():
