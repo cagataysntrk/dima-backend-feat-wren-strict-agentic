@@ -287,20 +287,65 @@ def _group_refs(refs: tuple[SemanticActionRef, ...]) -> dict[str, tuple[str, ...
     }
 
 
+def _direct_shape_handles(
+    refs: tuple[SemanticActionRef, ...],
+    *,
+    capability_key: str,
+    required_kinds: tuple[str, ...] | frozenset[str],
+    allowed_kinds: tuple[str, ...] | frozenset[str],
+) -> tuple[str, ...] | None:
+    """Project only semantic shapes the existing DIRECT runtime can execute losslessly.
+
+    This is deterministic control-plane parity, not new semantic authority.  It mirrors
+    structural cardinalities already enforced by the governed scheduler/core boundary so
+    ManagerActionSet never advertises an action that must be rejected after selection.
+    """
+
+    by_kind = _group_refs(refs)
+    if not set(required_kinds).issubset(by_kind):
+        return None
+
+    # Scheduler/Core consume at most one temporal/comparison authority for one
+    # analytics invocation.  Do not silently drop extra declared handles.
+    if len(by_kind.get("period", ())) > 1:
+        return None
+    if len(by_kind.get("comparison", ())) > 1:
+        return None
+
+    try:
+        key = ManagerCapabilityKey(capability_key)
+    except ValueError:
+        return None
+
+    if key == ManagerCapabilityKey.RANKING:
+        if len(by_kind.get("metric", ())) != 1:
+            return None
+        if not by_kind.get("dimension"):
+            return None
+    elif key == ManagerCapabilityKey.RELATIONSHIP:
+        if not by_kind.get("metric"):
+            return None
+        if len(by_kind.get("dimension", ())) != 1:
+            return None
+    elif key == ManagerCapabilityKey.COMPARISON:
+        if len(by_kind.get("comparison", ())) != 1:
+            return None
+
+    allowed = set(allowed_kinds)
+    selected = tuple(item.ref for item in refs if item.kind in allowed)
+    return tuple(dict.fromkeys(selected)) or None
+
+
 def _contract_handles(
     refs: tuple[SemanticActionRef, ...],
     contract: NextTestContractState,
 ) -> tuple[str, ...] | None:
-    by_kind = _group_refs(refs)
-    if not set(contract.required_kinds).issubset(by_kind):
-        return None
-    allowed = set(contract.allowed_kinds)
-    selected = tuple(
-        item.ref
-        for item in refs
-        if item.kind in allowed
+    return _direct_shape_handles(
+        refs,
+        capability_key=contract.capability_key,
+        required_kinds=contract.required_kinds,
+        allowed_kinds=contract.allowed_kinds,
     )
-    return tuple(dict.fromkeys(selected)) or None
 
 
 def _instance(
@@ -354,14 +399,15 @@ def _branch_capabilities(
             ManagerCapabilityKey.EXPLAIN,
         }:
             continue
-        if not set(spec.required_kinds).issubset(by_kind):
-            continue
-        selected = tuple(
-            item.ref for item in semantic_refs if item.kind in spec.allowed_kinds
+        selected = _direct_shape_handles(
+            semantic_refs,
+            capability_key=key.value,
+            required_kinds=spec.required_kinds,
+            allowed_kinds=spec.allowed_kinds,
         )
-        if not selected:
+        if selected is None:
             continue
-        rows.append((key.value, tuple(dict.fromkeys(selected))))
+        rows.append((key.value, selected))
     return tuple(rows)
 
 
@@ -688,14 +734,20 @@ class ManagerActionSetBuilder:
                 spec = registry.get(key)
             except (KeyError, ValueError):
                 continue
-            by_kind = _group_refs(task.semantic_refs)
-            if not set(spec.required_kinds).issubset(by_kind):
+            selected_refs = _direct_shape_handles(
+                task.semantic_refs,
+                capability_key=key.value,
+                required_kinds=spec.required_kinds,
+                allowed_kinds=spec.allowed_kinds,
+            )
+            if selected_refs is None:
                 continue
+            selected_set = set(selected_refs)
             selected_handles = {
                 kind: tuple(
                     item.ref
                     for item in task.semantic_refs
-                    if item.kind == kind and kind in spec.allowed_kinds
+                    if item.ref in selected_set and item.kind == kind
                 )
                 for kind in ("metric", "dimension", "filter", "period", "comparison")
             }
