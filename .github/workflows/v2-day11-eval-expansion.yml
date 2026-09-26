@@ -43,6 +43,24 @@ jobs:
             tests/test_v2_day10_s_action_availability.py::test_candidate_order_permutation_does_not_change_action_set_identity \
             tests/test_v2_day10_continuation.py::test_versioned_report_supersedes_without_mutating_prior_report
 
+      - name: Day11 negative owner-boundary attacks
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_obligation_local_semantic_recovery.py::test_prior_turn_governed_handle_is_not_current_turn_candidate_context \
+            tests/test_v2_day10_s_action_availability.py::test_multi_root_never_produces_cross_parent_handle_or_evidence_combinations \
+            tests/test_v2_day10_continuation.py::test_registry_revalidates_current_principal_and_exact_section_identity \
+            tests/test_v2_day10_continuation.py::test_tampered_and_foreign_context_tokens_fail_closed \
+            tests/test_v2_day10_s_action_availability.py::test_action_ref_is_state_bound_and_stale_choice_fails_closed \
+            tests/test_v2_day10_s_action_availability.py::test_invented_action_ref_fails_closed \
+            tests/test_v2_day7_research_tool_contract.py::test_task_tool_mismatch_is_rejected_before_execution \
+            tests/test_v2_day10_s_action_availability.py::test_resolve_semantics_parent_cannot_select_sibling_evidence \
+            tests/test_v2_day8_hypothesis_ledger.py::test_unrelated_obligation_evidence_is_rejected \
+            tests/test_v2_day10_directive_lifecycle.py::test_action_availability_projects_only_parent_lineage_evidence_for_open_directive \
+            tests/test_v2_day10_continuation.py::test_report_presentation_obligation_cannot_become_analytical_directive_parent \
+            tests/test_v2_day9_report_builder.py::test_finding_with_missing_derived_parent_lineage_never_becomes_cached_truth \
+            tests/test_v2_day10_continuation.py::test_evicted_or_missing_registry_context_requires_rebind
+
       - name: Existing external holdout attestation contract
         working-directory: backend
         run: pytest -q tests/test_v2_day6_5_holdout_freeze.py
