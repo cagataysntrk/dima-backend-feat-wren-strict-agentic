@@ -602,6 +602,26 @@ class ManagerActionSetBuilder:
                 if parent.branch_eligible
                 else ()
             )
+            is_final_turn_directive_parent = (
+                final_turn_directive is not None
+                and parent.parent_obligation_id
+                == final_turn_directive.parent_obligation_id
+                and parent.evidence_ref
+                in final_turn_directive.eligible_evidence_refs
+            )
+            if is_final_turn_directive_parent and branches:
+                # Capabilities whose operation parameters require another cognition
+                # turn are valid ordinary branches, but they are not same-turn
+                # terminal material paths.  Keep them out of only the final charged
+                # turn; earlier turns retain the full bounded branch surface.
+                capability_registry = ManagerCapabilityRegistry()
+                branches = tuple(
+                    (capability, handles)
+                    for capability, handles in branches
+                    if not capability_registry.get(
+                        ManagerCapabilityKey(capability)
+                    ).required_params
+                )
             if branches:
                 branch_caps = [capability for capability, _handles in branches]
                 instances.append(
@@ -842,7 +862,11 @@ class ManagerActionSetBuilder:
                 ):
                     return True
                 if item.action_kind in {"run_analytics", "run_relationship"}:
-                    return item.binding("task_id", item.binding("derived_task_id")) in critical_task_ids
+                    task_id = item.binding(
+                        "task_id",
+                        item.binding("derived_task_id"),
+                    )
+                    return task_id in critical_task_ids
                 return False
 
             dispositions = [
