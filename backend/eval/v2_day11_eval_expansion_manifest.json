@@ -244,5 +244,12 @@
     "case_specific_product_patch_added_from_eval_failure",
     "metamorphic_test_reference_missing",
     "known_regression_family_without_visible_evidence"
-  ]
+  ],
+  "canonical_taxonomy_coverage": {
+    "source_manifest": "eval/v2_day6_5_eval_manifest.yaml",
+    "visible_dev_source": "eval/v2_day6_5_dev_cases.yaml",
+    "required_coverage": 1,
+    "expected_taxonomy_count": 18,
+    "execution_required": false
+  }
 }
