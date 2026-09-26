@@ -663,7 +663,8 @@ jobs:
             DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
             test -f "$REVIEW"
             grep -q "DMP-DEC-0056" "$REVIEW"
-            grep -q "MINIMAL IMPLEMENTATION AUTHORIZED" "$REVIEW"
+            grep -q "## 21. DMP-DEC-0056 implementation authorization" "$REVIEW"
+            grep -Eq "MINIMAL IMPLEMENTATION AUTHORIZED|SEALED / DMP-DEC-0056 / PROVIDER-FREE GREEN" "$REVIEW"
             grep -q "DMP-DEC-0056 — MINIMAL REPORTDOCUMENT / PUBLICATION LEGALITY AUTHORITY" "$DECISIONS"
           fi
 
