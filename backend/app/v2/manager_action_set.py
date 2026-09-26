@@ -786,6 +786,7 @@ class ManagerActionSetBuilder:
 
             cognitive_schema: dict[str, dict[str, Any]] = {}
             bindings: dict[str, Any] = {
+                "research_task_id": task.task_id,
                 "obligation_ids": (
                     task.parent_obligation_id or task.question_id,
                 ),
