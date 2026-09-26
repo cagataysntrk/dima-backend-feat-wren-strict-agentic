@@ -376,6 +376,23 @@ class ManagerActionSetBuilder:
         root_by_id = {item.root_id: item for item in context.root_states}
         feasible_root_ids: set[str] = set()
 
+        # The current Research turn is charged before this projection is built.
+        # Therefore zero means this is the final cognition opportunity under the
+        # frozen Research budget.  A single completion-relevant ADAPT directive
+        # with eligible inspected VERIFIED Evidence becomes completion-critical
+        # only when this same turn also has a material path that can account it.
+        actionable_directives = tuple(
+            item
+            for item in context.directive_states
+            if item.eligible_evidence_refs
+        )
+        final_turn_directive = (
+            actionable_directives[0]
+            if context.remaining_research_turns == 0
+            and len(actionable_directives) == 1
+            else None
+        )
+
         # ROOT cognition: identities are server-bound; model owns only hypothesis text,
         # epistemic relation, material reason, and genuinely cognitive operation params.
         for root in context.root_states:
@@ -600,7 +617,21 @@ class ManagerActionSetBuilder:
                             "branch_candidates": {
                                 "type": "array",
                                 "minItems": 1,
-                                "maxItems": min(4, len(branch_caps)),
+                                # On the final charged Research turn, a branch for
+                                # the one completion-critical directive must remain
+                                # executable-and-accountable in this same turn.
+                                # One child is the existing inline execution path;
+                                # multiple children necessarily require a later
+                                # cognition turn that no longer exists.
+                                "maxItems": (
+                                    1
+                                    if final_turn_directive is not None
+                                    and parent.parent_obligation_id
+                                    == final_turn_directive.parent_obligation_id
+                                    and parent.evidence_ref
+                                    in final_turn_directive.eligible_evidence_refs
+                                    else min(4, len(branch_caps))
+                                ),
                                 "items": {
                                     "type": "object",
                                     "properties": {
@@ -774,6 +805,54 @@ class ManagerActionSetBuilder:
                 reason_codes=("COMPLETION_PROPOSAL",),
             )
         )
+
+        # Final-turn completion-critical scheduling is a projection rule, not a
+        # second availability authority.  Only narrow the canonical ActionSet when:
+        #   1) exactly one OPEN ADAPT directive has eligible Evidence,
+        #   2) cognition can terminally disposition it as NO_MATERIAL_DIRECTION, and
+        #   3) at least one material path can also complete and account it now.
+        #
+        # If condition (3) is absent, keep the ordinary surface.  The system must not
+        # manufacture NO_MATERIAL_DIRECTION merely to turn a budget failure green.
+        if final_turn_directive is not None:
+            directive_id = final_turn_directive.directive_id
+            parent_id = final_turn_directive.parent_obligation_id
+            eligible_refs = set(final_turn_directive.eligible_evidence_refs)
+            critical_task_ids = {
+                task.task_id
+                for task in context.ready_tasks
+                if task.origin == "AGENT_DERIVED"
+                and task.parent_obligation_id == parent_id
+                and task.trigger_evidence_ref in eligible_refs
+            }
+
+            def _is_terminal_disposition(item: ActionInstance) -> bool:
+                return (
+                    item.action_kind == "disposition_research_directive"
+                    and item.binding("directive_id") == directive_id
+                    and item.binding("parent_obligation_id") == parent_id
+                    and item.binding("evidence_ref") in eligible_refs
+                )
+
+            def _is_same_turn_material_path(item: ActionInstance) -> bool:
+                if (
+                    item.action_kind == "propose_branches"
+                    and item.binding("parent_obligation_id") == parent_id
+                    and item.binding("evidence_ref") in eligible_refs
+                ):
+                    return True
+                if item.action_kind in {"run_analytics", "run_relationship"}:
+                    return item.binding("task_id", item.binding("derived_task_id")) in critical_task_ids
+                return False
+
+            dispositions = [
+                item for item in instances if _is_terminal_disposition(item)
+            ]
+            material_paths = [
+                item for item in instances if _is_same_turn_material_path(item)
+            ]
+            if dispositions and material_paths:
+                instances = [*dispositions, *material_paths]
 
         # A candidate-order permutation must not change the externally visible set.
         instances = sorted(
