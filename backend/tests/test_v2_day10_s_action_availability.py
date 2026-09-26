@@ -404,6 +404,70 @@ def test_last_research_turn_with_executable_adapt_directive_is_completion_critic
     assert branch_schema["maxItems"] == 1
 
 
+
+def test_final_turn_directive_without_material_path_is_not_greenwashed():
+    action_set = _build(
+        remaining_research_turns=0,
+        directive_states=(
+            DirectiveActionState("D1", "P_REL", ("E_REL",)),
+        ),
+        inspectable_evidence=(
+            InspectableEvidenceState(
+                evidence_ref="E_OLD",
+                capability_keys=("performance",),
+                evidence_kind="standard_analytics",
+            ),
+        ),
+    )
+
+    # A terminal NO_MATERIAL_DIRECTION action is available, but the server has
+    # no material same-turn branch/execution path.  Do not collapse the surface
+    # to disposition-only: that would manufacture a negative finding to escape
+    # the budget boundary rather than preserve bounded cognition.
+    assert set(action_set.available_actions) == {
+        "disposition_research_directive",
+        "inspect_evidence",
+        "finish",
+    }
+    assert not _instances(action_set, "propose_branches")
+
+
+def test_completion_critical_projection_is_final_turn_only():
+    action_set = _build(
+        remaining_research_turns=1,
+        directive_states=(
+            DirectiveActionState("D1", "P_REL", ("E_REL",)),
+        ),
+        parent_evidence_states=(
+            ParentEvidenceActionState(
+                "P_REL",
+                "relationship",
+                "E_REL",
+                (_metric("M_REL"), _dimension("D_REL")),
+            ),
+        ),
+        inspectable_evidence=(
+            InspectableEvidenceState(
+                evidence_ref="E_OLD",
+                capability_keys=("performance",),
+                evidence_kind="standard_analytics",
+            ),
+        ),
+    )
+
+    # With a later Research turn still available, ordinary bounded cognition
+    # remains available; the scheduling rule must not become a global priority
+    # layer or second availability authority.
+    assert "disposition_research_directive" in action_set.available_actions
+    assert "propose_branches" in action_set.available_actions
+    assert "inspect_evidence" in action_set.available_actions
+    assert "finish" in action_set.available_actions
+    branches = _instances(action_set, "propose_branches")
+    assert len(branches) == 1
+    branch_schema = dict(branches[0].cognitive_schema)["branch_candidates"]
+    assert branch_schema["maxItems"] > 1
+
+
 def test_action_ref_is_state_bound_and_stale_choice_fails_closed():
     old = _build(
         state_version="prog_N",
