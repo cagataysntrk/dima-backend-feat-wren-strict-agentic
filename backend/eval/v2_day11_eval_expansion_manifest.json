@@ -1,0 +1,248 @@
+{
+  "version": "day11-eval-expansion-v1",
+  "phase": "P14_DAY11_EVAL_EXPANSION",
+  "status": "PROVIDER_FREE_COVERAGE_ACTIVE",
+  "product_behavior": "e1b3823b82cd28bbe9b4725abf81a4aa49d578ba",
+  "day10_paid_green_run": 36229302570,
+  "purpose": "Expand visible evaluation coverage from demo prompts to real-language variation and known regression families without consuming DEV80, Validation50, or Hidden50.",
+  "execution_policy": {
+    "provider_free_only": true,
+    "dev80_execution_authorized": false,
+    "validation50_execution_authorized": false,
+    "hidden50_execution_authorized": false,
+    "paid_live_execution_authorized": false,
+    "product_code_changes_expected": false,
+    "hidden_prompt_text_in_repo_forbidden": true
+  },
+  "corpus_partitions": {
+    "dev": {
+      "visibility": "VISIBLE_TO_DEVELOPMENT",
+      "tuning_allowed": true,
+      "source": "eval/v2_day6_5_dev_cases.yaml",
+      "target_count": 80,
+      "execution_status": "NOT_RUN_BY_DAY11_EXPANSION"
+    },
+    "validation": {
+      "visibility": "VISIBLE_AFTER_DEV_FREEZE",
+      "tuning_allowed": false,
+      "prompt_bodies_committed_by_day11_expansion": false,
+      "execution_status": "NOT_AUTHORIZED"
+    },
+    "hidden_holdout": {
+      "visibility": "EXTERNAL_SEALED",
+      "tuning_allowed": false,
+      "prompt_bodies_committed": false,
+      "generated_by_current_development_model": false,
+      "authority_contract": "eval/DAY6_5_HIDDEN_HOLDOUT_HANDOFF.md",
+      "attestation_test": "tests/test_v2_day6_5_holdout_freeze.py",
+      "execution_status": "NOT_AUTHORIZED"
+    }
+  },
+  "scenario_sources": [
+    {
+      "id": "visible_dev80_seed",
+      "path": "eval/v2_day6_5_dev_cases.yaml",
+      "role": "VISIBLE_CASE_SOURCE_ONLY",
+      "execution_authority": false
+    },
+    {
+      "id": "research_complex",
+      "path": "eval/v2_day6_research_cases.yaml",
+      "role": "VISIBLE_REAL_LANGUAGE_RESEARCH_SOURCE",
+      "execution_authority": false
+    },
+    {
+      "id": "conversation_threads",
+      "path": "eval/v2_day4_conversation_cases.yaml",
+      "role": "VISIBLE_MULTI_TURN_LANGUAGE_SOURCE",
+      "execution_authority": false
+    },
+    {
+      "id": "real_world_legacy",
+      "path": "lab/gercek_dunya.py",
+      "role": "HISTORICAL_REAL_WORLD_SCENARIO_SOURCE_ONLY",
+      "execution_authority": false
+    },
+    {
+      "id": "experience_legacy",
+      "path": "lab/deneyim.py",
+      "role": "HISTORICAL_EXPERIENCE_SCENARIO_SOURCE_ONLY",
+      "execution_authority": false
+    }
+  ],
+  "required_real_world_families": [
+    {
+      "id": "typo_no_diacritics",
+      "evidence": [
+        "eval/v2_day6_research_cases.yaml#typo_personnel",
+        "eval/v2_day6_research_cases.yaml#no_diacritics",
+        "eval/v2_day6_research_cases.yaml#typo_sales"
+      ]
+    },
+    {
+      "id": "incomplete_ellipsis_coreference",
+      "evidence": [
+        "eval/v2_day6_research_cases.yaml#ellipsis_subject_reuse",
+        "eval/v2_day4_conversation_cases.yaml#operations"
+      ]
+    },
+    {
+      "id": "topic_switch_and_return",
+      "evidence": [
+        "lab/deneyim.py#konu_degisimi",
+        "lab/deneyim.py#geri_donus"
+      ]
+    },
+    {
+      "id": "negative_research_unsupported",
+      "evidence": [
+        "eval/v2_day6_research_cases.yaml#unknown_domain",
+        "eval/v2_day6_research_cases.yaml#energy_sales_no_path"
+      ]
+    },
+    {
+      "id": "ambiguity_clarification",
+      "evidence": [
+        "eval/v2_day6_5_dev_cases.yaml#taxonomy:ambiguity_clarification",
+        "tests/test_v2_day6_5_preacceptance_protocol.py#test_063_coverage_veto_then_effect_conflict_clarifies_without_case_rule"
+      ]
+    },
+    {
+      "id": "repair_versioning",
+      "evidence": [
+        "eval/v2_day4_conversation_cases.yaml#operations",
+        "tests/test_v2_day6_5_preacceptance_protocol.py#test_run3_polarity_veto_happens_before_semantic_materialization_and_revision_grounds_fresh"
+      ]
+    },
+    {
+      "id": "exclusion_control_boundary",
+      "evidence": [
+        "tests/test_v2_day6_5_preacceptance_protocol.py#test_non_authoritative_control_request_never_becomes_business_authority",
+        "tests/test_v2_day6_5_preacceptance_protocol.py#test_presentation_control_misclassification_gets_one_bounded_revision_before_clarify",
+        "tests/test_v2_day6_5_preacceptance_protocol.py#test_persistent_presentation_polarity_conflict_fails_closed_to_user_clarification"
+      ]
+    },
+    {
+      "id": "trust_plane_bypass",
+      "evidence": [
+        "eval/v2_day6_5_dev_cases.yaml#d65-dev-005",
+        "eval/v2_day6_5_dev_cases.yaml#d65-dev-006"
+      ]
+    },
+    {
+      "id": "complex_research_root_cause",
+      "evidence": [
+        "eval/v2_day6_5_dev_cases.yaml#taxonomy:root_cause",
+        "tests/test_v2_day10_paid_harness_contract.py#test_day8_root_live_debt_oracle_does_not_require_adaptive_branch_trajectory"
+      ]
+    },
+    {
+      "id": "adaptive_branch_lifecycle",
+      "evidence": [
+        "tests/test_v2_day10_directive_lifecycle.py#test_open_adapt_directive_blocks_finish_until_accounted",
+        "tests/test_v2_day10_directive_lifecycle.py#test_broaden_within_budget_is_policy_not_hidden_completion_obligation"
+      ]
+    },
+    {
+      "id": "source_truth_revision",
+      "evidence": [
+        "tests/test_v2_day6_5_preacceptance_protocol.py#test_revision_source_truth_survives_cross_cube_contract_revision_without_recognition",
+        "tests/test_v2_day7_obligation_local_semantic_recovery.py#test_source_truth_survives_separate_resolution_invocations_and_remints_owner_authority",
+        "tests/test_v2_day7_obligation_local_semantic_recovery.py#test_identical_negative_semantic_question_is_memoized_across_revision"
+      ]
+    },
+    {
+      "id": "actionset_materializability_hydration",
+      "evidence": [
+        "tests/test_v2_day10_s_action_availability.py#test_direct_actionset_materializability_positive_matrix_reaches_existing_tool_contract",
+        "tests/test_v2_day10_s_action_availability.py#test_ready_derived_analytics_hydration_is_lossless_across_all_bound_identity"
+      ]
+    },
+    {
+      "id": "signed_continuation_report_immutability",
+      "evidence": [
+        "tests/test_v2_day10_continuation.py#test_signed_section_authority_projection_uses_typed_provenance_not_random_active_ledger",
+        "tests/test_v2_day10_continuation.py#test_versioned_report_supersedes_without_mutating_prior_report"
+      ]
+    },
+    {
+      "id": "standard_cube_coherence",
+      "evidence": [
+        "tests/test_v2_day6_5_preacceptance_protocol.py#test_cross_cube_standard_contract_revises_to_executable_obligations_within_budget"
+      ]
+    },
+    {
+      "id": "cross_domain_governance",
+      "evidence": [
+        "tests/test_v2_day7_obligation_local_semantic_recovery.py#test_cross_domain_current_turn_context_has_no_coherent_applicability_scope"
+      ]
+    },
+    {
+      "id": "temporal_and_conversation_repair",
+      "evidence": [
+        "eval/v2_day4_conversation_cases.yaml#operations",
+        "lab/deneyim.py#donem_duzeltme"
+      ]
+    },
+    {
+      "id": "tenant_and_principal_isolation",
+      "evidence": [
+        "tests/test_v2_day10_continuation.py#test_tampered_and_foreign_context_tokens_fail_closed",
+        "tests/test_v2_day10_continuation.py#test_registry_revalidates_current_principal_and_exact_section_identity"
+      ]
+    },
+    {
+      "id": "budget_and_no_progress",
+      "evidence": [
+        "tests/test_v2_day10_directive_lifecycle.py#test_research_phase_has_its_own_four_turn_hard_cap",
+        "tests/test_v2_day6_5_preacceptance_protocol.py#test_dynamic_action_frontier_blocks_exact_repeat_after_no_new_progress"
+      ]
+    }
+  ],
+  "metamorphic_invariants": [
+    {
+      "id": "source_owner_order_does_not_change_truth",
+      "test": "tests/test_v2_day7_obligation_local_semantic_recovery.py#test_source_truth_owner_order_permutation_does_not_change_canonical_truth"
+    },
+    {
+      "id": "candidate_order_does_not_change_source_truth",
+      "test": "tests/test_v2_day7_obligation_local_semantic_recovery.py#test_source_truth_candidate_order_permutation_keeps_selected_identity"
+    },
+    {
+      "id": "same_source_different_kind_remains_separate",
+      "test": "tests/test_v2_day7_obligation_local_semantic_recovery.py#test_source_truth_same_source_different_kind_does_not_share_decision"
+    },
+    {
+      "id": "scope_group_generation_is_permutation_stable",
+      "test": "tests/test_v2_day6_5_preacceptance_protocol.py#test_d10_q_scope_group_generation_is_permutation_stable_and_excludes_excluded"
+    },
+    {
+      "id": "scope_group_classifier_is_permutation_invariant",
+      "test": "tests/test_v2_day6_5_preacceptance_protocol.py#test_d10_q_unique_full_cover_classifier_is_permutation_invariant"
+    },
+    {
+      "id": "actionset_candidate_order_is_identity_invariant",
+      "test": "tests/test_v2_day10_s_action_availability.py#test_candidate_order_permutation_does_not_change_action_set_identity"
+    },
+    {
+      "id": "report_versioning_is_immutable",
+      "test": "tests/test_v2_day10_continuation.py#test_versioned_report_supersedes_without_mutating_prior_report"
+    }
+  ],
+  "day11_gates": {
+    "all_known_real_world_regression_families_represented": 1,
+    "holdout_separated": true,
+    "metamorphic_invariants_green": true,
+    "hidden_prompt_text_committed_max": 0,
+    "dev80_runs_consumed_by_day11_expansion": 0,
+    "product_eval_literals_added_max": 0
+  },
+  "stop_the_line": [
+    "hidden_or_validation_prompt_bodies_added_to_this_manifest",
+    "DEV80_or_VALIDATION50_or_HIDDEN50_started_by_day11_expansion",
+    "legacy_gercek_dunya_or_deneyim_treated_as_product_authority",
+    "case_specific_product_patch_added_from_eval_failure",
+    "metamorphic_test_reference_missing",
+    "known_regression_family_without_visible_evidence"
+  ]
+}
