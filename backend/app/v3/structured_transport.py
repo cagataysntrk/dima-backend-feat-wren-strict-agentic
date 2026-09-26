@@ -331,10 +331,22 @@ def validate_provider_strict_schema(schema: dict[str, Any]) -> None:
                     )
                 if isinstance(props, dict):
                     required = node.get("required")
-                    if not isinstance(required, list) or set(required) != set(props):
+                    if props:
+                        if (
+                            not isinstance(required, list)
+                            or set(required) != set(props)
+                        ):
+                            raise StructuredProviderError(
+                                "COGNITION_PROVIDER_SCHEMA_UNSAFE",
+                                "strict object required/properties mismatch at "
+                                + (".".join(path) or "<root>"),
+                            )
+                    elif required is not None and (
+                        not isinstance(required, list) or required
+                    ):
                         raise StructuredProviderError(
                             "COGNITION_PROVIDER_SCHEMA_UNSAFE",
-                            "strict object required/properties mismatch at "
+                            "empty strict object has invalid required set at "
                             + (".".join(path) or "<root>"),
                         )
 

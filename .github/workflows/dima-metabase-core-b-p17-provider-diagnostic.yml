@@ -100,7 +100,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "5e06e58e402134fb4d072837951ddec4f455b240"
           test "$(git rev-parse HEAD:backend/app/v3/structured_trace.py)" = "fd909369ca42a8fe97d28b86085f57a3ff687d14"
-          test "$(git rev-parse HEAD:backend/app/v3/structured_transport.py)" = "cae399f136fc6fa3249aea183a16e31b97bdbffa"
+          test "$(git rev-parse HEAD:backend/app/v3/structured_transport.py)" = "21bed409418085471191feddde25db09b9e4b487"
           test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_request_differential.py)" = "ec336c0ffd14b9c97d305c2bf9f813b28d7a5aba"
           test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_provider_diagnostic.py)" = "030495ad850b842eebe05c67f016aab1e8f4437f"
           test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
