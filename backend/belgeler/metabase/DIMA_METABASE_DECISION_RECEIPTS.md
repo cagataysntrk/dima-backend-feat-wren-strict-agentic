@@ -6283,3 +6283,44 @@ SIGNAL != ANALYTICAL CALCULATION
 ~~~
 
 Core Closure B is now the forward authority. No UI authority is granted by this seal.
+
+
+---
+
+## CORE-B FINAL LIVE STOP RECEIPT — NO NEW AUTHORITY
+
+date: 2026-09-26
+
+This is an observed failure receipt, not a new DMP decision and not authority to reopen P17.
+
+~~~text
+authorized lifecycle candidate        = 58fb2d049d9b99b4db10bd71fa4782c12d0ac10a
+provider-free seal                    = 36250936119 SUCCESS
+governance                            = 36250936065 SUCCESS
+
+final frozen live authorization       = small-sentinel-005.json
+dispatch SHA                          = 2b3b4779f97ecae088a7f2ae73e4f94661ad525a
+real Luna + Metabase run              = 36251231885 FAILURE
+
+failing case                          = root_cause_tr
+first wrong transition owner          = P17 manager provider boundary
+exception                             = COGNITION_PROVIDER_REJECTED
+HTTP                                  = 400
+provider response body                = NOT RETAINED BY SEALED TRANSPORT
+final machine-readable sentinel       = NOT WRITTEN
+uploaded sentinel artifact            = NONE
+
+hard prohibitions                     = GREEN
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+manifest blob                         = cf9aea5004d2bbb979015917570f32417c67017a
+neutral fixture blob                  = dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7
+live runner blob                      = 9ebf66876b1023c3dd7be54f6035281debd7b4e4
+
+P14/P20 owner-scope correction        = GREEN
+P17 modification under amendment      = FORBIDDEN
+Core Closure B                        = NOT SEALED
+Platform comparison-ready             = NO
+next action                           = SUPERVISOR DECISION REQUIRED
+~~~
+
+No blind live retry is authorized by this receipt.
