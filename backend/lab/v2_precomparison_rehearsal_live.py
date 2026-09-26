@@ -135,6 +135,48 @@ def _handle(
     )
 
 
+def _lane_diagnostics(*, research_lane, standard_lane) -> dict[str, Any]:
+    standard = getattr(standard_lane, "last_outcome", None)
+    research = getattr(research_lane, "last_result", None)
+    out: dict[str, Any] = {}
+    if standard is not None:
+        out["standard"] = {
+            "status": _value(getattr(standard, "status", None)),
+            "reasons": list(getattr(standard, "reasons", ()) or ()),
+            "coverage_status": getattr(standard, "coverage_status", None),
+            "attempts": getattr(standard, "attempts", None),
+        }
+    if research is not None:
+        outcome = getattr(research, "outcome", None)
+        observations = tuple(getattr(outcome, "observations", ()) or ())
+        out["research"] = {
+            "preacceptance_status": _value(
+                getattr(outcome, "preacceptance_status", None)
+            ),
+            "terminal_status": _value(
+                getattr(outcome, "terminal_status", None)
+            ),
+            "observations": [
+                item
+                for item in observations
+                if isinstance(item, dict)
+                and item.get("kind")
+                in {
+                    "intent_draft",
+                    "material_grounding_gap",
+                    "coverage_audit",
+                    "contract_validity",
+                    "draft_source_contract",
+                    "grounding_error",
+                    "tool_rejected",
+                    "research_directive_disposition",
+                    "adaptive_branch_executed",
+                }
+            ],
+        }
+    return out
+
+
 def _case_receipt(
     *,
     case: dict[str, Any],
@@ -146,6 +188,7 @@ def _case_receipt(
     wren_start: tuple[int, int, int],
     checks: dict[str, bool],
     extra: dict[str, Any] | None = None,
+    lane_diagnostics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     metrics = _event_metrics(response.events)
     role_calls = _role_delta(budget.calls, budget_start)
@@ -195,13 +238,16 @@ def _case_receipt(
         "checks": checks,
         "pass": all(checks.values()),
         "performance": performance,
-        "diagnostics": diagnostics,
+        "diagnostics": {
+            **diagnostics,
+            "lanes": lane_diagnostics or {},
+        },
         "extra": extra or {},
     }
 
 
 def _run_prompt(case, *, settings, budget, service, principal, checkpoint_root):
-    coordinator, _, _, _ = _coordinator(
+    coordinator, research_lane, standard_lane, _ = _coordinator(
         settings=settings,
         budget=budget,
         service=service,
@@ -229,6 +275,10 @@ def _run_prompt(case, *, settings, budget, service, principal, checkpoint_root):
         service=service,
         wren_start=wren_start,
         checks=checks,
+        lane_diagnostics=_lane_diagnostics(
+            research_lane=research_lane,
+            standard_lane=standard_lane,
+        ),
     )
 
 
