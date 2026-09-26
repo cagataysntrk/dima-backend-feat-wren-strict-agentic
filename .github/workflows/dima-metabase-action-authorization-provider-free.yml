@@ -14,7 +14,7 @@ on:
       - "backend/belgeler/metabase/predev/ACTIONPLAN_EXECUTION_AUTHORITY_PREDEVELOPMENT_REVIEW.md"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
       - "DIMA-METABASE-DURUM.md"
-      - "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
+      - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md"
       - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md"
       - ".github/workflows/dima-metabase-action-authorization-provider-free.yml"
       - ".github/workflows/dima-metabase-adoption-provider-free.yml"

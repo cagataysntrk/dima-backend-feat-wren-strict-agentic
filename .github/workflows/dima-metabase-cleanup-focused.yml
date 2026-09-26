@@ -16,6 +16,12 @@ on:
       - "backend/Dockerfile"
       - "backend/migrations/**"
       - "backend/tests/test_repository_hygiene.py"
+      - "backend/tools/repository_reachability.py"
+      - "backend/CLAUDE.md"
+      - "backend/AGENTS.md"
+      - "backend/MIMARI.md"
+      - "backend/belgeler/metabase/**"
+      - "DIMA-METABASE-DURUM.md"
       - "README.md"
       - "backend/README.md"
       - "docker-compose.yml"
@@ -49,6 +55,18 @@ jobs:
       - name: Repository hygiene
         working-directory: backend
         run: pytest -q tests/test_repository_hygiene.py
+
+      - name: Static canonical reachability inventory
+        working-directory: backend
+        run: |
+          python tools/repository_reachability.py --json | tee /tmp/reachability.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("/tmp/reachability.json").read_text())
+          assert not data["unresolved_dynamic_import"], data["unresolved_dynamic_import"]
+          print("legacy_unreachable_count=", data["counts"]["legacy_unreachable"])
+          PY
 
       - name: FastAPI and authority import smoke
         working-directory: backend

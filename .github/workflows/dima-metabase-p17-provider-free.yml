@@ -29,7 +29,7 @@ on:
       - "backend/migrations/versions/e1a7b4c9d305_p17_followup_execution_lineage.py"
       - "backend/migrations/versions/f3c9d6e2a814_p17_recursive_investigation_topology.py"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
-      - "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
+      - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md"
       - "backend/tests/test_v3_p17_research_manager.py"
       - "backend/tests/test_v3_p17_autonomous_manager_eval.py"
       - "backend/tests/test_v3_p17_authorization_transport.py"

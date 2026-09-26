@@ -12,7 +12,7 @@ on:
       - "backend/belgeler/metabase/predev/P18_MATERIAL_BUSINESS_RELATIONSHIP_POLICY_PREDEVELOPMENT_REVIEW.md"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
       - "DIMA-METABASE-DURUM.md"
-      - "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
+      - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md"
       - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md"
       - ".github/workflows/dima-metabase-p18-provider-free.yml"
       - ".github/workflows/dima-metabase-governance.yml"
@@ -51,7 +51,7 @@ jobs:
           set -euo pipefail
           REVIEW="backend/belgeler/metabase/predev/P18_MATERIAL_BUSINESS_RELATIONSHIP_POLICY_PREDEVELOPMENT_REVIEW.md"
           DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
-          HANDOFF="DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
+          HANDOFF="backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md"
           grep -q "SEALED / DMP-DEC-0054 / P18 MINIMAL IMPLEMENTATION AUTHORIZED" "$REVIEW"
           grep -q "DMP-DEC-0054 — MINIMAL BUSINESS RELATIONSHIP POLICY AUTHORITY" "$DECISIONS"
           grep -q "P18 BUSINESS RELATIONSHIP POLICY" "$HANDOFF"

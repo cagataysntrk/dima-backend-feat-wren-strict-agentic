@@ -59,10 +59,9 @@ CORE CLOSURE B
 → observability / audit lineage
 → 24-scenario headless rehearsal
 → full closed loop
-→ Wren-vs-Platform bake-off
-→ canonical core freeze
-→ final broad certification
-→ public contract freeze
+→ canonical candidate freeze
+→ final certification
+→ product contract freeze
 → BACKEND / BRAIN = UI-READY
 → STOP
 
@@ -71,9 +70,10 @@ UI IMPLEMENTATION DOES NOT OPEN AUTOMATICALLY.
 
 ### CURRENT RETURN POINT
 
-Do not return. Begin Core Closure B immediately. No UI, no external execution, no sealed-owner
-semantic rewrite. Headless orchestration must delegate to existing owners and resume from durable
-state rather than reinterpret original prompts.
+Repository canonicalization must be sealed first. Then continue immediately into Core Closure B.
+No UI, no external execution, no sealed-owner semantic rewrite. Headless orchestration must delegate
+to existing owners and resume from durable state rather than reinterpret original prompts. DEV80 is
+not run under the current directive.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 

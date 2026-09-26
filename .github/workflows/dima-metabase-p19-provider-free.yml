@@ -17,7 +17,7 @@ on:
       - "backend/belgeler/metabase/predev/P19_HYPOTHESIS_ROOT_CAUSE_PREDEVELOPMENT_REVIEW.md"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
       - "DIMA-METABASE-DURUM.md"
-      - "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
+      - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md"
       - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md"
       - ".github/workflows/dima-metabase-p19-provider-free.yml"
       - ".github/workflows/dima-metabase-p19-live.yml"

@@ -13,7 +13,7 @@ on:
       - "backend/belgeler/metabase/predev/RESEND_CONNECTOR_CERTIFICATION_RECEIPT.md"
       - "backend/belgeler/metabase/predev/FIRST_ACTION_EXECUTION_CONNECTOR_PREDEVELOPMENT_REVIEW.md"
       - "DIMA-METABASE-DURUM.md"
-      - "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
+      - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md"
       - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md"
   workflow_dispatch:
 
