@@ -89,6 +89,46 @@ def test_d10_s_exact_canonical_relationship_parent_clean_path_uses_six_total_tur
     assert receipt["paid_gate_structural_status"] == "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
 
 
+
+
+def test_canonical_relationship_four_turn_feasibility_trace_is_real_and_bounded():
+    receipt = run_canonical_relationship_topology_rehearsal(revision=False)
+
+    assert receipt["provider_calls"] == 0
+    assert receipt["research_manager_calls"] == 4
+    assert receipt["research_manager_turn_ceiling"] == 4
+    assert receipt["completion_gate_final_state"] == "COMPLETED"
+    assert receipt["root_status"] == "VERIFIED"
+    assert receipt["directive_final_status"] == "APPLIED"
+    assert receipt["confirmed_cause_count"] == 0
+
+    trace = tuple(receipt["research_turn_trace"])
+    assert len(trace) == 4
+    assert tuple(item["turn"] for item in trace) == (1, 2, 3, 4)
+    assert tuple(item["selected_action"] for item in trace) == (
+        ManagerActionKind.INSPECT_EVIDENCE.value,
+        ManagerActionKind.PROPOSE_BRANCHES.value,
+        ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST.value,
+        ManagerActionKind.PROPOSE_HYPOTHESIS_EVIDENCE_RELATION.value,
+    )
+
+    for item in trace:
+        available = {
+            card["action"]
+            for card in item["available_action_instances"]
+        }
+        assert item["selected_action"] in available
+        assert item["state_before"]
+        assert item["state_after"]
+        assert item["why_genuine_cognition"]
+
+    # The fourth charged cognition turn reaches terminal completion without a
+    # fifth Manager choice; server-owned execution/accounting stays uncharged.
+    assert trace[-1]["state_after"] == "COMPLETED"
+    assert receipt["research_manager_turn_headroom"] == 0
+    assert receipt["paid_gate_structural_status"] == "STRUCTURALLY_ADMISSIBLE_AT_CEILING"
+
+
 def test_d10_s_exact_canonical_relationship_parent_revision_path_completes():
     receipt = run_canonical_relationship_topology_rehearsal(revision=True)
 
