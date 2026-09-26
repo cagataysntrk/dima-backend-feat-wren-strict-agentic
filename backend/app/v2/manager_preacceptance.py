@@ -90,8 +90,18 @@ class DraftResearchDirective(FrozenModel):
     directive_type: Literal[
         "ADAPT_ON_EVIDENCE",
         "BROADEN_WITHIN_BUDGET",
-    ]
-    parent_obligation_id: str = Field(min_length=1)
+    ] = Field(
+        description=(
+            "ADAPT_ON_EVIDENCE follows a MATERIAL_NEW_DIRECTION revealed by inspected "
+            "VERIFIED Evidence. BROADEN_WITHIN_BUDGET is bounded permission to obtain "
+            "additional relevant governed analysis when useful; it is not a completion obligation."
+        )
+    )
+    parent_scope: Literal[
+        "CURRENT_OBLIGATION",
+        "SIGNED_SECTION_ANALYTICAL_AUTHORITY",
+    ] = "CURRENT_OBLIGATION"
+    parent_obligation_id: str | None = Field(default=None, min_length=1)
     condition: Literal[
         "MATERIAL_NEW_DIRECTION",
         "WITHIN_SYSTEM_BUDGET",
@@ -107,6 +117,15 @@ class DraftResearchDirective(FrozenModel):
         if self.condition != expected:
             raise ValueError(
                 f"{self.directive_type} requires condition {expected}"
+            )
+        if self.parent_scope == "CURRENT_OBLIGATION":
+            if not self.parent_obligation_id:
+                raise ValueError(
+                    "CURRENT_OBLIGATION directive requires parent_obligation_id"
+                )
+        elif self.parent_obligation_id is not None:
+            raise ValueError(
+                "SIGNED_SECTION_ANALYTICAL_AUTHORITY must not carry canonical parent ID"
             )
         return self
 
@@ -138,9 +157,16 @@ class IntentDraft(FrozenModel):
             raise ValueError("draft control request ids unique")
         known = set(obligation_ids)
         for directive in self.research_directives:
-            if directive.parent_obligation_id not in known:
+            if (
+                directive.parent_scope == "CURRENT_OBLIGATION"
+                and directive.parent_obligation_id not in known
+            ):
                 raise ValueError("draft directive parent obligation missing")
         return self
+
+
+class ContinuationDirectiveParentResolutionError(ValueError):
+    """Draft intent requires server-owned inherited identity that is not uniquely resolvable."""
 
 
 class CoverageIssueKind(StrEnum):
@@ -230,8 +256,18 @@ Rules:
 - An EXCLUDED business obligation is reserved for an explicit current-message exclusion whose
   required semantic target is itself source-grounded in the current message.
 - Conditional or scope-level research behavior is NOT an obligation. Use only the declared
-  research directives. BROADEN_WITHIN_BUDGET means relevant/available analytical
-  breakdowns may be explored while deterministic system budgets remain authoritative.
+  research directives.
+- ADAPT_ON_EVIDENCE means: after inspected VERIFIED Evidence reveals a MATERIAL_NEW_DIRECTION,
+  follow/account that material direction. Do not use it for generic permission to obtain more Evidence.
+- BROADEN_WITHIN_BUDGET means additional relevant governed analytical work MAY be performed
+  when useful or necessary and deterministic system budgets permit. It is authorization only
+  and must not be promoted into a completion obligation.
+- For an ordinary turn, a directive parent_scope is CURRENT_OBLIGATION and the parent ID must
+  name one current draft analytical obligation.
+- For a signed-section continuation, when a research policy governs the selected section's prior
+  analysis rather than a new current analytical obligation, use
+  SIGNED_SECTION_ANALYTICAL_AUTHORITY and set parent_obligation_id to null. Never reconstruct,
+  guess, echo, or select a prior opaque obligation ID; the server resolves exact identity.
 - Research-scope wording must not be emitted as a tenant semantic surface unless it
   independently names an actual tenant metric/dimension/filter/time/comparison concept.
 - source_surfaces and semantic_surfaces must be exact literal substrings of USER_MESSAGE.
@@ -341,6 +377,8 @@ class PreAcceptanceController:
         capabilities: ManagerCapabilityRegistry | None = None,
         max_draft_attempts: int = 2,
         context_scope_by_kind: dict[str, tuple[str, ...]] | None = None,
+        signed_section_continuation: bool = False,
+        allowed_continuation_parent_refs: tuple[str, ...] = (),
     ) -> None:
         if not callable(structured):
             raise ValueError("structured_json callable required")
@@ -353,6 +391,10 @@ class PreAcceptanceController:
             for kind, refs in (context_scope_by_kind or {}).items()
             if refs
         }
+        self._signed_section_continuation = bool(signed_section_continuation)
+        self._allowed_continuation_parent_refs = tuple(
+            dict.fromkeys(allowed_continuation_parent_refs)
+        )
 
     def _structured_call(self, *, system: str, payload: dict, model, schema_name: str):
         schema = _strict_native_schema(model.model_json_schema())
@@ -399,6 +441,7 @@ class PreAcceptanceController:
             "USER_MESSAGE": question,
             "CONVERSATION_SURFACE": _conversation_surface_view(conversation),
             "CAPABILITY_BINDING_CONTRACT": self._capabilities.manager_contract(),
+            "SIGNED_SECTION_CONTINUATION": self._signed_section_continuation,
             "REVISION_FEEDBACK": revision_feedback,
         }
         return self._structured_call(
@@ -663,19 +706,33 @@ class PreAcceptanceController:
                 )
             )
 
-        directives = tuple(
-            ResearchDirective(
-                directive_id=item.directive_id,
-                directive_type=ResearchDirectiveType(item.directive_type),
-                parent_obligation_id=item.parent_obligation_id,
-                condition=ResearchDirectiveCondition(item.condition),
-                source_refs=self._source_refs(
-                    message_id=message_id,
-                    surfaces=item.source_surfaces,
-                ),
+        directives: list[ResearchDirective] = []
+        for item in draft.research_directives:
+            if item.parent_scope == "CURRENT_OBLIGATION":
+                parent_obligation_id = item.parent_obligation_id
+                assert parent_obligation_id is not None
+            else:
+                if not self._signed_section_continuation:
+                    raise ContinuationDirectiveParentResolutionError(
+                        "signed-section analytical authority requested outside continuation"
+                    )
+                if len(self._allowed_continuation_parent_refs) != 1:
+                    raise ContinuationDirectiveParentResolutionError(
+                        "signed-section research policy requires one unambiguous inherited analytical authority"
+                    )
+                parent_obligation_id = self._allowed_continuation_parent_refs[0]
+            directives.append(
+                ResearchDirective(
+                    directive_id=item.directive_id,
+                    directive_type=ResearchDirectiveType(item.directive_type),
+                    parent_obligation_id=parent_obligation_id,
+                    condition=ResearchDirectiveCondition(item.condition),
+                    source_refs=self._source_refs(
+                        message_id=message_id,
+                        surfaces=item.source_surfaces,
+                    ),
+                )
             )
-            for item in draft.research_directives
-        )
 
         return UserIntentEnvelope(
             attempt_id=(
@@ -686,7 +743,7 @@ class PreAcceptanceController:
             source_message_hash=source_hash,
             model_role="RESEARCH_MANAGER",
             obligations=tuple(obligations),
-            research_directives=directives,
+            research_directives=tuple(directives),
         )
 
     def _grounding_summary(
@@ -1393,14 +1450,29 @@ class PreAcceptanceController:
                         observations=tuple(observations),
                     )
 
-            envelope = self._envelope(
-                draft=draft,
-                grounded=grounded,
-                message_id=message_id,
-                source_hash=source_hash,
-                request_ref=request_ref,
-                runtime=runtime,
-            )
+            try:
+                envelope = self._envelope(
+                    draft=draft,
+                    grounded=grounded,
+                    message_id=message_id,
+                    source_hash=source_hash,
+                    request_ref=request_ref,
+                    runtime=runtime,
+                )
+            except ContinuationDirectiveParentResolutionError as exc:
+                runtime.require_clarification(str(exc))
+                observations.append(
+                    {
+                        "kind": "continuation_parent_resolution",
+                        "attempt": attempt,
+                        "status": "AMBIGUOUS",
+                        "message": str(exc),
+                    }
+                )
+                return FiniteAcceptanceOutcome(
+                    status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
+                    observations=tuple(observations),
+                )
             try:
                 step = runtime.call_tool(
                     ManagerToolCall(
