@@ -34,6 +34,7 @@ jobs:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
+      DIMA_DATABASE_URL: "sqlite:///${{ runner.temp }}/dima-precomparison-control-plane.db"
 
     steps:
       - uses: actions/checkout@v4
