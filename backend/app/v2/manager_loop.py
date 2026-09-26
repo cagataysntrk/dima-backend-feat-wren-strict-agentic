@@ -245,6 +245,13 @@ class ManagerDecisionTransport(FrozenModel):
         le=1000,
         description="Top/bottom N operation parameter; do not resolve this number as semantics.",
     )
+    research_task_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Server-hydrated exact READY ResearchTask identity. Never model-authored."
+        ),
+    )
     derived_task_id: str | None = None
     derived_parent_obligation_id: str | None = None
     derived_capability_key: ManagerCapabilityKey | None = None
@@ -459,6 +466,18 @@ class ManagerDecisionTransport(FrozenModel):
         }:
             raise ValueError(
                 "hypothesis_ref is valid only for relation or next-test action"
+            )
+
+        if (
+            self.research_task_id is not None
+            and self.action
+            not in {
+                ManagerActionKind.RUN_ANALYTICS,
+                ManagerActionKind.RUN_RELATIONSHIP,
+            }
+        ):
+            raise ValueError(
+                "research_task_id is valid only for governed Research execution"
             )
 
         derived_values = (
@@ -1933,6 +1952,7 @@ class ResearchManagerLoop:
                 ranking_limit = payload["ranking_limit"]
             return ManagerDecisionTransport(
                 action=action,
+                research_task_id=bindings.get("research_task_id"),
                 obligation_ids=tuple(bindings["obligation_ids"]),
                 metric_handles=tuple(bindings.get("metric_handles") or ()),
                 dimension_handles=tuple(
@@ -1962,6 +1982,7 @@ class ResearchManagerLoop:
         if action == ManagerActionKind.RUN_RELATIONSHIP:
             return ManagerDecisionTransport(
                 action=action,
+                research_task_id=bindings.get("task_id"),
                 relationship_obligation_id=bindings["obligation_id"],
                 focus_handles=tuple(bindings["focus_handles"]),
                 counterpart_handles=tuple(bindings["counterpart_handles"]),
@@ -2198,6 +2219,7 @@ class ResearchManagerLoop:
             return ManagerToolCall(
                 name=ManagerToolName.RUN_ANALYTICS,
                 args={
+                    "research_task_id": decision.research_task_id,
                     "obligation_ids": decision.obligation_ids,
                     "metric_handles": self._decode_handles(decision.metric_handles),
                     "dimension_handles": self._decode_handles(decision.dimension_handles),
@@ -2221,6 +2243,7 @@ class ResearchManagerLoop:
             return ManagerToolCall(
                 name=ManagerToolName.RUN_RELATIONSHIP,
                 args={
+                    "research_task_id": decision.research_task_id,
                     "obligation_id": decision.relationship_obligation_id,
                     "focus_handles": self._decode_handles(decision.focus_handles),
                     "counterpart_handles": self._decode_handles(decision.counterpart_handles),
@@ -3747,7 +3770,25 @@ class ResearchManagerLoop:
                         ManagerActionKind.RUN_RELATIONSHIP,
                     }
                 ):
-                    if decision.action == ManagerActionKind.RUN_RELATIONSHIP:
+                    if decision.research_task_id is not None:
+                        try:
+                            task = task_registry.get(decision.research_task_id)
+                        except Exception as exc:
+                            raise ResearchTaskMaterializationError(
+                                "server-hydrated READY ResearchTask identity is no longer registered"
+                            ) from exc
+                        if task.state != "pending":
+                            raise ResearchTaskMaterializationError(
+                                "server-hydrated READY ResearchTask is no longer pending"
+                            )
+                        if (
+                            decision.derived_task_id is not None
+                            and decision.derived_task_id != decision.research_task_id
+                        ):
+                            raise ResearchTaskMaterializationError(
+                                "derived ResearchTask identity drifted during hydration"
+                            )
+                    elif decision.action == ManagerActionKind.RUN_RELATIONSHIP:
                         obligation_id = decision.relationship_obligation_id
                         task_id = f"seed:{obligation_id}"
                         try:
