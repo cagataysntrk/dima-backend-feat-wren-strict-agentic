@@ -25,6 +25,7 @@ from app.v2.report_builder import (
     ReportBuildStatus,
     ReportBuilder,
     ReportClaimKind,
+    ReportIssueCode,
     ReportSourceProvenance,
 )
 from app.v2.research_report_projector import (
@@ -473,6 +474,43 @@ def test_signed_continuation_report_accepts_immutable_prior_contract_finding_in_
     assert result.status == ReportBuildStatus.COMPLETE
     assert result.report is not None
 
+    for bad_provenance in (
+        HypothesisProvenance(
+            accepted_contract_id="atc-prior-version",
+            lineage_id="atl-foreign",
+            run_id=RUN,
+        ),
+        HypothesisProvenance(
+            accepted_contract_id="atc-prior-version",
+            lineage_id=LINEAGE,
+            run_id="mgr-foreign",
+        ),
+    ):
+        bad_finding = finding.model_copy(
+            update={"provenance": bad_provenance}
+        )
+        rejected = ReportBuilder(
+            evidence_store=store,
+            current_evidence_refs=("E_PRIOR_FINDING",),
+            findings=(bad_finding,),
+            semantic_handles=registry,
+            known_artifacts={
+                item.artifact_id: item.artifact_kind
+                for item in projection.artifacts
+            },
+            provenance=ReportSourceProvenance(
+                accepted_contract_id="atc-current-version",
+                lineage_id=LINEAGE,
+                run_id=RUN,
+                tenant_binding=TENANT,
+                context_version=CTX,
+            ),
+        ).build(projection.request)
+        assert rejected.status == ReportBuildStatus.REJECTED
+        assert any(
+            issue.code == ReportIssueCode.FINDING_PROVENANCE_MISMATCH
+            for issue in rejected.issues
+        )
 
 
 def test_projector_api_has_no_observation_or_freeform_manager_truth_input():
