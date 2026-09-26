@@ -47,23 +47,37 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AUTH="backend/lab/metabase/core_b/authorizations/small-sentinel-003.json"
+          AUTH="backend/lab/metabase/core_b/authorizations/small-sentinel-005.json"
           test -f "$AUTH"
           python - "$AUTH" "$(git rev-parse HEAD^)" <<'PY'
-          import json,sys
+          import json,subprocess,sys
           from pathlib import Path
           p=Path(sys.argv[1]); parent=sys.argv[2]
           value=json.loads(p.read_text(encoding="utf-8"))
           assert value["mode"]=="small_sentinel"
+          assert value["decision"]=="CORE_B_OWNER_SCOPED_MUST_FINAL_LIVE_SENTINEL"
           assert value["candidate_product_sha"]==parent
-          assert value["provider_free_run_id"]==36245781069
-          assert value["governance_run_id"]==36245781152
+          assert value["provider_free_run_id"]==36250936119
+          assert value["governance_run_id"]==36250936065
           assert value["max_observable_model_boundary_units"]==30
+          assert value["case_count"]==6
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
           assert value["model_topology"]=={
             "research_intake":"openai/gpt-5.6-luna",
+            "p17_manager":"openai/gpt-5.6-luna",
+            "p19_manager":"openai/gpt-5.6-luna",
             "metabot":"openrouter/openai/gpt-5.6-luna",
           }
+          assert value["source_manifest_blob_sha"]=="cf9aea5004d2bbb979015917570f32417c67017a"
+          assert value["neutral_fixture_blob_sha"]=="dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
+          assert value["engine_lock_blob_sha"]=="764ed2779fab6c970d062d520d5c9709b91d4ba3"
+          assert value["live_runner_blob_sha"]=="9ebf66876b1023c3dd7be54f6035281debd7b4e4"
+          def blob(path):
+              return subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
+          assert blob("backend/eval/core_b/askv2_matched_20_cases.json")==value["source_manifest_blob_sha"]
+          assert blob("backend/lab/metabase/core_b/fixtures/machine_operations.json")==value["neutral_fixture_blob_sha"]
+          assert blob("backend/lab/metabase/core_b/runtime/engine_runtime_lock.json")==value["engine_lock_blob_sha"]
+          assert blob("backend/lab/metabase/core_b/live_sentinel.py")==value["live_runner_blob_sha"]
           PY
           test -n "$DIMA_OPENROUTER_API_KEY"
 
