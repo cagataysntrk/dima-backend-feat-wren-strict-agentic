@@ -140,6 +140,17 @@ def closure(roots: set[str], graph: dict[str, set[str]]) -> set[str]:
     return reached
 
 
+def with_package_parents(modules: set[str], known: set[str]) -> set[str]:
+    out=set(modules)
+    for module in tuple(modules):
+        parts=module.split(".")
+        for cut in range(1,len(parts)):
+            parent=".".join(parts[:cut])
+            if parent in known:
+                out.add(parent)
+    return out
+
+
 def retained_test_roots(known: set[str]) -> set[str]:
     paths = sorted((BACKEND / "tests").glob("test_v3_*.py"))
     paths.extend(BACKEND / item for item in EXTRA_TEST_FILES)
@@ -191,10 +202,12 @@ def main() -> None:
             f"missing roots: canonical={missing_canonical} final_cert={missing_final}"
         )
 
-    canonical = closure(set(CANONICAL_ROOTS), graph)
-    final_cert = closure(set(FINAL_CERT_ROOTS), graph) - canonical
+    canonical = with_package_parents(closure(set(CANONICAL_ROOTS), graph), known)
+    final_cert_all = with_package_parents(closure(set(FINAL_CERT_ROOTS), graph), known)
+    final_cert = final_cert_all - canonical
     test_roots = retained_test_roots(known)
-    test_only = closure(test_roots, graph) - canonical - final_cert
+    test_all = with_package_parents(closure(test_roots, graph), known)
+    test_only = test_all - canonical - final_cert
     classified = canonical | final_cert | test_only
     legacy = sorted(known - classified)
 
