@@ -1,0 +1,56 @@
+name: v2-precomparison-targeted-live
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/V2_PRECOMPARISON_TARGETED_TRIGGER"
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 50
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_FAST_LANGUAGE_PROVIDER: openrouter
+      DIMA_V2_FAST_LANGUAGE_MODEL: "google/gemini-2.5-flash-lite"
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Targeted live robustness rerun
+        working-directory: backend
+        run: |
+          python lab/v2_precomparison_rehearsal_live.py \
+            --max-total-model-calls 70 \
+            --output lab/reports/v2_precomparison_targeted_live.json \
+            --case-id std_clause_order \
+            --case-id relationship_explicit_tr \
+            --case-id adaptive_tr \
+            --case-id canonical_reordered \
+            --case-id restart_signed_continuation \
+            --case-id foreign_principal_replay
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-precomparison-targeted-${{ github.run_id }}
+          path: backend/lab/reports/v2_precomparison_targeted_live.json
+          retention-days: 90
