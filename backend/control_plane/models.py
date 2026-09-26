@@ -1712,3 +1712,87 @@ class InstitutionalMemoryEntryRecord(SQLModel, table=True):
     memory_fingerprint: str = Field(index=True)
     created_at: datetime = Field(index=True)
     indexed_by_user_id: str = Field(index=True)
+
+
+
+class WatchRecord(SQLModel, table=True):
+    """Immutable governed Watch definition; no analytical calculation lives here."""
+
+    __tablename__ = "watch"
+    __table_args__ = (
+        UniqueConstraint("watch_fingerprint", name="uq_watch_fingerprint"),
+    )
+
+    watch_id: str = Field(primary_key=True)
+    tenant_binding: str = Field(index=True)
+    kind: str = Field(index=True)
+    title: str = Field(sa_column=Column(Text, nullable=False))
+    source_contract_ref: str = Field(sa_column=Column(Text, nullable=False))
+    criterion_ref: str = Field(sa_column=Column(Text, nullable=False))
+    entity_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    metric_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    context_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    watch_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(index=True)
+    created_by_user_id: str = Field(index=True)
+
+
+class SignalRecord(SQLModel, table=True):
+    """Immutable revision snapshot for one governed observed Signal occurrence."""
+
+    __tablename__ = "signal"
+    __table_args__ = (
+        UniqueConstraint(
+            "root_signal_id",
+            "revision",
+            name="uq_signal_root_revision",
+        ),
+        UniqueConstraint(
+            "signal_fingerprint",
+            name="uq_signal_fingerprint",
+        ),
+    )
+
+    signal_id: str = Field(primary_key=True)
+    root_signal_id: str = Field(index=True)
+    revision: int = Field(ge=1, index=True)
+    parent_signal_id: str | None = Field(
+        default=None,
+        foreign_key="signal.signal_id",
+        index=True,
+    )
+    tenant_binding: str = Field(index=True)
+    watch_id: str = Field(foreign_key="watch.watch_id", index=True)
+
+    source_occurrence_id: str = Field(index=True)
+    occurrence_fingerprint: str = Field(index=True)
+    source_kind: str = Field(index=True)
+    source_ref: str = Field(sa_column=Column(Text, nullable=False))
+    evidence_ref_json: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    entity_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    metric_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    observed_at: datetime = Field(index=True)
+
+    severity: str = Field(index=True)
+    business_significance: str = Field(sa_column=Column(Text, nullable=False))
+    memory_entry_id: str | None = Field(
+        default=None,
+        foreign_key="institutional_memory_entry.memory_id",
+        index=True,
+    )
+    action_work_id: str | None = Field(
+        default=None,
+        foreign_key="action_work.action_work_id",
+        index=True,
+    )
+
+    status: str = Field(index=True)
+    research_session_id: str | None = Field(
+        default=None,
+        foreign_key="research_session.session_id",
+        index=True,
+    )
+    resolution_ref: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    transition_history_json: str = Field(sa_column=Column(Text, nullable=False))
+    signal_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(index=True)
