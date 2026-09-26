@@ -43,6 +43,10 @@ def test_rehearsal_covers_required_product_categories():
         "security_isolation",
     }
     assert required <= categories
+    kinds = {item["kind"] for item in _manifest()["cases"]}
+    assert "signed_continuation" in kinds
+    assert "restart_continuation" in kinds
+    assert "foreign_principal_replay" in kinds
 
 
 def test_rehearsal_import_performs_no_provider_or_wren_execution():
