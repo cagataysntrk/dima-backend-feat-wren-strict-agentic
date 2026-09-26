@@ -6110,3 +6110,70 @@ CURRENT P20 + CURRENT P21 + CURRENT ACCEPTED DecisionAdoption
 Exactly one new durable Action authority family is authorized. ActionPlan remains transient. External
 execution, ActionAttempt/ExecutionReceipt, action:execute, connectors, models, analytics, UI and
 engine/Metabase-core changes remain forbidden.
+
+
+### DMP-DEC-0059 FINAL CLOSURE — ACTIONPLAN / ACTIONAUTHORIZATION AUTHORITY SEALED
+
+date: 2026-09-26
+
+```text
+ACTIONPLAN / ACTIONAUTHORIZATION AUTHORITY = SEALED
+
+behavior SHA                          = afd284f6bfa55337e174ea9c8150c6ef95b2275e
+certified integration HEAD            = 43bc6947b0e884a9d35b3531c1e12217cbf3de4e
+provider-free                         = 36223251524 SUCCESS
+governance                            = 36223251505 SUCCESS
+
+ActionAuthorization focused           = 38 PASS
+Human Adoption regression             = 29 PASS
+P21 regression                        = 25 PASS
+P20 regression                        = 19 PASS
+P19 regression                        = 42 PASS
+P18 regression                        = 24 PASS
+P17 regression                        = 95 PASS
+P16 regression                        = 6 PASS
+P15 regression                        = 5 PASS
+P14 regression                        = 17 PASS
+
+Alembic head                          = fa07d50b2163
+ActionAuthorization durable families  = 1
+ActionPlan durable tables             = 0
+execution receipt tables              = 0
+action:authorize                       = admin+
+supported risk class                  = REVERSIBLE_LOW_RISK only
+source adoption                       = CURRENT + ACCEPTED required
+MODIFIED source adoption              = FAIL CLOSED
+default production capability registry= EMPTY
+unknown action kind                   = FAIL CLOSED
+typed parameter validation            = GREEN
+client policy/risk override           = REJECTED
+source option exact-id lineage        = GREEN
+canonical plan identity               = GREEN
+exact plan snapshot persistence       = GREEN
+authorization expiry                  = GREEN
+authorization idempotency             = GREEN
+immutable supersession                = GREEN
+capability-version staleness          = GREEN
+tenant isolation / non-oracle         = GREEN
+
+legacy DecisionRecord mutation        = 0
+DecisionAdoption mutation             = 0
+P21 mutation                          = 0
+P14-P20 mutation                      = 0
+analytics                             = 0
+Action execution                      = 0
+external side effects                 = 0
+
+engine SHA/gitlink                    = cbe313af9ac2d5960f662068e433d328d896fb06
+engine modifications/builds           = 0 / 0
+Metabase core modifications           = 0
+Luna / Sol / C1                       = 0 / 0 / 0
+UI / router                           = 0 / 0
+```
+
+The first failed candidate was not a product/authority failure: 37 focused tests passed and one
+static test used the raw token `ERP`, which matched the substring inside `FINGERPRINT`. The
+generic root fix made the guard token-safe without changing product behavior.
+
+DMP-DEC-0059 is sealed. This closure does not authorize `action:execute`, connector calls,
+ActionAttempt/ExecutionReceipt, external side effects or UI.
