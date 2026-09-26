@@ -84,6 +84,14 @@ class InspectableEvidenceState:
 
 
 @dataclass(frozen=True)
+class GoalTaskActionState:
+    parent_obligation_id: str
+    goal_capability_key: str
+    source_surfaces: tuple[str, ...]
+    allowed_task_capabilities: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class TaskActionState:
     task_id: str
     question_id: str
@@ -104,6 +112,7 @@ class ManagerActionSetContext:
     root_states: tuple[RootActionState, ...] = ()
     directive_states: tuple[DirectiveActionState, ...] = ()
     parent_evidence_states: tuple[ParentEvidenceActionState, ...] = ()
+    goal_tasks: tuple[GoalTaskActionState, ...] = ()
     ready_tasks: tuple[TaskActionState, ...] = ()
     inspectable_evidence: tuple[InspectableEvidenceState, ...] = ()
     fresh_disclosed_evidence_ref: str | None = None
@@ -238,6 +247,24 @@ _LIMITATIONS = {
 _TARGET_KIND = {
     "type": "string",
     "enum": ["metric", "dimension", "filter", "time", "comparison", "unknown"],
+}
+_GOAL_TASK_SEMANTIC_SURFACES = {
+    "type": "array",
+    "minItems": 1,
+    "maxItems": 5,
+    "items": {
+        "type": "object",
+        "properties": {
+            "surface": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240,
+            },
+            "kind_hint": copy.deepcopy(_TARGET_KIND),
+        },
+        "required": ["surface", "kind_hint"],
+        "additionalProperties": False,
+    },
 }
 _RELATION = {
     "type": "string",
@@ -724,6 +751,42 @@ class ManagerActionSetBuilder:
                         },
                     )
                 )
+
+        # Late-bound goal-task materialization. These cards contain no canonical
+        # semantic IDs. The model may propose only a bounded analytical capability and
+        # exact user-source substrings; server-side hydration must still pass the existing
+        # semantic registry + CapabilityBindingValidator before any ResearchTask exists.
+        for goal in context.goal_tasks:
+            if not goal.allowed_task_capabilities or not goal.source_surfaces:
+                continue
+            instances.append(
+                _instance(
+                    state_version=state_version,
+                    action_kind="propose_goal_task",
+                    bindings={
+                        "parent_obligation_id": goal.parent_obligation_id,
+                        "allowed_task_capabilities": goal.allowed_task_capabilities,
+                        "goal_source_surfaces": goal.source_surfaces,
+                    },
+                    cognitive_schema={
+                        "task_capability": {
+                            "type": "string",
+                            "enum": list(goal.allowed_task_capabilities),
+                        },
+                        "semantic_surfaces": copy.deepcopy(
+                            _GOAL_TASK_SEMANTIC_SURFACES
+                        ),
+                        "material_reason": copy.deepcopy(_STRING_REASON),
+                        "ranking_direction": copy.deepcopy(_RANKING_DIRECTION),
+                        "ranking_limit": copy.deepcopy(_RANKING_LIMIT),
+                    },
+                    reason_codes=("RESEARCH_GOAL_REQUIRES_EXECUTABLE_TASK",),
+                    cognitive_context={
+                        "goal_capability": goal.goal_capability_key,
+                        "goal_source_surfaces": list(goal.source_surfaces),
+                    },
+                )
+            )
 
         # Existing pending ResearchTasks become exact executable actions. Model never
         # reconstructs task/parent/Evidence/handle joins.
