@@ -12,11 +12,26 @@ from app.v2.manager_policy import (
     ManagerCapabilityExecutionMode,
     ManagerCapabilityRegistry,
 )
+from app.v2.models import FrozenModel
 from app.v2.manager_models import (
     ObligationStatus,
     ResearchRunTerminal,
     UserObligationLedger,
 )
+
+
+class CompletionGapReceipt(FrozenModel):
+    """Deterministic non-completion diagnostics; never a second completion authority."""
+
+    unfulfilled_user_must_ids: tuple[str, ...] = ()
+    unresolved_directives: tuple[str, ...] = ()
+    open_hypothesis_ids: tuple[str, ...] = ()
+    required_next_test_or_accounting_gaps: tuple[str, ...] = ()
+    failed_or_blocked_task_ids: tuple[str, ...] = ()
+    remaining_research_turns: int
+    remaining_query_budget: int
+    completion_gate_reasons: tuple[str, ...] = ()
+    missing_completion_predicates: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
