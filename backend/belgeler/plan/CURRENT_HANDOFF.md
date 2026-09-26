@@ -1,3 +1,48 @@
+## LATEST AUTHORITY — DAY11 EVAL EXPANSION GREEN / DAY12 NEXT
+
+```text
+branch                           feat/ask-v2-mvp
+Day10 Product behavior           e1b3823b82cd28bbe9b4725abf81a4aa49d578ba
+Day10 final paid                 36229302570 = GREEN / SEALED
+
+Day11 eval candidate             ce9cd0c02b23b6aaa9aa07ac38f42d102adbd5bd
+Day11 final workflow             36229918083 = GREEN
+Day11 closure doc                DIMA_DAY11_EVAL_EXPANSION.md
+backend/app diff after Day10     ZERO
+
+canonical taxonomy coverage      18 / 18
+known regression family coverage 18 / 18
+metamorphic invariants           7 / 7 GREEN
+holdout separation               PASS
+DEV80 consumed                   0
+Validation50 consumed            0
+Hidden50 consumed                0
+
+Day10 FINAL                      SEALED
+Day11 FINAL                      CLOSED / PROVIDER-FREE GREEN
+Day12                            AUTHORIZED NEXT
+DEV80                            NOT AUTHORIZED YET
+```
+
+Day11 permanent evaluation boundary:
+
+```text
+VISIBLE DEV / REAL-WORLD SOURCES
+→ coverage + metamorphic proof
+
+Validation50
+→ only after authorized DEV freeze
+
+Hidden50
+→ external sealed
+→ no prompt bodies in repository
+
+gercek_dunya / deneyim
+→ historical scenario sources only
+!= Product authority
+!= certification authority
+```
+
 ## LATEST AUTHORITY — DAY10 FULL TWO-TURN PAID GREEN / FINAL SEALED
 
 ```text
