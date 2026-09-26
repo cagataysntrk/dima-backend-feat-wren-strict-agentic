@@ -75,6 +75,25 @@ class CompositionLimitation(Frozen):
     owner: str = Field(min_length=1)
 
 
+class ProductRequirementKind(StrEnum):
+    ANALYTICAL = "ANALYTICAL"
+    DELIVERABLE = "DELIVERABLE"
+
+
+class ProductRequirementState(StrEnum):
+    VERIFIED = "VERIFIED"
+    LIMITED = "LIMITED"
+    FULFILLED = "FULFILLED"
+    PENDING = "PENDING"
+
+
+class ProductRequirementFulfillment(Frozen):
+    requirement_id: str = Field(min_length=1)
+    requirement_kind: ProductRequirementKind
+    state: ProductRequirementState
+    fulfilled_by_ref: str | None = None
+
+
 class ProductCompositionResult(Frozen):
     research_session_id: str = Field(pattern=r"^rs_[a-f0-9]{24}$")
     child_research_session_ids: tuple[str, ...] = ()
@@ -87,6 +106,10 @@ class ProductCompositionResult(Frozen):
     limitations: tuple[CompositionLimitation, ...] = ()
     owner_calls: tuple[str, ...] = ()
     p17_required_goal_ids: tuple[str, ...] = ()
+    user_must_fulfillment: tuple[ProductRequirementFulfillment, ...] = ()
+    user_must_total: int = 0
+    user_must_accounted: int = 0
+    user_must_fulfilled: int = 0
     terminal_state: ProductCompositionTerminal
     currentness: ProductCompositionCurrentness = ProductCompositionCurrentness.CURRENT
 
@@ -504,28 +527,33 @@ class HeadlessProductComposer:
         session_id: str,
         brief: ResearchBrief,
         principal: Principal,
-        limitation_codes: dict[str, str],
+        composition_limitations: tuple[CompositionLimitation, ...],
         owner_calls: list[str],
     ):
-        limitations: list[ReportLimitation] = []
-        coverage: list[CoverageEntry] = []
-        for obligation_id in brief.must_requirement_ids:
-            code = limitation_codes.get(
-                obligation_id,
-                "PRODUCT_COMPOSITION_NO_PUBLISHABLE_FACT_ASSERTED",
-            )
-            detail = (
-                "Product composition preserves the governed upstream ceiling; "
-                "no additional factual or causal statement is asserted for this obligation."
-            )
+        analytical_ids = {item.goal_id for item in brief.questions}
+        grouped: dict[str, list[CompositionLimitation]] = {}
+        for item in composition_limitations:
+            if item.obligation_id in analytical_ids:
+                grouped.setdefault(item.obligation_id, []).append(item)
+
+        explicit: list[ReportLimitation] = []
+        for obligation_id in tuple(item.goal_id for item in brief.questions):
+            items = grouped.get(obligation_id, [])
+            if not items:
+                continue
+            codes = tuple(dict.fromkeys(item.code for item in items))
+            details = tuple(dict.fromkeys(item.detail for item in items))
+            code = "|".join(codes)
+            detail = " ".join(details)
             limitation_id = stable_limitation_id(
                 {
                     "session_id": session_id,
                     "obligation_id": obligation_id,
-                    "code": code,
+                    "codes": codes,
+                    "details": details,
                 }
             )
-            limitations.append(
+            explicit.append(
                 ReportLimitation(
                     limitation_id=limitation_id,
                     obligation_id=obligation_id,
@@ -534,25 +562,84 @@ class HeadlessProductComposer:
                     source_refs=(),
                 )
             )
-            coverage.append(
-                CoverageEntry(
-                    obligation_id=obligation_id,
-                    coverage_status=CoverageStatus.LIMITED,
-                    limitation_ids=(limitation_id,),
-                )
-            )
+
+        draft = self._reports.draft_from_governed_research(
+            research_session_id=session_id,
+            report_key="product-composition",
+            principal=principal,
+            explicit_limitations=tuple(explicit),
+        )
         report = self._reports.seal(
-            draft=ReportDraft(
-                research_session_id=session_id,
-                report_key="product-composition",
-                coverage=tuple(coverage),
-                statements=(),
-                limitations=tuple(limitations),
-            ),
+            draft=draft,
             principal=principal,
         )
         owner_calls.append("P20")
         return report
+
+    @staticmethod
+    def _project_user_must(
+        *,
+        brief: ResearchBrief,
+        session,
+        report,
+    ) -> tuple[tuple[ProductRequirementFulfillment, ...], int, int, int]:
+        obligation_map = {item.obligation_id: item for item in session.obligations}
+        projected: list[ProductRequirementFulfillment] = []
+
+        for question in brief.questions:
+            obligation = obligation_map.get(question.goal_id)
+            raw_state = (
+                _state_value(obligation.state)
+                if obligation is not None
+                else ProductRequirementState.PENDING.value
+            )
+            if raw_state == ObligationState.VERIFIED.value:
+                state = ProductRequirementState.VERIFIED
+            elif raw_state == ObligationState.LIMITED.value:
+                state = ProductRequirementState.LIMITED
+            else:
+                state = ProductRequirementState.PENDING
+            projected.append(
+                ProductRequirementFulfillment(
+                    requirement_id=question.goal_id,
+                    requirement_kind=ProductRequirementKind.ANALYTICAL,
+                    state=state,
+                )
+            )
+
+        for deliverable in brief.deliverables:
+            if deliverable.kind == PresentationKind.REPORT and report is not None:
+                state = ProductRequirementState.FULFILLED
+                fulfilled_by_ref = report.report_id
+            else:
+                state = ProductRequirementState.PENDING
+                fulfilled_by_ref = None
+            projected.append(
+                ProductRequirementFulfillment(
+                    requirement_id=deliverable.requirement_id,
+                    requirement_kind=ProductRequirementKind.DELIVERABLE,
+                    state=state,
+                    fulfilled_by_ref=fulfilled_by_ref,
+                )
+            )
+
+        ids = tuple(item.requirement_id for item in projected)
+        if ids != tuple(brief.must_requirement_ids):
+            raise ValueError(
+                "Product USER_MUST projection must preserve exact accepted requirement identity"
+            )
+        accounted = sum(
+            item.state != ProductRequirementState.PENDING
+            for item in projected
+        )
+        fulfilled = sum(
+            item.state in {
+                ProductRequirementState.VERIFIED,
+                ProductRequirementState.FULFILLED,
+            }
+            for item in projected
+        )
+        return tuple(projected), len(projected), accounted, fulfilled
 
     def compose(
         self,
@@ -753,7 +840,7 @@ class HeadlessProductComposer:
                 session_id=session.session_id,
                 brief=brief,
                 principal=principal,
-                limitation_codes=limitation_codes,
+                composition_limitations=tuple(limitations),
                 owner_calls=owner_calls,
             )
 
@@ -799,6 +886,14 @@ class HeadlessProductComposer:
         else:
             terminal = ProductCompositionTerminal.LIMITED
 
+        user_must, user_must_total, user_must_accounted, user_must_fulfilled = (
+            self._project_user_must(
+                brief=brief,
+                session=current,
+                report=report,
+            )
+        )
+
         return ProductCompositionResult(
             research_session_id=session.session_id,
             child_research_session_ids=tuple(child_sessions),
@@ -810,5 +905,9 @@ class HeadlessProductComposer:
             limitations=tuple(limitations),
             owner_calls=tuple(owner_calls),
             p17_required_goal_ids=tuple(p17_required),
+            user_must_fulfillment=user_must,
+            user_must_total=user_must_total,
+            user_must_accounted=user_must_accounted,
+            user_must_fulfilled=user_must_fulfilled,
             terminal_state=terminal,
         )

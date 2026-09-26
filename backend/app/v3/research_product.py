@@ -316,10 +316,10 @@ class ResearchAskOrchestrator:
         )
         tenant = self.tenant_binding_for(principal)
         subject = self._principal_subject(principal)
+        # P14 executes analytical Research questions only. Presentation deliverables
+        # remain in the immutable accepted ResearchBrief and total USER_MUST authority
+        # for product-level fulfillment after the relevant owner (for example P20) seals.
         objectives = {item.goal_id: item.source_text for item in brief.questions}
-        objectives.update(
-            {item.requirement_id: item.source_text for item in brief.deliverables}
-        )
         session = ResearchManager.start(
             authority=authority,
             objective=brief.objective,

@@ -114,3 +114,15 @@ jobs:
             test ! -d ui
             test ! -d web
           fi
+
+
+      - name: Guard owner-scoped USER_MUST accounting amendment
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R -n 'PRODUCT_COMPOSITION_NO_PUBLISHABLE_FACT_ASSERTED' backend/app/v3/product
+          ! grep -n 'for obligation_id in brief.must_requirement_ids' backend/app/v3/product/composition.py
+          grep -q 'analytical_ids = tuple(item.goal_id for item in brief.questions)' backend/app/v3/research.py
+          grep -q '_analytical_requirement_ids(session.accepted_brief)' backend/app/v3/report_document.py
+          grep -q 'ProductRequirementState.FULFILLED' backend/app/v3/product/composition.py
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"

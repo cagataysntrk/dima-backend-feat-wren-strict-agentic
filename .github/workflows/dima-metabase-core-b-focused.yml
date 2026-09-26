@@ -6,7 +6,11 @@ on:
       - feat/dima-metabase-platform
     paths:
       - "backend/app/v3/product/**"
+      - "backend/app/v3/research.py"
+      - "backend/app/v3/research_product.py"
+      - "backend/app/v3/report_document.py"
       - "backend/tests/test_v3_product_*.py"
+      - "backend/tests/test_v3_owner_scoped_must_accounting.py"
       - "backend/eval/core_b/**"
       - "backend/product_contracts/**"
       - "backend/belgeler/metabase/DIMA_METABASE_CORE_B_CLOSURE_RECEIPT.md"
@@ -47,10 +51,11 @@ jobs:
           python -m py_compile app/v3/product/*.py
           python -m py_compile tests/test_v3_product_contracts.py
           python -m py_compile tests/test_v3_product_composition.py
+          python -m py_compile tests/test_v3_owner_scoped_must_accounting.py
 
       - name: Core B product focused proof
         working-directory: backend
-        run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py
+        run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py tests/test_v3_owner_scoped_must_accounting.py
 
       - name: Guard projection-only architecture
         working-directory: backend
@@ -89,12 +94,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "5e42d2a095b00fb21229971bde4c424cdb22e33c"
+          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "4c319737e7f8d77b7b1b0bdb02c9d47fdb8b4aa8"
           test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
           test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
           test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
-          test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "5c7f199c16763a95d255b1b7f083bc61310b453e"
+          test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "9eaa1478b3c3924a8b6c4e4dfe547bda1bcb343d"
           test "$(git rev-parse HEAD:backend/app/v3/decision_intelligence.py)" = "1a40508048d668829344ca30aa7aadf881cebb82"
           test "$(git rev-parse HEAD:backend/app/v3/claim_lineage.py)" = "76589172d19d4d9ffa1db9f94f4ee9ee9f277e5a"
-          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "44286dee6b6bf5eb2cb8f88866f46007f266b6ab"
+          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "d2fa436269bec498cfc6c6a25b41cb2a6909340c"
           test "$(git rev-parse HEAD:backend/app/v3/research_store.py)" = "dc08a38920ea0e330de124ad93a5b467e48968cd"

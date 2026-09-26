@@ -170,6 +170,28 @@ def _subject(principal: Principal) -> str:
         raise P20ReportError('P20_PRINCIPAL_REQUIRED', 'P20 requires explicit principal')
     return value
 
+def _analytical_requirement_ids(brief) -> tuple[str, ...]:
+    return tuple(item.goal_id for item in brief.questions)
+
+def _numeric_row_values(payload: Any) -> tuple[tuple[str, int | float], ...]:
+    if not isinstance(payload, dict):
+        return ()
+    data = payload.get('data')
+    if not isinstance(data, dict):
+        return ()
+    rows = data.get('rows')
+    if not isinstance(rows, list):
+        return ()
+    found: list[tuple[str, int | float]] = []
+    for row_index, row in enumerate(rows):
+        if not isinstance(row, list):
+            continue
+        for column_index, value in enumerate(row):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            found.append((f'data.rows.{row_index}.{column_index}', value))
+    return tuple(found)
+
 def _path_value(value: Any, path: str, *, code: str) -> Any:
     current = value
     for token in path.split('.'):
@@ -223,14 +245,16 @@ class ReportClaimGate:
             raise P20ReportError('P20_RESEARCH_SESSION_SCOPE_INVALID', exc.code) from exc
         if session.accepted_brief is None:
             raise P20ReportError('P20_ACCEPTED_BRIEF_REQUIRED', 'P20 never reparses the original user prompt')
+        mandatory = _analytical_requirement_ids(session.accepted_brief)
+        obligation_map = {item.obligation_id: item for item in session.obligations}
+        if not mandatory or tuple(obligation_map) != mandatory:
+            raise P20ReportError('P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH', 'P14 execution obligations must exactly equal accepted analytical Research question ids')
+        if not set(mandatory).issubset(set(session.accepted_brief.must_requirement_ids)):
+            raise P20ReportError('P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH', 'analytical Research requirements left accepted USER_MUST authority')
+        if any((obligation_map[oid].state not in {ObligationState.VERIFIED, ObligationState.LIMITED} for oid in mandatory)):
+            raise P20ReportError('P20_RESEARCH_SESSION_NOT_SEALED', 'analytical Research obligation remains non-terminal')
         if session.stopping.status not in {StoppingStatus.COMPLETE, StoppingStatus.PARTIAL}:
             raise P20ReportError('P20_RESEARCH_SESSION_NOT_SEALED', session.stopping.status.value)
-        mandatory = tuple(session.accepted_brief.must_requirement_ids)
-        obligation_map = {item.obligation_id: item for item in session.obligations}
-        if set(mandatory) != set(obligation_map) or not mandatory:
-            raise P20ReportError('P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH', 'accepted USER_MUST set differs from sealed Research obligations')
-        if any((obligation_map[oid].state not in {ObligationState.VERIFIED, ObligationState.LIMITED} for oid in mandatory)):
-            raise P20ReportError('P20_RESEARCH_SESSION_NOT_SEALED', 'mandatory obligation remains non-terminal')
         return (session, mandatory)
 
     @staticmethod
@@ -432,7 +456,7 @@ class ReportClaimGate:
         raise P20ReportError('P20_P19_STATEMENT_KIND_INVALID', statement.statement_kind.value)
 
     def _validate_statement(self, *, session, statement: ReportStatement, limitations: dict[str, ReportLimitation], principal: Principal) -> ReportStatement:
-        mandatory = set(session.accepted_brief.must_requirement_ids)
+        mandatory = set(_analytical_requirement_ids(session.accepted_brief))
         if not set(statement.obligation_refs).issubset(mandatory):
             raise P20ReportError('P20_STATEMENT_OBLIGATION_INVALID', statement.statement_id)
         if any((ref.obligation_id not in statement.obligation_refs for ref in statement.source_refs)):
@@ -471,7 +495,7 @@ class ReportClaimGate:
         session, mandatory = self._session(draft.research_session_id, principal)
         coverage_map = {item.obligation_id: item for item in draft.coverage}
         if len(coverage_map) != len(draft.coverage) or set(coverage_map) != set(mandatory):
-            raise P20ReportError('P20_USER_MUST_COVERAGE_INCOMPLETE', 'every accepted USER_MUST must have exactly one coverage entry')
+            raise P20ReportError('P20_USER_MUST_COVERAGE_INCOMPLETE', 'every accepted analytical Research requirement must have exactly one report-content coverage entry')
         limitation_map = {item.limitation_id: item for item in draft.limitations}
         if len(limitation_map) != len(draft.limitations):
             raise P20ReportError('P20_LIMITATION_ID_DUPLICATE', draft.report_key)
@@ -529,6 +553,183 @@ class ReportDocumentStore:
         self._research = research_store
         self._engine = db_engine or control_plane_engine
         self._gate = ReportClaimGate(research_store=research_store, db_engine=self._engine)
+
+    def draft_from_governed_research(
+        self,
+        *,
+        research_session_id: str,
+        report_key: str,
+        principal: Principal,
+        explicit_limitations: tuple[ReportLimitation, ...] = (),
+    ) -> ReportDraft:
+        """Project report content from terminal analytical authority only.
+
+        Presentation deliverables are fulfilled by the sealed report at Product Composition;
+        they are never P20 content-coverage obligations.
+        """
+        session, mandatory = self._gate._session(research_session_id, principal)
+        explicit_by_obligation: dict[str, ReportLimitation] = {}
+        for limitation in explicit_limitations:
+            if limitation.obligation_id not in set(mandatory):
+                raise P20ReportError('P20_LIMITATION_OBLIGATION_INVALID', limitation.limitation_id)
+            if limitation.obligation_id in explicit_by_obligation:
+                raise P20ReportError('P20_LIMITATION_OBLIGATION_DUPLICATE', limitation.obligation_id)
+            explicit_by_obligation[limitation.obligation_id] = limitation
+
+        obligation_map = {item.obligation_id: item for item in session.obligations}
+        research_limitations = {
+            item.limitation_id: item
+            for item in session.limitations
+        }
+        coverage: list[CoverageEntry] = []
+        statements: list[ReportStatement] = []
+        limitations: list[ReportLimitation] = []
+
+        for obligation_id in mandatory:
+            explicit = explicit_by_obligation.get(obligation_id)
+            if explicit is not None:
+                limitations.append(explicit)
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.LIMITED,
+                        limitation_ids=(explicit.limitation_id,),
+                    )
+                )
+                continue
+
+            obligation = obligation_map[obligation_id]
+            if obligation.state == ObligationState.LIMITED:
+                owned = tuple(
+                    research_limitations[lid]
+                    for lid in obligation.limitation_refs
+                    if lid in research_limitations
+                )
+                if not owned:
+                    raise P20ReportError(
+                        'P20_LIMITED_OBLIGATION_DETAIL_REQUIRED',
+                        obligation_id,
+                    )
+                ids: list[str] = []
+                for item in owned:
+                    limitation_id = stable_limitation_id(
+                        {
+                            'session_id': session.session_id,
+                            'obligation_id': obligation_id,
+                            'research_limitation_id': item.limitation_id,
+                            'code': item.code,
+                            'detail': item.detail,
+                        }
+                    )
+                    limitation = ReportLimitation(
+                        limitation_id=limitation_id,
+                        obligation_id=obligation_id,
+                        code=item.code,
+                        detail=item.detail,
+                    )
+                    limitations.append(limitation)
+                    ids.append(limitation_id)
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.LIMITED,
+                        limitation_ids=tuple(ids),
+                    )
+                )
+                continue
+
+            approved_ids: list[str] = []
+            for evidence in (
+                item for item in session.evidence_refs
+                if item.obligation_id == obligation_id
+            ):
+                with Session(self._engine) as db:
+                    rows = tuple(
+                        db.exec(
+                            select(ResearchExecutionLink)
+                            .where(ResearchExecutionLink.session_id == session.session_id)
+                            .where(ResearchExecutionLink.obligation_id == obligation_id)
+                            .where(ResearchExecutionLink.evidence_id == evidence.evidence_id)
+                            .where(ResearchExecutionLink.receipt_id == evidence.receipt_id)
+                            .where(ResearchExecutionLink.status == 'VERIFIED')
+                        ).all()
+                    )
+                if len(rows) != 1:
+                    continue
+                payload = _json_object(
+                    rows[0].native_result_json,
+                    code='P20_NUMERIC_SOURCE_PAYLOAD_INVALID',
+                )
+                for source_path, value in _numeric_row_values(payload):
+                    source = SourceReference(
+                        source_kind=ReportSourceKind.P14_EVIDENCE,
+                        source_ref=evidence.evidence_id,
+                        source_receipt_id=evidence.receipt_id,
+                        obligation_id=obligation_id,
+                        source_path=source_path,
+                    )
+                    statement_id = stable_statement_id(
+                        {
+                            'kind': ReportStatementKind.NUMERIC.value,
+                            'source': source.model_dump(mode='json'),
+                            'value': value,
+                        }
+                    )
+                    statements.append(
+                        ReportStatement(
+                            statement_id=statement_id,
+                            statement_kind=ReportStatementKind.NUMERIC,
+                            source_refs=(source,),
+                            obligation_refs=(obligation_id,),
+                            upstream_epistemic_ceiling='EXACT_GOVERNED_NUMERIC',
+                            payload={'value': value},
+                        )
+                    )
+                    approved_ids.append(statement_id)
+
+            if approved_ids:
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.REPRESENTED,
+                        statement_ids=tuple(dict.fromkeys(approved_ids)),
+                    )
+                )
+                continue
+
+            limitation_id = stable_limitation_id(
+                {
+                    'session_id': session.session_id,
+                    'obligation_id': obligation_id,
+                    'code': 'P20_NO_GOVERNED_PUBLISHABLE_FACT',
+                }
+            )
+            limitation = ReportLimitation(
+                limitation_id=limitation_id,
+                obligation_id=obligation_id,
+                code='P20_NO_GOVERNED_PUBLISHABLE_FACT',
+                detail=(
+                    'The analytical requirement is terminal, but its governed upstream '
+                    'artifacts contain no exact fact eligible under the existing P20 '
+                    'publication contracts.'
+                ),
+            )
+            limitations.append(limitation)
+            coverage.append(
+                CoverageEntry(
+                    obligation_id=obligation_id,
+                    coverage_status=CoverageStatus.LIMITED,
+                    limitation_ids=(limitation_id,),
+                )
+            )
+
+        return ReportDraft(
+            research_session_id=research_session_id,
+            report_key=report_key,
+            coverage=tuple(coverage),
+            statements=tuple(statements),
+            limitations=tuple(limitations),
+        )
 
     @staticmethod
     def _hydrate(row: ReportDocumentRecord) -> ReportDocument:

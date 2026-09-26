@@ -10,6 +10,9 @@ on:
       - "backend/tests/test_v3_core_b_campaign_contract.py"
       - "backend/tests/test_v3_core_b_neutral_fixture.py"
       - "backend/app/v3/product/**"
+      - "backend/app/v3/research.py"
+      - "backend/app/v3/research_product.py"
+      - "backend/app/v3/report_document.py"
       - "backend/app/v3/research_intake.py"
       - "backend/app/v3/structured_transport.py"
       - "backend/app/config.py"
@@ -17,6 +20,7 @@ on:
       - "backend/tests/test_v3_control_plane_security.py"
       - "backend/tests/test_v3_product_contracts.py"
       - "backend/tests/test_v3_product_composition.py"
+      - "backend/tests/test_v3_owner_scoped_must_accounting.py"
       - "backend/tests/test_v3_research_intake.py"
       - ".github/workflows/dima-metabase-core-b-seal-provider-free.yml"
   workflow_dispatch:
@@ -48,9 +52,10 @@ jobs:
         working-directory: backend
         run: pip install -e ".[dev]"
 
-      - name: Compile canonical composition live harness
+      - name: Compile canonical composition and owner-scoped lifecycle
         working-directory: backend
-        run: python -m py_compile app/v3/product/composition.py lab/metabase/core_b/live_sentinel.py
+        run: |
+          python -m py_compile             app/v3/research.py             app/v3/research_product.py             app/v3/report_document.py             app/v3/product/composition.py             tests/test_v3_owner_scoped_must_accounting.py             lab/metabase/core_b/live_sentinel.py
 
       - name: Campaign and neutral fixture contract proof
         working-directory: backend
@@ -60,9 +65,37 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v3_research_intake.py
 
-      - name: Core B focused remains GREEN
+      - name: Owner-scoped USER_MUST lifecycle matrix
+        working-directory: backend
+        run: pytest -q tests/test_v3_owner_scoped_must_accounting.py
+
+      - name: Core B composition provider-free proof
         working-directory: backend
         run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py
+
+      - name: Sealed P14 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
+
+      - name: Sealed P17 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p17_authorization_transport.py tests/test_v3_p17_autonomous_provider_schema.py tests/test_v3_p17_autonomous_manager_eval.py tests/test_v3_p17_research_manager.py
+
+      - name: Sealed P18 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p18_business_relationship_policy.py
+
+      - name: Sealed P19 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p19_hypothesis_root_cause.py tests/test_v3_p19_provider.py tests/test_v3_p19_autonomous_eval.py
+
+      - name: P20 lifecycle and publication regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p20_report_document.py
+
+      - name: Sealed P21 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p21_decision_intelligence.py
 
       - name: Control-plane persistence invariant proof
         working-directory: backend
@@ -80,11 +113,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "5e42d2a095b00fb21229971bde4c424cdb22e33c"
+          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "4c319737e7f8d77b7b1b0bdb02c9d47fdb8b4aa8"
+          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "d2fa436269bec498cfc6c6a25b41cb2a6909340c"
           test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
           test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
           test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
-          test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "5c7f199c16763a95d255b1b7f083bc61310b453e"
+          test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "9eaa1478b3c3924a8b6c4e4dfe547bda1bcb343d"
           test "$(git rev-parse HEAD:backend/app/v3/decision_intelligence.py)" = "1a40508048d668829344ca30aa7aadf881cebb82"
           test "$(git rev-parse HEAD:backend/app/v3/claim_lineage.py)" = "76589172d19d4d9ffa1db9f94f4ee9ee9f277e5a"
 
@@ -96,7 +130,8 @@ jobs:
           test ! -e eval/DEV80
           test ! -e eval/Validation50
           test ! -e eval/Hidden50
-          ! grep -R -nE 'askv2_case_id|canonical_full special case|adaptive_tr special case' app/v3/product
+          ! grep -R -nE 'askv2_case_id|canonical_full special case|adaptive_tr special case|PRODUCT_COMPOSITION_NO_PUBLISHABLE_FACT_ASSERTED' app/v3/product
+          ! grep -n 'for obligation_id in brief.must_requirement_ids' app/v3/product/composition.py
           test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
 
       - uses: actions/upload-artifact@v4

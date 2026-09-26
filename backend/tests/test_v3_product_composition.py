@@ -135,13 +135,6 @@ class FakeResearch:
             )
             for item in brief.questions
         ]
-        obligations.extend(
-            SimpleNamespace(
-                obligation_id=item.requirement_id,
-                state=ObligationState.READY,
-            )
-            for item in brief.deliverables
-        )
         session = SimpleNamespace(
             session_id=sid,
             obligations=tuple(obligations),
@@ -369,8 +362,47 @@ class FakeP19Manager:
 
 
 class FakeReports:
-    def __init__(self):
+    def __init__(self, research):
+        self.research = research
         self.drafts = []
+
+    def draft_from_governed_research(
+        self,
+        *,
+        research_session_id,
+        report_key,
+        principal,
+        explicit_limitations=(),
+    ):
+        del report_key, principal
+        session = self.research.sessions[research_session_id]
+        explicit = {item.obligation_id: item for item in explicit_limitations}
+        coverage = []
+        for question in session.accepted_brief.questions:
+            if question.goal_id in explicit:
+                coverage.append(
+                    SimpleNamespace(
+                        obligation_id=question.goal_id,
+                        coverage_status=SimpleNamespace(value="LIMITED"),
+                        limitation_ids=(explicit[question.goal_id].limitation_id,),
+                        statement_ids=(),
+                    )
+                )
+            else:
+                coverage.append(
+                    SimpleNamespace(
+                        obligation_id=question.goal_id,
+                        coverage_status=SimpleNamespace(value="REPRESENTED"),
+                        limitation_ids=(),
+                        statement_ids=("p20s_" + "4" * 24,),
+                    )
+                )
+        return SimpleNamespace(
+            research_session_id=research_session_id,
+            coverage=tuple(coverage),
+            statements=(),
+            limitations=tuple(explicit_limitations),
+        )
 
     def seal(self, *, draft, principal):
         del principal
@@ -391,7 +423,7 @@ def composer(*, relationship_blocked=True):
             relationships=FakeRelationshipStore(blocked=relationship_blocked),
             epistemics=FakeP19(),
             epistemic_manager=FakeP19Manager(),
-            reports=FakeReports(),
+            reports=FakeReports(research),
         ),
         research,
         investigation,
@@ -570,14 +602,23 @@ def test_report_is_written_only_through_p20_seal_and_covers_every_user_must():
     )
     drafts = c._reports.drafts
     assert len(drafts) == 1
-    assert {item.obligation_id for item in drafts[0].coverage} == set(
-        b.must_requirement_ids
-    )
-    assert all(
-        item.coverage_status.value == "LIMITED"
-        for item in drafts[0].coverage
-    )
+    assert {item.obligation_id for item in drafts[0].coverage} == {
+        item.goal_id for item in b.questions
+    }
+    assert "d_report" not in {
+        item.obligation_id for item in drafts[0].coverage
+    }
     assert result.p20_report_ref
+    fulfillment = {
+        item.requirement_id: item
+        for item in result.user_must_fulfillment
+    }
+    assert fulfillment["g_breakdown"].state.value == "VERIFIED"
+    assert fulfillment["d_report"].state.value == "FULFILLED"
+    assert fulfillment["d_report"].fulfilled_by_ref == result.p20_report_ref
+    assert result.user_must_total == 2
+    assert result.user_must_accounted == 2
+    assert result.user_must_fulfilled == 2
 
 
 def test_product_composition_has_no_direct_truth_store_or_text_case_routing():

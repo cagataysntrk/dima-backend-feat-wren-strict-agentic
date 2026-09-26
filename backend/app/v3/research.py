@@ -156,8 +156,11 @@ class ResearchSession(Frozen):
                 raise ValueError("accepted ResearchBrief context mismatch")
             if brief.objective != self.objective:
                 raise ValueError("accepted ResearchBrief objective mismatch")
-            if tuple(brief.must_requirement_ids) != tuple(ids):
-                raise ValueError("accepted ResearchBrief obligation mismatch")
+            analytical_ids = tuple(item.goal_id for item in brief.questions)
+            if tuple(ids) != analytical_ids:
+                raise ValueError("accepted ResearchBrief analytical obligation mismatch")
+            if not set(analytical_ids).issubset(set(brief.must_requirement_ids)):
+                raise ValueError("accepted ResearchBrief analytical obligations left USER_MUST authority")
         if any(not set(h.obligation_ids).issubset(ids) for h in self.hypotheses):
             raise ValueError("hypothesis references unknown obligation")
         return self
@@ -215,9 +218,21 @@ class ResearchManager:
 
     @classmethod
     def start(cls,*,authority:AcceptedResearchAuthority,objective,obligation_objectives,tenant_binding,principal_subject,budget=None,now=None,session_id=None,accepted_brief:ResearchBrief|None=None):
-        accepted=tuple(authority.obligation_ids)
-        if not accepted or set(accepted)!=set(obligation_objectives):
-            raise ResearchStateError("P14_RESEARCH_OBLIGATION_AUTHORITY_MISMATCH","objectives must exactly cover accepted obligations")
+        accepted_total=tuple(authority.obligation_ids)
+        if not accepted_total:
+            raise ResearchStateError("P14_RESEARCH_OBLIGATION_AUTHORITY_MISMATCH","accepted authority has no USER_MUST obligations")
+        if accepted_brief is None:
+            execution_ids=accepted_total
+            if set(execution_ids)!=set(obligation_objectives):
+                raise ResearchStateError("P14_RESEARCH_OBLIGATION_AUTHORITY_MISMATCH","objectives must exactly cover accepted obligations")
+        else:
+            execution_ids=tuple(item.goal_id for item in accepted_brief.questions)
+            if tuple(accepted_brief.must_requirement_ids)!=accepted_total:
+                raise ResearchStateError("P14_RESEARCH_TOTAL_MUST_AUTHORITY_MISMATCH","persisted ResearchBrief must preserve the complete accepted USER_MUST identity")
+            if tuple(obligation_objectives)!=execution_ids:
+                raise ResearchStateError("P14_RESEARCH_ANALYTICAL_SCOPE_MISMATCH","P14 execution objectives must exactly cover accepted Research questions")
+            if not set(execution_ids).issubset(set(accepted_total)):
+                raise ResearchStateError("P14_RESEARCH_ANALYTICAL_SCOPE_MISMATCH","P14 execution obligations must remain inside accepted USER_MUST authority")
         stamp=_now(now)
         return ResearchSession(
             session_id=session_id or "rs_"+uuid4().hex[:24], authority_id=authority.contract_id,
@@ -225,7 +240,7 @@ class ResearchManager:
             context_version=authority.context_version, tenant_binding=tenant_binding,
             principal_subject=principal_subject, objective=objective.strip(),
             accepted_brief=accepted_brief,
-            obligations=tuple(ResearchObligation(obligation_id=x,objective=obligation_objectives[x].strip()) for x in accepted),
+            obligations=tuple(ResearchObligation(obligation_id=x,objective=obligation_objectives[x].strip()) for x in execution_ids),
             budget=budget or ResearchBudget(), created_at=stamp, updated_at=stamp,
         )
 
