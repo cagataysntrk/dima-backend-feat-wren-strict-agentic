@@ -15,6 +15,7 @@ from typing import Any
 
 from app import fanout
 from app.config import get_settings
+from app.compose import compose_and_build
 from app.v2.execution_receipts import build_development_performance_receipt
 from app.v2.persistence import DurableCheckpointStore
 from app.v2.product_events import ProductEventSink
@@ -435,6 +436,9 @@ def run(
         raise RuntimeError("rehearsal manifest must require real LLM and real Wren")
 
     settings = get_settings()
+    # A clean CI checkout has no compiled tenant project. Build the governed project
+    # deterministically before measuring real Wren; this performs zero provider calls.
+    compose_and_build(settings)
     inner = WrenService(
         project_dir=settings.resolved_project_dir(),
         datasource=settings.datasource,
