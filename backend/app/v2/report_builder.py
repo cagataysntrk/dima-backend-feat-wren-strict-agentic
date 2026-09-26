@@ -569,9 +569,18 @@ class ReportBuilder:
             return None
 
         provenance = finding.provenance
+        # accepted_contract_id is version-local authority provenance.  A signed
+        # continuation creates a new AcceptedTurnContract version on the same
+        # immutable Research run/lineage, while prior canonical findings remain
+        # valid truth objects.  Requiring the current report contract ID here
+        # falsely turns legitimate supersession into foreign provenance.
+        #
+        # The fail-closed replay boundary is the exact Research run + lineage.
+        # ProductCoordinator/ReportContextRegistry separately revalidate current
+        # tenant/principal/context/session/thread before continuation reaches this
+        # pure projection boundary.
         if (
-            provenance.accepted_contract_id != self._provenance.accepted_contract_id
-            or provenance.lineage_id != self._provenance.lineage_id
+            provenance.lineage_id != self._provenance.lineage_id
             or provenance.run_id != self._provenance.run_id
         ):
             issues.append(
@@ -579,7 +588,7 @@ class ReportBuilder:
                     code=ReportIssueCode.FINDING_PROVENANCE_MISMATCH,
                     path=path,
                     ref=finding_ref,
-                    reason="FindingRef belongs to a different accepted/run lineage",
+                    reason="FindingRef belongs to a different Research run/lineage",
                 )
             )
             return None
