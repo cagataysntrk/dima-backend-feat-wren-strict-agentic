@@ -70,8 +70,13 @@ jobs:
                       imports.add(node.module or "")
               assert not any(name.startswith(forbidden) for name in imports),(path,imports)
               assert "action:execute" not in src
-              assert "Session(" not in src
-              assert "select(" not in src
+              forbidden_calls={
+                  node.func.id
+                  for node in ast.walk(tree)
+                  if isinstance(node,ast.Call) and isinstance(node.func,ast.Name)
+              }
+              assert "Session" not in forbidden_calls,(path,forbidden_calls)
+              assert "select" not in forbidden_calls,(path,forbidden_calls)
           PY
           test ! -d frontend
           test ! -d ui

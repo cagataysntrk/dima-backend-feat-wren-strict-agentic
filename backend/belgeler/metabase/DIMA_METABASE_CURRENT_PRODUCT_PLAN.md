@@ -27,7 +27,7 @@ DEFAULT Action capability registry    = EMPTY
 UI / frontend                         = ABSENT
 
 final target                          = SEALED NEUTRAL-COMPARISON CANDIDATE
-DEV80                                 = NOT AUTHORIZED
+DEV80                                 = NOT AUTHORIZED / DEV80 is not run
 Validation50                          = NOT AUTHORIZED
 Hidden50                              = NOT AUTHORIZED
 neutral comparison                    = NOT PERFORMED BY THIS DEVELOPER

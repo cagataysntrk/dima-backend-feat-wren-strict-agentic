@@ -29,9 +29,7 @@ Alembic head    fb4e6d2a1074
 engine          cbe313af9ac2d5960f662068e433d328d896fb06
 ~~~
 
-The final cleanup removed another 48 historical files:
-25 `backend/belgeler/plan/**`, 19 ticket files, `backend/OPERASYON-DURUM.md`,
-`backend/VIZ_STANDARDS.md`, `test_auth.py`, and `wait_and_seed.sh`.
+The final cleanup removed the remaining historical planning tree, ticket set, stale backend operation/visualization notes, and obsolete root helper scripts.
 
 ## Forward sequence
 
