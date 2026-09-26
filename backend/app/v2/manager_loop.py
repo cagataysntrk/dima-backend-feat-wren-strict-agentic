@@ -1286,6 +1286,23 @@ class ResearchManagerLoop:
                 if ref.ref not in seen_aliases:
                     root_refs.append(ref)
                     seen_aliases.add(ref.ref)
+            # Concrete GOAL_DERIVED/seed task semantics are executable-task authority,
+            # not a mutation of parent goal authority. Project them into the run-scoped
+            # Manager view only while their task remains in this parent lineage.
+            for task in research_tasks:
+                task_owner = (
+                    task.question_id
+                    if task.origin == "USER_SEED"
+                    else task.parent_obligation_id
+                )
+                if task_owner != root_id:
+                    continue
+                for handle_id in task.input_refs:
+                    ref = semantic_ref(handle_id)
+                    if ref.ref not in seen_aliases:
+                        root_refs.append(ref)
+                        seen_aliases.add(ref.ref)
+
             # Governed derived semantic expansion already bound to this ROOT is Product
             # authority too; preserve it without reconstructing identity joins in schema.
             for row in governed_semantic_inventory:
@@ -1471,6 +1488,20 @@ class ResearchManagerLoop:
                         )
                     )
                     seen_parent_aliases.add(alias)
+                for task in research_tasks:
+                    task_owner = (
+                        task.question_id
+                        if task.origin == "USER_SEED"
+                        else task.parent_obligation_id
+                    )
+                    if task_owner != item.obligation_id:
+                        continue
+                    for handle_id in task.input_refs:
+                        ref = semantic_ref(handle_id)
+                        if ref.ref not in seen_parent_aliases:
+                            semantic_rows.append(ref)
+                            seen_parent_aliases.add(ref.ref)
+
                 semantic_refs = tuple(semantic_rows)
                 if item.obligation_id in {root.root_id for root in root_states}:
                     root = next(
