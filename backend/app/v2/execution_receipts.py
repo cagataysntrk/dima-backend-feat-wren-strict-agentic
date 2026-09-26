@@ -108,3 +108,50 @@ def build_query_contract_audit_receipt(
             "planner_version": planner_version,
         },
     }
+
+
+def build_development_performance_receipt(
+    *,
+    first_status_ms: int | None,
+    first_verified_evidence_ms: int | None,
+    report_ready_ms: int | None,
+    total_ms: int,
+    provider_calls_by_role: dict[str, int],
+    wren_query_calls: int,
+    wren_dry_plan_calls: int,
+    wren_cube_sql_calls: int,
+    manager_turns: int,
+) -> dict[str, Any]:
+    """Comparison-ready diagnostic sample; never an authority or p95 claim."""
+
+    if total_ms < 0 or manager_turns < 0:
+        raise ValueError("performance receipt counters must be non-negative")
+    for label, value in (
+        ("wren_query_calls", wren_query_calls),
+        ("wren_dry_plan_calls", wren_dry_plan_calls),
+        ("wren_cube_sql_calls", wren_cube_sql_calls),
+    ):
+        if value < 0:
+            raise ValueError(f"{label} must be non-negative")
+    normalized_calls = {
+        str(role): int(count)
+        for role, count in sorted(provider_calls_by_role.items())
+        if int(count) >= 0
+    }
+    return {
+        "receipt_version": "v2-day12-performance-sample-v1",
+        "first_status_ms": first_status_ms,
+        "first_verified_evidence_ms": first_verified_evidence_ms,
+        "report_ready_ms": report_ready_ms,
+        "total_ms": total_ms,
+        "provider_calls_by_role": normalized_calls,
+        "wren_calls": {
+            "query": wren_query_calls,
+            "dry_plan": wren_dry_plan_calls,
+            "cube_sql": wren_cube_sql_calls,
+        },
+        "manager_turns": manager_turns,
+        "sample_count": 1,
+        "p95_claim": False,
+        "diagnostic_only": True,
+    }
