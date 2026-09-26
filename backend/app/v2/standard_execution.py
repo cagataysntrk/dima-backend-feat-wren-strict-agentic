@@ -22,6 +22,7 @@ from app.v2.cube_planner import (
     ledger_from_canonical_ir,
 )
 from app.v2.manager_models import StandardProjection
+from app.v2.execution_receipts import build_query_contract_audit_receipt
 from app.v2.models import (
     AnalyticsIR,
     EvidenceArtifact,
@@ -352,6 +353,39 @@ class WrenStandardExecutionAdapter:
                 raise StandardExecutionError(
                     "verified result contains validation errors"
                 )
+            projected_capabilities: list[str] = ["performance"]
+            if projection.dimension_handles:
+                projected_capabilities.append("breakdown")
+            if projection.comparison_handle is not None:
+                projected_capabilities.append("comparison")
+            if projection.ranking_direction is not None:
+                projected_capabilities.append("ranking")
+            audit_receipt = build_query_contract_audit_receipt(
+                execution_id=plan.execution_id,
+                accepted_authority_ref=authority.authority_id,
+                obligation_ids=projection.obligation_ids,
+                requested_capabilities=tuple(projected_capabilities),
+                semantic_handle_refs=tuple(
+                    dict.fromkeys(
+                        (
+                            *projection.metric_handles,
+                            *projection.dimension_handles,
+                            *projection.filter_handles,
+                            *((projection.period_handle,) if projection.period_handle else ()),
+                            *((projection.comparison_handle,) if projection.comparison_handle else ()),
+                        )
+                    )
+                ),
+                analytics_ir=ir,
+                tenant_binding=tenant_binding,
+                principal_subject=runtime.principal_user_id,
+                context_version=ir.context_version,
+                planner_id=self._planner.planner_id,
+                planner_version=self._planner.planner_version,
+                research_run_id=None,
+                research_task_id=None,
+                relationship_join_authority=None,
+            )
             sealed = contract_store.record_v2_minimum(
                 session_id=session_id,
                 question=question,
@@ -372,6 +406,7 @@ class WrenStandardExecutionAdapter:
                         "context_version": ir.context_version,
                         "principal_user_id": runtime.principal_user_id,
                         "principal_roles": list(runtime.roles),
+                        "audit_receipt": audit_receipt,
                     }
                 },
             )
@@ -423,6 +458,12 @@ class WrenStandardExecutionAdapter:
             query_contract_refs=tuple(contract_refs),
             evidence_kind="standard_analytics",
             verified=True,
+            tenant_binding=tenant_binding,
+            principal_subject=runtime.principal_user_id,
+            context_version=ir.context_version,
+            run_id=f"standard:{authority.authority_id}",
+            lineage_id=authority.authority_id,
+            accepted_contract_id=authority.authority_id,
             payload={
                 "executions": bounded_results,
                 "query_count": query_count,
