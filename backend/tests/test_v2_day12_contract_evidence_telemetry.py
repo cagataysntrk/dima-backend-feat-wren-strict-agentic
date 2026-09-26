@@ -10,9 +10,11 @@ from app.v2.manager_executor import EvidenceStore
 from app.v2.models import (
     AnalyticsIR,
     EvidenceArtifact,
+    PeriodKind,
     ResolvedComparison,
     ResolvedPeriod,
     ResolvedSemanticRef,
+    SemanticTargetKind,
 )
 from app.v2.product_events import ProductEventSink
 from app.v2.product_models import ProductEventKind
@@ -20,36 +22,37 @@ from app.v2.product_models import ProductEventKind
 
 def _ir() -> AnalyticsIR:
     period = ResolvedPeriod(
-        kind="relative",
+        kind=PeriodKind.THIS_YEAR,
+        source_text="this year",
+        time_dimension="order_date",
         start="2026-01-01",
         end="2026-09-26",
-        grain="month",
-        source_text="this year",
     )
     return AnalyticsIR(
         cube="sales",
         metrics=(
             ResolvedSemanticRef(
-                kind="metric",
+                candidate_id="cand_metric",
+                target_kind=SemanticTargetKind.METRIC,
                 canonical_name="net_revenue",
-                display_name="Net Revenue",
-                model_name="sales",
+                cube_names=("sales",),
             ),
         ),
         dimensions=(
             ResolvedSemanticRef(
-                kind="dimension",
+                candidate_id="cand_dimension",
+                target_kind=SemanticTargetKind.DIMENSION,
                 canonical_name="region",
-                display_name="Region",
-                model_name="sales",
+                cube_names=("sales",),
             ),
         ),
         filters=(),
         period=period,
         comparison=ResolvedComparison(
             base_period=period,
-            compare_period=period.model_copy(
+            reference_period=period.model_copy(
                 update={
+                    "kind": PeriodKind.PREVIOUS_YEAR,
                     "start": "2025-01-01",
                     "end": "2025-09-26",
                     "source_text": "prior year",
