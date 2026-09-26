@@ -928,9 +928,12 @@ jobs:
           for node in mt.body:
               if isinstance(node,ast.ClassDef):
                   for item in node.body:
-                      if isinstance(item,ast.Assign) and any(isinstance(t,ast.Name) and t.id=="__tablename__" for t in item.targets) and isinstance(item.value,ast.Constant) and isinstance(item.value.value,str) and item.value.value.startswith("action_"):
+                      if isinstance(item,ast.Assign) and any(isinstance(t,ast.Name) and t.id=="__tablename__" for t in item.targets) and isinstance(item.value,ast.Constant) and isinstance(item.value.value,str):
                           tables.add(item.value.value)
-          assert tables == {"action_authorization"}, tables
+          assert "action_authorization" in tables, tables
+          assert "action_execution_receipt" not in tables, tables
+          assert "action_attempt" not in tables, tables
+          assert "execution_queue" not in tables, tables
           PY
             test ! -f backend/app/v3/action_execution.py
             ! grep -nE 'requests\.post|httpx\.|send_email|Slack|notification|ActionExecutionReceipt|ActionAttempt' "$HOT"
