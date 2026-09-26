@@ -1,10 +1,9 @@
 # DIMA METABASE — FINAL CORE CLOSURE ROADMAP
 
-**Status:** CORE CLOSURE A SEALED / CORE CLOSURE B ACTIVE / PRE-UI  
+**Status:** CORE CLOSURE A SEALED / REPOSITORY CANONICALIZATION ACTIVE / CORE CLOSURE B NEXT / PRE-UI  
 **Date:** 2026-09-26  
 **Starting Platform HEAD:** 2a9d9d68a0e3b1a80bb85826daf5452bb4fbf55b  
 **Certified Engine:** cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6  
-**Wren reference branch HEAD at roadmap creation:** 0ff770e5e306e940337226b3dfdd2fbbc12e85e5
 
 ## CURRENT EXECUTION STATUS — 2026-09-26
 
@@ -21,7 +20,8 @@ Wave-1 UX descriptors = 50 / COMPLETE
 external side effects = 0
 UI implementation = 0
 
-CORE CLOSURE B = ACTIVE
+REPOSITORY CANONICALIZATION = ACTIVE
+CORE CLOSURE B = NEXT AFTER CLEANUP
 ~~~
 
 
@@ -69,6 +69,8 @@ NO METABASE PRIMITIVE DUPLICATION
 NO P14-P21 REOPEN WITHOUT MEASURED DEFECT
 NO P13 RESURRECTION
 NO ENGINE dima.7 WITHOUT A REAL NATIVE BLOCKER
+NO WREN SOURCE TREE IN CANONICAL PLATFORM
+NO WREN BAKE-OFF
 NO WREN BULK MERGE
 ~~~
 
@@ -560,42 +562,34 @@ The still-relevant obligations of historical P22-P27 are absorbed here:
 
 Do not reopen sealed cognition ownership.
 
-## B5. Canonical engine bake-off and freeze
+## B5. Canonical engine freeze
 
-Wren remains a reference/bake-off lab until this point.
+The architectural competition is closed before Core Closure B.
 
-No merge.
-
-At the final headless candidate, compare frozen Platform and frozen Wren/reference capability only on measurable
-criteria:
+Canonical production architecture:
 
 ~~~text
-research quality
-root-cause depth
-silent wrong
-trajectory robustness
-latency
-cost
-operational complexity
-maintainability
-release-critical unique capability
+DIMA CORE
++
+METABASE / METABOT
 ~~~
 
-Decision rule:
+Wren is not a production competitor, not a forward engine option and not a required
+reference tree. No Wren bake-off, dual-engine abstraction or Wren merge is performed.
+
+At the final headless candidate, freeze and certify only the canonical Platform engine:
 
 ~~~text
-IF Wren demonstrates a clearly superior RELEASE-CRITICAL capability
-that cannot be reproduced through the canonical Metabase/Metabot path
-without violating ownership:
-→ explicit retain/bridge decision
-
-ELSE:
-→ canonical production analytical core =
-   Dima Core + Metabase / Metabot
-→ Wren remains reference / bake-off / historical lab
+Platform SHA
+engine SHA / release / digest
+model topology
+semantic resources
+configuration
+test corpus fingerprint
 ~~~
 
-No UI is built against two competing engine abstractions.
+The engine remains cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6
+unless a genuine engine-native blocker separately authorizes dima.7+.
 
 ## B6. Final integrated certification
 
@@ -669,7 +663,7 @@ old P22-P27
 → Core Closure B persistence/lifecycle/observability
 
 old P28-P29
-→ Core Closure B canonical engine bake-off/freeze
+→ Core Closure B canonical engine freeze; Wren bake-off cancelled
 
 old P30 UI workspace
 → DEFERRED; no UI without explicit user authorization
