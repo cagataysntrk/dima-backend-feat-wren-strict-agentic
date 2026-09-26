@@ -16,6 +16,12 @@ FORBIDDEN_PATHS = (
     "backend/docs",
     "lab/curl",
     "backend/app/v2",
+    "backend/belgeler/plan",
+    "backend/belgeler/metabase/tickets",
+    "backend/OPERASYON-DURUM.md",
+    "backend/VIZ_STANDARDS.md",
+    "test_auth.py",
+    "wait_and_seed.sh",
 )
 
 FORBIDDEN_ROOT_DOCS = (
@@ -141,6 +147,10 @@ def test_active_workflows_have_no_deleted_path_guards():
         "backend/docs/",
         "lab/curl/",
         "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md",
+        "backend/belgeler/plan/",
+        "backend/belgeler/metabase/tickets/",
+        "backend/OPERASYON-DURUM.md",
+        "backend/VIZ_STANDARDS.md",
     )
     for path in workflow_root.glob("*.yml"):
         text=path.read_text(encoding="utf-8")
@@ -215,3 +225,20 @@ def test_readmes_describe_only_canonical_product():
             "WrenAI-main/","dima-frontend-demo-master/","backend/demo/","belgeler/00-INDEKS",
         ):
             assert token not in text, (path, token)
+
+
+
+def test_backend_belgeler_has_single_active_story():
+    root = BACKEND / "belgeler"
+    children = sorted(p.name for p in root.iterdir())
+    assert children == ["metabase"], children
+
+
+def test_final_cleanup_helpers_are_absent():
+    for relative in (
+        "test_auth.py",
+        "wait_and_seed.sh",
+        "backend/OPERASYON-DURUM.md",
+        "backend/VIZ_STANDARDS.md",
+    ):
+        assert not (REPO_ROOT / relative).exists(), relative

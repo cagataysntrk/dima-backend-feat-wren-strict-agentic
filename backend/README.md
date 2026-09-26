@@ -19,8 +19,9 @@ belgeler/metabase/              active authority documentation
 lab/metabase/                   active certification only
 ~~~
 
-A small `app.v2` compatibility package remains only because sealed v3 contracts still import
-typed legacy contract shapes. It is not an Ask-v2 runtime.
+The canonical Python runtime contains no Ask-v2 compatibility namespace and no Wren runtime.
+Sealed product contracts live under `app/v3/`; historical implementations remain available only
+through Git history.
 
 ## Run
 
