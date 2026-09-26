@@ -46,6 +46,7 @@ from app.v2.report_continuation import (
     ReportContextRegistry,
     ReportSectionContinuationSigner,
     StaleReportContinuationError,
+    continuation_analytical_authority,
     continuation_conversation,
     continuation_scope_by_kind,
 )
@@ -252,6 +253,7 @@ class ProductCoordinator:
                 session_id=body.session_id,
                 thread_id=body.thread_id,
             )
+            continuation_authority = continuation_analytical_authority(entry)
 
             sink.emit(
                 ProductEventKind.LANE_SELECTED,
@@ -290,6 +292,9 @@ class ProductCoordinator:
                 conversation=continuation_conversation(entry),
                 section_scope_refs=entry.section.semantic_scope,
                 context_scope_by_kind=continuation_scope_by_kind(entry),
+                allowed_continuation_parent_refs=(
+                    continuation_authority.admitted_parent_refs
+                ),
                 progress_callback=on_continuation_progress,
                 cancel_check=cancel_check,
                 answer_now_check=answer_now_check,
