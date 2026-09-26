@@ -53,7 +53,7 @@
       "id": "std_clause_order",
       "kind": "prompt",
       "category": "multi_intent",
-      "question": "Bölüm bazında göster ve makine duruşlarını incele.",
+      "question": "Bölüm bazında makine duruşlarını göster.",
       "lanes": [
         "STANDARD",
         "RESEARCH"
@@ -86,7 +86,7 @@
       "id": "relationship_explicit_tr",
       "kind": "prompt",
       "category": "relationship",
-      "question": "Makine duruşları ile arıza sayısı arasındaki governed ilişkiyi araştır ve kanıta bağlı raporla.",
+      "question": "Makine duruşlarını ve arıza sayısını bölüm bazında araştır; aralarındaki governed ilişkiyi kontrol et ve kanıta bağlı raporla.",
       "lanes": [
         "RESEARCH"
       ],
@@ -116,7 +116,7 @@
       "id": "adaptive_tr",
       "kind": "prompt",
       "category": "adaptive_branch",
-      "question": "Makine duruşlarını araştır; doğrulanmış kanıt yeni ve maddi bir bölüm kırılımı gösterirse o yönü takip et ve raporla.",
+      "question": "Makine duruşlarını bölüm bazında araştır; doğrulanmış kanıt yeni ve maddi bir bölüm kırılımı gösterirse o yönü takip et ve raporla.",
       "lanes": [
         "RESEARCH"
       ],
@@ -295,10 +295,12 @@
         "RESEARCH"
       ],
       "statuses": [
-        "REPORT"
+        "REPORT",
+        "PARTIAL"
       ],
       "min_evidence": 4,
-      "verified": true
+      "verified": false,
+      "require_continuation_verified": false
     },
     {
       "id": "foreign_principal_replay",
