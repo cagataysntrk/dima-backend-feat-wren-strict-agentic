@@ -530,6 +530,10 @@ class ResearchTaskRegistry:
                 )
             return result
 
+        if current.state == "complete":
+            raise ResearchTaskLifecycleError(
+                f"completed ResearchTask cannot re-execute without canonical restored receipt: {task.task_id}"
+            )
         if current.state in {"cancelled", "failed", "blocked"}:
             raise ResearchTaskLifecycleError(
                 f"{current.state} ResearchTask cannot execute: {task.task_id}"
