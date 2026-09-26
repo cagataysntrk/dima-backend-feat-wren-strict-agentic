@@ -71,7 +71,9 @@ def test_autonomous_mixed_vocabulary_uses_strict_semantic_envelope():
 
     serialized = json.dumps(schema, sort_keys=True)
     assert "ProposedClaimDraft" not in serialized
-    assert "ClaimFreshness" not in serialized
+    assert "ProviderClaimDraft" in serialized
+    assert "ClaimFreshness" in serialized
+    assert '"additionalProperties": true' not in serialized
 
 
 def test_regular_non_stop_variant_cannot_emit_null_information_gain():
