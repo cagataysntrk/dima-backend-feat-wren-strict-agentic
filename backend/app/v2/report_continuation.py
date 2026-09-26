@@ -15,6 +15,17 @@ from typing import Any
 
 from pydantic import Field
 
+from app.v2.manager_models import (
+    ObligationOrigin,
+    ObligationPolarity,
+    ObligationPriority,
+    ObligationStatus,
+)
+from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
+    ManagerCapabilityLane,
+    ManagerCapabilityRegistry,
+)
 from app.v2.models import (
     ConversationStateV2,
     FocusStateV0,
@@ -70,6 +81,158 @@ class ReportContextEntry:
     source_run_ref: str
     lineage_ref: str
     report_version: int
+
+
+@dataclass(frozen=True)
+class ContinuationAnalyticalAuthority:
+    """Pure selected-section view over prior accepted analytical authority.
+
+    This is never a second authority store.  It contains only canonical parent
+    references already present in the prior immutable ledger and proven, through
+    typed report provenance, to belong to the selected signed section.
+    """
+
+    lineage_id: str
+    contract_id: str
+    ledger_version: int
+    admitted_parent_refs: tuple[str, ...]
+    section_evidence_refs: tuple[str, ...]
+    section_finding_refs: tuple[str, ...]
+
+
+def continuation_analytical_authority(
+    entry: ReportContextEntry,
+) -> ContinuationAnalyticalAuthority:
+    """Derive section-local inherited analytical parents without label matching.
+
+    Strong provenance comes from selected-section Finding parents first.  When no
+    Finding is present, exact selected-section Evidence ownership is used.  The
+    result is intersected with exact semantic-scope membership when that scope can
+    identify prior obligations.  Ambiguity is preserved as cardinality; callers
+    must never choose one parent by order or similarity.
+    """
+
+    prior = entry.research_result
+    contract = getattr(prior, "accepted_contract", None)
+    ledger = getattr(prior, "ledger", None)
+    if contract is None or ledger is None:
+        raise ReportContinuationNotAdmissibleError(
+            "signed continuation requires prior accepted contract + ledger"
+        )
+    if (
+        contract.lineage_id != entry.lineage_ref
+        or ledger.lineage_id != contract.lineage_id
+        or ledger.version != contract.version
+    ):
+        raise ReportContinuationNotAdmissibleError(
+            "signed continuation prior authority lineage/version mismatch"
+        )
+    provenance = entry.report.provenance
+    if (
+        provenance.accepted_contract_id != contract.contract_id
+        or provenance.lineage_id != contract.lineage_id
+        or provenance.tenant_binding != entry.tenant_binding
+        or provenance.context_version != entry.context_version
+    ):
+        raise ReportContinuationNotAdmissibleError(
+            "signed continuation report provenance does not match prior authority"
+        )
+
+    capability_registry = ManagerCapabilityRegistry()
+    eligible: dict[str, Any] = {}
+    for item in ledger.items:
+        if (
+            item.origin != ObligationOrigin.USER_MUST
+            or item.priority != ObligationPriority.MUST
+            or item.polarity != ObligationPolarity.REQUIRED
+            or item.status == ObligationStatus.SUPERSEDED
+        ):
+            continue
+        try:
+            spec = capability_registry.get(item.capability_key)
+        except KeyError:
+            continue
+        if (
+            spec.execution_mode
+            not in {
+                ManagerCapabilityExecutionMode.DIRECT,
+                ManagerCapabilityExecutionMode.ORCHESTRATED,
+            }
+            or spec.lane
+            not in {
+                ManagerCapabilityLane.STANDARD,
+                ManagerCapabilityLane.RESEARCH,
+            }
+        ):
+            continue
+        eligible[item.obligation_id] = item
+
+    section_evidence_refs = tuple(
+        dict.fromkeys(ref.evidence_ref for ref in entry.section.evidence_refs)
+    )
+    section_finding_refs = tuple(
+        dict.fromkeys(
+            ref.finding_ref
+            for block in entry.section.blocks
+            for ref in block.finding_refs
+        )
+    )
+    evidence_by_id = {
+        item.artifact_id: item
+        for item in tuple(getattr(prior, "evidence", ()) or ())
+    }
+    finding_by_id = {
+        item.finding_id: item
+        for item in tuple(getattr(prior, "findings", ()) or ())
+    }
+
+    finding_parents = {
+        finding.parent_obligation_id
+        for ref in section_finding_refs
+        if (finding := finding_by_id.get(ref)) is not None
+        and finding.parent_obligation_id in eligible
+    }
+
+    evidence_parents: set[str] = set()
+    for ref in section_evidence_refs:
+        evidence = evidence_by_id.get(ref)
+        if evidence is not None:
+            evidence_parents.update(
+                obligation_id
+                for obligation_id in evidence.obligation_ids
+                if obligation_id in eligible
+            )
+    section_evidence_set = set(section_evidence_refs)
+    evidence_parents.update(
+        item.obligation_id
+        for item in eligible.values()
+        if section_evidence_set.intersection(item.evidence_refs)
+    )
+
+    section_scope = set(entry.section.semantic_scope)
+    scope_parents = {
+        item.obligation_id
+        for item in eligible.values()
+        if item.semantic_handle_refs
+        and set(item.semantic_handle_refs).issubset(section_scope)
+    }
+
+    provenance_parents = finding_parents or evidence_parents
+    if provenance_parents:
+        represented = set(provenance_parents)
+        if scope_parents:
+            represented.intersection_update(scope_parents)
+    else:
+        represented = set(scope_parents)
+
+    return ContinuationAnalyticalAuthority(
+        lineage_id=contract.lineage_id,
+        contract_id=contract.contract_id,
+        ledger_version=ledger.version,
+        admitted_parent_refs=tuple(sorted(represented)),
+        section_evidence_refs=section_evidence_refs,
+        section_finding_refs=section_finding_refs,
+    )
 
 
 def _b64e(value: bytes) -> str:
