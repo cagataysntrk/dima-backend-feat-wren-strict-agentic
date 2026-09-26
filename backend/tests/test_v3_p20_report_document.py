@@ -8,7 +8,7 @@ from uuid import UUID
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine, select
-from app.v2.models import ResearchBrief, ResearchBriefStatus, ResearchGoalKind, ResearchGoalStatus, ResearchQuestion, ResearchScope, ResearchSemanticRef, SemanticTargetKind
+from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus, ResearchGoalKind, ResearchGoalStatus, ResearchQuestion, ResearchScope, ResearchSemanticRef, SemanticTargetKind
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore, RelationshipPolicyRequirement
 from app.v3.claim_lineage import ClaimEvidenceRelation, ClaimFreshness, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CandidateAssessment, CausalQualification, ContributionClass, EvidenceStrength, GroundingRelation, GroundingSourceKind, HypothesisDisposition, HypothesisEpistemicClass, HypothesisRootCauseStore, IdentificationLimitation, NumericAnalyticalKind, NumericProvenanceRef, RootCauseAssessmentDraft

@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine, select
 
 import app.v3.claim_lineage as claim_module
-from app.v2.models import (
+from app.v3.research_contracts import (
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,

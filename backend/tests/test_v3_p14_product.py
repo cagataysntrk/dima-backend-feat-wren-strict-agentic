@@ -12,8 +12,7 @@ import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, create_engine
 
-from app.v2.models import (
-    AskV2Request,
+from app.v3.research_contracts import (
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
@@ -36,7 +35,6 @@ from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import NativeEngineBridge
 from app.v3.substrate.metabase.native_models import NativeEngineIdentity
 from control_plane.authorize import Principal
-import app.routers.ask_v2 as ask_v2_router
 
 
 NOW = datetime(2026, 9, 24, 20, 30, tzinfo=timezone.utc)
@@ -498,15 +496,6 @@ def test_resume_is_scope_bound_and_does_not_require_old_raw_prompt():
     product = _product(engine)
     session = _start(product, two=False)
 
-    body = AskV2Request(
-        question="",
-        research_session_id=session.session_id,
-    )
-    assert body.question == ""
-    assert body.research_session_id == session.session_id
-    with pytest.raises(Exception):
-        AskV2Request(question="")
-
     other = Principal(
         user_id="different-user",
         tenant_id=TENANT_ID,
@@ -521,110 +510,3 @@ def test_resume_is_scope_bound_and_does_not_require_old_raw_prompt():
     assert exc.value.code == "P14_RESEARCH_SESSION_NOT_FOUND"
 
 
-class _FakeFinalized:
-    def __init__(self) -> None:
-        self.update = None
-
-    def model_copy(self, *, update):
-        self.update = update
-        return self
-
-
-class _FakeResearchProduct:
-    def __init__(self) -> None:
-        self.started = None
-        self.resumed = None
-
-    def start_from_brief(self, **kwargs):
-        self.started = kwargs
-        return SimpleNamespace(
-            session_id="rs_" + "a" * 24,
-            revision=1,
-            stopping=SimpleNamespace(status=SimpleNamespace(value="ACTIVE")),
-        )
-
-    def run_next(self, **kwargs):
-        self.resumed = kwargs
-        from app.v3.research_product import ResearchAskResponse
-
-        return ResearchAskResponse(
-            research_session_id=kwargs["session_id"],
-            research_session_revision=2,
-            obligation_id=kwargs.get("obligation_id"),
-            obligation_state="DELEGATED",
-            stopping_status="ACTIVE",
-        )
-
-
-def test_ask_resume_bypasses_language_orchestrator(monkeypatch):
-    product = _FakeResearchProduct()
-    request = SimpleNamespace(
-        app=SimpleNamespace(
-            state=SimpleNamespace(research_product=product)
-        )
-    )
-    monkeypatch.setattr(
-        ask_v2_router,
-        "get_settings",
-        lambda: SimpleNamespace(ask_v2_enabled=True),
-    )
-
-    class _MustNotRun:
-        @staticmethod
-        def handle(*args, **kwargs):
-            raise AssertionError("Research resume reparsed the old prompt")
-
-    monkeypatch.setattr(ask_v2_router, "_orchestrator", _MustNotRun())
-    body = AskV2Request(
-        question="",
-        research_session_id="rs_" + "b" * 24,
-        research_obligation_id="g1",
-    )
-    response = ask_v2_router.ask_v2(
-        request,
-        body,
-        _principal(),
-    )
-    assert response.research_session_id == body.research_session_id
-    assert product.resumed["obligation_id"] == "g1"
-
-
-def test_ready_research_brief_is_bound_to_durable_session_on_ask(monkeypatch):
-    product = _FakeResearchProduct()
-    request = SimpleNamespace(
-        app=SimpleNamespace(
-            state=SimpleNamespace(research_product=product)
-        )
-    )
-    core = SimpleNamespace(research_brief=_brief(two=False))
-    finalized = _FakeFinalized()
-    monkeypatch.setattr(
-        ask_v2_router,
-        "get_settings",
-        lambda: SimpleNamespace(ask_v2_enabled=True),
-    )
-    monkeypatch.setattr(
-        ask_v2_router,
-        "_orchestrator",
-        SimpleNamespace(handle=lambda *args: core),
-    )
-    monkeypatch.setattr(
-        ask_v2_router,
-        "_finalizer",
-        SimpleNamespace(finalize=lambda value: finalized),
-    )
-
-    body = AskV2Request(question="Satış performansını araştır.")
-    response = ask_v2_router.ask_v2(
-        request,
-        body,
-        _principal(),
-    )
-
-    assert product.started is not None
-    assert product.started["brief"] == core.research_brief
-    assert response.update == {
-        "research_session_id": "rs_" + "a" * 24,
-        "research_session_revision": 1,
-        "research_stopping_status": "ACTIVE",
-    }

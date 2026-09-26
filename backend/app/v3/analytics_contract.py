@@ -13,12 +13,12 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.v2.models import (
-    ResolvedComparison as V2ResolvedComparison,
-    ResolvedFilterRef as V2ResolvedFilterRef,
-    ResolvedPeriod as V2ResolvedPeriod,
-    ResolvedSemanticRef as V2ResolvedSemanticRef,
-    SemanticTargetKind,
+from app.v3.research_contracts import SemanticTargetKind
+from app.v3.semantic_binding_contracts import (
+    BoundComparison,
+    BoundFilterRef,
+    BoundPeriod,
+    BoundSemanticRef,
 )
 
 
@@ -189,7 +189,7 @@ class ResolvedAnalyticsIntentBuilder:
         self._handles = semantic_handles
 
     @staticmethod
-    def _period(value: V2ResolvedPeriod) -> ResolvedPeriod:
+    def _period(value: BoundPeriod) -> ResolvedPeriod:
         return ResolvedPeriod(
             kind=value.kind.value,
             source_text=value.source_text,
@@ -200,7 +200,7 @@ class ResolvedAnalyticsIntentBuilder:
         )
 
     @classmethod
-    def _comparison(cls, value: V2ResolvedComparison) -> ResolvedComparison:
+    def _comparison(cls, value: BoundComparison) -> ResolvedComparison:
         return ResolvedComparison(
             mode=value.mode,
             source_text=value.source_text,
@@ -240,7 +240,7 @@ class ResolvedAnalyticsIntentBuilder:
         for handle_id in projection.metric_handles:
             target = resolved[handle_id]
             if (
-                not isinstance(target, V2ResolvedSemanticRef)
+                not isinstance(target, BoundSemanticRef)
                 or target.target_kind != SemanticTargetKind.METRIC
             ):
                 raise SemanticHandleResolutionError(
@@ -260,7 +260,7 @@ class ResolvedAnalyticsIntentBuilder:
         for handle_id in projection.dimension_handles:
             target = resolved[handle_id]
             if (
-                not isinstance(target, V2ResolvedSemanticRef)
+                not isinstance(target, BoundSemanticRef)
                 or target.target_kind != SemanticTargetKind.DIMENSION
             ):
                 raise SemanticHandleResolutionError(
@@ -279,7 +279,7 @@ class ResolvedAnalyticsIntentBuilder:
         filters: list[ResolvedFilterRef] = []
         for handle_id in projection.filter_handles:
             target = resolved[handle_id]
-            if not isinstance(target, V2ResolvedFilterRef):
+            if not isinstance(target, BoundFilterRef):
                 raise SemanticHandleResolutionError(
                     f"{handle_id} is not a governed filter target"
                 )
@@ -297,7 +297,7 @@ class ResolvedAnalyticsIntentBuilder:
         period = None
         if projection.period_handle is not None:
             target = resolved[projection.period_handle]
-            if not isinstance(target, V2ResolvedPeriod):
+            if not isinstance(target, BoundPeriod):
                 raise SemanticHandleResolutionError(
                     f"{projection.period_handle} is not a governed period target"
                 )
@@ -306,7 +306,7 @@ class ResolvedAnalyticsIntentBuilder:
         comparison = None
         if projection.comparison_handle is not None:
             target = resolved[projection.comparison_handle]
-            if not isinstance(target, V2ResolvedComparison):
+            if not isinstance(target, BoundComparison):
                 raise SemanticHandleResolutionError(
                     f"{projection.comparison_handle} is not a governed comparison target"
                 )

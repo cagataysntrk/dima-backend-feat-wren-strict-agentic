@@ -15,6 +15,7 @@ FORBIDDEN_PATHS = (
     "backend/demo",
     "backend/docs",
     "lab/curl",
+    "backend/app/v2",
 )
 
 FORBIDDEN_WORKFLOW_REFERENCES = (
@@ -67,13 +68,9 @@ def test_canonical_main_has_no_legacy_runtime_imports():
         assert token not in text
 
 
-def test_only_typed_v2_compatibility_surface_remains():
-    v2 = BACKEND / "app" / "v2"
-    assert {p.name for p in v2.glob("*.py")} == {
-        "__init__.py",
-        "models.py",
-        "manager_models.py",
-    }
+def test_ask_v2_source_namespace_is_absent():
+    assert not (BACKEND / "app" / "v2").exists()
+    assert not (BACKEND / "app" / "v3" / "legacy_contract.py").exists()
 
 
 def test_wren_substrate_source_is_absent():

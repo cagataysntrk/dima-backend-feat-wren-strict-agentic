@@ -13,7 +13,7 @@ import httpx
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine, select
 
-from app.v2.models import (
+from app.v3.research_contracts import (
     RankingSurface,
     ResearchBrief,
     ResearchBriefStatus,

@@ -10,7 +10,6 @@ from typing import Protocol, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.v2.manager_models import AcceptedTurnContract as _ExistingAcceptedTurnContract
 from app.v3.analytics_contract import (
     StandardProjection,
     projection_handles,
@@ -22,9 +21,26 @@ class FrozenModel(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
-# There is deliberately no second Research authority body in v3.
-AcceptedTurnContract: TypeAlias = _ExistingAcceptedTurnContract
-AcceptedResearchAuthority: TypeAlias = _ExistingAcceptedTurnContract
+class AcceptedResearchAuthority(FrozenModel):
+    """Immutable accepted Research authority consumed by P14+."""
+
+    contract_id: str = Field(min_length=1)
+    lineage_id: str = Field(min_length=1)
+    version: int = Field(default=1, ge=1)
+    supersedes_contract_id: str | None = None
+    turn_id: str = Field(min_length=1)
+    request_ref: str = Field(min_length=1)
+    source_message_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    accepted_attempt_id: str = Field(min_length=1)
+    model_role: str = Field(min_length=1)
+    obligation_ids: tuple[str, ...] = Field(min_length=1)
+    exclusion_ids: tuple[str, ...] = ()
+    unresolved_ids: tuple[str, ...] = ()
+    context_version: str = Field(min_length=1)
+    accepted_at_iso: str = Field(min_length=1)
+
+
+AcceptedTurnContract: TypeAlias = AcceptedResearchAuthority
 
 
 class StandardWorkMode(StrEnum):

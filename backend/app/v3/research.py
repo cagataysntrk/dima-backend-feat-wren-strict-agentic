@@ -8,7 +8,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.v2.models import ResearchBrief, ResearchBriefStatus
+from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
 from app.v3.authority import AcceptedResearchAuthority
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.substrate.metabase.native_engine import NativeEngineBridge

@@ -15,7 +15,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine
 
 import app.v3.research_exploration as exploration_module
-from app.v2.models import (
+from app.v3.research_contracts import (
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
