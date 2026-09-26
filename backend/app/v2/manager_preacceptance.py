@@ -100,7 +100,14 @@ class DraftResearchDirective(FrozenModel):
     parent_scope: Literal[
         "CURRENT_OBLIGATION",
         "SIGNED_SECTION_ANALYTICAL_AUTHORITY",
-    ] = "CURRENT_OBLIGATION"
+    ] = Field(
+        default="CURRENT_OBLIGATION",
+        description=(
+            "CURRENT_OBLIGATION binds to one current draft analytical obligation. "
+            "SIGNED_SECTION_ANALYTICAL_AUTHORITY delegates exact prior analytical "
+            "identity hydration to the server for a signed-section continuation."
+        ),
+    )
     parent_obligation_id: str | None = Field(default=None, min_length=1)
     condition: Literal[
         "MATERIAL_NEW_DIRECTION",
@@ -264,6 +271,7 @@ Rules:
   and must not be promoted into a completion obligation.
 - For an ordinary turn, a directive parent_scope is CURRENT_OBLIGATION and the parent ID must
   name one current draft analytical obligation.
+- SIGNED_SECTION_CONTINUATION is server-provided control context, not user intent.
 - For a signed-section continuation, when a research policy governs the selected section's prior
   analysis rather than a new current analytical obligation, use
   SIGNED_SECTION_ANALYTICAL_AUTHORITY and set parent_obligation_id to null. Never reconstruct,
