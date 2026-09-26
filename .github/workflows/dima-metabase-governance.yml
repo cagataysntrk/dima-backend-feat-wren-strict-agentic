@@ -79,3 +79,33 @@ jobs:
           test ! -d frontend
           test ! -d web
           test ! -d ui
+
+
+      - name: Guard Core B as projection orchestration only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d backend/app/v3/product ]; then
+            python - <<'PY'
+          import ast
+          from pathlib import Path
+          root=Path("backend/app/v3/product")
+          forbidden=("sqlmodel","sqlalchemy","numpy","pandas","scipy","statistics","app.v3.substrate.metabase")
+          for path in root.glob("*.py"):
+              src=path.read_text(encoding="utf-8")
+              tree=ast.parse(src)
+              imports=set()
+              for node in ast.walk(tree):
+                  if isinstance(node,ast.Import):
+                      imports.update(a.name for a in node.names)
+                  elif isinstance(node,ast.ImportFrom):
+                      imports.add(node.module or "")
+              assert not any(name.startswith(forbidden) for name in imports),(path,imports)
+              assert "action:execute" not in src
+              assert "Session(" not in src
+              assert "select(" not in src
+          PY
+            test ! -d frontend
+            test ! -d ui
+            test ! -d web
+          fi

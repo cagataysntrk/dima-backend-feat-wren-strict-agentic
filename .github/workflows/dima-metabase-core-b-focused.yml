@@ -1,0 +1,79 @@
+name: dima-metabase-core-b-focused
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/product/**"
+      - "backend/tests/test_v3_product_*.py"
+      - "backend/eval/core_b/**"
+      - "backend/product_contracts/**"
+      - "backend/belgeler/metabase/DIMA_METABASE_CORE_B_CLOSURE_RECEIPT.md"
+      - ".github/workflows/dima-metabase-core-b-focused.yml"
+      - ".github/workflows/dima-metabase-governance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core-b-focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical test environment
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile Core B product package
+        working-directory: backend
+        run: |
+          python -m py_compile app/v3/product/*.py
+          python -m py_compile tests/test_v3_product_contracts.py
+
+      - name: Core B product focused proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_product_contracts.py
+
+      - name: Guard projection-only architecture
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          root=Path("app/v3/product")
+          forbidden=("sqlmodel","sqlalchemy","numpy","pandas","scipy","statistics","app.v3.substrate.metabase")
+          for path in root.glob("*.py"):
+              src=path.read_text(encoding="utf-8")
+              tree=ast.parse(src)
+              imports=set()
+              for node in ast.walk(tree):
+                  if isinstance(node,ast.Import):
+                      imports.update(a.name for a in node.names)
+                  elif isinstance(node,ast.ImportFrom):
+                      imports.add(node.module or "")
+              assert not any(name.startswith(forbidden) for name in imports),(path,imports)
+              assert "action:execute" not in src
+              assert "Session(" not in src
+              assert "select(" not in src
+          PY
+          test ! -d frontend
+          test ! -d ui
+          test ! -d web
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
