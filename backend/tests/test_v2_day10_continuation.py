@@ -33,7 +33,14 @@ from app.v2.manager_preacceptance import (
 )
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.product_models import VersionedReport
-from app.v2.models import ResolvedSemanticRef, SemanticTargetKind
+from app.v2.models import (
+    EpistemicLabel,
+    EvidenceArtifact,
+    EvidenceLinkedFinding,
+    HypothesisProvenance,
+    ResolvedSemanticRef,
+    SemanticTargetKind,
+)
 from app.v2.report_builder import (
     ReportBlock,
     ReportBlockKind,
@@ -1005,3 +1012,469 @@ def test_versioned_report_supersedes_without_mutating_prior_report():
     assert versioned.supersedes_report_ref == report_v1.report_id
     assert versioned.report.report_id != report_v1.report_id
     assert report_v1.model_dump(mode="json") == report_v1_dump
+
+
+def _accepted_contract(*, version: int = 1, contract_id: str = "atc-root"):
+    return AcceptedTurnContract(
+        contract_id=contract_id,
+        lineage_id="atl-1",
+        version=version,
+        turn_id=f"turn-{version}",
+        request_ref=f"req-{version}",
+        source_message_hash="a" * 64,
+        accepted_attempt_id=f"attempt-{version}",
+        model_role="RESEARCH_MANAGER",
+        obligation_ids=("U_ROOT", "U_REPORT"),
+        context_version="ctx-a",
+        accepted_at_iso="2026-09-26T00:00:00+00:00",
+    )
+
+
+def _ledger(*, metric_ref: str = "sem_" + "a" * 24, include_other: bool = True):
+    items = [
+        ObligationLedgerItem(
+            obligation_id="U_ROOT",
+            capability_key=ManagerCapabilityKey.ROOT_CAUSE,
+            origin=ObligationOrigin.USER_MUST,
+            priority=ObligationPriority.MUST,
+            polarity=ObligationPolarity.REQUIRED,
+            status=ObligationStatus.VERIFIED,
+            source_refs=("src-root",),
+            semantic_handle_refs=(metric_ref,),
+            evidence_refs=("E_ROOT",),
+            introduced_in_version=1,
+        ),
+        ObligationLedgerItem(
+            obligation_id="U_REPORT",
+            capability_key=ManagerCapabilityKey.REPORT,
+            origin=ObligationOrigin.USER_MUST,
+            priority=ObligationPriority.MUST,
+            polarity=ObligationPolarity.REQUIRED,
+            status=ObligationStatus.VERIFIED,
+            source_refs=("src-report",),
+            introduced_in_version=1,
+        ),
+    ]
+    if include_other:
+        items.append(
+            ObligationLedgerItem(
+                obligation_id="U_OTHER",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=("src-other",),
+                semantic_handle_refs=(metric_ref,),
+                evidence_refs=("E_OTHER",),
+                introduced_in_version=1,
+            )
+        )
+    return UserObligationLedger(
+        lineage_id="atl-1",
+        version=1,
+        items=tuple(items),
+    )
+
+
+def _authority_entry(
+    *,
+    metric_ref: str = "sem_" + "a" * 24,
+    root_finding: bool = True,
+    second_finding: bool = False,
+    include_section_evidence: bool = True,
+):
+    evidence = [
+        EvidenceArtifact(
+            artifact_id="E_ROOT",
+            task_id="task-root",
+            obligation_ids=("U_ROOT",),
+            query_contract_refs=("qc-root",),
+            evidence_kind="root_cause_analytics",
+            verified=True,
+        ),
+        EvidenceArtifact(
+            artifact_id="E_OTHER",
+            task_id="task-other",
+            obligation_ids=("U_OTHER",),
+            query_contract_refs=("qc-other",),
+            evidence_kind="standard_analytics",
+            verified=True,
+        ),
+    ]
+    findings = []
+    finding_refs = []
+    if root_finding:
+        findings.append(
+            EvidenceLinkedFinding(
+                finding_id="F_ROOT",
+                parent_obligation_id="U_ROOT",
+                statement="Bounded root-cause candidate.",
+                epistemic_label=EpistemicLabel.CANDIDATE_CAUSE,
+                evidence_refs=("E_ROOT",),
+                hypothesis_ref="H_ROOT",
+                semantic_handle_refs=(metric_ref,),
+                limitations=("causal confirmation unavailable",),
+                provenance=HypothesisProvenance(
+                    accepted_contract_id="atc-root",
+                    lineage_id="atl-1",
+                    run_id="mgr-1",
+                ),
+            )
+        )
+        finding_refs.append(ReportFindingRef(finding_ref="F_ROOT"))
+    if second_finding:
+        findings.append(
+            EvidenceLinkedFinding(
+                finding_id="F_OTHER",
+                parent_obligation_id="U_OTHER",
+                statement="Secondary analytical finding.",
+                epistemic_label=EpistemicLabel.ASSOCIATION,
+                evidence_refs=("E_OTHER",),
+                semantic_handle_refs=(metric_ref,),
+                limitations=(),
+                provenance=HypothesisProvenance(
+                    accepted_contract_id="atc-root",
+                    lineage_id="atl-1",
+                    run_id="mgr-1",
+                ),
+            )
+        )
+        finding_refs.append(ReportFindingRef(finding_ref="F_OTHER"))
+
+    block = ReportBlock(
+        block_id=BLK,
+        block_kind=ReportBlockKind.ROOT_CAUSE,
+        claim_kind=ReportClaimKind.EPISTEMIC if finding_refs else ReportClaimKind.NARRATIVE,
+        content="Governed selected-section content.",
+        finding_refs=tuple(finding_refs),
+    )
+    section = ReportSection(
+        section_id=SEC,
+        title="Presentation title is never authority",
+        blocks=(block,),
+        evidence_refs=(
+            (ReportEvidenceRef(evidence_ref="E_ROOT", query_contract_refs=("qc-root",)),)
+            if include_section_evidence
+            else ()
+        ),
+        semantic_scope=((metric_ref,) if root_finding or include_section_evidence else ()),
+        followup_context_ref=CTX_REF,
+    )
+    report = ReportDocument(
+        report_id=RPT,
+        title="Report",
+        sections=(section,),
+        provenance=ReportSourceProvenance(
+            accepted_contract_id="atc-root",
+            lineage_id="atl-1",
+            run_id="mgr-1",
+            tenant_binding="tenant-a",
+            context_version="ctx-a",
+        ),
+    )
+    prior = SimpleNamespace(
+        accepted_contract=_accepted_contract(),
+        ledger=_ledger(metric_ref=metric_ref),
+        evidence=tuple(evidence),
+        findings=tuple(findings),
+    )
+    return SimpleNamespace(
+        report=report,
+        section=section,
+        research_result=prior,
+        principal_subject="user-a",
+        tenant_binding="tenant-a",
+        context_version="ctx-a",
+        flow_binding="unused",
+        source_run_ref="mgr-1",
+        lineage_ref="atl-1",
+        report_version=1,
+    )
+
+
+def test_signed_section_authority_derives_root_parent_from_typed_provenance_only():
+    entry = _authority_entry()
+    authority = continuation_analytical_authority(entry)
+
+    assert authority.admitted_parent_refs == ("U_ROOT",)
+    assert authority.section_finding_refs == ("F_ROOT",)
+    assert authority.section_evidence_refs == ("E_ROOT",)
+    assert "U_REPORT" not in authority.admitted_parent_refs
+    assert "U_OTHER" not in authority.admitted_parent_refs
+
+
+def test_signed_section_authority_does_not_admit_foreign_active_ledger_obligation():
+    entry = _authority_entry()
+    authority = continuation_analytical_authority(entry)
+
+    # U_OTHER is active and analytically valid in the same prior ledger, but it is
+    # absent from selected-section Finding/Evidence provenance.
+    assert "U_OTHER" not in authority.admitted_parent_refs
+
+
+def test_signed_section_authority_preserves_ambiguity_instead_of_choosing_by_order():
+    entry = _authority_entry(second_finding=True)
+    # Both findings are deliberately represented by the selected section.
+    authority = continuation_analytical_authority(entry)
+
+    assert authority.admitted_parent_refs == ("U_OTHER", "U_ROOT")
+
+
+def test_signed_section_authority_can_resolve_to_no_parent_without_fabricating_one():
+    entry = _authority_entry(
+        root_finding=False,
+        include_section_evidence=False,
+    )
+    authority = continuation_analytical_authority(entry)
+
+    assert authority.admitted_parent_refs == ()
+
+
+def test_signed_continuation_broaden_hydrates_prior_analytical_parent_and_versions_immutably():
+    handles, metric, _, _ = _semantic_scope()
+    spans = SourceSpanRegistry()
+    gate = IntentAcceptanceGate(
+        source_spans=spans,
+        semantic_handles=handles,
+        allowed_continuation_parent_refs=("U_ROOT",),
+    )
+    active_contract = _accepted_contract()
+    active_ledger = _ledger(metric_ref=metric, include_other=False)
+
+    question = "mevcut raporu derinleştir ve gerekirse ek doğrulanmış analiz yap"
+    source_hash = spans.register_message(message_id="turn-2", text=question)
+    report_src = spans.mint_exact(
+        message_id="turn-2",
+        surface="mevcut raporu derinleştir",
+    ).source_ref
+    directive_src = spans.mint_exact(
+        message_id="turn-2",
+        surface="gerekirse ek doğrulanmış analiz yap",
+    ).source_ref
+
+    result = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="attempt-2",
+            turn_id="turn-2",
+            request_ref="req-2",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_REPORT_2",
+                    capability_key=ManagerCapabilityKey.REPORT,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(report_src,),
+                ),
+            ),
+            research_directives=(
+                ResearchDirective(
+                    directive_id="D_BROADEN",
+                    directive_type=ResearchDirectiveType.BROADEN_WITHIN_BUDGET,
+                    parent_obligation_id="U_ROOT",
+                    condition=ResearchDirectiveCondition.WITHIN_SYSTEM_BUDGET,
+                    source_refs=(directive_src,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-a",
+        active_contract=active_contract,
+        active_ledger=active_ledger,
+    )
+
+    assert result.status == AcceptanceStatus.ACCEPTED
+    assert result.contract.version == 2
+    assert result.contract.supersedes_contract_id == active_contract.contract_id
+    assert result.contract.lineage_id == active_contract.lineage_id
+    assert result.contract.research_directives[0].parent_obligation_id == "U_ROOT"
+    assert result.contract.research_directives[0].directive_type == ResearchDirectiveType.BROADEN_WITHIN_BUDGET
+    assert active_contract.version == 1
+    assert active_ledger.version == 1
+
+
+def test_report_obligation_still_cannot_become_analytical_directive_parent():
+    handles, _, _, _ = _semantic_scope()
+    spans = SourceSpanRegistry()
+    gate = IntentAcceptanceGate(source_spans=spans, semantic_handles=handles)
+    question = "raporu derinleştir"
+    source_hash = spans.register_message(message_id="turn-report", text=question)
+    src = spans.mint_exact(message_id="turn-report", surface=question).source_ref
+
+    result = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="a-report",
+            turn_id="turn-report",
+            request_ref="req-report",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_REPORT_CURRENT",
+                    capability_key=ManagerCapabilityKey.REPORT,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(src,),
+                ),
+            ),
+            research_directives=(
+                ResearchDirective(
+                    directive_id="D_BAD",
+                    directive_type=ResearchDirectiveType.BROADEN_WITHIN_BUDGET,
+                    parent_obligation_id="U_REPORT_CURRENT",
+                    condition=ResearchDirectiveCondition.WITHIN_SYSTEM_BUDGET,
+                    source_refs=(src,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-a",
+    )
+
+    assert result.status == AcceptanceStatus.REJECTED
+    assert any("active analytical authority" in reason for reason in result.reasons)
+
+
+def test_inherited_parent_must_be_explicitly_admitted_by_selected_section():
+    handles, metric, _, _ = _semantic_scope()
+    spans = SourceSpanRegistry()
+    gate = IntentAcceptanceGate(
+        source_spans=spans,
+        semantic_handles=handles,
+        allowed_continuation_parent_refs=("U_ROOT",),
+    )
+    question = "ek analiz"
+    source_hash = spans.register_message(message_id="turn-foreign", text=question)
+    src = spans.mint_exact(message_id="turn-foreign", surface=question).source_ref
+    active_contract = _accepted_contract()
+    active_ledger = _ledger(metric_ref=metric)
+
+    result = gate.evaluate(
+        envelope=UserIntentEnvelope(
+            attempt_id="a-foreign",
+            turn_id="turn-foreign",
+            request_ref="req-foreign",
+            source_message_hash=source_hash,
+            model_role="RESEARCH_MANAGER",
+            obligations=(
+                CandidateObligation(
+                    obligation_id="U_REPORT_2",
+                    capability_key=ManagerCapabilityKey.REPORT,
+                    origin=ObligationOrigin.USER_MUST,
+                    source_refs=(src,),
+                ),
+            ),
+            research_directives=(
+                ResearchDirective(
+                    directive_id="D_FOREIGN",
+                    directive_type=ResearchDirectiveType.BROADEN_WITHIN_BUDGET,
+                    parent_obligation_id="U_OTHER",
+                    condition=ResearchDirectiveCondition.WITHIN_SYSTEM_BUDGET,
+                    source_refs=(src,),
+                ),
+            ),
+        ),
+        tenant_binding="tenant-a",
+        context_version="ctx-a",
+        active_contract=active_contract,
+        active_ledger=active_ledger,
+    )
+
+    assert result.status == AcceptanceStatus.REJECTED
+    assert any("parent obligation missing" in reason for reason in result.reasons)
+
+
+def test_draft_signed_parent_is_server_hydrated_and_ambiguity_fails_closed():
+    spans = SourceSpanRegistry()
+    question = "raporu derinleştir ve gerekirse araştır"
+    source_hash = spans.register_message(message_id="turn-2", text=question)
+    runtime = ManagerRuntime(request_ref="req-2")
+    draft = IntentDraft(
+        obligations=(
+            IntentDraftObligation(
+                obligation_id="U_REPORT_2",
+                capability_key=ManagerCapabilityKey.REPORT,
+                origin="USER_MUST",
+                priority="MUST",
+                polarity="REQUIRED",
+                source_surfaces=("raporu derinleştir",),
+            ),
+        ),
+        research_directives=(
+            DraftResearchDirective(
+                directive_id="D1",
+                directive_type="BROADEN_WITHIN_BUDGET",
+                parent_scope="SIGNED_SECTION_ANALYTICAL_AUTHORITY",
+                parent_obligation_id=None,
+                condition="WITHIN_SYSTEM_BUDGET",
+                source_surfaces=("gerekirse araştır",),
+            ),
+        ),
+    )
+
+    controller = PreAcceptanceController(
+        structured=lambda *args, **kwargs: {},
+        source_spans=spans,
+        signed_section_continuation=True,
+        allowed_continuation_parent_refs=("U_ROOT",),
+    )
+    envelope = controller._envelope(
+        draft=draft,
+        grounded={},
+        message_id="turn-2",
+        source_hash=source_hash,
+        request_ref="req-2",
+        runtime=runtime,
+    )
+    assert envelope.research_directives[0].parent_obligation_id == "U_ROOT"
+
+    ambiguous = PreAcceptanceController(
+        structured=lambda *args, **kwargs: {},
+        source_spans=spans,
+        signed_section_continuation=True,
+        allowed_continuation_parent_refs=("U_ROOT", "U_OTHER"),
+    )
+    with pytest.raises(
+        ContinuationDirectiveParentResolutionError,
+        match="one unambiguous inherited analytical authority",
+    ):
+        ambiguous._envelope(
+            draft=draft,
+            grounded={},
+            message_id="turn-2",
+            source_hash=source_hash,
+            request_ref="req-2",
+            runtime=runtime,
+        )
+
+
+def test_adapt_and_broaden_taxonomy_remain_distinct_typed_policies():
+    broaden = DraftResearchDirective(
+        directive_id="D_B",
+        directive_type="BROADEN_WITHIN_BUDGET",
+        parent_scope="SIGNED_SECTION_ANALYTICAL_AUTHORITY",
+        parent_obligation_id=None,
+        condition="WITHIN_SYSTEM_BUDGET",
+        source_surfaces=("araştır",),
+    )
+    adapt = DraftResearchDirective(
+        directive_id="D_A",
+        directive_type="ADAPT_ON_EVIDENCE",
+        parent_scope="SIGNED_SECTION_ANALYTICAL_AUTHORITY",
+        parent_obligation_id=None,
+        condition="MATERIAL_NEW_DIRECTION",
+        source_surfaces=("yeni yönü takip et",),
+    )
+
+    assert broaden.condition == "WITHIN_SYSTEM_BUDGET"
+    assert adapt.condition == "MATERIAL_NEW_DIRECTION"
+
+    with pytest.raises(ValueError, match="MATERIAL_NEW_DIRECTION"):
+        DraftResearchDirective(
+            directive_id="D_BAD",
+            directive_type="ADAPT_ON_EVIDENCE",
+            parent_scope="SIGNED_SECTION_ANALYTICAL_AUTHORITY",
+            parent_obligation_id=None,
+            condition="WITHIN_SYSTEM_BUDGET",
+            source_surfaces=("araştır",),
+        )
