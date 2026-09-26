@@ -99,7 +99,7 @@ jobs:
           test "$(git rev-parse HEAD:backend/app/v3/structured_trace.py)" = "fd909369ca42a8fe97d28b86085f57a3ff687d14"
           test "$(git rev-parse HEAD:backend/app/v3/structured_transport.py)" = "00dc7dfa846c89f8f3a45e1a94ba72bbd6aef292"
           test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_request_differential.py)" = "ec336c0ffd14b9c97d305c2bf9f813b28d7a5aba"
-          test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_provider_diagnostic.py)" = "704e89923dc46a72c62af8f4ec0bf60e69cd57eb"
+          test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_provider_diagnostic.py)" = "030495ad850b842eebe05c67f016aab1e8f4437f"
           test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
           test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
           test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
@@ -266,28 +266,39 @@ jobs:
           value=json.loads(p.read_text(encoding="utf-8"))
           assert value["case_id"]=="root_cause_tr"
           assert value["model"]=="openai/gpt-5.6-luna"
-          assert value["diagnostic_classification"] in {"PROVIDER_ACCEPTED","PROVIDER_REJECTED"}
-          assert value["p17_provider_call_count"]==1
+          assert value["diagnostic_classification"] in {
+              "PROVIDER_REJECTED",
+              "BOUND_REACHED_NO_REJECTION",
+              "COMPOSITION_RETURNED_WITHIN_BOUND",
+          }
+          assert 1 <= value["p17_provider_call_count"] <= 2
           assert value["p19_provider_call_count"]==0
           assert value["automatic_retry"] is False
           assert value["full_sentinel_rerun"] is False
+          assert value["p17_semantic_turns_are_not_retries"] is True
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
           assert value["schema_name"]=="dima_p17_research_manager_proposal"
-          for key in (
-              "schema_fingerprint","request_envelope_fingerprint",
-              "system_prompt_hash","user_prompt_hash",
-              "provider_routing_policy_fingerprint",
-          ):
-              assert isinstance(value[key],str) and len(value[key])==64, key
-          assert value["call_ordinal_by_role"]==1
-          assert isinstance(value["request_trace"],dict)
-          assert value["request_trace"]["request_envelope_fingerprint"]==value["request_envelope_fingerprint"]
+          traces=value["request_traces"]
+          assert isinstance(traces,list)
+          assert len(traces)==value["p17_provider_call_count"]
+          assert value["call_ordinal_by_role"]==value["p17_provider_call_count"]
+          for trace in traces:
+              for key in (
+                  "schema_fingerprint","request_envelope_fingerprint",
+                  "system_prompt_hash","user_prompt_hash",
+                  "provider_routing_policy_fingerprint",
+              ):
+                  assert isinstance(trace[key],str) and len(trace[key])==64, (trace,key)
+              assert trace["owner"]=="p17_research_manager"
+          assert value["request_trace"]==traces[-1]
+          assert value["request_envelope_fingerprint"]==traces[-1]["request_envelope_fingerprint"]
           assert isinstance(value["http_status"],int)
-          if value["diagnostic_classification"]=="PROVIDER_ACCEPTED":
-              assert 200 <= value["http_status"] < 300
-              assert value["provider_error_code"] is None
-          else:
+          if value["diagnostic_classification"]=="PROVIDER_REJECTED":
+              assert value["rejected_call_ordinal"]==value["p17_provider_call_count"]
               assert not (200 <= value["http_status"] < 300)
+          else:
+              assert value["rejected_call_ordinal"] is None
+              assert 200 <= value["http_status"] < 300
           PY
 
       - name: Hard freeze

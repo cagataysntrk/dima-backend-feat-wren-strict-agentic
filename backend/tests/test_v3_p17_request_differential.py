@@ -2,6 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from lab.metabase.core_b.p17_provider_diagnostic import (
+    _BoundedP17Transport,
+    _DiagnosticBoundaryReached,
+)
 from lab.metabase.core_b.p17_request_differential import (
     HISTORICAL_DIAGNOSTIC_REQUEST_REF,
     SENTINEL_REQUEST_REF,
@@ -62,3 +68,36 @@ def test_diagnostic_runner_uses_frozen_sentinel_request_ref_namespace():
 
     assert 'request_ref=f"sentinel:{ROOT_CASE_ID}"' in source
     assert 'request_ref=f"diagnostic:{ROOT_CASE_ID}"' not in source
+
+
+
+class _FakeInnerTransport:
+    def __init__(self):
+        self.call_count = 0
+        self.trace_log = ()
+        self.last_trace = None
+        self.closed = False
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, user, schema, schema_name
+        self.call_count += 1
+        return '{"ok":true}'
+
+    def close(self):
+        self.closed = True
+
+
+def test_live_diagnostic_bound_allows_two_semantic_turns_and_blocks_third_before_provider():
+    inner = _FakeInnerTransport()
+    bounded = _BoundedP17Transport(inner, max_provider_calls=2)
+
+    assert bounded.structured_json("s","u",schema={},schema_name="x") == '{"ok":true}'
+    assert bounded.structured_json("s","u",schema={},schema_name="x") == '{"ok":true}'
+    assert bounded.call_count == 2
+
+    with pytest.raises(_DiagnosticBoundaryReached):
+        bounded.structured_json("s","u",schema={},schema_name="x")
+
+    assert bounded.call_count == 2
+    bounded.close()
+    assert inner.closed is True

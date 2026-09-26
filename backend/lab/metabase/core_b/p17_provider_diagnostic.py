@@ -67,6 +67,43 @@ def _trace_payload(trace):
     return trace.model_dump(mode="json")
 
 
+class _DiagnosticBoundaryReached(RuntimeError):
+    """Raised before a provider call that would exceed the authorized live bound."""
+
+
+class _BoundedP17Transport:
+    def __init__(self, inner, *, max_provider_calls: int) -> None:
+        self._inner = inner
+        self.max_provider_calls = int(max_provider_calls)
+
+    @property
+    def call_count(self) -> int:
+        return self._inner.call_count
+
+    @property
+    def last_trace(self):
+        return self._inner.last_trace
+
+    @property
+    def trace_log(self):
+        return self._inner.trace_log
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        if self._inner.call_count >= self.max_provider_calls:
+            raise _DiagnosticBoundaryReached(
+                f"authorized P17 provider-call bound reached: {self.max_provider_calls}"
+            )
+        return self._inner.structured_json(
+            system,
+            user,
+            schema=schema,
+            schema_name=schema_name,
+        )
+
+    def close(self) -> None:
+        self._inner.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base-url", required=True)
@@ -123,10 +160,13 @@ def main() -> int:
         model=MODEL,
         owner="research_intake",
     )
-    p17_transport = OpenRouterStructuredJSONTransport(
-        api_key=api_key,
-        model=MODEL,
-        owner="p17_research_manager",
+    p17_transport = _BoundedP17Transport(
+        OpenRouterStructuredJSONTransport(
+            api_key=api_key,
+            model=MODEL,
+            owner="p17_research_manager",
+        ),
+        max_provider_calls=2,
     )
     p19_transport = OpenRouterStructuredJSONTransport(
         api_key=api_key,
@@ -209,6 +249,9 @@ def main() -> int:
 
     source_hash = hashlib.sha256(question.encode("utf-8")).hexdigest()
     receipt: dict
+    classification: str
+    rejection = None
+    boundary_reached = False
     try:
         composer.compose(
             brief=intake_result.brief,
@@ -221,115 +264,94 @@ def main() -> int:
         if exc.code != "COGNITION_PROVIDER_REJECTED":
             raise
         if exc.diagnostic is None:
-            raise RuntimeError("provider rejection did not preserve diagnostic") from exc
-        if p17_transport.call_count != 1:
             raise RuntimeError(
-                f"diagnostic must stop after one P17 request, got {p17_transport.call_count}"
-            )
-        if p19_transport.call_count != 0:
-            raise RuntimeError(
-                f"diagnostic crossed into P19 unexpectedly: {p19_transport.call_count}"
-            )
-        diagnostic = exc.diagnostic
-        receipt = {
-            "schema_version": "core_b_p17_provider_diagnostic_v1",
-            "platform_sha": args.platform_sha,
-            "case_id": ROOT_CASE_ID,
-            "model": diagnostic.model,
-            "schema_name": diagnostic.schema_name,
-            "schema_fingerprint": diagnostic.schema_fingerprint,
-            "http_status": diagnostic.status_code,
-            "provider_error_code": diagnostic.provider_error_code,
-            "provider_error_message": diagnostic.provider_error_message,
-            "provider_error_metadata": diagnostic.provider_error_metadata,
-            "provider_request_id": diagnostic.provider_request_id,
-            "response_format_family": diagnostic.response_format_family,
-            "bounded_response_excerpt": diagnostic.bounded_response_excerpt,
-            "request_trace": _trace_payload(p17_transport.last_trace),
-            "request_envelope_fingerprint": diagnostic.request_envelope_fingerprint,
-            "system_prompt_hash": diagnostic.system_prompt_hash,
-            "user_prompt_hash": diagnostic.user_prompt_hash,
-            "provider_routing_policy_fingerprint": diagnostic.provider_routing_policy_fingerprint,
-            "call_ordinal_by_role": diagnostic.call_ordinal_by_role,
-            "provider_backend_identity": diagnostic.provider_backend_identity,
-            "diagnostic_classification": "PROVIDER_REJECTED",
-            "p17_provider_call_count": p17_transport.call_count,
-            "p19_provider_call_count": p19_transport.call_count,
-            "intake_provider_call_count": intake_transport.call_count,
-            "engine_sha": args.engine_sha,
-            "engine_runtime_tag": args.runtime_tag,
-            "full_sentinel_rerun": False,
-            "automatic_retry": False,
-        }
-        _write_receipt(args.output, receipt)
-        return 0
+                "provider rejection did not preserve diagnostic"
+            ) from exc
+        rejection = exc.diagnostic
+        classification = "PROVIDER_REJECTED"
+    except _DiagnosticBoundaryReached:
+        boundary_reached = True
+        classification = "BOUND_REACHED_NO_REJECTION"
+    else:
+        classification = "COMPOSITION_RETURNED_WITHIN_BOUND"
     finally:
+        traces = tuple(p17_transport.trace_log)
+        intake_calls = intake_transport.call_count
+        p17_calls = p17_transport.call_count
+        p19_calls = p19_transport.call_count
         intake_transport.close()
         p17_transport.close()
         p19_transport.close()
 
+    if not 1 <= p17_calls <= 2:
+        raise RuntimeError(
+            f"diagnostic provider-call bound violated: {p17_calls}"
+        )
+    if p19_calls != 0:
+        raise RuntimeError(
+            f"diagnostic crossed into P19 unexpectedly: {p19_calls}"
+        )
+    if len(traces) != p17_calls:
+        raise RuntimeError(
+            "P17 trace count does not match actual provider-call count"
+        )
+
+    last_trace = traces[-1]
+    if rejection is not None:
+        if rejection.call_ordinal_by_role != p17_calls:
+            raise RuntimeError(
+                "provider rejection ordinal does not match final P17 trace"
+            )
+        if (
+            rejection.request_envelope_fingerprint
+            != last_trace.request_envelope_fingerprint
+        ):
+            raise RuntimeError(
+                "provider rejection trace identity mismatch"
+            )
+
     receipt = {
-        "schema_version": "core_b_p17_provider_diagnostic_v1",
+        "schema_version": "core_b_p17_request_differential_live_v2",
         "platform_sha": args.platform_sha,
         "case_id": ROOT_CASE_ID,
         "model": MODEL,
-        "schema_name": (
-            p17_transport.last_trace.schema_name
-            if p17_transport.last_trace is not None
-            else None
+        "schema_name": last_trace.schema_name,
+        "schema_fingerprint": last_trace.schema_fingerprint,
+        "http_status": last_trace.http_status,
+        "provider_error_code": (
+            rejection.provider_error_code if rejection is not None else None
         ),
-        "schema_fingerprint": (
-            p17_transport.last_trace.schema_fingerprint
-            if p17_transport.last_trace is not None
-            else None
+        "provider_error_message": (
+            rejection.provider_error_message if rejection is not None else None
         ),
-        "http_status": (
-            p17_transport.last_trace.http_status
-            if p17_transport.last_trace is not None
-            else None
+        "provider_error_metadata": (
+            rejection.provider_error_metadata if rejection is not None else None
         ),
-        "provider_error_code": None,
-        "provider_error_message": None,
-        "provider_request_id": (
-            p17_transport.last_trace.provider_request_id
-            if p17_transport.last_trace is not None
-            else None
-        ),
-        "provider_backend_identity": (
-            p17_transport.last_trace.provider_backend_identity
-            if p17_transport.last_trace is not None
-            else None
-        ),
-        "request_trace": _trace_payload(p17_transport.last_trace),
+        "provider_request_id": last_trace.provider_request_id,
+        "provider_backend_identity": last_trace.provider_backend_identity,
+        "response_format_family": last_trace.response_format_family,
+        "request_trace": _trace_payload(last_trace),
+        "request_traces": [_trace_payload(trace) for trace in traces],
         "request_envelope_fingerprint": (
-            p17_transport.last_trace.request_envelope_fingerprint
-            if p17_transport.last_trace is not None
-            else None
+            last_trace.request_envelope_fingerprint
         ),
-        "system_prompt_hash": (
-            p17_transport.last_trace.system_prompt_hash
-            if p17_transport.last_trace is not None
-            else None
-        ),
-        "user_prompt_hash": (
-            p17_transport.last_trace.user_prompt_hash
-            if p17_transport.last_trace is not None
-            else None
-        ),
+        "system_prompt_hash": last_trace.system_prompt_hash,
+        "user_prompt_hash": last_trace.user_prompt_hash,
         "provider_routing_policy_fingerprint": (
-            p17_transport.last_trace.provider_routing_policy_fingerprint
-            if p17_transport.last_trace is not None
+            last_trace.provider_routing_policy_fingerprint
+        ),
+        "call_ordinal_by_role": last_trace.call_ordinal_by_role,
+        "rejected_call_ordinal": (
+            rejection.call_ordinal_by_role
+            if rejection is not None
             else None
         ),
-        "call_ordinal_by_role": (
-            p17_transport.last_trace.call_ordinal_by_role
-            if p17_transport.last_trace is not None
-            else None
-        ),
-        "diagnostic_classification": "PROVIDER_ACCEPTED",
-        "p17_provider_call_count": p17_transport.call_count,
-        "p19_provider_call_count": p19_transport.call_count,
-        "intake_provider_call_count": intake_transport.call_count,
+        "diagnostic_classification": classification,
+        "p17_provider_call_count": p17_calls,
+        "p17_semantic_turns_are_not_retries": True,
+        "p17_third_provider_call_blocked": boundary_reached,
+        "p19_provider_call_count": p19_calls,
+        "intake_provider_call_count": intake_calls,
         "engine_sha": args.engine_sha,
         "engine_runtime_tag": args.runtime_tag,
         "full_sentinel_rerun": False,
