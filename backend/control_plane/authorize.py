@@ -87,6 +87,10 @@ _ACTION_MIN_RANK = {
     "decision:write": 1,
     # DMP-DEC-0058 — Human Adoption truth; no side-effect authority.
     "decision:adopt": 1,
+    # DMP-DEC-0059 — external side-effect authorization is stricter than
+    # human adoption. This grants permission to authorize an exact ActionPlan;
+    # it does not grant execution capability.
+    "action:authorize": 2,
     # ── FAZ 1.3 · AJAN ARAÇ AKSİYONLARI (2026-08-04) ────────────────────────────
     # Ölçüldü: 15 aracın **15'i** `query:run` taşıyordu → `izinli_araclar()` ya 15'ini
     # döndürüyor ya hiçbirini. §11.2'nin *"ajan kullanıcının yetkisini AŞAMAZ"* değişmezi

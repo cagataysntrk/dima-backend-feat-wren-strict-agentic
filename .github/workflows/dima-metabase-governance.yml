@@ -55,6 +55,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/report_document.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/decision_intelligence.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/decision_adoption.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/action_authorization.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -883,4 +884,51 @@ jobs:
             test ! -f backend/app/routers/decision_adoption.py
             test ! -f backend/app/v3/action.py
             ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' "$HOT"
+          fi
+
+
+      - name: Require DMP-DEC-0059 Action authorization authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/app/v3/action_authorization.py ]; then
+            REVIEW="backend/belgeler/metabase/predev/ACTIONPLAN_EXECUTION_AUTHORITY_PREDEVELOPMENT_REVIEW.md"
+            DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+            grep -q "DMP-DEC-0059" "$REVIEW"
+            grep -q "PROVIDER-FREE AUTHORIZATION AUTHORITY IMPLEMENTATION AUTHORIZED" "$REVIEW"
+            grep -q "DMP-DEC-0059 — MINIMAL ACTIONPLAN / ACTIONAUTHORIZATION AUTHORITY" "$DECISIONS"
+            grep -q '"action:authorize": 2' backend/control_plane/authorize.py
+            ! grep -q '"action:execute"' backend/control_plane/authorize.py
+          fi
+
+      - name: Guard Action authorization as one-table no-execution authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/action_authorization.py"
+          if [ -f "$HOT" ]; then
+            python - <<'PY'
+          import ast
+          from pathlib import Path
+          source = Path("backend/app/v3/action_authorization.py").read_text(encoding="utf-8")
+          tree = ast.parse(source)
+          imports = set()
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Import):
+                  imports.update(alias.name for alias in node.names)
+              elif isinstance(node, ast.ImportFrom):
+                  imports.add(node.module or "")
+          forbidden=("app.v3.substrate.metabase","app.v3.research","app.wren","requests","httpx","numpy","pandas","scipy","statistics")
+          assert not any(name.startswith(forbidden) for name in imports)
+          mt=ast.parse(Path("backend/control_plane/models.py").read_text(encoding="utf-8"))
+          tables=set()
+          for node in mt.body:
+              if isinstance(node,ast.ClassDef):
+                  for item in node.body:
+                      if isinstance(item,ast.Assign) and any(isinstance(t,ast.Name) and t.id=="__tablename__" for t in item.targets) and isinstance(item.value,ast.Constant) and isinstance(item.value.value,str) and item.value.value.startswith("action_"):
+                          tables.add(item.value.value)
+          assert tables == {"action_authorization"}, tables
+          PY
+            test ! -f backend/app/v3/action_execution.py
+            ! grep -nE 'requests\.post|httpx\.|send_email|Slack|notification|ActionExecutionReceipt|ActionAttempt' "$HOT"
           fi

@@ -464,3 +464,22 @@ provider-free ActionPlan + ActionAuthorization authority only
 ```
 
 STOP before implementation.
+
+
+## 23. DMP-DEC-0059 lifecycle — implementation authorization
+
+Supervisor authority on 2026-09-26 ratifies:
+
+```text
+DMP-DEC-0059
+MINIMAL ACTIONPLAN / ACTIONAUTHORIZATION AUTHORITY
+
+RATIFIED /
+PROVIDER-FREE AUTHORIZATION AUTHORITY IMPLEMENTATION AUTHORIZED /
+EXECUTION NOT AUTHORIZED
+```
+
+First slice is limited to CURRENT P20/P21/ACCEPTED DecisionAdoption, trusted server-side capability
+metadata, typed transient ActionPlan, deterministic legality/authorization gates, admin+ explicit
+action:authorize permission and one immutable ActionAuthorizationRecord. Only
+REVERSIBLE_LOW_RISK is supported. No Action execution is authorized.

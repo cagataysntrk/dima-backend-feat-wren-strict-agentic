@@ -6087,3 +6087,26 @@ UI / router                           = 0 / 0
 ```
 
 DMP-DEC-0058 is sealed. This closure does not authorize Action production code or execution.
+
+
+---
+
+## DMP-DEC-0059 — MINIMAL ACTIONPLAN / ACTIONAUTHORIZATION AUTHORITY
+
+date: 2026-09-26
+
+status:
+`RATIFIED / PROVIDER-FREE AUTHORIZATION AUTHORITY IMPLEMENTATION AUTHORIZED / EXECUTION NOT AUTHORIZED`
+
+```text
+CURRENT P20 + CURRENT P21 + CURRENT ACCEPTED DecisionAdoption
++ trusted server-side ActionCapability
++ typed transient ActionPlan
+→ ActionPlanLegalityGate
+→ action:authorize = admin+
+→ immutable ActionAuthorizationRecord
+```
+
+Exactly one new durable Action authority family is authorized. ActionPlan remains transient. External
+execution, ActionAttempt/ExecutionReceipt, action:execute, connectors, models, analytics, UI and
+engine/Metabase-core changes remain forbidden.

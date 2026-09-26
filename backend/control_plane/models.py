@@ -1506,3 +1506,68 @@ class DecisionAdoptionRecord(SQLModel, table=True):
     supersedes_adoption_id: str | None = Field(default=None, foreign_key="decision_adoption.adoption_id", index=True)
     recorded_at: datetime = Field(index=True)
     adoption_fingerprint: str = Field(index=True)
+
+
+
+class ActionAuthorizationRecord(SQLModel, table=True):
+    """Immutable authorization over one exact canonical ActionPlan snapshot."""
+
+    __tablename__ = "action_authorization"
+    __table_args__ = (
+        UniqueConstraint(
+            "authorization_fingerprint",
+            name="uq_action_authorization_fingerprint",
+        ),
+    )
+
+    authorization_id: str = Field(primary_key=True)
+    tenant_binding: str = Field(index=True)
+
+    decision_brief_id: str = Field(
+        foreign_key="p21_decision_brief.decision_brief_id",
+        index=True,
+    )
+    decision_brief_fingerprint: str = Field(index=True)
+    decision_adoption_id: str = Field(
+        foreign_key="decision_adoption.adoption_id",
+        index=True,
+    )
+    decision_adoption_fingerprint: str = Field(index=True)
+
+    report_id: str = Field(
+        foreign_key="p20_report_document.report_id",
+        index=True,
+    )
+    report_fingerprint: str = Field(index=True)
+
+    action_kind: str = Field(index=True)
+    target_system: str = Field(index=True)
+    target_resource: str = Field(index=True)
+
+    canonical_plan_json: str = Field(sa_column=Column(Text, nullable=False))
+    plan_fingerprint: str = Field(index=True)
+
+    capability_key: str = Field(index=True)
+    capability_version: str = Field(index=True)
+    capability_fingerprint: str = Field(index=True)
+
+    risk_class: str = Field(index=True)
+    reversibility: str
+    confirmation_requirement: str
+    idempotency_strategy: str
+
+    authorization_policy_id: str = Field(index=True)
+    authorization_policy_version: str = Field(index=True)
+
+    authorizer_user_id: str = Field(index=True)
+    authorizer_context_json: str = Field(sa_column=Column(Text, nullable=False))
+
+    issued_at: datetime = Field(index=True)
+    expires_at: datetime = Field(index=True)
+
+    supersedes_authorization_id: str | None = Field(
+        default=None,
+        foreign_key="action_authorization.authorization_id",
+        index=True,
+    )
+    authorization_fingerprint: str = Field(index=True)

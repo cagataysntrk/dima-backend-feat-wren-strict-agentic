@@ -1,34 +1,35 @@
-# DMP-DEC-0058 minimal provider-free Human Adoption authority
-name: dima-metabase-adoption-provider-free
+# DMP-DEC-0059 minimal provider-free ActionPlan / ActionAuthorization authority
+name: dima-metabase-action-authorization-provider-free
 
 on:
   push:
-    branches: [feat/dima-metabase-platform]
+    branches:
+      - feat/dima-metabase-platform
     paths:
-      - "backend/app/v3/decision_adoption.py"
+      - "backend/app/v3/action_authorization.py"
       - "backend/control_plane/models.py"
       - "backend/control_plane/authorize.py"
-      - "backend/migrations/versions/f9e6c4fa1052_decision_adoption.py"
-      - "backend/tests/test_v3_decision_adoption.py"
-      - "backend/belgeler/metabase/predev/POST_P21_HUMAN_ADOPTION_ACTION_BOUNDARY_PREDEVELOPMENT_REVIEW.md"
+      - "backend/migrations/versions/fa07d50b2163_action_authorization.py"
+      - "backend/tests/test_v3_action_authorization.py"
+      - "backend/belgeler/metabase/predev/ACTIONPLAN_EXECUTION_AUTHORITY_PREDEVELOPMENT_REVIEW.md"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
       - "DIMA-METABASE-DURUM.md"
       - "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
       - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md"
+      - ".github/workflows/dima-metabase-action-authorization-provider-free.yml"
       - ".github/workflows/dima-metabase-adoption-provider-free.yml"
-      - ".github/workflows/dima-metabase-p21-provider-free.yml"
       - ".github/workflows/dima-metabase-governance.yml"
       - ".github/workflows/dima-metabase-m1.yml"
-      - "backend/belgeler/metabase/predev/ACTIONPLAN_EXECUTION_AUTHORITY_PREDEVELOPMENT_REVIEW.md"
+      - "backend/belgeler/metabase/predev/FIRST_ACTION_EXECUTION_CONNECTOR_PREDEVELOPMENT_REVIEW.md"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  adoption-provider-free:
+  action-authorization-provider-free:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     env:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
@@ -37,45 +38,54 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/pyproject.toml
+
       - name: Install canonical backend test environment
         working-directory: backend
         run: pip install -e ".[dev]"
-      - name: Enforce DMP-DEC-0058 authority
+
+      - name: Enforce DMP-DEC-0059 authority
         shell: bash
         run: |
           set -euo pipefail
-          REVIEW="backend/belgeler/metabase/predev/POST_P21_HUMAN_ADOPTION_ACTION_BOUNDARY_PREDEVELOPMENT_REVIEW.md"
+          REVIEW="backend/belgeler/metabase/predev/ACTIONPLAN_EXECUTION_AUTHORITY_PREDEVELOPMENT_REVIEW.md"
           DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
-          grep -q "DMP-DEC-0058" "$REVIEW"
-          grep -q "MINIMAL PROVIDER-FREE IMPLEMENTATION AUTHORIZED" "$REVIEW"
-          grep -q "DMP-DEC-0058 — MINIMAL HUMAN ADOPTION AUTHORITY" "$DECISIONS"
-          grep -q '"decision:adopt": 1' backend/control_plane/authorize.py
-      - name: Compile adoption authority
+          grep -q "DMP-DEC-0059" "$REVIEW"
+          grep -q "PROVIDER-FREE AUTHORIZATION AUTHORITY IMPLEMENTATION AUTHORIZED" "$REVIEW"
+          grep -q "DMP-DEC-0059 — MINIMAL ACTIONPLAN / ACTIONAUTHORIZATION AUTHORITY" "$DECISIONS"
+          grep -q '"action:authorize": 2' backend/control_plane/authorize.py
+          ! grep -q '"action:execute"' backend/control_plane/authorize.py
+
+      - name: Compile Action authorization slice
         working-directory: backend
-        run: python -m py_compile app/v3/decision_adoption.py control_plane/models.py control_plane/authorize.py migrations/versions/f9e6c4fa1052_decision_adoption.py tests/test_v3_decision_adoption.py
-      - name: Verify single Alembic head retains sealed Human Adoption revision
+        run: |
+          python -m py_compile             app/v3/action_authorization.py             control_plane/models.py             control_plane/authorize.py             migrations/versions/fa07d50b2163_action_authorization.py             tests/test_v3_action_authorization.py
+
+      - name: Verify single Alembic head
         working-directory: backend
         shell: bash
         run: |
           set -euo pipefail
-          python -m alembic heads > /tmp/adoption-heads.txt
-          test "$(grep -Ec '^[0-9a-f]+' /tmp/adoption-heads.txt)" -eq 1
-          python -m alembic history --verbose > /tmp/adoption-history.txt
-          grep -q 'Rev: f9e6c4fa1052' /tmp/adoption-history.txt
-          grep -q 'Rev: f8d5b3e9c041' /tmp/adoption-history.txt
-      - name: Guard one-table no-side-effect authority
+          python -m alembic heads > /tmp/action-heads.txt
+          test "$(grep -Ec '^[0-9a-f]+' /tmp/action-heads.txt)" -eq 1
+          grep -q '^fa07d50b2163' /tmp/action-heads.txt
+          python -m alembic history --verbose > /tmp/action-history.txt
+          grep -q 'Rev: f9e6c4fa1052' /tmp/action-history.txt
+
+      - name: Guard one-table authorization-only authority
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           import ast
           from pathlib import Path
-          source = Path("backend/app/v3/decision_adoption.py").read_text(encoding="utf-8")
+
+          source = Path("backend/app/v3/action_authorization.py").read_text(encoding="utf-8")
           tree = ast.parse(source)
           imports = set()
           imported = set()
@@ -85,14 +95,26 @@ jobs:
               elif isinstance(node, ast.ImportFrom):
                   imports.add(node.module or "")
                   imported.update(alias.name for alias in node.names)
+
           forbidden = (
-              "app.v3.substrate.metabase","app.v3.research","app.v3.claim_lineage",
-              "app.v3.hypothesis_root_cause","app.v3.business_relationship_policy",
-              "app.v3.action","app.wren","numpy","pandas","scipy","statistics",
+              "app.v3.substrate.metabase",
+              "app.v3.research",
+              "app.v3.claim_lineage",
+              "app.v3.hypothesis_root_cause",
+              "app.v3.business_relationship_policy",
+              "app.wren",
+              "requests",
+              "httpx",
+              "numpy",
+              "pandas",
+              "scipy",
+              "statistics",
           )
           assert not any(name.startswith(forbidden) for name in imports)
           assert "DecisionRecord" not in imported
+          assert "DecisionAdoptionRecord" not in imported
           assert "DecisionBriefRecord" not in imported
+
           models = Path("backend/control_plane/models.py")
           mt = ast.parse(models.read_text(encoding="utf-8"))
           tables = set()
@@ -102,54 +124,79 @@ jobs:
               for item in node.body:
                   if (
                       isinstance(item, ast.Assign)
-                      and any(isinstance(target, ast.Name) and target.id == "__tablename__" for target in item.targets)
+                      and any(
+                          isinstance(target, ast.Name)
+                          and target.id == "__tablename__"
+                          for target in item.targets
+                      )
                       and isinstance(item.value, ast.Constant)
-                      and item.value.value == "decision_adoption"
+                      and isinstance(item.value.value, str)
+                      and item.value.value.startswith("action_")
                   ):
                       tables.add(item.value.value)
-          assert tables == {"decision_adoption"}, tables
+          assert tables == {"action_authorization"}, tables
           PY
-          test ! -f backend/app/routers/decision_adoption.py
-          test ! -f backend/app/v3/action.py
-          ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/decision_adoption.py
-      - name: Verify sealed owners and legacy code untouched
+
+          test ! -f backend/app/routers/action_authorization.py
+          test ! -f backend/app/v3/action_execution.py
+          ! grep -nE 'requests\.post|httpx\.|send_email|Slack|ERP|ticket|notification|external API|execute_action|ActionExecutionReceipt|ActionAttempt' backend/app/v3/action_authorization.py
+          ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/action_authorization.py
+
+      - name: Verify sealed owners remain untouched
         shell: bash
         run: |
           set -euo pipefail
+          test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/v3/decision_adoption.py)"
+          test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/v3/decision_intelligence.py)"
+          test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/v3/report_document.py)"
           test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/decision.py backend/app/routers/decisions.py)"
-          test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/v3/decision_intelligence.py backend/app/v3/report_document.py)"
           test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
-      - name: Adoption focused provider-free proof
+
+      - name: ActionAuthorization focused provider-free proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_action_authorization.py
+
+      - name: Human Adoption remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_decision_adoption.py
+
       - name: P21 remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_p21_decision_intelligence.py
+
       - name: P20 remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_p20_report_document.py
+
       - name: P19 remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_p19_hypothesis_root_cause.py tests/test_v3_p19_provider.py tests/test_v3_p19_autonomous_eval.py
+
       - name: P18 remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_p18_business_relationship_policy.py
+
       - name: P17 remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_p17_authorization_transport.py tests/test_v3_p17_autonomous_provider_schema.py tests/test_v3_p17_autonomous_manager_eval.py tests/test_v3_p17_research_manager.py
+
       - name: P16 remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_p16_claim_lineage.py
+
       - name: P15 remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_p15_native_exploration.py
+
       - name: P14 remains GREEN
         working-directory: backend
         run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
-      - name: Verify provider/model/action budget
+
+      - name: Verify zero-execution/provider/model/engine budget
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/decision_adoption.py
-          ! grep -nE 'email|Slack|ERP|ticket|notification|external API|execute_action' backend/app/v3/decision_adoption.py
+          ! grep -nE 'requests\.post|httpx\.|send_email|Slack|ERP|ticket|notification|execute_action' backend/app/v3/action_authorization.py
+          ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/action_authorization.py
+          ! grep -q '"action:execute"' backend/control_plane/authorize.py
           test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
