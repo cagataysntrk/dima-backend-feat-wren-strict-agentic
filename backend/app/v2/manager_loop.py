@@ -1534,6 +1534,89 @@ class ResearchManagerLoop:
                         )
                     )
 
+        goal_task_states: list[GoalTaskActionState] = []
+        if ledger is not None and self._research_tool_runner is not None:
+            task_owner_ids = {
+                (
+                    task.question_id
+                    if task.origin == "USER_SEED"
+                    else task.parent_obligation_id
+                )
+                for task in research_tasks
+                if (
+                    task.question_id
+                    or task.parent_obligation_id
+                )
+            }
+            directive_parent_ids_all = {
+                directive.parent_obligation_id
+                for directive in (
+                    runtime.accepted_contract.research_directives
+                    if runtime.accepted_contract is not None
+                    else ()
+                )
+            }
+            declared_kinds = set(
+                self._research_tool_runner.declared_task_kinds
+            )
+            for item in ledger.active_user_must:
+                if item.status not in {
+                    ObligationStatus.ACCEPTED,
+                    ObligationStatus.READY,
+                    ObligationStatus.IN_PROGRESS,
+                }:
+                    continue
+                spec = self._capabilities.get(item.capability_key)
+                is_research_goal = (
+                    spec.lane.value == "RESEARCH"
+                    or item.obligation_id in directive_parent_ids_all
+                )
+                if not is_research_goal:
+                    continue
+                if item.obligation_id in task_owner_ids:
+                    continue
+
+                allowed: list[str] = []
+                candidates = (
+                    tuple(ManagerCapabilityKey)
+                    if item.capability_key == ManagerCapabilityKey.ROOT_CAUSE
+                    else (item.capability_key,)
+                )
+                for capability in candidates:
+                    candidate_spec = self._capabilities.get(capability)
+                    if candidate_spec.execution_mode.value != "DIRECT":
+                        continue
+                    if candidate_spec.lane.value not in {"STANDARD", "RESEARCH"}:
+                        continue
+                    try:
+                        kind = self._research_tasks.task_kind_for_capability(
+                            capability
+                        )
+                    except Exception:
+                        continue
+                    if kind not in declared_kinds:
+                        continue
+                    allowed.append(capability.value)
+
+                source_surfaces: list[str] = []
+                for source_ref in item.source_refs:
+                    try:
+                        span = self._source_spans.validate(source_ref)
+                    except Exception:
+                        continue
+                    value = str(span.exact_surface).strip()
+                    if value and value not in source_surfaces:
+                        source_surfaces.append(value)
+                if allowed and source_surfaces:
+                    goal_task_states.append(
+                        GoalTaskActionState(
+                            parent_obligation_id=item.obligation_id,
+                            goal_capability_key=item.capability_key.value,
+                            source_surfaces=tuple(source_surfaces),
+                            allowed_task_capabilities=tuple(dict.fromkeys(allowed)),
+                        )
+                    )
+
         ready_task_states: list[TaskActionState] = []
         for task in research_tasks:
             if task.state != "pending":
@@ -1661,6 +1744,7 @@ class ResearchManagerLoop:
             root_states=tuple(root_states),
             directive_states=tuple(directive_states),
             parent_evidence_states=tuple(parent_evidence_states),
+            goal_tasks=tuple(goal_task_states),
             ready_tasks=tuple(ready_task_states),
             inspectable_evidence=tuple(inspectable_states),
             fresh_disclosed_evidence_ref=fresh_ref,
