@@ -4,7 +4,19 @@ from __future__ import annotations
 
 import pytest
 
-from app.v2.manager_models import ResearchRunTerminal
+from app.v2.manager_models import (
+    AcceptedTurnContract,
+    ManagerCapabilityKey,
+    ManagerRunSnapshot,
+    ManagerState,
+    ObligationLedgerItem,
+    ObligationOrigin,
+    ObligationPolarity,
+    ObligationPriority,
+    ObligationStatus,
+    ResearchRunTerminal,
+    UserObligationLedger,
+)
 from app.v2.models import (
     EvidenceArtifact,
     ResearchTask,
@@ -17,6 +29,7 @@ from app.v2.persistence import (
     DurableCheckpointStore,
     StaleCheckpointWrite,
     restore_evidence_store,
+    restore_research_context,
     restore_semantic_handles,
     restore_task_registry,
 )
@@ -243,3 +256,79 @@ def test_scope_key_prevents_foreign_principal_or_context_resume(tmp_path):
     assert store.load(
         scope.model_copy(update={"context_version": "ctx-stale"})
     ) is None
+
+
+def test_terminal_runtime_rehydrates_and_opens_followup_without_losing_lineage(tmp_path):
+    scope = _scope()
+    records, handle_id = _semantic_records()
+    contract = AcceptedTurnContract(
+        contract_id="atc-day14",
+        lineage_id="atl-day14",
+        version=1,
+        turn_id="turn-1",
+        request_ref="req-1",
+        source_message_hash="a" * 64,
+        accepted_attempt_id="attempt-1",
+        model_role="RESEARCH_MANAGER",
+        obligation_ids=("U1",),
+        context_version="ctx-day14",
+        accepted_at_iso="2026-09-26T00:00:00+00:00",
+    )
+    ledger = UserObligationLedger(
+        lineage_id="atl-day14",
+        version=1,
+        items=(
+            ObligationLedgerItem(
+                obligation_id="U1",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.VERIFIED,
+                source_refs=("src-day14",),
+                semantic_handle_refs=(handle_id,),
+                evidence_refs=("evi_day14",),
+                introduced_in_version=1,
+            ),
+        ),
+    )
+    snapshot = ManagerRunSnapshot(
+        run_id="mgr-day14",
+        state=ManagerState.COMPLETED,
+        terminal_status=ResearchRunTerminal.VERIFIED_COMPLETE,
+        accepted_contract_id=contract.contract_id,
+        lineage_id=contract.lineage_id,
+        evidence_refs=("evi_day14",),
+        inspected_evidence_refs=("evi_day14",),
+        latest_evidence_ref="evi_day14",
+    )
+    state = CanonicalResumeState(
+        manager_snapshot=snapshot,
+        accepted_contract=contract,
+        ledger=ledger,
+        evidence=(_evidence(),),
+        completion_status=ResearchRunTerminal.VERIFIED_COMPLETE,
+        semantic_bindings=records,
+    )
+    store = DurableCheckpointStore(tmp_path)
+    checkpoint = store.commit(
+        scope=scope,
+        state=state,
+        expected_revision=0,
+    )
+
+    restored = restore_research_context(checkpoint)
+    assert restored.runtime.snapshot == snapshot
+    assert restored.accepted_contract == contract
+    assert restored.ledger == ledger
+    assert restored.evidence_store.get("evi_day14") == _evidence()
+
+    followup = restored.runtime.begin_followup_turn()
+    assert followup.state == ManagerState.UNDERSTANDING
+    assert followup.accepted_contract_id == contract.contract_id
+    assert followup.lineage_id == contract.lineage_id
+    assert followup.evidence_refs == ("evi_day14",)
+    assert followup.inspected_evidence_refs == ("evi_day14",)
+    assert followup.manager_turns == 0
+    assert followup.preacceptance_turns == 0
+    assert followup.research_manager_turns == 0
