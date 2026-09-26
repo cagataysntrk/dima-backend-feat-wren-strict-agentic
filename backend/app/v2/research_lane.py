@@ -285,6 +285,7 @@ class ResearchLaneService:
         conversation: ConversationStateV2,
         section_scope_refs: tuple[str, ...],
         context_scope_by_kind: dict[str, tuple[str, ...]],
+        allowed_continuation_parent_refs: tuple[str, ...],
         progress_callback: Callable[[str, tuple[str, ...]], None] | None = None,
         cancel_check: Callable[[], bool] | None = None,
         answer_now_check: Callable[[], bool] | None = None,
@@ -313,6 +314,7 @@ class ResearchLaneService:
             source_spans=source_spans,
             semantic_handles=semantic_handles,
             allowed_context_scope_refs=section_scope_refs,
+            allowed_continuation_parent_refs=allowed_continuation_parent_refs,
         )
         core_adapter = ManagerCoreAnalyticsAdapter(
             semantic_handles=semantic_handles,
@@ -366,6 +368,8 @@ class ResearchLaneService:
             cancel_check=cancel_check,
             answer_now_check=answer_now_check,
             context_scope_by_kind=context_scope_by_kind,
+            signed_section_continuation=True,
+            allowed_continuation_parent_refs=allowed_continuation_parent_refs,
         )
         outcome = loop.run(
             question=body.question,
