@@ -171,10 +171,27 @@ class ManagerSemanticResolutionAdapter:
             provider=self._semantic_decision_provider,
             diagnostic_sink=self._semantic_diagnostic_sink,
         )
-        self._preacceptance_semantic_session = PreAcceptanceSemanticDecisionSession(
-            tenant_binding=tenant_binding,
-            context_version=semantic_context.context_version.version,
+        self._preacceptance_semantic_session: (
+            PreAcceptanceSemanticDecisionSession | None
+        ) = None
+
+    def begin_preacceptance_semantic_session(
+        self,
+        *,
+        message_id: str,
+        message_hash: str,
+    ) -> None:
+        """Start fresh ephemeral source-decision memory for one finite protocol."""
+
+        session = PreAcceptanceSemanticDecisionSession(
+            tenant_binding=self._tenant_binding,
+            context_version=self._semantic_context.context_version.version,
         )
+        session.bind_message(
+            message_id=message_id,
+            message_hash=message_hash,
+        )
+        self._preacceptance_semantic_session = session
 
     def _time_dimension(self, anchor_handle: str | None) -> str:
         cube_names: set[str] = set()
@@ -355,7 +372,10 @@ class ManagerSemanticResolutionAdapter:
         if len(source_contexts) == 1:
             decision_context = next(iter(source_contexts))
 
-        message_identity = self._preacceptance_semantic_session.message_identity
+        session = self._preacceptance_semantic_session
+        message_identity = (
+            session.message_identity if session is not None else None
+        )
         message_id = message_identity[0] if message_identity is not None else ""
         decision_context_fingerprint = hashlib.sha256(
             (decision_context or "").encode("utf-8")
@@ -480,9 +500,9 @@ class ManagerSemanticResolutionAdapter:
                 bool(candidate_set.retrieval_truncated),
             )
             memoized_negative = (
-                self._preacceptance_semantic_session.negative_decision_by_key.get(
-                    negative_key
-                )
+                session.negative_decision_by_key.get(negative_key)
+                if session is not None
+                else None
             )
             if memoized_negative is not None:
                 replay = replace(
@@ -556,9 +576,8 @@ class ManagerSemanticResolutionAdapter:
                         "negative_memo_key"
                     )
                     if memo_key is not None:
-                        self._preacceptance_semantic_session.negative_decision_by_key[
-                            memo_key
-                        ] = selection
+                        if session is not None:
+                            session.negative_decision_by_key[memo_key] = selection
 
         resolved: list[ManagerResolvedSemantic] = []
         unresolved_source_refs: list[str] = []
@@ -1125,11 +1144,13 @@ class ManagerSemanticResolutionAdapter:
                 self._source_spans.validate(source_ref)
                 for source_ref in args.source_refs
             ]
-            for span in spans:
-                self._preacceptance_semantic_session.bind_message(
-                    message_id=span.message_id,
-                    message_hash=span.message_hash,
-                )
+            session = self._preacceptance_semantic_session
+            if session is not None:
+                for span in spans:
+                    session.bind_message(
+                        message_id=span.message_id,
+                        message_hash=span.message_hash,
+                    )
             hints = (
                 args.target_kind_hints
                 or tuple("unknown" for _ in args.source_refs)
@@ -1167,7 +1188,9 @@ class ManagerSemanticResolutionAdapter:
             # semantic kind for the whole finite preacceptance protocol. Owner
             # authority remains separately minted by BindingGate on every revision.
             source_truth_by_key = (
-                self._preacceptance_semantic_session.source_truth_by_key
+                session.source_truth_by_key
+                if session is not None
+                else {}
             )
 
             # Pass 1 is the existing bounded semantic path. It remains the owner whenever
