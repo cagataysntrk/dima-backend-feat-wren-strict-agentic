@@ -734,6 +734,8 @@ class ResearchManagerLoop:
         cancel_check: Callable[[], bool] | None = None,
         answer_now_check: Callable[[], bool] | None = None,
         context_scope_by_kind: dict[str, tuple[str, ...]] | None = None,
+        signed_section_continuation: bool = False,
+        allowed_continuation_parent_refs: tuple[str, ...] = (),
     ) -> None:
         structured = getattr(llm, "structured_json", None)
         if not callable(structured):
@@ -752,6 +754,10 @@ class ResearchManagerLoop:
             for kind, refs in (context_scope_by_kind or {}).items()
             if refs
         }
+        self._signed_section_continuation = bool(signed_section_continuation)
+        self._allowed_continuation_parent_refs = tuple(
+            dict.fromkeys(allowed_continuation_parent_refs)
+        )
         self._alias_by_handle: dict[str, str] = {}
         self._handle_by_alias: dict[str, str] = {}
 
@@ -2530,6 +2536,8 @@ class ResearchManagerLoop:
             source_spans=self._source_spans,
             capabilities=self._capabilities,
             context_scope_by_kind=self._context_scope_by_kind,
+            signed_section_continuation=self._signed_section_continuation,
+            allowed_continuation_parent_refs=self._allowed_continuation_parent_refs,
         )
         try:
             outcome = controller.run(
