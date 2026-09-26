@@ -3,3 +3,5 @@ cases=std_clause_order,relationship_explicit_tr,adaptive_tr,canonical_reordered,
 max_calls=70
 
 diagnostic_refresh=0c1501944052c7d4488823803f9a65ea70703b9c
+
+isolated_case_revision=de575ccc906b8bde918099557d7828b12b86b78a
