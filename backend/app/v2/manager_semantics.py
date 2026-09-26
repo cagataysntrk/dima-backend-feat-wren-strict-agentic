@@ -12,7 +12,8 @@ Legacy SemanticResolver may remain for non-Manager compatibility paths, but this
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, field, replace
+import hashlib
 from typing import Any, Callable
 
 from app.v2.manager_models import SemanticHandle
@@ -81,6 +82,48 @@ class ManagerSemanticResolutionResult(FrozenModel):
         )
 
 
+@dataclass
+class PreAcceptanceSemanticDecisionSession:
+    """Ephemeral source-decision memory for one immutable Product user turn.
+
+    This is not a semantic authority registry and never stores sem_* handles.
+    It preserves only canonical source->candidate truth and exact negative
+    cognition receipts across finite preacceptance draft revisions.
+    """
+
+    tenant_binding: str
+    context_version: str
+    message_identity: tuple[str, str] | None = None
+    source_truth_by_key: dict[
+        tuple[str, str], BoundedSemanticSelection
+    ] = field(default_factory=dict)
+    negative_decision_by_key: dict[
+        tuple[
+            str,
+            str,
+            str,
+            str,
+            str,
+            tuple[str, ...],
+            str,
+            bool,
+            bool,
+            bool,
+        ],
+        BoundedSemanticSelection,
+    ] = field(default_factory=dict)
+
+    def bind_message(self, *, message_id: str, message_hash: str) -> None:
+        identity = (message_id, message_hash)
+        if self.message_identity is None:
+            self.message_identity = identity
+            return
+        if self.message_identity != identity:
+            raise ValueError(
+                "preacceptance semantic decision session cannot span user messages"
+            )
+
+
 class ManagerSemanticResolutionAdapter:
     def __init__(
         self,
@@ -127,6 +170,10 @@ class ManagerSemanticResolutionAdapter:
             binding_gate=self._binding_gate,
             provider=self._semantic_decision_provider,
             diagnostic_sink=self._semantic_diagnostic_sink,
+        )
+        self._preacceptance_semantic_session = PreAcceptanceSemanticDecisionSession(
+            tenant_binding=tenant_binding,
+            context_version=semantic_context.context_version.version,
         )
 
     def _time_dimension(self, anchor_handle: str | None) -> str:
@@ -308,6 +355,12 @@ class ManagerSemanticResolutionAdapter:
         if len(source_contexts) == 1:
             decision_context = next(iter(source_contexts))
 
+        message_identity = self._preacceptance_semantic_session.message_identity
+        message_id = message_identity[0] if message_identity is not None else ""
+        decision_context_fingerprint = hashlib.sha256(
+            (decision_context or "").encode("utf-8")
+        ).hexdigest()
+
         grouped_entries: dict[
             tuple[str, str], list[tuple[str | None, str, str, str | None]]
         ] = {}
@@ -345,17 +398,18 @@ class ManagerSemanticResolutionAdapter:
                 )
             )
 
+            candidate_set = active_linker.preview_candidate_set(
+                request_id=request_id,
+                surface=text,
+                kind_hint=kind_hint,
+                decision_context=decision_context,
+            )
+            candidate_ids = tuple(
+                item.card.candidate_id for item in candidate_set.bindings
+            )
+
             existing = source_truth.get(key)
             if existing is not None and existing.binding is not None:
-                candidate_set = active_linker.preview_candidate_set(
-                    request_id=request_id,
-                    surface=text,
-                    kind_hint=kind_hint,
-                    decision_context=decision_context,
-                )
-                candidate_ids = tuple(
-                    item.card.candidate_id for item in candidate_set.bindings
-                )
                 candidate_id = existing.binding.card.candidate_id
                 current_binding = candidate_set.binding(candidate_id)
                 if current_binding is not None:
@@ -411,9 +465,51 @@ class ManagerSemanticResolutionAdapter:
                     )
                 continue
 
+            generator = getattr(active_linker, "_generator", None)
+            candidate_source_class = type(generator).__qualname__
+            negative_key = (
+                message_id,
+                source_ref,
+                normalized_kind,
+                discovery_pass,
+                candidate_source_class,
+                tuple(sorted(candidate_ids)),
+                decision_context_fingerprint,
+                bool(candidate_set.too_broad),
+                bool(candidate_set.retrieval_exhaustive),
+                bool(candidate_set.retrieval_truncated),
+            )
+            memoized_negative = (
+                self._preacceptance_semantic_session.negative_decision_by_key.get(
+                    negative_key
+                )
+            )
+            if memoized_negative is not None:
+                replay = replace(
+                    memoized_negative,
+                    request_id=request_id,
+                    surface=text,
+                    candidate_ids=candidate_ids,
+                )
+                selection_by_source_key[key] = replay
+                if self._semantic_diagnostic_sink is not None:
+                    self._semantic_diagnostic_sink(
+                        {
+                            "kind": "semantic_negative_decision_reuse",
+                            "source_ref": source_ref,
+                            "kind_hint": normalized_kind,
+                            "owner_obligation_ids": list(owners),
+                            "discovery_pass": discovery_pass,
+                            "candidate_ids": list(candidate_ids),
+                            "status": replay.status,
+                        }
+                    )
+                continue
+
             cognition_requests.append((request_id, text, kind_hint))
             request_key_by_id[request_id] = key
             diagnostic_metadata[request_id] = {
+                "negative_memo_key": negative_key,
                 "owner_obligation_id": (
                     owners[0] if len(owners) == 1 else None
                 ),
@@ -455,6 +551,14 @@ class ManagerSemanticResolutionAdapter:
                 selection_by_source_key[key] = selection
                 if selection.status == "BOUND" and selection.binding is not None:
                     source_truth[key] = selection
+                elif selection.status == "ABSTAIN":
+                    memo_key = diagnostic_metadata[request_id].get(
+                        "negative_memo_key"
+                    )
+                    if memo_key is not None:
+                        self._preacceptance_semantic_session.negative_decision_by_key[
+                            memo_key
+                        ] = selection
 
         resolved: list[ManagerResolvedSemantic] = []
         unresolved_source_refs: list[str] = []
@@ -1021,6 +1125,11 @@ class ManagerSemanticResolutionAdapter:
                 self._source_spans.validate(source_ref)
                 for source_ref in args.source_refs
             ]
+            for span in spans:
+                self._preacceptance_semantic_session.bind_message(
+                    message_id=span.message_id,
+                    message_hash=span.message_hash,
+                )
             hints = (
                 args.target_kind_hints
                 or tuple("unknown" for _ in args.source_refs)
@@ -1055,11 +1164,11 @@ class ManagerSemanticResolutionAdapter:
                     )
 
             # One exact current-message source has one canonical source truth per
-            # semantic kind for this resolution invocation. Owner authority remains
-            # separately minted by BindingGate.
-            source_truth_by_key: dict[
-                tuple[str, str], BoundedSemanticSelection
-            ] = {}
+            # semantic kind for the whole finite preacceptance protocol. Owner
+            # authority remains separately minted by BindingGate on every revision.
+            source_truth_by_key = (
+                self._preacceptance_semantic_session.source_truth_by_key
+            )
 
             # Pass 1 is the existing bounded semantic path. It remains the owner whenever
             # it has candidates, ambiguity, linker abstention/unavailability, or a
