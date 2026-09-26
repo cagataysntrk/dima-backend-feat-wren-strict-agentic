@@ -41,6 +41,7 @@ from app.v2.manager_models import (
     ResearchDirectiveDisposition,
     ResearchDirectiveDispositionStatus,
     ResearchDirectiveType,
+    SemanticBindingRef,
     UserIntentEnvelope,
 )
 from app.v2.manager_policy import ManagerCapabilityRegistry
@@ -2440,6 +2441,189 @@ class ResearchManagerLoop:
                 f"hypothesis_ref resolves to {len(matches)} active ROOT_CAUSE ledgers"
             )
         return matches[0]
+
+    def _materialize_goal_task_from_decision(
+        self,
+        *,
+        message_id: str,
+        runtime: ManagerRuntime,
+        executor,
+        task_registry: ResearchTaskRegistry,
+        decision: ManagerDecisionTransport,
+        action_ref: str,
+    ) -> tuple[ResearchTask | None, dict[str, Any]]:
+        """Late-bind one concrete analytical task under accepted Research goal authority.
+
+        The Manager supplies only task family + exact current-user-source substrings.
+        Canonical semantic identity remains Resolver/registry-owned. Failure to ground the
+        child task never rewrites or clarifies the already-accepted parent USER_MUST goal.
+        """
+
+        parent_id = decision.goal_parent_obligation_id
+        capability = decision.goal_task_capability
+        if parent_id is None or capability is None or runtime.ledger is None:
+            return None, {
+                "kind": "goal_task_materialization_rejected",
+                "reason": "missing accepted parent/capability",
+            }
+        parent = next(
+            (
+                item
+                for item in runtime.ledger.items
+                if item.obligation_id == parent_id
+            ),
+            None,
+        )
+        if parent is None:
+            return None, {
+                "kind": "goal_task_materialization_rejected",
+                "reason": "accepted parent obligation unavailable",
+                "parent_obligation_id": parent_id,
+            }
+
+        parent_surfaces: list[str] = []
+        for source_ref in parent.source_refs:
+            try:
+                span = self._source_spans.validate(source_ref)
+            except Exception:
+                continue
+            if span.message_id != message_id:
+                continue
+            parent_surfaces.append(str(span.exact_surface))
+
+        proposed = tuple(decision.goal_task_semantic_surfaces)
+        if not proposed:
+            return None, {
+                "kind": "goal_task_materialization_rejected",
+                "reason": "no concrete semantic surfaces proposed",
+                "parent_obligation_id": parent_id,
+            }
+
+        refs: list[str] = []
+        hints: list[str] = []
+        for item in proposed:
+            surface = str(item.surface)
+            if not any(surface in parent_surface for parent_surface in parent_surfaces):
+                return None, {
+                    "kind": "goal_task_materialization_rejected",
+                    "reason": "task semantic surface is outside accepted parent source lineage",
+                    "parent_obligation_id": parent_id,
+                    "surface": surface,
+                }
+            if item.kind_hint == "unknown":
+                return None, {
+                    "kind": "goal_task_materialization_rejected",
+                    "reason": "concrete task semantic kind cannot remain unknown",
+                    "parent_obligation_id": parent_id,
+                    "surface": surface,
+                }
+            try:
+                ref = self._source_spans.mint_exact(
+                    message_id=message_id,
+                    surface=surface,
+                ).source_ref
+            except Exception as exc:
+                return None, {
+                    "kind": "goal_task_materialization_rejected",
+                    "reason": f"exact task source invalid: {exc}",
+                    "parent_obligation_id": parent_id,
+                    "surface": surface,
+                }
+            refs.append(ref)
+            hints.append(item.kind_hint)
+
+        step = runtime.call_tool(
+            ManagerToolCall(
+                name=ManagerToolName.RESOLVE_SEMANTICS,
+                args={
+                    "provenance": "USER_SOURCE",
+                    "source_refs": tuple(refs),
+                    "source_obligation_ids": tuple(parent_id for _ in refs),
+                    "target_kind_hints": tuple(hints),
+                    "temporal_anchor_handle": None,
+                    "base_period_handle": None,
+                },
+            ),
+            executor=executor,
+        )
+        result = step.tool_result
+        resolved = tuple(getattr(result, "resolved", ()) or ())
+        by_ref = {
+            item.source_ref: item
+            for item in resolved
+            if getattr(item, "source_ref", None)
+        }
+        bindings: list[SemanticBindingRef] = []
+        handles: list[str] = []
+        for ref in refs:
+            item = by_ref.get(ref)
+            if item is None:
+                continue
+            handle = item.handle
+            bindings.append(
+                SemanticBindingRef(
+                    source_ref=ref,
+                    handle_id=handle.handle_id,
+                    target_kind=handle.target_kind,
+                )
+            )
+            handles.append(handle.handle_id)
+
+        candidate = parent.model_copy(
+            update={
+                "capability_key": capability,
+                "semantic_handle_refs": tuple(dict.fromkeys(handles)),
+                "semantic_bindings": tuple(bindings),
+                "scope_refs": (),
+                "ranking_direction": decision.goal_task_ranking_direction,
+                "ranking_limit": decision.goal_task_ranking_limit,
+            }
+        )
+        if self._root_cause_context is None:
+            return None, {
+                "kind": "goal_task_materialization_rejected",
+                "reason": "semantic authority registry unavailable",
+                "parent_obligation_id": parent_id,
+            }
+        validator = CapabilityBindingValidator(
+            semantic_handles=self._root_cause_context.semantic_handles,
+            capabilities=self._capabilities,
+        )
+        validation = validator.validate(
+            candidate,
+            tenant_binding=self._root_cause_context.tenant_binding,
+            context_version=self._root_cause_context.context_version,
+        )
+        if not validation.valid or validation.binding is None:
+            return None, {
+                "kind": "goal_task_grounding_failed",
+                "parent_obligation_id": parent_id,
+                "capability": capability.value,
+                "reasons": list(validation.reasons),
+            }
+
+        import hashlib
+        payload = (
+            f"{runtime.snapshot.run_id}|{action_ref}|{parent_id}|{capability.value}|"
+            + "|".join(sorted(handles))
+        )
+        task_id = "goal_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
+        task = self._research_tasks.materialize_goal_task(
+            runtime=runtime,
+            parent_obligation_id=parent_id,
+            capability_key=capability,
+            task_id=task_id,
+            input_refs=tuple(dict.fromkeys(handles)),
+        )
+        task = task_registry.register(task)
+        return task, {
+            "kind": "goal_task_materialized",
+            "parent_obligation_id": parent_id,
+            "task_id": task.task_id,
+            "task_kind": task.task_kind,
+            "capability": capability.value,
+            "semantic_handle_count": len(task.input_refs),
+        }
 
     @staticmethod
     def _pending_user_seed_for_obligation(
