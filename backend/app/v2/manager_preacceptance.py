@@ -317,10 +317,13 @@ account for current-message correction/retraction evidence without creating an E
 business obligation. Do not demand an EXCLUDED business obligation unless the current user
 message explicitly source-grounds the business target being excluded. Do not VETO merely
 because a control request is not represented as an obligation or research directive.
+Coverage is not a reclassification pass: a source region already owned only by a typed
+control_request cannot be promoted into a business-polarity veto.
 
 Research directives are policy/scope, not tenant semantic entities. Do not require their
 scope wording to resolve as a metric/dimension/filter unless the draft separately declares
-that wording as a semantic surface.
+that wording as a semantic surface. Do not emit UNMODELED_DIRECTIVE for a source region
+already fully contained by a declared research_directive source surface.
 
 Return PASS or VETO with exact source substrings that justify the veto. The audit may
 block commit; it can never create authority.
@@ -477,6 +480,123 @@ class PreAcceptanceController:
             model=CoverageAudit,
             schema_name="dima_intent_coverage_v1",
         )
+
+    def _enforce_coverage_source_ownership(
+        self,
+        *,
+        draft: IntentDraft,
+        audit: CoverageAudit,
+        message_id: str,
+    ) -> tuple[CoverageAudit, tuple[CoverageIssue, ...]]:
+        """Keep Coverage veto-only over genuinely uncovered typed source regions.
+
+        Coverage may discover omitted business intent, but it may not reclassify source
+        regions that the current draft already assigns to a different non-authoritative
+        control domain, nor claim a research directive is unmodeled when its exact issue
+        region is already contained by a declared directive source span.
+
+        This is a source-provenance rule only. It does not inspect words, labels, titles,
+        languages, capability names, or semantic candidates.
+        """
+
+        if audit.status == "PASS":
+            return audit, ()
+
+        def refs_for(surfaces: tuple[str, ...]) -> tuple[str, ...]:
+            refs: list[str] = []
+            for surface in surfaces:
+                try:
+                    refs.append(
+                        self._source_spans.mint_exact(
+                            message_id=message_id,
+                            surface=surface,
+                        ).source_ref
+                    )
+                except (KeyError, ValueError):
+                    # Invalid auditor source surfaces are not silently forgiven here.
+                    # They remain effective veto issues and follow the existing bounded
+                    # revision/fail-closed path.
+                    return ()
+            return tuple(refs)
+
+        obligation_refs = tuple(
+            ref
+            for item in draft.obligations
+            for ref in refs_for(item.source_surfaces)
+        )
+        semantic_refs = tuple(
+            ref
+            for item in draft.obligations
+            for ref in refs_for(
+                tuple(surface.surface for surface in item.semantic_surfaces)
+            )
+        )
+        directive_refs = tuple(
+            ref
+            for item in draft.research_directives
+            for ref in refs_for(item.source_surfaces)
+        )
+        control_refs = tuple(
+            ref
+            for item in draft.control_requests
+            for ref in refs_for(item.source_surfaces)
+        )
+        any_typed_refs = tuple(
+            dict.fromkeys(
+                (*obligation_refs, *semantic_refs, *directive_refs, *control_refs)
+            )
+        )
+
+        def fully_contained(
+            issue_refs: tuple[str, ...],
+            owner_refs: tuple[str, ...],
+        ) -> bool:
+            return bool(issue_refs) and all(
+                any(
+                    self._source_spans.contains(owner_ref, issue_ref)
+                    for owner_ref in owner_refs
+                )
+                for issue_ref in issue_refs
+            )
+
+        def overlaps_business_owner(issue_refs: tuple[str, ...]) -> bool:
+            business_refs = (*obligation_refs, *semantic_refs)
+            return any(
+                self._source_spans.contains(owner_ref, issue_ref)
+                or self._source_spans.contains(issue_ref, owner_ref)
+                for issue_ref in issue_refs
+                for owner_ref in business_refs
+            )
+
+        kept: list[CoverageIssue] = []
+        dropped: list[CoverageIssue] = []
+        for issue in audit.issues:
+            issue_refs = refs_for(issue.source_surfaces)
+            if not issue_refs:
+                kept.append(issue)
+                continue
+
+            invalid_veto = False
+            if issue.kind == CoverageIssueKind.UNCOVERED_SOURCE:
+                invalid_veto = fully_contained(issue_refs, any_typed_refs)
+            elif issue.kind == CoverageIssueKind.UNMODELED_DIRECTIVE:
+                invalid_veto = fully_contained(issue_refs, directive_refs)
+            elif issue.kind == CoverageIssueKind.POLARITY_CONFLICT:
+                invalid_veto = (
+                    fully_contained(issue_refs, control_refs)
+                    and not overlaps_business_owner(issue_refs)
+                )
+
+            if invalid_veto:
+                dropped.append(issue)
+            else:
+                kept.append(issue)
+
+        effective = CoverageAudit(
+            status="VETO" if kept else "PASS",
+            issues=tuple(kept),
+        )
+        return effective, tuple(dropped)
 
     def _validate_draft_surfaces(
         self,
@@ -1299,10 +1419,17 @@ class PreAcceptanceController:
 
             try:
                 runtime.note_manager_turn(phase="preacceptance")
-                coverage = self._coverage(
+                raw_coverage = self._coverage(
                     question=question,
                     draft=draft,
                     conversation=conversation,
+                )
+                coverage, dropped_coverage_issues = (
+                    self._enforce_coverage_source_ownership(
+                        draft=draft,
+                        audit=raw_coverage,
+                        message_id=message_id,
+                    )
                 )
             except ManagerBudgetError:
                 raise
@@ -1317,6 +1444,22 @@ class PreAcceptanceController:
                 return FiniteAcceptanceOutcome(
                     status=FiniteAcceptanceStatus.MODEL_FAILURE,
                     observations=tuple(observations),
+                )
+
+            if dropped_coverage_issues:
+                observations.append(
+                    {
+                        "kind": "coverage_source_ownership",
+                        "attempt": attempt,
+                        "status": "REJECTED_INVALID_VETO",
+                        "dropped_issues": [
+                            {
+                                "kind": issue.kind.value,
+                                "source_surfaces": list(issue.source_surfaces),
+                            }
+                            for issue in dropped_coverage_issues
+                        ],
+                    }
                 )
 
             observations.append(
