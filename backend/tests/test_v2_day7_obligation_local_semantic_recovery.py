@@ -1491,6 +1491,11 @@ def test_source_truth_survives_separate_resolution_invocations_and_remints_owner
         message_id=message_id,
         surface="Shared Axis",
     ).source_ref
+    span = fx.spans.validate(source_ref)
+    fx.adapter.begin_preacceptance_semantic_session(
+        message_id=span.message_id,
+        message_hash=span.message_hash,
+    )
 
     first = fx.adapter.resolve(
         ResolveSemanticsArgs(
@@ -1534,6 +1539,12 @@ def test_identical_negative_semantic_question_is_memoized_across_revision():
         surface="Shared Axis",
     ).source_ref
 
+    span = fx.spans.validate(source_ref)
+    fx.adapter.begin_preacceptance_semantic_session(
+        message_id=span.message_id,
+        message_hash=span.message_hash,
+    )
+
     first = fx.adapter.resolve(
         ResolveSemanticsArgs(
             provenance="USER_SOURCE",
@@ -1570,7 +1581,7 @@ def test_negative_memo_reconsiders_when_governed_candidate_universe_changes():
         surface="Axis issue",
     ).source_ref
     span = fx.spans.validate(source_ref)
-    fx.adapter._preacceptance_semantic_session.bind_message(
+    fx.adapter.begin_preacceptance_semantic_session(
         message_id=span.message_id,
         message_hash=span.message_hash,
     )
@@ -1641,7 +1652,7 @@ def test_bound_truth_candidate_disappearance_fails_closed_without_second_cogniti
         surface="Axis issue",
     ).source_ref
     span = fx.spans.validate(source_ref)
-    fx.adapter._preacceptance_semantic_session.bind_message(
+    fx.adapter.begin_preacceptance_semantic_session(
         message_id=span.message_id,
         message_hash=span.message_hash,
     )
@@ -1697,6 +1708,12 @@ def test_source_decision_session_does_not_leak_to_next_product_turn():
     provider = _DivergesIfAskedAgain()
 
     first_fx = _source_truth_fixture(provider)
+    first_fx.adapter.begin_preacceptance_semantic_session(
+        message_id="same-message-identity",
+        message_hash=SourceSpanRegistry.message_hash(
+            "Shared Axis is the current source."
+        ),
+    )
     first_result, first_refs = _resolve(
         first_fx,
         text="Shared Axis is the current source.",
@@ -1706,6 +1723,12 @@ def test_source_decision_session_does_not_leak_to_next_product_turn():
     first_id = first_result.resolved[0].handle.resolver_provenance_id
 
     second_fx = _source_truth_fixture(provider)
+    second_fx.adapter.begin_preacceptance_semantic_session(
+        message_id="same-message-identity",
+        message_hash=SourceSpanRegistry.message_hash(
+            "Shared Axis is the current source."
+        ),
+    )
     second_result, second_refs = _resolve(
         second_fx,
         text="Shared Axis is the current source.",
@@ -1722,6 +1745,12 @@ def test_source_decision_session_does_not_leak_to_next_product_turn():
 def test_source_decision_session_is_bound_to_one_immutable_message():
     provider = _DivergesIfAskedAgain()
     fx = _source_truth_fixture(provider)
+    fx.adapter.begin_preacceptance_semantic_session(
+        message_id="turn-one",
+        message_hash=SourceSpanRegistry.message_hash(
+            "Shared Axis is the first immutable source."
+        ),
+    )
     _resolve(
         fx,
         text="Shared Axis is the first immutable source.",
