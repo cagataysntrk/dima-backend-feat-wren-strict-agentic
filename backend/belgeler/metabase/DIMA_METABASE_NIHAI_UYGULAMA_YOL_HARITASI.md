@@ -6,6 +6,33 @@
 **Final audit notu:** Plan, Metabase source-level cross-check sonrası query-handle lifecycle, access-lens, retrieval states, implicit joins, bridge preflight, front-door ownership ve cutover/rollback adımlarıyla sertleştirilmiştir.
 
 
+## CURRENT FORWARD ROADMAP CONTINUATION — CORE CLOSURE A/B
+
+> **Forward precedence notice — 2026-09-26**
+>
+> P14-P21, Human Adoption and ActionPlan/ActionAuthorization are sealed. The historical P22-P43
+> decomposition below remains preserved for architecture history, regression requirements and hard-gate
+> evidence, but forward execution is compressed into two Core Closures:
+>
+> **backend/belgeler/metabase/DIMA_METABASE_CORE_CLOSURE_FINAL_ROADMAP.md**
+>
+> Active sequence:
+>
+> ~~~text
+> CORE CLOSURE A
+> Closed-loop brain + UX foundations
+>
+> CORE CLOSURE B
+> Headless product engine + final certification + canonical engine freeze
+>
+> UI-READY GATE
+> → STOP
+> → explicit user authorization required before any UI/UX implementation
+> ~~~
+>
+> Resend/mail live execution is deferred productization debt and is not a current core blocker.
+> No historical receipt is deleted by this precedence update.
+
 ## CURRENT NORMATIVE ARCHITECTURE — DMP-DEC-0031..0036 / P12X C0-C3
 
 > **Precedence notice — 2026-09-23**
