@@ -300,6 +300,7 @@ def _build_product(
     budget: RoleCallBudget,
     service: CountingWren,
     principal: Principal,
+    checkpoint_store=None,
 ):
     policy = ModelRolePolicy(settings)
     structured_outputs: list[dict[str, Any]] = []
@@ -398,6 +399,7 @@ def _build_product(
             provider="openrouter",
             model=NARRATOR_MODEL,
         ),
+        checkpoint_store=checkpoint_store,
     )
 
     schema = service.schema()
