@@ -11,6 +11,7 @@ import fcntl
 import hashlib
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,7 @@ from pydantic import Field
 
 from app.v2.manager_models import (
     AcceptedTurnContract,
+    ManagerRunSnapshot,
     ResearchDirectiveDisposition,
     ResearchRunTerminal,
     UserObligationLedger,
@@ -55,6 +57,7 @@ class CheckpointScope(FrozenModel):
 
 
 class CanonicalResumeState(FrozenModel):
+    manager_snapshot: ManagerRunSnapshot | None = None
     accepted_contract: AcceptedTurnContract | None = None
     ledger: UserObligationLedger | None = None
     research_tasks: tuple[ResearchTask, ...] = ()
@@ -238,6 +241,7 @@ def state_from_research_result(
     )
     outcome = result.outcome
     return CanonicalResumeState(
+        manager_snapshot=outcome.snapshot,
         accepted_contract=accepted,
         ledger=ledger,
         research_tasks=tuple(outcome.research_tasks),
@@ -283,3 +287,45 @@ def restore_task_registry(checkpoint: DurableCheckpoint):
     for task in checkpoint.state.research_tasks:
         registry.register(task)
     return registry
+
+
+@dataclass(frozen=True)
+class RestoredResearchContext:
+    runtime: Any
+    evidence_store: Any
+    semantic_handles: SemanticHandleRegistry
+    accepted_contract: AcceptedTurnContract
+    ledger: UserObligationLedger
+    evidence: tuple[EvidenceArtifact, ...]
+    findings: tuple[EvidenceLinkedFinding, ...]
+
+
+def restore_research_context(
+    checkpoint: DurableCheckpoint,
+) -> RestoredResearchContext:
+    from app.v2.manager_runtime import ManagerRuntime
+
+    state = checkpoint.state
+    if (
+        state.manager_snapshot is None
+        or state.accepted_contract is None
+        or state.ledger is None
+    ):
+        raise DurableCheckpointError(
+            "research resume requires snapshot + accepted contract + ledger"
+        )
+    runtime = ManagerRuntime.restore_canonical(
+        snapshot=state.manager_snapshot,
+        accepted_contract=state.accepted_contract,
+        ledger=state.ledger,
+        directive_dispositions=state.directive_dispositions,
+    )
+    return RestoredResearchContext(
+        runtime=runtime,
+        evidence_store=restore_evidence_store(checkpoint),
+        semantic_handles=restore_semantic_handles(checkpoint),
+        accepted_contract=state.accepted_contract,
+        ledger=state.ledger,
+        evidence=state.evidence,
+        findings=state.findings,
+    )
