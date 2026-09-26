@@ -76,8 +76,8 @@ jobs:
           cd backend
           python -m alembic heads > /tmp/core-a-final-heads.txt
           test "$(grep -Ec '^[0-9a-f]+' /tmp/core-a-final-heads.txt)" -eq 1
-          grep -q '^fb4e6d2a1074' /tmp/core-a-final-heads.txt
           python -m alembic history --verbose > /tmp/core-a-final-history.txt
+          grep -q 'Rev: fb4e6d2a1074' /tmp/core-a-final-history.txt
           grep -q 'Rev: fa07d50b2163' /tmp/core-a-final-history.txt
           grep -q 'Rev: f9e6c4fa1052' /tmp/core-a-final-history.txt
 

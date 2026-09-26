@@ -574,9 +574,100 @@ class StructuredResearchProposalManager:
         self.call_count = 0
 
     @staticmethod
-    def _snapshot_payload(snapshot: ResearchManagerSnapshot) -> str:
+    def _snapshot_payload(
+        snapshot: ResearchManagerSnapshot,
+        *,
+        target_parent_obligation: str | None = None,
+        allowed_evidence_refs: tuple[str, ...] | None = None,
+    ) -> str:
+        payload = snapshot.model_dump(mode="json")
+        if target_parent_obligation is not None:
+            known = {
+                item.obligation_id for item in snapshot.parent_obligations
+            }
+            if target_parent_obligation not in known:
+                raise ValueError(
+                    "provider target obligation must exist in governed snapshot"
+                )
+            scoped_nodes = tuple(
+                node
+                for node in snapshot.investigation.nodes
+                if node.root_obligation_id == target_parent_obligation
+            )
+            scoped_step_ids = {node.step_id for node in scoped_nodes}
+            scoped_branch_ids = {node.branch_id for node in scoped_nodes}
+            evidence = set(allowed_evidence_refs or ())
+            for node in scoped_nodes:
+                evidence.update(node.evidence_refs)
+                evidence.update(node.counter_evidence_refs)
+            scoped_claims = tuple(
+                item
+                for item in snapshot.claims
+                if item.obligation_id == target_parent_obligation
+            )
+            scoped_materials = tuple(
+                item
+                for item in snapshot.materials
+                if item.obligation_id == target_parent_obligation
+            )
+            payload["parent_obligations"] = [
+                item
+                for item in payload["parent_obligations"]
+                if item["obligation_id"] == target_parent_obligation
+            ]
+            payload["evidence_refs"] = sorted(
+                ref for ref in snapshot.evidence_refs if ref in evidence
+            )
+            payload["claims"] = [
+                item.model_dump(mode="json") for item in scoped_claims
+            ]
+            payload["materials"] = [
+                item.model_dump(mode="json") for item in scoped_materials
+            ]
+            payload["material_refs"] = sorted(
+                item.lead_id for item in scoped_materials
+            )
+            graph = payload["investigation"]
+            graph["nodes"] = [
+                node.model_dump(mode="json") for node in scoped_nodes
+            ]
+            graph["root_step_ids"] = [
+                step_id
+                for step_id in graph["root_step_ids"]
+                if step_id in scoped_step_ids
+            ]
+            graph["open_branch_ids"] = [
+                branch_id
+                for branch_id in graph["open_branch_ids"]
+                if branch_id in scoped_branch_ids
+            ]
+            graph["stopped_branch_ids"] = [
+                branch_id
+                for branch_id in graph["stopped_branch_ids"]
+                if branch_id in scoped_branch_ids
+            ]
+            graph["max_observed_depth"] = max(
+                (node.depth for node in scoped_nodes),
+                default=0,
+            )
+            payload["completed_reasoning_steps"] = [
+                step_id
+                for step_id in payload["completed_reasoning_steps"]
+                if step_id in scoped_step_ids
+            ]
+            payload["pending_reasoning_steps"] = [
+                step_id
+                for step_id in payload["pending_reasoning_steps"]
+                if step_id in scoped_step_ids
+            ]
+            for rule in payload["action_profile"]["rules"]:
+                rule["legal_parent_step_ids"] = [
+                    step_id
+                    for step_id in rule["legal_parent_step_ids"]
+                    if step_id in scoped_step_ids
+                ]
         return json.dumps(
-            snapshot.model_dump(mode="json"),
+            payload,
             ensure_ascii=False,
             sort_keys=True,
             separators=(",", ":"),
@@ -604,6 +695,8 @@ class StructuredResearchProposalManager:
         allowed_intents: tuple[InvestigationIntent, ...] | None = None,
         allowed_parent_step_ids: tuple[str | None, ...] | None = None,
         branch_key_mode: str | None = None,
+        target_parent_obligation: str | None = None,
+        allowed_evidence_refs: tuple[str, ...] | None = None,
     ) -> ManagerProposal:
         user = (
             "Choose exactly one next bounded investigation step from this "
@@ -619,11 +712,54 @@ class StructuredResearchProposalManager:
                 "\n\nBOUNDARY-SHAPE GUIDANCE (does not supply the analytical "
                 "answer):\n" + guidance.strip()
             )
+        state_legal = snapshot.action_profile.legal_intents
+        scoped_step_ids: set[str] | None = None
+        scoped_claim_ids: tuple[str, ...] | None = None
+        scoped_material_ids: tuple[str, ...] | None = None
+        scoped_evidence_ids: tuple[str, ...] | None = None
+        if target_parent_obligation is not None:
+            if target_parent_obligation not in {
+                item.obligation_id for item in snapshot.parent_obligations
+            }:
+                raise ValueError(
+                    "provider target obligation must exist in governed snapshot"
+                )
+            scoped_nodes = tuple(
+                node
+                for node in snapshot.investigation.nodes
+                if node.root_obligation_id == target_parent_obligation
+            )
+            scoped_step_ids = {node.step_id for node in scoped_nodes}
+            evidence = set(allowed_evidence_refs or ())
+            for node in scoped_nodes:
+                evidence.update(node.evidence_refs)
+                evidence.update(node.counter_evidence_refs)
+            scoped_evidence_ids = tuple(
+                sorted(
+                    ref for ref in snapshot.evidence_refs
+                    if ref in evidence
+                )
+            )
+            scoped_claim_ids = tuple(
+                sorted(
+                    item.claim_id for item in snapshot.claims
+                    if item.obligation_id == target_parent_obligation
+                )
+            )
+            scoped_material_ids = tuple(
+                sorted(
+                    item.lead_id for item in snapshot.materials
+                    if item.obligation_id == target_parent_obligation
+                )
+            )
         user += (
             "\n\nGOVERNED SNAPSHOT JSON:\n"
-            + self._snapshot_payload(snapshot)
+            + self._snapshot_payload(
+                snapshot,
+                target_parent_obligation=target_parent_obligation,
+                allowed_evidence_refs=allowed_evidence_refs,
+            )
         )
-        state_legal = snapshot.action_profile.legal_intents
         effective_intents = (
             tuple(
                 intent
@@ -633,6 +769,26 @@ class StructuredResearchProposalManager:
             if allowed_intents is not None
             else state_legal
         )
+        if target_parent_obligation is not None:
+            narrowed_intents: list[InvestigationIntent] = []
+            for intent in effective_intents:
+                rule = snapshot.action_profile.rule_for(intent)
+                if rule is None:
+                    continue
+                legal_scoped_parents = tuple(
+                    step_id
+                    for step_id in rule.legal_parent_step_ids
+                    if scoped_step_ids is not None
+                    and step_id in scoped_step_ids
+                )
+                if rule.allow_parentless or legal_scoped_parents:
+                    if (
+                        intent == InvestigationIntent.SEEK_COUNTER_EVIDENCE
+                        and not scoped_claim_ids
+                    ):
+                        continue
+                    narrowed_intents.append(intent)
+            effective_intents = tuple(narrowed_intents)
         if not effective_intents:
             raise ValueError(
                 "no state-legal P17 intent remains in the requested vocabulary"
@@ -656,16 +812,57 @@ class StructuredResearchProposalManager:
                 "type": "integer",
                 "enum": [snapshot.source_revision],
             }
+            target_ids = (
+                [target_parent_obligation]
+                if target_parent_obligation is not None
+                else [
+                    x.obligation_id for x in snapshot.parent_obligations
+                ]
+            )
             props["target_parent_obligation"] = {
                 "type": "string",
-                "enum": [
-                    x.obligation_id for x in snapshot.parent_obligations
-                ],
+                "enum": target_ids,
             }
+            legal_parent_step_ids = rule.legal_parent_step_ids
+            if scoped_step_ids is not None:
+                legal_parent_step_ids = tuple(
+                    step_id
+                    for step_id in legal_parent_step_ids
+                    if step_id in scoped_step_ids
+                )
             props["parent_step_id"] = _parent_schema(
-                legal_parent_step_ids=rule.legal_parent_step_ids,
+                legal_parent_step_ids=legal_parent_step_ids,
                 allow_parentless=rule.allow_parentless,
             )
+            if scoped_evidence_ids is not None:
+                props["inspected_evidence_refs"] = {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": list(scoped_evidence_ids),
+                    },
+                }
+            if scoped_claim_ids:
+                props["inspected_claim_refs"] = {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": list(scoped_claim_ids),
+                    },
+                }
+                if "counter_to_claim_id" in props:
+                    props["counter_to_claim_id"] = {
+                        "type": "string",
+                        "enum": list(scoped_claim_ids),
+                    }
+            if scoped_material_ids:
+                props["inspected_material_refs"] = {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": list(scoped_material_ids),
+                    },
+                }
             props["branch_key"] = (
                 {"type": "string"}
                 if rule.branch_key_policy
@@ -721,6 +918,23 @@ class StructuredResearchProposalManager:
                     "provider branch-key constraint cannot broaden action-profile legality"
                 )
 
+        if scoped_material_ids:
+            for definition in (schema.get("$defs") or {}).values():
+                if not isinstance(definition, dict):
+                    continue
+                props = definition.get("properties")
+                if (
+                    isinstance(props, dict)
+                    and "origin_material_refs" in props
+                ):
+                    props["origin_material_refs"] = {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": list(scoped_material_ids),
+                        },
+                    }
+
         # Dynamic action-profile narrowing mutates scalar constraints after
         # schema construction. Re-validate the final provider representation
         # immediately before transport so no reachable state can emit an open
@@ -762,6 +976,24 @@ class StructuredResearchProposalManager:
         return self._propose(
             snapshot,
             allowed_intents=allowed_intents,
+        )
+
+    def propose_for_obligation(
+        self,
+        snapshot: ResearchManagerSnapshot,
+        *,
+        target_parent_obligation: str,
+        allowed_evidence_refs: tuple[str, ...],
+    ) -> ManagerProposal:
+        """Narrow provider representation to one legally rooted obligation.
+
+        This method cannot broaden P17 legality. The domain validator in
+        research_manager.py remains final authority for every returned ref.
+        """
+        return self._propose(
+            snapshot,
+            target_parent_obligation=target_parent_obligation,
+            allowed_evidence_refs=allowed_evidence_refs,
         )
 
     def propose_with_guidance(

@@ -7,12 +7,15 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from app.v3.research_manager import (
+    ClaimView,
     InvestigationGraph,
     InvestigationIntent,
     InvestigationNodeView,
     InvestigationTargetKind,
     MaterialCognitionView,
+    ParentObligationView,
     ReasoningStepStatus,
+    ResearchManagerSnapshot,
     _build_action_profile,
 )
 from app.v3.research_manager_provider import (
@@ -406,3 +409,205 @@ def test_turn2_material_state_reproduces_form_claim_capable_profile_provider_fre
     # The old live turn-2 fingerprint is preserved as historical failure
     # identity. The corrected closed representation intentionally changes it.
     assert len(HISTORICAL_REJECTED_TURN2_SCHEMA_FP) == 64
+
+
+
+class _CaptureTransport:
+    def __init__(self):
+        self.schema = None
+        self.user = None
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, schema_name
+        self.schema = schema
+        self.user = user
+        raise RuntimeError("captured-before-provider-call")
+
+
+def _scoped_snapshot():
+    source = InvestigationNodeView(
+        step_id="rrs_" + "1" * 24,
+        parent_step_id=None,
+        root_obligation_id="g_source",
+        depth=0,
+        branch_id="branch:g_source",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+        target_kind=InvestigationTargetKind.GAP,
+        target_ref=None,
+        objective_key="gap.source",
+        bounded_objective="Inspect source.",
+        status=ReasoningStepStatus.COMPLETED,
+        evidence_refs=("evi_source",),
+        counter_evidence_refs=(),
+        native_material_refs=("lead_source",),
+        child_step_ids=(),
+        stop_reason=None,
+        stop_scope=None,
+    )
+    other = InvestigationNodeView(
+        step_id="rrs_" + "2" * 24,
+        parent_step_id=None,
+        root_obligation_id="g_other",
+        depth=0,
+        branch_id="branch:g_other",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+        target_kind=InvestigationTargetKind.GAP,
+        target_ref=None,
+        objective_key="gap.other",
+        bounded_objective="Inspect other.",
+        status=ReasoningStepStatus.COMPLETED,
+        evidence_refs=("evi_other",),
+        counter_evidence_refs=(),
+        native_material_refs=("lead_other",),
+        child_step_ids=(),
+        stop_reason=None,
+        stop_scope=None,
+    )
+    graph = InvestigationGraph(
+        nodes=(source, other),
+        root_step_ids=(source.step_id, other.step_id),
+        open_branch_ids=(source.branch_id, other.branch_id),
+        stopped_branch_ids=(),
+        max_observed_depth=0,
+    )
+    materials = (
+        MaterialCognitionView(
+            lead_id="lead_source",
+            obligation_id="g_source",
+            execution_link_id="rex_source",
+            native_conversation_id="conv_source",
+            native_query_id="query_source",
+            query_fingerprint="1" * 64,
+            material_fingerprint="2" * 64,
+            source_evidence_refs=("evi_source",),
+            exploration_kind="FOLLOWUP",
+        ),
+        MaterialCognitionView(
+            lead_id="lead_other",
+            obligation_id="g_other",
+            execution_link_id="rex_other",
+            native_conversation_id="conv_other",
+            native_query_id="query_other",
+            query_fingerprint="3" * 64,
+            material_fingerprint="4" * 64,
+            source_evidence_refs=("evi_other",),
+            exploration_kind="FOLLOWUP",
+        ),
+    )
+    claims = (
+        ClaimView(
+            claim_id="clm_" + "a" * 24,
+            obligation_id="g_source",
+            claim_text="Source claim.",
+            proposition={"subject": "source"},
+            scope={"scope": "source"},
+            epistemic_state="SUPPORTED",
+            origin_material_refs=("lead_source",),
+        ),
+        ClaimView(
+            claim_id="clm_" + "b" * 24,
+            obligation_id="g_other",
+            claim_text="Other claim.",
+            proposition={"subject": "other"},
+            scope={"scope": "other"},
+            epistemic_state="SUPPORTED",
+            origin_material_refs=("lead_other",),
+        ),
+    )
+    profile = _build_action_profile(
+        graph=graph,
+        claims=claims,
+        materials=materials,
+        remaining_followup_native_turns=3,
+        remaining_counter_evidence_attempts=2,
+        max_depth=5,
+    )
+    return ResearchManagerSnapshot(
+        research_session_id="rs_" + "c" * 24,
+        research_authority_id="authority-source",
+        source_revision=3,
+        objective="Scoped investigation.",
+        parent_obligations=(
+            ParentObligationView(
+                obligation_id="g_source",
+                objective="Source objective.",
+                state="VERIFIED",
+            ),
+            ParentObligationView(
+                obligation_id="g_other",
+                objective="Other objective.",
+                state="VERIFIED",
+            ),
+        ),
+        evidence_refs=("evi_source", "evi_other"),
+        material_refs=("lead_source", "lead_other"),
+        materials=materials,
+        action_profile=profile,
+        claims=claims,
+        investigation=graph,
+        limitation_refs=(),
+        completed_reasoning_steps=(source.step_id, other.step_id),
+        pending_reasoning_steps=(),
+        remaining_reasoning_steps=4,
+        remaining_followup_native_turns=3,
+        remaining_counter_evidence_attempts=2,
+        terminal_stop_reason=None,
+    )
+
+
+def test_obligation_scoped_provider_view_exposes_no_cross_obligation_refs():
+    transport = _CaptureTransport()
+    manager = StructuredResearchProposalManager(transport=transport)
+    snapshot = _scoped_snapshot()
+
+    with pytest.raises(RuntimeError, match="captured-before-provider-call"):
+        manager.propose_for_obligation(
+            snapshot,
+            target_parent_obligation="g_source",
+            allowed_evidence_refs=("evi_source",),
+        )
+
+    assert transport.schema is not None
+    assert transport.user is not None
+    provider_view = json.loads(
+        transport.user.split("GOVERNED SNAPSHOT JSON:\n", 1)[1]
+    )
+    assert {
+        item["obligation_id"]
+        for item in provider_view["parent_obligations"]
+    } == {"g_source"}
+    assert provider_view["evidence_refs"] == ["evi_source"]
+    assert {item["claim_id"] for item in provider_view["claims"]} == {
+        "clm_" + "a" * 24
+    }
+    assert {item["lead_id"] for item in provider_view["materials"]} == {
+        "lead_source"
+    }
+    assert {
+        item["root_obligation_id"]
+        for item in provider_view["investigation"]["nodes"]
+    } == {"g_source"}
+
+    serialized_schema = json.dumps(transport.schema, sort_keys=True)
+    serialized_view = json.dumps(provider_view, sort_keys=True)
+    for forbidden in (
+        "g_other",
+        "evi_other",
+        "clm_" + "b" * 24,
+        "lead_other",
+    ):
+        assert forbidden not in serialized_schema
+        assert forbidden not in serialized_view
+
+    for variant in _variants(transport.schema):
+        props = variant["properties"]
+        assert props["target_parent_obligation"]["enum"] == ["g_source"]
+        assert props["inspected_evidence_refs"]["items"]["enum"] == [
+            "evi_source"
+        ]
+        assert props["inspected_claim_refs"]["items"]["enum"] == [
+            "clm_" + "a" * 24
+        ]
+        assert props["inspected_material_refs"]["items"]["enum"] == [
+            "lead_source"
+        ]

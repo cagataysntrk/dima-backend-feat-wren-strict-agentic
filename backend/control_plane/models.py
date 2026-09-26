@@ -1796,3 +1796,36 @@ class SignalRecord(SQLModel, table=True):
     transition_history_json: str = Field(sa_column=Column(Text, nullable=False))
     signal_fingerprint: str = Field(index=True)
     created_at: datetime = Field(index=True)
+
+
+
+class ProductInvestigationRequirementRecord(SQLModel, table=True):
+    """Immutable Core-B routing intent; not analytical or epistemic truth."""
+
+    __tablename__ = "product_investigation_requirement"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_binding",
+            "research_session_id",
+            "requirement_id",
+            name="uq_product_investigation_requirement_scope",
+        ),
+        UniqueConstraint(
+            "requirement_fingerprint",
+            name="uq_product_investigation_requirement_fingerprint",
+        ),
+    )
+
+    routing_record_id: str = Field(primary_key=True)
+    tenant_binding: str = Field(index=True)
+    research_session_id: str = Field(
+        foreign_key="research_session.session_id",
+        index=True,
+    )
+    brief_id: str = Field(index=True)
+    requirement_id: str = Field(index=True)
+    kind: str = Field(index=True)
+    source_goal_id: str = Field(index=True)
+    source_text: str = Field(sa_column=Column(Text, nullable=False))
+    requirement_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(index=True)

@@ -6,7 +6,10 @@ from uuid import UUID
 import httpx
 import pytest
 
-from app.v3.product.contracts import ProductErrorCode
+from app.v3.product.contracts import (
+    ProductErrorCode,
+    ProductInvestigationRequirementKind,
+)
 from app.v3.product.errors import ProductError
 from app.v3.product.service import HeadlessProductService, ProductSources
 from app.v3.research_contracts import (
@@ -135,6 +138,7 @@ def ready_payload(
             }
         ],
         "deliverables": [],
+        "investigation_directives": [],
         "time_surfaces": [],
         "required_domains": ["machine_operations"],
         "clarification_question": None,
@@ -160,6 +164,74 @@ def test_ready_breakdown_compiles_to_typed_research_brief():
     assert question.subject_refs[0].candidate_id == "metric.downtime"
     assert question.related_refs[0].candidate_id == "dimension.department"
     assert brief.must_requirement_ids == (question.goal_id,)
+
+
+def test_adaptive_intent_compiles_to_core_b_requirement_not_second_p14_goal():
+    payload = ready_payload()
+    payload["deliverables"] = [
+        {
+            "key": "report-current",
+            "kind": "report",
+            "source_text": "Produce a governed report.",
+        }
+    ]
+    payload["investigation_directives"] = [
+        {
+            "key": "follow-material",
+            "kind": "FOLLOW_VERIFIED_MATERIAL",
+            "source_goal_key": "g-current",
+            "source_text": (
+                "If verified evidence reveals a new material direction, "
+                "follow that direction."
+            ),
+        }
+    ]
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=(
+            "Makine duruşlarını bölüm bazında araştır; doğrulanmış kanıt "
+            "yeni ve maddi bir bölüm kırılımı gösterirse o yönü takip et "
+            "ve raporla."
+        ),
+        catalog=catalog(),
+    )
+    assert result.brief is not None
+    assert len(result.brief.questions) == 1
+    source_goal = result.brief.questions[0]
+    assert source_goal.kind == ResearchGoalKind.BREAKDOWN
+    assert len(result.investigation_requirements) == 1
+    requirement = result.investigation_requirements[0]
+    assert (
+        requirement.kind
+        == ProductInvestigationRequirementKind.FOLLOW_VERIFIED_MATERIAL
+    )
+    assert requirement.source_goal_id == source_goal.goal_id
+    assert requirement.requirement_id.startswith("pir_")
+    assert result.brief.must_requirement_ids == (
+        source_goal.goal_id,
+        result.brief.deliverables[0].requirement_id,
+    )
+
+
+def test_adaptive_dependency_unknown_goal_key_fails_closed():
+    payload = ready_payload()
+    payload["investigation_directives"] = [
+        {
+            "key": "follow-material",
+            "kind": "FOLLOW_VERIFIED_MATERIAL",
+            "source_goal_key": "not-a-current-goal",
+            "source_text": "Follow verified material if warranted.",
+        }
+    ]
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Follow a bounded verified direction.",
+            catalog=catalog(),
+        )
+    assert exc.value.code == "INTAKE_INVESTIGATION_SOURCE_UNKNOWN"
 
 
 def test_authorized_relationship_compiles_and_preserves_exact_catalog_refs():
@@ -226,6 +298,7 @@ def test_unknown_semantic_ref_fails_closed():
                 "objective": None,
                 "goals": [],
                 "deliverables": [],
+                "investigation_directives": [],
                 "time_surfaces": [],
                 "required_domains": [],
                 "clarification_question": "Which metric do you mean?",
@@ -240,6 +313,7 @@ def test_unknown_semantic_ref_fails_closed():
                 "objective": None,
                 "goals": [],
                 "deliverables": [],
+                "investigation_directives": [],
                 "time_surfaces": [],
                 "required_domains": [],
                 "clarification_question": None,

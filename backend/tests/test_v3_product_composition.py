@@ -9,6 +9,10 @@ from app.v3.product.composition import (
     HeadlessProductComposer,
     ProductCompositionTerminal,
 )
+from app.v3.product.contracts import (
+    ProductInvestigationRequirement,
+    ProductInvestigationRequirementKind,
+)
 from app.v3.research import ObligationState
 from app.v3.research_contracts import (
     PresentationKind,
@@ -112,10 +116,11 @@ def brief(*questions, report=False):
 
 
 class FakeResearch:
-    def __init__(self):
+    def __init__(self, *, limited_goal_ids=()):
         self.sessions = {}
         self.counter = 0
         self.run_calls = []
+        self.limited_goal_ids = set(limited_goal_ids)
 
     def start_from_brief(
         self,
@@ -169,7 +174,11 @@ class FakeResearch:
         # - every ordinary/comparison/root analytical request can yield P14 Evidence.
         target = (
             ObligationState.LIMITED
-            if goal.kind in {ResearchGoalKind.RELATIONSHIP, ResearchGoalKind.OTHER}
+            if (
+                goal.goal_id in self.limited_goal_ids
+                or goal.kind
+                in {ResearchGoalKind.RELATIONSHIP, ResearchGoalKind.OTHER}
+            )
             else ObligationState.VERIFIED
         )
         obligations = tuple(
@@ -226,8 +235,16 @@ class FakeInvestigation:
         manager,
         native_session_token,
     ):
-        del principal, manager, native_session_token
+        del principal, native_session_token
         state = self._state(session_id)
+        state["obligation"] = getattr(
+            manager,
+            "target_parent_obligation",
+            FakeReasoning.current_obligation_by_session.get(
+                session_id,
+                "g_root",
+            ),
+        )
         state["calls"] += 1
         n = state["calls"]
         step_id = f"rrs_{session_id[-8:]}{n:016x}"[-28:]
@@ -244,8 +261,14 @@ class FakeInvestigation:
         return SimpleNamespace(step_id=step_id), None
 
     def _obligation(self, session_id):
-        # Test reasoning store sets this before each composition branch.
-        return FakeReasoning.current_obligation_by_session.get(session_id, "g_root")
+        state = self._state(session_id)
+        return state.get(
+            "obligation",
+            FakeReasoning.current_obligation_by_session.get(
+                session_id,
+                "g_root",
+            ),
+        )
 
 
 class FakeProposalManager:
@@ -265,7 +288,10 @@ class FakeReasoning:
 
     def steps(self, session_id):
         state = self.investigation._state(session_id)
-        obligation = self.current_obligation_by_session.get(session_id, "g_root")
+        obligation = state.get(
+            "obligation",
+            self.current_obligation_by_session.get(session_id, "g_root"),
+        )
         return tuple(
             SimpleNamespace(
                 step_id=item,
@@ -410,8 +436,8 @@ class FakeReports:
         return SimpleNamespace(report_id="p20r_" + "3" * 24)
 
 
-def composer(*, relationship_blocked=True):
-    research = FakeResearch()
+def composer(*, relationship_blocked=True, limited_goal_ids=()):
+    research = FakeResearch(limited_goal_ids=limited_goal_ids)
     investigation = FakeInvestigation()
     reasoning = FakeReasoning(investigation)
     return (
@@ -527,18 +553,18 @@ def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():
     )
 
 
-def test_adaptive_route_comes_from_typed_unresolved_state_not_raw_text():
+def test_adaptive_requirement_roots_p17_in_exact_verified_source_obligation():
     c, research, investigation, reasoning = composer()
     b = brief(
         question("g_base", ResearchGoalKind.BREAKDOWN),
-        question("g_followup", ResearchGoalKind.OTHER),
         report=True,
     )
-    original = c._run_p17
-    def wrapped(**kwargs):
-        reasoning.current_obligation_by_session[kwargs["session_id"]] = "g_base"
-        return original(**kwargs)
-    c._run_p17 = wrapped
+    requirement = ProductInvestigationRequirement(
+        requirement_id="pir_" + "a" * 20,
+        kind=ProductInvestigationRequirementKind.FOLLOW_VERIFIED_MATERIAL,
+        source_goal_id="g_base",
+        source_text="Follow a new material direction only if verified evidence warrants it.",
+    )
 
     result = c.compose(
         brief=b,
@@ -546,12 +572,77 @@ def test_adaptive_route_comes_from_typed_unresolved_state_not_raw_text():
         request_ref="adaptive",
         source_message_hash="d" * 64,
         native_session_token=None,
+        investigation_requirements=(requirement,),
     )
-    assert "g_followup" in result.p17_required_goal_ids
+
+    assert result.p17_required_goal_ids == ("g_base",)
+    assert result.investigation_requirement_ids == (requirement.requirement_id,)
+    assert result.fulfilled_investigation_requirement_ids == (
+        requirement.requirement_id,
+    )
     assert result.p17_step_refs
+    steps = reasoning.steps(result.research_session_id)
+    assert steps
+    assert {step.parent_obligation_id for step in steps} == {"g_base"}
     assert result.p18_policy_use_refs == ()
     assert result.p19_assessment_refs == ()
     assert result.p20_report_ref is not None
+
+
+def test_verified_evidence_does_not_auto_route_unrelated_unverified_goal_to_p17():
+    c, research, investigation, reasoning = composer()
+    b = brief(
+        question("g_base", ResearchGoalKind.BREAKDOWN),
+        question("g_unrelated", ResearchGoalKind.OTHER),
+    )
+
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="no-adaptive-edge",
+        source_message_hash="7" * 64,
+        native_session_token=None,
+    )
+
+    assert result.p17_required_goal_ids == ()
+    assert result.investigation_requirement_ids == ()
+    assert result.p17_step_refs == ()
+    assert investigation._state(result.research_session_id)["calls"] == 0
+
+
+def test_adaptive_requirement_does_not_open_p17_when_source_is_limited():
+    c, research, investigation, reasoning = composer(
+        limited_goal_ids=("g_base",),
+    )
+    b = brief(
+        question("g_base", ResearchGoalKind.BREAKDOWN),
+        report=True,
+    )
+    requirement = ProductInvestigationRequirement(
+        requirement_id="pir_" + "b" * 20,
+        kind=ProductInvestigationRequirementKind.FOLLOW_VERIFIED_MATERIAL,
+        source_goal_id="g_base",
+        source_text="Follow only verified material.",
+    )
+
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="adaptive-limited",
+        source_message_hash="8" * 64,
+        native_session_token=None,
+        investigation_requirements=(requirement,),
+    )
+
+    assert result.p17_required_goal_ids == ("g_base",)
+    assert result.p17_step_refs == ()
+    assert result.fulfilled_investigation_requirement_ids == ()
+    assert investigation._state(result.research_session_id)["calls"] == 0
+    assert any(
+        item.code == "PRODUCT_ADAPTIVE_SOURCE_NOT_VERIFIED"
+        and item.obligation_id == "g_base"
+        for item in result.limitations
+    )
 
 
 def test_p18_blocked_resolution_is_preserved_as_limitation_not_fake_success():

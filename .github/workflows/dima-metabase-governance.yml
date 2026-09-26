@@ -48,6 +48,7 @@ jobs:
           import app.v3.decision_intelligence
           import app.v3.decision_adoption
           import app.v3.action_authorization
+          import app.v3.product_routing_store
           import app.v3.core_a.action_work
           import app.v3.core_a.outcome_observation
           import app.v3.core_a.institutional_memory
@@ -59,7 +60,7 @@ jobs:
         run: |
           python -m alembic heads > /tmp/heads.txt
           test "$(grep -Ec '^[0-9a-f]+' /tmp/heads.txt)" -eq 1
-          grep -q '^fb4e6d2a1074' /tmp/heads.txt
+          grep -q '^fc8a1d0e3b42' /tmp/heads.txt
 
       - name: Frozen architecture boundaries
         shell: bash
@@ -126,3 +127,15 @@ jobs:
           grep -q '_analytical_requirement_ids(session.accepted_brief)' backend/app/v3/report_document.py
           grep -q 'ProductRequirementState.FULFILLED' backend/app/v3/product/composition.py
           test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+
+
+      - name: Guard Core B adaptive dependency ownership
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
+          ! grep -n 'verified_exists' backend/app/v3/product/composition.py
+          grep -q 'FOLLOW_VERIFIED_MATERIAL' backend/app/v3/research_intake.py
+          grep -q 'ProductInvestigationRequirementRecord' backend/control_plane/models.py
+          grep -q 'target_parent_obligation=target_parent_obligation' backend/app/v3/research_manager_provider.py
+          ! grep -R -nE 'adaptive_tr|askv2_case_id|acceptance_contract|source_obligation'             backend/app/v3/product             backend/app/v3/research_intake.py             backend/app/v3/product_routing_store.py

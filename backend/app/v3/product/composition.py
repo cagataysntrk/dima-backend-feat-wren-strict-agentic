@@ -15,6 +15,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from control_plane.authorize import Principal
 
+from app.v3.product.contracts import (
+    ProductInvestigationRequirement,
+    ProductInvestigationRequirementKind,
+)
+
 from app.v3.business_relationship_policy import (
     BusinessRelationshipPolicyStore,
     RelationshipPolicyRequirement,
@@ -106,6 +111,8 @@ class ProductCompositionResult(Frozen):
     limitations: tuple[CompositionLimitation, ...] = ()
     owner_calls: tuple[str, ...] = ()
     p17_required_goal_ids: tuple[str, ...] = ()
+    investigation_requirement_ids: tuple[str, ...] = ()
+    fulfilled_investigation_requirement_ids: tuple[str, ...] = ()
     user_must_fulfillment: tuple[ProductRequirementFulfillment, ...] = ()
     user_must_total: int = 0
     user_must_accounted: int = 0
@@ -130,6 +137,60 @@ class P19ProposalManager(Protocol):
         policy_statuses: dict[str, str] | None = None,
         deterministic_feedback_code: str | None = None,
     ): ...
+
+
+class ProductInvestigationRequirementStoreProtocol(Protocol):
+    def persist(
+        self,
+        *,
+        tenant_binding: str,
+        research_session_id: str,
+        brief_id: str,
+        requirements: tuple[ProductInvestigationRequirement, ...],
+        accepted_goal_ids: tuple[str, ...],
+    ) -> tuple[ProductInvestigationRequirement, ...]: ...
+
+    def load(
+        self,
+        *,
+        tenant_binding: str,
+        research_session_id: str,
+    ) -> tuple[ProductInvestigationRequirement, ...]: ...
+
+
+class _ObligationScopedProposalManager:
+    """Provider-view adapter only; P17 domain validation remains final."""
+
+    def __init__(
+        self,
+        *,
+        inner: ProposalManager,
+        target_parent_obligation: str,
+        allowed_evidence_refs: tuple[str, ...],
+    ) -> None:
+        self._inner = inner
+        self.target_parent_obligation = target_parent_obligation
+        self._allowed_evidence_refs = allowed_evidence_refs
+
+    @property
+    def call_count(self) -> int:
+        return int(getattr(self._inner, "call_count", 0))
+
+    def propose(self, snapshot):
+        scoped = getattr(self._inner, "propose_for_obligation", None)
+        if callable(scoped):
+            return scoped(
+                snapshot,
+                target_parent_obligation=self.target_parent_obligation,
+                allowed_evidence_refs=self._allowed_evidence_refs,
+            )
+        proposal = self._inner.propose(snapshot)
+        target = getattr(proposal, "target_parent_obligation", None)
+        if target is not None and target != self.target_parent_obligation:
+            raise ValueError(
+                "provider proposal escaped Core-B source-obligation scope"
+            )
+        return proposal
 
 
 def _canonical(value: Any) -> str:
@@ -169,6 +230,9 @@ class HeadlessProductComposer:
         epistemics: HypothesisRootCauseStore,
         epistemic_manager: P19ProposalManager,
         reports: ReportDocumentStore,
+        investigation_requirements: (
+            ProductInvestigationRequirementStoreProtocol | None
+        ) = None,
     ) -> None:
         self._research = research
         self._investigation = investigation
@@ -178,6 +242,7 @@ class HeadlessProductComposer:
         self._epistemics = epistemics
         self._epistemic_manager = epistemic_manager
         self._reports = reports
+        self._investigation_requirements = investigation_requirements
 
     @staticmethod
     def _run_p14(
@@ -340,17 +405,38 @@ class HeadlessProductComposer:
         minimum_claims: int,
         owner_calls: list[str],
         max_turns: int = 4,
+        manager: ProposalManager | None = None,
+        target_obligation_id: str | None = None,
     ):
         executed = 0
         last_error: Exception | None = None
+        effective_manager = manager or self._investigation_manager
         for _ in range(max_turns):
             snapshot = self._investigation.snapshot(
                 session_id=session_id,
                 principal=principal,
             )
+            completed = tuple(snapshot.completed_reasoning_steps)
+            claims = tuple(snapshot.claims)
+            if target_obligation_id is not None:
+                scoped_step_ids = {
+                    step.step_id
+                    for step in self._reasoning.steps(session_id)
+                    if step.parent_obligation_id == target_obligation_id
+                }
+                completed = tuple(
+                    step_id
+                    for step_id in completed
+                    if step_id in scoped_step_ids
+                )
+                claims = tuple(
+                    claim
+                    for claim in claims
+                    if claim.obligation_id == target_obligation_id
+                )
             if (
-                len(snapshot.completed_reasoning_steps) >= 1
-                and len(snapshot.claims) >= minimum_claims
+                len(completed) >= 1
+                and len(claims) >= minimum_claims
             ):
                 return snapshot, executed, last_error
             if snapshot.terminal_stop_reason is not None:
@@ -359,7 +445,7 @@ class HeadlessProductComposer:
                 self._investigation.run_one(
                     session_id=session_id,
                     principal=principal,
-                    manager=self._investigation_manager,
+                    manager=effective_manager,
                     native_session_token=native_session_token,
                 )
                 owner_calls.append("P17")
@@ -649,6 +735,9 @@ class HeadlessProductComposer:
         request_ref: str,
         source_message_hash: str,
         native_session_token: str | None,
+        investigation_requirements: (
+            tuple[ProductInvestigationRequirement, ...] | None
+        ) = None,
     ) -> ProductCompositionResult:
         if brief.status != ResearchBriefStatus.READY_FOR_RESEARCH:
             raise ValueError("Product Composition requires accepted READY ResearchBrief")
@@ -660,6 +749,7 @@ class HeadlessProductComposer:
         p19_refs: list[str] = []
         limitations: list[CompositionLimitation] = []
         p17_required: list[str] = []
+        fulfilled_investigation_requirements: list[str] = []
         correlated_evidence_refs: list[str] = []
         limitation_codes: dict[str, str] = {}
 
@@ -669,6 +759,29 @@ class HeadlessProductComposer:
             source_message_hash=source_message_hash,
             principal=principal,
         )
+        owner_calls.append("P14")
+        accepted_investigation_requirements = (
+            tuple(investigation_requirements)
+            if investigation_requirements is not None
+            else ()
+        )
+        if self._investigation_requirements is not None:
+            if investigation_requirements is not None:
+                self._investigation_requirements.persist(
+                    tenant_binding=session.tenant_binding,
+                    research_session_id=session.session_id,
+                    brief_id=brief.brief_id,
+                    requirements=accepted_investigation_requirements,
+                    accepted_goal_ids=tuple(
+                        question.goal_id for question in brief.questions
+                    ),
+                )
+            accepted_investigation_requirements = (
+                self._investigation_requirements.load(
+                    tenant_binding=session.tenant_binding,
+                    research_session_id=session.session_id,
+                )
+            )
         owner_calls.append("P14")
         session = self._run_p14(
             research=self._research,
@@ -680,11 +793,6 @@ class HeadlessProductComposer:
         )
 
         goal_by_id = _question_map(brief)
-        verified_exists = any(
-            _state_value(item.state) == ObligationState.VERIFIED.value
-            for item in session.obligations
-            if item.obligation_id in goal_by_id
-        )
 
         for goal in brief.questions:
             state = next(
@@ -695,16 +803,10 @@ class HeadlessProductComposer:
                 ),
                 "UNKNOWN",
             )
-            needs_investigation = (
-                goal.kind in {
-                    ResearchGoalKind.RELATIONSHIP,
-                    ResearchGoalKind.ROOT_CAUSE,
-                }
-                or (
-                    verified_exists
-                    and state != ObligationState.VERIFIED.value
-                )
-            )
+            needs_investigation = goal.kind in {
+                ResearchGoalKind.RELATIONSHIP,
+                ResearchGoalKind.ROOT_CAUSE,
+            }
             if needs_investigation:
                 p17_required.append(goal.goal_id)
 
@@ -806,29 +908,99 @@ class HeadlessProductComposer:
                         )
                 continue
 
-            if needs_investigation:
-                p17_snapshot, _, error = self._run_p17(
-                    session_id=session.session_id,
-                    principal=principal,
-                    native_session_token=native_session_token,
-                    minimum_claims=0,
-                    owner_calls=owner_calls,
+        for requirement in accepted_investigation_requirements:
+            if (
+                requirement.kind
+                != ProductInvestigationRequirementKind.FOLLOW_VERIFIED_MATERIAL
+            ):
+                raise ValueError(
+                    "unsupported Core-B investigation requirement kind"
                 )
-                p17_refs.extend(p17_snapshot.completed_reasoning_steps)
-                if not p17_snapshot.completed_reasoning_steps:
-                    code = (
-                        getattr(error, "code", None)
-                        or "PRODUCT_P17_INCONCLUSIVE"
+            source_goal = goal_by_id.get(requirement.source_goal_id)
+            if source_goal is None:
+                raise ValueError(
+                    "Core-B investigation requirement references unknown goal"
+                )
+            p17_required.append(source_goal.goal_id)
+            source_state = next(
+                (
+                    _state_value(item.state)
+                    for item in session.obligations
+                    if item.obligation_id == source_goal.goal_id
+                ),
+                "UNKNOWN",
+            )
+            if source_state != ObligationState.VERIFIED.value:
+                code = "PRODUCT_ADAPTIVE_SOURCE_NOT_VERIFIED"
+                limitation_codes[source_goal.goal_id] = code
+                limitations.append(
+                    CompositionLimitation(
+                        obligation_id=source_goal.goal_id,
+                        code=code,
+                        detail=(
+                            "Adaptive investigation was not opened because its "
+                            "exact analytical source obligation was not VERIFIED."
+                        ),
+                        owner="PRODUCT",
                     )
-                    limitation_codes[goal.goal_id] = str(code)
-                    limitations.append(
-                        CompositionLimitation(
-                            obligation_id=goal.goal_id,
-                            code=str(code),
-                            detail="P17 bounded investigation reached no completed reasoning step.",
-                            owner="P17",
-                        )
+                )
+                continue
+
+            current_session = self._research.resume_state(
+                session_id=session.session_id,
+                principal=principal,
+            )
+            source_evidence_refs = tuple(
+                item.evidence_id
+                for item in current_session.evidence_refs
+                if item.obligation_id == source_goal.goal_id
+            )
+            scoped_manager = _ObligationScopedProposalManager(
+                inner=self._investigation_manager,
+                target_parent_obligation=source_goal.goal_id,
+                allowed_evidence_refs=source_evidence_refs,
+            )
+            p17_snapshot, _, error = self._run_p17(
+                session_id=session.session_id,
+                principal=principal,
+                native_session_token=native_session_token,
+                minimum_claims=0,
+                owner_calls=owner_calls,
+                manager=scoped_manager,
+                target_obligation_id=source_goal.goal_id,
+            )
+            scoped_step_ids = {
+                step.step_id
+                for step in self._reasoning.steps(session.session_id)
+                if step.parent_obligation_id == source_goal.goal_id
+            }
+            scoped_terminal_refs = tuple(
+                step_id
+                for step_id in p17_snapshot.completed_reasoning_steps
+                if step_id in scoped_step_ids
+            )
+            p17_refs.extend(scoped_terminal_refs)
+            if scoped_terminal_refs:
+                fulfilled_investigation_requirements.append(
+                    requirement.requirement_id
+                )
+            else:
+                code = (
+                    getattr(error, "code", None)
+                    or "PRODUCT_P17_INCONCLUSIVE"
+                )
+                limitation_codes[source_goal.goal_id] = str(code)
+                limitations.append(
+                    CompositionLimitation(
+                        obligation_id=source_goal.goal_id,
+                        code=str(code),
+                        detail=(
+                            "P17 did not reach a governed terminal for the "
+                            "typed adaptive investigation requirement."
+                        ),
+                        owner="P17",
                     )
+                )
 
         report_requested = any(
             item.kind == PresentationKind.REPORT
@@ -861,6 +1033,14 @@ class HeadlessProductComposer:
         p19_refs = list(dict.fromkeys(p19_refs))
         p17_required = list(dict.fromkeys(p17_required))
 
+        adaptive_incomplete = (
+            bool(accepted_investigation_requirements)
+            and set(fulfilled_investigation_requirements)
+            != {
+                item.requirement_id
+                for item in accepted_investigation_requirements
+            }
+        )
         advanced_incomplete = (
             any(
                 goal.kind == ResearchGoalKind.RELATIONSHIP
@@ -873,9 +1053,7 @@ class HeadlessProductComposer:
                 for goal in brief.questions
             )
             and not p19_refs
-        ) or (
-            bool(p17_required) and not p17_refs
-        )
+        ) or adaptive_incomplete
 
         if report is not None:
             terminal = ProductCompositionTerminal.REPORT
@@ -905,6 +1083,13 @@ class HeadlessProductComposer:
             limitations=tuple(limitations),
             owner_calls=tuple(owner_calls),
             p17_required_goal_ids=tuple(p17_required),
+            investigation_requirement_ids=tuple(
+                item.requirement_id
+                for item in accepted_investigation_requirements
+            ),
+            fulfilled_investigation_requirement_ids=tuple(
+                dict.fromkeys(fulfilled_investigation_requirements)
+            ),
             user_must_fulfillment=user_must,
             user_must_total=user_must_total,
             user_must_accounted=user_must_accounted,

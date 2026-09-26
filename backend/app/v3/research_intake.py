@@ -13,6 +13,10 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.v3.product.contracts import (
+    ProductInvestigationRequirement,
+    ProductInvestigationRequirementKind,
+)
 from app.v3.research_contracts import (
     ComparisonSurface,
     PresentationKind,
@@ -127,11 +131,19 @@ class ModelDeliverableDraft(Frozen):
     source_text: str = Field(min_length=1)
 
 
+class ModelInvestigationDirectiveDraft(Frozen):
+    key: str = Field(min_length=1, max_length=120)
+    kind: ProductInvestigationRequirementKind
+    source_goal_key: str = Field(min_length=1, max_length=120)
+    source_text: str = Field(min_length=1)
+
+
 class ModelResearchBriefDraft(Frozen):
     terminal: ResearchIntakeTerminal
     objective: str | None = None
     goals: tuple[ModelGoalDraft, ...] = ()
     deliverables: tuple[ModelDeliverableDraft, ...] = ()
+    investigation_directives: tuple[ModelInvestigationDirectiveDraft, ...] = ()
     time_surfaces: tuple[str, ...] = ()
     required_domains: tuple[str, ...] = ()
     clarification_question: str | None = None
@@ -147,12 +159,22 @@ class ModelResearchBriefDraft(Frozen):
         elif self.terminal == ResearchIntakeTerminal.CLARIFY:
             if not (self.clarification_question or "").strip():
                 raise ValueError("CLARIFY requires one bounded clarification question")
-            if self.goals or self.deliverables or self.unsupported_reason is not None:
+            if (
+                self.goals
+                or self.deliverables
+                or self.investigation_directives
+                or self.unsupported_reason is not None
+            ):
                 raise ValueError("CLARIFY cannot carry executable goals")
         elif self.terminal == ResearchIntakeTerminal.UNSUPPORTED:
             if not (self.unsupported_reason or "").strip():
                 raise ValueError("UNSUPPORTED requires a reason")
-            if self.goals or self.deliverables or self.clarification_question is not None:
+            if (
+                self.goals
+                or self.deliverables
+                or self.investigation_directives
+                or self.clarification_question is not None
+            ):
                 raise ValueError("UNSUPPORTED cannot carry executable goals")
         return self
 
@@ -160,6 +182,7 @@ class ModelResearchBriefDraft(Frozen):
 class ResearchIntakeResult(Frozen):
     terminal: ResearchIntakeTerminal
     brief: ResearchBrief | None = None
+    investigation_requirements: tuple[ProductInvestigationRequirement, ...] = ()
     clarification_question: str | None = None
     unsupported_reason: str | None = None
     catalog_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -170,8 +193,8 @@ class ResearchIntakeResult(Frozen):
         if self.terminal == ResearchIntakeTerminal.READY:
             if self.brief is None:
                 raise ValueError("READY result requires ResearchBrief")
-        elif self.brief is not None:
-            raise ValueError("non-READY result cannot carry ResearchBrief")
+        elif self.brief is not None or self.investigation_requirements:
+            raise ValueError("non-READY result cannot carry ResearchBrief or product routing")
         return self
 
 
@@ -189,6 +212,11 @@ Authority rules:
 - For explicit corrections, the CURRENT message is authoritative: do not silently merge removed
   obligations back from prior context.
 - Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
+- Adaptive instructions such as "if verified evidence reveals a new material direction, follow it"
+  are Core-B product-routing intent, NOT a second analytical goal. Emit the actual analytical goal
+  once, then emit FOLLOW_VERIFIED_MATERIAL with source_goal_key pointing to that exact goal.
+- An investigation directive never asserts that evidence is material; it only preserves the user's
+  conditional instruction for later governed P17 evaluation.
 - Do not convert association into causality. ROOT_CAUSE means bounded investigation, not a cause.
 - Do not emit implementation-specific Wren/SQL/lane/token concepts.
 """
@@ -338,6 +366,7 @@ class ResearchIntakeCompiler:
         questions: list[ResearchQuestion] = []
         scope_refs: dict[str, ResearchSemanticRef] = {}
         seen_goal_keys: set[str] = set()
+        goal_id_by_key: dict[str, str] = {}
         for index, goal in enumerate(draft.goals, start=1):
             if goal.goal_key in seen_goal_keys:
                 raise ResearchIntakeError(
@@ -375,6 +404,7 @@ class ResearchIntakeCompiler:
                 goal.model_dump(mode="json"),
                 index,
             )
+            goal_id_by_key[goal.goal_key] = goal_id
             questions.append(
                 ResearchQuestion(
                     goal_id=goal_id,
@@ -406,6 +436,45 @@ class ResearchIntakeCompiler:
                 ResearchDeliverableRequirement(
                     requirement_id=requirement_id,
                     kind=item.kind,
+                    source_text=item.source_text,
+                )
+            )
+
+        investigation_requirements: list[ProductInvestigationRequirement] = []
+        seen_directive_keys: set[str] = set()
+        seen_directive_identity: set[tuple[str, str]] = set()
+        for index, item in enumerate(draft.investigation_directives, start=1):
+            if item.key in seen_directive_keys:
+                raise ResearchIntakeError(
+                    "INTAKE_INVESTIGATION_KEY_DUPLICATE",
+                    item.key,
+                )
+            seen_directive_keys.add(item.key)
+            source_goal_id = goal_id_by_key.get(item.source_goal_key)
+            if source_goal_id is None:
+                raise ResearchIntakeError(
+                    "INTAKE_INVESTIGATION_SOURCE_UNKNOWN",
+                    item.source_goal_key,
+                )
+            identity = (item.kind.value, source_goal_id)
+            if identity in seen_directive_identity:
+                raise ResearchIntakeError(
+                    "INTAKE_INVESTIGATION_DUPLICATE",
+                    item.key,
+                )
+            seen_directive_identity.add(identity)
+            investigation_requirements.append(
+                ProductInvestigationRequirement(
+                    requirement_id=self._ids(
+                        "pir_",
+                        {
+                            "directive": item.model_dump(mode="json"),
+                            "source_goal_id": source_goal_id,
+                        },
+                        index,
+                    ),
+                    kind=item.kind,
+                    source_goal_id=source_goal_id,
                     source_text=item.source_text,
                 )
             )
@@ -453,6 +522,7 @@ class ResearchIntakeCompiler:
         return ResearchIntakeResult(
             terminal=ResearchIntakeTerminal.READY,
             brief=brief,
+            investigation_requirements=tuple(investigation_requirements),
             catalog_fingerprint=catalog.fingerprint,
             model_calls=calls,
         )

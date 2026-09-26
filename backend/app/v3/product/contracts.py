@@ -39,6 +39,19 @@ class ProductCurrentness(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class ProductInvestigationRequirementKind(StrEnum):
+    FOLLOW_VERIFIED_MATERIAL = "FOLLOW_VERIFIED_MATERIAL"
+
+
+class ProductInvestigationRequirement(Frozen):
+    """Core-B orchestration intent only; never analytical or epistemic truth."""
+
+    requirement_id: str = Field(pattern=r"^pir_[a-f0-9]{20}$")
+    kind: ProductInvestigationRequirementKind
+    source_goal_id: str = Field(min_length=1)
+    source_text: str = Field(min_length=1)
+
+
 class CapabilityStatus(StrEnum):
     SUPPORTED = "SUPPORTED"
     FOUNDATION_ONLY = "FOUNDATION_ONLY"

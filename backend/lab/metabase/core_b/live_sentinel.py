@@ -19,6 +19,7 @@ from sqlmodel import SQLModel, Session, create_engine, select
 
 from app.v3.product.composition import HeadlessProductComposer
 from app.v3.product.service import HeadlessProductService, ProductSources
+from app.v3.product_routing_store import ProductInvestigationRequirementStore
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
 from app.v3.claim_lineage import ClaimLineageStore
 from app.v3.hypothesis_root_cause import HypothesisRootCauseStore
@@ -240,13 +241,16 @@ def _build_control_plane(path: Path, metabase_user_id: int):
     return engine
 
 
-def _load_cases(path: Path) -> dict[str, dict]:
+def _load_cases(
+    path: Path,
+    required_ids: tuple[str, ...] = SENTINEL_SOURCE_IDS,
+) -> dict[str, dict]:
     body = json.loads(path.read_text(encoding="utf-8"))
     cases = body.get("cases")
     if not isinstance(cases, list):
         raise RuntimeError("matched manifest has no cases")
     by_id = {str(item["source_case_id"]): item for item in cases}
-    missing = [cid for cid in SENTINEL_SOURCE_IDS if cid not in by_id]
+    missing = [cid for cid in required_ids if cid not in by_id]
     if missing:
         raise RuntimeError(f"sentinel source cases missing: {missing}")
     return by_id
@@ -272,6 +276,7 @@ def _case_result(
     composer,
     p17_manager,
     p19_manager,
+    reasoning,
     store,
     db_engine,
     principal,
@@ -335,6 +340,7 @@ def _case_result(
         request_ref=f"sentinel:{case_id}",
         source_message_hash=source_hash,
         native_session_token=native_token,
+        investigation_requirements=intake_result.investigation_requirements,
     )
     p17_calls = p17_manager.call_count - before_p17
     p19_calls = p19_manager.call_count - before_p19
@@ -369,6 +375,34 @@ def _case_result(
         and bool(link.evidence_id)
         for link in links
     )
+    parent_reasoning_steps = reasoning.steps(final.session_id)
+    evidence_obligation_by_id = {
+        item.evidence_id: item.obligation_id
+        for item in final.evidence_refs
+    }
+    evidence_obligation_by_id.update(
+        {
+            link.evidence_id: link.obligation_id
+            for link in links
+            if link.evidence_id is not None
+        }
+    )
+    scoped_steps = tuple(
+        step
+        for step in parent_reasoning_steps
+        if step.step_id in set(composition.p17_step_refs)
+    )
+    p17_target_obligation_ids = tuple(
+        dict.fromkeys(step.parent_obligation_id for step in scoped_steps)
+    )
+    p17_inspected_evidence_obligation_ids = tuple(
+        dict.fromkeys(
+            evidence_obligation_by_id[ref]
+            for step in scoped_steps
+            for ref in step.inspected_evidence_refs
+            if ref in evidence_obligation_by_id
+        )
+    )
 
     relationship_required = any(
         item.kind == ResearchGoalKind.RELATIONSHIP
@@ -379,6 +413,14 @@ def _case_result(
         for item in brief.questions
     )
     p17_required = bool(composition.p17_required_goal_ids)
+    adaptive_required = bool(intake_result.investigation_requirements)
+    adaptive_fulfilled = (
+        set(composition.fulfilled_investigation_requirement_ids)
+        == {
+            item.requirement_id
+            for item in intake_result.investigation_requirements
+        }
+    )
     report_required = any(
         item.kind == PresentationKind.REPORT
         for item in brief.deliverables
@@ -400,9 +442,12 @@ def _case_result(
     ):
         passed = False
         failure = "P19_EPISTEMIC_AUTHORITY_NOT_COMPOSED"
-    elif p17_required and not composition.p17_step_refs:
+    elif adaptive_required and not adaptive_fulfilled:
         passed = False
         failure = "P17_ADAPTIVE_AUTHORITY_NOT_COMPOSED"
+    elif p17_required and not composition.p17_step_refs:
+        passed = False
+        failure = "P17_REQUIRED_AUTHORITY_NOT_COMPOSED"
     elif report_required and not composition.p20_report_ref:
         passed = False
         failure = "P20_REPORT_AUTHORITY_NOT_COMPOSED"
@@ -437,6 +482,16 @@ def _case_result(
         "obligations_satisfied": verified,
         "obligations_unresolved": unresolved,
         "p17_required_goal_ids": list(composition.p17_required_goal_ids),
+        "investigation_requirement_ids": list(
+            composition.investigation_requirement_ids
+        ),
+        "fulfilled_investigation_requirement_ids": list(
+            composition.fulfilled_investigation_requirement_ids
+        ),
+        "p17_target_obligation_ids": list(p17_target_obligation_ids),
+        "p17_inspected_evidence_obligation_ids": list(
+            p17_inspected_evidence_obligation_ids
+        ),
         "p17_refs": list(composition.p17_step_refs),
         "p18_policy_use_refs": list(composition.p18_policy_use_refs),
         "p19_assessment_refs": list(composition.p19_assessment_refs),
@@ -579,6 +634,12 @@ def main() -> int:
     ap.add_argument("--build-identity",required=True)
     ap.add_argument("--image-identity",required=True)
     ap.add_argument("--platform-sha",required=True)
+    ap.add_argument(
+        "--case-id",
+        choices=SENTINEL_SOURCE_IDS,
+        default=None,
+        help="Run one frozen source case only; default remains the 5+security sentinel.",
+    )
     args=ap.parse_args()
 
     if args.engine_sha != "cbe313af9ac2d5960f662068e433d328d896fb06":
@@ -677,6 +738,7 @@ def main() -> int:
         research_store=session_store,
         db_engine=db_engine,
     )
+    routing_store=ProductInvestigationRequirementStore(db_engine)
     composer=HeadlessProductComposer(
         research=orchestrator,
         investigation=p17,
@@ -686,11 +748,17 @@ def main() -> int:
         epistemics=p19,
         epistemic_manager=p19_manager,
         reports=p20,
+        investigation_requirements=routing_store,
     )
 
-    source_cases=_load_cases(args.manifest)
+    selected_source_ids = (
+        (args.case_id,)
+        if args.case_id is not None
+        else SENTINEL_SOURCE_IDS
+    )
+    source_cases=_load_cases(args.manifest, selected_source_ids)
     observations=[]
-    for cid in SENTINEL_SOURCE_IDS:
+    for cid in selected_source_ids:
         case=source_cases[cid]
         started=time.monotonic()
         observations.append(
@@ -702,6 +770,7 @@ def main() -> int:
                 composer=composer,
                 p17_manager=p17_manager,
                 p19_manager=p19_manager,
+                reasoning=reasoning,
                 store=orchestrator,
                 db_engine=db_engine,
                 principal=_principal(),
@@ -714,15 +783,16 @@ def main() -> int:
                 started_at=started,
             )
         )
-    observations.append(
-        _security_case(
-            intake=intake,
-            product=product,
-            orchestrator=orchestrator,
-            db_engine=db_engine,
-            native_token=token,
+    if args.case_id is None:
+        observations.append(
+            _security_case(
+                intake=intake,
+                product=product,
+                orchestrator=orchestrator,
+                db_engine=db_engine,
+                native_token=token,
+            )
         )
-    )
     intake_transport.close()
     p17_transport.close()
     p19_transport.close()
