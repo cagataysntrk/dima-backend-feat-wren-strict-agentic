@@ -16,6 +16,7 @@ from typing import Any, Literal
 
 from pydantic import Field
 
+from app.pii import mask_text
 from app.v2.models import EpistemicLabel, FrozenModel
 from app.v2.report_builder import (
     ReportBlock,
@@ -85,13 +86,13 @@ class NarrationPacket(FrozenModel):
             sections=tuple(
                 NarrationPacketSection(
                     section_ref=section.section_id,
-                    title=section.title,
+                    title=mask_text(section.title),
                     blocks=tuple(
                         NarrationPacketBlock(
                             block_ref=block.block_id,
                             block_kind=block.block_kind,
                             claim_kind=block.claim_kind,
-                            content=block.content,
+                            content=mask_text(block.content),
                             epistemic_label=block.epistemic_label,
                             has_artifact=block.artifact_ref is not None,
                             artifact_kind=(
@@ -99,15 +100,19 @@ class NarrationPacket(FrozenModel):
                                 if block.artifact_ref is None
                                 else block.artifact_ref.artifact_kind
                             ),
-                            limitations=block.limitations,
+                            limitations=tuple(
+                                mask_text(item) for item in block.limitations
+                            ),
                         )
                         for block in section.blocks
                     ),
-                    limitations=section.limitations,
+                    limitations=tuple(
+                        mask_text(item) for item in section.limitations
+                    ),
                 )
                 for section in report.sections
             ),
-            limitations=report.limitations,
+            limitations=tuple(mask_text(item) for item in report.limitations),
         )
 
 
