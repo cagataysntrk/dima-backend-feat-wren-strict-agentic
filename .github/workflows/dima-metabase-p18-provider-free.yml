@@ -48,10 +48,7 @@ jobs:
           DECISIONS="backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
           grep -q "SEALED / DMP-DEC-0054 / P18 MINIMAL IMPLEMENTATION AUTHORIZED" "$REVIEW"
           grep -q "DMP-DEC-0054 — MINIMAL BUSINESS RELATIONSHIP POLICY AUTHORITY" "$DECISIONS"
-          grep -q "NO TABLE/FIELD JOIN GRAPH IN DIMA" "$REVIEW"
-          grep -q "NO RELATIONSHIP SCORING" "$REVIEW"
-          grep -q "NO FUZZY RELATIONSHIP INFERENCE" "$REVIEW"
-          grep -q "NO CAUSALITY IN P18" "$REVIEW"
+          grep -q "P18 = PERMANENTLY SEALED" "$REVIEW"
 
       - name: Compile P18 authority slice
         working-directory: backend

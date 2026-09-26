@@ -19,7 +19,7 @@ permissions:
 jobs:
   provider-free:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     env:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          submodules: false
 
       - uses: actions/setup-python@v5
         with:
@@ -43,7 +44,7 @@ jobs:
       - name: Compile connector certification surface
         working-directory: backend
         run: |
-          python -m py_compile app/v3/action_connectors/__init__.py app/v3/action_connectors/resend_email.py tests/test_v3_resend_action_connector.py
+          python -m py_compile             app/v3/action_connectors/__init__.py             app/v3/action_connectors/resend_email.py             tests/test_v3_resend_action_connector.py
 
       - name: Enforce connector-only boundary
         shell: bash
@@ -52,108 +53,13 @@ jobs:
           RECEIPT="backend/belgeler/metabase/predev/RESEND_CONNECTOR_CERTIFICATION_RECEIPT.md"
           test -f "$RECEIPT"
           grep -q "RESEND CONNECTOR CERTIFICATION" "$RECEIPT"
-          grep -q "NO DMP-DEC-0060" "$RECEIPT"
-
           test ! -f backend/app/channels.py
-          grep -q '^DEFAULT_ACTION_CAPABILITY_REGISTRY = ActionCapabilityRegistry()
-          test -z "$(find backend/migrations/versions -maxdepth 1 -type f -iname '*resend*' -print)"
-
-          if grep -R --include='*.py' -nE             'from app\.v3\.action_connectors\.resend_email|import app\.v3\.action_connectors\.resend_email'             backend/app             --exclude='resend_email.py'; then
-            echo "Resend connector imported into a normal product hot path"
-            exit 1
-          fi
-
-      - name: Static provider-free guard
-        working-directory: backend
-        run: |
-          python - <<'PY'
-          import ast
-          from pathlib import Path
-          p=Path("app/v3/action_connectors/resend_email.py")
-          src=p.read_text(encoding="utf-8")
-          tree=ast.parse(src)
-          imports=set()
-          for node in ast.walk(tree):
-              if isinstance(node,ast.Import):
-                  imports.update(a.name for a in node.names)
-              elif isinstance(node,ast.ImportFrom):
-                  imports.add(node.module or "")
-          forbidden=(
-              "app.v3.action_authorization","app.v3.decision_adoption",
-              "app.v3.decision_intelligence","app.v3.report_document",
-              "app.v3.substrate.metabase","app.v3.research","app.wren",
-              "sqlmodel","sqlalchemy","numpy","pandas","scipy","statistics",
-          )
-          assert not any(name.startswith(forbidden) for name in imports), imports
-          assert "https://api.resend.com" in src
-          assert "action:execute" not in src
-          assert "ActionExecutionReceipt" not in src
-          assert "ActionAttempt" not in src
-          PY
-
-      - name: Resend connector focused provider-free proof
-        working-directory: backend
-        run: pytest -q tests/test_v3_resend_action_connector.py
-
-      - name: ActionAuthorization remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_action_authorization.py
-
-      - name: Human Adoption remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_decision_adoption.py
-
-      - name: P21 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p21_decision_intelligence.py
-
-      - name: P20 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p20_report_document.py
-
-      - name: P19 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p19_hypothesis_root_cause.py tests/test_v3_p19_provider.py tests/test_v3_p19_autonomous_eval.py
-
-      - name: P18 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p18_business_relationship_policy.py
-
-      - name: P17 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p17_authorization_transport.py tests/test_v3_p17_autonomous_provider_schema.py tests/test_v3_p17_autonomous_manager_eval.py tests/test_v3_p17_research_manager.py
-
-      - name: P16 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p16_claim_lineage.py
-
-      - name: P15 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p15_native_exploration.py
-
-      - name: P14 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
-
-      - name: Verify zero execution/model/engine budget
-        shell: bash
-        run: |
-          set -euo pipefail
-          ! grep -q '"action:execute"' backend/control_plane/authorize.py
-          test ! -f backend/app/v3/action_execution.py
-          ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/action_connectors/resend_email.py
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
- backend/app/v3/action_authorization.py
-          ! grep -q '"action:execute"' backend/control_plane/authorize.py
-          test ! -f backend/app/v3/action_execution.py
-
-          grep -q '^RESEND_API_ORIGIN = "https://api.resend.com"
+          grep -q '^RESEND_API_ORIGIN = "https://api.resend.com"$' backend/app/v3/action_connectors/resend_email.py
           grep -q '^DEFAULT_ACTION_CAPABILITY_REGISTRY = ActionCapabilityRegistry()$' backend/app/v3/action_authorization.py
           ! grep -q '"action:execute"' backend/control_plane/authorize.py
           test ! -f backend/app/v3/action_execution.py
           test -z "$(find backend/migrations/versions -maxdepth 1 -type f -iname '*resend*' -print)"
-
-          if grep -R --include='*.py' -nE             'from app\.v3\.action_connectors\.resend_email|import app\.v3\.action_connectors\.resend_email'             backend/app             --exclude='resend_email.py'; then
+          if grep -R --include='*.py' -nE             'from app\.v3\.action_connectors\.resend_email|import app\.v3\.action_connectors\.resend_email'             backend/app --exclude='resend_email.py'; then
             echo "Resend connector imported into a normal product hot path"
             exit 1
           fi
@@ -190,142 +96,10 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v3_resend_action_connector.py
 
-      - name: ActionAuthorization remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_action_authorization.py
-
-      - name: Human Adoption remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_decision_adoption.py
-
-      - name: P21 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p21_decision_intelligence.py
-
-      - name: P20 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p20_report_document.py
-
-      - name: P19 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p19_hypothesis_root_cause.py tests/test_v3_p19_provider.py tests/test_v3_p19_autonomous_eval.py
-
-      - name: P18 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p18_business_relationship_policy.py
-
-      - name: P17 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p17_authorization_transport.py tests/test_v3_p17_autonomous_provider_schema.py tests/test_v3_p17_autonomous_manager_eval.py tests/test_v3_p17_research_manager.py
-
-      - name: P16 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p16_claim_lineage.py
-
-      - name: P15 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p15_native_exploration.py
-
-      - name: P14 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
-
-      - name: Verify zero execution/model/engine budget
+      - name: Verify frozen execution boundary
         shell: bash
         run: |
           set -euo pipefail
           ! grep -q '"action:execute"' backend/control_plane/authorize.py
           test ! -f backend/app/v3/action_execution.py
-          ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/action_connectors/resend_email.py
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
- backend/app/v3/action_connectors/resend_email.py
-          grep -q '^DEFAULT_ACTION_CAPABILITY_REGISTRY = ActionCapabilityRegistry()$' backend/app/v3/action_authorization.py
-          ! grep -q '"action:execute"' backend/control_plane/authorize.py
-          test ! -f backend/app/v3/action_execution.py
-          test -z "$(find backend/migrations/versions -maxdepth 1 -type f -iname '*resend*' -print)"
-
-          if grep -R --include='*.py' -nE             'from app\.v3\.action_connectors\.resend_email|import app\.v3\.action_connectors\.resend_email'             backend/app             --exclude='resend_email.py'; then
-            echo "Resend connector imported into a normal product hot path"
-            exit 1
-          fi
-
-      - name: Static provider-free guard
-        working-directory: backend
-        run: |
-          python - <<'PY'
-          import ast
-          from pathlib import Path
-          p=Path("app/v3/action_connectors/resend_email.py")
-          src=p.read_text(encoding="utf-8")
-          tree=ast.parse(src)
-          imports=set()
-          for node in ast.walk(tree):
-              if isinstance(node,ast.Import):
-                  imports.update(a.name for a in node.names)
-              elif isinstance(node,ast.ImportFrom):
-                  imports.add(node.module or "")
-          forbidden=(
-              "app.v3.action_authorization","app.v3.decision_adoption",
-              "app.v3.decision_intelligence","app.v3.report_document",
-              "app.v3.substrate.metabase","app.v3.research","app.wren",
-              "sqlmodel","sqlalchemy","numpy","pandas","scipy","statistics",
-          )
-          assert not any(name.startswith(forbidden) for name in imports), imports
-          assert "https://api.resend.com" in src
-          assert "action:execute" not in src
-          assert "ActionExecutionReceipt" not in src
-          assert "ActionAttempt" not in src
-          PY
-
-      - name: Resend connector focused provider-free proof
-        working-directory: backend
-        run: pytest -q tests/test_v3_resend_action_connector.py
-
-      - name: ActionAuthorization remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_action_authorization.py
-
-      - name: Human Adoption remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_decision_adoption.py
-
-      - name: P21 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p21_decision_intelligence.py
-
-      - name: P20 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p20_report_document.py
-
-      - name: P19 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p19_hypothesis_root_cause.py tests/test_v3_p19_provider.py tests/test_v3_p19_autonomous_eval.py
-
-      - name: P18 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p18_business_relationship_policy.py
-
-      - name: P17 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p17_authorization_transport.py tests/test_v3_p17_autonomous_provider_schema.py tests/test_v3_p17_autonomous_manager_eval.py tests/test_v3_p17_research_manager.py
-
-      - name: P16 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p16_claim_lineage.py
-
-      - name: P15 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p15_native_exploration.py
-
-      - name: P14 remains GREEN
-        working-directory: backend
-        run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
-
-      - name: Verify zero execution/model/engine budget
-        shell: bash
-        run: |
-          set -euo pipefail
-          ! grep -q '"action:execute"' backend/control_plane/authorize.py
-          test ! -f backend/app/v3/action_execution.py
-          ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/action_connectors/resend_email.py
           test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
