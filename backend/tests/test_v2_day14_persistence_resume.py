@@ -14,11 +14,15 @@ from app.v2.manager_models import (
     ObligationPolarity,
     ObligationPriority,
     ObligationStatus,
+    ResearchDirectiveDisposition,
+    ResearchDirectiveDispositionStatus,
+    ResearchDirectiveType,
     ResearchRunTerminal,
     UserObligationLedger,
 )
 from app.v2.models import (
     EvidenceArtifact,
+    HypothesisLedgerState,
     ResearchTask,
     ResolvedSemanticRef,
     SemanticTargetKind,
@@ -332,3 +336,161 @@ def test_terminal_runtime_rehydrates_and_opens_followup_without_losing_lineage(t
     assert followup.manager_turns == 0
     assert followup.preacceptance_turns == 0
     assert followup.research_manager_turns == 0
+
+
+def _accepted_resume_authority():
+    records, handle_id = _semantic_records()
+    contract = AcceptedTurnContract(
+        contract_id="atc-day14",
+        lineage_id="atl-day14",
+        version=1,
+        turn_id="turn-1",
+        request_ref="req-1",
+        source_message_hash="a" * 64,
+        accepted_attempt_id="attempt-1",
+        model_role="RESEARCH_MANAGER",
+        obligation_ids=("U1",),
+        context_version="ctx-day14",
+        accepted_at_iso="2026-09-26T00:00:00+00:00",
+    )
+    ledger = UserObligationLedger(
+        lineage_id="atl-day14",
+        version=1,
+        items=(
+            ObligationLedgerItem(
+                obligation_id="U1",
+                capability_key=ManagerCapabilityKey.PERFORMANCE,
+                origin=ObligationOrigin.USER_MUST,
+                priority=ObligationPriority.MUST,
+                polarity=ObligationPolarity.REQUIRED,
+                status=ObligationStatus.IN_PROGRESS,
+                source_refs=("src-day14",),
+                semantic_handle_refs=(handle_id,),
+                evidence_refs=(),
+                introduced_in_version=1,
+            ),
+        ),
+    )
+    snapshot = ManagerRunSnapshot(
+        run_id="mgr-day14",
+        state=ManagerState.RESEARCHING,
+        accepted_contract_id=contract.contract_id,
+        lineage_id=contract.lineage_id,
+    )
+    return records, contract, ledger, snapshot
+
+
+def test_crash_after_accepted_contract_restores_authority_without_fabricating_evidence(tmp_path):
+    records, contract, ledger, snapshot = _accepted_resume_authority()
+    state = CanonicalResumeState(
+        manager_snapshot=snapshot,
+        accepted_contract=contract,
+        ledger=ledger,
+        semantic_bindings=records,
+    )
+    store = DurableCheckpointStore(tmp_path)
+    checkpoint = store.commit(
+        scope=_scope(),
+        state=state,
+        expected_revision=0,
+    )
+
+    restored = restore_research_context(checkpoint)
+
+    assert restored.accepted_contract == contract
+    assert restored.ledger == ledger
+    assert restored.evidence == ()
+    assert restored.runtime.snapshot.state == ManagerState.RESEARCHING
+
+
+def test_crash_after_evidence_creation_preserves_evidence_before_obligation_consumption(tmp_path):
+    records, contract, ledger, snapshot = _accepted_resume_authority()
+    evidence = _evidence()
+    state = CanonicalResumeState(
+        manager_snapshot=snapshot.model_copy(
+            update={
+                "evidence_refs": (evidence.artifact_id,),
+                "latest_evidence_ref": evidence.artifact_id,
+            }
+        ),
+        accepted_contract=contract,
+        ledger=ledger,
+        evidence=(evidence,),
+        semantic_bindings=records,
+    )
+    checkpoint = DurableCheckpointStore(tmp_path).commit(
+        scope=_scope(),
+        state=state,
+        expected_revision=0,
+    )
+
+    restored = restore_research_context(checkpoint)
+
+    assert restored.evidence_store.get(evidence.artifact_id) == evidence
+    assert restored.ledger.items[0].status == ObligationStatus.IN_PROGRESS
+    assert restored.ledger.items[0].evidence_refs == ()
+
+
+def test_open_root_and_directive_state_survive_restart_without_terminal_laundering(tmp_path):
+    records, contract, ledger, snapshot = _accepted_resume_authority()
+    hypothesis = HypothesisLedgerState(
+        parent_obligation_id="U1",
+        accepted_contract_id=contract.contract_id,
+        lineage_id=contract.lineage_id,
+        run_id=snapshot.run_id,
+        entries=(),
+    )
+    directive = ResearchDirectiveDisposition(
+        directive_id="dir-day14",
+        directive_type=ResearchDirectiveType.ADAPT_ON_EVIDENCE,
+        parent_obligation_id="U1",
+        status=ResearchDirectiveDispositionStatus.OPEN,
+    )
+    state = CanonicalResumeState(
+        manager_snapshot=snapshot,
+        accepted_contract=contract,
+        ledger=ledger,
+        hypothesis_states=(hypothesis,),
+        directive_dispositions=(directive,),
+        semantic_bindings=records,
+        completion_status=None,
+    )
+    store = DurableCheckpointStore(tmp_path)
+    checkpoint = store.commit(
+        scope=_scope(),
+        state=state,
+        expected_revision=0,
+    )
+    loaded = store.load(_scope())
+
+    assert loaded is not None
+    assert loaded.state.hypothesis_states == (hypothesis,)
+    assert loaded.state.directive_dispositions == (directive,)
+    assert loaded.state.completion_status is None
+
+
+def test_report_v1_is_preserved_when_stale_v2_writer_loses_cas(tmp_path):
+    store = DurableCheckpointStore(tmp_path)
+    scope = _scope()
+    base = store.commit(
+        scope=scope,
+        state=_state(report_version=1),
+        expected_revision=0,
+    )
+    winner = store.commit(
+        scope=scope,
+        state=_state(report_version=2),
+        expected_revision=base.revision,
+    )
+
+    with pytest.raises(StaleCheckpointWrite):
+        store.commit(
+            scope=scope,
+            state=_state(report_version=1),
+            expected_revision=base.revision,
+        )
+
+    loaded = store.load(scope)
+    assert loaded == winner
+    assert loaded.state.reports[0].version == 2
+    assert _report(1).report.title == "Report v1"
