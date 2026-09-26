@@ -155,19 +155,24 @@ def test_evidence_store_rejects_same_artifact_identity_with_different_truth():
         store.put(_evidence(payload={"changed": True}))
 
 
-def test_evidence_store_rejects_second_canonical_evidence_for_same_task():
+def test_evidence_store_allows_distinct_artifacts_for_same_task_without_identity_laundering():
     store = EvidenceStore(
         tenant_binding="tenant:a",
         principal_subject="user-a",
         context_version="ctx-day12",
     )
-    store.put(_evidence())
+    first = _evidence()
+    second = _evidence(
+        artifact_id="evi_day12_b",
+        query_contract_refs=("c-day12-b",),
+    )
 
-    with pytest.raises(
-        ManagerAuthorityViolation,
-        match="ResearchTask already owns canonical Evidence",
-    ):
-        store.put(_evidence(artifact_id="evi_day12_b"))
+    store.put(first)
+    store.put(second)
+
+    assert store.count == 2
+    assert store.get(first.artifact_id) == first
+    assert store.get(second.artifact_id) == second
 
 
 @pytest.mark.parametrize(
