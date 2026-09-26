@@ -1097,9 +1097,16 @@ class PreAcceptanceController:
         for obligation in draft.obligations:
             spec = self._capabilities.get(obligation.capability_key)
             required = (
-                spec.required_kinds
-                if obligation.polarity == ObligationPolarity.REQUIRED
-                else spec.exclusion_required_kinds
+                frozenset()
+                if (
+                    obligation.polarity == ObligationPolarity.REQUIRED
+                    and spec.lane == ManagerCapabilityLane.RESEARCH
+                )
+                else (
+                    spec.required_kinds
+                    if obligation.polarity == ObligationPolarity.REQUIRED
+                    else spec.exclusion_required_kinds
+                )
             )
             if not required:
                 continue
