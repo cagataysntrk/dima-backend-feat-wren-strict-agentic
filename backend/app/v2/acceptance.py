@@ -5,7 +5,11 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime, timezone
 
-from app.v2.capability_bindings import CapabilityBinding, CapabilityBindingValidator
+from app.v2.capability_bindings import (
+    CapabilityBinding,
+    CapabilityBindingValidator,
+    ResearchGoalExecutionDisposition,
+)
 from app.v2.manager_models import (
     AcceptedTurnContract,
     AcceptanceResult,
@@ -417,24 +421,32 @@ class IntentAcceptanceGate:
                     )
 
             spec_for_acceptance = self._capabilities.get(item.capability_key)
-            binding_result = self._bindings.validate(
+            goal_authority_eligible = (
+                item.origin == ObligationOrigin.USER_MUST
+                and item.priority == ObligationPriority.MUST
+                and item.polarity == ObligationPolarity.REQUIRED
+                and (
+                    spec_for_acceptance.lane == ManagerCapabilityLane.RESEARCH
+                    or item.obligation_id in current_research_goal_parent_ids
+                )
+            )
+            classification = self._bindings.classify_research_goal_execution(
                 item,
                 tenant_binding=tenant_binding,
                 context_version=context_version,
-                research_goal_authority=(
-                    item.origin == ObligationOrigin.USER_MUST
-                    and item.priority == ObligationPriority.MUST
-                    and item.polarity == ObligationPolarity.REQUIRED
-                    and (
-                        spec_for_acceptance.lane == ManagerCapabilityLane.RESEARCH
-                        or item.obligation_id in current_research_goal_parent_ids
-                    )
-                ),
+                goal_authority_eligible=goal_authority_eligible,
             )
-            if not binding_result.valid:
-                reject.extend(binding_result.reasons)
-            elif binding_result.binding is not None:
-                current_bindings[item.obligation_id] = binding_result.binding
+            if (
+                classification.disposition
+                == ResearchGoalExecutionDisposition.INVALID
+            ):
+                reject.extend(classification.reasons)
+            elif (
+                classification.disposition
+                == ResearchGoalExecutionDisposition.EXECUTABLE_NOW
+                and classification.binding is not None
+            ):
+                current_bindings[item.obligation_id] = classification.binding
 
         if semantic_receipts is not None:
             reject.extend(
@@ -459,27 +471,35 @@ class IntentAcceptanceGate:
         effective_bindings = dict(current_bindings)
         for item in carried_items:
             carried_spec = self._capabilities.get(item.capability_key)
-            result = self._bindings.validate(
+            goal_authority_eligible = (
+                item.origin == ObligationOrigin.USER_MUST
+                and item.priority == ObligationPriority.MUST
+                and item.polarity == ObligationPolarity.REQUIRED
+                and (
+                    carried_spec.lane == ManagerCapabilityLane.RESEARCH
+                    or item.obligation_id in carried_research_goal_parent_ids
+                )
+            )
+            classification = self._bindings.classify_research_goal_execution(
                 item,
                 tenant_binding=tenant_binding,
                 context_version=context_version,
-                research_goal_authority=(
-                    item.origin == ObligationOrigin.USER_MUST
-                    and item.priority == ObligationPriority.MUST
-                    and item.polarity == ObligationPolarity.REQUIRED
-                    and (
-                        carried_spec.lane == ManagerCapabilityLane.RESEARCH
-                        or item.obligation_id in carried_research_goal_parent_ids
-                    )
-                ),
+                goal_authority_eligible=goal_authority_eligible,
             )
-            if not result.valid:
+            if (
+                classification.disposition
+                == ResearchGoalExecutionDisposition.INVALID
+            ):
                 reject.extend(
                     f"carried obligation {item.obligation_id}: {reason}"
-                    for reason in result.reasons
+                    for reason in classification.reasons
                 )
-            elif result.binding is not None:
-                effective_bindings[item.obligation_id] = result.binding
+            elif (
+                classification.disposition
+                == ResearchGoalExecutionDisposition.EXECUTABLE_NOW
+                and classification.binding is not None
+            ):
+                effective_bindings[item.obligation_id] = classification.binding
 
         has_required_user_must = any(
             item.origin == ObligationOrigin.USER_MUST
