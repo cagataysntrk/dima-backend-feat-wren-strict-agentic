@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from pydantic import Field
 
+from app.v2.completion import CompletionGapReceipt
 from app.v2.models import (
     AskV2Request,
     BoundedSemanticContextV0,
@@ -106,6 +107,7 @@ class ProductTerminalReceipt(FrozenModel):
     manager_turns: int = Field(default=0, ge=0)
     tool_calls: int = Field(default=0, ge=0)
     data_queries: int = Field(default=0, ge=0)
+    completion_gap: CompletionGapReceipt | None = None
 
 
 class VersionedReport(FrozenModel):
