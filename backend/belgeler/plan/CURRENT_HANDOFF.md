@@ -1,3 +1,62 @@
+## LATEST AUTHORITY — WREN GOAL/TASK AUTHORITY RECOVERY SEALED
+
+```text
+branch                           feat/ask-v2-mvp
+Product behavior                 f7e565bb13e0668f85df071f6ecc70411314f9fd
+formal closure engineering HEAD  cbcf5be92dcf50cb8beb8894b4da2c3e2f44294e
+formal closure run               36247385449 = GREEN
+formal closure workflow          v2-research-goal-task-final-closure
+backend/app diff after Product   ZERO
+paid/provider calls in recovery  0
+
+goal-task quarantine             GREEN
+Day6.5 affected closure          GREEN
+Day7 affected Research           GREEN
+Day8 affected ROOT               GREEN
+Day10 affected Product           GREEN
+real-Wren relationship           GREEN
+real-Wren ROOT Product           GREEN
+
+WREN GOAL/TASK AUTHORITY RECOVERY SEALED
+recovery engineering             STOP
+paid/live reassurance            FORBIDDEN
+DEV80 / Validation50 / Hidden50  NOT CONSUMED
+next phase                       Wren vs Metabase comparison planning
+```
+
+Canonical recovery architecture:
+
+```text
+EXECUTABLE_NOW
+-> existing sealed task/Wren path
+
+MATERIALIZATION_REQUIRED
+-> optional bounded goal-task seam
+-> fresh task-owned semantic authority
+-> same sealed task/Wren path
+-> VERIFIED Evidence
+-> typed parent roll-up
+```
+
+Permanent:
+
+```text
+normal executable validation FIRST
+goal-authority validation SECOND
+
+RESEARCH GOAL AUTHORITY != EXECUTABLE TASK AUTHORITY
+SAME CONTRACT != SAME EXECUTABLE SEMANTIC AUTHORITY
+SOURCE TRUTH MAY BE REUSED; OWNER AUTHORITY MUST BE FRESH
+MATERIALIZATION != COMPLETION
+CompletionGate remains final truth
+```
+
+Seal document:
+
+```text
+backend/belgeler/plan/DIMA_WREN_GOAL_TASK_AUTHORITY_RECOVERY_FINAL_SEAL.md
+```
+
 ## LATEST AUTHORITY — DAY11 EVAL EXPANSION GREEN / DAY12 NEXT
 
 ```text
