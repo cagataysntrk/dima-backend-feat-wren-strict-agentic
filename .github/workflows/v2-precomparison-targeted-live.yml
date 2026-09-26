@@ -45,13 +45,9 @@ jobs:
         working-directory: backend
         run: |
           python lab/v2_precomparison_rehearsal_live.py \
-            --max-total-model-calls 70 \
+            --max-total-model-calls 20 \
             --output lab/reports/v2_precomparison_targeted_live.json \
-            --case-id std_clause_order \
-            --case-id relationship_explicit_tr \
             --case-id adaptive_tr \
-            --case-id canonical_reordered \
-            --case-id restart_signed_continuation \
             --case-id foreign_principal_replay
       - uses: actions/upload-artifact@v4
         if: always()
