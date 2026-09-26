@@ -6031,3 +6031,59 @@ CURRENT DecisionBrief
 Exactly one new durable family is authorized. Legacy DecisionRecord remains frozen historical
 compatibility. ActionPlan, ActionAuthorization, Action execution, external side effects, analytics,
 P14-P21 mutation, router/UI, model dependency and engine/Metabase-core changes remain forbidden.
+
+
+### DMP-DEC-0058 FINAL CLOSURE — HUMAN ADOPTION AUTHORITY SEALED
+
+date: 2026-09-26
+
+```text
+HUMAN ADOPTION AUTHORITY              = SEALED
+
+behavior SHA                          = cbfc0fe792b6a6121d0a04c8ab819c289950af97
+certified integration HEAD            = cbfc0fe792b6a6121d0a04c8ab819c289950af97
+
+adoption provider-free                = 36222145155 SUCCESS
+governance                            = 36222145158 SUCCESS
+
+adoption focused                      = 29 PASS
+P21 regression                        = 25 PASS
+P20 regression                        = 19 PASS
+P19 regression                        = 42 PASS
+P18 regression                        = 24 PASS
+P17 regression                        = 95 PASS
+P16 regression                        = 6 PASS
+P15 regression                        = 5 PASS
+P14 regression                        = 17 PASS
+
+Alembic head                          = f9e6c4fa1052
+DecisionAdoptionRecord families       = 1
+decision:adopt                        = analyst+
+
+CURRENT DecisionBrief                 = REQUIRED / GREEN
+source fingerprint match              = GREEN
+tenant isolation                      = GREEN
+foreign/missing non-oracle            = GREEN
+ACCEPTED                              = GREEN
+REJECTED                              = GREEN
+MODIFIED                              = GREEN
+DEFERRED                              = GREEN
+idempotency                           = GREEN
+immutable supersession                = GREEN
+cross-actor supersession reject       = GREEN
+
+legacy DecisionRecord diff            = 0
+P21 production diff                   = 0
+P14-P21 mutation                      = 0
+analytics                             = 0
+Action writes                         = 0
+external side effects                 = 0
+
+engine SHA/gitlink                    = cbe313af9ac2d5960f662068e433d328d896fb06
+engine modifications/builds           = 0 / 0
+Metabase core modifications           = 0
+Luna / Sol / C1                       = 0 / 0 / 0
+UI / router                           = 0 / 0
+```
+
+DMP-DEC-0058 is sealed. This closure does not authorize Action production code or execution.

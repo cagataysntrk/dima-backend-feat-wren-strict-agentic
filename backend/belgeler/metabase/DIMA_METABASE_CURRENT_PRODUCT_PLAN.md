@@ -17,17 +17,15 @@ P19                                   = SEALED
 P20                                   = SEALED
 P21                                   = SEALED
 
-P20 canonical product SHA             = 46bbc5f22ea18f6be239014750d77fc254508c46
-P21 behavior/product SHA              = b4f101e30abd1292fedf6ea01fc150b9a3b55bce
-P21 certified integration HEAD        = 224df510112092e5a64b6fbbd2bd579bc7694f1f
+HUMAN ADOPTION AUTHORITY              = SEALED
+DMP                                   = DMP-DEC-0058
+adoption behavior SHA                 = cbfc0fe792b6a6121d0a04c8ab819c289950af97
+adoption certified integration HEAD   = cbfc0fe792b6a6121d0a04c8ab819c289950af97
+adoption provider-free                = 36222145155 SUCCESS
+adoption governance                   = 36222145158 SUCCESS
+adoption focused                      = 29 PASS
 
-P21 provider-free                     = 36219566290 SUCCESS
-P21 governance                        = 36219566300 SUCCESS
-P20 current-head regression           = 36219566284 SUCCESS
-P19 current-head regression           = 36219566307 SUCCESS
-P18 current-head regression           = 36219566289 SUCCESS
-
-P21 focused                           = 25 PASS
+P21 regression                        = 25 PASS
 P20 regression                        = 19 PASS
 P19 regression                        = 42 PASS
 P18 regression                        = 24 PASS
@@ -36,35 +34,31 @@ P16 regression                        = 6 PASS
 P15 regression                        = 5 PASS
 P14 regression                        = 17 PASS
 
-Alembic head                          = f8d5b3e9c041
-P21 durable record families           = 1
-P21 table                             = p21_decision_brief
-
-P20 currentness gate                  = GREEN
+Alembic head                          = f9e6c4fa1052
+DecisionAdoptionRecord families       = 1
+DecisionAdoption table                = decision_adoption
+decision:adopt                        = analyst+
+CURRENT DecisionBrief required        = GREEN
 tenant / non-oracle isolation         = GREEN
-numeric premise exact-copy gate       = GREEN
-epistemic ceiling                     = GREEN
-restart / idempotency                 = GREEN
-revision / staleness                  = GREEN
+typed disposition legality            = GREEN
+idempotency / supersession            = GREEN
 legacy DecisionRecord diff            = 0
+P21 production diff                   = 0
+P14-P21 mutation                      = 0
+analytics                             = 0
+Action writes                         = 0
+external side effects                 = 0
 
-P21 analytical execution              = 0
-new receipt/Evidence/claim/P19/report authority writes = 0
-human-adoption writes                 = 0
-action execution / side-effect writes = 0
+ACTION AUTHORITY                      = PRE-DEVELOPMENT NEXT
+Action pre-development review         = COMPLETE
+ACTION EXECUTION                      = NOT AUTHORIZED
+UI / UX                               = NOT AUTHORIZED
 
 engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
 engine modifications/builds           = 0 / 0
 Metabase core modification            = 0
 Luna / Sol / C1                       = 0 / 0 / 0
-UI / router                           = 0 / 0
-
-current open work                     = POST-P21 HUMAN ADOPTION / ACTION BOUNDARY REVIEW
-post-P21 review status                = COMPLETE
-HUMAN ADOPTION IMPLEMENTATION         = NOT AUTHORIZED
-ACTION EXECUTION                      = NOT AUTHORIZED
-UI / UX                               = NOT AUTHORIZED
 ```
 
 Current owner split:
@@ -74,19 +68,22 @@ METABASE + METABOT = analytical computation / execution
 P19                = epistemic / root-cause authority
 P20                = governed report / publication authority
 P21                = advisory DecisionBrief authority
+DecisionAdoption   = authenticated human decision truth
 
-P20 REPORT != P21 RECOMMENDATION
-P21 RECOMMENDATION != HUMAN-ADOPTED DECISION
-HUMAN-ADOPTED DECISION != ACTION EXECUTION
+RECOMMENDATION != ADOPTION
+ADOPTION != ACTION AUTHORIZATION
+ACTION AUTHORIZATION != EXECUTION
+EXECUTION SUCCESS != BUSINESS OUTCOME
 ```
 
 ### CURRENT RETURN POINT
 
-P21 is sealed. The post-P21 Human Adoption / Action Boundary pre-development review is complete.
+Human Adoption Authority is sealed under DMP-DEC-0058. The ActionPlan / Action Authorization /
+Execution pre-development review is complete.
 
-No human-adoption production authority, Action executor, workflow automation or UI/UX is authorized.
-The next bounded objective requires a new supervisor authorization and must preserve the
-DecisionBrief → human adoption → Action-execution separation.
+No Action production code, Action execution, external side effect or UI/UX is authorized. The next
+bounded objective requires a new supervisor authorization and should open ActionPlan +
+ActionAuthorization authority only before any executor is enabled.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 

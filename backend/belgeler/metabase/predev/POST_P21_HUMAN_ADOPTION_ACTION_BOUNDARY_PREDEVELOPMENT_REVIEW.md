@@ -517,3 +517,32 @@ CURRENT DecisionBrief
 ```
 
 No Action implementation is authorized by DMP-DEC-0058.
+
+
+## 25. DMP-DEC-0058 final closure — Human Adoption Authority SEALED
+
+```text
+behavior SHA                    = cbfc0fe792b6a6121d0a04c8ab819c289950af97
+certified integration HEAD      = cbfc0fe792b6a6121d0a04c8ab819c289950af97
+provider-free                   = 36222145155 SUCCESS
+governance                      = 36222145158 SUCCESS
+focused                         = 29 PASS
+P21/P20/P19/P18                 = 25/19/42/24 PASS
+P17/P16/P15/P14                 = 95/6/5/17 PASS
+Alembic head                    = f9e6c4fa1052
+DecisionAdoptionRecord families = 1
+decision:adopt                  = analyst+
+Action writes                   = 0
+external side effects           = 0
+model calls                     = 0
+engine changes/builds           = 0/0
+```
+
+Status from this point:
+
+```text
+HUMAN ADOPTION AUTHORITY = SEALED
+ACTION AUTHORITY = PRE-DEVELOPMENT NEXT
+ACTION EXECUTION = NOT AUTHORIZED
+UI/UX = NOT AUTHORIZED
+```
