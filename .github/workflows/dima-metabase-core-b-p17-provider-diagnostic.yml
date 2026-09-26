@@ -17,6 +17,7 @@ on:
       - "backend/lab/metabase/core_b/authorizations/p17-provider-diagnostic-001.json"
       - "backend/lab/metabase/core_b/authorizations/p17-request-differential-002.json"
       - "backend/lab/metabase/core_b/authorizations/p17-request-differential-003.json"
+      - "backend/lab/metabase/core_b/authorizations/p17-provider-schema-recovery-004.json"
 
 permissions:
   contents: read
@@ -132,29 +133,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AUTH="backend/lab/metabase/core_b/authorizations/p17-request-differential-003.json"
+          AUTH="backend/lab/metabase/core_b/authorizations/p17-provider-schema-recovery-004.json"
           test -f "$AUTH"
           python - "$AUTH" "$(git rev-parse HEAD^)" <<'PY'
           import json,subprocess,sys
           from pathlib import Path
           p=Path(sys.argv[1]); parent=sys.argv[2]
           value=json.loads(p.read_text(encoding="utf-8"))
-          assert value["mode"]=="p17_request_differential_live_v2"
-          assert value["decision"]=="CORE_B_SENTINEL_DIFFERENTIAL_RECOVERY"
+          assert value["mode"]=="p17_provider_schema_recovery_live_v1"
+          assert value["decision"]=="P17_PROVIDER_SCHEMA_REPRESENTATION_RECOVERY"
           assert value["candidate_product_sha"]==parent
-          assert value["provider_free_differential_run_id"]==36273869930
-          assert value["core_b_provider_free_seal_run_id"]==36273869889
-          assert value["governance_run_id"]==36273869897
-          assert value["prior_live_harness_failure_run_id"]==36273495405
-          assert value["provider_free_classification"]=="IDENTICAL"
-          assert value["historical_first_divergence_owner"]=="diagnostic_request_ref_namespace"
+          assert value["provider_free_diagnostic_run_id"]==36275984685
+          assert value["core_b_provider_free_seal_run_id"]==36275984671
+          assert value["governance_run_id"]==36275984683
+          assert value["prior_live_diagnostic_run_id"]==36273986016
+          assert value["historical_failed_schema_fingerprint"]=="80533318ccc154c2e183e66099bb1f42d4a055413a2fffec7939ee172cda9b11"
+          assert value["historical_failure_owner"]=="P17_PROVIDER_FACING_STRICT_SCHEMA_REPRESENTATION"
           assert value["model"]=="openai/gpt-5.6-luna"
           assert value["case_id"]=="root_cause_tr"
           assert value["max_p17_provider_calls"]==2
+          assert value["required_accepted_p17_calls"]==2
+          assert value["required_p19_provider_calls"]==0
           assert value["semantic_turns_are_not_retries"] is True
           assert value["third_provider_call_blocked_before_network"] is True
           assert value["automatic_retry"] is False
           assert value["full_sentinel_rerun"] is False
+          assert value["provider_pinning"] is False
+          assert value["strict_mode_required"] is True
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
           assert value["source_manifest_blob_sha"]=="cf9aea5004d2bbb979015917570f32417c67017a"
           assert value["neutral_fixture_blob_sha"]=="dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
@@ -164,9 +169,9 @@ jobs:
           assert blob("backend/lab/metabase/core_b/fixtures/machine_operations.json")==value["neutral_fixture_blob_sha"]
           assert blob("backend/app/v3/structured_trace.py")==value["structured_trace_blob_sha"]
           assert blob("backend/app/v3/structured_transport.py")==value["structured_transport_blob_sha"]
+          assert blob("backend/app/v3/research_manager_provider.py")==value["research_manager_provider_blob_sha"]
           assert blob("backend/lab/metabase/core_b/p17_request_differential.py")==value["differential_harness_blob_sha"]
           assert blob("backend/lab/metabase/core_b/p17_provider_diagnostic.py")==value["diagnostic_runner_blob_sha"]
-          assert value["diagnostic_runner_blob_sha"]=="030495ad850b842eebe05c67f016aab1e8f4437f"
           PY
           test -n "$DIMA_OPENROUTER_API_KEY"
 
@@ -264,7 +269,7 @@ jobs:
           mkdir -p eval/core_b/artifacts
           python lab/metabase/core_b/p17_provider_diagnostic.py             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --manifest eval/core_b/askv2_matched_20_cases.json             --output eval/core_b/artifacts/p17_provider_diagnostic.json             --control-db eval/core_b/artifacts/p17_provider_diagnostic.db             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --platform-sha "$GITHUB_SHA"
 
-      - name: Verify diagnostic receipt contract
+      - name: Verify recovered two-turn provider contract
         working-directory: backend
         run: |
           python - <<'PY'
@@ -275,38 +280,26 @@ jobs:
           assert value["case_id"]=="root_cause_tr"
           assert value["model"]=="openai/gpt-5.6-luna"
           assert value["diagnostic_classification"] in {
-              "PROVIDER_REJECTED",
               "BOUND_REACHED_NO_REJECTION",
               "COMPOSITION_RETURNED_WITHIN_BOUND",
           }
-          assert 1 <= value["p17_provider_call_count"] <= 2
+          assert value["p17_provider_call_count"]==2
           assert value["p19_provider_call_count"]==0
+          assert value["intake_provider_call_count"]==1
           assert value["automatic_retry"] is False
           assert value["full_sentinel_rerun"] is False
           assert value["p17_semantic_turns_are_not_retries"] is True
+          assert value["rejected_call_ordinal"] is None
+          assert value["provider_error_code"] is None
+          assert value["provider_error_message"] is None
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
-          assert value["schema_name"]=="dima_p17_research_manager_proposal"
           traces=value["request_traces"]
-          assert isinstance(traces,list)
-          assert len(traces)==value["p17_provider_call_count"]
-          assert value["call_ordinal_by_role"]==value["p17_provider_call_count"]
-          for trace in traces:
-              for key in (
-                  "schema_fingerprint","request_envelope_fingerprint",
-                  "system_prompt_hash","user_prompt_hash",
-                  "provider_routing_policy_fingerprint",
-              ):
-                  assert isinstance(trace[key],str) and len(trace[key])==64, (trace,key)
-              assert trace["owner"]=="p17_research_manager"
+          assert len(traces)==2
+          assert [trace["call_ordinal_by_role"] for trace in traces]==[1,2]
+          assert all(200 <= trace["http_status"] < 300 for trace in traces)
+          assert all(trace["owner"]=="p17_research_manager" for trace in traces)
+          assert traces[0]["schema_fingerprint"] != traces[1]["schema_fingerprint"]
           assert value["request_trace"]==traces[-1]
-          assert value["request_envelope_fingerprint"]==traces[-1]["request_envelope_fingerprint"]
-          assert isinstance(value["http_status"],int)
-          if value["diagnostic_classification"]=="PROVIDER_REJECTED":
-              assert value["rejected_call_ordinal"]==value["p17_provider_call_count"]
-              assert not (200 <= value["http_status"] < 300)
-          else:
-              assert value["rejected_call_ordinal"] is None
-              assert 200 <= value["http_status"] < 300
           PY
 
       - name: Hard freeze
