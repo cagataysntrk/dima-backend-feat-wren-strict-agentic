@@ -20,6 +20,7 @@ from app.v2.manager_models import (
     ManagerState,
     ObligationOrigin,
     ObligationPolarity,
+    ObligationStatus,
     ObligationPriority,
     SemanticBindingRef,
     SemanticResolutionReceipt,
