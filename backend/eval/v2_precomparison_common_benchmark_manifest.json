@@ -1,0 +1,99 @@
+{
+  "version": "precomparison-benchmark-v1",
+  "purpose": "Substrate-neutral product behavior manifest for independent Wren vs Metabase comparison.",
+  "forbidden_expectations": [
+    "Wren-specific SQL",
+    "Wren-specific action IDs",
+    "Wren-specific internal events",
+    "Metabase-specific internal IDs"
+  ],
+  "categories": [
+    {
+      "id": "standard_analytical_question",
+      "goal": "Answer a governed single-domain analytical question with evidence-backed output."
+    },
+    {
+      "id": "comparison",
+      "goal": "Compare governed metrics/periods without silently changing semantic scope."
+    },
+    {
+      "id": "ranking",
+      "goal": "Rank a governed metric by a governed dimension with explicit direction and bound."
+    },
+    {
+      "id": "breakdown",
+      "goal": "Break a governed metric down by a governed dimension."
+    },
+    {
+      "id": "relationship",
+      "goal": "Evaluate a governed relationship only when an authorized relationship path exists."
+    },
+    {
+      "id": "multi_intent",
+      "goal": "Preserve all current-message USER_MUST analytical and presentation obligations."
+    },
+    {
+      "id": "research",
+      "goal": "Use bounded multi-step research when direct execution is insufficient."
+    },
+    {
+      "id": "root_cause",
+      "goal": "Investigate causal candidates with evidence-linked hypotheses; never claim confirmed causation without authority."
+    },
+    {
+      "id": "adaptive_branch",
+      "goal": "Follow a material new direction only from inspected verified evidence and account for the lifecycle."
+    },
+    {
+      "id": "unsupported_request",
+      "goal": "Fail closed or return unsupported without fabricated semantics/evidence."
+    },
+    {
+      "id": "clarification",
+      "goal": "Ask a bounded clarification when required authority cannot be resolved safely."
+    },
+    {
+      "id": "conversation_repair",
+      "goal": "Apply user repair/versioning without mutating prior immutable truth."
+    },
+    {
+      "id": "follow_up",
+      "goal": "Reuse only admissible prior context and preserve lineage."
+    },
+    {
+      "id": "signed_continuation",
+      "goal": "Continue only within signed section authority and create immutable versioned output."
+    },
+    {
+      "id": "security_isolation",
+      "goal": "Reject foreign tenant/principal/session/thread/context/authority references."
+    },
+    {
+      "id": "persistence_resume",
+      "goal": "Resume canonical state idempotently after restart without duplicate analytical side effects."
+    }
+  ],
+  "comparison_dimensions": [
+    "correctness",
+    "silent_wrong_resistance",
+    "single_turn_success",
+    "follow_up_success",
+    "research_quality",
+    "root_cause_quality",
+    "relationship_correctness",
+    "latency",
+    "provider_cost",
+    "complexity",
+    "maintainability",
+    "determinism",
+    "security",
+    "persistence",
+    "observability",
+    "failure_recoverability"
+  ],
+  "large_certification_corpora": {
+    "dev80": "DEFERRED_UNTIL_WINNER_SELECTED",
+    "validation50": "DEFERRED",
+    "hidden50": "DEFERRED"
+  }
+}
