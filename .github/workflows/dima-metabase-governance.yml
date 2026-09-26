@@ -40,6 +40,7 @@ jobs:
           grep -Fq -- '- "!backend/lab/metabase/p13d/**"' .github/workflows/dima-metabase-m2.yml
           grep -Fq -- '- "!backend/lab/metabase/p14/**"' .github/workflows/dima-metabase-m2.yml
           grep -Fq -- '- "!backend/lab/metabase/p17/**"' .github/workflows/dima-metabase-m2.yml
+          grep -Fq -- '- "!backend/lab/metabase/action_execution/**"' .github/workflows/dima-metabase-m2.yml
           grep -Fq -- '- "!backend/app/v3/research.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_store.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/research_product.py"' .github/workflows/dima-metabase-m1.yml
