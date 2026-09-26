@@ -1,27 +1,35 @@
 from __future__ import annotations
 
 import json
+
+import pytest
 from pathlib import Path
 from unittest.mock import Mock
 
-from app.v3.research_manager import InvestigationIntent
+from app.v3.research_manager import (
+    InvestigationGraph,
+    InvestigationIntent,
+    InvestigationNodeView,
+    InvestigationTargetKind,
+    MaterialCognitionView,
+    ReasoningStepStatus,
+    _build_action_profile,
+)
 from app.v3.research_manager_provider import (
     ResearchManagerProposalDraft,
     StructuredResearchProposalManager,
+    _ACTION_FOR_INTENT,
     _draft_payload_from_transport,
     _schema_for_intents,
 )
 
 
-AUTONOMOUS_INTENTS = (
-    InvestigationIntent.INVESTIGATE_GAP,
-    InvestigationIntent.EXPLORE_ALTERNATIVES,
-    InvestigationIntent.SEEK_COUNTER_EVIDENCE,
-    InvestigationIntent.DEEPEN_EXPLANATION,
-    InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
-    InvestigationIntent.REPLAN,
-    InvestigationIntent.STOP_BRANCH,
-    InvestigationIntent.STOP_INVESTIGATION,
+# Runtime source-of-truth: provider-free coverage must never drift from the
+# actually reachable live vocabulary.
+AUTONOMOUS_INTENTS = tuple(_ACTION_FOR_INTENT)
+
+HISTORICAL_REJECTED_TURN2_SCHEMA_FP = (
+    "80533318ccc154c2e183e66099bb1f42d4a055413a2fffec7939ee172cda9b11"
 )
 
 
@@ -201,3 +209,198 @@ def test_transport_schema_code_contains_no_business_example_special_cases():
         'branch == "Web"',
     ):
         assert forbidden not in source
+
+
+
+def _closed_value(kind, *, string=None, integer=None, number=None, boolean=None, entries=(), items=()):
+    return {
+        "kind": kind,
+        "string_value": string,
+        "integer_value": integer,
+        "number_value": number,
+        "boolean_value": boolean,
+        "object_entries": list(entries),
+        "array_items": list(items),
+    }
+
+
+def _closed_entry(key, value):
+    return {"key": key, "value": value}
+
+
+def test_runtime_reachable_provider_vocabulary_includes_form_claim():
+    assert InvestigationIntent.FORM_CLAIM in AUTONOMOUS_INTENTS
+    assert set(AUTONOMOUS_INTENTS) == set(_ACTION_FOR_INTENT)
+
+
+@pytest.mark.parametrize("intent", AUTONOMOUS_INTENTS)
+def test_every_runtime_reachable_intent_has_recursively_closed_provider_schema(intent):
+    schema = _schema_for_intents((intent,))
+    _assert_provider_strict_objects(schema)
+    serialized = json.dumps(schema, sort_keys=True)
+    assert '"additionalProperties": true' not in serialized
+
+
+def test_form_claim_provider_transport_is_closed_and_maps_to_domain_claim():
+    schema = _schema_for_intents((InvestigationIntent.FORM_CLAIM,))
+    _assert_provider_strict_objects(schema)
+
+    claim_variant = schema["properties"]
+    claim_schema = claim_variant["claim"]
+    serialized = json.dumps(claim_schema, sort_keys=True)
+    assert "ProviderClaimDraft" in serialized or "$ref" in claim_schema
+    assert '"additionalProperties": true' not in serialized
+
+    raw = {
+        "proposal_id": "p17-form-claim-transport-001",
+        "source_revision": 2,
+        "target_parent_obligation": "g1",
+        "intent": "FORM_CLAIM",
+        "parent_step_id": "rrs_" + "a" * 24,
+        "branch_key": None,
+        "target_kind": "CLAIM",
+        "target_ref": None,
+        "objective_key": "claim.form.machine-downtime",
+        "bounded_objective": "Form one bounded claim from governed material.",
+        "rationale": "Governed material can now support a claim-shaped proposition.",
+        "inspected_evidence_refs": [],
+        "inspected_claim_refs": [],
+        "inspected_material_refs": ["lead_1"],
+        "expected_information_gain": "Makes the proposition explicit for later Evidence linkage.",
+        "claim": {
+            "claim_text": "Department A has 41 downtime events in the governed scope.",
+            "proposition": {
+                "entries": [
+                    _closed_entry(
+                        "subject",
+                        _closed_value("STRING", string="department:A"),
+                    ),
+                    _closed_entry(
+                        "predicate",
+                        _closed_value("STRING", string="has_downtime_events"),
+                    ),
+                    _closed_entry(
+                        "object",
+                        _closed_value("INTEGER", integer=41),
+                    ),
+                    _closed_entry(
+                        "context",
+                        _closed_value(
+                            "OBJECT",
+                            entries=(
+                                _closed_entry(
+                                    "basis",
+                                    _closed_value("STRING", string="governed-material"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ]
+            },
+            "scope": {
+                "entries": [
+                    _closed_entry(
+                        "period",
+                        _closed_value("STRING", string="fixture-period"),
+                    ),
+                    _closed_entry(
+                        "population",
+                        _closed_value("STRING", string="machine_operations"),
+                    ),
+                ]
+            },
+            "freshness": {
+                "as_of": "2026-09-26T00:00:00Z",
+                "stale_after": None,
+            },
+            "origin_material_refs": ["lead_1"],
+            "limitations": [],
+        },
+    }
+
+    draft = ResearchManagerProposalDraft.model_validate(raw)
+    proposal = StructuredResearchProposalManager._proposal(draft)
+
+    assert proposal.intent == InvestigationIntent.FORM_CLAIM
+    assert proposal.claim is not None
+    assert proposal.claim.proposition == {
+        "subject": "department:A",
+        "predicate": "has_downtime_events",
+        "object": 41,
+        "context": {"basis": "governed-material"},
+    }
+    assert proposal.claim.scope == {
+        "period": "fixture-period",
+        "population": "machine_operations",
+    }
+
+
+def test_turn2_material_state_reproduces_form_claim_capable_profile_provider_free():
+    root = InvestigationNodeView(
+        step_id="rrs_" + "b" * 24,
+        parent_step_id=None,
+        root_obligation_id="g1",
+        depth=0,
+        branch_id="branch:g1",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+        target_kind=InvestigationTargetKind.GAP,
+        target_ref=None,
+        objective_key="gap.machine-downtime",
+        bounded_objective="Investigate the first governed downtime gap.",
+        status=ReasoningStepStatus.COMPLETED,
+        evidence_refs=(),
+        counter_evidence_refs=(),
+        native_material_refs=("lead_turn1",),
+        child_step_ids=(),
+        stop_reason=None,
+        stop_scope=None,
+    )
+    graph = InvestigationGraph(
+        nodes=(root,),
+        root_step_ids=(root.step_id,),
+        open_branch_ids=(root.branch_id,),
+        stopped_branch_ids=(),
+        max_observed_depth=0,
+    )
+    material = MaterialCognitionView(
+        lead_id="lead_turn1",
+        obligation_id="g1",
+        execution_link_id="rex_turn1",
+        native_conversation_id="conv_turn1",
+        native_query_id="query_turn1",
+        query_fingerprint="1" * 64,
+        material_fingerprint="2" * 64,
+        source_evidence_refs=(),
+        exploration_kind="FOLLOWUP",
+    )
+    profile = _build_action_profile(
+        graph=graph,
+        claims=(),
+        materials=(material,),
+        remaining_followup_native_turns=3,
+        remaining_counter_evidence_attempts=2,
+        max_depth=5,
+    )
+
+    assert profile.legal_intents == (
+        InvestigationIntent.INVESTIGATE_GAP,
+        InvestigationIntent.EXPLORE_ALTERNATIVES,
+        InvestigationIntent.DEEPEN_EXPLANATION,
+        InvestigationIntent.REPLAN,
+        InvestigationIntent.FORM_CLAIM,
+        InvestigationIntent.STOP_BRANCH,
+        InvestigationIntent.STOP_INVESTIGATION,
+    )
+
+    schema = _schema_for_intents(profile.legal_intents)
+    _assert_provider_strict_objects(schema)
+    claim_variant = _variant_by_intent(schema, InvestigationIntent.FORM_CLAIM)
+    assert "claim" in claim_variant["properties"]
+    assert '"additionalProperties": true' not in json.dumps(
+        claim_variant,
+        sort_keys=True,
+    )
+
+    # The old live turn-2 fingerprint is preserved as historical failure
+    # identity. The corrected closed representation intentionally changes it.
+    assert len(HISTORICAL_REJECTED_TURN2_SCHEMA_FP) == 64

@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/dima-metabase-core-b-p17-provider-diagnostic.yml"
       - "backend/app/v3/structured_trace.py"
+      - "backend/app/v3/research_manager_provider.py"
       - "backend/app/v3/structured_transport.py"
       - "backend/tests/test_v3_structured_transport.py"
       - "backend/tests/test_v3_p17_request_differential.py"
@@ -51,7 +52,7 @@ jobs:
       - name: Compile diagnostic surfaces
         working-directory: backend
         run: |
-          python -m py_compile             app/v3/structured_trace.py             app/v3/structured_transport.py             tests/test_v3_structured_transport.py             tests/test_v3_p17_request_differential.py             lab/metabase/core_b/p17_request_differential.py             lab/metabase/core_b/p17_provider_diagnostic.py
+          python -m py_compile             app/v3/structured_trace.py             app/v3/structured_transport.py             app/v3/research_manager_provider.py             tests/test_v3_structured_transport.py             tests/test_v3_p17_autonomous_provider_schema.py             tests/test_v3_p17_request_differential.py             lab/metabase/core_b/p17_request_differential.py             lab/metabase/core_b/p17_provider_diagnostic.py
 
       - name: Structured transport diagnostic focused proof
         working-directory: backend
@@ -96,9 +97,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "b6074af0909384e26ac9057f6d57f03e260876f1"
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "10bf6616cb29b4fea468bb2bc5cebedf5a10ced7"
           test "$(git rev-parse HEAD:backend/app/v3/structured_trace.py)" = "fd909369ca42a8fe97d28b86085f57a3ff687d14"
-          test "$(git rev-parse HEAD:backend/app/v3/structured_transport.py)" = "00dc7dfa846c89f8f3a45e1a94ba72bbd6aef292"
+          test "$(git rev-parse HEAD:backend/app/v3/structured_transport.py)" = "cae399f136fc6fa3249aea183a16e31b97bdbffa"
           test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_request_differential.py)" = "ec336c0ffd14b9c97d305c2bf9f813b28d7a5aba"
           test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_provider_diagnostic.py)" = "030495ad850b842eebe05c67f016aab1e8f4437f"
           test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
@@ -312,7 +313,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "b6074af0909384e26ac9057f6d57f03e260876f1"
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "10bf6616cb29b4fea468bb2bc5cebedf5a10ced7"
           test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
           test "$(git rev-parse HEAD:backend/eval/core_b/askv2_matched_20_cases.json)" = "cf9aea5004d2bbb979015917570f32417c67017a"
           test "$(git rev-parse HEAD:backend/lab/metabase/core_b/fixtures/machine_operations.json)" = "dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"

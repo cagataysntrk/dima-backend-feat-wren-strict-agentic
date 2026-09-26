@@ -12,6 +12,7 @@ on:
       - "backend/lab/metabase/core_b/fixtures/**"
       - "backend/lab/metabase/core_b/runtime/**"
       - "backend/app/v3/research_intake.py"
+      - "backend/app/v3/research_manager_provider.py"
       - "backend/app/v3/structured_transport.py"
 
 permissions:

@@ -13,6 +13,7 @@ from app.v3.structured_transport import (
     OpenRouterStructuredJSONTransport,
     StructuredProviderError,
     schema_fingerprint,
+    validate_provider_strict_schema,
 )
 
 
@@ -553,3 +554,77 @@ def test_rejected_call_trace_matches_diagnostic_request_identity():
     assert trace.http_status == 400
     assert trace.provider_error_code == "invalid_request"
     assert trace.provider_error_message == "schema rejected"
+
+
+
+def test_recursive_schema_guard_rejects_open_nested_object_before_network():
+    called = False
+
+    def handler(request: httpx.Request):
+        nonlocal called
+        called = True
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"value":"ok"}'}}]},
+        )
+
+    unsafe = {
+        "type": "object",
+        "properties": {
+            "proposition": {
+                "type": "object",
+                "additionalProperties": True,
+            }
+        },
+        "required": ["proposition"],
+        "additionalProperties": False,
+    }
+
+    with _transport(handler) as client:
+        with pytest.raises(StructuredProviderError) as caught:
+            _call(client, schema=unsafe)
+        assert client.call_count == 0
+
+    assert called is False
+    assert caught.value.code == "COGNITION_PROVIDER_SCHEMA_UNSAFE"
+    assert "properties.proposition" in caught.value.detail
+
+
+def test_recursive_schema_guard_rejects_unsupported_object_control_keyword():
+    unsafe = {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": False,
+        "patternProperties": {"^x": {"type": "string"}},
+    }
+
+    with pytest.raises(StructuredProviderError) as caught:
+        validate_provider_strict_schema(unsafe)
+
+    assert caught.value.code == "COGNITION_PROVIDER_SCHEMA_UNSAFE"
+    assert "patternProperties" in caught.value.detail
+
+
+def test_recursive_schema_guard_accepts_closed_refs_and_arrays():
+    safe = {
+        "type": "object",
+        "properties": {
+            "items": {
+                "type": "array",
+                "items": {"$ref": "#/$defs/Item"},
+            }
+        },
+        "required": ["items"],
+        "additionalProperties": False,
+        "$defs": {
+            "Item": {
+                "type": "object",
+                "properties": {"value": {"type": "string"}},
+                "required": ["value"],
+                "additionalProperties": False,
+            }
+        },
+    }
+
+    validate_provider_strict_schema(safe)

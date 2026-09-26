@@ -15,6 +15,7 @@ on:
       - "backend/app/v3/report_document.py"
       - "backend/app/v3/research_intake.py"
       - "backend/app/v3/structured_trace.py"
+      - "backend/app/v3/research_manager_provider.py"
       - "backend/app/v3/structured_transport.py"
       - "backend/app/config.py"
       - "backend/control_plane/models.py"

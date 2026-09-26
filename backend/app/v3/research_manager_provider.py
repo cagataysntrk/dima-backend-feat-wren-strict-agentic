@@ -7,10 +7,11 @@ from __future__ import annotations
 
 import copy
 import json
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.v3.structured_transport import validate_provider_strict_schema
 from app.v3.research_manager import (
     InvestigationBranchKeyPolicy,
     InvestigationIntent,
@@ -36,6 +37,137 @@ class StructuredJSONTransport(Protocol):
 
 class _Frozen(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
+
+
+ProviderJSONKind = Literal[
+    "STRING",
+    "INTEGER",
+    "NUMBER",
+    "BOOLEAN",
+    "NULL",
+    "OBJECT",
+    "ARRAY",
+]
+
+
+class ProviderJSONValue(_Frozen):
+    """Closed recursive JSON value for strict provider transport only."""
+
+    kind: ProviderJSONKind
+    string_value: str | None = None
+    integer_value: int | None = None
+    number_value: float | None = None
+    boolean_value: bool | None = None
+    object_entries: tuple["ProviderObjectEntry", ...] = ()
+    array_items: tuple["ProviderJSONValue", ...] = ()
+
+    @model_validator(mode="after")
+    def coherent_value(self):
+        scalar_fields = {
+            "STRING": self.string_value,
+            "INTEGER": self.integer_value,
+            "NUMBER": self.number_value,
+            "BOOLEAN": self.boolean_value,
+        }
+        active = scalar_fields.get(self.kind)
+        if self.kind in scalar_fields:
+            if active is None:
+                raise ValueError(f"{self.kind} requires its typed value")
+            for kind, value in scalar_fields.items():
+                if kind != self.kind and value is not None:
+                    raise ValueError("provider JSON scalar fields are mutually exclusive")
+            if self.object_entries or self.array_items:
+                raise ValueError("scalar provider JSON value cannot carry containers")
+            return self
+
+        if any(value is not None for value in scalar_fields.values()):
+            raise ValueError("container/null provider JSON value cannot carry scalar fields")
+
+        if self.kind == "NULL":
+            if self.object_entries or self.array_items:
+                raise ValueError("NULL provider JSON value cannot carry containers")
+            return self
+        if self.kind == "OBJECT":
+            if self.array_items:
+                raise ValueError("OBJECT provider JSON value cannot carry array items")
+            keys = [entry.key for entry in self.object_entries]
+            if len(keys) != len(set(keys)):
+                raise ValueError("provider JSON object keys must be unique")
+            return self
+        if self.kind == "ARRAY":
+            if self.object_entries:
+                raise ValueError("ARRAY provider JSON value cannot carry object entries")
+            return self
+        raise ValueError(f"unsupported provider JSON kind: {self.kind}")
+
+
+class ProviderObjectEntry(_Frozen):
+    key: str = Field(min_length=1, max_length=256)
+    value: ProviderJSONValue
+
+
+ProviderJSONValue.model_rebuild()
+
+
+class ProviderClosedObject(_Frozen):
+    entries: tuple[ProviderObjectEntry, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def unique_keys(self):
+        keys = [entry.key for entry in self.entries]
+        if len(keys) != len(set(keys)):
+            raise ValueError("provider object keys must be unique")
+        return self
+
+
+class ProviderClaimDraft(_Frozen):
+    """Strict provider DTO; mapped deterministically into domain claim shape."""
+
+    claim_text: str = Field(min_length=1)
+    proposition: ProviderClosedObject
+    scope: ProviderClosedObject
+    freshness: ClaimFreshness
+    origin_material_refs: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+
+
+def _provider_json_value(value: ProviderJSONValue) -> Any:
+    if value.kind == "STRING":
+        return value.string_value
+    if value.kind == "INTEGER":
+        return value.integer_value
+    if value.kind == "NUMBER":
+        return value.number_value
+    if value.kind == "BOOLEAN":
+        return value.boolean_value
+    if value.kind == "NULL":
+        return None
+    if value.kind == "OBJECT":
+        return {
+            entry.key: _provider_json_value(entry.value)
+            for entry in value.object_entries
+        }
+    if value.kind == "ARRAY":
+        return [_provider_json_value(item) for item in value.array_items]
+    raise ValueError(f"unsupported provider JSON kind: {value.kind}")
+
+
+def _provider_object(value: ProviderClosedObject) -> dict[str, Any]:
+    return {
+        entry.key: _provider_json_value(entry.value)
+        for entry in value.entries
+    }
+
+
+def _domain_claim(value: ProviderClaimDraft) -> ProposedClaimDraft:
+    return ProposedClaimDraft(
+        claim_text=value.claim_text,
+        proposition=_provider_object(value.proposition),
+        scope=_provider_object(value.scope),
+        freshness=value.freshness,
+        origin_material_refs=value.origin_material_refs,
+        limitations=value.limitations,
+    )
 
 
 class ResearchManagerProposalDraft(_Frozen):
@@ -69,7 +201,7 @@ class ResearchManagerProposalDraft(_Frozen):
     )
     stop_reason: ManagerStopReason | None = None
     counter_to_claim_id: str | None = None
-    claim: ProposedClaimDraft | None = None
+    claim: ProviderClaimDraft | None = None
 
     @model_validator(mode="after")
     def coherent_live_semantics(self):
@@ -233,6 +365,7 @@ def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
         }
         if not value["$defs"]:
             value.pop("$defs", None)
+    validate_provider_strict_schema(value)
     return value
 
 
@@ -452,6 +585,8 @@ class StructuredResearchProposalManager:
                 f"unsupported P17 live intent: {draft.intent.value}"
             )
         payload = draft.model_dump()
+        if draft.claim is not None:
+            payload["claim"] = _domain_claim(draft.claim).model_dump()
         payload["action"] = action
         return ManagerProposal.model_validate(payload)
 
@@ -579,6 +714,12 @@ class StructuredResearchProposalManager:
                 raise ValueError(
                     "provider branch-key constraint cannot broaden action-profile legality"
                 )
+
+        # Dynamic action-profile narrowing mutates scalar constraints after
+        # schema construction. Re-validate the final provider representation
+        # immediately before transport so no reachable state can emit an open
+        # strict-schema object.
+        validate_provider_strict_schema(schema)
 
         raw = self._transport.structured_json(
             _SYSTEM,

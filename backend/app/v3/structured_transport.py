@@ -270,6 +270,83 @@ def _provider_diagnostic(
     )
 
 
+_UNSAFE_PROVIDER_SCHEMA_KEYWORDS = frozenset(
+    {
+        "patternProperties",
+        "unevaluatedProperties",
+        "propertyNames",
+        "dependencies",
+        "dependentSchemas",
+        "if",
+        "then",
+        "else",
+        "not",
+    }
+)
+
+
+def validate_provider_strict_schema(schema: dict[str, Any]) -> None:
+    """Fail closed before network when a provider schema is not recursively closed.
+
+    The provider-facing strict subset may use refs/unions, but every object
+    representation must be explicitly closed. Runtime/domain models can remain
+    more general; this guard applies only to the serialized provider contract.
+    """
+
+    if not isinstance(schema, dict):
+        raise StructuredProviderError(
+            "COGNITION_PROVIDER_SCHEMA_UNSAFE",
+            "provider schema root must be an object",
+        )
+
+    def visit(node: Any, path: tuple[str, ...]) -> None:
+        if isinstance(node, dict):
+            unsafe = sorted(_UNSAFE_PROVIDER_SCHEMA_KEYWORDS.intersection(node))
+            if unsafe:
+                raise StructuredProviderError(
+                    "COGNITION_PROVIDER_SCHEMA_UNSAFE",
+                    "unsupported strict-schema keyword at "
+                    + (".".join(path) or "<root>")
+                    + ": "
+                    + ",".join(unsafe),
+                )
+
+            object_like = (
+                node.get("type") == "object"
+                or "properties" in node
+                or "additionalProperties" in node
+            )
+            if object_like:
+                if node.get("additionalProperties") is not False:
+                    raise StructuredProviderError(
+                        "COGNITION_PROVIDER_SCHEMA_UNSAFE",
+                        "open object at " + (".".join(path) or "<root>"),
+                    )
+                props = node.get("properties")
+                if props is not None and not isinstance(props, dict):
+                    raise StructuredProviderError(
+                        "COGNITION_PROVIDER_SCHEMA_UNSAFE",
+                        "properties must be an object at "
+                        + (".".join(path) or "<root>"),
+                    )
+                if isinstance(props, dict):
+                    required = node.get("required")
+                    if not isinstance(required, list) or set(required) != set(props):
+                        raise StructuredProviderError(
+                            "COGNITION_PROVIDER_SCHEMA_UNSAFE",
+                            "strict object required/properties mismatch at "
+                            + (".".join(path) or "<root>"),
+                        )
+
+            for key, child in node.items():
+                visit(child, (*path, str(key)))
+        elif isinstance(node, list):
+            for index, child in enumerate(node):
+                visit(child, (*path, str(index)))
+
+    visit(schema, ())
+
+
 def strict_json_schema(model: type[BaseModel]) -> dict[str, Any]:
     """Return OpenAI/OpenRouter strict JSON-schema without changing semantics."""
 
@@ -288,6 +365,7 @@ def strict_json_schema(model: type[BaseModel]) -> dict[str, Any]:
                 visit(child)
 
     visit(schema)
+    validate_provider_strict_schema(schema)
     return schema
 
 
@@ -389,6 +467,10 @@ class OpenRouterStructuredJSONTransport:
                 "COGNITION_PROMPT_INVALID",
                 "system and user prompts are required",
             )
+
+        # Never spend a provider call to discover a locally detectable strict
+        # schema representation defect.
+        validate_provider_strict_schema(schema)
 
         call_ordinal = self.call_count + 1
         payload = build_provider_bound_payload(
