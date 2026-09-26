@@ -321,6 +321,13 @@ class GovernedManagerExecutor:
                     session_id=self._context.session_id,
                     allowed_obligation_ids=allowed_ids
                     | set(effective_args.obligation_ids),
+                    provenance_extra={
+                        "research_run_id": runtime.snapshot.run_id,
+                        "requested_capabilities": [
+                            self._obligations.get(ledger, obligation_id).capability_key.value
+                            for obligation_id in effective_args.obligation_ids
+                        ],
+                    },
                 )
             except ManagerCoreAdapterError as exc:
                 raise ManagerSemanticGap(str(exc)) from exc
