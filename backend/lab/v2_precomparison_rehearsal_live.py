@@ -344,11 +344,26 @@ def _run_foreign_principal(case, *, settings, budget, service, principal, checkp
     )
 
 
-def run(*, max_total_model_calls: int, output: Path) -> dict[str, Any]:
+def run(
+    *,
+    max_total_model_calls: int,
+    output: Path,
+    case_ids: tuple[str, ...] = (),
+) -> dict[str, Any]:
     manifest = json.loads(CASES.read_text(encoding="utf-8"))
-    cases = list(manifest["cases"])
-    if not 20 <= len(cases) <= 25:
+    all_cases = list(manifest["cases"])
+    if not 20 <= len(all_cases) <= 25:
         raise RuntimeError("development rehearsal must contain 20..25 cases")
+    selected = set(case_ids)
+    cases = [
+        case for case in all_cases
+        if not selected or str(case["id"]) in selected
+    ]
+    missing = selected - {str(case["id"]) for case in cases}
+    if missing:
+        raise RuntimeError(f"unknown rehearsal case ids: {sorted(missing)}")
+    if not cases:
+        raise RuntimeError("no rehearsal cases selected")
     if not manifest.get("real_llm_required") or not manifest.get("real_wren_required"):
         raise RuntimeError("rehearsal manifest must require real LLM and real Wren")
 
@@ -425,6 +440,8 @@ def run(*, max_total_model_calls: int, output: Path) -> dict[str, Any]:
         "kind": "v2_precomparison_development_rehearsal",
         "status": "pass" if passed == len(records) else "fail",
         "case_count": len(records),
+        "full_manifest_case_count": len(all_cases),
+        "selected_case_ids": [str(item["id"]) for item in cases],
         "passed": passed,
         "failed": len(records) - passed,
         "real_llm": True,
@@ -447,12 +464,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-total-model-calls", type=int, default=180)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--case-id", action="append", default=[])
     args = parser.parse_args()
     if not 1 <= args.max_total_model_calls <= 200:
         raise SystemExit("--max-total-model-calls must be 1..200")
     payload = run(
         max_total_model_calls=args.max_total_model_calls,
         output=args.output,
+        case_ids=tuple(args.case_id),
     )
     print(
         f"precomparison rehearsal: {payload['passed']}/{payload['case_count']} "
