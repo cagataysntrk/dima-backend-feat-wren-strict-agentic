@@ -37,6 +37,7 @@ from app.v2.manager_models import (
     ObligationPolarity,
     ObligationPriority,
     ObligationStatus,
+    ResearchDirectiveDisposition,
     ResearchDirectiveDispositionStatus,
     ResearchDirectiveType,
     UserIntentEnvelope,
@@ -98,8 +99,10 @@ from app.v2.models import (
     HypothesisEvidenceRelation,
     HypothesisStatus,
     HypothesisEvidenceRelationProposal,
+    HypothesisLedgerState,
     HypothesisNextTestProposal,
     HypothesisProposal,
+    ResearchTask,
     ResearchTaskKind,
 )
 from app.v2.source_spans import SourceSpanRegistry
@@ -507,6 +510,9 @@ class ManagerLoopOutcome:
     observations: tuple[dict[str, Any], ...]
     preacceptance_status: FiniteAcceptanceStatus | None = None
     findings: tuple[EvidenceLinkedFinding, ...] = ()
+    research_tasks: tuple[ResearchTask, ...] = ()
+    hypothesis_states: tuple[HypothesisLedgerState, ...] = ()
+    directive_dispositions: tuple[ResearchDirectiveDisposition, ...] = ()
     cancelled: bool = False
     answer_now_requested: bool = False
 
@@ -4028,6 +4034,12 @@ class ResearchManagerLoop:
             observations=tuple(observations),
             preacceptance_status=FiniteAcceptanceStatus.ACCEPTED,
             findings=tuple(canonical_findings),
+            research_tasks=tuple(task_registry.tasks),
+            hypothesis_states=tuple(
+                ledger.state
+                for _root_id, ledger in sorted(root_cause_ledgers.items())
+            ),
+            directive_dispositions=runtime.directive_dispositions,
             cancelled=cancelled,
             answer_now_requested=answer_now_requested,
         )
