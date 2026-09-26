@@ -25,6 +25,7 @@ on:
       - "backend/tests/test_v3_owner_scoped_must_accounting.py"
       - "backend/tests/test_v3_research_intake.py"
       - "backend/tests/test_v3_structured_transport.py"
+      - "backend/tests/test_v3_p17_autonomous_provider_schema.py"
       - "backend/tests/test_v3_p17_request_differential.py"
       - ".github/workflows/dima-metabase-core-b-seal-provider-free.yml"
   workflow_dispatch:

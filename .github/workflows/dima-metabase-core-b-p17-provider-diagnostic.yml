@@ -10,6 +10,7 @@ on:
       - "backend/app/v3/research_manager_provider.py"
       - "backend/app/v3/structured_transport.py"
       - "backend/tests/test_v3_structured_transport.py"
+      - "backend/tests/test_v3_p17_autonomous_provider_schema.py"
       - "backend/tests/test_v3_p17_request_differential.py"
       - "backend/lab/metabase/core_b/p17_request_differential.py"
       - "backend/lab/metabase/core_b/p17_provider_diagnostic.py"
