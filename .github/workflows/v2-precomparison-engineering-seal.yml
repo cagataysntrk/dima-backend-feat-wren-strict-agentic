@@ -1,0 +1,73 @@
+name: v2-precomparison-engineering-seal
+
+"on":
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/V2_PRECOMPARISON_SEAL_TRIGGER"
+
+jobs:
+  seal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Final provider-free Day11-15 and seal contracts
+        working-directory: backend
+        run: |
+          python -m compileall -q \
+            app/v2 \
+            lab/v2_precomparison_identity.py \
+            lab/v2_precomparison_package.py
+          pytest -q \
+            tests/test_v2_day11_eval_expansion.py \
+            tests/test_v2_day12_contract_evidence_telemetry.py \
+            tests/test_v2_day13_security.py \
+            tests/test_v2_day14_persistence_resume.py \
+            tests/test_v2_day15_pilot_rollback.py \
+            tests/test_v2_precomparison_canary.py \
+            tests/test_v2_precomparison_rehearsal_contract.py
+      - name: Exact engineering identity
+        working-directory: backend
+        run: python lab/v2_precomparison_identity.py
+      - name: Neutral comparison evidence package
+        working-directory: backend
+        run: python lab/v2_precomparison_package.py
+      - name: Assert large certification and pilot activation remain deferred
+        working-directory: backend
+        run: |
+          test ! -e lab/reports/v2_day6_5_dev80.json
+          test ! -e lab/reports/v2_day6_5_validation50.json
+          test ! -e lab/reports/v2_day6_5_hidden50.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          identity = json.loads(Path("lab/reports/v2_precomparison_engineering_identity.json").read_text())
+          assert identity["feature_flag"]["pilot_enabled"] is False
+          assert "DEFERRED" in identity["large_certification"]["DEV80"]
+          assert identity["large_certification"]["Validation50"] == "DEFERRED"
+          assert identity["large_certification"]["Hidden50"] == "DEFERRED"
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v2-precomparison-engineering-seal-${{ github.run_id }}
+          path: |
+            backend/lab/reports/v2_precomparison_engineering_identity.json
+            backend/lab/reports/v2_precomparison_comparison_package.json
+          retention-days: 90
