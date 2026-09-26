@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from app.v2.execution_receipts import build_query_contract_audit_receipt
+from app.v2.execution_receipts import (
+    build_development_performance_receipt,
+    build_query_contract_audit_receipt,
+)
 from app.v2.manager_errors import ManagerAuthorityViolation
 from app.v2.manager_executor import EvidenceStore
 from app.v2.models import (
@@ -212,3 +215,35 @@ def test_product_events_remain_diagnostic_not_truth_authority():
     assert event.refs == ("evi_day12_a",)
     assert not hasattr(event, "verified")
     assert not hasattr(event, "query_contract")
+
+
+def test_performance_receipt_is_diagnostic_and_never_claims_p95():
+    receipt = build_development_performance_receipt(
+        first_status_ms=3,
+        first_verified_evidence_ms=420,
+        report_ready_ms=900,
+        total_ms=1100,
+        provider_calls_by_role={
+            "RESEARCH_MANAGER": 3,
+            "SEMANTIC_LINKER": 1,
+        },
+        wren_query_calls=2,
+        wren_dry_plan_calls=2,
+        wren_cube_sql_calls=2,
+        manager_turns=4,
+    )
+
+    assert receipt["sample_count"] == 1
+    assert receipt["p95_claim"] is False
+    assert receipt["diagnostic_only"] is True
+    assert receipt["provider_calls_by_role"] == {
+        "RESEARCH_MANAGER": 3,
+        "SEMANTIC_LINKER": 1,
+    }
+    assert receipt["wren_calls"] == {
+        "query": 2,
+        "dry_plan": 2,
+        "cube_sql": 2,
+    }
+    assert "verified_complete" not in receipt
+    assert "authority" not in receipt
