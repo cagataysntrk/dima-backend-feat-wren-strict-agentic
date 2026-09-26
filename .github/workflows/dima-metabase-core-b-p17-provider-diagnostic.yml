@@ -14,6 +14,7 @@ on:
       - "backend/lab/metabase/core_b/p17_provider_diagnostic.py"
       - "backend/lab/metabase/core_b/authorizations/p17-provider-diagnostic-001.json"
       - "backend/lab/metabase/core_b/authorizations/p17-request-differential-002.json"
+      - "backend/lab/metabase/core_b/authorizations/p17-request-differential-003.json"
 
 permissions:
   contents: read
@@ -129,23 +130,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AUTH="backend/lab/metabase/core_b/authorizations/p17-request-differential-002.json"
+          AUTH="backend/lab/metabase/core_b/authorizations/p17-request-differential-003.json"
           test -f "$AUTH"
           python - "$AUTH" "$(git rev-parse HEAD^)" <<'PY'
           import json,subprocess,sys
           from pathlib import Path
           p=Path(sys.argv[1]); parent=sys.argv[2]
           value=json.loads(p.read_text(encoding="utf-8"))
-          assert value["mode"]=="p17_request_differential_live"
+          assert value["mode"]=="p17_request_differential_live_v2"
           assert value["decision"]=="CORE_B_SENTINEL_DIFFERENTIAL_RECOVERY"
           assert value["candidate_product_sha"]==parent
-          assert value["provider_free_differential_run_id"]==36273274258
-          assert value["core_b_provider_free_seal_run_id"]==36273274224
+          assert value["provider_free_differential_run_id"]==36273869930
+          assert value["core_b_provider_free_seal_run_id"]==36273869889
+          assert value["governance_run_id"]==36273869897
+          assert value["prior_live_harness_failure_run_id"]==36273495405
           assert value["provider_free_classification"]=="IDENTICAL"
           assert value["historical_first_divergence_owner"]=="diagnostic_request_ref_namespace"
           assert value["model"]=="openai/gpt-5.6-luna"
           assert value["case_id"]=="root_cause_tr"
-          assert value["max_p17_provider_calls"]==1
+          assert value["max_p17_provider_calls"]==2
+          assert value["semantic_turns_are_not_retries"] is True
+          assert value["third_provider_call_blocked_before_network"] is True
           assert value["automatic_retry"] is False
           assert value["full_sentinel_rerun"] is False
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
@@ -159,6 +164,7 @@ jobs:
           assert blob("backend/app/v3/structured_transport.py")==value["structured_transport_blob_sha"]
           assert blob("backend/lab/metabase/core_b/p17_request_differential.py")==value["differential_harness_blob_sha"]
           assert blob("backend/lab/metabase/core_b/p17_provider_diagnostic.py")==value["diagnostic_runner_blob_sha"]
+          assert value["diagnostic_runner_blob_sha"]=="030495ad850b842eebe05c67f016aab1e8f4437f"
           PY
           test -n "$DIMA_OPENROUTER_API_KEY"
 
