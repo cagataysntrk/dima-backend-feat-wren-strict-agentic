@@ -36,6 +36,49 @@ EXPECTED_FAMILIES = {
     "budget_and_no_progress",
 }
 
+
+
+EXPECTED_BEHAVIORAL_CATEGORIES = {
+    "turkish_paraphrase",
+    "english_paraphrase",
+    "surface_order_permutation",
+    "metric_dimension_rename",
+    "schema_label_change",
+    "implicit_comparison",
+    "explicit_comparison",
+    "breakdown",
+    "ranking",
+    "relationship",
+    "cross_domain_relationship",
+    "root_cause",
+    "adaptive_research",
+    "unsupported_request",
+    "ambiguous_request",
+    "clarification",
+    "conversation_repair",
+    "follow_up",
+    "signed_continuation",
+    "broaden_vs_adapt",
+    "report_evidence_linkage",
+    "presentation_control_constraints",
+}
+
+EXPECTED_NEGATIVE_ATTACKS = {
+    "foreign_source_truth",
+    "foreign_owner_handles",
+    "foreign_tenant_principal",
+    "foreign_context_version",
+    "stale_action_ref",
+    "invented_action_ref",
+    "wrong_task_identity",
+    "cross_parent_evidence",
+    "wrong_hypothesis_evidence",
+    "wrong_directive_parent",
+    "wrong_signed_section_authority",
+    "foreign_report_finding",
+    "stale_continuation",
+}
+
 EXPECTED_METAMORPHIC = {
     "source_owner_order_does_not_change_truth",
     "candidate_order_does_not_change_source_truth",
@@ -231,6 +274,25 @@ def test_day11_holdout_partition_contains_no_case_or_prompt_payloads():
         "execution_status",
     }
 
+
+
+
+def test_day11_behavioral_robustness_categories_match_supervisor_constitution():
+    manifest = _manifest()
+    assert set(manifest["behavioral_categories"]) == EXPECTED_BEHAVIORAL_CATEGORIES
+    assert manifest["day11_gates"]["behavioral_categories_represented"] == 1
+
+
+def test_day11_negative_attacks_are_real_owner_tests():
+    manifest = _manifest()
+    attacks = manifest["negative_attack_nodes"]
+    ids = [item["id"] for item in attacks]
+
+    assert len(ids) == len(set(ids))
+    assert set(ids) == EXPECTED_NEGATIVE_ATTACKS
+    assert manifest["day11_gates"]["negative_attack_nodes_green"] is True
+    for item in attacks:
+        _assert_marker_exists(item["test"])
 
 def test_day11_gates_are_fail_closed_and_do_not_claim_dev80():
     gates = _manifest()["day11_gates"]
