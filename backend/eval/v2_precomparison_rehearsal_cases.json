@@ -19,7 +19,8 @@
         "ANSWER"
       ],
       "min_evidence": 1,
-      "verified": true
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "std_ranking_tr",
@@ -33,7 +34,8 @@
         "ANSWER"
       ],
       "min_evidence": 1,
-      "verified": true
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "std_failure_breakdown_tr",
@@ -47,7 +49,8 @@
         "ANSWER"
       ],
       "min_evidence": 1,
-      "verified": true
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "std_clause_order",
@@ -63,7 +66,8 @@
         "REPORT"
       ],
       "min_evidence": 1,
-      "verified": true
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "std_english_surface",
@@ -80,7 +84,8 @@
         "UNSUPPORTED"
       ],
       "min_evidence": 0,
-      "verified": false
+      "verified": false,
+      "contract_class": "MAY_CLARIFY"
     },
     {
       "id": "relationship_explicit_tr",
@@ -95,7 +100,8 @@
         "PARTIAL"
       ],
       "min_evidence": 1,
-      "verified": false
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "root_cause_tr",
@@ -110,7 +116,8 @@
         "PARTIAL"
       ],
       "min_evidence": 1,
-      "verified": false
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "adaptive_tr",
@@ -125,7 +132,8 @@
         "PARTIAL"
       ],
       "min_evidence": 1,
-      "verified": false
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "canonical_full",
@@ -139,7 +147,8 @@
         "REPORT"
       ],
       "min_evidence": 4,
-      "verified": true
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "canonical_reordered",
@@ -154,7 +163,8 @@
         "PARTIAL"
       ],
       "min_evidence": 3,
-      "verified": false
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "canonical_no_diacritics",
@@ -170,7 +180,8 @@
         "CLARIFY"
       ],
       "min_evidence": 0,
-      "verified": false
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
     },
     {
       "id": "broaden_policy",
@@ -185,7 +196,8 @@
       ],
       "min_evidence": 1,
       "verified": true,
-      "followup": "Yalnızca imzalı bu rapor bölümünün governed kapsamını derinleştir; mevcut kanıt yetmezse bütçe içinde ilgili ek governed analizleri yap ve yeni rapor sürümü üret."
+      "followup": "Yalnızca imzalı bu rapor bölümünün governed kapsamını derinleştir; mevcut kanıt yetmezse bütçe içinde ilgili ek governed analizleri yap ve yeni rapor sürümü üret.",
+      "contract_class": "CONTINUATION"
     },
     {
       "id": "report_control",
@@ -200,7 +212,8 @@
       ],
       "min_evidence": 1,
       "verified": true,
-      "followup": "Yalnızca imzalı bölüm kapsamında yeni rapor sürümü üret; önceki raporu ve önceki doğrulanmış kanıtı mutate etme."
+      "followup": "Yalnızca imzalı bölüm kapsamında yeni rapor sürümü üret; önceki raporu ve önceki doğrulanmış kanıtı mutate etme.",
+      "contract_class": "CONTINUATION"
     },
     {
       "id": "unsupported_domain",
@@ -216,7 +229,8 @@
         "CLARIFY"
       ],
       "min_evidence": 0,
-      "verified": false
+      "verified": false,
+      "contract_class": "MUST_REJECT"
     },
     {
       "id": "ambiguous_request",
@@ -232,7 +246,8 @@
         "UNSUPPORTED"
       ],
       "min_evidence": 0,
-      "verified": false
+      "verified": false,
+      "contract_class": "MUST_CLARIFY"
     },
     {
       "id": "cross_domain_relationship",
@@ -248,7 +263,8 @@
         "UNSUPPORTED"
       ],
       "min_evidence": 0,
-      "verified": false
+      "verified": false,
+      "contract_class": "MAY_CLARIFY"
     },
     {
       "id": "repair_surface",
@@ -265,7 +281,8 @@
         "CLARIFY"
       ],
       "min_evidence": 0,
-      "verified": false
+      "verified": false,
+      "contract_class": "MAY_CLARIFY"
     },
     {
       "id": "english_root",
@@ -283,7 +300,8 @@
         "UNSUPPORTED"
       ],
       "min_evidence": 0,
-      "verified": false
+      "verified": false,
+      "contract_class": "MAY_CLARIFY"
     },
     {
       "id": "restart_signed_continuation",
@@ -300,7 +318,8 @@
       ],
       "min_evidence": 4,
       "verified": false,
-      "require_continuation_verified": false
+      "require_continuation_verified": false,
+      "contract_class": "PERSISTENCE"
     },
     {
       "id": "foreign_principal_replay",
@@ -315,7 +334,8 @@
         "REPORT"
       ],
       "min_evidence": 4,
-      "verified": true
+      "verified": true,
+      "contract_class": "SECURITY_ATTACK"
     }
   ],
   "forbidden": [
@@ -324,5 +344,15 @@
     "Hidden50",
     "pilot activation",
     "CONFIRMED_CAUSE"
-  ]
+  ],
+  "contract_classes": [
+    "MUST_EXECUTE",
+    "MAY_CLARIFY",
+    "MUST_CLARIFY",
+    "MUST_REJECT",
+    "SECURITY_ATTACK",
+    "CONTINUATION",
+    "PERSISTENCE"
+  ],
+  "contract_class_note": "Contract class is the primary behavioral dimension. Existing lanes/statuses remain secondary case-specific outcome constraints; orthogonal security/continuation/persistence runners score their own invariants independently."
 }
